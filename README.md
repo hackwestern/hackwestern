@@ -5,11 +5,11 @@ Welcome to Hack Western :)
 ## Pre-requisites
 
 - Linux, MacOS, or Windows with [Windows Subsystem For Linux](https://learn.microsoft.com/en-us/windows/wsl/about) installed.
-- Node version 16.14.0 or higher (Node 12.x and 14.x have reached end-of-life as of April 2023) with `npm`.
+- Node version 16.14.0 or higher (Node 12.x and 14.x have reached end-of-life as of April 2023) with `npm`, I'd recommend Node 20.12.2 as it's the most recent LTS version.
 - A modern browser (Chrome 64+, Edge 79+, Firefox 67+, Safari 12+, etc).
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) or an alternative such as [colima](https://github.com/abiosoft/colima).
 - Git installed, GitHub account setup. Been added to our Hack Western GitHub organization.
-  [ ] Hack cloned this repository, and `cd` into it.
+- Have cloned this repository, and `cd` into it.
 
 ## Development Start
 
@@ -26,6 +26,8 @@ If you are not familiar with the different technologies used in this project, pl
 - [Next.js](https://nextjs.org)
 - [React.js](https://react.dev)
 - [NextAuth.js](https://next-auth.js.org)
+- [PostgreSQL](https://www.postgresql.org/)
 - [Drizzle](https://orm.drizzle.team)
+- [Docker](https://docs.docker.com/)
 - [Tailwind CSS](https://tailwindcss.com)
 - [tRPC](https://trpc.io)
