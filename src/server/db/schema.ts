@@ -13,6 +13,13 @@ import {
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 
+/**
+ * This is the prefix for tables from this year's hack western!
+ * Please change it every year so we have separate tables for each year.
+ * Make sure to also change the `tableFilter` in drizzle-config.ts.
+ *
+ * @see https://orm.drizzle.team/kit-docs/config-reference#tablesfilters
+ */
 const TABLE_PREFIX = "hackwestern2024";
 
 /**
@@ -23,6 +30,9 @@ const TABLE_PREFIX = "hackwestern2024";
  */
 export const createTable = pgTableCreator((name) => `${TABLE_PREFIX}_${name}`);
 
+/**
+ * The status of a hacker application, from when it's first started (`IN_PROGRESS`).
+ */
 export const applicationStatus = pgEnum("application_status", [
   "IN_PROGRESS",
   "PENDING_REVIEW",
@@ -33,16 +43,22 @@ export const applicationStatus = pgEnum("application_status", [
   "DECLINED",
 ]);
 
+/**
+ * The school/university year that the hacker applicant is in.
+ */
 export const schoolYear = pgEnum("school_year", [
+  "High School",
   "Undergrad - First",
   "Undergrad - Second",
   "Undergrad - Third",
   "Undergrad - Fourth",
   "Undergrad - Other",
-  "High School",
   "Graduate/PHD",
 ]);
 
+/**
+ * The subject that the applicant is mainly studying in university.
+ */
 export const major = pgEnum("major", [
   "Computer Science",
   "Computer Engineering",
@@ -61,6 +77,9 @@ export const major = pgEnum("major", [
   "Other",
 ]);
 
+/**
+ * The number of hackathons the hacker applicant has attended before.
+ */
 export const numOfHackathons = pgEnum("num_of_hackathons", [
   "0",
   "1-3",
@@ -68,6 +87,9 @@ export const numOfHackathons = pgEnum("num_of_hackathons", [
   "7+",
 ]);
 
+/**
+ * The gender identity that the applicant identifies themselves with.
+ */
 export const gender = pgEnum("gender", [
   "Female",
   "Male",
@@ -75,7 +97,10 @@ export const gender = pgEnum("gender", [
   "Other",
 ]);
 
-export const ethniticity = pgEnum("race/ethniticity", [
+/**
+ * The race/ethnicity of the applicant.
+ */
+export const ethnicity = pgEnum("race/ethnicity", [
   "American Indian or Alaskan Native",
   "Asian / Pacific Islander",
   "Black or African American",
@@ -84,6 +109,9 @@ export const ethniticity = pgEnum("race/ethniticity", [
   "Multiple ethnicity / Other",
 ]);
 
+/**
+ * The sexual orientation that the applicant identifies themselves with.
+ */
 export const sexualOrientation = pgEnum("sexual_orientation", [
   "Asexual / Aromantic",
   "Pansexual, Demisexual or Omnisexual",
@@ -94,6 +122,10 @@ export const sexualOrientation = pgEnum("sexual_orientation", [
   "Other",
 ]);
 
+/**
+ * The table for storing hacker applications while the hacker is completing the application,
+ * and during the review process.
+ */
 export const applications = createTable("application", {
   id: uuid("id").defaultRandom().primaryKey().notNull(),
   userId: varchar("id", { length: 255 })
@@ -143,10 +175,15 @@ export const applications = createTable("application", {
   // Optional Questions
   underrepGroup: boolean("underrep_group"),
   gender: gender("gender"),
-  ethniticity: ethniticity("ethnicity"),
+  ethnicity: ethnicity("ethnicity"),
   sexualOrientation: sexualOrientation("sexual_orientation"),
 });
 
+/**
+ * Applications have a one-to-one relationship with Users,
+ * ie. A user can only make one application, and an application can only be associated
+ * with one user.
+ */
 export const applicationsRelation = relations(applications, ({ one }) => ({
   users: one(users),
 }));
