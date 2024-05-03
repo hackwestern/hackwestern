@@ -1,14 +1,19 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  boolean,
   index,
   integer,
+  pgEnum,
   pgTableCreator,
   primaryKey,
   text,
   timestamp,
+  uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
+
+const TABLE_PREFIX = "hackwestern2024";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -16,7 +21,135 @@ import { type AdapterAccount } from "next-auth/adapters";
  *
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
-export const createTable = pgTableCreator((name) => `hackwestern_${name}`);
+export const createTable = pgTableCreator((name) => `${TABLE_PREFIX}_${name}`);
+
+export const applicationStatus = pgEnum("application_status", [
+  "IN_PROGRESS",
+  "PENDING_REVIEW",
+  "IN_REVIEW",
+  "ACCEPTED",
+  "REJECTED",
+  "WAITLISTED",
+  "DECLINED",
+]);
+
+export const schoolYear = pgEnum("school_year", [
+  "Undergrad - First",
+  "Undergrad - Second",
+  "Undergrad - Third",
+  "Undergrad - Fourth",
+  "Undergrad - Other",
+  "High School",
+  "Graduate/PHD",
+]);
+
+export const major = pgEnum("major", [
+  "Computer Science",
+  "Computer Engineering",
+  "Software Engineering",
+  "Other Engineering Discipline",
+  "Information Systems",
+  "Information Technology",
+  "System Administration",
+  "Natural Sciences (Biology, Chemistry, Physics, etc.)",
+  "Mathematics/Statistics",
+  "Web Development/Web Design",
+  "Business Administration",
+  "Humanities",
+  "Social Science",
+  "Fine Arts/Performing Arts",
+  "Other",
+]);
+
+export const numOfHackathons = pgEnum("num_of_hackathons", [
+  "0",
+  "1-3",
+  "4-6",
+  "7+",
+]);
+
+export const gender = pgEnum("gender", [
+  "Female",
+  "Male",
+  "Non-Binary",
+  "Other",
+]);
+
+export const ethniticity = pgEnum("race/ethniticity", [
+  "American Indian or Alaskan Native",
+  "Asian / Pacific Islander",
+  "Black or African American",
+  "Hispanic",
+  "White / Caucasian",
+  "Multiple ethnicity / Other",
+]);
+
+export const sexualOrientation = pgEnum("sexual_orientation", [
+  "Asexual / Aromantic",
+  "Pansexual, Demisexual or Omnisexual",
+  "Bisexual",
+  "Queer",
+  "Gay / Lesbian",
+  "Heterosexual / Straight",
+  "Other",
+]);
+
+export const applications = createTable("application", {
+  id: uuid("id").defaultRandom().primaryKey().notNull(),
+  userId: varchar("id", { length: 255 })
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp("created_at", {
+    mode: "date",
+    precision: 3,
+  })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", {
+    mode: "date",
+    precision: 3,
+  })
+    .defaultNow()
+    .notNull(),
+  status: applicationStatus("status").default("IN_PROGRESS").notNull(),
+
+  // About You
+  dateOfBirth: timestamp("date_of_birth").defaultNow().notNull(),
+  school: varchar("name", { length: 255 }),
+  year: schoolYear("year"),
+  major: major("major"),
+  attendedBefore: boolean("attended").default(false).notNull(),
+  numOfHackathons: numOfHackathons("num_of_hackathons").default("0").notNull(),
+
+  // Your Story
+  ideaToLife: text("idea_to_life"),
+  interestsAndPassions: text("interest_and_passions"),
+  technologyInspires: text("technology_inspires"),
+
+  // Profile Links
+  resumeLink: varchar("resume_link", { length: 2048 }),
+  githubLink: varchar("github_link", { length: 2048 }),
+  linkedInLink: varchar("linkedin_link", { length: 2048 }),
+  otherLink: varchar("other_link", { length: 2048 }),
+
+  // Agreements
+  agreeCodeOfConduct: boolean("agree_code_of_conduct").default(false).notNull(),
+  agreeShareWithSponsors: boolean("agree_share_with_sponsors")
+    .default(false)
+    .notNull(),
+  agreeShareWithMLH: boolean("agree_share_with_mlh").default(false).notNull(),
+  agreeWillBe18: boolean("agree_will_be_18").default(false).notNull(),
+
+  // Optional Questions
+  underrepGroup: boolean("underrep_group"),
+  gender: gender("gender"),
+  ethniticity: ethniticity("ethnicity"),
+  sexualOrientation: sexualOrientation("sexual_orientation"),
+});
+
+export const applicationsRelation = relations(applications, ({ one }) => ({
+  users: one(users),
+}));
 
 export const users = createTable("user", {
   id: varchar("id", { length: 255 }).notNull().primaryKey(),
