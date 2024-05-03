@@ -9,6 +9,7 @@ Welcome to Hack Western :)
 - A modern browser (Chrome 64+, Edge 79+, Firefox 67+, Safari 12+, etc).
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) or an alternative such as [colima](https://github.com/abiosoft/colima).
 - Git installed, GitHub account setup. Been added to our Hack Western GitHub organization.
+- A modern text editor like VSCode or Neovim with the TypeScript LSP, Prettier and ESLint plugins installed and configured to run on save/commit.
 - Have cloned this repository, and `cd` into it.
 
 ## Development Start
