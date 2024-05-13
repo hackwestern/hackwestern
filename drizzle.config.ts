@@ -8,5 +8,5 @@ export default {
   dbCredentials: {
     connectionString: env.DATABASE_URL,
   },
-  tablesFilter: ["hackwestern_*"],
+  tablesFilter: ["hackwestern2024_*"],
 } satisfies Config;

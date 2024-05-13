@@ -1,14 +1,26 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  boolean,
   index,
   integer,
+  pgEnum,
   pgTableCreator,
   primaryKey,
   text,
   timestamp,
+  uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
+
+/**
+ * This is the prefix for tables from this year's hack western!
+ * Please change it every year so we have separate tables for each year.
+ * Make sure to also change the `tableFilter` in drizzle-config.ts.
+ *
+ * @see https://orm.drizzle.team/kit-docs/config-reference#tablesfilters
+ */
+const TABLE_PREFIX = "hackwestern2024";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -16,7 +28,165 @@ import { type AdapterAccount } from "next-auth/adapters";
  *
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
-export const createTable = pgTableCreator((name) => `hackwestern_${name}`);
+export const createTable = pgTableCreator((name) => `${TABLE_PREFIX}_${name}`);
+
+/**
+ * The status of a hacker application, from when it's first started (`IN_PROGRESS`).
+ */
+export const applicationStatus = pgEnum("application_status", [
+  "IN_PROGRESS",
+  "PENDING_REVIEW",
+  "IN_REVIEW",
+  "ACCEPTED",
+  "REJECTED",
+  "WAITLISTED",
+  "DECLINED",
+]);
+
+/**
+ * The school/university year that the hacker applicant is in.
+ */
+export const schoolYear = pgEnum("school_year", [
+  "High School",
+  "Undergrad - First",
+  "Undergrad - Second",
+  "Undergrad - Third",
+  "Undergrad - Fourth",
+  "Undergrad - Other",
+  "Graduate/PHD",
+]);
+
+/**
+ * The subject that the applicant is mainly studying in university.
+ */
+export const major = pgEnum("major", [
+  "Computer Science",
+  "Computer Engineering",
+  "Software Engineering",
+  "Other Engineering Discipline",
+  "Information Systems",
+  "Information Technology",
+  "System Administration",
+  "Natural Sciences (Biology, Chemistry, Physics, etc.)",
+  "Mathematics/Statistics",
+  "Web Development/Web Design",
+  "Business Administration",
+  "Humanities",
+  "Social Science",
+  "Fine Arts/Performing Arts",
+  "Other",
+]);
+
+/**
+ * The number of hackathons the hacker applicant has attended before.
+ */
+export const numOfHackathons = pgEnum("num_of_hackathons", [
+  "0",
+  "1-3",
+  "4-6",
+  "7+",
+]);
+
+/**
+ * The gender identity that the applicant identifies themselves with.
+ */
+export const gender = pgEnum("gender", [
+  "Female",
+  "Male",
+  "Non-Binary",
+  "Other",
+]);
+
+/**
+ * The race/ethnicity of the applicant.
+ */
+export const ethnicity = pgEnum("race/ethnicity", [
+  "American Indian or Alaskan Native",
+  "Asian / Pacific Islander",
+  "Black or African American",
+  "Hispanic",
+  "White / Caucasian",
+  "Multiple ethnicity / Other",
+]);
+
+/**
+ * The sexual orientation that the applicant identifies themselves with.
+ */
+export const sexualOrientation = pgEnum("sexual_orientation", [
+  "Asexual / Aromantic",
+  "Pansexual, Demisexual or Omnisexual",
+  "Bisexual",
+  "Queer",
+  "Gay / Lesbian",
+  "Heterosexual / Straight",
+  "Other",
+]);
+
+/**
+ * The table for storing hacker applications while the hacker is completing the application,
+ * and during the review process.
+ */
+export const applications = createTable("application", {
+  id: uuid("id").defaultRandom().primaryKey().notNull(),
+  userId: varchar("id", { length: 255 })
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp("created_at", {
+    mode: "date",
+    precision: 3,
+  })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", {
+    mode: "date",
+    precision: 3,
+  })
+    .defaultNow()
+    .notNull(),
+  status: applicationStatus("status").default("IN_PROGRESS").notNull(),
+
+  // About You
+  dateOfBirth: timestamp("date_of_birth").defaultNow().notNull(),
+  school: varchar("name", { length: 255 }),
+  year: schoolYear("year"),
+  major: major("major"),
+  attendedBefore: boolean("attended").default(false).notNull(),
+  numOfHackathons: numOfHackathons("num_of_hackathons").default("0").notNull(),
+
+  // Your Story
+  ideaToLife: text("idea_to_life"),
+  interestsAndPassions: text("interest_and_passions"),
+  technologyInspires: text("technology_inspires"),
+
+  // Profile Links
+  resumeLink: varchar("resume_link", { length: 2048 }),
+  githubLink: varchar("github_link", { length: 2048 }),
+  linkedInLink: varchar("linkedin_link", { length: 2048 }),
+  otherLink: varchar("other_link", { length: 2048 }),
+
+  // Agreements
+  agreeCodeOfConduct: boolean("agree_code_of_conduct").default(false).notNull(),
+  agreeShareWithSponsors: boolean("agree_share_with_sponsors")
+    .default(false)
+    .notNull(),
+  agreeShareWithMLH: boolean("agree_share_with_mlh").default(false).notNull(),
+  agreeWillBe18: boolean("agree_will_be_18").default(false).notNull(),
+
+  // Optional Questions
+  underrepGroup: boolean("underrep_group"),
+  gender: gender("gender"),
+  ethnicity: ethnicity("ethnicity"),
+  sexualOrientation: sexualOrientation("sexual_orientation"),
+});
+
+/**
+ * Applications have a one-to-one relationship with Users,
+ * ie. A user can only make one application, and an application can only be associated
+ * with one user.
+ */
+export const applicationsRelation = relations(applications, ({ one }) => ({
+  users: one(users),
+}));
 
 export const users = createTable("user", {
   id: varchar("id", { length: 255 }).notNull().primaryKey(),
