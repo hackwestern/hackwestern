@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
 
 // Imports for reset
 import { randomBytes } from "crypto";
@@ -11,7 +11,7 @@ import { TRPCError } from "@trpc/server";
 const TOKEN_EXPIRY = 1000 * 60 * 10; // 10 minutes
 
 export const login = createTRPCRouter({
-  reset: protectedProcedure
+  reset: publicProcedure
     .input(z.object({ email: z.string() }))
     .mutation(async ({ input }) => {
 
