@@ -264,3 +264,15 @@ export const verificationTokens = createTable(
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
   }),
 );
+
+export const resetPasswordTokens = createTable(
+  "resetPasswordToken",
+  {
+    userId: varchar("userId", { length: 255 })
+      .references(() => users.id)
+      .primaryKey(),
+    token: varchar("token", { length: 255 }),
+    expires: timestamp("expires", { mode: "date" })
+      .notNull(),
+  }
+)
