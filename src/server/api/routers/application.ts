@@ -17,6 +17,9 @@ export const applicationRouter = createTRPCRouter({
         }
         return application[0];
       }).catch((error) => {
+        if (error instanceof TRPCError && error.code === "NOT_FOUND") {
+          throw error;
+        }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to fetch application: " + JSON.stringify(error),
