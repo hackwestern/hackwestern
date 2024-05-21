@@ -137,7 +137,7 @@ export const preregistrations = createTable("preregistration", {
     .defaultNow()
     .notNull(),
   name: text("name"),
-  email: varchar("email", { length: 320 }),
+  email: varchar("email", { length: 320 }).unique(),
 });
 
 /**
