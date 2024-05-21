@@ -27,7 +27,9 @@ export const applicationRouter = createTRPCRouter({
       });
   }),
 
-  save: protectedProcedure.mutation(({ ctx }) => {
-    // TODO: handler body
-  }),
+  save: protectedProcedure
+    .input(applicationSaveSchema)
+    .mutation(({ input, ctx }) => {
+      // TODO: handler body
+    }),
 });
