@@ -37,7 +37,13 @@ export const applicationRouter = createTRPCRouter({
 
   save: protectedProcedure
     .input(applicationSaveSchema)
-    .mutation(({ input, ctx }) => {
-      // TODO: handler body
+    .mutation( async ({ input, ctx }) => {
+      const userId = ctx.session.user.id;
+      const applicationData = input;
+  
+      const savedApplication = await ctx.db.insert(applications).values({...applicationData, userId})
+        .onConflictDoUpdate({target: applications.id, set: {...applicationData, userId}})
+  
+      return savedApplication;
     }),
 });
