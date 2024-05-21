@@ -42,7 +42,7 @@ export const applicationRouter = createTRPCRouter({
       const applicationData = input;
   
       const savedApplication = await ctx.db.insert(applications).values({...applicationData, userId})
-        .onConflictDoUpdate({target: applications.id, set: {...applicationData, userId}})
+        .onConflictDoUpdate({target: [applications.id, applications.userId], set: {...applicationData, userId}})
   
       return savedApplication;
     }),
