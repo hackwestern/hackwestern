@@ -3,6 +3,14 @@ import { eq } from "drizzle-orm";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { applications } from "~/server/db/schema";
+import { createInsertSchema } from "drizzle-zod";
+
+const applicationSaveSchema = createInsertSchema(applications)
+.omit({
+  createdAt: true,
+  updatedAt: true,
+})
+.required({ id: true, userId: true });
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure.query(({ ctx }) => {
