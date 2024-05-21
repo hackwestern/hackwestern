@@ -128,6 +128,10 @@ export const sexualOrientation = pgEnum("sexual_orientation", [
   "Other",
 ]);
 
+/**
+ * The table for storing hacker pre-registration, to be used as an email list
+ * for when the actual application starts.
+ */
 export const preregistrations = createTable("preregistration", {
   id: serial("id").primaryKey(),
   createdAt: timestamp("created_at", {
