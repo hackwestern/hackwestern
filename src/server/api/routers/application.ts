@@ -38,12 +38,17 @@ export const applicationRouter = createTRPCRouter({
   save: protectedProcedure
     .input(applicationSaveSchema)
     .mutation( async ({ input, ctx }) => {
-      const userId = ctx.session.user.id;
-      const applicationData = input;
-  
-      const savedApplication = await ctx.db.insert(applications).values({...applicationData, userId})
-        .onConflictDoUpdate({target: applications.id, set: {...applicationData, userId}})
-  
-      return savedApplication;
+      try {
+        const userId = ctx.session.user.id;
+        const applicationData = input;
+        const savedApplication = await ctx.db.insert(applications).values({...applicationData, userId})
+          .onConflictDoUpdate({target: applications.id, set: {...applicationData, userId}})
+        return savedApplication;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to save application: " + JSON.stringify(error),
+        });
+      }
     }),
 });
