@@ -1,5 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth";
+import { Stream } from "stream";
+
 import { z } from "zod";
 import { db } from "~/server/db";
 
@@ -37,11 +39,11 @@ async function GET(req: NextApiRequest, res: NextApiResponse) {
     const format = formatQuerySchema.parse(req.query?.format);
 
     if (format === "json") {
-      return jsonHandler(req, res);
+      return jsonHandler(res);
     }
 
     if (format === "csv") {
-      return csvHandler(req, res);
+      return csvHandler(res);
     }
   } catch (e) {
     console.log(
@@ -52,10 +54,25 @@ async function GET(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-async function jsonHandler(req: NextApiRequest, res: NextApiResponse) {
-  // TODO: finish body
+async function jsonHandler(res: NextApiResponse) {
+  const preregistrations = await db.query.preregistrations.findMany();
+
+  return res.status(200).json(preregistrations);
 }
 
-async function csvHandler(req: NextApiRequest, res: NextApiResponse) {
-  // TODO: finish body
+const FILE_NAME = "preregistrations.csv";
+
+async function csvHandler(res: NextApiResponse) {
+  const preregistrations = await db.query.preregistrations.findMany();
+
+  const columnNames = Object.keys(preregistrations).join(", ") + "\n";
+  const fileString = preregistrations.reduce((acc, pr) => {
+    acc += Object.values(pr).join(", ") + "\n";
+    return acc;
+  }, columnNames);
+
+  res.setHeader("Content-disposition", `attachment; filename=${FILE_NAME}`);
+  res.setHeader("Content-Type", "text/csv; charset=UTF-8");
+
+  res.send(fileString);
 }
