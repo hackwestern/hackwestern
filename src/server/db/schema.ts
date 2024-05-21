@@ -2,10 +2,12 @@ import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   index,
+  serial,
   integer,
   pgEnum,
   pgTableCreator,
   primaryKey,
+  smallint,
   text,
   timestamp,
   uuid,
@@ -46,14 +48,18 @@ export const applicationStatus = pgEnum("application_status", [
 /**
  * The school/university year that the hacker applicant is in.
  */
-export const schoolYear = pgEnum("school_year", [
-  "High School",
-  "Undergrad - First",
-  "Undergrad - Second",
-  "Undergrad - Third",
-  "Undergrad - Fourth",
-  "Undergrad - Other",
-  "Graduate/PHD",
+export const levelOfStudy = pgEnum("level_of_study", [
+  "Less than Secondary / High School",
+  "Secondary / High School",
+  "Undergraduate University (2 year - community college or similar)",
+  "Undergraduate University (3+ year)",
+  "Graduate University (Masters, Professional, Doctoral, etc)",
+  "Code School / Bootcamp",
+  "Other Vocational / Trade Program or Apprenticeship",
+  "Post Doctorate",
+  "Other",
+  "I'm not currently a student",
+  "Prefer not to answer",
 ]);
 
 /**
@@ -122,6 +128,18 @@ export const sexualOrientation = pgEnum("sexual_orientation", [
   "Other",
 ]);
 
+export const preregistrations = createTable("preregistration", {
+  id: serial("id").primaryKey(),
+  createdAt: timestamp("created_at", {
+    mode: "date",
+    precision: 3,
+  })
+    .defaultNow()
+    .notNull(),
+  name: text("name"),
+  email: varchar("email", { length: 320 }),
+});
+
 /**
  * The table for storing hacker applications while the hacker is completing the application,
  * and during the review process.
@@ -146,10 +164,16 @@ export const applications = createTable("application", {
   status: applicationStatus("status").default("IN_PROGRESS").notNull(),
 
   // About You
+  firstName: varchar("first_name", { length: 255 }),
+  lastName: varchar("last_name", { length: 255 }),
   dateOfBirth: timestamp("date_of_birth").defaultNow().notNull(),
+  phoneNumber: varchar("phone_number", { length: 42 }),
+  countryOfResidence: smallint("country_of_residence"),
+
   school: varchar("name", { length: 255 }),
-  year: schoolYear("year"),
+  levelOfStudy: levelOfStudy("level_of_study"),
   major: major("major"),
+
   attendedBefore: boolean("attended").default(false).notNull(),
   numOfHackathons: numOfHackathons("num_of_hackathons").default("0").notNull(),
 
@@ -170,6 +194,7 @@ export const applications = createTable("application", {
     .default(false)
     .notNull(),
   agreeShareWithMLH: boolean("agree_share_with_mlh").default(false).notNull(),
+  agreeEmailsFromMLH: boolean("agree_emails_from_mlh").default(false).notNull(),
   agreeWillBe18: boolean("agree_will_be_18").default(false).notNull(),
 
   // Optional Questions
@@ -265,14 +290,10 @@ export const verificationTokens = createTable(
   }),
 );
 
-export const resetPasswordTokens = createTable(
-  "resetPasswordToken",
-  {
-    userId: varchar("userId", { length: 255 })
-      .references(() => users.id)
-      .primaryKey(),
-    token: varchar("token", { length: 255 }),
-    expires: timestamp("expires", { mode: "date" })
-      .notNull(),
-  }
-)
+export const resetPasswordTokens = createTable("resetPasswordToken", {
+  userId: varchar("userId", { length: 255 })
+    .references(() => users.id)
+    .primaryKey(),
+  token: varchar("token", { length: 255 }),
+  expires: timestamp("expires", { mode: "date" }).notNull(),
+});
