@@ -10,7 +10,7 @@ import { TRPCError } from "@trpc/server";
 
 const TOKEN_EXPIRY = 1000 * 60 * 10; // 10 minutes
 
-export const login = createTRPCRouter({
+export const loginRouter = createTRPCRouter({
   reset: publicProcedure
     .input(z.object({ email: z.string() }))
     .mutation(async ({ input }) => {
