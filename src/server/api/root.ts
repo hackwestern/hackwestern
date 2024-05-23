@@ -1,7 +1,7 @@
 import { exampleRouter } from "~/server/api/routers/example";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 import { applicationRouter } from "./routers/application";
-import { login } from "./routers/login";
+import { loginRouter } from "./routers/login";
 import { preregistrationRouter } from "./routers/preregistration";
 
 /**
@@ -12,7 +12,7 @@ import { preregistrationRouter } from "./routers/preregistration";
 export const appRouter = createTRPCRouter({
   example: exampleRouter,
   application: applicationRouter,
-  login: login,
+  login: loginRouter,
   preregistration: preregistrationRouter,
 });
 
