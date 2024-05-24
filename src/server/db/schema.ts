@@ -140,8 +140,8 @@ export const preregistrations = createTable("preregistration", {
   })
     .defaultNow()
     .notNull(),
-  name: text("name"),
-  email: varchar("email", { length: 320 }).unique(),
+  name: text("name").notNull(),
+  email: varchar("email", { length: 320 }).unique().notNull(),
 });
 
 /**
@@ -150,9 +150,9 @@ export const preregistrations = createTable("preregistration", {
  */
 export const applications = createTable("application", {
   id: uuid("id").defaultRandom().primaryKey().notNull(),
-  userId: varchar("id", { length: 255 })
+  userId: varchar("user_id", { length: 255 })
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", {
     mode: "date",
     precision: 3,
@@ -214,7 +214,7 @@ export const applications = createTable("application", {
  * with one user.
  */
 export const applicationsRelation = relations(applications, ({ one }) => ({
-  users: one(users),
+  users: one(users, { fields: [applications.userId], references: [users.id] }),
 }));
 
 export const users = createTable("user", {
