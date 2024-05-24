@@ -6,10 +6,17 @@ import { ApplicationSeeder } from "./application-seeder";
 import { PreregistrationSeeder } from "./preregistration-seeder";
 import { UserSeeder } from "./user-seeder";
 
+import * as p from "@clack/prompts";
+
+const MAX_INSERT_PARAMETERS = 2000;
+
+p.intro("Starting hackwestern db seed script");
 try {
   await seedDatabase();
+  p.outro("You're all set!");
 } catch (e) {
-  console.log("Something went wrong when seeding the database.", e);
+  console.error("\nSomething went wrong when seeding the database.", e);
+  p.outro("Seed script failed.");
 } finally {
   conn.end();
 }
@@ -30,36 +37,54 @@ function CreateSeeders(users: UserPartial[]): Seeder<PgTable>[] {
   return [new PreregistrationSeeder(), new ApplicationSeeder(users)];
 }
 
+function chunkArray<T>(array: T[], size: number): T[][] {
+  return Array.from(new Array(Math.ceil(array.length / size)), (_, i) =>
+    array.slice(i * size, i * size + size),
+  );
+}
+
 function seed<T extends PgTable>(s: Seeder<T>, tx: Transaction) {
-  console.log(`Seeding ${s.tableName}`);
   const vals = Array.from(Array(s.num), () => s.createRandom());
 
-  return tx.insert(s.table).values(vals);
+  const batches = chunkArray(vals, MAX_INSERT_PARAMETERS);
+  return batches.map((b) => tx.insert(s.table).values(b).onConflictDoNothing());
 }
 
 function deleteAll<T extends PgTable>(s: Seeder<T>, tx: Transaction) {
-  console.log(`Deleting all rows from ${s.tableName}`);
-
   return tx.delete(s.table);
 }
 
-function seedUsers(
+async function seedUsers(
   us: Seeder<typeof users>,
   tx: Transaction,
 ): Promise<UserPartial[]> {
-  return seed(us, tx).returning({ id: us.table.id, name: us.table.name });
+  const usersChunked = await Promise.all(
+    seed(us, tx).map((b) =>
+      b.returning({ id: us.table.id, name: us.table.name }),
+    ),
+  );
+
+  return usersChunked.flat(1);
 }
 
 async function seedDatabase(): Promise<void> {
   await db.transaction(async (tx) => {
     try {
-      console.log("Starting to delete all rows from seeded tables...");
+      const delSpinner = p.spinner();
+      delSpinner.start("Starting to delete rows from seeded tables.");
 
       const us = new UserSeeder();
+      delSpinner.message("Deleting rows from User table");
       await deleteAll(us, tx);
+      delSpinner.message("Seeding table users");
       const insertedUsers = await seedUsers(us, tx);
 
       const seeders = CreateSeeders(insertedUsers);
+      const seederTableNames = seeders.map((s) => s.tableName);
+
+      delSpinner.message(
+        `Deleting rows from tables ${seederTableNames.join(", ")}`,
+      );
       const deletePromises = seeders.map((s) => deleteAll(s, tx));
       const deleteResults = await Promise.allSettled(deletePromises);
       const deleteErrors = deleteResults
@@ -70,18 +95,21 @@ async function seedDatabase(): Promise<void> {
         .filter((r) => r.status === "rejected");
 
       if (deleteErrors.length > 0) {
+        delSpinner.stop("Deleting rows from tables failed.");
         throw new Error(
           "Deleting rows from seeded tables failed.\n" +
             JSON.stringify(deleteErrors),
         );
       }
 
-      console.log("Finished deleting rows from the seeded tables.");
+      delSpinner.stop("Finished deleting rows from the seeded tables.");
 
-      console.log("Starting to seed database...");
+      const seedSpinner = p.spinner();
+      seedSpinner.start("Starting to seed tables");
 
-      const seedPromises = seeders.map((s) => seed(s, tx));
+      const seedPromises = seeders.map((s) => Promise.all(seed(s, tx)));
 
+      seedSpinner.message(`Seeding tables ${seederTableNames.join(", ")}`);
       const seedResults = await Promise.allSettled(seedPromises);
       const seedErrors = seedResults
         .map((r, i) => ({
@@ -91,13 +119,14 @@ async function seedDatabase(): Promise<void> {
         .filter((r) => r.status === "rejected");
 
       if (seedErrors.length > 0) {
+        seedSpinner.stop("Seeding tables failed.");
         throw new Error(
           "Some seeders failed to seed correctly.\n" +
             JSON.stringify(seedErrors),
         );
       }
 
-      console.log("Finished seeding the database.");
+      seedSpinner.stop("Finished seeding the database.");
     } catch (e) {
       console.log(e, "Rolling back the database transaction.");
       tx.rollback();

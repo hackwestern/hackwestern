@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import { users } from "../schema";
 import { Seeder } from ".";
 
-export const USERS = 30;
+export const USERS = 10000;
 
 export class UserSeeder implements Seeder<typeof users> {
   private userIds = faker.helpers.uniqueArray(faker.string.uuid, USERS);

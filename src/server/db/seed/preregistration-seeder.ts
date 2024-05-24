@@ -2,7 +2,7 @@ import { faker } from "@faker-js/faker";
 import { Seeder } from ".";
 import { preregistrations } from "../schema";
 
-const PREREGISTRATIONS = 50;
+const PREREGISTRATIONS = 5000;
 
 export class PreregistrationSeeder implements Seeder<typeof preregistrations> {
   tableName = "Preregistrations";
