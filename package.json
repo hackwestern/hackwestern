@@ -33,7 +33,6 @@
     "@trpc/next": "next",
     "@trpc/react-query": "next",
     "@trpc/server": "next",
-    "@types/bcrypt": "^5.0.2",
     "drizzle-orm": "^0.29.4",
     "drizzle-zod": "^0.5.1",
     "lucide-react": "^0.383.0",
