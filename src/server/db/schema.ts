@@ -2,10 +2,12 @@ import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   index,
+  serial,
   integer,
   pgEnum,
   pgTableCreator,
   primaryKey,
+  smallint,
   text,
   timestamp,
   uuid,
@@ -46,14 +48,18 @@ export const applicationStatus = pgEnum("application_status", [
 /**
  * The school/university year that the hacker applicant is in.
  */
-export const schoolYear = pgEnum("school_year", [
-  "High School",
-  "Undergrad - First",
-  "Undergrad - Second",
-  "Undergrad - Third",
-  "Undergrad - Fourth",
-  "Undergrad - Other",
-  "Graduate/PHD",
+export const levelOfStudy = pgEnum("level_of_study", [
+  "Less than Secondary / High School",
+  "Secondary / High School",
+  "Undergraduate University (2 year - community college etc.)",
+  "Undergraduate University (3+ year)",
+  "Graduate University (Masters, Professional, Doctoral, etc)",
+  "Code School / Bootcamp",
+  "Other Vocational / Trade Program or Apprenticeship",
+  "Post Doctorate",
+  "Other",
+  "Not currently a student",
+  "Prefer not to answer",
 ]);
 
 /**
@@ -123,61 +129,96 @@ export const sexualOrientation = pgEnum("sexual_orientation", [
 ]);
 
 /**
- * The table for storing hacker applications while the hacker is completing the application,
- * and during the review process.
+ * The table for storing hacker pre-registration, to be used as an email list
+ * for when the actual application starts.
  */
-export const applications = createTable("application", {
-  id: uuid("id").defaultRandom().primaryKey().notNull(),
-  userId: varchar("id", { length: 255 })
-    .notNull()
-    .references(() => users.id),
+export const preregistrations = createTable("preregistration", {
+  id: serial("id").primaryKey(),
   createdAt: timestamp("created_at", {
     mode: "date",
     precision: 3,
   })
     .defaultNow()
     .notNull(),
-  updatedAt: timestamp("updated_at", {
-    mode: "date",
-    precision: 3,
-  })
-    .defaultNow()
-    .notNull(),
-  status: applicationStatus("status").default("IN_PROGRESS").notNull(),
-
-  // About You
-  dateOfBirth: timestamp("date_of_birth").defaultNow().notNull(),
-  school: varchar("name", { length: 255 }),
-  year: schoolYear("year"),
-  major: major("major"),
-  attendedBefore: boolean("attended").default(false).notNull(),
-  numOfHackathons: numOfHackathons("num_of_hackathons").default("0").notNull(),
-
-  // Your Story
-  ideaToLife: text("idea_to_life"),
-  interestsAndPassions: text("interest_and_passions"),
-  technologyInspires: text("technology_inspires"),
-
-  // Profile Links
-  resumeLink: varchar("resume_link", { length: 2048 }),
-  githubLink: varchar("github_link", { length: 2048 }),
-  linkedInLink: varchar("linkedin_link", { length: 2048 }),
-  otherLink: varchar("other_link", { length: 2048 }),
-
-  // Agreements
-  agreeCodeOfConduct: boolean("agree_code_of_conduct").default(false).notNull(),
-  agreeShareWithSponsors: boolean("agree_share_with_sponsors")
-    .default(false)
-    .notNull(),
-  agreeShareWithMLH: boolean("agree_share_with_mlh").default(false).notNull(),
-  agreeWillBe18: boolean("agree_will_be_18").default(false).notNull(),
-
-  // Optional Questions
-  underrepGroup: boolean("underrep_group"),
-  gender: gender("gender"),
-  ethnicity: ethnicity("ethnicity"),
-  sexualOrientation: sexualOrientation("sexual_orientation"),
+  name: text("name").notNull(),
+  email: varchar("email", { length: 320 }).unique().notNull(),
 });
+
+/**
+ * The table for storing hacker applications while the hacker is completing the application,
+ * and during the review process.
+ */
+export const applications = createTable(
+  "application",
+  {
+    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", {
+      mode: "date",
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", {
+      mode: "date",
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    status: applicationStatus("status").default("IN_PROGRESS").notNull(),
+
+    // About You
+    firstName: varchar("first_name", { length: 255 }),
+    lastName: varchar("last_name", { length: 255 }),
+    dateOfBirth: timestamp("date_of_birth").defaultNow().notNull(),
+    phoneNumber: varchar("phone_number", { length: 42 }),
+    countryOfResidence: smallint("country_of_residence"),
+
+    school: varchar("name", { length: 255 }),
+    levelOfStudy: levelOfStudy("level_of_study"),
+    major: major("major"),
+
+    attendedBefore: boolean("attended").default(false).notNull(),
+    numOfHackathons: numOfHackathons("num_of_hackathons")
+      .default("0")
+      .notNull(),
+
+    // Your Story
+    ideaToLife: text("idea_to_life"),
+    interestsAndPassions: text("interest_and_passions"),
+    technologyInspires: text("technology_inspires"),
+
+    // Profile Links
+    resumeLink: varchar("resume_link", { length: 2048 }),
+    githubLink: varchar("github_link", { length: 2048 }),
+    linkedInLink: varchar("linkedin_link", { length: 2048 }),
+    otherLink: varchar("other_link", { length: 2048 }),
+
+    // Agreements
+    agreeCodeOfConduct: boolean("agree_code_of_conduct")
+      .default(false)
+      .notNull(),
+    agreeShareWithSponsors: boolean("agree_share_with_sponsors")
+      .default(false)
+      .notNull(),
+    agreeShareWithMLH: boolean("agree_share_with_mlh").default(false).notNull(),
+    agreeEmailsFromMLH: boolean("agree_emails_from_mlh")
+      .default(false)
+      .notNull(),
+    agreeWillBe18: boolean("agree_will_be_18").default(false).notNull(),
+
+    // Optional Questions
+    underrepGroup: boolean("underrep_group"),
+    gender: gender("gender"),
+    ethnicity: ethnicity("ethnicity"),
+    sexualOrientation: sexualOrientation("sexual_orientation"),
+  },
+  (table) => ({
+    userIdIdx: index("user_id_idx").on(table.userId),
+  }),
+);
 
 /**
  * Applications have a one-to-one relationship with Users,
@@ -185,8 +226,10 @@ export const applications = createTable("application", {
  * with one user.
  */
 export const applicationsRelation = relations(applications, ({ one }) => ({
-  users: one(users),
+  users: one(users, { fields: [applications.userId], references: [users.id] }),
 }));
+
+export const userType = pgEnum("user_type", ["hacker", "organizer", "sponsor"]);
 
 export const users = createTable("user", {
   id: varchar("id", { length: 255 }).notNull().primaryKey(),
@@ -196,6 +239,7 @@ export const users = createTable("user", {
     mode: "date",
   }).default(sql`CURRENT_TIMESTAMP`),
   image: varchar("image", { length: 255 }),
+  type: userType("type").default("hacker"),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -265,14 +309,10 @@ export const verificationTokens = createTable(
   }),
 );
 
-export const resetPasswordTokens = createTable(
-  "resetPasswordToken",
-  {
-    userId: varchar("userId", { length: 255 })
-      .references(() => users.id)
-      .primaryKey(),
-    token: varchar("token", { length: 255 }),
-    expires: timestamp("expires", { mode: "date" })
-      .notNull(),
-  }
-)
+export const resetPasswordTokens = createTable("resetPasswordToken", {
+  userId: varchar("userId", { length: 255 })
+    .references(() => users.id)
+    .primaryKey(),
+  token: varchar("token", { length: 255 }),
+  expires: timestamp("expires", { mode: "date" }).notNull(),
+});
