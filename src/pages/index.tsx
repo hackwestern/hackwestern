@@ -1,5 +1,6 @@
 import { signIn, signOut, useSession } from "next-auth/react";
 import Head from "next/head";
+import Link from "next/link";
 
 import { api } from "~/utils/api";
 
@@ -40,7 +41,7 @@ export default function Home() {
  */
 function PreregistrationButton() {
   return (
-    <a href="/api/preregistration/all?format=csv">Export Preregistrations</a>
+    <Link href="/api/preregistration/all?format=csv" className="bg-white p-1 rounded">Export Preregistrations</Link>
   );
 }
 
