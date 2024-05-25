@@ -34,6 +34,10 @@ export default function Home() {
   );
 }
 
+/**
+ * Downloads the CSV if authorized as an organizer.
+ * @see ./api/preregistration/all.ts
+ */
 function PreregistrationButton() {
   return (
     <a href="/api/preregistration/all?format=csv">Export Preregistrations</a>
