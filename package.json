@@ -21,6 +21,8 @@
     "@trpc/next": "next",
     "@trpc/react-query": "next",
     "@trpc/server": "next",
+    "@types/bcrypt": "^5.0.2",
+    "bcrypt": "^5.1.1",
     "drizzle-orm": "^0.29.4",
     "drizzle-zod": "^0.5.1",
     "next": "^14.1.3",
