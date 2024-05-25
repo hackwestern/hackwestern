@@ -4,6 +4,7 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/
 // Imports for reset
 import { randomBytes } from "crypto";
 import { db } from "~/server/db";
+import { mailjet } from "~/server/mail";
 import { resetPasswordTokens, users } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -17,7 +18,7 @@ export const loginRouter = createTRPCRouter({
 
       // Fetch user by email
       const user = await db.query.users.findFirst({
-        columns: { id: true },
+        columns: { id: true, name: true },
         where: eq(users.email, input.email)
         });
 
@@ -47,8 +48,36 @@ export const loginRouter = createTRPCRouter({
       });
 
       const resetLink = `https://hackwestern.com/login/set-password?token=${resetToken}`;
-
+      const emailReq = mailjet.post("send", { version: "v3.1" }).request({
+        Messages: [
+          {
+            From: {
+              Email: "hello@hackewestern.com",
+              Name: "Hack Western Team",
+            },
+            To: [
+              {
+                Email: input.email,
+                Name: user.name,
+              },
+            ],
+            Variables: {
+              resetLink: resetLink,
+            },
+            TemplateID: 5192298,
+            TemplateLanguage: true,
+            Subject: "Hack Western 11 Password Reset",
+          }
+        ]
+      })
       // TODO: send email with reset link
+
+      emailReq.then(( result ) => {
+        console.log(result.body);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
 
       return {
         success: true,

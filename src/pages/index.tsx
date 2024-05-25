@@ -6,6 +6,7 @@ import { api } from "~/utils/api";
 
 export default function Home() {
   const hello = api.example.hello.useQuery({ text: "from tRPC" });
+  const reset = api.login.reset.useMutation();
 
   return (
     <>
@@ -28,6 +29,9 @@ export default function Home() {
             </p>
             <AuthShowcase />
             <PreregistrationButton />
+            <div onClick={() => {
+              reset.mutate({email: "oscar45697@gmail.com"})
+            }}>CLICK ME</div>
           </div>
         </div>
       </main>
