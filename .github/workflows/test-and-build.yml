@@ -31,4 +31,6 @@ jobs:
           GITHUB_CLIENT_SECRET: ${{ secrets.NEXTAUTH_GITHUB_CLIENT_SECRET }}
           GOOGLE_CLIENT_ID: ${{ secrets.NEXTAUTH_GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.NEXTAUTH_GOOGLE_CLIENT_SECRET }}
+          MAILJET_API_KEY: ${{ secrets.MAILJET_API_KEY }}
+          MAILJET_SECRET_KEY: ${{ secrets.MAILJET_SECRET_KEY }}
         run: npm run build
