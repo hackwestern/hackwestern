@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 
 // Imports for reset
 import { randomBytes } from "crypto";
@@ -8,6 +8,7 @@ import { mailjet } from "~/server/mail";
 import { resetPasswordTokens, users } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { resetTemplate } from "./password-reset-template";
 
 const TOKEN_EXPIRY = 1000 * 60 * 10; // 10 minutes
 
@@ -52,7 +53,7 @@ export const loginRouter = createTRPCRouter({
         Messages: [
           {
             From: {
-              Email: "hello@hackewestern.com",
+              Email: "hello@hackwestern.com",
               Name: "Hack Western Team",
             },
             To: [
@@ -64,8 +65,7 @@ export const loginRouter = createTRPCRouter({
             Variables: {
               resetLink: resetLink,
             },
-            TemplateID: 5192298,
-            TemplateLanguage: true,
+            HTMLPart: resetTemplate(resetLink),
             Subject: "Hack Western 11 Password Reset",
           }
         ]
@@ -73,7 +73,7 @@ export const loginRouter = createTRPCRouter({
       // TODO: send email with reset link
 
       emailReq.then(( result ) => {
-        console.log(result.body);
+        console.log(result);
       })
       .catch((err) => {
         console.error(err);
