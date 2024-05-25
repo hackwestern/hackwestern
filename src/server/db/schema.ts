@@ -229,6 +229,8 @@ export const applicationsRelation = relations(applications, ({ one }) => ({
   users: one(users, { fields: [applications.userId], references: [users.id] }),
 }));
 
+export const userType = pgEnum("user_type", ["hacker", "organizer", "sponsor"]);
+
 export const users = createTable("user", {
   id: varchar("id", { length: 255 }).notNull().primaryKey(),
   name: varchar("name", { length: 255 }),
@@ -237,6 +239,7 @@ export const users = createTable("user", {
     mode: "date",
   }).default(sql`CURRENT_TIMESTAMP`),
   image: varchar("image", { length: 255 }),
+  type: userType("type").default("hacker"),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({

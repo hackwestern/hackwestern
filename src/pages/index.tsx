@@ -26,10 +26,21 @@ export default function Home() {
               {hello.data ? hello.data.greeting : "Loading tRPC query..."}
             </p>
             <AuthShowcase />
+            <PreregistrationButton />
           </div>
         </div>
       </main>
     </>
+  );
+}
+
+/**
+ * Downloads the CSV if authorized as an organizer.
+ * @see ./api/preregistration/all.ts
+ */
+function PreregistrationButton() {
+  return (
+    <a href="/api/preregistration/all?format=csv">Export Preregistrations</a>
   );
 }
 
