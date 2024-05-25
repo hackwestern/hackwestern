@@ -74,9 +74,9 @@ async function seedDatabase(): Promise<void> {
       delSpinner.start("Starting to delete rows from seeded tables.");
 
       const us = new UserSeeder();
-      delSpinner.message("Deleting rows from User table");
+      delSpinner.message("Deleting rows from the Users table");
       await deleteAll(us, tx);
-      delSpinner.message("Seeding table users");
+      delSpinner.message("Seeding Users table");
       const insertedUsers = await seedUsers(us, tx);
 
       const seeders = CreateSeeders(insertedUsers);
