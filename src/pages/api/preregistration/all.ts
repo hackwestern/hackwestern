@@ -1,8 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getServerSession } from "next-auth";
-import { Stream } from "stream";
 
 import { z } from "zod";
+import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 
 export default async function handler(
@@ -21,7 +20,8 @@ const formatQuerySchema = z.enum(["json", "csv"]);
 
 async function GET(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const session = await getServerSession();
+    const session = await getServerAuthSession({ req, res });
+    console.log(session);
 
     if (!session) return res.status(401).json({ message: "Unauthorized" });
     if (!session.user)
