@@ -13,7 +13,6 @@ const MAX_INSERT_PARAMETERS = 2000;
 p.intro("Starting hackwestern db seed script");
 try {
   await seedDatabase();
-  p.outro("You're all set!");
 } catch (e) {
   console.error("\nSomething went wrong when seeding the database.", e);
   p.outro("Seed script failed.");
@@ -21,10 +20,26 @@ try {
   conn.end();
 }
 
+async function seedDatabase(): Promise<void> {
+  const shouldSeed = await p.confirm({
+    message:
+      "Are you sure you want to continue seeding? THIS WILL DELETE ALL ROWS in the seeded tables.",
+  });
+
+  if (!shouldSeed) {
+    p.outro("Stopped seed script.");
+    return;
+  }
+
+  await deleteSeedTables();
+  await seedTables();
+  p.outro("You're all set!");
+}
+
 export interface Seeder<T extends PgTable> {
   tableName: string;
   table: T;
-  num: number;
+  numRows: number;
   createRandom: () => PgInsertValue<T>;
 }
 
@@ -44,7 +59,7 @@ function chunkArray<T>(array: T[], size: number): T[][] {
 }
 
 function seed<T extends PgTable>(s: Seeder<T>, tx: Transaction) {
-  const vals = Array.from(Array(s.num), () => s.createRandom());
+  const vals = Array.from(Array(s.numRows), () => s.createRandom());
 
   const batches = chunkArray(vals, MAX_INSERT_PARAMETERS);
   return batches.map((b) => tx.insert(s.table).values(b).onConflictDoNothing());
@@ -67,45 +82,50 @@ async function seedUsers(
   return usersChunked.flat(1);
 }
 
-async function seedDatabase(): Promise<void> {
+async function deleteSeedTables(): Promise<void> {
+  await db.transaction(async (tx) => {
+    const delSpinner = p.spinner();
+    delSpinner.start("Starting to delete rows from seeded tables.");
+
+    const seeders = [new UserSeeder(), ...CreateSeeders([])];
+    const seederTableNames = seeders.map((s) => s.tableName);
+
+    delSpinner.message(
+      `Deleting rows from tables ${seederTableNames.join(", ")}`,
+    );
+    const deletePromises = seeders.map((s) => deleteAll(s, tx));
+    const deleteResults = await Promise.allSettled(deletePromises);
+    const deleteErrors = deleteResults
+      .map((r, i) => ({
+        tableName: seeders[i]?.tableName,
+        ...r,
+      }))
+      .filter((r) => r.status === "rejected");
+
+    if (deleteErrors.length > 0) {
+      delSpinner.stop("Deleting rows from tables failed.");
+      throw new Error(
+        "Deleting rows from seeded tables failed.\n" +
+          JSON.stringify(deleteErrors),
+      );
+    }
+
+    delSpinner.stop("Finished deleting rows from the seeded tables.");
+  });
+}
+
+async function seedTables(): Promise<void> {
   await db.transaction(async (tx) => {
     try {
-      const delSpinner = p.spinner();
-      delSpinner.start("Starting to delete rows from seeded tables.");
+      const seedSpinner = p.spinner();
+      seedSpinner.start("Starting to seed tables");
 
+      seedSpinner.message("Seeding users table");
       const us = new UserSeeder();
-      delSpinner.message("Deleting rows from the Users table");
-      await deleteAll(us, tx);
-      delSpinner.message("Seeding Users table");
       const insertedUsers = await seedUsers(us, tx);
 
       const seeders = CreateSeeders(insertedUsers);
       const seederTableNames = seeders.map((s) => s.tableName);
-
-      delSpinner.message(
-        `Deleting rows from tables ${seederTableNames.join(", ")}`,
-      );
-      const deletePromises = seeders.map((s) => deleteAll(s, tx));
-      const deleteResults = await Promise.allSettled(deletePromises);
-      const deleteErrors = deleteResults
-        .map((r, i) => ({
-          tableName: seeders[i]?.tableName,
-          ...r,
-        }))
-        .filter((r) => r.status === "rejected");
-
-      if (deleteErrors.length > 0) {
-        delSpinner.stop("Deleting rows from tables failed.");
-        throw new Error(
-          "Deleting rows from seeded tables failed.\n" +
-            JSON.stringify(deleteErrors),
-        );
-      }
-
-      delSpinner.stop("Finished deleting rows from the seeded tables.");
-
-      const seedSpinner = p.spinner();
-      seedSpinner.start("Starting to seed tables");
 
       const seedPromises = seeders.map((s) => Promise.all(seed(s, tx)));
 

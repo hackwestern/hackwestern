@@ -27,10 +27,10 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
   private users: UserPartial[] = [];
   tableName = "Applications";
   table = applications;
-  num = USERS;
+  numRows = USERS;
   constructor(users: UserPartial[]) {
     this.users = users;
-    this.num = users.length;
+    this.numRows = users.length;
   }
 
   createRandom() {

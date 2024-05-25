@@ -7,7 +7,7 @@ const PREREGISTRATIONS = 2345;
 export class PreregistrationSeeder implements Seeder<typeof preregistrations> {
   tableName = "Preregistrations";
   table = preregistrations;
-  num = PREREGISTRATIONS;
+  numRows = PREREGISTRATIONS;
 
   createRandom() {
     return {
