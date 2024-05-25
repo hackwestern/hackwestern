@@ -1,3 +1,4 @@
+import { faker } from "@faker-js/faker";
 import {
   applicationStatus,
   applications,
@@ -8,9 +9,8 @@ import {
   numOfHackathons,
   sexualOrientation,
 } from "../schema";
-import { UserPartial, type Seeder } from ".";
 import { USERS } from "./user-seeder";
-import { faker } from "@faker-js/faker/locale/zu_ZA";
+import { type UserPartial, type Seeder } from ".";
 
 const today = new Date();
 const thirtyDaysAgo = new Date().setDate(today.getDate() - 30);

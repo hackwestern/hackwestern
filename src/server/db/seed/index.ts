@@ -1,5 +1,5 @@
-import { Transaction, conn, db } from "..";
-import { users } from "../schema";
+import { type Transaction, conn, db } from "..";
+import { type users } from "../schema";
 import { type PgTable, type PgInsertValue } from "drizzle-orm/pg-core";
 
 import { ApplicationSeeder } from "./application-seeder";
@@ -17,7 +17,7 @@ try {
   console.error("\nSomething went wrong when seeding the database.", e);
   p.outro("Seed script failed.");
 } finally {
-  conn.end();
+  await conn.end();
 }
 
 async function seedDatabase(): Promise<void> {
@@ -127,10 +127,11 @@ async function seedTables(): Promise<void> {
       const seeders = CreateSeeders(insertedUsers);
       const seederTableNames = seeders.map((s) => s.tableName);
 
-      const seedPromises = seeders.map((s) => Promise.all(seed(s, tx)));
-
       seedSpinner.message(`Seeding tables ${seederTableNames.join(", ")}`);
-      const seedResults = await Promise.allSettled(seedPromises);
+
+      const seedResults = await Promise.allSettled(
+        seeders.map((s) => Promise.all(seed(s, tx))),
+      );
       const seedErrors = seedResults
         .map((r, i) => ({
           tableName: seeders[i]?.tableName,

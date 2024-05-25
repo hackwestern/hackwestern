@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
-import { Seeder } from ".";
 import { preregistrations } from "../schema";
+import { type Seeder } from ".";
 
 const PREREGISTRATIONS = 2345;
 
