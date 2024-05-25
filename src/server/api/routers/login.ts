@@ -48,6 +48,7 @@ export const login = createTRPCRouter({
 
       const resetLink = `https://hackwestern.com/login/set-password?token=${resetToken}`;
 
+      
       // TODO: send email with reset link
 
       return {
