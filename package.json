@@ -8,6 +8,7 @@
     "db:start": "bash ./start-database.sh",
     "db:push": "drizzle-kit push:pg",
     "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx --env-file .env ./src/server/db/seed/index.ts",
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start"
@@ -31,6 +32,8 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@clack/prompts": "^0.7.0",
+    "@faker-js/faker": "^8.4.1",
     "@types/eslint": "^8.56.2",
     "@types/node": "^20.11.20",
     "@types/react": "^18.2.57",
@@ -46,6 +49,7 @@
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.11",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.11.0",
     "typescript": "^5.4.2"
   },
   "ct3aMetadata": {
