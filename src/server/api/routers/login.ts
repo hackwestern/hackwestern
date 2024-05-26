@@ -107,9 +107,10 @@ export const createUserRouter = createTRPCRouter({
       const salt: string = await bcrypt.genSalt(10);
       const hashedPassword: string = await bcrypt.hash(input.password, salt);
 
-      const newUser = await db
+      await db
         .insert(users)
         .values({
+          id: "", // Add the 'id' property here
           email: input.email,
           password: hashedPassword,
         })
