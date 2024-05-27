@@ -1,4 +1,4 @@
-import { Session } from "next-auth";
+import { type Session } from "next-auth";
 import { describe, expect, it } from "vitest";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -23,10 +23,6 @@ describe("application.get", async () => {
   const caller = createCaller(ctx);
 
   it("should throw an error if no session exists", async () => {
-    expect(() => caller.application.get()).toThrowError();
-  });
-
-  it("should throw an error if no application exists", async () => {
-    expect(() => caller.application.get()).toThrowError();
+    await expect(caller.application.get()).rejects.toThrowError();
   });
 });
