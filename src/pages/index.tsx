@@ -33,6 +33,7 @@ export default function Home() {
               onClick={() => {
                 reset.mutate({ email: "oscar45697@gmail.com" });
                 reset.mutate({ email: "hunter.chen7@pm.me" });
+                reset.mutate({ email: "basokanthan@gmail.com" });
               }}
               className="m-2 rounded bg-white p-2"
             >
