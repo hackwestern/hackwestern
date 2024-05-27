@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - prettier
+permissions:
+  contents: write
 jobs:
   prettier:
     runs-on: ubuntu-latest
@@ -16,7 +18,7 @@ jobs:
           node-version: "21"
           registry-url: "https://registry.npmjs.org"
       - name: Install prettier
-        run: npm install prettier
+        run: npm install --no-package-lock --no-save prettier@latest
       - name: Run prettier
         run: npx prettier --write .
       - name: Commit and push changes
