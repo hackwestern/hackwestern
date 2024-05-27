@@ -18,11 +18,12 @@ jobs:
       - name: Install prettier
         run: npm install prettier
       - name: Run prettier
-        run: npx prettier --write ./src
-      - name: Commit and push changes
+        run: npx prettier --check ./src
+      - name: Commit changes
         run: |
           git config --global user.email 'prettify[bot]@users.noreply.github.com'
           git config --global user.name 'prettify [bot]'
           git add .
           git commit -m "Prettify code"
-          git push origin HEAD:${{ github.ref }}
+      - name: Push changes
+        run: git push origin ${{ github.head_ref || github.ref_name }} 
