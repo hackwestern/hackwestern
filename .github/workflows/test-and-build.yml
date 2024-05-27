@@ -25,7 +25,7 @@ jobs:
         run: npm run db:push
 
       - name: Run tests
-        run: npx vitests
+        run: npx vitest
 
       - name: Build
         env:
