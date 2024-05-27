@@ -1,0 +1,29 @@
+name: Prettify
+on:
+  pull_request_review:
+    types: [submitted]
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ github.token }}
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "21"
+          registry-url: "https://registry.npmjs.org"
+      - name: Install packages
+        run: npm install
+      - name: Run prettier
+        run: npx prettier --check ./src
+      - name: Commit changes
+        run: |
+          git config --global user.email 'prettify-hackwestern[bot]@users.noreply.github.com'
+          git config --global user.name 'prettify-hackwestern[bot]'
+          git add .
+          git commit -m "Prettify code" || echo "No changes to commit"
+      - name: Push changes
+        run: git push
