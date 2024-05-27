@@ -42,20 +42,18 @@ describe("application.get", async () => {
     const want = createRandomApplication(session);
     await db.insert(applications).values(want);
 
-    const got = await caller.application.get();
-    assert(!!got);
+    const result = await caller.application.save(want);
+    assert(!!result);
 
-    // @ts-ignore
-    delete got.id;
-    // @ts-ignore
-    delete got.createdAt;
-    // @ts-ignore
-    delete got.updatedAt;
+    const { createdAt, updatedAt, ...got } = result;
 
-    // dates are the same but different, don't worry about dates LOL.
-    got.dateOfBirth = want.dateOfBirth;
-
-    expect(got).toEqual(want);
+    expect({
+      ...got,
+      dateOfBirth: got.dateOfBirth.getDate(),
+    }).toEqual({
+      ...want,
+      dateOfBirth: want.dateOfBirth.getDate(),
+    });
   });
 });
 
@@ -83,21 +81,19 @@ describe.sequential("application.save", async () => {
     const want = {
       ...createRandomApplication(session),
     };
-    const got = await caller.application.save(want);
 
-    assert(!!got);
+    const result = await caller.application.save(want);
+    assert(!!result);
 
-    // @ts-ignore
-    delete got.id;
-    // @ts-ignore
-    delete got.createdAt;
-    // @ts-ignore
-    delete got.updatedAt;
+    const { createdAt, updatedAt, ...got } = result;
 
-    // dates are the same but different, don't worry about dates LOL.
-    got.dateOfBirth = want.dateOfBirth;
-
-    expect(got).toEqual(want);
+    expect({
+      ...got,
+      dateOfBirth: got.dateOfBirth.getDate(),
+    }).toEqual({
+      ...want,
+      dateOfBirth: want.dateOfBirth.getDate(),
+    });
   });
 
   test("updates the application when it does exist", async () => {
@@ -111,21 +107,18 @@ describe.sequential("application.save", async () => {
       ...createRandomApplication(session),
     };
 
-    const got = await caller.application.save(want);
+    const result = await caller.application.save(want);
+    assert(!!result);
 
-    assert(!!got);
+    const { createdAt, updatedAt, ...got } = result;
 
-    // @ts-ignore
-    delete got.id;
-    // @ts-ignore
-    delete got.createdAt;
-    // @ts-ignore
-    delete got.updatedAt;
-
-    // dates are the same but different, don't think too much about dates.
-    got.dateOfBirth = want.dateOfBirth;
-
-    expect(got).toEqual(want);
+    expect({
+      ...got,
+      dateOfBirth: got.dateOfBirth.getDate(),
+    }).toEqual({
+      ...want,
+      dateOfBirth: want.dateOfBirth.getDate(),
+    });
   });
 });
 
