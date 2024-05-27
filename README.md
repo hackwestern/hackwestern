@@ -17,9 +17,11 @@ Welcome to Hack Western :)
 1. Get a copy of the `.env` from a web lead.
 2. Run `npm install` to install dependencies using the node package manager.
 3. Run `npm run db:start` to start your dev Postgres database using Docker (see `./start-database.sh`).
-4. Run `npm run db:push` to push the drizzle database schema changes to your dev Postgres database using drizzle.
+4. Run `npm run db:migrate` to push the drizzle database schema changes to your dev Postgres database using drizzle.
 5. Optionally, you can run `npm run db:seed` to seed (some of) the database with fake data to use when testing.
 6. Run `npm run dev` to start the development server!
+
+When making changes to the schema, first run `npm run db:generate` to generate the migration SQL scripts, then run `npm run db:migrate` to apply them. DO NOT use `npx drizzle-kit push` anymore.
 
 ## Technologies
 
