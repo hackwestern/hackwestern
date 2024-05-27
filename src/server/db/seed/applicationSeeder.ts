@@ -9,7 +9,7 @@ import {
   numOfHackathons,
   sexualOrientation,
 } from "../schema";
-import { USERS } from "./user-seeder";
+import { USERS } from "./userSeeder";
 import { type UserPartial, type Seeder } from ".";
 
 const today = new Date();
