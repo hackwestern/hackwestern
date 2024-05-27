@@ -26,18 +26,18 @@ const ctx = createInnerTRPCContext({ session, db });
 const caller = createCaller(ctx);
 
 describe("application.get", async () => {
-  test("should throw an error if no user exists", async () => {
+  test("throws an error if no user exists", async () => {
     const ctx = createInnerTRPCContext({ session: null, db });
     const caller = createCaller(ctx);
 
     await expect(caller.application.get()).rejects.toThrowError();
   });
 
-  test("should throw an error if no application exists", async () => {
+  test("throws an error if no application exists", async () => {
     await expect(caller.application.get()).rejects.toThrowError();
   });
 
-  test("get the user's application if it exists", async () => {
+  test("gets the user's application if it exists", async () => {
     const want = createRandomApplication(session);
     await db.insert(applications).values(want);
 
@@ -76,23 +76,6 @@ describe.sequential("application.save", async () => {
     await expect(caller.application.save(application)).rejects.toThrowError();
   });
 
-  test("throws an error if the user has another application with a different id", async () => {
-    const application = {
-      ...createRandomApplication(session),
-    };
-
-    await caller.application.save(application);
-
-    const newApplication = {
-      ...application,
-      id: faker.string.uuid(),
-    };
-
-    await expect(
-      caller.application.save(newApplication),
-    ).rejects.toThrowError();
-  });
-
   test("creates a new application when it does not exist", async () => {
     await expect(caller.application.get()).rejects.toThrowError("not found");
 
@@ -121,11 +104,10 @@ describe.sequential("application.save", async () => {
       ...createRandomApplication(session),
     };
 
-    const originalApplication = await caller.application.save(application);
+    await caller.application.save(application);
 
     const want = {
       ...createRandomApplication(session),
-      id: originalApplication?.id,
     };
 
     const got = await caller.application.save(want);

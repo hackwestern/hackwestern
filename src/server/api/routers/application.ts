@@ -51,8 +51,8 @@ export const applicationRouter = createTRPCRouter({
           .insert(applications)
           .values({ ...applicationData, userId })
           .onConflictDoUpdate({
-            target: [applications.id, applications.userId],
-            set: { ...applicationData, userId },
+            target: applications.userId,
+            set: { ...applicationData, updatedAt: new Date() },
           })
           .returning();
         return savedApplication[0];

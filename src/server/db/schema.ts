@@ -151,10 +151,9 @@ export const preregistrations = createTable("preregistration", {
 export const applications = createTable(
   "application",
   {
-    id: uuid("id").defaultRandom().notNull(),
     userId: varchar("user_id", { length: 255 })
       .notNull()
-      .unique()
+      .primaryKey()
       .references(() => users.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at", {
       mode: "date",
@@ -217,7 +216,6 @@ export const applications = createTable(
     sexualOrientation: sexualOrientation("sexual_orientation"),
   },
   (table) => ({
-    pt: primaryKey({ columns: [table.id, table.userId] }),
     userIdIdx: index("user_id_idx").on(table.userId),
   }),
 );
