@@ -27,7 +27,9 @@
     "baseUrl": ".",
     "paths": {
       "~/*": ["./src/*"]
-    }
+    },
+
+    "types": ["vitest/importMeta"]
   },
   "include": [
     ".eslintrc.cjs",
