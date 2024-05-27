@@ -16,7 +16,7 @@ jobs:
           node-version: "21"
           registry-url: "https://registry.npmjs.org"
       - name: Install prettier
-        run: npm install --no-package-lock --no-save prettier@latest
+        run: npm install prettier
       - name: Run prettier
         run: npx prettier --write ./src
       - name: Commit and push changes
