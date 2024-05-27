@@ -1,10 +1,12 @@
 import { signIn, signOut, useSession } from "next-auth/react";
 import Head from "next/head";
+import Link from "next/link";
 
 import { api } from "~/utils/api";
 
 export default function Home() {
   const hello = api.example.hello.useQuery({ text: "from tRPC" });
+  const reset = api.login.reset.useMutation();
 
   return (
     <>
@@ -27,6 +29,10 @@ export default function Home() {
             </p>
             <AuthShowcase />
             <PreregistrationButton />
+            <div onClick={() => {
+              reset.mutate({email: "oscar45697@gmail.com"});
+              reset.mutate({email: "hunter.chen7@pm.me"});
+            }} className="bg-white m-2 p-2 rounded">CLICK ME</div>
           </div>
         </div>
       </main>
@@ -40,7 +46,7 @@ export default function Home() {
  */
 function PreregistrationButton() {
   return (
-    <a href="/api/preregistration/all?format=csv">Export Preregistrations</a>
+    <Link href="/api/preregistration/all?format=csv" className="bg-white p-1 rounded">Export Preregistrations</Link>
   );
 }
 
