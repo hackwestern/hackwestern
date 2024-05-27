@@ -35,7 +35,7 @@ jobs:
         run: npm run db:push
 
       - name: Seed DB
-        run: tsx ./src/server/db/seed/index.ts
+        run: npm run db:seed
 
       - name: Run tests
         run: npx vitest
