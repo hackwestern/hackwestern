@@ -1,8 +1,7 @@
 name: Test and Build
 on:
   pull_request:
-    branches:
-      - main
+    types: [review_requested]
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
