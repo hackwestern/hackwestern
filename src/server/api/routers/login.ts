@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import bcrypt from "bcrypt";
+import bcrypt from "bcrypt";
 
 // Imports for reset
 import { randomBytes } from "crypto";
@@ -22,11 +23,14 @@ export const loginRouter = createTRPCRouter({
         columns: { id: true, name: true },
         where: eq(users.email, input.email),
       });
+        where: eq(users.email, input.email),
+      });
 
       if (!user) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "User not found",
+        });
         });
       }
 
@@ -35,10 +39,24 @@ export const loginRouter = createTRPCRouter({
       // Generate reset token
       const resetToken = randomBytes(20).toString("hex"); // 20 byte hex string
 
+
       // Store reset token and expiry; replace existing if exists
       await db
         .insert(resetPasswordTokens)
+      await db
+        .insert(resetPasswordTokens)
         .values({
+          userId: uid,
+          token: resetToken,
+          expires: new Date(Date.now() + TOKEN_EXPIRY),
+        })
+        .onConflictDoUpdate({
+          target: resetPasswordTokens.userId,
+          set: {
+            token: resetToken,
+            expires: new Date(Date.now() + TOKEN_EXPIRY),
+          },
+        });
           userId: uid,
           token: resetToken,
           expires: new Date(Date.now() + TOKEN_EXPIRY),
@@ -73,8 +91,18 @@ export const loginRouter = createTRPCRouter({
           },
         ],
       });
+          },
+        ],
+      });
       // TODO: send email with reset link
 
+      emailReq
+        .then((result) => {
+          console.log(result);
+        })
+        .catch((err) => {
+          console.error(err);
+        });
       emailReq
         .then((result) => {
           console.log(result);
@@ -86,6 +114,7 @@ export const loginRouter = createTRPCRouter({
       return {
         success: true,
       };
+    }),
     }),
 });
 
