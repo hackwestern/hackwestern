@@ -33,21 +33,12 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
     this.numRows = users.length;
   }
 
-  createRandom() {
-    const user = this.users.pop();
-    if (user === undefined) {
-      throw new Error("There were no more users found.");
-    }
-
-    const names = user.name?.split(" ");
-    const [firstName, lastName] = [names?.at(0), names?.at(-1)];
-
+  static createRandomWithoutUser() {
     return {
-      userId: user.id,
       status: faker.helpers.arrayElement(applicationStatus.enumValues),
 
-      firstName: firstName,
-      lastName: lastName,
+      firstName: faker.person.firstName(),
+      lastName: faker.person.lastName(),
       dateOfBirth: faker.date.birthdate(),
       phoneNumber: faker.phone.number(),
       countryOfResidence: Number(faker.location.countryCode("numeric")),
@@ -81,6 +72,25 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       sexualOrientation: faker.helpers.arrayElement(
         sexualOrientation.enumValues,
       ),
+    };
+  }
+
+  createRandom() {
+    const user = this.users.pop();
+    if (user === undefined) {
+      throw new Error("There were no more users found.");
+    }
+
+    const application = ApplicationSeeder.createRandomWithoutUser();
+
+    const names = user.name?.split(" ");
+    const [firstName, lastName] = [names?.at(0), names?.at(-1)];
+
+    return {
+      ...application,
+      userId: user.id,
+      firstName,
+      lastName,
     };
   }
 }

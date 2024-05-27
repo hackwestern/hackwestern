@@ -151,9 +151,10 @@ export const preregistrations = createTable("preregistration", {
 export const applications = createTable(
   "application",
   {
-    id: uuid("id").defaultRandom().primaryKey().notNull(),
+    id: uuid("id").defaultRandom().notNull(),
     userId: varchar("user_id", { length: 255 })
       .notNull()
+      .unique()
       .references(() => users.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at", {
       mode: "date",
@@ -165,7 +166,7 @@ export const applications = createTable(
       mode: "date",
       precision: 3,
     })
-      .defaultNow()
+      .default(sql`CURRENT_TIMESTAMP(3) on update CURRENT_TIMESTAMP(3)`)
       .notNull(),
     status: applicationStatus("status").default("IN_PROGRESS").notNull(),
 
@@ -216,6 +217,7 @@ export const applications = createTable(
     sexualOrientation: sexualOrientation("sexual_orientation"),
   },
   (table) => ({
+    pt: primaryKey({ columns: [table.id, table.userId] }),
     userIdIdx: index("user_id_idx").on(table.userId),
   }),
 );
