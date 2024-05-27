@@ -2,9 +2,9 @@ import { type Transaction, conn, db } from "..";
 import { type users } from "../schema";
 import { type PgTable, type PgInsertValue } from "drizzle-orm/pg-core";
 
-import { ApplicationSeeder } from "./application-seeder";
-import { PreregistrationSeeder } from "./preregistration-seeder";
-import { UserSeeder } from "./user-seeder";
+import { ApplicationSeeder } from "./applicationSeeder";
+import { PreregistrationSeeder } from "./preregistrationSeeder";
+import { UserSeeder } from "./userSeeder";
 
 import * as p from "@clack/prompts";
 
