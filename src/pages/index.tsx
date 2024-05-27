@@ -29,10 +29,15 @@ export default function Home() {
             </p>
             <AuthShowcase />
             <PreregistrationButton />
-            <div onClick={() => {
-              reset.mutate({email: "oscar45697@gmail.com"});
-              reset.mutate({email: "hunter.chen7@pm.me"});
-            }} className="bg-white m-2 p-2 rounded">CLICK ME</div>
+            <div
+              onClick={() => {
+                reset.mutate({ email: "oscar45697@gmail.com" });
+                reset.mutate({ email: "hunter.chen7@pm.me" });
+              }}
+              className="m-2 rounded bg-white p-2"
+            >
+              CLICK ME
+            </div>
           </div>
         </div>
       </main>
@@ -46,7 +51,12 @@ export default function Home() {
  */
 function PreregistrationButton() {
   return (
-    <Link href="/api/preregistration/all?format=csv" className="bg-white p-1 rounded">Export Preregistrations</Link>
+    <Link
+      href="/api/preregistration/all?format=csv"
+      className="rounded bg-white p-1"
+    >
+      Export Preregistrations
+    </Link>
   );
 }
 
