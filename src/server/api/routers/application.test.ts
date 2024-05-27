@@ -6,20 +6,10 @@ import { eq } from "drizzle-orm";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 
-import { db, type Database } from "~/server/db";
-import { applications, users } from "~/server/db/schema";
+import { db } from "~/server/db";
+import { mockSession } from "~/server/auth";
+import { applications } from "~/server/db/schema";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
-import { UserSeeder } from "~/server/db/seed/userSeeder";
-
-async function mockSession(db: Database): Promise<Session> {
-  const user = new UserSeeder().createRandom();
-  await db.insert(users).values(user).returning();
-
-  return {
-    user,
-    expires: new Date(Date.now() + 10).toISOString(),
-  };
-}
 
 const session = await mockSession(db);
 
