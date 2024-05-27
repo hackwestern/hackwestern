@@ -2,7 +2,7 @@ name: Prettify
 on:
   push:
     branches:
-      - prettier
+      - main
 jobs:
   prettier:
     runs-on: ubuntu-latest
