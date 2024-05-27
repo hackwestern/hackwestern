@@ -16,7 +16,7 @@ jobs:
           node-version: "21"
           registry-url: "https://registry.npmjs.org"
       - name: Pull changes
-        run: git pull origin ${{ github.head_ref || github.ref_name }}
+        run: git config pull.rebase false && git pull origin ${{ github.head_ref || github.ref_name }}
       - name: Install prettier
         run: npm install prettier
       - name: Run prettier
