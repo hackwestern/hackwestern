@@ -3,8 +3,6 @@ on:
   push:
     branches:
       - prettier
-permissions:
-  contents: write
 jobs:
   prettier:
     runs-on: ubuntu-latest
@@ -20,7 +18,7 @@ jobs:
       - name: Install prettier
         run: npm install --no-package-lock --no-save prettier@latest
       - name: Run prettier
-        run: npx prettier --write .
+        run: npx prettier --write ./src
       - name: Commit and push changes
         run: |
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
