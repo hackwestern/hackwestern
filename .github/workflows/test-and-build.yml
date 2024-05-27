@@ -32,7 +32,7 @@ jobs:
         run: npm run db:start
 
       - name: Push Schema
-        run: npm run db:push || (echo "Retrying" && sleep 5 && npm run db:push)
+        run: npm run db:push
 
       - name: Seed DB
         run: yes | npm run db:seed
