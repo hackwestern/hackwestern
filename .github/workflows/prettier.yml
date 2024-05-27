@@ -11,7 +11,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ github.token }}
-          ref: ${{ github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: "21"
@@ -26,4 +25,4 @@ jobs:
           git config --global user.name 'prettify [bot]'
           git add .
           git commit -m "Prettify code"
-          git push
+          git push origin HEAD:${{ github.ref }}
