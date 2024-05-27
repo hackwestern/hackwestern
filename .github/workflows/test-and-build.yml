@@ -34,6 +34,9 @@ jobs:
       - name: Push Drizzle DB schema
         run: npm run db:push
 
+      - name: Seed DB
+        run: npm run db:seed
+
       - name: Run tests
         run: npx vitest
 
