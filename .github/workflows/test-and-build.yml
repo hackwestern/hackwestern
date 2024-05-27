@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Start Posgres DB
+      - name: Start Postgres DB
         run: npm run db:start && sleep 2
 
       - name: Push Schema
