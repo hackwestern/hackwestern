@@ -28,8 +28,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Start Posgres DB and push schema
-        run: npm run db:start && npm run db:push
+      - name: Start Posgres DB
+        run: npm run db:start
+
+      - name: Push Schema
+        run: npm run db:push || (echo "Retrying" && sleep 5 && npm run db:push)
 
       - name: Seed DB
         run: yes | npm run db:seed
