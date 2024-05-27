@@ -15,8 +15,8 @@ jobs:
         with:
           node-version: "21"
           registry-url: "https://registry.npmjs.org"
-      - name: Install prettier
-        run: npm install -g prettier prettier-plugin-tailwindcss
+      - name: Install packages
+        run: npm install
       - name: Run prettier
         run: npx prettier --check ./src
       - name: Commit changes
