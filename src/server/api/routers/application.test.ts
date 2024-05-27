@@ -23,10 +23,6 @@ describe("application.get", async () => {
   const caller = createCaller(ctx);
 
   it("should throw an error if no session exists", async () => {
-    expect(() => caller.application.get()).toThrowError();
-  });
-
-  it("should throw an error if no application exists", async () => {
-    expect(() => caller.application.get()).toThrowError();
+    await expect(caller.application.get()).rejects.toThrowError();
   });
 });
