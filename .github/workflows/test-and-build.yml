@@ -29,13 +29,10 @@ jobs:
         run: npm install
 
       - name: Start Posgres DB
-        run: npm run db:start
+        run: npm run db:start && sleep 10
 
       - name: Push Schema
         run: npm run db:push
-
-      - name: Seed DB
-        run: yes | npm run db:seed
 
       - name: Run tests
         run: npx vitest
