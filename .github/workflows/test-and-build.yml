@@ -20,9 +20,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # for when we have tests
-      # - name: Run tests
-      #  run: npm test
+      - name: Start Posgres DB
+        run: npm run db:start
+      
+      - name: Push Drizzle DB schema
+        run: npm run db:push
+
+      - name: Run tests
+        run: npx vitests
 
       - name: Build
         env:
