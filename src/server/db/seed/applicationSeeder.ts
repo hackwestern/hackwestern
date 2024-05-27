@@ -44,8 +44,6 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
 
     return {
       userId: user.id,
-      createdAt: faker.date.between({ from: thirtyDaysAgo, to: fiveDaysAgo }),
-      updatedAt: faker.date.between({ from: fourDaysAgo, to: today }),
       status: faker.helpers.arrayElement(applicationStatus.enumValues),
 
       firstName: firstName,
