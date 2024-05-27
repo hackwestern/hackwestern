@@ -9,6 +9,8 @@ import { resetPasswordTokens, users } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { resetTemplate } from "./password-reset-template";
+import { authOptions } from "~/server/auth";
+import { Adapter } from "next-auth/adapters";
 
 const TOKEN_EXPIRY = 1000 * 60 * 10; // 10 minutes
 
@@ -91,31 +93,51 @@ export const createUserRouter = createTRPCRouter({
   create: publicProcedure
     .input(z.object({ email: z.string(), password: z.string() }))
     .mutation(async ({ input }) => {
-      const user = await db.query.users.findFirst({
-        where: eq(users.email, input.email),
-      });
-
-      if (user) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "User already exists",
+      try {
+        const user = await db.query.users.findFirst({
+          where: eq(users.email, input.email),
         });
-      }
 
-      const salt: string = await bcrypt.genSalt(10);
-      const hashedPassword: string = await bcrypt.hash(input.password, salt);
+        if (user) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "User already exists",
+          });
+        }
 
-      await db
-        .insert(users)
-        .values({
-          id: "", // Add the 'id' property here
+        const salt: string = await bcrypt.genSalt(10);
+        const hashedPassword: string = await bcrypt.hash(input.password, salt);
+
+        const adapter = authOptions.adapter;
+
+        if (adapter?.createUser === undefined) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Adapter not found",
+          });
+        }
+        const createdUser = await adapter.createUser({
           email: input.email,
-          password: hashedPassword,
-        })
-        .execute();
+          emailVerified: new Date(),
+        });
 
-      return {
-        success: true,
-      };
+        await db
+          .update(users)
+          .set({
+            password: hashedPassword,
+          })
+          .where(eq(users.id, createdUser.id));
+        return {
+          success: true,
+        };
+      } catch (error) {
+        throw error instanceof TRPCError
+          ? error
+          : new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message:
+                "Failed to create user with password" + JSON.stringify(error),
+            });
+      }
     }),
 });
