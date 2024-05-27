@@ -1,14 +1,15 @@
-import { faker } from "@faker-js/faker";
-import { eq } from "drizzle-orm";
-import { type Session } from "next-auth";
 import { assert, beforeEach, describe, expect, test } from "vitest";
+import { faker } from "@faker-js/faker";
+import { type Session } from "next-auth";
+import { eq } from "drizzle-orm";
+
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
+
 import { db, type Database } from "~/server/db";
 import { applications, users } from "~/server/db/schema";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { UserSeeder } from "~/server/db/seed/userSeeder";
-import { delay } from "~/utils/delay";
 
 async function mockSession(db: Database): Promise<Session> {
   const user = new UserSeeder().createRandom();
@@ -111,10 +112,6 @@ describe.sequential("application.save", async () => {
     };
 
     const got = await caller.application.save(want);
-
-    expect(got?.updatedAt.getTime()).toBeGreaterThan(
-      got?.createdAt.getTime() ?? 0,
-    );
 
     assert(!!got);
 

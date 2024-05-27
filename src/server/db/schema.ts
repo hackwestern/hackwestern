@@ -165,7 +165,7 @@ export const applications = createTable(
       mode: "date",
       precision: 3,
     })
-      .default(sql`CURRENT_TIMESTAMP(3) on update CURRENT_TIMESTAMP(3)`)
+      .defaultNow()
       .notNull(),
     status: applicationStatus("status").default("IN_PROGRESS").notNull(),
 
