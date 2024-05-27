@@ -22,7 +22,7 @@ import { type AdapterAccount } from "next-auth/adapters";
  *
  * @see https://orm.drizzle.team/kit-docs/config-reference#tablesfilters
  */
-const TABLE_PREFIX = "hackwestern2024";
+const TABLE_PREFIX = "hw11";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same

@@ -8,5 +8,5 @@ export default defineConfig({
   dbCredentials: {
     url: env.DATABASE_URL,
   },
-  tablesFilter: ["hackwestern2024_*"],
+  tablesFilter: ["hw11_*"],
 });
