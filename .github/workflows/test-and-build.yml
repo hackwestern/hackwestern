@@ -35,7 +35,7 @@ jobs:
         run: npm run db:push
 
       - name: Seed DB
-        run: y | npm run db:seed
+        run: yes | npm run db:seed
 
       - name: Run tests
         run: npx vitest
