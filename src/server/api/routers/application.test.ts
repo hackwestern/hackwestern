@@ -36,6 +36,7 @@ describe("application.get", async () => {
     assert(!!result);
 
     const { createdAt, updatedAt, ...got } = result;
+    void createdAt, updatedAt;
 
     expect({
       ...got,
@@ -76,6 +77,7 @@ describe.sequential("application.save", async () => {
     assert(!!result);
 
     const { createdAt, updatedAt, ...got } = result;
+    void createdAt, updatedAt;
 
     expect({
       ...got,
@@ -101,6 +103,7 @@ describe.sequential("application.save", async () => {
     assert(!!result);
 
     const { createdAt, updatedAt, ...got } = result;
+    void createdAt, updatedAt;
 
     expect({
       ...got,
