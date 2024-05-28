@@ -18,7 +18,7 @@ jobs:
       - name: Install packages
         run: npm install
       - name: Run prettier
-        run: npx prettier --check ./src
+        run: npx prettier --write ./src
       - name: Commit changes
         run: |
           git config --global user.email 'prettify-hackwestern[bot]@users.noreply.github.com'
