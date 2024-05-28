@@ -12,10 +12,10 @@ import {
 import { USERS } from "./userSeeder";
 import { type UserPartial, type Seeder } from ".";
 
-const today = new Date();
-const thirtyDaysAgo = new Date().setDate(today.getDate() - 30);
-const fiveDaysAgo = new Date().setDate(today.getDate() - 5);
-const fourDaysAgo = new Date().setDate(today.getDate() - 4);
+// const today = new Date();
+// const thirtyDaysAgo = new Date().setDate(today.getDate() - 30);
+// const fiveDaysAgo = new Date().setDate(today.getDate() - 5);
+// const fourDaysAgo = new Date().setDate(today.getDate() - 4);
 
 const schools = [
   "Western University",
