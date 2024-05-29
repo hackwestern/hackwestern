@@ -10,7 +10,7 @@ export default function Home() {
 
   return (
     <>
-<Head>
+      <Head>
         <title>Hack Western</title>
         <meta
           name="description"
