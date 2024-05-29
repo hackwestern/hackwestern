@@ -1,11 +1,11 @@
 {
-  "id": "5dfffbca-2d6d-4906-8a37-0f4591bf32f4",
+  "id": "9d68b394-5673-495e-b3ff-99e8a3640e1c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "6",
   "dialect": "postgresql",
   "tables": {
-    "public.hackwestern2024_account": {
-      "name": "hackwestern2024_account",
+    "public.hw11_account": {
+      "name": "hw11_account",
       "schema": "",
       "columns": {
         "userId": {
@@ -85,10 +85,10 @@
         }
       },
       "foreignKeys": {
-        "hackwestern2024_account_userId_hackwestern2024_user_id_fk": {
-          "name": "hackwestern2024_account_userId_hackwestern2024_user_id_fk",
-          "tableFrom": "hackwestern2024_account",
-          "tableTo": "hackwestern2024_user",
+        "hw11_account_userId_hw11_user_id_fk": {
+          "name": "hw11_account_userId_hw11_user_id_fk",
+          "tableFrom": "hw11_account",
+          "tableTo": "hw11_user",
           "columnsFrom": [
             "userId"
           ],
@@ -100,8 +100,8 @@
         }
       },
       "compositePrimaryKeys": {
-        "hackwestern2024_account_provider_providerAccountId_pk": {
-          "name": "hackwestern2024_account_provider_providerAccountId_pk",
+        "hw11_account_provider_providerAccountId_pk": {
+          "name": "hw11_account_provider_providerAccountId_pk",
           "columns": [
             "provider",
             "providerAccountId"
@@ -110,21 +110,14 @@
       },
       "uniqueConstraints": {}
     },
-    "public.hackwestern2024_application": {
-      "name": "hackwestern2024_application",
+    "public.hw11_application": {
+      "name": "hw11_application",
       "schema": "",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
         "user_id": {
           "name": "user_id",
           "type": "varchar(255)",
-          "primaryKey": false,
+          "primaryKey": true,
           "notNull": true
         },
         "created_at": {
@@ -330,10 +323,10 @@
         }
       },
       "foreignKeys": {
-        "hackwestern2024_application_user_id_hackwestern2024_user_id_fk": {
-          "name": "hackwestern2024_application_user_id_hackwestern2024_user_id_fk",
-          "tableFrom": "hackwestern2024_application",
-          "tableTo": "hackwestern2024_user",
+        "hw11_application_user_id_hw11_user_id_fk": {
+          "name": "hw11_application_user_id_hw11_user_id_fk",
+          "tableFrom": "hw11_application",
+          "tableTo": "hw11_user",
           "columnsFrom": [
             "user_id"
           ],
@@ -347,8 +340,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.hackwestern2024_preregistration": {
-      "name": "hackwestern2024_preregistration",
+    "public.hw11_preregistration": {
+      "name": "hw11_preregistration",
       "schema": "",
       "columns": {
         "id": {
@@ -381,8 +374,8 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "hackwestern2024_preregistration_email_unique": {
-          "name": "hackwestern2024_preregistration_email_unique",
+        "hw11_preregistration_email_unique": {
+          "name": "hw11_preregistration_email_unique",
           "nullsNotDistinct": false,
           "columns": [
             "email"
@@ -390,8 +383,8 @@
         }
       }
     },
-    "public.hackwestern2024_resetPasswordToken": {
-      "name": "hackwestern2024_resetPasswordToken",
+    "public.hw11_resetPasswordToken": {
+      "name": "hw11_resetPasswordToken",
       "schema": "",
       "columns": {
         "userId": {
@@ -415,10 +408,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "hackwestern2024_resetPasswordToken_userId_hackwestern2024_user_id_fk": {
-          "name": "hackwestern2024_resetPasswordToken_userId_hackwestern2024_user_id_fk",
-          "tableFrom": "hackwestern2024_resetPasswordToken",
-          "tableTo": "hackwestern2024_user",
+        "hw11_resetPasswordToken_userId_hw11_user_id_fk": {
+          "name": "hw11_resetPasswordToken_userId_hw11_user_id_fk",
+          "tableFrom": "hw11_resetPasswordToken",
+          "tableTo": "hw11_user",
           "columnsFrom": [
             "userId"
           ],
@@ -432,8 +425,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.hackwestern2024_session": {
-      "name": "hackwestern2024_session",
+    "public.hw11_session": {
+      "name": "hw11_session",
       "schema": "",
       "columns": {
         "sessionToken": {
@@ -465,10 +458,10 @@
         }
       },
       "foreignKeys": {
-        "hackwestern2024_session_userId_hackwestern2024_user_id_fk": {
-          "name": "hackwestern2024_session_userId_hackwestern2024_user_id_fk",
-          "tableFrom": "hackwestern2024_session",
-          "tableTo": "hackwestern2024_user",
+        "hw11_session_userId_hw11_user_id_fk": {
+          "name": "hw11_session_userId_hw11_user_id_fk",
+          "tableFrom": "hw11_session",
+          "tableTo": "hw11_user",
           "columnsFrom": [
             "userId"
           ],
@@ -482,8 +475,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.hackwestern2024_user": {
-      "name": "hackwestern2024_user",
+    "public.hw11_user": {
+      "name": "hw11_user",
       "schema": "",
       "columns": {
         "id": {
@@ -531,8 +524,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.hackwestern2024_verificationToken": {
-      "name": "hackwestern2024_verificationToken",
+    "public.hw11_verificationToken": {
+      "name": "hw11_verificationToken",
       "schema": "",
       "columns": {
         "identifier": {
@@ -557,8 +550,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
-        "hackwestern2024_verificationToken_identifier_token_pk": {
-          "name": "hackwestern2024_verificationToken_identifier_token_pk",
+        "hw11_verificationToken_identifier_token_pk": {
+          "name": "hw11_verificationToken_identifier_token_pk",
           "columns": [
             "identifier",
             "token"

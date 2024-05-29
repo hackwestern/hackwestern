@@ -72,7 +72,6 @@ export const loginRouter = createTRPCRouter({
           },
         ],
       });
-      // TODO: send email with reset link
 
       emailReq
         .then((result) => {

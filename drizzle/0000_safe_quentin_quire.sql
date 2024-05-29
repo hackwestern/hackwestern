@@ -46,7 +46,7 @@ EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "hackwestern2024_account" (
+CREATE TABLE IF NOT EXISTS "hw11_account" (
 	"userId" varchar(255) NOT NULL,
 	"type" varchar(255) NOT NULL,
 	"provider" varchar(255) NOT NULL,
@@ -58,12 +58,11 @@ CREATE TABLE IF NOT EXISTS "hackwestern2024_account" (
 	"scope" varchar(255),
 	"id_token" text,
 	"session_state" varchar(255),
-	CONSTRAINT "hackwestern2024_account_provider_providerAccountId_pk" PRIMARY KEY("provider","providerAccountId")
+	CONSTRAINT "hw11_account_provider_providerAccountId_pk" PRIMARY KEY("provider","providerAccountId")
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "hackwestern2024_application" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" varchar(255) NOT NULL,
+CREATE TABLE IF NOT EXISTS "hw11_application" (
+	"user_id" varchar(255) PRIMARY KEY NOT NULL,
 	"created_at" timestamp (3) DEFAULT now() NOT NULL,
 	"updated_at" timestamp (3) DEFAULT now() NOT NULL,
 	"status" "application_status" DEFAULT 'IN_PROGRESS' NOT NULL,
@@ -95,27 +94,27 @@ CREATE TABLE IF NOT EXISTS "hackwestern2024_application" (
 	"sexual_orientation" "sexual_orientation"
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "hackwestern2024_preregistration" (
+CREATE TABLE IF NOT EXISTS "hw11_preregistration" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"created_at" timestamp (3) DEFAULT now() NOT NULL,
 	"name" text NOT NULL,
 	"email" varchar(320) NOT NULL,
-	CONSTRAINT "hackwestern2024_preregistration_email_unique" UNIQUE("email")
+	CONSTRAINT "hw11_preregistration_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "hackwestern2024_resetPasswordToken" (
+CREATE TABLE IF NOT EXISTS "hw11_resetPasswordToken" (
 	"userId" varchar(255) PRIMARY KEY NOT NULL,
 	"token" varchar(255),
 	"expires" timestamp NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "hackwestern2024_session" (
+CREATE TABLE IF NOT EXISTS "hw11_session" (
 	"sessionToken" varchar(255) PRIMARY KEY NOT NULL,
 	"userId" varchar(255) NOT NULL,
 	"expires" timestamp NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "hackwestern2024_user" (
+CREATE TABLE IF NOT EXISTS "hw11_user" (
 	"id" varchar(255) PRIMARY KEY NOT NULL,
 	"name" varchar(255),
 	"email" varchar(255) NOT NULL,
@@ -124,37 +123,37 @@ CREATE TABLE IF NOT EXISTS "hackwestern2024_user" (
 	"type" "user_type" DEFAULT 'hacker'
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "hackwestern2024_verificationToken" (
+CREATE TABLE IF NOT EXISTS "hw11_verificationToken" (
 	"identifier" varchar(255) NOT NULL,
 	"token" varchar(255) NOT NULL,
 	"expires" timestamp NOT NULL,
-	CONSTRAINT "hackwestern2024_verificationToken_identifier_token_pk" PRIMARY KEY("identifier","token")
+	CONSTRAINT "hw11_verificationToken_identifier_token_pk" PRIMARY KEY("identifier","token")
 );
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "hackwestern2024_account" ADD CONSTRAINT "hackwestern2024_account_userId_hackwestern2024_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."hackwestern2024_user"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "hw11_account" ADD CONSTRAINT "hw11_account_userId_hw11_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."hw11_user"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "hackwestern2024_application" ADD CONSTRAINT "hackwestern2024_application_user_id_hackwestern2024_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."hackwestern2024_user"("id") ON DELETE cascade ON UPDATE no action;
+ ALTER TABLE "hw11_application" ADD CONSTRAINT "hw11_application_user_id_hw11_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."hw11_user"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "hackwestern2024_resetPasswordToken" ADD CONSTRAINT "hackwestern2024_resetPasswordToken_userId_hackwestern2024_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."hackwestern2024_user"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "hw11_resetPasswordToken" ADD CONSTRAINT "hw11_resetPasswordToken_userId_hw11_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."hw11_user"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "hackwestern2024_session" ADD CONSTRAINT "hackwestern2024_session_userId_hackwestern2024_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."hackwestern2024_user"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "hw11_session" ADD CONSTRAINT "hw11_session_userId_hw11_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."hw11_user"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "account_userId_idx" ON "hackwestern2024_account" ("userId");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "user_id_idx" ON "hackwestern2024_application" ("user_id");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "session_userId_idx" ON "hackwestern2024_session" ("userId");
+CREATE INDEX IF NOT EXISTS "account_userId_idx" ON "hw11_account" ("userId");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "user_id_idx" ON "hw11_application" ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "session_userId_idx" ON "hw11_session" ("userId");

@@ -10,7 +10,6 @@ import {
   smallint,
   text,
   timestamp,
-  uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
@@ -22,7 +21,7 @@ import { type AdapterAccount } from "next-auth/adapters";
  *
  * @see https://orm.drizzle.team/kit-docs/config-reference#tablesfilters
  */
-const TABLE_PREFIX = "hackwestern2024";
+const TABLE_PREFIX = "hw11";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -151,9 +150,9 @@ export const preregistrations = createTable("preregistration", {
 export const applications = createTable(
   "application",
   {
-    id: uuid("id").defaultRandom().primaryKey().notNull(),
     userId: varchar("user_id", { length: 255 })
       .notNull()
+      .primaryKey()
       .references(() => users.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at", {
       mode: "date",

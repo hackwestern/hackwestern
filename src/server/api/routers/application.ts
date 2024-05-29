@@ -10,7 +10,7 @@ const applicationSaveSchema = createInsertSchema(applications)
     createdAt: true,
     updatedAt: true,
   })
-  .required({ id: true, userId: true });
+  .required({ userId: true });
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure.query(async ({ ctx }) => {
@@ -51,11 +51,11 @@ export const applicationRouter = createTRPCRouter({
           .insert(applications)
           .values({ ...applicationData, userId })
           .onConflictDoUpdate({
-            target: applications.id,
-            set: { ...applicationData, userId },
+            target: applications.userId,
+            set: { ...applicationData, updatedAt: new Date() },
           })
           .returning();
-        return savedApplication;
+        return savedApplication[0];
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
