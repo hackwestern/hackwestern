@@ -27,6 +27,7 @@ describe("preregistration.create", async () => {
 
     assert(!!result);
     const { id, createdAt, ...got } = result;
+    void id, createdAt;
 
     expect(got).toEqual(want);
   });
