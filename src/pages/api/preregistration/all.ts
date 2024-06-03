@@ -16,7 +16,9 @@ export default async function handler(
   }
 }
 
-const formatQuerySchema = z.enum(["json", "csv"]);
+const paramsSchema = z.object({
+  format: z.enum(["json", "csv"]),
+});
 
 async function GET(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -36,7 +38,7 @@ async function GET(req: NextApiRequest, res: NextApiResponse) {
       return res.status(403).json({ message: "Not an organizer. Forbidden." });
     }
 
-    const format = formatQuerySchema.parse(req.query?.format);
+    const format = paramsSchema.parse(req.query).format;
 
     if (format === "csv") {
       return csvHandler(res);
