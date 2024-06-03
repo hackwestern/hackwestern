@@ -1,27 +1,21 @@
-import * as React from "react"
-import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons"
+import * as React from "react";
+import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
 
-import { cn } from "~/lib/utils"
-import { Button } from "./button"
+import { cn } from "~/lib/utils";
+import { Button } from "./button";
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-  CommandList
-} from "./command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "./popover"
+  CommandList,
+} from "./command";
+import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 
-export function Combobox(
-  props: {
-    options: { label: string; value: string }[]
-  }
-) {
+export function Combobox(props: {
+  options: { label: string; value: string }[];
+}) {
   const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState("");
 
@@ -53,15 +47,15 @@ export function Combobox(
                   key={option.value}
                   value={option.value}
                   onSelect={(currentValue) => {
-                    setValue(currentValue === value ? "" : currentValue)
-                    setOpen(false)
+                    setValue(currentValue === value ? "" : currentValue);
+                    setOpen(false);
                   }}
                 >
                   {option.label}
                   <CheckIcon
                     className={cn(
                       "ml-auto h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
+                      value === option.value ? "opacity-100" : "opacity-0",
                     )}
                   />
                 </CommandItem>
@@ -71,5 +65,5 @@ export function Combobox(
         </Command>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

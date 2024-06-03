@@ -34,11 +34,11 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "~/components/ui/form"
+} from "~/components/ui/form";
 
 const formSchema = z.object({
   name: z.string().min(2).max(50),
-})
+});
 
 export default function UI() {
   const selectItems = ["Apple", "Banana", "Blueberry", "Grapes", "Pineapple"];
@@ -93,9 +93,9 @@ export default function UI() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-[#160524]">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-[#160524] py-5">
       <div className="flex justify-center">
-        <div className="3xl:grid-cols-5 container grid grid-cols-1 items-center gap-6 px-4 md:grid-cols-3">
+        <div className="3xl:grid-cols-5 3xl:grid-cols-4 container grid grid-cols-1 items-center gap-6 px-4 md:grid-cols-2 xl:grid-cols-3">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
               <FormField
@@ -107,14 +107,17 @@ export default function UI() {
                     <FormControl>
                       <Input placeholder="shadcn" {...field} />
                     </FormControl>
-                    <FormDescription>
-                      This is your name.
-                    </FormDescription>
+                    <FormDescription>This is your name.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="bg-white text-black hover:bg-gray-300">Submit</Button>
+              <Button
+                type="submit"
+                className="bg-white text-black hover:bg-gray-300"
+              >
+                Submit
+              </Button>
             </form>
           </Form>
           <div className="text-white">
