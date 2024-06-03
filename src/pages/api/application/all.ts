@@ -18,6 +18,7 @@ export default async function handler(
 
 const paramsSchema = z.object({
   format: z.enum(["json", "csv"]),
+  mlh: z.string().length(0).optional(),
 });
 
 async function GET(req: NextApiRequest, res: NextApiResponse) {
@@ -38,13 +39,15 @@ async function GET(req: NextApiRequest, res: NextApiResponse) {
       return res.status(403).json({ message: "Not an organizer. Forbidden." });
     }
 
-    const format = paramsSchema.parse(req.query).format;
+    const params = paramsSchema.parse(req.query);
+    const format = params.format;
+    const isMlh = params.mlh === "" || !!params.mlh;
 
     if (format === "csv") {
-      return csvHandler(res);
+      return csvHandler(isMlh, res);
     }
 
-    return jsonHandler(res);
+    return jsonHandler(isMlh, res);
   } catch (e) {
     console.log(
       `Something went wrong while responding to api/preregistration/all`,
@@ -54,17 +57,63 @@ async function GET(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-async function jsonHandler(res: NextApiResponse) {
-  const preregistrations = await db.query.preregistrations.findMany();
-
-  return res.status(200).json(preregistrations);
+function getMlhApplications() {
+  return db.query.applications.findMany({
+    columns: {
+      firstName: true,
+      lastName: true,
+      dateOfBirth: true,
+      phoneNumber: true,
+      school: true,
+      levelOfStudy: true,
+      countryOfResidence: true,
+      agreeCodeOfConduct: true,
+      agreeShareWithMLH: true,
+      agreeEmailsFromMLH: true,
+    },
+    with: {
+      users: {
+        columns: {
+          email: true,
+        },
+      },
+    },
+  });
 }
 
-const FILE_NAME = "preregistrations.csv";
+function getApplications() {
+  return db.query.applications.findMany({
+    with: {
+      users: true,
+    },
+  });
+}
 
-async function csvHandler(res: NextApiResponse) {
-  const preregistrations = await db.query.preregistrations.findMany();
-  const fileString = createCsvFile(preregistrations);
+async function getApplicationObjects(isMlh: boolean) {
+  const applications = isMlh
+    ? await getMlhApplications()
+    : await getApplications();
+
+  return applications.map((application) => {
+    const { users, ...rest } = application;
+    return {
+      ...users,
+      ...rest,
+    };
+  });
+}
+
+async function jsonHandler(isMlh: boolean, res: NextApiResponse) {
+  const applications = await getApplicationObjects(isMlh);
+
+  return res.status(200).json(applications);
+}
+
+const FILE_NAME = "applications.csv";
+
+async function csvHandler(isMlh: boolean, res: NextApiResponse) {
+  const applications = await getApplicationObjects(isMlh);
+  const fileString = createCsvFile(applications);
 
   res.setHeader("Content-disposition", `attachment; filename=${FILE_NAME}`);
   res.setHeader("Content-Type", "text/csv; charset=UTF-8");
