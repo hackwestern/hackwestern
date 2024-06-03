@@ -195,7 +195,7 @@ export const reviews = createTable(
  * Reviews have a many-to-one relationship with applications.
  * ie. a review is for one application, but an application can have many reveiws.
  */
-export const reviewsRelation = relations(reviews, ({ one }) => ({
+export const reviewsRelations = relations(reviews, ({ one }) => ({
   reviewer: one(users, {
     fields: [reviews.reviewerUserId],
     references: [users.id],
@@ -294,7 +294,7 @@ export const applications = createTable(
  * Applications have a one-to-many relationship with Reviews,
  * ie. An application can have many reviews, but a review is only for one application.
  */
-export const applicationsRelation = relations(
+export const applicationsRelations = relations(
   applications,
   ({ one, many }) => ({
     user: one(users, {
