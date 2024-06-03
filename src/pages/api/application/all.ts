@@ -72,19 +72,20 @@ function getMlhApplications() {
       agreeEmailsFromMLH: true,
     },
     with: {
-      users: {
+      user: {
         columns: {
           email: true,
         },
       },
     },
+    where: ({ status }, { eq }) => eq(status, "ACCEPTED"),
   });
 }
 
 function getApplications() {
   return db.query.applications.findMany({
     with: {
-      users: true,
+      user: true,
     },
   });
 }
@@ -95,9 +96,9 @@ async function getApplicationObjects(isMlh: boolean) {
     : await getApplications();
 
   return applications.map((application) => {
-    const { users, ...rest } = application;
+    const { user, ...rest } = application;
     return {
-      ...users,
+      ...user,
       ...rest,
     };
   });

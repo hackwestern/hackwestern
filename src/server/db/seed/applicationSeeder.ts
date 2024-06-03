@@ -12,11 +12,6 @@ import {
 import { USERS } from "./userSeeder";
 import { type UserPartial, type Seeder } from ".";
 
-// const today = new Date();
-// const thirtyDaysAgo = new Date().setDate(today.getDate() - 30);
-// const fiveDaysAgo = new Date().setDate(today.getDate() - 5);
-// const fourDaysAgo = new Date().setDate(today.getDate() - 4);
-
 const schools = [
   "Western University",
   "University of Waterloo",
@@ -50,9 +45,9 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       attendedBefore: faker.datatype.boolean(),
       numOfHackathons: faker.helpers.arrayElement(numOfHackathons.enumValues),
 
-      ideaToLife: faker.lorem.paragraphs(2),
-      interestsAndPassions: faker.lorem.paragraphs(2),
-      technologyInspires: faker.lorem.paragraphs(2),
+      question1: faker.lorem.paragraphs(2),
+      question2: faker.lorem.paragraphs(2),
+      question3: faker.lorem.paragraphs(2),
 
       resumeLink: faker.internet.url(),
       githubLink: faker.internet.url(),
