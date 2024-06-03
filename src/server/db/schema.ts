@@ -318,8 +318,9 @@ export const users = createTable("user", {
   type: userType("type").default("hacker"),
 });
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   accounts: many(accounts),
+  application: one(applications),
 }));
 
 export const accounts = createTable(
