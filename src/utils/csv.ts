@@ -7,7 +7,7 @@ function columnNames(
 
 export function createCsvFile(
   objects: Record<string, unknown>[],
-  separator: string = ";",
+  separator = ";",
 ): string {
   const firstRow = columnNames(objects[0] ?? {}, separator);
 
