@@ -40,46 +40,50 @@ const formSchema = z.object({
   name: z.string().min(2).max(50),
 });
 
+const frameworks = [
+  {
+    value: "next.js",
+    label: "Next.js",
+  },
+  {
+    value: "sveltekit",
+    label: "SvelteKit",
+  },
+  {
+    value: "nuxt.js",
+    label: "Nuxt.js",
+  },
+  {
+    value: "remix",
+    label: "Remix",
+  },
+  {
+    value: "astro",
+    label: "Astro",
+  },
+];
+
+const radioItems = [
+  {
+    value: "yes",
+    label: "Yes",
+  },
+  {
+    value: "no",
+    label: "No",
+  },
+  {
+    value: "maybe",
+    label: "Maybe",
+  },
+];
+
+function onSubmit(data: z.infer<typeof formSchema>) {
+  alert("submitted: " + JSON.stringify(data, null, 2));
+}
+
 export default function UI() {
   const selectItems = ["Apple", "Banana", "Blueberry", "Grapes", "Pineapple"];
-
-  const frameworks = [
-    {
-      value: "next.js",
-      label: "Next.js",
-    },
-    {
-      value: "sveltekit",
-      label: "SvelteKit",
-    },
-    {
-      value: "nuxt.js",
-      label: "Nuxt.js",
-    },
-    {
-      value: "remix",
-      label: "Remix",
-    },
-    {
-      value: "astro",
-      label: "Astro",
-    },
-  ];
-
-  const radioItems = [
-    {
-      value: "yes",
-      label: "Yes",
-    },
-    {
-      value: "no",
-      label: "No",
-    },
-    {
-      value: "maybe",
-      label: "Maybe",
-    },
-  ];
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -87,10 +91,6 @@ export default function UI() {
       name: "",
     },
   });
-
-  function onSubmit(data: z.infer<typeof formSchema>) {
-    alert("submitted: " + JSON.stringify(data, null, 2));
-  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-[#160524] py-5">
