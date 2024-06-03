@@ -23,6 +23,22 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "~/components/ui/accordion";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "~/components/ui/form"
+
+const formSchema = z.object({
+  name: z.string().min(2).max(50),
+})
 
 export default function UI() {
   const selectItems = ["Apple", "Banana", "Blueberry", "Grapes", "Pineapple"];
@@ -65,10 +81,42 @@ export default function UI() {
     },
   ];
 
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+    },
+  });
+
+  function onSubmit(data: z.infer<typeof formSchema>) {
+    alert("submitted: " + JSON.stringify(data, null, 2));
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-[#160524]">
       <div className="flex justify-center">
         <div className="3xl:grid-cols-5 container grid grid-cols-1 items-center gap-6 px-4 md:grid-cols-3">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="shadcn" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      This is your name.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="bg-white text-black hover:bg-gray-300">Submit</Button>
+            </form>
+          </Form>
           <div className="text-white">
             I&apos;m an input
             <Input className="w-96 text-black" />
