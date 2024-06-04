@@ -12,7 +12,7 @@ import { preregistrationRouter } from "./routers/preregistration";
 export const appRouter = createTRPCRouter({
   example: exampleRouter,
   application: applicationRouter,
-  login: authRouter,
+  auth: authRouter,
   preregistration: preregistrationRouter,
 });
 
