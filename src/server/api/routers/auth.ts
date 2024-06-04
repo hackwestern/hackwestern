@@ -12,7 +12,7 @@ import { authOptions } from "~/server/auth";
 
 const TOKEN_EXPIRY = 1000 * 60 * 10; // 10 minutes
 
-export const loginRouter = createTRPCRouter({
+export const authRouter = createTRPCRouter({
   reset: publicProcedure
     .input(z.object({ email: z.string() }))
     .mutation(async ({ input }) => {
@@ -85,8 +85,7 @@ export const loginRouter = createTRPCRouter({
         success: true,
       };
     }),
-});
-export const createUserRouter = createTRPCRouter({
+
   create: publicProcedure
     .input(z.object({ email: z.string(), password: z.string() }))
     .mutation(async ({ input }) => {
