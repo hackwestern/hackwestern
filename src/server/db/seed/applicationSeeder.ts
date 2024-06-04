@@ -9,13 +9,8 @@ import {
   numOfHackathons,
   sexualOrientation,
 } from "../schema";
-import { USERS } from "./user-seeder";
+import { USERS } from "./userSeeder";
 import { type UserPartial, type Seeder } from ".";
-
-const today = new Date();
-const thirtyDaysAgo = new Date().setDate(today.getDate() - 30);
-const fiveDaysAgo = new Date().setDate(today.getDate() - 5);
-const fourDaysAgo = new Date().setDate(today.getDate() - 4);
 
 const schools = [
   "Western University",
@@ -33,23 +28,12 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
     this.numRows = users.length;
   }
 
-  createRandom() {
-    const user = this.users.pop();
-    if (user === undefined) {
-      throw new Error("There were no more users found.");
-    }
-
-    const names = user.name?.split(" ");
-    const [firstName, lastName] = [names?.at(0), names?.at(-1)];
-
+  static createRandomWithoutUser() {
     return {
-      userId: user.id,
-      createdAt: faker.date.between({ from: thirtyDaysAgo, to: fiveDaysAgo }),
-      updatedAt: faker.date.between({ from: fourDaysAgo, to: today }),
       status: faker.helpers.arrayElement(applicationStatus.enumValues),
 
-      firstName: firstName,
-      lastName: lastName,
+      firstName: faker.person.firstName(),
+      lastName: faker.person.lastName(),
       dateOfBirth: faker.date.birthdate(),
       phoneNumber: faker.phone.number(),
       countryOfResidence: Number(faker.location.countryCode("numeric")),
@@ -61,9 +45,9 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       attendedBefore: faker.datatype.boolean(),
       numOfHackathons: faker.helpers.arrayElement(numOfHackathons.enumValues),
 
-      ideaToLife: faker.lorem.paragraphs(2),
-      interestsAndPassions: faker.lorem.paragraphs(2),
-      technologyInspires: faker.lorem.paragraphs(2),
+      question1: faker.lorem.paragraphs(2),
+      question2: faker.lorem.paragraphs(2),
+      question3: faker.lorem.paragraphs(2),
 
       resumeLink: faker.internet.url(),
       githubLink: faker.internet.url(),
@@ -83,6 +67,25 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       sexualOrientation: faker.helpers.arrayElement(
         sexualOrientation.enumValues,
       ),
+    };
+  }
+
+  createRandom() {
+    const user = this.users.pop();
+    if (user === undefined) {
+      throw new Error("There were no more users found.");
+    }
+
+    const application = ApplicationSeeder.createRandomWithoutUser();
+
+    const names = user.name?.split(" ");
+    const [firstName, lastName] = [names?.at(0), names?.at(-1)];
+
+    return {
+      ...application,
+      userId: user.id,
+      firstName,
+      lastName,
     };
   }
 }

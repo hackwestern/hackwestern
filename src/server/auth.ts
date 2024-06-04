@@ -1,6 +1,7 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { type GetServerSidePropsContext } from "next";
 import {
+  type Session,
   getServerSession,
   type DefaultSession,
   type NextAuthOptions,
@@ -10,8 +11,9 @@ import GithubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 
 import { env } from "~/env";
-import { db } from "~/server/db";
-import { createTable } from "~/server/db/schema";
+import { type Database, db } from "~/server/db";
+import { createTable, users } from "~/server/db/schema";
+import { UserSeeder } from "./db/seed/userSeeder";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -82,3 +84,13 @@ export const getServerAuthSession = (ctx: {
 }) => {
   return getServerSession(ctx.req, ctx.res, authOptions);
 };
+
+export async function mockSession(db: Database): Promise<Session> {
+  const user = new UserSeeder().createRandom();
+  await db.insert(users).values(user).returning();
+
+  return {
+    user,
+    expires: new Date(Date.now() + 10).toISOString(),
+  };
+}

@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import bcrypt from "bcrypt";
-// Imports for reset
 import { randomBytes } from "crypto";
 import { db } from "~/server/db";
 import { mailjet } from "~/server/mail";
@@ -10,7 +9,6 @@ import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { resetTemplate } from "./password-reset-template";
 import { authOptions } from "~/server/auth";
-import { Adapter } from "next-auth/adapters";
 
 const TOKEN_EXPIRY = 1000 * 60 * 10; // 10 minutes
 
@@ -74,7 +72,6 @@ export const loginRouter = createTRPCRouter({
           },
         ],
       });
-      // TODO: send email with reset link
 
       emailReq
         .then((result) => {

@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { z } from "zod";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
+import { createCsvFile } from "~/utils/csv";
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,7 +16,9 @@ export default async function handler(
   }
 }
 
-const formatQuerySchema = z.enum(["json", "csv"]);
+const paramsSchema = z.object({
+  format: z.enum(["json", "csv"]),
+});
 
 async function GET(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -35,15 +38,13 @@ async function GET(req: NextApiRequest, res: NextApiResponse) {
       return res.status(403).json({ message: "Not an organizer. Forbidden." });
     }
 
-    const format = formatQuerySchema.parse(req.query?.format);
-
-    if (format === "json") {
-      return jsonHandler(res);
-    }
+    const format = paramsSchema.parse(req.query).format;
 
     if (format === "csv") {
       return csvHandler(res);
     }
+
+    return jsonHandler(res);
   } catch (e) {
     console.log(
       `Something went wrong while responding to api/preregistration/all`,
@@ -63,12 +64,7 @@ const FILE_NAME = "preregistrations.csv";
 
 async function csvHandler(res: NextApiResponse) {
   const preregistrations = await db.query.preregistrations.findMany();
-
-  const columnNames = Object.keys(preregistrations).join(", ") + "\n";
-  const fileString = preregistrations.reduce((acc, pr) => {
-    acc += Object.values(pr).join(", ") + "\n";
-    return acc;
-  }, columnNames);
+  const fileString = createCsvFile(preregistrations);
 
   res.setHeader("Content-disposition", `attachment; filename=${FILE_NAME}`);
   res.setHeader("Content-Type", "text/csv; charset=UTF-8");
