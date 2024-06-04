@@ -6,7 +6,7 @@ import { api } from "~/utils/api";
 
 export default function Home() {
   const hello = api.example.hello.useQuery({ text: "from tRPC" });
-  const reset = api.login.reset.useMutation();
+  const reset = api.auth.reset.useMutation();
 
   return (
     <>
