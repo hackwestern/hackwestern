@@ -1,7 +1,7 @@
 name: Prettify
 on:
   pull_request:
-    branches: [main]
+    types: [review_requested]
 jobs:
   prettier:
     runs-on: ubuntu-latest
