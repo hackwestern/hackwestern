@@ -10,7 +10,6 @@ import {
   smallint,
   text,
   timestamp,
-  uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
@@ -22,7 +21,7 @@ import { type AdapterAccount } from "next-auth/adapters";
  *
  * @see https://orm.drizzle.team/kit-docs/config-reference#tablesfilters
  */
-const TABLE_PREFIX = "hackwestern2024";
+const TABLE_PREFIX = "hw11";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -145,15 +144,82 @@ export const preregistrations = createTable("preregistration", {
 });
 
 /**
+ * The table for storing organizer reviews of an application, to be used for the
+ * application review portal.
+ */
+export const reviews = createTable(
+  "review",
+  {
+    reviewerUserId: varchar("reviewer_user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    applicantUserId: varchar("applicant_user_id", { length: 255 })
+      .notNull()
+      .references(() => applications.userId)
+      .references(() => users.id),
+    createdAt: timestamp("created_at", {
+      mode: "date",
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", {
+      mode: "date",
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    question1Rating: smallint("question1_rating").default(0),
+    question2Rating: smallint("question2_rating").default(0),
+    question3Rating: smallint("question3_rating").default(0),
+    resumeBonus: smallint("resume_bonus").default(0),
+    githubBonus: smallint("github_bonus").default(0),
+    linkedinBonus: smallint("linkedin_bonus").default(0),
+    otherlinkBonus: smallint("otherlink_bonus").default(0),
+    referral: boolean("referall"),
+  },
+  (review) => {
+    return {
+      pk: primaryKey({
+        columns: [review.reviewerUserId, review.applicantUserId],
+      }),
+      applicantIdx: index("applicant_user_id_idx").on(review.applicantUserId),
+    };
+  },
+);
+
+/**
+ * Reviews have a many-to-one relationship with users for reviewer and applicant.
+ * ie. a review only has one reviewer and one applicant user.
+ *
+ * Reviews have a many-to-one relationship with applications.
+ * ie. a review is for one application, but an application can have many reveiws.
+ */
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  reviewer: one(users, {
+    fields: [reviews.reviewerUserId],
+    references: [users.id],
+  }),
+  applicant: one(users, {
+    fields: [reviews.applicantUserId],
+    references: [users.id],
+  }),
+  application: one(applications, {
+    fields: [reviews.applicantUserId],
+    references: [applications.userId],
+  }),
+}));
+
+/**
  * The table for storing hacker applications while the hacker is completing the application,
  * and during the review process.
  */
 export const applications = createTable(
   "application",
   {
-    id: uuid("id").defaultRandom().primaryKey().notNull(),
     userId: varchar("user_id", { length: 255 })
       .notNull()
+      .primaryKey()
       .references(() => users.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at", {
       mode: "date",
@@ -186,9 +252,9 @@ export const applications = createTable(
       .notNull(),
 
     // Your Story
-    ideaToLife: text("idea_to_life"),
-    interestsAndPassions: text("interest_and_passions"),
-    technologyInspires: text("technology_inspires"),
+    question1: text("question1"),
+    question2: text("question2"),
+    question3: text("question3"),
 
     // Profile Links
     resumeLink: varchar("resume_link", { length: 2048 }),
@@ -215,8 +281,8 @@ export const applications = createTable(
     ethnicity: ethnicity("ethnicity"),
     sexualOrientation: sexualOrientation("sexual_orientation"),
   },
-  (table) => ({
-    userIdIdx: index("user_id_idx").on(table.userId),
+  (application) => ({
+    userIdIdx: index("user_id_idx").on(application.userId),
   }),
 );
 
@@ -224,16 +290,27 @@ export const applications = createTable(
  * Applications have a one-to-one relationship with Users,
  * ie. A user can only make one application, and an application can only be associated
  * with one user.
+ *
+ * Applications have a one-to-many relationship with Reviews,
+ * ie. An application can have many reviews, but a review is only for one application.
  */
-export const applicationsRelation = relations(applications, ({ one }) => ({
-  users: one(users, { fields: [applications.userId], references: [users.id] }),
-}));
+export const applicationsRelations = relations(
+  applications,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [applications.userId],
+      references: [users.id],
+    }),
+    reviews: many(reviews),
+  }),
+);
 
 export const userType = pgEnum("user_type", ["hacker", "organizer", "sponsor"]);
 
 export const users = createTable("user", {
   id: varchar("id", { length: 255 }).notNull().primaryKey(),
   name: varchar("name", { length: 255 }),
+  password: varchar("password", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull(),
   emailVerified: timestamp("emailVerified", {
     mode: "date",
@@ -242,8 +319,9 @@ export const users = createTable("user", {
   type: userType("type").default("hacker"),
 });
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   accounts: many(accounts),
+  application: one(applications),
 }));
 
 export const accounts = createTable(

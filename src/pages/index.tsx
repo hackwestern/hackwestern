@@ -6,7 +6,7 @@ import { api } from "~/utils/api";
 
 export default function Home() {
   const hello = api.example.hello.useQuery({ text: "from tRPC" });
-  const reset = api.login.reset.useMutation();
+  const reset = api.auth.reset.useMutation();
 
   return (
     <>
@@ -28,11 +28,13 @@ export default function Home() {
               {hello.data ? hello.data.greeting : "Loading tRPC query..."}
             </p>
             <AuthShowcase />
-            <PreregistrationButton />
+            <PreregistrationsButton />
+            <ApplicationsButton />
             <div
               onClick={() => {
                 reset.mutate({ email: "oscar45697@gmail.com" });
                 reset.mutate({ email: "hunter.chen7@pm.me" });
+                reset.mutate({ email: "basokanthan@gmail.com" });
               }}
               className="m-2 rounded bg-white p-2"
             >
@@ -47,9 +49,24 @@ export default function Home() {
 
 /**
  * Downloads the CSV if authorized as an organizer.
+ * @see ./api/application/all.ts
+ */
+function ApplicationsButton() {
+  return (
+    <Link
+      href="/api/application/all?format=csv&mlh"
+      className="rounded bg-white p-1"
+    >
+      Export Applications
+    </Link>
+  );
+}
+
+/**
+ * Downloads the CSV if authorized as an organizer.
  * @see ./api/preregistration/all.ts
  */
-function PreregistrationButton() {
+function PreregistrationsButton() {
   return (
     <Link
       href="/api/preregistration/all?format=csv"
