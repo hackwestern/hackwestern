@@ -1,7 +1,8 @@
 import NextAuth from "next-auth";
 import { NextAuthOptions } from "next-auth";
-import { authOptions } from "~/server/auth";
-import { CredentialsProvider } from "next-auth/providers/credentials";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { authRouter } from "~/server/api/routers/auth";
+import { appRouter } from "~/server/api/root";
 
 const authOptions: NextAuthOptions = {
   providers: [
@@ -16,14 +17,22 @@ const authOptions: NextAuthOptions = {
           placeholder: "Password",
         },
       },
-      authorize: async (credentials) => {
-        const { username, password } = credentials ?? {};
+      async authorize(credentials, req) {
+        // Add logic here to look up the user from the credentials supplied
+        if (!credentials) {
+          return null;
+        }
+        const { username: email, password } = credentials;
 
-        // Here you should add logic to verify username and password
-        // For example, you could check against a database or an external API
-        if (username === "admin" && password === "password") {
-          return { id: 1, name: "Admin", email: "admin@example.com" };
-        } else {
+        try {
+          const result = await authRouter.login({ email, password });
+          if (result.success) {
+            return result.user;
+          } else {
+            return null;
+          }
+        } catch (error) {
+          console.error("Login error", error);
           return null;
         }
       },

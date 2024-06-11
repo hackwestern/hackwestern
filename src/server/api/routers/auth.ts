@@ -136,4 +136,55 @@ export const authRouter = createTRPCRouter({
             });
       }
     }),
+  login: publicProcedure
+    .input(z.object({ email: z.string(), password: z.string() }))
+    .mutation(async ({ input }) => {
+      try {
+        const user = await db.query.users.findFirst({
+          where: eq(users.email, input.email),
+        });
+
+        if (!user) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "User not found",
+          });
+        }
+
+        // Typescript lint check
+        if (!user.password) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Password not set",
+          });
+        }
+
+        const passwordMatch = await bcrypt.compare(
+          input.password,
+          user.password,
+        );
+
+        if (!passwordMatch) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Invalid password",
+          });
+        }
+
+        return {
+          success: true,
+          user: {
+            id: user.id,
+            email: user.email,
+          },
+        };
+      } catch (error) {
+        throw error instanceof TRPCError
+          ? error
+          : new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Failed to login" + JSON.stringify(error),
+            });
+      }
+    }),
 });
