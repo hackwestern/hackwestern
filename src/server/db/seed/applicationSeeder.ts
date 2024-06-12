@@ -2,6 +2,7 @@ import { faker } from "@faker-js/faker";
 import {
   applicationStatus,
   applications,
+  countrySelection,
   ethnicity,
   gender,
   levelOfStudy,
@@ -34,9 +35,9 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
 
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
-      age: faker.date.birthdate({ mode: "age" }),
+      age: faker.number.int({ min: 17, max: 65 }),
       phoneNumber: faker.phone.number(),
-      countryOfResidence: Number(faker.location.countryCode("numeric")),
+      countryOfResidence: faker.helpers.arrayElement(countrySelection.enumValues),
 
       school: faker.helpers.arrayElement(schools),
       levelOfStudy: faker.helpers.arrayElement(levelOfStudy.enumValues),
