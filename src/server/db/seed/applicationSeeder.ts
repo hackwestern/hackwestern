@@ -12,7 +12,7 @@ import {
 import { USERS } from "./userSeeder";
 import { type UserPartial, type Seeder } from ".";
 import { applicationSubmitSchema } from "~/server/api/routers/application";
-import { z } from "zod";
+import type { z } from "zod";
 
 const schools = [
   "Western University",

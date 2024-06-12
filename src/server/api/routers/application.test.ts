@@ -74,6 +74,7 @@ describe.sequential("application.save", async () => {
     assert(!!result);
 
     const { createdAt, updatedAt, ...got } = result;
+    void createdAt, updatedAt;
 
     expect(got).toEqual(want);
   });
@@ -94,6 +95,7 @@ describe.sequential("application.save", async () => {
     assert(!!result);
 
     const { createdAt, updatedAt, ...got } = result;
+    void createdAt, updatedAt;
 
     expect(got).toEqual(want);
   });
@@ -112,6 +114,8 @@ describe.sequential("application.save", async () => {
     assert(!!result);
 
     const { createdAt, updatedAt, ...got } = result;
+    void createdAt, updatedAt;
+
     expect(got).toEqual(want);
   });
 });
