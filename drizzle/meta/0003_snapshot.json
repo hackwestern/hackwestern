@@ -1,0 +1,839 @@
+{
+  "id": "e972b245-1448-4c72-b3c5-0104054bd9f7",
+  "prevId": "1a1a2c25-1776-4e91-ba4f-95e91e1cf2e1",
+  "version": "6",
+  "dialect": "postgresql",
+  "tables": {
+    "public.hw11_account": {
+      "name": "hw11_account",
+      "schema": "",
+      "columns": {
+        "userId": {
+          "name": "userId",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "providerAccountId": {
+          "name": "providerAccountId",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_type": {
+          "name": "token_type",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "session_state": {
+          "name": "session_state",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "account_userId_idx": {
+          "name": "account_userId_idx",
+          "columns": [
+            "userId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "hw11_account_userId_hw11_user_id_fk": {
+          "name": "hw11_account_userId_hw11_user_id_fk",
+          "tableFrom": "hw11_account",
+          "tableTo": "hw11_user",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "hw11_account_provider_providerAccountId_pk": {
+          "name": "hw11_account_provider_providerAccountId_pk",
+          "columns": [
+            "provider",
+            "providerAccountId"
+          ]
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "public.hw11_application": {
+      "name": "hw11_application",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "status": {
+          "name": "status",
+          "type": "application_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'IN_PROGRESS'"
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "age": {
+          "name": "age",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone_number": {
+          "name": "phone_number",
+          "type": "varchar(42)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "country_of_residence": {
+          "name": "country_of_residence",
+          "type": "country",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "level_of_study": {
+          "name": "level_of_study",
+          "type": "level_of_study",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "major": {
+          "name": "major",
+          "type": "major",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attended": {
+          "name": "attended",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "num_of_hackathons": {
+          "name": "num_of_hackathons",
+          "type": "num_of_hackathons",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "question1": {
+          "name": "question1",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "question2": {
+          "name": "question2",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "question3": {
+          "name": "question3",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resume_link": {
+          "name": "resume_link",
+          "type": "varchar(2048)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "github_link": {
+          "name": "github_link",
+          "type": "varchar(2048)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "linkedin_link": {
+          "name": "linkedin_link",
+          "type": "varchar(2048)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "other_link": {
+          "name": "other_link",
+          "type": "varchar(2048)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agree_code_of_conduct": {
+          "name": "agree_code_of_conduct",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "agree_share_with_sponsors": {
+          "name": "agree_share_with_sponsors",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "agree_share_with_mlh": {
+          "name": "agree_share_with_mlh",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "agree_emails_from_mlh": {
+          "name": "agree_emails_from_mlh",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "agree_will_be_18": {
+          "name": "agree_will_be_18",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "underrep_group": {
+          "name": "underrep_group",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gender": {
+          "name": "gender",
+          "type": "gender",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ethnicity": {
+          "name": "ethnicity",
+          "type": "race/ethnicity",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sexual_orientation": {
+          "name": "sexual_orientation",
+          "type": "sexual_orientation",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "user_id_idx": {
+          "name": "user_id_idx",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "hw11_application_user_id_hw11_user_id_fk": {
+          "name": "hw11_application_user_id_hw11_user_id_fk",
+          "tableFrom": "hw11_application",
+          "tableTo": "hw11_user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.hw11_preregistration": {
+      "name": "hw11_preregistration",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "hw11_preregistration_email_unique": {
+          "name": "hw11_preregistration_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      }
+    },
+    "public.hw11_resetPasswordToken": {
+      "name": "hw11_resetPasswordToken",
+      "schema": "",
+      "columns": {
+        "userId": {
+          "name": "userId",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires": {
+          "name": "expires",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "hw11_resetPasswordToken_userId_hw11_user_id_fk": {
+          "name": "hw11_resetPasswordToken_userId_hw11_user_id_fk",
+          "tableFrom": "hw11_resetPasswordToken",
+          "tableTo": "hw11_user",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.hw11_review": {
+      "name": "hw11_review",
+      "schema": "",
+      "columns": {
+        "reviewer_user_id": {
+          "name": "reviewer_user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "applicant_user_id": {
+          "name": "applicant_user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "question1_rating": {
+          "name": "question1_rating",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "question2_rating": {
+          "name": "question2_rating",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "question3_rating": {
+          "name": "question3_rating",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "resume_bonus": {
+          "name": "resume_bonus",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "github_bonus": {
+          "name": "github_bonus",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "linkedin_bonus": {
+          "name": "linkedin_bonus",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "otherlink_bonus": {
+          "name": "otherlink_bonus",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "referall": {
+          "name": "referall",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "applicant_user_id_idx": {
+          "name": "applicant_user_id_idx",
+          "columns": [
+            "applicant_user_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "hw11_review_reviewer_user_id_hw11_user_id_fk": {
+          "name": "hw11_review_reviewer_user_id_hw11_user_id_fk",
+          "tableFrom": "hw11_review",
+          "tableTo": "hw11_user",
+          "columnsFrom": [
+            "reviewer_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "hw11_review_applicant_user_id_hw11_application_user_id_fk": {
+          "name": "hw11_review_applicant_user_id_hw11_application_user_id_fk",
+          "tableFrom": "hw11_review",
+          "tableTo": "hw11_application",
+          "columnsFrom": [
+            "applicant_user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "hw11_review_applicant_user_id_hw11_user_id_fk": {
+          "name": "hw11_review_applicant_user_id_hw11_user_id_fk",
+          "tableFrom": "hw11_review",
+          "tableTo": "hw11_user",
+          "columnsFrom": [
+            "applicant_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "hw11_review_reviewer_user_id_applicant_user_id_pk": {
+          "name": "hw11_review_reviewer_user_id_applicant_user_id_pk",
+          "columns": [
+            "reviewer_user_id",
+            "applicant_user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "public.hw11_session": {
+      "name": "hw11_session",
+      "schema": "",
+      "columns": {
+        "sessionToken": {
+          "name": "sessionToken",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires": {
+          "name": "expires",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "session_userId_idx": {
+          "name": "session_userId_idx",
+          "columns": [
+            "userId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "hw11_session_userId_hw11_user_id_fk": {
+          "name": "hw11_session_userId_hw11_user_id_fk",
+          "tableFrom": "hw11_session",
+          "tableTo": "hw11_user",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.hw11_user": {
+      "name": "hw11_user",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password": {
+          "name": "password",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "emailVerified": {
+          "name": "emailVerified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "image": {
+          "name": "image",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "user_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'hacker'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.hw11_verificationToken": {
+      "name": "hw11_verificationToken",
+      "schema": "",
+      "columns": {
+        "identifier": {
+          "name": "identifier",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires": {
+          "name": "expires",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "hw11_verificationToken_identifier_token_pk": {
+          "name": "hw11_verificationToken_identifier_token_pk",
+          "columns": [
+            "identifier",
+            "token"
+          ]
+        }
+      },
+      "uniqueConstraints": {}
+    }
+  },
+  "enums": {
+    "public.application_status": {
+      "name": "application_status",
+      "schema": "public",
+      "values": [
+        "IN_PROGRESS",
+        "PENDING_REVIEW",
+        "IN_REVIEW",
+        "ACCEPTED",
+        "REJECTED",
+        "WAITLISTED",
+        "DECLINED"
+      ]
+    },
+    "public.country": {
+      "name": "country",
+      "schema": "public",
+      "values": [
+        "Canada",
+        "United States",
+        "Other"
+      ]
+    },
+    "public.race/ethnicity": {
+      "name": "race/ethnicity",
+      "schema": "public",
+      "values": [
+        "American Indian or Alaskan Native",
+        "Asian / Pacific Islander",
+        "Black or African American",
+        "Hispanic",
+        "White / Caucasian",
+        "Multiple ethnicity / Other"
+      ]
+    },
+    "public.gender": {
+      "name": "gender",
+      "schema": "public",
+      "values": [
+        "Female",
+        "Male",
+        "Non-Binary",
+        "Other"
+      ]
+    },
+    "public.level_of_study": {
+      "name": "level_of_study",
+      "schema": "public",
+      "values": [
+        "Less than Secondary / High School",
+        "Secondary / High School",
+        "Undergraduate University (2 year - community college etc.)",
+        "Undergraduate University (3+ year)",
+        "Graduate University (Masters, Professional, Doctoral, etc)",
+        "Code School / Bootcamp",
+        "Other Vocational / Trade Program or Apprenticeship",
+        "Post Doctorate",
+        "Other",
+        "Not currently a student",
+        "Prefer not to answer"
+      ]
+    },
+    "public.major": {
+      "name": "major",
+      "schema": "public",
+      "values": [
+        "Computer Science",
+        "Computer Engineering",
+        "Software Engineering",
+        "Other Engineering Discipline",
+        "Information Systems",
+        "Information Technology",
+        "System Administration",
+        "Natural Sciences (Biology, Chemistry, Physics, etc.)",
+        "Mathematics/Statistics",
+        "Web Development/Web Design",
+        "Business Administration",
+        "Humanities",
+        "Social Science",
+        "Fine Arts/Performing Arts",
+        "Other"
+      ]
+    },
+    "public.num_of_hackathons": {
+      "name": "num_of_hackathons",
+      "schema": "public",
+      "values": [
+        "0",
+        "1-3",
+        "4-6",
+        "7+"
+      ]
+    },
+    "public.sexual_orientation": {
+      "name": "sexual_orientation",
+      "schema": "public",
+      "values": [
+        "Asexual / Aromantic",
+        "Pansexual, Demisexual or Omnisexual",
+        "Bisexual",
+        "Queer",
+        "Gay / Lesbian",
+        "Heterosexual / Straight",
+        "Other"
+      ]
+    },
+    "public.user_type": {
+      "name": "user_type",
+      "schema": "public",
+      "values": [
+        "hacker",
+        "organizer",
+        "sponsor"
+      ]
+    }
+  },
+  "schemas": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
