@@ -278,7 +278,7 @@ export const applications = createTable(
     agreeShareWithSponsors: boolean("agree_share_with_sponsors") // Optional
       .default(false)
       .notNull(),
-    agreeShareWithMLH: boolean("agree_share_with_mlh") // Optional
+    agreeShareWithMLH: boolean("agree_share_with_mlh") // Need
       .default(false)
       .notNull(), 
     agreeEmailsFromMLH: boolean("agree_emails_from_mlh") // Optional
