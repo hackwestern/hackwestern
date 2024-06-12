@@ -34,7 +34,7 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
 
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
-      dateOfBirth: faker.date.birthdate(),
+      age: faker.date.birthdate({ mode: "age" }),
       phoneNumber: faker.phone.number(),
       countryOfResidence: Number(faker.location.countryCode("numeric")),
 

@@ -5,10 +5,13 @@ import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { applications } from "~/server/db/schema";
 import { createInsertSchema } from "drizzle-zod";
 
-const applicationSaveSchema = createInsertSchema(applications)
+const applicationSaveSchema = createInsertSchema(applications, {
+  age: (schema) => schema.age.min(18),
+  })
   .omit({
     createdAt: true,
     updatedAt: true,
+    status: true,
   })
   .required({ userId: true });
 
