@@ -35,8 +35,7 @@ describe("application.get", async () => {
     const result = await caller.application.get();
     assert(!!result);
 
-    const { createdAt, updatedAt, ...got } = result;
-    void createdAt, updatedAt;
+    const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
 
     expect(got).toEqual(want);
   });
@@ -73,8 +72,7 @@ describe.sequential("application.save", async () => {
     const result = await caller.application.save(application);
     assert(!!result);
 
-    const { createdAt, updatedAt, ...got } = result;
-    void createdAt, updatedAt;
+    const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
 
     expect(got).toEqual(want);
   });
@@ -94,8 +92,7 @@ describe.sequential("application.save", async () => {
     const result = await caller.application.save(updatedApplication);
     assert(!!result);
 
-    const { createdAt, updatedAt, ...got } = result;
-    void createdAt, updatedAt;
+    const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
 
     expect(got).toEqual(want);
   });
@@ -113,8 +110,7 @@ describe.sequential("application.save", async () => {
     const result = await caller.application.save(completeApplication);
     assert(!!result);
 
-    const { createdAt, updatedAt, ...got } = result;
-    void createdAt, updatedAt;
+    const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
 
     expect(got).toEqual(want);
   });
