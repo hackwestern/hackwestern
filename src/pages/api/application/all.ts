@@ -62,7 +62,7 @@ function getMlhApplications() {
     columns: {
       firstName: true,
       lastName: true,
-      dateOfBirth: true,
+      age: true,
       phoneNumber: true,
       school: true,
       levelOfStudy: true,
