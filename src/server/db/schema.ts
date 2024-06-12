@@ -127,8 +127,8 @@ export const sexualOrientation = pgEnum("sexual_orientation", [
   "Other",
 ]);
 
-/** 
- * Country of residence for the applicant. 
+/**
+ * Country of residence for the applicant.
  */
 export const countrySelection = pgEnum("country", [
   "Canada",
@@ -280,13 +280,13 @@ export const applications = createTable(
       .notNull(),
     agreeShareWithMLH: boolean("agree_share_with_mlh") // Need
       .default(false)
-      .notNull(), 
+      .notNull(),
     agreeEmailsFromMLH: boolean("agree_emails_from_mlh") // Optional
       .default(false)
       .notNull(),
     agreeWillBe18: boolean("agree_will_be_18") // Need
       .default(false)
-      .notNull(), 
+      .notNull(),
 
     // Optional Questions
     underrepGroup: boolean("underrep_group"),
