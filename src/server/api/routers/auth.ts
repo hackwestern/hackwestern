@@ -112,6 +112,8 @@ export const authRouter = createTRPCRouter({
             message: "Adapter not found",
           });
         }
+
+        // TODO: verify email
         const createdUser = await adapter.createUser({
           email: input.email,
           emailVerified: new Date(),
