@@ -136,14 +136,6 @@ export const authRouter = createTRPCRouter({
           success: true,
         };
       } catch (error) {
-        if (error instanceof z.ZodError) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Input validation error',
-            cause: error,
-          });
-        }
-
         throw error instanceof TRPCError
           ? error
           : new TRPCError({ 
