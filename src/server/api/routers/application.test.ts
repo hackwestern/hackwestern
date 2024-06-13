@@ -1,4 +1,4 @@
-import { assert, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, assert, describe, expect, test } from "vitest";
 import { faker } from "@faker-js/faker";
 import { type Session } from "next-auth";
 import { eq } from "drizzle-orm";
@@ -32,24 +32,17 @@ describe("application.get", async () => {
     const want = createRandomApplication(session);
     await db.insert(applications).values(want);
 
-    const result = await caller.application.save(want);
+    const result = await caller.application.get();
     assert(!!result);
 
-    const { createdAt, updatedAt, ...got } = result;
-    void createdAt, updatedAt;
+    const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
 
-    expect({
-      ...got,
-      dateOfBirth: got.dateOfBirth.getDate(),
-    }).toEqual({
-      ...want,
-      dateOfBirth: want.dateOfBirth.getDate(),
-    });
+    expect(got).toEqual(want);
   });
 });
 
 describe.sequential("application.save", async () => {
-  beforeEach(async () => {
+  afterEach(async () => {
     await db
       .delete(applications)
       .where(eq(applications.userId, session.user.id));
@@ -69,49 +62,57 @@ describe.sequential("application.save", async () => {
   test("creates a new application when it does not exist", async () => {
     await expect(caller.application.get()).rejects.toThrowError("not found");
 
+    const application = createRandomApplication(session);
     const want = {
-      ...createRandomApplication(session),
+      ...application,
+      githubLink: `https://github.com/${application.githubLink}`,
+      linkedInLink: `https://linkedin.com/in/${application.linkedInLink}`,
     };
 
-    const result = await caller.application.save(want);
+    const result = await caller.application.save(application);
     assert(!!result);
 
-    const { createdAt, updatedAt, ...got } = result;
-    void createdAt, updatedAt;
+    const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
 
-    expect({
-      ...got,
-      dateOfBirth: got.dateOfBirth.getDate(),
-    }).toEqual({
-      ...want,
-      dateOfBirth: want.dateOfBirth.getDate(),
-    });
+    expect(got).toEqual(want);
   });
 
   test("updates the application when it does exist", async () => {
-    const application = {
-      ...createRandomApplication(session),
-    };
+    const application = createRandomApplication(session);
 
     await caller.application.save(application);
+    const updatedApplication = createRandomApplication(session);
 
     const want = {
-      ...createRandomApplication(session),
+      ...updatedApplication,
+      githubLink: `https://github.com/${updatedApplication.githubLink}`,
+      linkedInLink: `https://linkedin.com/in/${updatedApplication.linkedInLink}`,
     };
 
-    const result = await caller.application.save(want);
+    const result = await caller.application.save(updatedApplication);
     assert(!!result);
 
-    const { createdAt, updatedAt, ...got } = result;
-    void createdAt, updatedAt;
+    const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
 
-    expect({
-      ...got,
-      dateOfBirth: got.dateOfBirth.getDate(),
-    }).toEqual({
-      ...want,
-      dateOfBirth: want.dateOfBirth.getDate(),
-    });
+    expect(got).toEqual(want);
+  });
+
+  test("complete application changes status to PENDING_REVIEW", async () => {
+    const completeApplication = createCompleteApplication(session);
+
+    const want = {
+      ...completeApplication,
+      githubLink: `https://github.com/${completeApplication.githubLink}`,
+      linkedInLink: `https://linkedin.com/in/${completeApplication.linkedInLink}`,
+      status: "PENDING_REVIEW",
+    };
+
+    const result = await caller.application.save(completeApplication);
+    assert(!!result);
+
+    const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
+
+    expect(got).toEqual(want);
   });
 });
 
@@ -125,6 +126,22 @@ function createRandomApplication(session: Session) {
 
   return {
     ...ApplicationSeeder.createRandomWithoutUser(),
+    userId,
+    firstName,
+    lastName,
+  };
+}
+
+function createCompleteApplication(session: Session) {
+  const names = session.user.name?.split(" ");
+  const [userId, firstName, lastName] = [
+    session.user.id,
+    names?.at(0),
+    names?.at(-1),
+  ];
+
+  return {
+    ...ApplicationSeeder.createCompleteWithoutUser(),
     userId,
     firstName,
     lastName,
