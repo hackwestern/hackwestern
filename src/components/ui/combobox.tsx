@@ -30,7 +30,7 @@ export function Combobox(props: {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between"
+          className="w-[200px] justify-between overflow-hidden text-ellipsis"
         >
           {value
             ? options.find((option) => option.value === value)?.label
