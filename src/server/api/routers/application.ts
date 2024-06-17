@@ -79,7 +79,7 @@ export const applicationRouter = createTRPCRouter({
         const isCompleteApplication =
           applicationSubmitSchema.safeParse(applicationData).success;
 
-        const savedApplication = await ctx.db
+        await ctx.db
           .insert(applications)
           .values({
             ...applicationData,
@@ -97,9 +97,7 @@ export const applicationRouter = createTRPCRouter({
               linkedInLink: `https://linkedin.com/in/${applicationData.linkedInLink}`,
               status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
             },
-          })
-          .returning();
-        return savedApplication[0];
+          });
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
