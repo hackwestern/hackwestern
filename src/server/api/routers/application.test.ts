@@ -11,6 +11,7 @@ import { mockSession } from "~/server/auth";
 import { applications } from "~/server/db/schema";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { applicationSubmitSchema } from "~/schemas/application";
+import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
 
 const session = await mockSession(db);
 
@@ -131,8 +132,8 @@ function createRandomApplication(session: Session) {
     userId,
     firstName,
     lastName,
-    githubLink: `https://github.com/${application.githubLink}`,
-    linkedInLink: `https://linkedin.com/in/${application.linkedInLink}`,
+    githubLink: `${GITHUB_URL}${application.githubLink}`,
+    linkedInLink: `${LINKEDIN_URL}${application.linkedInLink}`,
   };
 }
 
@@ -151,8 +152,8 @@ function createCompleteApplication(session: Session) {
     userId,
     firstName,
     lastName,
-    githubLink: `https://github.com/${application.githubLink}`,
-    linkedInLink: `https://linkedin.com/in/${application.linkedInLink}`,
+    githubLink: `${GITHUB_URL}${application.githubLink}`,
+    linkedInLink: `${LINKEDIN_URL}${application.linkedInLink}`,
     agreeCodeOfConduct: true,
     agreeShareWithSponsors: true,
     agreeShareWithMLH: true,

@@ -7,6 +7,7 @@ import {
   applicationSaveSchema,
   applicationSubmitSchema,
 } from "~/schemas/application";
+import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure.query(async ({ ctx }) => {
@@ -46,8 +47,8 @@ export const applicationRouter = createTRPCRouter({
           .insert(applications)
           .values({
             ...applicationData,
-            githubLink: `https://github.com/${applicationData.githubLink}`,
-            linkedInLink: `https://linkedin.com/in/${applicationData.linkedInLink}`,
+            githubLink: `${GITHUB_URL}${applicationData.githubLink}`,
+            linkedInLink: `${LINKEDIN_URL}${applicationData.linkedInLink}`,
             userId,
             status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
           })
@@ -56,8 +57,8 @@ export const applicationRouter = createTRPCRouter({
             set: {
               ...applicationData,
               updatedAt: new Date(),
-              githubLink: `https://github.com/${applicationData.githubLink}`,
-              linkedInLink: `https://linkedin.com/in/${applicationData.linkedInLink}`,
+              githubLink: `${GITHUB_URL}${applicationData.githubLink}`,
+              linkedInLink: `${LINKEDIN_URL}${applicationData.linkedInLink}`,
               status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
             },
           });
