@@ -1,5 +1,4 @@
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { applications } from "~/server/db/schema";
@@ -13,17 +12,15 @@ export const applicationRouter = createTRPCRouter({
   get: protectedProcedure.query(async ({ ctx }) => {
     try {
       const userId = ctx.session.user.id;
-      const application = await db
-        .select()
-        .from(applications)
-        .where(eq(applications.userId, userId))
-        .limit(1);
+      const application = await db.query.applications.findFirst({
+        where: (schema, { eq }) => eq(schema.userId, userId),
+      });
 
-      if (!application.length) {
-        return undefined;
-      }
-
-      return application[0];
+      return {
+        ...application,
+        githubLink: application?.githubLink?.substring(19),
+        linkedInLink: application?.linkedInLink?.substring(24),
+      };
     } catch (error) {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
@@ -45,16 +42,8 @@ export const applicationRouter = createTRPCRouter({
           .insert(applications)
           .values({
             ...applicationData,
-            githubLink: !applicationData.githubLink?.startsWith(
-              "https://github.com",
-            )
-              ? `https://github.com/${applicationData.githubLink}`
-              : undefined,
-            linkedInLink: !applicationData.linkedInLink?.startsWith(
-              "https://github.com",
-            )
-              ? `https://linkedin.com/in/${applicationData.linkedInLink}`
-              : undefined,
+            githubLink: `https://github.com/${applicationData.githubLink}`,
+            linkedInLink: `https://linkedin.com/in/${applicationData.linkedInLink}`,
             userId,
             status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
           })

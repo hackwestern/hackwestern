@@ -21,12 +21,6 @@ export function Combobox(props: {
   const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState(props.value);
 
-  console.log(props.value);
-
-  React.useEffect(() => {
-    console.log({ value, propValue: props.value });
-  }, [value, props.value]);
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -55,7 +49,7 @@ export function Combobox(props: {
                   key={option.value}
                   value={option.value}
                   onSelect={(currentValue) => {
-                    setValue(currentValue === value ? "" : currentValue);
+                    setValue(currentValue);
                     setOpen(false);
                   }}
                 >
