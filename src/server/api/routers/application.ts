@@ -51,8 +51,16 @@ export const applicationRouter = createTRPCRouter({
           .insert(applications)
           .values({
             ...applicationData,
-            githubLink: `https://github.com/${applicationData.githubLink}`,
-            linkedInLink: `https://linkedin.com/in/${applicationData.linkedInLink}`,
+            githubLink: !applicationData.githubLink?.startsWith(
+              "https://github.com",
+            )
+              ? `https://github.com/${applicationData.githubLink}`
+              : undefined,
+            linkedInLink: !applicationData.linkedInLink?.startsWith(
+              "https://github.com",
+            )
+              ? `https://linkedin.com/in/${applicationData.linkedInLink}`
+              : undefined,
             userId,
             status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
           })

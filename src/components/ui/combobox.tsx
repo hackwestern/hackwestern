@@ -21,7 +21,9 @@ export function Combobox(props: {
   const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState(props.value);
 
-  const { options } = props;
+  React.useEffect(() => {
+    console.log({ value, propValue: props.value });
+  }, [value]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -30,21 +32,27 @@ export function Combobox(props: {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between overflow-hidden text-ellipsis"
+          className="flex w-full flex-row justify-between"
         >
-          {value
-            ? options.find((option) => option.value === value)?.label
-            : "Select option..."}
+          <span className="overflow-hidden text-ellipsis">
+            {value
+              ? props.options.find((option) => option.value === value)?.label
+              : "Select option..."}
+          </span>
           <CaretSortIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0">
-        <Command value={props.value} onValueChange={props.onChange}>
+        <Command
+          defaultValue={props.value}
+          value={value}
+          onValueChange={props.onChange}
+        >
           <CommandInput placeholder="Search option..." className="h-9" />
           <CommandList>
             <CommandEmpty>No option found.</CommandEmpty>
             <CommandGroup>
-              {options.map((option) => (
+              {props.options.map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.value}
