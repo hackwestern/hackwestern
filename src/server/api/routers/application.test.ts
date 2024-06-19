@@ -10,32 +10,38 @@ import { db } from "~/server/db";
 import { mockSession } from "~/server/auth";
 import { applications } from "~/server/db/schema";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
+import { applicationSubmitSchema } from "~/schemas/application";
 
 const session = await mockSession(db);
 
-const ctx = createInnerTRPCContext({ session, db });
+const ctx = createInnerTRPCContext({ session });
 const caller = createCaller(ctx);
 
 describe("application.get", async () => {
   test("throws an error if no user exists", async () => {
-    const ctx = createInnerTRPCContext({ session: null, db });
+    const ctx = createInnerTRPCContext({ session: null });
     const caller = createCaller(ctx);
 
     await expect(caller.application.get()).rejects.toThrowError();
   });
 
-  test("throws an error if no application exists", async () => {
-    await expect(caller.application.get()).rejects.toThrowError();
+  test("undefined if no application exists", async () => {
+    expect(caller.application.get()).resolves.toBeUndefined();
   });
 
   test("gets the user's application if it exists", async () => {
-    const want = createRandomApplication(session);
-    await db.insert(applications).values(want);
+    const application = createRandomApplication(session);
+    await db.insert(applications).values(application);
 
     const result = await caller.application.get();
     assert(!!result);
 
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
+    const want = {
+      ...application,
+      githubLink: application?.githubLink?.substring(19),
+      linkedInLink: application?.linkedInLink?.substring(24),
+    };
 
     expect(got).toEqual(want);
   });
@@ -49,7 +55,7 @@ describe.sequential("application.save", async () => {
   });
 
   test("throws an error if no user exists", async () => {
-    const ctx = createInnerTRPCContext({ session: null, db });
+    const ctx = createInnerTRPCContext({ session: null });
     const caller = createCaller(ctx);
 
     const application = {
@@ -60,16 +66,13 @@ describe.sequential("application.save", async () => {
   });
 
   test("creates a new application when it does not exist", async () => {
-    await expect(caller.application.get()).rejects.toThrowError("not found");
+    await expect(caller.application.get()).resolves.toBeUndefined();
 
     const application = createRandomApplication(session);
-    const want = {
-      ...application,
-      githubLink: `https://github.com/${application.githubLink}`,
-      linkedInLink: `https://linkedin.com/in/${application.linkedInLink}`,
-    };
+    const want = application;
 
-    const result = await caller.application.save(application);
+    await caller.application.save(application);
+    const result = await caller.application.get();
     assert(!!result);
 
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
@@ -83,13 +86,10 @@ describe.sequential("application.save", async () => {
     await caller.application.save(application);
     const updatedApplication = createRandomApplication(session);
 
-    const want = {
-      ...updatedApplication,
-      githubLink: `https://github.com/${updatedApplication.githubLink}`,
-      linkedInLink: `https://linkedin.com/in/${updatedApplication.linkedInLink}`,
-    };
+    const want = updatedApplication;
 
-    const result = await caller.application.save(updatedApplication);
+    await caller.application.save(updatedApplication);
+    const result = await caller.application.get();
     assert(!!result);
 
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
@@ -99,15 +99,15 @@ describe.sequential("application.save", async () => {
 
   test("complete application changes status to PENDING_REVIEW", async () => {
     const completeApplication = createCompleteApplication(session);
+    applicationSubmitSchema.parse(completeApplication);
 
     const want = {
       ...completeApplication,
-      githubLink: `https://github.com/${completeApplication.githubLink}`,
-      linkedInLink: `https://linkedin.com/in/${completeApplication.linkedInLink}`,
       status: "PENDING_REVIEW",
     };
 
-    const result = await caller.application.save(completeApplication);
+    await caller.application.save(completeApplication);
+    const result = await caller.application.get();
     assert(!!result);
 
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
@@ -124,11 +124,15 @@ function createRandomApplication(session: Session) {
     names?.at(-1),
   ];
 
+  const application = ApplicationSeeder.createRandomWithoutUser();
+
   return {
-    ...ApplicationSeeder.createRandomWithoutUser(),
+    ...application,
     userId,
     firstName,
     lastName,
+    githubLink: `https://github.com/${application.githubLink}`,
+    linkedInLink: `https://linkedin.com/in/${application.linkedInLink}`,
   };
 }
 
@@ -140,10 +144,19 @@ function createCompleteApplication(session: Session) {
     names?.at(-1),
   ];
 
+  const application = ApplicationSeeder.createRandomWithoutUser();
+
   return {
-    ...ApplicationSeeder.createCompleteWithoutUser(),
+    ...application,
     userId,
     firstName,
     lastName,
+    githubLink: `https://github.com/${application.githubLink}`,
+    linkedInLink: `https://linkedin.com/in/${application.linkedInLink}`,
+    agreeCodeOfConduct: true,
+    agreeShareWithSponsors: true,
+    agreeShareWithMLH: true,
+    agreeEmailsFromMLH: true,
+    agreeWillBe18: true,
   };
 }

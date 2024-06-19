@@ -16,11 +16,15 @@ export const applicationRouter = createTRPCRouter({
         where: (schema, { eq }) => eq(schema.userId, userId),
       });
 
-      return {
-        ...application,
-        githubLink: application?.githubLink?.substring(19),
-        linkedInLink: application?.linkedInLink?.substring(24),
-      };
+      const modifiedApplication = application
+        ? {
+            ...application,
+            githubLink: application?.githubLink?.substring(19),
+            linkedInLink: application?.linkedInLink?.substring(24),
+          }
+        : undefined;
+
+      return modifiedApplication;
     } catch (error) {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
