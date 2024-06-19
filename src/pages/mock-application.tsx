@@ -108,7 +108,7 @@ export default function MockApplication() {
     <main className="flex min-h-screen flex-col items-center justify-center py-5">
       <div className="flex justify-center">
         {isLoading && "loading..."}
-        {!isError && applicationData && (
+        {!isLoading && (
           <div className="flex max-w-full flex-row gap-5">
             <Form {...applicationForm}>
               <form
