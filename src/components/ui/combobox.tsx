@@ -21,9 +21,11 @@ export function Combobox(props: {
   const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState(props.value);
 
+  console.log(props.value);
+
   React.useEffect(() => {
     console.log({ value, propValue: props.value });
-  }, [value]);
+  }, [value, props.value]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -43,11 +45,7 @@ export function Combobox(props: {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0">
-        <Command
-          defaultValue={props.value}
-          value={value}
-          onValueChange={props.onChange}
-        >
+        <Command value={value} onValueChange={props.onChange}>
           <CommandInput placeholder="Search option..." className="h-9" />
           <CommandList>
             <CommandEmpty>No option found.</CommandEmpty>

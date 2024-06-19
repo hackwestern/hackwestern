@@ -100,7 +100,7 @@ export default function MockApplication() {
   });
 
   React.useEffect(() => {
-    console.log({ values: applicationForm.getValues(), applicationData });
+    console.log({ values: applicationForm, applicationData });
     applicationForm.reset(applicationData);
   }, [applicationData, applicationForm]);
 
