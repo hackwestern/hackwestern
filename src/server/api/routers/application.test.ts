@@ -25,8 +25,8 @@ describe("application.get", async () => {
     await expect(caller.application.get()).rejects.toThrowError();
   });
 
-  test("undefined if no application exists", async () => {
-    expect(caller.application.get()).resolves.toBeUndefined();
+  test("undefined if no application exists", () => {
+    return expect(caller.application.get()).resolves.toBeUndefined();
   });
 
   test("gets the user's application if it exists", async () => {
