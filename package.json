@@ -58,6 +58,7 @@
   "devDependencies": {
     "@clack/prompts": "^0.7.0",
     "@faker-js/faker": "^8.4.1",
+    "esbuild": "^0.21.5",
     "@testing-library/react": "^15.0.7",
     "@types/eslint": "^8.56.2",
     "@types/node": "^20.11.20",
