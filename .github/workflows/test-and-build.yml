@@ -33,15 +33,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
-      - name: Cache build
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.npm
-            ${{ github.workspace }}/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
-          restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/package.json') }}-
+      #- name: Cache build
+      #  uses: actions/cache@v4
+      #  with:
+      #    path: |
+      #      ~/.npm
+      #      ${{ github.workspace }}/.next/cache
+      #    key: ${{ runner.os }}-nextjs-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+      #    restore-keys: |
+      #      ${{ runner.os }}-nextjs-${{ hashFiles('**/package.json') }}-
 
       - name: Install dependencies
         run: rm package-lock.json && npm install
