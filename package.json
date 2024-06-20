@@ -34,7 +34,6 @@
     "@trpc/react-query": "next",
     "@trpc/server": "next",
     "@types/bcrypt": "^5.0.2",
-    "@types/next-auth": "^3.15.0",
     "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",

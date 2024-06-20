@@ -11,8 +11,8 @@ import {
 } from "../schema";
 import { USERS } from "./userSeeder";
 import { type UserPartial, type Seeder } from ".";
-import { applicationSubmitSchema } from "~/server/api/routers/application";
 import type { z } from "zod";
+import { applicationSubmitSchema } from "~/schemas/application";
 
 const schools = [
   "Western University",
