@@ -89,7 +89,7 @@ const gender = [
   "Male",
   "Non-Binary",
   "Other",
-  "Prefer not to answer (default)",
+  "Prefer not to answer",
 ].map((c) => ({
   value: c,
   label: c,
@@ -102,7 +102,7 @@ const ethnicity = [
   "Hispanic",
   "White / Caucasian",
   "Multiple ethnicity / Other",
-  "Prefer not to answer (default)",
+  "Prefer not to answer",
 ].map((c) => ({
   value: c,
   label: c,
@@ -116,7 +116,7 @@ const sexualOrientation = [
   "Gay / Lesbian",
   "Heterosexual / Straight",
   "Other",
-  "Prefer not to answer (default)",
+  "Prefer not to answer",
 ].map((c) => ({
   value: c,
   label: c,

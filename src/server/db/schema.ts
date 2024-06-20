@@ -100,7 +100,7 @@ export const gender = pgEnum("gender", [
   "Male",
   "Non-Binary",
   "Other",
-  "Prefer not to answer (default)",
+  "Prefer not to answer",
 ]);
 
 /**
@@ -113,7 +113,7 @@ export const ethnicity = pgEnum("race/ethnicity", [
   "Hispanic",
   "White / Caucasian",
   "Multiple ethnicity / Other",
-  "Prefer not to answer (default)",
+  "Prefer not to answer",
 ]);
 
 /**
@@ -127,7 +127,7 @@ export const sexualOrientation = pgEnum("sexual_orientation", [
   "Gay / Lesbian",
   "Heterosexual / Straight",
   "Other",
-  "Prefer not to answer (default)",
+  "Prefer not to answer",
 ]);
 
 /**
