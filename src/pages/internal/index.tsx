@@ -9,9 +9,15 @@ const Internal = () => {
   return (
     <>
       <main className="flex min-h-screen flex-col items-center justify-center bg-[#160524]">
+        <h1 className="text-white text-3xl mb-5">
+          Internal Dashboard
+        </h1>
         <div className="flex flex-col gap-3">
-          <Button onClick={() => router.push("/internal/review")}>
-            Review
+          <Button
+            onClick={() => router.push("/internal/review")}
+            className="rounded bg-white p-1 text-center text-black hover:bg-gray-300"
+          >
+            Review Portal
           </Button>
           <PreregistrationsButton />
           <ApplicationsButton />
@@ -29,9 +35,12 @@ function ApplicationsButton() {
   return (
     <Link
       href="/api/application/all?format=csv&mlh"
-      className="rounded bg-white p-1 text-center"
     >
-      Export Applications
+      <Button
+        className="rounded bg-white p-1 text-center text-black hover:bg-gray-300 w-max w-full"
+      >
+        Export Applications
+      </Button>
     </Link>
   );
 }
@@ -44,9 +53,12 @@ function PreregistrationsButton() {
   return (
     <Link
       href="/api/preregistration/all?format=csv"
-      className="rounded bg-white p-1 text-center"
     >
-      Export Preregistrations
+      <Button
+        className="rounded bg-white p-1 text-center text-black hover:bg-gray-300 mx-auto"
+      >
+        Export Preregistrations
+      </Button>
     </Link>
   );
 }

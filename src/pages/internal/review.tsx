@@ -1,3 +1,5 @@
+import { authRedirect } from "~/utils/redirect";
+
 const Review = () => {
     return (
         <div>Review</div>
@@ -5,3 +7,4 @@ const Review = () => {
 }
 
 export default Review;
+export const getServerSideProps = authRedirect;
