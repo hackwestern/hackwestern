@@ -9,9 +9,7 @@ const Internal = () => {
   return (
     <>
       <main className="flex min-h-screen flex-col items-center justify-center bg-[#160524]">
-        <h1 className="text-white text-3xl mb-5">
-          Internal Dashboard
-        </h1>
+        <h1 className="mb-5 text-3xl text-white">Internal Dashboard</h1>
         <div className="flex flex-col gap-3">
           <Button
             onClick={() => router.push("/internal/review")}
@@ -25,7 +23,7 @@ const Internal = () => {
       </main>
     </>
   );
-}
+};
 
 /**
  * Downloads the CSV if authorized as an organizer.
@@ -33,12 +31,8 @@ const Internal = () => {
  */
 function ApplicationsButton() {
   return (
-    <Link
-      href="/api/application/all?format=csv&mlh"
-    >
-      <Button
-        className="rounded bg-white p-1 text-center text-black hover:bg-gray-300 w-max w-full"
-      >
+    <Link href="/api/application/all?format=csv&mlh">
+      <Button className="w-full w-max rounded bg-white p-1 text-center text-black hover:bg-gray-300">
         Export Applications
       </Button>
     </Link>
@@ -51,12 +45,8 @@ function ApplicationsButton() {
  */
 function PreregistrationsButton() {
   return (
-    <Link
-      href="/api/preregistration/all?format=csv"
-    >
-      <Button
-        className="rounded bg-white p-1 text-center text-black hover:bg-gray-300 mx-auto"
-      >
+    <Link href="/api/preregistration/all?format=csv">
+      <Button className="mx-auto rounded bg-white p-1 text-center text-black hover:bg-gray-300">
         Export Preregistrations
       </Button>
     </Link>
