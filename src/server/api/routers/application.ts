@@ -1,68 +1,32 @@
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { applications } from "~/server/db/schema";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
-
-// Save schema
-export const applicationSaveSchema = createInsertSchema(applications).omit({
-  createdAt: true,
-  updatedAt: true,
-  status: true,
-  userId: true,
-});
-
-// Helper function to check word count within a range
-const checkWordCount = (value: string, min: number, max: number) => {
-  const words = value.split(" ");
-  return words.length < max && words.length > min;
-};
-
-// Submission schema with data validation
-export const applicationSubmitSchema = createInsertSchema(applications, {
-  agreeCodeOfConduct: z.literal(true),
-  agreeShareWithMLH: z.literal(true),
-  agreeWillBe18: z.literal(true),
-  age: (schema) => schema.age.min(18),
-  resumeLink: (schema) => schema.resumeLink.url(),
-  otherLink: (schema) => schema.otherLink.url(),
-  question1: (schema) =>
-    schema.question1.refine((value) => checkWordCount(value, 30, 150)),
-  question2: (schema) =>
-    schema.question2.refine((value) => checkWordCount(value, 30, 150)),
-  question3: (schema) =>
-    schema.question3.refine((value) => checkWordCount(value, 30, 150)),
-}).omit({
-  createdAt: true,
-  updatedAt: true,
-  status: true,
-  userId: true,
-});
+import { db } from "~/server/db";
+import {
+  applicationSaveSchema,
+  applicationSubmitSchema,
+} from "~/schemas/application";
+import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure.query(async ({ ctx }) => {
     try {
       const userId = ctx.session.user.id;
-      const application = await ctx.db
-        .select()
-        .from(applications)
-        .where(eq(applications.userId, userId))
-        .limit(1);
+      const application = await db.query.applications.findFirst({
+        where: (schema, { eq }) => eq(schema.userId, userId),
+      });
 
-      if (!application.length) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Application not found",
-        });
-      }
+      const modifiedApplication = application
+        ? {
+            ...application,
+            githubLink: application?.githubLink?.substring(19),
+            linkedInLink: application?.linkedInLink?.substring(24),
+          }
+        : undefined;
 
-      return application[0];
+      return modifiedApplication;
     } catch (error) {
-      if (error instanceof TRPCError && error.code === "NOT_FOUND") {
-        throw error;
-      }
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to fetch application: " + JSON.stringify(error),
@@ -79,12 +43,12 @@ export const applicationRouter = createTRPCRouter({
         const isCompleteApplication =
           applicationSubmitSchema.safeParse(applicationData).success;
 
-        const savedApplication = await ctx.db
+        await db
           .insert(applications)
           .values({
             ...applicationData,
-            githubLink: `https://github.com/${applicationData.githubLink}`,
-            linkedInLink: `https://linkedin.com/in/${applicationData.linkedInLink}`,
+            githubLink: `${GITHUB_URL}${applicationData.githubLink}`,
+            linkedInLink: `${LINKEDIN_URL}${applicationData.linkedInLink}`,
             userId,
             status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
           })
@@ -93,13 +57,11 @@ export const applicationRouter = createTRPCRouter({
             set: {
               ...applicationData,
               updatedAt: new Date(),
-              githubLink: `https://github.com/${applicationData.githubLink}`,
-              linkedInLink: `https://linkedin.com/in/${applicationData.linkedInLink}`,
+              githubLink: `${GITHUB_URL}${applicationData.githubLink}`,
+              linkedInLink: `${LINKEDIN_URL}${applicationData.linkedInLink}`,
               status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
             },
-          })
-          .returning();
-        return savedApplication[0];
+          });
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
