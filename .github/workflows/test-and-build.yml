@@ -44,7 +44,7 @@ jobs:
       #      ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
 
       - name: Install dependencies
-        run: npm install
+        run: rm package-lock.json && npm install
 
       - name: Start Postgres DB
         run: npm run db:start && sleep 2
