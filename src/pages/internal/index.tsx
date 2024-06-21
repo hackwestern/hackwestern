@@ -1,64 +1,40 @@
-import { signIn, signOut, useSession } from "next-auth/react";
-import Head from "next/head";
 import Link from "next/link";
+import { useRouter } from "next/router";
+import { Button } from "~/components/ui/button";
+import { authRedirect } from "~/utils/redirect";
 
-import { api } from "~/utils/api";
+const Internal = () => {
+  const router = useRouter();
 
-export default function Internal() {
-  const hello = api.example.hello.useQuery({ text: "from tRPC" });
-  const reset = api.auth.reset.useMutation();
-
-  //TODO: ADD AUTH LAYER SO INTERNAL PAGES CAN ONLY BE ACCESSED BY ORGANIZERS
   return (
     <>
-      <Head>
-        <title>Hack Western</title>
-        <meta
-          name="description"
-          content="Hack Western: One of Canada's largest annual student-run hackathons based out of Western University in London, Ontario."
-        />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
       <main className="flex min-h-screen flex-col items-center justify-center bg-[#160524]">
-        <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 ">
-          <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-[5rem]">
-            Hack Western
-          </h1>
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-2xl text-white">
-              {hello.data ? hello.data.greeting : "Loading tRPC query..."}
-            </p>
-            <AuthShowcase />
-            <PreregistrationsButton />
-            <ApplicationsButton />
-            <div
-              onClick={() => {
-                reset.mutate({ email: "oscar45697@gmail.com" });
-                reset.mutate({ email: "hunter.chen7@pm.me" });
-                reset.mutate({ email: "basokanthan@gmail.com" });
-              }}
-              className="m-2 rounded bg-white p-2"
-            >
-              CLICK ME
-            </div>
-          </div>
+        <h1 className="mb-5 text-3xl text-white">Internal Dashboard</h1>
+        <div className="flex flex-col gap-3">
+          <Button
+            onClick={() => router.push("/internal/review")}
+            className="rounded bg-white p-1 text-center text-black hover:bg-gray-300"
+          >
+            Review Portal
+          </Button>
+          <PreregistrationsButton />
+          <ApplicationsButton />
         </div>
       </main>
     </>
   );
-}
+};
 
 /**
  * Downloads the CSV if authorized as an organizer.
- * @see ./api/application/all.ts
+ * @see ./api/application/all.tswsl --set-default-version 2
  */
 function ApplicationsButton() {
   return (
-    <Link
-      href="/api/application/all?format=csv&mlh"
-      className="rounded bg-white p-1"
-    >
-      Export Applications
+    <Link href="/api/application/all?format=csv&mlh">
+      <Button className="w-full rounded bg-white p-1 text-center text-black hover:bg-gray-300">
+        Export Applications
+      </Button>
     </Link>
   );
 }
@@ -69,35 +45,14 @@ function ApplicationsButton() {
  */
 function PreregistrationsButton() {
   return (
-    <Link
-      href="/api/preregistration/all?format=csv"
-      className="rounded bg-white p-1"
-    >
-      Export Preregistrations
+    <Link href="/api/preregistration/all?format=csv">
+      <Button className="mx-auto rounded bg-white p-1 text-center text-black hover:bg-gray-300">
+        Export Preregistrations
+      </Button>
     </Link>
   );
 }
 
-function AuthShowcase() {
-  const { data: sessionData } = useSession();
+export const getServerSideProps = authRedirect;
 
-  const { data: secretMessage } = api.example.getSecretMessage.useQuery(
-    undefined, // no input
-    { enabled: sessionData?.user !== undefined },
-  );
-
-  return (
-    <div className="flex flex-col items-center justify-center gap-4">
-      <p className="text-center text-2xl text-white">
-        {sessionData && <span>Logged in as {sessionData.user?.name}</span>}
-        {secretMessage && <span> - {secretMessage}</span>}
-      </p>
-      <button
-        className="rounded-full bg-white/10 px-10 py-3 font-semibold text-white no-underline transition hover:bg-white/20"
-        onClick={sessionData ? () => void signOut() : () => void signIn()}
-      >
-        {sessionData ? "Sign out" : "Sign in"}
-      </button>
-    </div>
-  );
-}
+export default Internal;
