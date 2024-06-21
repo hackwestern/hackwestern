@@ -20,7 +20,6 @@ const Internal = () => {
           </Button>
           <PreregistrationsButton />
           <ApplicationsButton />
-          <PreregistrationForm />
         </div>
       </div>
     </>

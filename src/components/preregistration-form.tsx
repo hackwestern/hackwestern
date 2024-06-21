@@ -19,7 +19,7 @@ const preregistrationFormSchema = z.object({
 });
 
 type PreregistrationFormProps = {
-  className: string;
+  className?: string;
 };
 
 export function PreregistrationForm({ className }: PreregistrationFormProps) {
