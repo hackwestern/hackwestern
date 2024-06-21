@@ -16,44 +16,43 @@ export default function Home() {
         <div className="relative h-screen flex-col items-center justify-center overflow-hidden">
           <div className="absolute left-0 top-0 h-full w-full bg-hw-radial-gradient" />
           {/* Images */}
+          <div className="absolute left-[39%] top-[59%] h-10 w-10 sm:left-[37%] sm:top-[55%] sm:h-16 sm:w-16 md:left-[37%] md:top-[50%] md:h-28 md:w-28 xl:left-[39%] xl:top-[50%] ">
+            <Image src="/images/sun.svg" alt="hack western 11 sun" fill />
+          </div>
           <div>
-            <div className="absolute bottom-0 left-0 h-full w-[80%]">
+            <div className="absolute bottom-0 left-0 h-full w-full md:h-full md:w-[80%]">
               <Image
                 src="/images/cloud4.svg"
                 alt="hack western cloud"
-                layout="fill"
-                objectFit="contain"
-                objectPosition="bottom left"
+                className="object-contain object-left-bottom"
+                fill
               />
             </div>
-            <div className="absolute bottom-0 left-0 h-full w-[30%]">
-              <Image
-                src="/images/cloud1.svg"
-                alt="hack western cloud"
-                layout="fill"
-                objectFit="contain"
-                objectPosition="bottom left"
-              />
-            </div>
-            <div className="absolute bottom-0 right-0 h-full w-[70%]">
+            <div className="absolute bottom-0 right-0 h-full w-full md:h-full md:w-[70%]">
               <Image
                 src="/images/cloud3.svg"
                 alt="hack western cloud"
-                layout="fill"
-                objectFit="contain"
-                objectPosition="bottom right"
+                className="object-contain object-right-bottom"
+                fill
               />
             </div>
-            <div className="absolute bottom-0 right-0 h-full w-[30%]">
+            <div className="absolute bottom-0 left-0 h-full w-[50%] md:h-full md:w-[30%]">
+              <Image
+                src="/images/cloud1.svg"
+                alt="hack western cloud"
+                className="object-contain object-left-bottom"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-0 right-0 h-full w-[50%] md:h-full md:w-[30%]">
               <Image
                 src="/images/cloud2.svg"
                 alt="hack western cloud"
-                layout="fill"
-                objectFit="contain"
-                objectPosition="bottom right"
+                className="object-contain object-right-bottom"
+                fill
               />
             </div>
-            <div className="absolute bottom-10 right-[20%] h-[50%] w-[50%]">
+            <div className="absolute bottom-[50%] right-[50%] flex h-[80%] w-[80%] translate-x-1/2 translate-y-1/2 md:bottom-10 md:right-[20%] md:h-[50%] md:w-[50%] md:translate-x-0 md:translate-y-0">
               <Image
                 src="/images/plane.svg"
                 alt="hack western plane"
@@ -74,8 +73,8 @@ export default function Home() {
           {/* Text */}
           <div className="relative flex h-screen w-screen justify-center">
             <div className="mt-[10%] flex flex-col items-center text-white">
-              <h3 className="font-sans text-xl">Nov 29 - Dec 1</h3>
-              <h1 className="bg-hw-hero-text-gradient bg-clip-text font-MagicRetro text-8xl leading-normal text-transparent mix-blend-screen">
+              <h3 className="font-DM_Sans text-xl">Nov 29 - Dec 1</h3>
+              <h1 className="bg-hw-hero-text-gradient bg-clip-text font-MagicRetro text-5xl leading-normal text-transparent mix-blend-screen sm:text-6xl md:text-7xl lg:text-8xl 2xl:text-9xl">
                 hack western 11
               </h1>
               <h2 className="font-sans text-2xl font-light italic">

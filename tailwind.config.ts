@@ -81,7 +81,9 @@ const config = {
       },
       fontFamily: {
         DM_Sans: ["var(--font-sans)"],
-        MagicRetro: ["var(--font-magicretro)"]
+        MagicRetro: ["var(--font-magicretro)", "var(--font-borel)"],
+        Borel: ["var(--font-salsa)"]
+        
       }
     },
   },
