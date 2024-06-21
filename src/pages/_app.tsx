@@ -8,8 +8,9 @@ import { api } from "~/utils/api";
 import "~/styles/globals.css";
 
 const DM_SANS = DM_Sans({
+  weight: ["400", "500", "700"],
   subsets: ["latin"],
-  variable: "--font-sans",
+  fallback: ["Inter", "sans-serif"],
 });
 
 const MyApp: AppType<{ session: Session | null }> = ({
