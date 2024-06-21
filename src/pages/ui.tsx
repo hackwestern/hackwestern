@@ -215,7 +215,7 @@ export const getServerSideProps = async (
   const user = await db.query.users.findFirst({
     where: (users, { eq }) => eq(users.id, session.user.id),
   });
-  console.log(user);
+
   const userType = user?.type;
 
   if (userType !== "organizer") {
