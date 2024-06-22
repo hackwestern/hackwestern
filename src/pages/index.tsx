@@ -53,7 +53,7 @@ export default function Home() {
                 fill
               />
             </div>
-            <div className="absolute bottom-[50%] right-[50%] flex h-[80%] w-[80%] translate-x-1/2 translate-y-1/2 md:bottom-10 md:right-[20%] md:h-[50%] md:w-[50%] md:translate-x-0 md:translate-y-0">
+            <div className="absolute bottom-[40%] right-[50%] flex h-[80%] w-[80%] translate-x-1/2 translate-y-1/2 sm:bottom-[5%] sm:right-[15%] sm:h-[60%] sm:w-[60%] sm:translate-x-0 sm:translate-y-0 md:bottom-[10%] md:right-[30%] md:h-[40%] md:w-[40%] md:translate-x-0 md:translate-y-0 lg:bottom-[7%] lg:right-[27%] lg:h-[40%] lg:w-[40%] lg:translate-x-0 lg:translate-y-0">
               <Image
                 src="/images/plane.svg"
                 alt="hack western plane"
