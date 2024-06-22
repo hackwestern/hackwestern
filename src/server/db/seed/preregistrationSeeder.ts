@@ -11,7 +11,6 @@ export class PreregistrationSeeder implements Seeder<typeof preregistrations> {
 
   createRandom() {
     return {
-      name: faker.person.fullName(),
       email: faker.internet.email(),
     };
   }
