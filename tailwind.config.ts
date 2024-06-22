@@ -1,4 +1,3 @@
-import { DM_Sans, Pacifico } from "next/font/google";
 import type { Config } from "tailwindcss";
 
 const config = {
@@ -91,3 +90,4 @@ const config = {
 } satisfies Config;
 
 export default config;
+

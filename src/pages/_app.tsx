@@ -9,8 +9,9 @@ import { api } from "~/utils/api";
 import "~/styles/globals.css";
 
 const DM_SANS = DM_Sans({
+  weight: ["400", "500", "700"],
   subsets: ["latin"],
-  variable: "--font-sans",
+  fallback: ["Inter", "sans-serif"],
 });
 
 const SalsaFont = Salsa({
@@ -33,7 +34,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
   return (
     <SessionProvider session={session}>
       <main
-        className={`font-sans ${DM_SANS.variable} ${MagicRetro.className} ${SalsaFont.variable}`}
+        className={`font-sans ${DM_SANS.className} ${MagicRetro.className} ${SalsaFont.variable}`}
       >
         <Component {...pageProps} />
       </main>
