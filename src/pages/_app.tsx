@@ -8,8 +8,9 @@ import { api } from "~/utils/api";
 import "~/styles/globals.css";
 
 const DM_SANS = DM_Sans({
+  weight: ["400", "500", "700"],
   subsets: ["latin"],
-  variable: "--font-sans",
+  fallback: ["Inter", "sans-serif"],
 });
 
 const MyApp: AppType<{ session: Session | null }> = ({
@@ -18,7 +19,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
 }) => {
   return (
     <SessionProvider session={session}>
-      <main className={`font-sans ${DM_SANS.variable}`}>
+      <main className={`${DM_SANS.className}`}>
         <Component {...pageProps} />
       </main>
     </SessionProvider>

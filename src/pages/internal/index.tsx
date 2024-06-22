@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { PreregistrationForm } from "~/components/preregistration-form";
 import { Button } from "~/components/ui/button";
 import { authRedirect } from "~/utils/redirect";
 
@@ -7,21 +8,19 @@ const Internal = () => {
   const router = useRouter();
 
   return (
-    <>
-      <main className="flex min-h-screen flex-col items-center justify-center bg-[#160524]">
-        <h1 className="mb-5 text-3xl text-white">Internal Dashboard</h1>
-        <div className="flex flex-col gap-3">
-          <Button
-            onClick={() => router.push("/internal/review")}
-            className="rounded bg-white p-1 text-center text-black hover:bg-gray-300"
-          >
-            Review Portal
-          </Button>
-          <PreregistrationsButton />
-          <ApplicationsButton />
-        </div>
-      </main>
-    </>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#160524]">
+      <h1 className="mb-5 text-3xl text-white">Internal Dashboard</h1>
+      <div className="flex flex-col gap-3">
+        <Button
+          onClick={() => router.push("/internal/review")}
+          className="rounded bg-white p-1 text-center text-black hover:bg-gray-300"
+        >
+          Review Portal
+        </Button>
+        <PreregistrationsButton />
+        <ApplicationsButton />
+      </div>
+    </div>
   );
 };
 

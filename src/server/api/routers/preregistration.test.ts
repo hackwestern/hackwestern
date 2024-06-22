@@ -9,7 +9,7 @@ import { PreregistrationSeeder } from "~/server/db/seed/preregistrationSeeder";
 
 const session = await mockSession(db);
 
-const ctx = createInnerTRPCContext({ session, db });
+const ctx = createInnerTRPCContext({ session });
 const caller = createCaller(ctx);
 
 const testPreregistration = new PreregistrationSeeder().createRandom();
