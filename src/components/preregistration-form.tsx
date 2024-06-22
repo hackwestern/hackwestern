@@ -36,29 +36,41 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      {isSuccess && (
-        <h4 className="text-[#F6F2FD]">
-          Thanks! You&apos;ll hear from us soon 🛩️
-        </h4>
+    <div
+      className={cn(
+        "flex w-full flex-col items-center justify-center px-12 text-primary",
+        className,
       )}
+    >
+      <a
+        id="mlh-trust-badge"
+        className="fixed right-12 top-0 z-50 block w-full min-w-5 max-w-16"
+        href="https://mlh.io/na?utm_source=na-hackathon&utm_medium=TrustBadge&utm_campaign=2025-season&utm_content=white"
+        target="_blank"
+      >
+        <img
+          src="https://s3.amazonaws.com/logged-assets/trust-badge/2025/mlh-trust-badge-2025-white.svg"
+          alt="Major League Hacking 2025 Hackathon Season"
+          style={{ width: "100%" }}
+        />
+      </a>
+      <h4 className="py-3 text-lg font-medium text-[#F6F2FD]">
+        {isSuccess
+          ? "Thanks! You'll hear from us soon 🛩️"
+          : "Get notified when applications drop:"}
+      </h4>
       {!isSuccess && (
         <Form {...preregistrationForm}>
-          <h4 className="py-3 text-lg font-medium text-[#F6F2FD]">
-            Get notified when applications drop:
-          </h4>
-          <form onSubmit={preregistrationForm.handleSubmit(onSubmit)}>
+          <form
+            className="w-full"
+            onSubmit={preregistrationForm.handleSubmit(onSubmit)}
+          >
             <FormField
               control={preregistrationForm.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <div
-                    className={cn(
-                      "flex w-full flex-row gap-2 rounded-md bg-white p-0.5",
-                      className,
-                    )}
-                  >
+                  <div className="flex w-full flex-row gap-2 rounded-md bg-white p-0.5">
                     <FormLabel className="sr-only">Email Address</FormLabel>
                     <FormControl>
                       <Input

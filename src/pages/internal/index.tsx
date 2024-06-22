@@ -31,7 +31,7 @@ const Internal = () => {
 function ApplicationsButton() {
   return (
     <Link href="/api/application/all?format=csv&mlh">
-      <Button className="w-full w-max rounded bg-white p-1 text-center text-black hover:bg-gray-300">
+      <Button className="w-full rounded bg-white p-1 text-center text-black hover:bg-gray-300">
         Export Applications
       </Button>
     </Link>
