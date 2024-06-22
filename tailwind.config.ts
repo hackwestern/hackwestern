@@ -79,7 +79,7 @@ const config = {
         "hw-hero-text-gradient": "linear-gradient(190deg, #EBA0C6 48.2%, #FFDEE0 84.16%)",
       },
       fontFamily: {
-        DM_Sans: ["var(--font-sans)"],
+        DM_Sans: ["var(--font-dmsans)"],
         MagicRetro: ["var(--font-magicretro)", "var(--font-borel)"],
         Borel: ["var(--font-salsa)"]
         
