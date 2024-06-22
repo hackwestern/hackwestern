@@ -1,4 +1,8 @@
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 import { createInsertSchema } from "drizzle-zod";
 import { preregistrations } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
@@ -10,7 +14,7 @@ const preregistrationCreateSchema = createInsertSchema(preregistrations).omit({
 });
 
 export const preregistrationRouter = createTRPCRouter({
-  create: protectedProcedure
+  create: publicProcedure
     .input(preregistrationCreateSchema)
     .mutation(async ({ input }) => {
       try {
@@ -38,7 +42,7 @@ export const preregistrationRouter = createTRPCRouter({
           : new TRPCError({
               code: "INTERNAL_SERVER_ERROR",
               message:
-                "Failed to create user with password" + JSON.stringify(error),
+                "Failed to create preregistration" + JSON.stringify(error),
             });
       }
     }),
