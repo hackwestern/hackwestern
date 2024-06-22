@@ -34,7 +34,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
   return (
     <SessionProvider session={session}>
       <main
-        className={`font-sans ${DM_SANS.className} ${MagicRetro.className} ${SalsaFont.variable}`}
+        className={`${DM_SANS.className} ${MagicRetro.className} ${SalsaFont.variable}`}
       >
         <Component {...pageProps} />
       </main>
