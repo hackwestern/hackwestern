@@ -81,7 +81,7 @@ export default function Home() {
               <h2 className="font-sans text-2xl font-light italic">
                 where ideas take flight
               </h2>
-              <PreregistrationForm />
+              <PreregistrationForm className="py-10" />
             </div>
           </div>
         </div>

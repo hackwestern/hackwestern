@@ -36,7 +36,12 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center">
+    <div
+      className={cn(
+        "flex w-full flex-col items-center justify-center px-6",
+        className,
+      )}
+    >
       {isSuccess && (
         <h4 className="text-[#F6F2FD]">
           Thanks! You&apos;ll hear from us soon 🛩️
@@ -47,18 +52,16 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
           <h4 className="py-3 text-lg font-medium text-[#F6F2FD]">
             Get notified when applications drop:
           </h4>
-          <form onSubmit={preregistrationForm.handleSubmit(onSubmit)}>
+          <form
+            className="w-full"
+            onSubmit={preregistrationForm.handleSubmit(onSubmit)}
+          >
             <FormField
               control={preregistrationForm.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <div
-                    className={cn(
-                      "flex w-full flex-row gap-2 rounded-md bg-white p-0.5",
-                      className,
-                    )}
-                  >
+                  <div className="flex w-full flex-row gap-2 rounded-md bg-white p-0.5">
                     <FormLabel className="sr-only">Email Address</FormLabel>
                     <FormControl>
                       <Input
