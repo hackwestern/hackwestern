@@ -71,6 +71,14 @@ export default function Home() {
             layout="fill"
             objectFit="cover"
           />
+          <div className="absolute left-0 top-0 m-7 h-10 w-10 md:h-14 md:w-14 ">
+            <Image
+              src="/images/hwoutlinelogo.svg"
+              alt="hack western logo"
+              layout="fill"
+              objectFit="contain"
+            />
+          </div>
           {/* Text */}
           <div className="relative flex h-screen w-screen justify-center">
             <div className="mt-[10%] flex flex-col items-center text-white">
