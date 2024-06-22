@@ -13,6 +13,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
+import { Spinner } from "~/components/loading-spinner";
 
 const preregistrationFormSchema = z.object({
   email: z.string().email("Please enter a valid email."),
@@ -23,7 +24,8 @@ type PreregistrationFormProps = {
 };
 
 export function PreregistrationForm({ className }: PreregistrationFormProps) {
-  const { mutate, isSuccess } = api.preregistration.create.useMutation();
+  const { mutate, isSuccess, isPending } =
+    api.preregistration.create.useMutation();
 
   const preregistrationForm = useForm<
     z.infer<typeof preregistrationFormSchema>
@@ -70,11 +72,11 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex w-full flex-row gap-2 rounded-md bg-white p-0.5">
+                  <div className="flex w-full flex-row gap-2 rounded-lg bg-white p-0.5">
                     <FormLabel className="sr-only">Email Address</FormLabel>
                     <FormControl>
                       <Input
-                        className="h-8 border-0 px-1 py-0"
+                        className="h-8 border-0 px-2.5 py-0 active:border-0"
                         {...field}
                         placeholder="Email Address"
                       />
@@ -82,9 +84,10 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
                     <Button
                       size="sm"
                       type="submit"
-                      className="bg-gradient-to-r from-[#A87DF1] to-[#5E28B8] px-10 py-0"
+                      className="gap-2 bg-gradient-to-r from-[#A87DF1] to-[#5E28B8] py-0 active:border-0 lg:px-10"
                     >
-                      Submit
+                      <span>Submit</span>
+                      <Spinner isLoading={isPending} />
                     </Button>
                   </div>
                   <FormMessage className="text-[#5E28B8]" />
