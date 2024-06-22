@@ -81,15 +81,15 @@ export default function Home() {
           </div>
           {/* Text */}
           <div className="relative flex h-screen w-screen justify-center">
-            <div className="mt-[10%] flex flex-col items-center text-white">
-              <h3 className="text-xl">Nov 29 - Dec 1</h3>
-              <h1 className="bg-hw-hero-text-gradient bg-clip-text font-MagicRetro text-5xl leading-normal text-transparent mix-blend-screen sm:text-6xl md:text-7xl lg:text-8xl 2xl:text-9xl">
+            <div className="flex flex-col items-center pt-32 text-white">
+              <h3 className="pb-4 text-xl font-medium">Nov 29 - Dec 1</h3>
+              <h1 className="bg-hw-hero-text-gradient bg-clip-text font-MagicRetro leading-normal text-transparent mix-blend-screen sm:text-4xl md:text-5xl lg:text-8xl 2xl:text-8xl">
                 hack western 11
               </h1>
-              <h2 className="font-sans text-2xl font-light italic">
+              <h2 className="-mt-1 font-sans font-light italic sm:text-xl md:text-2xl lg:text-3xl 2xl:text-4xl">
                 where ideas take flight
               </h2>
-              <PreregistrationForm className="py-10" />
+              <PreregistrationForm className="py-7" />
             </div>
           </div>
         </div>
