@@ -1,5 +1,6 @@
 import Head from "next/head";
 import Image from "next/image";
+import { PreregistrationForm } from "~/components/preregistration-form";
 
 export default function Home() {
   return (
@@ -73,13 +74,14 @@ export default function Home() {
           {/* Text */}
           <div className="relative flex h-screen w-screen justify-center">
             <div className="mt-[10%] flex flex-col items-center text-white">
-              <h3 className="font-DM_Sans text-xl">Nov 29 - Dec 1</h3>
+              <h3 className="text-xl">Nov 29 - Dec 1</h3>
               <h1 className="bg-hw-hero-text-gradient bg-clip-text font-MagicRetro text-5xl leading-normal text-transparent mix-blend-screen sm:text-6xl md:text-7xl lg:text-8xl 2xl:text-9xl">
                 hack western 11
               </h1>
               <h2 className="font-sans text-2xl font-light italic">
                 where ideas take flight
               </h2>
+              <PreregistrationForm />
             </div>
           </div>
         </div>

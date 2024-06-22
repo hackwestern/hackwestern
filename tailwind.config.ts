@@ -76,18 +76,17 @@ const config = {
       backgroundImage: {
         "hw-radial-gradient":
           "radial-gradient(77.76% 72.21% at 42.29% 60.83%, #FFE4D6 0%, #FFB2B7 9%, #E19CDE 18%, #B07ACA 35%, #765EA1 61%, #483CB5 100%);",
-        "hw-hero-text-gradient": "linear-gradient(190deg, #EBA0C6 48.2%, #FFDEE0 84.16%)",
+        "hw-hero-text-gradient":
+          "linear-gradient(190deg, #EBA0C6 48.2%, #FFDEE0 84.16%)",
       },
       fontFamily: {
         DM_Sans: ["var(--font-dmsans)"],
-        MagicRetro: ["var(--font-magicretro)", "var(--font-borel)"],
-        Borel: ["var(--font-salsa)"]
-        
-      }
+        MagicRetro: ["var(--font-magicretro)"],
+        Borel: ["var(--font-salsa)"],
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],
 } satisfies Config;
 
 export default config;
-
