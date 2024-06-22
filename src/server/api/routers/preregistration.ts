@@ -1,7 +1,4 @@
-import {
-  createTRPCRouter,
-  publicProcedure,
-} from "~/server/api/trpc";
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { createInsertSchema } from "drizzle-zod";
 import { preregistrations } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";

@@ -19,12 +19,12 @@ export default async function handler(
 const paramsSchema = z.object({
   format: z.enum(["json", "csv"]),
   mlh: z.string().length(0).optional(),
-});    
-   
+});
+
 async function GET(req: NextApiRequest, res: NextApiResponse) {
-  try { 
+  try {
     const session = await getServerAuthSession({ req, res });
-  console.log(session);
+    console.log(session);
 
     if (!session) return res.status(401).json({ message: "Unauthorized" });
     if (!session.user)
