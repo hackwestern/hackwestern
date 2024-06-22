@@ -1,0 +1,1 @@
+ALTER TABLE "hw11_preregistration" DROP COLUMN IF EXISTS "name";

@@ -134,7 +134,6 @@ function ApplicationForm({ defaultValues }: ApplicationFormProps) {
   });
 
   function onSubmit(data: z.infer<typeof applicationSaveSchema>) {
-    console.log(data);
     mutate(data);
   }
 
