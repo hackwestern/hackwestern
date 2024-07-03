@@ -1,7 +1,7 @@
 name: Prettify
 on:
   pull_request:
-    types: [review_requested]
+    branches: main
 jobs:
   prettier:
     runs-on: ubuntu-latest
@@ -26,4 +26,12 @@ jobs:
       - name: Install packages
         run: npm install
       - name: Run prettier
-        run: npx prettier --check ./src
+        run: npx prettier --write ./src
+      - name: Commit changes
+        run: |
+          git config --global user.email 'prettify-hackwestern[bot]@users.noreply.github.com'
+          git config --global user.name 'prettify-hackwestern[bot]'
+          git add src
+          git commit -m "Prettify code" || echo "No changes to commit"
+      - name: Push changes
+        run: git push
