@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Input } from "~/components/ui/input";
 import { api } from "~/utils/api";
-// import { OrganizerRedirect } from "~/lib/authRedirect";
 import { authRedirect } from "../../utils/redirect";
 
 const TestPasswordReset = () => {

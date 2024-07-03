@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { PreregistrationForm } from "~/components/preregistration-form";
 import { Button } from "~/components/ui/button";
 import { authRedirect } from "~/utils/redirect";
 
