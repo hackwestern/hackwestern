@@ -26,7 +26,6 @@ const MagicRetro = localFont({
   variable: "--font-magicretro",
   display: "swap",
 });
-console.log(MagicRetro);
 
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
