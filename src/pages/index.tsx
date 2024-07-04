@@ -96,7 +96,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <Footer className="fixed bottom-0 w-full bg-gradient-to-t from-[#FFE4D6]/30 to-transparent" />
+        <Footer className="fixed bottom-0" />
       </main>
     </>
   );
