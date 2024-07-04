@@ -1,5 +1,6 @@
 import Head from "next/head";
 import Image from "next/image";
+import { Footer } from "~/components/footer";
 import { PreregistrationForm } from "~/components/preregistration-form";
 
 export default function Home() {
@@ -13,9 +14,9 @@ export default function Home() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="">
+      <main className="bg-hw-radial-gradient">
         <div className="relative h-screen flex-col items-center justify-center overflow-hidden">
-          <div className="absolute left-0 top-0 h-full w-full bg-hw-radial-gradient" />
+          <div className="absolute left-0 top-0 h-full w-full" />
           {/* Images */}
           <div className="absolute left-[39%] top-[59%] h-10 w-10 sm:left-[37%] sm:top-[55%] sm:h-16 sm:w-16 md:left-[37%] md:top-[50%] md:h-28 md:w-28 xl:left-[39%] xl:top-[50%] ">
             <Image src="/images/sun.svg" alt="hack western 11 sun" fill />
@@ -95,6 +96,7 @@ export default function Home() {
             </div>
           </div>
         </div>
+        <Footer className="fixed bottom-0 w-full bg-gradient-to-t from-[#FFE4D6]/30 to-transparent" />
       </main>
     </>
   );
