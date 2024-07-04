@@ -1,7 +1,7 @@
 import { type Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 import { type AppType } from "next/app";
-import { DM_Sans, Salsa } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import localFont from "next/font/local";
 
 import { api } from "~/utils/api";
@@ -13,12 +13,6 @@ const DM_SANS = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dmsans",
   fallback: ["Inter", "sans-serif"],
-});
-
-const SalsaFont = Salsa({
-  subsets: ["latin"],
-  variable: "--font-salsa",
-  weight: "400",
 });
 
 const MagicRetro = localFont({
