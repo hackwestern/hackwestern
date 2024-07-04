@@ -82,7 +82,7 @@ export default function Home() {
           {/* Text */}
           <div className="relative flex h-screen w-screen justify-center">
             <div className="flex flex-col items-center pt-32 text-white">
-              <h3 className="pb-4 text-xl font-medium">Nov 29 - Dec 1</h3>
+              <h3 className="pb-4 text-xl font-medium">November 29 - December 1st, 2024</h3>
               <h1 className="bg-hw-hero-text-gradient bg-clip-text font-MagicRetro text-5xl leading-normal text-transparent mix-blend-screen md:text-5xl lg:text-8xl 2xl:text-8xl">
                 hack western 11
               </h1>
