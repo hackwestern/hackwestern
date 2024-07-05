@@ -180,6 +180,7 @@ export const reviews = createTable(
     })
       .defaultNow()
       .notNull(),
+    completed: boolean("completed").default(false),
     question1Rating: smallint("question1_rating").default(0),
     question2Rating: smallint("question2_rating").default(0),
     question3Rating: smallint("question3_rating").default(0),
