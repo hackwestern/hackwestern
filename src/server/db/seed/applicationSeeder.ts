@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import {
-  applicationStatus,
   applications,
+  countrySelection,
   ethnicity,
   gender,
   levelOfStudy,
@@ -11,6 +11,8 @@ import {
 } from "../schema";
 import { USERS } from "./userSeeder";
 import { type UserPartial, type Seeder } from ".";
+import type { z } from "zod";
+import { applicationSubmitSchema } from "~/schemas/application";
 
 const schools = [
   "Western University",
@@ -28,15 +30,25 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
     this.numRows = users.length;
   }
 
-  static createRandomWithoutUser() {
+  static createCompleteWithoutUser(): z.infer<typeof applicationSubmitSchema> {
     return {
-      status: faker.helpers.arrayElement(applicationStatus.enumValues),
+      ...ApplicationSeeder.createRandomWithoutUser(),
+      age: faker.number.int({ min: 18, max: 65 }),
+      agreeCodeOfConduct: true,
+      agreeShareWithMLH: true,
+      agreeWillBe18: true,
+    };
+  }
 
+  static createRandomWithoutUser() {
+    const application = {
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
-      dateOfBirth: faker.date.birthdate(),
+      age: faker.number.int({ min: 17, max: 65 }),
       phoneNumber: faker.phone.number(),
-      countryOfResidence: Number(faker.location.countryCode("numeric")),
+      countryOfResidence: faker.helpers.arrayElement(
+        countrySelection.enumValues,
+      ),
 
       school: faker.helpers.arrayElement(schools),
       levelOfStudy: faker.helpers.arrayElement(levelOfStudy.enumValues),
@@ -45,13 +57,13 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       attendedBefore: faker.datatype.boolean(),
       numOfHackathons: faker.helpers.arrayElement(numOfHackathons.enumValues),
 
-      question1: faker.lorem.paragraphs(2),
-      question2: faker.lorem.paragraphs(2),
-      question3: faker.lorem.paragraphs(2),
+      question1: faker.lorem.paragraphs(3),
+      question2: faker.lorem.paragraphs(3),
+      question3: faker.lorem.paragraphs(3),
 
       resumeLink: faker.internet.url(),
-      githubLink: faker.internet.url(),
-      linkedInLink: faker.internet.url(),
+      githubLink: faker.internet.userName(),
+      linkedInLink: faker.internet.userName(),
       otherLink: faker.internet.url(),
 
       agreeCodeOfConduct: faker.datatype.boolean(),
@@ -67,6 +79,15 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       sexualOrientation: faker.helpers.arrayElement(
         sexualOrientation.enumValues,
       ),
+    };
+
+    const isComplete = applicationSubmitSchema.safeParse(application).success;
+    const status = isComplete
+      ? ("PENDING_REVIEW" as const)
+      : ("IN_PROGRESS" as const);
+    return {
+      ...application,
+      status,
     };
   }
 

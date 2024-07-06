@@ -100,6 +100,7 @@ export const gender = pgEnum("gender", [
   "Male",
   "Non-Binary",
   "Other",
+  "Prefer not to answer",
 ]);
 
 /**
@@ -112,6 +113,7 @@ export const ethnicity = pgEnum("race/ethnicity", [
   "Hispanic",
   "White / Caucasian",
   "Multiple ethnicity / Other",
+  "Prefer not to answer",
 ]);
 
 /**
@@ -124,6 +126,16 @@ export const sexualOrientation = pgEnum("sexual_orientation", [
   "Queer",
   "Gay / Lesbian",
   "Heterosexual / Straight",
+  "Other",
+  "Prefer not to answer",
+]);
+
+/**
+ * Country of residence for the applicant.
+ */
+export const countrySelection = pgEnum("country", [
+  "Canada",
+  "United States",
   "Other",
 ]);
 
@@ -139,7 +151,6 @@ export const preregistrations = createTable("preregistration", {
   })
     .defaultNow()
     .notNull(),
-  name: text("name").notNull(),
   email: varchar("email", { length: 320 }).unique().notNull(),
 });
 
@@ -238,9 +249,9 @@ export const applications = createTable(
     // About You
     firstName: varchar("first_name", { length: 255 }),
     lastName: varchar("last_name", { length: 255 }),
-    dateOfBirth: timestamp("date_of_birth").defaultNow().notNull(),
-    phoneNumber: varchar("phone_number", { length: 42 }),
-    countryOfResidence: smallint("country_of_residence"),
+    age: integer("age"), // 18+
+    phoneNumber: varchar("phone_number", { length: 42 }), // Frontend validation
+    countryOfResidence: countrySelection("country_of_residence"),
 
     school: varchar("name", { length: 255 }),
     levelOfStudy: levelOfStudy("level_of_study"),
@@ -263,17 +274,21 @@ export const applications = createTable(
     otherLink: varchar("other_link", { length: 2048 }),
 
     // Agreements
-    agreeCodeOfConduct: boolean("agree_code_of_conduct")
+    agreeCodeOfConduct: boolean("agree_code_of_conduct") // Need
       .default(false)
       .notNull(),
-    agreeShareWithSponsors: boolean("agree_share_with_sponsors")
+    agreeShareWithSponsors: boolean("agree_share_with_sponsors") // Optional
       .default(false)
       .notNull(),
-    agreeShareWithMLH: boolean("agree_share_with_mlh").default(false).notNull(),
-    agreeEmailsFromMLH: boolean("agree_emails_from_mlh")
+    agreeShareWithMLH: boolean("agree_share_with_mlh") // Need
       .default(false)
       .notNull(),
-    agreeWillBe18: boolean("agree_will_be_18").default(false).notNull(),
+    agreeEmailsFromMLH: boolean("agree_emails_from_mlh") // Optional
+      .default(false)
+      .notNull(),
+    agreeWillBe18: boolean("agree_will_be_18") // Need
+      .default(false)
+      .notNull(),
 
     // Optional Questions
     underrepGroup: boolean("underrep_group"),

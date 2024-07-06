@@ -1,7 +1,8 @@
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { createInsertSchema } from "drizzle-zod";
 import { preregistrations } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
+import { db } from "~/server/db";
 
 const preregistrationCreateSchema = createInsertSchema(preregistrations).omit({
   createdAt: true,
@@ -9,12 +10,12 @@ const preregistrationCreateSchema = createInsertSchema(preregistrations).omit({
 });
 
 export const preregistrationRouter = createTRPCRouter({
-  create: protectedProcedure
+  create: publicProcedure
     .input(preregistrationCreateSchema)
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       try {
         const existingPreregistration =
-          await ctx.db.query.preregistrations.findFirst({
+          await db.query.preregistrations.findFirst({
             where: ({ email }, { eq }) => eq(email, input.email),
           });
 
@@ -25,7 +26,7 @@ export const preregistrationRouter = createTRPCRouter({
           });
         }
 
-        const createdPreregistration = await ctx.db
+        const createdPreregistration = await db
           .insert(preregistrations)
           .values(input)
           .returning();
@@ -37,7 +38,7 @@ export const preregistrationRouter = createTRPCRouter({
           : new TRPCError({
               code: "INTERNAL_SERVER_ERROR",
               message:
-                "Failed to create user with password" + JSON.stringify(error),
+                "Failed to create preregistration" + JSON.stringify(error),
             });
       }
     }),

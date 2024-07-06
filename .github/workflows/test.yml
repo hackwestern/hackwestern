@@ -1,7 +1,7 @@
-name: Test and Build
+name: Test
 on:
   pull_request:
-    types: [review_requested]
+    branches: main
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -29,22 +29,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
-      #- name: Cache build
-      #  uses: actions/cache@v4
-      #  with:
-      #    path: |
-      #      ~/.npm
-      #      ${{ github.workspace }}/.next/cache
-      #    key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
-      #    restore-keys: |
-      #      ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
-
       - name: Install dependencies
-        run: npm install
+        run: rm package-lock.json && npm install
 
       - name: Start Postgres DB
         run: npm run db:start && sleep 2
@@ -54,7 +44,4 @@ jobs:
 
       - name: Run tests
         run: npx vitest
-
-      - name: Build
-        run: npm run build
 

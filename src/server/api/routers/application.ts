@@ -1,39 +1,32 @@
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { applications } from "~/server/db/schema";
-import { createInsertSchema } from "drizzle-zod";
-
-const applicationSaveSchema = createInsertSchema(applications)
-  .omit({
-    createdAt: true,
-    updatedAt: true,
-  })
-  .required({ userId: true });
+import { db } from "~/server/db";
+import {
+  applicationSaveSchema,
+  applicationSubmitSchema,
+} from "~/schemas/application";
+import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure.query(async ({ ctx }) => {
     try {
       const userId = ctx.session.user.id;
-      const application = await ctx.db
-        .select()
-        .from(applications)
-        .where(eq(applications.userId, userId))
-        .limit(1);
+      const application = await db.query.applications.findFirst({
+        where: (schema, { eq }) => eq(schema.userId, userId),
+      });
 
-      if (!application.length) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Application not found",
-        });
-      }
+      const modifiedApplication = application
+        ? {
+            ...application,
+            githubLink: application?.githubLink?.substring(19),
+            linkedInLink: application?.linkedInLink?.substring(24),
+          }
+        : undefined;
 
-      return application[0];
+      return modifiedApplication;
     } catch (error) {
-      if (error instanceof TRPCError && error.code === "NOT_FOUND") {
-        throw error;
-      }
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to fetch application: " + JSON.stringify(error),
@@ -47,15 +40,28 @@ export const applicationRouter = createTRPCRouter({
       try {
         const userId = ctx.session.user.id;
         const applicationData = input;
-        const savedApplication = await ctx.db
+        const isCompleteApplication =
+          applicationSubmitSchema.safeParse(applicationData).success;
+
+        await db
           .insert(applications)
-          .values({ ...applicationData, userId })
+          .values({
+            ...applicationData,
+            githubLink: `${GITHUB_URL}${applicationData.githubLink}`,
+            linkedInLink: `${LINKEDIN_URL}${applicationData.linkedInLink}`,
+            userId,
+            status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
+          })
           .onConflictDoUpdate({
             target: applications.userId,
-            set: { ...applicationData, updatedAt: new Date() },
-          })
-          .returning();
-        return savedApplication[0];
+            set: {
+              ...applicationData,
+              updatedAt: new Date(),
+              githubLink: `${GITHUB_URL}${applicationData.githubLink}`,
+              linkedInLink: `${LINKEDIN_URL}${applicationData.linkedInLink}`,
+              status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
+            },
+          });
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
