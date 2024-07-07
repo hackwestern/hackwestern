@@ -1,14 +1,11 @@
 import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { applications, reviews, users } from "~/server/db/schema";
-import { createInsertSchema } from "drizzle-zod";
+import { applications, reviews } from "~/server/db/schema";
 import { z } from "zod";
 import { asc, eq, sql } from "drizzle-orm"
 
 import { db } from "~/server/db";
-import { drizzle } from "drizzle-orm/postgres-js";
-import { count } from "console";
 
 const REQUIRED_REVIEWS = 2;
 const REVIEW_TIMEOUT = 24;
