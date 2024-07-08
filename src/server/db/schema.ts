@@ -180,6 +180,7 @@ export const reviews = createTable(
     })
       .defaultNow()
       .notNull(),
+    completed: boolean("completed").default(false),
     question1Rating: smallint("question1_rating").default(0),
     question2Rating: smallint("question2_rating").default(0),
     question3Rating: smallint("question3_rating").default(0),
@@ -187,7 +188,7 @@ export const reviews = createTable(
     githubBonus: smallint("github_bonus").default(0),
     linkedinBonus: smallint("linkedin_bonus").default(0),
     otherlinkBonus: smallint("otherlink_bonus").default(0),
-    referral: boolean("referall"),
+    referral: boolean("referall").default(false),
   },
   (review) => {
     return {
