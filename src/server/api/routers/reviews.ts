@@ -3,10 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { reviews, users } from "~/server/db/schema";
 import { db } from "~/server/db";
-import {
-  reviewSaveSchema,
-  reviewSubmitSchema,
-} from "~/schemas/review";
+import { reviewSaveSchema, reviewSubmitSchema } from "~/schemas/review";
 import { eq } from "drizzle-orm";
 
 export const reviewsRouter = createTRPCRouter({
