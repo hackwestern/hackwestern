@@ -5,7 +5,7 @@ import { db } from "~/server/db";
 
 export const authRedirect = async (
   context: GetServerSidePropsContext,
-  destination = "/login",
+  destination = "/internal/login",
   userTypeTarget = "organizer",
 ) => {
   const session = await getServerSession(context.req, context.res, authOptions);
