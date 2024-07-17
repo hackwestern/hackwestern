@@ -51,10 +51,6 @@ export const reviewsRouter = createTRPCRouter({
         });
       }
     }),
-  /*Query
-    Check if the session user is an organizer, if not return a 401 (Not Authorized)
-    Given the userId of an organizer, return all of the reviews related to this organizer
-    */
   getReviews: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
     const reviewer = await db.query.users.findFirst({
@@ -71,8 +67,4 @@ export const reviewsRouter = createTRPCRouter({
       where: eq(reviews.reviewerUserId, userId),
     });
   }),
-  /*Mutation
-    Check if the session user is an organizer, if not return a 401 (Not Authorized)
-    Given the userId of an organizer, return all of the reviews related to this organizer
-    */
 });
