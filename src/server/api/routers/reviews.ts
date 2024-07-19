@@ -51,7 +51,7 @@ export const reviewsRouter = createTRPCRouter({
         });
       }
     }),
-  getReviews: protectedProcedure.query(async ({ ctx }) => {
+  getByOrganizer: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
     const reviewer = await db.query.users.findFirst({
       where: eq(users.id, userId),
@@ -64,6 +64,18 @@ export const reviewsRouter = createTRPCRouter({
     }
 
     return db.query.reviews.findMany({
+      columns: {
+        reviewerUserId: false,
+      },
+      with: {
+        applicant: {
+          columns: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
       where: eq(reviews.reviewerUserId, userId),
     });
   }),
