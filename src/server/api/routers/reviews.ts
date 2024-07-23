@@ -54,4 +54,36 @@ export const reviewsRouter = createTRPCRouter({
         });
       }
     }),
+    
+    referApplicant: protectedProcedure
+    .input(reviewSaveSchema)
+    .mutation(async({ input, ctx }) => {
+      try {
+        const userId = ctx.session.user.id;
+        const reviewer = await db.query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+        if (!reviewer || reviewer.type !== "organizer") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "User is not authorized to submit reviews",
+          });
+        }
+
+        const reviewData = input;
+        await db
+        .insert(reviews)
+        .values({
+          ...reviewData,
+          reviewerUserId: userId,
+          applicantUserId: reviewData.applicantUserId,
+          referral: true,
+        })
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to save referral: " + JSON.stringify(error),
+        });
+      }
+    }),
 });
