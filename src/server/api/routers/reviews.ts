@@ -51,10 +51,10 @@ export const reviewsRouter = createTRPCRouter({
         });
       }
     }),
-    
-    referApplicant: protectedProcedure
+
+  referApplicant: protectedProcedure
     .input(reviewSaveSchema)
-    .mutation(async({ input, ctx }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
         const reviewer = await db.query.users.findFirst({
@@ -68,14 +68,12 @@ export const reviewsRouter = createTRPCRouter({
         }
 
         const reviewData = input;
-        await db
-        .insert(reviews)
-        .values({
+        await db.insert(reviews).values({
           ...reviewData,
           reviewerUserId: userId,
           applicantUserId: reviewData.applicantUserId,
           referral: true,
-        })
+        });
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -83,7 +81,7 @@ export const reviewsRouter = createTRPCRouter({
         });
       }
     }),
-  
+
   getByOrganizer: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
     const reviewer = await db.query.users.findFirst({
