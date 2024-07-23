@@ -7,6 +7,8 @@ import { getServerSession } from "next-auth";
 import type { GetServerSidePropsContext } from "next";
 import { db } from "~/server/db";
 import { redirect } from "next/dist/server/api-utils";
+import GoogleAuthButton from "~/components/auth/googleauth-button";
+import GithubAuthButton from "~/components/auth/githubauth-button";
 
 export default function Login() {
   const { data: sessionData } = useSession();
@@ -26,15 +28,9 @@ export default function Login() {
           <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-[5rem]">
             Hack Western Organizer
           </h1>
-          <div className="flex flex-col items-center gap-2">
-            <button
-              className="rounded-full bg-white/10 px-10 py-3 font-semibold text-white no-underline transition hover:bg-white/20"
-              onClick={() =>
-                void signIn("google", { callbackUrl: "/internal" })
-              }
-            >
-              Sign in
-            </button>
+          <div className="flex w-72 flex-col items-center gap-2">
+            <GoogleAuthButton redirect="/internal" />
+            <GithubAuthButton redirect="/internal" />
           </div>
         </div>
         <div className="relative flex w-full items-center md:py-5">
@@ -69,4 +65,5 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
       },
     };
   }
+  return { props: {} };
 }

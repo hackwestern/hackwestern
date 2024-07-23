@@ -5,11 +5,16 @@ import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
 import { db } from "~/server/db";
 import { authOptions } from "~/server/auth";
-import { useSession } from "next-auth/react";
-
-const Internal = async () => {
+import { users } from "~/server/db/schema";
+import NotAuthorizedCard from "~/components/notauthorized-card";
+const Internal = ({
+  userSession,
+}: {
+  userSession: typeof users.$inferSelect;
+}) => {
   const router = useRouter();
-  return (
+
+  return userSession.type == "organizer" ? (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#160524]">
       <h1 className="mb-5 text-3xl text-white">Internal Dashboard</h1>
       <div className="flex flex-col gap-3">
@@ -23,6 +28,8 @@ const Internal = async () => {
         <ApplicationsButton />
       </div>
     </div>
+  ) : (
+    <NotAuthorizedCard />
   );
 };
 
@@ -64,9 +71,14 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
       },
     };
   }
+  const user = await db.query.users.findFirst({
+    where: (users, { eq }) => eq(users.id, session.user.id),
+  });
+
   return {
     props: {
-      session,
+      userSession: user,
+      name: "hello",
     },
   };
 }
