@@ -4,6 +4,7 @@ import { type PgTable, type PgInsertValue } from "drizzle-orm/pg-core";
 
 import { ApplicationSeeder } from "./applicationSeeder";
 import { PreregistrationSeeder } from "./preregistrationSeeder";
+import { ReviewSeeder } from "./reviewSeeder";
 import { UserSeeder } from "./userSeeder";
 
 import * as p from "@clack/prompts";
@@ -49,7 +50,7 @@ export type UserPartial = {
 };
 
 function CreateSeeders(users: UserPartial[]): Seeder<PgTable>[] {
-  return [new PreregistrationSeeder(), new ApplicationSeeder(users)];
+  return [new PreregistrationSeeder(), new ApplicationSeeder(users), new ReviewSeeder()];
 }
 
 function chunkArray<T>(array: T[], size: number): T[][] {
