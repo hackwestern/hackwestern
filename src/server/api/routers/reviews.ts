@@ -55,10 +55,10 @@ export const reviewsRouter = createTRPCRouter({
         });
       }
     }),
-    
-    referApplicant: protectedProcedure
+
+  referApplicant: protectedProcedure
     .input(referApplicantSchema)
-    .mutation(async({ input, ctx }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
         const reviewer = await db.query.users.findFirst({
@@ -71,8 +71,8 @@ export const reviewsRouter = createTRPCRouter({
           });
         }
 
-        const applicantData = input;
-        await db
+      const applicantData = input;
+      await db
         .insert(reviews)
         .values({
           ...applicantData,
