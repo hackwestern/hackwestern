@@ -71,10 +71,8 @@ export const reviewsRouter = createTRPCRouter({
           });
         }
 
-      const applicantData = input;
-      await db
-        .insert(reviews)
-        .values({
+        const applicantData = input;
+        await db.insert(reviews).values({
           ...applicantData,
           reviewerUserId: userId,
           applicantUserId: applicantData.applicantUserId,
