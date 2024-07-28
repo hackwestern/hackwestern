@@ -50,7 +50,11 @@ export type UserPartial = {
 };
 
 function CreateSeeders(users: UserPartial[]): Seeder<PgTable>[] {
-  return [new PreregistrationSeeder(), new ApplicationSeeder(users), new ReviewSeeder()];
+  return [
+    new PreregistrationSeeder(),
+    new ApplicationSeeder(users),
+    new ReviewSeeder(),
+  ];
 }
 
 function chunkArray<T>(array: T[], size: number): T[][] {
