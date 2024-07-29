@@ -26,6 +26,4 @@ export const reviewSubmitSchema = createInsertSchema(reviews, {
   referral: true,
 });
 
-export const referApplicantSchema = createInsertSchema(reviews, {
-  applicantUserId: z.string().min(1).max(255),
-});
+export const referApplicantSchema = createInsertSchema(reviews).pick({ applicantUserId: true });
