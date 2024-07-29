@@ -26,4 +26,6 @@ export const reviewSubmitSchema = createInsertSchema(reviews, {
   referral: true,
 });
 
-export const referApplicantSchema = createInsertSchema(reviews).pick({ applicantUserId: true });
+export const referApplicantSchema = createInsertSchema(reviews).pick({
+  applicantUserId: true,
+});
