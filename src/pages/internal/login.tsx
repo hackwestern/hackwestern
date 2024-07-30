@@ -1,4 +1,4 @@
-import { signIn, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import Head from "next/head";
 
 import Link from "next/link";
@@ -6,7 +6,6 @@ import { authOptions } from "~/server/auth";
 import { getServerSession } from "next-auth";
 import type { GetServerSidePropsContext } from "next";
 import { db } from "~/server/db";
-import { redirect } from "next/dist/server/api-utils";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 
@@ -28,22 +27,11 @@ export default function Login() {
           <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-[5rem]">
             Hack Western Organizer
           </h1>
-          <div className="flex w-72 flex-col items-center gap-2">
+          <div className="flex w-72 flex-col items-center gap-5">
             <GoogleAuthButton redirect="/internal" />
             <GithubAuthButton redirect="/internal" />
           </div>
         </div>
-        <div className="relative flex w-full items-center md:py-5">
-          <div className="flex-grow border-t border-gray-400"></div>
-          <span className="mx-4 flex-shrink text-gray-400">or</span>
-          <div className="flex-grow border-t border-gray-400"></div>
-        </div>
-        <p className="pb-5 text-white">Don't have an account?</p>
-        <Link href="/internal/register">
-          <button className="rounded-full bg-white/10 px-10 py-3 font-semibold text-white no-underline transition hover:bg-white/20">
-            Register
-          </button>
-        </Link>
       </main>
     </>
   );

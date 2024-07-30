@@ -5,7 +5,7 @@ function GoogleAuthButton({ redirect }: { redirect: string }) {
   return (
     <button
       onClick={() => {
-        signIn("google", { callbackUrl: redirect });
+        void signIn("google", { callbackUrl: redirect });
       }}
       className="w-full rounded-md bg-slate-50 p-1 font-medium outline outline-1 outline-gray-400"
     >

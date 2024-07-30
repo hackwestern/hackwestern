@@ -5,7 +5,7 @@ import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
 import { db } from "~/server/db";
 import { authOptions } from "~/server/auth";
-import { users } from "~/server/db/schema";
+import type { users } from "~/server/db/schema";
 import NotAuthorizedCard from "~/components/notauthorized-card";
 const Internal = ({
   userSession,
