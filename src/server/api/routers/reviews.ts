@@ -3,7 +3,11 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { reviews, users } from "~/server/db/schema";
 import { db } from "~/server/db";
-import { reviewSaveSchema, reviewSubmitSchema } from "~/schemas/review";
+import {
+  reviewSaveSchema,
+  reviewSubmitSchema,
+  referApplicantSchema,
+} from "~/schemas/review";
 import { eq } from "drizzle-orm";
 
 export const reviewsRouter = createTRPCRouter({
@@ -51,6 +55,37 @@ export const reviewsRouter = createTRPCRouter({
         });
       }
     }),
+
+  referApplicant: protectedProcedure
+    .input(referApplicantSchema)
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const userId = ctx.session.user.id;
+        const reviewer = await db.query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+        if (!reviewer || reviewer.type !== "organizer") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "User is not authorized to modify reviews",
+          });
+        }
+
+        const applicantData = input;
+        await db.insert(reviews).values({
+          ...applicantData,
+          reviewerUserId: userId,
+          applicantUserId: applicantData.applicantUserId,
+          referral: true,
+        });
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to save referral: " + JSON.stringify(error),
+        });
+      }
+    }),
+
   getByOrganizer: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
     const reviewer = await db.query.users.findFirst({
