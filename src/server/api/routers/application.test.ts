@@ -1,19 +1,25 @@
-import { afterEach, assert, describe, expect, test } from "vitest";
+import { afterEach, assert, beforeEach, describe, expect, test } from "vitest";
 import { faker } from "@faker-js/faker";
 import { type Session } from "next-auth";
-import { eq } from "drizzle-orm";
 
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 
 import { db } from "~/server/db";
-import { mockSession } from "~/server/auth";
-import { applications } from "~/server/db/schema";
-import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
+import { count, eq } from "drizzle-orm";
+import { mockOrganizerSession, mockSession } from "~/server/auth";
+import { applications, users } from "~/server/db/schema";
+
 import { applicationSubmitSchema } from "~/schemas/application";
+
+import { UserSeeder } from "~/server/db/seed/userSeeder";
+import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
+import { seed, seedUsers } from "~/server/db/seed/helpers";
+
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
 
 const session = await mockSession(db);
+const organizerSession = await mockOrganizerSession(db);
 
 const ctx = createInnerTRPCContext({ session });
 const caller = createCaller(ctx);
@@ -45,6 +51,59 @@ describe("application.get", async () => {
     };
 
     expect(got).toEqual(want);
+  });
+});
+
+describe("application.getAllApplicants", async () => {
+  beforeEach(async () => {
+    await db.delete(applications);
+  });
+
+  afterEach(async () => {
+    await db.delete(applications);
+  });
+
+  test("throws an error if not authenticated", async () => {
+    const ctx = createInnerTRPCContext({ session: null });
+    const caller = createCaller(ctx);
+
+    await expect(caller.application.getAllApplicants()).rejects.toThrowError();
+  });
+
+  test("throws an error if user is not an organizer", () => {
+    expect(caller.application.getAllApplicants()).rejects.toThrowError();
+  });
+
+  test("gets all applicants with applications that are ready for review", async () => {
+    const ctx = createInnerTRPCContext({ session: organizerSession });
+    const caller = createCaller(ctx);
+
+    const NUM_ROWS = 50;
+    const us = new UserSeeder(NUM_ROWS);
+    await db.transaction(async (tx) => {
+      const insertedUsers = await seedUsers(us, tx);
+      const as = new ApplicationSeeder(insertedUsers, NUM_ROWS);
+
+      await Promise.all(seed(as, tx));
+    });
+
+    const result = await db
+      .select({
+        userId: applications.userId,
+        firstName: applications.firstName,
+        lastName: applications.lastName,
+        email: users.email,
+      })
+      .from(applications)
+      .innerJoin(users, eq(users.id, applications.userId))
+      .where(eq(applications.status, "PENDING_REVIEW"));
+
+    const want = result.length;
+
+    const applicants = await caller.application.getAllApplicants();
+    const got = applicants.length;
+
+    expect(got).toBe(want);
   });
 });
 

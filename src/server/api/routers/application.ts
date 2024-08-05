@@ -1,13 +1,14 @@
 import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { applications } from "~/server/db/schema";
+import { applications, users } from "~/server/db/schema";
 import { db } from "~/server/db";
 import {
   applicationSaveSchema,
   applicationSubmitSchema,
 } from "~/schemas/application";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
+import { eq } from "drizzle-orm";
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure.query(async ({ ctx }) => {
@@ -31,6 +32,47 @@ export const applicationRouter = createTRPCRouter({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to fetch application: " + JSON.stringify(error),
       });
+    }
+  }),
+
+  getAllApplicants: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      const userId = ctx.session.user.id;
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+      });
+      if (user?.type !== "organizer") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "User is not authorized to get all applicants",
+        });
+      }
+
+      const applicants = await db
+        .select({
+          userId: applications.userId,
+          firstName: applications.firstName,
+          lastName: applications.lastName,
+          email: users.email,
+        })
+        .from(applications)
+        .innerJoin(users, eq(users.id, applications.userId))
+        .where(eq(applications.status, "PENDING_REVIEW"));
+
+      console.log("calling get all applicants", { applicants });
+
+      return applicants.map((ap) => ({
+        userId: ap.userId,
+        name: `${ap.firstName ?? ""} ${ap.lastName ?? ""}`,
+        email: ap.email,
+      }));
+    } catch (error) {
+      throw error instanceof TRPCError
+        ? error
+        : new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to fetch applicants: " + JSON.stringify(error),
+          });
     }
   }),
 
