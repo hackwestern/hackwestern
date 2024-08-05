@@ -59,8 +59,6 @@ export const applicationRouter = createTRPCRouter({
         .innerJoin(users, eq(users.id, applications.userId))
         .where(eq(applications.status, "PENDING_REVIEW"));
 
-      console.log("calling get all applicants", { applicants });
-
       return applicants.map((ap) => ({
         userId: ap.userId,
         name: `${ap.firstName ?? ""} ${ap.lastName ?? ""}`,

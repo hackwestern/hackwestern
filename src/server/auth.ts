@@ -19,7 +19,7 @@ import { env } from "~/env";
 import { type Database, db } from "~/server/db";
 import { createTable, users } from "~/server/db/schema";
 import { UserSeeder } from "./db/seed/userSeeder";
-import { PgInsertValue } from "drizzle-orm/pg-core";
+import type { PgInsertValue } from "drizzle-orm/pg-core";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
