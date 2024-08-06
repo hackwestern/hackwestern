@@ -189,7 +189,6 @@ export const reviews = createTable(
     linkedinBonus: smallint("linkedin_bonus").default(0),
     otherlinkBonus: smallint("otherlink_bonus").default(0),
     referral: boolean("referral"),
-    completed: boolean("completed")
   },
   (review) => {
     return {
