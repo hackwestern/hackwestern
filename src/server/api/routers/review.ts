@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { applications, reviews } from "~/server/db/schema";
 import { z } from "zod";
-import { asc, eq, sql } from "drizzle-orm"
+import { asc, eq, sql } from "drizzle-orm";
 
 import { db } from "~/server/db";
 import { count } from "console";
@@ -42,15 +42,17 @@ export const reviewRequestRouter = createTRPCRouter({
                 return { reviewInProgress, applicationInReview }
             }
 
-            // Select first application that has not received the required number of reviews and has not been referred
-            const applicationsAwaitingReview = await db
-                .select()
-                .from(applications)
-                .where(sql`${applications.status}='PENDING_REVIEW'`)
-                .groupBy(applications.userId)
-                .having(sql`count(${reviews.applicantUserId}) < ${REQUIRED_REVIEWS} and ${reviews.referral} is not true`)
-                .orderBy(asc(applications.updatedAt))
-                .limit(1);
+        // Select first application that has not received the required number of reviews and has not been referred
+        const applicationsAwaitingReview = await db
+            .select()
+            .from(applications)
+            .where(sql`${applications.status}='PENDING_REVIEW'`)
+            .groupBy(applications.userId)
+            .having(
+            sql`count(${reviews.applicantUserId}) < ${REQUIRED_REVIEWS} and ${reviews.referral} is not true`,
+            )
+            .orderBy(asc(applications.updatedAt))
+            .limit(1);
 
             const appToReview = applicationsAwaitingReview[0];
 
