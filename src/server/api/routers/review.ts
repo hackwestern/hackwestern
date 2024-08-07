@@ -6,7 +6,6 @@ import { z } from "zod";
 import { asc, eq, sql } from "drizzle-orm";
 
 import { db } from "~/server/db";
-import { count } from "console";
 
 const REQUIRED_REVIEWS = 2;
 const REVIEW_TIMEOUT = 24;
