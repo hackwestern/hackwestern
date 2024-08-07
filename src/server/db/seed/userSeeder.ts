@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { users } from "../schema";
-import { type Seeder } from ".";
+import { type Seeder } from "./helpers";
 
 export const USERS = 3000;
 
@@ -8,7 +8,7 @@ export class UserSeeder implements Seeder<typeof users> {
   private userIds = faker.helpers.uniqueArray(() => faker.string.uuid(), USERS);
   tableName = "Users";
   table = users;
-  numRows = USERS;
+  constructor(public numRows = USERS) {}
 
   createRandom() {
     return {
