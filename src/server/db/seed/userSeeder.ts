@@ -19,4 +19,15 @@ export class UserSeeder implements Seeder<typeof users> {
       image: faker.image.avatar(),
     };
   }
+
+  createReviewer() {
+    return {
+      id: this.userIds.pop() ?? "",
+      name: faker.person.fullName(),
+      email: faker.internet.email(),
+      emailVerified: faker.date.anytime(),
+      image: faker.image.avatar(),
+      type: "organizer",
+    };
+  }
 }

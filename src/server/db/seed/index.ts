@@ -4,6 +4,7 @@ import { type PgTable, type PgInsertValue } from "drizzle-orm/pg-core";
 
 import { ApplicationSeeder } from "./applicationSeeder";
 import { PreregistrationSeeder } from "./preregistrationSeeder";
+import { ReviewSeeder } from "./reviewSeeder";
 import { UserSeeder } from "./userSeeder";
 
 import * as p from "@clack/prompts";
@@ -46,10 +47,15 @@ export interface Seeder<T extends PgTable> {
 export type UserPartial = {
   id: string;
   name: string | null;
+  type: 'hacker' | 'organizer' | 'sponsor';
 };
 
-function CreateSeeders(users: UserPartial[]): Seeder<PgTable>[] {
-  return [new PreregistrationSeeder(), new ApplicationSeeder(users)];
+function CreateSeeders(users: UserPartial[], reviewers: UserPartial[]): Seeder<PgTable>[] {
+  return [
+    new PreregistrationSeeder(),
+    new ApplicationSeeder(users),
+    new ReviewSeeder(users, reviewers),
+  ];
 }
 
 function chunkArray<T>(array: T[], size: number): T[][] {
@@ -124,7 +130,9 @@ async function seedTables(): Promise<void> {
       const us = new UserSeeder();
       const insertedUsers = await seedUsers(us, tx);
 
-      const seeders = CreateSeeders(insertedUsers);
+      const reviewers = insertedUsers.filter(user => user.type === "organizer");
+
+      const seeders = CreateSeeders(insertedUsers, reviewers);
       const seederTableNames = seeders.map((s) => s.tableName);
 
       seedSpinner.message(`Seeding tables ${seederTableNames.join(", ")}`);

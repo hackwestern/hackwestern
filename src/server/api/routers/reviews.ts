@@ -10,7 +10,7 @@ import {
 } from "~/schemas/review";
 import { eq } from "drizzle-orm";
 
-export const reviewsRouter = createTRPCRouter({
+export const reviewRouter = createTRPCRouter({
   save: protectedProcedure
     .input(reviewSaveSchema)
     .mutation(async ({ input, ctx }) => {
