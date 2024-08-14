@@ -1,7 +1,9 @@
 name: Test
 on:
   pull_request:
-    branches: main
+    branches:
+      - main
+      - dev
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -44,4 +46,3 @@ jobs:
 
       - name: Run tests
         run: npx vitest
-
