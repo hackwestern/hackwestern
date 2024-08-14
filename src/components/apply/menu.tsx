@@ -11,7 +11,11 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
     // TODO: make this responsive
     <div className="flex w-full justify-center gap-3 border-[1px] border-t-primary-300 bg-violet-100 py-2">
       {applySteps.map((s) => (
-        <Button variant={s.step === step ? "apply" : "apply-ghost"} asChild>
+        <Button
+          key={s.step}
+          variant={s.step === step ? "apply" : "apply-ghost"}
+          asChild
+        >
           <Link href={{ pathname: "/apply", query: { step: s.step } }}>
             {s.label}
           </Link>
