@@ -8,8 +8,8 @@ import { ApplyNavbar } from "~/components/apply/navbar";
 import { ApplyForm } from "~/components/apply/form";
 import { ApplyNavigation } from "~/components/apply/navigation";
 
-function getStep(stepValue: string | null): ApplyStep | undefined {
-  return applySteps.find((s) => s.step === stepValue)?.step;
+function getStep(stepValue: string | null): ApplyStep | null {
+  return applySteps.find((s) => s.step === stepValue)?.step ?? null;
 }
 
 export default function Apply() {

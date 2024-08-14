@@ -9,7 +9,7 @@ import { OptionalForm } from "./optional-form";
 import { ReviewForm } from "./review-form";
 
 type ApplyFormProps = {
-  step: ApplyStep | undefined;
+  step: ApplyStep | null;
 };
 
 export function ApplyForm({ step }: ApplyFormProps) {

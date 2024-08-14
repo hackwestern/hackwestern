@@ -3,7 +3,7 @@ import { Button } from "../ui/button";
 import Link from "next/link";
 
 type ApplyMenuProps = {
-  step: ApplyStep | undefined;
+  step: ApplyStep | null;
 };
 
 export function ApplyMenu({ step }: ApplyMenuProps) {

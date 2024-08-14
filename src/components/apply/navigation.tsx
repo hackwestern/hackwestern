@@ -4,7 +4,7 @@ import Link from "next/link";
 import React from "react";
 
 type ApplyNavigationProps = {
-  step: ApplyStep | undefined;
+  step: ApplyStep | null;
 };
 
 function getPreviousStep(stepIndex: number | null): ApplyStep | null {
@@ -18,7 +18,7 @@ function getNextStep(stepIndex: number | null): ApplyStep | null {
   return applySteps[stepIndex + 1]?.step ?? null;
 }
 
-function getStepIndex(step: ApplyStep | undefined): number | null {
+function getStepIndex(step: ApplyStep | null): number | null {
   if (!step) return null;
 
   const stepIndex = applySteps.findIndex((s) => s.step === step);
