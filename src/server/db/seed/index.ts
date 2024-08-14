@@ -47,7 +47,7 @@ export interface Seeder<T extends PgTable> {
 export type UserPartial = {
   id: string;
   name: string | null;
-  type: 'hacker' | 'organizer' | 'sponsor';
+  type: 'hacker' | 'organizer' | 'sponsor' | null;
 };
 
 function CreateSeeders(users: UserPartial[], reviewers: UserPartial[]): Seeder<PgTable>[] {
@@ -81,7 +81,7 @@ async function seedUsers(
 ): Promise<UserPartial[]> {
   const usersChunked = await Promise.all(
     seed(us, tx).map((b) =>
-      b.returning({ id: us.table.id, name: us.table.name }),
+      b.returning({ id: us.table.id, name: us.table.name, type: us.table.type }),
     ),
   );
 
@@ -93,7 +93,7 @@ async function deleteSeedTables(): Promise<void> {
     const delSpinner = p.spinner();
     delSpinner.start("Starting to delete rows from seeded tables.");
 
-    const seeders = [new UserSeeder(), ...CreateSeeders([])];
+    const seeders = [new UserSeeder(), ...CreateSeeders([], [])];
     const seederTableNames = seeders.map((s) => s.tableName);
 
     delSpinner.message(

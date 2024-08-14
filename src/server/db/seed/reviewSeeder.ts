@@ -11,7 +11,7 @@ export class ReviewSeeder implements Seeder<typeof reviews> {
   table = reviews;
   numRows = USERS;
   constructor(reviewers: UserPartial[], users: UserPartial[]) {
-    this.reviewers = reviewers;;
+    this.reviewers = reviewers;
     this.applicants = users;
     this.numRows = users.length;
   }
