@@ -1,6 +1,5 @@
 import * as React from "react";
 import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
-
 import { cn } from "~/lib/utils";
 import { Button } from "./button";
 import {
@@ -48,7 +47,7 @@ export function Combobox(props: {
                 <CommandItem
                   key={option.value}
                   value={option.value}
-                  onSelect={(currentValue) => {
+                  onSelect={(currentValue: React.SetStateAction<string | undefined>) => {
                     setValue(currentValue);
                     setOpen(false);
                   }}
