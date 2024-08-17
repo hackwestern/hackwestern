@@ -40,7 +40,7 @@ const Review = () => {
       <h1 className="text-4xl text-white">Review Application</h1>
 
       {applicationData ? (
-        <div className="flex w-[97vw] flex-col gap-3 p-8 sm:w-[94vw] md:w-[85vw] lg:w-[77vw] xl:w-[72vw] 2xl:w-[66vw] 3xl:w-[60vw] 4xl:w-[52vw]">
+        <div className="3xl:w-[60vw] 4xl:w-[52vw] flex w-[97vw] flex-col gap-3 p-8 sm:w-[94vw] md:w-[85vw] lg:w-[77vw] xl:w-[72vw] 2xl:w-[66vw]">
           <RateQuestion
             section="Question 1"
             question={applicationData.question1}
