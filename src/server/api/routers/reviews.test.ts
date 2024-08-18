@@ -20,9 +20,7 @@ const caller = createCaller(ctx);
 
 describe("review.save", async () => {
   afterEach(async () => {
-    await db
-      .delete(reviews)
-      .where(eq(reviews.reviewerUserId, session.user.id));
+    await db.delete(reviews).where(eq(reviews.reviewerUserId, session.user.id));
   });
 
   test("throws an error if the user is not an organizer", async () => {
@@ -40,7 +38,7 @@ describe("review.save", async () => {
     const application = createRandomApplication(session);
     await caller.application.save(application);
     const review = createRandomReview(session);
-    
+
     // try {
     //   await caller.review.save(review);
     // } catch (error) {
@@ -64,9 +62,7 @@ describe("review.save", async () => {
 
 describe.sequential("review.referApplicant", async () => {
   afterEach(async () => {
-    await db
-      .delete(reviews)
-      .where(eq(reviews.reviewerUserId, session.user.id));
+    await db.delete(reviews).where(eq(reviews.reviewerUserId, session.user.id));
   });
 
   test("throws an error if the user is not an organizer", async () => {
@@ -85,7 +81,7 @@ describe.sequential("review.referApplicant", async () => {
 
     await expect(caller.review.referApplicant(review)).resolves.not.toThrow();
   });
-})
+});
 
 function createRandomReview(session: Session) {
   const reviewerUserId = session.user.id;
