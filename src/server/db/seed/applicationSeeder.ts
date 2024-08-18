@@ -10,7 +10,7 @@ import {
   sexualOrientation,
 } from "../schema";
 import { USERS } from "./userSeeder";
-import { type UserPartial, type Seeder } from ".";
+import { type UserPartial, type Seeder } from "./helpers";
 import type { z } from "zod";
 import { applicationSubmitSchema } from "~/schemas/application";
 
@@ -24,9 +24,11 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
   private users: UserPartial[] = [];
   tableName = "Applications";
   table = applications;
-  numRows = USERS;
-  constructor(users: UserPartial[]) {
-    this.users = users;
+  constructor(
+    users: UserPartial[],
+    public numRows = USERS,
+  ) {
+    this.users = [...users];
     this.numRows = users.length;
   }
 
