@@ -41,7 +41,7 @@ export const reviewRequestRouter = createTRPCRouter({
                     .select()
                     .from(applications)
                     .where(sql`${applications.userId}=${reviewInProgress.applicantUserId}`)
-                console.log("fetched application being reviewed")
+                // console.log("fetched application being reviewed")
                 return { reviewInProgress, applicationInReview }
             } else {
                 // console.log("no review in progress")
