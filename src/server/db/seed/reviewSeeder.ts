@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { reviews } from "../schema";
 import { USERS } from "./userSeeder";
-import { UserPartial, type Seeder } from ".";
+import { UserPartial, type Seeder } from "./helpers";
 import { reviewSubmitSchema } from "~/schemas/review";
 
 export class ReviewSeeder implements Seeder<typeof reviews> {
