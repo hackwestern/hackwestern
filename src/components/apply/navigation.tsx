@@ -14,7 +14,6 @@ function getPreviousStep(stepIndex: number | null): ApplyStep | null {
 
 function getNextStep(stepIndex: number | null): ApplyStep | null {
   if (stepIndex === null) return null;
-  console.log(applySteps[stepIndex], applySteps[stepIndex + 1]);
   return applySteps[stepIndex + 1]?.step ?? null;
 }
 
