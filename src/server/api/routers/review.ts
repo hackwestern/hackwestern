@@ -3,10 +3,9 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { applications, reviews } from "~/server/db/schema";
 import { z } from "zod";
-import { asc, eq, sql } from "drizzle-orm"
+import { asc, eq, lt, sql, count } from "drizzle-orm";
 
 import { db } from "~/server/db";
-import { count } from "console";
 
 const REQUIRED_REVIEWS = 2;
 const REVIEW_TIMEOUT = 24;
@@ -42,8 +41,6 @@ export const reviewRequestRouter = createTRPCRouter({
                 .where(sql`${reviews.reviewerUserId}=${ctx.session.user.id}`)
                 .limit(1))[0]
             
-            
-
             if (reviewInProgress) {
                 console.log("fetched review in progress")
                 const applicationInReview = await db
@@ -58,12 +55,15 @@ export const reviewRequestRouter = createTRPCRouter({
 
             // Select first application that has not received the required number of reviews and has not been referred
             const applicationsAwaitingReview = await db
-                .select()
+                .select({
+                    userId: applications.userId,
+                    count: count(reviews.applicantUserId).mapWith(Number)
+                })
                 .from(applications)
                 .where(sql`${applications.status}='PENDING_REVIEW'`)
                 .groupBy(applications.userId)
                 .having(
-                sql`count(${reviews.applicantUserId}) < ${REQUIRED_REVIEWS} and ${reviews.referral} is not true`,
+                    sql`count(${reviews.applicantUserId}) < ${REQUIRED_REVIEWS} and ${reviews.referral} is not true`,
                 )
                 .orderBy(asc(applications.updatedAt))
                 .limit(1);
