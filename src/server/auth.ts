@@ -67,7 +67,6 @@ export const authOptions: NextAuthOptions = {
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
     }),
-
     CredentialsProvider({
       // The name to display on the sign-in form (e.g., 'Sign in with...')
       name: "Credentials",
