@@ -14,7 +14,7 @@ const Internal = ({
 }) => {
   const router = useRouter();
 
-  return userSession.type == "organizer" ? (
+  return userSession.type == "hacker" ? (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#160524]">
       <h1 className="mb-5 text-3xl text-white">Internal Dashboard</h1>
       <div className="flex flex-col gap-3">
