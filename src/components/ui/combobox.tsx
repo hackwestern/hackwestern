@@ -47,7 +47,9 @@ export function Combobox(props: {
                 <CommandItem
                   key={option.value}
                   value={option.value}
-                  onSelect={(currentValue: React.SetStateAction<string | undefined>) => {
+                  onSelect={(
+                    currentValue: React.SetStateAction<string | undefined>,
+                  ) => {
                     setValue(currentValue);
                     setOpen(false);
                   }}
