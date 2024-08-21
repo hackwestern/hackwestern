@@ -13,7 +13,6 @@ import { reviewRouter } from "./routers/reviews";
 export const appRouter = createTRPCRouter({
   example: exampleRouter,
   application: applicationRouter,
-  reviews: reviewsRouter,
   auth: authRouter,
   preregistration: preregistrationRouter,
   review: reviewRouter,
