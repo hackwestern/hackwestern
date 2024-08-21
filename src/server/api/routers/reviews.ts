@@ -39,7 +39,7 @@ export const reviewRouter = createTRPCRouter({
             completed: isCompleteReview ? true : false,
           })
           .onConflictDoUpdate({
-            target: reviews.applicantUserId,
+            target: [reviews.applicantUserId, reviews.reviewerUserId],
             set: {
               ...reviewData,
               updatedAt: new Date(),

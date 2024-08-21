@@ -7,13 +7,13 @@ import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 
 import { db } from "~/server/db";
-import { mockSession } from "~/server/auth";
+import { mockOrganizerSession } from "~/server/auth";
 import { reviews } from "~/server/db/schema";
 import { ReviewSeeder } from "~/server/db/seed/reviewSeeder";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
 
-const session = await mockSession(db);
+const session = await mockOrganizerSession(db);
 
 const ctx = createInnerTRPCContext({ session });
 const caller = createCaller(ctx);
@@ -39,11 +39,11 @@ describe("review.save", async () => {
     await caller.application.save(application);
     const review = createRandomReview(session);
 
-    // try {
-    //   await caller.review.save(review);
-    // } catch (error) {
-    //   console.error('Test failed with error:', error);
-    // }
+    try {
+      await caller.review.save(review);
+    } catch (error) {
+      console.error("Test failed with error:", error);
+    }
     await expect(caller.review.save(review)).resolves.not.toThrow();
   });
 
