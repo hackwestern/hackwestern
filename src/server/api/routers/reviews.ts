@@ -13,7 +13,7 @@ import { z } from "zod";
 const REQUIRED_REVIEWS = 2;
 const REVIEW_TIMEOUT = 24;
 
-export const reviewsRouter = createTRPCRouter({
+export const reviewRouter = createTRPCRouter({
   save: protectedProcedure
     .input(reviewSaveSchema)
     .mutation(async ({ input, ctx }) => {
@@ -42,7 +42,7 @@ export const reviewsRouter = createTRPCRouter({
             completed: isCompleteReview ? true : false,
           })
           .onConflictDoUpdate({
-            target: reviews.applicantUserId,
+            target: [reviews.applicantUserId, reviews.reviewerUserId],
             set: {
               ...reviewData,
               updatedAt: new Date(),
