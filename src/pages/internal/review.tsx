@@ -22,12 +22,14 @@ const Review = () => {
   return (
     <main className="flex min-h-screen flex-col items-center bg-[#160524] py-4 text-white">
       <h1 className="text-4xl text-white">Review Application</h1>
-      <Button onClick={
-        () => {
+      <Button
+        onClick={() => {
           const realData = data.mutate({});
-          console.log('data:', realData);
-        }
-      }>Click me</Button>
+          console.log("data:", realData);
+        }}
+      >
+        Click me
+      </Button>
       {/*applicationData ? (
         [
           {
