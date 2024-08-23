@@ -30,5 +30,7 @@ export function ApplyForm({ step }: ApplyFormProps) {
       return <OptionalForm />;
     case "review":
       return <ReviewForm />;
+    default:
+      return <></>;
   }
 }
