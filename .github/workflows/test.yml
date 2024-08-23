@@ -1,5 +1,6 @@
 name: Test
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - main
@@ -43,6 +44,9 @@ jobs:
 
       - name: Push Schema
         run: npm run db:migrate
+
+      - name: Run Build
+        run: npm run build
 
       - name: Run tests
         run: npx vitest
