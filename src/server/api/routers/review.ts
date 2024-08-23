@@ -1,16 +1,125 @@
 import { TRPCError } from "@trpc/server";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { applications, reviews } from "~/server/db/schema";
-import { z } from "zod";
-import { asc, eq, lt, sql, count, and, not, or, isNull } from "drizzle-orm";
-
+import { applications, reviews, users } from "~/server/db/schema";
 import { db } from "~/server/db";
+import { z } from "zod";
+import {
+  reviewSaveSchema,
+  reviewSubmitSchema,
+  referApplicantSchema,
+} from "~/schemas/review";
+import { asc, eq, lt, sql, count, and, not, or, isNull } from "drizzle-orm";
 
 const REQUIRED_REVIEWS = 2;
 
-export const reviewRequestRouter = createTRPCRouter({
-    get: protectedProcedure
+export const reviewRouter = createTRPCRouter({
+  save: protectedProcedure
+    .input(reviewSaveSchema)
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const userId = ctx.session.user.id;
+        const reviewer = await db.query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+        if (!reviewer || reviewer.type !== "organizer") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "User is not authorized to submit reviews",
+          });
+        }
+
+        const reviewData = input;
+        const isCompleteReview =
+          reviewSubmitSchema.safeParse(reviewData).success;
+
+        await db
+          .insert(reviews)
+          .values({
+            ...reviewData,
+            reviewerUserId: userId,
+            applicantUserId: reviewData.applicantUserId,
+            completed: isCompleteReview ? true : false,
+          })
+          .onConflictDoUpdate({
+            target: [reviews.applicantUserId, reviews.reviewerUserId],
+            set: {
+              ...reviewData,
+              updatedAt: new Date(),
+              reviewerUserId: userId,
+              completed: isCompleteReview ? true : false,
+            },
+          })
+          .returning();
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to save review: " + JSON.stringify(error),
+        });
+      }
+    }),
+
+  referApplicant: protectedProcedure
+    .input(referApplicantSchema)
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const userId = ctx.session.user.id;
+        const reviewer = await db.query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+        if (!reviewer || reviewer.type !== "organizer") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "User is not authorized to modify reviews",
+          });
+        }
+
+        const applicantData = input;
+        await db.insert(reviews).values({
+          ...applicantData,
+          reviewerUserId: userId,
+          applicantUserId: applicantData.applicantUserId,
+          referral: true,
+        });
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to save referral: " + JSON.stringify(error),
+        });
+      }
+    }),
+
+  getByOrganizer: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    const reviewer = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+    if (!reviewer || reviewer.type !== "organizer") {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "User is not authorized to view reviews",
+      });
+    }
+
+    return db.query.reviews.findMany({
+      columns: {
+        reviewerUserId: false,
+      },
+      with: {
+        applicant: {
+          columns: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      where: eq(reviews.reviewerUserId, userId),
+    });
+  }),
+
+  //TODO: Write unit tests for this router path
+  get: protectedProcedure
         .input(z.object({}))
         .mutation(async ( {ctx} ) => {
         try {
@@ -95,13 +204,12 @@ export const reviewRequestRouter = createTRPCRouter({
         
             // console.log("updated application status to IN_REVIEW")
 
-            return {newReview, appToReview};
-            
-        } catch (error) {
-            throw new TRPCError({
-                code: "INTERNAL_SERVER_ERROR",
-                message: "Failed to fetch application: " + JSON.stringify(error),
-              });
-        }
-    })
-})
+      return { newReview, appToReview };
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch application: " + JSON.stringify(error),
+      });
+    }
+  }),
+});
