@@ -187,7 +187,8 @@ export const reviews = createTable(
     githubBonus: smallint("github_bonus").default(0),
     linkedinBonus: smallint("linkedin_bonus").default(0),
     otherlinkBonus: smallint("otherlink_bonus").default(0),
-    referral: boolean("referall"),
+    completed: boolean("completed").default(false),
+    referral: boolean("referral").default(false),
   },
   (review) => {
     return {

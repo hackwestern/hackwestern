@@ -43,6 +43,20 @@
       "when": 1718996391701,
       "tag": "0005_furry_kingpin",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1720419013743,
+      "tag": "0006_many_chronomancer",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1722314745188,
+      "tag": "0007_dusty_spencer_smythe",
+      "breakpoints": true
     }
   ]
 }
