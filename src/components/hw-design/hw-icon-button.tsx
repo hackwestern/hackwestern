@@ -1,3 +1,4 @@
+import { IconNode, LucideIcon } from "lucide-react";
 import { ReactNode } from "react";
 
 /**
@@ -6,16 +7,18 @@ import { ReactNode } from "react";
  * @param props - The props for the Button component.
  * @param props.className - Additional CSS classes to apply to the button.
  */
-function HWButton({
+function HWIconButton({
   text,
   className = "",
   variant,
+  icon: Icon,
   children,
   ...props
 }: {
   text: string;
   className?: string;
   children?: ReactNode;
+  icon: LucideIcon;
   variant: "primary" | "destructive" | "outline" | "subtle";
 }) {
   const stylesVariants = {
@@ -27,12 +30,15 @@ function HWButton({
   };
   return (
     <button
-      className={`rounded-xl px-5 py-2 font-medium ${stylesVariants[variant]} ${className}`}
+      className={`rounded-xl px-5 py-2 font-medium ${stylesVariants[variant]} ${className} flex items-center justify-center`}
       {...props}
     >
+      <span>
+        <Icon className="mr-2 inline-block" />
+      </span>
       {text}
     </button>
   );
 }
 
-export default HWButton;
+export default HWIconButton;
