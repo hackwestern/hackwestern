@@ -78,7 +78,6 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   return {
     props: {
       userSession: user,
-      name: "hello",
     },
   };
 }
