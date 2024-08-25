@@ -25,9 +25,27 @@ const config = {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        github: "#1b1f23",
         primary: {
           DEFAULT: "hsl(var(--primary))",
+          50: "hsl(var(--primary-50))",
+          100: "hsl(var(--primary-100))",
+          200: "hsl(var(--primary-200))",
+          300: "hsl(var(--primary-300))",
+          400: "hsl(var(--primary-400))",
+          500: "hsl(var(--primary-500))",
+          600: "hsl(var(--primary-600))",
+          700: "hsl(var(--primary-700))",
+          800: "hsl(var(--primary-800))",
           foreground: "hsl(var(--primary-foreground))",
+        },
+        violet: {
+          100: "hsl(var(--violet-100))",
+          200: "hsl(var(--violet-200))",
+          300: "hsl(var(--violet-300))",
+          400: "hsl(var(--violet-400))",
+          500: "hsl(var(--violet-500))",
+          600: "hsl(var(--violet-600))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -35,6 +53,7 @@ const config = {
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
+          dark: "hsl(var(--destructive-dark))",
           foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {

@@ -1,12 +1,20 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { Button } from "~/components/ui/button";
-import { authRedirect } from "~/utils/redirect";
-
-const Internal = () => {
+import type { GetServerSidePropsContext } from "next";
+import { getServerSession } from "next-auth";
+import { db } from "~/server/db";
+import { authOptions } from "~/server/auth";
+import type { users } from "~/server/db/schema";
+import NotAuthorizedCard from "~/components/notauthorized-card";
+const Internal = ({
+  userSession,
+}: {
+  userSession: typeof users.$inferSelect;
+}) => {
   const router = useRouter();
 
-  return (
+  return userSession.type == "hacker" ? (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#160524]">
       <h1 className="mb-5 text-3xl text-white">Internal Dashboard</h1>
       <div className="flex flex-col gap-3">
@@ -20,6 +28,8 @@ const Internal = () => {
         <ApplicationsButton />
       </div>
     </div>
+  ) : (
+    <NotAuthorizedCard />
   );
 };
 
@@ -51,6 +61,26 @@ function PreregistrationsButton() {
   );
 }
 
-export const getServerSideProps = authRedirect;
+export async function getServerSideProps(context: GetServerSidePropsContext) {
+  const session = await getServerSession(context.req, context.res, authOptions);
+  if (!session) {
+    return {
+      redirect: {
+        destination: "internal/login",
+        permanent: false,
+      },
+    };
+  }
+  const user = await db.query.users.findFirst({
+    where: (users, { eq }) => eq(users.id, session.user.id),
+  });
+
+  return {
+    props: {
+      userSession: user,
+      name: "hello",
+    },
+  };
+}
 
 export default Internal;
