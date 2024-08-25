@@ -2,7 +2,10 @@ import { Check } from "lucide-react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Head from "next/head";
 import { Input } from "~/components/ui/input";
+import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
+import GithubAuthButton from "~/components/hw-design/auth/githubauth-button";
+import GoogleAuthButton from "~/components/hw-design/auth/googleauth-button";
 import { api } from "~/utils/api";
 
 export default function Login() {
@@ -20,17 +23,28 @@ export default function Login() {
       </Head>
 
       <div className="flex h-screen flex-col items-center justify-center bg-purple-100">
-        <div className="w-full max-w-2xl rounded-lg bg-purple-50 bg-white p-12 shadow-md">
+        <div className="w-full max-w-2xl rounded-lg bg-violet-50 bg-white p-12 shadow-md">
           <h2 className="mb-2 text-4xl font-bold">Welcome Back!</h2>
           <h2 className="mb-6 text-lg">
             We can't wait to see what you will create.
           </h2>
           <h2 className="mb-2 text-sm">Email</h2>
-          <Input className="mb-4 bg-slate-100 " placeholder="Email" />
+          <Input className="mb-4" placeholder="Email" />
           <h2 className="mb-2 text-sm">Password</h2>
-          <Input className="mb-8 bg-slate-100" placeholder="Password" />
+          <Input className="mb-8" placeholder="Password" />
           <Checkbox /> <span> Remember Me</span>
-          <AuthShowcase />
+          <Button className="mt-8 w-full">Sign In</Button>
+          <div className="relative flex w-full items-center md:py-5">
+            <div className="flex-grow border-t border-gray-400"></div>
+            <span className="mx-4 flex-shrink text-gray-400">or</span>
+            <div className="flex-grow border-t border-gray-400"></div>
+          </div>
+          <div className="mt-4">
+            <GoogleAuthButton />
+          </div>
+          <div className="mt-4">
+            <GithubAuthButton />
+          </div>
         </div>
 
         <div className="mt-8 text-center">
