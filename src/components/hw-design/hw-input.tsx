@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { InputHTMLAttributes, ReactNode } from "react";
 
 function HWInput({
   title,
@@ -15,13 +15,14 @@ function HWInput({
   className?: string;
   children?: ReactNode;
   variant: "primary" | "destructive" | "outline" | "subtle";
-}) {
+} & InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className="flex w-full flex-col gap-2">
       <p className="pl-1 font-medium">{title}</p>
       <input
-        className="bg-primary-50 outline-primary-300 hover:bg-primary-200 rounded-xl px-5 py-2 text-black outline outline-2"
+        className="rounded-xl bg-primary-50 px-5 py-2 text-black outline outline-2 outline-primary-300 hover:bg-primary-200"
         placeholder={placeholder}
+        {...props}
       />
       <p className="pl-1 font-light text-gray-700">{subtitle}</p>
     </div>

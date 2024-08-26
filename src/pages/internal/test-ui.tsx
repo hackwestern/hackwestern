@@ -13,7 +13,14 @@ function TestUI() {
         <GoogleAuthButton redirect="/" />
         <HWButton text="Continue" variant="outline" />
         <HWButton text="Delete" variant="destructive" />
-        <HWIconButton text="Mail" variant="primary" icon={Mail} />
+        <HWIconButton
+          text="Mail"
+          variant="primary"
+          icon={Mail}
+          onClick={() => {
+            console.log("Hello");
+          }}
+        />
         <HWInput
           title="Email"
           placeholder="john@doe.com"

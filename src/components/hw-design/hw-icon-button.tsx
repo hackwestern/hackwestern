@@ -1,5 +1,5 @@
 import { IconNode, LucideIcon } from "lucide-react";
-import { ReactNode } from "react";
+import { ButtonHTMLAttributes, ReactNode } from "react";
 
 /**
  * A reusable Hack Western button component with variants and customizable styles and attributes.
@@ -7,6 +7,7 @@ import { ReactNode } from "react";
  * @param props - The props for the Button component.
  * @param props.className - Additional CSS classes to apply to the button.
  */
+
 function HWIconButton({
   text,
   className = "",
@@ -20,7 +21,7 @@ function HWIconButton({
   children?: ReactNode;
   icon: LucideIcon;
   variant: "primary" | "destructive" | "outline" | "subtle";
-}) {
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
   const stylesVariants = {
     primary: "bg-primary-500 hover:bg-primary-600 text-white",
     destructive: "bg-destructive hover:bg-destructive-dark text-white",

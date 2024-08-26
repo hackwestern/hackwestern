@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ButtonHTMLAttributes, ReactNode } from "react";
 
 /**
  * A reusable Hack Western button component with variants and customizable styles and attributes.
@@ -17,7 +17,7 @@ function HWButton({
   className?: string;
   children?: ReactNode;
   variant: "primary" | "destructive" | "outline" | "subtle";
-}) {
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
   const stylesVariants = {
     primary: "bg-primary-500 hover:bg-primary-600 text-white",
     destructive: "bg-destructive hover:bg-destructive-dark text-white",
