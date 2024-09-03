@@ -1,4 +1,3 @@
-import { Check } from "lucide-react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Head from "next/head";
 import { Input } from "~/components/ui/input";
@@ -7,9 +6,16 @@ import { Checkbox } from "~/components/ui/checkbox";
 import GithubAuthButton from "~/components/hw-design/auth/githubauth-button";
 import GoogleAuthButton from "~/components/hw-design/auth/googleauth-button";
 import { api } from "~/utils/api";
+import React, { useState } from "react";
 
 export default function Login() {
-  const hello = api.example.hello.useQuery({ text: "from tRPC" });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const data = api.auth.create.useMutation();
+
+  function handleSubmit() {
+    data.mutate({ email, password });
+  }
 
   return (
     <>
@@ -28,22 +34,36 @@ export default function Login() {
           <h2 className="mb-6 text-lg">
             We can't wait to see what you will create.
           </h2>
-          <h2 className="mb-2 text-sm">Email</h2>
-          <Input className="mb-4" placeholder="Email" />
-          <h2 className="mb-2 text-sm">Password</h2>
-          <Input className="mb-8" placeholder="Password" />
-          <Checkbox /> <span> Remember Me</span>
-          <Button className="mt-8 w-full">Sign In</Button>
+          <form onSubmit={handleSubmit}>
+            <h2 className="mb-2 text-sm">Email</h2>
+            <Input
+              type="email"
+              onChange={(e) => setEmail(e.target.value)}
+              className="mb-4"
+              placeholder="Email"
+            />
+            <h2 className="mb-2 text-sm">Password</h2>
+            <Input
+              type="password"
+              onChange={(e) => setPassword(e.target.value)}
+              className="mb-8"
+              placeholder="Password"
+            />
+            <Checkbox /> <span> Remember Me</span>
+            <Button type="submit" className="mt-8 w-full">
+              Sign In
+            </Button>
+          </form>
           <div className="relative flex w-full items-center md:py-5">
             <div className="flex-grow border-t border-gray-400"></div>
             <span className="mx-4 flex-shrink text-gray-400">or</span>
             <div className="flex-grow border-t border-gray-400"></div>
           </div>
           <div className="mt-4">
-            <GoogleAuthButton />
+            <GoogleAuthButton redirect="/dashboard" />
           </div>
           <div className="mt-4">
-            <GithubAuthButton />
+            <GithubAuthButton redirect="/dashboard" />
           </div>
         </div>
 
@@ -58,29 +78,5 @@ export default function Login() {
         </div>
       </div>
     </>
-  );
-}
-
-function AuthShowcase() {
-  const { data: sessionData } = useSession();
-
-  const { data: secretMessage } = api.example.getSecretMessage.useQuery(
-    undefined, // no input
-    { enabled: sessionData?.user !== undefined },
-  );
-
-  return (
-    <div className="flex flex-col items-center justify-center gap-4">
-      <p className="text-center text-2xl">
-        {sessionData && <span>Logged in as {sessionData.user?.name}</span>}
-        {secretMessage && <span> - {secretMessage}</span>}
-      </p>
-      <button
-        className="rounded-full bg-black/10 px-10 py-3 font-semibold text-white no-underline transition hover:bg-white/20"
-        onClick={sessionData ? () => void signOut() : () => void signIn()}
-      >
-        {sessionData ? "Sign out" : "Sign in"}
-      </button>
-    </div>
   );
 }
