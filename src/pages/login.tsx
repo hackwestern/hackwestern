@@ -32,7 +32,7 @@ export default function Login() {
         <div className="w-full max-w-2xl rounded-lg bg-violet-50 bg-white p-12 shadow-md">
           <h2 className="mb-2 text-4xl font-bold">Welcome Back!</h2>
           <h2 className="mb-6 text-lg">
-            We can't wait to see what you will create.
+            We can&apos;t wait to see what you will create.
           </h2>
           <form onSubmit={handleSubmit}>
             <h2 className="mb-2 text-sm">Email</h2>
@@ -68,7 +68,7 @@ export default function Login() {
         </div>
 
         <div className="mt-8 text-center">
-          Don't have an account yet?{" "}
+          Don&apos;t have an account yet?{" "}
           <a
             className="text-purple-500 underline hover:text-violet-700"
             href="/register"
