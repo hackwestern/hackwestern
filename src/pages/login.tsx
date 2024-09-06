@@ -11,10 +11,13 @@ import React, { useState } from "react";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const data = api.auth.create.useMutation();
 
-  function handleSubmit() {
-    data.mutate({ email, password });
+  async function handleSubmit() {
+    const result = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    });
   }
 
   return (
