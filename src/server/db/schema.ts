@@ -13,6 +13,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
+import { db } from ".";
 
 /**
  * This is the prefix for tables from this year's hack western!
@@ -43,6 +44,8 @@ export const applicationStatus = pgEnum("application_status", [
   "WAITLISTED",
   "DECLINED",
 ]);
+
+export const avatar = pgEnum("avatar", ["Wildlife Wanderer", "City Cruiser", "Foodie Fanatic", "Beach Bum"]);
 
 /**
  * The school/university year that the hacker applicant is in.
@@ -248,6 +251,7 @@ export const applications = createTable(
     status: applicationStatus("status").default("IN_PROGRESS").notNull(),
 
     // About You
+    avatar: avatar("avatar"),
     firstName: varchar("first_name", { length: 255 }),
     lastName: varchar("last_name", { length: 255 }),
     age: integer("age"), // 18+
