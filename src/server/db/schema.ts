@@ -45,7 +45,12 @@ export const applicationStatus = pgEnum("application_status", [
   "DECLINED",
 ]);
 
-export const avatar = pgEnum("avatar", ["Wildlife Wanderer", "City Cruiser", "Foodie Fanatic", "Beach Bum"]);
+export const avatar = pgEnum("avatar", [
+  "Wildlife Wanderer",
+  "City Cruiser",
+  "Foodie Fanatic",
+  "Beach Bum",
+]);
 
 /**
  * The school/university year that the hacker applicant is in.
