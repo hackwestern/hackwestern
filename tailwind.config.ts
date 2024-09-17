@@ -25,7 +25,11 @@ const config = {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-        github: "#1b1f23",
+        githubbg: "#1b1f23",
+        hwprimary: {
+          400: "#C1ACE5",
+          500: "#976CDF"
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           50: "hsl(var(--primary-50))",

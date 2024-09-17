@@ -14,7 +14,7 @@ const Internal = ({
 }) => {
   const router = useRouter();
 
-  return userSession.type == "hacker" ? (
+  return userSession.type == "organizer" ? (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#160524]">
       <h1 className="mb-5 text-3xl text-white">Internal Dashboard</h1>
       <div className="flex flex-col gap-3">
@@ -78,7 +78,6 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   return {
     props: {
       userSession: user,
-      name: "hello",
     },
   };
 }

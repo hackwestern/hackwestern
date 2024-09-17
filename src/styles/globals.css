@@ -13,14 +13,13 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-    
 
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    
+
     --primary-50: 260, 100%, 99%;
     --primary-100: 260, 100%, 98%;
     --primary-200: 261, 53%, 94%;
@@ -56,8 +55,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
+    --ring: var(--primary-700);
     --radius: 0.5rem;
   }
 

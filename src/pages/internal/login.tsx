@@ -6,8 +6,8 @@ import { authOptions } from "~/server/auth";
 import { getServerSession } from "next-auth";
 import type { GetServerSidePropsContext } from "next";
 import { db } from "~/server/db";
-import GoogleAuthButton from "~/components/hw-design/auth/googleauth-button";
-import GithubAuthButton from "~/components/hw-design/auth/githubauth-button";
+import GoogleAuthButton from "~/components/auth/googleauth-button";
+import GithubAuthButton from "~/components/auth/githubauth-button";
 
 export default function Login() {
   const { data: sessionData } = useSession();
