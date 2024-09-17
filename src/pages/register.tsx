@@ -8,6 +8,7 @@ import { Input } from "~/components/ui/input";
 import { useToast } from "~/components/hooks/use-toast";
 
 import { api } from "~/utils/api";
+import Link from "next/link";
 
 export default function Register() {
   const { toast } = useToast();
@@ -24,9 +25,7 @@ export default function Register() {
         variant: "destructive",
       });
     },
-    onSuccess: () => {
-      router.push("/dashboard");
-    },
+    onSuccess: () => router.push("/dashboard"),
   });
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -85,9 +84,9 @@ export default function Register() {
         </div>
         <div className="my-4">
           Already have an account?{" "}
-          <a href="/login" className="text-blue-500">
+          <Link href="/login" className="text-blue-500 hover:text-purple-700">
             Login
-          </a>
+          </Link>
         </div>
       </div>
     </>
