@@ -1,16 +1,38 @@
-import { signIn, signOut, useSession } from "next-auth/react";
 import Head from "next/head";
-import { useState } from "react";
+import { useRouter } from "next/router";
+import { FormEvent, useState } from "react";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
+import { useToast } from "~/components/hooks/use-toast";
 
 import { api } from "~/utils/api";
 
 export default function Register() {
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const router = useRouter();
+  const { mutate: register } = api.auth.create.useMutation({
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description:
+          error.data?.zodError?.fieldErrors?.password?.[0] ?? error.message,
+        variant: "destructive",
+      });
+    },
+    onSuccess: () => {
+      router.push("/dashboard");
+    },
+  });
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    register({ email, password });
+  };
 
   return (
     <>
@@ -28,9 +50,10 @@ export default function Register() {
           <h2 className="mb-6 text-lg">
             It&apos;s time to turn your ideas into realities
           </h2>
-          <form >
+          <form onSubmit={(e) => handleSubmit(e)}>
             <h2 className="mb-2 text-sm">Email</h2>
             <Input
+              required
               type="email"
               onChange={(e) => setEmail(e.target.value)}
               className="mb-4"
@@ -38,6 +61,7 @@ export default function Register() {
             />
             <h2 className="mb-2 text-sm">Password</h2>
             <Input
+              required
               type="password"
               onChange={(e) => setPassword(e.target.value)}
               className="mb-8"
@@ -60,7 +84,10 @@ export default function Register() {
           </div>
         </div>
         <div className="my-4">
-          Already have an account? <a href="/login" className="text-blue-500">Login</a>
+          Already have an account?{" "}
+          <a href="/login" className="text-blue-500">
+            Login
+          </a>
         </div>
       </div>
     </>
