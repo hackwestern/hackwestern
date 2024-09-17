@@ -8,7 +8,7 @@ const textareaVariants = cva(
   {
     variants: {
       variant: {
-        defaut: "",
+        default: "",
         primary:
           "rounded-xl bg-primary-50 px-5 py-2 text-black outline outline-2 outline-primary-300 hover:bg-primary-200",
       },
