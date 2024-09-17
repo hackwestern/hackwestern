@@ -1,12 +1,11 @@
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import Head from "next/head";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
-import GithubAuthButton from "~/components/hw-design/auth/githubauth-button";
-import GoogleAuthButton from "~/components/hw-design/auth/googleauth-button";
-import { api } from "~/utils/api";
-import React, { useState } from "react";
+import { useState } from "react";
+import GoogleAuthButton from "~/components/auth/googleauth-button";
+import GithubAuthButton from "~/components/auth/githubauth-button";
 
 export default function Login() {
   const [email, setEmail] = useState("");
