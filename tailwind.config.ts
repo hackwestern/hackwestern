@@ -55,7 +55,6 @@ const config = {
           DEFAULT: "hsl(var(--destructive))",
           dark: "hsl(var(--destructive-dark))",
           foreground: "hsl(var(--destructive-foreground))",
-          dark: "hsl(var(--destructive-dark))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
