@@ -26,10 +26,6 @@ const config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         githubbg: "#1b1f23",
-        hwprimary: {
-          400: "#C1ACE5",
-          500: "#976CDF"
-        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           50: "hsl(var(--primary-50))",
@@ -59,6 +55,7 @@ const config = {
           DEFAULT: "hsl(var(--destructive))",
           dark: "hsl(var(--destructive-dark))",
           foreground: "hsl(var(--destructive-foreground))",
+          dark: "hsl(var(--destructive-dark))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
