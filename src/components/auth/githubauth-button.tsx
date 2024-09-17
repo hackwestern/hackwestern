@@ -1,7 +1,13 @@
 import { signIn } from "next-auth/react";
 import Image from "next/image";
 
-function GithubAuthButton({ redirect, register }: { redirect: string, register?: boolean }) {
+function GithubAuthButton({
+  redirect,
+  register,
+}: {
+  redirect: string;
+  register?: boolean;
+}) {
   return (
     <button
       onClick={() => {
