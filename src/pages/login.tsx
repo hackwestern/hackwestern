@@ -6,6 +6,7 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { useState } from "react";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
+import Link from "next/link";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -71,12 +72,12 @@ export default function Login() {
 
         <div className="mt-8 text-center">
           Don&apos;t have an account yet?{" "}
-          <a
+          <Link
             className="text-purple-500 underline hover:text-violet-700"
             href="/register"
           >
             Create Account
-          </a>
+          </Link>
         </div>
       </div>
     </>

@@ -57,6 +57,13 @@
       "when": 1722314745188,
       "tag": "0007_dusty_spencer_smythe",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1724803459803,
+      "tag": "0008_wealthy_the_executioner",
+      "breakpoints": true
     }
   ]
 }
