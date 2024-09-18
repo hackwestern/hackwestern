@@ -6,6 +6,7 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { useState } from "react";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
+import Link from "next/link";
 
 export default function Login() {
   const [email, setEmail] = useState("");
