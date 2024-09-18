@@ -6,12 +6,6 @@ type majorType = (typeof major.enumValues)[number];
 type schoolType = (typeof schools)[number];
 type experienceType = (typeof numOfHackathons.enumValues)[number];
 
-const sizes = {
-  sm: "h-10",
-  md: "h-20",
-  lg: "h-30",
-};
-
 const majorMap = (type: majorType): string => {
   switch (type) {
     case "Computer Science":
