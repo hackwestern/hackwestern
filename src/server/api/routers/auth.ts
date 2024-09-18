@@ -1,4 +1,4 @@
-import { z, ZodError } from "zod";
+import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
@@ -139,7 +139,7 @@ export const authRouter = createTRPCRouter({
           success: true,
         };
       } catch (error) {
-        throw error instanceof TRPCError || error instanceof ZodError
+        throw error instanceof TRPCError
           ? error
           : new TRPCError({
               code: "INTERNAL_SERVER_ERROR",
