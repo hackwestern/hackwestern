@@ -52,7 +52,7 @@ export default function Login() {
               placeholder="Password"
             />
             <Checkbox /> <span> Remember Me</span>
-            <Button type="submit" className="mt-8 w-full">
+            <Button variant="primary" type="submit" className="mt-8 w-full">
               Sign In
             </Button>
           </form>
