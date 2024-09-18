@@ -46,7 +46,7 @@
     --muted: var(--violet-200);
     --muted-foreground: var(--violet-400);
 
-    --accent: var(--violet-400);
+    --accent: var(--violet-300);
     --accent-foreground: var(--violet-800);
 
     --destructive: 0 84.2% 60.2%;
