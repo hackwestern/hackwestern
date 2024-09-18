@@ -21,7 +21,8 @@ function Calendar({
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
         caption: "flex flex-row items-center justify-center pt-1 relative ",
-        dropdown: "bg-transparent py-1.5 px-1 rounded-md text-sm font-medium ring-offset-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        dropdown:
+          "bg-transparent py-1.5 px-1 rounded-md text-sm font-medium ring-offset-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         caption_dropdowns: "flex flex-row gap-3 ",
         caption_label: "hidden",
         vhidden: "hidden",
