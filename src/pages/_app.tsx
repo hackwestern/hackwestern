@@ -7,6 +7,7 @@ import localFont from "next/font/local";
 import { api } from "~/utils/api";
 
 import "~/styles/globals.css";
+import { Toaster } from "~/components/ui/toaster";
 
 const DM_SANS = DM_Sans({
   weight: ["400", "500", "700"],
@@ -32,6 +33,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
       >
         <Component {...pageProps} />
       </main>
+      <Toaster />
     </SessionProvider>
   );
 };

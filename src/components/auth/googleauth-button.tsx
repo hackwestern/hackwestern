@@ -2,7 +2,13 @@ import { signIn } from "next-auth/react";
 import Image from "next/image";
 import { Button } from "../ui/button";
 
-function GoogleAuthButton({ redirect }: { redirect: string }) {
+function GoogleAuthButton({
+  redirect,
+  register,
+}: {
+  redirect: string;
+  register?: boolean;
+}) {
   return (
     <Button
       onClick={() => {
@@ -17,7 +23,7 @@ function GoogleAuthButton({ redirect }: { redirect: string }) {
           width={25}
           height={25}
         />
-        <span>Sign in with Google</span>
+        <span>Sign {register ? "up" : "in"} with Google</span>
       </div>
     </Button>
   );
