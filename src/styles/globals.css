@@ -56,7 +56,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: var(--primary-700);
-    --radius: 0.7rem;
+    --radius: 0.5rem;
   }
 
   .dark {
