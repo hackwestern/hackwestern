@@ -2,22 +2,26 @@ import React from "react";
 import Head from "next/head";
 import { useSearchParams } from "next/navigation";
 
-import { type ApplyStep, applySteps } from "~/constants/apply";
+import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
 import { ApplyNavbar } from "~/components/apply/navbar";
 import { ApplyForm } from "~/components/apply/form";
 import { ApplyNavigation } from "~/components/apply/navigation";
 
-function getStep(stepValue: string | null): ApplyStep | null {
-  return applySteps.find((s) => s.step === stepValue)?.step ?? null;
+function getApplyStep(stepValue: string | null): ApplyStepFull | null {
+  return applySteps.find((s) => s.step === stepValue) ?? null;
 }
 
 export default function Apply() {
   const searchParams = useSearchParams();
-  const step = React.useMemo(
-    () => getStep(searchParams.get("step")),
+  const applyStep = React.useMemo(
+    () => getApplyStep(searchParams.get("step")),
     [searchParams],
   );
+
+  const step = applyStep?.step ?? null;
+  const heading = applyStep?.heading ?? null;
+  const subheading = applyStep?.subheading ?? null;
 
   return (
     <>
@@ -35,10 +39,15 @@ export default function Apply() {
           {/* TODO: make this responsive */}
           <div
             id="left-panel"
-            className="flex h-full flex-grow flex-col bg-primary-100 p-9 pt-12"
+            className="flex h-full flex-grow flex-col space-y-8 bg-primary-100 p-9 pt-12"
           >
-            <h1 className="flex-1 text-xl font-bold">Form Panel</h1>
-            <ApplyForm step={step} />
+            <div className="space-y-2">
+              <h1 className="text-2xl font-medium">{heading}</h1>
+              <h2 className="text-sm text-slate-500">{subheading}</h2>
+            </div>
+            <div className="flex-1">
+              <ApplyForm step={step} />
+            </div>
             <ApplyNavigation step={step} />
           </div>
           <div
