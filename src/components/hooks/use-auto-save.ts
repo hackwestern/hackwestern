@@ -13,7 +13,7 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
 
   const debouncedSave = useCallback(
     debounce(() => {
-      context.handleSubmit(onSubmit)();
+      void context.handleSubmit(onSubmit)();
     }, 500),
     [],
   );
