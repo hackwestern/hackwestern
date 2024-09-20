@@ -23,7 +23,7 @@ export function LinksForm() {
     mode: "onBlur",
   });
 
-  useAutoSave(form, onSubmit);
+  useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof linksSaveSchema>) {
     mutate({
