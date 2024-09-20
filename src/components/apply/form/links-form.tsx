@@ -41,7 +41,7 @@ export function LinksForm() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        onChange={() => console.log(form.getValues())}
+        onBlur={() => console.log(form.getValues())}
         className="space-y-2"
       >
         <FormField
