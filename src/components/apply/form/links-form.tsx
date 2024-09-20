@@ -14,8 +14,13 @@ import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { linksSaveSchema } from "~/schemas/application";
 
 export function LinksForm() {
+  const utils = api.useUtils();
   const { data: defaultValues } = api.application.get.useQuery();
-  const { mutate } = api.application.save.useMutation();
+  const { mutate } = api.application.save.useMutation({
+    onSuccess: () => {
+      utils.application.get.invalidate();
+    },
+  });
 
   const form = useForm<z.infer<typeof linksSaveSchema>>({
     resolver: zodResolver(linksSaveSchema),
