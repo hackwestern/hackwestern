@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { FieldValues, useWatch, type useForm } from "react-hook-form";
 import { debounce } from "~/lib/utils";
 import useDeepCompareEffect from "use-deep-compare-effect";
@@ -6,6 +6,7 @@ import useDeepCompareEffect from "use-deep-compare-effect";
 export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
   context: ReturnType<typeof useForm<TFieldValues>>,
   onSubmit: (data: TFieldValues) => void,
+  defaultValues?: TFieldValues,
 ) {
   const watch = useWatch({ control: context.control });
   const { dirtyFields } = context.formState;
@@ -17,6 +18,12 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
     }, 500),
     [],
   );
+
+  useEffect(() => {
+    if (defaultValues) {
+      context.reset(defaultValues);
+    }
+  }, [context, defaultValues]);
 
   useDeepCompareEffect(() => {
     if (hasDirtyFields) {
