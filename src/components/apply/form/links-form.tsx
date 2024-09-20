@@ -18,7 +18,7 @@ export function LinksForm() {
   const { data: defaultValues } = api.application.get.useQuery();
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
-      utils.application.get.invalidate();
+      return utils.application.get.invalidate();
     },
   });
 
