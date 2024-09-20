@@ -43,11 +43,11 @@
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: var(--violet-200);
+    --muted-foreground: var(--violet-400);
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: var(--violet-300);
+    --accent-foreground: var(--violet-800);
 
     --destructive: 0 84.2% 60.2%;
     --destructive-dark: 0 72.2% 50.6%;

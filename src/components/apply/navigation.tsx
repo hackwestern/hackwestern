@@ -43,7 +43,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
         ))}
       <div className="ml-auto flex">
         {/* TODO: add last saved text */}
-        <Button asChild className="w-20">
+        <Button variant="primary" asChild className="w-20">
           {!step || !!nextStep ? (
             <Link href={`/apply?step=${nextStep}`}>Next</Link>
           ) : (

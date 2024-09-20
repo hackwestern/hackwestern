@@ -2,6 +2,7 @@ import { Calendar, Icon, Mail } from "lucide-react";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import { Button } from "~/components/ui/button";
+import { DatePicker } from "~/components/ui/date-picker";
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 
@@ -11,11 +12,12 @@ function TestUI() {
       <div className="flex w-[30%] flex-col items-center justify-center gap-3">
         <GithubAuthButton redirect="/" />
         <GoogleAuthButton redirect="/" />
-        <Button variant="primary"> Continue</Button>
-        <Button variant="outline"> Continue</Button>
+        <Button variant="outline">Outline</Button>
+        <Button variant="primary">Primary</Button>
         <Button variant="destructive">Delete</Button>
         <Input placeholder="john@doe.com" variant="primary" />
         <Textarea placeholder="Enter answer here" variant="primary" />
+        <DatePicker />
       </div>
     </div>
   );
