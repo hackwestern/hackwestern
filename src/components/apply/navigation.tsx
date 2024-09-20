@@ -51,7 +51,11 @@ function LastSavedAt() {
   const formattedLastSavedAt = formattedDate(lastSavedAtState[0] ?? null);
 
   if (!formattedLastSavedAt) {
-    return <span>Not Saved</span>;
+    return (
+      <span className="text-right text-xs italic text-slate-400">
+        Not Saved
+      </span>
+    );
   }
 
   return (
