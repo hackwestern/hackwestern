@@ -15,8 +15,13 @@ import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { basicsSaveSchema } from "~/schemas/application";
 
 export function BasicsForm() {
+  const utils = api.useUtils();
   const { data: defaultValues } = api.application.get.useQuery();
-  const { mutate } = api.application.save.useMutation();
+  const { mutate } = api.application.save.useMutation({
+    onSuccess: () => {
+      utils.application.get.invalidate();
+    },
+  });
 
   const form = useForm<z.infer<typeof basicsSaveSchema>>({
     resolver: zodResolver(basicsSaveSchema),
