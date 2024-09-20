@@ -21,8 +21,8 @@ export const applicationRouter = createTRPCRouter({
       const modifiedApplication = application
         ? {
             ...application,
-            githubLink: application?.githubLink?.substring(19),
-            linkedInLink: application?.linkedInLink?.substring(24),
+            githubLink: application?.githubLink?.substring(19) ?? null,
+            linkedInLink: application?.linkedInLink?.substring(24) ?? null,
           }
         : undefined;
 

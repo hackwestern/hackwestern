@@ -1,8 +1,8 @@
-import { useMutationState } from "@tanstack/react-query";
-import { getQueryKey } from "@trpc/react-query";
+import { useIsMutating } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { api } from "~/utils/api";
 import { Spinner } from "../loading-spinner";
+import { useEffect } from "react";
 
 function formattedDate(lastSaved: Date | null): string | null {
   if (!lastSaved) {
@@ -13,10 +13,11 @@ function formattedDate(lastSaved: Date | null): string | null {
 
 export function SavedIndicator() {
   const { data: application } = api.application.get.useQuery();
-  const isSaving = useMutationState({
-    filters: { mutationKey: getQueryKey(api.application.save) },
-    select: (mutation) => mutation.state.status === "pending",
-  })[0];
+  const isSaving = useIsMutating();
+
+  useEffect(() => {
+    console.log({ isSaving });
+  }, [isSaving]);
 
   const formattedLastSavedAt = formattedDate(application?.updatedAt ?? null);
 
