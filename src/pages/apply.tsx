@@ -39,7 +39,7 @@ export default function Apply() {
           {/* TODO: make this responsive */}
           <div
             id="left-panel"
-            className="flex h-full flex-grow flex-col space-y-8 bg-primary-100 p-9 pt-12"
+            className="lg:w-xl flex h-full flex-grow flex-col space-y-8 bg-primary-100 p-9 pt-12 lg:max-w-xl"
           >
             <div className="space-y-2">
               <h1 className="text-2xl font-medium">{heading}</h1>
