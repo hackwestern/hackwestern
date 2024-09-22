@@ -39,11 +39,7 @@ export function LinksForm() {
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        onBlur={() => console.log(form.getValues())}
-        className="space-y-2"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
         <FormField
           control={form.control}
           name="githubLink"

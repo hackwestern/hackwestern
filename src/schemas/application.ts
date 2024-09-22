@@ -18,6 +18,13 @@ export const linksSaveSchema = applicationSaveSchema.pick({
   otherLink: true,
 });
 
+export const basicsSaveSchema = applicationSaveSchema.pick({
+  firstName: true,
+  lastName: true,
+  phoneNumber: true,
+  age: true,
+});
+
 // Helper function to check word count within a range
 const checkWordCount = (value: string, min: number, max: number) => {
   const words = value.split(" ");
