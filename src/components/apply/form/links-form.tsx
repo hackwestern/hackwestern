@@ -47,12 +47,15 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>Github</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ""}
-                  placeholder="github.com/hacker"
-                  variant="primary"
-                />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>github.com/</span>
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="hacker"
+                    variant="primary"
+                  />
+                </div>
               </FormControl>
             </FormItem>
           )}
@@ -64,12 +67,15 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>LinkedIn</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ""}
-                  placeholder="linkedin.com/in/hacker"
-                  variant="primary"
-                />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>linkedin.com/in/</span>
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="hacker"
+                    variant="primary"
+                  />
+                </div>
               </FormControl>
             </FormItem>
           )}
