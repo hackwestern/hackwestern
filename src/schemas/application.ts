@@ -11,6 +11,13 @@ export const applicationSaveSchema = createInsertSchema(applications).omit({
   userId: true,
 });
 
+export const linksSaveSchema = applicationSaveSchema.pick({
+  githubLink: true,
+  linkedInLink: true,
+  resumeLink: true,
+  otherLink: true,
+});
+
 // Helper function to check word count within a range
 const checkWordCount = (value: string, min: number, max: number) => {
   const words = value.split(" ");
