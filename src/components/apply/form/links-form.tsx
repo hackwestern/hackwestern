@@ -45,7 +45,7 @@ export function LinksForm() {
     const githubUsername = getGithubUsername(pastedText);
 
     form.setValue("githubLink", githubUsername);
-    form.handleSubmit(onSubmit)();
+    return form.handleSubmit(onSubmit)();
   }
 
   function onLinkedinPaste(e: ClipboardEvent<HTMLInputElement>) {
@@ -54,7 +54,7 @@ export function LinksForm() {
     const linkedinUsername = getLinkedinUsername(pastedText);
 
     form.setValue("linkedInLink", linkedinUsername);
-    form.handleSubmit(onSubmit)();
+    return form.handleSubmit(onSubmit)();
   }
 
   return (
