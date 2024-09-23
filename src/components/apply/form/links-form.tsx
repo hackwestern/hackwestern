@@ -1,5 +1,6 @@
-import { z } from "zod";
+import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { ClipboardEvent } from "react";
 import { useForm } from "react-hook-form";
 import {
   Form,
@@ -12,6 +13,7 @@ import { Input } from "~/components/ui/input";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { linksSaveSchema } from "~/schemas/application";
+import { getGithubUsername, getLinkedinUsername } from "~/utils/urls";
 
 export function LinksForm() {
   const utils = api.useUtils();
@@ -37,6 +39,24 @@ export function LinksForm() {
     });
   }
 
+  function onGithubPaste(e: ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+    const githubUsername = getGithubUsername(pastedText);
+
+    form.setValue("githubLink", githubUsername);
+    return form.handleSubmit(onSubmit)();
+  }
+
+  function onLinkedinPaste(e: ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+    const linkedinUsername = getLinkedinUsername(pastedText);
+
+    form.setValue("linkedInLink", linkedinUsername);
+    return form.handleSubmit(onSubmit)();
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
@@ -47,12 +67,16 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>Github</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ""}
-                  placeholder="github.com/hacker"
-                  variant="primary"
-                />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>github.com/</span>
+                  <Input
+                    onPaste={onGithubPaste}
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="hacker"
+                    variant="primary"
+                  />
+                </div>
               </FormControl>
             </FormItem>
           )}
@@ -64,12 +88,16 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>LinkedIn</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ""}
-                  placeholder="linkedin.com/in/hacker"
-                  variant="primary"
-                />
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>linkedin.com/in/</span>
+                  <Input
+                    onPaste={onLinkedinPaste}
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="hacker"
+                    variant="primary"
+                  />
+                </div>
               </FormControl>
             </FormItem>
           )}
