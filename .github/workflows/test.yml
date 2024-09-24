@@ -37,7 +37,7 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: Install dependencies
-        run: rm package-lock.json && npm install
+        run: rm package-lock.json && npm install @rollup/rollup-linux-x64-gnu
 
       - name: Start Postgres DB
         run: npm run db:start && sleep 2
