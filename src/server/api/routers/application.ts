@@ -24,7 +24,7 @@ export const applicationRouter = createTRPCRouter({
             githubLink: application?.githubLink?.substring(19) ?? null,
             linkedInLink: application?.linkedInLink?.substring(24) ?? null,
           }
-        : undefined;
+        : null;
 
       return modifiedApplication;
     } catch (error) {

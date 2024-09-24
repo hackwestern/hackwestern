@@ -26,8 +26,6 @@ export function LinksForm() {
 
   const form = useForm<z.infer<typeof linksSaveSchema>>({
     resolver: zodResolver(linksSaveSchema),
-    defaultValues,
-    mode: "onBlur",
   });
 
   useAutoSave(form, onSubmit, defaultValues);

@@ -6,7 +6,7 @@ import useDeepCompareEffect from "use-deep-compare-effect";
 export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
   context: ReturnType<typeof useForm<TFieldValues>>,
   onSubmit: (data: TFieldValues) => void,
-  defaultValues?: TFieldValues,
+  defaultValues: TFieldValues | null | undefined,
 ) {
   const watch = useWatch({ control: context.control });
   const { dirtyFields } = context.formState;
