@@ -7,7 +7,7 @@ function formattedDate(lastSaved: Date | null): string | null {
   if (!lastSaved) {
     return null;
   }
-  return format(lastSaved, "MMM d, h:m a");
+  return format(lastSaved, "MMM d, h:mm a");
 }
 
 export function SavedIndicator() {
