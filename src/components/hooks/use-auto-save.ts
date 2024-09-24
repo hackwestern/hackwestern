@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { FieldValues, useWatch, type useForm } from "react-hook-form";
+import { type FieldValues, useWatch, type useForm } from "react-hook-form";
 import { debounce } from "~/lib/utils";
 import useDeepCompareEffect from "use-deep-compare-effect";
 
