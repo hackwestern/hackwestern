@@ -37,16 +37,16 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: Install dependencies
-        run: rm package-lock.json && npm install
+        run: npm ci
+
+      - name: Run Build
+        run: npm run build
 
       - name: Start Postgres DB
         run: npm run db:start && sleep 2
 
       - name: Push Schema
         run: npm run db:migrate
-
-      - name: Run Build
-        run: npm run build
 
       - name: Run tests
         run: npx vitest

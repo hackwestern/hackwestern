@@ -26,7 +26,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
       - name: Install packages
-        run: npm install
+        run: npm ci
       - name: Run prettier
         run: npx prettier --write ./src
       - name: Commit changes
@@ -37,4 +37,3 @@ jobs:
           git commit -m "Prettify code" || echo "No changes to commit"
       - name: Push changes
         run: git push
-
