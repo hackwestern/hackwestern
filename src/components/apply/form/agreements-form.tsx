@@ -38,11 +38,9 @@ export function AgreementsForm() {
 
   const form = useForm<z.infer<typeof agreementsSaveSchema>>({
     resolver: zodResolver(agreementsSaveSchema),
-    defaultValues,
-    mode: "onBlur",
   });
 
-  useAutoSave(form, onSubmit);
+  useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof agreementsSaveSchema>) {
     mutate({

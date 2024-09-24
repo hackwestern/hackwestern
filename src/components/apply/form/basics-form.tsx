@@ -25,11 +25,9 @@ export function BasicsForm() {
 
   const form = useForm<z.infer<typeof basicsSaveSchema>>({
     resolver: zodResolver(basicsSaveSchema),
-    defaultValues,
-    mode: "onBlur",
   });
 
-  useAutoSave(form, onSubmit);
+  useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof basicsSaveSchema>) {
     mutate({
