@@ -25,6 +25,14 @@ export const basicsSaveSchema = applicationSaveSchema.pick({
   age: true,
 });
 
+export const agreementsSaveSchema = applicationSaveSchema.pick({
+  agreeCodeOfConduct: true,
+  agreeShareWithMLH: true,
+  agreeShareWithSponsors: true,
+  agreeWillBe18: true,
+  agreeEmailsFromMLH: true,
+});
+
 // Helper function to check word count within a range
 const checkWordCount = (value: string, min: number, max: number) => {
   const words = value.split(" ");
@@ -35,7 +43,9 @@ const checkWordCount = (value: string, min: number, max: number) => {
 export const applicationSubmitSchema = createInsertSchema(applications, {
   agreeCodeOfConduct: z.literal(true),
   agreeShareWithMLH: z.literal(true),
+  agreeShareWithSponsors: z.literal(true),
   agreeWillBe18: z.literal(true),
+  agreeEmailsFromMLH: z.literal(true),
   age: (schema) => schema.age.min(18),
   resumeLink: (schema) => schema.resumeLink.url(),
   otherLink: (schema) => schema.otherLink.url(),
