@@ -45,7 +45,6 @@ export const applicationSubmitSchema = createInsertSchema(applications, {
   agreeShareWithMLH: z.literal(true),
   agreeShareWithSponsors: z.literal(true),
   agreeWillBe18: z.literal(true),
-  agreeEmailsFromMLH: z.literal(true),
   age: (schema) => schema.age.min(18),
   resumeLink: (schema) => schema.resumeLink.url(),
   otherLink: (schema) => schema.otherLink.url(),
