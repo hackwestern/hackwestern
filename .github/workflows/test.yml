@@ -37,7 +37,7 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: Install dependencies
-        run: rm package-lock.json && npm install
+        run: npm install
 
       - name: Start Postgres DB
         run: npm run db:start && sleep 2
