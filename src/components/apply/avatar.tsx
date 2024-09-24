@@ -11,6 +11,7 @@ type AvatarType =
 
 type AvatarProps = {
   avatar: AvatarType;
+  className: string;
 };
 
 function getAvatarImage(avatar: AvatarType) {
@@ -30,17 +31,19 @@ function getAvatarImage(avatar: AvatarType) {
 
 const Avatar = ({ avatar }: AvatarProps) => {
   return (
-    <div className="flex flex-col items-center justify-end pr-[18.896px]">
-      <Image
-        src={getAvatarImage(avatar)}
-        alt="Avatar"
-        width={200}
-        height={204}
-      />
-      <div className="absolute left-[2%] top-[47%] -rotate-[8.646deg] transform items-center justify-center gap-[10px] border border-[#DCDFE9] bg-[#F8F5FF] p-[4px_8px]">
-        <p className="font-sans text-[13px] font-medium leading-[18px] text-[#976CDF]">
+    <div className="relative w-[160px] h-[160px]">
+      <div className="absolute top-1 left-3">
+        <p className="text-sm text-[#222734]">
           {avatar}
         </p>
+      </div>
+      <div className="flex flex-col items-center justify-end">
+        <Image
+          src={getAvatarImage(avatar)}
+          alt="Avatar"
+          width={160}
+          height={150}
+        />
       </div>
     </div>
   );

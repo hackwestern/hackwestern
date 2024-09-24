@@ -25,6 +25,10 @@ export const basicsSaveSchema = applicationSaveSchema.pick({
   age: true,
 });
 
+export const personaSaveSchema = applicationSaveSchema.pick({
+  avatar: true,
+});
+
 // Helper function to check word count within a range
 const checkWordCount = (value: string, min: number, max: number) => {
   const words = value.split(" ");
