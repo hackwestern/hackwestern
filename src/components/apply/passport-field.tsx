@@ -1,7 +1,7 @@
 import React from "react";
 
 type FieldType = {
-  value?: string | null;
+  value: string | null | undefined;
 };
 
 const PassportField = ({ value }: FieldType) => {
