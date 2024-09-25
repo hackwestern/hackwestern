@@ -42,6 +42,7 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       agreeWillBe18: true,
       agreeEmailsFromMLH: true,
       agreeShareWithSponsors: true,
+      school: "Western University",
     };
   }
 
