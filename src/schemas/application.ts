@@ -27,6 +27,7 @@ export const basicsSaveSchema = applicationSaveSchema.pick({
 
 export const personaSaveSchema = applicationSaveSchema.pick({
   avatar: true,
+});
 
 export const agreementsSaveSchema = applicationSaveSchema.pick({
   agreeCodeOfConduct: true,
