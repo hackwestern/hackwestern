@@ -45,9 +45,8 @@ const checkWordCount = (value: string, min: number, max: number) => {
   return words.length < max && words.length > min;
 };
 
-const phoneRegex = new RegExp(
-  /^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/,
-);
+export const phoneRegex =
+  /^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
 
 // Submission schema with data validation
 export const applicationSubmitSchema = createInsertSchema(applications, {

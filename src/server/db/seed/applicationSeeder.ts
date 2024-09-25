@@ -43,6 +43,7 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       agreeEmailsFromMLH: true,
       agreeShareWithSponsors: true,
       school: "Western University",
+      phoneNumber: "519-936-5950",
     };
   }
 
