@@ -6,7 +6,6 @@ import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
-import Image from "next/image";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
     const session = await getServerSession(context.req, context.res, authOptions);
