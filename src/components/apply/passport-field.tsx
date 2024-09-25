@@ -10,7 +10,7 @@ const PassportField = ({ value }: FieldType) => {
       <p>{value}</p>
     </div>
   ) : (
-    <div className="bg-primary-200 w-fill h-6"/>
+    <div className="w-fill h-6 bg-primary-200" />
   );
 };
 
