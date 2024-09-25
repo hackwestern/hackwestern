@@ -6,7 +6,7 @@ type FieldType = {
 
 const PassportField = ({ value }: FieldType) => {
   return value ? (
-    <div className="font-sans text-base font-normal leading-5 text-[#222734]">
+    <div className="font-sans text-base font-normal leading-5 text-slate-800">
       <p>{value}</p>
     </div>
   ) : (

@@ -5,12 +5,12 @@ import { api } from "~/utils/api";
 
 export const Passport = () => {
   const { data: application } = api.application.get.useQuery();
-  const textStyle = "text-[#8E93A5] font-sans text-xs font-medium leading-5";
+  const textStyle = "text-slate-400 font-sans text-xs font-medium leading-5";
 
   return (
-    <div className="2xl:[50vh] 3xl:[40vh] flex h-[70vh] w-1/2 flex-shrink-0 flex-col items-start rounded-[10px] border border-[#E3DBF2] xl:h-[60vh]">
+    <div className="2xl:[50vh] 3xl:[40vh] flex h-[70vh] w-1/2 flex-shrink-0 flex-col items-start rounded-[10px] border border-primary-300 xl:h-[60vh]">
       <div className="flex h-1/2 flex-[1_0_0] items-center self-stretch rounded-t-[10px] border-b border-b-[#E3DBF2] bg-gradient-to-l from-[#EFF3FF] via-[#E5E9FF] to-[#ECE9FF]"></div>
-      <div className="flex h-1/2 flex-[1_0_0] items-center justify-center gap-10 self-stretch bg-[#F8F5FF] p-10">
+      <div className="flex h-1/2 flex-[1_0_0] items-center justify-center gap-10 self-stretch bg-primary-100 p-10">
         <Avatar avatar={application?.avatar} />
         <div className="flex w-1/2 w-full flex-col gap-2">
           <p className={textStyle}>NAME</p>
