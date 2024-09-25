@@ -46,7 +46,7 @@ const checkWordCount = (value: string, min: number, max: number) => {
 };
 
 const phoneRegex = new RegExp(
-  /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/,
+  /^(\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/,
 );
 
 // Submission schema with data validation
