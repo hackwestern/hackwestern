@@ -24,7 +24,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, variant, ...props }, ref) => {
     return (
       <textarea
-        className={cn(textareaVariants({ variant, className }))}
+        className={cn(textareaVariants({ variant, className }), "resize-none")}
         ref={ref}
         {...props}
       />
