@@ -33,8 +33,8 @@ const Avatar = ({ avatar }: AvatarProps) => {
     <div className="relative flex aspect-square w-2/5 flex-col items-center justify-end rounded-lg bg-primary-200 pr-[18.896px]">
       {avatar && (
         <>
-          <div className="absolute -left-3 top-0 z-50 -rotate-[8.646deg] transform items-center justify-center gap-[10px] border border-[#DCDFE9] bg-[#F8F5FF] p-[4px_8px]">
-            <p className="font-sans text-[13px] font-medium leading-[18px] text-[#976CDF]">
+          <div className="absolute -left-3 top-0 z-50 -rotate-[8.646deg] transform items-center justify-center gap-[10px] border border-slate-200 bg-primary-100 p-[4px_8px]">
+            <p className="font-sans text-[13px] font-medium leading-[18px] text-primary-500">
               {avatar}
             </p>
           </div>
