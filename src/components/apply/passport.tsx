@@ -15,7 +15,7 @@ export const Passport = () => {
         <div className="flex w-1/2 w-full flex-col gap-2">
           <p className={textStyle}>NAME</p>
           <PassportField
-            value={application?.firstName + " " + application?.lastName}
+            value={!!application?.firstName && !!application?.lastName ? application?.firstName + " " + application?.lastName : ""}
           />
           <p className={textStyle}>AGE</p>
           <PassportField value={application?.age?.toString()} />
