@@ -3,7 +3,7 @@ import Avatar from "./avatar";
 import PassportField from "./passport-field";
 import { api } from "~/utils/api";
 
-export const Passport = () => {
+const Passport = () => {
   const { data: application } = api.application.get.useQuery();
   const textStyle = "text-[#8E93A5] font-sans text-xs font-medium leading-5";
 
@@ -36,3 +36,5 @@ export const Passport = () => {
     </div>
   );
 };
+
+export default Passport;
