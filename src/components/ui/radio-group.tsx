@@ -71,5 +71,6 @@ const RadioButtonItem = React.forwardRef<
     </RadioGroupPrimitive.Item>
   );
 });
+RadioButtonItem.displayName = RadioGroupPrimitive.Item.displayName;
 
 export { RadioGroup, RadioGroupItem, RadioButtonItem };
