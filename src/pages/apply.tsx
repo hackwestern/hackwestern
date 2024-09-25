@@ -7,7 +7,7 @@ import { ApplyMenu } from "~/components/apply/menu";
 import { ApplyNavbar } from "~/components/apply/navbar";
 import { ApplyForm } from "~/components/apply/form";
 import { ApplyNavigation } from "~/components/apply/navigation";
-import Passport from "~/components/apply/passport";
+import { Passport } from "~/components/apply/passport";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   return applySteps.find((s) => s.step === stepValue) ?? null;
