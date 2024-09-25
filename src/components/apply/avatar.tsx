@@ -38,11 +38,7 @@ const Avatar = ({ avatar }: AvatarProps) => {
               {avatar}
             </p>
           </div>
-          <Image
-            src={getAvatarImage(avatar)}
-            alt="Avatar"
-            fill={true}
-          />
+          <Image src={getAvatarImage(avatar)} alt="Avatar" fill={true} />
         </>
       )}
     </div>
