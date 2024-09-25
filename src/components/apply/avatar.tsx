@@ -31,11 +31,9 @@ function getAvatarImage(avatar: AvatarType) {
 
 const Avatar = ({ avatar }: AvatarProps) => {
   return (
-    <div className="relative w-[160px] h-[160px]">
-      <div className="absolute top-1 left-3">
-        <p className="text-sm text-[#222734]">
-          {avatar}
-        </p>
+    <div className="relative h-[160px] w-[160px]">
+      <div className="absolute left-3 top-1">
+        <p className="text-sm text-[#222734]">{avatar}</p>
       </div>
       <div className="flex flex-col items-center justify-end">
         <Image

@@ -1,18 +1,17 @@
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-} from "~/components/ui/form";
+import { Form, FormControl, FormField, FormItem } from "~/components/ui/form";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { personaSaveSchema } from "~/schemas/application";
 import AvatarRadio from "../avatar-radio";
 
-type AvatarType = "Wildlife Wanderer" | "City Cruiser" | "Foodie Fanatic" | "Beach Bum";
+type AvatarType =
+  | "Wildlife Wanderer"
+  | "City Cruiser"
+  | "Foodie Fanatic"
+  | "Beach Bum";
 
 export function PersonaForm() {
   const utils = api.useUtils();
@@ -46,9 +45,7 @@ export function PersonaForm() {
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <AvatarRadio
-                    {...field}
-                  />
+                  <AvatarRadio {...field} />
                 </FormControl>
               </FormItem>
             )}
