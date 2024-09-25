@@ -83,7 +83,7 @@ export function ApplicationForm() {
         </div>
 
         <div className="flex w-full flex-wrap gap-2">
-          <FormLabel className="mt-4 w-full">
+          <FormLabel className="w-full">
             Tell us why you think you will win Hack Western 11.
           </FormLabel>
           <FormField
@@ -113,7 +113,7 @@ export function ApplicationForm() {
         </div>
 
         <div className="flex w-full flex-wrap gap-2">
-          <FormLabel className="mt-4 w-full">
+          <FormLabel className="w-full">
             Tell us why you think you will win Hack Western 11.
           </FormLabel>
           <FormField
