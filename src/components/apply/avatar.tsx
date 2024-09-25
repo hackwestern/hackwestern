@@ -30,18 +30,17 @@ function getAvatarImage(avatar: AvatarType) {
 
 const Avatar = ({ avatar }: AvatarProps) => {
   return (
-    <div className="flex flex-col items-center justify-end pr-[18.896px]">
-      <Image
-        src={getAvatarImage(avatar)}
-        alt="Avatar"
-        width={200}
-        height={204}
-      />
-      <div className="absolute left-[2%] top-[47%] -rotate-[8.646deg] transform items-center justify-center gap-[10px] border border-[#DCDFE9] bg-[#F8F5FF] p-[4px_8px]">
-        <p className="font-sans text-[13px] font-medium leading-[18px] text-[#976CDF]">
-          {avatar}
-        </p>
-      </div>
+    <div className="relative flex aspect-square w-2/5 flex-col items-center justify-end rounded-lg bg-primary-200 pr-[18.896px]">
+      {avatar && (
+        <>
+          <div className="absolute -left-3 top-0 z-50 -rotate-[8.646deg] transform items-center justify-center gap-2.5 border border-slate-200 bg-primary-100 px-1 py-2">
+            <p className="font-sans text-xs font-medium leading-4 text-primary-500">
+              {avatar}
+            </p>
+          </div>
+          <Image src={getAvatarImage(avatar)} alt="Avatar" fill={true} />
+        </>
+      )}
     </div>
   );
 };

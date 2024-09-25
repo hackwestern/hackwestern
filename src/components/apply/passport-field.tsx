@@ -1,15 +1,16 @@
 import React from "react";
 
 type FieldType = {
-  str?: string | null;
-  int?: number | null;
+  value: string | null | undefined;
 };
 
-const PassportField = ({ str, int }: FieldType) => {
-  return (
-    <div className="font-sans text-base font-normal leading-5 text-[#222734]">
-      <p>{str ?? int?.toString()}</p>
+const PassportField = ({ value }: FieldType) => {
+  return value ? (
+    <div className="font-sans text-base font-normal leading-5 text-slate-800">
+      <p>{value}</p>
     </div>
+  ) : (
+    <div className="w-fill h-6 bg-primary-200" />
   );
 };
 
