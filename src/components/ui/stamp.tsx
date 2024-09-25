@@ -1,6 +1,6 @@
 import * as React from "react";
-import { major, numOfHackathons } from "~/server/db/schema";
-import { schools } from "~/constants/schools";
+import type { major, numOfHackathons } from "~/server/db/schema";
+import type { schools } from "~/constants/schools";
 
 type majorType = (typeof major.enumValues)[number];
 type schoolType = (typeof schools)[number];
