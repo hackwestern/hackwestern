@@ -23,7 +23,7 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
     if (defaultValues) {
       context.reset(defaultValues);
     }
-  }, [context, defaultValues]);
+  }, [defaultValues]);
 
   useDeepCompareEffect(() => {
     if (hasDirtyFields) {
