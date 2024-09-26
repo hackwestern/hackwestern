@@ -75,7 +75,7 @@ export function ApplicationForm() {
                   />
                 </FormControl>
                 <div className="text-sm text-gray-500">
-                  {maxChars - charCount1} characters remaining
+                  {maxChars - field.value.length} characters remaining
                 </div>
               </FormItem>
             )}
