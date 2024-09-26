@@ -31,7 +31,7 @@ export function ApplicationForm() {
     mode: "onBlur",
   });
 
-  useAutoSave(form, onSubmit);
+  useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof applicationSubmitSchema>) {
     mutate({
