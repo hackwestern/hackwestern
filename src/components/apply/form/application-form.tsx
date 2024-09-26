@@ -16,8 +16,6 @@ import {
   applicationSubmitSchema,
   basicsSaveSchema,
 } from "~/schemas/application";
-import { useState } from "react";
-import { applications } from "~/server/db/schema";
 
 export function ApplicationForm() {
   const utils = api.useUtils();
@@ -44,11 +42,6 @@ export function ApplicationForm() {
 
   const maxChars = 150;
 
-  // Track character counts for each textarea
-  const [charCount1, setCharCount1] = useState(0);
-  const [charCount2, setCharCount2] = useState(0);
-  const [charCount3, setCharCount3] = useState(0);
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -70,12 +63,11 @@ export function ApplicationForm() {
                     variant="primary"
                     onChange={(e) => {
                       field.onChange(e);
-                      setCharCount1(e.target.value.length);
                     }}
                   />
                 </FormControl>
                 <div className="text-sm text-gray-500">
-                  {maxChars - field.value.length} characters remaining
+                  {maxChars - (field.value?.length ?? 0)} characters remaining
                 </div>
               </FormItem>
             )}
@@ -100,12 +92,11 @@ export function ApplicationForm() {
                     variant="primary"
                     onChange={(e) => {
                       field.onChange(e);
-                      setCharCount2(e.target.value.length);
                     }}
                   />
                 </FormControl>
                 <div className="text-sm text-gray-500">
-                  {maxChars - charCount2} characters remaining
+                  {maxChars - (field.value?.length ?? 0)} characters remaining
                 </div>
               </FormItem>
             )}
@@ -130,12 +121,11 @@ export function ApplicationForm() {
                     variant="primary"
                     onChange={(e) => {
                       field.onChange(e);
-                      setCharCount3(e.target.value.length);
                     }}
                   />
                 </FormControl>
                 <div className="text-sm text-gray-500">
-                  {maxChars - charCount3} characters remaining
+                  {maxChars - (field.value?.length ?? 0)} characters remaining
                 </div>
               </FormItem>
             )}
