@@ -1,4 +1,11 @@
-import { Calendar, Icon, Mail } from "lucide-react";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+} from "~/components/ui/select";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import { Button } from "~/components/ui/button";
@@ -22,6 +29,8 @@ const radioItems = [
   },
 ];
 
+const selectItems = ["Apple", "Banana", "Blueberry", "Grapes", "Pineapple"];
+
 function TestUI() {
   return (
     <div className="flex h-screen items-center justify-center">
@@ -39,6 +48,20 @@ function TestUI() {
             <RadioButtonItem key={item.label} {...item} />
           ))}
         </RadioGroup>
+        <Select>
+          <SelectTrigger className="w-96">
+            <SelectValue placeholder="Select a fruit" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {selectItems.map((item) => (
+                <SelectItem key={item} value={item}>
+                  {item}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
