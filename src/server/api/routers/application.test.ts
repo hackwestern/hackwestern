@@ -199,7 +199,7 @@ function createCompleteApplication(session: Session) {
     names?.at(-1),
   ];
 
-  const application = ApplicationSeeder.createRandomWithoutUser();
+  const application = ApplicationSeeder.createCompleteWithoutUser();
 
   return {
     ...application,
