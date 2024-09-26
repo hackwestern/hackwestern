@@ -31,6 +31,18 @@ export const basicsSaveSchema = applicationSaveSchema.pick({
   age: true,
 });
 
+export const infoSaveSchema = applicationSaveSchema
+  .pick({
+    school: true,
+    levelOfStudy: true,
+    major: true,
+    attendedBefore: true,
+    numOfHackathons: true,
+  })
+  .extend({
+    attendedBefore: z.enum(["yes", "no"]),
+  });
+
 export const agreementsSaveSchema = applicationSaveSchema.pick({
   agreeCodeOfConduct: true,
   agreeShareWithMLH: true,
