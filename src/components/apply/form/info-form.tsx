@@ -20,7 +20,7 @@ import {
 } from "~/components/ui/select";
 import { schools } from "~/constants/schools";
 import { levelOfStudy, major, numOfHackathons } from "~/server/db/schema";
-import { RadioButtonItem, RadioGroup } from "~/components/ui/radio-group";
+import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
 import { useMemo } from "react";
 
 export function InfoForm() {
@@ -148,10 +148,10 @@ export function InfoForm() {
             <FormItem>
               <FormLabel>Have you attended Hack Western before?</FormLabel>
               <FormControl>
-                <RadioGroup {...field} onValueChange={field.onChange}>
+                <RadioButtonGroup {...field} onValueChange={field.onChange}>
                   <RadioButtonItem key="yes" label="Yes" value="yes" />
                   <RadioButtonItem key="no" label="No" value="no" />
-                </RadioGroup>
+                </RadioButtonGroup>
               </FormControl>
             </FormItem>
           )}
@@ -163,7 +163,7 @@ export function InfoForm() {
             <FormItem>
               <FormLabel>How many hackathons have you attended?</FormLabel>
               <FormControl>
-                <RadioGroup {...field} onValueChange={field.onChange}>
+                <RadioButtonGroup {...field} onValueChange={field.onChange}>
                   {numOfHackathons.enumValues.map((option) => (
                     <RadioButtonItem
                       key={option}
@@ -171,7 +171,7 @@ export function InfoForm() {
                       value={option}
                     />
                   ))}
-                </RadioGroup>
+                </RadioButtonGroup>
               </FormControl>
             </FormItem>
           )}
