@@ -46,7 +46,9 @@ export const authRedirectOrganizer = async (
 export const authRedirectHacker = async (context: GetServerSidePropsContext) =>
   authRedirect(context, "/login");
 
-export const hackerLoginRedirect = async (context: GetServerSidePropsContext) => {
+export const hackerLoginRedirect = async (
+  context: GetServerSidePropsContext,
+) => {
   const session = await getServerSession(context.req, context.res, authOptions);
 
   if (session) {
