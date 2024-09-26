@@ -79,6 +79,7 @@ export const authOptions: NextAuthOptions = {
         },
       },
       async authorize(credentials, _req) {
+        console.log("attempting to auth:", credentials);
         // Add logic here to look up the user from the credentials supplied
         if (!credentials) {
           return null;
@@ -87,6 +88,7 @@ export const authOptions: NextAuthOptions = {
 
         try {
           const result = await login(email, password);
+          console.log("auth result:", result);
           if (result.success) {
             return result.user;
           } else {

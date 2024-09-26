@@ -1,4 +1,4 @@
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import Head from "next/head";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
@@ -8,17 +8,24 @@ import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import Link from "next/link";
 import { hackerLoginRedirect } from "~/utils/redirect";
+import { useRouter } from "next/router";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   async function handleSubmit() {
-    const result = await signIn("credentials", {
+    signIn("credentials", {
       redirect: false,
-      email,
+      username: email,
       password,
-    });
+    })
+      .then((response) => {
+        console.log("response:", response);
+      })
+      .catch((e) => {
+        throw e;
+      });
   }
 
   return (
@@ -38,7 +45,12 @@ export default function Login() {
           <h2 className="mb-6 text-lg">
             We can&apos;t wait to see what you will create.
           </h2>
-          <form onSubmit={handleSubmit}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleSubmit();
+            }}
+          >
             <h2 className="mb-2 text-sm">Email</h2>
             <Input
               type="email"
