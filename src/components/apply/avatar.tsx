@@ -30,7 +30,7 @@ function getAvatarImage(avatar: AvatarType) {
 
 const Avatar = ({ avatar }: AvatarProps) => {
   return (
-    <div className="relative flex aspect-square w-2/5 flex-col items-center justify-end rounded-lg bg-primary-200 pr-[18.896px]">
+    <div className="relative flex aspect-square w-2/3 flex-col items-center justify-end rounded-lg bg-primary-200 pr-[18.896px]">
       {avatar && (
         <>
           <div className="absolute -left-3 top-0 z-50 -rotate-[8.646deg] transform items-center justify-center gap-2.5 border border-slate-200 bg-primary-100 px-1 py-2">
