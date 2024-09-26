@@ -33,7 +33,7 @@ describe("application.get", async () => {
   });
 
   test("undefined if no application exists", () => {
-    return expect(caller.application.get()).resolves.toBeUndefined();
+    return expect(caller.application.get()).resolves.toBeNull();
   });
 
   test("gets the user's application if it exists", async () => {
@@ -121,7 +121,7 @@ describe.sequential("application.save", async () => {
   });
 
   test("creates a new application when it does not exist", async () => {
-    await expect(caller.application.get()).resolves.toBeUndefined();
+    await expect(caller.application.get()).resolves.toBeNull();
 
     const application = createRandomApplication(session);
     const want = application;

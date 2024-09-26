@@ -40,6 +40,8 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       agreeCodeOfConduct: true,
       agreeShareWithMLH: true,
       agreeWillBe18: true,
+      agreeEmailsFromMLH: true,
+      agreeShareWithSponsors: true,
     };
   }
 
