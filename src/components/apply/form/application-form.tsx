@@ -11,11 +11,7 @@ import {
 import { Textarea } from "~/components/ui/textarea";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/components/hooks/use-auto-save";
-import {
-  applicationSaveSchema,
-  applicationSubmitSchema,
-  basicsSaveSchema,
-} from "~/schemas/application";
+import { applicationStepSaveSchema } from "~/schemas/application";
 
 export function ApplicationForm() {
   const utils = api.useUtils();
@@ -26,14 +22,14 @@ export function ApplicationForm() {
     },
   });
 
-  const form = useForm<z.infer<typeof applicationSubmitSchema>>({
-    resolver: zodResolver(basicsSaveSchema),
+  const form = useForm<z.infer<typeof applicationStepSaveSchema>>({
+    resolver: zodResolver(applicationStepSaveSchema),
     mode: "onBlur",
   });
 
   useAutoSave(form, onSubmit, defaultValues);
 
-  function onSubmit(data: z.infer<typeof applicationSubmitSchema>) {
+  function onSubmit(data: z.infer<typeof applicationStepSaveSchema>) {
     mutate({
       ...defaultValues,
       ...data,
