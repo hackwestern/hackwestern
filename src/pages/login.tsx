@@ -7,6 +7,7 @@ import { useState } from "react";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import Link from "next/link";
+import { hackerLoginRedirect } from "~/utils/redirect";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -83,3 +84,5 @@ export default function Login() {
     </>
   );
 }
+
+export const getServerSideProps = hackerLoginRedirect;

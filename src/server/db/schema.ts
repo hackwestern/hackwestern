@@ -13,7 +13,6 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
-import { db } from ".";
 
 /**
  * This is the prefix for tables from this year's hack western!
