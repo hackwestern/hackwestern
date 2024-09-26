@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { ApplyNavbar } from "~/components/apply/navbar";
 import { Passport } from "~/components/apply/passport";
 import { api } from "~/utils/api";
+import { authRedirectHacker } from "~/utils/redirect";
 
 type ApplicationStatusType =
   | "IN_PROGRESS"
@@ -127,3 +128,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+export const getServerSideProps = authRedirectHacker;

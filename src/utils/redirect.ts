@@ -5,8 +5,8 @@ import { db } from "~/server/db";
 
 export const authRedirect = async (
   context: GetServerSidePropsContext,
-  destination = "/internal/login",
-  userTypeTarget = "organizer",
+  destination: string,
+  userTypeTarget?: "hacker" | "organizer" | "sponsor",
 ) => {
   const session = await getServerSession(context.req, context.res, authOptions);
 
@@ -25,10 +25,34 @@ export const authRedirect = async (
 
   const userType = user?.type;
 
-  if (userType !== userTypeTarget) {
+  if (userTypeTarget && userType !== userTypeTarget) {
     return {
       redirect: {
         destination,
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: {},
+  };
+};
+
+export const authRedirectOrganizer = async (
+  context: GetServerSidePropsContext,
+) => authRedirect(context, "/internal/login", "organizer");
+
+export const authRedirectHacker = async (context: GetServerSidePropsContext) =>
+  authRedirect(context, "/login");
+
+export const hackerLoginRedirect = async (context: GetServerSidePropsContext) => {
+  const session = await getServerSession(context.req, context.res, authOptions);
+
+  if (session) {
+    return {
+      redirect: {
+        destination: "/dashboard",
         permanent: false,
       },
     };
