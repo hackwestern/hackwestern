@@ -51,6 +51,24 @@ export const agreementsSaveSchema = applicationSaveSchema.pick({
   agreeEmailsFromMLH: true,
 });
 
+export const underrepGroupAnswers = [
+  "Yes",
+  "No",
+  "Prefer not to answer",
+] as const;
+export type UnderrepGroupAnswer = (typeof underrepGroupAnswers)[number];
+
+export const optionalSaveSchema = applicationSaveSchema
+  .pick({
+    underrepGroup: true,
+    gender: true,
+    ethnicity: true,
+    sexualOrientation: true,
+  })
+  .extend({
+    underrepGroup: z.enum(underrepGroupAnswers),
+  });
+
 // Helper function to check word count within a range
 const checkWordCount = (value: string, min: number, max: number) => {
   const words = value.split(" ");
