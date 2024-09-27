@@ -8,7 +8,7 @@ interface Sponsor {
 
 const SponsorCard = ({ name, logo }: Sponsor) => {
   return (
-    <div className="h-36 w-full cursor-pointer rounded-xl bg-white transition-all hover:scale-[1.01] hover:shadow-2xl xl:h-40 2xl:h-48">
+    <div className="h-36 w-full cursor-pointer rounded-xl bg-white transition-all hover:scale-[1.0075] hover:shadow-2xl xl:h-40 2xl:h-48">
       {name + logo}
     </div>
   );
