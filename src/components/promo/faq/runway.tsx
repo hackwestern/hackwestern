@@ -27,7 +27,7 @@ const Runway = () => {
         </linearGradient>
       </defs>
       <line
-        x1="-2.5"
+        x1="-25.5"
         y1="104"
         x2="5437.5"
         y2="104"
