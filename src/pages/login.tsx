@@ -12,7 +12,6 @@ import { useRouter } from "next/router";
 import { useToast } from "~/components/hooks/use-toast";
 
 export default function Login() {
-  const { data: session } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
@@ -27,7 +26,6 @@ export default function Login() {
     })
       .then((response) => {
         if (response && response.ok === false) {
-          console.log("error logging in:", response.error);
           toast({
             title: "Error",
             description: "Invalid email or password",
@@ -35,11 +33,10 @@ export default function Login() {
           });
           return;
         }
-        console.log("response:", response);
         router.push("/dashboard");
       })
       .catch((e) => {
-        console.log("error logging in:", e);
+        console.error("error logging in:", e);
       });
   }
 
