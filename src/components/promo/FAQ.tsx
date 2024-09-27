@@ -32,7 +32,7 @@ const FAQ = () => {
         <div className="z-40 mx-auto h-full w-2/3 justify-center pb-20 pt-12 md:gap-8">
           <Accordion
             type="single"
-            className=" mx-auto text-white md:w-2/3 md:columns-2 3xl:w-1/2"
+            className="mx-auto text-white md:w-2/3 md:columns-2 3xl:w-1/2"
           >
             <AccordionItem value="item-1">
               <AccordionTrigger>Is it accessible?</AccordionTrigger>
