@@ -1,7 +1,7 @@
 const RightHill = () => {
   return (
     <svg
-      className="absolute right-0 z-20 -bottom-[500px] 2xl:-bottom-[600px]"
+      className="absolute -right-40 md:right-0 z-20 -bottom-[700px] md:-bottom-[500px] 2xl:-bottom-[600px]"
       width="1439"
       height="1087"
       fill="none"

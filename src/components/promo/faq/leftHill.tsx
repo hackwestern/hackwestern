@@ -1,7 +1,7 @@
 const LeftHill = () => {
   return (
     <svg
-      className="absolute left-0 z-10 -bottom-[200px] 2xl:-bottom-[350px]"
+      className="absolute -left-48 md:left-0 z-10 -bottom-[450px] md:-bottom-[200px] 2xl:-bottom-[350px]"
       width="1439"
       height="791"
       viewBox="0 0 1439 791"

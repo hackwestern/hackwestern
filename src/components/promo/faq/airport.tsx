@@ -1,9 +1,7 @@
 const Airport = () => {
   return (
     <svg
-      className="z-30"
-      width="941"
-      height="198"
+      className="z-30 mr-2.5 md:w-[941px]"
       viewBox="0 0 941 198"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"

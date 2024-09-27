@@ -1,16 +1,18 @@
 const Runway = () => {
   return (
     <svg
-      height="208"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="bottom-0 z-50 w-screen"
+      className="z-50 h-[150px] w-screen md:h-[208px]"
     >
-      <rect x="-15" className="w-screen" height="208" fill="#D9D9D9" />
       <rect
         x="-15"
-        className="w-screen"
-        height="208"
+        className="h-[150px] w-[5000px] md:h-[208px]"
+        fill="#D9D9D9"
+      />
+      <rect
+        x="-15"
+        className="h-[150px] w-[5000px] md:h-[208px]"
         fill="url(#paint0_linear_1165_628)"
       />
       <defs>
@@ -27,7 +29,18 @@ const Runway = () => {
         </linearGradient>
       </defs>
       <line
-        x1="-25.5"
+        className="md:invisible"
+        x1="-2.5"
+        y1="75"
+        x2="5437.5"
+        y2="75"
+        stroke="#DAD7F1"
+        strokeWidth="5"
+        strokeDasharray="10 20"
+      />
+      <line
+        className="invisible md:visible"
+        x1="-2.5"
         y1="104"
         x2="5437.5"
         y2="104"
