@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import {
   Form,
@@ -21,7 +22,6 @@ import {
 import { schools } from "~/constants/schools";
 import { levelOfStudy, major, numOfHackathons } from "~/server/db/schema";
 import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
-import { useMemo } from "react";
 
 export function InfoForm() {
   const utils = api.useUtils();
