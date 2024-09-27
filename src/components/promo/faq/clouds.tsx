@@ -1,7 +1,7 @@
 export const Cloud1 = () => {
   return (
     <svg
-      className="absolute -left-20 md:left-0 top-20 z-0"
+      className="absolute -left-20 top-20 z-0 md:left-0"
       width="398"
       height="289"
       viewBox="0 0 398 289"
@@ -67,7 +67,7 @@ export const Cloud3 = () => {
 export const Cloud2 = () => {
   return (
     <svg
-      className="absolute right-0 top-14 z-0 invisible md:visible"
+      className="invisible absolute right-0 top-14 z-0 md:visible"
       width="337"
       height="253"
       viewBox="0 0 337 253"

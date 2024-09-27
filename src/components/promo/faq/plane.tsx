@@ -1,7 +1,7 @@
 const Plane = () => {
   return (
     <svg
-      className="absolute -bottom-3 md:-bottom-10 start-1/3 md:start-2/3 z-50 w-2/3 md:w-[546px]"
+      className="absolute -bottom-3 start-1/3 z-50 w-2/3 md:-bottom-10 md:start-2/3 md:w-[546px]"
       viewBox="0 0 546 463"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
