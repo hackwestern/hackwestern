@@ -18,7 +18,7 @@ const Sponsors = () => {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-[#713eba] py-28 text-center">
+    <div className="min-h-screen bg-[#713eba] pt-28 text-center">
       <h1 className="font-MagicRetro text-5xl text-primary-100">
         thank you to our sponsors
       </h1>
@@ -58,6 +58,7 @@ const Sponsors = () => {
           </Button>
         </div>
       </div>
+      <div className="h-48 lg:h-64 2xl:h-80 bg-gradient-to-b from-[#713EBA] via-[#582B95] to-[#320862] mt-12" />
     </div>
   );
 };
