@@ -16,13 +16,13 @@ import Moon from "./faq/moon";
 const FAQ = () => {
   return (
     <div className="flex min-h-screen flex-col justify-between overflow-clip bg-[#320862] text-center">
-      <div className="absolute h-screen overflow-clip w-full">
+      <div className="absolute h-screen w-full overflow-clip">
         <Moon />
         <Cloud1 />
         <Cloud2 />
         <Cloud3 />
       </div>
-      <div className="3xl:min-h-[75vh] 3xl:pt-72 z-50 my-auto flex min-h-screen flex-col justify-center pt-48 lg:min-h-[60vh] xl:pt-60">
+      <div className="z-50 my-auto flex min-h-screen flex-col justify-center pt-48 lg:min-h-[60vh] xl:pt-60 3xl:min-h-[75vh] 3xl:pt-72">
         <h2 className="font-MagicRetro text-3xl text-white md:text-6xl">
           frequently asked questions
         </h2>
@@ -30,7 +30,10 @@ const FAQ = () => {
           Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         </p>
         <div className="z-40 mx-auto h-full w-2/3 justify-center pb-20 pt-12 md:gap-8">
-          <Accordion type="multiple" className=" text-white md:w-2/3 3xl:w-1/2 md:columns-2 mx-auto">
+          <Accordion
+            type="multiple"
+            className=" mx-auto text-white md:w-2/3 md:columns-2 3xl:w-1/2"
+          >
             <AccordionItem value="item-1">
               <AccordionTrigger>Is it accessible?</AccordionTrigger>
               <AccordionContent>
