@@ -34,7 +34,7 @@ export default function Register() {
           description: "Account created successfully",
           variant: "default",
         });
-        router.push("/dashboard");
+        void router.push("/dashboard");
       }),
   });
 

@@ -1,4 +1,4 @@
-import { signIn, useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import Head from "next/head";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
@@ -18,7 +18,7 @@ export default function Login() {
   const { toast } = useToast();
 
   async function handleSubmit() {
-    signIn("credentials", {
+    void signIn("credentials", {
       redirect: false,
       username: email,
       password,
@@ -31,7 +31,7 @@ export default function Login() {
         });
         return;
       }
-      router.push("/dashboard");
+      void router.push("/dashboard");
     });
   }
 

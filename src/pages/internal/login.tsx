@@ -1,4 +1,3 @@
-import { useSession } from "next-auth/react";
 import Head from "next/head";
 import { authOptions } from "~/server/auth";
 import { getServerSession } from "next-auth";
@@ -42,9 +41,18 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
       where: (users, { eq }) => eq(users.id, session.user.id),
     });
 
+    if (user?.type === "organizer") {
+      return {
+        redirect: {
+          destination: "/internal",
+          permanent: false,
+        },
+      };
+    }
+
     return {
       redirect: {
-        destination: "/internal",
+        destination: "/dashboard",
         permanent: false,
       },
     };
