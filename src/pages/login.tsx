@@ -8,11 +8,13 @@ import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import Link from "next/link";
 import { hackerLoginRedirect } from "~/utils/redirect";
-import { useRouter } from "next/router";
 
 export default function Login() {
+  const { data: session } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  console.log("session:", session);
 
   async function handleSubmit() {
     signIn("credentials", {

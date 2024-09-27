@@ -1,8 +1,10 @@
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 
 const Logout = () => {
   const router = useRouter();
+  const session = useSession();
+  console.log("session:", session);
 
   const logout = () => {
     signOut()
