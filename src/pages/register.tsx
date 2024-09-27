@@ -76,7 +76,7 @@ export default function Register() {
               className="mb-8"
               placeholder="Password"
             />
-            <Button type="submit" className="w-full">
+            <Button variant="primary" type="submit" className=" w-full">
               Create Account
             </Button>
           </form>
