@@ -1,9 +1,9 @@
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import { authRedirectHacker } from "~/utils/redirect";
 
 const Logout = () => {
   const router = useRouter();
-  const session = useSession();
 
   const logout = () => {
     signOut()
@@ -20,3 +20,4 @@ const Logout = () => {
 };
 
 export default Logout;
+export const getServerSideProps = authRedirectHacker;

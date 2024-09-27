@@ -9,6 +9,8 @@ import { useToast } from "~/components/hooks/use-toast";
 
 import { api } from "~/utils/api";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
+import { hackerLoginRedirect } from "~/utils/redirect";
 
 export default function Register() {
   const { toast } = useToast();
@@ -25,7 +27,15 @@ export default function Register() {
         variant: "destructive",
       });
     },
-    onSuccess: () => router.push("/dashboard"),
+    onSuccess: () =>
+      signIn("credentials", { username: email, password }).then(() => {
+        toast({
+          title: "Success",
+          description: "Account created successfully",
+          variant: "default",
+        });
+        router.push("/dashboard");
+      }),
   });
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -92,3 +102,5 @@ export default function Register() {
     </>
   );
 }
+
+export const getServerSideProps = hackerLoginRedirect;

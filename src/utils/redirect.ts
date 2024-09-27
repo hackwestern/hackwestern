@@ -3,15 +3,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
 
-export const authRedirect = async (
+const authRedirect = async (
   context: GetServerSidePropsContext,
   destination: string,
   userTypeTarget?: "hacker" | "organizer" | "sponsor",
 ) => {
   const session = await getServerSession(context.req, context.res, authOptions);
-  
+
   if (!session) {
-    console.log('no session found')
+    console.log("no session found");
     return {
       redirect: {
         destination,

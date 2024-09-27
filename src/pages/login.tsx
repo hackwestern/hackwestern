@@ -20,24 +20,19 @@ export default function Login() {
   async function handleSubmit() {
     signIn("credentials", {
       redirect: false,
-      callbackUrl: "/dashboard",
       username: email,
       password,
-    })
-      .then((response) => {
-        if (response && response.ok === false) {
-          toast({
-            title: "Error",
-            description: "Invalid email or password",
-            variant: "destructive",
-          });
-          return;
-        }
-        router.push("/dashboard");
-      })
-      .catch((e) => {
-        console.error("error logging in:", e);
-      });
+    }).then((response) => {
+      if (response && response.ok === false) {
+        toast({
+          title: "Error",
+          description: "Invalid email or password",
+          variant: "destructive",
+        });
+        return;
+      }
+      router.push("/dashboard");
+    });
   }
 
   return (
