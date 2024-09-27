@@ -27,7 +27,7 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
 
   useDeepCompareEffect(() => {
     if (hasDirtyFields) {
-      context.handleSubmit(debouncedSave, (errors) =>
+      void context.handleSubmit(debouncedSave, (errors) =>
         console.error("invalid form", { errors }),
       )();
     }
