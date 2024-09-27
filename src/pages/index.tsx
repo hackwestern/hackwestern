@@ -2,6 +2,7 @@ import Head from "next/head";
 import Image from "next/image";
 import { Footer } from "~/components/footer";
 import { PreregistrationForm } from "~/components/preregistration-form";
+import FAQ from "~/components/promo/FAQ";
 
 export default function Home() {
   return (
@@ -96,6 +97,7 @@ export default function Home() {
             </div>
           </div>
         </div>
+        <FAQ />
         <Footer className="fixed bottom-0" />
       </main>
     </>
