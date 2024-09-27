@@ -79,7 +79,10 @@ export function OptionalForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="max-h-full space-y-2 overflow-y-auto"
+      >
         <FormField
           control={form.control}
           name="underrepGroup"
