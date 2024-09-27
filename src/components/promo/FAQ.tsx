@@ -22,7 +22,7 @@ const FAQ = () => {
         <Cloud2 />
         <Cloud3 />
       </div>
-      <div className="3xl:min-h-[75vh] 3xl:pt-72 z-50 my-auto flex min-h-screen flex-col justify-center pt-48 lg:min-h-[60vh] xl:pt-60">
+      <div className="3xl:min-h-[70vh] 3xl:pt-72 z-50 my-auto flex min-h-screen flex-col justify-center pt-48 xl:min-h-[90vh] xl:pt-60">
         <h2 className="font-MagicRetro text-3xl text-white md:text-6xl">
           frequently asked questions
         </h2>
@@ -31,7 +31,7 @@ const FAQ = () => {
         </p>
         <div className="z-40 mx-auto h-full w-2/3 justify-center pb-20 pt-12 md:gap-8">
           <Accordion
-            type="multiple"
+            type="single"
             className=" 3xl:w-1/2 mx-auto text-white md:w-2/3 md:columns-2"
           >
             <AccordionItem value="item-1">
