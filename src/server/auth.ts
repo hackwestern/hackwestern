@@ -50,24 +50,26 @@ declare module "next-auth" {
  */
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    session: ({ session, user }) => (
-      console.log("session:", session),
-      {
-        ...session,
-        user: {
-          ...session.user,
-          id: user.id,
-        },
+    session: async ({ session, token }) => {
+      if (session.user) {
+        session.user.id = token.sub ?? "";
       }
-    ),
+      return session;
+    },
+    jwt: async ({ user, token }) => {
+      if (user) {
+        token.uid = user.id;
+      }
+      return token;
+    },
   },
-  /*session: {
+  session: {
     strategy: "jwt",
   },
   jwt: {
     encode,
     decode,
-  },*/
+  },
   adapter: DrizzleAdapter(db, createTable) as Adapter,
   providers: [
     GithubProvider({
@@ -90,7 +92,6 @@ export const authOptions: NextAuthOptions = {
         },
       },
       async authorize(credentials, _req) {
-        console.log("attempting to auth:", credentials);
         // Add logic here to look up the user from the credentials supplied
         if (!credentials) {
           return null;
@@ -99,7 +100,6 @@ export const authOptions: NextAuthOptions = {
 
         try {
           const result = await login(email, password);
-          console.log("auth result:", result);
           if (result.success) {
             return result.user;
           } else {

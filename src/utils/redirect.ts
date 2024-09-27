@@ -9,7 +9,6 @@ export const authRedirect = async (
   userTypeTarget?: "hacker" | "organizer" | "sponsor",
 ) => {
   const session = await getServerSession(context.req, context.res, authOptions);
-  console.log('session:', session)
   
   if (!session) {
     console.log('no session found')

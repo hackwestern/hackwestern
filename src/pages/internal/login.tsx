@@ -1,7 +1,5 @@
 import { useSession } from "next-auth/react";
 import Head from "next/head";
-
-import Link from "next/link";
 import { authOptions } from "~/server/auth";
 import { getServerSession } from "next-auth";
 import type { GetServerSidePropsContext } from "next";
@@ -10,8 +8,6 @@ import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 
 export default function Login() {
-  const { data: sessionData } = useSession();
-  console.log(sessionData);
   return (
     <>
       <Head>

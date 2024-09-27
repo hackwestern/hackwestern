@@ -8,25 +8,38 @@ import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import Link from "next/link";
 import { hackerLoginRedirect } from "~/utils/redirect";
+import { useRouter } from "next/router";
+import { useToast } from "~/components/hooks/use-toast";
 
 export default function Login() {
   const { data: session } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  console.log("session:", session);
+  const router = useRouter();
+  const { toast } = useToast();
 
   async function handleSubmit() {
     signIn("credentials", {
       redirect: false,
+      callbackUrl: "/dashboard",
       username: email,
       password,
     })
       .then((response) => {
+        if (response && response.ok === false) {
+          console.log("error logging in:", response.error);
+          toast({
+            title: "Error",
+            description: "Invalid email or password",
+            variant: "destructive",
+          });
+          return;
+        }
         console.log("response:", response);
+        router.push("/dashboard");
       })
       .catch((e) => {
-        throw e;
+        console.log("error logging in:", e);
       });
   }
 
