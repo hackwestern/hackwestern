@@ -15,7 +15,7 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
   const debouncedSave = useCallback(
     debounce(() => {
       void context.handleSubmit(onSubmit)();
-    }, 1000),
+    }, 500),
     [],
   );
 
@@ -23,11 +23,13 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
     if (defaultValues) {
       context.reset(defaultValues);
     }
-  }, [defaultValues]);
+  }, [context, defaultValues]);
 
   useDeepCompareEffect(() => {
     if (hasDirtyFields) {
-      debouncedSave();
+      context.handleSubmit(debouncedSave, (errors) =>
+        console.error("invalid form", { errors }),
+      )();
     }
   }, [watch]);
 }
