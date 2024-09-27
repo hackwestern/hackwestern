@@ -58,7 +58,7 @@ const Sponsors = () => {
           </Button>
         </div>
       </div>
-      <div className="h-48 lg:h-64 2xl:h-80 bg-gradient-to-b from-[#713EBA] via-[#582B95] to-[#320862] mt-12" />
+      <div className="mt-12 h-48 bg-gradient-to-b from-[#713EBA] via-[#582B95] to-[#320862] lg:h-64 2xl:h-80" />
     </div>
   );
 };
