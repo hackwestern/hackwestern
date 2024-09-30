@@ -12,6 +12,9 @@ import LeftHill from "./left-hill";
 import Plane from "./plane";
 import { Cloud1, Cloud2, Cloud3 } from "./clouds";
 import Moon from "./moon";
+import { GENERALHACK_FAQ, OTHER_FAQ } from "~/constants/faq";
+
+const FAQ_ITEMS = [...GENERALHACK_FAQ, ...OTHER_FAQ];
 
 const FAQ = () => {
   return (
@@ -26,66 +29,21 @@ const FAQ = () => {
         <h2 className="font-MagicRetro text-3xl text-white md:text-6xl">
           frequently asked questions
         </h2>
-        <p className="py-6 text-xl text-white">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        </p>
         <div className="z-40 mx-auto h-full w-2/3 justify-center pb-20 pt-12 md:gap-8">
           <Accordion
             type="single"
-            className="mx-auto text-white md:w-2/3 md:columns-2 3xl:w-1/2"
+            className="mx-auto grid gap-x-4 text-white md:w-5/6 md:grid-cols-2 md:gap-x-10 3xl:w-1/2"
           >
-            <AccordionItem value="item-1">
-              <AccordionTrigger>Is it accessible?</AccordionTrigger>
-              <AccordionContent>
-                Yes. It adheres to the WAI-ARIA design pattern.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-2">
-              <AccordionTrigger>Is it styled?</AccordionTrigger>
-              <AccordionContent>
-                Yes. It comes with default styles that matches the other
-                components&apos; aesthetic.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-3">
-              <AccordionTrigger>Is it animated?</AccordionTrigger>
-              <AccordionContent>
-                Yes. It&apos;s animated by default, but you can disable it if
-                you prefer.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-4">
-              <AccordionTrigger>Is it accessible?</AccordionTrigger>
-              <AccordionContent>
-                Yes. It adheres to the WAI-ARIA design pattern.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-5">
-              <AccordionTrigger>Is it accessible?</AccordionTrigger>
-              <AccordionContent>
-                Yes. It adheres to the WAI-ARIA design pattern.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-6">
-              <AccordionTrigger>Is it styled?</AccordionTrigger>
-              <AccordionContent>
-                Yes. It comes with default styles that matches the other
-                components&apos; aesthetic.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-7">
-              <AccordionTrigger>Is it animated?</AccordionTrigger>
-              <AccordionContent>
-                Yes. It&apos;s animated by default, but you can disable it if
-                you prefer.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-8">
-              <AccordionTrigger>Is it accessible?</AccordionTrigger>
-              <AccordionContent>
-                Yes. It adheres to the WAI-ARIA design pattern.
-              </AccordionContent>
-            </AccordionItem>
+            {FAQ_ITEMS.map(({ question, answer }, index) => (
+              <AccordionItem key={index} value={`item-${index}`}>
+                <AccordionTrigger className="text-left">
+                  {question}
+                </AccordionTrigger>
+                <AccordionContent className="text-left">
+                  <span dangerouslySetInnerHTML={{ __html: answer }} />
+                </AccordionContent>
+              </AccordionItem>
+            ))}
           </Accordion>
         </div>
       </div>
