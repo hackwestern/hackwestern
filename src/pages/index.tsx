@@ -2,7 +2,7 @@ import Head from "next/head";
 import Image from "next/image";
 import { Footer } from "~/components/footer";
 import { PreregistrationForm } from "~/components/preregistration-form";
-import FAQ from "~/components/promo/FAQ";
+import FAQ from "~/components/promo/faq";
 
 export default function Home() {
   return (

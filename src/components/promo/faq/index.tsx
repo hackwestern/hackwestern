@@ -3,15 +3,15 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "../ui/accordion";
+} from "../../ui/accordion";
 
-import Runway from "./faq/runway";
-import Airport from "./faq/airport";
-import RightHill from "./faq/rightHill";
-import LeftHill from "./faq/leftHill";
-import Plane from "./faq/plane";
-import { Cloud1, Cloud2, Cloud3 } from "./faq/clouds";
-import Moon from "./faq/moon";
+import Runway from "./runway";
+import Airport from "./airport";
+import RightHill from "./right-hill";
+import LeftHill from "./left-hill";
+import Plane from "./plane";
+import { Cloud1, Cloud2, Cloud3 } from "./clouds";
+import Moon from "./moon";
 
 const FAQ = () => {
   return (
