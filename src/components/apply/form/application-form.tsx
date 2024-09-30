@@ -81,8 +81,8 @@ export function ApplicationForm() {
         </div>
         <div className="flex w-full flex-wrap gap-2">
           <FormLabel className="w-full">
-            If you could have any superpower to help you during Hack Western,
-            what would it be and why?
+            If you could build your own dream destination what would it look
+            like? Be as detailed and creative as you want!
           </FormLabel>
           <FormField
             control={form.control}
@@ -119,8 +119,9 @@ export function ApplicationForm() {
         </div>
         <div className="flex w-full flex-wrap gap-2">
           <FormLabel className="w-full">
-            If you could have any superpower to help you during Hack Western,
-            what would it be and why?
+            What project (anything you have ever worked on not just restricted
+            to tech) of yours are you the most proud of and why? What did you
+            learn throughout the process?
           </FormLabel>
           <FormField
             control={form.control}
