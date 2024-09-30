@@ -98,7 +98,7 @@ export default function Home() {
           </div>
         </div>
         <FAQ />
-        <Footer className="fixed bottom-0" />
+        <Footer />
       </main>
     </>
   );
