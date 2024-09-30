@@ -95,7 +95,7 @@ export default function UI() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-[#160524] py-5">
       <div className="flex justify-center">
-        <div className="3xl:grid-cols-5 3xl:grid-cols-4 container grid grid-cols-1 items-center gap-6 px-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="container grid grid-cols-1 items-center gap-6 px-4 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 3xl:grid-cols-5">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
               <FormField
