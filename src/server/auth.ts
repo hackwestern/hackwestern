@@ -4,6 +4,7 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
 import { TRPCError } from "@trpc/server";
+import { encode, decode } from "next-auth/jwt";
 
 import {
   type Session,
@@ -49,13 +50,25 @@ declare module "next-auth" {
  */
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+    session: async ({ session, token }) => {
+      if (session.user) {
+        session.user.id = token.sub ?? "";
+      }
+      return session;
+    },
+    jwt: async ({ user, token }) => {
+      if (user) {
+        token.uid = user.id;
+      }
+      return token;
+    },
+  },
+  session: {
+    strategy: "jwt",
+  },
+  jwt: {
+    encode,
+    decode,
   },
   adapter: DrizzleAdapter(db, createTable) as Adapter,
   providers: [
