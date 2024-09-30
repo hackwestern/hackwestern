@@ -36,14 +36,15 @@ export function ApplicationForm() {
     });
   }
 
-  const maxChars = 150;
+  const maxWords = 150;
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="flex w-full flex-wrap gap-2">
           <FormLabel className="w-full">
-            Tell us why you think you will win Hack Western 11.
+            If you could have any superpower to help you during Hack Western,
+            what would it be and why?
           </FormLabel>
           <FormField
             control={form.control}
@@ -54,25 +55,34 @@ export function ApplicationForm() {
                   <Textarea
                     {...field}
                     value={field.value ?? ""}
-                    maxLength={maxChars}
                     placeholder="Type your message here"
                     variant="primary"
                     onChange={(e) => {
-                      field.onChange(e);
+                      const words = e.target.value
+                        .trim()
+                        .split(/\s+/)
+                        .filter(Boolean);
+
+                      if (words.length <= 150) {
+                        field.onChange(e);
+                      }
                     }}
                   />
                 </FormControl>
                 <div className="text-sm text-gray-500">
-                  {maxChars - (field.value?.length ?? 0)} characters remaining
+                  {maxWords -
+                    (field.value?.split(/\s+/).filter(Boolean).length ??
+                      0)}{" "}
+                  words remaining
                 </div>
               </FormItem>
             )}
           />
         </div>
-
         <div className="flex w-full flex-wrap gap-2">
           <FormLabel className="w-full">
-            Tell us why you think you will win Hack Western 11.
+            If you could have any superpower to help you during Hack Western,
+            what would it be and why?
           </FormLabel>
           <FormField
             control={form.control}
@@ -83,25 +93,34 @@ export function ApplicationForm() {
                   <Textarea
                     {...field}
                     value={field.value ?? ""}
-                    maxLength={maxChars}
                     placeholder="Type your message here"
                     variant="primary"
                     onChange={(e) => {
-                      field.onChange(e);
+                      const words = e.target.value
+                        .trim()
+                        .split(/\s+/)
+                        .filter(Boolean);
+
+                      if (words.length <= 150) {
+                        field.onChange(e);
+                      }
                     }}
                   />
                 </FormControl>
                 <div className="text-sm text-gray-500">
-                  {maxChars - (field.value?.length ?? 0)} characters remaining
+                  {maxWords -
+                    (field.value?.split(/\s+/).filter(Boolean).length ??
+                      0)}{" "}
+                  words remaining
                 </div>
               </FormItem>
             )}
           />
         </div>
-
         <div className="flex w-full flex-wrap gap-2">
           <FormLabel className="w-full">
-            Tell us why you think you will win Hack Western 11.
+            If you could have any superpower to help you during Hack Western,
+            what would it be and why?
           </FormLabel>
           <FormField
             control={form.control}
@@ -112,16 +131,25 @@ export function ApplicationForm() {
                   <Textarea
                     {...field}
                     value={field.value ?? ""}
-                    maxLength={maxChars}
                     placeholder="Type your message here"
                     variant="primary"
                     onChange={(e) => {
-                      field.onChange(e);
+                      const words = e.target.value
+                        .trim()
+                        .split(/\s+/)
+                        .filter(Boolean);
+
+                      if (words.length <= 150) {
+                        field.onChange(e);
+                      }
                     }}
                   />
                 </FormControl>
                 <div className="text-sm text-gray-500">
-                  {maxChars - (field.value?.length ?? 0)} characters remaining
+                  {maxWords -
+                    (field.value?.split(/\s+/).filter(Boolean).length ??
+                      0)}{" "}
+                  words remaining
                 </div>
               </FormItem>
             )}
