@@ -20,8 +20,8 @@ const RightHill = () => {
           gradientUnits="userSpaceOnUse"
           gradientTransform="translate(546.092 -440.893) rotate(63.0079) scale(1787 1458.1)"
         >
-          <stop stop-color="#9766CA" />
-          <stop offset="1" stop-color="#320862" />
+          <stop stopColor="#9766CA" />
+          <stop offset="1" stopColor="#320862" />
         </radialGradient>
       </defs>
     </svg>

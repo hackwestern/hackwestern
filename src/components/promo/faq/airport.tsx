@@ -19,7 +19,7 @@ const Airport = () => {
         width="357.708"
         height="45.6386"
         stroke="#DAD7F1"
-        stroke-width="6.16737"
+        strokeWidth="6.16737"
       />
       <rect
         x="25.7617"
@@ -69,7 +69,7 @@ const Airport = () => {
         width="357.708"
         height="45.6386"
         stroke="#DAD7F1"
-        stroke-width="6.16737"
+        strokeWidth="6.16737"
       />
       <rect
         x="25.7617"
@@ -119,7 +119,7 @@ const Airport = () => {
         width="357.708"
         height="45.6386"
         stroke="#DAD7F1"
-        stroke-width="6.16737"
+        strokeWidth="6.16737"
       />
       <rect
         x="626.464"
@@ -176,7 +176,7 @@ const Airport = () => {
         width="357.708"
         height="45.6386"
         stroke="#DAD7F1"
-        stroke-width="6.16737"
+        strokeWidth="6.16737"
       />
       <rect
         x="626.464"
@@ -220,7 +220,7 @@ const Airport = () => {
         height="51.8059"
         fill="#DAD7F1"
       />
-      <g clip-path="url(#clip0_1165_629)">
+      <g clipPath="url(#clip0_1165_629)">
         <rect
           x="255.805"
           y="12.3347"
@@ -234,7 +234,7 @@ const Airport = () => {
           width="357.708"
           height="45.6386"
           stroke="#53317A"
-          stroke-width="6.16737"
+          strokeWidth="6.16737"
         />
         <rect
           x="302.06"
@@ -291,7 +291,7 @@ const Airport = () => {
           width="357.708"
           height="45.6386"
           stroke="#53317A"
-          stroke-width="6.16737"
+          strokeWidth="6.16737"
         />
         <rect
           x="302.06"
@@ -348,7 +348,7 @@ const Airport = () => {
           width="357.708"
           height="45.6386"
           stroke="#53317A"
-          stroke-width="6.16737"
+          strokeWidth="6.16737"
         />
         <rect
           x="302.06"
@@ -405,7 +405,7 @@ const Airport = () => {
           width="357.708"
           height="45.6386"
           stroke="#53317A"
-          stroke-width="6.16737"
+          strokeWidth="6.16737"
         />
         <rect
           x="302.06"
@@ -453,10 +453,10 @@ const Airport = () => {
       <path
         d="M255.805 191.188C255.805 92.4102 335.88 12.3347 434.658 12.3347C533.437 12.3347 613.512 92.4102 613.512 191.188V194.889H255.805V191.188Z"
         stroke="#DAD7F1"
-        stroke-width="6.16737"
+        strokeWidth="6.16737"
       />
       <path
-        fill-rule="evenodd"
+        fillRule="evenodd"
         clip-rule="evenodd"
         d="M614.892 197.973H655.969C652.37 69.0098 550.564 0 435.347 0C320.16 0 216.453 70.759 212.736 197.973H255.026C254.891 195.111 254.823 192.232 254.823 189.337C254.823 89.8778 335.473 9.25 434.959 9.25C534.446 9.25 615.096 89.8778 615.096 189.337C615.096 192.232 615.027 195.111 614.892 197.973Z"
         fill="#DAD7F1"
@@ -470,8 +470,8 @@ const Airport = () => {
           y2="218.25"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="#B589D5" />
-          <stop offset="1" stop-color="#572A88" />
+          <stop stopColor="#B589D5" />
+          <stop offset="1" stopColor="#572A88" />
         </linearGradient>
         <linearGradient
           id="paint1_linear_1165_629"
@@ -481,8 +481,8 @@ const Airport = () => {
           y2="221.543"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="#B589D5" />
-          <stop offset="1" stop-color="#582B89" />
+          <stop stopColor="#B589D5" />
+          <stop offset="1" stopColor="#582B89" />
         </linearGradient>
         <linearGradient
           id="paint2_linear_1165_629"
@@ -492,8 +492,8 @@ const Airport = () => {
           y2="218.25"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="#B589D5" />
-          <stop offset="1" stop-color="#572A88" />
+          <stop stopColor="#B589D5" />
+          <stop offset="1" stopColor="#572A88" />
         </linearGradient>
         <linearGradient
           id="paint3_linear_1165_629"
@@ -503,8 +503,8 @@ const Airport = () => {
           y2="221.543"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="#B589D5" />
-          <stop offset="1" stop-color="#582B89" />
+          <stop stopColor="#B589D5" />
+          <stop offset="1" stopColor="#582B89" />
         </linearGradient>
         <linearGradient
           id="paint4_linear_1165_629"
@@ -514,8 +514,8 @@ const Airport = () => {
           y2="126.972"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="#B589D5" />
-          <stop offset="1" stop-color="#572A88" />
+          <stop stopColor="#B589D5" />
+          <stop offset="1" stopColor="#572A88" />
         </linearGradient>
         <linearGradient
           id="paint5_linear_1165_629"
@@ -525,8 +525,8 @@ const Airport = () => {
           y2="130.266"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="#B589D5" />
-          <stop offset="1" stop-color="#582B89" />
+          <stop stopColor="#B589D5" />
+          <stop offset="1" stopColor="#582B89" />
         </linearGradient>
         <linearGradient
           id="paint6_linear_1165_629"
@@ -536,8 +536,8 @@ const Airport = () => {
           y2="175.904"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="#B589D5" />
-          <stop offset="1" stop-color="#582B89" />
+          <stop stopColor="#B589D5" />
+          <stop offset="1" stopColor="#582B89" />
         </linearGradient>
         <linearGradient
           id="paint7_linear_1165_629"
@@ -547,8 +547,8 @@ const Airport = () => {
           y2="221.543"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="#B589D5" />
-          <stop offset="1" stop-color="#582B89" />
+          <stop stopColor="#B589D5" />
+          <stop offset="1" stopColor="#582B89" />
         </linearGradient>
         <clipPath id="clip0_1165_629">
           <path
