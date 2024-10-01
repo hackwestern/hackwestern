@@ -68,7 +68,7 @@ export default function Apply() {
             </div>
           </div>
         )}
-        <div className="flex w-full flex-1 flex-grow items-center">
+        <div className="flex w-full flex-grow items-center">
           {/* TODO: make this responsive */}
           {formVisible && (
             <div
@@ -88,7 +88,7 @@ export default function Apply() {
           {passportVisible && (
             <div
               id="right-panel"
-              className="flex h-full w-[60vw] flex-col items-center justify-center"
+              className="flex h-full w-screen flex-col items-center justify-center px-4 sm:w-[60vw]"
             >
               <Passport />
             </div>
