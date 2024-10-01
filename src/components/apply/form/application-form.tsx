@@ -57,23 +57,11 @@ export function ApplicationForm() {
                     value={field.value ?? ""}
                     placeholder="Type your message here"
                     variant="primary"
-                    onChange={(e) => {
-                      const words = e.target.value
-                        .trim()
-                        .split(/\s+/)
-                        .filter(Boolean);
-
-                      if (words.length <= 150) {
-                        field.onChange(e);
-                      }
-                    }}
                   />
                 </FormControl>
                 <div className="text-sm text-gray-500">
-                  {maxWords -
-                    (field.value?.split(/\s+/).filter(Boolean).length ??
-                      0)}{" "}
-                  words remaining
+                  {field.value?.split(/\s+/).filter(Boolean).length ?? 0} / 150
+                  words
                 </div>
               </FormItem>
             )}
@@ -95,23 +83,11 @@ export function ApplicationForm() {
                     value={field.value ?? ""}
                     placeholder="Type your message here"
                     variant="primary"
-                    onChange={(e) => {
-                      const words = e.target.value
-                        .trim()
-                        .split(/\s+/)
-                        .filter(Boolean);
-
-                      if (words.length <= 150) {
-                        field.onChange(e);
-                      }
-                    }}
                   />
                 </FormControl>
                 <div className="text-sm text-gray-500">
-                  {maxWords -
-                    (field.value?.split(/\s+/).filter(Boolean).length ??
-                      0)}{" "}
-                  words remaining
+                  {field.value?.split(/\s+/).filter(Boolean).length ?? 0} / 150
+                  words
                 </div>
               </FormItem>
             )}
@@ -134,23 +110,11 @@ export function ApplicationForm() {
                     value={field.value ?? ""}
                     placeholder="Type your message here"
                     variant="primary"
-                    onChange={(e) => {
-                      const words = e.target.value
-                        .trim()
-                        .split(/\s+/)
-                        .filter(Boolean);
-
-                      if (words.length <= 150) {
-                        field.onChange(e);
-                      }
-                    }}
                   />
                 </FormControl>
                 <div className="text-sm text-gray-500">
-                  {maxWords -
-                    (field.value?.split(/\s+/).filter(Boolean).length ??
-                      0)}{" "}
-                  words remaining
+                  {field.value?.split(/\s+/).filter(Boolean).length ?? 0} / 150
+                  words
                 </div>
               </FormItem>
             )}
