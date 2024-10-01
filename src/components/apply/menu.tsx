@@ -107,19 +107,18 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
             <DrawerContent>
               <DrawerFooter>
                 {applySteps.map((s) => (
-                  <DrawerClose key={s.step}>
-                    <Button
-                      className="w-full sm:w-auto"
-                      variant={s.step === step ? "apply" : "apply-ghost"}
-                      asChild
+                  <Button
+                    key={s.step}
+                    className="w-full sm:w-auto"
+                    variant={s.step === step ? "apply" : "apply-ghost"}
+                    asChild
+                  >
+                    <Link
+                      href={{ pathname: "/apply", query: { step: s.step } }}
                     >
-                      <Link
-                        href={{ pathname: "/apply", query: { step: s.step } }}
-                      >
-                        {s.label}
-                      </Link>
-                    </Button>
-                  </DrawerClose>
+                      {s.label}
+                    </Link>
+                  </Button>
                 ))}
               </DrawerFooter>
             </DrawerContent>
