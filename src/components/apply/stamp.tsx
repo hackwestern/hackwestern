@@ -80,7 +80,7 @@ const experienceMap = (experience: experienceType): string => {
   }
 };
 
-const sharedStampClass = "h-28 3xl:h-32";
+const sharedStampClass = "h-24 2xl:h-28 3xl:h-32 4xl:h-36";
 
 export function MajorStamp({ type }: { type: majorType }) {
   const stampSrc = majorMap(type);
@@ -89,7 +89,7 @@ export function MajorStamp({ type }: { type: majorType }) {
     <img
       alt="Field of Study Stamp"
       src={stampSrc}
-      className={`${sharedStampClass}`}
+      className={`${sharedStampClass} rotate-[2.1deg]`}
     />
   );
 }
@@ -100,7 +100,7 @@ export function HWStamp({ returning }: { returning: "newcomer" | "returnee" }) {
     <img
       alt="Hack Western Experience Stamp"
       src={stampSrc}
-      className={`${sharedStampClass}`}
+      className={`${sharedStampClass} rotate-[2.25deg]`}
     />
   );
 }
@@ -109,7 +109,11 @@ export function SchoolStamp({ type }: { type: schoolType }) {
   const stampSrc = schoolMap(type);
   if (!stampSrc) return "";
   return (
-    <img alt="School Stamp" src={stampSrc} className={`${sharedStampClass}`} />
+    <img
+      alt="School Stamp"
+      src={stampSrc}
+      className={`${sharedStampClass} rotate-[-3.35deg]`}
+    />
   );
 }
 
@@ -123,7 +127,7 @@ export function HackerStamp({
     <img
       alt="Hackathon Experience Stamp"
       src={stampSrc}
-      className={`${sharedStampClass}`}
+      className={`${sharedStampClass} rotate-[-1.8deg]`}
     />
   );
 }
@@ -143,7 +147,7 @@ export function LinksStamp() {
     <img
       alt="Links Added Stamp"
       src="/stamps/completion/linked.svg"
-      className={`${sharedStampClass}`}
+      className={`${sharedStampClass} rotate-[2.13deg]`}
     />
   );
 }
