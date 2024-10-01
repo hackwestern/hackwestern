@@ -80,6 +80,7 @@ const config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        "hw-gradient-radius": '3137px',
       },
       keyframes: {
         "accordion-down": {
@@ -100,6 +101,11 @@ const config = {
           "radial-gradient(77.76% 72.21% at 42.29% 60.83%, #FFE4D6 0%, #FFB2B7 9%, #E19CDE 18%, #B07ACA 35%, #765EA1 61%, #483CB5 100%);",
         "hw-hero-text-gradient":
           "linear-gradient(190deg, #EBA0C6 48.2%, #FFDEE0 84.16%)",
+        "hw-linear-gradient":
+          "linear-gradient(180deg, #8360BE 0%, #370966 57%);",
+        "hw-highlight-radial-gradient":
+          "radial-gradient(50% 50% at 50% 50%, rgba(255, 161, 94, 0.94) 0%, rgba(240, 110, 110, 0.92) 8.5%, rgba(244, 56, 124, 0.47) 52.5%, rgba(121, 35, 207, 0.00) 100%)",
+ 
       },
       fontFamily: {
         DM_Sans: ["var(--font-dmsans)"],
