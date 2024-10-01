@@ -45,7 +45,7 @@ export default function Apply() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="flex h-svh max-h-svh flex-col items-center bg-primary-50">
-        <div className="fixed sm:static bg-primary-50">
+        <div className="fixed bg-primary-50 sm:static">
           <ApplyNavbar />
           {isMobile && (
             <div className="flex w-screen justify-around border-b px-3 md:invisible">
