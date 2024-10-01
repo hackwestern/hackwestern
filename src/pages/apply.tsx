@@ -45,29 +45,32 @@ export default function Apply() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="flex h-svh max-h-svh flex-col items-center bg-primary-50">
-        <ApplyNavbar />
-        {isMobile && (
-          <div className="flex w-screen justify-around border-b px-3 md:invisible">
-            <div
-              className={`w-1/2 py-4 text-center ${formVisible ? "border-b border-primary-600 text-primary-600" : "border-b border-slate-400 text-slate-400"}`}
-              onClick={() => {
-                setFormVisible(true);
-                setPassportVisible(false);
-              }}
-            >
-              Form
+        <div className="fixed sm:static bg-primary-50">
+          <ApplyNavbar />
+          {isMobile && (
+            <div className="flex w-screen justify-around border-b px-3 md:invisible">
+              <div
+                className={`w-1/2 py-4 text-center ${formVisible ? "border-b border-primary-600 text-primary-600" : "border-b border-slate-400 text-slate-400"}`}
+                onClick={() => {
+                  setFormVisible(true);
+                  setPassportVisible(false);
+                }}
+              >
+                Form
+              </div>
+              <div
+                className={`w-1/2 py-4 text-center ${passportVisible ? "border-b border-primary-600 text-primary-600" : "border-b border-slate-400 text-slate-400"}`}
+                onClick={() => {
+                  setFormVisible(false);
+                  setPassportVisible(true);
+                }}
+              >
+                Passport
+              </div>
             </div>
-            <div
-              className={`w-1/2 py-4 text-center ${passportVisible ? "border-b border-primary-600 text-primary-600" : "border-b border-slate-400 text-slate-400"}`}
-              onClick={() => {
-                setFormVisible(false);
-                setPassportVisible(true);
-              }}
-            >
-              Passport
-            </div>
-          </div>
-        )}
+          )}
+        </div>
+        {isMobile && <div className="bg-black py-12">this is a secret</div>}
         <div className="flex w-full flex-grow items-center">
           {/* TODO: make this responsive */}
           {formVisible && (
