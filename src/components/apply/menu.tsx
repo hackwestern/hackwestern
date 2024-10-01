@@ -17,8 +17,6 @@ type ApplyMenuProps = {
 
 export function ApplyMenu({ step }: ApplyMenuProps) {
   const stepName = step && step?.charAt(0).toUpperCase() + step?.slice(1);
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
-
   const stepIndex = useMemo(() => getStepIndex(step), [step]);
   const prevStep = getPreviousStep(stepIndex);
   const nextStep = getNextStep(stepIndex);
@@ -27,21 +25,20 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
 
   return (
     <div className="fixed bottom-0 mx-auto h-fit w-screen justify-center gap-3 border-[1px] border-t-primary-300 bg-violet-100 py-2 sm:static">
-      {!isMobile && (
-        <div className="mx-auto flex w-fit">
-          {applySteps.map((s) => (
-            <Button
-              key={s.step}
-              variant={s.step === step ? "apply" : "apply-ghost"}
-              asChild
-            >
-              <Link href={{ pathname: "/apply", query: { step: s.step } }}>
-                {s.label}
-              </Link>
-            </Button>
-          ))}
-        </div>
-      )}
+      <div className="mx-auto flex hidden w-fit sm:block">
+        {applySteps.map((s) => (
+          <Button
+            key={s.step}
+            variant={s.step === step ? "apply" : "apply-ghost"}
+            asChild
+          >
+            <Link href={{ pathname: "/apply", query: { step: s.step } }}>
+              {s.label}
+            </Link>
+          </Button>
+        ))}
+      </div>
+
       <div className="mx-4 flex h-auto justify-between overflow-clip sm:invisible sm:h-0">
         <svg
           width="16"
