@@ -1,7 +1,7 @@
 import { applySteps, type ApplyStep } from "~/constants/apply";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { getNextStep, getPreviousStep, getStepIndex } from "./navigation";
 import { useRouter } from "next/router";
 import {
@@ -109,7 +109,6 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
                 {applySteps.map((s) => (
                   <Button
                     key={s.step}
-                    className="w-full sm:w-auto"
                     variant={s.step === step ? "apply" : "apply-ghost"}
                     asChild
                   >

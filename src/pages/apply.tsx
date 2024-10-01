@@ -72,7 +72,6 @@ export default function Apply() {
         </div>
         {isMobile && <div className="bg-black py-12">this is a secret</div>}
         <div className="flex w-full flex-grow items-center">
-          {/* TODO: make this responsive */}
           {formVisible && (
             <div
               id="left-panel"
@@ -85,7 +84,7 @@ export default function Apply() {
               <div className="flex-1">
                 <ApplyForm step={step} />
               </div>
-              <ApplyNavigation step={step} />
+              {!isMobile && <ApplyNavigation step={step} />}
             </div>
           )}
           {passportVisible && (
