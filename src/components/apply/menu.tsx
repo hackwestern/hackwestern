@@ -1,7 +1,9 @@
 import { applySteps, type ApplyStep } from "~/constants/apply";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { getNextStep, getPreviousStep, getStepIndex } from "./navigation";
+import { useRouter } from "next/router";
 
 type ApplyMenuProps = {
   step: ApplyStep | null;
@@ -12,6 +14,12 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
 
   const stepName = step && step?.charAt(0).toUpperCase() + step?.slice(1);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+
+  const stepIndex = useMemo(() => getStepIndex(step), [step]);
+  const prevStep = getPreviousStep(stepIndex);
+  const nextStep = getNextStep(stepIndex);
+
+  const router = useRouter();
 
   return (
     <div
@@ -40,11 +48,16 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
           viewBox="0 0 16 16"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className=""
+          className="my-3"
+          onClick={() => {
+            if (prevStep) {
+              void router.push(`/apply?step=${prevStep}`);
+            }
+          }}
         >
           <path
             d="M3.8284 9.0001L9.1924 14.3641L7.7782 15.7783L6.79994e-07 8.0001L7.7782 0.221999L9.1924 1.6362L3.8284 7.0001L16 7.0001L16 9.0001L3.8284 9.0001Z"
-            fill="#6D3EBA"
+            fill={prevStep ? "#6D3EBA" : "#BCC1D0"}
           />
         </svg>
         <div className="flex gap-2">
@@ -77,11 +90,16 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
           viewBox="0 0 16 16"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className=""
+          className="my-3"
+          onClick={() => {
+            if (nextStep) {
+              void router.push(`/apply?step=${nextStep}`);
+            }
+          }}
         >
           <path
             d="M12.1716 6.9999L6.8076 1.63589L8.2218 0.22168L16 7.9999L8.2218 15.778L6.8076 14.3638L12.1716 8.9999H0V6.9999H12.1716Z"
-            fill="#6D3EBA"
+            fill={nextStep ? "#6D3EBA" : "#BCC1D0"}
           />
         </svg>
       </div>
