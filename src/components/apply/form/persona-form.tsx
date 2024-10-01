@@ -5,7 +5,7 @@ import { Form, FormControl, FormField, FormItem } from "~/components/ui/form";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { personaSaveSchema } from "~/schemas/application";
-import AvatarRadio from "../avatar-radio";
+import AvatarRadio from "../../ui/avatar-radio";
 
 type AvatarType =
   | "Wildlife Wanderer"
