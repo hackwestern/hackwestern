@@ -6,12 +6,8 @@ import { getNextStep, getPreviousStep, getStepIndex } from "./navigation";
 import { useRouter } from "next/router";
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
-  DrawerDescription,
   DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
   DrawerTrigger,
 } from "../ui/drawer";
 
@@ -30,32 +26,11 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
   const router = useRouter();
 
   return (
-    <div
-      className={`fixed bottom-0 mx-auto h-fit w-screen justify-center gap-3 border-[1px] border-t-primary-300 bg-violet-100 py-2 sm:static`}
-    >
-      {isMobile && (
-        <Drawer>
-          <DrawerContent>
-            <DrawerHeader>
-              <DrawerTitle>Are you absolutely sure?</DrawerTitle>
-              <DrawerDescription>
-                This action cannot be undone.
-              </DrawerDescription>
-            </DrawerHeader>
-            <DrawerFooter>
-              <Button>Submit</Button>
-              <DrawerClose>
-                <Button variant="outline">Cancel</Button>
-              </DrawerClose>
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
-      )}
+    <div className="fixed bottom-0 mx-auto h-fit w-screen justify-center gap-3 border-[1px] border-t-primary-300 bg-violet-100 py-2 sm:static">
       {!isMobile && (
-        <div className="mx-auto flex w-fit flex-col sm:flex-row">
+        <div className="mx-auto flex w-fit">
           {applySteps.map((s) => (
             <Button
-              className="w-screen sm:w-auto"
               key={s.step}
               variant={s.step === step ? "apply" : "apply-ghost"}
               asChild

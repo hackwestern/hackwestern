@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import Head from "next/head";
 import { useSearchParams } from "next/navigation";
 import { type ApplyStepFull, applySteps } from "~/constants/apply";
@@ -7,6 +7,7 @@ import { ApplyNavbar } from "~/components/apply/navbar";
 import { ApplyForm } from "~/components/apply/form";
 import { ApplyNavigation } from "~/components/apply/navigation";
 import { Passport } from "~/components/apply/passport";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   return applySteps.find((s) => s.step === stepValue) ?? null;
@@ -19,20 +20,12 @@ export default function Apply() {
     [searchParams],
   );
 
-  const [formVisible, setFormVisible] = useState(true);
-  const [passportVisible, setPassportVisible] = useState(true);
-
   const step = applyStep?.step ?? null;
   const heading = applyStep?.heading ?? null;
   const subheading = applyStep?.subheading ?? null;
 
   // screen width smaller than sm
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
-
-  if (isMobile && formVisible === passportVisible) {
-    setFormVisible(true);
-    setPassportVisible(false);
-  }
 
   return (
     <>
@@ -48,31 +41,57 @@ export default function Apply() {
         <div className="fixed bg-primary-50 sm:static">
           <ApplyNavbar />
           {isMobile && (
-            <div className="flex w-screen justify-around border-b px-3 md:invisible">
-              <div
-                className={`w-1/2 py-4 text-center ${formVisible ? "border-b border-primary-600 text-primary-600" : "border-b border-slate-400 text-slate-400"}`}
-                onClick={() => {
-                  setFormVisible(true);
-                  setPassportVisible(false);
-                }}
+            <Tabs defaultValue="application" className="w-screen">
+              <TabsList className="flex w-screen justify-around bg-primary-100">
+                <TabsTrigger
+                  value="application"
+                  className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
+                >
+                  Application
+                </TabsTrigger>
+                <TabsTrigger
+                  value="passport"
+                  className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
+                >
+                  Passport
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent
+                value="application"
+                className="min-w-screen max-w-screen mt-0 overflow-auto"
               >
-                Form
-              </div>
-              <div
-                className={`w-1/2 py-4 text-center ${passportVisible ? "border-b border-primary-600 text-primary-600" : "border-b border-slate-400 text-slate-400"}`}
-                onClick={() => {
-                  setFormVisible(false);
-                  setPassportVisible(true);
-                }}
+                <div
+                  id="left-panel"
+                  className="flex h-screen flex-grow flex-col space-y-8 bg-primary-100 p-9"
+                >
+                  <div className="space-y-2">
+                    <h1 className="text-2xl font-medium">{heading}</h1>
+                    <h2 className="text-sm text-slate-500">{subheading}</h2>
+                  </div>
+                  <div className=" overflow-y-auto">
+                    <ApplyForm step={step} />
+                  </div>
+                  <div className="select-none bg-primary-100 py-12 text-primary-100">
+                    this is a secret
+                  </div>
+                </div>
+              </TabsContent>
+              <TabsContent
+                value="passport"
+                className="flex flex-col justify-center"
               >
-                Passport
-              </div>
-            </div>
+                <div
+                  id="right-panel"
+                  className="flex h-full w-screen flex-col items-center justify-center px-4"
+                >
+                  <Passport />
+                </div>
+              </TabsContent>
+            </Tabs>
           )}
         </div>
-        {isMobile && <div className="bg-black py-12">this is a secret</div>}
-        <div className="flex w-full flex-grow items-center">
-          {formVisible && (
+        {!isMobile && (
+          <div className="flex w-full flex-grow items-center">
             <div
               id="left-panel"
               className="lg:w-xl flex h-full flex-grow flex-col space-y-8 bg-primary-100 p-9 pt-12 lg:max-w-xl"
@@ -84,19 +103,17 @@ export default function Apply() {
               <div className="flex-1">
                 <ApplyForm step={step} />
               </div>
-              {!isMobile && <ApplyNavigation step={step} />}
+              <ApplyNavigation step={step} />
             </div>
-          )}
-          {passportVisible && (
             <div
               id="right-panel"
               className="flex h-full w-screen flex-col items-center justify-center px-4 sm:w-[60vw]"
             >
               <Passport />
             </div>
-          )}
-        </div>
-        {isMobile && <div className="py-4">this is a secret</div>}
+          </div>
+        )}
+
         <ApplyMenu step={step} />
       </main>
     </>
