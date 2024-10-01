@@ -127,6 +127,7 @@ export const authRouter = createTRPCRouter({
         const createdUser = await adapter.createUser({
           email: input.email,
           emailVerified: new Date(),
+          id: "",
         });
 
         await db

@@ -14,8 +14,12 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
 
   const debouncedSave = useCallback(
     debounce(() => {
-      void context.handleSubmit(onSubmit)();
-    }, 1000),
+      void context.handleSubmit(onSubmit, (fieldErrors) => {
+        console.error("There were errors in one or more fields on the form:", {
+          fieldErrors,
+        });
+      })();
+    }, 500),
     [],
   );
 

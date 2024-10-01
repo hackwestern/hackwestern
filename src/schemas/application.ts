@@ -31,6 +31,18 @@ export const basicsSaveSchema = applicationSaveSchema.pick({
   age: true,
 });
 
+export const infoSaveSchema = applicationSaveSchema
+  .pick({
+    school: true,
+    levelOfStudy: true,
+    major: true,
+    attendedBefore: true,
+    numOfHackathons: true,
+  })
+  .extend({
+    attendedBefore: z.enum(["yes", "no"]),
+  });
+
 export const agreementsSaveSchema = applicationSaveSchema.pick({
   agreeCodeOfConduct: true,
   agreeShareWithMLH: true,
@@ -38,6 +50,24 @@ export const agreementsSaveSchema = applicationSaveSchema.pick({
   agreeWillBe18: true,
   agreeEmailsFromMLH: true,
 });
+
+export const underrepGroupAnswers = [
+  "Yes",
+  "No",
+  "Prefer not to answer",
+] as const;
+export type UnderrepGroupAnswer = (typeof underrepGroupAnswers)[number];
+
+export const optionalSaveSchema = applicationSaveSchema
+  .pick({
+    underrepGroup: true,
+    gender: true,
+    ethnicity: true,
+    sexualOrientation: true,
+  })
+  .extend({
+    underrepGroup: z.enum(underrepGroupAnswers),
+  });
 
 // Helper function to check word count within a range
 const checkWordCount = (value: string, min: number, max: number) => {
