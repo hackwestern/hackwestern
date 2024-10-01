@@ -104,3 +104,9 @@ export const applicationSubmitSchema = createInsertSchema(applications, {
   status: true,
   userId: true,
 });
+
+export const applicationStepSaveSchema = applicationSaveSchema.pick({
+  question1: true,
+  question2: true,
+  question3: true,
+});
