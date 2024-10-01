@@ -80,7 +80,7 @@ const experienceMap = (experience: experienceType): string => {
   }
 };
 
-const sharedStampClass = "h-24 2xl:h-28 3xl:h-32 4xl:h-36";
+const sharedStampClass = "h-20 2xl:h-28 3xl:h-32 4xl:h-36";
 
 export function MajorStamp({ type }: { type: majorType }) {
   const stampSrc = majorMap(type);
