@@ -45,7 +45,10 @@ export function PersonaForm() {
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <AvatarRadio {...field} />
+                  <AvatarRadio
+                    value={field.value === null ? undefined : field.value}
+                    onChange={field.onChange}
+                  />
                 </FormControl>
               </FormItem>
             )}
