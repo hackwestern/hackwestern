@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import * as React from "react";
 import type { major, numOfHackathons } from "~/server/db/schema";
 import type { schools } from "~/constants/schools";
@@ -79,10 +80,18 @@ const experienceMap = (experience: experienceType): string => {
   }
 };
 
+const sharedStampClass = "h-24 2xl:h-28 3xl:h-32 4xl:h-36";
+
 export function MajorStamp({ type }: { type: majorType }) {
   const stampSrc = majorMap(type);
   if (!stampSrc) return "";
-  return <img alt="Field of Study Stamp" src={stampSrc} className="h-20"></img>;
+  return (
+    <img
+      alt="Field of Study Stamp"
+      src={stampSrc}
+      className={`${sharedStampClass} rotate-[2.1deg]`}
+    />
+  );
 }
 
 export function HWStamp({ returning }: { returning: "newcomer" | "returnee" }) {
@@ -91,15 +100,21 @@ export function HWStamp({ returning }: { returning: "newcomer" | "returnee" }) {
     <img
       alt="Hack Western Experience Stamp"
       src={stampSrc}
-      className="h-20"
-    ></img>
+      className={`${sharedStampClass} rotate-[2.25deg]`}
+    />
   );
 }
 
 export function SchoolStamp({ type }: { type: schoolType }) {
   const stampSrc = schoolMap(type);
   if (!stampSrc) return "";
-  return <img alt="School Stamp" src={stampSrc} className="h-20"></img>;
+  return (
+    <img
+      alt="School Stamp"
+      src={stampSrc}
+      className={`${sharedStampClass} rotate-[-3.35deg]`}
+    />
+  );
 }
 
 export function HackerStamp({
@@ -109,7 +124,11 @@ export function HackerStamp({
 }) {
   const stampSrc = experienceMap(numHackathons);
   return (
-    <img alt="Hackathon Experience Stamp" src={stampSrc} className="h-20"></img>
+    <img
+      alt="Hackathon Experience Stamp"
+      src={stampSrc}
+      className={`${sharedStampClass} rotate-[-1.8deg]`}
+    />
   );
 }
 
@@ -118,8 +137,8 @@ export function SubmittedStamp() {
     <img
       alt="Submitted Stamp"
       src="/stamps/completion/submitted.svg"
-      className="h-20"
-    ></img>
+      className={`${sharedStampClass}`}
+    />
   );
 }
 
@@ -128,7 +147,7 @@ export function LinksStamp() {
     <img
       alt="Links Added Stamp"
       src="/stamps/completion/linked.svg"
-      className="h-20"
-    ></img>
+      className={`${sharedStampClass} rotate-[2.13deg]`}
+    />
   );
 }
