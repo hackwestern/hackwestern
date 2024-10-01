@@ -82,7 +82,7 @@ export default function Apply() {
               >
                 <div
                   id="right-panel"
-                  className="flex h-full w-screen flex-col items-center justify-center px-4"
+                  className="flex h-[70vh] w-screen flex-col items-center justify-center px-4 sm:w-[60vw]"
                 >
                   <Passport />
                 </div>
