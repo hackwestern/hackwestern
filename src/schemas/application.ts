@@ -1,7 +1,13 @@
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { schools } from "~/constants/schools";
 
-import { applications } from "~/server/db/schema";
+import {
+  applications,
+  countrySelection,
+  levelOfStudy,
+  major,
+} from "~/server/db/schema";
 
 // Save schema
 export const applicationSaveSchema = createInsertSchema(applications).omit({
@@ -25,6 +31,18 @@ export const basicsSaveSchema = applicationSaveSchema.pick({
   age: true,
 });
 
+export const infoSaveSchema = applicationSaveSchema
+  .pick({
+    school: true,
+    levelOfStudy: true,
+    major: true,
+    attendedBefore: true,
+    numOfHackathons: true,
+  })
+  .extend({
+    attendedBefore: z.enum(["yes", "no"]),
+  });
+
 export const agreementsSaveSchema = applicationSaveSchema.pick({
   agreeCodeOfConduct: true,
   agreeShareWithMLH: true,
@@ -33,27 +51,53 @@ export const agreementsSaveSchema = applicationSaveSchema.pick({
   agreeEmailsFromMLH: true,
 });
 
+export const underrepGroupAnswers = [
+  "Yes",
+  "No",
+  "Prefer not to answer",
+] as const;
+export type UnderrepGroupAnswer = (typeof underrepGroupAnswers)[number];
+
+export const optionalSaveSchema = applicationSaveSchema
+  .pick({
+    underrepGroup: true,
+    gender: true,
+    ethnicity: true,
+    sexualOrientation: true,
+  })
+  .extend({
+    underrepGroup: z.enum(underrepGroupAnswers),
+  });
+
 // Helper function to check word count within a range
 const checkWordCount = (value: string, min: number, max: number) => {
   const words = value.split(" ");
   return words.length < max && words.length > min;
 };
 
+export const phoneRegex =
+  /^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
+
 // Submission schema with data validation
 export const applicationSubmitSchema = createInsertSchema(applications, {
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  age: z.number().min(18),
+  countryOfResidence: z.enum(countrySelection.enumValues),
+  phoneNumber: z.string().min(1).regex(phoneRegex, "Invalid phone number"),
+  school: z.enum(schools),
+  levelOfStudy: z.enum(levelOfStudy.enumValues),
+  major: z.enum(major.enumValues),
+  question1: z.string().refine((value) => checkWordCount(value, 30, 150)),
+  question2: z.string().refine((value) => checkWordCount(value, 30, 150)),
+  question3: z.string().refine((value) => checkWordCount(value, 30, 150)),
+  resumeLink: z.string().min(1).url(),
+  githubLink: z.string().min(1),
+  linkedInLink: z.string().min(1),
+  otherLink: z.string().min(1).url(),
   agreeCodeOfConduct: z.literal(true),
   agreeShareWithMLH: z.literal(true),
-  agreeShareWithSponsors: z.literal(true),
   agreeWillBe18: z.literal(true),
-  age: (schema) => schema.age.min(18),
-  resumeLink: (schema) => schema.resumeLink.url(),
-  otherLink: (schema) => schema.otherLink.url(),
-  question1: (schema) =>
-    schema.question1.refine((value) => checkWordCount(value, 30, 150)),
-  question2: (schema) =>
-    schema.question2.refine((value) => checkWordCount(value, 30, 150)),
-  question3: (schema) =>
-    schema.question3.refine((value) => checkWordCount(value, 30, 150)),
 }).omit({
   createdAt: true,
   updatedAt: true,
