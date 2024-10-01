@@ -7,16 +7,31 @@ import { useState } from "react";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import Link from "next/link";
+import { hackerLoginRedirect } from "~/utils/redirect";
+import { useRouter } from "next/router";
+import { useToast } from "~/components/hooks/use-toast";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const router = useRouter();
+  const { toast } = useToast();
 
   async function handleSubmit() {
-    const result = await signIn("credentials", {
+    void signIn("credentials", {
       redirect: false,
-      email,
+      username: email,
       password,
+    }).then((response) => {
+      if (response && response.ok === false) {
+        toast({
+          title: "Error",
+          description: "Invalid email or password",
+          variant: "destructive",
+        });
+        return;
+      }
+      void router.push("/dashboard");
     });
   }
 
@@ -37,7 +52,12 @@ export default function Login() {
           <h2 className="mb-6 text-lg">
             We can&apos;t wait to see what you will create.
           </h2>
-          <form onSubmit={handleSubmit}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleSubmit();
+            }}
+          >
             <h2 className="mb-2 text-sm">Email</h2>
             <Input
               type="email"
@@ -83,3 +103,5 @@ export default function Login() {
     </>
   );
 }
+
+export const getServerSideProps = hackerLoginRedirect;
