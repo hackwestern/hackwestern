@@ -16,9 +16,9 @@ export const Passport = () => {
   const textStyle = "text-slate-400 font-sans text-xs font-medium leading-5";
 
   return (
-    <div className="2xl:[50vh] 3xl:[40vh] 3xl:w-2/5 flex h-[70vh] w-2/3 flex-shrink-0 flex-col items-start rounded-[10px] border border-primary-300 xl:h-[60vh] xl:w-1/2">
-      <div className="flex h-1/2 columns-2 flex-col justify-around self-stretch rounded-t-[10px] border-b border-b-[#E3DBF2] bg-gradient-to-l from-[#EFF3FF] via-[#E5E9FF] to-[#ECE9FF]">
-        <div className="flex justify-center gap-4">
+    <div className="3xl:w-2/5 flex  w-2/3 flex-shrink-0 flex-col items-start rounded-[10px] border border-primary-300 xl:w-1/2">
+      <div className="3xl:py-8 flex h-1/2 columns-2 flex-col justify-around self-stretch rounded-t-[10px] border-b border-b-[#E3DBF2] bg-gradient-to-l from-[#EFF3FF] via-[#E5E9FF] to-[#ECE9FF] py-2.5 xl:py-4 2xl:py-6 gap-4">
+        <div className="3xl:gap-8 flex justify-center gap-4 2xl:gap-6">
           {application?.major && <MajorStamp type={application.major} />}
           <HackerStamp numHackathons={application?.numOfHackathons ?? "0"} />
           {application?.attendedBefore !== null && (
@@ -27,7 +27,7 @@ export const Passport = () => {
             />
           )}
         </div>
-        <div className="flex justify-center gap-4">
+        <div className="3xl:gap-8 flex justify-center gap-4 2xl:gap-6 pb-4 2xl:pb-6 3xl:pb-8">
           {application?.school && (
             <SchoolStamp
               type={application.school as (typeof schools)[number]}
