@@ -6,6 +6,7 @@ import { getNextStep, getPreviousStep, getStepIndex } from "./navigation";
 import { useRouter } from "next/router";
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerFooter,
   DrawerTrigger,
@@ -63,8 +64,8 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
 
         <div className="flex gap-2">
           <Drawer>
-            <DrawerTrigger>
-              <div className={`rounded-2xl bg-primary-300 p-2.5`}>
+            <DrawerTrigger className="mt-1.5 flex gap-2">
+              <div className="rounded-2xl bg-primary-300 p-2.5">
                 <svg
                   width="24"
                   height="24"
@@ -78,30 +79,29 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
                   />
                 </svg>
               </div>
+              <div className="h-fit rounded-2xl bg-primary-300 p-2.5 font-semibold text-primary-600">
+                {stepName}
+              </div>
             </DrawerTrigger>
             <DrawerContent>
               <DrawerFooter>
                 {applySteps.map((s) => (
-                  <Button
-                    key={s.step}
-                    variant={s.step === step ? "apply" : "apply-ghost"}
-                    asChild
-                  >
-                    <Link
-                      href={{ pathname: "/apply", query: { step: s.step } }}
+                  <DrawerClose key={s.step} asChild>
+                    <Button
+                      variant={s.step === step ? "apply" : "apply-ghost"}
+                      asChild
                     >
-                      {s.label}
-                    </Link>
-                  </Button>
+                      <Link
+                        href={{ pathname: "/apply", query: { step: s.step } }}
+                      >
+                        {s.label}
+                      </Link>
+                    </Button>
+                  </DrawerClose>
                 ))}
               </DrawerFooter>
             </DrawerContent>
           </Drawer>
-          <div
-            className={`mt-1.5 h-fit rounded-2xl bg-primary-300 p-2.5 font-semibold text-primary-600`}
-          >
-            {stepName}
-          </div>
         </div>
         <div className="mt-3 h-max cursor-pointer rounded-full p-2 transition-all hover:bg-primary-400">
           <svg
