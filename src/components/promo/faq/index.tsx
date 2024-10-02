@@ -18,7 +18,10 @@ const FAQ_ITEMS = [...GENERALHACK_FAQ, ...OTHER_FAQ];
 
 const FAQ = () => {
   return (
-    <div className="flex min-h-screen flex-col justify-between overflow-clip bg-[#320862] text-center">
+    <div
+      className="flex min-h-screen flex-col justify-between overflow-clip bg-[#320862] text-center"
+      id="faq"
+    >
       <div className="absolute h-screen w-full overflow-clip">
         <Moon />
         <Cloud1 />
