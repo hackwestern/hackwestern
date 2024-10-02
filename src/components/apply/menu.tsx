@@ -40,24 +40,27 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
       </div>
 
       <div className="mx-4 flex h-auto justify-between overflow-clip md:invisible md:h-0">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="my-3"
-          onClick={() => {
-            if (prevStep) {
-              void router.push(`/apply?step=${prevStep}`);
-            }
-          }}
-        >
-          <path
-            d="M3.8284 9.0001L9.1924 14.3641L7.7782 15.7783L6.79994e-07 8.0001L7.7782 0.221999L9.1924 1.6362L3.8284 7.0001L16 7.0001L16 9.0001L3.8284 9.0001Z"
-            fill={prevStep ? "#6D3EBA" : "#BCC1D0"}
-          />
-        </svg>
+        <div className="my-3 h-max cursor-pointer rounded-full p-2 transition-all hover:bg-primary-400">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className=""
+            onClick={() => {
+              if (prevStep) {
+                void router.push(`/apply?step=${prevStep}`);
+              }
+            }}
+          >
+            <path
+              d="M3.8284 9.0001L9.1924 14.3641L7.7782 15.7783L6.79994e-07 8.0001L7.7782 0.221999L9.1924 1.6362L3.8284 7.0001L16 7.0001L16 9.0001L3.8284 9.0001Z"
+              fill={prevStep ? "#6D3EBA" : "#BCC1D0"}
+            />
+          </svg>
+        </div>
+
         <div className="flex gap-2">
           <Drawer>
             <DrawerTrigger>
@@ -94,31 +97,31 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
               </DrawerFooter>
             </DrawerContent>
           </Drawer>
-
           <div
-            className={`rounded-2xl bg-primary-300 p-2.5 font-semibold text-primary-600`}
+            className={`mt-1.5 h-fit rounded-2xl bg-primary-300 p-2.5 font-semibold text-primary-600`}
           >
             {stepName}
           </div>
         </div>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="my-3"
-          onClick={() => {
-            if (nextStep) {
-              void router.push(`/apply?step=${nextStep}`);
-            }
-          }}
-        >
-          <path
-            d="M12.1716 6.9999L6.8076 1.63589L8.2218 0.22168L16 7.9999L8.2218 15.778L6.8076 14.3638L12.1716 8.9999H0V6.9999H12.1716Z"
-            fill={nextStep ? "#6D3EBA" : "#BCC1D0"}
-          />
-        </svg>
+        <div className="mt-3 h-max cursor-pointer rounded-full p-2 transition-all hover:bg-primary-400">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            onClick={() => {
+              if (nextStep) {
+                void router.push(`/apply?step=${nextStep}`);
+              }
+            }}
+          >
+            <path
+              d="M12.1716 6.9999L6.8076 1.63589L8.2218 0.22168L16 7.9999L8.2218 15.778L6.8076 14.3638L12.1716 8.9999H0V6.9999H12.1716Z"
+              fill={nextStep ? "#6D3EBA" : "#BCC1D0"}
+            />
+          </svg>
+        </div>
       </div>
     </div>
   );

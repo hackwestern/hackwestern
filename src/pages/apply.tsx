@@ -41,13 +41,13 @@ export default function Apply() {
             <TabsList className="flex w-screen justify-around bg-primary-100">
               <TabsTrigger
                 value="application"
-                className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
+                className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
               >
                 Application
               </TabsTrigger>
               <TabsTrigger
                 value="passport"
-                className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
+                className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
               >
                 Passport
               </TabsTrigger>
@@ -106,7 +106,6 @@ export default function Apply() {
             <Passport />
           </div>
         </div>
-
         <ApplyMenu step={step} />
       </main>
     </>
