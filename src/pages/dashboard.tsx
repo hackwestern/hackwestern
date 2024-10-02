@@ -85,10 +85,10 @@ const Dashboard = () => {
       </Head>
       <main className="flex h-svh max-h-svh flex-col items-center bg-primary-50">
         <ApplyNavbar />
-        <div className="flex flex-col md:flex-row w-full flex-grow items-center">
+        <div className="flex w-full flex-grow flex-col items-center md:flex-row">
           <div
             id="left-panel"
-            className="lg:w-xl flex md:h-full flex-grow flex-col justify-center gap-4 bg-primary-100 p-9 pt-12 text-center lg:max-w-xl"
+            className="lg:w-xl flex flex-grow flex-col justify-center gap-4 bg-primary-100 p-9 pt-12 text-center md:h-full lg:max-w-xl"
           >
             <div className="pb-2.5 text-3xl font-bold text-slate-700">
               {
