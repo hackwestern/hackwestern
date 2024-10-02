@@ -124,7 +124,11 @@ const Dashboard = () => {
                 Western journey. We encourage you to apply again next year!
               </div>
             )}
-            <Button variant="destructive" className="w-fit mx-auto" onClick={logout}>
+            <Button
+              variant="destructive"
+              className="mx-auto w-fit"
+              onClick={logout}
+            >
               Logout
             </Button>
           </div>
