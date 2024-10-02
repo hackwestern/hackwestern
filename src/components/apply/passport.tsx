@@ -16,7 +16,7 @@ export const Passport = () => {
   const textStyle = "text-slate-400 font-sans text-xs font-medium leading-5";
 
   return (
-    <div className="flex w-11/12 flex-col justify-center rounded-[10px] border border-primary-300 sm:w-2/3 xl:w-1/2 3xl:w-2/5">
+    <div className="flex w-11/12 flex-col justify-center rounded-[10px] border border-primary-300 sm:w-4/5 lg:w-3/5 2xl:w-2/5 3xl:w-1/3">
       <div className="flex h-1/2 columns-2 flex-col justify-around gap-4 self-stretch rounded-t-[10px] border-b border-b-[#E3DBF2] bg-gradient-to-l from-[#EFF3FF] via-[#E5E9FF] to-[#ECE9FF] py-2.5 xl:py-4 2xl:py-6 3xl:py-8">
         <div className="flex justify-center gap-4 2xl:gap-6 3xl:gap-8">
           {application?.major && <MajorStamp type={application.major} />}

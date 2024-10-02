@@ -88,7 +88,7 @@ export default function Apply() {
         <div className="hidden w-full flex-grow items-center sm:flex">
           <div
             id="left-panel"
-            className="lg:w-xl flex h-full flex-grow flex-col space-y-8 bg-primary-100 p-9 pt-12 lg:max-w-xl"
+            className="flex h-full flex-grow flex-col space-y-8 bg-primary-100 p-9 pt-12 sm:w-2/3 2xl:w-1/2"
           >
             <div className="space-y-2">
               <h1 className="text-2xl font-medium">{heading}</h1>
@@ -101,7 +101,7 @@ export default function Apply() {
           </div>
           <div
             id="right-panel"
-            className="flex h-full w-screen flex-col items-center justify-center px-4 sm:w-[60vw]"
+            className="flex h-full flex-col items-center justify-center px-4 sm:w-full"
           >
             <Passport />
           </div>
