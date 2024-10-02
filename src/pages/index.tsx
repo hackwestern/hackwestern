@@ -20,7 +20,7 @@ export default function Home() {
         <Header />
         <div
           className="relative h-screen flex-col items-center justify-center overflow-hidden"
-          id="about"
+          id="home"
         >
           <div className="absolute left-0 top-0 h-full w-full" />
           {/* Images */}
