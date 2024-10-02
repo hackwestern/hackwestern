@@ -28,7 +28,7 @@ const Header = () => {
         />
       </div>
       <div className="flex">
-        <div className="my-4 flex gap-12 text-primary-100 mr-8">
+        <div className="my-4 mr-8 flex gap-12 text-primary-100">
           <Link href="#about" text="About" />
           <Link href="#projects" text="Projects" />
           <Link href="#faq" text="FAQ" />
