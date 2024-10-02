@@ -24,8 +24,8 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
   const router = useRouter();
 
   return (
-    <div className="fixed bottom-0 mx-auto h-fit w-screen justify-center gap-3 border-[1px] border-t-primary-300 bg-violet-100 py-2 sm:static">
-      <div className="mx-auto flex hidden w-fit sm:block">
+    <div className="fixed bottom-0 mx-auto h-fit w-screen justify-center gap-3 border-[1px] border-t-primary-300 bg-violet-100 py-2 md:static">
+      <div className="mx-auto flex hidden w-fit md:block">
         {applySteps.map((s) => (
           <Button
             key={s.step}
@@ -39,7 +39,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
         ))}
       </div>
 
-      <div className="mx-4 flex h-auto justify-between overflow-clip sm:invisible sm:h-0">
+      <div className="mx-4 flex h-auto justify-between overflow-clip md:invisible md:h-0">
         <svg
           width="16"
           height="16"

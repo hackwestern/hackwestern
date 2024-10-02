@@ -35,9 +35,9 @@ export default function Apply() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="flex h-svh max-h-svh flex-col items-center bg-primary-50">
-        <div className="fixed bg-primary-50 sm:static">
+        <div className="fixed bg-primary-50 md:static">
           <ApplyNavbar />
-          <Tabs defaultValue="application" className="w-screen sm:hidden">
+          <Tabs defaultValue="application" className="w-screen md:hidden">
             <TabsList className="flex w-screen justify-around bg-primary-100">
               <TabsTrigger
                 value="application"
@@ -78,17 +78,17 @@ export default function Apply() {
             >
               <div
                 id="right-panel"
-                className="flex h-[70vh] w-screen flex-col items-center justify-center px-4 sm:w-[60vw]"
+                className="flex h-[70vh] w-screen flex-col items-center justify-center px-4 md:w-[60vw]"
               >
                 <Passport />
               </div>
             </TabsContent>
           </Tabs>
         </div>
-        <div className="hidden w-full flex-grow items-center sm:flex">
+        <div className="hidden w-full flex-grow items-center md:flex">
           <div
             id="left-panel"
-            className="flex h-full flex-grow flex-col space-y-8 bg-primary-100 p-9 pt-12 sm:w-2/3 2xl:w-1/2"
+            className="flex h-full flex-grow flex-col space-y-8 bg-primary-100 p-9 pt-12 md:w-2/3 2xl:w-1/2"
           >
             <div className="space-y-2">
               <h1 className="text-2xl font-medium">{heading}</h1>
@@ -101,7 +101,7 @@ export default function Apply() {
           </div>
           <div
             id="right-panel"
-            className="flex h-full flex-col items-center justify-center px-4 sm:w-full"
+            className="flex h-full flex-col items-center justify-center px-4 md:w-full"
           >
             <Passport />
           </div>
