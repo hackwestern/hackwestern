@@ -28,19 +28,19 @@ const Header = () => {
         />
       </div>
       <div className="flex">
-        <div className="my-4 flex gap-16 text-primary-100">
+        <div className="my-4 flex gap-12 text-primary-100 mr-8">
           <Link href="#about" text="About" />
           <Link href="#projects" text="Projects" />
           <Link href="#faq" text="FAQ" />
           <Link href="#sponsors" text="Sponsors" />
           <Button
-            className="rounded-md bg-[#5E28B8] p-5 text-lg drop-shadow-[0_2px_24px_rgba(255,212,251,0.25)] transition-all hover:bg-[#5C2FAA] hover:drop-shadow-[0_2px_12px_rgba(255,212,251,0.5)]"
+            className="rounded-md bg-[#5E28B8] p-5 drop-shadow-[0_2px_24px_rgba(255,212,251,0.25)] transition-all hover:bg-[#5C2FAA] hover:drop-shadow-[0_2px_12px_rgba(255,212,251,0.5)]"
             onClick={() => router.push("/register")}
           >
             Apply Now
           </Button>
         </div>
-        {/*<a
+        <a
           id="mlh-trust-badge"
           className="z-50 block w-full min-w-5 max-w-16"
           href="https://mlh.io/na?utm_source=na-hackathon&utm_medium=TrustBadge&utm_campaign=2025-season&utm_content=white"
@@ -53,7 +53,7 @@ const Header = () => {
             height={0}
             className="h-auto w-full"
           />
-        </a>*/}
+        </a>
       </div>
     </div>
   );
