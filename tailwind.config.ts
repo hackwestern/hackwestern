@@ -102,8 +102,7 @@ const config = {
         },
         slide: {
           "0%": { transform: "translateX(0)" },
-          "99.9%": { transform: "translateX(100vw)" },
-          "100%": { transform: "translateX(-50vw)" },
+          "100%": { transform: "translateX(100vw)" },
         },
       },
       animation: {

@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 type Project = {
@@ -99,7 +98,7 @@ const listProjects: Project[] = [
 const BlueSuitcase = (props: { project: Project }) => {
   const { title, image, link } = props.project;
   return (
-    <div className="mt-6 flex h-fit">
+    <div className="mt-6 flex h-fit animate-wiggle">
       <div className="my-auto -mr-8 h-16 w-16 rounded-md border-8 border-[#26254C]" />
       <Link
         href={link}
@@ -122,7 +121,7 @@ const BlueSuitcase = (props: { project: Project }) => {
 const RedSuitcase = ({ project }: { project: Project }) => {
   const { title, image, link } = project;
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col animate-wiggle">
       <div className="mx-auto -mb-5 h-12 w-20 rounded-md border-8 border-[#8E4C5C]" />
       <Link
         href={link}
