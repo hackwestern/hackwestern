@@ -67,7 +67,7 @@ export default function Submitted() {
             fill
           />
         </div>
-        <div className="absolute bottom-0 right-0 h-full w-[50%] md:h-full md:w-[40%] lg:w-[30%] lg:h-[50%]">
+        <div className="absolute bottom-0 right-0 h-full w-[50%] md:h-full md:w-[40%] lg:h-[50%] lg:w-[30%]">
           <Image
             src="/images/cloud8.svg"
             alt="hack western cloud"
