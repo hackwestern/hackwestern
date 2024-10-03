@@ -78,7 +78,7 @@ const Dashboard = () => {
   const logout = () => {
     signOut()
       .then(() => {
-        void router.push("/login");
+        void router.push("/");
       })
       .catch((e) => console.log("error logging out:", e));
   };
