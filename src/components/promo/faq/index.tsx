@@ -7,25 +7,28 @@ import {
 
 import Runway from "./runway";
 import Airport from "./airport";
-import RightHill from "./right-hill";
-import LeftHill from "./left-hill";
+
 import Plane from "./plane";
 import { Cloud1, Cloud2, Cloud3 } from "./clouds";
 import Moon from "./moon";
 import { GENERALHACK_FAQ, OTHER_FAQ } from "~/constants/faq";
+import { LeftHill, MiddleHill, RightHill } from "./hills";
 
 const FAQ_ITEMS = [...GENERALHACK_FAQ, ...OTHER_FAQ];
 
 const FAQ = () => {
   return (
-    <div className="flex min-h-screen flex-col justify-between overflow-clip bg-[#320862] text-center">
+    <div
+      className="flex min-h-screen flex-col justify-between overflow-clip bg-[#320862] text-center"
+      id="faq"
+    >
       <div className="absolute h-screen w-full overflow-clip">
         <Moon />
         <Cloud1 />
         <Cloud2 />
         <Cloud3 />
       </div>
-      <div className="z-50 my-auto flex min-h-screen flex-col justify-center pt-48 xl:min-h-[90vh] xl:pt-60 3xl:min-h-[70vh] 3xl:pt-72">
+      <div className="z-50 my-auto flex flex-col justify-center pt-48 xl:min-h-[90vh] xl:pt-60 3xl:min-h-[70vh] 3xl:pt-72">
         <h2 className="font-MagicRetro text-3xl text-white md:text-6xl">
           frequently asked questions
         </h2>
@@ -50,6 +53,7 @@ const FAQ = () => {
       <Airport />
       <div className="relative z-10">
         <LeftHill />
+        <MiddleHill />
         <RightHill />
       </div>
       <div className="w-fill relative z-50">

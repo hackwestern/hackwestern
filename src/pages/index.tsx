@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Footer } from "~/components/footer";
 import { PreregistrationForm } from "~/components/preregistration-form";
 import FAQ from "~/components/promo/faq";
+import Header from "~/components/promo/header";
 
 export default function Home() {
   return (
@@ -15,8 +16,12 @@ export default function Home() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-radial-gradient">
-        <div className="relative h-screen flex-col items-center justify-center overflow-hidden">
+      <main className="scroll-smooth bg-hw-radial-gradient">
+        <Header />
+        <div
+          className="relative h-screen flex-col items-center justify-center overflow-hidden"
+          id="home"
+        >
           <div className="absolute left-0 top-0 h-full w-full" />
           {/* Images */}
           <div className="absolute left-[39%] top-[59%] h-10 w-10 sm:left-[37%] sm:top-[55%] sm:h-16 sm:w-16 md:left-[37%] md:top-[50%] md:h-28 md:w-28 xl:left-[39%] xl:top-[50%] ">
@@ -73,14 +78,6 @@ export default function Home() {
             layout="fill"
             objectFit="cover"
           />
-          <div className="absolute left-0 top-0 m-7 h-10 w-10 md:h-14 md:w-14 ">
-            <Image
-              src="/images/hwoutlinelogo.svg"
-              alt="hack western logo"
-              layout="fill"
-              objectFit="contain"
-            />
-          </div>
           {/* Text */}
           <div className="relative flex h-screen w-screen justify-center">
             <div className="flex flex-col items-center pt-32 text-white">

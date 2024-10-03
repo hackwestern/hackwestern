@@ -1,7 +1,9 @@
+import { signOut } from "next-auth/react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { ApplyNavbar } from "~/components/apply/navbar";
 import { Passport } from "~/components/apply/passport";
+import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
 import { authRedirectHacker } from "~/utils/redirect";
 
@@ -73,6 +75,14 @@ const Dashboard = () => {
     }
   };
 
+  const logout = () => {
+    signOut()
+      .then(() => {
+        void router.push("/");
+      })
+      .catch((e) => console.log("error logging out:", e));
+  };
+
   return (
     <>
       <Head>
@@ -85,10 +95,10 @@ const Dashboard = () => {
       </Head>
       <main className="flex h-svh max-h-svh flex-col items-center bg-primary-50">
         <ApplyNavbar />
-        <div className="flex w-full flex-1 flex-grow items-center">
+        <div className="flex w-full flex-grow flex-col items-center md:flex-row">
           <div
             id="left-panel"
-            className="lg:w-xl flex h-full flex-grow flex-col justify-center gap-4 bg-primary-100 p-9 pt-12 text-center lg:max-w-xl"
+            className="lg:w-xl flex flex-grow flex-col justify-center gap-4 bg-primary-100 p-9 pt-12 text-center md:h-full lg:max-w-xl"
           >
             <div className="pb-2.5 text-3xl font-bold text-slate-700">
               {
@@ -114,10 +124,17 @@ const Dashboard = () => {
                 Western journey. We encourage you to apply again next year!
               </div>
             )}
+            <Button
+              variant="destructive"
+              className="mx-auto w-fit"
+              onClick={logout}
+            >
+              Logout
+            </Button>
           </div>
           <div
             id="right-panel"
-            className="flex h-full w-[60vw] flex-col items-center justify-center"
+            className="flex h-full w-full flex-col items-center justify-center"
           >
             <Passport />
           </div>
