@@ -1,7 +1,9 @@
+import { signOut } from "next-auth/react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { ApplyNavbar } from "~/components/apply/navbar";
 import { Passport } from "~/components/apply/passport";
+import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
 import { authRedirectHacker } from "~/utils/redirect";
 
@@ -73,6 +75,14 @@ const Dashboard = () => {
     }
   };
 
+  const logout = () => {
+    signOut()
+      .then(() => {
+        void router.push("/");
+      })
+      .catch((e) => console.log("error logging out:", e));
+  };
+
   return (
     <>
       <Head>
@@ -114,6 +124,13 @@ const Dashboard = () => {
                 Western journey. We encourage you to apply again next year!
               </div>
             )}
+            <Button
+              variant="destructive"
+              className="mx-auto w-fit"
+              onClick={logout}
+            >
+              Logout
+            </Button>
           </div>
           <div
             id="right-panel"
