@@ -33,7 +33,7 @@ export const LeftHill = () => {
 export const MiddleHill = () => {
   return (
     <svg
-      className="absolute -bottom-48 z-50 hidden md:left-1/3 4xl:block opacity-90"
+      className="absolute -bottom-48 z-50 hidden opacity-90 md:left-1/3 4xl:block"
       width="1266"
       height="384"
       viewBox="0 0 1266 384"
