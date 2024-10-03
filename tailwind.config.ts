@@ -92,10 +92,26 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "small-bounce": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-2.5%)" },
+        },
+        wiggle: {
+          "0%, 100%": { transform: "rotate(-0.5deg)" },
+          "50%": { transform: "rotate(0.5deg)" },
+        },
+        slide: {
+          "0%": { transform: "translateX(0)" },
+          "99.9%": { transform: "translateX(100vw)" },
+          "100%": { transform: "translateX(-50vw)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "small-bounce": "small-bounce 0.75s ease-in-out infinite",
+        wiggle: "wiggle 1s ease-in-out infinite",
+        slide: "slide 12s linear infinite",
       },
       backgroundImage: {
         "hw-radial-gradient":

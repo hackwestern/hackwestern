@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Footer } from "~/components/footer";
 import { PreregistrationForm } from "~/components/preregistration-form";
 import FAQ from "~/components/promo/faq";
+import Projects from "~/components/promo/projects";
 
 export default function Home() {
   return (
@@ -97,6 +98,7 @@ export default function Home() {
             </div>
           </div>
         </div>
+        <Projects />
         <FAQ />
         <Footer />
       </main>
