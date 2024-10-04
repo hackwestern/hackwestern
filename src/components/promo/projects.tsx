@@ -75,8 +75,8 @@ const Projects = () => {
           </div>
         </div>
       </div>
-      <div className="animate-small-bounce w-full overflow-hidden">
-        <div className="animate-suitcase-slide -mb-1 flex gap-8 hover:[animation-play-state:paused] xl:gap-16 2xl:gap-20 3xl:gap-28 4xl:gap-36">
+      <div className="w-full animate-small-bounce overflow-hidden">
+        <div className="-mb-1 flex animate-suitcase-slide gap-8 hover:[animation-play-state:paused] xl:gap-16 2xl:gap-20 3xl:gap-28 4xl:gap-36">
           {
             /* suitcases (projects) */
             bigListProjects.map((project, i) =>
@@ -105,7 +105,7 @@ const Projects = () => {
 const BlueSuitcase = (props: { project: Project }) => {
   const { title, image, link } = props.project;
   return (
-    <div className="md:animate-wiggle mt-6 flex h-fit hover:[animation-play-state:paused]">
+    <div className="mt-6 flex h-fit hover:[animation-play-state:paused] md:animate-wiggle">
       <div className="my-auto -mr-8 h-16 w-16 rounded-md border-8 border-[#26254C]" />
       <a
         href={link}
@@ -129,7 +129,7 @@ const BlueSuitcase = (props: { project: Project }) => {
 const RedSuitcase = ({ project }: { project: Project }) => {
   const { title, image, link } = project;
   return (
-    <div className="md:animate-wiggle flex flex-col hover:[animation-play-state:paused]">
+    <div className="flex flex-col hover:[animation-play-state:paused] md:animate-wiggle">
       <div className="mx-auto -mb-5 h-12 w-20 rounded-md border-8 border-[#8E4C5C]" />
       <a
         href={link}
@@ -154,7 +154,7 @@ const Gear = () => {
       viewBox="0 0 130 140"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="animate-spin-reverse z-50 -my-6 overflow-clip"
+      className="z-50 -my-6 animate-spin-reverse overflow-clip"
     >
       <rect
         x="37"
