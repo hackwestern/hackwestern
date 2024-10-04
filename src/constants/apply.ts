@@ -54,7 +54,8 @@ export const applySteps = [
     step: "review",
     label: "Review",
     heading: "Review Your Application",
-    subheading: "Once you submit, there’s no turning back!",
+    subheading:
+      "Review your entire application here and make it the best it can be!",
   },
 ] as const satisfies Step[];
 
