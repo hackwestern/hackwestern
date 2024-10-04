@@ -11,7 +11,7 @@ function Hero() {
       </div>
       <div className="absolute right-[10%] top-[30%] z-20 h-[150%] w-[150%] overflow-clip rounded-hw-gradient-radius bg-hw-highlight-radial-gradient" />
       <div>
-        <div className="animate-cloud4 absolute bottom-0 left-0 z-30 h-[130%] w-[70%] outline-red-500 md:w-[60%]  lg:-bottom-72">
+        <div className="absolute bottom-0 left-0 z-30 h-[130%] w-[70%] animate-cloud4 outline-red-500 md:w-[60%]  lg:-bottom-72">
           <Image
             src="/images/cloud4.svg"
             alt="hack western cloud"
@@ -19,7 +19,7 @@ function Hero() {
             fill
           />
         </div>
-        <div className="animate-cloud3 absolute -bottom-24 right-0 z-30 h-[120%] w-full">
+        <div className="absolute -bottom-24 right-0 z-30 h-[120%] w-full animate-cloud3">
           <Image
             src="/images/cloud3.svg"
             alt="hack western cloud"
@@ -27,7 +27,7 @@ function Hero() {
             fill
           />
         </div>
-        <div className="animate-cloud2 absolute -bottom-32 right-0 z-30 h-full w-[50%] delay-75 md:h-full md:w-[30%]">
+        <div className="absolute -bottom-32 right-0 z-30 h-full w-[50%] animate-cloud2 delay-75 md:h-full md:w-[30%]">
           <Image
             src="/images/cloud2.svg"
             alt="hack western cloud"
@@ -35,7 +35,7 @@ function Hero() {
             fill
           />
         </div>
-        <div className="animate-cloud1 absolute bottom-0 left-0 z-30  h-full w-[50%] md:h-full md:w-[30%]">
+        <div className="absolute bottom-0 left-0 z-30 h-full  w-[50%] animate-cloud1 md:h-full md:w-[30%]">
           <Image
             src="/images/cloud1.svg"
             alt="hack western cloud"
