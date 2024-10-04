@@ -74,7 +74,7 @@ export default function Apply() {
             value="passport"
             className="flex flex-col justify-center"
           >
-            <div className="flex w-screen flex-col items-center justify-center px-4 h-[85vh]">
+            <div className="flex h-[85vh] w-screen flex-col items-center justify-center px-4">
               <Passport />
             </div>
             {/* Clouds */}
