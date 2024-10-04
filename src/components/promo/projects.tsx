@@ -13,8 +13,8 @@ const Projects = () => {
       id="projects"
       className="max-w-screen relative flex min-h-screen flex-col justify-between bg-[url('/images/projects-bg.svg')] bg-cover md:bg-contain"
     >
-      <div className="mx-auto my-auto w-2/3 border-4 border-[#27283D] bg-[#3F3F5C] text-lg text-primary-100 2xl:w-1/2 2xl:text-xl 3xl:w-1/3 4xl:text-2xl">
-        <div className="3xl:6xl flex border-b-4 border-[#27283D] font-MagicRetro text-2xl xl:text-4xl">
+      <div className="mx-auto my-auto w-5/6 border-4 border-[#27283D] bg-[#3F3F5C] text-lg text-primary-100 md:w-2/3 2xl:w-1/2 2xl:text-xl 3xl:w-1/3 4xl:text-2xl">
+        <div className="3xl:6xl flex border-b-4 border-[#27283D] font-MagicRetro text-3xl xl:text-4xl">
           <svg
             width="28"
             height="28"
@@ -79,8 +79,8 @@ const Projects = () => {
           </div>
         </div>
       </div>
-      <div className="w-full animate-small-bounce overflow-hidden">
-        <div className="-mb-1 flex animate-suitcase-slide gap-8 hover:[animation-play-state:paused] xl:gap-16 2xl:gap-20 3xl:gap-28 4xl:gap-36">
+      <div className="animate-small-bounce w-full overflow-hidden">
+        <div className="animate-suitcase-slide -mb-1 flex gap-8 hover:[animation-play-state:paused] xl:gap-16 2xl:gap-20 3xl:gap-28 4xl:gap-36">
           {
             /* suitcases (projects) */
             Array.from({ length: 3 }, () => listProjects)
@@ -111,18 +111,19 @@ const Projects = () => {
 const BlueSuitcase = (props: { project: Project }) => {
   const { title, image, link } = props.project;
   return (
-    <div className="mt-6 flex h-fit hover:[animation-play-state:paused] md:animate-wiggle">
+    <div className="md:animate-wiggle mt-6 flex h-fit hover:[animation-play-state:paused]">
       <div className="my-auto -mr-8 h-16 w-16 rounded-md border-8 border-[#26254C]" />
-      <Link
+      <a
         href={link}
         target="_blank"
+        rel="noreferrer noopener"
         className="w-fit min-w-48 rounded-md border-[12px] border-[#484798] bg-white transition-all hover:scale-[1.02] hover:shadow-[0px_0px_4px_8px_rgba(72,71,152,0.25)] xl:min-w-64 3xl:min-w-80"
       >
         {
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={image} alt={title} />
+          <img src={image} alt={title} title={title} />
         }
-      </Link>
+      </a>
       <div className="my-6 flex flex-col justify-between">
         <div className="w-6 rounded-full border-8 border-[#26254C]" />
         <div className="w-6 rounded-full border-8 border-[#26254C]" />
@@ -134,18 +135,19 @@ const BlueSuitcase = (props: { project: Project }) => {
 const RedSuitcase = ({ project }: { project: Project }) => {
   const { title, image, link } = project;
   return (
-    <div className="flex flex-col hover:[animation-play-state:paused] md:animate-wiggle">
+    <div className="md:animate-wiggle flex flex-col hover:[animation-play-state:paused]">
       <div className="mx-auto -mb-5 h-12 w-20 rounded-md border-8 border-[#8E4C5C]" />
-      <Link
+      <a
         href={link}
         target="_blank"
+        rel="noreferrer noopener"
         className="w-fit min-w-48 rounded-md border-[12px] border-[#C46C81] bg-white transition-all hover:scale-[1.02] hover:shadow-[0px_0px_4px_8px_rgba(196,108,129,0.25)] xl:min-w-64 3xl:min-w-80"
       >
         {
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={image} alt={title} />
+          <img src={image} alt={title} title={title} />
         }
-      </Link>
+      </a>
     </div>
   );
 };
@@ -158,7 +160,7 @@ const Gear = () => {
       viewBox="0 0 130 140"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="z-50 -my-6 animate-spin-reverse overflow-clip"
+      className="animate-spin-reverse z-50 -my-6 overflow-clip"
     >
       <rect
         x="37"
