@@ -11,6 +11,8 @@ import {
   DrawerFooter,
   DrawerTrigger,
 } from "../ui/drawer";
+import { ArrowLeft, ArrowRight, Menu } from "lucide-react";
+import { cn } from "~/lib/utils";
 
 type ApplyMenuProps = {
   step: ApplyStep | null;
@@ -40,49 +42,42 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
         ))}
       </div>
 
-      <div className="mx-4 flex h-auto justify-between overflow-clip md:invisible md:h-0">
-        <div className="my-3 h-max cursor-pointer rounded-full p-2 transition-all hover:bg-primary-400">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className=""
-            onClick={() => {
-              if (prevStep) {
-                void router.push(`/apply?step=${prevStep}`);
-              }
-            }}
+      <div className="flex h-auto items-center justify-between overflow-clip px-4 py-1.5 md:hidden md:h-0">
+        <Button
+          asChild
+          variant="apply-ghost"
+          className="h-full rounded-full p-2 hover:bg-primary-400"
+          disabled={!prevStep}
+        >
+          <Link
+            href={{ pathname: "/apply", query: { step: prevStep ?? step } }}
           >
-            <path
-              d="M3.8284 9.0001L9.1924 14.3641L7.7782 15.7783L6.79994e-07 8.0001L7.7782 0.221999L9.1924 1.6362L3.8284 7.0001L16 7.0001L16 9.0001L3.8284 9.0001Z"
-              fill={prevStep ? "#6D3EBA" : "#BCC1D0"}
+            <ArrowLeft
+              className={cn(
+                "size-6",
+                prevStep ? "text-primary-600" : "text-slate-300",
+              )}
             />
-          </svg>
-        </div>
+          </Link>
+        </Button>
 
         <div className="flex gap-2">
           <Drawer>
-            <DrawerTrigger className="mt-1.5 flex gap-2">
-              <div className="rounded-2xl bg-primary-300 p-2.5">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+            <div className="flex items-center gap-2">
+              <DrawerTrigger asChild>
+                <Button variant="apply" className="rounded-2xl p-2.5">
+                  <Menu strokeWidth={2.5} className="size-5 text-primary-600" />
+                </Button>
+              </DrawerTrigger>
+              <DrawerTrigger asChild>
+                <Button
+                  variant="apply"
+                  className="h-full rounded-2xl p-2.5 text-base font-semibold"
                 >
-                  <path
-                    d="M4 18C3.44772 18 3 17.5523 3 17C3 16.4477 3.44772 16 4 16H20C20.5523 16 21 16.4477 21 17C21 17.5523 20.5523 18 20 18H4ZM4 13C3.44772 13 3 12.5523 3 12C3 11.4477 3.44772 11 4 11H20C20.5523 11 21 11.4477 21 12C21 12.5523 20.5523 13 20 13H4ZM4 8C3.44772 8 3 7.55228 3 7C3 6.44772 3.44772 6 4 6H20C20.5523 6 21 6.44772 21 7C21 7.55228 20.5523 8 20 8H4Z"
-                    fill="#6D3EBA"
-                  />
-                </svg>
-              </div>
-              <div className="h-fit rounded-2xl bg-primary-300 p-2.5 font-semibold text-primary-600">
-                {stepName}
-              </div>
-            </DrawerTrigger>
+                  {stepName}
+                </Button>
+              </DrawerTrigger>
+            </div>
             <DrawerContent>
               <DrawerFooter>
                 {applySteps.map((s) => (
@@ -103,25 +98,29 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
             </DrawerContent>
           </Drawer>
         </div>
-        <div className="mt-3 h-max cursor-pointer rounded-full p-2 transition-all hover:bg-primary-400">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            onClick={() => {
-              if (nextStep) {
-                void router.push(`/apply?step=${nextStep}`);
-              }
-            }}
+        <Button
+          asChild
+          variant="apply-ghost"
+          className="h-full rounded-full p-2 hover:bg-primary-400"
+          disabled={!nextStep && step !== "review"}
+        >
+          <Link
+            href={
+              step === "review"
+                ? "/submitted"
+                : { pathname: "/apply", query: { step: nextStep ?? step } }
+            }
           >
-            <path
-              d="M12.1716 6.9999L6.8076 1.63589L8.2218 0.22168L16 7.9999L8.2218 15.778L6.8076 14.3638L12.1716 8.9999H0V6.9999H12.1716Z"
-              fill={nextStep ? "#6D3EBA" : "#BCC1D0"}
+            <ArrowRight
+              className={cn(
+                "size-6",
+                nextStep || step === "review"
+                  ? "text-primary-600"
+                  : "text-slate-300",
+              )}
             />
-          </svg>
-        </div>
+          </Link>
+        </Button>
       </div>
     </div>
   );
