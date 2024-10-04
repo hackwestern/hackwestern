@@ -53,8 +53,8 @@ export const MiddleHill = () => {
           gradientUnits="userSpaceOnUse"
           gradientTransform="translate(408.036 -460.459) rotate(63.0079) scale(1103.02 900.003)"
         >
-          <stop stop-color="#9766CA" />
-          <stop offset="1" stop-color="#18052F" />
+          <stop stopColor="#9766CA" />
+          <stop offset="1" stopColor="#18052F" />
         </radialGradient>
       </defs>
     </svg>
