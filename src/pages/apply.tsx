@@ -100,7 +100,7 @@ export default function Apply() {
           </div>
           <div
             id="right-panel"
-            className="flex h-full flex-col items-center justify-center px-4 md:w-full"
+            className="flex h-full flex-col items-center justify-center bg-hw-linear-gradient-day px-4 md:w-full"
           >
             {/* Clouds */}
             <div className="absolute bottom-0 left-0 h-full w-full md:h-full md:w-[80%]">

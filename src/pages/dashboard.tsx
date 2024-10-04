@@ -99,7 +99,7 @@ const Dashboard = () => {
         <div className="relative flex w-full flex-grow flex-col items-center md:flex-row">
           <div
             id="left-panel"
-            className="lg:w-xl w-full z-10 flex flex-grow flex-col justify-center gap-4 bg-primary-100 p-9 pt-12 text-center md:h-full lg:max-w-xl"
+            className="lg:w-xl z-10 flex w-full flex-grow flex-col justify-center gap-4 bg-primary-100 p-9 pt-12 text-center md:h-full lg:max-w-xl"
           >
             <div className="pb-2.5 text-3xl font-bold text-slate-700">
               {
@@ -203,7 +203,9 @@ const Dashboard = () => {
               layout="fill"
               objectFit="cover"
             />
-            <div className="z-10 flex flex-col items-center justify-center w-[100%]"><Passport /></div>
+            <div className="z-10 flex w-[100%] flex-col items-center justify-center">
+              <Passport />
+            </div>
           </div>
         </div>
       </main>
