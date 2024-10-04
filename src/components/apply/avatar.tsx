@@ -61,6 +61,9 @@ const Avatar = ({ avatar, selection }: AvatarProps) => {
           </div>
         </>
       )}
+      {!avatar && (
+        <div className="flex h-40 w-40 items-center justify-center rounded-lg bg-primary-200" />
+      )}
     </div>
   );
 };
