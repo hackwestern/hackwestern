@@ -14,9 +14,9 @@ function Hero() {
       <div className="absolute left-[39%] top-[59%] z-30 h-10 w-10 sm:left-[37%] sm:top-[55%] sm:h-16 sm:w-16 md:left-[37%] md:top-[50%] md:h-28 md:w-28 xl:left-[39%] xl:top-[50%]">
         <Image src="/images/sun.svg" alt="hack western 11 sun" fill />
       </div>
-      <div className="rounded-hw-gradient-radius bg-hw-highlight-radial-gradient absolute right-[10%] top-[30%] z-20 h-[150%] w-[150%] overflow-clip" />
+      <div className="absolute right-[10%] top-[30%] z-20 h-[150%] w-[150%] overflow-clip rounded-hw-gradient-radius bg-hw-highlight-radial-gradient" />
       <div>
-        <div className="animate-cloud4 absolute bottom-0 left-0 z-30 h-[130%] w-[70%] outline-red-500 md:w-[60%]  lg:-bottom-72">
+        <div className="absolute bottom-0 left-0 z-30 h-[130%] w-[70%] animate-cloud4 outline-red-500 md:w-[60%]  lg:-bottom-72">
           <Image
             src="/images/cloud4.svg"
             alt="hack western cloud"
@@ -24,7 +24,7 @@ function Hero() {
             fill
           />
         </div>
-        <div className="animate-cloud3 absolute -bottom-24 right-0 z-30 h-[120%] w-full">
+        <div className="absolute -bottom-24 right-0 z-30 h-[120%] w-full animate-cloud3">
           <Image
             src="/images/cloud3.svg"
             alt="hack western cloud"
@@ -32,7 +32,7 @@ function Hero() {
             fill
           />
         </div>
-        <div className="animate-cloud2 absolute -bottom-32 right-0 z-30 h-full w-[50%] delay-75 md:h-full md:w-[30%]">
+        <div className="absolute -bottom-32 right-0 z-30 h-full w-[50%] animate-cloud2 delay-75 md:h-full md:w-[30%]">
           <Image
             src="/images/cloud2.svg"
             alt="hack western cloud"
@@ -40,7 +40,7 @@ function Hero() {
             fill
           />
         </div>
-        <div className="animate-cloud1 absolute bottom-0 left-0 z-30  h-full w-[50%] md:h-full md:w-[30%]">
+        <div className="absolute bottom-0 left-0 z-30 h-full  w-[50%] animate-cloud1 md:h-full md:w-[30%]">
           <Image
             src="/images/cloud1.svg"
             alt="hack western cloud"
@@ -78,7 +78,7 @@ function Hero() {
       </div>
       {/* Text */}
       <div className="relative z-50 flex h-screen w-screen justify-center">
-        <div className="flex flex-col items-center pt-32 2xl:pt-40 3xl:pt-48 text-white">
+        <div className="flex flex-col items-center pt-32 text-white 2xl:pt-40 3xl:pt-48">
           <h3 className="pb-4 text-xl font-medium">
             November 29th - December 1st, 2024
           </h3>
