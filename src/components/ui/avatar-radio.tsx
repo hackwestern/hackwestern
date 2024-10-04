@@ -47,7 +47,7 @@ AvatarRadioGroup.displayName = RadioGroupPrimitive.Root.displayName;
 const RadioButtonItem = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>
->(({ className, children, ...props }, ref) => {
+>(({ children, ...props }, ref) => {
   return (
     <RadioGroupPrimitive.Item
       ref={ref}

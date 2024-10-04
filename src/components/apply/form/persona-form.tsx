@@ -7,12 +7,6 @@ import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { personaSaveSchema } from "~/schemas/application";
 import AvatarRadio from "../../ui/avatar-radio";
 
-type AvatarType =
-  | "Wildlife Wanderer"
-  | "City Cruiser"
-  | "Foodie Fanatic"
-  | "Beach Bum";
-
 export function PersonaForm() {
   const utils = api.useUtils();
   const { data: defaultValues } = api.application.get.useQuery();
