@@ -35,7 +35,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
   const nextStep = getNextStep(stepIndex);
 
   return (
-    <div className="flex w-full justify-between">
+    <div className="sticky bottom-0 flex w-full justify-between bg-primary-100 py-3">
       {!step ||
         (previousStep && (
           <Button variant="secondary" asChild className="w-20">

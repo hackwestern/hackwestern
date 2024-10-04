@@ -24,7 +24,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
   const nextStep = getNextStep(stepIndex);
 
   return (
-    <div className="fixed bottom-0 mx-auto h-fit w-screen justify-center gap-3 border-[1px] border-t-primary-300 bg-violet-100 py-2">
+    <div className="fixed bottom-0 mx-auto h-fit w-screen justify-center gap-3 border-[1px] border-t-primary-300 bg-violet-100 py-3">
       <div className="mx-auto hidden w-fit gap-1 md:flex">
         {applySteps.map((s) => (
           <Button
