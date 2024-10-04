@@ -9,6 +9,7 @@ import { ApplyNavigation } from "~/components/apply/navigation";
 import { Passport } from "~/components/apply/passport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import Image from "next/image";
+import { SavedIndicator } from "~/components/apply/saved-indicator";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   return applySteps.find((s) => s.step === stepValue) ?? null;
@@ -39,11 +40,8 @@ export default function Apply() {
         <div className="fixed z-20 bg-primary-50">
           <ApplyNavbar />
         </div>
-        <Tabs
-          defaultValue="application"
-          className="h-full w-screen pt-16 md:hidden"
-        >
-          <TabsList className="flex w-screen justify-around rounded-none bg-primary-100">
+        <Tabs defaultValue="application" className="w-screen pt-16 md:hidden">
+          <TabsList className="fixed w-screen justify-around rounded-none bg-primary-100 z-50">
             <TabsTrigger
               value="application"
               className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
@@ -57,21 +55,16 @@ export default function Apply() {
               Passport
             </TabsTrigger>
           </TabsList>
-          <TabsContent
-            value="application"
-            className="min-w-screen max-w-screen mt-0 overflow-auto"
-          >
-            <div
-              id="left-panel"
-              className="flex h-screen flex-grow flex-col space-y-8 bg-primary-100 p-9"
-            >
+          <TabsContent value="application" className="w-screen z-40">
+            <div className="flex flex-col space-y-8 bg-primary-100 px-6 pt-12 h-screen fixed w-screen">
               <div className="space-y-2">
                 <h1 className="text-2xl font-medium">{heading}</h1>
                 <h2 className="text-sm text-slate-500">{subheading}</h2>
               </div>
-              <div className=" overflow-y-auto">
+              <div className="overflow-y-auto">
                 <ApplyForm step={step} />
               </div>
+              <SavedIndicator />
               <div className="select-none bg-primary-100 py-12 text-primary-100">
                 this is a secret
               </div>
@@ -79,12 +72,9 @@ export default function Apply() {
           </TabsContent>
           <TabsContent
             value="passport"
-            className="flex h-full flex-col justify-center"
+            className="flex flex-col justify-center"
           >
-            <div
-              id="right-panel"
-              className="flex h-[70vh] w-screen flex-col items-center justify-center px-4 md:w-[60vw]"
-            >
+            <div className="flex h-[70vh] w-screen flex-col items-center justify-center px-4 md:w-[60vw]">
               <Passport />
             </div>
           </TabsContent>
