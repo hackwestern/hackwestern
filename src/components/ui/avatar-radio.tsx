@@ -35,7 +35,7 @@ const AvatarRadioGroup = React.forwardRef<
       {...props}
     >
       {avatarOptions.map((option, index) => (
-        <RadioButtonItem key={index} value={option} >
+        <RadioButtonItem key={index} value={option}>
           <Avatar avatar={option} selection={true} />
         </RadioButtonItem>
       ))}
