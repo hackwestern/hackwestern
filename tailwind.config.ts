@@ -82,6 +82,7 @@ const config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        "hw-gradient-radius": "3137px",
       },
       keyframes: {
         "accordion-down": {
@@ -91,6 +92,14 @@ const config = {
         "accordion-up": {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
+        },
+        float: {
+          "0%, 100%": { transform: "translatey(0px)" },
+          "50%": { transform: "translatey(-20px)" },
+        },
+        "inv-float": {
+          "0%, 100%": { transform: "translatey(-20px)" },
+          "50%": { transform: "translatey(0px)" },
         },
         "small-bounce": {
           "0%, 100%": { transform: "translateY(0)" },
@@ -112,6 +121,10 @@ const config = {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        cloud1: "float 5s ease-in-out infinite",
+        cloud2: "inv-float 6s ease-in-out infinite",
+        cloud3: "float 12s ease-in-out infinite",
+        cloud4: "inv-float 14s ease-in-out infinite",
         "small-bounce": "small-bounce 0.75s ease-in-out infinite",
         wiggle: "wiggle 1s ease-in-out infinite",
         "suitcase-slide": "suitcase-slide 120s linear infinite",
@@ -124,6 +137,10 @@ const config = {
           "linear-gradient(180deg, #B2C8FF 0%, #FFEAFC 100%);",
         "hw-hero-text-gradient":
           "linear-gradient(190deg, #EBA0C6 48.2%, #FFDEE0 84.16%)",
+        "hw-linear-gradient":
+          "linear-gradient(180deg, #8360BE 0%, #370966 57%);",
+        "hw-highlight-radial-gradient":
+          "radial-gradient(50% 50% at 50% 50%, rgba(255, 161, 94, 0.94) 0%, rgba(240, 110, 110, 0.92) 8.5%, rgba(244, 56, 124, 0.47) 52.5%, rgba(121, 35, 207, 0.00) 100%)",
       },
       fontFamily: {
         DM_Sans: ["var(--font-dmsans)"],

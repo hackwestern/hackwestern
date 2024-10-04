@@ -88,14 +88,13 @@ export default function Apply() {
         <div className="hidden w-full flex-grow items-center md:flex">
           <div
             id="left-panel"
-            className="flex h-screen flex-grow flex-col space-y-8 overflow-auto bg-primary-100 p-9 pb-20 pt-24 md:w-2/3 2xl:w-1/2"
+            className="flex h-screen flex-grow flex-col justify-between space-y-8 overflow-auto bg-primary-100 p-9 pb-20 pt-24 md:w-2/3 2xl:w-1/2"
           >
             <div className="space-y-2 p-1">
               <h1 className="text-2xl font-medium">{heading}</h1>
               <h2 className="text-sm text-slate-500">{subheading}</h2>
               <ApplyForm step={step} />
             </div>
-
             <ApplyNavigation step={step} />
           </div>
           <div
