@@ -34,8 +34,8 @@ export default function Apply() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="flex h-svh max-h-svh flex-col items-center bg-primary-50">
-        <div className="fixed bg-primary-50 md:static">
+      <main className="flex max-h-screen flex-col items-center bg-primary-50">
+        <div className="fixed bg-primary-50">
           <ApplyNavbar />
           <Tabs defaultValue="application" className="w-screen md:hidden">
             <TabsList className="flex w-screen justify-around bg-primary-100">
@@ -88,20 +88,19 @@ export default function Apply() {
         <div className="hidden w-full flex-grow items-center md:flex">
           <div
             id="left-panel"
-            className="flex h-full flex-grow flex-col space-y-8 bg-primary-100 p-9 pt-12 md:w-2/3 2xl:w-1/2"
+            className="flex h-screen flex-grow flex-col space-y-8 overflow-auto bg-primary-100 p-9 pb-20 pt-24 md:w-2/3 2xl:w-1/2"
           >
             <div className="space-y-2 p-1">
               <h1 className="text-2xl font-medium">{heading}</h1>
               <h2 className="text-sm text-slate-500">{subheading}</h2>
-            </div>
-            <div className="flex-1">
               <ApplyForm step={step} />
             </div>
+
             <ApplyNavigation step={step} />
           </div>
           <div
             id="right-panel"
-            className="flex h-full flex-col items-center justify-center px-4 md:w-full"
+            className="flex flex-col items-center justify-center px-4 md:w-full"
           >
             <Passport />
           </div>
