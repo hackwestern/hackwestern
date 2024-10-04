@@ -3,7 +3,6 @@ import { Button } from "../ui/button";
 import Link from "next/link";
 import { useMemo } from "react";
 import { getNextStep, getPreviousStep, getStepIndex } from "./navigation";
-import { useRouter } from "next/router";
 import {
   Drawer,
   DrawerClose,
@@ -11,7 +10,7 @@ import {
   DrawerFooter,
   DrawerTrigger,
 } from "../ui/drawer";
-import { ArrowLeft, ArrowRight, Menu } from "lucide-react";
+import { ArrowLeft, ArrowRight, Menu, Send } from "lucide-react";
 import { cn } from "~/lib/utils";
 
 type ApplyMenuProps = {
@@ -23,8 +22,6 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
   const stepIndex = useMemo(() => getStepIndex(step), [step]);
   const prevStep = getPreviousStep(stepIndex);
   const nextStep = getNextStep(stepIndex);
-
-  const router = useRouter();
 
   return (
     <div className="fixed bottom-0 mx-auto h-fit w-screen justify-center gap-3 border-[1px] border-t-primary-300 bg-violet-100 py-2">
@@ -111,14 +108,16 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
                 : { pathname: "/apply", query: { step: nextStep ?? step } }
             }
           >
-            <ArrowRight
-              className={cn(
-                "size-6",
-                nextStep || step === "review"
-                  ? "text-primary-600"
-                  : "text-slate-300",
-              )}
-            />
+            {step !== "review" ? (
+              <ArrowRight
+                className={cn(
+                  "size-6",
+                  nextStep ? "text-primary-600" : "text-slate-300",
+                )}
+              />
+            ) : (
+              <Send className="size-6 text-primary-600" />
+            )}
           </Link>
         </Button>
       </div>
