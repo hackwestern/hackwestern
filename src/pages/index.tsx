@@ -5,6 +5,8 @@ import MLHTrustBadge from "~/components/promo/mlh-trust.badge";
 import { PreregistrationForm } from "~/components/preregistration-form";
 import Hero from "~/components/promo/Hero";
 import About from "~/components/promo/About";
+import FAQ from "~/components/promo/faq";
+import Header from "~/components/promo/header";
 
 export default function Home() {
   return (

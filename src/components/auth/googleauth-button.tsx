@@ -1,13 +1,20 @@
 import { signIn } from "next-auth/react";
 import Image from "next/image";
+import { Button } from "../ui/button";
 
-function GoogleAuthButton({ redirect }: { redirect: string }) {
+function GoogleAuthButton({
+  redirect,
+  register,
+}: {
+  redirect: string;
+  register?: boolean;
+}) {
   return (
-    <button
+    <Button
       onClick={() => {
         void signIn("google", { callbackUrl: redirect });
       }}
-      className="w-full rounded-md bg-slate-50 p-1 font-medium outline outline-1 outline-gray-400"
+      className="w-full rounded-md bg-slate-50 p-1 font-medium outline outline-1 outline-gray-400 hover:bg-white"
     >
       <div className="flex flex-row items-center justify-center gap-1">
         <Image
@@ -16,9 +23,9 @@ function GoogleAuthButton({ redirect }: { redirect: string }) {
           width={25}
           height={25}
         />
-        <span>Sign in with Google</span>
+        <span>Sign {register ? "up" : "in"} with Google</span>
       </div>
-    </button>
+    </Button>
   );
 }
 

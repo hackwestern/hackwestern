@@ -13,10 +13,15 @@ const config = {
     container: {
       center: true,
       padding: "2rem",
-      screens: {
-        "3xl": "2000px",
-        "4xl": "3000px",
-      },
+    },
+    screens: {
+      sm: "640px",
+      md: "768px",
+      lg: "1024px",
+      xl: "1280px",
+      "2xl": "1536px",
+      "3xl": "2000px",
+      "4xl": "3000px",
     },
     extend: {
       colors: {
@@ -26,10 +31,6 @@ const config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         githubbg: "#1b1f23",
-        hwprimary: {
-          400: "#C1ACE5",
-          500: "#976CDF"
-        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           50: "hsl(var(--primary-50))",
@@ -57,6 +58,7 @@ const config = {
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
+          dark: "hsl(var(--destructive-dark))",
           foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
@@ -111,6 +113,8 @@ const config = {
       backgroundImage: {
         "hw-radial-gradient":
           "radial-gradient(77.76% 72.21% at 42.29% 60.83%, #FFE4D6 0%, #FFB2B7 9%, #E19CDE 18%, #B07ACA 35%, #765EA1 61%, #483CB5 100%);",
+        "hw-linear-gradient-day":
+          "linear-gradient(180deg, #B2C8FF 0%, #FFEAFC 100%);",
         "hw-hero-text-gradient":
           "linear-gradient(190deg, #EBA0C6 48.2%, #FFDEE0 84.16%)",
         "hw-linear-gradient":
