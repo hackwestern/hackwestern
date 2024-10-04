@@ -94,15 +94,19 @@ const config = {
         },
         "small-bounce": {
           "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-2.5%)" },
+          "50%": { transform: "translateY(2.5%)" },
         },
         wiggle: {
           "0%, 100%": { transform: "rotate(-0.5deg)" },
           "50%": { transform: "rotate(0.5deg)" },
         },
-        slide: {
+        "suitcase-slide": {
           "0%": { transform: "translateX(0)" },
-          "100%": { transform: "translateX(100vw)" },
+          "100%": { transform: "translateX(-12000px)" },
+        },
+        "spin-reverse": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(-360deg)" },
         },
       },
       animation: {
@@ -110,7 +114,8 @@ const config = {
         "accordion-up": "accordion-up 0.2s ease-out",
         "small-bounce": "small-bounce 0.75s ease-in-out infinite",
         wiggle: "wiggle 1s ease-in-out infinite",
-        slide: "slide 12s linear infinite",
+        "suitcase-slide": "suitcase-slide 120s linear infinite",
+        "spin-reverse": "spin-reverse 2s linear infinite",
       },
       backgroundImage: {
         "hw-radial-gradient":

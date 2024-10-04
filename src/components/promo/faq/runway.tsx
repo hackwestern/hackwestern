@@ -24,8 +24,8 @@ const Runway = () => {
           y2="208"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="#9D7FCF" />
-          <stop offset="1" stop-color="#845BB9" />
+          <stop stopColor="#9D7FCF" />
+          <stop offset="1" stopColor="#845BB9" />
         </linearGradient>
       </defs>
       <line
