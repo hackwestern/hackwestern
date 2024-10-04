@@ -90,7 +90,7 @@ const MIN_WORDS = 30;
 const MAX_WORDS = 150;
 
 // Submission schema with data validation
-export const applicationSubmitSchema = createInsertSchema(applications, {
+export const applicationSubmitSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   age: z.number().min(18),
@@ -163,11 +163,6 @@ export const applicationSubmitSchema = createInsertSchema(applications, {
       message: "You must be at least 18 years old as of November 29th, 2024",
     }),
   }),
-}).omit({
-  createdAt: true,
-  updatedAt: true,
-  status: true,
-  userId: true,
 });
 
 export const applicationStepSaveSchema = applicationSaveSchema.pick({
