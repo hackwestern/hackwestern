@@ -95,7 +95,7 @@ export const applicationSubmitSchema = createInsertSchema(applications, {
   lastName: z.string().min(1),
   age: z.number().min(18),
   countryOfResidence: z.enum(countrySelection.enumValues),
-  phoneNumber: z.string().min(1).regex(phoneRegex, "not a valid phone number"),
+  phoneNumber: z.string().min(1).regex(phoneRegex, "Invalid phone number"),
   school: z.enum(schools),
   levelOfStudy: z.enum(levelOfStudy.enumValues),
   major: z.enum(major.enumValues),
@@ -104,54 +104,63 @@ export const applicationSubmitSchema = createInsertSchema(applications, {
     .min(1)
     .refine(
       (value) => minWordCount(value, MIN_WORDS),
-      `response must be at least ${MIN_WORDS} words`,
+      `Response must be at least ${MIN_WORDS} words`,
     )
     .refine(
       (value) => maxWordCount(value, MAX_WORDS),
-      `response must be less than ${MAX_WORDS} words`,
+      `Response must be less than ${MAX_WORDS} words`,
     ),
   question2: z
     .string()
     .min(1)
     .refine(
       (value) => minWordCount(value, MIN_WORDS),
-      `response must be at least ${MIN_WORDS} words`,
+      `Response must be at least ${MIN_WORDS} words`,
     )
     .refine(
       (value) => maxWordCount(value, MAX_WORDS),
-      `response must be less than ${MAX_WORDS} words`,
+      `Response must be less than ${MAX_WORDS} words`,
     ),
   question3: z
     .string()
     .min(1)
     .refine(
       (value) => minWordCount(value, MIN_WORDS),
-      `response must be at least ${MIN_WORDS} words`,
+      `Response must be at least ${MIN_WORDS} words`,
     )
     .refine(
       (value) => maxWordCount(value, MAX_WORDS),
-      `response must be less than ${MAX_WORDS} words`,
+      `Response must be less than ${MAX_WORDS} words`,
     ),
-  resumeLink: z.string().min(1).url(),
-  githubLink: z.string().min(1),
-  linkedInLink: z.string().min(1),
-  otherLink: z.string().min(1).url(),
+  resumeLink: z.preprocess(
+    (v) => (!v ? undefined : v),
+    z.string().url().optional(),
+  ),
+  githubLink: z.preprocess((v) => (!v ? undefined : v), z.string().optional()),
+  linkedInLink: z.preprocess(
+    (v) => (!v ? undefined : v),
+    z.string().optional(),
+  ),
+  otherLink: z.preprocess(
+    (v) => (!v ? undefined : v),
+    z.string().url().optional(),
+  ),
   agreeCodeOfConduct: z.literal(true, {
-    errorMap: () => ({ message: "you must agree to the MLH Code of Conduct" }),
+    errorMap: () => ({ message: "You must agree to the MLH Code of Conduct" }),
   }),
   agreeShareWithMLH: z.literal(true, {
     errorMap: () => ({
-      message: "you must agree to share application information with MLH",
+      message: "You must agree to share application information with MLH",
     }),
   }),
   agreeShareWithSponsors: z.literal(true, {
     errorMap: () => ({
-      message: "you must agree to share information with sponsors",
+      message: "You must agree to share information with sponsors",
     }),
   }),
   agreeWillBe18: z.literal(true, {
     errorMap: () => ({
-      message: "you must be at least 18 years old as of November 29th, 2024",
+      message: "You must be at least 18 years old as of November 29th, 2024",
     }),
   }),
 }).omit({
