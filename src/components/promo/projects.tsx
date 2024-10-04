@@ -1,10 +1,7 @@
 import { Button } from "../ui/button";
+import { listProjects, type Project } from "~/constants/projects";
 
-type Project = {
-  image: string;
-  title: string;
-  link: string;
-};
+const bigListProjects = listProjects.concat(listProjects).concat(listProjects);
 
 const Projects = () => {
   return (
@@ -78,19 +75,17 @@ const Projects = () => {
           </div>
         </div>
       </div>
-      <div className="w-full animate-small-bounce overflow-hidden">
-        <div className="-mb-1 flex animate-suitcase-slide gap-8 hover:[animation-play-state:paused] xl:gap-16 2xl:gap-20 3xl:gap-28 4xl:gap-36">
+      <div className="animate-small-bounce w-full overflow-hidden">
+        <div className="animate-suitcase-slide -mb-1 flex gap-8 hover:[animation-play-state:paused] xl:gap-16 2xl:gap-20 3xl:gap-28 4xl:gap-36">
           {
             /* suitcases (projects) */
-            Array.from({ length: 3 }, () => listProjects)
-              .flat()
-              .map((project, i) =>
-                i % 2 === 0 ? (
-                  <BlueSuitcase key={i} project={project} />
-                ) : (
-                  <RedSuitcase key={i} project={project} />
-                ),
-              )
+            bigListProjects.map((project, i) =>
+              i % 2 === 0 ? (
+                <BlueSuitcase key={i} project={project} />
+              ) : (
+                <RedSuitcase key={i} project={project} />
+              ),
+            )
           }
         </div>
         <div className="-py-12 flex overflow-hidden border-y-8 border-violet-500 bg-violet-400">
@@ -110,7 +105,7 @@ const Projects = () => {
 const BlueSuitcase = (props: { project: Project }) => {
   const { title, image, link } = props.project;
   return (
-    <div className="mt-6 flex h-fit hover:[animation-play-state:paused] md:animate-wiggle">
+    <div className="md:animate-wiggle mt-6 flex h-fit hover:[animation-play-state:paused]">
       <div className="my-auto -mr-8 h-16 w-16 rounded-md border-8 border-[#26254C]" />
       <a
         href={link}
@@ -134,7 +129,7 @@ const BlueSuitcase = (props: { project: Project }) => {
 const RedSuitcase = ({ project }: { project: Project }) => {
   const { title, image, link } = project;
   return (
-    <div className="flex flex-col hover:[animation-play-state:paused] md:animate-wiggle">
+    <div className="md:animate-wiggle flex flex-col hover:[animation-play-state:paused]">
       <div className="mx-auto -mb-5 h-12 w-20 rounded-md border-8 border-[#8E4C5C]" />
       <a
         href={link}
@@ -159,7 +154,7 @@ const Gear = () => {
       viewBox="0 0 130 140"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="z-50 -my-6 animate-spin-reverse overflow-clip"
+      className="animate-spin-reverse z-50 -my-6 overflow-clip"
     >
       <rect
         x="37"
@@ -224,80 +219,5 @@ const Gear = () => {
     </svg>
   );
 };
-
-const listProjects: Project[] = [
-  {
-    image:
-      "https://d112y698adiu2z.cloudfront.net/photos/production/software_thumbnail_photos/002/682/847/datas/medium.png",
-    title: "SuperStage",
-    link: "https://devpost.com/software/superstage",
-  },
-  {
-    image:
-      "https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/002/683/856/datas/medium.png",
-    title: "Infu",
-    link: "https://devpost.com/software/infu",
-  },
-  {
-    image:
-      "https://d112y698adiu2z.cloudfront.net/photos/production/software_thumbnail_photos/002/682/566/datas/medium.png",
-    title: "AR.cade",
-    link: "https://devpost.com/software/ar-cade",
-  },
-  {
-    image:
-      "https://d112y698adiu2z.cloudfront.net/photos/production/software_thumbnail_photos/002/682/604/datas/medium.png",
-    title: "Credit Crimes",
-    link: "https://devpost.com/software/papers-please-clone",
-  },
-  {
-    image:
-      "https://d112y698adiu2z.cloudfront.net/photos/production/software_thumbnail_photos/002/758/135/datas/medium.png",
-    title: "Pawndr",
-    link: "https://devpost.com/software/pawndr-kvlmgj",
-  },
-  {
-    image:
-      "https://d112y698adiu2z.cloudfront.net/photos/production/software_thumbnail_photos/002/683/716/datas/medium.png",
-    title: "BlockXism",
-    link: "https://devpost.com/software/blockxism",
-  },
-  {
-    image:
-      "https://d112y698adiu2z.cloudfront.net/photos/production/software_thumbnail_photos/002/683/944/datas/medium.png",
-    title: "TrailGuide",
-    link: "https://devpost.com/software/trailguide",
-  },
-  {
-    image:
-      "https://d112y698adiu2z.cloudfront.net/photos/production/software_photos/002/683/595/datas/medium.png",
-    title: "Memory Lane",
-    link: "https://devpost.com/software/memory-lane-84kcrl",
-  },
-  {
-    image:
-      "https://d112y698adiu2z.cloudfront.net/photos/production/software_thumbnail_photos/002/682/801/datas/medium.gif",
-    title: "Harbor.ed",
-    link: "https://devpost.com/software/harbor-ed",
-  },
-  {
-    image:
-      "https://d112y698adiu2z.cloudfront.net/photos/production/software_thumbnail_photos/002/683/130/datas/medium.png",
-    title: "Newts",
-    link: "https://devpost.com/software/newts",
-  },
-  {
-    image:
-      "https://d112y698adiu2z.cloudfront.net/photos/production/software_thumbnail_photos/002/683/471/datas/medium.png",
-    title: "Outsider Trading",
-    link: "https://devpost.com/software/outsider-trading-458oy6",
-  },
-  {
-    image:
-      "https://d112y698adiu2z.cloudfront.net/photos/production/software_thumbnail_photos/002/682/642/datas/medium.png",
-    title: "bliss",
-    link: "https://devpost.com/software/bliss-wtaofu",
-  },
-];
 
 export default Projects;
