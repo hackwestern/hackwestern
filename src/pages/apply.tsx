@@ -8,6 +8,7 @@ import { ApplyForm } from "~/components/apply/form";
 import { ApplyNavigation } from "~/components/apply/navigation";
 import { Passport } from "~/components/apply/passport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { SavedIndicator } from "~/components/apply/saved-indicator";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   return applySteps.find((s) => s.step === stepValue) ?? null;
@@ -67,7 +68,8 @@ export default function Apply() {
                 <div className=" overflow-y-auto">
                   <ApplyForm step={step} />
                 </div>
-                <div className="select-none bg-primary-100 py-12 text-primary-100">
+                <SavedIndicator />
+                <div className="select-none bg-primary-100 pt-32 text-primary-100">
                   this is a secret
                 </div>
               </div>

@@ -34,7 +34,7 @@ const Avatar = ({ avatar, selection }: AvatarProps) => {
     <div>
       {selection && (
         <>
-          <div className="relative h-[170px] w-[170px] xl:h-[200px] xl:w-[200px] 2xl:h-[250px] 2xl:w-[250px] 3xl:h-[320px] 3xl:w-[320px] 4xl:h-[400px] 4xl:w-[400px]">
+          <div className="relative h-[140px] w-[140px] overflow-hidden md:h-[170px] md:w-[170px] xl:h-[200px] xl:w-[200px] 2xl:h-[250px] 2xl:w-[250px] 3xl:h-[320px] 3xl:w-[320px] 4xl:h-[400px] 4xl:w-[400px]">
             <div className="absolute left-2 top-1">
               <p className="text-sm text-slate-500">{avatar}</p>
             </div>
