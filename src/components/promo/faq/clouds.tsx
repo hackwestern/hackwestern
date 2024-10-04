@@ -23,8 +23,8 @@ export const Cloud1 = () => {
           y2="49.0001"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="#44147C" />
-          <stop offset="1" stop-color="#633796" />
+          <stop stopColor="#44147C" />
+          <stop offset="1" stopColor="#633796" />
         </linearGradient>
       </defs>
     </svg>
@@ -56,7 +56,7 @@ export const Cloud3 = () => {
           y2="-70.2015"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="#3A1565" />
+          <stop stopColor="#3A1565" />
           <stop offset="1" stopColor="#501E8B" />
         </linearGradient>
       </defs>
