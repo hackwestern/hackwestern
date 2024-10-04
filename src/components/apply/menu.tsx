@@ -25,7 +25,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
   const router = useRouter();
 
   return (
-    <div className="fixed bottom-0 mx-auto h-fit w-screen justify-center gap-3 border-[1px] border-t-primary-300 bg-violet-100 py-2 md:static">
+    <div className="fixed bottom-0 mx-auto h-fit w-screen justify-center gap-3 border-[1px] border-t-primary-300 bg-violet-100 py-2">
       <div className="mx-auto flex hidden w-fit md:block">
         {applySteps.map((s) => (
           <Button

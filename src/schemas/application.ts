@@ -31,6 +31,10 @@ export const basicsSaveSchema = applicationSaveSchema.pick({
   age: true,
 });
 
+export const personaSaveSchema = applicationSaveSchema.pick({
+  avatar: true,
+});
+
 export const infoSaveSchema = applicationSaveSchema
   .pick({
     school: true,
