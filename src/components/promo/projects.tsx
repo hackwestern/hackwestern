@@ -95,7 +95,7 @@ const Projects = () => {
           <div></div>
           {
             // a lot of gears
-            Array.from({ length: 100 }, (_, i) => (
+            Array.from({ length: 50 }, (_, i) => (
               <Gear key={i} />
             ))
           }
