@@ -73,14 +73,21 @@ export const optionalSaveSchema = applicationSaveSchema
     underrepGroup: z.enum(underrepGroupAnswers),
   });
 
-// Helper function to check word count within a range
-const checkWordCount = (value: string, min: number, max: number) => {
-  const words = value.split(" ");
-  return words.length < max && words.length > min;
-};
+function minWordCount(value: string, min: number) {
+  const words = value.trim().split(/\s+/);
+  return min <= words.length;
+}
+
+function maxWordCount(value: string, max: number) {
+  const words = value.trim().split(/\s+/);
+  return words.length <= max;
+}
 
 export const phoneRegex =
   /^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
+
+const MIN_WORDS = 30;
+const MAX_WORDS = 150;
 
 // Submission schema with data validation
 export const applicationSubmitSchema = createInsertSchema(applications, {
@@ -88,29 +95,65 @@ export const applicationSubmitSchema = createInsertSchema(applications, {
   lastName: z.string().min(1),
   age: z.number().min(18),
   countryOfResidence: z.enum(countrySelection.enumValues),
-  phoneNumber: z.string().min(1).regex(phoneRegex, "Invalid phone number"),
+  phoneNumber: z.string().min(1).regex(phoneRegex, "not a valid phone number"),
   school: z.enum(schools),
   levelOfStudy: z.enum(levelOfStudy.enumValues),
   major: z.enum(major.enumValues),
   question1: z
     .string()
     .min(1)
-    .refine((value) => checkWordCount(value, 30, 150)),
+    .refine(
+      (value) => minWordCount(value, MIN_WORDS),
+      `response must be at least ${MIN_WORDS} words`,
+    )
+    .refine(
+      (value) => maxWordCount(value, MAX_WORDS),
+      `response must be less than ${MAX_WORDS} words`,
+    ),
   question2: z
     .string()
     .min(1)
-    .refine((value) => checkWordCount(value, 30, 150)),
+    .refine(
+      (value) => minWordCount(value, MIN_WORDS),
+      `response must be at least ${MIN_WORDS} words`,
+    )
+    .refine(
+      (value) => maxWordCount(value, MAX_WORDS),
+      `response must be less than ${MAX_WORDS} words`,
+    ),
   question3: z
     .string()
     .min(1)
-    .refine((value) => checkWordCount(value, 30, 150)),
+    .refine(
+      (value) => minWordCount(value, MIN_WORDS),
+      `response must be at least ${MIN_WORDS} words`,
+    )
+    .refine(
+      (value) => maxWordCount(value, MAX_WORDS),
+      `response must be less than ${MAX_WORDS} words`,
+    ),
   resumeLink: z.string().min(1).url(),
   githubLink: z.string().min(1),
   linkedInLink: z.string().min(1),
   otherLink: z.string().min(1).url(),
-  agreeCodeOfConduct: z.literal(true),
-  agreeShareWithMLH: z.literal(true),
-  agreeWillBe18: z.literal(true),
+  agreeCodeOfConduct: z.literal(true, {
+    errorMap: () => ({ message: "you must agree to the MLH Code of Conduct" }),
+  }),
+  agreeShareWithMLH: z.literal(true, {
+    errorMap: () => ({
+      message: "you must agree to share application information with MLH",
+    }),
+  }),
+  agreeShareWithSponsors: z.literal(true, {
+    errorMap: () => ({
+      message: "you must agree to share information with sponsors",
+    }),
+  }),
+  agreeWillBe18: z.literal(true, {
+    errorMap: () => ({
+      message: "you must be at least 18 years old as of November 29th, 2024",
+    }),
+  }),
 }).omit({
   createdAt: true,
   updatedAt: true,
