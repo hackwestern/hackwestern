@@ -8,6 +8,7 @@ import { ApplyForm } from "~/components/apply/form";
 import { ApplyNavigation } from "~/components/apply/navigation";
 import { Passport } from "~/components/apply/passport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import Image from "next/image";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   return applySteps.find((s) => s.step === stepValue) ?? null;
@@ -34,11 +35,12 @@ export default function Apply() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="flex max-h-screen flex-col items-center bg-primary-50">
-        <div className="fixed bg-primary-50">
+      <main className="flex h-screen flex-col items-center bg-primary-50 bg-hw-linear-gradient-day">
+        <div className="fixed z-20 bg-primary-50">
           <ApplyNavbar />
-          <Tabs defaultValue="application" className="w-screen md:hidden">
-            <TabsList className="flex w-screen justify-around bg-primary-100">
+        </div>
+        <Tabs defaultValue="application" className="w-screen md:hidden pt-16 h-full">
+            <TabsList className="flex w-screen justify-around bg-primary-100 rounded-none">
               <TabsTrigger
                 value="application"
                 className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
@@ -74,7 +76,7 @@ export default function Apply() {
             </TabsContent>
             <TabsContent
               value="passport"
-              className="flex flex-col justify-center"
+              className="flex flex-col justify-center h-full"
             >
               <div
                 id="right-panel"
@@ -84,11 +86,10 @@ export default function Apply() {
               </div>
             </TabsContent>
           </Tabs>
-        </div>
-        <div className="hidden w-full flex-grow items-center md:flex">
+        <div className="z-10 relative hidden w-full flex-grow items-center md:flex">
           <div
             id="left-panel"
-            className="flex h-screen flex-grow flex-col justify-between space-y-8 overflow-auto bg-primary-100 p-9 pb-20 pt-24 md:w-2/3 2xl:w-1/2"
+            className="z-10 flex h-screen flex-grow flex-col justify-between space-y-8 overflow-auto bg-primary-100 p-9 pb-20 pt-24 md:w-2/3 2xl:w-1/2"
           >
             <div className="space-y-2 p-1">
               <h1 className="text-2xl font-medium">{heading}</h1>
@@ -99,12 +100,82 @@ export default function Apply() {
           </div>
           <div
             id="right-panel"
-            className="flex flex-col items-center justify-center px-4 md:w-full"
+            className="flex h-full flex-col items-center justify-center px-4 md:w-full"
           >
-            <Passport />
+            {/* Clouds */}
+            <div className="absolute bottom-0 left-0 h-full w-full md:h-full md:w-[80%]">
+              <Image
+                src="/images/cloud5.svg"
+                alt="hack western cloud"
+                className="object-contain object-left-bottom"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-0 right-0 h-full w-full md:h-[90%] md:w-[70%] lg:h-[100%]">
+              <Image
+                src="/images/cloud6.svg"
+                alt="hack western cloud"
+                className="object-contain object-right-bottom"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-0 left-0 h-full w-[50%] md:h-full md:w-[30%]">
+              <Image
+                src="/images/cloud7.svg"
+                alt="hack western cloud"
+                className="object-contain object-left-bottom"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-0 right-0 h-full w-[50%] md:h-full md:w-[40%] lg:h-[50%] lg:w-[30%]">
+              <Image
+                src="/images/cloud8.svg"
+                alt="hack western cloud"
+                className="object-contain object-right-bottom"
+                fill
+              />
+            </div>
+            {/* Stars */}
+            <div className="absolute bottom-[20%] left-[20%] h-full w-[20%] md:w-[10%] lg:w-[5%]">
+              <Image
+                src="/images/star.svg"
+                alt="hack western star"
+                className="object-contain"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-[40%] right-[10%] h-full w-[15%] md:w-[7%] lg:w-[3%]">
+              <Image
+                src="/images/star.svg"
+                alt="hack western star"
+                className="object-contain"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-[25%] right-[15%] h-full w-[20%] md:w-[10%] lg:w-[5%] ">
+              <Image
+                src="/images/star2.svg"
+                alt="hack western star"
+                className="object-contain"
+                fill
+              />
+            </div>
+            {/* Grain Filter */}
+            <Image
+              className="absolute left-0 top-0 opacity-20"
+              src="/images/hwfilter.png"
+              alt="Hack Western Main Page"
+              layout="fill"
+              objectFit="cover"
+            />
+            <div className="z-10 flex w-[100%] flex-col items-center justify-center">
+              <Passport />
+            </div>
           </div>
         </div>
-        <ApplyMenu step={step} />
+        <div className="relative z-10 flex w-[100%] flex-col items-center justify-center">
+          <ApplyMenu step={step} />
+        </div>
       </main>
     </>
   );

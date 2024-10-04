@@ -6,6 +6,7 @@ import { Passport } from "~/components/apply/passport";
 import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
 import { authRedirectHacker } from "~/utils/redirect";
+import Image from "next/image";
 
 type ApplicationStatusType =
   | "IN_PROGRESS"
@@ -95,10 +96,10 @@ const Dashboard = () => {
       </Head>
       <main className="flex h-svh max-h-svh flex-col items-center bg-primary-50">
         <ApplyNavbar />
-        <div className="flex w-full flex-grow flex-col items-center md:flex-row">
+        <div className="relative flex w-full flex-grow flex-col items-center md:flex-row">
           <div
             id="left-panel"
-            className="lg:w-xl flex flex-grow flex-col justify-center gap-4 bg-primary-100 p-9 pt-12 text-center md:h-full lg:max-w-xl"
+            className="lg:w-xl w-full z-10 flex flex-grow flex-col justify-center gap-4 bg-primary-100 p-9 pt-12 text-center md:h-full lg:max-w-xl"
           >
             <div className="pb-2.5 text-3xl font-bold text-slate-700">
               {
@@ -134,9 +135,75 @@ const Dashboard = () => {
           </div>
           <div
             id="right-panel"
-            className="flex h-full w-full flex-col items-center justify-center"
+            className="flex h-full w-full flex-col items-center justify-center bg-hw-linear-gradient-day"
           >
-            <Passport />
+            {/* Clouds */}
+            <div className="absolute bottom-0 left-0 h-full w-full md:h-full md:w-[80%]">
+              <Image
+                src="/images/cloud5.svg"
+                alt="hack western cloud"
+                className="object-contain object-left-bottom"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-0 right-0 h-full w-full md:h-[90%] md:w-[70%] lg:h-[100%]">
+              <Image
+                src="/images/cloud6.svg"
+                alt="hack western cloud"
+                className="object-contain object-right-bottom"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-0 left-0 h-full w-[50%] md:h-full md:w-[30%]">
+              <Image
+                src="/images/cloud7.svg"
+                alt="hack western cloud"
+                className="object-contain object-left-bottom"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-0 right-0 h-full w-[50%] md:h-full md:w-[40%] lg:h-[50%] lg:w-[30%]">
+              <Image
+                src="/images/cloud8.svg"
+                alt="hack western cloud"
+                className="object-contain object-right-bottom"
+                fill
+              />
+            </div>
+            {/* Stars */}
+            <div className="absolute bottom-[20%] left-[20%] h-full w-[20%] md:w-[10%] lg:w-[5%]">
+              <Image
+                src="/images/star.svg"
+                alt="hack western star"
+                className="object-contain"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-[40%] right-[10%] h-full w-[15%] md:w-[7%] lg:w-[3%]">
+              <Image
+                src="/images/star.svg"
+                alt="hack western star"
+                className="object-contain"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-[25%] right-[15%] h-full w-[20%] md:w-[10%] lg:w-[5%] ">
+              <Image
+                src="/images/star2.svg"
+                alt="hack western star"
+                className="object-contain"
+                fill
+              />
+            </div>
+            {/* Grain Filter */}
+            <Image
+              className="absolute left-0 top-0 opacity-20"
+              src="/images/hwfilter.png"
+              alt="Hack Western Main Page"
+              layout="fill"
+              objectFit="cover"
+            />
+            <div className="z-10 flex flex-col items-center justify-center w-[100%]"><Passport /></div>
           </div>
         </div>
       </main>
