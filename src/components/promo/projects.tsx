@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "../ui/button";
 
 type Project = {
   image: string;
@@ -9,20 +10,85 @@ type Project = {
 const Projects = () => {
   return (
     <div className="max-w-screen relative flex min-h-screen flex-col justify-between bg-[url('/images/projects-bg.svg')] bg-cover md:bg-contain">
-      <div className="mx-auto my-auto w-1/2 columns-2 bg-[#27283D] 2xl:w-1/3 3xl:w-1/4">
-        hi :3
+      <div className="mx-auto my-auto w-2/3 border-4 border-[#27283D] bg-[#3F3F5C] text-lg text-primary-100 2xl:w-1/2 2xl:text-xl 3xl:w-1/3 4xl:text-2xl">
+        <div className="3xl:6xl flex border-b-4 border-[#27283D] font-MagicRetro text-2xl xl:text-4xl">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 28 28"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="m-auto"
+          >
+            <path
+              d="M23.1751 8.07423L3.45171 27.7977L0.210815 24.5568L19.9343 4.83333H2.55019V0.25H27.7585V25.4583H23.1751V8.07423Z"
+              fill="#F8F5FF"
+            />
+          </svg>
+          <p className="w-4/5 border-l-4 border-[#27283D] p-6">
+            inspiring technology leaders
+          </p>
+        </div>
+        <div className="flex border-b-4 border-[#27283D]">
+          <svg
+            width="48"
+            height="36"
+            viewBox="0 0 48 36"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="m-auto"
+          >
+            <path
+              d="M48 18L36.6862 29.3138L33.8578 26.4852L42.3432 18L33.8578 9.51472L36.6862 6.6863L48 18ZM5.65686 18L14.1421 26.4852L11.3137 29.3138L0 18L11.3137 6.6863L14.1421 9.51472L5.65686 18ZM19.5769 36H15.3202L28.4232 0H32.6798L19.5769 36Z"
+              fill="#F8F5FF"
+            />
+          </svg>
+          <p className="w-4/5 border-l-4 border-[#27283D] p-6">
+            Experience a weekend getaway of incredible speakers, mentors, and
+            judges. Build your skills and learn about the future of technology.
+          </p>
+        </div>
+        <div className="flex">
+          <svg
+            width="42"
+            height="40"
+            viewBox="0 0 42 40"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="m-auto"
+          >
+            <path
+              d="M8.20579 28.718L37.4103 28.718V4.10256L4.58975 4.10256L4.58975 31.5592L8.20579 28.718ZM9.62472 32.8205L0.487183 40L0.487183 2.05128C0.487183 0.9184 1.40558 0 2.53846 0L39.4615 0C40.5945 0 41.5128 0.9184 41.5128 2.05128V30.7692C41.5128 31.9022 40.5945 32.8205 39.4615 32.8205H9.62472Z"
+              fill="#EEF1F7"
+            />
+          </svg>
+          <div className="w-4/5 border-l-4 border-[#27283D] p-6">
+            Interested in supporting the event? We&apos;d love to get in touch!
+            <br />
+            <Button
+              variant="secondary"
+              className="mt-4 border-primary-300 bg-primary-500 text-primary-100 hover:bg-primary-400"
+              onClick={() => window.open("mailto:hello@hackwestern.com")}
+              asChild
+            >
+              <a href="mailto:hello@hackwestern.com">Contact Us!</a>
+            </Button>
+          </div>
+        </div>
       </div>
       <div className="animate-small-bounce w-full overflow-hidden">
         <div className="animate-suitcase-slide -mb-1 flex gap-8 hover:[animation-play-state:paused] xl:gap-16 2xl:gap-20 3xl:gap-28 4xl:gap-36">
           {
             /* suitcases (projects) */
-            Array.from({ length: 3}, () => listProjects).flat().map((project, i) =>
-              i % 2 === 0 ? (
-                <BlueSuitcase key={i} project={project} />
-              ) : (
-                <RedSuitcase key={i} project={project} />
-              ),
-            )
+            Array.from({ length: 3 }, () => listProjects)
+              .flat()
+              .map((project, i) =>
+                i % 2 === 0 ? (
+                  <BlueSuitcase key={i} project={project} />
+                ) : (
+                  <RedSuitcase key={i} project={project} />
+                ),
+              )
           }
         </div>
         <div className="-py-12 flex overflow-hidden border-y-8 border-violet-500 bg-violet-400">
