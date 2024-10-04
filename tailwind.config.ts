@@ -91,10 +91,22 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "float": {
+          "0%, 100%": {transform: "translatey(0px)"},
+          "50%": {transform: "translatey(-20px)"}
+        },
+        "inv-float": {
+          "0%, 100%": {transform: "translatey(-20px)"},
+          "50%": {transform: "translatey(0px)"}
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "cloud1": "float 5s ease-in-out infinite",
+        "cloud2": "inv-float 6s ease-in-out infinite",
+        "cloud3": "float 12s ease-in-out infinite",
+        "cloud4": "inv-float 14s ease-in-out infinite",
       },
       backgroundImage: {
         "hw-radial-gradient":
