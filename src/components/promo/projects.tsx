@@ -28,7 +28,7 @@ const Projects = () => {
               fill="#F8F5FF"
             />
           </svg>
-          <p className="w-4/5 border-l-4 border-[#27283D] p-6">
+          <p className="w-4/5 border-l-4 border-[#27283D] p-6 3xl:w-5/6">
             inspiring technology leaders
           </p>
         </div>
@@ -46,7 +46,7 @@ const Projects = () => {
               fill="#F8F5FF"
             />
           </svg>
-          <p className="w-4/5 border-l-4 border-[#27283D] p-6">
+          <p className="w-4/5 border-l-4 border-[#27283D] p-6 3xl:w-5/6">
             Experience a weekend getaway of incredible speakers, mentors, and
             judges. Build your skills and learn about the future of technology.
           </p>
@@ -65,7 +65,7 @@ const Projects = () => {
               fill="#EEF1F7"
             />
           </svg>
-          <div className="w-4/5 border-l-4 border-[#27283D] p-6">
+          <div className="w-4/5 border-l-4 border-[#27283D] p-6 3xl:w-5/6">
             Interested in supporting the event? We&apos;d love to get in touch!
             <br />
             <Button
