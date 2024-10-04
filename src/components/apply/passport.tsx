@@ -37,7 +37,7 @@ export const Passport = () => {
         </div>
       </div>
       <div className="flex h-1/2 flex-[1_0_0] items-center justify-center gap-10 self-stretch bg-primary-100 p-10">
-        <Avatar avatar={application?.avatar} />
+        <Avatar avatar={application?.avatar} selection={false} />
         <div className="flex w-1/2 w-full flex-col gap-2">
           <p className={textStyle}>NAME</p>
           <PassportField
