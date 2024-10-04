@@ -67,33 +67,6 @@ export function InfoForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
         <FormField
           control={form.control}
-          name="countryOfResidence"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>What is your country of residence?</FormLabel>
-              <FormControl>
-                <Select
-                  {...field}
-                  value={field.value ?? undefined}
-                  onValueChange={field.onChange}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {countrySelection.enumValues.map((item) => (
-                      <SelectItem key={item} value={item}>
-                        {item}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="school"
           render={({ field }) => (
             <FormItem>

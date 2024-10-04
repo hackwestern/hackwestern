@@ -29,6 +29,7 @@ export const basicsSaveSchema = applicationSaveSchema.pick({
   lastName: true,
   phoneNumber: true,
   age: true,
+  countryOfResidence: true,
 });
 
 export const personaSaveSchema = applicationSaveSchema.pick({
@@ -37,7 +38,6 @@ export const personaSaveSchema = applicationSaveSchema.pick({
 
 export const infoSaveSchema = applicationSaveSchema
   .pick({
-    countryOfResidence: true,
     school: true,
     levelOfStudy: true,
     major: true,
@@ -164,6 +164,7 @@ export const applicationSubmitSchema = z.object({
       message: "You must be at least 18 years old as of November 29th, 2024",
     }),
   }),
+  agreeEmailsFromMLH: z.boolean().optional(),
 });
 
 export const applicationStepSaveSchema = applicationSaveSchema.pick({
