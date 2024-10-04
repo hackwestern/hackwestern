@@ -20,7 +20,7 @@ export default function Home() {
       <main>
         {/* Text, Plane, and Clouds */}
         <Hero />
-        {/* About ticket and Window test*/}
+        {/* About ticket and Window */}
         <About />
         {/* MLH Code of Conduct */}
         <Footer className="fixed bottom-0 z-50" />
