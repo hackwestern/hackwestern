@@ -46,9 +46,7 @@ export function BasicsForm() {
             name="firstName"
             render={({ field }) => (
               <FormItem className="min-w-48 flex-1">
-                <FormLabel className="hidden">
-                  First Name
-                </FormLabel>
+                <FormLabel className="hidden">First Name</FormLabel>
                 <FormControl>
                   <Input
                     {...field}
