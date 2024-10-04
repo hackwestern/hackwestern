@@ -16,7 +16,7 @@ export const Passport = () => {
   const textStyle = "text-slate-400 font-sans text-xs font-medium leading-5";
 
   return (
-    <div className="flex w-11/12 flex-col justify-center rounded-[10px] border border-primary-300  lg:w-3/5 2xl:w-2/5 3xl:w-1/3">
+    <div className="z-50 flex w-11/12 flex-col justify-center rounded-[10px] border border-primary-300  lg:w-3/5 2xl:w-2/5 3xl:w-1/3">
       <div className="flex h-1/2 columns-2 flex-col justify-around gap-4 self-stretch rounded-t-[10px] border-b border-b-[#E3DBF2] bg-gradient-to-l from-[#EFF3FF] via-[#E5E9FF] to-[#ECE9FF] py-2.5 xl:py-4 2xl:py-6 3xl:py-8">
         <div className="flex justify-center gap-4 2xl:gap-6 3xl:gap-8">
           {application?.major && <MajorStamp type={application.major} />}
@@ -36,9 +36,9 @@ export const Passport = () => {
           {application?.resumeLink && <LinksStamp />}
         </div>
       </div>
-      <div className="flex h-1/2 flex-[1_0_0] items-center justify-center gap-10 self-stretch bg-primary-100 p-10">
+      <div className="flex h-1/2 flex-[1_0_0] items-center justify-center gap-10 self-stretch rounded-b-[10px] bg-primary-100 p-10">
         <Avatar avatar={application?.avatar} selection={false} />
-        <div className="flex w-1/2 w-full flex-col gap-2">
+        <div className="flex w-full flex-col gap-2">
           <p className={textStyle}>NAME</p>
           <PassportField
             value={

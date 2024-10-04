@@ -5,7 +5,7 @@ import { Profile } from "~/components/apply/profile";
 
 export function ApplyNavbar() {
   return (
-    <nav className="flex w-screen justify-between border-[1px] border-slate-200 px-1 py-3">
+    <nav className="z-100 flex w-screen justify-between border-[1px] border-slate-200 px-1 py-3">
       <Button variant="link" asChild>
         <Link href="/">
           <HWLogo />
