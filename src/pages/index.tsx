@@ -1,13 +1,9 @@
 import Head from "next/head";
-import Image from "next/image";
 import { Footer } from "~/components/footer";
-import MLHTrustBadge from "~/components/promo/mlh-trust.badge";
-import { PreregistrationForm } from "~/components/preregistration-form";
 import Hero from "~/components/promo/Hero";
 import About from "~/components/promo/About";
 import FAQ from "~/components/promo/faq";
 import Projects from "~/components/promo/projects";
-import Header from "~/components/promo/header";
 
 export default function Home() {
   return (
