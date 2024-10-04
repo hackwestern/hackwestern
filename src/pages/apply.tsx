@@ -41,7 +41,7 @@ export default function Apply() {
           <ApplyNavbar />
         </div>
         <Tabs defaultValue="application" className="w-screen pt-16 md:hidden">
-          <TabsList className="fixed w-screen justify-around rounded-none bg-primary-100 z-50">
+          <TabsList className="fixed z-50 w-screen justify-around rounded-none bg-primary-100">
             <TabsTrigger
               value="application"
               className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
@@ -55,8 +55,8 @@ export default function Apply() {
               Passport
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="application" className="w-screen z-40">
-            <div className="flex flex-col space-y-8 bg-primary-100 px-6 pt-12 h-screen fixed w-screen">
+          <TabsContent value="application" className="z-40 w-screen">
+            <div className="fixed flex h-screen w-screen flex-col space-y-8 bg-primary-100 px-6 pt-12">
               <div className="space-y-2">
                 <h1 className="text-2xl font-medium">{heading}</h1>
                 <h2 className="text-sm text-slate-500">{subheading}</h2>
@@ -74,9 +74,67 @@ export default function Apply() {
             value="passport"
             className="flex flex-col justify-center"
           >
-            <div className="flex h-[70vh] w-screen flex-col items-center justify-center px-4 md:w-[60vw]">
+            <div className="flex w-screen flex-col items-center justify-center px-4 h-[85vh]">
               <Passport />
             </div>
+            {/* Clouds */}
+            <div className="absolute bottom-0 left-0 h-full w-full md:h-full md:w-[80%]">
+              <Image
+                src="/images/cloud5.svg"
+                alt="hack western cloud"
+                className="object-contain object-left-bottom"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-0 right-0 h-full w-full md:h-[90%] md:w-[70%] lg:h-[100%]">
+              <Image
+                src="/images/cloud6.svg"
+                alt="hack western cloud"
+                className="object-contain object-right-bottom"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-0 left-0 h-full w-[50%] md:h-full md:w-[30%]">
+              <Image
+                src="/images/cloud7.svg"
+                alt="hack western cloud"
+                className="object-contain object-left-bottom"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-0 right-0 h-full w-[50%] md:h-full md:w-[40%] lg:h-[50%] lg:w-[30%]">
+              <Image
+                src="/images/cloud8.svg"
+                alt="hack western cloud"
+                className="object-contain object-right-bottom"
+                fill
+              />
+            </div>
+            {/* Stars */}
+            <div className="absolute bottom-[24%] left-[20%] h-full w-[20%] md:w-[10%] lg:w-[5%]">
+              <Image
+                src="/images/star.svg"
+                alt="hack western star"
+                className="object-contain"
+                fill
+              />
+            </div>
+            <div className="absolute bottom-[30%] right-[25%] h-full w-[15%] md:w-[7%] lg:w-[3%]">
+              <Image
+                src="/images/star.svg"
+                alt="hack western star"
+                className="object-contain"
+                fill
+              />
+            </div>
+            {/* Grain Filter */}
+            <Image
+              className="absolute left-0 top-0 opacity-20"
+              src="/images/hwfilter.png"
+              alt="Hack Western Main Page"
+              layout="fill"
+              objectFit="cover"
+            />
           </TabsContent>
         </Tabs>
         <div className="relative z-10 hidden w-full flex-grow items-center md:flex">
