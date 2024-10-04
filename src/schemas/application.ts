@@ -92,9 +92,18 @@ export const applicationSubmitSchema = createInsertSchema(applications, {
   school: z.enum(schools),
   levelOfStudy: z.enum(levelOfStudy.enumValues),
   major: z.enum(major.enumValues),
-  question1: z.string().refine((value) => checkWordCount(value, 30, 150)),
-  question2: z.string().refine((value) => checkWordCount(value, 30, 150)),
-  question3: z.string().refine((value) => checkWordCount(value, 30, 150)),
+  question1: z
+    .string()
+    .min(1)
+    .refine((value) => checkWordCount(value, 30, 150)),
+  question2: z
+    .string()
+    .min(1)
+    .refine((value) => checkWordCount(value, 30, 150)),
+  question3: z
+    .string()
+    .min(1)
+    .refine((value) => checkWordCount(value, 30, 150)),
   resumeLink: z.string().min(1).url(),
   githubLink: z.string().min(1),
   linkedInLink: z.string().min(1),
