@@ -20,7 +20,12 @@ import {
   SelectItem,
 } from "~/components/ui/select";
 import { schools } from "~/constants/schools";
-import { levelOfStudy, major, numOfHackathons } from "~/server/db/schema";
+import {
+  countrySelection,
+  levelOfStudy,
+  major,
+  numOfHackathons,
+} from "~/server/db/schema";
 import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
 
 export function InfoForm() {
@@ -60,6 +65,33 @@ export function InfoForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+        <FormField
+          control={form.control}
+          name="countryOfResidence"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>What is your country of residence?</FormLabel>
+              <FormControl>
+                <Select
+                  {...field}
+                  value={field.value ?? undefined}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countrySelection.enumValues.map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="school"

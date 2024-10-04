@@ -37,6 +37,7 @@ export const personaSaveSchema = applicationSaveSchema.pick({
 
 export const infoSaveSchema = applicationSaveSchema
   .pick({
+    countryOfResidence: true,
     school: true,
     levelOfStudy: true,
     major: true,
