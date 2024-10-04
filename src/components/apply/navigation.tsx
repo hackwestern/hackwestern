@@ -8,17 +8,17 @@ type ApplyNavigationProps = {
   step: ApplyStep | null;
 };
 
-function getPreviousStep(stepIndex: number | null): ApplyStep | null {
+export function getPreviousStep(stepIndex: number | null): ApplyStep | null {
   if (stepIndex === null) return null;
   return applySteps[stepIndex - 1]?.step ?? null;
 }
 
-function getNextStep(stepIndex: number | null): ApplyStep | null {
+export function getNextStep(stepIndex: number | null): ApplyStep | null {
   if (stepIndex === null) return null;
   return applySteps[stepIndex + 1]?.step ?? null;
 }
 
-function getStepIndex(step: ApplyStep | null): number | null {
+export function getStepIndex(step: ApplyStep | null): number | null {
   if (!step) return null;
 
   const stepIndex = applySteps.findIndex((s) => s.step === step);
