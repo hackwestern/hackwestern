@@ -5,8 +5,12 @@ import { schools } from "~/constants/schools";
 import {
   applications,
   countrySelection,
+  ethnicity,
+  gender,
   levelOfStudy,
   major,
+  numOfHackathons,
+  sexualOrientation,
 } from "~/server/db/schema";
 
 // Save schema
@@ -94,12 +98,14 @@ const MAX_WORDS = 150;
 export const applicationSubmitSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  age: z.number().min(18),
-  countryOfResidence: z.enum(countrySelection.enumValues),
   phoneNumber: z.string().min(1).regex(phoneRegex, "Invalid phone number"),
+  countryOfResidence: z.enum(countrySelection.enumValues),
+  age: z.number().min(18),
   school: z.enum(schools),
   levelOfStudy: z.enum(levelOfStudy.enumValues),
   major: z.enum(major.enumValues),
+  attendedBefore: z.boolean(),
+  numOfHackathons: z.enum(numOfHackathons.enumValues),
   question1: z
     .string()
     .min(1)
@@ -165,6 +171,10 @@ export const applicationSubmitSchema = z.object({
     }),
   }),
   agreeEmailsFromMLH: z.boolean().optional(),
+  underrepGroup: z.boolean().optional(),
+  gender: z.enum(gender.enumValues),
+  ethnicity: z.enum(ethnicity.enumValues),
+  sexualOrientation: z.enum(sexualOrientation.enumValues),
 });
 
 export const applicationStepSaveSchema = applicationSaveSchema.pick({
