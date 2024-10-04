@@ -25,6 +25,8 @@ export default function Home() {
         <Hero />
         {/* About ticket and Window */}
         <About />
+        <Projects />
+        <FAQ />
         {/* MLH Code of Conduct */}
         <Footer className="fixed bottom-0 z-50" />
       </main>
