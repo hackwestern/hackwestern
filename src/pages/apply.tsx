@@ -144,7 +144,9 @@ export default function Apply() {
           >
             <div className="space-y-2 p-1">
               <h1 className="text-2xl font-medium">{heading}</h1>
-              <h2 className="text-sm text-slate-500">{subheading}</h2>
+              <h2 className="text-sm text-slate-500 lg:text-base">
+                {subheading}
+              </h2>
               <ApplyForm step={step} />
             </div>
             <ApplyNavigation step={step} />
