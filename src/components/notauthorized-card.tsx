@@ -1,4 +1,3 @@
-import { useRouter } from "next/router";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,9 +7,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
+import Link from "next/link";
 
 function NotAuthorizedCard() {
-  const router = useRouter();
   return (
     <AlertDialog open={true}>
       <AlertDialogContent>
@@ -22,11 +21,8 @@ function NotAuthorizedCard() {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogAction
-            onClick={() => router.push("/")}
-            className="bg-hwprimary-500"
-          >
-            Return
+          <AlertDialogAction asChild className="bg-primary-500">
+            <Link href="/">Return</Link>
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

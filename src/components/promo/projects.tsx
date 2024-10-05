@@ -5,11 +5,11 @@ const bigListProjects = listProjects.concat(listProjects).concat(listProjects);
 
 const Projects = () => {
   return (
-    <div
-      id="projects"
-      className="max-w-screen relative flex min-h-screen flex-col justify-between bg-[url('/images/projects-bg.svg')] bg-cover md:bg-contain"
-    >
-      <div className="mx-auto my-auto w-5/6 border-4 border-[#27283D] bg-[#3F3F5C] text-lg text-primary-100 md:w-2/3 2xl:w-1/2 2xl:text-xl 3xl:w-1/3 4xl:text-2xl">
+    <div className="max-w-screen relative flex min-h-screen flex-col justify-between overflow-clip bg-[url('/images/projects-bg.svg')] bg-cover pt-40 md:bg-contain">
+      <div
+        className="mx-auto my-auto mb-20 w-5/6 border-4 border-[#27283D] bg-[#3F3F5C] text-lg text-primary-100 md:w-2/3 2xl:w-1/2 2xl:text-xl 3xl:w-1/3 4xl:text-2xl"
+        id="projects"
+      >
         <div className="3xl:6xl flex border-b-4 border-[#27283D] font-MagicRetro text-3xl xl:text-4xl">
           <svg
             width="28"
@@ -75,8 +75,14 @@ const Projects = () => {
           </div>
         </div>
       </div>
-      <div className="w-full animate-small-bounce overflow-hidden">
-        <div className="-mb-1 flex animate-suitcase-slide gap-8 hover:[animation-play-state:paused] xl:gap-16 2xl:gap-20 3xl:gap-28 4xl:gap-36">
+      <div className="mx-auto my-12 w-5/6 text-lg text-primary-100 md:w-2/3 2xl:w-1/2 2xl:text-xl 3xl:w-1/3 4xl:text-2xl">
+        <div className="3xl:6xl flex justify-center border-4 border-[#27283D] bg-[#3F3F5C] p-8 font-MagicRetro text-3xl xl:text-4xl">
+          check out some past projects!
+        </div>
+        <div className="absolute h-[100vh] w-5/6 border-x-[16px] border-[#5D528A] px-4 md:w-2/3 2xl:w-1/2 3xl:w-1/3" />
+      </div>
+      <div className="w-full animate-small-bounce overflow-clip">
+        <div className="-mb-1 flex animate-suitcase-slide-small gap-8 hover:[animation-play-state:paused] md:animate-suitcase-slide xl:gap-16 2xl:gap-20 3xl:gap-28 4xl:gap-36">
           {
             /* suitcases (projects) */
             bigListProjects.map((project, i) =>
@@ -88,8 +94,7 @@ const Projects = () => {
             )
           }
         </div>
-        <div className="-py-12 flex overflow-hidden border-y-8 border-violet-500 bg-violet-400">
-          <div></div>
+        <div className="-py-12 flex overflow-clip border-y-8 border-violet-500 bg-violet-400">
           {
             // a lot of gears
             Array.from({ length: 50 }, (_, i) => (

@@ -7,23 +7,23 @@ const bigOrganizerList = organizerList
 
 const Organizer = () => {
   return (
-    <div className="bg-gradient-to-b from-[#9D72D5] to-[#5A2F92] py-8 text-3xl">
+    <div className="bg-gradient-to-b from-[#9D72D5] to-[#5A2F92] pb-16 pt-12 text-3xl lg:py-14">
       <h2 className="mx-auto py-4 text-center text-3xl text-white">
         Brought to you with &#60;3
       </h2>
-      <div className="w-full overflow-hidden">
-        <div className="-mb-1 ml-24 flex animate-organizer-slide gap-8 p-4 hover:[animation-play-state:paused] xl:gap-16 2xl:gap-20 3xl:gap-28 4xl:gap-36">
+      <div className="w-full overflow-hidden pt-8">
+        <div className="-mb-1 ml-24 flex animate-organizer-slide-small gap-8 p-4 hover:[animation-play-state:paused] md:animate-organizer-slide xl:gap-16 2xl:gap-20 3xl:gap-24 4xl:gap-28">
           {bigOrganizerList.map((organizer, index) =>
             index % 2 === 0 ? (
               <OrganizerPhotoLeft
-                key={organizer.name}
+                key={index}
                 name={organizer.name}
                 role={organizer.role}
                 image={organizer.image}
               />
             ) : (
               <OrganizerPhotoRight
-                key={organizer.name}
+                key={index}
                 name={organizer.name}
                 role={organizer.role}
                 image={organizer.image}
