@@ -53,7 +53,7 @@ const Sponsors = () => {
           Diamond Sponsors
         </h1>
         <div className="flex flex-col gap-2 lg:gap-8">
-          <div className="grid gap-2 lg:grid-cols-2 lg:gap-8">
+          <div className="grid grid-cols-2 gap-2 lg:gap-8">
             <SponsorCard
               name="Canada Life"
               logo="/sponsors/CanadaLife.svg"
@@ -75,7 +75,7 @@ const Sponsors = () => {
         <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
           Gold Sponsors
         </h1>
-        <div className="grid gap-2 lg:grid-cols-3 lg:gap-8">
+        <div className="grid grid-cols-3 gap-2 lg:gap-8">
           <SponsorCard
             name="TD invent"
             logo="/sponsors/TD Invent.svg"
@@ -96,7 +96,7 @@ const Sponsors = () => {
         <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
           Bronze Sponsors
         </h1>
-        <div className="grid flex-col gap-2 lg:grid-cols-3 lg:gap-8">
+        <div className="grid grid-cols-3 flex-col gap-2 lg:gap-8">
           <SponsorCard
             name="P&G"
             logo="/sponsors/P&G.svg"
@@ -117,7 +117,7 @@ const Sponsors = () => {
         <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
           In-kind Sponsors
         </h1>
-        <div className="grid gap-2 lg:grid-cols-3 lg:gap-8">
+        <div className="grid grid-cols-3 gap-2 lg:gap-8">
           <SponsorCard
             name="Canada Learning Code"
             logo="/sponsors/Canada Learning Code.svg"
@@ -134,7 +134,7 @@ const Sponsors = () => {
             link="https://www.voiceflow.com/"
           />
         </div>
-        <div className="mt-20 flex h-64 flex-col justify-around rounded-xl border-2 border-[#B07ACA] bg-gradient-to-tr from-[#7B3FDF] via-[#DE81A8] to-[#FFBD80] p-5 py-2.5">
+        <div className="mt-8 flex h-64 flex-col justify-around rounded-xl border-2 border-[#B07ACA] bg-gradient-to-tr from-[#7B3FDF] via-[#DE81A8] to-[#FFBD80] p-5 py-2.5 md:mt-20">
           <div className="text-3xl font-bold text-white">
             Help us set some ideas ablaze.
           </div>
@@ -148,7 +148,7 @@ const Sponsors = () => {
           </Button>
         </div>
       </div>
-      <div className="mt-12 h-48 bg-gradient-to-b from-[#713EBA] via-[#582B95] to-[#320862] lg:h-64 2xl:h-80" />
+      <div className="-mt-12 h-48 bg-gradient-to-b from-[#713EBA] via-[#582B95] to-[#320862] lg:-mt-8 lg:h-64 2xl:h-80" />
     </div>
   );
 };

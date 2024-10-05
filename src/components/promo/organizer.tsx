@@ -7,7 +7,7 @@ const bigOrganizerList = organizerList
 
 const Organizer = () => {
   return (
-    <div className="bg-gradient-to-b from-[#9D72D5] to-[#5A2F92] py-8 text-3xl lg:py-20">
+    <div className="bg-gradient-to-b from-[#9D72D5] to-[#5A2F92] py-8 text-3xl lg:py-14">
       <h2 className="mx-auto py-4 text-center text-3xl text-white">
         Brought to you with &#60;3
       </h2>
