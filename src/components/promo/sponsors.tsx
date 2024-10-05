@@ -131,7 +131,7 @@ const Sponsors = () => {
             link="https://www.warp.dev/"
           />
         </div>
-        <div className="mt-20 flex h-64 flex-col justify-around rounded-xl border border-2 border-[#B07ACA] bg-gradient-to-tr from-[#7B3FDF] via-[#DE81A8] to-[#FFBD80] p-5 py-2.5">
+        <div className="mt-20 flex h-64 flex-col justify-around rounded-xl border-2 border-[#B07ACA] bg-gradient-to-tr from-[#7B3FDF] via-[#DE81A8] to-[#FFBD80] p-5 py-2.5">
           <div className="text-3xl font-bold text-white">
             Help us set some ideas ablaze.
           </div>
