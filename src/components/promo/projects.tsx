@@ -7,7 +7,7 @@ const Projects = () => {
   return (
     <div
       id="projects"
-      className="max-w-screen relative flex min-h-screen flex-col justify-between bg-[url('/images/projects-bg.svg')] bg-cover md:bg-contain"
+      className="max-w-screen relative flex min-h-screen flex-col justify-between bg-[url('/images/projects-bg.svg')] bg-cover pt-40 md:bg-contain"
     >
       <div className="mx-auto my-auto w-5/6 border-4 border-[#27283D] bg-[#3F3F5C] text-lg text-primary-100 md:w-2/3 2xl:w-1/2 2xl:text-xl 3xl:w-1/3 4xl:text-2xl">
         <div className="3xl:6xl flex border-b-4 border-[#27283D] font-MagicRetro text-3xl xl:text-4xl">
@@ -73,6 +73,26 @@ const Projects = () => {
               <a href="mailto:hello@hackwestern.com">Contact Us!</a>
             </Button>
           </div>
+        </div>
+      </div>
+      <div className="mx-auto my-12 w-5/6 border-4 border-[#27283D] bg-[#3F3F5C] text-lg text-primary-100 md:w-2/3 2xl:w-1/2 2xl:text-xl 3xl:w-1/3 4xl:text-2xl">
+        <div className="3xl:6xl flex font-MagicRetro text-3xl xl:text-4xl">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="42"
+            height="42"
+            viewBox="0 0 42 42"
+            fill="none"
+            className="m-auto"
+          >
+            <path
+              d="M21 42C15.6333 42 10.9569 40.2208 6.97083 36.6625C2.98472 33.1042 0.7 28.6611 0.116667 23.3333H4.9C5.44444 27.3778 7.24306 30.7222 10.2958 33.3667C13.3486 36.0111 16.9167 37.3333 21 37.3333C25.55 37.3333 29.4097 35.7486 32.5792 32.5792C35.7486 29.4097 37.3333 25.55 37.3333 21C37.3333 16.45 35.7486 12.5903 32.5792 9.42083C29.4097 6.25139 25.55 4.66667 21 4.66667C18.3167 4.66667 15.8083 5.28889 13.475 6.53333C11.1417 7.77778 9.17778 9.48889 7.58333 11.6667H14V16.3333H0V2.33333H4.66667V7.81667C6.65 5.32778 9.07083 3.40278 11.9292 2.04167C14.7875 0.680556 17.8111 0 21 0C23.9167 0 26.6486 0.554167 29.1958 1.6625C31.7431 2.77083 33.9597 4.26806 35.8458 6.15417C37.7319 8.04028 39.2292 10.2569 40.3375 12.8042C41.4458 15.3514 42 18.0833 42 21C42 23.9167 41.4458 26.6486 40.3375 29.1958C39.2292 31.7431 37.7319 33.9597 35.8458 35.8458C33.9597 37.7319 31.7431 39.2292 29.1958 40.3375C26.6486 41.4458 23.9167 42 21 42ZM27.5333 30.8L18.6667 21.9333V9.33333H23.3333V20.0667L30.8 27.5333L27.5333 30.8Z"
+              fill="white"
+            />
+          </svg>
+          <p className="w-4/5 border-l-4 border-[#27283D] p-6 3xl:w-5/6">
+            hack western 10 winners
+          </p>
         </div>
       </div>
       <div className="w-full animate-small-bounce overflow-hidden">
