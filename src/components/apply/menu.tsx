@@ -12,6 +12,8 @@ import {
 } from "../ui/drawer";
 import { ArrowLeft, ArrowRight, Menu, Send } from "lucide-react";
 import { cn } from "~/lib/utils";
+import { useToast } from "../hooks/use-toast";
+import { api } from "~/utils/api";
 
 type ApplyMenuProps = {
   step: ApplyStep | null;
@@ -22,6 +24,19 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
   const stepIndex = useMemo(() => getStepIndex(step), [step]);
   const prevStep = getPreviousStep(stepIndex);
   const nextStep = getNextStep(stepIndex);
+  const { toast } = useToast();
+
+  const { data: applicationData } = api.application.get.useQuery();
+
+  const onClickSubmit = () => {
+    if (step === "review" && applicationData?.status !== "PENDING_REVIEW") {
+      toast({
+        title: "Application Incomplete",
+        description: "Please complete all required steps before submitting.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="fixed bottom-0 mx-auto h-fit w-screen justify-center gap-3 border-[1px] border-t-primary-300 bg-violet-100 py-3">
@@ -100,6 +115,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
           variant="apply-ghost"
           className="h-full rounded-full p-2 hover:bg-primary-400"
           disabled={!nextStep && step !== "review"}
+          onClick={onClickSubmit}
         >
           <Link
             href={

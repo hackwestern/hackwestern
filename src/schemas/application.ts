@@ -5,12 +5,9 @@ import { schools } from "~/constants/schools";
 import {
   applications,
   countrySelection,
-  ethnicity,
-  gender,
   levelOfStudy,
   major,
   numOfHackathons,
-  sexualOrientation,
 } from "~/server/db/schema";
 
 // Save schema
@@ -139,10 +136,7 @@ export const applicationSubmitSchema = z.object({
       (value) => maxWordCount(value, MAX_WORDS),
       `Response must be less than ${MAX_WORDS} words`,
     ),
-  resumeLink: z.preprocess(
-    (v) => (!v ? undefined : v),
-    z.string().url().optional(),
-  ),
+  resumeLink: z.preprocess((v) => (!v ? undefined : v), z.string().url()),
   githubLink: z.preprocess((v) => (!v ? undefined : v), z.string().optional()),
   linkedInLink: z.preprocess(
     (v) => (!v ? undefined : v),
@@ -171,10 +165,6 @@ export const applicationSubmitSchema = z.object({
     }),
   }),
   agreeEmailsFromMLH: z.boolean().optional(),
-  underrepGroup: z.boolean().optional(),
-  gender: z.enum(gender.enumValues),
-  ethnicity: z.enum(ethnicity.enumValues),
-  sexualOrientation: z.enum(sexualOrientation.enumValues),
 });
 
 export const applicationStepSaveSchema = applicationSaveSchema.pick({

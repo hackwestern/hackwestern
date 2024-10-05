@@ -1,6 +1,6 @@
 import { PencilLine } from "lucide-react";
 import Link from "next/link";
-import { z } from "zod";
+import { type z } from "zod";
 import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
@@ -82,22 +82,20 @@ function ReviewField({ value, label, error }: ReviewFieldProps) {
 function BasicsReview({ error }: ReviewSectionProps) {
   const { data } = api.application.get.useQuery();
 
-  const firstNameErrors =
-    error?.firstName?._errors.map((err) => `First Name: ${err}`) ?? [];
-  const lastNameErrors =
-    error?.lastName?._errors.map((err) => `Last Name: ${err}`) ?? [];
-  const nameErrors = [...firstNameErrors, ...lastNameErrors];
+  const nameErrors: string[] = [];
+  if (!data?.firstName) nameErrors.push("First name is required");
+  if (!data?.lastName) nameErrors.push("Last name is required");
   return (
     <>
       <ReviewField
         label="Full Name"
-        value={`${data?.firstName} ${data?.lastName}`}
+        value={`${data?.firstName ?? ""} ${data?.lastName ?? ""}`}
         error={nameErrors}
       />
       <ReviewField
         label="Phone Number"
         value={data?.phoneNumber}
-        error={error?.phoneNumber?._errors}
+        error={["Invalid phone number"]}
       />
       <ReviewField label="Age" value={data?.age} error={error?.age?._errors} />
     </>
@@ -111,17 +109,17 @@ function InfoReview({ error }: ReviewSectionProps) {
       <ReviewField
         label="Which school do you attend?"
         value={data?.school}
-        error={error?.school?._errors}
+        error={!data?.school ? ["School is required"] : []}
       />
       <ReviewField
         label="Which year are you in?"
         value={data?.levelOfStudy}
-        error={error?.levelOfStudy?._errors}
+        error={!data?.levelOfStudy ? ["Year is required"] : []}
       />
       <ReviewField
         label="What is your major?"
         value={data?.major}
-        error={error?.major?._errors}
+        error={!data?.major ? ["Major is required"] : []}
       />
       <ReviewField
         label="Have you attended Hack Western before?"
@@ -144,17 +142,23 @@ function ApplicationReview({ error }: ReviewSectionProps) {
       <ReviewField
         label="If you could have any superpower to help you during Hack Western, what would it be and why?"
         value={data?.question1}
-        error={error?.question1?._errors}
+        error={error?.question1?._errors.map((e) =>
+          e.includes("Response") ? e : "Response is required",
+        )}
       />
       <ReviewField
         label="If you could build your own dream destination what would it look like? Be as detailed and creative as you want!"
         value={data?.question2}
-        error={error?.question2?._errors}
+        error={error?.question2?._errors.map((e) =>
+          e.includes("Response") ? e : "Response is required",
+        )}
       />
       <ReviewField
         label="What project (anything you have ever worked on not just restricted to tech) of yours are you the most proud of and why? What did you learn throughout the process?"
         value={data?.question3}
-        error={error?.question3?._errors}
+        error={error?.question3?._errors.map((e) =>
+          e.includes("Response") ? e : "Response is required",
+        )}
       />
     </>
   );
@@ -213,8 +217,7 @@ function AgreementsReview({ error }: ReviewSectionProps) {
         error={error?.agreeWillBe18?._errors}
       />
       <ReviewField
-        label="
-(Optional) I authorize MLH to send me occasional emails about relevant events, career opportunities, and community announcements."
+        label="(Optional) I authorize MLH to send me occasional emails about relevant events, career opportunities, and community announcements."
         value={data?.agreeEmailsFromMLH}
         error={error?.agreeEmailsFromMLH?._errors}
       />
@@ -222,29 +225,29 @@ function AgreementsReview({ error }: ReviewSectionProps) {
   );
 }
 
-function OptionalReview({ error }: ReviewSectionProps) {
+function OptionalReview({}: ReviewSectionProps) {
   const { data } = api.application.get.useQuery();
   return (
     <>
       <ReviewField
         label="Do you identify as part of an underrepresented group in the technology industry?"
         value={data?.underrepGroup}
-        error={error?.underrepGroup?._errors}
+        error={null}
       />
       <ReviewField
         label="What is your gender?"
         value={data?.gender}
-        error={error?.gender?._errors}
+        error={null}
       />
       <ReviewField
         label="What is your race/ethnicity?"
         value={data?.ethnicity}
-        error={error?.ethnicity?._errors}
+        error={null}
       />
       <ReviewField
         label="What is your sexual orientation?"
         value={data?.sexualOrientation}
-        error={error?.sexualOrientation?._errors}
+        error={null}
       />
     </>
   );
