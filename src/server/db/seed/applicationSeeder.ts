@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import {
   applications,
+  avatar,
   countrySelection,
   ethnicity,
   gender,
@@ -39,11 +40,16 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       agreeCodeOfConduct: true,
       agreeShareWithMLH: true,
       agreeWillBe18: true,
+      agreeEmailsFromMLH: true,
+      agreeShareWithSponsors: true,
+      school: "Western University",
+      phoneNumber: "519-936-5950",
     };
   }
 
   static createRandomWithoutUser() {
     const application = {
+      avatar: faker.helpers.arrayElement(avatar.enumValues),
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
       age: faker.number.int({ min: 17, max: 65 }),

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
 
-import { authRedirect } from "~/utils/redirect";
+import { authRedirectOrganizer } from "~/utils/redirect";
 
 const Review = () => {
   const [question1Rating, setQuestion1Rating] = useState(0);
@@ -46,4 +46,4 @@ const Review = () => {
 };
 
 export default Review;
-export const getServerSideProps = authRedirect;
+export const getServerSideProps = authRedirectOrganizer;
