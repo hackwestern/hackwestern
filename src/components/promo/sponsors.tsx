@@ -36,7 +36,7 @@ const Sponsors = () => {
         We&apos;d like to extend our appreciation to all of our sponsors that
         help make Hack Western a reality.
       </div>
-      <div className="mx-auto flex w-5/6 flex-col gap-8 py-12 lg:w-3/5 2xl:w-3/5 3xl:w-1/3">
+      <div className="mx-auto flex w-11/12 flex-col gap-8 py-12 md:w-5/6 lg:w-4/5 2xl:w-3/5 3xl:w-2/5">
         {/* Title Sponsors */}
         <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
           Title Sponsor
