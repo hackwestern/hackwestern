@@ -4,6 +4,7 @@ import Hero from "~/components/promo/Hero";
 import About from "~/components/promo/About";
 import FAQ from "~/components/promo/faq";
 import Projects from "~/components/promo/projects";
+import Sponsors from "~/components/promo/sponsors";
 
 export default function Home() {
   return (
@@ -22,6 +23,7 @@ export default function Home() {
         {/* About ticket and Window */}
         <About />
         <Projects />
+        <Sponsors />
         <FAQ />
         {/* MLH Code of Conduct */}
         <Footer className="fixed bottom-0 z-50" />
