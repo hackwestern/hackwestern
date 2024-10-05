@@ -129,6 +129,7 @@ const config = {
         wiggle: "wiggle 1s ease-in-out infinite",
         "suitcase-slide": "suitcase-slide 120s linear infinite",
         "spin-reverse": "spin-reverse 2s linear infinite",
+        "organizer-slide": "suitcase-slide 180s linear infinite",
       },
       backgroundImage: {
         "hw-radial-gradient":
