@@ -7,11 +7,11 @@ const bigOrganizerList = organizerList
 
 const Organizer = () => {
   return (
-    <div className="bg-gradient-to-b from-[#9D72D5] to-[#5A2F92] py-8 text-3xl">
+    <div className="bg-gradient-to-b from-[#9D72D5] to-[#5A2F92] py-8 text-3xl lg:py-20">
       <h2 className="mx-auto py-4 text-center text-3xl text-white">
         Brought to you with &#60;3
       </h2>
-      <div className="w-full overflow-hidden">
+      <div className="w-full overflow-hidden pt-8">
         <div className="-mb-1 ml-24 flex animate-organizer-slide gap-8 p-4 hover:[animation-play-state:paused] xl:gap-16 2xl:gap-20 3xl:gap-28 4xl:gap-36">
           {bigOrganizerList.map((organizer, index) =>
             index % 2 === 0 ? (
