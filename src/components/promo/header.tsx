@@ -33,8 +33,8 @@ const Header = () => {
         <div className="flex items-center gap-4 px-8 py-3 text-primary-100">
           <HeadingLink href="#about" text="About" />
           <HeadingLink href="#projects" text="Projects" />
-          <HeadingLink href="#faq" text="FAQ" />
           <HeadingLink href="#sponsors" text="Sponsors" />
+          <HeadingLink href="#faq" text="FAQ" />
           <Button
             className="rounded-md bg-[#5E28B8] p-5 drop-shadow-[0_2px_24px_rgba(255,212,251,0.25)] transition-all hover:bg-[#5C2FAA] hover:drop-shadow-[0_2px_12px_rgba(255,212,251,0.5)]"
             asChild
