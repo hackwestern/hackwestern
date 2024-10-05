@@ -95,7 +95,7 @@ function BasicsReview({ error }: ReviewSectionProps) {
       <ReviewField
         label="Phone Number"
         value={data?.phoneNumber}
-        error={["Invalid phone number"]}
+        error={error?.phoneNumber?._errors}
       />
       <ReviewField label="Age" value={data?.age} error={error?.age?._errors} />
     </>
