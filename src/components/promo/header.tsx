@@ -1,6 +1,5 @@
 import Image from "next/image";
 import { Button } from "../ui/button";
-import { useRouter } from "next/router";
 import Link from "next/link";
 
 const HeadingLink = ({ href, text }: { href: string; text: string }) => {
@@ -17,8 +16,6 @@ const HeadingLink = ({ href, text }: { href: string; text: string }) => {
 };
 
 const Header = () => {
-  const router = useRouter();
-
   return (
     <div className="fixed z-[1000] hidden w-screen items-center justify-between scroll-smooth px-14 md:flex">
       <Button asChild className="h-full w-12 bg-transparent p-0">
