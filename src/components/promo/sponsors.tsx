@@ -1,4 +1,3 @@
-import { useRouter } from "next/router";
 import { Button } from "../ui/button";
 import Image from "next/image";
 
@@ -28,8 +27,6 @@ const SponsorCard = ({ name, logo, link }: Sponsor) => {
 };
 
 const Sponsors = () => {
-  const router = useRouter();
-
   return (
     <div className="min-h-screen bg-[#713eba] pt-28 text-center">
       <h1 className="font-MagicRetro text-5xl text-primary-100">
@@ -138,12 +135,10 @@ const Sponsors = () => {
           <div className="text-xl text-white">
             For our sponsorship package and other inquiries:
           </div>
-          <Button
-            variant="primary"
-            className="mx-auto w-max text-xl"
-            onClick={() => router.push("/sponsors")}
-          >
-            Become a Sponsor
+          <Button variant="primary" className="mx-auto w-max text-xl" asChild>
+            <a href="https://drive.google.com/file/d/1a8Pf5XKAr-FPT-8RyWyycuj_YI9PNk4X/view?usp=sharing">
+              Become a Sponsor
+            </a>
           </Button>
         </div>
       </div>
