@@ -2,6 +2,7 @@ import Image from "next/image";
 import Header from "./header";
 import { Button } from "../ui/button";
 import { useRouter } from "next/router";
+import Link from "next/link";
 
 function Hero() {
   const router = useRouter();
@@ -80,10 +81,12 @@ function Hero() {
             where ideas take flight
           </h2>
           <Button
-            className="mt-12 rounded-md bg-[#5E28B8] px-12 py-6 text-xl drop-shadow-[0_2px_24px_rgba(255,212,251,0.25)] transition-all hover:bg-[#5C2FAA] hover:drop-shadow-[0_2px_12px_rgba(255,212,251,0.5)]"
-            onClick={() => router.push("/register")}
+            variant="primary"
+            size="lg"
+            className="my-8 px-16 text-base"
+            asChild
           >
-            Apply Now
+            <Link href="/register">Apply Now</Link>
           </Button>
         </div>
       </div>
