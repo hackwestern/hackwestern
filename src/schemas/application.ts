@@ -7,6 +7,7 @@ import {
   countrySelection,
   levelOfStudy,
   major,
+  numOfHackathons,
 } from "~/server/db/schema";
 
 // Save schema
@@ -29,6 +30,7 @@ export const basicsSaveSchema = applicationSaveSchema.pick({
   lastName: true,
   phoneNumber: true,
   age: true,
+  countryOfResidence: true,
 });
 
 export const personaSaveSchema = applicationSaveSchema.pick({
@@ -73,40 +75,96 @@ export const optionalSaveSchema = applicationSaveSchema
     underrepGroup: z.enum(underrepGroupAnswers),
   });
 
-// Helper function to check word count within a range
-const checkWordCount = (value: string, min: number, max: number) => {
-  const words = value.split(" ");
-  return words.length < max && words.length > min;
-};
+function minWordCount(value: string, min: number) {
+  const words = value.trim().split(/\s+/);
+  return min <= words.length;
+}
+
+function maxWordCount(value: string, max: number) {
+  const words = value.trim().split(/\s+/);
+  return words.length <= max;
+}
 
 export const phoneRegex =
   /^(\+\d{1,2}\s?)?1?\-?\.?\s?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
 
+const MIN_WORDS = 30;
+const MAX_WORDS = 150;
+
 // Submission schema with data validation
-export const applicationSubmitSchema = createInsertSchema(applications, {
+export const applicationSubmitSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
-  age: z.number().min(18),
-  countryOfResidence: z.enum(countrySelection.enumValues),
   phoneNumber: z.string().min(1).regex(phoneRegex, "Invalid phone number"),
+  countryOfResidence: z.enum(countrySelection.enumValues),
+  age: z.number().min(18),
   school: z.enum(schools),
   levelOfStudy: z.enum(levelOfStudy.enumValues),
   major: z.enum(major.enumValues),
-  question1: z.string().refine((value) => checkWordCount(value, 30, 150)),
-  question2: z.string().refine((value) => checkWordCount(value, 30, 150)),
-  question3: z.string().refine((value) => checkWordCount(value, 30, 150)),
-  resumeLink: z.string().min(1).url(),
-  githubLink: z.string().min(1),
-  linkedInLink: z.string().min(1),
-  otherLink: z.string().min(1).url(),
-  agreeCodeOfConduct: z.literal(true),
-  agreeShareWithMLH: z.literal(true),
-  agreeWillBe18: z.literal(true),
-}).omit({
-  createdAt: true,
-  updatedAt: true,
-  status: true,
-  userId: true,
+  attendedBefore: z.boolean(),
+  numOfHackathons: z.enum(numOfHackathons.enumValues),
+  question1: z
+    .string()
+    .min(1)
+    .refine(
+      (value) => minWordCount(value, MIN_WORDS),
+      `Response must be at least ${MIN_WORDS} words`,
+    )
+    .refine(
+      (value) => maxWordCount(value, MAX_WORDS),
+      `Response must be less than ${MAX_WORDS} words`,
+    ),
+  question2: z
+    .string()
+    .min(1)
+    .refine(
+      (value) => minWordCount(value, MIN_WORDS),
+      `Response must be at least ${MIN_WORDS} words`,
+    )
+    .refine(
+      (value) => maxWordCount(value, MAX_WORDS),
+      `Response must be less than ${MAX_WORDS} words`,
+    ),
+  question3: z
+    .string()
+    .min(1)
+    .refine(
+      (value) => minWordCount(value, MIN_WORDS),
+      `Response must be at least ${MIN_WORDS} words`,
+    )
+    .refine(
+      (value) => maxWordCount(value, MAX_WORDS),
+      `Response must be less than ${MAX_WORDS} words`,
+    ),
+  resumeLink: z.preprocess((v) => (!v ? undefined : v), z.string().url()),
+  githubLink: z.preprocess((v) => (!v ? undefined : v), z.string().optional()),
+  linkedInLink: z.preprocess(
+    (v) => (!v ? undefined : v),
+    z.string().optional(),
+  ),
+  otherLink: z.preprocess(
+    (v) => (!v ? undefined : v),
+    z.string().url().optional(),
+  ),
+  agreeCodeOfConduct: z.literal(true, {
+    errorMap: () => ({ message: "You must agree to the MLH Code of Conduct" }),
+  }),
+  agreeShareWithMLH: z.literal(true, {
+    errorMap: () => ({
+      message: "You must agree to share application information with MLH",
+    }),
+  }),
+  agreeShareWithSponsors: z.literal(true, {
+    errorMap: () => ({
+      message: "You must agree to share information with sponsors",
+    }),
+  }),
+  agreeWillBe18: z.literal(true, {
+    errorMap: () => ({
+      message: "You must be at least 18 years old as of November 29th, 2024",
+    }),
+  }),
+  agreeEmailsFromMLH: z.boolean().optional(),
 });
 
 export const applicationStepSaveSchema = applicationSaveSchema.pick({
