@@ -10,7 +10,7 @@ interface Sponsor {
 const SponsorCard = ({ name, logo, link }: Sponsor) => {
   return (
     <a
-      className="mx-auto flex h-36 w-full cursor-pointer justify-center rounded-xl bg-primary-700 p-4 align-middle transition-all hover:scale-[1.0075] hover:shadow-2xl xl:h-40 2xl:h-48"
+      className="mx-auto flex h-36 w-full cursor-pointer select-none justify-center rounded-xl bg-primary-700 p-4 align-middle transition-all hover:scale-[1.0075] hover:shadow-2xl xl:h-40 2xl:h-48"
       href={link}
       target="_blank"
       rel="noreferrer noopener"
@@ -29,7 +29,7 @@ const SponsorCard = ({ name, logo, link }: Sponsor) => {
 const Sponsors = () => {
   return (
     <div className="min-h-screen bg-[#713eba] pt-28 text-center">
-      <h1 className="font-MagicRetro text-5xl text-primary-100">
+      <h1 className="font-MagicRetro text-5xl text-primary-100" id="sponsors">
         thank you to our sponsors
       </h1>
       <div className="font-dmsans p-5 py-12 text-xl text-primary-100">
@@ -52,24 +52,25 @@ const Sponsors = () => {
         <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
           Diamond Sponsors
         </h1>
-        <div className="grid gap-8 lg:grid-cols-2">
+        <div className="flex flex-col gap-2 lg:gap-8">
+          <div className="grid gap-2 lg:grid-cols-2 lg:gap-8">
+            <SponsorCard
+              name="Canada Life"
+              logo="/sponsors/CanadaLife.svg"
+              link="https://www.canadalife.com/"
+            />
+            <SponsorCard
+              name="Sun Life"
+              logo="/sponsors/Sun Life.svg"
+              link="https://www.sunlife.ca/"
+            />
+          </div>
           <SponsorCard
-            name="Canada Life"
-            logo="/sponsors/CanadaLife.svg"
-            link="https://www.canadalife.com/"
-          />
-          <div className="h-8 lg:hidden" />
-          <SponsorCard
-            name="Sun Life"
-            logo="/sponsors/Sun Life.svg"
-            link="https://www.sunlife.ca/"
+            name="Starknet"
+            logo="/sponsors/Starknet.svg"
+            link="https://www.starknet.io/"
           />
         </div>
-        <SponsorCard
-          name="Starknet"
-          logo="/sponsors/Starknet.svg"
-          link="https://www.starknet.io/"
-        />
         {/* Gold Sponsors */}
         <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
           Gold Sponsors
@@ -116,7 +117,7 @@ const Sponsors = () => {
         <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
           In-kind Sponsors
         </h1>
-        <div className="grid lg:grid-cols-3 lg:gap-8">
+        <div className="grid gap-2 lg:grid-cols-3 lg:gap-8">
           <SponsorCard
             name="Canada Learning Code"
             logo="/sponsors/Canada Learning Code.svg"
