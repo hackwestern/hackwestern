@@ -57,14 +57,16 @@ export default function Apply() {
           </TabsList>
           <TabsContent value="application" className="z-40 w-screen">
             <div className="fixed flex h-screen w-screen flex-col space-y-8 bg-primary-100 px-6 pt-12">
-              <div className="space-y-2">
+              <div className="space-y-2 py-1.5">
                 <h1 className="text-2xl font-medium">{heading}</h1>
                 <h2 className="text-sm text-slate-500">{subheading}</h2>
               </div>
               <div className="overflow-y-auto">
                 <ApplyForm step={step} />
               </div>
-              <SavedIndicator />
+              <div className="self-end pb-3">
+                <SavedIndicator />
+              </div>
               <div className="select-none bg-primary-100 py-12 text-primary-100">
                 this is a secret
               </div>
@@ -140,7 +142,7 @@ export default function Apply() {
         <div className="relative z-10 hidden w-full flex-grow items-center md:flex">
           <div
             id="left-panel"
-            className="z-10 flex h-screen flex-grow flex-col justify-between space-y-8 overflow-auto bg-primary-100 p-9 pb-20 pt-24 md:w-2/3 2xl:w-1/2"
+            className="z-10 flex h-screen flex-grow flex-col justify-between space-y-8 overflow-auto bg-primary-100 p-9 pb-[4.1rem] pt-24 md:w-2/3 2xl:w-1/2"
           >
             <div className="space-y-2 p-1">
               <h1 className="text-2xl font-medium">{heading}</h1>

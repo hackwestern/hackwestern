@@ -13,6 +13,14 @@ import { Input } from "~/components/ui/input";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { basicsSaveSchema } from "~/schemas/application";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import { countrySelection } from "~/server/db/schema";
 
 export function BasicsForm() {
   const utils = api.useUtils();
@@ -115,6 +123,33 @@ export function BasicsForm() {
               <FormDescription>
                 You must be 18 years of age by November 29, 2024.
               </FormDescription>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="countryOfResidence"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>What is your country of residence?</FormLabel>
+              <FormControl>
+                <Select
+                  {...field}
+                  value={field.value ?? undefined}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countrySelection.enumValues.map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
             </FormItem>
           )}
         />
