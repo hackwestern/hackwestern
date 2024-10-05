@@ -41,7 +41,7 @@ const Sponsors = () => {
         <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
           Title Sponsor
         </h1>
-        <div className="flex columns-1 flex-col">
+        <div>
           <SponsorCard
             name="Scotiabank"
             logo="/sponsors/Scotiabank.svg"
@@ -52,7 +52,7 @@ const Sponsors = () => {
         <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
           Diamond Sponsors
         </h1>
-        <div className="columns-1 gap-8 lg:columns-2">
+        <div className="grid gap-8 lg:grid-cols-2">
           <SponsorCard
             name="Canada Life"
             logo="/sponsors/CanadaLife.svg"
@@ -74,7 +74,7 @@ const Sponsors = () => {
         <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
           Gold Sponsors
         </h1>
-        <div className="columns-3 flex-col gap-2 lg:flex-row lg:gap-8">
+        <div className="grid gap-2 lg:grid-cols-3 lg:gap-8">
           <SponsorCard
             name="TD invent"
             logo="/sponsors/TD Invent.svg"
@@ -95,7 +95,7 @@ const Sponsors = () => {
         <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
           Bronze Sponsors
         </h1>
-        <div className="columns-3 flex-col gap-2 lg:flex-row lg:gap-8">
+        <div className="grid flex-col gap-2 lg:grid-cols-3 lg:gap-8">
           <SponsorCard
             name="P&G"
             logo="/sponsors/P&G.svg"
@@ -116,7 +116,7 @@ const Sponsors = () => {
         <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
           In-kind Sponsors
         </h1>
-        <div className="columns-2 flex-col gap-2 lg:flex-row lg:gap-8">
+        <div className="grid lg:grid-cols-3 lg:gap-8">
           <SponsorCard
             name="Canada Learning Code"
             logo="/sponsors/Canada Learning Code.svg"
@@ -126,6 +126,11 @@ const Sponsors = () => {
             name="Warp"
             logo="/sponsors/Warp.svg"
             link="https://www.warp.dev/"
+          />
+          <SponsorCard
+            name="Voiceflow"
+            logo="/sponsors/Voiceflow.svg"
+            link="https://www.voiceflow.com/"
           />
         </div>
         <div className="mt-20 flex h-64 flex-col justify-around rounded-xl border-2 border-[#B07ACA] bg-gradient-to-tr from-[#7B3FDF] via-[#DE81A8] to-[#FFBD80] p-5 py-2.5">
