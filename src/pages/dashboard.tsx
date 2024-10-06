@@ -73,7 +73,7 @@ function getApplyLink(status: ApplicationStatusType | undefined) {
     case "PENDING_REVIEW":
       return "/apply?step=review";
     default:
-      return "/apply?step=review";
+      return "/apply?step=persona";
   }
 }
 
