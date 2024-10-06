@@ -16,7 +16,7 @@ function Hero() {
       </div>
       <div className="absolute right-[10%] top-[30%] z-20 h-[150%] w-[150%] overflow-clip rounded-hw-gradient-radius bg-hw-highlight-radial-gradient" />
       <div>
-        <div className="absolute bottom-0 left-0 z-30 h-[130%] w-[70%] animate-cloud4 outline-red-500 md:w-[60%]  lg:-bottom-72">
+        <div className="animate-cloud4 absolute bottom-0 left-0 z-30 h-[130%] w-[70%] outline-red-500 md:w-[60%]  lg:-bottom-72">
           <Image
             src="/images/cloud4.svg"
             alt="hack western cloud"
@@ -24,7 +24,7 @@ function Hero() {
             fill
           />
         </div>
-        <div className="absolute -bottom-24 right-0 z-30 h-[120%] w-full animate-cloud3">
+        <div className="animate-cloud3 absolute -bottom-24 right-0 z-30 h-[120%] w-full">
           <Image
             src="/images/cloud3.svg"
             alt="hack western cloud"
@@ -32,7 +32,7 @@ function Hero() {
             fill
           />
         </div>
-        <div className="absolute -bottom-32 right-0 z-30 h-full w-[50%] animate-cloud2 delay-75 md:h-full md:w-[30%]">
+        <div className="animate-cloud2 absolute -bottom-32 right-0 z-30 h-full w-[50%] delay-75 md:h-full md:w-[30%]">
           <Image
             src="/images/cloud2.svg"
             alt="hack western cloud"
@@ -40,7 +40,7 @@ function Hero() {
             fill
           />
         </div>
-        <div className="absolute bottom-0 left-0 z-30 h-full  w-[50%] animate-cloud1 md:h-full md:w-[30%]">
+        <div className="animate-cloud1 absolute bottom-0 left-0 z-30  h-full w-[50%] md:h-full md:w-[30%]">
           <Image
             src="/images/cloud1.svg"
             alt="hack western cloud"
@@ -48,7 +48,7 @@ function Hero() {
             fill
           />
         </div>
-        <div className="absolute bottom-[40%] right-[50%] z-30 flex h-[80%] w-[80%] translate-x-1/2 translate-y-1/2 sm:bottom-[5%] sm:right-[15%] sm:h-[60%] sm:w-[60%] sm:translate-x-0 sm:translate-y-0 md:bottom-[10%] md:right-[30%] md:h-[40%] md:w-[40%] md:translate-x-0 md:translate-y-0 lg:bottom-[7%] lg:right-[27%] lg:h-[40%] lg:w-[40%] lg:translate-x-0 lg:translate-y-0">
+        <div className="animate-plane absolute -bottom-[5%] right-[10%] z-30 flex h-[80%] w-[80%] translate-x-1/2 translate-y-1/2 sm:bottom-[5%] sm:right-[15%] sm:h-[60%] sm:w-[60%] sm:translate-x-0 sm:translate-y-0 md:bottom-[10%] md:right-[30%] md:h-[40%] md:w-[40%] md:translate-x-0 md:translate-y-0 lg:bottom-[7%] lg:right-[27%] lg:h-[40%] lg:w-[40%] lg:translate-x-0 lg:translate-y-0">
           <Image
             src="/images/plane.svg"
             alt="hack western plane"
@@ -69,7 +69,7 @@ function Hero() {
 
       {/* Text */}
       <div className="relative z-50 flex h-screen w-screen justify-center">
-        <div className="flex flex-col items-center pt-32 text-white 2xl:pt-40 3xl:pt-48">
+        <div className="3xl:pt-48 flex flex-col items-center pt-32 text-white 2xl:pt-40">
           <h3 className="pb-4 text-xl font-medium">
             November 29th - December 1st, 2024
           </h3>
