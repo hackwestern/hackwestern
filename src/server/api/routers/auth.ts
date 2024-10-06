@@ -77,7 +77,7 @@ export const authRouter = createTRPCRouter({
             Variables: {
               resetLink: resetLink,
             },
-            HTMLPart: resetTemplate(resetLink),
+            HTMLPart: resetTemplate(resetLink, user.name ?? "there"),
             Subject: "Hack Western 11 Password Reset",
           },
         ],
