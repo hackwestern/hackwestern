@@ -28,14 +28,14 @@ function About() {
           />
         </div>
       </div>
-      <div className="relative left-0 top-0 h-[50vh] w-full sm:h-[50vh]">
+      <div className="relative left-0 top-0 mb-10 h-[50vh] w-full sm:h-[50vh]">
         <Image
           className="opacity-20"
           src="/images/hwfilter.png"
           alt="Hack Western Main Page"
           fill
         />
-        <div className="md: absolute left-[10%] top-24 z-40 h-full max-h-none w-[200%] max-w-none sm:left-1/4 md:h-[150%] lg:top-10 lg:h-[200%]">
+        <div className="md: absolute left-[10%] top-24 z-40 h-full max-h-none w-[200%] max-w-none sm:left-1/4 md:h-[150%] lg:top-10 lg:h-[200%] 3xl:left-1/3">
           <Image
             src="/images/window.svg"
             alt="hack western cloud"
@@ -44,10 +44,10 @@ function About() {
           />
         </div>
         <div className="absolute left-1/2 top-1/4 flex w-[48%] flex-col justify-center ">
-          <h2 className="z-30 font-MagicRetro text-4xl text-white sm:top-20 md:top-24 xl:text-5xl">
+          <h2 className="z-30 font-MagicRetro text-4xl text-white sm:top-20 md:top-24 xl:text-5xl  2xl:text-6xl">
             about us
           </h2>
-          <p className="z-30 h-1/3 text-xs text-white sm:top-32 md:top-36 md:w-96 lg:text-sm xl:text-base">
+          <p className="z-30 h-1/3 text-xs text-white sm:top-32 md:top-36 md:w-96 lg:text-sm xl:text-base 3xl:text-lg">
             Founded in 2014, we&apos;re a team of technologists,
             problem-solvers, and creatives dedicated to building the technology
             community at Western University. Our mission since day one has been
