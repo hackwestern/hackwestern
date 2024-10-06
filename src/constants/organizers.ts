@@ -70,12 +70,22 @@ export const organizerList = [
     image: "/images/organizers/marissa.png",
   },
   {
+    name: "Raymond Wang",
+    role: "Events",
+    image: "/images/organizers/ray.png",
+  },
+  {
     name: "Yash Gandhi",
     role: "Sponsorships",
     image: "/images/organizers/yash_.png",
   },
   {
     name: "Edison Qu",
+    role: "Sponsorships",
+    image: "/images/organizers/edison.png",
+  },
+  {
+    name: "Raymond Wanh",
     role: "Sponsorships",
     image: "/images/organizers/edison.png",
   },
