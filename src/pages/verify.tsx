@@ -11,6 +11,7 @@ const Verify = () => {
   const router = useRouter();
   const [verificationSent, setVerificationSent] = useState(false);
   const [verifySuccess, setVerifySuccess] = useState(false);
+  const [verifyFailed, setVerifyFailed] = useState(false);
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const verifyToken = searchParams.get("token");
@@ -30,6 +31,7 @@ const Verify = () => {
         description: error.message,
         variant: "destructive",
       });
+      setVerifyFailed(true);
     },
   });
   const { mutate: sendVerificationEmail } = api.auth.resendEmail.useMutation({
@@ -157,12 +159,13 @@ const Verify = () => {
           objectFit="cover"
         />
         <div className="z-10 w-full max-w-2xl rounded-lg bg-violet-50 bg-white p-12 shadow-md">
-          {verifySuccess ? (
+          {verifySuccess && (
             <div>
               <div className="text-center">Email Verified!</div>
               <div className="text-center">You can now login.</div>
             </div>
-          ) : (
+          )}
+          {verifyFailed && (
             <div className="flex flex-col justify-center">
               <div className="text-center">
                 Invalid or Expired Verification Token.
@@ -175,6 +178,9 @@ const Verify = () => {
                 Request New Verification Link
               </Button>
             </div>
+          )}
+          {!verifySuccess && !verifyFailed && (
+            <div className="text-center">Verifying email...</div>
           )}
         </div>
       </div>
