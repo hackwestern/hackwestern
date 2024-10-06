@@ -10,7 +10,7 @@ import { Passport } from "~/components/apply/passport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import Image from "next/image";
 import { SavedIndicator } from "~/components/apply/saved-indicator";
-import { authRedirectHacker } from "~/utils/redirect";
+import { applicationPageRedirect } from "~/utils/redirect";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   return applySteps.find((s) => s.step === stepValue) ?? null;
@@ -237,4 +237,4 @@ export default function Apply() {
   );
 }
 
-export const getServerSideProps = authRedirectHacker;
+export const getServerSideProps = applicationPageRedirect;

@@ -1,39 +1,82 @@
-import { signIn } from "next-auth/react";
-import Head from "next/head";
-import { Input } from "~/components/ui/input";
-import { Button } from "~/components/ui/button";
-import { useState } from "react";
-import GoogleAuthButton from "~/components/auth/googleauth-button";
-import GithubAuthButton from "~/components/auth/githubauth-button";
-import Link from "next/link";
-import { hackerLoginRedirect } from "~/utils/redirect";
-import { useRouter } from "next/router";
-import { useToast } from "~/components/hooks/use-toast";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
+import Head from "next/head";
+import { useEffect, useState } from "react";
+import { api } from "~/utils/api";
+import { useToast } from "~/components/hooks/use-toast";
+import { useRouter } from "next/router";
+import { Button } from "~/components/ui/button";
 
-export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+const Verify = () => {
   const router = useRouter();
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [verifySuccess, setVerifySuccess] = useState(false);
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+  const verifyToken = searchParams.get("token");
+  const { mutate: verifyEmail } = api.auth.verify.useMutation({
+    onSuccess: () => {
+      setVerifySuccess(true);
+      toast({
+        title: "Email Verified",
+        description: "Your email has been verified successfully!",
+        variant: "default",
+      });
+      void router.push("/login");
+    },
+    onError: (error) => {
+      toast({
+        title: "Error Verifying Email",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  const { mutate: sendVerificationEmail } = api.auth.resendEmail.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Verification Email Sent",
+        description: "Check your inbox for a verification email.",
+        variant: "default",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error Sending Verification Email",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    },
+  });
+  const { data: verifiedData } = api.auth.checkVerified.useQuery();
 
-  async function handleSubmit() {
-    void signIn("credentials", {
-      redirect: false,
-      username: email,
-      password,
-    }).then((response) => {
-      if (response && response.ok === false) {
-        toast({
-          title: "Error",
-          description: "Invalid email or password",
-          variant: "destructive",
-        });
-        return;
-      }
-      void router.push("/dashboard");
+  if (verifiedData?.verified) {
+    toast({
+      title: "Email Already Verified",
+      description: "You can now login.",
+      variant: "default",
     });
+    void router.push("/dashboard");
   }
+
+  useEffect(() => {
+    if (verifyToken) {
+      verifyEmail({ token: verifyToken });
+    }
+  }, [verifyToken, verifyEmail]);
+
+  const handleResendVerification = () => {
+    if (!verificationSent) {
+      sendVerificationEmail();
+      setVerificationSent(true);
+    } else {
+      toast({
+        title: "Verification Email Already Sent",
+        description: "Check your inbox for a verification email.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <>
@@ -114,58 +157,29 @@ export default function Login() {
           objectFit="cover"
         />
         <div className="z-10 w-full max-w-2xl rounded-lg bg-violet-50 bg-white p-12 shadow-md">
-          <h2 className="mb-2 text-4xl font-bold">Welcome Back!</h2>
-          <h2 className="mb-6 text-lg">
-            We can&apos;t wait to see what you will create.
-          </h2>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void handleSubmit();
-            }}
-          >
-            <h2 className="mb-2 text-sm">Email</h2>
-            <Input
-              type="email"
-              onChange={(e) => setEmail(e.target.value)}
-              className="mb-4"
-              placeholder="Email"
-            />
-            <h2 className="mb-2 text-sm">Password</h2>
-            <Input
-              type="password"
-              onChange={(e) => setPassword(e.target.value)}
-              className="mb-8"
-              placeholder="Password"
-            />
-            <Button variant="primary" type="submit" className="mt-8 w-full">
-              Sign In
-            </Button>
-          </form>
-          <div className="relative flex w-full items-center md:py-5">
-            <div className="flex-grow border-t border-gray-400"></div>
-            <span className="mx-4 flex-shrink text-gray-400">or</span>
-            <div className="flex-grow border-t border-gray-400"></div>
-          </div>
-          <div className="mt-4">
-            <GoogleAuthButton redirect="/dashboard" />
-          </div>
-          <div className="mt-4">
-            <GithubAuthButton redirect="/dashboard" />
-          </div>
-          <div className="my-4">
-            Don&apos;t have an account yet?{" "}
-            <Link
-              className="text-purple-500 underline hover:text-violet-700"
-              href="/register"
-            >
-              Create Account
-            </Link>
-          </div>
+          {verifySuccess ? (
+            <div>
+              <div className="text-center">Email Verified!</div>
+              <div className="text-center">You can now login.</div>
+            </div>
+          ) : (
+            <div className="flex flex-col justify-center">
+              <div className="text-center">
+                Invalid or Expired Verification Token.
+              </div>
+              <Button
+                variant="primary"
+                className="mx-auto mt-6 w-fit text-sm"
+                onClick={handleResendVerification}
+              >
+                Request New Verification Link
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </>
   );
-}
+};
 
-export const getServerSideProps = hackerLoginRedirect;
+export default Verify;

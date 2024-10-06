@@ -9,6 +9,8 @@ import { authRedirectHacker } from "~/utils/redirect";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "~/lib/utils";
+import { useToast } from "~/components/hooks/use-toast";
+import { useState } from "react";
 
 type ApplicationStatusType =
   | "IN_PROGRESS"
@@ -78,7 +80,27 @@ function getApplyLink(status: ApplicationStatusType | undefined) {
 }
 
 const Dashboard = () => {
+  const { toast } = useToast();
   const { data: application } = api.application.get.useQuery();
+  const { data: verifiedData } = api.auth.checkVerified.useQuery();
+  const { mutate: sendVerificationEmail } = api.auth.resendEmail.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Verification Email Sent",
+        description: "Check your inbox for a verification email.",
+        variant: "default",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error Sending Verification Email",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    },
+  });
+  const [verificationSent, setVerificationSent] = useState(false);
+  const userVerified = !!verifiedData?.verified;
   const router = useRouter();
 
   const logout = () => {
@@ -87,6 +109,19 @@ const Dashboard = () => {
         void router.push("/");
       })
       .catch((e) => console.log("error logging out:", e));
+  };
+
+  const handleResendVerification = () => {
+    if (!verificationSent) {
+      sendVerificationEmail();
+      setVerificationSent(true);
+    } else {
+      toast({
+        title: "Verification Email Already Sent",
+        description: "Check your inbox for a verification email.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -101,6 +136,22 @@ const Dashboard = () => {
       </Head>
       <main className="flex h-svh max-h-svh flex-col items-center bg-primary-50">
         <ApplyNavbar />
+        {!userVerified && (
+          <div className="fixed z-[9999] flex w-screen flex-col justify-center gap-3 bg-primary-100/35 py-6 text-center text-black backdrop-blur-lg">
+            <p>
+              You have registered successfully! Please verify your email before
+              continuing. If you do not see an email, click here to request a
+              new one.
+            </p>
+            <Button
+              variant="primary"
+              className="mx-auto w-fit text-sm"
+              onClick={handleResendVerification}
+            >
+              Request New Verification Link
+            </Button>
+          </div>
+        )}
         <div className="relative flex w-full flex-grow flex-col items-center md:flex-row">
           <div
             id="left-panel"
