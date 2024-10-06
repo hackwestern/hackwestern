@@ -139,7 +139,6 @@ export default function Login() {
               className="mb-8"
               placeholder="Password"
             />
-            <Checkbox /> <span> Remember Me</span>
             <Button variant="primary" type="submit" className="mt-8 w-full">
               Sign In
             </Button>
