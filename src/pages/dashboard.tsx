@@ -250,7 +250,7 @@ const Dashboard = () => {
             </div>
             {/* Grain Filter */}
             <Image
-              className="absolute left-0 top-0 opacity-20"
+              className="absolute left-0 top-0 select-none opacity-20"
               src="/images/hwfilter.png"
               alt="Hack Western Main Page"
               layout="fill"
