@@ -5,10 +5,12 @@ import { ApplyNavbar } from "~/components/apply/navbar";
 import { Passport } from "~/components/apply/passport";
 import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
-import { authRedirectHacker } from "~/utils/redirect";
+import { notVerifiedRedirect } from "~/utils/redirect";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "~/lib/utils";
+import { useToast } from "~/components/hooks/use-toast";
+import { useState } from "react";
 
 type ApplicationStatusType =
   | "IN_PROGRESS"
@@ -216,4 +218,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-export const getServerSideProps = authRedirectHacker;
+export const getServerSideProps = notVerifiedRedirect;
