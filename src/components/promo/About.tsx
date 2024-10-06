@@ -22,7 +22,7 @@ function About() {
         <div className="relative z-30 mx-auto flex h-full w-[90%] lg:w-[50%]">
           <Image
             src="/images/aboutticket.svg"
-            alt="hack western cloud"
+            alt="hack western about ticket"
             className="object-contain"
             fill
           />
@@ -38,7 +38,7 @@ function About() {
         <div className="md: absolute left-[10%] top-24 z-40 h-full max-h-none w-[200%] max-w-none sm:left-1/4 md:h-[150%] lg:top-10 lg:h-[200%] 3xl:left-1/3">
           <Image
             src="/images/window.svg"
-            alt="hack western cloud"
+            alt="hack western window"
             className="object-contain object-left"
             fill
           />
