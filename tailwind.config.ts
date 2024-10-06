@@ -113,6 +113,10 @@ const config = {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-12000px)" },
         },
+        "suitcase-slide-small": {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-6000px)" },
+        },
         "spin-reverse": {
           "0%": { transform: "rotate(0deg)" },
           "100%": { transform: "rotate(-360deg)" },
@@ -128,7 +132,10 @@ const config = {
         "small-bounce": "small-bounce 0.75s ease-in-out infinite",
         wiggle: "wiggle 1s ease-in-out infinite",
         "suitcase-slide": "suitcase-slide 120s linear infinite",
+        "suitcase-slide-small": "suitcase-slide-small 60s linear infinite",
         "spin-reverse": "spin-reverse 2s linear infinite",
+        "organizer-slide": "suitcase-slide 180s linear infinite",
+        "organizer-slide-small": "suitcase-slide-small 60s linear infinite",
       },
       backgroundImage: {
         "hw-radial-gradient":

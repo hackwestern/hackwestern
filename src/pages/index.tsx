@@ -4,6 +4,8 @@ import Hero from "~/components/promo/Hero";
 import About from "~/components/promo/About";
 import FAQ from "~/components/promo/faq";
 import Projects from "~/components/promo/projects";
+import Sponsors from "~/components/promo/sponsors";
+import Organizer from "~/components/promo/organizer";
 
 export default function Home() {
   return (
@@ -16,13 +18,15 @@ export default function Home() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main>
+      <main id="home">
         {/* Text, Plane, and Clouds */}
         <Hero />
         {/* About ticket and Window */}
         <About />
         <Projects />
+        <Sponsors />
         <FAQ />
+        <Organizer />
         {/* MLH Code of Conduct */}
         <Footer className="fixed bottom-0 z-50" />
       </main>
