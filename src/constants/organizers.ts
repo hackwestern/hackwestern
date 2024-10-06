@@ -85,11 +85,6 @@ export const organizerList = [
     image: "/images/organizers/edison.png",
   },
   {
-    name: "Raymond Wanh",
-    role: "Sponsorships",
-    image: "/images/organizers/edison.png",
-  },
-  {
     name: "Joy Zheng",
     role: "Web",
     image: "/images/organizers/joy.png",
