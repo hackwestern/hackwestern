@@ -11,7 +11,7 @@ function About() {
           alt="Hack Western Main Page"
           fill
         />
-        <div className="animate-cloud2 absolute z-40 h-[50%] w-[100%] delay-75 md:h-[60%] lg:h-[75%] xl:h-[90%]">
+        <div className="absolute z-40 h-[50%] w-[100%] animate-cloud2 delay-75 md:h-[60%] lg:h-[75%] xl:h-[90%]">
           <Image
             src="/images/aboutcloud.svg"
             alt="hack western cloud"
@@ -38,7 +38,7 @@ function About() {
         <Image
           src="/images/window.svg"
           alt="hack western cloud"
-          className="3xl:-bottom-44 absolute -bottom-44 left-[10%] z-40 max-h-none  max-w-none sm:left-[20%] md:left-1/4 lg:left-1/3"
+          className="absolute -bottom-44 left-[10%] z-40 max-h-none max-w-none  sm:left-[20%] md:left-1/4 lg:left-1/3 3xl:-bottom-44"
           height={1080}
           width={1080}
         />
