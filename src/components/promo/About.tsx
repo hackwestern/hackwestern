@@ -6,7 +6,7 @@ function About() {
       {/* Grain Filter */}
       <div className="absolute left-0 top-0 h-full w-full">
         <Image
-          className="opacity-20"
+          className="opacity-20 select-none"
           src="/images/hwfilter.png"
           alt="Hack Western Main Page"
           fill

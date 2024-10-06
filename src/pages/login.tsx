@@ -2,7 +2,6 @@ import { signIn } from "next-auth/react";
 import Head from "next/head";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { Checkbox } from "~/components/ui/checkbox";
 import { useState } from "react";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
@@ -108,7 +107,7 @@ export default function Login() {
         </div>
         {/* Grain Filter */}
         <Image
-          className="absolute left-0 top-0 opacity-20"
+          className="absolute left-0 top-0 select-none opacity-20"
           src="/images/hwfilter.png"
           alt="Hack Western Main Page"
           layout="fill"
@@ -154,13 +153,22 @@ export default function Login() {
           <div className="mt-4">
             <GithubAuthButton redirect="/dashboard" />
           </div>
-          <div className="my-4">
+          <div className="mt-4">
             Don&apos;t have an account yet?{" "}
             <Link
               className="text-purple-500 underline hover:text-violet-700"
               href="/register"
             >
               Create Account
+            </Link>
+          </div>
+          <div>
+            Forget password?{" "}
+            <Link
+              className="text-purple-500 underline hover:text-violet-700"
+              href="/reset-password"
+            >
+              Reset Password
             </Link>
           </div>
         </div>
