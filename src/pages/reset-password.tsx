@@ -11,7 +11,24 @@ export default function ResetRequest() {
   const [email, setEmail] = useState("");
   const [resetRequsted, setResetRequested] = useState(false);
   const { toast } = useToast();
-  const reset = api.auth.reset.useMutation();
+  const reset = api.auth.reset.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Password reset email sent!",
+        variant: "default",
+      });
+      setResetRequested(true);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message ?? "Error sending reset email.",
+        variant: "destructive",
+      });
+      console.log("error sending email", error);
+    },
+  });
 
   async function handleSubmit() {
     if (!email) {
@@ -31,12 +48,6 @@ export default function ResetRequest() {
       return;
     }
     reset.mutate({ email });
-    toast({
-      title: "Success",
-      description: "Password reset email sent!",
-      variant: "default",
-    });
-    setResetRequested(true);
   }
 
   return (
@@ -121,12 +132,7 @@ export default function ResetRequest() {
           <h2 className="mb-2 text-3xl font-bold">Reset Password</h2>
           <h2>We&apos;ll send you a link to reset your password.</h2>
           <h2 className="mb-2 mt-6 text-sm">Email</h2>
-          <Input
-            required
-            type="email"
-            onChange={(e) => setEmail(e.target.value)}
-            className=""
-          />
+          <Input type="email" onChange={(e) => setEmail(e.target.value)} />
           <Button
             variant="primary"
             className="mt-6 w-full"

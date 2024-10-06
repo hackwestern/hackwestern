@@ -10,7 +10,7 @@ import { TRPCError } from "@trpc/server";
 import { resetTemplate } from "./password-reset-template";
 import { authOptions } from "~/server/auth";
 
-const TOKEN_EXPIRY = 1000 * 60 * 10; // 10 minutes
+const TOKEN_EXPIRY = 1000 * 60 * 11; // 11 minutes
 
 const createInputSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -146,6 +146,50 @@ export const authRouter = createTRPCRouter({
               code: "INTERNAL_SERVER_ERROR",
               message:
                 "Failed to create user with password: " + JSON.stringify(error),
+            });
+      }
+    }),
+
+  setPassword: publicProcedure
+    .input(z.object({ token: z.string(), password: z.string() }))
+    .mutation(async ({ input }) => {
+      try {
+        const token = await db.query.resetPasswordTokens.findFirst({
+          where: eq(resetPasswordTokens.token, input.token),
+        });
+
+        if (!token) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Token not found",
+          });
+        }
+
+        if (token.expires < new Date()) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Token has expired",
+          });
+        }
+
+        const salt: string = await bcrypt.genSalt(10);
+        const hashedPassword: string = await bcrypt.hash(input.password, salt);
+
+        await db
+          .update(users)
+          .set({
+            password: hashedPassword,
+          })
+          .where(eq(users.id, token.userId));
+        return {
+          success: true,
+        };
+      } catch (error) {
+        throw error instanceof TRPCError
+          ? error
+          : new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Failed to set password: " + JSON.stringify(error),
             });
       }
     }),
