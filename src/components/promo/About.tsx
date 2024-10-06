@@ -28,20 +28,21 @@ function About() {
           />
         </div>
       </div>
-      <div className="relative left-0 top-0 h-[50vh] w-full">
+      <div className="relative left-0 top-0 h-[50vh] w-full sm:h-[50vh]">
         <Image
           className="opacity-20"
           src="/images/hwfilter.png"
           alt="Hack Western Main Page"
           fill
         />
-        <Image
-          src="/images/window.svg"
-          alt="hack western cloud"
-          className="absolute -bottom-44 left-[10%] z-40 max-h-none max-w-none  sm:left-[20%] md:left-1/4 lg:left-1/3 3xl:-bottom-44"
-          height={1080}
-          width={1080}
-        />
+        <div className="md: absolute left-[10%] top-24 z-40 h-full max-h-none w-[200%] max-w-none sm:left-1/4 md:h-[150%] lg:top-10 lg:h-[200%]">
+          <Image
+            src="/images/window.svg"
+            alt="hack western cloud"
+            className="object-contain object-left"
+            fill
+          />
+        </div>
         <div className="absolute left-1/2 top-1/4 flex w-[48%] flex-col justify-center ">
           <h2 className="z-30 font-MagicRetro text-4xl text-white sm:top-20 md:top-24 xl:text-5xl">
             about us
