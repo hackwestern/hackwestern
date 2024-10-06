@@ -5,8 +5,12 @@ import { ApplyNavbar } from "~/components/apply/navbar";
 import { Passport } from "~/components/apply/passport";
 import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
-import { authRedirectHacker } from "~/utils/redirect";
+import { notVerifiedRedirect } from "~/utils/redirect";
 import Image from "next/image";
+import Link from "next/link";
+import { cn } from "~/lib/utils";
+import { useToast } from "~/components/hooks/use-toast";
+import { useState } from "react";
 
 type ApplicationStatusType =
   | "IN_PROGRESS"
@@ -17,30 +21,33 @@ type ApplicationStatusType =
   | "WAITLISTED"
   | "DECLINED";
 
+const parsedStatuses = {
+  IN_PROGRESS: "Application In Progress...",
+  PENDING_REVIEW: "Application Submitted!",
+  IN_REVIEW: "Application In Review",
+  ACCEPTED: "Application Accepted! 🥳",
+  REJECTED: "Application Not Accepted",
+  WAITLISTED: "Waitlisted",
+  DECLINED: "You're Not Coming :(",
+};
+
+const statusClassName = {
+  IN_PROGRESS: "bg-primary-200 text-violet-500",
+  PENDING_REVIEW: "bg-primary-300 border border-primary-600 text-primary-600",
+  IN_REVIEW: "bg-primary-300 border border-primary-600 text-primary-600",
+  ACCEPTED: "bg-primary-500 text-primary-100",
+  REJECTED: "bg-violet-500 text-primary-100",
+  WAITLISTED: "bg-violet-500 text-primary-100",
+  DECLINED: "bg-violet-500 text-primary-100",
+};
+
 const ApplicationStatus = ({ status }: { status: ApplicationStatusType }) => {
-  const parsedStatuses = {
-    IN_PROGRESS: "Application In Progress...",
-    PENDING_REVIEW: "Application Submitted!",
-    IN_REVIEW: "Application In Review",
-    ACCEPTED: "Application Accepted! 🥳",
-    REJECTED: "Application Not Accepted",
-    WAITLISTED: "Waitlisted",
-    DECLINED: "You're Not Coming :(",
-  };
-
-  const statusClassName = {
-    IN_PROGRESS: "bg-primary-200 text-violet-500",
-    PENDING_REVIEW: "bg-primary-300 border border-primary-600 text-primary-600",
-    IN_REVIEW: "bg-primary-300 border border-primary-600 text-primary-600",
-    ACCEPTED: "bg-primary-500 text-primary-100",
-    REJECTED: "bg-violet-500 text-primary-100",
-    WAITLISTED: "bg-violet-500 text-primary-100",
-    DECLINED: "bg-violet-500 text-primary-100",
-  };
-
   return (
     <div
-      className={`text-xl font-medium capitalize ${statusClassName?.[status ?? "IN_PROGRESS"]} mx-auto flex w-max select-none justify-center rounded-full px-10 py-2.5 text-center`}
+      className={cn(
+        "mx-auto flex w-max select-none justify-center rounded-full px-10 py-2.5 text-center text-xl font-medium capitalize",
+        statusClassName[status ?? "IN_PROGRESS"],
+      )}
     >
       {parsedStatuses?.[status ?? "IN_PROGRESS"]}
     </div>
@@ -61,20 +68,20 @@ const buttonStatus = (status: ApplicationStatusType) => {
   return parsedStatuses?.[status ?? "IN_PROGRESS"];
 };
 
+function getApplyLink(status: ApplicationStatusType | undefined) {
+  switch (status) {
+    case "IN_PROGRESS":
+      return "/apply?step=persona";
+    case "PENDING_REVIEW":
+      return "/apply?step=review";
+    default:
+      return "/apply?step=persona";
+  }
+}
+
 const Dashboard = () => {
   const { data: application } = api.application.get.useQuery();
   const router = useRouter();
-
-  const onButtonClick = (status: ApplicationStatusType) => {
-    switch (status) {
-      case "IN_PROGRESS":
-        void router.push("/apply?step=persona");
-      case "PENDING_REVIEW":
-        void router.push("/apply?step=review");
-      default:
-        void router.push("/apply?step=review");
-    }
-  };
 
   const logout = () => {
     signOut()
@@ -99,7 +106,7 @@ const Dashboard = () => {
         <div className="relative flex w-full flex-grow flex-col items-center md:flex-row">
           <div
             id="left-panel"
-            className="lg:w-xl z-10 flex w-full flex-grow flex-col justify-center gap-4 bg-primary-100 p-9 pt-12 text-center md:h-full lg:max-w-xl"
+            className="lg:w-xl z-10 flex w-full flex-grow flex-col items-center justify-center gap-4 bg-primary-100 p-9 pt-12 text-center md:h-full lg:max-w-xl"
           >
             <div className="pb-2.5 text-3xl font-bold text-slate-700">
               {
@@ -110,14 +117,11 @@ const Dashboard = () => {
             <div className="text-xl font-medium text-slate-700">Status:</div>
             <ApplicationStatus status={application?.status ?? "IN_PROGRESS"} />
             {application?.status !== "REJECTED" ? (
-              <div
-                className="mx-auto mt-6 w-max cursor-pointer select-none rounded-2xl bg-primary-600 px-4 py-2.5 text-lg text-white transition-all hover:bg-primary-500"
-                onClick={() =>
-                  onButtonClick(application?.status ?? "IN_PROGRESS")
-                }
-              >
-                {buttonStatus(application?.status ?? "IN_PROGRESS")}
-              </div>
+              <Button variant="primary" className="mt-6 w-fit" asChild>
+                <Link href={getApplyLink(application?.status)}>
+                  {buttonStatus(application?.status ?? "IN_PROGRESS")}
+                </Link>
+              </Button>
             ) : (
               <div className="text-slate-700">
                 Due to the volume of applicants, we were unable to accept
@@ -197,7 +201,7 @@ const Dashboard = () => {
             </div>
             {/* Grain Filter */}
             <Image
-              className="absolute left-0 top-0 opacity-20"
+              className="absolute left-0 top-0 select-none opacity-20"
               src="/images/hwfilter.png"
               alt="Hack Western Main Page"
               layout="fill"
@@ -214,4 +218,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-export const getServerSideProps = authRedirectHacker;
+export const getServerSideProps = notVerifiedRedirect;

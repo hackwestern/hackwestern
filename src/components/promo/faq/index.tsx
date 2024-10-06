@@ -34,7 +34,7 @@ const FAQ = () => {
         </h2>
         <div className="z-40 mx-auto h-full w-2/3 justify-center pb-20 pt-12 md:gap-8">
           <Accordion
-            type="single"
+            type="multiple"
             className="mx-auto grid gap-x-4 text-white md:w-5/6 md:grid-cols-2 md:gap-x-10 3xl:w-1/2"
           >
             {FAQ_ITEMS.map(({ question, answer }, index) => (
