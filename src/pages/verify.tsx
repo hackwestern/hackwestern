@@ -15,6 +15,7 @@ const Verify = () => {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const verifyToken = searchParams.get("token");
+
   const { mutate: verifyEmail } = api.auth.verify.useMutation({
     onSuccess: () => {
       setVerifySuccess(true);
@@ -34,6 +35,7 @@ const Verify = () => {
       setVerifyFailed(true);
     },
   });
+
   const { mutate: sendVerificationEmail } = api.auth.resendEmail.useMutation({
     onSuccess: () => {
       toast({
@@ -64,6 +66,8 @@ const Verify = () => {
   useEffect(() => {
     if (verifyToken) {
       verifyEmail({ token: verifyToken });
+    } else {
+      setVerifyFailed(true);
     }
   }, [verifyToken, verifyEmail]);
 
@@ -170,13 +174,15 @@ const Verify = () => {
               <div className="text-center">
                 Invalid or Expired Verification Token.
               </div>
-              <Button
-                variant="primary"
-                className="mx-auto mt-6 w-fit text-sm"
-                onClick={handleResendVerification}
-              >
-                Request New Verification Link
-              </Button>
+              {verifyToken && (
+                <Button
+                  variant="primary"
+                  className="mx-auto mt-6 w-fit text-sm"
+                  onClick={handleResendVerification}
+                >
+                  Request New Verification Link
+                </Button>
+              )}
             </div>
           )}
           {!verifySuccess && !verifyFailed && (
