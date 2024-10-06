@@ -1,60 +1,51 @@
-import Head from "next/head";
-import { useState } from "react";
-import { hackerLoginRedirect } from "~/utils/redirect";
-import { useToast } from "~/components/hooks/use-toast";
 import Image from "next/image";
-import { api } from "~/utils/api";
-import { Input } from "~/components/ui/input";
+import Head from "next/head";
 import { Button } from "~/components/ui/button";
+import { api } from "~/utils/api";
+import { useToast } from "~/components/hooks/use-toast";
+import { useState } from "react";
+import { signOut } from "next-auth/react";
+import { isVerifiedRedirect } from "~/utils/redirect";
+import { useRouter } from "next/router";
 
-export default function ResetRequest() {
-  const [email, setEmail] = useState("");
-  const [resetRequsted, setResetRequested] = useState(false);
+const NotVerified = () => {
   const { toast } = useToast();
-  const reset = api.auth.reset.useMutation({
+  const router = useRouter();
+  const { mutate: sendVerificationEmail } = api.auth.resendEmail.useMutation({
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Password reset email sent!",
+        title: "Verification Email Sent",
+        description: "Check your inbox for a verification email.",
         variant: "default",
       });
-      setResetRequested(true);
     },
-    onError: (error) => {
+    onError: () => {
       toast({
-        title: "Error",
-        description: error.message ?? "Error sending reset email.",
+        title: "Error Sending Verification Email",
+        description: "Please try again later.",
         variant: "destructive",
       });
-      console.log("error sending email", error);
     },
   });
+  const [verificationSent, setVerificationSent] = useState(false);
 
-  async function handleSubmit() {
-    if (!email) {
+  const handleResendVerification = () => {
+    if (!verificationSent) {
+      sendVerificationEmail();
+      setVerificationSent(true);
+    } else {
       toast({
-        title: "Error",
-        description: "Please enter your email",
+        title: "Verification Email Already Sent",
+        description: "Check your inbox for a verification email.",
         variant: "destructive",
       });
-      return;
     }
-    if (resetRequsted) {
-      toast({
-        title: "Error",
-        description:
-          "You have already requested a password reset, please try again in a few minutes.",
-        variant: "destructive",
-      });
-      return;
-    }
-    reset.mutate({ email });
-  }
+  };
 
   return (
     <>
       <Head>
-        <title>Hack Western</title>
+        <title>Verify Email</title>
         <meta
           name="description"
           content="Hack Western: One of Canada's largest annual student-run hackathons based out of Western University in London, Ontario."
@@ -123,28 +114,38 @@ export default function ResetRequest() {
         </div>
         {/* Grain Filter */}
         <Image
-          className="absolute left-0 top-0 select-none opacity-20"
+          className="absolute left-0 top-0 opacity-20"
           src="/images/hwfilter.png"
           alt="Hack Western Main Page"
           layout="fill"
           objectFit="cover"
         />
-        <div className="z-10 w-full max-w-2xl rounded-lg bg-[rgba(248,245,255,0.75)] p-12 shadow-md backdrop-blur-xl">
-          <h2 className="mb-2 text-3xl font-bold">Reset Password</h2>
-          <h2>We&apos;ll send you a link to reset your password.</h2>
-          <h2 className="mb-2 mt-6 text-sm">Email</h2>
-          <Input type="email" onChange={(e) => setEmail(e.target.value)} />
-          <Button
-            variant="primary"
-            className="mt-6 w-full"
-            onClick={handleSubmit}
-          >
-            Reset Password
-          </Button>
+        <div className="z-10 flex w-full max-w-2xl flex-col justify-center gap-6 rounded-lg bg-violet-50 bg-white p-8 shadow-md">
+          <p>
+            You have registered successfully! Please verify your email before
+            continuing. If you do not see an email, try requesting a new one.
+          </p>
+          <div className="flex justify-between">
+            <Button
+              variant="primary"
+              className="w-fit text-sm"
+              onClick={handleResendVerification}
+            >
+              Request New Verification Link
+            </Button>
+
+            <Button
+              variant="destructive"
+              onClick={() => signOut().then(() => void router.push("/login"))}
+            >
+              Sign Out
+            </Button>
+          </div>
         </div>
       </div>
     </>
   );
-}
+};
 
-export const getServerSideProps = hackerLoginRedirect;
+export default NotVerified;
+export const getServerSideProps = isVerifiedRedirect;
