@@ -11,15 +11,21 @@ import { resetTemplate } from "./password-reset-template";
 import { authOptions } from "~/server/auth";
 
 const TOKEN_EXPIRY = 1000 * 60 * 11; // 11 minutes
+const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters long")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number")
+  .regex(/[^a-zA-Z0-9]/, "Password must contain at least one symbol");
 
 const createInputSchema = z.object({
   email: z.string().email("Invalid email format"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters long")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number")
-    .regex(/[^a-zA-Z0-9]/, "Password must contain at least one symbol"),
+  password: passwordSchema,
+});
+
+const setPasswordInputSchema = z.object({
+  token: z.string().length(40, "Invalid token"),
+  password: passwordSchema,
 });
 
 export const authRouter = createTRPCRouter({
@@ -60,7 +66,7 @@ export const authRouter = createTRPCRouter({
           },
         });
 
-      const resetLink = `https://hackwestern.com/login/set-password?token=${resetToken}`;
+      const resetLink = `https://hackwestern.com/reset-password?token=${resetToken}`;
       const emailReq = mailjet.post("send", { version: "v3.1" }).request({
         Messages: [
           {
@@ -151,7 +157,7 @@ export const authRouter = createTRPCRouter({
     }),
 
   setPassword: publicProcedure
-    .input(z.object({ token: z.string(), password: z.string() }))
+    .input(setPasswordInputSchema)
     .mutation(async ({ input }) => {
       try {
         const token = await db.query.resetPasswordTokens.findFirst({
@@ -175,12 +181,19 @@ export const authRouter = createTRPCRouter({
         const salt: string = await bcrypt.genSalt(10);
         const hashedPassword: string = await bcrypt.hash(input.password, salt);
 
+        // update user password
         await db
           .update(users)
           .set({
             password: hashedPassword,
           })
           .where(eq(users.id, token.userId));
+
+        // delete token after use
+        await db
+          .delete(resetPasswordTokens)
+          .where(eq(resetPasswordTokens.token, input.token));
+
         return {
           success: true,
         };
@@ -192,5 +205,31 @@ export const authRouter = createTRPCRouter({
               message: "Failed to set password: " + JSON.stringify(error),
             });
       }
+    }),
+
+  checkValidToken: publicProcedure
+    .input(z.object({ token: z.string() }))
+    .query(async ({ input }) => {
+      const token = await db.query.resetPasswordTokens.findFirst({
+        where: eq(resetPasswordTokens.token, input.token),
+      });
+
+      if (!token) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Token not found",
+        });
+      }
+
+      if (token.expires < new Date()) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Token has expired",
+        });
+      }
+
+      return {
+        success: true,
+      };
     }),
 });

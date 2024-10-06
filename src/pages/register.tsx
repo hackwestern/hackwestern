@@ -168,7 +168,7 @@ export default function Register() {
             Forget password?{" "}
             <Link
               className="text-purple-500 underline hover:text-violet-700"
-              href="/reset-password"
+              href="/forgot-password"
             >
               Reset Password
             </Link>
