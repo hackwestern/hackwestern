@@ -82,7 +82,7 @@ const Projects = () => {
         <div className="absolute h-[100vh] w-5/6 border-x-[16px] border-[#5D528A] px-4 md:w-2/3 2xl:w-1/2 3xl:w-1/3" />
       </div>
       <div className="w-full animate-small-bounce overflow-clip">
-        <div className="animate-suitcase-slide-small -mb-1 flex gap-8 hover:[animation-play-state:paused] md:animate-suitcase-slide xl:gap-16 2xl:gap-20 3xl:gap-28 4xl:gap-36">
+        <div className="-mb-1 flex animate-suitcase-slide-small gap-8 hover:[animation-play-state:paused] md:animate-suitcase-slide xl:gap-16 2xl:gap-20 3xl:gap-28 4xl:gap-36">
           {
             /* suitcases (projects) */
             bigListProjects.map((project, i) =>
