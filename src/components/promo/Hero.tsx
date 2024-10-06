@@ -1,12 +1,9 @@
 import Image from "next/image";
 import Header from "./header";
 import { Button } from "../ui/button";
-import { useRouter } from "next/router";
 import Link from "next/link";
 
 function Hero() {
-  const router = useRouter();
-
   return (
     <div className="relative h-screen flex-col items-center justify-center overflow-x-clip bg-hw-radial-gradient">
       <Header />
@@ -61,7 +58,7 @@ function Hero() {
       {/* Grain Filter */}
       <div className="absolute left-0 top-0 h-full w-full">
         <Image
-          className="opacity-20"
+          className="select-none opacity-20"
           src="/images/hwfilter.png"
           alt="Hack Western Main Page"
           fill

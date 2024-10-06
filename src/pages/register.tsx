@@ -115,7 +115,7 @@ export default function Register() {
         </div>
         {/* Grain Filter */}
         <Image
-          className="absolute left-0 top-0 opacity-20"
+          className="absolute left-0 top-0 select-none opacity-20"
           src="/images/hwfilter.png"
           alt="Hack Western Main Page"
           layout="fill"
@@ -158,10 +158,19 @@ export default function Register() {
           <div className="mt-4">
             <GithubAuthButton redirect="/dashboard" register={true} />
           </div>
-          <div className="my-4">
+          <div className="mt-4">
             Already have an account?{" "}
             <Link href="/login" className="text-blue-500 hover:text-purple-700">
               Login
+            </Link>
+          </div>
+          <div>
+            Forget password?{" "}
+            <Link
+              className="text-purple-500 underline hover:text-violet-700"
+              href="/forgot-password"
+            >
+              Reset Password
             </Link>
           </div>
         </div>
