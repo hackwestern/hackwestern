@@ -148,7 +148,7 @@ export const isVerifiedRedirect = async (
       .where(eq(users.id, session.user.id));
   }
 
-  if (user?.emailVerified || isOAuthUser) {
+  if (!!user?.emailVerified || isOAuthUser) {
     return {
       redirect: {
         destination: "/dashboard",
