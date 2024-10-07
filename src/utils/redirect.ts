@@ -119,9 +119,6 @@ export const isVerifiedRedirect = async (
 
   const user = await db.query.users.findFirst({
     where: (users, { eq }) => eq(users.id, session?.user.id),
-    with: {
-      accounts: true,
-    },
   });
 
   // redirect to dashboard if user is verified, or they don't have a password (oauth user)
