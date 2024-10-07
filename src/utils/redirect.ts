@@ -2,8 +2,6 @@ import { type GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
-import { users } from "~/server/db/schema";
-import { eq } from "drizzle-orm";
 
 const authRedirect = async (
   context: GetServerSidePropsContext,
@@ -89,19 +87,12 @@ export const notVerifiedRedirect = async (
     },
   });
 
-  const isOAuthUser = !!user?.accounts.some((ac) => ac.type === "oauth");
-  const now = new Date();
+  const emailIsVerified = !!user?.emailVerified;
+  const userHasPassword = !!user?.password;
 
-  if (isOAuthUser && !user?.emailVerified) {
-    await db
-      .update(users)
-      .set({
-        emailVerified: now,
-      })
-      .where(eq(users.id, session.user.id));
-  }
-
-  if (!user?.emailVerified && !isOAuthUser) {
+  // redirect to not-verified page if email is not verified AND they're not using oauth
+  // oauth users don't have passwords, so redirect if not verified and they have password
+  if (!emailIsVerified && userHasPassword) {
     return {
       redirect: {
         destination: "/not-verified",
@@ -136,19 +127,8 @@ export const isVerifiedRedirect = async (
     },
   });
 
-  const isOAuthUser = !!user?.accounts.some((ac) => ac.type === "oauth");
-  const now = new Date();
-
-  if (isOAuthUser && !user?.emailVerified) {
-    await db
-      .update(users)
-      .set({
-        emailVerified: now,
-      })
-      .where(eq(users.id, session.user.id));
-  }
-
-  if (!!user?.emailVerified || isOAuthUser) {
+  // redirect to dashboard if user is verified, or they don't have a password (oauth user)
+  if (!!user?.emailVerified || !user?.password) {
     return {
       redirect: {
         destination: "/dashboard",
