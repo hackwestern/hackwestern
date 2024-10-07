@@ -2,6 +2,8 @@ import { type GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
+import { users } from "~/server/db/schema";
+import { eq } from "drizzle-orm";
 
 const authRedirect = async (
   context: GetServerSidePropsContext,
@@ -82,9 +84,24 @@ export const notVerifiedRedirect = async (
 
   const user = await db.query.users.findFirst({
     where: (users, { eq }) => eq(users.id, session?.user.id),
+    with: {
+      accounts: true,
+    },
   });
 
-  if (!user?.emailVerified) {
+  const isOAuthUser = !!user?.accounts.some((ac) => ac.type === "oauth");
+  const now = new Date();
+
+  if (isOAuthUser && !user?.emailVerified) {
+    await db
+      .update(users)
+      .set({
+        emailVerified: now,
+      })
+      .where(eq(users.id, session.user.id));
+  }
+
+  if (!user?.emailVerified && !isOAuthUser) {
     return {
       redirect: {
         destination: "/not-verified",

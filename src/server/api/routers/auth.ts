@@ -215,7 +215,22 @@ export const authRouter = createTRPCRouter({
 
     const user = await db.query.users.findFirst({
       where: eq(users.id, ctx.session.user.id),
+      with: {
+        accounts: true,
+      },
     });
+
+    const isOAuthUser = !!user?.accounts.some((ac) => ac.type === "oauth");
+    const now = new Date();
+
+    if (isOAuthUser && !user?.emailVerified) {
+      await db
+        .update(users)
+        .set({
+          emailVerified: now,
+        })
+        .where(eq(users.id, ctx.session.user.id));
+    }
 
     if (!user) {
       throw new TRPCError({
@@ -225,7 +240,7 @@ export const authRouter = createTRPCRouter({
     }
 
     return {
-      verified: user.emailVerified,
+      verified: user.emailVerified ?? now,
     };
   }),
 
