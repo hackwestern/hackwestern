@@ -82,9 +82,6 @@ export const notVerifiedRedirect = async (
 
   const user = await db.query.users.findFirst({
     where: (users, { eq }) => eq(users.id, session?.user.id),
-    with: {
-      accounts: true,
-    },
   });
 
   const emailIsVerified = !!user?.emailVerified;
