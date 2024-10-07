@@ -54,6 +54,46 @@ function Hero() {
             objectFit="contain"
           />
         </div>
+        <div className="animate-star-pulse-1 absolute left-[7%] top-[28%] z-40 h-[70px] w-[70px] md:top-[18%]  ">
+          <Image
+            src="/images/promostar.svg"
+            alt="hack western star"
+            className="object-contain"
+            fill
+          />
+        </div>
+        <div className="animate-star-pulse-2 absolute left-[25%] top-[40%] z-40 hidden h-[100px] w-[100px] md:block  ">
+          <Image
+            src="/images/promostar.svg"
+            alt="hack western star"
+            className="object-contain"
+            fill
+          />
+        </div>
+        <div className="animate-star-pulse-3 absolute left-[70%] top-[30%] z-40 hidden h-[55px] w-[55px] md:block  ">
+          <Image
+            src="/images/promostar.svg"
+            alt="hack western star"
+            className="object-contain"
+            fill
+          />
+        </div>
+        <div className="animate-star-pulse-1 absolute left-[85%] top-[10%] z-40 h-[70px] w-[70px]  ">
+          <Image
+            src="/images/promostar.svg"
+            alt="hack western star"
+            className="object-contain"
+            fill
+          />
+        </div>
+        <div className="animate-star-pulse-2 absolute left-[85%] top-[65%] z-40 h-[70px] w-[70px]  ">
+          <Image
+            src="/images/promostar.svg"
+            alt="hack western star"
+            className="object-contain"
+            fill
+          />
+        </div>
       </div>
       {/* Grain Filter */}
       <div className="absolute left-0 top-0 h-full w-full">

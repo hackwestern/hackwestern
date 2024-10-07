@@ -11,7 +11,7 @@ function About() {
           alt="Hack Western Main Page"
           fill
         />
-        <div className="absolute z-40 h-[50%] w-[100%] animate-cloud2 delay-75 md:h-[60%] lg:h-[75%] xl:h-[90%]">
+        <div className="absolute z-40 h-[120%] w-[100%] animate-cloud1 delay-75 sm:h-[60%] lg:h-[100%] xl:-top-40 xl:h-[150%]">
           <Image
             src="/images/aboutcloud.svg"
             alt="hack western cloud"
@@ -19,10 +19,42 @@ function About() {
             fill
           />
         </div>
+        <div className="absolute -top-24 z-20 h-[300%] w-[100%] animate-cloud4 delay-75 sm:top-0 sm:h-[150%] lg:h-[150%] xl:-top-24 xl:h-[200%]">
+          <Image
+            src="/images/aboutcloud2.svg"
+            alt="hack western cloud"
+            className="object-contain object-left"
+            fill
+          />
+        </div>
         <div className="relative z-30 mx-auto flex h-full w-[90%] lg:w-[50%]">
           <Image
             src="/images/aboutticket.svg"
             alt="hack western about ticket"
+            className="object-contain"
+            fill
+          />
+        </div>
+        <div className="animate-star-pulse-1 absolute left-[7%] top-[130%] z-40 h-[70px] w-[70px]  ">
+          <Image
+            src="/images/promostar.svg"
+            alt="hack western star"
+            className="object-contain"
+            fill
+          />
+        </div>
+        <div className="animate-star-pulse-3 absolute left-[70%] top-[10%] z-40 hidden h-[55px] w-[55px] md:block  ">
+          <Image
+            src="/images/promostar.svg"
+            alt="hack western star"
+            className="object-contain"
+            fill
+          />
+        </div>
+        <div className="animate-star-pulse-1 absolute left-[85%] top-[80%] z-40 h-[70px] w-[70px]  ">
+          <Image
+            src="/images/promostar.svg"
+            alt="hack western star"
             className="object-contain"
             fill
           />
