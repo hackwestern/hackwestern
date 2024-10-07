@@ -6,6 +6,7 @@ import { api } from "~/utils/api";
 import { useToast } from "~/components/hooks/use-toast";
 import { useRouter } from "next/router";
 import { Button } from "~/components/ui/button";
+import { isVerifiedRedirect } from "~/utils/redirect";
 
 const Verify = () => {
   const router = useRouter();
@@ -195,3 +196,4 @@ const Verify = () => {
 };
 
 export default Verify;
+export const getServerSideProps = isVerifiedRedirect;
