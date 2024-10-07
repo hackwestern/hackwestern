@@ -69,7 +69,8 @@ const Verify = () => {
     } else {
       setVerifyFailed(true);
     }
-  }, [verifyToken, verifyEmail]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleResendVerification = () => {
     if (!verificationSent) {
