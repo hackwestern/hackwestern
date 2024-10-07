@@ -129,6 +129,7 @@ const config = {
         cloud2: "inv-float 6s ease-in-out infinite",
         cloud3: "float 12s ease-in-out infinite",
         cloud4: "inv-float 14s ease-in-out infinite",
+        plane: "float 10s ease-in-out infinite",
         "small-bounce": "small-bounce 0.75s ease-in-out infinite",
         wiggle: "wiggle 1s ease-in-out infinite",
         "suitcase-slide": "suitcase-slide 120s linear infinite",
