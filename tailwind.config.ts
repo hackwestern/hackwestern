@@ -121,6 +121,22 @@ const config = {
           "0%": { transform: "rotate(0deg)" },
           "100%": { transform: "rotate(-360deg)" },
         },
+        pulse: {
+          "0%, 100%" : {
+            transform: 'scale(1.05)', opacity: '1'
+          },
+          "50%" : {
+            transform: 'scale(1.)', opacity: '0.7' 
+          }
+        },
+        "inv-pulse": {
+          "0%, 100%" : {
+            transform: 'scale(1)', opacity: '0.7' 
+          },
+          "50%" : {
+            transform: 'scale(1.05)', opacity: '1'
+          }
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -137,6 +153,13 @@ const config = {
         "spin-reverse": "spin-reverse 2s linear infinite",
         "organizer-slide": "suitcase-slide 180s linear infinite",
         "organizer-slide-small": "suitcase-slide-small 60s linear infinite",
+        "star-pulse-1": "pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite",
+        "star-pulse-2": "inv-pulse 3s cubic-bezier(0.4, 0, 0.2, 1) infinite",
+        "star-pulse-3": "pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite",
+        "star-pulse-4": "inv-pulse 4s cubic-bezier(0.4, 0, 0.2, 1) infinite"
+
+
+
       },
       backgroundImage: {
         "hw-radial-gradient":
