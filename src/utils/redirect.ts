@@ -84,7 +84,12 @@ export const notVerifiedRedirect = async (
     where: (users, { eq }) => eq(users.id, session?.user.id),
   });
 
-  if (!user?.emailVerified) {
+  const emailIsVerified = !!user?.emailVerified;
+  const userHasPassword = !!user?.password;
+
+  // redirect to not-verified page if email is not verified AND they're not using oauth
+  // oauth users don't have passwords, so redirect if not verified and they have password
+  if (!emailIsVerified && userHasPassword) {
     return {
       redirect: {
         destination: "/not-verified",
@@ -116,7 +121,8 @@ export const isVerifiedRedirect = async (
     where: (users, { eq }) => eq(users.id, session?.user.id),
   });
 
-  if (user?.emailVerified) {
+  // redirect to dashboard if user is verified, or they don't have a password (oauth user)
+  if (!!user?.emailVerified || !user?.password) {
     return {
       redirect: {
         destination: "/dashboard",
