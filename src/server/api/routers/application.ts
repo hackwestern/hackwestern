@@ -8,7 +8,7 @@ import {
   applicationSubmitSchema,
 } from "~/schemas/application";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
-import { eq } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure.query(async ({ ctx }) => {
@@ -117,4 +117,23 @@ export const applicationRouter = createTRPCRouter({
         });
       }
     }),
+
+  getAppStats: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      const applicationStats = await db
+        .select({
+          status: applications.status,
+          count: count(applications.userId),
+        })
+        .from(applications)
+        .groupBy(applications.status);
+
+      return applicationStats;
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch application stats: " + JSON.stringify(error),
+      });
+    }
+  }),
 });
