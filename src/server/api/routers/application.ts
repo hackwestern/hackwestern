@@ -118,20 +118,22 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
 
-    getAppStats: protectedProcedure.query(async ({ ctx }) => {
-      try {
-        const applicationStats = await db
-        .select({status: applications.status ,count: count(applications.userId)})
+  getAppStats: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      const applicationStats = await db
+        .select({
+          status: applications.status,
+          count: count(applications.userId),
+        })
         .from(applications)
         .groupBy(applications.status);
-        
-  
-        return applicationStats;
-      } catch (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch application stats: " + JSON.stringify(error),
-        });
-      }
-    }),
+
+      return applicationStats;
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch application stats: " + JSON.stringify(error),
+      });
+    }
+  }),
 });
