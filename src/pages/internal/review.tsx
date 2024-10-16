@@ -312,14 +312,20 @@ const Review = () => {
             </div>
             <div className="flex justify-between">
               {nextId ? (
-                <Button
-                  variant="primary"
-                  onClick={() => setSubmitSuccessful(false)}
-                >
-                  <Link href={`/internal/review?applicant=${nextId}`}>
-                    {submitSuccessful ? "Next" : "Skip"}
-                  </Link>
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Button
+                      variant="primary"
+                      onClick={() => setSubmitSuccessful(false)}
+                      disabled={form.formState.isSubmitting}
+                    >
+                      <Link href={`/internal/review?applicant=${nextId}`}>
+                        {submitSuccessful ? "Next" : "Skip"}
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{nextId}</TooltipContent>
+                </Tooltip>
               ) : (
                 <div />
               )}
@@ -405,7 +411,14 @@ const Review = () => {
             />
             <div className="z-10 my-8 flex w-[100%] flex-col items-center justify-center text-sm">
               <div className="z-50 flex w-11/12 flex-col justify-center overflow-y-auto rounded-[10px] border border-primary-300 bg-primary-100 p-8 2xl:w-3/5 3xl:w-2/5 4xl:w-1/3">
-                <div className="text-base">{`${applicationData?.firstName} ${applicationData?.lastName}`}</div>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="text-base">{`${applicationData?.firstName} ${applicationData?.lastName}`}</div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {`User ID: ${applicationData?.userId}`}
+                  </TooltipContent>
+                </Tooltip>
                 <div className="pt-3 font-semibold">
                   If you could have any superpower to help you during Hack
                   Western, what would it be and why?

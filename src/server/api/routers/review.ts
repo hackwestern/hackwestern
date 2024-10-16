@@ -254,24 +254,15 @@ export const reviewRouter = createTRPCRouter({
           });
         }
 
-        const appToReview = (
-          await db
-            .select()
-            .from(applications)
-            .where(sql`${applications.userId} = ${appAwaitingReview?.userId}`)
-        )[0];
-
-        // console.log(`created new review for user ${ctx.session.user.id}`)
-
         // Update the application status to in_review
         await db
           .update(applications)
           .set({ status: "IN_REVIEW" })
-          .where(eq(applications.userId, appToReview!.userId));
+          .where(eq(applications.userId, appAwaitingReview.userId));
 
         // console.log("updated application status to IN_REVIEW")
 
-        return appToReview?.userId;
+        return appAwaitingReview?.userId;
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
