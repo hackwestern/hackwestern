@@ -144,7 +144,9 @@ export const reviewRouter = createTRPCRouter({
         await db
           .select()
           .from(reviews)
-          .where(sql`${reviews.reviewerUserId}=${ctx.session.user.id}`)
+          .where(
+            sql`${reviews.reviewerUserId}=${ctx.session.user.id} AND ${reviews.completed} IS NOT TRUE`,
+          )
           .limit(1)
       )[0];
 
