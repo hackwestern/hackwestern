@@ -17,7 +17,7 @@ import {
   FormItem,
   FormLabel,
 } from "~/components/ui/form";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import {
   Tooltip,
@@ -30,6 +30,7 @@ import { useIsMutating } from "@tanstack/react-query";
 import { Spinner } from "~/components/loading-spinner";
 import { Textarea } from "~/components/ui/textarea";
 import { useToast } from "~/components/hooks/use-toast";
+import { useState } from "react";
 
 const Review = () => {
   const { toast } = useToast();
@@ -38,6 +39,7 @@ const Review = () => {
   const { data: applicationData } = api.application.getById.useQuery({
     applicantId,
   });
+  const [submitSuccessful, setSubmitSuccessful] = useState(false);
   const { data: reviewData } = api.review.getById.useQuery({ applicantId });
   const { mutate } = api.review.save.useMutation();
   const { mutate: submitReview } = api.review.submit.useMutation({
@@ -46,12 +48,26 @@ const Review = () => {
         title: "Review Submitted!",
         description: `View all your reviews on your dashboard. Click "Next" to move on to the next application.`,
       });
+      setSubmitSuccessful(true);
     },
+  });
+  const { data: nextId } = api.review.getNextId.useQuery({
+    skipId: applicantId,
   });
 
   const form = useForm<z.infer<typeof reviewSaveSchema>>({
     resolver: zodResolver(reviewSaveSchema),
   });
+
+  useEffect(() => {
+    if (applicantId && reviewData) {
+      // Reset form when applicantId or reviewData changes
+      form.reset({
+        ...reviewData,
+      });
+      setSubmitSuccessful(false); // Reset submit state
+    }
+  }, [applicantId, reviewData, form]);
 
   const defaultValues = useMemo(() => {
     if (!reviewData) return null;
@@ -97,7 +113,7 @@ const Review = () => {
                   variant="link"
                   asChild
                 >
-                  <Link href="/internal/dashboard">Back to Dashboard</Link>
+                  <Link href="/internal">Back to Dashboard</Link>
                 </Button>
               </nav>
               <h1 className="text-2xl font-medium">Review Guidelines</h1>
@@ -112,7 +128,7 @@ const Review = () => {
                 <li>
                   Hover over the emojis{" "}
                   <Tooltip>
-                    <TooltipTrigger>🤩</TooltipTrigger>
+                    <TooltipTrigger>🤑</TooltipTrigger>
                     <TooltipContent>They have tooltips!</TooltipContent>
                   </Tooltip>
                 </li>
@@ -295,16 +311,19 @@ const Review = () => {
               <SavedIndicator />
             </div>
             <div className="flex justify-between">
-              {reviewData?.completed ? (
+              {nextId ? (
                 <Button
                   variant="primary"
-                  onClick={() => alert("this should go to next review")}
+                  onClick={() => setSubmitSuccessful(false)}
                 >
-                  Next
+                  <Link href={`/internal/review?applicant=${nextId}`}>
+                    {submitSuccessful ? "Next" : "Skip"}
+                  </Link>
                 </Button>
               ) : (
-                <Button>Skip</Button>
+                <div />
               )}
+
               <Button
                 variant="primary"
                 onClick={onClickSubmit}

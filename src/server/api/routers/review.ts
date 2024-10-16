@@ -9,7 +9,19 @@ import {
   reviewSubmitSchema,
   referApplicantSchema,
 } from "~/schemas/review";
-import { asc, eq, lt, sql, count, and, not, or, isNull } from "drizzle-orm";
+import {
+  asc,
+  eq,
+  lt,
+  sql,
+  count,
+  and,
+  not,
+  or,
+  isNull,
+  ne,
+  notInArray,
+} from "drizzle-orm";
 
 const REQUIRED_REVIEWS = 2;
 
@@ -150,114 +162,123 @@ export const reviewRouter = createTRPCRouter({
   }),
 
   //TODO: Write unit tests for this router path
-  getNextId: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      // Remove expired reviews from the review table
-      // This is a SQL string because drizzle doesn't have USING (drizzle bad)
-      await db.execute(
-        sql`DELETE FROM hw11_review USING hw11_application AS app WHERE applicant_user_id = app.user_id AND app.updated_at < NOW() - INTERVAL '24 hours';`,
-      );
-
-      // console.log("deleted");
-
-      // Put applications with expired reviews back on the queue
-      await db
-        .update(applications)
-        .set({ status: "PENDING_REVIEW" })
-        .where(
-          sql`${applications.status}='IN_REVIEW' and ${applications.updatedAt} < now() - interval '24 hours'`,
+  getNextId: protectedProcedure
+    .input(
+      z.object({
+        skipId: z.string().nullish(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        // Remove expired reviews from the review table
+        // This is a SQL string because drizzle doesn't have USING (drizzle bad)
+        await db.execute(
+          sql`DELETE FROM hw11_review USING hw11_application AS app WHERE applicant_user_id = app.user_id AND NOW() - app.updated_at > INTERVAL '24 hours' AND completed != TRUE;`,
         );
 
-      // console.log("updated");
+        // console.log("deleted");
 
-      // If reviewer has a review in progress, return that
-      const reviewInProgress = (
+        // Put applications with expired reviews back on the queue
         await db
-          .select()
-          .from(reviews)
+          .update(applications)
+          .set({ status: "PENDING_REVIEW" })
           .where(
-            sql`${reviews.reviewerUserId}=${ctx.session.user.id} AND ${reviews.completed} IS NOT TRUE`,
-          )
-          .limit(1)
-      )[0];
-
-      if (reviewInProgress) {
-        // console.log("fetched review in progress")
-        const applicationInReview = await db
-          .select()
-          .from(applications)
-          .where(
-            sql`${applications.userId}=${reviewInProgress.applicantUserId}`,
+            sql`${applications.status}='IN_REVIEW' and ${applications.updatedAt} < now() - interval '2 hours'`,
           );
-        // console.log("fetched application being reviewed")
-        return { reviewInProgress, applicationInReview };
-      } else {
-        // console.log("no review in progress")
-      }
 
-      // Select first application that has not received the required number of reviews and has not been referred
-      const appAwaitingReview = (
-        await db
+        // console.log("updated");
+
+        // If reviewer has a review in progress, return that and not skipping current
+        if (!input.skipId) {
+          const reviewInProgress = (
+            await db
+              .select()
+              .from(reviews)
+              .where(
+                and(
+                  eq(reviews.reviewerUserId, ctx.session.user.id),
+                  eq(reviews.completed, false),
+                ),
+              )
+              .limit(1)
+          )[0];
+
+          if (reviewInProgress) {
+            return reviewInProgress.applicantUserId;
+          }
+        }
+
+        const reviewedByReviewer = await db
+          .select({ userId: reviews.applicantUserId })
+          .from(reviews)
+          .where(eq(reviews.reviewerUserId, ctx.session.user.id));
+
+        const reviewedIds = reviewedByReviewer.map((review) => review.userId);
+
+        // Select first application that has not received the required number of reviews and has not been referred, and not matching the one to skip
+        const appAwaitingReviews = await db
           .select({
             userId: applications.userId,
             reviewCount: count(reviews.applicantUserId).mapWith(Number),
           })
           .from(applications)
-          .leftJoin(reviews, eq(applications.userId, reviews.applicantUserId))
+          .leftJoin(
+            reviews,
+            and(eq(applications.userId, reviews.applicantUserId)),
+          )
           .where(
             and(
               eq(applications.status, "PENDING_REVIEW"),
               or(not(eq(reviews.referral, true)), isNull(reviews.referral)),
+              ne(applications.userId, input.skipId ?? ""),
+              // Don't review applications that have already been reviewed by the reviewer
+              notInArray(applications.userId, reviewedIds),
             ),
           )
           .groupBy(applications.userId)
           .having(({ reviewCount }) => lt(reviewCount, REQUIRED_REVIEWS))
           .orderBy(asc(applications.updatedAt))
-          .limit(1)
-      )[0];
+          .limit(15);
 
-      // If there are no applications awaiting review, return
-      if (!appAwaitingReview) {
+        // pick a random one
+        const appAwaitingReview =
+          appAwaitingReviews[
+            Math.floor(Math.random() * appAwaitingReviews.length)
+          ];
+
+        // If there are no applications awaiting review, return
+        if (!appAwaitingReview) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "There are no applications matching this query.",
+          });
+        }
+
+        const appToReview = (
+          await db
+            .select()
+            .from(applications)
+            .where(sql`${applications.userId} = ${appAwaitingReview?.userId}`)
+        )[0];
+
+        // console.log(`created new review for user ${ctx.session.user.id}`)
+
+        // Update the application status to in_review
+        await db
+          .update(applications)
+          .set({ status: "IN_REVIEW" })
+          .where(eq(applications.userId, appToReview!.userId));
+
+        // console.log("updated application status to IN_REVIEW")
+
+        return appToReview?.userId;
+      } catch (error) {
         throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "There are no applications matching this query.",
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch application: " + JSON.stringify(error),
         });
       }
-
-      const appToReview = (
-        await db
-          .select()
-          .from(applications)
-          .where(sql`${applications.userId} = ${appAwaitingReview?.userId}`)
-      )[0];
-
-      // Create a new review
-      await db
-        .insert(reviews)
-        .values({
-          reviewerUserId: ctx.session.user.id,
-          applicantUserId: appToReview!.userId,
-        })
-        .returning();
-
-      // console.log(`created new review for user ${ctx.session.user.id}`)
-
-      // Update the application status to in_review
-      await db
-        .update(applications)
-        .set({ status: "IN_REVIEW" })
-        .where(eq(applications.userId, appToReview!.userId));
-
-      // console.log("updated application status to IN_REVIEW")
-
-      return appToReview?.userId;
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch application: " + JSON.stringify(error),
-      });
-    }
-  }),
+    }),
 
   getById: protectedProcedure
     .input(
@@ -286,13 +307,20 @@ export const reviewRouter = createTRPCRouter({
           });
         }
 
-        const review = await db.query.reviews.findFirst({
-          where:
-            eq(reviews.applicantUserId, input.applicantId) &&
-            eq(reviews.reviewerUserId, reviewerId),
-        });
+        await db
+          .insert(reviews)
+          .values({
+            reviewerUserId: reviewerId,
+            applicantUserId: input.applicantId,
+          })
+          .onConflictDoNothing();
 
-        return review;
+        return await db.query.reviews.findFirst({
+          where: and(
+            eq(reviews.applicantUserId, input.applicantId),
+            eq(reviews.reviewerUserId, reviewerId),
+          ),
+        });
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
