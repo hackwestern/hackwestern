@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 
-import { Button } from "./ui/button";
+import { Button } from "./button";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];

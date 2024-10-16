@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { db } from "~/server/db";
 import { authOptions } from "~/server/auth";
 import { api } from "~/utils/api";
-import { DataTable } from "~/components/data-table";
+import { DataTable } from "~/components/ui/data-table";
 import { reviewDashboardColumns } from "~/components/columns";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {

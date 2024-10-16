@@ -26,7 +26,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       cell: ({ row }) => {
         const applicant: applicantType = row.getValue("applicant");
         const name: string = applicant.name;
-        return <div>{name}</div>;
+        return name;
       },
     },
     {
@@ -45,7 +45,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       cell: ({ row }) => {
         const applicant: applicantType = row.getValue("applicant");
         const email: string = applicant.email;
-        return <div>{email}</div>;
+        return email;
       },
     },
     {
