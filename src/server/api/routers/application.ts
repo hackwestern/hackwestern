@@ -39,12 +39,12 @@ export const applicationRouter = createTRPCRouter({
   getById: protectedProcedure
     .input(
       z.object({
-        userId: z.string().nullish(),
+        applicantId: z.string().nullish(),
       }),
     )
     .query(async ({ input }) => {
       try {
-        if (!input.userId) {
+        if (!input.applicantId) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Missing userId",
@@ -52,7 +52,7 @@ export const applicationRouter = createTRPCRouter({
         }
 
         const application = await db.query.applications.findFirst({
-          where: eq(applications.userId, input.userId),
+          where: eq(applications.userId, input.applicantId),
         });
 
         if (!application) {

@@ -1,31 +1,64 @@
 import Head from "next/head";
 import { useSearchParams } from "next/navigation";
-import { SavedIndicator } from "~/components/apply/saved-indicator";
 import { Button } from "~/components/ui/button";
 import { Slider } from "~/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { api } from "~/utils/api";
 import Image from "next/image";
 import Link from "next/link";
 import { authRedirectOrganizer } from "~/utils/redirect";
 import type { z } from "zod";
-import { useForm } from "react-hook-form";
-
 import { reviewSaveSchema } from "~/schemas/review";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useAutoSave } from "~/components/hooks/use-auto-save";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "~/components/ui/form";
+import { useMemo } from "react";
+import { useForm } from "react-hook-form";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
+import { formattedDate } from "~/components/apply/saved-indicator";
+import { useIsMutating } from "@tanstack/react-query";
+import { Spinner } from "~/components/loading-spinner";
+import { Textarea } from "~/components/ui/textarea";
+import { useToast } from "~/components/hooks/use-toast";
 
 const Review = () => {
-  const utils = api.useUtils();
-  const { mutate } = api.review.save.useMutation();
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const applicantId = searchParams.get("applicant");
   const { data: applicationData } = api.application.getById.useQuery({
-    userId: applicantId,
+    applicantId,
+  });
+  const { data: reviewData } = api.review.getById.useQuery({ applicantId });
+  const { mutate } = api.review.save.useMutation();
+  const { mutate: submitReview } = api.review.submit.useMutation({
+    onSuccess: () => {
+      toast({
+        title: "Review Submitted!",
+        description: `View all your reviews on your dashboard. Click "Next" to move on to the next application.`,
+      });
+    },
   });
 
   const form = useForm<z.infer<typeof reviewSaveSchema>>({
     resolver: zodResolver(reviewSaveSchema),
   });
+
+  const defaultValues = useMemo(() => {
+    if (!reviewData) return null;
+    return {
+      ...reviewData,
+    };
+  }, [reviewData]);
 
   const onSubmit = (data: z.infer<typeof reviewSaveSchema>) => {
     mutate({
@@ -33,11 +66,16 @@ const Review = () => {
     });
   };
 
-  const heading = "Heading";
-  const subheading = "Subheading";
+  useAutoSave(form, onSubmit, defaultValues);
+
+  const onClickSubmit = () => {
+    submitReview({
+      ...form.getValues(),
+    });
+  };
 
   return (
-    <>
+    <TooltipProvider>
       <Head>
         <title>Hack Western</title>
         <meta
@@ -46,105 +84,11 @@ const Review = () => {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="flex h-screen flex-col items-center bg-primary-50 bg-hw-linear-gradient-day">
-        <Tabs defaultValue="application" className="w-screen pt-16 md:hidden">
-          <TabsList className="fixed z-50 w-screen justify-around rounded-none bg-primary-100">
-            <TabsTrigger
-              value="application"
-              className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
-            >
-              Application
-            </TabsTrigger>
-            <TabsTrigger
-              value="passport"
-              className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
-            >
-              Passport
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="application" className="z-40 w-screen">
-            <div className="fixed flex h-screen w-screen flex-col space-y-8 bg-primary-100 px-6 pt-12">
-              <div className="space-y-2 py-1.5">
-                <h1 className="text-2xl font-medium">{heading}</h1>
-                <h2 className="text-sm text-slate-500">{subheading}</h2>
-              </div>
-              <div className="self-end pb-3">
-                <SavedIndicator />
-              </div>
-              <div className="select-none bg-primary-100 py-12 text-primary-100">
-                this is a secret
-              </div>
-            </div>
-          </TabsContent>
-          <TabsContent
-            value="passport"
-            className="flex flex-col justify-center"
-          >
-            <div className="flex h-[85vh] w-screen flex-col items-center justify-center px-4"></div>
-            {/* Clouds */}
-            <div className="absolute bottom-0 left-0 h-full w-full md:h-full md:w-[80%]">
-              <Image
-                src="/images/cloud5.svg"
-                alt="hack western cloud"
-                className="object-contain object-left-bottom"
-                fill
-              />
-            </div>
-            <div className="absolute bottom-0 right-0 h-full w-full md:h-[90%] md:w-[70%] lg:h-[100%]">
-              <Image
-                src="/images/cloud6.svg"
-                alt="hack western cloud"
-                className="object-contain object-right-bottom"
-                fill
-              />
-            </div>
-            <div className="absolute bottom-0 left-0 h-full w-[50%] md:h-full md:w-[30%]">
-              <Image
-                src="/images/cloud7.svg"
-                alt="hack western cloud"
-                className="object-contain object-left-bottom"
-                fill
-              />
-            </div>
-            <div className="absolute bottom-0 right-0 h-full w-[50%] md:h-full md:w-[40%] lg:h-[50%] lg:w-[30%]">
-              <Image
-                src="/images/cloud8.svg"
-                alt="hack western cloud"
-                className="object-contain object-right-bottom"
-                fill
-              />
-            </div>
-            {/* Stars */}
-            <div className="absolute bottom-[24%] left-[20%] h-full w-[20%] md:w-[10%] lg:w-[5%]">
-              <Image
-                src="/images/star.svg"
-                alt="hack western star"
-                className="object-contain"
-                fill
-              />
-            </div>
-            <div className="absolute bottom-[30%] right-[25%] h-full w-[15%] md:w-[7%] lg:w-[3%]">
-              <Image
-                src="/images/star.svg"
-                alt="hack western star"
-                className="object-contain"
-                fill
-              />
-            </div>
-            {/* Grain Filter */}
-            <Image
-              className="absolute left-0 top-0 opacity-20"
-              src="/images/hwfilter.png"
-              alt="Hack Western Main Page"
-              layout="fill"
-              objectFit="cover"
-            />
-          </TabsContent>
-        </Tabs>
-        <div className="relative z-10 hidden w-full flex-grow items-center md:flex">
+      <main className="flex flex-col items-center bg-primary-50 bg-hw-linear-gradient-day md:h-screen">
+        <div className="relative z-[100] w-full flex-grow items-center md:flex">
           <div
             id="left-panel"
-            className="z-10 flex h-screen flex-grow flex-col justify-between space-y-8 overflow-auto bg-primary-100 p-9 pb-[4.1rem] md:w-2/3 2xl:w-1/2"
+            className="flex flex-grow flex-col justify-between space-y-8 overflow-auto bg-primary-100 p-9 pb-[4.1rem] md:h-screen md:w-2/3 2xl:w-1/2"
           >
             <div className="space-y-2 p-1">
               <nav className="flex px-1 pb-3">
@@ -153,21 +97,229 @@ const Review = () => {
                   variant="link"
                   asChild
                 >
-                  <Link href="/internal/dashboard">Dashboard</Link>
+                  <Link href="/internal/dashboard">Back to Dashboard</Link>
                 </Button>
               </nav>
-              <h1 className="text-2xl font-medium">heading</h1>
-              <h2 className="text-sm text-slate-500 lg:text-base">
-                subheading
-              </h2>
+              <h1 className="text-2xl font-medium">Review Guidelines</h1>
+              <ul className="my-4 ml-2 list-disc text-sm text-slate-500 lg:text-base">
+                <li>Create a supportive, diverse, and curious community</li>
+                <li>Accept by merit, aim for equality</li>
+                <li>
+                  Uphold our duty to select deserving individuals fairly and
+                  without bias
+                </li>
+                <li>No-fly list oop</li>
+                <li>
+                  Hover over the emojis{" "}
+                  <Tooltip>
+                    <TooltipTrigger>🤩</TooltipTrigger>
+                    <TooltipContent>They have tooltips!</TooltipContent>
+                  </Tooltip>
+                </li>
+              </ul>
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-2 pt-5"
+                >
+                  <FormField
+                    control={form.control}
+                    name="originalityRating"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xl">Originality</FormLabel>
+                        <FormControl>
+                          <div className="flex text-lg">
+                            <Tooltip>
+                              <TooltipTrigger>🙄</TooltipTrigger>
+                              <TooltipContent>
+                                <ul className="max-w-96 list-disc px-3">
+                                  <li>Very lame</li>
+                                  <li>Same projects as everyone else</li>
+                                </ul>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Slider
+                              value={[field.value ?? 0]}
+                              onValueChange={(values) => {
+                                field.onChange(values[0]);
+                              }}
+                            />
+                            <Tooltip>
+                              <TooltipTrigger>🤩</TooltipTrigger>
+                              <TooltipContent>
+                                <ul className="max-w-96 list-disc px-3">
+                                  <li>Novel: ideas are unique!</li>
+                                  <li>
+                                    Creative: out-of-the-box thinking, creative
+                                    problem solving techniques
+                                  </li>
+                                  <li>
+                                    Ownership: their OWN work, could be a team
+                                    effort, but still showcases personal
+                                    experiences
+                                  </li>
+                                </ul>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="technicalityRating"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xl">Technicality</FormLabel>
+                        <FormControl>
+                          <div className="flex text-lg">
+                            <Tooltip>
+                              <TooltipTrigger>😵‍💫</TooltipTrigger>
+                              <TooltipContent>
+                                <ul className="max-w-96 list-disc px-3">
+                                  <li>Resume shows no relevant experience</li>
+                                  <li>
+                                    No github or barren github (less relevant
+                                    than resume)
+                                  </li>
+                                </ul>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Slider
+                              value={[field.value ?? 0]}
+                              onValueChange={(values) => {
+                                field.onChange(values[0]);
+                              }}
+                            />
+                            <Tooltip>
+                              <TooltipTrigger>🤓</TooltipTrigger>
+                              <TooltipContent>
+                                <ul className="max-w-96 list-disc px-3">
+                                  <li>
+                                    Projects: Multiple projects and Git commits
+                                    consistently spread across a long period of
+                                    time and all projects have high quality and
+                                    usability
+                                  </li>
+                                  <li>
+                                    Resume: Held technical positions in
+                                    clubs/internships and resume shows strong
+                                    technical experience
+                                  </li>
+                                </ul>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="passionRating"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xl">
+                          Passion and Potential
+                        </FormLabel>
+                        <FormControl>
+                          <div className="flex text-lg">
+                            <Tooltip>
+                              <TooltipTrigger>😴</TooltipTrigger>
+                              <TooltipContent>
+                                <ul className="max-w-96 list-disc px-3">
+                                  <li>
+                                    <b>BORINGGGGGGGGGGGG</b> (respectfully)
+                                  </li>
+                                  <li>Thank you, NEXT (respectfully)</li>
+                                  <li>
+                                    Short ass responses that have no thought
+                                    (not respectfully)
+                                  </li>
+                                </ul>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Slider
+                              value={[field.value ?? 0]}
+                              onValueChange={(values) => {
+                                field.onChange(values[0]);
+                              }}
+                            />
+                            <Tooltip>
+                              <TooltipTrigger>🔥</TooltipTrigger>
+                              <TooltipContent>
+                                <ul className="max-w-96 list-disc px-3">
+                                  <li>
+                                    Interest in tech: Strong personal interest
+                                    in technology and hackathons
+                                  </li>
+                                  <li>
+                                    Character: Cares about leaving a meaningful
+                                    impact and seems like a good fun person :D
+                                  </li>
+                                  <li>
+                                    Preparation: Well-thought-out long answers
+                                    and uses the word limit effectively
+                                  </li>
+                                </ul>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="comments"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xl">
+                          Additional Comments (these are only visible to you)
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            value={field.value ?? ""}
+                            placeholder="Additional Comments"
+                            variant="primary"
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </form>
+              </Form>
+              <SavedIndicator />
+            </div>
+            <div className="flex justify-between">
+              {reviewData?.completed ? (
+                <Button
+                  variant="primary"
+                  onClick={() => alert("this should go to next review")}
+                >
+                  Next
+                </Button>
+              ) : (
+                <Button>Skip</Button>
+              )}
+              <Button
+                variant="primary"
+                onClick={onClickSubmit}
+                disabled={form.formState.isSubmitting}
+              >
+                Submit!
+              </Button>
             </div>
           </div>
           <div
             id="right-panel"
-            className="flex h-full flex-col items-center justify-center bg-hw-linear-gradient-day px-4 md:w-full"
+            className="-z-10 flex h-full flex-col items-center justify-center bg-hw-linear-gradient-day px-4 md:w-full"
           >
             {/* Clouds */}
-            <div className="absolute bottom-0 left-0 h-full w-full md:h-full md:w-[80%]">
+            <div className="absolute bottom-0 left-0 -z-10 h-full w-full md:h-full md:w-[80%]">
               <Image
                 src="/images/cloud5.svg"
                 alt="hack western cloud"
@@ -175,7 +327,7 @@ const Review = () => {
                 fill
               />
             </div>
-            <div className="absolute bottom-0 right-0 h-full w-full md:h-[90%] md:w-[70%] lg:h-[100%]">
+            <div className="absolute bottom-0 right-0 -z-10 h-full w-full md:h-[90%] md:w-[70%] lg:h-[100%]">
               <Image
                 src="/images/cloud6.svg"
                 alt="hack western cloud"
@@ -183,7 +335,7 @@ const Review = () => {
                 fill
               />
             </div>
-            <div className="absolute bottom-0 left-0 h-full w-[50%] md:h-full md:w-[30%]">
+            <div className="absolute bottom-0 left-0 -z-10 h-full w-[50%] md:h-full md:w-[30%]">
               <Image
                 src="/images/cloud7.svg"
                 alt="hack western cloud"
@@ -191,7 +343,7 @@ const Review = () => {
                 fill
               />
             </div>
-            <div className="absolute bottom-0 right-0 h-full w-[50%] md:h-full md:w-[40%] lg:h-[50%] lg:w-[30%]">
+            <div className="absolute bottom-0 right-0 -z-10 h-full w-[50%] md:h-full md:w-[40%] lg:h-[50%] lg:w-[30%]">
               <Image
                 src="/images/cloud8.svg"
                 alt="hack western cloud"
@@ -200,7 +352,7 @@ const Review = () => {
               />
             </div>
             {/* Stars */}
-            <div className="absolute bottom-[20%] left-[20%] h-full w-[20%] md:w-[10%] lg:w-[5%]">
+            <div className="absolute bottom-[20%] left-[20%] -z-10 h-full w-[20%] md:w-[10%] lg:w-[5%]">
               <Image
                 src="/images/star.svg"
                 alt="hack western star"
@@ -208,7 +360,7 @@ const Review = () => {
                 fill
               />
             </div>
-            <div className="absolute bottom-[40%] right-[10%] h-full w-[15%] md:w-[7%] lg:w-[3%]">
+            <div className="absolute bottom-[40%] right-[10%] -z-10 h-full w-[15%] md:w-[7%] lg:w-[3%]">
               <Image
                 src="/images/star.svg"
                 alt="hack western star"
@@ -216,7 +368,7 @@ const Review = () => {
                 fill
               />
             </div>
-            <div className="absolute bottom-[25%] right-[15%] h-full w-[20%] md:w-[10%] lg:w-[5%] ">
+            <div className="absolute bottom-[25%] right-[15%] -z-10 h-full w-[20%] md:w-[10%] lg:w-[5%] ">
               <Image
                 src="/images/star2.svg"
                 alt="hack western star"
@@ -226,13 +378,13 @@ const Review = () => {
             </div>
             {/* Grain Filter */}
             <Image
-              className="absolute left-0 top-0 opacity-20"
+              className="absolute left-0 top-0 -z-10 opacity-20"
               src="/images/hwfilter.png"
               alt="Hack Western Main Page"
               layout="fill"
               objectFit="cover"
             />
-            <div className="z-10 flex w-[100%] flex-col items-center justify-center text-sm">
+            <div className="z-10 my-8 flex w-[100%] flex-col items-center justify-center text-sm">
               <div className="z-50 flex w-11/12 flex-col justify-center overflow-y-auto rounded-[10px] border border-primary-300 bg-primary-100 p-8 2xl:w-3/5 3xl:w-2/5 4xl:w-1/3">
                 <div className="text-base">{`${applicationData?.firstName} ${applicationData?.lastName}`}</div>
                 <div className="pt-3 font-semibold">
@@ -258,7 +410,11 @@ const Review = () => {
                     .map((link) => {
                       if (applicationData?.[link]) {
                         return (
-                          <Button variant="link" key={link} className="pl-0">
+                          <Button
+                            variant="link"
+                            key={link}
+                            className="my-0 pl-0 pt-0 text-primary-600"
+                          >
                             <a
                               href={applicationData[link]}
                               target="_blank"
@@ -276,7 +432,7 @@ const Review = () => {
           </div>
         </div>
       </main>
-    </>
+    </TooltipProvider>
   );
 };
 
@@ -292,6 +448,36 @@ const linkName = (link: string) => {
       return "Resume";
   }
 };
+
+function SavedIndicator() {
+  const searchParams = useSearchParams();
+  const applicantId = searchParams.get("applicant");
+  const { data: review } = api.review.getById.useQuery({ applicantId });
+  const isSaving = useIsMutating();
+
+  const formattedLastSavedAt = formattedDate(review?.updatedAt ?? null);
+
+  if (isSaving) {
+    return (
+      <div className="flex items-center gap-1 text-xs italic text-slate-400">
+        <Spinner isLoading className="size-3 fill-primary-100 text-slate-400" />
+        <span>Saving</span>
+      </div>
+    );
+  }
+
+  if (formattedLastSavedAt) {
+    return (
+      <div className="text-right text-xs italic text-slate-400">
+        Last Saved:
+        <br />
+        {formattedLastSavedAt}
+      </div>
+    );
+  }
+
+  return <></>;
+}
 
 export default Review;
 export const getServerSideProps = authRedirectOrganizer;

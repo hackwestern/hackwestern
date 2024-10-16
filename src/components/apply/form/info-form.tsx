@@ -21,7 +21,6 @@ import {
 } from "~/components/ui/select";
 import { schools } from "~/constants/schools";
 import {
-  countrySelection,
   levelOfStudy,
   major,
   numOfHackathons,
