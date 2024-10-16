@@ -1,9 +1,12 @@
 name: Test
 on:
+  workflow_dispatch:
   pull_request:
-    branches: main
+    branches:
+      - main
+      - dev
 jobs:
-  build-and-deploy:
+  build-and-test:
     runs-on: ubuntu-latest
     environment: test
     env:
@@ -34,7 +37,10 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: Install dependencies
-        run: rm package-lock.json && npm install
+        run: npm ci
+
+      - name: Run Build
+        run: npm run build
 
       - name: Start Postgres DB
         run: npm run db:start && sleep 2
@@ -44,4 +50,3 @@ jobs:
 
       - name: Run tests
         run: npx vitest
-

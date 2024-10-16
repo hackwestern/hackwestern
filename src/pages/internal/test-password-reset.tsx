@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Input } from "~/components/ui/input";
 import { api } from "~/utils/api";
-import { authRedirect } from "../../utils/redirect";
+import { authRedirectOrganizer } from "../../utils/redirect";
 
 const TestPasswordReset = () => {
   const reset = api.auth.reset.useMutation();
@@ -26,4 +26,4 @@ const TestPasswordReset = () => {
 };
 
 export default TestPasswordReset;
-export const getServerSideProps = authRedirect;
+export const getServerSideProps = authRedirectOrganizer;

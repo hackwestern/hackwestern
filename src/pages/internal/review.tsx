@@ -1,7 +1,7 @@
 import { type FC, useState } from "react";
 import { Slider } from "~/components/ui/slider";
 
-import { authRedirect } from "~/utils/redirect";
+import { authRedirectOrganizer } from "~/utils/redirect";
 
 const Review = () => {
   const [question1Rating, setQuestion1Rating] = useState(0);
@@ -44,7 +44,7 @@ const Review = () => {
       <h1 className="text-4xl text-white">Review Application</h1>
 
       {applicationData ? (
-        <div className="3xl:w-[60vw] 4xl:w-[52vw] flex w-[97vw] flex-col gap-3 p-8 sm:w-[94vw] md:w-[85vw] lg:w-[77vw] xl:w-[72vw] 2xl:w-[66vw]">
+        <div className="flex w-[97vw] flex-col gap-3 p-8 sm:w-[94vw] md:w-[85vw] lg:w-[77vw] xl:w-[72vw] 2xl:w-[66vw] 3xl:w-[60vw] 4xl:w-[52vw]">
           <RateQuestion
             section="Question 1"
             question={applicationData.question1}
@@ -151,7 +151,7 @@ const RateQuestion: FC<{
         className="w-full p-3"
         max={maxRating ?? 10}
         defaultValue={[rating]}
-        onValueChange={(e) => setRating(e[0] ?? 1)}
+        onValueChange={(e: number[]) => setRating(e[0] ?? 1)}
       />
     </div>
   );
@@ -184,4 +184,4 @@ const getMockApplicationData = async () => {
 };
 
 export default Review;
-export const getServerSideProps = authRedirect;
+export const getServerSideProps = authRedirectOrganizer;

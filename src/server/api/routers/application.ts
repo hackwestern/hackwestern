@@ -8,7 +8,7 @@ import {
   applicationSubmitSchema,
 } from "~/schemas/application";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
-import { eq } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure.query(async ({ ctx }) => {
@@ -21,10 +21,10 @@ export const applicationRouter = createTRPCRouter({
       const modifiedApplication = application
         ? {
             ...application,
-            githubLink: application?.githubLink?.substring(19),
-            linkedInLink: application?.linkedInLink?.substring(24),
+            githubLink: application?.githubLink?.substring(19) ?? null,
+            linkedInLink: application?.linkedInLink?.substring(24) ?? null,
           }
-        : undefined;
+        : null;
 
       return modifiedApplication;
     } catch (error) {
@@ -87,8 +87,12 @@ export const applicationRouter = createTRPCRouter({
           .insert(applications)
           .values({
             ...applicationData,
-            githubLink: `${GITHUB_URL}${applicationData.githubLink}`,
-            linkedInLink: `${LINKEDIN_URL}${applicationData.linkedInLink}`,
+            githubLink: applicationData.githubLink
+              ? `${GITHUB_URL}${applicationData.githubLink}`
+              : null,
+            linkedInLink: applicationData.linkedInLink
+              ? `${LINKEDIN_URL}${applicationData.linkedInLink}`
+              : null,
             userId,
             status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
           })
@@ -97,8 +101,12 @@ export const applicationRouter = createTRPCRouter({
             set: {
               ...applicationData,
               updatedAt: new Date(),
-              githubLink: `${GITHUB_URL}${applicationData.githubLink}`,
-              linkedInLink: `${LINKEDIN_URL}${applicationData.linkedInLink}`,
+              githubLink: applicationData.githubLink
+                ? `${GITHUB_URL}${applicationData.githubLink}`
+                : null,
+              linkedInLink: applicationData.linkedInLink
+                ? `${LINKEDIN_URL}${applicationData.linkedInLink}`
+                : null,
               status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
             },
           });
@@ -109,4 +117,23 @@ export const applicationRouter = createTRPCRouter({
         });
       }
     }),
+
+  getAppStats: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      const applicationStats = await db
+        .select({
+          status: applications.status,
+          count: count(applications.userId),
+        })
+        .from(applications)
+        .groupBy(applications.status);
+
+      return applicationStats;
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch application stats: " + JSON.stringify(error),
+      });
+    }
+  }),
 });
