@@ -9,17 +9,7 @@ import {
   reviewSubmitSchema,
   referApplicantSchema,
 } from "~/schemas/review";
-import {
-  asc,
-  eq,
-  lt,
-  sql,
-  count,
-  and,
-  or,
-  isNull,
-  ne,
-} from "drizzle-orm";
+import { asc, eq, lt, sql, count, and, or, isNull, ne } from "drizzle-orm";
 
 const REQUIRED_REVIEWS = 2;
 
