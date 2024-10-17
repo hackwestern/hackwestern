@@ -139,7 +139,6 @@ const Review = () => {
                   Uphold our duty to select deserving individuals fairly and
                   without bias
                 </li>
-                <li>No-fly list oop</li>
                 <li>
                   Hover over the emojis{" "}
                   <Tooltip>
