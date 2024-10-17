@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { reviews } from "../schema";
 import { USERS } from "./userSeeder";
-import type { UserPartial, Seeder } from "./helpers";
+import { UserPartial, type Seeder } from "./helpers";
 import { reviewSubmitSchema } from "~/schemas/review";
 
 export class ReviewSeeder implements Seeder<typeof reviews> {
@@ -18,10 +18,13 @@ export class ReviewSeeder implements Seeder<typeof reviews> {
 
   static createRandomWithoutUser() {
     const review = {
-      originalityRating: faker.number.int({ min: 1, max: 10 }),
-      technicalityRating: faker.number.int({ min: 1, max: 10 }),
-      passionRating: faker.number.int({ min: 1, max: 10 }),
-      comments: faker.lorem.sentence(),
+      question1Rating: faker.number.int({ min: 1, max: 10 }),
+      question2Rating: faker.number.int({ min: 1, max: 10 }),
+      question3Rating: faker.number.int({ min: 1, max: 10 }),
+      resumeBonus: faker.number.int({ min: 0, max: 3 }),
+      githubBonus: faker.number.int({ min: 0, max: 3 }),
+      linkedinBonus: faker.number.int({ min: 0, max: 3 }),
+      otherlinkBonus: faker.number.int({ min: 0, max: 3 }),
       referral: faker.datatype.boolean(),
     };
 
