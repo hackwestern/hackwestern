@@ -31,6 +31,8 @@ import { Spinner } from "~/components/loading-spinner";
 import { Textarea } from "~/components/ui/textarea";
 import { useToast } from "~/components/hooks/use-toast";
 import { useState } from "react";
+import { useRouter } from "next/router";
+import { Checkbox } from "~/components/ui/checkbox";
 
 const Review = () => {
   const { toast } = useToast();
@@ -39,6 +41,8 @@ const Review = () => {
   const { data: applicationData } = api.application.getById.useQuery({
     applicantId,
   });
+  const router = useRouter();
+  const [isAutoredirect, setIsAutoredirect] = useState(true);
   const [submitSuccessful, setSubmitSuccessful] = useState(false);
   const { data: reviewData } = api.review.getById.useQuery({ applicantId });
   const { mutate } = api.review.save.useMutation();
@@ -49,6 +53,10 @@ const Review = () => {
         description: `View all your reviews on your dashboard. Click "Next" to move on to the next application.`,
       });
       setSubmitSuccessful(true);
+      // check local storage redirect
+      if (isAutoredirect) {
+        void router.push(`/internal/review?applicant=${nextId}`);
+      }
     },
   });
   const { data: nextId } = api.review.getNextId.useQuery({
@@ -107,15 +115,22 @@ const Review = () => {
             className="flex flex-grow flex-col justify-between space-y-8 overflow-auto bg-primary-100 p-9 pb-[4.1rem] md:h-screen md:w-2/3 2xl:w-1/2"
           >
             <div className="space-y-2 p-1">
-              <nav className="flex px-1 pb-3">
+              <nav className="flex px-1">
                 <Button
                   className="mx-0 px-0 text-lg text-primary-600"
                   variant="link"
                   asChild
                 >
-                  <Link href="/internal">Back to Dashboard</Link>
+                  <Link href="/internal/dashboard">Back to Dashboard</Link>
                 </Button>
               </nav>
+              <div className="text-sm">
+                check me to go to next review when submitted{" "}
+                <Checkbox
+                  defaultChecked={isAutoredirect}
+                  onCheckedChange={(e) => setIsAutoredirect(!!e)}
+                />
+              </div>
               <h1 className="text-2xl font-medium">Review Guidelines</h1>
               <ul className="my-4 ml-2 list-disc text-sm text-slate-500 lg:text-base">
                 <li>Create a supportive, diverse, and curious community</li>
@@ -313,7 +328,7 @@ const Review = () => {
             <div className="flex justify-between">
               {nextId ? (
                 <Tooltip>
-                  <TooltipTrigger>
+                  <TooltipTrigger asChild>
                     <Button
                       variant="primary"
                       onClick={() => setSubmitSuccessful(false)}
