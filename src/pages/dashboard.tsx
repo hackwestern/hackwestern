@@ -5,10 +5,11 @@ import { ApplyNavbar } from "~/components/apply/navbar";
 import { Passport } from "~/components/apply/passport";
 import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
-import { APPLICATION_DEADLINE, notVerifiedRedirect } from "~/utils/redirect";
+import { notVerifiedRedirect } from "~/utils/redirect";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "~/lib/utils";
+import { isPastDeadline } from "~/lib/date";
 
 type ApplicationStatusType =
   | "IN_PROGRESS"
@@ -37,10 +38,6 @@ function getParsedStatus(status: ApplicationStatusType) {
   }
 
   return parsedStatuses[status];
-}
-
-function isPastDeadline() {
-  return Date.now().valueOf() >= APPLICATION_DEADLINE.valueOf();
 }
 
 const statusClassName = {

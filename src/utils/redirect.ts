@@ -1,9 +1,8 @@
 import { type GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
+import { isPastDeadline } from "~/lib/date";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
-
-export const APPLICATION_DEADLINE = new Date("2024-10-16T23:59:00-05:00");
 
 const authRedirect = async (
   context: GetServerSidePropsContext,
@@ -100,8 +99,7 @@ export const notVerifiedRedirect = async (
     };
   }
 
-  const currentDate = Date.now();
-  if (currentDate.valueOf() >= APPLICATION_DEADLINE.valueOf()) {
+  if (isPastDeadline()) {
     return {
       redirect: {
         destination: "/dashboard",
