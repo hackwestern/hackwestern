@@ -22,7 +22,6 @@ import { useForm } from "react-hook-form";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { formattedDate } from "~/components/apply/saved-indicator";
@@ -99,7 +98,7 @@ const Review = () => {
   };
 
   return (
-    <TooltipProvider>
+    <>
       <Head>
         <title>Hack Western</title>
         <meta
@@ -478,7 +477,7 @@ const Review = () => {
           </div>
         </div>
       </main>
-    </TooltipProvider>
+    </>
   );
 };
 
