@@ -152,7 +152,6 @@ export const reviewRouter = createTRPCRouter({
             sql`${applications.status}='IN_REVIEW' and ${applications.updatedAt} < now() - interval '2 hours'`,
           );
 
-        console.log("updated");
         // If reviewer has a review in progress, return that and not skipping current
         if (!input.skipId) {
           const reviewInProgress = (
