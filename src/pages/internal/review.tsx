@@ -29,33 +29,20 @@ import { useIsMutating } from "@tanstack/react-query";
 import { Spinner } from "~/components/loading-spinner";
 import { Textarea } from "~/components/ui/textarea";
 import { useToast } from "~/components/hooks/use-toast";
-import { useState } from "react";
-import { useRouter } from "next/router";
-import { Checkbox } from "~/components/ui/checkbox";
 
 const Review = () => {
   const { toast } = useToast();
+  const utils = api.useUtils();
   const searchParams = useSearchParams();
   const applicantId = searchParams.get("applicant");
   const { data: applicationData } = api.application.getById.useQuery({
     applicantId,
   });
-  const router = useRouter();
-  const [isAutoredirect, setIsAutoredirect] = useState(true);
-  const [submitSuccessful, setSubmitSuccessful] = useState(false);
   const { data: reviewData } = api.review.getById.useQuery({ applicantId });
-  const { mutate } = api.review.save.useMutation();
-  const { mutate: submitReview } = api.review.submit.useMutation({
+  const { mutate } = api.review.save.useMutation({
     onSuccess: () => {
-      toast({
-        title: "Review Submitted!",
-        description: `View all your reviews on your dashboard. Click "Next" to move on to the next application.`,
-      });
-      setSubmitSuccessful(true);
-      // check local storage redirect
-      if (isAutoredirect) {
-        void router.push(`/internal/review?applicant=${nextId}`);
-      }
+      // Refetch review data after saving
+      return utils.review.getById.invalidate();
     },
   });
   const { data: nextId } = api.review.getNextId.useQuery({
@@ -72,7 +59,6 @@ const Review = () => {
       form.reset({
         ...reviewData,
       });
-      setSubmitSuccessful(false); // Reset submit state
     }
   }, [applicantId, reviewData, form]);
 
@@ -90,12 +76,6 @@ const Review = () => {
   };
 
   useAutoSave(form, onSubmit, defaultValues);
-
-  const onClickSubmit = () => {
-    submitReview({
-      ...form.getValues(),
-    });
-  };
 
   return (
     <>
@@ -123,13 +103,7 @@ const Review = () => {
                   <Link href="/internal/dashboard">Back to Dashboard</Link>
                 </Button>
               </nav>
-              <div className="text-sm">
-                check me to go to next review when submitted{" "}
-                <Checkbox
-                  defaultChecked={isAutoredirect}
-                  onCheckedChange={(e) => setIsAutoredirect(!!e)}
-                />
-              </div>
+
               <h1 className="text-2xl font-medium">Review Guidelines</h1>
               <ul className="my-4 ml-2 list-disc text-sm text-slate-500 lg:text-base">
                 <li>Create a supportive, diverse, and curious community</li>
@@ -323,33 +297,27 @@ const Review = () => {
               </Form>
               <SavedIndicator />
             </div>
-            <div className="flex justify-between">
-              {nextId ? (
+            <div className="flex justify-end">
+              {nextId && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="primary"
-                      onClick={() => setSubmitSuccessful(false)}
                       disabled={form.formState.isSubmitting}
+                      onClick={() => {
+                        toast({
+                          title: "starting next review",
+                        });
+                      }}
                     >
                       <Link href={`/internal/review?applicant=${nextId}`}>
-                        {submitSuccessful ? "Next" : "Skip"}
+                        {reviewData?.completed ? "Next" : "Skip"}
                       </Link>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>{nextId}</TooltipContent>
                 </Tooltip>
-              ) : (
-                <div />
               )}
-
-              <Button
-                variant="primary"
-                onClick={onClickSubmit}
-                disabled={form.formState.isSubmitting}
-              >
-                Submit!
-              </Button>
             </div>
           </div>
           <div
@@ -504,7 +472,7 @@ function SavedIndicator() {
 
   if (isSaving) {
     return (
-      <div className="flex items-center gap-1 text-xs italic text-slate-400">
+      <div className="flex items-center justify-end gap-1 text-xs italic text-slate-400">
         <Spinner isLoading className="size-3 fill-primary-100 text-slate-400" />
         <span>Saving</span>
       </div>

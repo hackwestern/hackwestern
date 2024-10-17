@@ -71,37 +71,6 @@ export const reviewRouter = createTRPCRouter({
       }
     }),
 
-  submit: protectedProcedure
-    .input(reviewSaveSchema)
-    .mutation(async ({ input }) => {
-      try {
-        const reviewData = input;
-        const isCompleteReview =
-          reviewSubmitSchema.safeParse(reviewData).success;
-
-        await db
-          .insert(reviews)
-          .values({
-            ...reviewData,
-            completed: isCompleteReview ? true : false,
-          })
-          .onConflictDoUpdate({
-            target: [reviews.applicantUserId, reviews.reviewerUserId],
-            set: {
-              ...reviewData,
-              updatedAt: new Date(),
-              completed: isCompleteReview ? true : false,
-            },
-          })
-          .returning();
-      } catch (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to submit review: " + JSON.stringify(error),
-        });
-      }
-    }),
-
   referApplicant: protectedProcedure
     .input(referApplicantSchema)
     .mutation(async ({ input, ctx }) => {
