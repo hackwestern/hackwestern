@@ -1,5 +1,6 @@
 import { type GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
+import { isPastDeadline } from "~/lib/date";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
 
@@ -93,6 +94,15 @@ export const notVerifiedRedirect = async (
     return {
       redirect: {
         destination: "/not-verified",
+        permanent: false,
+      },
+    };
+  }
+
+  if (isPastDeadline()) {
+    return {
+      redirect: {
+        destination: "/dashboard",
         permanent: false,
       },
     };
