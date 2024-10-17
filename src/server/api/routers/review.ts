@@ -16,11 +16,9 @@ import {
   sql,
   count,
   and,
-  not,
   or,
   isNull,
   ne,
-  notInArray,
 } from "drizzle-orm";
 
 const REQUIRED_REVIEWS = 2;
@@ -192,14 +190,11 @@ export const reviewRouter = createTRPCRouter({
           )
           .groupBy(applications.userId)
           .having(({ reviewCount }) => lt(reviewCount, REQUIRED_REVIEWS))
-          .orderBy(asc(applications.updatedAt))
-          .limit(15);
+          // order by random
+          .orderBy(asc(sql`RANDOM()`))
+          .limit(1);
 
-        // pick a random one
-        const appAwaitingReview =
-          appAwaitingReviews[
-            Math.floor(Math.random() * appAwaitingReviews.length)
-          ];
+        const appAwaitingReview = appAwaitingReviews[0];
 
         // If there are no applications awaiting review, return
         if (!appAwaitingReview) {
