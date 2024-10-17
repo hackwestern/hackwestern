@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { api } from "~/utils/api";
 import { Spinner } from "../loading-spinner";
 
-function formattedDate(lastSaved: Date | null): string | null {
+export function formattedDate(lastSaved: Date | null): string | null {
   if (!lastSaved) {
     return null;
   }
