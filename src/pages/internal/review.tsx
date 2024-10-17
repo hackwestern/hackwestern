@@ -62,20 +62,13 @@ const Review = () => {
     }
   }, [applicantId, reviewData, form]);
 
-  const defaultValues = useMemo(() => {
-    if (!reviewData) return null;
-    return {
-      ...reviewData,
-    };
-  }, [reviewData]);
-
   const onSubmit = (data: z.infer<typeof reviewSaveSchema>) => {
     mutate({
       ...data,
     });
   };
 
-  useAutoSave(form, onSubmit, defaultValues);
+  useAutoSave(form, onSubmit, reviewData);
 
   return (
     <>
@@ -120,181 +113,186 @@ const Review = () => {
                   </Tooltip>
                 </li>
               </ul>
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="space-y-2 pt-5"
-                >
-                  <FormField
-                    control={form.control}
-                    name="originalityRating"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xl">Originality</FormLabel>
-                        <FormControl>
-                          <div className="flex text-lg">
-                            <Tooltip>
-                              <TooltipTrigger>🙄</TooltipTrigger>
-                              <TooltipContent>
-                                <ul className="max-w-96 list-disc px-3">
-                                  <li>Very lame</li>
-                                  <li>Same projects as everyone else</li>
-                                </ul>
-                              </TooltipContent>
-                            </Tooltip>
-                            <Slider
-                              value={[field.value ?? 0]}
-                              onValueChange={(values) => {
-                                field.onChange(values[0]);
-                              }}
+              {reviewData && (
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="space-y-2 pt-5"
+                  >
+                    <FormField
+                      control={form.control}
+                      name="originalityRating"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xl">Originality</FormLabel>
+                          <FormControl>
+                            <div className="flex text-lg">
+                              <Tooltip>
+                                <TooltipTrigger>🙄</TooltipTrigger>
+                                <TooltipContent>
+                                  <ul className="max-w-96 list-disc px-3">
+                                    <li>Very lame</li>
+                                    <li>Same projects as everyone else</li>
+                                  </ul>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Slider
+                                value={[field.value ?? 0]}
+                                onValueChange={(values) => {
+                                  field.onChange(values[0]);
+                                }}
+                              />
+                              <Tooltip>
+                                <TooltipTrigger>🤩</TooltipTrigger>
+                                <TooltipContent>
+                                  <ul className="max-w-96 list-disc px-3">
+                                    <li>Novel: ideas are unique!</li>
+                                    <li>
+                                      Creative: out-of-the-box thinking,
+                                      creative problem solving techniques
+                                    </li>
+                                    <li>
+                                      Ownership: their OWN work, could be a team
+                                      effort, but still showcases personal
+                                      experiences
+                                    </li>
+                                  </ul>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="technicalityRating"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xl">
+                            Technicality
+                          </FormLabel>
+                          <FormControl>
+                            <div className="flex text-lg">
+                              <Tooltip>
+                                <TooltipTrigger>😵‍💫</TooltipTrigger>
+                                <TooltipContent>
+                                  <ul className="max-w-96 list-disc px-3">
+                                    <li>Resume shows no relevant experience</li>
+                                    <li>
+                                      No github or barren github (less relevant
+                                      than resume)
+                                    </li>
+                                  </ul>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Slider
+                                value={[field.value ?? 0]}
+                                onValueChange={(values) => {
+                                  field.onChange(values[0]);
+                                }}
+                              />
+                              <Tooltip>
+                                <TooltipTrigger>🤓</TooltipTrigger>
+                                <TooltipContent>
+                                  <ul className="max-w-96 list-disc px-3">
+                                    <li>
+                                      Projects: Multiple projects and Git
+                                      commits consistently spread across a long
+                                      period of time and all projects have high
+                                      quality and usability
+                                    </li>
+                                    <li>
+                                      Resume: Held technical positions in
+                                      clubs/internships and resume shows strong
+                                      technical experience
+                                    </li>
+                                  </ul>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="passionRating"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xl">
+                            Passion and Potential
+                          </FormLabel>
+                          <FormControl>
+                            <div className="flex text-lg">
+                              <Tooltip>
+                                <TooltipTrigger>😴</TooltipTrigger>
+                                <TooltipContent>
+                                  <ul className="max-w-96 list-disc px-3">
+                                    <li>
+                                      <b>BORINGGGGGGGGGGGG</b> (respectfully)
+                                    </li>
+                                    <li>Thank you, NEXT (respectfully)</li>
+                                    <li>
+                                      Short ass responses that have no thought
+                                      (not respectfully)
+                                    </li>
+                                  </ul>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Slider
+                                value={[field.value ?? 0]}
+                                onValueChange={(values) => {
+                                  field.onChange(values[0]);
+                                }}
+                              />
+                              <Tooltip>
+                                <TooltipTrigger>🔥</TooltipTrigger>
+                                <TooltipContent>
+                                  <ul className="max-w-96 list-disc px-3">
+                                    <li>
+                                      Interest in tech: Strong personal interest
+                                      in technology and hackathons
+                                    </li>
+                                    <li>
+                                      Character: Cares about leaving a
+                                      meaningful impact and seems like a good
+                                      fun person :D
+                                    </li>
+                                    <li>
+                                      Preparation: Well-thought-out long answers
+                                      and uses the word limit effectively
+                                    </li>
+                                  </ul>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="comments"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xl">
+                            Additional Comments (these are only visible to you)
+                          </FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              value={field.value ?? ""}
+                              placeholder="Additional Comments"
+                              variant="primary"
                             />
-                            <Tooltip>
-                              <TooltipTrigger>🤩</TooltipTrigger>
-                              <TooltipContent>
-                                <ul className="max-w-96 list-disc px-3">
-                                  <li>Novel: ideas are unique!</li>
-                                  <li>
-                                    Creative: out-of-the-box thinking, creative
-                                    problem solving techniques
-                                  </li>
-                                  <li>
-                                    Ownership: their OWN work, could be a team
-                                    effort, but still showcases personal
-                                    experiences
-                                  </li>
-                                </ul>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="technicalityRating"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xl">Technicality</FormLabel>
-                        <FormControl>
-                          <div className="flex text-lg">
-                            <Tooltip>
-                              <TooltipTrigger>😵‍💫</TooltipTrigger>
-                              <TooltipContent>
-                                <ul className="max-w-96 list-disc px-3">
-                                  <li>Resume shows no relevant experience</li>
-                                  <li>
-                                    No github or barren github (less relevant
-                                    than resume)
-                                  </li>
-                                </ul>
-                              </TooltipContent>
-                            </Tooltip>
-                            <Slider
-                              value={[field.value ?? 0]}
-                              onValueChange={(values) => {
-                                field.onChange(values[0]);
-                              }}
-                            />
-                            <Tooltip>
-                              <TooltipTrigger>🤓</TooltipTrigger>
-                              <TooltipContent>
-                                <ul className="max-w-96 list-disc px-3">
-                                  <li>
-                                    Projects: Multiple projects and Git commits
-                                    consistently spread across a long period of
-                                    time and all projects have high quality and
-                                    usability
-                                  </li>
-                                  <li>
-                                    Resume: Held technical positions in
-                                    clubs/internships and resume shows strong
-                                    technical experience
-                                  </li>
-                                </ul>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="passionRating"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xl">
-                          Passion and Potential
-                        </FormLabel>
-                        <FormControl>
-                          <div className="flex text-lg">
-                            <Tooltip>
-                              <TooltipTrigger>😴</TooltipTrigger>
-                              <TooltipContent>
-                                <ul className="max-w-96 list-disc px-3">
-                                  <li>
-                                    <b>BORINGGGGGGGGGGGG</b> (respectfully)
-                                  </li>
-                                  <li>Thank you, NEXT (respectfully)</li>
-                                  <li>
-                                    Short ass responses that have no thought
-                                    (not respectfully)
-                                  </li>
-                                </ul>
-                              </TooltipContent>
-                            </Tooltip>
-                            <Slider
-                              value={[field.value ?? 0]}
-                              onValueChange={(values) => {
-                                field.onChange(values[0]);
-                              }}
-                            />
-                            <Tooltip>
-                              <TooltipTrigger>🔥</TooltipTrigger>
-                              <TooltipContent>
-                                <ul className="max-w-96 list-disc px-3">
-                                  <li>
-                                    Interest in tech: Strong personal interest
-                                    in technology and hackathons
-                                  </li>
-                                  <li>
-                                    Character: Cares about leaving a meaningful
-                                    impact and seems like a good fun person :D
-                                  </li>
-                                  <li>
-                                    Preparation: Well-thought-out long answers
-                                    and uses the word limit effectively
-                                  </li>
-                                </ul>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="comments"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xl">
-                          Additional Comments (these are only visible to you)
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            value={field.value ?? ""}
-                            placeholder="Additional Comments"
-                            variant="primary"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </form>
-              </Form>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </form>
+                </Form>
+              )}
               <SavedIndicator />
             </div>
             <div className="flex justify-end">
