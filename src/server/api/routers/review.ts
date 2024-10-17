@@ -219,10 +219,7 @@ export const reviewRouter = createTRPCRouter({
             reviewCount: count(reviews.applicantUserId).mapWith(Number),
           })
           .from(applications)
-          .leftJoin(
-            reviews,
-            eq(applications.userId, reviews.applicantUserId),
-          )
+          .leftJoin(reviews, eq(applications.userId, reviews.applicantUserId))
           .where(
             and(
               eq(applications.status, "PENDING_REVIEW"),
