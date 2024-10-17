@@ -1,7 +1,7 @@
-import type { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import Link from "next/link";
-import type { reviews } from "~/server/db/schema";
+import { reviews } from "~/server/db/schema";
 import { Button } from "./ui/button";
 
 type applicantType = {
@@ -57,16 +57,16 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       },
     },
     {
-      accessorKey: "originalityRating",
-      header: "Originality",
+      accessorKey: "question1Rating",
+      header: "Q1",
     },
     {
-      accessorKey: "technicalityRating",
-      header: "Technicality",
+      accessorKey: "question2Rating",
+      header: "Q2",
     },
     {
-      accessorKey: "passionRating",
-      header: "Passion",
+      accessorKey: "question3Rating",
+      header: "Q3",
     },
     {
       accessorKey: "referral",

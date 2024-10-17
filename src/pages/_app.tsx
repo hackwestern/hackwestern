@@ -8,7 +8,6 @@ import { api } from "~/utils/api";
 
 import "~/styles/globals.css";
 import { Toaster } from "~/components/ui/toaster";
-import { TooltipProvider } from "~/components/ui/tooltip";
 
 const DM_SANS = DM_Sans({
   weight: ["400", "500", "700"],
@@ -32,9 +31,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
       <main
         className={`${MagicRetro.variable} ${DM_SANS.variable} font-DM_Sans`}
       >
-        <TooltipProvider>
-          <Component {...pageProps} />
-        </TooltipProvider>
+        <Component {...pageProps} />
       </main>
       <Toaster />
     </SessionProvider>

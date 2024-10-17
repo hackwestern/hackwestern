@@ -6,14 +6,11 @@ import { db } from "~/server/db";
 import { authOptions } from "~/server/auth";
 import type { users } from "~/server/db/schema";
 import NotAuthorizedCard from "~/components/notauthorized-card";
-import { api } from "~/utils/api";
 const Internal = ({
   userSession,
 }: {
   userSession: typeof users.$inferSelect;
 }) => {
-  const { data: nextReviewId } = api.review.getNextId.useQuery({});
-
   return userSession.type == "organizer" ? (
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#160524]">
       <h1 className="mb-5 text-3xl text-white">Internal Dashboard</h1>
@@ -22,9 +19,7 @@ const Internal = ({
           asChild
           className="rounded bg-white p-1 text-center text-black hover:bg-gray-300"
         >
-          <Link href={`/internal/review?applicant=${nextReviewId}`}>
-            Review Next
-          </Link>
+          <Link href="/internal/review">Review Portal</Link>
         </Button>
         <PreregistrationsButton />
         <ApplicationsButton />
