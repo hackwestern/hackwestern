@@ -221,7 +221,7 @@ export const reviewRouter = createTRPCRouter({
           .from(applications)
           .leftJoin(
             reviews,
-            and(eq(applications.userId, reviews.applicantUserId)),
+            eq(applications.userId, reviews.applicantUserId),
           )
           .where(
             and(
