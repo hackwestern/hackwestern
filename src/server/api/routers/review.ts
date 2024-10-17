@@ -102,9 +102,6 @@ export const reviewRouter = createTRPCRouter({
     }
 
     return db.query.reviews.findMany({
-      columns: {
-        reviewerUserId: false,
-      },
       with: {
         applicant: {
           columns: {
