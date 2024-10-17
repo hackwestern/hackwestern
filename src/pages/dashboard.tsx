@@ -5,7 +5,9 @@ import { ApplyNavbar } from "~/components/apply/navbar";
 import { Passport } from "~/components/apply/passport";
 import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
-import { notVerifiedRedirect } from "~/utils/redirect";
+import {
+  notVerifiedRedirectDashboard,
+} from "~/utils/redirect";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "~/lib/utils";
@@ -230,4 +232,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-export const getServerSideProps = notVerifiedRedirect;
+export const getServerSideProps = notVerifiedRedirectDashboard;

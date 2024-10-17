@@ -113,6 +113,43 @@ export const notVerifiedRedirect = async (
   };
 };
 
+export const notVerifiedRedirectDashboard = async (
+  context: GetServerSidePropsContext,
+) => {
+  const session = await getServerSession(context.req, context.res, authOptions);
+
+  if (!session) {
+    return {
+      redirect: {
+        destination: "/login",
+        permanent: false,
+      },
+    };
+  }
+
+  const user = await db.query.users.findFirst({
+    where: (users, { eq }) => eq(users.id, session?.user.id),
+  });
+
+  const emailIsVerified = !!user?.emailVerified;
+  const userHasPassword = !!user?.password;
+
+  // redirect to not-verified page if email is not verified AND they're not using oauth
+  // oauth users don't have passwords, so redirect if not verified and they have password
+  if (!emailIsVerified && userHasPassword) {
+    return {
+      redirect: {
+        destination: "/not-verified",
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: {},
+  };
+};
+
 export const isVerifiedRedirect = async (
   context: GetServerSidePropsContext,
 ) => {
