@@ -9,6 +9,7 @@ import { notVerifiedRedirect } from "~/utils/redirect";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "~/lib/utils";
+import { isPastDeadline } from "~/lib/date";
 
 type ApplicationStatusType =
   | "IN_PROGRESS"
@@ -21,6 +22,7 @@ type ApplicationStatusType =
 
 const parsedStatuses = {
   IN_PROGRESS: "Application In Progress...",
+  INCOMPLETE: "Application Incomplete.",
   PENDING_REVIEW: "Application Submitted!",
   IN_REVIEW: "Application In Review",
   ACCEPTED: "Application Accepted! 🥳",
@@ -28,6 +30,15 @@ const parsedStatuses = {
   WAITLISTED: "Waitlisted",
   DECLINED: "You're Not Coming :(",
 };
+
+function getParsedStatus(status: ApplicationStatusType) {
+  const pastDeadline = isPastDeadline();
+  if (pastDeadline && status === "IN_PROGRESS") {
+    return parsedStatuses.INCOMPLETE;
+  }
+
+  return parsedStatuses[status];
+}
 
 const statusClassName = {
   IN_PROGRESS: "bg-primary-200 text-violet-500",
@@ -47,7 +58,7 @@ const ApplicationStatus = ({ status }: { status: ApplicationStatusType }) => {
         statusClassName[status ?? "IN_PROGRESS"],
       )}
     >
-      {parsedStatuses?.[status ?? "IN_PROGRESS"]}
+      {getParsedStatus(status ?? "IN_PROGRESS")}
     </div>
   );
 };
@@ -89,6 +100,8 @@ const Dashboard = () => {
       .catch((e) => console.log("error logging out:", e));
   };
 
+  const pastDeadline = isPastDeadline();
+
   return (
     <>
       <Head>
@@ -114,13 +127,14 @@ const Dashboard = () => {
             </div>
             <div className="text-xl font-medium text-slate-700">Status:</div>
             <ApplicationStatus status={application?.status ?? "IN_PROGRESS"} />
-            {application?.status !== "REJECTED" ? (
+            {application?.status !== "REJECTED" && !pastDeadline && (
               <Button variant="primary" className="mt-6 w-fit" asChild>
                 <Link href={getApplyLink(application?.status)}>
                   {buttonStatus(application?.status ?? "IN_PROGRESS")}
                 </Link>
               </Button>
-            ) : (
+            )}
+            {application?.status === "REJECTED" && (
               <div className="text-slate-700">
                 Due to the volume of applicants, we were unable to accept
                 everyone. That doesn&apos;t mean it&apos;s the end of your Hack
