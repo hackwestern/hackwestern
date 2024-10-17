@@ -142,8 +142,6 @@ export const reviewRouter = createTRPCRouter({
           sql`DELETE FROM hw11_review USING hw11_application AS app WHERE applicant_user_id = app.user_id AND NOW() - app.updated_at > INTERVAL '24 hours' AND completed != TRUE;`,
         );
 
-        // console.log("deleted");
-
         // Put applications with expired reviews back on the queue
         await db
           .update(applications)
@@ -151,8 +149,6 @@ export const reviewRouter = createTRPCRouter({
           .where(
             sql`${applications.status}='IN_REVIEW' and ${applications.updatedAt} < now() - interval '2 hours'`,
           );
-
-        // console.log("updated");
 
         // If reviewer has a review in progress, return that and not skipping current
         if (!input.skipId) {
@@ -174,13 +170,6 @@ export const reviewRouter = createTRPCRouter({
           }
         }
 
-        const reviewedByReviewer = await db
-          .select({ userId: reviews.applicantUserId })
-          .from(reviews)
-          .where(eq(reviews.reviewerUserId, ctx.session.user.id));
-
-        const reviewedIds = reviewedByReviewer.map((review) => review.userId);
-
         // Select first application that has not received the required number of reviews and has not been referred, and not matching the one to skip
         const appAwaitingReviews = await db
           .select({
@@ -192,10 +181,13 @@ export const reviewRouter = createTRPCRouter({
           .where(
             and(
               eq(applications.status, "PENDING_REVIEW"),
-              or(not(eq(reviews.referral, true)), isNull(reviews.referral)),
+              or(ne(reviews.referral, true), isNull(reviews.referral)),
               ne(applications.userId, input.skipId ?? ""),
               // Don't review applications that have already been reviewed by the reviewer
-              notInArray(applications.userId, reviewedIds),
+              or(
+                ne(reviews.reviewerUserId, ctx.session.user.id),
+                isNull(reviews.reviewerUserId),
+              ),
             ),
           )
           .groupBy(applications.userId)
