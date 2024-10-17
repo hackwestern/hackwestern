@@ -142,8 +142,6 @@ export const reviewRouter = createTRPCRouter({
           sql`DELETE FROM hw11_review USING hw11_application AS app WHERE applicant_user_id = app.user_id AND NOW() - app.updated_at > INTERVAL '24 hours' AND completed != TRUE;`,
         );
 
-        // console.log("deleted");
-
         // Put applications with expired reviews back on the queue
         await db
           .update(applications)
