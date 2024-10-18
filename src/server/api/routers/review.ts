@@ -9,7 +9,18 @@ import {
   reviewSubmitSchema,
   referApplicantSchema,
 } from "~/schemas/review";
-import { asc, eq, lt, sql, count, and, or, isNull, ne } from "drizzle-orm";
+import {
+  asc,
+  eq,
+  lt,
+  sql,
+  count,
+  and,
+  or,
+  isNull,
+  ne,
+  desc,
+} from "drizzle-orm";
 
 const REQUIRED_REVIEWS = 2;
 
@@ -127,7 +138,7 @@ export const reviewRouter = createTRPCRouter({
         // Remove expired reviews from the review table
         // This is a SQL string because drizzle doesn't have USING (drizzle bad)
         await db.execute(
-          sql`DELETE FROM hw11_review USING hw11_application AS app WHERE applicant_user_id = app.user_id AND NOW() - app.updated_at > INTERVAL '24 hours' AND completed != TRUE;`,
+          sql`DELETE FROM hw11_review USING hw11_application AS app WHERE applicant_user_id = app.user_id AND NOW() - app.updated_at::timestamp > INTERVAL '24 hours' AND completed != TRUE;`,
         );
 
         // Put applications with expired reviews back on the queue
@@ -135,7 +146,7 @@ export const reviewRouter = createTRPCRouter({
           .update(applications)
           .set({ status: "PENDING_REVIEW" })
           .where(
-            sql`${applications.status}='IN_REVIEW' and ${applications.updatedAt} < now() - interval '2 hours'`,
+            sql`${applications.status}='IN_REVIEW' and ${applications.updatedAt}::timestamp < now() - interval '2 hours'`,
           );
 
         // If reviewer has a review in progress, return that and not skipping current
@@ -259,4 +270,43 @@ export const reviewRouter = createTRPCRouter({
         });
       }
     }),
+
+  getReviewCounts: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      const userId = ctx.session.user.id;
+      const reviewer = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+      });
+      if (!reviewer || reviewer.type !== "organizer") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "User is not authorized to view reviews",
+        });
+      }
+
+      const reviewCounts = await db
+        .select({
+          reviewerId: reviews.reviewerUserId,
+          reviewerName: users.name,
+          reviewCount: count(reviews.reviewerUserId).mapWith(Number),
+        })
+        .from(reviews)
+        .innerJoin(
+          users,
+          and(
+            eq(reviews.reviewerUserId, users.id),
+            eq(reviews.completed, true),
+          ),
+        )
+        .groupBy(reviews.reviewerUserId, users.name)
+        .orderBy(desc(count(reviews.reviewerUserId)));
+
+      return reviewCounts;
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch review counts: " + JSON.stringify(error),
+      });
+    }
+  }),
 });

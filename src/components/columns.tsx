@@ -25,7 +25,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       header: "Name",
       cell: ({ row }) => {
         const applicant: applicantType = row.getValue("applicant");
-        const name: string = applicant.name;
+        const name: string = applicant?.name;
         return name;
       },
     },
@@ -44,7 +44,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       },
       cell: ({ row }) => {
         const applicant: applicantType = row.getValue("applicant");
-        const email: string = applicant.email;
+        const email: string = applicant?.email;
         return email;
       },
     },
@@ -58,22 +58,82 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
     },
     {
       accessorKey: "originalityRating",
-      header: "Originality",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            className="mx-0 p-0"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Originality
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
     },
     {
       accessorKey: "technicalityRating",
-      header: "Technicality",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            className="mx-0 p-0"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Technicality
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
     },
     {
       accessorKey: "passionRating",
-      header: "Passion",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            className="mx-0 p-0"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Passion
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
     },
     {
-      accessorKey: "referral",
-      header: "Referral",
+      accessorKey: "total",
+      accessorFn: (row) => {
+        const originalityRating = row.originalityRating ?? 0;
+        const technicalityRating = row.technicalityRating ?? 0;
+        const passionRating = row.passionRating ?? 0;
+        return originalityRating + technicalityRating + passionRating;
+      },
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            className="mx-0 p-0"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Total
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
       cell: ({ row }) => {
-        const completed: boolean = row.getValue("referral");
-        return completed ? "🤝" : "";
+        const originalityRating: number = row.getValue("originalityRating");
+        const technicalityRating: number = row.getValue("technicalityRating");
+        const passionRating: number = row.getValue("passionRating");
+        return originalityRating + technicalityRating + passionRating;
+      },
+    },
+    {
+      accessorKey: "comments",
+      header: "Comments",
+      cell: ({ row }) => {
+        const comments: string = row.getValue("comments");
+        return comments;
       },
     },
   ];

@@ -70,6 +70,10 @@ const Review = () => {
 
   useAutoSave(form, onSubmit, reviewData);
 
+  const { data: reviewCount } = api.review.getReviewCounts.useQuery();
+  const { data: allReviews } = api.review.getByOrganizer.useQuery();
+  const completedReviews = allReviews?.filter((review) => review.completed);
+
   return (
     <>
       <Head>
@@ -97,22 +101,50 @@ const Review = () => {
                 </Button>
               </nav>
 
-              <h1 className="text-2xl font-medium">Review Guidelines</h1>
-              <ul className="my-4 ml-2 list-disc text-sm text-slate-500 lg:text-base">
-                <li>Create a supportive, diverse, and curious community</li>
-                <li>Accept by merit, aim for equality</li>
-                <li>
-                  Uphold our duty to select deserving individuals fairly and
-                  without bias
-                </li>
-                <li>
-                  Hover over the emojis{" "}
-                  <Tooltip>
-                    <TooltipTrigger>🤑</TooltipTrigger>
-                    <TooltipContent>They have tooltips!</TooltipContent>
-                  </Tooltip>
-                </li>
-              </ul>
+              <div className="flex justify-around">
+                <div>
+                  <h1 className="text-2xl font-medium">Review Guidelines</h1>
+                  <ul className="my-4 ml-2 list-disc text-sm text-slate-500 lg:text-base">
+                    <li>Create a supportive, diverse, and curious community</li>
+                    <li>Accept by merit, aim for equality</li>
+                    <li>
+                      Uphold our duty to select deserving individuals fairly and
+                      without bias
+                    </li>
+                    <li>
+                      Hover over the emojis{" "}
+                      <Tooltip>
+                        <TooltipTrigger>🤑</TooltipTrigger>
+                        <TooltipContent>They have tooltips!</TooltipContent>
+                      </Tooltip>
+                    </li>
+                  </ul>
+                </div>
+                {reviewCount && (
+                  <div className="mx-auto w-1/4 text-center">
+                    <h1 className="font-semibold">Leaderboard</h1>
+                    <ul>
+                      <li>
+                        🥇 {reviewCount[0]?.reviewerName}{" "}
+                        {reviewCount[0]?.reviewCount}
+                      </li>
+                      <li>
+                        🥈 {reviewCount[1]?.reviewerName}{" "}
+                        {reviewCount[1]?.reviewCount}
+                      </li>
+                      <li>
+                        🥉 {reviewCount[2]?.reviewerName}{" "}
+                        {reviewCount[2]?.reviewCount}
+                      </li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+              <div>
+                This is your {postfix((completedReviews?.length ?? 0) + 1)}{" "}
+                review!
+              </div>
+
               {reviewData && (
                 <Form {...form}>
                   <form
@@ -388,7 +420,7 @@ const Review = () => {
               layout="fill"
               objectFit="cover"
             />
-            <div className="z-10 my-8 flex w-[100%] flex-col items-center justify-center text-sm">
+            <div className="z-10 my-auto flex max-h-[96vh] w-[100%] flex-col items-center justify-center overflow-auto text-sm">
               <div className="z-50 flex w-11/12 flex-col justify-center overflow-y-auto rounded-[10px] border border-primary-300 bg-primary-100 p-8 2xl:w-3/5 3xl:w-2/5 4xl:w-1/3">
                 <Tooltip>
                   <TooltipTrigger>
@@ -489,6 +521,26 @@ function SavedIndicator() {
 
   return <></>;
 }
+
+const postfix = (num: number) => {
+  const lastDigit = num % 10;
+  const lastTwoDigits = num % 100;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 13) {
+    return `${num}th`;
+  }
+
+  switch (lastDigit) {
+    case 1:
+      return `${num}st`;
+    case 2:
+      return `${num}nd`;
+    case 3:
+      return `${num}rd`;
+    default:
+      return `${num}th`;
+  }
+};
 
 export default Review;
 export const getServerSideProps = authRedirectOrganizer;
