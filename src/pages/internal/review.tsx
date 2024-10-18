@@ -420,7 +420,7 @@ const Review = () => {
               layout="fill"
               objectFit="cover"
             />
-            <div className="z-10 my-auto flex max-h-[96vh] w-[100%] flex-col items-center justify-center overflow-auto text-sm">
+            <div className="z-10 my-6 md:my-auto flex md:max-h-[96vh] w-[100%] flex-col items-center justify-center overflow-auto text-sm">
               <div className="z-50 flex w-11/12 flex-col justify-center overflow-y-auto rounded-[10px] border border-primary-300 bg-primary-100 p-8 2xl:w-3/5 3xl:w-2/5 4xl:w-1/3">
                 <Tooltip>
                   <TooltipTrigger>
