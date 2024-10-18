@@ -9,7 +9,18 @@ import {
   reviewSubmitSchema,
   referApplicantSchema,
 } from "~/schemas/review";
-import { asc, eq, lt, sql, count, and, or, isNull, ne } from "drizzle-orm";
+import {
+  asc,
+  eq,
+  lt,
+  sql,
+  count,
+  and,
+  or,
+  isNull,
+  ne,
+  desc,
+} from "drizzle-orm";
 
 const REQUIRED_REVIEWS = 2;
 
@@ -259,4 +270,43 @@ export const reviewRouter = createTRPCRouter({
         });
       }
     }),
+
+  getReviewCounts: protectedProcedure.query(async ({ ctx }) => {
+    try {
+      const userId = ctx.session.user.id;
+      const reviewer = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+      });
+      if (!reviewer || reviewer.type !== "organizer") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "User is not authorized to view reviews",
+        });
+      }
+
+      const reviewCounts = await db
+        .select({
+          reviewerId: reviews.reviewerUserId,
+          reviewerName: users.name,
+          reviewCount: count(reviews.reviewerUserId).mapWith(Number),
+        })
+        .from(reviews)
+        .innerJoin(
+          users,
+          and(
+            eq(reviews.reviewerUserId, users.id),
+            eq(reviews.completed, true),
+          ),
+        )
+        .groupBy(reviews.reviewerUserId, users.name)
+        .orderBy(desc(count(reviews.reviewerUserId)));
+
+      return reviewCounts;
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch review counts: " + JSON.stringify(error),
+      });
+    }
+  }),
 });
