@@ -48,8 +48,6 @@ const Internal = () => {
   const { data: nextReviewId } = api.review.getNextId.useQuery({});
   const { data: reviewCount } = api.review.getReviewCounts.useQuery();
 
-  console.log("review counts:", reviewCount);
-
   return (
     <div className="flex flex-col items-center justify-center bg-primary-100 py-4 h-screen bg-hw-linear-gradient-day">
       <h1 className="z-10 mb-5 text-3xl">Internal Dashboard</h1>

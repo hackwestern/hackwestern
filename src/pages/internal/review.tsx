@@ -102,7 +102,7 @@ const Review = () => {
                 </Button>
               </nav>
 
-              <div className="flex">
+              <div className="flex justify-around">
                 <div>
                   <h1 className="text-2xl font-medium">Review Guidelines</h1>
                   <ul className="my-4 ml-2 list-disc text-sm text-slate-500 lg:text-base">
@@ -122,9 +122,9 @@ const Review = () => {
                   </ul>
                 </div>
                 {reviewCount && (
-                  <div className="w-1/4 text-center">
-                    <h1>Leaderboard</h1>
-                    <ul className="text-left">
+                  <div className="mx-auto w-1/4 text-center">
+                    <h1 className="font-semibold">Leaderboard</h1>
+                    <ul>
                       <li>
                         🥇 {reviewCount[0]?.reviewerName}{" "}
                         {reviewCount[0]?.reviewCount}
