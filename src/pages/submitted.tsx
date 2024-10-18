@@ -40,7 +40,7 @@ export default function Submitted() {
   const { data: application } = api.application.get.useQuery();
   return (
     <div className="flex h-svh flex-col">
-      <ApplyNavbar></ApplyNavbar>
+      <ApplyNavbar />
       <div className="relative flex flex-grow items-center justify-center bg-hw-linear-gradient-day">
         <CloudBackground />
         <div className="relative m-5 flex max-w-screen-sm flex-col items-start gap-2 rounded-lg border-primary-300 bg-violet-100 p-10 ">

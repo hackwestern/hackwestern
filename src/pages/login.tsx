@@ -78,9 +78,9 @@ export default function Login() {
             </Button>
           </form>
           <div className="relative flex w-full items-center md:py-5">
-            <div className="flex-grow border-t border-gray-400"></div>
+            <div className="flex-grow border-t border-gray-400" />
             <span className="mx-4 flex-shrink text-gray-400">or</span>
-            <div className="flex-grow border-t border-gray-400"></div>
+            <div className="flex-grow border-t border-gray-400" />
           </div>
           <div className="mt-4">
             <GoogleAuthButton redirect="/dashboard" />
