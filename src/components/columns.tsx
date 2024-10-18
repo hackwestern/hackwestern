@@ -30,7 +30,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       },
     },
     {
-      accessorKey: "applicant",
+      accessorKey: "applicantEmail",
       header: ({ column }) => {
         return (
           <Button
