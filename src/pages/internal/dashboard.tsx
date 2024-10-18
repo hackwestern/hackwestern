@@ -49,7 +49,7 @@ const Internal = () => {
   const { data: reviewCount } = api.review.getReviewCounts.useQuery();
 
   return (
-    <div className="flex md:h-screen flex-col items-center justify-center bg-primary-100 bg-hw-linear-gradient-day py-4">
+    <div className="flex flex-col items-center justify-center bg-primary-100 bg-hw-linear-gradient-day py-4 md:h-screen">
       <h1 className="z-10 mb-5 text-3xl">Internal Dashboard</h1>
       <Accordion type="multiple" className="z-10">
         <AccordionItem key="leaderboard" value="leaderboard">
