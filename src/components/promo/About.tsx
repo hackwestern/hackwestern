@@ -4,7 +4,10 @@ function About() {
   return (
     <div className="relative flex-col items-center justify-center overflow-hidden bg-hw-linear-gradient">
       {/* Grain Filter */}
-      <div className="relative left-0 top-0 h-[20vh] w-full sm:h-[50vh]">
+      <div
+        className="relative left-0 top-0 h-[20vh] w-full sm:h-[50vh]"
+        id="about"
+      >
         <Image
           className="select-none opacity-20"
           src="/images/hwfilter.png"
