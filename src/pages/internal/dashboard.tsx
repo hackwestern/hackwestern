@@ -51,7 +51,7 @@ const Internal = () => {
   console.log("review counts:", reviewCount);
 
   return (
-    <div className="flex flex-col items-center justify-center bg-primary-100 py-4 h-screen bg-hw-linear-gradient-day">
+    <div className="flex h-screen flex-col items-center justify-center bg-primary-100 bg-hw-linear-gradient-day py-4">
       <h1 className="z-10 mb-5 text-3xl">Internal Dashboard</h1>
       <Accordion type="multiple" className="z-10">
         <AccordionItem key="leaderboard" value="leaderboard">

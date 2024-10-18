@@ -41,9 +41,9 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <div className="w-full h-fit">
-      <div className="rounded-md border bg-white h-fit">
-        <div className="relative overflow-auto h-[65vh]">
+    <div className="h-fit w-full">
+      <div className="h-fit rounded-md border bg-white">
+        <div className="relative h-[65vh] overflow-auto">
           <Table>
             <TableHeader className="sticky top-0 bg-white">
               {table.getHeaderGroups().map((headerGroup) => (
