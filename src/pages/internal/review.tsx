@@ -359,7 +359,9 @@ const Review = () => {
             id="right-panel"
             className="-z-10 flex h-full flex-col items-center justify-center bg-hw-linear-gradient-day px-4 md:w-full"
           >
-            <CloudBackground />
+            <div className="-z-10">
+              <CloudBackground />
+            </div>
             <div className="z-10 my-8 flex w-[100%] flex-col items-center justify-center overflow-auto text-sm md:my-auto md:max-h-[96vh]">
               <div className="z-50 flex w-11/12 flex-col justify-center overflow-y-auto rounded-[10px] border border-primary-300 bg-primary-100 p-8 2xl:w-3/5 3xl:w-2/5 4xl:w-1/3">
                 <Tooltip>
