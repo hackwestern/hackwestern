@@ -58,7 +58,6 @@ const Review = () => {
   useEffect(() => {
     if (applicantId) {
       form.reset({
-        reviewerUserId: session?.user?.id,
         applicantUserId: applicantId,
         originalityRating: 0,
         technicalityRating: 0,
@@ -66,7 +65,7 @@ const Review = () => {
         comments: "",
       });
     }
-  }, [applicantId, form, session]);
+  }, [applicantId, session, form]);
 
   const onSubmit = (data: z.infer<typeof reviewSaveSchema>) => {
     mutate({
