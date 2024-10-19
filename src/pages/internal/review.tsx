@@ -30,6 +30,7 @@ import { Spinner } from "~/components/loading-spinner";
 import { Textarea } from "~/components/ui/textarea";
 import { useToast } from "~/components/hooks/use-toast";
 import { useSession } from "next-auth/react";
+import CloudBackground from "~/components/cloud-background";
 
 const Review = () => {
   const { data: session } = useSession();
@@ -358,73 +359,8 @@ const Review = () => {
             id="right-panel"
             className="-z-10 flex h-full flex-col items-center justify-center bg-hw-linear-gradient-day px-4 md:w-full"
           >
-            {/* Clouds */}
-            <div className="absolute bottom-0 left-0 -z-10 h-full w-full md:h-full md:w-[80%]">
-              <Image
-                src="/images/cloud5.svg"
-                alt="hack western cloud"
-                className="object-contain object-left-bottom"
-                fill
-              />
-            </div>
-            <div className="absolute bottom-0 right-0 -z-10 h-full w-full md:h-[90%] md:w-[70%] lg:h-[100%]">
-              <Image
-                src="/images/cloud6.svg"
-                alt="hack western cloud"
-                className="object-contain object-right-bottom"
-                fill
-              />
-            </div>
-            <div className="absolute bottom-0 left-0 -z-10 h-full w-[50%] md:h-full md:w-[30%]">
-              <Image
-                src="/images/cloud7.svg"
-                alt="hack western cloud"
-                className="object-contain object-left-bottom"
-                fill
-              />
-            </div>
-            <div className="absolute bottom-0 right-0 -z-10 h-full w-[50%] md:h-full md:w-[40%] lg:h-[50%] lg:w-[30%]">
-              <Image
-                src="/images/cloud8.svg"
-                alt="hack western cloud"
-                className="object-contain object-right-bottom"
-                fill
-              />
-            </div>
-            {/* Stars */}
-            <div className="absolute bottom-[20%] left-[20%] -z-10 h-full w-[20%] md:w-[10%] lg:w-[5%]">
-              <Image
-                src="/images/star.svg"
-                alt="hack western star"
-                className="object-contain"
-                fill
-              />
-            </div>
-            <div className="absolute bottom-[40%] right-[10%] -z-10 h-full w-[15%] md:w-[7%] lg:w-[3%]">
-              <Image
-                src="/images/star.svg"
-                alt="hack western star"
-                className="object-contain"
-                fill
-              />
-            </div>
-            <div className="absolute bottom-[25%] right-[15%] -z-10 h-full w-[20%] md:w-[10%] lg:w-[5%] ">
-              <Image
-                src="/images/star2.svg"
-                alt="hack western star"
-                className="object-contain"
-                fill
-              />
-            </div>
-            {/* Grain Filter */}
-            <Image
-              className="absolute left-0 top-0 -z-10 opacity-20"
-              src="/images/hwfilter.png"
-              alt="Hack Western Main Page"
-              layout="fill"
-              objectFit="cover"
-            />
-            <div className="z-10 my-auto flex max-h-[96vh] w-[100%] flex-col items-center justify-center overflow-auto text-sm">
+            <CloudBackground />
+            <div className="z-10 my-8 flex w-[100%] flex-col items-center justify-center overflow-auto text-sm md:my-auto md:max-h-[96vh]">
               <div className="z-50 flex w-11/12 flex-col justify-center overflow-y-auto rounded-[10px] border border-primary-300 bg-primary-100 p-8 2xl:w-3/5 3xl:w-2/5 4xl:w-1/3">
                 <Tooltip>
                   <TooltipTrigger>
