@@ -29,8 +29,10 @@ import { useIsMutating } from "@tanstack/react-query";
 import { Spinner } from "~/components/loading-spinner";
 import { Textarea } from "~/components/ui/textarea";
 import { useToast } from "~/components/hooks/use-toast";
+import { useSession } from "next-auth/react";
 
 const Review = () => {
+  const { data: session } = useSession();
   const { toast } = useToast();
   const utils = api.useUtils();
   const searchParams = useSearchParams();
@@ -38,8 +40,7 @@ const Review = () => {
   const { data: applicationData } = api.application.getById.useQuery({
     applicantId,
   });
-  const { data: reviewData, isFetched: reviewIsFetched } =
-    api.review.getById.useQuery({ applicantId });
+  const { data: reviewData } = api.review.getById.useQuery({ applicantId });
   const { mutate } = api.review.save.useMutation({
     onSuccess: () => {
       return utils.review.getById.invalidate();
@@ -55,24 +56,17 @@ const Review = () => {
 
   // on applicant id change (new applicant), reset form
   useEffect(() => {
-    form.reset({
-      ...reviewData,
-      originalityRating: reviewData?.originalityRating ?? 0,
-      technicalityRating: reviewData?.technicalityRating ?? 0,
-      passionRating: reviewData?.passionRating ?? 0,
-      comments: reviewData?.comments ?? "",
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [applicantId]);
-
-  // on review data change (new review), reset form with new data
-  // this fills in the applicant and reviewer IDs that get reset by the previous effect
-  useEffect(() => {
-    if (reviewIsFetched && reviewData) {
-      form.reset(reviewData);
+    if (applicantId) {
+      form.reset({
+        reviewerUserId: session?.user?.id,
+        applicantUserId: applicantId,
+        originalityRating: 0,
+        technicalityRating: 0,
+        passionRating: 0,
+        comments: "",
+      });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reviewIsFetched]);
+  }, [applicantId, form, session?.user?.id]);
 
   const onSubmit = (data: z.infer<typeof reviewSaveSchema>) => {
     mutate({
