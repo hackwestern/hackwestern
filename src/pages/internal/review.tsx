@@ -56,6 +56,7 @@ const Review = () => {
   // on applicant id change (new applicant), reset form
   useEffect(() => {
     form.reset({
+      ...reviewData,
       originalityRating: reviewData?.originalityRating ?? 0,
       technicalityRating: reviewData?.technicalityRating ?? 0,
       passionRating: reviewData?.passionRating ?? 0,
