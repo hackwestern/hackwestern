@@ -59,10 +59,10 @@ const Review = () => {
     if (applicantId) {
       form.reset({
         applicantUserId: applicantId,
-        originalityRating: 0,
-        technicalityRating: 0,
-        passionRating: 0,
-        comments: "",
+        originalityRating: reviewData?.originalityRating ?? 0,
+        technicalityRating: reviewData?.technicalityRating ?? 0,
+        passionRating: reviewData?.passionRating ?? 0,
+        comments: reviewData?.comments ?? "",
       });
     }
   }, [applicantId, session, form]);
