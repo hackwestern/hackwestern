@@ -101,7 +101,7 @@ const Internal = () => {
       </Button>
       <Input
         className="z-10 w-96"
-        placeholder="Search"
+        placeholder="Search by name or email"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
