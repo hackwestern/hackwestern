@@ -1,4 +1,4 @@
-closes/addresses (Github Issue number)
+closes (Github Issue number)
 
 # Quick Overview of Changes
 
