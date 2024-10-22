@@ -20,6 +20,7 @@ import {
   isNull,
   ne,
   desc,
+  notInArray,
 } from "drizzle-orm";
 
 const REQUIRED_REVIEWS = 2;
@@ -169,6 +170,16 @@ export const reviewRouter = createTRPCRouter({
           }
         }
 
+        const alreadyReviewedByReviewer = db
+          .select({ data: reviews.applicantUserId })
+          .from(reviews)
+          .where(
+            and(
+              eq(reviews.reviewerUserId, ctx.session.user.id),
+              eq(reviews.completed, true),
+            ),
+          );
+
         // Select first application that has not received the required number of reviews and has not been referred, and not matching the one to skip
         const appAwaitingReviews = await db
           .select({
@@ -183,10 +194,7 @@ export const reviewRouter = createTRPCRouter({
               or(ne(reviews.referral, true), isNull(reviews.referral)),
               ne(applications.userId, input.skipId ?? ""),
               // Don't review applications that have already been reviewed by the reviewer
-              or(
-                ne(reviews.reviewerUserId, ctx.session.user.id),
-                isNull(reviews.reviewerUserId),
-              ),
+              notInArray(applications.userId, alreadyReviewedByReviewer),
             ),
           )
           .groupBy(applications.userId)
