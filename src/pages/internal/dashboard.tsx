@@ -14,6 +14,8 @@ import {
   AccordionTrigger,
 } from "~/components/ui/accordion";
 import CloudBackground from "~/components/cloud-background";
+import { Input } from "~/components/ui/input";
+import { useState } from "react";
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const session = await getServerSession(context.req, context.res, authOptions);
@@ -47,6 +49,18 @@ const Internal = () => {
   const { data: reviewData } = api.review.getByOrganizer.useQuery();
   const { data: nextReviewId } = api.review.getNextId.useQuery({});
   const { data: reviewCount } = api.review.getReviewCounts.useQuery();
+  const [search, setSearch] = useState("");
+
+  const filteredData = reviewData?.filter((review) => {
+    return (
+      review.applicant.email.toLowerCase().includes(search.toLowerCase()) ||
+      review.application.firstName
+        ?.toLowerCase()
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+        .includes(search.toLowerCase()) ||
+      review.application.lastName?.toLowerCase().includes(search.toLowerCase())
+    );
+  });
 
   return (
     <div className="flex flex-col items-center justify-center bg-primary-100 bg-hw-linear-gradient-day py-4">
@@ -85,9 +99,15 @@ const Internal = () => {
           Review Next
         </Link>
       </Button>
+      <Input
+        className="z-10 w-96"
+        placeholder="Search by name or email"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
       <div className="z-10 mt-4">
-        {reviewData ? (
-          <DataTable columns={reviewDashboardColumns} data={reviewData} />
+        {reviewData && filteredData ? (
+          <DataTable columns={reviewDashboardColumns} data={filteredData} />
         ) : (
           <h2>Loading...</h2>
         )}

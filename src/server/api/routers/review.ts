@@ -117,8 +117,13 @@ export const reviewRouter = createTRPCRouter({
         applicant: {
           columns: {
             id: true,
-            name: true,
             email: true,
+          },
+        },
+        application: {
+          columns: {
+            firstName: true,
+            lastName: true,
           },
         },
       },
