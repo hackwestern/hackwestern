@@ -10,6 +10,11 @@ type applicantType = {
   name: string;
 };
 
+type applicationType = {
+  firstName: string;
+  lastName: string;
+};
+
 export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
   [
     {
@@ -21,16 +26,15 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       },
     },
     {
-      accessorKey: "applicant",
+      accessorKey: "application",
       header: "Name",
       cell: ({ row }) => {
-        const applicant: applicantType = row.getValue("applicant");
-        const name: string = applicant?.name;
-        return name;
+        const application: applicationType = row.getValue("application");
+        return `${application?.firstName} ${application?.lastName}`;
       },
     },
     {
-      accessorKey: "applicantEmail",
+      accessorKey: "applicant",
       header: ({ column }) => {
         return (
           <Button
