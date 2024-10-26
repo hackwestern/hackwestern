@@ -91,14 +91,18 @@ const Internal = () => {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-      <div className="z-10 pt-2">
+      <div className="z-10 p-2">
         {reviewData?.length} applications reviewed!
       </div>
-      <Button asChild className="z-10 my-2" variant="primary">
-        <Link href={`/internal/review?applicant=${nextReviewId}`}>
-          Review Next
-        </Link>
-      </Button>
+      {nextReviewId ? (
+        <Button asChild className="z-10 mb-2" variant="primary">
+          <Link href={`/internal/review?applicant=${nextReviewId}`}>
+            Review Next
+          </Link>
+        </Button>
+      ) : (
+        <div>All reviews completed! 🎉</div>
+      )}
       <Input
         className="z-10 w-96"
         placeholder="Search by name or email"
