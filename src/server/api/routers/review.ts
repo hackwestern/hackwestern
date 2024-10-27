@@ -101,6 +101,101 @@ export const reviewRouter = createTRPCRouter({
       }
     }),
 
+    referApplicantByEmail : protectedProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const reviewer = await db.query.users.findFirst({
+          where: eq(users.email, "org@hackwestern.com"),
+        });
+        if (!reviewer || reviewer.type !== "organizer") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "User is not authorized to submit reviews",
+          });
+        }
+
+        const applicant = await db.query.users.findFirst({
+          where: eq(users.email, input.email),
+        });
+
+        if (!applicant) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "No user found with the provided email.",
+          });
+        }
+
+        const application = await db.query.applications.findFirst({
+          where: eq(applications.userId, applicant.id),
+        });
+
+        if (!application) {
+          await db.insert(applications).values({
+            userId: applicant.id, // Associate the application with the applicant
+            // You can add any default values needed for the application fields
+            // For example, if there are fields like status, createdAt, etc.
+            status: "PENDING_REVIEW", // Set a default status or any other field as required
+            createdAt: new Date(), // Set the current date as created date
+            // Add other necessary fields here
+          });
+        }
+
+        await db.insert(reviews).values({
+          reviewerUserId: reviewer.id,
+          applicantUserId: applicant.id,
+          originalityRating: 100,
+          technicalityRating: 100,
+          passionRating: 100,
+          comments: "referral",
+          completed: true,
+          referral: true,
+        })
+      } catch (error) {
+        if(typeof error == typeof TRPCError){
+          throw error;
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create referral review: " + JSON.stringify(error),
+        });
+      }
+    }),
+
+
+  getAllRefferals: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    const reviewer = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+    if (!reviewer || reviewer.type !== "organizer") {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "User is not authorized to view reviews",
+      });
+    }
+
+    return db.query.reviews.findMany({
+      where: eq(reviews.referral, true),
+      columns: {
+        applicantUserId: true,
+      },
+      with: {
+        application: {
+          columns: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+        applicant: {
+          columns: {
+            email: true,
+          }
+        }
+      },
+    });  
+  }),
+
   getByOrganizer: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
     const reviewer = await db.query.users.findFirst({

@@ -15,6 +15,32 @@ type applicationType = {
   lastName: string;
 };
 
+type ReferralData = {
+  applicantUserId: string;
+  application: {
+    firstName: string | null;
+    lastName: string | null;
+  };
+  applicant: {
+    email: string;
+  };
+};
+
+export const refferalColumns: ColumnDef<ReferralData>[] = [
+  {
+    accessorKey: "applicant.email",
+    header: "Email",
+  },
+  {
+    accessorKey: "application.firstName",
+    header: "First Name",
+  },
+  {
+    accessorKey: "application.lastName",
+    header: "Last Name",
+  },
+];
+
 export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
   [
     {

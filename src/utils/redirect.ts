@@ -43,7 +43,7 @@ const authRedirect = async (
 
 export const authRedirectOrganizer = async (
   context: GetServerSidePropsContext,
-) => authRedirect(context, "/internal/login", "organizer");
+) => authRedirect(context, "/login", "organizer");
 
 export const authRedirectHacker = async (context: GetServerSidePropsContext) =>
   authRedirect(context, "/login");
