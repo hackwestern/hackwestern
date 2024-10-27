@@ -101,7 +101,7 @@ export const reviewRouter = createTRPCRouter({
       }
     }),
 
-    referApplicantByEmail : protectedProcedure
+  referApplicantByEmail: protectedProcedure
     .input(z.object({ email: z.string().email() }))
     .mutation(async ({ input, ctx }) => {
       try {
@@ -150,9 +150,9 @@ export const reviewRouter = createTRPCRouter({
           comments: "referral",
           completed: true,
           referral: true,
-        })
+        });
       } catch (error) {
-        if(typeof error == typeof TRPCError){
+        if (typeof error == typeof TRPCError) {
           throw error;
         }
         throw new TRPCError({
@@ -161,7 +161,6 @@ export const reviewRouter = createTRPCRouter({
         });
       }
     }),
-
 
   getAllRefferals: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
@@ -190,10 +189,10 @@ export const reviewRouter = createTRPCRouter({
         applicant: {
           columns: {
             email: true,
-          }
-        }
+          },
+        },
       },
-    });  
+    });
   }),
 
   getByOrganizer: protectedProcedure.query(async ({ ctx }) => {
