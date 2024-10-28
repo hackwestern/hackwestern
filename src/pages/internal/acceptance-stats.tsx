@@ -14,9 +14,7 @@ type GenderCounts = {
   [key in Gender]?: number;
 };
 
-type SchoolCounts = {
-  [school: string]: number;
-};
+type SchoolCounts = Record<string, number>;
 
 const AcceptanceStats = () => {
   const { data: allUserData } =
@@ -62,7 +60,7 @@ const AcceptanceStats = () => {
       .slice(0, 450)
       .reduce((counts, user) => {
         if (user.gender) {
-          counts[user.gender] = (counts[user.gender] || 0) + 1;
+          counts[user.gender] = (counts[user.gender] ?? 0) + 1;
         }
         return counts;
       }, {} as GenderCounts);
@@ -70,8 +68,8 @@ const AcceptanceStats = () => {
     const totalTopUsers = Math.min(450, sortedUserData.length);
     return (Object.keys(genderCounts) as Gender[]).map((gender) => ({
       gender,
-      count: genderCounts[gender] || 0, // Include the actual count
-      percentage: (((genderCounts[gender] || 0) / totalTopUsers) * 100).toFixed(
+      count: genderCounts[gender] ?? 0, // Include the actual count
+      percentage: (((genderCounts[gender] ?? 0) / totalTopUsers) * 100).toFixed(
         2,
       ),
     }));
@@ -82,7 +80,7 @@ const AcceptanceStats = () => {
       .slice(0, 450)
       .reduce((counts, user) => {
         if (user.school) {
-          counts[user.school] = (counts[user.school] || 0) + 1;
+          counts[user.school] = (counts[user.school] ?? 0) + 1;
         }
         return counts;
       }, {} as SchoolCounts);
@@ -90,8 +88,8 @@ const AcceptanceStats = () => {
     const totalTopUsers = Math.min(450, sortedUserData.length);
     return Object.keys(schoolCounts).map((school) => ({
       school,
-      count: schoolCounts[school] || 0, // Include the actual count
-      percentage: (((schoolCounts[school] || 0) / totalTopUsers) * 100).toFixed(
+      count: schoolCounts[school] ?? 0, // Include the actual count
+      percentage: (((schoolCounts[school] ?? 0) / totalTopUsers) * 100).toFixed(
         2,
       ),
     }));
