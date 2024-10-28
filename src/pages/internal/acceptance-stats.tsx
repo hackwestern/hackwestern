@@ -26,6 +26,9 @@ const AcceptanceStats = () => {
     },
   );
 
+  useEffect(() => {
+    applyWeightingsAndSort();
+  }, [allUserData]);
 
   // State for weightings
   const [originalityWeight, setOriginalityWeight] = useState(1); // Default is 100%
@@ -36,9 +39,10 @@ const AcceptanceStats = () => {
   );
 
   // Memoize the sorted data with weightings
-  const sortedData = useMemo(() => {
-    if (!allUserData) return [];
-    return [...allUserData].sort((a, b) => {
+  const applyWeightingsAndSort = () => {
+    if (!allUserData) return;
+
+    const sortedData = [...allUserData].sort((a, b) => {
       if (a.referral && !b.referral) return -1; // a comes first
       if (!a.referral && b.referral) return 1; // b comes first
 
@@ -53,7 +57,9 @@ const AcceptanceStats = () => {
         b.avgPassionRating * passionWeight;
       return bTotal - aTotal;
     });
-  }, [allUserData])
+
+    setSortedUserData(sortedData);
+  };
 
   const genderStats = useMemo(() => {
     const genderCounts: GenderCounts = sortedUserData
@@ -173,7 +179,7 @@ const AcceptanceStats = () => {
       </div>
 
       {/* Data Table Section */}
-      <div className="z-10 mt-4 h-full w-[90%]">
+      {/* <div className="z-10 mt-4 h-full w-[90%]">
         {allUserData ? (
           <DataTable
             data={sortedUserData}
@@ -182,7 +188,7 @@ const AcceptanceStats = () => {
         ) : (
           <h2>Loading...</h2>
         )}
-      </div>
+      </div> */}
     </div>
   );
 };
