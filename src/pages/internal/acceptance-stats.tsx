@@ -39,10 +39,9 @@ const AcceptanceStats = () => {
   );
 
   // Memoize the sorted data with weightings
-  const applyWeightingsAndSort = () => {
-    if (!allUserData) return;
-
-    const sortedData = [...allUserData].sort((a, b) => {
+  const sortedData = useMemo(() => {
+    if (!allUserData) return [];
+    return [...allUserData].sort((a, b) => {
       if (a.referral && !b.referral) return -1; // a comes first
       if (!a.referral && b.referral) return 1; // b comes first
 
@@ -57,9 +56,7 @@ const AcceptanceStats = () => {
         b.avgPassionRating * passionWeight;
       return bTotal - aTotal;
     });
-
-    setSortedUserData(sortedData);
-  };
+  }, [allUserData])
 
   const genderStats = useMemo(() => {
     const genderCounts: GenderCounts = sortedUserData
