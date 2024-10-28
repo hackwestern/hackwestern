@@ -3,6 +3,7 @@ import { DataTable } from "~/components/ui/data-table";
 import { allUsersWithReviewStatsColumns } from "~/components/columns";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "~/components/ui/button";
+import { authRedirectOrganizer } from "~/utils/redirect";
 
 type Gender =
   | "Other"
@@ -17,8 +18,13 @@ type GenderCounts = {
 type SchoolCounts = Record<string, number>;
 
 const AcceptanceStats = () => {
-  const { data: allUserData } =
-    api.review.getAllUsersWithReviewStats.useQuery();
+  const { data: allUserData } = api.review.getAllUsersWithReviewStats.useQuery(
+    undefined,
+    {
+      refetchOnWindowFocus: false, // Disable refetching on window focus
+      refetchOnMount: false, // Disable refetching on mount
+    },
+  );
 
   useEffect(() => {
     applyWeightingsAndSort();
@@ -109,6 +115,7 @@ const AcceptanceStats = () => {
             Originality Weight (%):
             <input
               type="number"
+              placeholder="100"
               onChange={(e) =>
                 setOriginalityWeight(Number(e.target.value) / 100)
               } // Store as decimal
@@ -119,6 +126,7 @@ const AcceptanceStats = () => {
             Technicality Weight (%):
             <input
               type="number"
+              placeholder="100"
               onChange={(e) =>
                 setTechnicalityWeight(Number(e.target.value) / 100)
               } // Store as decimal
@@ -129,6 +137,7 @@ const AcceptanceStats = () => {
             Passion Weight (%):
             <input
               type="number"
+              placeholder="100"
               onChange={(e) => setPassionWeight(Number(e.target.value) / 100)} // Store as decimal
               className="ml-2 rounded border border-gray-400 p-2"
             />
@@ -183,5 +192,7 @@ const AcceptanceStats = () => {
     </div>
   );
 };
+
+export const getServerSideProps = authRedirectOrganizer;
 
 export default AcceptanceStats;
