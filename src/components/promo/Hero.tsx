@@ -117,7 +117,7 @@ function Hero() {
           <h2 className="-mt-3 font-sans text-xl font-light italic md:-mt-1 md:text-2xl lg:text-3xl 2xl:text-4xl">
             where ideas take flight
           </h2>
-          <h2 className="mt-3 font-sans italic text-base font-light lg:text-lg 2xl:text-xl">
+          <h2 className="mt-3 font-sans text-base font-light italic lg:text-lg 2xl:text-xl">
             Hacker applications now closed!
           </h2>
           {/*<Button
