@@ -60,10 +60,10 @@ const AcceptanceStats = () => {
 
     const someHackers = sortedData
       .filter((app) => app.school === "University of Waterloo")
-      .slice(94);
+      .slice(0, 94);
 
-    const otherHackers = sortedData.filter((app) =>
-      someHackers.some((a) => a.userId === app.userId),
+    const otherHackers = sortedData.filter(
+      (app) => app.school !== "University of Waterloo",
     );
 
     setSortedUserData([...someHackers, ...otherHackers]);
