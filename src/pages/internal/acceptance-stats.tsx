@@ -26,9 +26,6 @@ const AcceptanceStats = () => {
     },
   );
 
-  useEffect(() => {
-    applyWeightingsAndSort();
-  }, [allUserData]);
 
   // State for weightings
   const [originalityWeight, setOriginalityWeight] = useState(1); // Default is 100%
