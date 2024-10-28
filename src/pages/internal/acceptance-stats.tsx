@@ -58,7 +58,15 @@ const AcceptanceStats = () => {
       return bTotal - aTotal;
     });
 
-    setSortedUserData(sortedData);
+    const someHackers = sortedData
+      .filter((app) => app.school === "University of Waterloo")
+      .slice(94);
+
+    const otherHackers = sortedData.filter((app) =>
+      someHackers.some((a) => a.userId === app.userId),
+    );
+
+    setSortedUserData([...someHackers, ...otherHackers]);
   };
 
   const genderStats = useMemo(() => {
@@ -179,7 +187,7 @@ const AcceptanceStats = () => {
       </div>
 
       {/* Data Table Section */}
-      {/* <div className="z-10 mt-4 h-full w-[90%]">
+      <div className="z-10 mt-4 h-full w-[90%]">
         {allUserData ? (
           <DataTable
             data={sortedUserData}
@@ -188,7 +196,7 @@ const AcceptanceStats = () => {
         ) : (
           <h2>Loading...</h2>
         )}
-      </div> */}
+      </div>
     </div>
   );
 };
