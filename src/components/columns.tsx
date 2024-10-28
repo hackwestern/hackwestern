@@ -15,6 +15,62 @@ type applicationType = {
   lastName: string;
 };
 
+type AllUsersWithReviewStats = {
+  userId: string;
+  firstName: string | null; // nullable fields
+  lastName: string | null; // nullable fields
+  email: string | null; // nullable fields
+  avgOriginalityRating: number;
+  avgTechnicalityRating: number;
+  avgPassionRating: number;
+  referral: boolean;
+};
+
+export const allUsersWithReviewStatsColumns: ColumnDef<AllUsersWithReviewStats>[] =
+  [
+    {
+      id: "rowNumber",
+      header: "#",
+      cell: ({ row }) => row.index + 1,
+    },
+    {
+      accessorKey: "userId",
+      header: "User ID",
+    },
+    {
+      accessorKey: "firstName",
+      header: "First Name",
+    },
+    {
+      accessorKey: "lastName",
+      header: "Last Name",
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+    },
+    {
+      accessorKey: "avgOriginalityRating",
+      header: "Avg Originality Rating",
+      cell: ({ getValue }) => parseFloat(getValue<string>()).toFixed(2),
+    },
+    {
+      accessorKey: "avgTechnicalityRating",
+      header: "Avg Technicality Rating",
+      cell: ({ getValue }) => parseFloat(getValue<string>()).toFixed(2),
+    },
+    {
+      accessorKey: "avgPassionRating",
+      header: "Avg Passion Rating",
+      cell: ({ getValue }) => parseFloat(getValue<string>()).toFixed(2),
+    },
+    {
+      accessorKey: "referral",
+      header: "Referral",
+      cell: ({ getValue }) => (getValue<boolean>() ? "Yes" : "No"), // Show "Yes" or "No"
+    },
+  ];
+
 export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
   [
     {

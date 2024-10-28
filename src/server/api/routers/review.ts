@@ -322,4 +322,50 @@ export const reviewRouter = createTRPCRouter({
       });
     }
   }),
+
+  getAllUsersWithReviewStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      try {
+        // Ensure only organizers can access this route
+        const userId = ctx.session.user.id;
+        const requester = await db.query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+
+        if (!requester || requester.type !== "organizer") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "User is not authorized to view applications",
+          });
+        }
+
+        // Query to get applications with average ratings and referral status
+        const applicationsWithReviews = await db
+          .select({
+            userId: applications.userId,
+            firstName: applications.firstName,
+            lastName: applications.lastName,
+            email: users.email,
+            school: applications.school,
+            gender: applications.gender,
+            avgOriginalityRating: sql<number>`CAST(AVG(${reviews.originalityRating}) AS FLOAT)`,
+            avgTechnicalityRating: sql<number>`CAST(AVG(${reviews.technicalityRating}) AS FLOAT)`,
+            avgPassionRating: sql<number>`CAST(AVG(${reviews.passionRating}) AS FLOAT)`,
+            referral: sql<boolean>`BOOL_OR(${reviews.referral})`,
+          })
+          .from(applications)
+          .leftJoin(users, eq(applications.userId, users.id))
+          .leftJoin(reviews, eq(applications.userId, reviews.applicantUserId))
+          .where(eq(applications.status, "PENDING_REVIEW"))
+          .groupBy(applications.userId, applications.firstName, applications.lastName, users.email);
+
+        return applicationsWithReviews;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch applications with review summaries: " + JSON.stringify(error),
+        });
+      }
+    }),
+
 });
