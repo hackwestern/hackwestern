@@ -4,6 +4,7 @@ import { allUsersWithReviewStatsColumns } from "~/components/columns";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "~/components/ui/button";
 import { authRedirectOrganizer } from "~/utils/redirect";
+import { createCsvFile } from "~/utils/csv";
 
 type Gender =
   | "Other"
@@ -42,31 +43,71 @@ const AcceptanceStats = () => {
   const applyWeightingsAndSort = () => {
     if (!allUserData) return;
 
-    const sortedData = [...allUserData].sort((a, b) => {
-      if (a.referral && !b.referral) return -1; // a comes first
-      if (!a.referral && b.referral) return 1; // b comes first
+    const referred = allUserData.filter((app) => app.referral);
 
-      // Apply the weightings
-      const aTotal =
-        a.avgOriginalityRating * originalityWeight +
-        a.avgTechnicalityRating * technicalityWeight +
-        a.avgPassionRating * passionWeight;
-      const bTotal =
-        b.avgOriginalityRating * originalityWeight +
-        b.avgTechnicalityRating * technicalityWeight +
-        b.avgPassionRating * passionWeight;
-      return bTotal - aTotal;
-    });
+    const sortedData = allUserData
+      .filter((app) => !app.referral)
+      .sort((a, b) => {
+        // Apply the weightings
+        const aTotal =
+          a.avgOriginalityRating * originalityWeight +
+          a.avgTechnicalityRating * technicalityWeight +
+          a.avgPassionRating * passionWeight;
+        const bTotal =
+          b.avgOriginalityRating * originalityWeight +
+          b.avgTechnicalityRating * technicalityWeight +
+          b.avgPassionRating * passionWeight;
+        return bTotal - aTotal;
+      });
 
-    const someHackers = sortedData
-      .filter((app) => app.school === "University of Waterloo")
-      .slice(0, 94);
-
-    const otherHackers = sortedData.filter(
-      (app) => app.school !== "University of Waterloo",
+    const waterlooMenReferred = referred.filter(
+      (r) => r.school === "University of Waterloo" && r.gender === "Male",
+    );
+    const waterlooNotMenReferred = referred.filter(
+      (r) => r.school === "University of Waterloo" && r.gender !== "Male",
     );
 
-    setSortedUserData([...someHackers, ...otherHackers]);
+    const waterlooMen = sortedData
+      .filter(
+        (app) =>
+          app.school === "University of Waterloo" &&
+          (app.gender === "Male" || app.gender === "Prefer not to answer"),
+      )
+      .slice(0, 47 - waterlooMenReferred.length);
+
+    const waterlooNotMen = sortedData
+      .filter(
+        (app) =>
+          app.school === "University of Waterloo" &&
+          app.gender !== "Male" &&
+          app.gender !== "Prefer not to answer",
+      )
+      .slice(0, 47 - waterlooNotMenReferred.length);
+
+    const otherMen = sortedData
+      .filter(
+        (app) =>
+          app.school !== "University of Waterloo" &&
+          (app.gender === "Male" || app.gender === "Prefer not to answer"),
+      )
+      .slice(0, 188);
+
+    const otherNonMen = sortedData.filter(
+      (app) =>
+        app.school !== "University of Waterloo" &&
+        app.gender !== "Male" &&
+        app.gender !== "Prefer not to answer",
+    );
+
+    const hackers = [
+      ...referred,
+      ...waterlooMen,
+      ...waterlooNotMen,
+      ...otherMen,
+      ...otherNonMen,
+    ];
+
+    setSortedUserData(hackers);
   };
 
   const genderStats = useMemo(() => {
@@ -75,6 +116,9 @@ const AcceptanceStats = () => {
       .reduce((counts, user) => {
         if (user.gender) {
           counts[user.gender] = (counts[user.gender] ?? 0) + 1;
+        } else {
+          counts["Prefer not to answer"] =
+            (counts["Prefer not to answer"] ?? 0) + 1;
         }
         return counts;
       }, {} as GenderCounts);
@@ -95,6 +139,8 @@ const AcceptanceStats = () => {
       .reduce((counts, user) => {
         if (user.school) {
           counts[user.school] = (counts[user.school] ?? 0) + 1;
+        } else {
+          counts["Other"] = (counts["Other"] ?? 0) + 1;
         }
         return counts;
       }, {} as SchoolCounts);
@@ -151,9 +197,28 @@ const AcceptanceStats = () => {
             />
           </label>
         </div>
-        <Button onClick={applyWeightingsAndSort} variant="primary">
-          Apply Weightings
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={applyWeightingsAndSort} variant="primary">
+            Apply Weightings
+          </Button>
+          <Button onClick={() => {}} variant="primary">
+            <a
+              href={(() => {
+                const topHackers = sortedUserData.slice(0, 450).map((app) => ({
+                  name: `${app.firstName ?? ""} ${app.lastName ?? ""}`,
+                  email: app.email,
+                }));
+
+                const csvFileString = createCsvFile(topHackers);
+                const file = new Blob([csvFileString], { type: "text/csv" });
+                return URL.createObjectURL(file);
+              })()}
+              download="accepted.csv"
+            >
+              Export to CSV
+            </a>
+          </Button>
+        </div>
       </div>
 
       {/* Gender and School Stats Section */}
