@@ -38,6 +38,7 @@ const AcceptanceStats = () => {
   const [sortedUserData, setSortedUserData] = useState(
     allUserData ? allUserData : [],
   );
+  const [waitlist, setWaitlist] = useState(allUserData ? allUserData : []);
 
   // Memoize the sorted data with weightings
   const applyWeightingsAndSort = () => {
@@ -90,7 +91,7 @@ const AcceptanceStats = () => {
           app.school !== "University of Waterloo" &&
           (app.gender === "Male" || app.gender === "Prefer not to answer"),
       )
-      .slice(0, 188);
+      .slice(0, 185);
 
     const otherNonMen = sortedData.filter(
       (app) =>
@@ -105,23 +106,54 @@ const AcceptanceStats = () => {
       ...waterlooNotMen,
       ...otherMen,
       ...otherNonMen,
-    ];
+    ].slice(0, 450);
+
+    const tempWaitlist = allUserData
+      .map((s) =>
+        s.gender === "Male" || s.gender === "Prefer not to answer"
+          ? { ...s }
+          : {
+              ...s,
+              avgOriginalityRating: s.avgOriginalityRating * 1.35,
+              avgTechnicalityRating: s.avgTechnicalityRating * 1.35,
+              avgPassionRating: s.avgPassionRating * 1.35,
+            },
+      )
+      .filter((a) => !hackers.some((h) => h.email === a.email))
+      .sort((a, b) => {
+        const aTotal =
+          a.avgOriginalityRating * originalityWeight +
+          a.avgTechnicalityRating * technicalityWeight +
+          a.avgPassionRating * passionWeight;
+        const bTotal =
+          b.avgOriginalityRating * originalityWeight +
+          b.avgTechnicalityRating * technicalityWeight +
+          b.avgPassionRating * passionWeight;
+        return bTotal - aTotal;
+      })
+      .slice(0, 75);
+
+    console.log("waitlist:", tempWaitlist);
+    console.log(
+      "wait list women count: ",
+      tempWaitlist?.filter((app) => app.gender === "Female").length,
+    );
+
+    setWaitlist(tempWaitlist);
 
     setSortedUserData(hackers);
   };
 
   const genderStats = useMemo(() => {
-    const genderCounts: GenderCounts = sortedUserData
-      .slice(0, 450)
-      .reduce((counts, user) => {
-        if (user.gender) {
-          counts[user.gender] = (counts[user.gender] ?? 0) + 1;
-        } else {
-          counts["Prefer not to answer"] =
-            (counts["Prefer not to answer"] ?? 0) + 1;
-        }
-        return counts;
-      }, {} as GenderCounts);
+    const genderCounts: GenderCounts = sortedUserData.reduce((counts, user) => {
+      if (user.gender) {
+        counts[user.gender] = (counts[user.gender] ?? 0) + 1;
+      } else {
+        counts["Prefer not to answer"] =
+          (counts["Prefer not to answer"] ?? 0) + 1;
+      }
+      return counts;
+    }, {} as GenderCounts);
 
     const totalTopUsers = Math.min(450, sortedUserData.length);
     return (Object.keys(genderCounts) as Gender[]).map((gender) => ({
@@ -134,16 +166,14 @@ const AcceptanceStats = () => {
   }, [sortedUserData]);
 
   const schoolStats = useMemo(() => {
-    const schoolCounts: SchoolCounts = sortedUserData
-      .slice(0, 450)
-      .reduce((counts, user) => {
-        if (user.school) {
-          counts[user.school] = (counts[user.school] ?? 0) + 1;
-        } else {
-          counts["Other"] = (counts["Other"] ?? 0) + 1;
-        }
-        return counts;
-      }, {} as SchoolCounts);
+    const schoolCounts: SchoolCounts = sortedUserData.reduce((counts, user) => {
+      if (user.school) {
+        counts[user.school] = (counts[user.school] ?? 0) + 1;
+      } else {
+        counts.Other = (counts.Other ?? 0) + 1;
+      }
+      return counts;
+    }, {} as SchoolCounts);
 
     const totalTopUsers = Math.min(450, sortedUserData.length);
     return Object.keys(schoolCounts).map((school) => ({
@@ -201,10 +231,10 @@ const AcceptanceStats = () => {
           <Button onClick={applyWeightingsAndSort} variant="primary">
             Apply Weightings
           </Button>
-          <Button onClick={() => {}} variant="primary">
+          <Button variant="primary">
             <a
               href={(() => {
-                const topHackers = sortedUserData.slice(0, 450).map((app) => ({
+                const topHackers = sortedUserData.map((app) => ({
                   name: `${app.firstName ?? ""} ${app.lastName ?? ""}`,
                   email: app.email,
                 }));
@@ -215,7 +245,24 @@ const AcceptanceStats = () => {
               })()}
               download="accepted.csv"
             >
-              Export to CSV
+              Top 450 CSV
+            </a>
+          </Button>
+          <Button variant="primary">
+            <a
+              href={(() => {
+                const waitlistHackers = waitlist.map((app) => ({
+                  name: `${app.firstName ?? ""} ${app.lastName ?? ""}`,
+                  email: app.email,
+                }));
+
+                const csvFileString = createCsvFile(waitlistHackers);
+                const file = new Blob([csvFileString], { type: "text/csv" });
+                return URL.createObjectURL(file);
+              })()}
+              download="waitlist.csv"
+            >
+              Waitlist CSV
             </a>
           </Button>
         </div>
