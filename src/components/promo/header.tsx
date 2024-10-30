@@ -39,7 +39,7 @@ const Header = () => {
             className="rounded-md bg-[#5E28B8] p-5 drop-shadow-[0_2px_24px_rgba(255,212,251,0.25)] transition-all hover:bg-[#5C2FAA] hover:drop-shadow-[0_2px_12px_rgba(255,212,251,0.5)]"
             asChild
           >
-            <Link href="/dashboard">Apply Now</Link>
+            <Link href="/dashboard">Hacker Dashboard</Link>
           </Button>
         </div>
         <Button asChild className="flex h-auto bg-transparent p-0">
