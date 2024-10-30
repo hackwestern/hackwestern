@@ -31,7 +31,7 @@ export default function Login() {
         });
         return;
       }
-      void router.push("/dashboard");
+      void router.push("/live");
     });
   }
 
