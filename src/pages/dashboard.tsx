@@ -22,7 +22,9 @@ type ApplicationStatusType =
 
 const parsedStatuses = {
   IN_PROGRESS: "Application In Progress...",
-  INCOMPLETE: "Application Incomplete.",
+  INCOMPLETE: isPastDeadline()
+    ? "Applications Closed."
+    : "Application Incomplete.",
   PENDING_REVIEW: "Application Submitted!",
   IN_REVIEW: "Application In Review",
   ACCEPTED: "Application Accepted! 🥳",
