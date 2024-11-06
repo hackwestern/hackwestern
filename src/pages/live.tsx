@@ -23,15 +23,17 @@ const Live = () => {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="flex w-screen">
+      <div className="flex h-screen w-screen">
         <Sidebar />
-        <div className="w-2/3 2xl:w-3/4">
+        <div className="flex max-h-screen w-2/3 flex-col 2xl:w-3/4">
           <h1 className="w-fill border-b p-10 pt-12 text-xl font-bold xl:text-2xl 2xl:text-3xl">
             {tab != "faq"
               ? tab.charAt(0).toUpperCase() + tab.slice(1)
               : tab.toUpperCase()}
           </h1>
-          <TabComponent tab={tab} />
+          <div className="flex-1 overflow-auto">
+            <TabComponent tab={tab} />
+          </div>
         </div>
       </div>
     </>
