@@ -1,10 +1,13 @@
-export type MentorTags =
-  | "Front-End"
-  | "Back-End"
-  | "Hardware"
-  | "Data & AI"
-  | "Product Design"
-  | "Product Management";
+export const MentorTagsList = [
+  "Front-End",
+  "Back-End",
+  "Hardware",
+  "Data & AI",
+  "Product Design",
+  "Product Management",
+];
+
+export type MentorTags = (typeof MentorTagsList)[number];
 
 export type Mentor = {
   name: string;
@@ -36,76 +39,76 @@ export const MentorsList: Mentor[] = [
     name: "Not Cynthia",
     desc: "cynthia @ cynthia",
     image: "/images/organizers/cynthia.png",
-    tags: ["Product Management", "Data & AI"],
+    tags: ["Product Management", "Data & AI", "Front-End", "Hardware"],
   },
   {
-    name: "Dennis",
+    name: "Dennis 2",
     desc: "dennis @ dennis",
     image: "/images/organizers/dennis.png",
     tags: ["Front-End", "Back-End"],
   },
   {
-    name: "Cynthia",
+    name: "Cynthia 2",
     desc: "cynthia @ cynthia",
     image: "/images/organizers/cynthia.png",
     tags: ["Hardware", "Product Design"],
   },
   {
-    name: "Not Dennis",
+    name: "Not Dennis 2",
     desc: "dennis @ dennis",
     image: "/images/organizers/dennis.png",
     tags: ["Front-End"],
   },
   {
-    name: "Not Cynthia",
+    name: "Not Cynthia 2",
     desc: "cynthia @ cynthia",
     image: "/images/organizers/cynthia.png",
     tags: ["Product Management", "Data & AI"],
   },
   {
-    name: "Dennis",
+    name: "Dennis 24",
     desc: "dennis @ dennis",
     image: "/images/organizers/dennis.png",
     tags: ["Front-End", "Back-End"],
   },
   {
-    name: "Cynthia",
+    name: "Cynthia 22",
     desc: "cynthia @ cynthia",
     image: "/images/organizers/cynthia.png",
     tags: ["Hardware", "Product Design"],
   },
   {
-    name: "Not Dennis",
+    name: "Not Dennis 3",
     desc: "dennis @ dennis",
     image: "/images/organizers/dennis.png",
     tags: ["Front-End"],
   },
   {
-    name: "Not Cynthia",
+    name: "Not Cynthia 4",
     desc: "cynthia @ cynthia",
     image: "/images/organizers/cynthia.png",
     tags: ["Product Management", "Data & AI"],
   },
   {
-    name: "Dennis",
+    name: "Dennis 5",
     desc: "dennis @ dennis",
     image: "/images/organizers/dennis.png",
     tags: ["Front-End", "Back-End"],
   },
   {
-    name: "Cynthia",
+    name: "Cynthia 6",
     desc: "cynthia @ cynthia",
     image: "/images/organizers/cynthia.png",
     tags: ["Hardware", "Product Design"],
   },
   {
-    name: "Not Dennis",
+    name: "Not Dennis 7 ",
     desc: "dennis @ dennis",
     image: "/images/organizers/dennis.png",
     tags: ["Front-End"],
   },
   {
-    name: "Not Cynthia",
+    name: "Not Cynthia 8",
     desc: "cynthia @ cynthia",
     image: "/images/organizers/cynthia.png",
     tags: ["Product Management", "Data & AI"],
