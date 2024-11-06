@@ -25,7 +25,7 @@ const Live = () => {
       </Head>
       <div className="flex h-screen w-screen">
         <Sidebar />
-        <div className="flex max-h-screen w-2/3 flex-col 2xl:w-3/4">
+        <div className="flex max-h-screen w-2/3 flex-col bg-primary-100 2xl:w-3/4">
           <h1 className="w-fill border-b p-10 pt-12 text-xl font-bold xl:text-2xl 2xl:text-3xl">
             {tab != "faq"
               ? tab.charAt(0).toUpperCase() + tab.slice(1)
