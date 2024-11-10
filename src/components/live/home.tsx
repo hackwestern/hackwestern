@@ -23,7 +23,7 @@ const Home = () => {
         </div>
         <div className="pt-5">
           <h3 className="text-md font-bold text-slate-700">GETTING STARTED</h3>
-          <div className="w-full border-t-4 border-primary-300" />
+          <div className="w-full border-t-2 border-primary-300" />
           <p className="text-md pt-5 font-medium text-slate-600">
             Resources to help kickstart your hackathon project and learn various
             skills in design, development, and more.
@@ -34,7 +34,7 @@ const Home = () => {
         </div>
         <div className="pt-5">
           <h3 className="text-md font-bold text-slate-700">NEED HELP?</h3>
-          <div className="w-full border-t-4 border-primary-300" />
+          <div className="w-full border-t-2 border-primary-300" />
           <p className="text-md pt-5 font-medium text-slate-600">
             For urgent matters, send a message in the{" "}
             <span className="font-bold text-primary-600">#questions</span>{" "}
@@ -49,7 +49,7 @@ const Home = () => {
         </div>
         <div className="pt-5">
           <h3 className="text-md font-bold text-slate-700">FOR EMERGENCIES</h3>
-          <div className="w-full border-t-4 border-primary-300" />
+          <div className="w-full border-t-2 border-primary-300" />
           <p className="text-md pt-5 font-medium text-slate-600">
             To contact campus police, dial{" "}
             <span className="font-bold text-primary-600 underline">
