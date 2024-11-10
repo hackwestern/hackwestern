@@ -17,14 +17,13 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="flex h-screen w-1/3 flex-col justify-between bg-violet-100 px-16 py-8 2xl:w-1/4 3xl:w-1/5">
+    <div className="hidden h-screen w-1/3 flex-col justify-between bg-violet-100 px-16 py-8 md:flex 2xl:w-1/4 3xl:w-1/5">
       <div>
         <Link
           className="py-auto flex gap-4 text-center font-MagicRetro text-xl lg:text-2xl 2xl:text-3xl"
           href="/"
         >
           <Horsey />
-
           <div className="flex flex-col justify-center">hack western 11</div>
         </Link>
         <div className="flex flex-col gap-2 pt-8">
