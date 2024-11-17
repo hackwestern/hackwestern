@@ -17,7 +17,11 @@ const FAQ = () => {
         className="mx-auto grid gap-x-9 md:grid-cols-2 3xl:w-1/2"
       >
         {FAQ_ITEMS.map(({ question, answer }, index) => (
-          <AccordionItem key={index} value={`item-${index}`} className="border-violet-300 my-3">
+          <AccordionItem
+            key={index}
+            value={`item-${index}`}
+            className="my-3 border-violet-300"
+          >
             <AccordionTrigger className="text-left text-slate-600">
               {question}
             </AccordionTrigger>
