@@ -1,9 +1,9 @@
 const Map = () => {
-  return <div className="flex w-full h-full p-5 sm:p-10">
-    <div className="bg-primary-300 max-w-4xl w-full h-full rounded-md">
-
+  return (
+    <div className="flex h-full w-full p-5 sm:p-10">
+      <div className="h-full w-full max-w-4xl rounded-md bg-primary-300"></div>
     </div>
-  </div>;
+  );
 };
 
 export default Map;
