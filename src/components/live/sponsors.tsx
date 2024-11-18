@@ -28,7 +28,9 @@ const SponsorCard = ({ name, logo, link }: Sponsor) => {
 const Sponsors = () => {
   return (
     <div className="p-12">
-      <h1 className="py-4 font-DM_Sans text-3xl font-bold ">Title Sponsor</h1>
+      <h1 className="py-4 font-DM_Sans text-2xl font-medium text-slate-600">
+        Title Sponsor
+      </h1>
       <div>
         <SponsorCard
           name="Scotiabank"
@@ -37,7 +39,9 @@ const Sponsors = () => {
         />
       </div>
       {/* Diamond Sponsors */}
-      <h1 className="py-4 font-DM_Sans text-3xl font-bold">Diamond Sponsors</h1>
+      <h1 className="py-4 font-DM_Sans text-2xl font-medium text-slate-600">
+        Diamond Sponsors
+      </h1>
       <div className="flex flex-col gap-2 lg:gap-8">
         <div className="grid grid-cols-2 gap-2 lg:gap-8">
           <SponsorCard
@@ -58,7 +62,9 @@ const Sponsors = () => {
         />
       </div>
       {/* Gold Sponsors */}
-      <h1 className="py-4 font-DM_Sans text-3xl font-bold">Gold Sponsors</h1>
+      <h1 className="py-4 font-DM_Sans text-2xl font-medium text-slate-600">
+        Gold Sponsors
+      </h1>
       <div className="grid grid-cols-3 gap-2 lg:gap-8">
         <SponsorCard
           name="TD invent"
@@ -77,7 +83,9 @@ const Sponsors = () => {
         />
       </div>
       {/* Bronze Sponsors */}
-      <h1 className="py-4 font-DM_Sans text-3xl font-bold">Bronze Sponsors</h1>
+      <h1 className="py-4 font-DM_Sans text-2xl font-medium text-slate-600">
+        Bronze Sponsors
+      </h1>
       <div className="grid grid-cols-3 flex-col gap-2 lg:gap-8">
         <SponsorCard
           name="P&G"
@@ -96,8 +104,10 @@ const Sponsors = () => {
         />
       </div>
       {/* In-kind Sponsors */}
-      <h1 className="py-4 font-DM_Sans text-3xl font-bold">In-kind Sponsors</h1>
-      <div className="grid grid-cols-4 gap-2 lg:gap-8">
+      <h1 className="py-4 font-DM_Sans text-2xl font-medium text-slate-600">
+        In-kind Sponsors
+      </h1>
+      <div className="grid grid-cols-5 gap-2 lg:gap-8">
         <SponsorCard
           name="Canada Learning Code"
           logo="/sponsors/Canada Learning Code.svg"
@@ -117,6 +127,11 @@ const Sponsors = () => {
           name="StandOut Stickers"
           logo="/sponsors/StandOut.svg"
           link="http://hackp.ac/mlh-StandOutStickers-hackathons"
+        />
+        <SponsorCard
+          name="Western Engineering"
+          logo="/sponsors/WesternEngineering.svg"
+          link="https://www.eng.uwo.ca/outreach/index.html"
         />
       </div>
     </div>
