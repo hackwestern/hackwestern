@@ -10,7 +10,6 @@ const authRedirect = async (
   userTypeTarget?: "hacker" | "organizer" | "sponsor",
 ) => {
   const session = await getServerSession(context.req, context.res, authOptions);
-
   if (!session) {
     console.log("no session found");
     return {
