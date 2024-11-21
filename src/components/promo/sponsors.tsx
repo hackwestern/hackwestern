@@ -20,7 +20,7 @@ const SponsorCard = ({ name, logo, link }: Sponsor) => {
         alt={name}
         width={0}
         height={0}
-        className="h-auto w-full"
+        className="h-auto w-auto"
       />
     </a>
   );
