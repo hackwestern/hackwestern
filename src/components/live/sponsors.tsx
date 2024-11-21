@@ -1,29 +1,4 @@
-import Image from "next/image";
-
-interface Sponsor {
-  name: string;
-  logo: string;
-  link: string;
-}
-
-const SponsorCard = ({ name, logo, link }: Sponsor) => {
-  return (
-    <a
-      className="mx-auto flex h-36 w-full cursor-pointer select-none justify-center rounded-xl bg-primary-700 p-4 align-middle transition-all hover:scale-[1.0075] hover:shadow-2xl xl:h-40 2xl:h-48"
-      href={link}
-      target="_blank"
-      rel="noreferrer noopener"
-    >
-      <Image
-        src={logo}
-        alt={name}
-        width={0}
-        height={0}
-        className="h-auto w-full"
-      />
-    </a>
-  );
-};
+import { SponsorCard } from "../promo/sponsors";
 
 const Sponsors = () => {
   return (
@@ -107,32 +82,50 @@ const Sponsors = () => {
       <h1 className="py-4 font-DM_Sans text-2xl font-medium text-slate-600">
         In-kind Sponsors
       </h1>
-      <div className="grid grid-cols-5 gap-2 lg:gap-8">
-        <SponsorCard
-          name="Canada Learning Code"
-          logo="/sponsors/Canada Learning Code.svg"
-          link="https://www.canadalearningcode.ca/"
-        />
-        <SponsorCard
-          name="Warp"
-          logo="/sponsors/Warp.svg"
-          link="https://www.warp.dev/"
-        />
-        <SponsorCard
-          name="Voiceflow"
-          logo="/sponsors/Voiceflow.svg"
-          link="https://www.voiceflow.com/"
-        />
-        <SponsorCard
-          name="StandOut Stickers"
-          logo="/sponsors/StandOut.svg"
-          link="http://hackp.ac/mlh-StandOutStickers-hackathons"
-        />
-        <SponsorCard
-          name="Western Engineering"
-          logo="/sponsors/WesternEngineering.svg"
-          link="https://www.eng.uwo.ca/outreach/index.html"
-        />
+      <div className="flex flex-wrap gap-2 lg:gap-8">
+        <div className="w-1/3">
+          <SponsorCard
+            name="Canada Learning Code"
+            logo="/sponsors/Canada Learning Code.svg"
+            link="https://www.canadalearningcode.ca/"
+          />
+        </div>
+        <div className="w-1/3">
+          <SponsorCard
+            name="Warp"
+            logo="/sponsors/Warp.svg"
+            link="https://www.warp.dev/"
+          />
+        </div>
+        <div className="w-1/3">
+          <SponsorCard
+            name="Voiceflow"
+            logo="/sponsors/Voiceflow.svg"
+            link="https://www.voiceflow.com/"
+          />
+        </div>
+        <div className="w-1/3">
+          <SponsorCard
+            name="StandOut Stickers"
+            logo="/sponsors/StandOut.svg"
+            link="http://hackp.ac/mlh-StandOutStickers-hackathons"
+          />
+        </div>
+        <div className="w-1/3">
+          <SponsorCard
+            name="Western Engineering"
+            logo="/sponsors/WesternEngineering.svg"
+            link="https://www.eng.uwo.ca/outreach/index.html"
+          />
+        </div>
+
+        <div className="w-1/3">
+          <SponsorCard
+            name="Awake Caffeinated Chocolate"
+            logo="/sponsors/Awake Chocolate.svg"
+            link="https://awakechocolate.com/"
+          />
+        </div>
       </div>
     </div>
   );
