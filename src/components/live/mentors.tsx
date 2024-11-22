@@ -54,7 +54,7 @@ const Mentors = () => {
 const MentorCard = (mentor: Mentor) => {
   return (
     <div className="flex flex-col rounded-lg border border-[#E2E8F0] bg-white p-4 2xl:p-6 3xl:p-8">
-      <div className="relative my-4 h-24 w-24 rounded-lg bg-[#E6E2F0] 2xl:h-32 2xl:w-32 3xl:h-40 3xl:w-40 overflow-clip border">
+      <div className="relative my-4 h-24 w-24 overflow-clip rounded-lg border bg-[#E6E2F0] 2xl:h-32 2xl:w-32 3xl:h-40 3xl:w-40">
         <Image
           src={mentor.image}
           alt={mentor.name}
