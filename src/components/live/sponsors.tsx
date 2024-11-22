@@ -77,6 +77,16 @@ const Sponsors = () => {
           logo="/sponsors/Morrissette.svg"
           link="https://entrepreneurship.uwo.ca/"
         />
+        <SponsorCard
+          name="Digital Extreme"
+          logo="/sponsors/digitalextreme.svg"
+          link="https://www.digitalextremes.com/"
+        />
+        <SponsorCard
+          name="GEOTAB"
+          logo="/sponsors/geotab.svg"
+          link="https://www.geotab.com/"
+        />
       </div>
       {/* In-kind Sponsors */}
       <h1 className="py-4 font-DM_Sans text-2xl font-medium text-slate-600">

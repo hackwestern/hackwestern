@@ -25,6 +25,7 @@ const SponsorCard = ({ name, logo, link }: Sponsor) => {
     </a>
   );
 };
+
 export { SponsorCard };
 
 const Sponsors = () => {
@@ -112,6 +113,16 @@ const Sponsors = () => {
             name="Morrissette"
             logo="/sponsors/Morrissette.svg"
             link="https://entrepreneurship.uwo.ca/"
+          />
+          <SponsorCard
+            name="Digital Extreme"
+            logo="/sponsors/digitalextreme.svg"
+            link="https://www.digitalextremes.com/"
+          />
+          <SponsorCard
+            name="GEOTAB"
+            logo="/sponsors/geotab.svg"
+            link="https://www.geotab.com/"
           />
         </div>
         {/* In-kind Sponsors */}
