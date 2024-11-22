@@ -18,8 +18,8 @@ const SponsorCard = ({ name, logo, link }: Sponsor) => {
       <Image
         src={logo}
         alt={name}
-        width={0}
-        height={0}
+        width={150}
+        height={150}
         className="h-auto w-auto"
       />
     </a>
