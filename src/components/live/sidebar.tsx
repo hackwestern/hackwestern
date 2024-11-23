@@ -17,10 +17,10 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="hidden h-screen w-1/3 flex-col justify-between bg-violet-100 px-16 py-8 md:flex 2xl:w-1/4 3xl:w-1/5">
+    <div className="hidden h-screen w-1/4 flex-col justify-between bg-violet-100 px-4 py-8 md:flex lg:px-8 2xl:w-1/5 2xl:px-10 3xl:w-1/6 3xl:px-16">
       <div>
         <Link
-          className="py-auto flex gap-4 text-center font-MagicRetro text-xl lg:text-2xl 2xl:text-3xl"
+          className="py-auto flex gap-4 text-center font-MagicRetro text-xl lg:text-2xl"
           href="/"
         >
           <Horsey />
