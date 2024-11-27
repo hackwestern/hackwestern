@@ -7,7 +7,7 @@ const Home = () => {
 
   return (
     <div className="flex w-full flex-row justify-start p-10 ">
-      <div className="flex w-2/3 flex-col ">
+      <div className="flex w-full flex-col md:w-2/3">
         <h2 className="font-MagicRetro text-5xl">
           Hi {application?.firstName ? `${application.firstName}` : "Hacker"},
         </h2>
@@ -18,7 +18,7 @@ const Home = () => {
           We are thrilled to have you at Hack Western 11! We hope you build a
           cool project and kindle some fun memories this weekend 💜
         </p>
-        <div className="md:hidden">
+        <div className="pt-5 md:hidden">
           <QuickLinks />
         </div>
         <div className="pt-5">
@@ -76,21 +76,21 @@ const QuickLinks = () => {
     <div className="flex flex-col rounded-xl bg-primary-200 p-5 pr-16">
       <div className="text-2xl font-bold">Quick Links</div>
       <div className="text-lg font-medium ">
-        <div className="mt-5 w-[120%] border-t-2 border-primary-400" />
+        <div className="mt-5 w-full border-t-2 border-primary-400 md:w-[120%]" />
         <QLink
           text="Event Guide"
           link="#"
           image="/images/icons/arrowupright.svg"
         />
-        <div className="w-[120%] border-t-2 border-primary-400" />
+        <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
         <QLink text="Join our Slack" link="#" image="/images/icons/slack.svg" />
-        <div className="w-[120%] border-t-2 border-primary-400" />
+        <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
         <QLink
           text="Add Schedule to GCal"
           link="#"
           image="/images/icons/gcal.svg"
         />
-        <div className="w-[120%] border-t-2 border-primary-400" />
+        <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
         <QLink
           text="Submit your project"
           link="#"
