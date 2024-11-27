@@ -87,6 +87,11 @@ const Sponsors = () => {
           logo="/sponsors/geotab.svg"
           link="https://www.geotab.com/"
         />
+        <SponsorCard
+          name="Notion"
+          logo="/sponsors/notion.png"
+          link="https://notion.com"
+        />
       </div>
       {/* In-kind Sponsors */}
       <h1 className="py-4 font-DM_Sans text-2xl font-medium text-slate-600">
