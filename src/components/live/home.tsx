@@ -122,7 +122,12 @@ const QLink = ({
   image: string;
 }) => {
   return (
-    <a href={link} className="flex items-center space-x-3 py-3">
+    <a
+      href={link}
+      className="flex items-center space-x-3 py-3"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       <Image src={image} alt="Link Icon" width={20} height={20} />
       <span className="transition-all duration-200 ease-in-out hover:text-primary-600">
         {text}
