@@ -95,12 +95,12 @@ const QuickLinks = () => {
           link="https://join.slack.com/t/hackwestern11/shared_invite/zt-2unzxw9iq-xS9AYyz71BlYkGW7VdAceg"
           image="/images/icons/slack.svg"
         />
-        {/*<div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
+        <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
         <QLink
           text="Add Schedule to GCal"
-          link="#"
+          link="https://calendar.google.com/calendar/embed?src=c7677dbb10f476721982c9755440429fa1791b6818969805682b81e2eaf2bbb7%40group.calendar.google.com&ctz=America%2FToronto"
           image="/images/icons/gcal.svg"
-        />*/}
+        />
         <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
         <QLink
           text="Submit your project"
