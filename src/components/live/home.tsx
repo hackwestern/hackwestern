@@ -1,6 +1,6 @@
 import { api } from "~/utils/api";
 import { Button } from "../ui/button";
-import { ArrowUpRight, LucideIcon } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 const Home = () => {
   const { data: application } = api.application.get.useQuery();
@@ -37,7 +37,14 @@ const Home = () => {
           <div className="w-full border-t-2 border-primary-300" />
           <p className="text-md pt-5 font-medium text-slate-600">
             For urgent matters, send a message in the{" "}
-            <span className="font-bold text-primary-600">#questions</span>{" "}
+            <a
+              className="font-bold text-primary-600"
+              href="https://hackwestern11.slack.com/archives/C07V6KJ141M"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              #questions
+            </a>{" "}
             channel on Slack! You can also identify Hack Western organizers and
             volunteers by their name tags - feel free to ask us for help.
             Otherwise, feel free to send an email to{" "}
@@ -79,21 +86,25 @@ const QuickLinks = () => {
         <div className="mt-5 w-full border-t-2 border-primary-400 md:w-[120%]" />
         <QLink
           text="Event Guide"
-          link="#"
+          link="https://island-denim-3d7.notion.site/Hack-Western-11-Hacker-Package-142e351b228b8030a3deebfa557063ec"
           image="/images/icons/arrowupright.svg"
         />
         <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
-        <QLink text="Join our Slack" link="#" image="/images/icons/slack.svg" />
+        <QLink
+          text="Join our Slack"
+          link="https://join.slack.com/t/hackwestern11/shared_invite/zt-2unzxw9iq-xS9AYyz71BlYkGW7VdAceg"
+          image="/images/icons/slack.svg"
+        />
         <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
         <QLink
           text="Add Schedule to GCal"
-          link="#"
+          link="https://calendar.google.com/calendar/embed?src=c7677dbb10f476721982c9755440429fa1791b6818969805682b81e2eaf2bbb7%40group.calendar.google.com&ctz=America%2FToronto"
           image="/images/icons/gcal.svg"
         />
         <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
         <QLink
           text="Submit your project"
-          link="#"
+          link="https://dorahacks.io/hackathon/hackwestern-11/detail"
           image="/images/icons/dorahacks.png"
         />
       </div>
@@ -111,7 +122,12 @@ const QLink = ({
   image: string;
 }) => {
   return (
-    <a href="https://slack.com/" className="flex items-center space-x-3 py-3">
+    <a
+      href={link}
+      className="flex items-center space-x-3 py-3"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       <Image src={image} alt="Link Icon" width={20} height={20} />
       <span className="transition-all duration-200 ease-in-out hover:text-primary-600">
         {text}
