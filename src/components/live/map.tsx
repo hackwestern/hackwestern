@@ -2,7 +2,7 @@ import Image from "next/image";
 
 const Map = () => {
   return (
-    <div className="h-full w-fill p-5 sm:p-10 flex flex-col gap-3 mb-8">
+    <div className="w-fill mb-8 flex h-full flex-col gap-3 p-5 sm:p-10">
       <div className="h-fit w-full rounded-md bg-primary-300 p-4">
         <Image
           src="/images/maps/map.svg"
