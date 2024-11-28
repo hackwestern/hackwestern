@@ -7,7 +7,6 @@ import Mentors from "~/components/live/mentors";
 import Sponsors from "~/components/live/sponsors";
 import FAQ from "~/components/live/faq";
 import Sidebar from "~/components/live/sidebar";
-import { authRedirectHacker } from "~/utils/redirect";
 import Topbar from "~/components/live/topbar";
 
 const Live = () => {
@@ -62,4 +61,3 @@ const TabComponent = ({ tab }: { tab: string }) => {
 };
 
 export default Live;
-export const getServerSideProps = authRedirectHacker;
