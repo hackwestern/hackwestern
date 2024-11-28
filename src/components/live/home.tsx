@@ -1,6 +1,6 @@
 import { api } from "~/utils/api";
 import { Button } from "../ui/button";
-import { ArrowUpRight, LucideIcon } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 const Home = () => {
   const { data: application } = api.application.get.useQuery();
@@ -79,21 +79,25 @@ const QuickLinks = () => {
         <div className="mt-5 w-full border-t-2 border-primary-400 md:w-[120%]" />
         <QLink
           text="Event Guide"
-          link="#"
+          link="https://island-denim-3d7.notion.site/Hack-Western-11-Hacker-Package-142e351b228b8030a3deebfa557063ec"
           image="/images/icons/arrowupright.svg"
         />
         <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
-        <QLink text="Join our Slack" link="#" image="/images/icons/slack.svg" />
-        <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
         <QLink
+          text="Join our Slack"
+          link="https://join.slack.com/t/hackwestern11/shared_invite/zt-2unzxw9iq-xS9AYyz71BlYkGW7VdAceg"
+          image="/images/icons/slack.svg"
+        />
+        <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
+        {/*<QLink
           text="Add Schedule to GCal"
           link="#"
           image="/images/icons/gcal.svg"
-        />
+        />*/}
         <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
         <QLink
           text="Submit your project"
-          link="#"
+          link="https://dorahacks.io/hackathon/hackwestern-11/detail"
           image="/images/icons/dorahacks.png"
         />
       </div>
@@ -111,7 +115,7 @@ const QLink = ({
   image: string;
 }) => {
   return (
-    <a href="https://slack.com/" className="flex items-center space-x-3 py-3">
+    <a href={link} className="flex items-center space-x-3 py-3">
       <Image src={image} alt="Link Icon" width={20} height={20} />
       <span className="transition-all duration-200 ease-in-out hover:text-primary-600">
         {text}
