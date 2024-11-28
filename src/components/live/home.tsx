@@ -37,7 +37,14 @@ const Home = () => {
           <div className="w-full border-t-2 border-primary-300" />
           <p className="text-md pt-5 font-medium text-slate-600">
             For urgent matters, send a message in the{" "}
-            <span className="font-bold text-primary-600">#questions</span>{" "}
+            <a
+              className="font-bold text-primary-600"
+              href="https://hackwestern11.slack.com/archives/C07V6KJ141M"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              #questions
+            </a>{" "}
             channel on Slack! You can also identify Hack Western organizers and
             volunteers by their name tags - feel free to ask us for help.
             Otherwise, feel free to send an email to{" "}
