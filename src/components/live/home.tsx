@@ -28,8 +28,14 @@ const Home = () => {
             Resources to help kickstart your hackathon project and learn various
             skills in design, development, and more.
           </p>
-          <Button variant="primary" className="mt-5 p-6">
-            Access Starter Pack <ArrowUpRight size={20} />
+          <Button variant="primary" className="mt-5 p-6" asChild>
+            <a
+              href="https://island-denim-3d7.notion.site/Hacker-Starter-Pack-14ce351b228b8073805ad107e878caf9"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Access Starter Pack <ArrowUpRight size={20} />
+            </a>
           </Button>
         </div>
         <div className="pt-5">
