@@ -88,8 +88,8 @@ const QuickLinks = () => {
           link="https://join.slack.com/t/hackwestern11/shared_invite/zt-2unzxw9iq-xS9AYyz71BlYkGW7VdAceg"
           image="/images/icons/slack.svg"
         />
-        <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
-        {/*<QLink
+        {/*<div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
+        <QLink
           text="Add Schedule to GCal"
           link="#"
           image="/images/icons/gcal.svg"
