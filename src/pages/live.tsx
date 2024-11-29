@@ -7,7 +7,6 @@ import Mentors from "~/components/live/mentors";
 import Sponsors from "~/components/live/sponsors";
 import FAQ from "~/components/live/faq";
 import Sidebar from "~/components/live/sidebar";
-import { authRedirectHacker } from "~/utils/redirect";
 import Topbar from "~/components/live/topbar";
 
 const Live = () => {
@@ -27,7 +26,7 @@ const Live = () => {
       <div className="flex h-screen w-screen flex-col md:flex-row">
         <Topbar />
         <Sidebar />
-        <div className="flex max-h-screen min-h-screen w-screen flex-col bg-primary-100 md:w-2/3 2xl:w-3/4">
+        <div className="flex max-h-screen min-h-screen w-screen flex-col bg-primary-100">
           <h1 className="w-fill hidden border-b p-10 pt-12 text-xl font-bold md:block xl:text-2xl 2xl:text-3xl">
             {tab != "faq"
               ? tab.charAt(0).toUpperCase() + tab.slice(1)
@@ -62,4 +61,3 @@ const TabComponent = ({ tab }: { tab: string }) => {
 };
 
 export default Live;
-export const getServerSideProps = authRedirectHacker;

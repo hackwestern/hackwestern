@@ -18,13 +18,15 @@ const SponsorCard = ({ name, logo, link }: Sponsor) => {
       <Image
         src={logo}
         alt={name}
-        width={0}
-        height={0}
-        className="h-auto w-full"
+        width={150}
+        height={150}
+        className="h-auto w-auto"
       />
     </a>
   );
 };
+
+export { SponsorCard };
 
 const Sponsors = () => {
   return (
@@ -112,12 +114,27 @@ const Sponsors = () => {
             logo="/sponsors/Morrissette.svg"
             link="https://entrepreneurship.uwo.ca/"
           />
+          <SponsorCard
+            name="Digital Extreme"
+            logo="/sponsors/digitalextreme.svg"
+            link="https://www.digitalextremes.com/"
+          />
+          <SponsorCard
+            name="GEOTAB"
+            logo="/sponsors/geotab.svg"
+            link="https://www.geotab.com/"
+          />
+          <SponsorCard
+            name="Notion"
+            logo="/sponsors/notion.png"
+            link="https://notion.com"
+          />
         </div>
         {/* In-kind Sponsors */}
         <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
           In-kind Sponsors
         </h1>
-        <div className="grid grid-cols-4 gap-2 lg:gap-8">
+        <div className="grid grid-cols-3 gap-2 lg:gap-8">
           <SponsorCard
             name="Canada Learning Code"
             logo="/sponsors/Canada Learning Code.svg"
@@ -137,6 +154,16 @@ const Sponsors = () => {
             name="StandOut Stickers"
             logo="/sponsors/StandOut.svg"
             link="http://hackp.ac/mlh-StandOutStickers-hackathons"
+          />
+          <SponsorCard
+            name="Western Engineering"
+            logo="/sponsors/WesternEngineering.svg"
+            link="https://www.eng.uwo.ca/outreach/index.html"
+          />
+          <SponsorCard
+            name="Awake Caffeinated Chocolate"
+            logo="/sponsors/Awake Chocolate.svg"
+            link="https://awakechocolate.com/"
           />
         </div>
         <div className="mt-8 flex h-64 flex-col justify-around rounded-xl border-2 border-[#B07ACA] bg-gradient-to-tr from-[#7B3FDF] via-[#DE81A8] to-[#FFBD80] p-5 py-2.5 md:mt-20">
