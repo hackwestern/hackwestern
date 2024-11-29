@@ -92,8 +92,7 @@ export const HACKATHON_FAQ: FaqType[] = [
   },
   {
     question: "Can I submit multiple projects?",
-    answer:
-      "No, each team is allowed to submit only one project.",
+    answer: "No, each team is allowed to submit only one project.",
   },
   {
     question: "Can my project use publicly available frameworks?",
@@ -112,8 +111,7 @@ export const HACKATHON_FAQ: FaqType[] = [
   },
   {
     question: "When can I start hacking?",
-    answer:
-      "Hacking begins on Friday, November 29th at 10pm.",
+    answer: "Hacking begins on Friday, November 29th at 10pm.",
   },
   {
     question: "What workshops and activities will there be?",
@@ -122,8 +120,7 @@ export const HACKATHON_FAQ: FaqType[] = [
   },
   {
     question: "What is the submission deadline?",
-    answer:
-      "Hacking ends on Sunday, December 1st at 10am.",
+    answer: "Hacking ends on Sunday, December 1st at 10am.",
   },
   {
     question: "Will judging be in person?",
@@ -132,8 +129,7 @@ export const HACKATHON_FAQ: FaqType[] = [
   },
   {
     question: "What prizes are available?",
-    answer:
-      "You can find all the prizes available on our Dorahacks page.",
+    answer: "You can find all the prizes available on our Dorahacks page.",
   },
   {
     question: "Can I submit to multiple bounties?",
