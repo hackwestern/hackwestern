@@ -120,14 +120,14 @@ function Hero() {
           <h2 className="mt-3 font-sans text-base font-light italic lg:text-lg 2xl:text-xl">
             Hacker applications now closed!
           </h2>
-          {/*<Button
+          <Button
             variant="primary"
             size="lg"
             className="my-8 px-16 text-base"
             asChild
           >
-            <Link href="/register">Apply as Volunteer</Link>
-          </Button>*/}
+            <Link href="/live">Live Site</Link>
+          </Button>
         </div>
       </div>
     </div>
