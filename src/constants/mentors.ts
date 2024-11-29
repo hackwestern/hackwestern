@@ -15,7 +15,7 @@ export type MentorTags = (typeof MentorTagsList)[number];
 export type Mentor = {
   name: string;
   desc: string;
-  image: string;
+  image?: string;
   tags: MentorTags[];
 };
 
@@ -49,6 +49,35 @@ export const MentorsList: Mentor[] = [
     desc: "Sr ML Engineer @ BNY, Community Manager @ TensorFlow",
     image: "/images/mentors/bilal_aamer.webp",
     tags: ["Data & AI"],
+  },
+  {
+    name: "Vanessa Malott",
+    desc: "Sr. Software Deveoper @ Canada Life",
+    image: "/images/mentors/vanessa_malott.webp",
+    tags: ["Back-End", "Front-End", "DevOps & Cloud"],
+  },
+  {
+    name: "Dave Ticknor",
+    desc: "Senior IT Automation @ Canada Life",
+    image: "/images/mentors/dave_ticknor.webp",
+    tags: ["DevOps & Cloud", "Back-End", "Hardware"],
+  },
+  {
+    name: "Tammi Reaburn",
+    desc: "Director Collaboration & Desktop @ Canada Life",
+    image: "/images/mentors/tammi_reaburn.webp",
+    tags: ["Product Management", "DevOps & Cloud"],
+  },
+  {
+    name: "Owen Karnas",
+    desc: "Software Developer @ Canada Life",
+    image: "/images/mentors/owen_karnas.webp",
+    tags: ["Back-End", "Front-End"],
+  },
+  {
+    name: "Jesse Davidson",
+    desc: "Software Developer @ Canada Life",
+    tags: ["Back-End", "Front-End"],
   },
   {
     name: "Charlotte Lemon",

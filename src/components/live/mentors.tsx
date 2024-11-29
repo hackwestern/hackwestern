@@ -55,12 +55,14 @@ const MentorCard = (mentor: Mentor) => {
   return (
     <div className="flex flex-col rounded-lg border border-[#E2E8F0] bg-white p-4 2xl:p-6 3xl:p-8">
       <div className="relative my-4 h-24 w-24 overflow-clip rounded-lg border bg-[#E6E2F0] 2xl:h-32 2xl:w-32 3xl:h-40 3xl:w-40">
-        <Image
-          src={mentor.image}
-          alt={mentor.name}
-          layout="fill"
-          objectFit="cover"
-        />
+        {mentor.image && (
+          <Image
+            src={mentor.image}
+            alt={mentor.name}
+            layout="fill"
+            objectFit="cover"
+          />
+        )}
       </div>
       <div className="my-2">
         <h2 className="text-lg font-medium">{mentor.name}</h2>
