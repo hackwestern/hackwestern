@@ -6,12 +6,10 @@ import FAQ from "~/components/promo/faq";
 import Projects from "~/components/promo/projects";
 import Sponsors from "~/components/promo/sponsors";
 import Organizer from "~/components/promo/organizer";
-import FAQs from "~/components/live/faq";
 
 export default function Home() {
   return (
     <>
-    <FAQs></FAQs>
       <Head>
         <title>Hack Western</title>
         <meta
