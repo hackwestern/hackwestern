@@ -19,44 +19,12 @@ export const GENERALHACK_FAQ: FaqType[] = [
     answer:
       "Hackers can be in teams of up to 4 people, which means you could also solo hack if you wish. You do not need to tell us who your team members are, simply add them to your Devpost submission before the deadline.",
   },
-  // TODO: update for this year
-  // {
-  //   question: "Where can I go if I need help?",
-  //   answer:
-  //     "We will have a help desk available at the lower ground floor (level 2) all weekend to answer any questions/provide assistance. Otherwise, you can reach an organizer by tagging @organizers in Slack in the <a class='underline font-bold' target='_blank' rel='noopener' href='https://hackwestern10.slack.com/archives/C065X1MLQTT'>#questions</a> channel. Organizers will also be identifiable throughout the venue by having black nametags. For project help, please refer to the following section.",
-  // },
   {
     question: "What are mentors?",
     answer:
       "Whether you’re stuck trying to debug a project, can’t come up with an idea, or just need some overall guidance on how to proceed, mentors are here to help you succeed! We will have various mentors available on-call to help hackers with their projects throughout the weekend. Note that mentors are only available for support, and are not writing code for you. In this site, you can navigate to the <a class='underline font-semibold' href='https://hackwestern.com/live/mentors'>Mentors tab</a> to see all of our mentors for this weekend for reference.",
   },
-  // TODO: update for this year
-  // {
-  //   question: "How do I get help from a mentor?",
-  //   answer:
-  //     "To reach a mentor, join the <a class='underline font-semibold' target='_blank' rel='noopener' href='https://hackwestern10.slack.com/archives/C065J9EU22F'>#mentorship</a> channel in Slack where you can submit a request for a mentor by indicating what sort of help you need and where you are in the building. You may also go to the Mentors Hub at any time to find a mentor.",
-  // },
 ];
-
-// TODO: Update these answers
-//
-// export const SUBMISSION_FAQ: FaqType[] = [
-//   {
-//     question: "How do I submit my project?",
-//     answer:
-//       "All hackers must submit their project on Devpost in order to qualify for prizes. To do so, you must register on <a class='underline font-semibold' target='_blank' rel='noopener' href='https://hack-western-10.devpost.com/'>https://hack-western-10.devpost.com/</a> and submit your project before 9am on Sunday, November 26th. Note that this is 1 hour before the official hacking period ends, you will only need to submit by this deadline but may continue editing the Devpost and hacking until the 10am finish.",
-//   },
-//   {
-//     question: "What prizes are available?",
-//     answer:
-//       "Check out our devpost at <a class='underline font-semibold' target='_blank' rel='noopener' href='https://hack-western-10.devpost.com/'>https://hack-western-10.devpost.com/</a> for a full list of all the prizes up for grabs at Hack Western 10! We are extremely grateful for the variety of prizes donated by our sponsors to Hack Western this year. To learn more about specific sponsor prizes, visit the sponsor booth in-person or join the relevant channels on Slack!",
-//   },
-//   {
-//     question: "How will judging work?",
-//     answer:
-//       "When you submit your project on <a class='underline font-semibold' target='_blank' rel='noopener' href='https://hack-western-10.devpost.com/'>Devpost</a>, you will have the option to select which sponsor prizes you want to opt-in for. Your projects will be judged for those categories you select. Some prizes are already eligible to all projects and do not need to be opted-in to, which include the overall winners of Hack Western as well as the Organizers’ Choice Awards. On Sunday, November 26th, there will be a Demo Fair from 10:30am-1pm where all projects will be judged expo-style. You will be given a time lock within this duration and a table number in which your team can prepare to pitch your projects to judges as they walk around. Each pitch may not be longer than 3 minutes. Finalists for overall prizes will pitch again during Closing Ceremonies.",
-//   },
-// ];
 
 export const OTHER_FAQ: FaqType[] = [
   {
@@ -108,5 +76,123 @@ export const OTHER_FAQ: FaqType[] = [
     question: "Question not here?",
     answer:
       "Feel free to reach out to us on social media or directly at <a class='text-bold underline' href='mailto:hello@hackwestern.com'>hello@hackwestern.com</a> and we will be more than happy to answer any of your questions.",
+  },
+];
+
+export const HACKATHON_FAQ: FaqType[] = [
+  {
+    question: "How many people can be on my team?",
+    answer:
+      "Teams can have up to 4 members. While you can participate solo, teamwork is encouraged for the best experience.",
+  },
+  {
+    question: "Can I work on my hack before the event?",
+    answer:
+      "No, all work on your project must begin after the event officially starts. This ensures a fair competition for all participants.",
+  },
+  {
+    question: "Can I submit multiple projects?",
+    answer:
+      "No, each team is allowed to submit only one project.",
+  },
+  {
+    question: "Can my project use publicly available frameworks?",
+    answer:
+      "Yes, you can use publicly available frameworks, but be sure to credit them properly in your README file.",
+  },
+  {
+    question: "Can I use tools like ChatGPT or other AI models?",
+    answer:
+      "Yes, but you must clearly credit any tools used and describe in your README what was built vs. what was generated. Projects that are simple reskins of existing AI tools may be disqualified.",
+  },
+  {
+    question: "Do I have to submit code? If so, in what format?",
+    answer:
+      "Yes, submissions must include your code in an accessible format, such as a GitHub repository link, Google Drive link, or equivalent.",
+  },
+  {
+    question: "When can I start hacking?",
+    answer:
+      "Hacking begins on Friday, November 29th at 10pm.",
+  },
+  {
+    question: "What workshops and activities will there be?",
+    answer:
+      "We’ll host workshops from sponsors and clubs, networking sessions, and fun activities throughout the event. Keep an eye on the schedule for updates.",
+  },
+  {
+    question: "What is the submission deadline?",
+    answer:
+      "Hacking ends on Sunday, December 1st at 10am.",
+  },
+  {
+    question: "Will judging be in person?",
+    answer:
+      "Yes, judging will be conducted in person, science-fair style. Teams will present their projects to judges at their booths.",
+  },
+  {
+    question: "What prizes are available?",
+    answer:
+      "You can find all the prizes available on our Dorahacks page.",
+  },
+  {
+    question: "Can I submit to multiple bounties?",
+    answer:
+      "Yes, teams can submit their projects to multiple bounties if applicable.",
+  },
+  {
+    question: "What are mentors?",
+    answer:
+      "Mentors are experienced individuals available throughout the event to provide guidance and answer your questions.",
+  },
+  {
+    question: "How can I find mentors during the event?",
+    answer:
+      "Mentors will be available on-site and online through our communication platform. Look for the mentor tags or join the mentor-help channel.",
+  },
+  {
+    question: "What resources will be provided?",
+    answer:
+      "We’ll provide a list of APIs, frameworks, and documentation to help you get started, as well as access to online tools.",
+  },
+  {
+    question: "Will there be sleeping accommodations?",
+    answer:
+      "Yes! We provide mattresses on a first-come, first-served basis. You are welcome to bring your own sleeping bag, blanket, or pillow for added comfort. Designated quiet areas will also be available for rest throughout the event.",
+  },
+  {
+    question: "Are there shower facilities?",
+    answer:
+      "Unfortunately, there will not be shower facilities at the venue, so plan accordingly. We recommend bringing toiletries and a change of clothes if you plan to stay overnight.",
+  },
+  {
+    question: "What about food and drinks?",
+    answer:
+      "All meals, snacks, and drinks will be provided throughout the hackathon to keep you fueled and hydrated.",
+  },
+  {
+    question: "Can I leave the venue and come back?",
+    answer:
+      "Yes, participants are free to leave and return during the hackathon, but ensure you have your event badge for re-entry.",
+  },
+  {
+    question: "Will there be parking available?",
+    answer:
+      "Yes, parking is available near the venue. Check your participant guide for details on parking locations and rates.",
+  },
+  {
+    question: "Are there travel reimbursements?",
+    answer:
+      "Yes, we provide partial reimbursements for travel costs after the event. To be eligible, you must submit a project during the hackathon. Reimbursements are contingent on available funds and are not guaranteed. To request reimbursement, email hello@hackwestern.com after the event with your travel receipts and project submission details.",
+  },
+  {
+    question: "How do I apply for travel reimbursement?",
+    answer:
+      "Send an email to hello@hackwestern.com after the hackathon with: <br> - A copy of your travel receipts (e.g., bus/train tickets or flight details) <br> - Your team/project submission details <br> Reimbursements are processed based on the availability of funds, and priority may be given to those traveling from farther locations.",
+  },
+  {
+    question: "Question not here?",
+    answer:
+      "Reach out to us through our contact page or during the event for any unanswered questions.",
   },
 ];

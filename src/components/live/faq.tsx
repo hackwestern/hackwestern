@@ -1,5 +1,5 @@
 import React from "react";
-import { GENERALHACK_FAQ, OTHER_FAQ } from "~/constants/faq";
+import { HACKATHON_FAQ } from "~/constants/faq";
 import {
   Accordion,
   AccordionContent,
@@ -7,7 +7,7 @@ import {
   AccordionTrigger,
 } from "../ui/accordion";
 
-const FAQ_ITEMS = [...GENERALHACK_FAQ, ...OTHER_FAQ];
+const FAQ_ITEMS = [...HACKATHON_FAQ];
 
 const FAQ = () => {
   return (
