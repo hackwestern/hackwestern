@@ -92,6 +92,11 @@ const Sponsors = () => {
           logo="/sponsors/notion.png"
           link="https://notion.com"
         />
+        <SponsorCard
+          name="Tempo Labs"
+          logo="/sponsors/tempo-logo-white.svg"
+          link="https://www.tempolabs.ai/"
+        />
       </div>
       {/* In-kind Sponsors */}
       <h1 className="py-4 font-DM_Sans text-2xl font-medium text-slate-600">
@@ -123,7 +128,6 @@ const Sponsors = () => {
           logo="/sponsors/WesternEngineering.svg"
           link="https://www.eng.uwo.ca/outreach/index.html"
         />
-
         <SponsorCard
           name="Awake Caffeinated Chocolate"
           logo="/sponsors/Awake Chocolate.svg"

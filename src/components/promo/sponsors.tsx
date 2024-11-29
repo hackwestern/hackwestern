@@ -129,6 +129,11 @@ const Sponsors = () => {
             logo="/sponsors/notion.png"
             link="https://notion.com"
           />
+          <SponsorCard
+            name="Tempo Labs"
+            logo="/sponsors/tempo-logo-white.svg"
+            link="https://www.tempolabs.ai/"
+          />
         </div>
         {/* In-kind Sponsors */}
         <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
