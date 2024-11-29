@@ -28,9 +28,9 @@ const Schedule = () => {
         ))}
       </div>
       <div
-        className={`h-fit w-fit min-w-[200%] rounded-md bg-primary-300 p-4 md:min-w-fit ${!selectedDays.includes("Friday") && selectedDays.length >= 1 && "hidden"}`}
+        className={`h-fit w-fit min-w-[200%] space-y-2 rounded-md bg-primary-300 p-4 md:min-w-fit ${!selectedDays.includes("Friday") && selectedDays.length >= 1 && "hidden"}`}
       >
-        Friday
+        <span>Friday</span>
         <Image
           src="/images/schedule/1.png"
           alt="schedule 1"
@@ -40,10 +40,9 @@ const Schedule = () => {
         />
       </div>
       <div
-        className={`h-fit w-fit min-w-[200%] rounded-md bg-primary-300 p-4 md:min-w-fit ${!selectedDays.includes("Saturday") && selectedDays.length >= 1 && "hidden"}`}
+        className={`h-fit w-fit min-w-[200%] space-y-2 rounded-md bg-primary-300 p-4 md:min-w-fit ${!selectedDays.includes("Saturday") && selectedDays.length >= 1 && "hidden"}`}
       >
-        {" "}
-        Saturday
+        <span>Saturday</span>
         <Image
           src="/images/schedule/2.png"
           alt="schedule 2"
@@ -53,10 +52,9 @@ const Schedule = () => {
         />
       </div>
       <div
-        className={`h-fit w-fit min-w-[200%] rounded-md bg-primary-300 p-4 md:min-w-fit ${!selectedDays.includes("Sunday") && selectedDays.length >= 1 && "hidden"}`}
+        className={`h-fit w-fit min-w-[200%] space-y-2 rounded-md bg-primary-300 p-4 md:min-w-fit ${!selectedDays.includes("Sunday") && selectedDays.length >= 1 && "hidden"}`}
       >
-        {" "}
-        Sunday
+        <span>Sunday</span>
         <Image
           src="/images/schedule/3.png"
           alt="schedule 3"
