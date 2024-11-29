@@ -11,7 +11,7 @@ import FAQs from "~/components/live/faq";
 export default function Home() {
   return (
     <>
-    <FAQs></FAQs>
+      <FAQs></FAQs>
       <Head>
         <title>Hack Western</title>
         <meta
