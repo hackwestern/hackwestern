@@ -133,6 +133,11 @@ const Sponsors = () => {
           logo="/sponsors/Awake Chocolate.svg"
           link="https://awakechocolate.com/"
         />
+        <SponsorCard
+          name="Hack the North"
+          logo="/sponsors/HacktheNorthLogo_White.svg"
+          link="https://hackthenorth.com/"
+        />
       </div>
     </div>
   );
