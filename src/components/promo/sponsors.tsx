@@ -170,6 +170,11 @@ const Sponsors = () => {
             logo="/sponsors/Awake Chocolate.svg"
             link="https://awakechocolate.com/"
           />
+          <SponsorCard
+            name="Hack the North"
+            logo="/sponsors/HacktheNorthLogo_White.svg"
+            link="https://hackthenorth.com/"
+          />
         </div>
         <div className="mt-8 flex h-64 flex-col justify-around rounded-xl border-2 border-[#B07ACA] bg-gradient-to-tr from-[#7B3FDF] via-[#DE81A8] to-[#FFBD80] p-5 py-2.5 md:mt-20">
           <div className="text-3xl font-bold text-white">
