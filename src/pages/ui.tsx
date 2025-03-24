@@ -2,7 +2,6 @@ import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
 import { Button } from "~/components/ui/button";
 import { Combobox } from "~/components/ui/combobox";
-import { DatePicker } from "~/components/ui/date-picker";
 import { Input } from "~/components/ui/input";
 import {
   Select,
@@ -130,7 +129,6 @@ export default function UI() {
           >
             Button
           </Button>
-          <DatePicker />
           <Select>
             <SelectTrigger className="w-96">
               <SelectValue placeholder="Select a fruit" />
