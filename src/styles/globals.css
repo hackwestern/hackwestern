@@ -1,9 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=Playwrite+US+Modern:wght@100..400&display=swap");
+
 @font-face {
   font-family: MagicRetro;
   src: url("/public/fonts/magic_retro/MagicRetro.woff") format("woff");
 }
-
-@import url("https://fonts.googleapis.com/css2?family=Playwrite+US+Modern:wght@100..400&display=swap");
 
 @tailwind base;
 @tailwind components;
