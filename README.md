@@ -22,6 +22,7 @@ Welcome to Hack Western :)
 4. Run `npm run db:migrate` to push the drizzle database schema changes to your dev Postgres database using drizzle.
 5. Optionally, you can run `npm run db:seed` to seed (some of) the database with fake data to use when testing.
 6. Run `npm run dev` to start the development server!
+7. Use `npm run db:studio` to use drizzle studio to manage your database
 
 When making changes to the schema, first run `npm run db:generate` to generate the migration SQL scripts, then run `npm run db:migrate` to apply them. DO NOT use `npx drizzle-kit push` anymore.
 
