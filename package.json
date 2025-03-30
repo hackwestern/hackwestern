@@ -47,7 +47,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
-    "drizzle-orm": "^0.29.4",
+    "drizzle-orm": "^0.41.0",
     "drizzle-zod": "^0.5.1",
     "hackwestern": "file:",
     "lucide-react": "^0.483.0",
