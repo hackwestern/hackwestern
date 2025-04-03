@@ -10,6 +10,7 @@ import { hackerLoginRedirect } from "~/utils/redirect";
 import { useRouter } from "next/router";
 import { useToast } from "~/components/hooks/use-toast";
 import CloudBackground from "~/components/cloud-background";
+import DiscordAuthButton from "~/components/auth/discordauth-button";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -87,6 +88,9 @@ export default function Login() {
           </div>
           <div className="mt-4">
             <GithubAuthButton redirect="/dashboard" />
+          </div>
+          <div className="mt-4">
+            <DiscordAuthButton redirect="/dashboard" />
           </div>
           <div className="mt-4">
             Don&apos;t have an account yet?{" "}
