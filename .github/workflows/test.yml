@@ -38,6 +38,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
+      - name: Print TS and eslint plugin versions
+        run: npm list typescript @typescript-eslint/eslint-plugin @typescript-eslint/parser
+
       - name: Install dependencies
         run: npm ci
 
