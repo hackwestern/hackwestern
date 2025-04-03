@@ -161,7 +161,7 @@ export const authRouter = createTRPCRouter({
 
         const adapter = authOptions.adapter;
 
-        if (!adapter || adapter?.createUser === undefined) {
+        if (adapter?.createUser === undefined) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: "Adapter not found",
