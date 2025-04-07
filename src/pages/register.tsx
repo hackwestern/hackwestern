@@ -12,6 +12,7 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { hackerLoginRedirect } from "~/utils/redirect";
 import CloudBackground from "~/components/cloud-background";
+import DiscordAuthButton from "~/components/auth/discordauth-button";
 
 export default function Register() {
   const { toast } = useToast();
@@ -92,6 +93,9 @@ export default function Register() {
           </div>
           <div className="mt-4">
             <GithubAuthButton redirect="/dashboard" register={true} />
+          </div>
+          <div className="mt-4">
+            <DiscordAuthButton redirect="/dashboard" register={true} />
           </div>
           <div className="mt-4">
             Already have an account?{" "}
