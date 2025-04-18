@@ -1,9 +1,11 @@
 {
+  "id": "83a38cd2-6757-4703-8b8e-7907749b80b3",
+  "prevId": "ab7fa064-1b5a-4158-8c11-40adb6689a33",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.hw11_account": {
-      "name": "hw11_account",
+    "public.hw_account": {
+      "name": "hw_account",
       "schema": "",
       "columns": {
         "userId": {
@@ -75,6 +77,7 @@
       },
       "indexes": {
         "account_userId_idx": {
+          "name": "account_userId_idx",
           "columns": [
             {
               "expression": "userId",
@@ -83,31 +86,30 @@
               "nulls": "last"
             }
           ],
-          "with": {},
-          "name": "account_userId_idx",
           "isUnique": false,
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
-        "hw11_account_userId_hw11_user_id_fk": {
-          "name": "hw11_account_userId_hw11_user_id_fk",
-          "tableFrom": "hw11_account",
+        "hw_account_userId_hw_user_id_fk": {
+          "name": "hw_account_userId_hw_user_id_fk",
+          "tableFrom": "hw_account",
+          "tableTo": "hw_user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "hw11_user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
-        "hw11_account_provider_providerAccountId_pk": {
-          "name": "hw11_account_provider_providerAccountId_pk",
+        "hw_account_provider_providerAccountId_pk": {
+          "name": "hw_account_provider_providerAccountId_pk",
           "columns": [
             "provider",
             "providerAccountId"
@@ -116,11 +118,11 @@
       },
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.hw11_application": {
-      "name": "hw11_application",
+    "public.hw_application": {
+      "name": "hw_application",
       "schema": "",
       "columns": {
         "user_id": {
@@ -150,6 +152,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'IN_PROGRESS'"
+        },
+        "avatar": {
+          "name": "avatar",
+          "type": "avatar",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
         },
         "first_name": {
           "name": "first_name",
@@ -324,6 +333,7 @@
       },
       "indexes": {
         "user_id_idx": {
+          "name": "user_id_idx",
           "columns": [
             {
               "expression": "user_id",
@@ -332,36 +342,35 @@
               "nulls": "last"
             }
           ],
-          "with": {},
-          "name": "user_id_idx",
           "isUnique": false,
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
-        "hw11_application_user_id_hw11_user_id_fk": {
-          "name": "hw11_application_user_id_hw11_user_id_fk",
-          "tableFrom": "hw11_application",
+        "hw_application_user_id_hw_user_id_fk": {
+          "name": "hw_application_user_id_hw_user_id_fk",
+          "tableFrom": "hw_application",
+          "tableTo": "hw_user",
           "columnsFrom": [
             "user_id"
           ],
-          "tableTo": "hw11_user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.hw11_preregistration": {
-      "name": "hw11_preregistration",
+    "public.hw_preregistration": {
+      "name": "hw_preregistration",
       "schema": "",
       "columns": {
         "id": {
@@ -377,12 +386,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "email": {
           "name": "email",
           "type": "varchar(320)",
@@ -394,20 +397,20 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "hw11_preregistration_email_unique": {
-          "name": "hw11_preregistration_email_unique",
+        "hw_preregistration_email_unique": {
+          "name": "hw_preregistration_email_unique",
+          "nullsNotDistinct": false,
           "columns": [
             "email"
-          ],
-          "nullsNotDistinct": false
+          ]
         }
       },
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.hw11_resetPasswordToken": {
-      "name": "hw11_resetPasswordToken",
+    "public.hw_resetPasswordToken": {
+      "name": "hw_resetPasswordToken",
       "schema": "",
       "columns": {
         "userId": {
@@ -431,28 +434,28 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "hw11_resetPasswordToken_userId_hw11_user_id_fk": {
-          "name": "hw11_resetPasswordToken_userId_hw11_user_id_fk",
-          "tableFrom": "hw11_resetPasswordToken",
+        "hw_resetPasswordToken_userId_hw_user_id_fk": {
+          "name": "hw_resetPasswordToken_userId_hw_user_id_fk",
+          "tableFrom": "hw_resetPasswordToken",
+          "tableTo": "hw_user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "hw11_user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.hw11_review": {
-      "name": "hw11_review",
+    "public.hw_review": {
+      "name": "hw_review",
       "schema": "",
       "columns": {
         "reviewer_user_id": {
@@ -481,64 +484,51 @@
           "notNull": true,
           "default": "now()"
         },
-        "question1_rating": {
-          "name": "question1_rating",
+        "originality_rating": {
+          "name": "originality_rating",
           "type": "smallint",
           "primaryKey": false,
           "notNull": false,
           "default": 0
         },
-        "question2_rating": {
-          "name": "question2_rating",
+        "technicality_rating": {
+          "name": "technicality_rating",
           "type": "smallint",
           "primaryKey": false,
           "notNull": false,
           "default": 0
         },
-        "question3_rating": {
-          "name": "question3_rating",
+        "passion_rating": {
+          "name": "passion_rating",
           "type": "smallint",
           "primaryKey": false,
           "notNull": false,
           "default": 0
         },
-        "resume_bonus": {
-          "name": "resume_bonus",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "github_bonus": {
-          "name": "github_bonus",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "linkedin_bonus": {
-          "name": "linkedin_bonus",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "otherlink_bonus": {
-          "name": "otherlink_bonus",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
-        "referall": {
-          "name": "referall",
-          "type": "boolean",
+        "comments": {
+          "name": "comments",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "completed": {
+          "name": "completed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "referral": {
+          "name": "referral",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
         }
       },
       "indexes": {
         "applicant_user_id_idx": {
+          "name": "applicant_user_id_idx",
           "columns": [
             {
               "expression": "applicant_user_id",
@@ -547,57 +537,56 @@
               "nulls": "last"
             }
           ],
-          "with": {},
-          "name": "applicant_user_id_idx",
           "isUnique": false,
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
-        "hw11_review_reviewer_user_id_hw11_user_id_fk": {
-          "name": "hw11_review_reviewer_user_id_hw11_user_id_fk",
-          "tableFrom": "hw11_review",
+        "hw_review_reviewer_user_id_hw_user_id_fk": {
+          "name": "hw_review_reviewer_user_id_hw_user_id_fk",
+          "tableFrom": "hw_review",
+          "tableTo": "hw_user",
           "columnsFrom": [
             "reviewer_user_id"
           ],
-          "tableTo": "hw11_user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
-        "hw11_review_applicant_user_id_hw11_application_user_id_fk": {
-          "name": "hw11_review_applicant_user_id_hw11_application_user_id_fk",
-          "tableFrom": "hw11_review",
+        "hw_review_applicant_user_id_hw_application_user_id_fk": {
+          "name": "hw_review_applicant_user_id_hw_application_user_id_fk",
+          "tableFrom": "hw_review",
+          "tableTo": "hw_application",
           "columnsFrom": [
             "applicant_user_id"
           ],
-          "tableTo": "hw11_application",
           "columnsTo": [
             "user_id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
-        "hw11_review_applicant_user_id_hw11_user_id_fk": {
-          "name": "hw11_review_applicant_user_id_hw11_user_id_fk",
-          "tableFrom": "hw11_review",
+        "hw_review_applicant_user_id_hw_user_id_fk": {
+          "name": "hw_review_applicant_user_id_hw_user_id_fk",
+          "tableFrom": "hw_review",
+          "tableTo": "hw_user",
           "columnsFrom": [
             "applicant_user_id"
           ],
-          "tableTo": "hw11_user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
-        "hw11_review_reviewer_user_id_applicant_user_id_pk": {
-          "name": "hw11_review_reviewer_user_id_applicant_user_id_pk",
+        "hw_review_reviewer_user_id_applicant_user_id_pk": {
+          "name": "hw_review_reviewer_user_id_applicant_user_id_pk",
           "columns": [
             "reviewer_user_id",
             "applicant_user_id"
@@ -606,11 +595,11 @@
       },
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.hw11_session": {
-      "name": "hw11_session",
+    "public.hw_session": {
+      "name": "hw_session",
       "schema": "",
       "columns": {
         "sessionToken": {
@@ -634,6 +623,7 @@
       },
       "indexes": {
         "session_userId_idx": {
+          "name": "session_userId_idx",
           "columns": [
             {
               "expression": "userId",
@@ -642,36 +632,35 @@
               "nulls": "last"
             }
           ],
-          "with": {},
-          "name": "session_userId_idx",
           "isUnique": false,
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
-        "hw11_session_userId_hw11_user_id_fk": {
-          "name": "hw11_session_userId_hw11_user_id_fk",
-          "tableFrom": "hw11_session",
+        "hw_session_userId_hw_user_id_fk": {
+          "name": "hw_session_userId_hw_user_id_fk",
+          "tableFrom": "hw_session",
+          "tableTo": "hw_user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "hw11_user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.hw11_user": {
-      "name": "hw11_user",
+    "public.hw_user": {
+      "name": "hw_user",
       "schema": "",
       "columns": {
         "id": {
@@ -725,11 +714,11 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.hw11_verificationToken": {
-      "name": "hw11_verificationToken",
+    "public.hw_verificationToken": {
+      "name": "hw_verificationToken",
       "schema": "",
       "columns": {
         "identifier": {
@@ -754,8 +743,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
-        "hw11_verificationToken_identifier_token_pk": {
-          "name": "hw11_verificationToken_identifier_token_pk",
+        "hw_verificationToken_identifier_token_pk": {
+          "name": "hw_verificationToken_identifier_token_pk",
           "columns": [
             "identifier",
             "token"
@@ -764,8 +753,8 @@
       },
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {
@@ -780,6 +769,16 @@
         "REJECTED",
         "WAITLISTED",
         "DECLINED"
+      ]
+    },
+    "public.avatar": {
+      "name": "avatar",
+      "schema": "public",
+      "values": [
+        "Wildlife Wanderer",
+        "City Cruiser",
+        "Foodie Fanatic",
+        "Beach Bum"
       ]
     },
     "public.country": {
@@ -888,15 +887,13 @@
     }
   },
   "schemas": {},
-  "_meta": {
-    "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "id": "71c28e51-1fa2-4138-9b27-4aca2777ba19",
-  "prevId": "e972b245-1448-4c72-b3c5-0104054bd9f7",
   "sequences": {},
+  "roles": {},
   "policies": {},
   "views": {},
-  "roles": {}
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
 }
