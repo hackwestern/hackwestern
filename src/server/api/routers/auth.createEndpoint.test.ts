@@ -37,6 +37,8 @@ describe("auth.create", () => {
   //   }
   // });
   test("throws an error when creating a duplicate user", async () => {
-    await expect(caller.auth.create(fakeUser)).rejects.toThrowError(/already exists/i);
+    await expect(caller.auth.create(fakeUser)).rejects.toThrowError(
+      /already exists/i,
+    );
   });
 });
