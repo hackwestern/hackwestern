@@ -5,7 +5,6 @@ import { createInnerTRPCContext } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { users } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
 
 describe("auth.create", () => {
   const fakeUser = {
@@ -28,14 +27,6 @@ describe("auth.create", () => {
     expect(dbUser?.email).toBe(fakeUser.email);
   });
 
-  // test("throws an error when creating a duplicate user", async () => {
-  //   try {
-  //     await caller.auth.create(fakeUser);
-  //   } catch (err) {
-  //     console.error("Caught error:", err); // 👈 This will give us the exact shape of the error
-  //     expect(err).toBeInstanceOf(TRPCError);
-  //   }
-  // });
   test("throws an error when creating a duplicate user", async () => {
     await expect(caller.auth.create(fakeUser)).rejects.toThrowError(
       /already exists/i,
