@@ -5,6 +5,7 @@ import path from "path";
 export default defineConfig({
   plugins: [react()],
   test: {
+    include: ['src/**/*.test.ts'], // adjust this to match your file structure
     environment: "node",
     setupFiles: ["dotenv/config"],
   },

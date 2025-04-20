@@ -158,6 +158,7 @@ export async function mockOrganizerSession(db: Database): Promise<Session> {
     ...new UserSeeder().createRandom(),
     type: "organizer",
   } as const satisfies PgInsertValue<typeof users>;
+  
   await db.insert(users).values(user).returning();
 
   return {
