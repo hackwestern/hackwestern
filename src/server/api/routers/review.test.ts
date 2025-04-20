@@ -17,7 +17,7 @@ const session = await mockOrganizerSession(db);
 const ctx = createInnerTRPCContext({ session });
 const caller = createCaller(ctx);
 
-describe("review.save", async () => {  
+describe("review.save", async () => {
   afterEach(async () => {
     await db.delete(reviews).where(eq(reviews.reviewerUserId, session.user.id));
   });
@@ -82,7 +82,6 @@ describe.sequential("review.referApplicant", async () => {
   });
 });
 
-
 let hackerSession: Session;
 let hackerCtx: createInnerTRPCContext;
 let hackerCaller: createCaller;
@@ -96,9 +95,9 @@ let review;
 
 interface ReviewCount {
   reviewerId: string;
-  reviewerName: string; 
+  reviewerName: string;
   reviewCount: number;
-};
+}
 
 describe("review.getReviewCounts", () => {
   beforeEach(async () => {
@@ -112,8 +111,8 @@ describe("review.getReviewCounts", () => {
 
     application = {
       ...ReviewSeeder.createRandomWithoutUser(),
-      userId: hackerSession.user.id
-    }
+      userId: hackerSession.user.id,
+    };
 
     review = {
       ...ReviewSeeder.createRandomWithoutUser(),
@@ -121,33 +120,40 @@ describe("review.getReviewCounts", () => {
       reviewerUserId: organizerSession.user.id,
       completed: true,
     };
-  })
+  });
 
   afterEach(async () => {
     // Clean up all related data created by tests using known session.user.id
-    await db.delete(reviews).where(eq(reviews.reviewerUserId, organizerSession.user.id));
-    await db.delete(applications).where(eq(applications.userId, hackerSession.user.id));
+    await db
+      .delete(reviews)
+      .where(eq(reviews.reviewerUserId, organizerSession.user.id));
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, hackerSession.user.id));
     await db.delete(users).where(eq(users.id, organizerSession.user.id));
     await db.delete(users).where(eq(users.id, hackerSession.user.id));
   });
-  
 
   test("throws error if user is not logged in", async () => {
     const ctx = createInnerTRPCContext({ session: null });
     const caller = createCaller(ctx);
 
-    await expect(caller.review.getReviewCounts()).rejects.toThrowError(/UNAUTHORIZED/);
+    await expect(caller.review.getReviewCounts()).rejects.toThrowError(
+      /UNAUTHORIZED/,
+    );
   });
 
   test("throws error if user is not an organizer", async () => {
-    await expect(hackerCaller.review.getReviewCounts()).rejects.toThrowError(/FORBIDDEN/);
+    await expect(hackerCaller.review.getReviewCounts()).rejects.toThrowError(
+      /FORBIDDEN/,
+    );
   });
 
   test("returns empty array if no reviews exist", async () => {
-    const result = await filterBasedOnSession() 
+    const result = await filterBasedOnSession();
     expect(result).toEqual([]);
   });
-  
+
   test("returns 1 count if 1 completed review exists", async () => {
     await db.insert(applications).values(application);
     await db.insert(reviews).values(review);
@@ -165,8 +171,8 @@ describe("review.getReviewCounts", () => {
     // Incomplete Reviewed Application
     const incompleteApplication = {
       ...ReviewSeeder.createRandomWithoutUser(),
-      userId: newHackerSession.user.id
-    }
+      userId: newHackerSession.user.id,
+    };
 
     // Incomplete Review
     const incompleteReview = {
@@ -187,21 +193,25 @@ describe("review.getReviewCounts", () => {
     expect(result[0]?.reviewCount).toBe(1);
 
     // Clean up for newHacker
-    await db.delete(reviews).where(eq(reviews.applicantUserId, newHackerSession.user.id));
-    await db.delete(applications).where(eq(applications.userId, newHackerSession.user.id));
+    await db
+      .delete(reviews)
+      .where(eq(reviews.applicantUserId, newHackerSession.user.id));
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, newHackerSession.user.id));
   });
 });
 
-
-
 /* HELPER FUNCTIONS */
 // Filter to ensure only reviews created during test run are counted, and not prexisting db
-async function filterBasedOnSession(){
+async function filterBasedOnSession() {
   const result = await organizerCaller.review.getReviewCounts();
 
   return result.filter((item: ReviewCount) => {
-    if (item.reviewerId === organizerSession.user.id){ return item }
-   })
+    if (item.reviewerId === organizerSession.user.id) {
+      return item;
+    }
+  });
 }
 
 function createRandomReview(session: Session) {
