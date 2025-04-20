@@ -44,11 +44,5 @@ jobs:
       - name: Run Build
         run: npm run build
 
-      - name: Start Postgres DB
-        run: npm run db:start && sleep 2
-
-      - name: Push Schema
-        run: npm run db:migrate
-
       - name: Run tests
         run: npx vitest
