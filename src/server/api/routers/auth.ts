@@ -3,7 +3,7 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
 import { db } from "~/server/db";
-import { mailjet } from "~/server/mail";
+import { resend } from "~/server/mail";
 import {
   resetPasswordTokens,
   users,
@@ -11,10 +11,9 @@ import {
 } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { resetTemplate } from "./password-reset-template";
 import { authOptions } from "~/server/auth";
-import { verifyTemplate } from "./verify-email-template";
 import { type AdapterUser } from "next-auth/adapters";
+import { resetTemplate, verifyTemplate } from "./email-templates";
 
 const TOKEN_EXPIRY = 1000 * 60 * 11; // 11 minutes
 const passwordSchema = z
@@ -23,6 +22,7 @@ const passwordSchema = z
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
   .regex(/[0-9]/, "Password must contain at least one number")
   .regex(/[^a-zA-Z0-9]/, "Password must contain at least one symbol");
+const HACK_WESTERN_EMAIL = "Hack Western Team <hello@hackwestern.com>";
 
 const createInputSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -44,26 +44,11 @@ const requestVerifyEmail = async (user: AdapterUser) => {
     expires: new Date(Date.now() + TOKEN_EXPIRY),
   });
 
-  return mailjet.post("send", { version: "v3.1" }).request({
-    Messages: [
-      {
-        From: {
-          Email: "hello@hackwestern.com",
-          Name: "Hack Western Team",
-        },
-        To: [
-          {
-            Email: user.email,
-            Name: user.name ?? "there",
-          },
-        ],
-        Variables: {
-          verifyLink: verifyLink,
-        },
-        HTMLPart: verifyTemplate(verifyLink),
-        Subject: "Hack Western 11 Account Verification",
-      },
-    ],
+  return await resend.emails.send({
+    from: HACK_WESTERN_EMAIL,
+    to: user.email,
+    subject: "Hack Western 11 Account Verification",
+    html: verifyTemplate(verifyLink),
   });
 };
 
@@ -106,35 +91,23 @@ export const authRouter = createTRPCRouter({
         });
 
       const resetLink = `https://hackwestern.com/reset-password?token=${resetToken}`;
-      const emailReq = mailjet.post("send", { version: "v3.1" }).request({
-        Messages: [
-          {
-            From: {
-              Email: "hello@hackwestern.com",
-              Name: "Hack Western Team",
-            },
-            To: [
-              {
-                Email: input.email,
-                Name: user.name,
-              },
-            ],
-            Variables: {
-              resetLink: resetLink,
-            },
-            HTMLPart: resetTemplate(resetLink, user.name ?? "there"),
-            Subject: "Hack Western 11 Password Reset",
-          },
-        ],
+
+      const { data: emailReq, error } = await resend.emails.send({
+        from: HACK_WESTERN_EMAIL,
+        to: input.email,
+        subject: "Hack Western 11 Password Reset",
+        html: resetTemplate(resetLink, user.name ?? "there"),
       });
 
-      emailReq
-        .then((result) => {
-          console.log(result);
-        })
-        .catch((err) => {
-          console.error(err);
+      if (error) {
+        console.error("Error sending reset email:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to send reset email",
         });
+      }
+
+      console.log("Reset email sent:", emailReq);
 
       return {
         success: true,
@@ -181,15 +154,17 @@ export const authRouter = createTRPCRouter({
           })
           .where(eq(users.id, createdUser.id));
 
-        const emailReq = requestVerifyEmail(createdUser);
+        const res = await requestVerifyEmail(createdUser);
 
-        emailReq
-          .then((result) => {
-            console.log(result);
-          })
-          .catch((err) => {
-            console.error(err);
+        if (res.error) {
+          console.error("Error sending verification email:", res.error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to send verification email",
           });
+        }
+
+        console.log("Verification email sent:", res);
 
         return {
           success: true,
@@ -248,15 +223,17 @@ export const authRouter = createTRPCRouter({
       });
     }
 
-    const emailReq = requestVerifyEmail(user);
+    const res = await requestVerifyEmail(user);
 
-    emailReq
-      .then((result) => {
-        console.log(result);
-      })
-      .catch((err) => {
-        console.error(err);
+    if (res.error) {
+      console.error("Error sending verification email:", res.error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to send verification email",
       });
+    }
+
+    console.log("Verification email resent:", res);
 
     return {
       success: true,
