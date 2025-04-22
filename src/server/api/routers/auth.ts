@@ -3,7 +3,7 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
 import { db } from "~/server/db";
-import { mailjet, resend } from "~/server/mail";
+import { resend } from "~/server/mail";
 import {
   resetPasswordTokens,
   users,
@@ -42,37 +42,6 @@ const requestVerifyEmail = async (user: AdapterUser) => {
     token: token,
     expires: new Date(Date.now() + TOKEN_EXPIRY),
   });
-
-  /*return await mailjet
-    .post("send", { version: "v3.1" })
-    .request({
-      Messages: [
-        {
-          From: {
-            Email: "hello@hackwestern.com",
-            Name: "Hack Western Team",
-          },
-          To: [
-            {
-              Email: user.email,
-              Name: user.name ?? "there",
-            },
-          ],
-          Variables: {
-            verifyLink: verifyLink,
-          },
-          HTMLPart: verifyTemplate(verifyLink),
-          Subject: "Hack Western 11 Account Verification",
-        },
-      ],
-    })
-    .catch((err) => {
-      console.error("Error sending verification email:", err);
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to send verification email",
-      });
-    });*/
 
   const { data, error } = await resend.emails.send({
     from: "Hack Western Team <hello@hackwestern.com>",
@@ -131,27 +100,6 @@ export const authRouter = createTRPCRouter({
         });
 
       const resetLink = `https://hackwestern.com/reset-password?token=${resetToken}`;
-      /*const emailReq = mailjet.post("send", { version: "v3.1" }).request({
-        Messages: [
-          {
-            From: {
-              Email: "hello@hackwestern.com",
-              Name: "Hack Western Team",
-            },
-            To: [
-              {
-                Email: input.email,
-                Name: user.name,
-              },
-            ],
-            Variables: {
-              resetLink: resetLink,
-            },
-            HTMLPart: resetTemplate(resetLink, user.name ?? "there"),
-            Subject: "Hack Western 11 Password Reset",
-          },
-        ],
-      });*/
 
       const { data: emailReq, error } = await resend.emails.send({
         from: "Hack Western Team <hello@hackwestern.com",
