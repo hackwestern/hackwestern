@@ -35,3 +35,14 @@ vi.mock('~/server/db', async (importOriginal) => {
     db: testDb, // Provide the PGLite-backed instance
   };
 });
+
+vi.mock("~/server/mail", () => ({
+  resend: {
+    emails: {
+      send: vi.fn().mockResolvedValue({
+        data: { id: "mocked-email-id" },
+        error: null,
+      }),
+    },
+  },
+}));
