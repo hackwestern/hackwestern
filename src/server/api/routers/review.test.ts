@@ -2,10 +2,8 @@ import { afterEach, assert, describe, expect, test } from "vitest";
 import { faker } from "@faker-js/faker";
 import { type Session } from "next-auth";
 import { eq } from "drizzle-orm";
-
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
-
 import { db } from "~/server/db";
 import { mockOrganizerSession } from "~/server/auth";
 import { reviews } from "~/server/db/schema";
