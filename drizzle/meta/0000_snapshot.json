@@ -1,7 +1,5 @@
 {
-  "id": "9d68b394-5673-495e-b3ff-99e8a3640e1c",
-  "prevId": "00000000-0000-0000-0000-000000000000",
-  "version": "6",
+  "version": "7",
   "dialect": "postgresql",
   "tables": {
     "public.hw11_account": {
@@ -77,26 +75,34 @@
       },
       "indexes": {
         "account_userId_idx": {
-          "name": "account_userId_idx",
           "columns": [
-            "userId"
+            {
+              "expression": "userId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "with": {},
+          "name": "account_userId_idx",
+          "isUnique": false,
+          "method": "btree",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "hw11_account_userId_hw11_user_id_fk": {
           "name": "hw11_account_userId_hw11_user_id_fk",
           "tableFrom": "hw11_account",
-          "tableTo": "hw11_user",
           "columnsFrom": [
             "userId"
           ],
+          "tableTo": "hw11_user",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {
@@ -108,7 +114,10 @@
           ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     },
     "public.hw11_application": {
       "name": "hw11_application",
@@ -315,30 +324,41 @@
       },
       "indexes": {
         "user_id_idx": {
-          "name": "user_id_idx",
           "columns": [
-            "user_id"
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "with": {},
+          "name": "user_id_idx",
+          "isUnique": false,
+          "method": "btree",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "hw11_application_user_id_hw11_user_id_fk": {
           "name": "hw11_application_user_id_hw11_user_id_fk",
           "tableFrom": "hw11_application",
-          "tableTo": "hw11_user",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "hw11_user",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     },
     "public.hw11_preregistration": {
       "name": "hw11_preregistration",
@@ -376,12 +396,15 @@
       "uniqueConstraints": {
         "hw11_preregistration_email_unique": {
           "name": "hw11_preregistration_email_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "email"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
-      }
+      },
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     },
     "public.hw11_resetPasswordToken": {
       "name": "hw11_resetPasswordToken",
@@ -411,19 +434,22 @@
         "hw11_resetPasswordToken_userId_hw11_user_id_fk": {
           "name": "hw11_resetPasswordToken_userId_hw11_user_id_fk",
           "tableFrom": "hw11_resetPasswordToken",
-          "tableTo": "hw11_user",
           "columnsFrom": [
             "userId"
           ],
+          "tableTo": "hw11_user",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     },
     "public.hw11_session": {
       "name": "hw11_session",
@@ -450,30 +476,41 @@
       },
       "indexes": {
         "session_userId_idx": {
-          "name": "session_userId_idx",
           "columns": [
-            "userId"
+            {
+              "expression": "userId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": false
+          "with": {},
+          "name": "session_userId_idx",
+          "isUnique": false,
+          "method": "btree",
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "hw11_session_userId_hw11_user_id_fk": {
           "name": "hw11_session_userId_hw11_user_id_fk",
           "tableFrom": "hw11_session",
-          "tableTo": "hw11_user",
           "columnsFrom": [
             "userId"
           ],
+          "tableTo": "hw11_user",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     },
     "public.hw11_user": {
       "name": "hw11_user",
@@ -522,7 +559,10 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     },
     "public.hw11_verificationToken": {
       "name": "hw11_verificationToken",
@@ -558,7 +598,10 @@
           ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false,
+      "checkConstraints": {}
     }
   },
   "enums": {
@@ -670,8 +713,14 @@
   },
   "schemas": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
-  }
+    "tables": {},
+    "columns": {}
+  },
+  "id": "9d68b394-5673-495e-b3ff-99e8a3640e1c",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "sequences": {},
+  "policies": {},
+  "views": {},
+  "roles": {}
 }
