@@ -35,6 +35,7 @@ describe.sequential("auth.reset", async () => {
       })
       .returning()
       .then((res) => res[0]);
+
     const result = await caller.auth.reset({ email: fakeEmail });
 
     // non-null result
