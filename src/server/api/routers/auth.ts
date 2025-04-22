@@ -22,6 +22,7 @@ const passwordSchema = z
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
   .regex(/[0-9]/, "Password must contain at least one number")
   .regex(/[^a-zA-Z0-9]/, "Password must contain at least one symbol");
+const HACK_WESTERN_EMAIL = "Hack Western Team <hello@hackwestern.com>";
 
 const createInputSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -44,7 +45,7 @@ const requestVerifyEmail = async (user: AdapterUser) => {
   });
 
   const { data, error } = await resend.emails.send({
-    from: "Hack Western Team <hello@hackwestern.com>",
+    from: HACK_WESTERN_EMAIL,
     to: user.email,
     subject: "Hack Western 11 Account Verification",
     html: verifyTemplate(verifyLink),
@@ -102,7 +103,7 @@ export const authRouter = createTRPCRouter({
       const resetLink = `https://hackwestern.com/reset-password?token=${resetToken}`;
 
       const { data: emailReq, error } = await resend.emails.send({
-        from: "Hack Western Team <hello@hackwestern.com",
+        from: HACK_WESTERN_EMAIL,
         to: input.email,
         subject: "Hack Western 11 Password Reset",
         html: resetTemplate(resetLink, user.name ?? "there"),
