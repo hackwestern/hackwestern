@@ -290,6 +290,7 @@ export const reviewRouter = createTRPCRouter({
       const reviewer = await db.query.users.findFirst({
         where: eq(users.id, userId),
       });
+
       if (!reviewer || reviewer.type !== "organizer") {
         throw new TRPCError({
           code: "FORBIDDEN",
