@@ -95,7 +95,7 @@ let review;
 
 interface ReviewCount {
   reviewerId: string;
-  reviewerName: string;
+  reviewerName: string | null;
   reviewCount: number;
 }
 
