@@ -1,18 +1,17 @@
-import { afterEach, assert, describe, expect, test } from "vitest";
+import { beforeEach, afterEach, assert, describe, expect, test } from "vitest";
 import { faker } from "@faker-js/faker";
 import { type Session } from "next-auth";
 import { eq } from "drizzle-orm";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 import { db } from "~/server/db";
-import { mockOrganizerSession } from "~/server/auth";
-import { reviews } from "~/server/db/schema";
+import { mockOrganizerSession, mockSession } from "~/server/auth";
+import { users, applications, reviews } from "~/server/db/schema";
 import { ReviewSeeder } from "~/server/db/seed/reviewSeeder";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
 
 const session = await mockOrganizerSession(db);
-
 const ctx = createInnerTRPCContext({ session });
 const caller = createCaller(ctx);
 
@@ -80,6 +79,140 @@ describe.sequential("review.referApplicant", async () => {
     await expect(caller.review.referApplicant(review)).resolves.not.toThrow();
   });
 });
+
+let application: ReturnType<typeof ReviewSeeder.createRandomWithoutUser> & {
+  userId: string;
+};
+
+let review: ReturnType<typeof createRandomReview>;
+
+let hackerCaller: ReturnType<typeof createCaller>;
+let organizerCaller: ReturnType<typeof createCaller>;
+let hackerCtx: ReturnType<typeof createInnerTRPCContext>;
+let organizerCtx: ReturnType<typeof createInnerTRPCContext>;
+let hackerSession: Session;
+let organizerSession: Session;
+
+interface ReviewCount {
+  reviewerId: string;
+  reviewerName: string | null;
+  reviewCount: number;
+}
+
+describe("review.getReviewCounts", () => {
+  beforeEach(async () => {
+    hackerSession = await mockSession(db);
+    hackerCtx = createInnerTRPCContext({ session: hackerSession });
+    hackerCaller = createCaller(hackerCtx);
+
+    organizerSession = await mockOrganizerSession(db);
+    organizerCtx = createInnerTRPCContext({ session: organizerSession });
+    organizerCaller = createCaller(organizerCtx);
+
+    application = {
+      ...ReviewSeeder.createRandomWithoutUser(),
+      userId: hackerSession.user.id,
+    };
+
+    review = {
+      ...ReviewSeeder.createRandomWithoutUser(),
+      applicantUserId: hackerSession.user.id,
+      reviewerUserId: organizerSession.user.id,
+      completed: true,
+    };
+  });
+
+  afterEach(async () => {
+    // Clean up all related data created by tests using known session.user.id
+    await db
+      .delete(reviews)
+      .where(eq(reviews.reviewerUserId, organizerSession.user.id));
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, hackerSession.user.id));
+    await db.delete(users).where(eq(users.id, organizerSession.user.id));
+    await db.delete(users).where(eq(users.id, hackerSession.user.id));
+  });
+
+  test("throws error if user is not logged in", async () => {
+    const ctx = createInnerTRPCContext({ session: null });
+    const caller = createCaller(ctx);
+
+    await expect(caller.review.getReviewCounts()).rejects.toThrowError(
+      /UNAUTHORIZED/,
+    );
+  });
+
+  test("throws error if user is not an organizer", async () => {
+    await expect(hackerCaller.review.getReviewCounts()).rejects.toThrowError(
+      /FORBIDDEN/,
+    );
+  });
+
+  test("returns empty array if no reviews exist", async () => {
+    const result = await filterBasedOnSession();
+    expect(result).toEqual([]);
+  });
+
+  test("returns 1 count if 1 completed review exists", async () => {
+    await db.insert(applications).values(application);
+    await db.insert(reviews).values(review);
+    const result = await filterBasedOnSession();
+
+    expect(result.length).toBe(1);
+    expect(result[0]?.reviewerId).toBe(organizerSession.user.id);
+    expect(result[0]?.reviewCount).toBe(1);
+  });
+
+  test("ignores incomplete reviews", async () => {
+    // Creating New Hacker (for incomplete review)
+    const newHackerSession = await mockSession(db);
+
+    // Incomplete Reviewed Application
+    const incompleteApplication = {
+      ...ReviewSeeder.createRandomWithoutUser(),
+      userId: newHackerSession.user.id,
+    };
+
+    // Incomplete Review
+    const incompleteReview = {
+      ...ReviewSeeder.createRandomWithoutUser(),
+      applicantUserId: newHackerSession.user.id,
+      reviewerUserId: organizerSession.user.id,
+      completed: false,
+    };
+
+    await db.insert(applications).values(application);
+    await db.insert(applications).values(incompleteApplication);
+    await db.insert(reviews).values(review);
+    await db.insert(reviews).values(incompleteReview);
+
+    const result = await filterBasedOnSession();
+
+    expect(result.length).toBe(1);
+    expect(result[0]?.reviewCount).toBe(1);
+
+    // Clean up for newHacker
+    await db
+      .delete(reviews)
+      .where(eq(reviews.applicantUserId, newHackerSession.user.id));
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, newHackerSession.user.id));
+  });
+});
+
+/* HELPER FUNCTIONS */
+// Filter to ensure only reviews created during test run are counted, and not prexisting db
+async function filterBasedOnSession() {
+  const result = await organizerCaller.review.getReviewCounts();
+
+  return result.filter((item: ReviewCount) => {
+    if (item.reviewerId === organizerSession.user.id) {
+      return item;
+    }
+  });
+}
 
 function createRandomReview(session: Session) {
   const reviewerUserId = session.user.id;
