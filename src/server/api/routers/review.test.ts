@@ -82,20 +82,23 @@ describe.sequential("review.referApplicant", async () => {
   });
 });
 
+let application: ReturnType<typeof ReviewSeeder.createRandomWithoutUser> & {
+  userId: string;
+};
+
+let review: ReturnType<typeof createRandomReview>;
+
+let hackerCaller: ReturnType<typeof createCaller>;
+let organizerCaller: ReturnType<typeof createCaller>;
+let hackerCtx: ReturnType<typeof createInnerTRPCContext>;
+let organizerCtx: ReturnType<typeof createInnerTRPCContext>;
 let hackerSession: Session;
-let hackerCtx: createInnerTRPCContext;
-let hackerCaller: createCaller;
-
 let organizerSession: Session;
-let organizerCtx: createInnerTRPCContext;
-let organizerCaller: createCaller;
 
-let application;
-let review;
 
 interface ReviewCount {
   reviewerId: string;
-  reviewerName: string;
+  reviewerName: string | null;
   reviewCount: number;
 }
 
