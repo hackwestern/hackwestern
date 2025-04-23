@@ -93,7 +93,6 @@ let organizerCtx: ReturnType<typeof createInnerTRPCContext>;
 let hackerSession: Session;
 let organizerSession: Session;
 
-
 interface ReviewCount {
   reviewerId: string;
   reviewerName: string | null;
