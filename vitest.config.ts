@@ -7,7 +7,8 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'], // adjust this to match your file structure
     environment: "node",
-    setupFiles: ["dotenv/config"],
+    setupFiles: ["dotenv/config", "./vitest.setup.ts"],
+    reporters: "verbose",
   },
   resolve: {
     alias: {
