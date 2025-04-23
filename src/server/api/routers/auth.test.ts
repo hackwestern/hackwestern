@@ -5,7 +5,11 @@ import { createInnerTRPCContext } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { eq } from "drizzle-orm";
 import { mockSession } from "~/server/auth";
-import { resetPasswordTokens, users, verificationTokens } from "~/server/db/schema";
+import {
+  resetPasswordTokens,
+  users,
+  verificationTokens,
+} from "~/server/db/schema";
 import { randomBytes } from "crypto";
 
 const session = await mockSession(db);
@@ -97,7 +101,7 @@ describe("auth.verify", () => {
       email: faker.internet.email(),
       emailVerified: faker.date.anytime(),
       image: faker.image.avatar(),
-    }
+    };
 
     await db.insert(users).values(fakeUser);
 
@@ -121,7 +125,7 @@ describe("auth.verify", () => {
       email: faker.internet.email(),
       emailVerified: faker.date.anytime(),
       image: faker.image.avatar(),
-    }
+    };
 
     await db.insert(users).values(fakeUser);
 
