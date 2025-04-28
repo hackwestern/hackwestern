@@ -44,22 +44,12 @@ const requestVerifyEmail = async (user: AdapterUser) => {
     expires: new Date(Date.now() + TOKEN_EXPIRY),
   });
 
-  const { data, error } = await resend.emails.send({
+  return await resend.emails.send({
     from: HACK_WESTERN_EMAIL,
     to: user.email,
     subject: "Hack Western 11 Account Verification",
     html: verifyTemplate(verifyLink),
   });
-
-  if (error) {
-    console.error("Error sending verification email:", error);
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Failed to send verification email",
-    });
-  }
-
-  return data;
 };
 
 export const authRouter = createTRPCRouter({
@@ -165,6 +155,15 @@ export const authRouter = createTRPCRouter({
           .where(eq(users.id, createdUser.id));
 
         const res = await requestVerifyEmail(createdUser);
+
+        if (res.error) {
+          console.error("Error sending verification email:", res.error);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to send verification email",
+          });
+        }
+
         console.log("Verification email sent:", res);
 
         return {
@@ -225,6 +224,15 @@ export const authRouter = createTRPCRouter({
     }
 
     const res = await requestVerifyEmail(user);
+
+    if (res.error) {
+      console.error("Error sending verification email:", res.error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to send verification email",
+      });
+    }
+
     console.log("Verification email resent:", res);
 
     return {
