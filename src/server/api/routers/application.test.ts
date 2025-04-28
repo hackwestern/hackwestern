@@ -54,20 +54,24 @@ describe("application.get", async () => {
   });
 });
 
-describe("application.getById", async() => {
+describe("application.getById", async () => {
   const fakeUserId = faker.string.uuid();
-  
+
   test("throws an error if ID is null", async () => {
-    return expect(caller.application.getById({ applicantId: null })).rejects.toThrowError();
+    return expect(
+      caller.application.getById({ applicantId: null }),
+    ).rejects.toThrowError();
   });
 
   test("throws an error if ID does not exist", async () => {
-    return expect(caller.application.getById({ applicantId: fakeUserId })).rejects.toThrowError();
+    return expect(
+      caller.application.getById({ applicantId: fakeUserId }),
+    ).rejects.toThrowError();
   });
 
   test("gets application successfully given an existing user ID", async () => {
     const getByIdSession = await mockSession(db);
-    const userId = getByIdSession.user.id
+    const userId = getByIdSession.user.id;
     const application = createRandomApplication(getByIdSession);
     await db.insert(applications).values(application);
 
@@ -82,8 +86,8 @@ describe("application.getById", async() => {
     };
 
     return expect(got).toEqual(want);
-  })
-})
+  });
+});
 
 describe("application.getAllApplicants", async () => {
   test("throws an error if not authenticated", async () => {
