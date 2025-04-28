@@ -54,6 +54,37 @@ describe("application.get", async () => {
   });
 });
 
+describe("application.getById", async() => {
+  const fakeUserId = faker.string.uuid();
+  
+  test("throws an error if ID is null", async () => {
+    return expect(caller.application.getById({ applicantId: null })).rejects.toThrowError();
+  });
+
+  test("throws an error if ID does not exist", async () => {
+    return expect(caller.application.getById({ applicantId: fakeUserId })).rejects.toThrowError();
+  });
+
+  test("gets application successfully given an existing user ID", async () => {
+    const getByIdSession = await mockSession(db);
+    const userId = getByIdSession.user.id
+    const application = createRandomApplication(getByIdSession);
+    await db.insert(applications).values(application);
+
+    const result = await caller.application.getById({ applicantId: userId });
+    assert(!!result);
+
+    const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
+    const want = {
+      ...application,
+      githubLink: application?.githubLink,
+      linkedInLink: application?.linkedInLink,
+    };
+
+    return expect(got).toEqual(want);
+  })
+})
+
 describe("application.getAllApplicants", async () => {
   test("throws an error if not authenticated", async () => {
     const ctx = createInnerTRPCContext({ session: null });
