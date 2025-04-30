@@ -35,6 +35,13 @@ export default function Canvas() {
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const drawRef = useRef<(() => void) | null>(() => null);
 
+  const isPinchingRef = useRef(false);
+  const pinchStartDistRef = useRef(0);
+  const pinchStartMidScreenRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const pinchStartMidWorldRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const pinchStartScaleRef = useRef(1);
+  const pinchStartOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
   useEffect(() => {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
@@ -71,10 +78,16 @@ export default function Canvas() {
       drawRef.current?.();
     })();
 
-    const toWorld = (e: PointerEvent) => ({
-      x: (e.clientX - offsetRef.current.x) / scaleRef.current,
-      y: (e.clientY - offsetRef.current.y) / scaleRef.current,
-    });
+    type ScreenPt = { x: number; y: number } | PointerEvent;
+    const toWorld = (e: ScreenPt) => {
+      // pick the right coords
+      const sx = "clientX" in e ? e.clientX : e.x;
+      const sy = "clientY" in e ? e.clientY : e.y;
+      return {
+        x: (sx - offsetRef.current.x) / scaleRef.current,
+        y: (sy - offsetRef.current.y) / scaleRef.current,
+      };
+    };
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -187,12 +200,66 @@ export default function Canvas() {
       dragTargetRef.current = null;
     };
 
+    const getDist = (t1: Touch, t2: Touch) =>
+      Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+    const getMid = (t1: Touch, t2: Touch) => ({
+      x: (t1.clientX + t2.clientX) / 2,
+      y: (t1.clientY + t2.clientY) / 2,
+    });
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        isPinchingRef.current = true;
+        const [t1, t2] = [e.touches[0], e.touches[1]];
+        pinchStartDistRef.current = getDist(t1!, t2!);
+        pinchStartMidScreenRef.current = getMid(t1!, t2!);
+        pinchStartScaleRef.current = scaleRef.current;
+        pinchStartOffsetRef.current = { ...offsetRef.current };
+        pinchStartMidWorldRef.current = toWorld(pinchStartMidScreenRef.current);
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (isPinchingRef.current && e.touches.length === 2) {
+        e.preventDefault();
+        const [t1, t2] = [e.touches[0], e.touches[1]];
+        const newDist = getDist(t1!, t2!);
+        const factor = newDist / pinchStartDistRef.current;
+        const newScale = Math.min(Math.max(pinchStartScaleRef.current * factor, 0.5), 5);
+        scaleRef.current = newScale;
+
+        // recalc offset so zoom centers at pinch midpoint:
+        const midScreen = getMid(t1!, t2!);
+        const midWorld = pinchStartMidWorldRef.current;
+        offsetRef.current.x = midScreen.x - midWorld.x * newScale;
+        offsetRef.current.y = midScreen.y - midWorld.y * newScale;
+
+        drawRef.current?.();
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        isPinchingRef.current = false;
+      }
+    };
+
+    canvas.addEventListener("touchstart", onTouchStart, { passive: false });
+    canvas.addEventListener("touchmove", onTouchMove, { passive: false });
+    canvas.addEventListener("touchend", onTouchEnd);
+    canvas.addEventListener("touchcancel", onTouchEnd);
     canvas.addEventListener("wheel", onWheel, { passive: false });
     canvas.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
 
     return () => {
+      canvas.removeEventListener("touchstart", onTouchStart);
+      canvas.removeEventListener("touchmove", onTouchMove);
+      canvas.removeEventListener("touchend", onTouchEnd);
+      canvas.removeEventListener("touchcancel", onTouchEnd);
       window.removeEventListener("resize", resize);
       canvas.removeEventListener("wheel", onWheel);
       canvas.removeEventListener("pointerdown", onPointerDown);
