@@ -52,6 +52,7 @@
     "drizzle-zod": "^0.5.1",
     "hackwestern": "file:",
     "lucide-react": "^0.483.0",
+    "motion": "^12.10.5",
     "next": "15.2.3",
     "next-auth": "^4.24.8",
     "postgres": "^3.4.3",
