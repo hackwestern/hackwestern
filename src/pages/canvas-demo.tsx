@@ -1,25 +1,22 @@
 import Head from "next/head";
-import { motion } from "framer-motion";
+import { motion, useAnimationControls } from "framer-motion";
 import {
   useState,
   useRef,
   type PointerEvent,
   type WheelEvent,
   type FC,
-  useMemo,
+  useEffect,
 } from "react";
-import { Draggable } from "~/components/canvas/draggable";
 import { CanvasProvider } from "~/contexts/CanvasContext";
 import TestPage1 from "~/components/canvas-demo/test-page-1";
+import MainPage from "~/components/canvas-demo/main-page";
+import Image from "next/image";
 
 interface Point {
   x: number;
   y: number;
 }
-
-const useMemoizedPoint = (x: number, y: number): Point => {
-  return useMemo(() => ({ x, y }), [x, y]);
-};
 
 const Canvas: FC = () => {
   const [panOffset, setPanOffset] = useState<Point>({ x: 0, y: 0 });
@@ -32,8 +29,27 @@ const Canvas: FC = () => {
     y: 0,
   });
 
+  const sceneControls = useAnimationControls();
   const viewportRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    void sceneControls.start(
+      { x: panOffset.x, y: panOffset.y, scale: zoom },
+      { duration: 0.3 },
+    );
+  }, []);
+
+  useEffect(() => {
+    void sceneControls.start(
+      {
+        x: panOffset.x,
+        y: panOffset.y,
+        scale: zoom,
+      },
+      { duration: 0.01 },
+    );
+  }, [panOffset, zoom, sceneControls]);
 
   const onResetViewAndItems = (): void => {
     setPanOffset({ x: 0, y: 0 });
@@ -47,6 +63,7 @@ const Canvas: FC = () => {
     setInitialPanOffsetOnDrag({ x: panOffset.x, y: panOffset.y });
     if (viewportRef.current) viewportRef.current.style.cursor = "grabbing";
   };
+
   const handlePanMove = (event: PointerEvent<HTMLDivElement>): void => {
     if (!isPanning) return;
     event.preventDefault();
@@ -100,7 +117,7 @@ const Canvas: FC = () => {
       <CanvasProvider zoom={zoom} panOffset={panOffset}>
         <div
           ref={viewportRef}
-          className="relative h-screen w-screen touch-none select-none overflow-hidden"
+          className="relative h-screen w-screen touch-none select-none overflow-hidden bg-gray-300"
           style={{ cursor: isPanning ? "grabbing" : "grab" }}
           onPointerDown={handlePanStart}
           onPointerMove={handlePanMove}
@@ -110,39 +127,24 @@ const Canvas: FC = () => {
         >
           <motion.div
             ref={sceneRef}
-            className="scene absolute bg-blue-100"
-            style={{
-              width: "0",
-              height: "0",
-              transformOrigin: "0 0",
-            }}
-            animate={{ x: panOffset.x, y: panOffset.y, scale: zoom }}
-            transition={{ duration: 0.05 }}
+            className="scene absolute h-0 w-0 origin-top-left"
+            animate={sceneControls}
           >
-            <Draggable
-              initialPos={useMemoizedPoint(100, 100)}
-              drag
-              className="w-32 cursor-grab rounded bg-blue-500 p-4 text-center text-white shadow-lg"
-              onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
-            >
-              Draggable 1
-            </Draggable>
-            <Draggable
-              initialPos={useMemoizedPoint(600, 300)}
-              drag
-              className="w-32 cursor-grab rounded bg-red-500 p-4 text-center text-white shadow-lg"
-              onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
-            >
-              Draggable 2
-            </Draggable>
+            <MainPage />
             <TestPage1 />
           </motion.div>
-          <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
+          <div className="absolute bottom-4 right-4 flex gap-2">
             <button
-              className="min-w-[120px] rounded bg-gray-700 p-2 font-mono text-sm text-white shadow-md hover:bg-gray-600"
+              className="rounded bg-gray-700 p-1.5 font-mono text-sm text-white shadow-md transition-colors hover:bg-gray-600"
               onClick={onResetViewAndItems}
+              onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
             >
-              Reset All
+              <Image
+                src="/images/reset.svg"
+                alt="Reset"
+                width={18}
+                height={18}
+              />
             </button>
             <div className="rounded bg-gray-700 p-2 font-mono text-sm text-white shadow-md">
               Zoom: {zoom.toFixed(2)}x

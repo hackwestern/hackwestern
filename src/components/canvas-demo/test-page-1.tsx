@@ -3,7 +3,7 @@ import { Draggable } from "../canvas/draggable";
 
 const TestPage1 = () => {
   return (
-    <motion.div className="absolute -top-[3000px] h-screen w-screen bg-gray-200">
+    <motion.div className="absolute left-[2200px] top-[2000px] h-screen w-screen bg-gray-200">
       <div className="text-center text-3xl font-bold text-gray-800">
         This is a large background element
       </div>
