@@ -6,7 +6,7 @@ import {
   type PanInfo,
 } from "framer-motion";
 import { useCanvasContext } from "~/contexts/CanvasContext";
-import { useMemoPoint } from "~/lib/memo-point";
+import { useMemoPoint } from "~/lib/canvas";
 
 interface Point {
   x: number;

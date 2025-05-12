@@ -17,6 +17,7 @@ import TestPageMap from "~/components/canvas-demo/test-page-map";
 import TestPageBoxes from "~/components/canvas-demo/test-page-boxes";
 import TestPage2 from "~/components/canvas-demo/test-page-2";
 import Hero from "~/components/promo/Hero";
+import { getDistance, getMidpoint } from "~/lib/canvas";
 
 export const OFFSETS = [
   // 0.001 to avoid the reset when 0,0
@@ -73,6 +74,16 @@ const Canvas: FC = () => {
   const viewportRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
 
+  const activePointersRef = useRef<Map<number, PointerEvent<HTMLDivElement>>>(
+    new Map(),
+  );
+  const initialPinchStateRef = useRef<{
+    distance: number;
+    midpoint: Point;
+    zoom: number;
+    panOffset: Point;
+  } | null>(null);
+
   useEffect(() => {
     void sceneControls.start({ x: 0, y: 0, scale: 1 }, { duration: 0.3 });
   }, [sceneControls]);
@@ -111,31 +122,113 @@ const Canvas: FC = () => {
       });
   };
 
-  const handlePanStart = (event: PointerEvent<HTMLDivElement>): void => {
-    event.preventDefault();
-    setIsPanning(true);
-    setPanStartPoint({ x: event.clientX, y: event.clientY });
-    setInitialPanOffsetOnDrag({ x: panOffset.x, y: panOffset.y });
-    if (viewportRef.current) viewportRef.current.style.cursor = "grabbing";
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
+    activePointersRef.current.set(event.pointerId, event);
+    (event.target as HTMLElement).setPointerCapture(event.pointerId);
+    sceneControls.stop();
+    if (activePointersRef.current.size === 1) {
+      const targetElement = event.target as HTMLElement;
+      if (
+        targetElement.closest("[data-toolbar-button]") ??
+        targetElement.closest("[data-navbar-button]")
+      ) {
+        activePointersRef.current.delete(event.pointerId);
+        (event.target as HTMLElement).releasePointerCapture(event.pointerId);
+        return;
+      }
+
+      setIsPanning(true);
+      setPanStartPoint({ x: event.clientX, y: event.clientY });
+      setInitialPanOffsetOnDrag({ ...panOffset }); // Use current panOffset
+      if (viewportRef.current) viewportRef.current.style.cursor = "grabbing";
+    } else if (activePointersRef.current.size === 2) {
+      setIsPanning(false);
+      const pointers = Array.from(activePointersRef.current.values());
+      initialPinchStateRef.current = {
+        distance: getDistance(pointers[0]!, pointers[1]!),
+        midpoint: getMidpoint(pointers[0]!, pointers[1]!),
+        zoom: zoom,
+        panOffset: { ...panOffset },
+      };
+    }
   };
 
-  const handlePanMove = (event: PointerEvent<HTMLDivElement>): void => {
-    if (!isPanning) return;
-    event.preventDefault();
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>): void => {
+    if (!activePointersRef.current.has(event.pointerId)) return;
+    activePointersRef.current.set(event.pointerId, event);
 
-    const deltaX = event.clientX - panStartPoint.x;
-    const deltaY = event.clientY - panStartPoint.y;
+    if (isPanning && activePointersRef.current.size === 1) {
+      event.preventDefault();
+      const deltaX = event.clientX - panStartPoint.x;
+      const deltaY = event.clientY - panStartPoint.y;
+      setPanOffset({
+        x: initialPanOffsetOnDrag.x + deltaX,
+        y: initialPanOffsetOnDrag.y + deltaY,
+      });
+    } else if (
+      activePointersRef.current.size >= 2 &&
+      initialPinchStateRef.current
+    ) {
+      event.preventDefault();
+      const pointers = Array.from(activePointersRef.current.values());
+      const p1 = pointers[0]!;
+      const p2 = pointers[1]!;
 
-    setPanOffset({
-      x: initialPanOffsetOnDrag.x + deltaX,
-      y: initialPanOffsetOnDrag.y + deltaY,
-    });
+      const currentDistance = getDistance(p1, p2);
+      const currentMidpoint = getMidpoint(p1, p2);
+
+      const {
+        distance: initialDistance,
+        midpoint: initialMidpointViewport,
+        zoom: initialZoom,
+        panOffset: initialPanOffsetPinch,
+      } = initialPinchStateRef.current;
+
+      if (initialDistance === 0) return;
+
+      let newZoom = initialZoom * (currentDistance / initialDistance);
+      newZoom = Math.max(0.1, Math.min(newZoom, 10));
+
+      const initialMidpointSceneX =
+        (initialMidpointViewport.x - initialPanOffsetPinch.x) / initialZoom;
+      const initialMidpointSceneY =
+        (initialMidpointViewport.y - initialPanOffsetPinch.y) / initialZoom;
+
+      const newPanX = currentMidpoint.x - initialMidpointSceneX * newZoom;
+      const newPanY = currentMidpoint.y - initialMidpointSceneY * newZoom;
+
+      setZoom(newZoom);
+      setPanOffset({ x: newPanX, y: newPanY });
+    }
   };
 
-  const handlePanEnd = (): void => {
-    if (isPanning) {
+  const handlePointerUpOrCancel = (
+    event: PointerEvent<HTMLDivElement>,
+  ): void => {
+    if ((event.target as HTMLElement).hasPointerCapture(event.pointerId)) {
+      (event.target as HTMLElement).releasePointerCapture(event.pointerId);
+    }
+    activePointersRef.current.delete(event.pointerId);
+
+    if (isPanning && activePointersRef.current.size < 1) {
       setIsPanning(false);
       if (viewportRef.current) viewportRef.current.style.cursor = "grab";
+    }
+
+    if (initialPinchStateRef.current && activePointersRef.current.size < 2) {
+      initialPinchStateRef.current = null;
+    }
+
+    if (
+      !isPanning &&
+      activePointersRef.current.size === 1 &&
+      !initialPinchStateRef.current
+    ) {
+      const lastPointer = Array.from(activePointersRef.current.values())[0]!;
+      setIsPanning(true);
+      setPanStartPoint({ x: lastPointer.clientX, y: lastPointer.clientY });
+      setInitialPanOffsetOnDrag({ ...panOffset }); // Use current panOffset
+      if (viewportRef.current) viewportRef.current.style.cursor = "grabbing";
     }
   };
 
@@ -168,18 +261,24 @@ const Canvas: FC = () => {
         <meta name="description" content="Interactive Canvas" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
+      <Navbar onClick={panToOffset} />
+      <Toolbar
+        onResetViewAndItems={onResetViewAndItems}
+        panOffset={panOffset}
+        zoom={zoom}
+      />
       <CanvasProvider zoom={zoom} panOffset={panOffset}>
         <div
           ref={viewportRef}
           className="relative h-screen w-screen touch-none select-none overflow-hidden bg-gray-300"
           style={{ cursor: isPanning ? "grabbing" : "grab" }}
-          onPointerDown={handlePanStart}
-          onPointerMove={handlePanMove}
-          onPointerUp={handlePanEnd}
-          onPointerLeave={handlePanEnd}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUpOrCancel}
+          onPointerLeave={handlePointerUpOrCancel}
+          onPointerCancel={handlePointerUpOrCancel}
           onWheel={handleWheelZoom}
         >
-          <Navbar onClick={panToOffset} />
           <motion.div
             ref={sceneRef}
             className="scene absolute z-20 h-0 w-0 origin-top-left"
@@ -203,11 +302,6 @@ const Canvas: FC = () => {
               </OffsetComponent>
             ))}
           </motion.div>
-          <Toolbar
-            onResetViewAndItems={onResetViewAndItems}
-            panOffset={panOffset}
-            zoom={zoom}
-          />
         </div>
       </CanvasProvider>
     </>
