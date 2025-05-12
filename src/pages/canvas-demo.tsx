@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { motion, useAnimationControls } from "framer-motion";
+import { motion, type Point, useAnimationControls } from "framer-motion";
 import {
   useState,
   useRef,
@@ -11,12 +11,52 @@ import {
 import { CanvasProvider } from "~/contexts/CanvasContext";
 import TestPage1 from "~/components/canvas-demo/test-page-1";
 import MainPage from "~/components/canvas-demo/main-page";
-import Image from "next/image";
+import Toolbar from "~/components/canvas-demo/toolbar";
+import Navbar from "~/components/canvas-demo/navbar";
+import TestPageMap from "~/components/canvas-demo/test-page-map";
+import TestPageBoxes from "~/components/canvas-demo/test-page-boxes";
+import TestPage2 from "~/components/canvas-demo/test-page-2";
+import Hero from "~/components/promo/Hero";
 
-interface Point {
-  x: number;
-  y: number;
-}
+export const OFFSETS = [
+  // 0.001 to avoid the reset when 0,0
+  { x: 0, y: 0.001 },
+  { x: 4000, y: 0 },
+  { x: -4000, y: 0 },
+  { x: 0, y: 2000 },
+  { x: 0, y: -2000 },
+  { x: 4000, y: 2000 },
+  { x: -4000, y: -2000 },
+  { x: 4000, y: -2000 },
+  { x: -4000, y: 2000 },
+] as const;
+
+export type OffsetIndex = Exclude<
+  keyof typeof OFFSETS,
+  keyof (typeof OFFSETS)[]
+>;
+
+const OffsetComponent = ({
+  offset,
+  children,
+}: {
+  offset: Point;
+  children: React.ReactNode;
+}) => {
+  return (
+    <motion.div
+      style={{
+        position: "absolute",
+        top: offset.y,
+        left: offset.x,
+        width: "100%",
+        height: "100%",
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 const Canvas: FC = () => {
   const [panOffset, setPanOffset] = useState<Point>({ x: 0, y: 0 });
@@ -34,26 +74,41 @@ const Canvas: FC = () => {
   const sceneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    void sceneControls.start(
-      { x: panOffset.x, y: panOffset.y, scale: zoom },
-      { duration: 0.3 },
-    );
-  }, []);
+    void sceneControls.start({ x: 0, y: 0, scale: 1 }, { duration: 0.3 });
+  }, [sceneControls]);
 
   useEffect(() => {
-    void sceneControls.start(
-      {
-        x: panOffset.x,
-        y: panOffset.y,
-        scale: zoom,
-      },
-      { duration: 0.01 },
-    );
+    sceneControls.set({
+      x: panOffset.x,
+      y: panOffset.y,
+      scale: zoom,
+    });
   }, [panOffset, zoom, sceneControls]);
 
   const onResetViewAndItems = (): void => {
-    setPanOffset({ x: 0, y: 0 });
-    setZoom(1);
+    void sceneControls
+      .start({ x: 0, y: 0, scale: 1 }, { duration: 0.2 })
+      .then(() => {
+        setPanOffset({ x: 0, y: 0 });
+        setZoom(1);
+      });
+  };
+
+  const panToOffset = (offset: Point): void => {
+    if (!viewportRef.current) return;
+    void sceneControls
+      .start(
+        {
+          x: -offset.x,
+          y: -offset.y,
+          scale: 1,
+        },
+        { duration: 0.3 },
+      )
+      .then(() => {
+        setZoom(1);
+        setPanOffset({ x: -offset.x, y: -offset.y });
+      });
   };
 
   const handlePanStart = (event: PointerEvent<HTMLDivElement>): void => {
@@ -113,7 +168,6 @@ const Canvas: FC = () => {
         <meta name="description" content="Interactive Canvas" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      {/* Type for div attributes is inferred, but we can be explicit with refs */}
       <CanvasProvider zoom={zoom} panOffset={panOffset}>
         <div
           ref={viewportRef}
@@ -125,31 +179,35 @@ const Canvas: FC = () => {
           onPointerLeave={handlePanEnd}
           onWheel={handleWheelZoom}
         >
+          <Navbar onClick={panToOffset} />
           <motion.div
             ref={sceneRef}
-            className="scene absolute h-0 w-0 origin-top-left"
+            className="scene absolute z-20 h-0 w-0 origin-top-left"
             animate={sceneControls}
           >
-            <MainPage />
-            <TestPage1 />
+            {[
+              <MainPage key="main" />,
+              <TestPage1 key="tp1" />,
+              <TestPage2 key="tp2" />,
+              <TestPageMap key="tpm" />,
+              <TestPageBoxes key="tpb" />,
+              <div key="index" className="w-screen">
+                <Hero />
+              </div>,
+            ].map((Component, index) => (
+              <OffsetComponent
+                key={index}
+                offset={OFFSETS[index.toString() as OffsetIndex]}
+              >
+                {Component}
+              </OffsetComponent>
+            ))}
           </motion.div>
-          <div className="absolute bottom-4 right-4 flex gap-2">
-            <button
-              className="rounded bg-gray-700 p-1.5 font-mono text-sm text-white shadow-md transition-colors hover:bg-gray-600"
-              onClick={onResetViewAndItems}
-              onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
-            >
-              <Image
-                src="/images/reset.svg"
-                alt="Reset"
-                width={18}
-                height={18}
-              />
-            </button>
-            <div className="rounded bg-gray-700 p-2 font-mono text-sm text-white shadow-md">
-              Zoom: {zoom.toFixed(2)}x
-            </div>
-          </div>
+          <Toolbar
+            onResetViewAndItems={onResetViewAndItems}
+            panOffset={panOffset}
+            zoom={zoom}
+          />
         </div>
       </CanvasProvider>
     </>
