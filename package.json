@@ -50,6 +50,7 @@
     "date-fns": "^3.6.0",
     "drizzle-orm": "^0.41.0",
     "drizzle-zod": "^0.5.1",
+    "framer-motion": "^12.10.5",
     "hackwestern": "file:",
     "lucide-react": "^0.483.0",
     "motion": "^12.10.5",
