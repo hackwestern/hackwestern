@@ -13,7 +13,7 @@ const NavbarButton = ({
 }) => {
   return (
     <motion.button
-      className="mx-2 h-max text-wrap rounded bg-gray-700 p-2 font-mono"
+      className="mx-2 h-max text-wrap rounded bg-gray-700 p-2 font-mono text-xs md:text-base"
       onClick={() => onClick(OFFSETS[offset])}
       onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
       whileHover={{ scale: 1.05, rotate: 1 }}
