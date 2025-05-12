@@ -11,7 +11,6 @@ const TestPage2 = () => {
         {[1, 2, 3, 4, 5].map((n) => (
           <Draggable
             key={n}
-            drag
             className="w-64 rounded bg-yellow-400 p-6 text-center text-white shadow-lg"
           >
             Card {n}

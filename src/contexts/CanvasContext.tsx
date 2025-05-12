@@ -1,4 +1,9 @@
-import React, { createContext, useContext, type ReactNode, useMemo } from 'react';
+import React, {
+  createContext,
+  useContext,
+  type ReactNode,
+  useMemo,
+} from "react";
 
 export interface Point {
   x: number;
@@ -19,7 +24,7 @@ export const CanvasContext = createContext<CanvasContextState>(defaultState);
 export const useCanvasContext = (): CanvasContextState => {
   const context = useContext(CanvasContext);
   if (context === undefined) {
-    throw new Error('useCanvasContext must be used within a CanvasProvider');
+    throw new Error("useCanvasContext must be used within a CanvasProvider");
   }
   return context;
 };

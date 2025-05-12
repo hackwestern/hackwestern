@@ -1,7 +1,9 @@
 import React, { useRef, useEffect, forwardRef } from "react";
 import {
+  animate,
   motion,
   useAnimationControls,
+  useMotionValue,
   type HTMLMotionProps,
   type PanInfo,
 } from "framer-motion";
@@ -21,10 +23,9 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
   (props, ref) => {
     const {
       initialPos: passedPos,
-      drag,
-      onDrag: onDragPropFromUser,
       animate: animatePropFromUser,
       children,
+      style,
       ...restProps
     } = props;
 
@@ -33,21 +34,34 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
     const defaultPos = useMemoPoint(0, 0);
     const initialPos = passedPos ?? defaultPos;
 
+    const x = useMotionValue(initialPos.x);
+    const y = useMotionValue(initialPos.y);
+
     const logicalPositionRef = useRef<Point>({ ...initialPos });
     const controls = useAnimationControls();
 
     useEffect(() => {
       if (parentZoom === 1 && panOffset.x === 0 && panOffset.y === 0) {
         logicalPositionRef.current = { ...initialPos };
-        void controls.start({
-          x: initialPos.x,
-          y: initialPos.y,
+        void animate(x, initialPos.x, {
+          duration: 0.3,
+          type: "spring",
+          damping: 14,
+          stiffness: 120,
+          mass: 1,
+        });
+        void animate(y, initialPos.y, {
+          duration: 0.3,
+          type: "spring",
+          damping: 14,
+          stiffness: 120,
+          mass: 1,
         });
       }
-    }, [initialPos, controls, parentZoom, panOffset]);
+    }, [initialPos, controls, parentZoom, panOffset, x, y]);
 
     const handleDrag = (
-      event: MouseEvent | TouchEvent | PointerEvent,
+      _event: MouseEvent | TouchEvent | PointerEvent,
       info: PanInfo,
     ) => {
       const deltaParentX = info.delta.x / parentZoom;
@@ -56,17 +70,9 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
       logicalPositionRef.current.x += deltaParentX;
       logicalPositionRef.current.y += deltaParentY;
 
-      controls.set({
-        x: logicalPositionRef.current.x,
-        y: logicalPositionRef.current.y,
-      });
-
-      if (onDragPropFromUser) {
-        onDragPropFromUser(event, info);
-      }
+      x.set(logicalPositionRef.current.x);
+      y.set(logicalPositionRef.current.y);
     };
-
-    const isCustomDragActive = !!drag;
 
     const finalAnimate = animatePropFromUser ?? controls;
 
@@ -74,13 +80,17 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
       <motion.div
         ref={ref}
         dragMomentum={false}
-        drag={drag}
+        drag
         animate={finalAnimate}
-        onDrag={isCustomDragActive ? handleDrag : onDragPropFromUser}
+        onDrag={handleDrag}
+        style={{
+          ...style,
+          x,
+          y,
+        }}
         onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
         whileHover={{ scale: 1.1 }}
         whileTap={{ cursor: "grabbing" }}
-        // reset z index
         {...restProps}
       >
         {children}

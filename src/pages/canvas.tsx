@@ -20,8 +20,7 @@ import Hero from "~/components/promo/Hero";
 import { getDistance, getMidpoint } from "~/lib/canvas";
 
 export const OFFSETS = [
-  // 0.001 to avoid the reset when 0,0
-  { x: 0, y: 0.001 },
+  { x: 0, y: 0 },
   { x: 4000, y: 0 },
   { x: -4000, y: 0 },
   { x: 0, y: 2000 },
@@ -114,7 +113,7 @@ const Canvas: FC = () => {
           y: -offset.y,
           scale: 1,
         },
-        { duration: 0.3 },
+        { duration: 0.3, type: "spring", damping: 14, stiffness: 120, mass: 1 },
       )
       .then(() => {
         setZoom(1);

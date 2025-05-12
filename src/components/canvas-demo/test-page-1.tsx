@@ -8,7 +8,6 @@ const TestPage1 = () => {
         This is a large background element
       </div>
       <Draggable
-        drag
         className="mx-auto w-32 cursor-grab rounded bg-green-500 p-4 text-center text-white shadow-lg"
         onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
       >

@@ -33,7 +33,7 @@ const NavbarButton = ({
 
 const Navbar = ({ onClick }: { onClick: (offset: Point) => void }) => {
   return (
-    <div className="fixed top-0 z-30 flex h-16 w-full justify-center p-4 px-4 text-white">
+    <div className="fixed top-0 z-[1000] flex h-16 w-full justify-center p-4 px-4 text-white">
       {[
         ["0", "Main Page"],
         ["1", "Test Page 1"],

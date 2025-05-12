@@ -11,7 +11,6 @@ const TestPageMap = () => {
         {[1, 2, 3, 4, 5, 6].map((n) => (
           <Draggable
             key={n}
-            drag
             className="h-24 cursor-move rounded bg-blue-500 p-4 text-center text-white shadow-md"
           >
             Box {n}

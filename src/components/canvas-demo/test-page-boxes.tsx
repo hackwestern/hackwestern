@@ -12,24 +12,39 @@ const TestPageBoxes = () => {
       </div>
 
       <div className="mb-4 flex justify-center gap-4">
-        <button
+        <motion.button
           onClick={() => setBoxes((prev) => [...prev, Date.now()])}
           className="rounded bg-green-500 px-4 py-2 text-white shadow"
+          whileHover={{ scale: 1.05, rotate: 1 }}
+          whileTap={{ scale: 0.95, rotate: -1 }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{
+            opacity: 1,
+            y: 0,
+            transition: { type: "spring", stiffness: 300 },
+          }}
         >
           Add Box
-        </button>
-        <button
+        </motion.button>
+        <motion.button
           onClick={() => setBoxes((prev) => prev.slice(0, prev.length - 1))}
           className="rounded bg-red-500 px-4 py-2 text-white shadow"
+          whileHover={{ scale: 1.05, rotate: 1 }}
+          whileTap={{ scale: 0.95, rotate: -1 }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{
+            opacity: 1,
+            y: 0,
+            transition: { type: "spring", stiffness: 300 },
+          }}
         >
           Delete Box
-        </button>
+        </motion.button>
       </div>
 
       <div className="flex flex-wrap justify-center gap-4">
         {boxes.map((id, index) => (
           <Draggable
-            drag
             key={id}
             className={`flex h-24 w-24 items-center justify-center rounded bg-yellow-400 text-center text-white shadow-lg`}
           >

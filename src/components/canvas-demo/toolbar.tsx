@@ -12,7 +12,7 @@ const Toolbar = ({
 }) => {
   return (
     <>
-      <div className="absolute bottom-4 right-4 z-50 flex gap-2 text-">
+      <div className="absolute bottom-4 right-4 z-[1000] flex gap-2 text-">
         <button
           className="rounded bg-gray-700 p-1.5 font-mono text-xs md:text-sm text-white shadow-md transition-colors hover:bg-gray-600"
           onClick={onResetViewAndItems}
@@ -28,7 +28,7 @@ const Toolbar = ({
         </div>
       </div>
       <div
-        className="absolute bottom-4 left-4 z-50 cursor-default rounded bg-gray-700 p-2 font-mono text-xs md:text-sm text-white shadow-md"
+        className="absolute bottom-4 left-4 z-[1000] cursor-default rounded bg-gray-700 p-2 font-mono text-xs md:text-sm text-white shadow-md"
         onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
       >
         x: {-panOffset.x.toFixed(2)}, y: {-panOffset.y.toFixed(2)}

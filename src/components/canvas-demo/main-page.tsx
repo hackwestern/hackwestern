@@ -1,60 +1,53 @@
 import { Draggable } from "../canvas/draggable";
 import Image from "next/image";
 
+const avatars = [
+  "/images/wildlifewanderer.svg",
+  "/images/citycruiser.svg",
+  "/images/foodiefanatic.svg",
+  "/images/beachbum.svg",
+];
+
+const Avatars = () => {
+  return (
+    <div className="flex gap-4">
+      {avatars.map((avatar, index) => (
+        <Draggable
+          key={index}
+          animate={{
+            rotate: [-2, 2],
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            repeatType: "mirror",
+            ease: "easeInOut",
+          }}
+        >
+          <Image
+            src={avatar}
+            alt={`Avatar ${index + 1}`}
+            width={250}
+            height={250}
+            draggable="false"
+          />
+        </Draggable>
+      ))}
+    </div>
+  );
+};
+
 const MainPage = () => {
   return (
     <div className="absolute flex h-screen w-screen flex-col items-center justify-center bg-hw-radial-gradient">
       hello im hack western :)))
-      <Draggable
-        drag
-        className="m-8 w-32 cursor-grab rounded bg-blue-500 p-4 text-center text-white shadow-lg"
-      >
+      <Draggable className="m-8 w-32 cursor-grab rounded bg-blue-500 p-4 text-center text-white shadow-lg">
         Draggable 1
       </Draggable>
-      <Draggable
-        drag
-        className="m-4 w-32 cursor-grab rounded bg-red-500 p-4 text-center text-white shadow-lg"
-      >
+      <Draggable className="m-4 w-32 cursor-grab rounded bg-red-500 p-4 text-center text-white shadow-lg">
         Draggable 2
       </Draggable>
-      <div className="flex gap-4">
-        <Draggable drag>
-          <Image
-            src="/images/wildlifewanderer.svg"
-            alt="Avatar"
-            width={250}
-            height={250}
-            draggable="false"
-          />
-        </Draggable>
-        <Draggable drag>
-          <Image
-            src="/images/citycruiser.svg"
-            alt="Avatar"
-            width={250}
-            height={250}
-            draggable="false"
-          />
-        </Draggable>
-        <Draggable drag>
-          <Image
-            src="/images/foodiefanatic.svg"
-            alt="Avatar"
-            width={250}
-            height={250}
-            draggable="false"
-          />
-        </Draggable>
-        <Draggable drag>
-          <Image
-            src="/images/beachbum.svg"
-            alt="Avatar"
-            width={250}
-            height={250}
-            draggable="false"
-          />
-        </Draggable>
-      </div>
+      <Avatars />
     </div>
   );
 };
