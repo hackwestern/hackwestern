@@ -6,6 +6,7 @@ import {
   type PointerEvent,
   type FC,
   useEffect,
+  useCallback,
 } from "react";
 import { CanvasProvider } from "~/contexts/CanvasContext";
 import TestPage1 from "~/components/canvas-demo/test-page-1";
@@ -17,6 +18,17 @@ import TestPageBoxes from "~/components/canvas-demo/test-page-boxes";
 import TestPage2 from "~/components/canvas-demo/test-page-2";
 import Hero from "~/components/promo/Hero";
 import { getDistance, getMidpoint } from "~/lib/canvas";
+
+export const PAGES = [
+  <MainPage key="main" />,
+  <TestPage1 key="tp1" />,
+  <TestPage2 key="tp2" />,
+  <TestPageMap key="tpm" />,
+  <TestPageBoxes key="tpb" />,
+  <div key="index" className="w-screen">
+    <Hero />
+  </div>,
+];
 
 export const OFFSETS = [
   { x: 0, y: 0 },
@@ -82,10 +94,6 @@ const Canvas: FC = () => {
     zoom: number;
     panOffset: Point;
   } | null>(null);
-
-  useEffect(() => {
-    void sceneControls.start({ x: 0, y: 0, scale: 1 }, { duration: 0.3 });
-  }, [sceneControls]);
 
   useEffect(() => {
     sceneControls.set({
@@ -237,35 +245,50 @@ const Canvas: FC = () => {
     }
   };
 
-  const handleWheelZoom = (event: WheelEvent): void => {
-    const isPinch = event.ctrlKey || event.metaKey;
-    if (isPinch) {
-      event.preventDefault();
+  const handleWheelZoom = useCallback(
+    (event: WheelEvent) => {
+      const isPinch = event.ctrlKey || event.metaKey;
+
+      if (isPinch) event.preventDefault();
+
+      const zoomFactor = isPinch ? 0.075 : 0.1;
+
+      const newZoomValue =
+        event.deltaY > 0
+          ? zoom * (1 - zoomFactor)
+          : zoom * (1 / (1 - zoomFactor));
+      const clampedZoom = Math.max(0.1, Math.min(newZoomValue, 10));
+
+      let mouseX = event.clientX;
+      let mouseY = event.clientY;
+
+      if (viewportRef.current) {
+        const viewportRect = viewportRef.current.getBoundingClientRect();
+        mouseX = event.clientX - viewportRect.left;
+        mouseY = event.clientY - viewportRect.top;
+      }
+
+      const sceneMouseX = (mouseX - panOffset.x) / zoom;
+      const sceneMouseY = (mouseY - panOffset.y) / zoom;
+
+      const newPanX = mouseX - sceneMouseX * clampedZoom;
+      const newPanY = mouseY - sceneMouseY * clampedZoom;
+
+      setZoom(clampedZoom);
+      setPanOffset({ x: newPanX, y: newPanY });
+    },
+    [zoom, panOffset, setZoom, setPanOffset],
+  );
+
+  useEffect(() => {
+    const element = viewportRef.current;
+    if (element) {
+      element.addEventListener("wheel", handleWheelZoom, { passive: false });
+      return () => {
+        element.removeEventListener("wheel", handleWheelZoom);
+      };
     }
-
-    const zoomFactor = 0.1;
-    const newZoom =
-      event.deltaY > 0 ? zoom * (1 - zoomFactor) : zoom * (1 + zoomFactor);
-    const clampedZoom = Math.max(0.1, Math.min(newZoom, 10));
-
-    const mouseX = event.clientX;
-    const mouseY = event.clientY;
-
-    const sceneMouseX = (mouseX - panOffset.x) / zoom;
-    const sceneMouseY = (mouseY - panOffset.y) / zoom;
-
-    const newPanX = mouseX - sceneMouseX * clampedZoom;
-    const newPanY = mouseY - sceneMouseY * clampedZoom;
-
-    setZoom(clampedZoom);
-    setPanOffset({ x: newPanX, y: newPanY });
-  };
-
-  if (viewportRef.current) {
-    viewportRef.current.addEventListener("wheel", handleWheelZoom, {
-      passive: false,
-    });
-  }
+  }, [handleWheelZoom]);
 
   return (
     <>
@@ -304,16 +327,7 @@ const Canvas: FC = () => {
             className="scene absolute z-20 h-0 w-0 origin-top-left"
             animate={sceneControls}
           >
-            {[
-              <MainPage key="main" />,
-              <TestPage1 key="tp1" />,
-              <TestPage2 key="tp2" />,
-              <TestPageMap key="tpm" />,
-              <TestPageBoxes key="tpb" />,
-              <div key="index" className="w-screen">
-                <Hero />
-              </div>,
-            ].map((Component, index) => (
+            {PAGES.map((Component, index) => (
               <OffsetComponent
                 key={index}
                 offset={OFFSETS[index.toString() as OffsetIndex]}
