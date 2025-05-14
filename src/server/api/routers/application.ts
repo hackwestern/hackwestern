@@ -8,7 +8,8 @@ import {
   applicationSubmitSchema,
 } from "~/schemas/application";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
-import { eq } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
+import { z } from "zod";
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure.query(async ({ ctx }) => {
@@ -34,6 +35,41 @@ export const applicationRouter = createTRPCRouter({
       });
     }
   }),
+
+  getById: protectedProcedure
+    .input(
+      z.object({
+        applicantId: z.string().nullish(),
+      }),
+    )
+    .query(async ({ input }) => {
+      try {
+        if (!input.applicantId) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Missing userId",
+          });
+        }
+
+        const application = await db.query.applications.findFirst({
+          where: eq(applications.userId, input.applicantId),
+        });
+
+        if (!application) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Application not found",
+          });
+        }
+
+        return application;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch application: " + JSON.stringify(error),
+        });
+      }
+    }),
 
   getAllApplicants: protectedProcedure.query(async ({ ctx }) => {
     try {
@@ -117,4 +153,23 @@ export const applicationRouter = createTRPCRouter({
         });
       }
     }),
+
+  getAppStats: protectedProcedure.query(async ({}) => {
+    try {
+      const applicationStats = await db
+        .select({
+          status: applications.status,
+          count: count(applications.userId),
+        })
+        .from(applications)
+        .groupBy(applications.status);
+
+      return applicationStats;
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch application stats: " + JSON.stringify(error),
+      });
+    }
+  }),
 });

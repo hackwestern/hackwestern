@@ -15,16 +15,17 @@ jobs:
       NEXTAUTH_URL: "http://localhost:3000"
       GITHUB_CLIENT_ID: ${{ secrets.NEXTAUTH_GITHUB_CLIENT_ID }}
       GITHUB_CLIENT_SECRET: ${{ secrets.NEXTAUTH_GITHUB_CLIENT_SECRET }}
+      DISCORD_CLIENT_ID: ${{ secrets.NEXTAUTH_DISCORD_CLIENT_ID }}
+      DISCORD_CLIENT_SECRET: ${{ secrets.NEXTAUTH_DISCORD_CLIENT_SECRET }}
       GOOGLE_CLIENT_ID: ${{ secrets.NEXTAUTH_GOOGLE_CLIENT_ID }}
       GOOGLE_CLIENT_SECRET: ${{ secrets.NEXTAUTH_GOOGLE_CLIENT_SECRET }}
-      MAILJET_API_KEY: ${{ secrets.MAILJET_API_KEY }}
-      MAILJET_SECRET_KEY: ${{ secrets.MAILJET_SECRET_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "21"
+          node-version: "23"
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
 
@@ -41,12 +42,6 @@ jobs:
 
       - name: Run Build
         run: npm run build
-
-      - name: Start Postgres DB
-        run: npm run db:start && sleep 2
-
-      - name: Push Schema
-        run: npm run db:migrate
 
       - name: Run tests
         run: npx vitest

@@ -21,7 +21,7 @@ import { type AdapterAccount } from "next-auth/adapters";
  *
  * @see https://orm.drizzle.team/kit-docs/config-reference#tablesfilters
  */
-const TABLE_PREFIX = "hw11";
+const TABLE_PREFIX = "hw";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -187,13 +187,10 @@ export const reviews = createTable(
     })
       .defaultNow()
       .notNull(),
-    question1Rating: smallint("question1_rating").default(0),
-    question2Rating: smallint("question2_rating").default(0),
-    question3Rating: smallint("question3_rating").default(0),
-    resumeBonus: smallint("resume_bonus").default(0),
-    githubBonus: smallint("github_bonus").default(0),
-    linkedinBonus: smallint("linkedin_bonus").default(0),
-    otherlinkBonus: smallint("otherlink_bonus").default(0),
+    originalityRating: smallint("originality_rating").default(0),
+    technicalityRating: smallint("technicality_rating").default(0),
+    passionRating: smallint("passion_rating").default(0),
+    comments: text("comments"),
     completed: boolean("completed").default(false),
     referral: boolean("referral").default(false),
   },

@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -131,6 +132,9 @@ export function LinksForm() {
                   variant="primary"
                 />
               </FormControl>
+              <FormDescription>
+                Make sure that this link is public.
+              </FormDescription>
             </FormItem>
           )}
         />

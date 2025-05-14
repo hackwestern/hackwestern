@@ -1,4 +1,4 @@
-closes/addresses (Github Issue number)
+closes (Github Issue number)
 
 # Quick Overview of Changes
 
@@ -13,4 +13,4 @@ closes/addresses (Github Issue number)
 - [ ] Check that CI is passing.
 - [ ] If no (re-)reviews after 1-2 days, ping the web leads on the discord to remind them to review the PR.
 
-@basokant @ArsalaanAli
+@hunterchen7 @liuwllm

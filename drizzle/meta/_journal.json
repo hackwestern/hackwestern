@@ -64,6 +64,20 @@
       "when": 1724803459803,
       "tag": "0008_wealthy_the_executioner",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1729064166744,
+      "tag": "0009_elite_cardiac",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1744951938704,
+      "tag": "0010_dizzy_grandmaster",
+      "breakpoints": true
     }
   ]
 }

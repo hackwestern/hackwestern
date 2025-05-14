@@ -5,7 +5,6 @@ import {
 } from "drizzle-orm/postgres-js";
 import { type ExtractTablesWithRelations } from "drizzle-orm";
 import postgres from "postgres";
-
 import { env } from "~/env";
 import * as schema from "./schema";
 

@@ -15,6 +15,7 @@ import {
 import { type Adapter } from "next-auth/adapters";
 import GithubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
+import DiscordProvider from "next-auth/providers/discord";
 
 import { env } from "~/env";
 import { type Database, db } from "~/server/db";
@@ -79,6 +80,10 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
+    }),
+    DiscordProvider({
+      clientId: env.DISCORD_CLIENT_ID,
+      clientSecret: env.DISCORD_CLIENT_SECRET,
     }),
     CredentialsProvider({
       // The name to display on the sign-in form (e.g., 'Sign in with...')
@@ -153,6 +158,7 @@ export async function mockOrganizerSession(db: Database): Promise<Session> {
     ...new UserSeeder().createRandom(),
     type: "organizer",
   } as const satisfies PgInsertValue<typeof users>;
+
   await db.insert(users).values(user).returning();
 
   return {

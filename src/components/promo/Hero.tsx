@@ -1,11 +1,9 @@
 import Image from "next/image";
 import Header from "./header";
 import { Button } from "../ui/button";
-import { useRouter } from "next/router";
+import Link from "next/link";
 
 function Hero() {
-  const router = useRouter();
-
   return (
     <div className="relative h-screen flex-col items-center justify-center overflow-x-clip bg-hw-radial-gradient">
       <Header />
@@ -48,7 +46,7 @@ function Hero() {
             fill
           />
         </div>
-        <div className="absolute bottom-[40%] right-[50%] z-30 flex h-[80%] w-[80%] translate-x-1/2 translate-y-1/2 sm:bottom-[5%] sm:right-[15%] sm:h-[60%] sm:w-[60%] sm:translate-x-0 sm:translate-y-0 md:bottom-[10%] md:right-[30%] md:h-[40%] md:w-[40%] md:translate-x-0 md:translate-y-0 lg:bottom-[7%] lg:right-[27%] lg:h-[40%] lg:w-[40%] lg:translate-x-0 lg:translate-y-0">
+        <div className="absolute -bottom-[5%] right-[10%] z-30 flex h-[80%] w-[80%] translate-x-1/2 translate-y-1/2 animate-plane sm:bottom-[5%] sm:right-[15%] sm:h-[60%] sm:w-[60%] sm:translate-x-0 sm:translate-y-0 md:bottom-[10%] md:right-[30%] md:h-[40%] md:w-[40%] md:translate-x-0 md:translate-y-0 lg:bottom-[7%] lg:right-[27%] lg:h-[40%] lg:w-[40%] lg:translate-x-0 lg:translate-y-0">
           <Image
             src="/images/plane.svg"
             alt="hack western plane"
@@ -56,11 +54,51 @@ function Hero() {
             objectFit="contain"
           />
         </div>
+        <div className="absolute left-[7%] top-[28%] z-40 h-[70px] w-[70px] animate-star-pulse-1 md:top-[18%]  ">
+          <Image
+            src="/images/promostar.svg"
+            alt="hack western star"
+            className="object-contain"
+            fill
+          />
+        </div>
+        <div className="absolute left-[25%] top-[40%] z-40 hidden h-[100px] w-[100px] animate-star-pulse-2 md:block  ">
+          <Image
+            src="/images/promostar.svg"
+            alt="hack western star"
+            className="object-contain"
+            fill
+          />
+        </div>
+        <div className="absolute left-[70%] top-[30%] z-40 hidden h-[55px] w-[55px] animate-star-pulse-3 md:block  ">
+          <Image
+            src="/images/promostar.svg"
+            alt="hack western star"
+            className="object-contain"
+            fill
+          />
+        </div>
+        <div className="absolute left-[85%] top-[10%] z-40 h-[70px] w-[70px] animate-star-pulse-1  ">
+          <Image
+            src="/images/promostar.svg"
+            alt="hack western star"
+            className="object-contain"
+            fill
+          />
+        </div>
+        <div className="absolute left-[85%] top-[65%] z-40 h-[70px] w-[70px] animate-star-pulse-2  ">
+          <Image
+            src="/images/promostar.svg"
+            alt="hack western star"
+            className="object-contain"
+            fill
+          />
+        </div>
       </div>
       {/* Grain Filter */}
       <div className="absolute left-0 top-0 h-full w-full">
         <Image
-          className="opacity-20"
+          className="select-none opacity-20"
           src="/images/hwfilter.png"
           alt="Hack Western Main Page"
           fill
@@ -79,11 +117,16 @@ function Hero() {
           <h2 className="-mt-3 font-sans text-xl font-light italic md:-mt-1 md:text-2xl lg:text-3xl 2xl:text-4xl">
             where ideas take flight
           </h2>
+          <h2 className="mt-3 font-sans text-base font-light italic lg:text-lg 2xl:text-xl">
+            Hacker applications now closed!
+          </h2>
           <Button
-            className="mt-12 rounded-md bg-[#5E28B8] px-12 py-6 text-xl drop-shadow-[0_2px_24px_rgba(255,212,251,0.25)] transition-all hover:bg-[#5C2FAA] hover:drop-shadow-[0_2px_12px_rgba(255,212,251,0.5)]"
-            onClick={() => router.push("/register")}
+            variant="primary"
+            size="lg"
+            className="my-8 px-16 text-base"
+            asChild
           >
-            Apply Now
+            <Link href="/live">Live Site</Link>
           </Button>
         </div>
       </div>
