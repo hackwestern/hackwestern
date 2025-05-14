@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, forwardRef } from "react";
+import React, { useRef, useEffect, forwardRef, useState } from "react";
 import {
   animate,
   motion,
@@ -21,15 +21,9 @@ export interface DraggableProps extends HTMLMotionProps<"div"> {
 
 export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
   (props, ref) => {
-    const {
-      initialPos: passedPos,
-      animate: animatePropFromUser,
-      children,
-      style,
-      ...restProps
-    } = props;
+    const { initialPos: passedPos, children, style, ...restProps } = props;
 
-    const { zoom: parentZoom, panOffset, isResetting } = useCanvasContext();
+    const { zoom: parentZoom, panOffset, isResetting, maxZIndex, setMaxZIndex } = useCanvasContext();
 
     const defaultPos = useMemoPoint(0, 0);
     const initialPos = passedPos ?? defaultPos;
@@ -39,6 +33,8 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
 
     const logicalPositionRef = useRef<Point>({ ...initialPos });
     const controls = useAnimationControls();
+
+    const [zIndex, setZIndex] = useState(1);
 
     useEffect(() => {
       if (isResetting) {
@@ -64,6 +60,7 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
       _event: MouseEvent | TouchEvent | PointerEvent,
       info: PanInfo,
     ) => {
+      controls.stop();
       const deltaParentX = info.delta.x / parentZoom;
       const deltaParentY = info.delta.y / parentZoom;
 
@@ -72,21 +69,25 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
 
       x.set(logicalPositionRef.current.x);
       y.set(logicalPositionRef.current.y);
-    };
 
-    const finalAnimate = animatePropFromUser ?? controls;
+      if (zIndex < maxZIndex) {
+        setZIndex(maxZIndex + 1);
+        setMaxZIndex(maxZIndex + 1);
+      }
+    };
 
     return (
       <motion.div
         ref={ref}
         dragMomentum={false}
         drag
-        animate={finalAnimate}
+        animate={controls}
         onDrag={handleDrag}
         style={{
           ...style,
           x,
           y,
+          zIndex,
         }}
         onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
         whileHover={{ scale: 1.1 }}

@@ -31,7 +31,7 @@ const Toolbar = ({
         className="absolute bottom-4 left-4 z-[1000] cursor-default rounded bg-gray-700 p-2 font-mono text-xs md:text-sm text-white shadow-md"
         onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
       >
-        x: {-panOffset.x.toFixed(2)}, y: {-panOffset.y.toFixed(2)}
+        x: {(-panOffset.x / zoom).toFixed(2)}, y: {(-panOffset.y / zoom).toFixed(2)}
       </div>
     </>
   );

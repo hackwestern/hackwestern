@@ -1,5 +1,5 @@
 import { Draggable } from "../canvas/draggable";
-import Image from "next/image";
+import { motion } from "framer-motion";
 
 const avatars = [
   "/images/wildlifewanderer.svg",
@@ -15,16 +15,16 @@ const Avatars = () => {
         <Draggable
           key={index}
           animate={{
-            rotate: [-2, 2],
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            repeatType: "mirror",
-            ease: "easeInOut",
+            rotate: [3, -3],
+            transition: {
+              duration: 1,
+              repeat: Infinity,
+              repeatType: "mirror",
+              ease: "easeInOut",
+            },
           }}
         >
-          <Image
+          <motion.img
             src={avatar}
             alt={`Avatar ${index + 1}`}
             width={250}

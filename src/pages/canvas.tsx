@@ -80,6 +80,7 @@ const Canvas: FC = () => {
     y: 0,
   });
   const [isResetting, setIsResetting] = useState<boolean>(false);
+  const [maxZIndex, setMaxZIndex] = useState<number>(50);
 
   const sceneControls = useAnimationControls();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -307,6 +308,8 @@ const Canvas: FC = () => {
         zoom={zoom}
         panOffset={panOffset}
         isResetting={isResetting}
+        maxZIndex={maxZIndex}
+        setMaxZIndex={setMaxZIndex}
       >
         <div
           ref={viewportRef}
