@@ -6,7 +6,8 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "node",
-    setupFiles: ["dotenv/config"],
+    setupFiles: ["dotenv/config", "./vitest.setup.ts"],
+    reporters: "verbose",
   },
   resolve: {
     alias: {
