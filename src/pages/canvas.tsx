@@ -4,7 +4,6 @@ import {
   useState,
   useRef,
   type PointerEvent,
-  type WheelEvent,
   type FC,
   useEffect,
 } from "react";
@@ -68,6 +67,7 @@ const Canvas: FC = () => {
     x: 0,
     y: 0,
   });
+  const [isResetting, setIsResetting] = useState<boolean>(false);
 
   const sceneControls = useAnimationControls();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -96,9 +96,14 @@ const Canvas: FC = () => {
   }, [panOffset, zoom, sceneControls]);
 
   const onResetViewAndItems = (): void => {
+    setIsResetting(true);
     void sceneControls
-      .start({ x: 0, y: 0, scale: 1 }, { duration: 0.2 })
+      .start(
+        { x: 0, y: 0, scale: 1 },
+        { duration: 0.3, type: "spring", damping: 14, stiffness: 120, mass: 1 },
+      )
       .then(() => {
+        setIsResetting(false);
         setPanOffset({ x: 0, y: 0 });
         setZoom(1);
       });
@@ -204,6 +209,7 @@ const Canvas: FC = () => {
   const handlePointerUpOrCancel = (
     event: PointerEvent<HTMLDivElement>,
   ): void => {
+    event.preventDefault();
     if ((event.target as HTMLElement).hasPointerCapture(event.pointerId)) {
       (event.target as HTMLElement).releasePointerCapture(event.pointerId);
     }
@@ -231,17 +237,19 @@ const Canvas: FC = () => {
     }
   };
 
-  const handleWheelZoom = (event: WheelEvent<HTMLDivElement>): void => {
+  const handleWheelZoom = (event: WheelEvent): void => {
+    const isPinch = event.ctrlKey || event.metaKey;
+    if (isPinch) {
+      event.preventDefault();
+    }
+
     const zoomFactor = 0.1;
     const newZoom =
       event.deltaY > 0 ? zoom * (1 - zoomFactor) : zoom * (1 + zoomFactor);
     const clampedZoom = Math.max(0.1, Math.min(newZoom, 10));
 
-    if (!viewportRef.current) return;
-    const viewportRect = viewportRef.current.getBoundingClientRect();
-
-    const mouseX = event.clientX - viewportRect.left;
-    const mouseY = event.clientY - viewportRect.top;
+    const mouseX = event.clientX;
+    const mouseY = event.clientY;
 
     const sceneMouseX = (mouseX - panOffset.x) / zoom;
     const sceneMouseY = (mouseY - panOffset.y) / zoom;
@@ -252,6 +260,12 @@ const Canvas: FC = () => {
     setZoom(clampedZoom);
     setPanOffset({ x: newPanX, y: newPanY });
   };
+
+  if (viewportRef.current) {
+    viewportRef.current.addEventListener("wheel", handleWheelZoom, {
+      passive: false,
+    });
+  }
 
   return (
     <>
@@ -266,17 +280,24 @@ const Canvas: FC = () => {
         panOffset={panOffset}
         zoom={zoom}
       />
-      <CanvasProvider zoom={zoom} panOffset={panOffset}>
+      <CanvasProvider
+        zoom={zoom}
+        panOffset={panOffset}
+        isResetting={isResetting}
+      >
         <div
           ref={viewportRef}
           className="relative h-screen w-screen touch-none select-none overflow-hidden bg-gray-300"
-          style={{ cursor: isPanning ? "grabbing" : "grab" }}
+          style={{
+            cursor: isPanning ? "grabbing" : "grab",
+            touchAction: "none",
+            overscrollBehavior: "contain",
+          }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUpOrCancel}
           onPointerLeave={handlePointerUpOrCancel}
           onPointerCancel={handlePointerUpOrCancel}
-          onWheel={handleWheelZoom}
         >
           <motion.div
             ref={sceneRef}

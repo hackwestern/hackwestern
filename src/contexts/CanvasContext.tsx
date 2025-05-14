@@ -13,11 +13,13 @@ export interface Point {
 export interface CanvasContextState {
   zoom: number;
   panOffset: Point;
+  isResetting: boolean;
 }
 
 const defaultState: CanvasContextState = {
   zoom: 1,
   panOffset: { x: 0, y: 0 },
+  isResetting: false,
 };
 export const CanvasContext = createContext<CanvasContextState>(defaultState);
 
@@ -29,20 +31,19 @@ export const useCanvasContext = (): CanvasContextState => {
   return context;
 };
 
-interface CanvasProviderProps {
+interface CanvasProviderProps extends CanvasContextState {
   children: ReactNode;
-  zoom: number;
-  panOffset: Point;
 }
 
 export const CanvasProvider: React.FC<CanvasProviderProps> = ({
   children,
   zoom,
   panOffset,
+  isResetting,
 }) => {
   const contextValue = useMemo(() => {
-    return { zoom, panOffset };
-  }, [zoom, panOffset]);
+    return { zoom, panOffset, isResetting };
+  }, [zoom, panOffset, isResetting]);
 
   return (
     <CanvasContext.Provider value={contextValue}>

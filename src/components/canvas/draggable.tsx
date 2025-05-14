@@ -29,7 +29,7 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
       ...restProps
     } = props;
 
-    const { zoom: parentZoom, panOffset } = useCanvasContext();
+    const { zoom: parentZoom, panOffset, isResetting } = useCanvasContext();
 
     const defaultPos = useMemoPoint(0, 0);
     const initialPos = passedPos ?? defaultPos;
@@ -41,7 +41,7 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
     const controls = useAnimationControls();
 
     useEffect(() => {
-      if (parentZoom === 1 && panOffset.x === 0 && panOffset.y === 0) {
+      if (isResetting) {
         logicalPositionRef.current = { ...initialPos };
         void animate(x, initialPos.x, {
           duration: 0.3,
@@ -58,7 +58,7 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
           mass: 1,
         });
       }
-    }, [initialPos, controls, parentZoom, panOffset, x, y]);
+    }, [initialPos, controls, isResetting, panOffset, x, y]);
 
     const handleDrag = (
       _event: MouseEvent | TouchEvent | PointerEvent,
