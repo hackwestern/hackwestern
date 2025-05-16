@@ -1,5 +1,5 @@
 import { type Point } from "framer-motion";
-import { type OffsetIndex, OFFSETS } from "~/pages/canvas";
+import { type OffsetIndex, OFFSETS } from "~/pages/canvas-demo";
 import { motion } from "framer-motion";
 
 const NavbarButton = ({
