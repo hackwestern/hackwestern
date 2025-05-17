@@ -145,15 +145,15 @@ describe.sequential("auth.checkVerified", async () => {
   test("throws an error if not logged in", async () => {
     const unauthCtx = createInnerTRPCContext({ session: null });
     const unauthCaller = createCaller(unauthCtx);
-    
+
     await expect(unauthCaller.auth.checkVerified()).rejects.toThrowError(
-      "Not logged in"
+      "Not logged in",
     );
   });
-  
+
   test("Returns verification status for non-verified email", async () => {
     const userId = session.user.id;
-    
+
     //update email to be unverified
     await db
       .update(users)
@@ -161,15 +161,15 @@ describe.sequential("auth.checkVerified", async () => {
         emailVerified: null,
       })
       .where(eq(users.id, userId));
-    
-    const result = await caller.auth.checkVerified(); 
+
+    const result = await caller.auth.checkVerified();
     expect(result.verified).toBeNull();
   });
-  
+
   test("Returns verification status for verified email", async () => {
     const userId = session.user.id;
     const verificationDate = faker.date.recent();
-    
+
     //update email to be verified
     await db
       .update(users)
@@ -177,7 +177,7 @@ describe.sequential("auth.checkVerified", async () => {
         emailVerified: verificationDate,
       })
       .where(eq(users.id, userId));
-    
+
     const result = await caller.auth.checkVerified();
     expect(result.verified).toEqual(verificationDate);
   });
