@@ -144,7 +144,7 @@ export const reviewRouter = createTRPCRouter({
         // Remove expired reviews from the review table
         // This is a SQL string because drizzle doesn't have USING (drizzle bad)
         await db.execute(
-          sql`DELETE FROM hw11_review USING hw11_application AS app WHERE applicant_user_id = app.user_id AND NOW() - app.updated_at::timestamp > INTERVAL '24 hours' AND completed != TRUE;`,
+          sql`DELETE FROM hw_review USING hw_application AS app WHERE applicant_user_id = app.user_id AND NOW() - app.updated_at::timestamp > INTERVAL '24 hours' AND completed != TRUE;`,
         );
 
         // Put applications with expired reviews back on the queue
