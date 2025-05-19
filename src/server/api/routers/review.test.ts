@@ -10,6 +10,7 @@ import { users, applications, reviews } from "~/server/db/schema";
 import { ReviewSeeder } from "~/server/db/seed/reviewSeeder";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
+import { resultOf } from "node_modules/@trpc/client/dist/links/internals/urlWithConnectionParams";
 
 const session = await mockOrganizerSession(db);
 const ctx = createInnerTRPCContext({ session });
