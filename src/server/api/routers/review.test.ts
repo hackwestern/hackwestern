@@ -209,16 +209,16 @@ describe("review.getByOrganizer", () => {
     hackerCtx = createInnerTRPCContext({ session: hackerSession });
     hackerCaller = createCaller(hackerCtx);
   });
-  
+
   afterEach(async () => {
     await db.delete(users).where(eq(users.id, hackerSession.user.id));
   });
 
-  test("returns error if user is not organizer", async() => {
+  test("returns error if user is not organizer", async () => {
     return expect(hackerCaller.review.getByOrganizer()).rejects.toThrowError();
   });
 
-  test("returns reviews for the organizer if user is organizer", async() => {
+  test("returns reviews for the organizer if user is organizer", async () => {
     organizerSession = await mockOrganizerSession(db);
     organizerCtx = createInnerTRPCContext({ session: organizerSession });
     organizerCaller = createCaller(organizerCtx);
@@ -242,7 +242,7 @@ describe("review.getByOrganizer", () => {
     expect(result).toHaveLength(1);
     expect(result[0]?.applicant.id).toBe(hackerSession.user.id);
     expect(result[0]?.reviewerUserId).toBe(organizerSession.user.id);
-    
+
     await db
       .delete(reviews)
       .where(eq(reviews.reviewerUserId, organizerSession.user.id));
@@ -250,7 +250,7 @@ describe("review.getByOrganizer", () => {
       .delete(applications)
       .where(eq(applications.userId, hackerSession.user.id));
     await db.delete(users).where(eq(users.id, organizerSession.user.id));
-  })
+  });
 });
 
 /* HELPER FUNCTIONS */
