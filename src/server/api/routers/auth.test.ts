@@ -185,9 +185,9 @@ describe.sequential("auth.checkVerified", async () => {
 
 describe("auth.checkValidToken", () => {
   test("throw an error if no such token exists", async () => {
-    await expect(caller.auth.checkValidToken({ token: "nonexistent-token" })).rejects.toThrowError(
-      "not found",
-    );
+    await expect(
+      caller.auth.checkValidToken({ token: "nonexistent-token" }),
+    ).rejects.toThrowError("not found");
   });
 
   test("throws an error if the token is expired", async () => {
@@ -209,9 +209,9 @@ describe("auth.checkValidToken", () => {
       expires: new Date(Date.now() - 1000 * 60 * 60),
     });
 
-    await expect(caller.auth.checkValidToken({ token: "expired-token" })).rejects.toThrowError(
-      "expired",
-    );
+    await expect(
+      caller.auth.checkValidToken({ token: "expired-token" }),
+    ).rejects.toThrowError("expired");
   });
 
   test("validates the token successfully", async () => {
