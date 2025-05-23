@@ -1,0 +1,59 @@
+import { motion } from "framer-motion";
+import { useState } from "react";
+import { Draggable } from "../canvas/draggable";
+
+const TestPageBoxes = () => {
+  const [boxes, setBoxes] = useState<number[]>([]);
+
+  return (
+    <motion.div className="h-screen w-screen bg-yellow-50 px-4 pt-16">
+      <div className="mb-6 text-center text-xl font-medium text-yellow-800">
+        add and delete boxes
+      </div>
+
+      <div className="mb-4 flex justify-center gap-4">
+        <motion.button
+          onClick={() => setBoxes((prev) => [...prev, Date.now()])}
+          className="rounded bg-green-500 px-4 py-2 text-white shadow"
+          whileHover={{ scale: 1.05, rotate: 1 }}
+          whileTap={{ scale: 0.95, rotate: -1 }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{
+            opacity: 1,
+            y: 0,
+            transition: { type: "spring", stiffness: 300 },
+          }}
+        >
+          Add Box
+        </motion.button>
+        <motion.button
+          onClick={() => setBoxes((prev) => prev.slice(0, prev.length - 1))}
+          className="rounded bg-red-500 px-4 py-2 text-white shadow"
+          whileHover={{ scale: 1.05, rotate: 1 }}
+          whileTap={{ scale: 0.95, rotate: -1 }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{
+            opacity: 1,
+            y: 0,
+            transition: { type: "spring", stiffness: 300 },
+          }}
+        >
+          Delete Box
+        </motion.button>
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-4">
+        {boxes.map((id, index) => (
+          <Draggable
+            key={id}
+            className={`flex h-24 w-24 items-center justify-center rounded bg-yellow-400 text-center text-white shadow-lg`}
+          >
+            Box {index}
+          </Draggable>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
+export default TestPageBoxes;

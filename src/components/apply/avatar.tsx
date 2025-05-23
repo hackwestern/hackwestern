@@ -57,6 +57,7 @@ const Avatar = ({ avatar, selection }: AvatarProps) => {
               alt="Avatar"
               width={250}
               height={250}
+              draggable="false"
             />
           </div>
         </>
