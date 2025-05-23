@@ -23,7 +23,13 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
   (props, ref) => {
     const { initialPos: passedPos, children, style, ...restProps } = props;
 
-    const { zoom: parentZoom, panOffset, isResetting, maxZIndex, setMaxZIndex } = useCanvasContext();
+    const {
+      zoom: parentZoom,
+      panOffset,
+      isResetting,
+      maxZIndex,
+      setMaxZIndex,
+    } = useCanvasContext();
 
     const defaultPos = useMemoPoint(0, 0);
     const initialPos = passedPos ?? defaultPos;
