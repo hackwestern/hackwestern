@@ -5,18 +5,21 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "~/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-white",
   {
     variants: {
       variant: {
         default: "",
-        primary: "bg-button-primary text-white",
+        primary:
+          "flex items-center rounded-lg bg-button-primary hover:bg-button-primary-hover shadow-button-primary active:bg-button-primary-active active:translate-y-[2px] active:scale-[0.99]",
+        secondary:
+          "flex items-center rounded-lg text-[#625679] bg-button-secondary hover:bg-button-secondary-hover shadow-button-secondary active:bg-button-secondary-active active:translate-y-[2px] active:scale-[0.99]",
+        tertiary:
+          "bg-transparent text-[#625679] px-4 active:text-[#8F57AD]",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive-dark",
         outline:
           "bg-violet-100 hover:bg-muted border border-[1px] border-muted",
-        secondary:
-          "bg-white text-secondary-foreground hover:bg-white/60 border border-[1px] border-primary-300",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         "apply-ghost":
@@ -50,14 +53,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const buttonClass = cn(buttonVariants({ variant, size, className }));
 
     return (
-      <div className="group relative inline-block">
-        {variant === "primary" && (
-          <button
-            className="active:bg-button-primary-click absolute left-0 top-0 z-10 h-full w-full rounded-lg bg-white text-sm text-white opacity-0 transition-opacity duration-150 group-hover:cursor-pointer group-hover:opacity-10"
-            {...props}
-          />
+      <div className="group relative inline-block w-max">
+        {(variant === "primary" || variant === "secondary") && (
+          <span className="pointer-events-none absolute inset-0 w-full rounded-lg border border-x border-y border-b-4 border-[rgba(0,0,0,0.4)] group-active:translate-y-[1px] group-active:border-b-2" />
         )}
-        <Comp className={cn(buttonClass)} ref={ref} {...props} />
+        <Comp ref={ref} {...props} className={cn(buttonClass)} />
+        {variant === "tertiary" && (
+          <span className="block h-0 max-w-0 border-b-2 border-dashed border-[#625679] transition-all duration-200 group-hover:max-w-full group-active:border-[#8F57AD]" />
+        )}
       </div>
     );
   },

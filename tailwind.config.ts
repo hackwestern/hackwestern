@@ -53,6 +53,10 @@ const config = {
           800: "hsl(var(--primary-800))",
           foreground: "hsl(var(--primary-foreground))",
         },
+        secondary: "hsl(var(--secondary))",
+        "button-secondary": "rgba(255, 255, 255, 0.50)",
+        "button-secondary-hover": "rgba(255, 255, 255, 0.65)",
+        "button-secondary-active": "rgba(255, 255, 255, 0.35)",
         violet: {
           100: "hsl(var(--violet-100))",
           200: "hsl(var(--violet-200))",
@@ -60,10 +64,6 @@ const config = {
           400: "hsl(var(--violet-400))",
           500: "hsl(var(--violet-500))",
           600: "hsl(var(--violet-600))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -106,7 +106,10 @@ const config = {
         "button-primary": "linear-gradient(#8F57AD 0%, #D19AEE 100%)",
         "button-primary-hover":
           "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), linear-gradient(#8F57AD 0%, #D19AEE 100%)",
-        "button-primary-click": "linear-gradient(#763896 0%, #B879DA 100%)",
+        "button-primary-active": "linear-gradient(#763896 0%, #B879DA 100%)",
+      },
+      boxShadow: {
+        "button-primary": "0px 2px 4px rgba(60, 32, 76, 0.2)",
       },
       fontFamily: {
         DM_Sans: ["var(--font-dmsans)"],

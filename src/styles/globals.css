@@ -54,8 +54,7 @@ html {
     --violet-500: 247, 14%, 52%;
     --violet-600: 247, 15%, 34%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: #625679;
 
     --muted: var(--violet-200);
     --muted-foreground: var(--violet-400);

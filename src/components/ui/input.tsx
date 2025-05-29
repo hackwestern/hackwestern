@@ -1,4 +1,4 @@
-import { VariantProps, cva } from "class-variance-authority";
+import { type VariantProps, cva } from "class-variance-authority";
 import * as React from "react";
 
 import { cn } from "~/lib/utils";
@@ -14,6 +14,7 @@ const inputVariants = cva(
       variant: {
         default: "",
         primary: "rounded-md bg-violet-100 px-3 py-2 text-black border-muted",
+        inner: "bg-[rgba(119, 103, 128, 0.10))]"
       },
     },
   },
