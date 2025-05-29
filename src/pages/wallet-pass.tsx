@@ -1,14 +1,13 @@
-import { useState } from 'react';
-import { useSession, signIn } from 'next-auth/react';
+import { useState } from "react";
+import { useSession, signIn } from "next-auth/react";
 // import {
 //   GenericClient,
 //   GenericClass,
 //   GenericObject
 // } from "google-wallet/lib/cjs/generic";
 // This library could be used for later to streamline pass generation...
-import Head from 'next/head';
-import WalletButton from '../components/WalletButton';
-
+import Head from "next/head";
+import WalletButton from "../components/WalletButton";
 
 interface ApiWalletResponse {
   saveToWalletUrl?: string;
@@ -24,42 +23,46 @@ const WalletPassPage = () => {
 
   const handleGeneratePass = async () => {
     setIsLoading(true);
-    setError('');
-    setSaveToWalletUrl(''); // Explicitly clear previous URL at the start
+    setError("");
+    setSaveToWalletUrl(""); // Explicitly clear previous URL at the start
 
     try {
-      const response = await fetch('/api/wallet/create-pass', {
-        method: 'POST',
+      const response = await fetch("/api/wallet/create-pass", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
-      console.log('CLIENT: API Response Status:', response.status); // Log status
+      console.log("CLIENT: API Response Status:", response.status); // Log status
 
       const data: ApiWalletResponse = await response.json();
-      console.log('CLIENT: API Response Data:', data); // Log the data received
+      console.log("CLIENT: API Response Data:", data); // Log the data received
 
       if (response.ok && data.saveToWalletUrl) {
-        console.log('CLIENT: Setting saveToWalletUrl:', data.saveToWalletUrl);
+        console.log("CLIENT: Setting saveToWalletUrl:", data.saveToWalletUrl);
         setSaveToWalletUrl(data.saveToWalletUrl);
       } else {
-        console.error('CLIENT: Failed to get saveToWalletUrl from API.', data);
-        setError(data.error || data.message || 'Failed to generate pass. No URL received from API.');
-        setSaveToWalletUrl(''); // Ensure it's cleared on error
+        console.error("CLIENT: Failed to get saveToWalletUrl from API.", data);
+        setError(
+          data.error ||
+            data.message ||
+            "Failed to generate pass. No URL received from API.",
+        );
+        setSaveToWalletUrl(""); // Ensure it's cleared on error
       }
     } catch (err: any) {
-      console.error('CLIENT: Error in handleGeneratePass catch block:', err);
-      setError(err.message || 'An unexpected error occurred during API call.');
-      setSaveToWalletUrl(''); // Ensure it's cleared on error
+      console.error("CLIENT: Error in handleGeneratePass catch block:", err);
+      setError(err.message || "An unexpected error occurred during API call.");
+      setSaveToWalletUrl(""); // Ensure it's cleared on error
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex min-h-screen items-center justify-center">
         <p>Loading session...</p>
       </div>
     );
@@ -67,15 +70,17 @@ const WalletPassPage = () => {
 
   if (!session) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen p-4 text-center">
+      <div className="flex min-h-screen flex-col items-center justify-center p-4 text-center">
         <Head>
           <title>Access Denied | HackWestern Pass</title>
         </Head>
-        <h1 className="text-2xl font-semibold mb-4">Access Denied</h1>
-        <p className="mb-6">Please sign in to generate your HackWestern digital pass.</p>
-        <button 
+        <h1 className="mb-4 text-2xl font-semibold">Access Denied</h1>
+        <p className="mb-6">
+          Please sign in to generate your HackWestern digital pass.
+        </p>
+        <button
           onClick={() => signIn()}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
         >
           Sign In
         </button>
@@ -90,24 +95,30 @@ const WalletPassPage = () => {
     <>
       <Head>
         <title>Your HackWestern Digital Pass</title>
-        <meta name="description" content="Generate your personalized HackWestern Google Wallet pass." />
+        <meta
+          name="description"
+          content="Generate your personalized HackWestern Google Wallet pass."
+        />
       </Head>
       <main className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto text-center">
-          <h1 className="text-3xl font-bold mb-6">Your HackWestern Digital Pass</h1>
-          
+        <div className="mx-auto max-w-2xl text-center">
+          <h1 className="mb-6 text-3xl font-bold">
+            Your HackWestern Digital Pass
+          </h1>
+
           {saveToWalletUrl ? (
             <div className="mt-8 flex flex-col items-center">
               <p className="mb-6 text-lg text-gray-700 dark:text-gray-300">
-                Your pass is ready! Click the button below to add it to your Google Wallet.
+                Your pass is ready! Click the button below to add it to your
+                Google Wallet.
               </p>
               <WalletButton saveToWalletUrl={saveToWalletUrl} />
               <button
                 onClick={() => {
                   setSaveToWalletUrl(null); // Allow generating a new pass
                   setError(null); // Clear previous errors
-                }} 
-                className="mt-6 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                }}
+                className="mt-6 rounded border border-gray-300 px-4 py-2 hover:bg-gray-50"
               >
                 Generate New Pass
               </button>
@@ -115,30 +126,33 @@ const WalletPassPage = () => {
           ) : (
             <>
               <p className="mb-8 text-lg text-gray-700 dark:text-gray-300">
-                Get your personalized digital pass for HackWestern! Click the button below to generate your pass.
+                Get your personalized digital pass for HackWestern! Click the
+                button below to generate your pass.
               </p>
               <button
                 onClick={handleGeneratePass}
                 disabled={isLoading}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isLoading ? 'Generating...' : 'Generate My Wallet Pass'}
+                {isLoading ? "Generating..." : "Generate My Wallet Pass"}
               </button>
             </>
           )}
 
           {error && (
-            <div className="mt-6 p-4 bg-red-100 text-red-700 border border-red-300 rounded-md">
+            <div className="mt-6 rounded-md border border-red-300 bg-red-100 p-4 text-red-700">
               <p className="font-semibold">Error:</p>
               <p>{error}</p>
             </div>
           )}
 
-           {!isLoading && !saveToWalletUrl && !error && (
-            <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg shadow-sm text-left">
-                <p className="text-blue-700 dark:text-blue-300">Click the "Generate My Wallet Pass" button to get started.</p>
+          {!isLoading && !saveToWalletUrl && !error && (
+            <div className="mt-8 rounded-lg border border-blue-200 bg-blue-50 p-6 text-left shadow-sm dark:border-blue-700 dark:bg-blue-900/20">
+              <p className="text-blue-700 dark:text-blue-300">
+                Click the "Generate My Wallet Pass" button to get started.
+              </p>
             </div>
-           )}
+          )}
         </div>
       </main>
     </>
