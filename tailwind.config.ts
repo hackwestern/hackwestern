@@ -1,3 +1,4 @@
+import { JetBrains_Mono } from "next/font/google";
 import type { Config } from "tailwindcss";
 
 const config = {
@@ -177,6 +178,9 @@ const config = {
         DM_Sans: ["var(--font-dmsans)"],
         MagicRetro: ["var(--font-magicretro)"],
         Borel: ["var(--font-salsa)"],
+        Figtree: ["var(--font-figtree)"],
+        Dico: ["var(--font-dico)"],
+        JetBrains_Mono: ["var(--font-jetbrainsmono)"]
       },
     },
   },
