@@ -67,11 +67,9 @@ export default async function handler(
     console.error(
       "FATAL: WALLET_SERVICE_ACCOUNT_EMAIL environment variable is not set.",
     );
-    return res
-      .status(500)
-      .json({
-        error: "Server configuration error: Missing service account email.",
-      });
+    return res.status(500).json({
+      error: "Server configuration error: Missing service account email.",
+    });
   }
   if (!NEXT_PUBLIC_APP_URL) {
     console.error(
@@ -329,22 +327,18 @@ export default async function handler(
         "Detailed Google Wallet API error (outer catch):",
         JSON.stringify(error.response.data.error, null, 2),
       );
-      return res
-        .status(500)
-        .json({
-          error: `Google Wallet API Error: ${error.response.data.error.message}`,
-        });
+      return res.status(500).json({
+        error: `Google Wallet API Error: ${error.response.data.error.message}`,
+      });
     } else if (error.isAxiosError && error.response) {
       console.error(
         "Axios error response data (outer catch):",
         JSON.stringify(error.response.data, null, 2),
       );
     }
-    return res
-      .status(500)
-      .json({
-        error: "Failed to create wallet pass.",
-        message: String(error.message),
-      });
+    return res.status(500).json({
+      error: "Failed to create wallet pass.",
+      message: String(error.message),
+    });
   }
 }
