@@ -22,17 +22,17 @@ interface ApiResponse {
 // --- Environment Variable Values ---
 // These are fetched once from `env` or `process.env`
 const GOOGLE_WALLET_ISSUER_ID = env.GOOGLE_WALLET_ISSUER_ID;
-const GOOGLE_APPLICATION_CREDENTIALS_PATH = env.GOOGLE_APPLICATION_CREDENTIALS;
+const GOOGLE_APPLICATION_CREDENTIALS = env.GOOGLE_APPLICATION_CREDENTIALS;
 const WALLET_SERVICE_ACCOUNT_EMAIL = env.WALLET_SERVICE_ACCOUNT_EMAIL;
 const NEXT_PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL; // Used for JWT 'origins'
 
 let serviceAccountCreds: any = null;
 // Attempt to load credentials only if the path is set
 
-if (GOOGLE_APPLICATION_CREDENTIALS_PATH) {
+if (GOOGLE_APPLICATION_CREDENTIALS) {
   try {
     const keyFileContent = fs.readFileSync(
-      GOOGLE_APPLICATION_CREDENTIALS_PATH,
+      GOOGLE_APPLICATION_CREDENTIALS,
       "utf-8",
     );
     serviceAccountCreds = JSON.parse(keyFileContent);
@@ -55,7 +55,7 @@ export default async function handler(
       .status(500)
       .json({ error: "Server configuration error: Missing Wallet Issuer ID." });
   }
-  if (!GOOGLE_APPLICATION_CREDENTIALS_PATH) {
+  if (!GOOGLE_APPLICATION_CREDENTIALS) {
     console.error(
       "FATAL: GOOGLE_APPLICATION_CREDENTIALS environment variable (path to key file) is not set.",
     );
