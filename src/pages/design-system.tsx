@@ -23,8 +23,8 @@ const Right = ({ fill }: { fill?: string }) => {
 
 function DesignSystem() {
   return (
-    <div className="flex h-screen w-screen flex-col gap-4 bg-hw-radial-gradient p-12">
-      <h1>Design System HW12</h1>
+    <div className="font-jetbrains-mono flex h-screen w-screen flex-col gap-4 bg-hw-radial-gradient p-12">
+      <h1 className="font-dico text-6xl">Design System HW12</h1>
       <div>BUTTON</div>
       <Button variant="primary" className="px-8 py-4">
         Primary Button

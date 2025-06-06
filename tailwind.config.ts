@@ -119,7 +119,7 @@ const config = {
       fontFamily: {
         figtree: ["var(--font-figtree)"],
         dico: ["var(--font-dico)"],
-        'jetbrains-mono': ["var(--font-jetbrainsmono)"],
+        "jetbrains-mono": ["var(--font-jetbrainsmono)"],
       },
     },
   },

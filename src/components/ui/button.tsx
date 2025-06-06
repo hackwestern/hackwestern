@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "~/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-white",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-white font-figtree",
   {
     variants: {
       variant: {
@@ -54,10 +54,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <div className="h-fill group relative inline-block w-max">
         {variant === "primary" && (
-          <span className="pointer-events-none absolute inset-0 h-full w-full rounded-lg bg-button-primary-back" />
+          <span className="bg-button-primary-back pointer-events-none absolute inset-0 h-full w-full rounded-lg" />
         )}
         {variant === "secondary" && (
-          <span className="pointer-events-none absolute inset-0 h-full w-full rounded-lg bg-button-secondary-back" />
+          <span className="bg-button-secondary-back pointer-events-none absolute inset-0 h-full w-full rounded-lg" />
         )}
         <Comp ref={ref} {...props} className={cn(buttonClass)} />
         {variant === "tertiary" && (
