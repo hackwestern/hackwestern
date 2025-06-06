@@ -1,4 +1,3 @@
-import { JetBrains_Mono } from "next/font/google";
 import type { Config } from "tailwindcss";
 
 const config = {
@@ -175,12 +174,9 @@ const config = {
           "radial-gradient(50% 50% at 50% 50%, rgba(255, 161, 94, 0.94) 0%, rgba(240, 110, 110, 0.92) 8.5%, rgba(244, 56, 124, 0.47) 52.5%, rgba(121, 35, 207, 0.00) 100%)",
       },
       fontFamily: {
-        DM_Sans: ["var(--font-dmsans)"],
-        MagicRetro: ["var(--font-magicretro)"],
-        Borel: ["var(--font-salsa)"],
-        Figtree: ["var(--font-figtree)"],
-        Dico: ["var(--font-dico)"],
-        JetBrains_Mono: ["var(--font-jetbrainsmono)"]
+        figtree: ["var(--font-figtree)"],
+        dico: ["var(--font-dico)"],
+        'jetbrains-mono': ["var(--font-jetbrainsmono)"],
       },
     },
   },
