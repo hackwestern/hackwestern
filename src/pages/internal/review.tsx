@@ -89,7 +89,7 @@ const Review = () => {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="flex flex-col items-center bg-primary-50 bg-hw-linear-gradient-day md:h-screen">
+      <main className="bg-hw-linear-gradient-day flex flex-col items-center bg-primary-50 md:h-screen">
         <div className="relative z-[100] w-full flex-grow items-center md:flex">
           <div
             id="left-panel"
@@ -356,7 +356,7 @@ const Review = () => {
           </div>
           <div
             id="right-panel"
-            className="-z-10 flex h-full flex-col items-center justify-center bg-hw-linear-gradient-day px-4 md:w-full"
+            className="bg-hw-linear-gradient-day -z-10 flex h-full flex-col items-center justify-center px-4 md:w-full"
           >
             <div className="-z-10">
               <CloudBackground />

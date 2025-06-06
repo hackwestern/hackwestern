@@ -2,7 +2,7 @@ import Image from "next/image";
 
 function About() {
   return (
-    <div className="relative flex-col items-center justify-center overflow-hidden bg-hw-linear-gradient">
+    <div className="bg-hw-linear-gradient relative flex-col items-center justify-center overflow-hidden">
       {/* Grain Filter */}
       <div
         className="relative left-0 top-0 h-[20vh] w-full sm:h-[50vh]"
@@ -14,7 +14,7 @@ function About() {
           alt="Hack Western Main Page"
           fill
         />
-        <div className="absolute z-40 h-[120%] w-[100%] animate-cloud1 delay-75 sm:h-[60%] lg:h-[100%] xl:-top-40 xl:h-[150%]">
+        <div className="animate-cloud1 absolute z-40 h-[120%] w-[100%] delay-75 sm:h-[60%] lg:h-[100%] xl:-top-40 xl:h-[150%]">
           <Image
             src="/images/aboutcloud.svg"
             alt="hack western cloud"
@@ -22,7 +22,7 @@ function About() {
             fill
           />
         </div>
-        <div className="absolute -top-24 z-20 h-[300%] w-[100%] animate-cloud4 delay-75 sm:top-0 sm:h-[150%] lg:h-[150%] xl:-top-24 xl:h-[200%]">
+        <div className="animate-cloud4 absolute -top-24 z-20 h-[300%] w-[100%] delay-75 sm:top-0 sm:h-[150%] lg:h-[150%] xl:-top-24 xl:h-[200%]">
           <Image
             src="/images/aboutcloud2.svg"
             alt="hack western cloud"
@@ -38,7 +38,7 @@ function About() {
             fill
           />
         </div>
-        <div className="absolute left-[7%] top-[130%] z-40 h-[70px] w-[70px] animate-star-pulse-1  ">
+        <div className="animate-star-pulse-1 absolute left-[7%] top-[130%] z-40 h-[70px] w-[70px]  ">
           <Image
             src="/images/promostar.svg"
             alt="hack western star"
@@ -46,7 +46,7 @@ function About() {
             fill
           />
         </div>
-        <div className="absolute left-[70%] top-[10%] z-40 hidden h-[55px] w-[55px] animate-star-pulse-3 md:block  ">
+        <div className="animate-star-pulse-3 absolute left-[70%] top-[10%] z-40 hidden h-[55px] w-[55px] md:block  ">
           <Image
             src="/images/promostar.svg"
             alt="hack western star"
@@ -54,7 +54,7 @@ function About() {
             fill
           />
         </div>
-        <div className="absolute left-[85%] top-[80%] z-40 h-[70px] w-[70px] animate-star-pulse-1  ">
+        <div className="animate-star-pulse-1 absolute left-[85%] top-[80%] z-40 h-[70px] w-[70px]  ">
           <Image
             src="/images/promostar.svg"
             alt="hack western star"

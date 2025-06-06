@@ -41,7 +41,7 @@ export default function Submitted() {
   return (
     <div className="flex h-svh flex-col">
       <ApplyNavbar />
-      <div className="relative flex flex-grow items-center justify-center bg-hw-linear-gradient-day">
+      <div className="bg-hw-linear-gradient-day relative flex flex-grow items-center justify-center">
         <CloudBackground />
         <div className="relative m-5 flex max-w-screen-sm flex-col items-start gap-2 rounded-lg border-primary-300 bg-violet-100 p-10 ">
           <h2 className="font-DM_Sans text-2xl font-bold">Submitted! ✈️</h2>
