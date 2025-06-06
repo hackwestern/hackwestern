@@ -11,11 +11,10 @@ const buttonVariants = cva(
       variant: {
         default: "",
         primary:
-          "flex items-center rounded-lg bg-button-primary hover:bg-button-primary-hover shadow-button-primary active:bg-button-primary-active active:translate-y-[2px] active:scale-[0.99]",
+          "flex items-center rounded-lg bg-button-primary shadow-button-primary -translate-y-[3px] group-hover:-translate-y-[4px] group-active:translate-y-[-1px] h-max transition-all duration-100 hover:bg-button-primary-hover active:bg-button-primary-active",
         secondary:
-          "flex items-center rounded-lg text-[#625679] bg-button-secondary hover:bg-button-secondary-hover shadow-button-secondary active:bg-button-secondary-active active:translate-y-[2px] active:scale-[0.99]",
-        tertiary:
-          "bg-transparent text-[#625679] px-4 active:text-[#8F57AD]",
+          "flex items-center rounded-lg text-[#625679] bg-button-secondary -translate-y-[3px] group-hover:-translate-y-[4px] group-active:translate-y-[-1px] h-max transition-all duration-100 hover:bg-button-secondary-hover active:bg-button-secondary-active",
+        tertiary: "bg-transparent text-[#625679] px-4 active:text-[#8F57AD]",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive-dark",
         outline:
@@ -53,9 +52,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const buttonClass = cn(buttonVariants({ variant, size, className }));
 
     return (
-      <div className="group relative inline-block w-max">
-        {(variant === "primary" || variant === "secondary") && (
-          <span className="pointer-events-none absolute inset-0 w-full rounded-lg border border-x border-y border-b-4 border-[rgba(0,0,0,0.4)] group-active:translate-y-[1px] group-active:border-b-2" />
+      <div className="group relative inline-block h-max w-max">
+        {variant === "primary" && (
+          <span className="bg-button-primary-back pointer-events-none absolute inset-0 h-full w-full rounded-lg" />
+        )}
+        {variant === "secondary" && (
+          <span className="bg-button-secondary-back pointer-events-none absolute inset-0 h-full w-full rounded-lg" />
         )}
         <Comp ref={ref} {...props} className={cn(buttonClass)} />
         {variant === "tertiary" && (

@@ -54,9 +54,10 @@ const config = {
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: "hsl(var(--secondary))",
-        "button-secondary": "rgba(255, 255, 255, 0.50)",
-        "button-secondary-hover": "rgba(255, 255, 255, 0.65)",
-        "button-secondary-active": "rgba(255, 255, 255, 0.35)",
+        "button-secondary": "rgb(250, 250, 250)",
+        "button-secondary-hover": "rgb(255, 255, 255)",
+        "button-secondary-active": "rgb(253, 252, 253)",
+        "button-secondary-back": "rgba(170, 170, 170)",
         violet: {
           100: "hsl(var(--violet-100))",
           200: "hsl(var(--violet-200))",
@@ -91,7 +92,7 @@ const config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        "hw-gradient-radius": "3137px",
+        "hw-gradient-radius": "1027px",
       },
       backgroundImage: {
         "hw-radial-gradient": `
@@ -107,6 +108,8 @@ const config = {
         "button-primary-hover":
           "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), linear-gradient(#8F57AD 0%, #D19AEE 100%)",
         "button-primary-active": "linear-gradient(#763896 0%, #B879DA 100%)",
+        "button-primary-back":
+          "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), linear-gradient(#8F57AD 0%, #D19AEE 100%)",
       },
       boxShadow: {
         "button-primary": "0px 2px 4px rgba(60, 32, 76, 0.2)",
