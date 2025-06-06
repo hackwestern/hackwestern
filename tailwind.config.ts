@@ -109,7 +109,7 @@ const config = {
           "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), linear-gradient(#8F57AD 0%, #D19AEE 100%)",
         "button-primary-active": "linear-gradient(#763896 0%, #B879DA 100%)",
         "button-primary-back":
-          "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), linear-gradient(#8F57AD 0%, #D19AEE 100%)",
+          "linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(#8F57AD 0%, #D19AEE 100%)",
       },
       boxShadow: {
         "button-primary": "0px 2px 4px rgba(60, 32, 76, 0.2)",
