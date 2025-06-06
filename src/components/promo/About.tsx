@@ -79,7 +79,7 @@ function About() {
           />
         </div>
         <div className="absolute left-1/2 top-1/4 flex w-[48%] flex-col justify-center ">
-          <h2 className="z-30 font-MagicRetro text-4xl text-white sm:top-20 md:top-24 xl:text-5xl  2xl:text-6xl">
+          <h2 className="font-MagicRetro z-30 text-4xl text-white sm:top-20 md:top-24 xl:text-5xl  2xl:text-6xl">
             about us
           </h2>
           <p className="z-30 h-1/3 text-xs text-white sm:top-32 md:top-36 md:w-96 lg:text-sm xl:text-base 3xl:text-lg">
