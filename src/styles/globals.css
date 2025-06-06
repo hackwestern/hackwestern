@@ -30,10 +30,9 @@ html {
     --medium: #776780;
     --light: #bbb3c0;
 
-    --offwhite: #FAFAFB; /* bg-white */
-    --highlight: #F4F2F7;
-    --border-light: #FFFEFE;
-
+    --offwhite: #fafafb; /* bg-white */
+    --highlight: #f4f2f7;
+    --border-light: #fffefe;
 
     --primary-50: 260, 100%, 99%;
     --primary-100: 260, 100%, 98%;
