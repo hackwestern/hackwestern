@@ -54,10 +54,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <div className="h-fill group relative inline-block w-max">
         {variant === "primary" && (
-          <span className="bg-button-primary-back pointer-events-none absolute inset-0 h-full w-full rounded-lg" />
+          <span className="pointer-events-none absolute inset-0 h-full w-full rounded-lg bg-button-primary-back" />
         )}
         {variant === "secondary" && (
-          <span className="bg-button-secondary-back pointer-events-none absolute inset-0 h-full w-full rounded-lg" />
+          <span className="pointer-events-none absolute inset-0 h-full w-full rounded-lg bg-button-secondary-back" />
         )}
         <Comp ref={ref} {...props} className={cn(buttonClass)} />
         {variant === "tertiary" && (
