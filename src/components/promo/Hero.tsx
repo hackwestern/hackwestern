@@ -111,7 +111,7 @@ function Hero() {
           <h3 className="pb-4 text-xl font-medium">
             November 29th - December 1st, 2024
           </h3>
-          <h1 className="bg-hw-hero-text-gradient bg-clip-text font-MagicRetro text-5xl leading-normal text-transparent mix-blend-screen md:text-5xl lg:text-8xl 2xl:text-8xl">
+          <h1 className="font-MagicRetro bg-hw-hero-text-gradient bg-clip-text text-5xl leading-normal text-transparent mix-blend-screen md:text-5xl lg:text-8xl 2xl:text-8xl">
             hack western 11
           </h1>
           <h2 className="-mt-3 font-sans text-xl font-light italic md:-mt-1 md:text-2xl lg:text-3xl 2xl:text-4xl">

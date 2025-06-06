@@ -117,9 +117,9 @@ const config = {
         "button-primary": "0px 2px 4px rgba(60, 32, 76, 0.2)",
       },
       fontFamily: {
-        DM_Sans: ["var(--font-dmsans)"],
-        MagicRetro: ["var(--font-magicretro)"],
-        Borel: ["var(--font-salsa)"],
+        figtree: ["var(--font-figtree)"],
+        dico: ["var(--font-dico)"],
+        'jetbrains-mono': ["var(--font-jetbrainsmono)"],
       },
     },
   },
