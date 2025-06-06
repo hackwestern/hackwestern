@@ -13,7 +13,7 @@ const buttonVariants = cva(
         primary:
           "flex items-center rounded-lg bg-button-primary shadow-button-primary -translate-y-[3px] group-hover:-translate-y-[4px] group-active:translate-y-[-1px] h-max transition-all duration-100 hover:bg-button-primary-hover active:bg-button-primary-active",
         secondary:
-          "flex items-center rounded-lg text-[#625679] bg-button-secondary -translate-y-[3px] group-hover:-translate-y-[4px] group-active:translate-y-[-1px] h-max transition-all duration-100 hover:bg-button-secondary-hover active:bg-button-secondary-active",
+          "flex items-center rounded-lg text-[#625679] bg-button-secondary -translate-y-[3px] group-hover:-translate-y-[4px] group-active:translate-y-[-1px] h-max transition-all duration-100 hover:bg-button-secondary-hover active:bg-button-secondary-active active:shadow-button-secondary",
         tertiary: "bg-transparent text-[#625679] px-4 active:text-[#8F57AD]",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive-dark",
@@ -54,10 +54,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <div className="h-fill group relative inline-block w-max">
         {variant === "primary" && (
-          <span className="pointer-events-none absolute inset-0 h-full w-full rounded-lg bg-button-primary-back" />
+          <>
+            <span className="bg-button-primary-back pointer-events-none absolute inset-0 h-full w-full rounded-lg" />
+            <span className="pointer-events-none absolute inset-0 z-50 h-full w-full -translate-y-[3px] rounded-lg border border-white/30 transition-all duration-100 group-hover:-translate-y-[4px] group-active:translate-y-[-1px] " />
+          </>
         )}
         {variant === "secondary" && (
-          <span className="pointer-events-none absolute inset-0 h-full w-full rounded-lg bg-button-secondary-back" />
+          <>
+            <span className="bg-button-secondary-back pointer-events-none absolute inset-0 h-full w-full rounded-lg" />
+            <span className="pointer-events-none absolute inset-0 z-50 h-full w-full -translate-y-[3px] rounded-lg border border-white/50 transition-all duration-100 group-hover:-translate-y-[4px] group-active:translate-y-[-1px]" />
+          </>
         )}
         <Comp ref={ref} {...props} className={cn(buttonClass)} />
         {variant === "tertiary" && (

@@ -51,7 +51,7 @@ function DesignSystem() {
       </div>
       <Input
         placeholder="placeholder"
-        className="w-max rounded-full border border-none border-white bg-white/50 px-6"
+        className="w-max rounded-lg border border-none border-white bg-white/50 px-6"
       />
       <div className="flex w-max flex-col gap-8 rounded-lg bg-white p-8">
         <div className="flex w-max rounded-lg border bg-highlight">
@@ -63,7 +63,7 @@ function DesignSystem() {
         </div>
         <Input
           placeholder="placeholder"
-          className="rounded-full border border bg-highlight px-6"
+          className="rounded-lg border border bg-highlight px-6"
         />
       </div>
     </div>

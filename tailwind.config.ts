@@ -58,7 +58,6 @@ const config = {
         "button-secondary": "rgb(250, 250, 250)",
         "button-secondary-hover": "rgb(255, 255, 255)",
         "button-secondary-active": "rgb(253, 252, 253)",
-        "button-secondary-back": "rgba(170, 170, 170)",
         violet: {
           100: "hsl(var(--violet-100))",
           200: "hsl(var(--violet-200))",
@@ -105,16 +104,19 @@ const config = {
               var(--beige) 100%
             )
           `,
-        "button-primary": "linear-gradient(#8F57AD 0%, #D19AEE 100%)",
+        "button-primary": "linear-gradient(#D19AEE 0%, #8F57AD 100%)",
         "button-primary-hover":
-          "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), linear-gradient(#8F57AD 0%, #D19AEE 100%)",
+          "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), linear-gradient(#D19AEE 0%, #8F57AD 100%)",
         "button-primary-active":
-          "linear-gradient(rgba(100, 100, 100, 0.1), rgba(100, 100, 100, 0.1)), linear-gradient(#8F57AD 0%, #D19AEE 100%)",
+          "linear-gradient(rgba(100, 100, 100, 0.1), rgba(100, 100, 100, 0.1)), linear-gradient(#D19AEE 0%, #8F57AD 100%)",
         "button-primary-back":
-          "linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(#8F57AD 0%, #D19AEE 100%)",
+          "linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(#D19AEE 0%, #8F57AD 100%)",
+        "button-secondary-back":
+          "linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), linear-gradient(#FFFFFF 0%,#A893B0 100%)",
       },
       boxShadow: {
         "button-primary": "0px 2px 4px rgba(60, 32, 76, 0.2)",
+        "button-secondary": "0px 2px 4px 0px rgba(60, 32, 76, 0.20)",
       },
       fontFamily: {
         figtree: ["var(--font-figtree)"],
