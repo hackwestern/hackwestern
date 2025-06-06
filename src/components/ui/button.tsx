@@ -55,13 +55,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <div className="h-fill group relative inline-block w-max">
         {variant === "primary" && (
           <>
-            <span className="bg-button-primary-back pointer-events-none absolute inset-0 h-full w-full rounded-lg" />
+            <span className="pointer-events-none absolute inset-0 h-full w-full rounded-lg bg-button-primary-back" />
             <span className="pointer-events-none absolute inset-0 z-50 h-full w-full -translate-y-[3px] rounded-lg border border-white/30 transition-all duration-100 group-hover:-translate-y-[4px] group-active:translate-y-[-1px] " />
           </>
         )}
         {variant === "secondary" && (
           <>
-            <span className="bg-button-secondary-back pointer-events-none absolute inset-0 h-full w-full rounded-lg" />
+            <span className="pointer-events-none absolute inset-0 h-full w-full rounded-lg bg-button-secondary-back" />
             <span className="pointer-events-none absolute inset-0 z-50 h-full w-full -translate-y-[3px] rounded-lg border border-white/50 transition-all duration-100 group-hover:-translate-y-[4px] group-active:translate-y-[-1px]" />
           </>
         )}
