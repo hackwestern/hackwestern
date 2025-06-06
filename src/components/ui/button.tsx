@@ -52,9 +52,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const buttonClass = cn(buttonVariants({ variant, size, className }));
 
     return (
-      <div className="group relative inline-block h-fill w-max">
+      <div className="h-fill group relative inline-block w-max">
         {variant === "primary" && (
-          <span className="bg-button-primary-back pointer-events-none absolute inset-0 h-fill w-full rounded-lg" />
+          <span className="bg-button-primary-back pointer-events-none absolute inset-0 h-full w-full rounded-lg" />
         )}
         {variant === "secondary" && (
           <span className="bg-button-secondary-back pointer-events-none absolute inset-0 h-full w-full rounded-lg" />

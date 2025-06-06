@@ -12,7 +12,7 @@ const Organizer = () => {
         Brought to you with &#60;3
       </h2>
       <div className="w-full overflow-hidden pt-8">
-        <div className="-mb-1 ml-24 flex animate-organizer-slide-small gap-8 p-4 hover:[animation-play-state:paused] md:animate-organizer-slide xl:gap-16 2xl:gap-20 3xl:gap-24 4xl:gap-28">
+        <div className="animate-organizer-slide-small md:animate-organizer-slide -mb-1 ml-24 flex gap-8 p-4 hover:[animation-play-state:paused] xl:gap-16 2xl:gap-20 3xl:gap-24 4xl:gap-28">
           {bigOrganizerList.map((organizer, index) =>
             index % 2 === 0 ? (
               <OrganizerPhotoLeft
