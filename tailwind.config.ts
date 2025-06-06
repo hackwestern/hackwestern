@@ -107,7 +107,8 @@ const config = {
         "button-primary": "linear-gradient(#8F57AD 0%, #D19AEE 100%)",
         "button-primary-hover":
           "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), linear-gradient(#8F57AD 0%, #D19AEE 100%)",
-        "button-primary-active": "linear-gradient(#763896 0%, #B879DA 100%)",
+        "button-primary-active":
+          "linear-gradient(rgba(100, 100, 100, 0.1), rgba(100, 100, 100, 0.1)), linear-gradient(#8F57AD 0%, #D19AEE 100%)",
         "button-primary-back":
           "linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(#8F57AD 0%, #D19AEE 100%)",
       },
