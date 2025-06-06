@@ -35,10 +35,11 @@ const config = {
         coral: "var(--coral)",
         lilac: "var(--lilac)",
         salmon: "var(--salmon)",
-        light: "var(--light)",
-        highlight: "var(--highlight)",
         heavy: "var(--heavy)",
         medium: "var(--medium)",
+        light: "var(--light)",
+        offwhite: "var(--offwhite)",
+        highlight: "var(--highlight)",
         "border-light": "hsl(var(--border-light))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
