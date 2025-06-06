@@ -10,7 +10,7 @@ const Projects = () => {
         className="mx-auto my-auto mb-20 w-5/6 border-4 border-[#27283D] bg-[#3F3F5C] text-lg text-primary-100 md:w-2/3 2xl:w-1/2 2xl:text-xl 3xl:w-1/3 4xl:text-2xl"
         id="projects"
       >
-        <div className="3xl:6xl flex border-b-4 border-[#27283D] font-MagicRetro text-3xl xl:text-4xl">
+        <div className="3xl:6xl font-MagicRetro flex border-b-4 border-[#27283D] text-3xl xl:text-4xl">
           <svg
             width="28"
             height="28"
@@ -76,7 +76,7 @@ const Projects = () => {
         </div>
       </div>
       <div className="mx-auto my-12 w-5/6 text-lg text-primary-100 md:w-2/3 2xl:w-1/2 2xl:text-xl 3xl:w-1/3 4xl:text-2xl">
-        <div className="3xl:6xl flex justify-center border-4 border-[#27283D] bg-[#3F3F5C] p-8 font-MagicRetro text-3xl xl:text-4xl">
+        <div className="3xl:6xl font-MagicRetro flex justify-center border-4 border-[#27283D] bg-[#3F3F5C] p-8 text-3xl xl:text-4xl">
           check out some past projects!
         </div>
         <div className="absolute h-[100vh] w-5/6 border-x-[16px] border-[#5D528A] px-4 md:w-2/3 2xl:w-1/2 3xl:w-1/3" />
