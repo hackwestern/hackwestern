@@ -21,6 +21,19 @@ html {
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
 
+    --beige: #f7f3ef;
+    --lilac: #ebdef6;
+    --salmon: #fadbc4;
+    --coral: #fcbfad;
+
+    --heavy: #3d214c;
+    --medium: #776780;
+    --light: #bbb3c0;
+
+    --offwhite: #fafafb; /* bg-white */
+    --highlight: #f4f2f7;
+    --border-light: #fffefe;
+
     --primary-50: 260, 100%, 99%;
     --primary-100: 260, 100%, 98%;
     --primary-200: 261, 53%, 94%;
@@ -41,8 +54,7 @@ html {
     --violet-500: 247, 14%, 52%;
     --violet-600: 247, 15%, 34%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: #625679;
 
     --muted: var(--violet-200);
     --muted-foreground: var(--violet-400);

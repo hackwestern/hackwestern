@@ -37,7 +37,7 @@ export default function Apply() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="flex h-screen flex-col items-center bg-primary-50 bg-hw-linear-gradient-day">
+      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center bg-primary-50">
         <div className="fixed z-20 bg-primary-50">
           <ApplyNavbar />
         </div>
@@ -99,7 +99,7 @@ export default function Apply() {
           </div>
           <div
             id="right-panel"
-            className="flex h-full flex-col items-center justify-center bg-hw-linear-gradient-day px-4 md:w-full"
+            className="bg-hw-linear-gradient-day flex h-full flex-col items-center justify-center px-4 md:w-full"
           >
             <CloudBackground />
             <div className="z-10 flex w-[100%] flex-col items-center justify-center">
