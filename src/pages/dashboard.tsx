@@ -153,7 +153,7 @@ const Dashboard = () => {
           </div>
           <div
             id="right-panel"
-            className="flex h-full w-full flex-col items-center justify-center bg-hw-linear-gradient-day"
+            className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center"
           >
             <CloudBackground />
             <div className="z-10 flex w-[100%] flex-col items-center justify-center">
