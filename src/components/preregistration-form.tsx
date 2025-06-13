@@ -44,7 +44,7 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
         className,
       )}
     >
-      <p className="font-medium text-medium font-figtree">
+      <p className="font-figtree font-medium text-medium">
         {isSuccess ? "Thanks! You'll hear from us soon." : ""}
       </p>
       {!isSuccess && (
@@ -58,11 +58,11 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex w-max rounded-xl border border-white bg-white bg-opacity-50 p-1 space-x-2">
+                  <div className="flex w-max space-x-2 rounded-xl border border-white bg-white bg-opacity-50 p-1">
                     <FormLabel className="sr-only">Email Address</FormLabel>
                     <FormControl>
                       <div className="py-0.5">
-                        <Input 
+                        <Input
                           className="border-none bg-transparent text-heavy"
                           {...field}
                           placeholder="jimmy@hacker.ca"

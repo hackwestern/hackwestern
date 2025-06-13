@@ -1,7 +1,7 @@
 import Head from "next/head";
 import { Footer } from "~/components/footer";
 import Hero from "~/components/promo/Hero";
-import Image from "next/image"
+import Image from "next/image";
 import About from "~/components/promo/About";
 import FAQ from "~/components/promo/faq";
 import Projects from "~/components/promo/projects";
@@ -29,14 +29,14 @@ export default function Home() {
           href="https://mlh.io/na?utm_source=na-hackathon&utm_medium=TrustBadge&utm_campaign=2026-season&utm_content=white"
           target="_blank"
           rel="noopener noreferrer"
-          className="fixed top-0 right-[50px] z-[10000] w-[10%] max-w-[100px] min-w-[60px] block"
+          className="fixed right-[50px] top-0 z-[10000] block w-[10%] min-w-[60px] max-w-[100px]"
         >
           <Image
             src="https://s3.amazonaws.com/logged-assets/trust-badge/2026/mlh-trust-badge-2026-white.svg"
             alt="Major League Hacking 2026 Hackathon Season"
             width={100}
             height={100}
-            className="w-full h-auto"
+            className="h-auto w-full"
             priority
           />
         </a>
