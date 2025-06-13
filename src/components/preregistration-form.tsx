@@ -44,11 +44,9 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
         className,
       )}
     >
-      <h4 className="py-3 text-lg font-medium text-[#F6F2FD]">
-        {isSuccess
-          ? "Thanks! You'll hear from us soon 🛩️"
-          : "Get notified when applications drop:"}
-      </h4>
+      <p className="font-medium text-medium font-figtree">
+        {isSuccess ? "Thanks! You'll hear from us soon." : ""}
+      </p>
       {!isSuccess && (
         <Form {...preregistrationForm}>
           <form
@@ -60,23 +58,23 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex w-full flex-row gap-2 rounded-lg bg-white p-0.5">
+                  <div className="flex w-max rounded-xl border border-white bg-white bg-opacity-50 p-1 space-x-2">
                     <FormLabel className="sr-only">Email Address</FormLabel>
                     <FormControl>
-                      <Input
-                        className="h-8 border-0 px-2.5 py-0 active:border-0"
-                        {...field}
-                        placeholder="Email Address"
-                      />
+                      <div className="py-0.5">
+                        <Input 
+                          className="border-none bg-transparent text-heavy"
+                          {...field}
+                          placeholder="jimmy@hacker.ca"
+                        />
+                      </div>
                     </FormControl>
-                    <Button
-                      size="sm"
-                      type="submit"
-                      className="gap-2 bg-gradient-to-r from-[#A87DF1] to-[#5E28B8] py-0 active:border-0 lg:px-10"
-                    >
-                      <span>Submit</span>
-                      <Spinner isLoading={isPending} />
-                    </Button>
+                    <div className="pt-1">
+                      <Button variant="primary" className="gap-2">
+                        <span>Submit</span>
+                        <Spinner isLoading={isPending} />
+                      </Button>
+                    </div>
                   </div>
                   <FormMessage className="text-[#5E28B8]" />
                 </FormItem>
