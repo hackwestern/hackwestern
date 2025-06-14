@@ -24,6 +24,10 @@ const config = {
       "4xl": "3000px",
     },
     extend: {
+      cursor: {
+        grab: "cursor-[url('/customcursor.svg'),auto]",
+        grabbing: "cursor-[url('/customcursor.svg'),auto]"
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -97,7 +101,7 @@ const config = {
       backgroundImage: {
         "hw-radial-gradient": `
             radial-gradient(
-              circle at 100vh 150vh,
+              circle 150vh at 100vh 150vh,
               var(--coral) 0%,
               var(--salmon) 40%,
               var(--lilac) 65%,
