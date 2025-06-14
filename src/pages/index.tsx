@@ -20,7 +20,6 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main id="home" className="cursor-[url('/customcursor.svg'),auto]">
-        
         {/* Text, Plane, and Clouds */}
         <Hero />
         {/* MLH Code of Conduct */}
