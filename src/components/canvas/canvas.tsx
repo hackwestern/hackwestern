@@ -36,7 +36,7 @@ const OffsetComponent = ({
 };
 
 interface Props {
-    children: React.ReactNode
+  children: React.ReactNode;
 }
 
 const Canvas: FC<Props> = ({ children }) => {
@@ -147,8 +147,20 @@ const Canvas: FC<Props> = ({ children }) => {
       const deltaX = (event.clientX - panStartPoint.x) / zoom;
       const deltaY = (event.clientY - panStartPoint.y) / zoom;
       setPanOffset({
-        x: Math.min(Math.max(initialPanOffsetOnDrag.x + deltaX, -(zoom) * width! + (0.5) * width!), (zoom) * width! - (0.5) * width!),
-        y: Math.min(Math.max(initialPanOffsetOnDrag.y + deltaY, -(zoom) * height! + (0.5) * height!), (zoom) * height! - (0.5) * height!),
+        x: Math.min(
+          Math.max(
+            initialPanOffsetOnDrag.x + deltaX,
+            -zoom * width! + 0.5 * width!,
+          ),
+          zoom * width! - 0.5 * width!,
+        ),
+        y: Math.min(
+          Math.max(
+            initialPanOffsetOnDrag.y + deltaY,
+            -zoom * height! + 0.5 * height!,
+          ),
+          zoom * height! - 0.5 * height!,
+        ),
       });
     } else if (
       activePointersRef.current.size >= 2 &&
@@ -179,8 +191,20 @@ const Canvas: FC<Props> = ({ children }) => {
       const initialMidpointSceneY =
         (initialMidpointViewport.y - initialPanOffsetPinch.y) / initialZoom;
 
-      const newPanX = Math.min(Math.max(currentMidpoint.x - initialMidpointSceneX * newZoom, -zoom * width!), zoom * width!);
-      const newPanY = Math.min(Math.max(currentMidpoint.y - initialMidpointSceneY * newZoom, -zoom * height!), zoom * height!);
+      const newPanX = Math.min(
+        Math.max(
+          currentMidpoint.x - initialMidpointSceneX * newZoom,
+          -zoom * width!,
+        ),
+        zoom * width!,
+      );
+      const newPanY = Math.min(
+        Math.max(
+          currentMidpoint.y - initialMidpointSceneY * newZoom,
+          -zoom * height!,
+        ),
+        zoom * height!,
+      );
 
       setZoom(newZoom);
       setPanOffset({ x: newPanX, y: newPanY });
@@ -226,9 +250,7 @@ const Canvas: FC<Props> = ({ children }) => {
       const zoomFactor = isPinch ? 0.075 : 0.1;
 
       const newZoomValue =
-        event.deltaY > 0
-          ? zoom - zoomFactor
-          : zoom + zoomFactor;
+        event.deltaY > 0 ? zoom - zoomFactor : zoom + zoomFactor;
       const clampedZoom = Math.max(0.6, Math.min(newZoomValue, 10));
 
       let mouseX = event.clientX;
@@ -243,8 +265,14 @@ const Canvas: FC<Props> = ({ children }) => {
       const sceneMouseX = (mouseX - panOffset.x) / zoom;
       const sceneMouseY = (mouseY - panOffset.y) / zoom;
 
-      const newPanX = Math.min(Math.max(mouseX - sceneMouseX * clampedZoom, -zoom * width!), zoom * width!);
-      const newPanY = Math.min(Math.max(mouseY - sceneMouseY * clampedZoom, -zoom * height!), zoom * height!);
+      const newPanX = Math.min(
+        Math.max(mouseX - sceneMouseX * clampedZoom, -zoom * width!),
+        zoom * width!,
+      );
+      const newPanY = Math.min(
+        Math.max(mouseY - sceneMouseY * clampedZoom, -zoom * height!),
+        zoom * height!,
+      );
 
       setZoom(clampedZoom);
       setPanOffset({ x: newPanX, y: newPanY });
