@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { PreregistrationForm } from "../preregistration-form";
 import { useRef } from "react";
-import { Reset } from "~/components/canvas/reset";
 import { Draggable } from "~/components/canvas/draggable";
 import { Grid } from "~/components/canvas/grid";
 import Canvas from "~/components/canvas/canvas";
