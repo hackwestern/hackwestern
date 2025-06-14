@@ -8,7 +8,6 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import Reset from "~/components/canvas/reset";
 import { CanvasProvider } from "~/contexts/CanvasContext";
 import { getDistance, getMidpoint } from "~/lib/canvas";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
