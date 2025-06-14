@@ -70,7 +70,12 @@ export const applicationRouter = createTRPCRouter({
         });
       }
     }),
+  
 
+
+
+    
+    
   getAllApplicants: protectedProcedure.query(async ({ ctx }) => {
     try {
       const userId = ctx.session.user.id;
