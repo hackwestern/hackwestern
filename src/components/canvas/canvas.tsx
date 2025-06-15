@@ -250,7 +250,9 @@ const Canvas: FC<Props> = ({ children }) => {
       const zoomFactor = isPinch ? 0.075 : 0.1;
 
       const newZoomValue =
-        event.deltaY > 0 ? zoom - zoomFactor : zoom + zoomFactor;
+        event.deltaY > 0
+        ? zoom * (1 - zoomFactor)
+        : zoom * (1 / (1 - zoomFactor));
       const clampedZoom = Math.max(0.6, Math.min(newZoomValue, 10));
 
       let mouseX = event.clientX;
@@ -264,14 +266,14 @@ const Canvas: FC<Props> = ({ children }) => {
 
       const sceneMouseX = (mouseX - panOffset.x) / zoom;
       const sceneMouseY = (mouseY - panOffset.y) / zoom;
-
+      
       const newPanX = Math.min(
-        Math.max(mouseX - sceneMouseX * clampedZoom, -zoom * width!),
-        zoom * width!,
+        Math.max(mouseX - sceneMouseX * clampedZoom, -clampedZoom * width! + 0.5 * width!),
+        zoom * width! - 0.5 * width!,
       );
       const newPanY = Math.min(
-        Math.max(mouseY - sceneMouseY * clampedZoom, -zoom * height!),
-        zoom * height!,
+        Math.max(mouseY - sceneMouseY * clampedZoom, -clampedZoom * height! + 0.5 * height!),
+        zoom * height! - 0.5 * height!,
       );
 
       setZoom(clampedZoom);
