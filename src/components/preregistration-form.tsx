@@ -25,7 +25,25 @@ type PreregistrationFormProps = {
 
 export function PreregistrationForm({ className }: PreregistrationFormProps) {
   const { mutate, isSuccess, isPending } =
-    api.preregistration.create.useMutation();
+    api.preregistration.create.useMutation({
+      onError: (error) => {
+        const errorCode = error.data?.code;
+
+        if (errorCode == "CONFLICT"){
+          preregistrationForm.setError("email", {
+            message: "That email is already registered.",
+          });
+        } else if (errorCode === "INTERNAL_SERVER_ERROR") {
+          preregistrationForm.setError("email", {
+            message: "Something went wrong. Please try again later.",
+          });
+        } else {
+          preregistrationForm.setError("email", {
+            message: "An unexpected error occurred.",
+          });
+        }
+      }
+    });
 
   const preregistrationForm = useForm<
     z.infer<typeof preregistrationFormSchema>
@@ -53,7 +71,7 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
             control={preregistrationForm.control}
             name="email"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-4">
                 <div className="flex w-max space-x-2 rounded-xl border border-white bg-white bg-opacity-50 pr-1 pt-1 pb-1">
                   <FormLabel className="sr-only">Email Address</FormLabel>
                   <FormControl>
@@ -72,7 +90,7 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
                     </Button>
                   </div>
                 </div>
-                <FormMessage className="text-[#5E28B8]" />
+                <FormMessage className="text-[#AC2323] font-jetbrainsmono text-center" />
               </FormItem>
             )}
           />
