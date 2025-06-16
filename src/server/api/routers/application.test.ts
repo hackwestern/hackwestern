@@ -1,4 +1,4 @@
-import { afterEach, assert, describe, expect, test } from "vitest";
+import { beforeEach, afterEach, assert, describe, expect, test } from "vitest";
 import { faker } from "@faker-js/faker";
 import { type Session } from "next-auth";
 
@@ -75,7 +75,11 @@ describe("application.getById", async () => {
     const application = createRandomApplication(getByIdSession);
     await db.insert(applications).values(application);
 
-    const result = await caller.application.getById({ applicantId: userId });
+    const getByIdOrganizerSession = await mockOrganizerSession(db);
+    const getByIdOrganizerCtx = createInnerTRPCContext({ session: getByIdOrganizerSession });
+    const getByIdOrganizerCaller = createCaller(getByIdOrganizerCtx);
+
+    const result = await getByIdOrganizerCaller.application.getById({ applicantId: userId });
     assert(!!result);
 
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
