@@ -19,11 +19,11 @@ export default function Home() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main id="home" className="cursor-[url('/customcursor.svg'),auto]">
+      <main id="home" className="cursor-grab">
         {/* Text, Plane, and Clouds */}
         <Hero />
         {/* MLH Code of Conduct */}
-        <Footer className="absolute bottom-4 right-4 z-50" />
+        <Footer className="absolute bottom-4 right-4 z-50 cursor-[url('/customcursor.svg'),auto]" />
         <a
           id="mlh-trust-badge"
           href="https://mlh.io/na?utm_source=na-hackathon&utm_medium=TrustBadge&utm_campaign=2026-season&utm_content=white"

@@ -25,8 +25,8 @@ const config = {
     },
     extend: {
       cursor: {
-        grab: "cursor-[url('/customcursor.svg'),auto]",
-        grabbing: "cursor-[url('/customcursor.svg'),auto]"
+        grab: "url('/customcursor.svg'), grab",
+        grabbing: "url('/customcursor.svg'), grabbing"
       },
       colors: {
         border: "hsl(var(--border))",
