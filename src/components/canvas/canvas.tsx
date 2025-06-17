@@ -125,7 +125,8 @@ const Canvas: FC<Props> = ({ children }) => {
       setIsPanning(true);
       setPanStartPoint({ x: event.clientX, y: event.clientY });
       setInitialPanOffsetOnDrag({ ...panOffset }); // Use current panOffset
-      if (viewportRef.current) viewportRef.current.style.cursor = "url('/customcursor.svg'), grabbing";
+      if (viewportRef.current)
+        viewportRef.current.style.cursor = "url('/customcursor.svg'), grabbing";
     } else if (activePointersRef.current.size === 2) {
       setIsPanning(false);
       const pointers = Array.from(activePointersRef.current.values());
@@ -222,7 +223,8 @@ const Canvas: FC<Props> = ({ children }) => {
 
     if (isPanning && activePointersRef.current.size < 1) {
       setIsPanning(false);
-      if (viewportRef.current) viewportRef.current.style.cursor = "url('/customcursor.svg'), grab";
+      if (viewportRef.current)
+        viewportRef.current.style.cursor = "url('/customcursor.svg'), grab";
     }
 
     if (initialPinchStateRef.current && activePointersRef.current.size < 2) {
@@ -251,8 +253,8 @@ const Canvas: FC<Props> = ({ children }) => {
 
       const newZoomValue =
         event.deltaY > 0
-        ? zoom * (1 - zoomFactor)
-        : zoom * (1 / (1 - zoomFactor));
+          ? zoom * (1 - zoomFactor)
+          : zoom * (1 / (1 - zoomFactor));
       const clampedZoom = Math.max(0.6, Math.min(newZoomValue, 10));
 
       let mouseX = event.clientX;
@@ -266,13 +268,19 @@ const Canvas: FC<Props> = ({ children }) => {
 
       const sceneMouseX = (mouseX - panOffset.x) / zoom;
       const sceneMouseY = (mouseY - panOffset.y) / zoom;
-      
+
       const newPanX = Math.min(
-        Math.max(mouseX - sceneMouseX * clampedZoom, -clampedZoom * width! + 0.2 * width!),
+        Math.max(
+          mouseX - sceneMouseX * clampedZoom,
+          -clampedZoom * width! + 0.2 * width!,
+        ),
         clampedZoom * width! - 0.2 * width!,
       );
       const newPanY = Math.min(
-        Math.max(mouseY - sceneMouseY * clampedZoom, -clampedZoom * height! + 0.2 * height!),
+        Math.max(
+          mouseY - sceneMouseY * clampedZoom,
+          -clampedZoom * height! + 0.2 * height!,
+        ),
         clampedZoom * height! - 0.2 * height!,
       );
 

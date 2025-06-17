@@ -29,7 +29,7 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
       onError: (error) => {
         const errorCode = error.data?.code;
 
-        if (errorCode == "CONFLICT"){
+        if (errorCode == "CONFLICT") {
           preregistrationForm.setError("email", {
             message: "That email is already registered.",
           });
@@ -42,7 +42,7 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
             message: "An unexpected error occurred.",
           });
         }
-      }
+      },
     });
 
   const preregistrationForm = useForm<
@@ -58,7 +58,7 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
   return (
     <div
       className={cn(
-        "flex w-full flex-col items-center justify-center px-12 text-primary space-y-4",
+        "flex w-full flex-col items-center justify-center space-y-4 px-12 text-primary",
         className,
       )}
     >
@@ -72,7 +72,7 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
             name="email"
             render={({ field }) => (
               <FormItem className="space-y-4">
-                <div className="flex w-max space-x-2 rounded-xl focus-within:ring focus-within:ring-2 focus-within:ring-ring border border-white bg-white bg-opacity-50 pr-1 pt-1 pb-1">
+                <div className="flex w-max space-x-2 rounded-xl border border-white bg-white bg-opacity-50 pb-1 pr-1 pt-1 focus-within:ring focus-within:ring-2 focus-within:ring-ring">
                   <FormLabel className="sr-only">Email Address</FormLabel>
                   <FormControl>
                     <div className="py-0.5">
@@ -91,7 +91,7 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
                     </Button>
                   </div>
                 </div>
-                <FormMessage className="text-[#AC2323] font-jetbrainsmono text-center" />
+                <FormMessage className="font-jetbrainsmono text-center text-[#AC2323]" />
               </FormItem>
             )}
           />
