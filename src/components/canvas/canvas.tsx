@@ -251,7 +251,7 @@ const Canvas: FC<Props> = ({ children }) => {
 
       if (isPinch) event.preventDefault();
 
-      const zoomFactor = isPinch ? 0.075 : 0.1;
+      const zoomFactor = isPinch ? 0.065 : 0.1;
 
       const newZoomValue =
         event.deltaY > 0

@@ -2,7 +2,7 @@ import Head from "next/head";
 import { Footer } from "~/components/footer";
 import Hero from "~/components/promo/Hero";
 import Image from "next/image";
-import { Filter, Grid } from "~/components/canvas/grid";
+import { Grid } from "~/components/canvas/grid";
 import Canvas from "~/components/canvas/canvas";
 
 const PAGESBEFORE = [
