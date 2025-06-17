@@ -4,7 +4,7 @@ import { applicationRouter } from "./routers/application";
 import { authRouter } from "./routers/auth";
 import { preregistrationRouter } from "./routers/preregistration";
 import { reviewRouter } from "./routers/review";
-
+import { walletRouter } from "~/pages/api/wallet/create-pass";
 /**
  * This is the primary router for your server.
  *
@@ -16,6 +16,7 @@ export const appRouter = createTRPCRouter({
   auth: authRouter,
   preregistration: preregistrationRouter,
   review: reviewRouter,
+  wallet: walletRouter,
 });
 
 // export type definition of API

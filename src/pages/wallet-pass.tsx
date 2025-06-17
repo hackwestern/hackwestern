@@ -8,6 +8,7 @@ import { useSession, signIn } from "next-auth/react";
 // This library could be used for later to streamline pass generation...
 import Head from "next/head";
 import WalletButton from "../components/WalletButton";
+import { api } from "~/utils/api";
 
 interface ApiWalletResponse {
   saveToWalletUrl?: string;
@@ -18,28 +19,13 @@ interface ApiWalletResponse {
 const WalletPassPage = () => {
   const { data: session, status } = useSession();
   const [saveToWalletUrl, setSaveToWalletUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleGeneratePass = async () => {
-    setIsLoading(true);
-    setError("");
-    setSaveToWalletUrl(""); // Explicitly clear previous URL at the start
-
-    try {
-      const response = await fetch("/api/wallet/create-pass", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      console.log("CLIENT: API Response Status:", response.status); // Log status
-
-      const data: ApiWalletResponse = await response.json();
-      console.log("CLIENT: API Response Data:", data); // Log the data received
-
-      if (response.ok && data.saveToWalletUrl) {
+  // Replace fetch with TRPC mutation
+  const { mutate: createPass, isLoading } = api.wallet.createPass.useMutation({
+    onSuccess: (data) => {
+      console.log("CLIENT: API Response Data:", data);
+      if (data.saveToWalletUrl) {
         console.log("CLIENT: Setting saveToWalletUrl:", data.saveToWalletUrl);
         setSaveToWalletUrl(data.saveToWalletUrl);
       } else {
@@ -47,17 +33,22 @@ const WalletPassPage = () => {
         setError(
           data.error ||
             data.message ||
-            "Failed to generate pass. No URL received from API.",
+            "Failed to generate pass. No URL received from API."
         );
         setSaveToWalletUrl(""); // Ensure it's cleared on error
       }
-    } catch (err: any) {
-      console.error("CLIENT: Error in handleGeneratePass catch block:", err);
+    },
+    onError: (err) => {
+      console.error("CLIENT: Error in createPass mutation:", err);
       setError(err.message || "An unexpected error occurred during API call.");
       setSaveToWalletUrl(""); // Ensure it's cleared on error
-    } finally {
-      setIsLoading(false);
     }
+  });
+
+  const handleGeneratePass = async () => {
+    setError("");
+    setSaveToWalletUrl(""); // Explicitly clear previous URL at the start
+    createPass();
   };
 
   if (status === "loading") {
