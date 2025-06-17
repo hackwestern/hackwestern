@@ -29,10 +29,9 @@ export const env = createEnv({
     DISCORD_CLIENT_ID: z.string(),
     DISCORD_CLIENT_SECRET: z.string(),
     RESEND_API_KEY: z.string(),
-    // Add your new server-side environment variables for Google Wallet
     GOOGLE_WALLET_ISSUER_ID: z.string().min(1),
-    GOOGLE_APPLICATION_CREDENTIALS: z.string().min(1), // Renamed from GOOGLE_APPLICATION_CREDENTIALS for clarity
-    WALLET_SERVICE_ACCOUNT_EMAIL: z.string().email(), // Added new variable
+    GOOGLE_APPLICATION_CREDENTIALS: z.string().min(1),
+    WALLET_SERVICE_ACCOUNT_EMAIL: z.string().email(), 
   },
 
   /**
