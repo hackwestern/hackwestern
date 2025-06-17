@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { PreregistrationForm } from "../preregistration-form";
-import Image from "next/image";
+import { useRef } from "react";
 import { Draggable } from "~/components/canvas/draggable";
 import { Grid } from "~/components/canvas/grid";
 import Canvas from "~/components/canvas/canvas";
@@ -112,14 +112,11 @@ function Hero() {
                 NOV 31 - DEC 2, 2025
               </div>
               <div className="flex flex-col items-center justify-center font-dico text-5xl text-heavy">
-                <Image
-                  src="/hackwesterntitle.svg"
-                  alt="Logo"
-                  width={200}
-                  height={200}
-                />
+                <div>Hack</div>
+                <div>Western</div>
+                <div>XII</div>
               </div>
-              <div className="font-figtree text-[1rem] text-medium">
+              <div className="font-figtree text-sm text-medium">
                 The world is your canvas.
               </div>
               <PreregistrationForm />
