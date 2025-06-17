@@ -125,7 +125,7 @@ const Canvas: FC<Props> = ({ children }) => {
       setIsPanning(true);
       setPanStartPoint({ x: event.clientX, y: event.clientY });
       setInitialPanOffsetOnDrag({ ...panOffset }); // Use current panOffset
-      if (viewportRef.current) viewportRef.current.style.cursor = "grabbing";
+      if (viewportRef.current) viewportRef.current.style.cursor = "url('/customcursor.svg'), grabbing";
     } else if (activePointersRef.current.size === 2) {
       setIsPanning(false);
       const pointers = Array.from(activePointersRef.current.values());
@@ -150,16 +150,16 @@ const Canvas: FC<Props> = ({ children }) => {
         x: Math.min(
           Math.max(
             initialPanOffsetOnDrag.x + deltaX,
-            -zoom * width! + 0.5 * width!,
+            -zoom * width! + 0.2 * width!,
           ),
-          zoom * width! - 0.5 * width!,
+          zoom * width! - 0.2 * width!,
         ),
         y: Math.min(
           Math.max(
             initialPanOffsetOnDrag.y + deltaY,
-            -zoom * height! + 0.5 * height!,
+            -zoom * height! + 0.2 * height!,
           ),
-          zoom * height! - 0.5 * height!,
+          zoom * height! - 0.2 * height!,
         ),
       });
     } else if (
@@ -184,7 +184,7 @@ const Canvas: FC<Props> = ({ children }) => {
       if (initialDistance === 0) return;
 
       let newZoom = initialZoom * (currentDistance / initialDistance);
-      newZoom = Math.max(0.1, Math.min(newZoom, 10));
+      newZoom = Math.max(0.6, Math.min(newZoom, 10));
 
       const initialMidpointSceneX =
         (initialMidpointViewport.x - initialPanOffsetPinch.x) / initialZoom;
@@ -194,16 +194,16 @@ const Canvas: FC<Props> = ({ children }) => {
       const newPanX = Math.min(
         Math.max(
           currentMidpoint.x - initialMidpointSceneX * newZoom,
-          -zoom * width!,
+          -newZoom * width! + 0.2 * width!,
         ),
-        zoom * width!,
+        newZoom * width! - 0.2 * width!,
       );
       const newPanY = Math.min(
         Math.max(
           currentMidpoint.y - initialMidpointSceneY * newZoom,
-          -zoom * height!,
+          -newZoom * height! + 0.2 * height!,
         ),
-        zoom * height!,
+        newZoom * height! - 0.2 * height!,
       );
 
       setZoom(newZoom);
@@ -222,7 +222,7 @@ const Canvas: FC<Props> = ({ children }) => {
 
     if (isPanning && activePointersRef.current.size < 1) {
       setIsPanning(false);
-      if (viewportRef.current) viewportRef.current.style.cursor = "grab";
+      if (viewportRef.current) viewportRef.current.style.cursor = "url('/customcursor.svg'), grab";
     }
 
     if (initialPinchStateRef.current && activePointersRef.current.size < 2) {
@@ -268,12 +268,12 @@ const Canvas: FC<Props> = ({ children }) => {
       const sceneMouseY = (mouseY - panOffset.y) / zoom;
       
       const newPanX = Math.min(
-        Math.max(mouseX - sceneMouseX * clampedZoom, -clampedZoom * width! + 0.5 * width!),
-        zoom * width! - 0.5 * width!,
+        Math.max(mouseX - sceneMouseX * clampedZoom, -clampedZoom * width! + 0.2 * width!),
+        clampedZoom * width! - 0.2 * width!,
       );
       const newPanY = Math.min(
-        Math.max(mouseY - sceneMouseY * clampedZoom, -clampedZoom * height! + 0.5 * height!),
-        zoom * height! - 0.5 * height!,
+        Math.max(mouseY - sceneMouseY * clampedZoom, -clampedZoom * height! + 0.2 * height!),
+        clampedZoom * height! - 0.2 * height!,
       );
 
       setZoom(clampedZoom);
