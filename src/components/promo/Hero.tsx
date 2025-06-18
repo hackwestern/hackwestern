@@ -6,7 +6,7 @@ import { CanvasComponent } from "../canvas/canvas";
 function Hero() {
   return (
     <CanvasComponent>
-      <div className="mb-[40vh] flex flex-col items-center justify-center space-y-12 sm:mb-[25vh]">
+      <div className="mb-[23vh] flex flex-col items-center justify-center space-y-12 sm:mt-0">
         <div>
           <Draggable
             key="hw-logo"
