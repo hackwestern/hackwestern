@@ -80,7 +80,7 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
                         className="border-none bg-transparent text-heavy"
                         variant="noRing"
                         {...field}
-                        placeholder="jimmy@hacker.ca"
+                        placeholder="hello@hackwestern.com"
                       />
                     </div>
                   </FormControl>

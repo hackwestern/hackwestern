@@ -1,19 +1,10 @@
 import { motion } from "framer-motion";
 import { PreregistrationForm } from "../preregistration-form";
 import { Draggable } from "~/components/canvas/draggable";
-import { Dots, Filter } from "../canvas/grid";
 
 function Hero() {
   return (
     <div>
-      <div
-        className="absolute inset-0 z-0 h-full w-full bg-hw-radial-gradient opacity-100"
-        style={{
-          backgroundImage: `radial-gradient(ellipse 550vh 300vh at 50vw 275vh, var(--coral) 0%, var(--salmon) 40%, var(--lilac) 65%, var(--beige) 90%)`,
-        }}
-      />
-      <Filter />
-      <Dots />
       <div className="z-2 absolute inset-0 z-30 flex h-full w-full items-center justify-center">
         <div className="mb-[25vh] flex flex-col items-center justify-center space-y-12">
           <div>
@@ -40,7 +31,7 @@ function Hero() {
             </Draggable>
           </div>
           <div className="font-jetbrains-mono text-medium">
-            NOV 31 - DEC 2, 2025
+            NOV 21 - NOV 23, 2025
           </div>
           <div className="flex flex-col items-center justify-center font-dico text-5xl text-heavy">
             <div>Hack</div>
