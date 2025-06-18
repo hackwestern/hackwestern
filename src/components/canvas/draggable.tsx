@@ -97,7 +97,7 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
         }}
         onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
         whileHover={{ scale: 1.1 }}
-        whileTap={{ cursor: "grabbing" }}
+        whileTap={{ cursor: "url('/customcursor.svg'), grabbing" }}
         {...restProps}
       >
         {children}

@@ -1,6 +1,10 @@
-import Head from "next/head";
-import { motion, type Point, useAnimationControls } from "framer-motion";
 import {
+  type AnimationControls,
+  motion,
+  type Point,
+  useAnimationControls,
+} from "framer-motion";
+import React, {
   useState,
   useRef,
   type PointerEvent,
@@ -8,46 +12,12 @@ import {
   useEffect,
   useCallback,
 } from "react";
+import Reset from "~/components/canvas/reset";
 import { CanvasProvider } from "~/contexts/CanvasContext";
-import TestPage1 from "~/components/canvas-demo/test-page-1";
-import MainPage from "~/components/canvas-demo/main-page";
-import Toolbar from "~/components/canvas-demo/toolbar";
-import Navbar from "~/components/canvas-demo/navbar";
-import TestPageMap from "~/components/canvas-demo/test-page-map";
-import TestPageBoxes from "~/components/canvas-demo/test-page-boxes";
-import TestPage2 from "~/components/canvas-demo/test-page-2";
-import Hero from "~/components/promo/Hero";
 import { getDistance, getMidpoint } from "~/lib/canvas";
+import useWindowDimensions from "~/hooks/useWindowDimensions";
 
-export const PAGES = [
-  <MainPage key="main" />,
-  <TestPage1 key="tp1" />,
-  <TestPage2 key="tp2" />,
-  <TestPageMap key="tpm" />,
-  <TestPageBoxes key="tpb" />,
-  <div key="index" className="w-screen">
-    <Hero />
-  </div>,
-];
-
-export const OFFSETS = [
-  { x: 0, y: 0 },
-  { x: 4000, y: 0 },
-  { x: -4000, y: 0 },
-  { x: 0, y: 2000 },
-  { x: 0, y: -2000 },
-  { x: 4000, y: 2000 },
-  { x: -4000, y: -2000 },
-  { x: 4000, y: -2000 },
-  { x: -4000, y: 2000 },
-] as const;
-
-export type OffsetIndex = Exclude<
-  keyof typeof OFFSETS,
-  keyof (typeof OFFSETS)[]
->;
-
-const OffsetComponent = ({
+export const OffsetComponent = ({
   offset,
   children,
 }: {
@@ -69,8 +39,33 @@ const OffsetComponent = ({
   );
 };
 
-const Canvas: FC = () => {
-  const [panOffset, setPanOffset] = useState<Point>({ x: 0, y: 0 });
+interface Props {
+  children: React.ReactNode;
+}
+
+async function panToOffsetScene(
+  offset: Point,
+  sceneControls: AnimationControls,
+): Promise<void> {
+  await sceneControls.start(
+    {
+      x: offset.x,
+      y: offset.y,
+      scale: 1,
+    },
+    {
+      duration: 0.3,
+    },
+  );
+}
+
+const Canvas: FC<Props> = ({ children }) => {
+  const { height, width } = useWindowDimensions();
+
+  const sceneWidth = 3 * width;
+  const sceneHeight = 3 * height;
+
+  const [panOffset, setPanOffset] = useState<Point>({ x: width, y: height });
   const [zoom, setZoom] = useState<number>(1);
 
   const [isPanning, setIsPanning] = useState<boolean>(false);
@@ -81,6 +76,7 @@ const Canvas: FC = () => {
   });
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   const sceneControls = useAnimationControls();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -106,33 +102,37 @@ const Canvas: FC = () => {
 
   const onResetViewAndItems = (): void => {
     setIsResetting(true);
-    void sceneControls
-      .start(
-        { x: 0, y: 0, scale: 1 },
-        { duration: 0.3, type: "spring", damping: 14, stiffness: 120, mass: 1 },
-      )
-      .then(() => {
-        setIsResetting(false);
-        setPanOffset({ x: 0, y: 0 });
-        setZoom(1);
-      });
+    void panToOffsetScene({ x: -width, y: -height }, sceneControls).then(() => {
+      setIsResetting(false);
+      setPanOffset({ x: -width, y: -height });
+      setZoom(1);
+    });
   };
 
-  const panToOffset = (offset: Point): void => {
+  useEffect(() => {
+    if (!isInitialized) {
+      setIsResetting(true);
+      void panToOffsetScene({ x: -width, y: -height }, sceneControls)
+        .then(() => {
+          setPanOffset({ x: -width, y: -height });
+          setZoom(1);
+        })
+        .then(() => {
+          setIsResetting(false);
+          setIsInitialized(true);
+        });
+    }
+  }, [height, width, isInitialized]);
+
+  const panToOffset = (
+    offset: Point,
+    viewportRef: React.RefObject<HTMLDivElement | null>,
+  ): void => {
     if (!viewportRef.current) return;
-    void sceneControls
-      .start(
-        {
-          x: -offset.x,
-          y: -offset.y,
-          scale: 1,
-        },
-        { duration: 0.3, type: "spring", damping: 14, stiffness: 120, mass: 1 },
-      )
-      .then(() => {
-        setZoom(1);
-        setPanOffset({ x: -offset.x, y: -offset.y });
-      });
+    void panToOffsetScene(offset, sceneControls).then(() => {
+      setZoom(1);
+      setPanOffset({ x: -offset.x, y: -offset.y });
+    });
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
@@ -152,8 +152,9 @@ const Canvas: FC = () => {
 
       setIsPanning(true);
       setPanStartPoint({ x: event.clientX, y: event.clientY });
-      setInitialPanOffsetOnDrag({ ...panOffset }); // Use current panOffset
-      if (viewportRef.current) viewportRef.current.style.cursor = "grabbing";
+      setInitialPanOffsetOnDrag({ ...panOffset });
+      if (viewportRef.current)
+        viewportRef.current.style.cursor = "url('/customcursor.svg'), grabbing";
     } else if (activePointersRef.current.size === 2) {
       setIsPanning(false);
       const pointers = Array.from(activePointersRef.current.values());
@@ -167,6 +168,7 @@ const Canvas: FC = () => {
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>): void => {
+    if (isPanning || activePointersRef.current.size >= 2) sceneControls.stop();
     if (!activePointersRef.current.has(event.pointerId)) return;
     activePointersRef.current.set(event.pointerId, event);
 
@@ -174,9 +176,21 @@ const Canvas: FC = () => {
       event.preventDefault();
       const deltaX = event.clientX - panStartPoint.x;
       const deltaY = event.clientY - panStartPoint.y;
+
+      const minPanX = width - sceneWidth * zoom;
+      const maxPanX = 0;
+      const minPanY = height - sceneHeight * zoom;
+      const maxPanY = 0;
+
       setPanOffset({
-        x: initialPanOffsetOnDrag.x + deltaX,
-        y: initialPanOffsetOnDrag.y + deltaY,
+        x: Math.min(
+          Math.max(initialPanOffsetOnDrag.x + deltaX, minPanX),
+          maxPanX,
+        ),
+        y: Math.min(
+          Math.max(initialPanOffsetOnDrag.y + deltaY, minPanY),
+          maxPanY,
+        ),
       });
     } else if (
       activePointersRef.current.size >= 2 &&
@@ -192,7 +206,6 @@ const Canvas: FC = () => {
 
       const {
         distance: initialDistance,
-        midpoint: initialMidpointViewport,
         zoom: initialZoom,
         panOffset: initialPanOffsetPinch,
       } = initialPinchStateRef.current;
@@ -200,15 +213,15 @@ const Canvas: FC = () => {
       if (initialDistance === 0) return;
 
       let newZoom = initialZoom * (currentDistance / initialDistance);
-      newZoom = Math.max(0.1, Math.min(newZoom, 10));
+      newZoom = Math.max(0.6, Math.min(newZoom, 10));
 
-      const initialMidpointSceneX =
-        (initialMidpointViewport.x - initialPanOffsetPinch.x) / initialZoom;
-      const initialMidpointSceneY =
-        (initialMidpointViewport.y - initialPanOffsetPinch.y) / initialZoom;
+      const mx = currentMidpoint.x;
+      const my = currentMidpoint.y;
 
-      const newPanX = currentMidpoint.x - initialMidpointSceneX * newZoom;
-      const newPanY = currentMidpoint.y - initialMidpointSceneY * newZoom;
+      const newPanX =
+        mx - ((mx - initialPanOffsetPinch.x) / initialZoom) * newZoom;
+      const newPanY =
+        my - ((my - initialPanOffsetPinch.y) / initialZoom) * newZoom;
 
       setZoom(newZoom);
       setPanOffset({ x: newPanX, y: newPanY });
@@ -218,6 +231,7 @@ const Canvas: FC = () => {
   const handlePointerUpOrCancel = (
     event: PointerEvent<HTMLDivElement>,
   ): void => {
+    sceneControls.stop();
     event.preventDefault();
     if ((event.target as HTMLElement).hasPointerCapture(event.pointerId)) {
       (event.target as HTMLElement).releasePointerCapture(event.pointerId);
@@ -226,7 +240,8 @@ const Canvas: FC = () => {
 
     if (isPanning && activePointersRef.current.size < 1) {
       setIsPanning(false);
-      if (viewportRef.current) viewportRef.current.style.cursor = "grab";
+      if (viewportRef.current)
+        viewportRef.current.style.cursor = "url('/customcursor.svg'), grab";
     }
 
     if (initialPinchStateRef.current && activePointersRef.current.size < 2) {
@@ -241,24 +256,24 @@ const Canvas: FC = () => {
       const lastPointer = Array.from(activePointersRef.current.values())[0]!;
       setIsPanning(true);
       setPanStartPoint({ x: lastPointer.clientX, y: lastPointer.clientY });
-      setInitialPanOffsetOnDrag({ ...panOffset }); // Use current panOffset
-      if (viewportRef.current) viewportRef.current.style.cursor = "grabbing";
+      setInitialPanOffsetOnDrag({ ...panOffset });
     }
   };
 
   const handleWheelZoom = useCallback(
     (event: WheelEvent) => {
+      sceneControls.stop();
       const isPinch = event.ctrlKey || event.metaKey;
 
       if (isPinch) event.preventDefault();
 
-      const zoomFactor = isPinch ? 0.075 : 0.1;
+      const zoomFactor = isPinch ? 0.08 : 0.16;
 
       const newZoomValue =
         event.deltaY > 0
           ? zoom * (1 - zoomFactor)
           : zoom * (1 / (1 - zoomFactor));
-      const clampedZoom = Math.max(0.1, Math.min(newZoomValue, 10));
+      const clampedZoom = Math.max(0.6, Math.min(newZoomValue, 10));
 
       let mouseX = event.clientX;
       let mouseY = event.clientY;
@@ -269,16 +284,53 @@ const Canvas: FC = () => {
         mouseY = event.clientY - viewportRect.top;
       }
 
-      const sceneMouseX = (mouseX - panOffset.x) / zoom;
-      const sceneMouseY = (mouseY - panOffset.y) / zoom;
+      const minPanX = width - sceneWidth * clampedZoom;
+      const maxPanX = 0;
+      const minPanY = height - sceneHeight * clampedZoom;
+      const maxPanY = 0;
 
-      const newPanX = mouseX - sceneMouseX * clampedZoom;
-      const newPanY = mouseY - sceneMouseY * clampedZoom;
+      const newPanX = Math.min(
+        Math.max(
+          mouseX - ((mouseX - panOffset.x) / zoom) * clampedZoom,
+          minPanX,
+        ),
+        maxPanX,
+      );
+      const newPanY = Math.min(
+        Math.max(
+          mouseY - ((mouseY - panOffset.y) / zoom) * clampedZoom,
+          minPanY,
+        ),
+        maxPanY,
+      );
 
-      setZoom(clampedZoom);
-      setPanOffset({ x: newPanX, y: newPanY });
+      void sceneControls
+        .start(
+          {
+            x: newPanX,
+            y: newPanY,
+            scale: clampedZoom,
+          },
+          {
+            duration: 0.05,
+            ease: [0.4, 0, 0.2, 1],
+          },
+        )
+        .then(() => {
+          setZoom(clampedZoom);
+          setPanOffset({ x: newPanX, y: newPanY });
+        });
     },
-    [zoom, panOffset, setZoom, setPanOffset],
+    [
+      zoom,
+      width,
+      sceneWidth,
+      height,
+      sceneHeight,
+      panOffset.x,
+      panOffset.y,
+      sceneControls,
+    ],
   );
 
   useEffect(() => {
@@ -293,17 +345,9 @@ const Canvas: FC = () => {
 
   return (
     <>
-      <Head>
-        <title>Canvas</title>
-        <meta name="description" content="Interactive Canvas" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      <Navbar onClick={panToOffset} />
-      <Toolbar
-        onResetViewAndItems={onResetViewAndItems}
-        panOffset={panOffset}
-        zoom={zoom}
-      />
+      {(zoom !== 1 || panOffset.x !== -width || panOffset.y !== -height) && (
+        <Reset onResetViewAndItems={onResetViewAndItems} />
+      )}
       <CanvasProvider
         zoom={zoom}
         panOffset={panOffset}
@@ -313,9 +357,8 @@ const Canvas: FC = () => {
       >
         <div
           ref={viewportRef}
-          className="relative h-screen w-screen touch-none select-none overflow-hidden bg-gray-300"
+          className="relative h-screen w-screen touch-none select-none overflow-hidden"
           style={{
-            cursor: isPanning ? "grabbing" : "grab",
             touchAction: "none",
             overscrollBehavior: "contain",
           }}
@@ -327,22 +370,55 @@ const Canvas: FC = () => {
         >
           <motion.div
             ref={sceneRef}
-            className="scene absolute z-20 h-0 w-0 origin-top-left"
+            className="absolute z-20 h-[300vh] w-[300vw] origin-top-left"
             animate={sceneControls}
           >
-            {PAGES.map((Component, index) => (
-              <OffsetComponent
-                key={index}
-                offset={OFFSETS[index.toString() as OffsetIndex]}
-              >
-                {Component}
-              </OffsetComponent>
-            ))}
+            <Gradient />
+            <Dots />
+            <Filter />
+            {children}
           </motion.div>
         </div>
       </CanvasProvider>
     </>
   );
 };
+
+interface OffsetPoints {
+  x: string;
+  y: string;
+}
+
+interface CanvasProps {
+  children: React.ReactNode;
+  offset?: OffsetPoints;
+}
+
+export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
+  return (
+    <div
+      className={`absolute inset-0 z-30 flex h-full w-full items-center justify-center left-[${offset?.x ?? "0"}] top-[${offset?.y ?? "0"}]`}
+    >
+      {children}
+    </div>
+  );
+};
+
+const Gradient = () => (
+  <div
+    className="absolute inset-0 h-full w-full bg-hw-radial-gradient opacity-100"
+    style={{
+      backgroundImage: `radial-gradient(ellipse 300vw 300vh at 150vw 300vh, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`,
+    }}
+  />
+);
+
+const Dots = () => (
+  <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-50 [background-size:20px_20px]" />
+);
+
+const Filter = () => (
+  <div className="pointer-events-none absolute inset-0 hidden h-full w-full bg-noise opacity-100 brightness-[105%] contrast-[170%] filter sm:inline" />
+);
 
 export default Canvas;
