@@ -24,6 +24,10 @@ const config = {
       "4xl": "3000px",
     },
     extend: {
+      cursor: {
+        grab: "url('/customcursor.svg'), grab",
+        grabbing: "url('/customcursor.svg'), grabbing"
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -92,16 +96,16 @@ const config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        "hw-gradient-radius": "1027px",
+        "hw-gradient-radius": "60vw"  ,
       },
       backgroundImage: {
         "hw-radial-gradient": `
             radial-gradient(
-              circle at bottom,
+              circle 150vh at 100vh 150vh,
               var(--coral) 0%,
-              var(--salmon) 36%,
-              var(--lilac) 73%,
-              var(--beige) 100%
+              var(--salmon) 40%,
+              var(--lilac) 65%,
+              var(--beige) 90%
             )
           `,
         "button-primary": "linear-gradient(#D19AEE 0%, #8F57AD 100%)",
@@ -113,6 +117,8 @@ const config = {
           "linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(#D19AEE 0%, #8F57AD 100%)",
         "button-secondary-back":
           "linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), linear-gradient(#FFFFFF 0%,#A893B0 100%)",
+        "noise":
+          `url("https://grainy-gradients.vercel.app/noise.svg")`
       },
       boxShadow: {
         "button-primary": "0px 2px 4px rgba(60, 32, 76, 0.2)",
@@ -123,6 +129,16 @@ const config = {
         dico: ["var(--font-dico)"],
         "jetbrains-mono": ["var(--font-jetbrainsmono)"],
       },
+      fontSize: {
+        'main-display': '4rem',
+        'md-display': '3rem',
+        'sm-display': '2rem',
+        'lg-sub': '1.5rem',
+        'sm-sub': '1rem',
+        'lg-p': '1.5rem',
+        'md-p': '1rem',
+        'sm-p': '.875rem'
+      }
     },
   },
   plugins: [require("tailwindcss-animate")],

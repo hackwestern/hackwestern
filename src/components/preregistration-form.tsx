@@ -25,7 +25,25 @@ type PreregistrationFormProps = {
 
 export function PreregistrationForm({ className }: PreregistrationFormProps) {
   const { mutate, isSuccess, isPending } =
-    api.preregistration.create.useMutation();
+    api.preregistration.create.useMutation({
+      onError: (error) => {
+        const errorCode = error.data?.code;
+
+        if (errorCode == "CONFLICT") {
+          preregistrationForm.setError("email", {
+            message: "That email is already registered.",
+          });
+        } else if (errorCode === "INTERNAL_SERVER_ERROR") {
+          preregistrationForm.setError("email", {
+            message: "Something went wrong. Please try again later.",
+          });
+        } else {
+          preregistrationForm.setError("email", {
+            message: "An unexpected error occurred.",
+          });
+        }
+      },
+    });
 
   const preregistrationForm = useForm<
     z.infer<typeof preregistrationFormSchema>
@@ -40,51 +58,48 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
   return (
     <div
       className={cn(
-        "flex w-full flex-col items-center justify-center px-12 text-primary",
+        "flex w-full flex-col items-center justify-center space-y-4 px-12 text-primary",
         className,
       )}
     >
-      <h4 className="py-3 text-lg font-medium text-[#F6F2FD]">
-        {isSuccess
-          ? "Thanks! You'll hear from us soon 🛩️"
-          : "Get notified when applications drop:"}
-      </h4>
-      {!isSuccess && (
-        <Form {...preregistrationForm}>
-          <form
-            className="w-full"
-            onSubmit={preregistrationForm.handleSubmit(onSubmit)}
-          >
-            <FormField
-              control={preregistrationForm.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex w-full flex-row gap-2 rounded-lg bg-white p-0.5">
-                    <FormLabel className="sr-only">Email Address</FormLabel>
-                    <FormControl>
+      <Form {...preregistrationForm}>
+        <form
+          className="w-full"
+          onSubmit={preregistrationForm.handleSubmit(onSubmit)}
+        >
+          <FormField
+            control={preregistrationForm.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem className="space-y-4">
+                <div className="flex w-max space-x-2 rounded-xl border border-white bg-white bg-opacity-50 pb-1 pr-1 pt-1 focus-within:ring focus-within:ring-2 focus-within:ring-ring">
+                  <FormLabel className="sr-only">Email Address</FormLabel>
+                  <FormControl>
+                    <div className="py-0.5">
                       <Input
-                        className="h-8 border-0 px-2.5 py-0 active:border-0"
+                        className="border-none bg-transparent text-heavy"
+                        variant="noRing"
                         {...field}
-                        placeholder="Email Address"
+                        placeholder="hello@hackwestern.com"
                       />
-                    </FormControl>
-                    <Button
-                      size="sm"
-                      type="submit"
-                      className="gap-2 bg-gradient-to-r from-[#A87DF1] to-[#5E28B8] py-0 active:border-0 lg:px-10"
-                    >
+                    </div>
+                  </FormControl>
+                  <div className="pt-1">
+                    <Button variant="primary" className="gap-2">
                       <span>Submit</span>
                       <Spinner isLoading={isPending} />
                     </Button>
                   </div>
-                  <FormMessage className="text-[#5E28B8]" />
-                </FormItem>
-              )}
-            />
-          </form>
-        </Form>
-      )}
+                </div>
+                <FormMessage className="font-jetbrainsmono text-center text-[#AC2323]" />
+              </FormItem>
+            )}
+          />
+        </form>
+      </Form>
+      <p className="font-figtree font-medium text-heavy">
+        {isSuccess ? "Prepare for greatness." : ""}
+      </p>
     </div>
   );
 }
