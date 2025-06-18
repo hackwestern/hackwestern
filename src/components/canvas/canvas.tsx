@@ -55,10 +55,6 @@ async function panToOffsetScene(
     },
     {
       duration: 0.3,
-      type: "spring",
-      damping: 14,
-      stiffness: 120,
-      mass: 1,
     },
   );
 }
@@ -80,6 +76,7 @@ const Canvas: FC<Props> = ({ children }) => {
   });
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   const sceneControls = useAnimationControls();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -113,11 +110,19 @@ const Canvas: FC<Props> = ({ children }) => {
   };
 
   useEffect(() => {
-    void panToOffsetScene({ x: width, y: height }, sceneControls).then(() => {
-      setPanOffset({ x: -width, y: -height });
-      setZoom(1);
-    });
-  }, [height, width]);
+    if (!isInitialized) {
+      setIsResetting(true);
+      void panToOffsetScene({ x: width, y: height }, sceneControls)
+        .then(() => {
+          setPanOffset({ x: -width, y: -height });
+          setZoom(1);
+        })
+        .then(() => {
+          setIsResetting(false);
+          setIsInitialized(true);
+        });
+    }
+  }, [height, width, isInitialized]);
 
   const panToOffset = (
     offset: Point,
@@ -131,6 +136,7 @@ const Canvas: FC<Props> = ({ children }) => {
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
+    if (isResetting) return;
     activePointersRef.current.set(event.pointerId, event);
     (event.target as HTMLElement).setPointerCapture(event.pointerId);
     sceneControls.stop();
@@ -163,6 +169,7 @@ const Canvas: FC<Props> = ({ children }) => {
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>): void => {
+    if (isResetting) return;
     if (!activePointersRef.current.has(event.pointerId)) return;
     activePointersRef.current.set(event.pointerId, event);
 
@@ -225,6 +232,7 @@ const Canvas: FC<Props> = ({ children }) => {
   const handlePointerUpOrCancel = (
     event: PointerEvent<HTMLDivElement>,
   ): void => {
+    if (isResetting) return;
     event.preventDefault();
     if ((event.target as HTMLElement).hasPointerCapture(event.pointerId)) {
       (event.target as HTMLElement).releasePointerCapture(event.pointerId);
@@ -255,6 +263,7 @@ const Canvas: FC<Props> = ({ children }) => {
 
   const handleWheelZoom = useCallback(
     (event: WheelEvent) => {
+      if (isResetting) return;
       const isPinch = event.ctrlKey || event.metaKey;
 
       if (isPinch) event.preventDefault();
@@ -300,14 +309,14 @@ const Canvas: FC<Props> = ({ children }) => {
       setPanOffset({ x: newPanX, y: newPanY });
     },
     [
+      isResetting,
       zoom,
-      panOffset,
-      setZoom,
-      setPanOffset,
       width,
-      height,
       sceneWidth,
+      height,
       sceneHeight,
+      panOffset.x,
+      panOffset.y,
     ],
   );
 
@@ -323,7 +332,9 @@ const Canvas: FC<Props> = ({ children }) => {
 
   return (
     <>
-      {<Reset onResetViewAndItems={onResetViewAndItems} />}
+      {(zoom !== 1 || panOffset.x !== -width || panOffset.y !== -height) && (
+        <Reset onResetViewAndItems={onResetViewAndItems} />
+      )}
       <CanvasProvider
         zoom={zoom}
         panOffset={panOffset}
