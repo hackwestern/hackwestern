@@ -153,8 +153,7 @@ const Canvas: FC<Props> = ({ children }) => {
       setIsPanning(true);
       setPanStartPoint({ x: event.clientX, y: event.clientY });
       setInitialPanOffsetOnDrag({ ...panOffset });
-      if (viewportRef.current)
-        viewportRef.current.style.cursor = "url('/customcursor.svg'), grabbing";
+      if (viewportRef.current) viewportRef.current.style.cursor = "grabbing";
     } else if (activePointersRef.current.size === 2) {
       setIsPanning(false);
       const pointers = Array.from(activePointersRef.current.values());
