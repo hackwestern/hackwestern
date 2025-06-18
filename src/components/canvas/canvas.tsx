@@ -371,9 +371,29 @@ const Canvas: FC<Props> = ({ children }) => {
   );
 };
 
+interface offsetPoints {
+  x: string;
+  y: string;
+}
+
+interface CanvasProps {
+  children: React.ReactNode;
+  offset?: offsetPoints;
+}
+
+export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
+  return (
+    <div
+      className={`absolute inset-0 z-30 flex h-full w-full items-center justify-center left-[${offset?.x ?? "0"}] top-[${offset?.y ?? "0"}]`}
+    >
+      {children}
+    </div>
+  );
+};
+
 const Gradient = () => (
   <div
-    className="absolute inset-0 z-0 h-full w-full bg-hw-radial-gradient opacity-100"
+    className="absolute inset-0 h-full w-full bg-hw-radial-gradient opacity-100"
     style={{
       backgroundImage: `radial-gradient(ellipse 300vw 300vh at 150vw 300vh, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`,
     }}
@@ -381,11 +401,11 @@ const Gradient = () => (
 );
 
 const Dots = () => (
-  <div className="absolute inset-0 z-10 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-50 [background-size:20px_20px]" />
+  <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-50 [background-size:20px_20px]" />
 );
 
 const Filter = () => (
-  <div className="pointer-events-none absolute inset-0 z-20 hidden h-full w-full bg-noise opacity-100 brightness-[105%] contrast-[170%] filter sm:inline" />
+  <div className="pointer-events-none absolute inset-0 hidden h-full w-full bg-noise opacity-100 brightness-[105%] contrast-[170%] filter sm:inline" />
 );
 
 export default Canvas;
