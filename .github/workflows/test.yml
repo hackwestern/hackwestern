@@ -3,10 +3,6 @@ on:
   workflow_dispatch:
   repository_dispatch:
     types: [test]
-  pull_request:
-    branches:
-      - main
-      - dev
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
