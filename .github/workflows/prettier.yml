@@ -30,10 +30,22 @@ jobs:
       - name: Run prettier
         run: npx prettier --write ./src
       - name: Commit changes
+        id: commit
         run: |
           git config --global user.email 'prettify-hackwestern[bot]@users.noreply.github.com'
           git config --global user.name 'prettify-hackwestern[bot]'
           git add src
-          git commit -m "Prettify code" || echo "No changes to commit"
-      - name: Push changes
-        run: git push
+          if ! git diff --cached --quiet; then
+            git commit -m "Prettify code"
+            git push origin HEAD:${{ github.head_ref }}
+            echo "trigger_test=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "trigger_test=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Trigger Test workflow
+        if: steps.commit.outputs.trigger_test == 'true'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: test
+
