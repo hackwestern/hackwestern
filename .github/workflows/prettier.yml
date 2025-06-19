@@ -30,6 +30,7 @@ jobs:
       - name: Run prettier
         run: npx prettier --write ./src
       - name: Commit changes
+        id: commit
         run: |
           git config --global user.email 'prettify-hackwestern[bot]@users.noreply.github.com'
           git config --global user.name 'prettify-hackwestern[bot]'
@@ -43,3 +44,7 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           event-type: test
+          client-payload: |
+            {
+              "ref":"${{ github.event.pull_request.head.ref }}"
+            }
