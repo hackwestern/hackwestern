@@ -8,6 +8,9 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    concurrency:
+      group: test-${{ github.head_ref || github.ref }}
+      cancel-in-progress: true
     environment: test
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
