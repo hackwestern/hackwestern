@@ -7,7 +7,9 @@ import { api } from "~/utils/api";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
 import CloudBackground from "~/components/cloud-background";
+import { disabledRedirect } from "~/utils/redirect";
 
+/*
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const session = await getServerSession(context.req, context.res, authOptions);
 
@@ -34,7 +36,9 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   }
 
   return { props: {} };
-}
+}*/
+
+export const getServerSideProps = disabledRedirect;
 
 export default function Submitted() {
   const { data: application } = api.application.get.useQuery();
