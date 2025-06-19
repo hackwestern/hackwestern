@@ -23,8 +23,7 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
   (props, ref) => {
     const { initialPos: passedPos, children, style, ...restProps } = props;
 
-    const {
-      zoom: parentZoom,
+    const {zoom: parentZoom,
       panOffset,
       isResetting,
       maxZIndex,
