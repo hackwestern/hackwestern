@@ -48,4 +48,9 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           event-type: test
+          client-payload: |
+            {
+              "ref": "${{ github.event.pull_request.head.ref }}",   # branch e.g. feature/foo
+              "sha": "${{ github.event.pull_request.head.sha }}"    # last commit we just pushed
+            }
 
