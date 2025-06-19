@@ -22,14 +22,15 @@ jobs:
         id: vars
         run: |
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            echo "ref=${{ github.event.client_payload.sha }}" >>"$GITHUB_OUTPUT"
-          else # pull_request / manual dispatch
+            echo "ref=${{ github.event.client_payload.ref }}" >>"$GITHUB_OUTPUT"
+          else
             echo "ref=${{ github.head_ref }}" >>"$GITHUB_OUTPUT"
           fi
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.vars.outputs.ref }}
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: "23"
