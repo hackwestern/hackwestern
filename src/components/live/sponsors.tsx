@@ -1,4 +1,20 @@
-import { SponsorCard } from "../promo/sponsors";
+// import { SponsorCard } from "../promo/sponsors";
+
+const SponsorCard = ({
+  name,
+  logo,
+  link,
+}: {
+  name: string;
+  logo: string;
+  link: string;
+}) => {
+  return (
+    <div>
+      {name} {logo} {link}
+    </div>
+  );
+};
 
 const Sponsors = () => {
   return (

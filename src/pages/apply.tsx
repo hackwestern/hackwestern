@@ -9,7 +9,7 @@ import { ApplyNavigation } from "~/components/apply/navigation";
 import { Passport } from "~/components/apply/passport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { SavedIndicator } from "~/components/apply/saved-indicator";
-import { notVerifiedRedirect } from "~/utils/redirect";
+import { disabledRedirect, notVerifiedRedirect } from "~/utils/redirect";
 import CloudBackground from "~/components/cloud-background";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
@@ -115,4 +115,5 @@ export default function Apply() {
   );
 }
 
-export const getServerSideProps = notVerifiedRedirect;
+// export const getServerSideProps = notVerifiedRedirect;
+export const getServerSideProps = disabledRedirect;
