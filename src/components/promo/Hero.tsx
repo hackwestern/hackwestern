@@ -7,7 +7,7 @@ function Hero() {
   return (
     <CanvasComponent>
       <div className="my-auto flex flex-col items-center justify-center space-y-12 pb-12">
-        <div>
+        <div className="z-10">
           <Draggable
             key="hw-logo"
             animate={{
