@@ -41,6 +41,7 @@ jobs:
             echo "trigger_test=true" >> "$GITHUB_OUTPUT"
           else
             echo "trigger_test=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Trigger Test workflow
         if: steps.commit.outputs.trigger_test == 'true'
         uses: peter-evans/repository-dispatch@v3
