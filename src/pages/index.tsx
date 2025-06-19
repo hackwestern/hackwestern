@@ -2,72 +2,7 @@ import Head from "next/head";
 import { Footer } from "~/components/footer";
 import Hero from "~/components/promo/Hero";
 import Image from "next/image";
-import { Grid } from "~/components/canvas/grid";
 import Canvas from "~/components/canvas/canvas";
-
-const PAGESBEFORE = [
-  <Grid
-    key="grid-1"
-    offsetVertical={-1}
-    offsetHorizontal={-1}
-    hasGradient={false}
-  />,
-  <Grid
-    key="grid-2"
-    offsetVertical={-1}
-    offsetHorizontal={0}
-    hasGradient={false}
-  />,
-  <Grid
-    key="grid-3"
-    offsetVertical={-1}
-    offsetHorizontal={1}
-    hasGradient={false}
-  />,
-  <Grid
-    key="grid-4"
-    offsetVertical={0}
-    offsetHorizontal={-1}
-    hasGradient={true}
-    circleX="150vw"
-    circleY="275vh"
-  />,
-];
-
-const PAGESAFTER = [
-  <Grid
-    key="grid-6"
-    offsetVertical={0}
-    offsetHorizontal={1}
-    hasGradient={true}
-    circleX="-50vw"
-    circleY="275vh"
-  />,
-  <Grid
-    key="grid-7"
-    offsetVertical={1}
-    offsetHorizontal={-1}
-    hasGradient={true}
-    circleX="150vw"
-    circleY="175vh"
-  />,
-  <Grid
-    key="grid-8"
-    offsetVertical={1}
-    offsetHorizontal={0}
-    hasGradient={true}
-    circleX="50vw"
-    circleY="175vh"
-  />,
-  <Grid
-    key="grid-9"
-    offsetVertical={1}
-    offsetHorizontal={1}
-    hasGradient={true}
-    circleX="-50vw"
-    circleY="175vh"
-  />,
-];
 
 export default function Home() {
   return (
@@ -82,12 +17,10 @@ export default function Home() {
       </Head>
       <main id="home" className="cursor-grab">
         <Canvas>
-          {PAGESBEFORE}
           <Hero />
-          {PAGESAFTER}
         </Canvas>
         {/* MLH Code of Conduct */}
-        <Footer className="absolute bottom-4 right-4 z-20 cursor-[url('/customcursor.svg'),auto]" />
+        <Footer className="absolute bottom-2 right-2 z-20 cursor-[url('/customcursor.svg'),auto]" />
         <a
           id="mlh-trust-badge"
           href="https://mlh.io/na?utm_source=na-hackathon&utm_medium=TrustBadge&utm_campaign=2026-season&utm_content=white"

@@ -6,7 +6,7 @@ const Reset = ({
   onResetViewAndItems: () => void;
 }) => {
   return (
-    <div className="text- absolute bottom-4 left-4 z-[1000] flex cursor-[url('/customcursor.svg'),auto]">
+    <div className="absolute bottom-4 left-4 z-[1000] flex cursor-[url('/customcursor.svg'),auto] select-none">
       <button
         className="rounded bg-gray-700 p-1.5 font-mono text-xs text-white shadow-md transition-colors hover:bg-gray-600 md:text-sm"
         onClick={onResetViewAndItems}
