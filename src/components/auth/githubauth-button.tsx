@@ -25,6 +25,7 @@ function GithubAuthButton({
         />
         <span>Sign {register ? "up" : "in"} with Github</span>
       </div>
+
     </Button>
   );
 }
