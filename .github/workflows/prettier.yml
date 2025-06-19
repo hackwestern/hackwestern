@@ -36,4 +36,10 @@ jobs:
           git add src
           git commit -m "Prettify code" || echo "No changes to commit"
       - name: Push changes
-        run: git push
+        run: |
+          git push
+          sleep 5
+      - name: Trigger Test workflow
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          event-type: test
