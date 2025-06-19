@@ -35,17 +35,16 @@ jobs:
           git config --global user.email 'prettify-hackwestern[bot]@users.noreply.github.com'
           git config --global user.name 'prettify-hackwestern[bot]'
           git add src
-          if ! git diff --cached --quiet; then
-            git commit -m "Prettify code"
-            git push origin HEAD:${{ github.head_ref }}
-            echo "trigger_test=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "trigger_test=false" >> "$GITHUB_OUTPUT"
-          fi
+          git commit -m "Prettify code" || echo "No changes to commit"
+      - name: Push changes
+        run: |
+          git push
+          sleep 5
       - name: Trigger Test workflow
-        if: steps.commit.outputs.trigger_test == 'true'
         uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           event-type: test
-
+          client-payload: |
+            {
+              "ref":"${{ github.event.pull_request.head.ref }}"
+            }
