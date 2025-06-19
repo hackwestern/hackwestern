@@ -120,8 +120,7 @@ const Canvas: FC<Props> = ({ children }) => {
         .then(() => {
           setIsResetting(false);
           setIsInitialized(true);
-        });
-    }
+        });    }
   }, [height, width, isInitialized]);
 
   const panToOffset = (
