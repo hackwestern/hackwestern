@@ -302,9 +302,7 @@ export const applications = createTable(
     ethnicity: ethnicity("ethnicity"),
     sexualOrientation: sexualOrientation("sexual_orientation"),
   },
-  (application) => ({
-    userIdIdx: index("user_id_idx").on(application.userId),
-  }),
+  (application) => [index("user_id_idx").on(application.userId)],
 );
 
 /**
@@ -364,12 +362,12 @@ export const accounts = createTable(
     id_token: text("id_token"),
     session_state: varchar("session_state", { length: 255 }),
   },
-  (account) => ({
-    compoundKey: primaryKey({
+  (account) => [
+    primaryKey({
       columns: [account.provider, account.providerAccountId],
     }),
-    userIdIdx: index("account_userId_idx").on(account.userId),
-  }),
+    index("account_userId_idx").on(account.userId),
+  ],
 );
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -397,21 +395,70 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 }));
 
 export const verificationTokens = createTable(
-  "verificationToken",
+  "verification_token",
   {
     identifier: varchar("identifier", { length: 255 }).notNull(),
     token: varchar("token", { length: 255 }).notNull(),
     expires: timestamp("expires", { mode: "date" }).notNull(),
   },
-  (vt) => ({
-    compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
-  }),
+  (vt) => [primaryKey({ columns: [vt.identifier, vt.token] })],
 );
 
-export const resetPasswordTokens = createTable("resetPasswordToken", {
+export const resetPasswordTokens = createTable("reset_password_token", {
   userId: varchar("userId", { length: 255 })
     .references(() => users.id)
     .primaryKey(),
   token: varchar("token", { length: 255 }),
   expires: timestamp("expires", { mode: "date" }).notNull(),
 });
+
+export const scavengerHuntItems = createTable("scavenger_hunt_item", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 12 }).unique().notNull(),
+  points: smallint("points").default(1).notNull(),
+  description: text("description"),
+});
+
+export const scavengerHuntScans = createTable(
+  "scavenger_hunt_scan",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    itemId: integer("item_id")
+      .notNull()
+      .references(() => scavengerHuntItems.id),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.itemId] }),
+    index("scan_user_idx").on(t.userId),
+  ],
+);
+
+export const scavengerHuntRewards = createTable("scavenger_hunt_reward", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  costPoints: smallint("cost_points").notNull(),
+  description: text("description"),
+  quantity: integer("quantity"),
+});
+
+export const scavengerHuntRedemptions = createTable(
+  "scavenger_hunt_redemption",
+  {
+    id: serial("id").primaryKey(),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    rewardId: integer("reward_id")
+      .notNull()
+      .references(() => scavengerHuntRewards.id),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("redemption_user_idx").on(t.userId)],
+);
