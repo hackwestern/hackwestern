@@ -58,7 +58,7 @@ function Hero() {
             draggable="false"
           />
         </div>
-        <div className="-mb-24 font-figtree text-sm text-medium">
+        <div className="font-figtree text-sm text-medium">
           The world is your canvas.
         </div>
         <PreregistrationForm />
