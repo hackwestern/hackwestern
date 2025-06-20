@@ -42,7 +42,7 @@ function Hero() {
             height={100}
             draggable="false"
             className="h-auto w-auto scale-75"
-            onClick={handleClickHorse}
+            onMouseDown={handleClickHorse}
           />
         </Draggable>
         {!clickedHorse && <Image 
