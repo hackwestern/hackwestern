@@ -115,9 +115,9 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
             {showPopup && (
               <motion.div
                 className={cn(
-                  "absolute left-1/2 top-full z-[-50] flex w-[250px] -translate-x-1/2 transform items-center justify-center rounded-lg border px-4 py-3 shadow-lg",
+                  "absolute left-1/2 top-full z-[-50] flex w-[250px] -translate-x-1/2 transform items-center justify-center rounded-lg border-2 border-heavy px-4 py-3 shadow-lg",
                   popupType === "success"
-                    ? "border-text-muted-foreground bg-highlight text-heavy"
+                    ? "bg-white text-heavy"
                     : "border-red-700 bg-white text-[#b91c1c]",
                 )}
                 initial={{ opacity: 0, y: -70, x: "-50%" }}
