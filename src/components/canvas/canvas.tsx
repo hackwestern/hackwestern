@@ -273,64 +273,56 @@ const Canvas: FC<Props> = ({ children }) => {
 
   const handleWheelZoom = useCallback(
     (event: WheelEvent) => {
-      sceneControls.stop();
+      event.preventDefault();
+      // pinch gesture on track
       const isPinch = event.ctrlKey || event.metaKey;
+      const isMouseWheelZoom =
+        event.deltaMode === WheelEvent.DOM_DELTA_LINE ||
+        Math.abs(event.deltaY) >= 100;
 
-      if (isPinch) event.preventDefault();
+      const MIN_ZOOM = 0.5;
+      const MAX_ZOOM = 10;
 
-      const zoomFactor = isPinch ? 0.08 : 0.16;
+      // mouse wheel zoom and track pad zoom have different sensitivities
+      const ZOOM_SENSITIVITY = isMouseWheelZoom ? 0.0015 : 0.015;
 
-      const newZoomValue =
-        event.deltaY > 0
-          ? zoom * (1 - zoomFactor)
-          : zoom * (1 / (1 - zoomFactor));
-      const clampedZoom = Math.max(0.6, Math.min(newZoomValue, 10));
+      if (isPinch) {
+        const nextZoom = Math.max(
+          MIN_ZOOM,
+          Math.min(zoom * (1 - event.deltaY * ZOOM_SENSITIVITY), MAX_ZOOM),
+        );
 
-      let mouseX = event.clientX;
-      let mouseY = event.clientY;
+        const rect = viewportRef.current?.getBoundingClientRect();
+        const vpLeft = rect?.left ?? 0;
+        const vpTop = rect?.top ?? 0;
 
-      if (viewportRef.current) {
-        const viewportRect = viewportRef.current.getBoundingClientRect();
-        mouseX = event.clientX - viewportRect.left;
-        mouseY = event.clientY - viewportRect.top;
+        const cursorSceneX = (event.clientX - vpLeft - panOffset.x) / zoom;
+        const cursorSceneY = (event.clientY - vpTop - panOffset.y) / zoom;
+
+        const newPanX = event.clientX - vpLeft - cursorSceneX * nextZoom;
+        const newPanY = event.clientY - vpTop - cursorSceneY * nextZoom;
+
+        sceneControls.set({ x: newPanX, y: newPanY, scale: nextZoom });
+
+        setPanOffset({ x: newPanX, y: newPanY });
+        setZoom(nextZoom);
+      } else {
+        sceneControls.stop();
+
+        const scrollSpeed = 1;
+        const newPanX = panOffset.x - event.deltaX * scrollSpeed;
+        const newPanY = panOffset.y - event.deltaY * scrollSpeed;
+
+        const minPanX = width - sceneWidth * zoom;
+        const maxPanX = 0;
+        const minPanY = height - sceneHeight * zoom;
+        const maxPanY = 0;
+
+        const clampedPanX = Math.min(Math.max(newPanX, minPanX), maxPanX);
+        const clampedPanY = Math.min(Math.max(newPanY, minPanY), maxPanY);
+
+        setPanOffset({ x: clampedPanX, y: clampedPanY });
       }
-
-      const minPanX = width - sceneWidth * clampedZoom;
-      const maxPanX = 0;
-      const minPanY = height - sceneHeight * clampedZoom;
-      const maxPanY = 0;
-
-      const newPanX = Math.min(
-        Math.max(
-          mouseX - ((mouseX - panOffset.x) / zoom) * clampedZoom,
-          minPanX,
-        ),
-        maxPanX,
-      );
-      const newPanY = Math.min(
-        Math.max(
-          mouseY - ((mouseY - panOffset.y) / zoom) * clampedZoom,
-          minPanY,
-        ),
-        maxPanY,
-      );
-
-      void sceneControls
-        .start(
-          {
-            x: newPanX,
-            y: newPanY,
-            scale: clampedZoom,
-          },
-          {
-            duration: 0.05,
-            ease: [0.4, 0, 0.2, 1],
-          },
-        )
-        .then(() => {
-          setZoom(clampedZoom);
-          setPanOffset({ x: newPanX, y: newPanY });
-        });
     },
     [
       zoom,
