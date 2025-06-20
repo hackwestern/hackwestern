@@ -129,7 +129,7 @@ function ShaderCanvas({ progress, className }: ShaderCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number>(1);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -172,7 +172,7 @@ function ShaderCanvas({ progress, className }: ShaderCanvasProps) {
 
     console.log('🔧 WebGL Debug: Shaders compiled successfully');
 
-    const program = gl.createProgram()!;
+    const program = gl.createProgram();
     gl.attachShader(program, vertShader);
     gl.attachShader(program, fragShader);
     gl.linkProgram(program);
@@ -357,7 +357,7 @@ export default function NameDropPreloader({
         style={{
           filter: useTransform(
             [contentBlur, brightnessBoost],
-            ([blur, brightness]) => `blur(${blur}px) brightness(${brightness})`
+            ([blur, brightness]) => `blur(${blur as number}px) brightness(${brightness as number})`
           ),
           transform: useTransform(contentPush, (push) => `translateY(${push}px)`),
         }}
