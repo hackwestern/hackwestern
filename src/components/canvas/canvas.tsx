@@ -57,7 +57,7 @@ async function panToOffsetScene(
     },
     {
       type: "spring",
-      visualDuration: 0.5,
+      visualDuration: 0.4,
       bounce: 0.2,
     },
   );
@@ -138,6 +138,7 @@ const Canvas: FC<Props> = ({ children }) => {
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     activePointersRef.current.set(event.pointerId, event);
     (event.target as HTMLElement).setPointerCapture(event.pointerId);
+    if (isResetting) return;
     sceneControls.stop();
     if (activePointersRef.current.size === 1) {
       const targetElement = event.target as HTMLElement;
@@ -179,7 +180,7 @@ const Canvas: FC<Props> = ({ children }) => {
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>): void => {
     if (isPanning || activePointersRef.current.size >= 2) sceneControls.stop();
-    if (!activePointersRef.current.has(event.pointerId)) return;
+    if (!activePointersRef.current.has(event.pointerId) || isResetting) return;
     activePointersRef.current.set(event.pointerId, event);
 
     if (isPanning && activePointersRef.current.size === 1) {
