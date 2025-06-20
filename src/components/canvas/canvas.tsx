@@ -12,10 +12,12 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import Reset from "~/components/canvas/reset";
+
 import { CanvasProvider } from "~/contexts/CanvasContext";
 import { getDistance, getMidpoint } from "~/lib/canvas";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
+import Navbar from "./navbar";
+import Toolbar from "./toolbar";
 
 export const OffsetComponent = ({
   offset,
@@ -54,7 +56,9 @@ async function panToOffsetScene(
       scale: 1,
     },
     {
-      duration: 0.3,
+      type: "spring",
+      visualDuration: 0.4,
+      bounce: 0.2,
     },
   );
 }
@@ -76,7 +80,6 @@ const Canvas: FC<Props> = ({ children }) => {
   });
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   const sceneControls = useAnimationControls();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -110,19 +113,16 @@ const Canvas: FC<Props> = ({ children }) => {
   };
 
   useEffect(() => {
-    if (!isInitialized) {
-      setIsResetting(true);
-      void panToOffsetScene({ x: -width, y: -height }, sceneControls)
-        .then(() => {
-          setPanOffset({ x: -width, y: -height });
-          setZoom(1);
-        })
-        .then(() => {
-          setIsResetting(false);
-          setIsInitialized(true);
-        });
-    }
-  }, [height, width, isInitialized]);
+    setIsResetting(true);
+    void panToOffsetScene({ x: -width, y: -height }, sceneControls)
+      .then(() => {
+        setPanOffset({ x: -width, y: -height });
+        setZoom(1);
+      })
+      .then(() => {
+        setIsResetting(false);
+      });
+  }, [height, width]);
 
   const panToOffset = (
     offset: Point,
@@ -138,6 +138,7 @@ const Canvas: FC<Props> = ({ children }) => {
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     activePointersRef.current.set(event.pointerId, event);
     (event.target as HTMLElement).setPointerCapture(event.pointerId);
+    if (isResetting) return;
     sceneControls.stop();
     if (activePointersRef.current.size === 1) {
       const targetElement = event.target as HTMLElement;
@@ -145,6 +146,17 @@ const Canvas: FC<Props> = ({ children }) => {
         targetElement.closest("[data-toolbar-button]") ??
         targetElement.closest("[data-navbar-button]")
       ) {
+        activePointersRef.current.delete(event.pointerId);
+        (event.target as HTMLElement).releasePointerCapture(event.pointerId);
+        return;
+      }
+
+      const isInputElement =
+        targetElement.tagName === "INPUT" ||
+        targetElement.tagName === "TEXTAREA" ||
+        targetElement.isContentEditable;
+
+      if (isInputElement) {
         activePointersRef.current.delete(event.pointerId);
         (event.target as HTMLElement).releasePointerCapture(event.pointerId);
         return;
@@ -168,7 +180,7 @@ const Canvas: FC<Props> = ({ children }) => {
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>): void => {
     if (isPanning || activePointersRef.current.size >= 2) sceneControls.stop();
-    if (!activePointersRef.current.has(event.pointerId)) return;
+    if (!activePointersRef.current.has(event.pointerId) || isResetting) return;
     activePointersRef.current.set(event.pointerId, event);
 
     if (isPanning && activePointersRef.current.size === 1) {
@@ -344,9 +356,6 @@ const Canvas: FC<Props> = ({ children }) => {
 
   return (
     <>
-      {(zoom !== 1 || panOffset.x !== -width || panOffset.y !== -height) && (
-        <Reset onResetViewAndItems={onResetViewAndItems} />
-      )}
       <CanvasProvider
         zoom={zoom}
         panOffset={panOffset}
@@ -354,9 +363,31 @@ const Canvas: FC<Props> = ({ children }) => {
         maxZIndex={maxZIndex}
         setMaxZIndex={setMaxZIndex}
       >
+        {(!(panOffset.x === -width && panOffset.y === -height && zoom === 1) ||
+          isResetting) && <Toolbar zoom={zoom} panOffset={panOffset} />}
+        <div
+          style={{
+            position: "fixed",
+            bottom: "30px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 1000,
+            pointerEvents: "auto",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Navbar
+            onResetViewAndItems={onResetViewAndItems}
+            panOffset={panOffset}
+            zoom={zoom}
+            isResetting={isResetting}
+          />
+        </div>
         <div
           ref={viewportRef}
-          className="relative h-screen w-screen touch-none select-none overflow-hidden"
+          className="relative h-screen touch-none select-none overflow-hidden"
           style={{
             touchAction: "none",
             overscrollBehavior: "contain",
@@ -413,7 +444,7 @@ const Gradient = () => (
 );
 
 const Dots = () => (
-  <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-50 [background-size:20px_20px]" />
+  <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-40 [background-size:20px_20px]" />
 );
 
 const Filter = () => (
