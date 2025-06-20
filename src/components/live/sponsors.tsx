@@ -1,9 +1,25 @@
-import { SponsorCard } from "../promo/sponsors";
+// import { SponsorCard } from "../promo/sponsors";
+
+const SponsorCard = ({
+  name,
+  logo,
+  link,
+}: {
+  name: string;
+  logo: string;
+  link: string;
+}) => {
+  return (
+    <div>
+      {name} {logo} {link}
+    </div>
+  );
+};
 
 const Sponsors = () => {
   return (
     <div className="p-12">
-      <h1 className="py-4 font-DM_Sans text-2xl font-medium text-slate-600">
+      <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
         Title Sponsor
       </h1>
       <div>
@@ -14,7 +30,7 @@ const Sponsors = () => {
         />
       </div>
       {/* Diamond Sponsors */}
-      <h1 className="py-4 font-DM_Sans text-2xl font-medium text-slate-600">
+      <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
         Diamond Sponsors
       </h1>
       <div className="flex flex-col gap-2 lg:gap-8">
@@ -37,7 +53,7 @@ const Sponsors = () => {
         />
       </div>
       {/* Gold Sponsors */}
-      <h1 className="py-4 font-DM_Sans text-2xl font-medium text-slate-600">
+      <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
         Gold Sponsors
       </h1>
       <div className="grid grid-cols-3 gap-2 lg:gap-8">
@@ -58,7 +74,7 @@ const Sponsors = () => {
         />
       </div>
       {/* Bronze Sponsors */}
-      <h1 className="py-4 font-DM_Sans text-2xl font-medium text-slate-600">
+      <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
         Bronze Sponsors
       </h1>
       <div className="grid grid-cols-3 flex-col gap-2 lg:gap-8">
@@ -99,7 +115,7 @@ const Sponsors = () => {
         />
       </div>
       {/* In-kind Sponsors */}
-      <h1 className="py-4 font-DM_Sans text-2xl font-medium text-slate-600">
+      <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
         In-kind Sponsors
       </h1>
       <div className="grid grid-cols-3 gap-2 lg:gap-8">

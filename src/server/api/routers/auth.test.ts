@@ -182,3 +182,66 @@ describe.sequential("auth.checkVerified", async () => {
     expect(result.verified).toEqual(verificationDate);
   });
 });
+
+describe("auth.checkValidToken", () => {
+  test("throw an error if no such token exists", async () => {
+    await expect(
+      caller.auth.checkValidToken({ token: "nonexistent-token" }),
+    ).rejects.toThrowError("not found");
+  });
+
+  test("throws an error if the token is expired", async () => {
+    const fakeId = faker.string.uuid();
+
+    const fakeUser = {
+      id: fakeId,
+      name: faker.person.fullName(),
+      email: faker.internet.email(),
+      emailVerified: faker.date.anytime(),
+      image: faker.image.avatar(),
+    };
+
+    await db.insert(users).values(fakeUser);
+
+    await db.insert(resetPasswordTokens).values({
+      userId: fakeId,
+      token: "expired-token",
+      expires: new Date(Date.now() - 1000 * 60 * 60),
+    });
+
+    await expect(
+      caller.auth.checkValidToken({ token: "expired-token" }),
+    ).rejects.toThrowError("expired");
+  });
+
+  test("validates the token successfully", async () => {
+    const fakeId = faker.string.uuid();
+
+    const fakeUser = {
+      id: fakeId,
+      name: faker.person.fullName(),
+      email: faker.internet.email(),
+      emailVerified: faker.date.anytime(),
+      image: faker.image.avatar(),
+    };
+
+    await db.insert(users).values(fakeUser);
+
+    await db.insert(resetPasswordTokens).values({
+      userId: fakeId,
+      token: "valid-token",
+      expires: new Date(Date.now() + 1000 * 60 * 60),
+    });
+
+    //reinserts item that gets deleted
+    await db.insert(verificationTokens).values({
+      identifier: fakeId,
+      token: "valid-token",
+      expires: new Date(Date.now() + 1000 * 60 * 60),
+    });
+
+    const result = await caller.auth.checkValidToken({ token: "valid-token" });
+
+    expect(result.success).toBe(true);
+  });
+});

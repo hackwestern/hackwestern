@@ -10,7 +10,7 @@ import { useToast } from "~/components/hooks/use-toast";
 import { api } from "~/utils/api";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { hackerLoginRedirect } from "~/utils/redirect";
+import { disabledRedirect, hackerLoginRedirect } from "~/utils/redirect";
 import CloudBackground from "~/components/cloud-background";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
 
@@ -118,4 +118,5 @@ export default function Register() {
   );
 }
 
-export const getServerSideProps = hackerLoginRedirect;
+// export const getServerSideProps = hackerLoginRedirect;
+export const getServerSideProps = disabledRedirect;
