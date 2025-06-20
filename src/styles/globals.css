@@ -1,10 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Playwrite+US+Modern:wght@100..400&display=swap");
-
-@font-face {
-  font-family: MagicRetro;
-  src: url("/public/fonts/magic_retro/MagicRetro.woff") format("woff");
-}
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -20,6 +13,19 @@ html {
 
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
+
+    --beige: #f5eade;
+    --lilac: #e2c4ff;
+    --salmon: #ffd2b4;
+    --coral: #ffb6a1;
+
+    --heavy: #3d214c;
+    --medium: #776780;
+    --light: #bbb3c0;
+
+    --offwhite: #fafafb; /* bg-white */
+    --highlight: #f4f2f7;
+    --border-light: #fffefe;
 
     --primary-50: 260, 100%, 99%;
     --primary-100: 260, 100%, 98%;
@@ -41,8 +47,7 @@ html {
     --violet-500: 247, 14%, 52%;
     --violet-600: 247, 15%, 34%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: #625679;
 
     --muted: var(--violet-200);
     --muted-foreground: var(--violet-400);
