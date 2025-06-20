@@ -36,7 +36,7 @@ function Hero() {
         </div>
         <div className="flex flex-col items-center justify-center">
           <motion.img
-            src="/HackWesternTitle.svg"
+            src="/hackwesterntitle.svg"
             alt="Hack Western XII"
             width={500}
             height={100}
