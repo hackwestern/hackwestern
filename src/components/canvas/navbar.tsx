@@ -1,7 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import SingleButton from "./single-button";
+import SingleButton from "../navbar/single-button";
 
 // Custom SponsorIcon component
 const SponsorIcon = ({ className }: { className?: string }) => (
@@ -54,19 +54,19 @@ const SponsorIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-interface ToolbarProps {
+interface NavbarProps {
   onResetViewAndItems?: () => void;
   panOffset?: { x: number; y: number };
   zoom?: number;
   isResetting?: boolean;
 }
 
-export default function Toolbar({
+export default function Navbar({
   onResetViewAndItems,
   panOffset = { x: 0, y: 0 },
   zoom = 1,
   isResetting = false,
-}: ToolbarProps) {
+}: NavbarProps) {
   const [expandedButton, setExpandedButton] = useState<string | null>(null);
 
   // Check if canvas is at center position or currently resetting
