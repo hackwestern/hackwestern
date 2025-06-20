@@ -10,11 +10,11 @@ const Toolbar = ({ zoom, panOffset }: { zoom: number; panOffset: Point }) => {
 
   return (
     <div
-      className="absolute left-4 top-4 z-[1000] cursor-default rounded bg-gray-700 p-2 font-mono text-xs text-white shadow-md sm:bottom-4 sm:top-auto md:text-sm"
+      className="absolute left-4 top-4 z-[1000] cursor-default rounded bg-white p-2 font-mono text-xs text-heavy shadow-md  md:text-sm"
       onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
     >
-      x: {(-panOffset.x / zoom - width).toFixed(2)}, y:{" "}
-      {(-panOffset.y / zoom - height).toFixed(2)}, zoom: {zoom.toFixed(2)}x
+      x: {(-panOffset.x / zoom - width).toFixed(2)} y:{" "}
+      {(-panOffset.y / zoom - height).toFixed(2)} zoom: {zoom.toFixed(2)}x
     </div>
   );
 };

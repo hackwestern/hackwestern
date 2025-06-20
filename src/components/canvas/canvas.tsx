@@ -56,7 +56,9 @@ async function panToOffsetScene(
       scale: 1,
     },
     {
-      duration: 0.3,
+      type: "spring",
+      visualDuration: 0.5,
+      bounce: 0.2
     },
   );
 }
