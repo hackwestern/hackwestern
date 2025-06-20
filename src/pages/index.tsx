@@ -3,7 +3,6 @@ import { Footer } from "~/components/footer";
 import Hero from "~/components/promo/Hero";
 import Image from "next/image";
 import Canvas from "~/components/canvas/canvas";
-import CursorFollower from "~/components/canvas/cursor";
 
 export default function Home() {
   return (
@@ -17,7 +16,6 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main id="home" className="cursor-grab">
-        <CursorFollower />
         <Canvas>
           <Hero />
         </Canvas>
