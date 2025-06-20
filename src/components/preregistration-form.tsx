@@ -72,7 +72,7 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
     // Reset mutation state and hide popup before new submission
     reset();
     setShowPopup(false);
-    
+
     // Call the mutation
     mutate(data);
   }
@@ -80,7 +80,9 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
   function onError(errors: Record<string, { message?: string }>) {
     // Show popup for validation errors
     if (errors.email) {
-      setPopupMessage(errors.email.message ?? "Please enter a valid email address.");
+      setPopupMessage(
+        errors.email.message ?? "Please enter a valid email address.",
+      );
       setPopupType("error");
       setShowPopup(true);
     }
@@ -97,12 +99,10 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
     }
   }, [showPopup]);
 
-
-
   return (
     <div
       className={cn(
-        "flex w-full flex-col items-center justify-center space-y-4 px-12 text-primary relative min-h-[200px]",
+        "relative flex min-h-[200px] w-full flex-col items-center justify-center space-y-4 px-12 text-primary",
         className,
       )}
     >
@@ -110,29 +110,31 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
         {showPopup && (
           <motion.div
             className={cn(
-              "absolute top-full left-1/2 mt-4 w-[250px] transform -translate-x-1/2 flex items-center justify-center rounded-lg border px-4 py-3 shadow-lg z-[-50]",
-              popupType === "success" 
+              "absolute left-1/2 top-full z-[-50] mt-4 flex w-[250px] -translate-x-1/2 transform items-center justify-center rounded-lg border px-4 py-3 shadow-lg",
+              popupType === "success"
                 ? "border-text-muted-foreground bg-highlight text-heavy"
-                : "border-red-700 bg-white text-[#b91c1c]"
+                : "border-red-700 bg-white text-[#b91c1c]",
             )}
             initial={{ opacity: 0, y: -120, x: "-50%" }}
             animate={{ opacity: 1, y: -90, x: "-50%" }}
             exit={{ opacity: 0, y: -120, x: "-50%" }}
-            transition={{ 
-              type: 'spring', 
-              damping: 15, 
-              stiffness: 200
+            transition={{
+              type: "spring",
+              damping: 15,
+              stiffness: 200,
             }}
           >
-            <span className="flex items-center justify-between w-full">
+            <span className="flex w-full items-center justify-between">
               <span className="flex items-center">
-                <span className="font-medium text-sm font-figtree ">{popupMessage}</span>
+                <span className="font-figtree text-sm font-medium ">
+                  {popupMessage}
+                </span>
               </span>
             </span>
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       <Form {...preregistrationForm}>
         <form
           className="w-full"
@@ -143,11 +145,11 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
             name="email"
             render={({ field }) => (
               <FormItem className="space-y-4">
-                <div className="flex w-max space-x-2 rounded-xl border border-purple/30 bg-white pb-1 pr-1 pt-1 focus-within:ring focus-within:ring-2 focus-within:ring-ring">
+                <div className="border-purple/30 flex w-max space-x-2 rounded-xl border bg-white pb-1 pr-1 pt-1 focus-within:ring focus-within:ring-2 focus-within:ring-ring">
                   <FormLabel className="sr-only">Email Address</FormLabel>
                   <FormControl>
-                    <div className="py-0.5 flex items-center gap-1">
-                      <Mail className="w-6 h-6 ml-2 text-muted-foreground" />
+                    <div className="flex items-center gap-1 py-0.5">
+                      <Mail className="ml-2 h-6 w-6 text-muted-foreground" />
                       <Input
                         className="border-none bg-transparent text-heavy"
                         variant="noRing"
@@ -157,8 +159,8 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
                     </div>
                   </FormControl>
                   <div className="pt-1">
-                    <Button 
-                      variant="primary" 
+                    <Button
+                      variant="primary"
                       className="gap-2"
                       type="submit"
                       disabled={isPending}

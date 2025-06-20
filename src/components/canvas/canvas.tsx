@@ -375,20 +375,25 @@ const Canvas: FC<Props> = ({ children }) => {
             <Filter />
             {children}
           </motion.div>
-          <div 
+          <div
             style={{
-              position: 'fixed',
-              bottom: '30px',
-              left: '50%',
-              transform: 'translateX(-50%)',
+              position: "fixed",
+              bottom: "30px",
+              left: "50%",
+              transform: "translateX(-50%)",
               zIndex: 1000,
-              pointerEvents: 'auto',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
+              pointerEvents: "auto",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
             }}
           >
-            <Toolbar onResetViewAndItems={onResetViewAndItems} panOffset={panOffset} zoom={zoom} isResetting={isResetting} />
+            <Toolbar
+              onResetViewAndItems={onResetViewAndItems}
+              panOffset={panOffset}
+              zoom={zoom}
+              isResetting={isResetting}
+            />
           </div>
         </div>
       </CanvasProvider>

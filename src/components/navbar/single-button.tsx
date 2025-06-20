@@ -56,10 +56,11 @@ export default function SingleButton({
     // Handle email copying with toast
     if (emailAddress) {
       const mailtoLink = `mailto:${emailAddress}`;
-      
+
       // Try to copy to clipboard
       if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(mailtoLink)
+        navigator.clipboard
+          .writeText(mailtoLink)
           .then(() => {
             toast({
               title: "Email copied! :)",
@@ -68,19 +69,20 @@ export default function SingleButton({
             });
           })
           .catch((error) => {
-            console.error('Failed to copy to clipboard:', error);
+            console.error("Failed to copy to clipboard:", error);
             // Fallback: try copying just the email address
-                          navigator.clipboard.writeText(emailAddress) 
-                .then(() => {
-                  toast({
-                    title: "Email copied! :)",
-                    duration: 3000,
-                    variant: "cute",
-                  });
-                })
+            navigator.clipboard
+              .writeText(emailAddress)
+              .then(() => {
+                toast({
+                  title: "Email copied! :)",
+                  duration: 3000,
+                  variant: "cute",
+                });
+              })
               .catch(() => {
                 // Final fallback: open email client
-                window.open(mailtoLink, '_blank');
+                window.open(mailtoLink, "_blank");
                 toast({
                   title: "Email app opened! :)",
                   duration: 3000,
@@ -92,13 +94,13 @@ export default function SingleButton({
         // Fallback for non-secure contexts or older browsers
         try {
           // Try the deprecated execCommand method
-          const textArea = document.createElement('textarea');
+          const textArea = document.createElement("textarea");
           textArea.value = emailAddress;
           document.body.appendChild(textArea);
           textArea.select();
-          const successful = document.execCommand('copy');
+          const successful = document.execCommand("copy");
           document.body.removeChild(textArea);
-          
+
           if (successful) {
             toast({
               title: "Email copied! :)",
@@ -106,12 +108,12 @@ export default function SingleButton({
               variant: "cute",
             });
           } else {
-            throw new Error('execCommand failed');
+            throw new Error("execCommand failed");
           }
         } catch (error) {
-          console.error('All copy methods failed:', error);
+          console.error("All copy methods failed:", error);
           // Final fallback: open email client
-          window.open(mailtoLink, '_blank');
+          window.open(mailtoLink, "_blank");
           toast({
             title: "Email app opened! :)",
             duration: 3000,
@@ -124,7 +126,7 @@ export default function SingleButton({
 
     // Handle link redirection
     if (link) {
-      window.open(link, '_blank', 'noopener,noreferrer');
+      window.open(link, "_blank", "noopener,noreferrer");
       return;
     }
 
@@ -154,7 +156,6 @@ export default function SingleButton({
       >
         {isPushed ? (
           <div className="flex items-center gap-3">
-
             <div>
               {Icon ? (
                 <Icon
@@ -208,7 +209,7 @@ export default function SingleButton({
                     duration: 0.05,
                     ease: "easeOut",
                   }}
-                  className="absolute z-50 pointer-events-none -top-10 left-1/2"
+                  className="pointer-events-none absolute -top-10 left-1/2 z-50"
                 >
                   <div className="rounded-sm bg-gradient-to-t from-black/10 to-transparent px-[1px] pb-[2.5px] pt-[1px]">
                     <div className="whitespace-nowrap rounded-sm bg-white px-2 py-1 text-sm text-black">
