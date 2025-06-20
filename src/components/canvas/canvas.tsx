@@ -16,7 +16,8 @@ import React, {
 import { CanvasProvider } from "~/contexts/CanvasContext";
 import { getDistance, getMidpoint } from "~/lib/canvas";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
-import Toolbar from "~/components/navbar/Toolbar";
+import Navbar from "./navbar";
+import Toolbar from "./toolbar";
 
 export const OffsetComponent = ({
   offset,
@@ -55,7 +56,9 @@ async function panToOffsetScene(
       scale: 1,
     },
     {
-      duration: 0.3,
+      type: "spring",
+      visualDuration: 0.5,
+      bounce: 0.2,
     },
   );
 }
@@ -352,6 +355,7 @@ const Canvas: FC<Props> = ({ children }) => {
         maxZIndex={maxZIndex}
         setMaxZIndex={setMaxZIndex}
       >
+        <Toolbar zoom={zoom} panOffset={panOffset} />
         <div
           ref={viewportRef}
           className="relative h-screen touch-none select-none overflow-hidden"
@@ -388,7 +392,7 @@ const Canvas: FC<Props> = ({ children }) => {
               alignItems: "center",
             }}
           >
-            <Toolbar
+            <Navbar
               onResetViewAndItems={onResetViewAndItems}
               panOffset={panOffset}
               zoom={zoom}

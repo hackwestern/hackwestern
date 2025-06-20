@@ -4,7 +4,7 @@ import { api } from "~/utils/api";
 import { useToast } from "~/components/hooks/use-toast";
 import { useState } from "react";
 import { signOut } from "next-auth/react";
-import { isVerifiedRedirect } from "~/utils/redirect";
+import { disabledRedirect, isVerifiedRedirect } from "~/utils/redirect";
 import { useRouter } from "next/router";
 import CloudBackground from "~/components/cloud-background";
 
@@ -83,4 +83,5 @@ const NotVerified = () => {
 };
 
 export default NotVerified;
-export const getServerSideProps = isVerifiedRedirect;
+// export const getServerSideProps = isVerifiedRedirect;
+export const getServerSideProps = disabledRedirect;
