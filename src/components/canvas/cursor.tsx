@@ -1,16 +1,22 @@
 import { useEffect, useRef } from "react";
-import throttle from "lodash";
 
 export default function CursorFollower() {
   const followerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleMouseMove = throttle((e: MouseEvent) => {
-      if (followerRef.current) {
-        followerRef.current.style.left = `${e.clientX}px`;
-        followerRef.current.style.top = `${e.clientY}px`;
+    let ticking = false;
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          if (followerRef.current) {
+            followerRef.current.style.left = `${e.clientX}px`;
+            followerRef.current.style.top = `${e.clientY}px`;
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
-    }, 100) as (e: MouseEvent) => void;
+    };
 
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
