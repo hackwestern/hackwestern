@@ -3,8 +3,6 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import SingleButton from "../navbar/single-button";
 
-
-
 interface NavbarProps {
   onResetViewAndItems?: () => void;
   panOffset?: { x: number; y: number };
