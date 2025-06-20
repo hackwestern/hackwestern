@@ -1,6 +1,12 @@
 "use client";
 
-import { motion, AnimatePresence, useMotionValue, animate, useTransform } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  animate,
+  useTransform,
+} from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import React from "react";
 import { usePreloader } from "../preloader/PreloaderContext";
@@ -129,22 +135,22 @@ function ShaderCanvas({ progress, className }: ShaderCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
-  const animationFrameRef = useRef<number>(1);
+  const animationFrameRef = useRef<number>();
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
-      console.log('🔧 WebGL Debug: Canvas not found');
+      console.log("🔧 WebGL Debug: Canvas not found");
       return;
     }
 
-    const gl = canvas.getContext('webgl');
+    const gl = canvas.getContext("webgl");
     if (!gl) {
-      console.warn('🔧 WebGL Debug: WebGL not supported, falling back to CSS');
+      console.warn("🔧 WebGL Debug: WebGL not supported, falling back to CSS");
       return;
     }
 
-    console.log('🔧 WebGL Debug: Context created successfully');
+    console.log("🔧 WebGL Debug: Context created successfully");
 
     glRef.current = gl;
 
@@ -153,9 +159,9 @@ function ShaderCanvas({ progress, className }: ShaderCanvasProps) {
       const shader = gl.createShader(type)!;
       gl.shaderSource(shader, source);
       gl.compileShader(shader);
-      
+
       if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+        console.error("Shader compile error:", gl.getShaderInfoLog(shader));
         gl.deleteShader(shader);
         return null;
       }
@@ -166,38 +172,36 @@ function ShaderCanvas({ progress, className }: ShaderCanvasProps) {
     const fragShader = compileShader(fragmentShader, gl.FRAGMENT_SHADER);
 
     if (!vertShader || !fragShader) {
-      console.error('🔧 WebGL Debug: Shader compilation failed');
+      console.error("🔧 WebGL Debug: Shader compilation failed");
       return;
     }
 
-    console.log('🔧 WebGL Debug: Shaders compiled successfully');
+    console.log("🔧 WebGL Debug: Shaders compiled successfully");
 
-    const program = gl.createProgram();
+    const program = gl.createProgram()!;
     gl.attachShader(program, vertShader);
     gl.attachShader(program, fragShader);
     gl.linkProgram(program);
 
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-      console.error('🔧 WebGL Debug: Program link error:', gl.getProgramInfoLog(program));
+      console.error(
+        "🔧 WebGL Debug: Program link error:",
+        gl.getProgramInfoLog(program),
+      );
       return;
     }
 
-    console.log('🔧 WebGL Debug: Program linked successfully');
+    console.log("🔧 WebGL Debug: Program linked successfully");
     programRef.current = program;
 
     // Create geometry
-    const vertices = new Float32Array([
-      -1, -1,
-       1, -1,
-      -1,  1,
-       1,  1,
-    ]);
+    const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
 
     const buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 
-    const positionLocation = gl.getAttribLocation(program, 'position');
+    const positionLocation = gl.getAttribLocation(program, "position");
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
@@ -206,31 +210,37 @@ function ShaderCanvas({ progress, className }: ShaderCanvasProps) {
       if (!gl || !program) return;
 
       gl.viewport(0, 0, canvas.width, canvas.height);
-      
+
       // Enable blending for transparency
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      
+
       // Clear with transparent background
       gl.clearColor(0.0, 0.0, 0.0, 0.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
-      
+
       gl.useProgram(program);
 
       // Set uniforms
-      const timeLocation = gl.getUniformLocation(program, 'time');
-      const progressLocation = gl.getUniformLocation(program, 'progress');
-      const resolutionLocation = gl.getUniformLocation(program, 'resolution');
-      const rippleCenterLocation = gl.getUniformLocation(program, 'rippleCenter');
+      const timeLocation = gl.getUniformLocation(program, "time");
+      const progressLocation = gl.getUniformLocation(program, "progress");
+      const resolutionLocation = gl.getUniformLocation(program, "resolution");
+      const rippleCenterLocation = gl.getUniformLocation(
+        program,
+        "rippleCenter",
+      );
 
       if (timeLocation) gl.uniform1f(timeLocation, time * 0.001);
       if (progressLocation) gl.uniform1f(progressLocation, progress);
-      if (resolutionLocation) gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
+      if (resolutionLocation)
+        gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
       if (rippleCenterLocation) gl.uniform2f(rippleCenterLocation, 0.5, 0.0); // Center-top
 
       // Debug logging every 10th frame
       if (Math.floor(time) % 100 === 0) {
-        console.log(`🔧 WebGL Debug: Progress=${progress.toFixed(3)}, Time=${(time*0.001).toFixed(2)}s`);
+        console.log(
+          `🔧 WebGL Debug: Progress=${progress.toFixed(3)}, Time=${(time * 0.001).toFixed(2)}s`,
+        );
       }
 
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -258,8 +268,8 @@ function ShaderCanvas({ progress, className }: ShaderCanvasProps) {
     };
 
     updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
   }, []);
 
   return (
@@ -267,13 +277,13 @@ function ShaderCanvas({ progress, className }: ShaderCanvasProps) {
       ref={canvasRef}
       className={className}
       style={{
-        position: 'absolute',
+        position: "absolute",
         top: 0,
         left: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-        mixBlendMode: 'multiply',
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none",
+        mixBlendMode: "multiply",
         opacity: progress > 0 ? 0.8 : 0,
       }}
     />
@@ -301,7 +311,11 @@ export default function NameDropPreloader({
 
   // Derived values for different stages of the animation
   const shockwaveProgress = useTransform(progress, [0, 0.3, 1], [0, 1, 0]);
-  const brightnessBoost = useTransform(progress, [0, 0.4, 0.8, 1], [1, 1.2, 1.1, 1]);
+  const brightnessBoost = useTransform(
+    progress,
+    [0, 0.4, 0.8, 1],
+    [1, 1.2, 1.1, 1],
+  );
   const contentBlur = useTransform(progress, [0, 0.3, 0.7, 1], [0, 15, 8, 0]); // Reduced max blur from 25px to 15px
   const contentOpacity = useTransform(progress, [0, 0.8, 1], [1, 0.5, 1]);
   const contentPush = useTransform(progress, [0, 0.4, 1], [0, 3, 0]); // Subtle push effect
@@ -357,9 +371,12 @@ export default function NameDropPreloader({
         style={{
           filter: useTransform(
             [contentBlur, brightnessBoost],
-            ([blur, brightness]) => `blur(${blur as number}px) brightness(${brightness as number})`
+            ([blur, brightness]) => `blur(${blur}px) brightness(${brightness})`,
           ),
-          transform: useTransform(contentPush, (push) => `translateY(${push}px)`),
+          transform: useTransform(
+            contentPush,
+            (push) => `translateY(${push}px)`,
+          ),
         }}
       >
         {children}
@@ -371,7 +388,7 @@ export default function NameDropPreloader({
       <AnimatePresence>
         {isVisible && (
           <motion.div
-            className="fixed inset-0 z-50 pointer-events-none overflow-hidden"
+            className="pointer-events-none fixed inset-0 z-50 overflow-hidden"
             initial={{ opacity: 1 }}
             exit={{
               opacity: 0,
@@ -382,19 +399,19 @@ export default function NameDropPreloader({
               ease: "easeOut",
             }}
             style={{
-              backgroundColor: 'transparent',
-              mixBlendMode: 'normal',
+              backgroundColor: "transparent",
+              mixBlendMode: "normal",
             }}
           >
             {/* CSS Layer with backdrop effects - this actually affects content underneath */}
             <div className="absolute inset-0">
               {/* Pin-sized Core Flash */}
               <motion.div
-                className="absolute w-2 h-2 bg-white rounded-full"
+                className="absolute h-2 w-2 rounded-full bg-white"
                 style={{
-                  left: '50%',
-                  top: '-20px', // Moved higher - starts above screen edge
-                  transform: 'translateX(-50%)',
+                  left: "50%",
+                  top: "-20px", // Moved higher - starts above screen edge
+                  transform: "translateX(-50%)",
                 }}
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{
@@ -411,27 +428,27 @@ export default function NameDropPreloader({
               {/* Expanding Ring */}
               {showShockwave && (
                 <motion.div
-                  className="absolute border-2 border-white rounded-full"
+                  className="absolute rounded-full border-2 border-white"
                   style={{
-                    left: '50%',
-                    top: '-10%', // Moved higher - starts above screen edge
-                    transform: 'translateX(-50%) translateY(-50%)',
+                    left: "50%",
+                    top: "-10%", // Moved higher - starts above screen edge
+                    transform: "translateX(-50%) translateY(-50%)",
                   }}
                   initial={{
                     width: 8,
                     height: 4,
                     opacity: 0.5,
-                    borderColor: 'rgba(255,255,255,1)',
+                    borderColor: "rgba(255,255,255,1)",
                   }}
                   animate={{
                     width: [4, 200, 800, 1200],
                     height: [4, 200, 800, 1200],
                     opacity: [1, 0.8, 0.3, 0],
                     borderColor: [
-                      'rgba(255,255,255,1)',
-                      'rgba(255,255,255,0.8)',
-                      'rgba(147,51,234,0.4)', // Purple tint
-                      'rgba(147,51,234,0)',
+                      "rgba(255,255,255,1)",
+                      "rgba(255,255,255,0.8)",
+                      "rgba(147,51,234,0.4)", // Purple tint
+                      "rgba(147,51,234,0)",
                     ],
                   }}
                   transition={{
@@ -442,64 +459,70 @@ export default function NameDropPreloader({
               )}
 
               {/* Ripple Distortion Effect */}
-              {showShockwave && [0, 1, 2].map((index) => (
-                <motion.div
-                  key={`ripple-distort-${index}`}
-                  className="absolute"
-                  style={{
-                    left: '50%',
-                    top: '-20px', // Moved higher - starts above screen edge  
-                    transform: 'translateX(-50%)',
-                  }}
-                  initial={{
-                    width: 20,
-                    height: 10,
-                    opacity: 0,
-                  }}
-                  animate={{
-                    width: [20, 600, 1000, 1400],
-                    height: [10, 300, 500, 700],
-                    opacity: [0, 0.8, 0.4, 0],
-                  }}
-                  transition={{
-                    duration: duration / 1000,
-                    delay: index * 0.1,
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                  }}
-                >
-                  <div
-                    className="w-full h-full"
+              {showShockwave &&
+                [0, 1, 2].map((index) => (
+                  <motion.div
+                    key={`ripple-distort-${index}`}
+                    className="absolute"
                     style={{
-                      clipPath: 'ellipse(50% 100% at 50% 0%)', // Creates half-circle from top
-                      backdropFilter: `blur(${15 + index * 5}px) brightness(${1.2 + index * 0.1}) saturate(0.8)`,
-                      background: `radial-gradient(ellipse at 50% 0%, 
+                      left: "50%",
+                      top: "-20px", // Moved higher - starts above screen edge
+                      transform: "translateX(-50%)",
+                    }}
+                    initial={{
+                      width: 20,
+                      height: 10,
+                      opacity: 0,
+                    }}
+                    animate={{
+                      width: [20, 600, 1000, 1400],
+                      height: [10, 300, 500, 700],
+                      opacity: [0, 0.8, 0.4, 0],
+                    }}
+                    transition={{
+                      duration: duration / 1000,
+                      delay: index * 0.1,
+                      ease: [0.25, 0.46, 0.45, 0.94],
+                    }}
+                  >
+                    <div
+                      className="h-full w-full"
+                      style={{
+                        clipPath: "ellipse(50% 100% at 50% 0%)", // Creates half-circle from top
+                        backdropFilter: `blur(${15 + index * 5}px) brightness(${1.2 + index * 0.1}) saturate(0.8)`,
+                        background: `radial-gradient(ellipse at 50% 0%, 
                         rgba(255,255,255,0.2) 0%,
                         rgba(255,255,255,0.1) 30%,
                         rgba(147,51,234,0.05) 60%,
                         transparent 80%
                       )`,
-                      mixBlendMode: 'overlay',
-                      borderRadius: '0 0 50% 50%', // Rounded bottom for smooth half-circle
-                    }}
-                  />
-                </motion.div>
-              ))}
+                        mixBlendMode: "overlay",
+                        borderRadius: "0 0 50% 50%", // Rounded bottom for smooth half-circle
+                      }}
+                    />
+                  </motion.div>
+                ))}
 
               {/* Debug Overlay */}
               {debugMode && (
                 <motion.div
-                  className="absolute top-4 left-4 bg-black/80 text-white p-3 rounded text-sm font-mono border border-yellow-400"
-                  style={{ fontSize: '12px' }}
+                  className="absolute left-4 top-4 rounded border border-yellow-400 bg-black/80 p-3 font-mono text-sm text-white"
+                  style={{ fontSize: "12px" }}
                 >
-                  <div className="text-yellow-400 font-bold mb-1">🔧 NameDrop Debug</div>
-                  Progress: {Math.round(progress.get() * 100)}%<br/>
-                  Shockwave Progress: {Math.round(shockwaveProgress.get() * 100)}%<br/>
-                  Duration: {duration}ms<br/>
-                  Shockwave: {showShockwave ? '🟢 Active' : '🔴 Inactive'}<br/>
-                  <div className="text-green-400 mt-1">
+                  <div className="mb-1 font-bold text-yellow-400">
+                    🔧 NameDrop Debug
+                  </div>
+                  Progress: {Math.round(progress.get() * 100)}%<br />
+                  Shockwave Progress:{" "}
+                  {Math.round(shockwaveProgress.get() * 100)}%<br />
+                  Duration: {duration}ms
+                  <br />
+                  Shockwave: {showShockwave ? "🟢 Active" : "🔴 Inactive"}
+                  <br />
+                  <div className="mt-1 text-green-400">
                     🚀 WebGL Shader: Active
                   </div>
-                  <div className="text-cyan-400 text-xs mt-1">
+                  <div className="mt-1 text-xs text-cyan-400">
                     Check console for WebGL logs
                   </div>
                 </motion.div>
