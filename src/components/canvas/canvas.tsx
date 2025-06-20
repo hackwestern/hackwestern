@@ -362,7 +362,8 @@ const Canvas: FC<Props> = ({ children }) => {
         maxZIndex={maxZIndex}
         setMaxZIndex={setMaxZIndex}
       >
-        <Toolbar zoom={zoom} panOffset={panOffset} />
+        {(!(panOffset.x === -width && panOffset.y === -height && zoom === 1) ||
+          isResetting) && <Toolbar zoom={zoom} panOffset={panOffset} />}
         <div
           style={{
             position: "fixed",
