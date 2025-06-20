@@ -80,7 +80,6 @@ const Canvas: FC<Props> = ({ children }) => {
   });
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
   const sceneControls = useAnimationControls();
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -114,19 +113,16 @@ const Canvas: FC<Props> = ({ children }) => {
   };
 
   useEffect(() => {
-    if (!isInitialized) {
-      setIsResetting(true);
-      void panToOffsetScene({ x: -width, y: -height }, sceneControls)
-        .then(() => {
-          setPanOffset({ x: -width, y: -height });
-          setZoom(1);
-        })
-        .then(() => {
-          setIsResetting(false);
-          setIsInitialized(true);
-        });
-    }
-  }, [height, width, isInitialized]);
+    setIsResetting(true);
+    void panToOffsetScene({ x: -width, y: -height }, sceneControls)
+      .then(() => {
+        setPanOffset({ x: -width, y: -height });
+        setZoom(1);
+      })
+      .then(() => {
+        setIsResetting(false);
+      });
+  }, [height, width]);
 
   const panToOffset = (
     offset: Point,

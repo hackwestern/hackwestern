@@ -14,7 +14,8 @@ const Toolbar = ({ zoom, panOffset }: { zoom: number; panOffset: Point }) => {
       onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
     >
       ({(-panOffset.x / zoom - width).toFixed(0)},
-      {(-panOffset.y / zoom - height).toFixed(0)}) | {zoom.toFixed(2)}x
+      {(-panOffset.y / zoom - height).toFixed(0)})
+      <span className="text-light"> |</span> {zoom.toFixed(2)}x
     </div>
   );
 };
