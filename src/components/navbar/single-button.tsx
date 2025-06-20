@@ -53,84 +53,53 @@ export default function SingleButton({
   }, [isHovered]);
 
   const handleClick = () => {
-    // Handle email copying with toast
-    if (emailAddress) {
-      const mailtoLink = `mailto:${emailAddress}`;
+    // quick toast helper
+    const notify = (msg: string) =>
+      toast({ title: msg, duration: 3000, variant: "cute" });
 
-      // Try to copy to clipboard
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard
-          .writeText(mailtoLink)
-          .then(() => {
-            toast({
-              title: "Email copied! :)",
-              duration: 3000,
-              variant: "cute",
-            });
-          })
-          .catch((error) => {
-            console.error("Failed to copy to clipboard:", error);
-            // Fallback: try copying just the email address
-            navigator.clipboard
-              .writeText(emailAddress)
-              .then(() => {
-                toast({
-                  title: "Email copied! :)",
-                  duration: 3000,
-                  variant: "cute",
-                });
-              })
-              .catch(() => {
-                // Final fallback: open email client
-                window.open(mailtoLink, "_blank");
-                toast({
-                  title: "Email app opened! :)",
-                  duration: 3000,
-                  variant: "cute",
-                });
-              });
-          });
-      } else {
-        // Fallback for non-secure contexts or older browsers
-        try {
-          // Try the deprecated execCommand method
-          const textArea = document.createElement("textarea");
-          textArea.value = emailAddress;
-          document.body.appendChild(textArea);
-          textArea.select();
-          const successful = document.execCommand("copy");
-          document.body.removeChild(textArea);
-
-          if (successful) {
-            toast({
-              title: "Email copied! :)",
-              duration: 3000,
-              variant: "cute",
-            });
-          } else {
-            throw new Error("execCommand failed");
-          }
-        } catch (error) {
-          console.error("All copy methods failed:", error);
-          // Final fallback: open email client
-          window.open(mailtoLink, "_blank");
-          toast({
-            title: "Email app opened! :)",
-            duration: 3000,
-            variant: "cute",
-          });
+    // minimal cross-browser copy helper
+    const copyText = async (text: string): Promise<boolean> => {
+      try {
+        if (navigator.clipboard?.writeText && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return true;
         }
+        // fallback: execCommand
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        return ok;
+      } catch {
+        return false;
       }
+    };
+
+    if (emailAddress) {
+      const mailto = `mailto:${emailAddress}`;
+
+      void (async () => {
+        const copied =
+          (await copyText(mailto)) || (await copyText(emailAddress));
+
+        if (copied) {
+          notify("Email copied! 🙂");
+        } else {
+          window.open(mailto, "_blank");
+          notify("Email app opened! 🙂");
+        }
+      })();
+
       return;
     }
 
-    // Handle link redirection
     if (link) {
       window.open(link, "_blank", "noopener,noreferrer");
       return;
     }
 
-    // Default onClick behavior
     onClick?.();
   };
 
