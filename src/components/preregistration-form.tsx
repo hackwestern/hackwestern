@@ -102,44 +102,39 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
   return (
     <div
       className={cn(
-        "relative flex min-h-[200px] w-full flex-col items-center justify-center space-y-4 px-12 text-primary",
+        "relative flex min-h-[100px] w-full flex-col items-center justify-center space-y-4 px-12 text-primary",
         className,
       )}
     >
-      <AnimatePresence>
-        {showPopup && (
-          <motion.div
-            className={cn(
-              "absolute left-1/2 top-full z-[-50] mt-4 flex w-[250px] -translate-x-1/2 transform items-center justify-center rounded-lg border px-4 py-3 shadow-lg",
-              popupType === "success"
-                ? "border-text-muted-foreground bg-highlight text-heavy"
-                : "border-red-700 bg-white text-[#b91c1c]",
-            )}
-            initial={{ opacity: 0, y: -120, x: "-50%" }}
-            animate={{ opacity: 1, y: -90, x: "-50%" }}
-            exit={{ opacity: 0, y: -120, x: "-50%" }}
-            transition={{
-              type: "spring",
-              damping: 15,
-              stiffness: 200,
-            }}
-          >
-            <span className="flex w-full items-center justify-between">
-              <span className="flex items-center">
-                <span className="font-figtree text-sm font-medium ">
-                  {popupMessage}
-                </span>
-              </span>
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <Form {...preregistrationForm}>
         <form
           className="w-full"
           onSubmit={preregistrationForm.handleSubmit(onSubmit, onError)}
         >
+          <AnimatePresence>
+            {showPopup && (
+              <motion.div
+                className={cn(
+                  "absolute left-1/2 top-full z-[-50] flex w-[250px] -translate-x-1/2 transform items-center justify-center rounded-lg border px-4 py-3 shadow-lg",
+                  popupType === "success"
+                    ? "border-text-muted-foreground bg-highlight text-heavy"
+                    : "border-red-700 bg-white text-[#b91c1c]",
+                )}
+                initial={{ opacity: 0, y: -70, x: "-50%" }}
+                animate={{ opacity: 1, y: -50, x: "-50%" }}
+                exit={{ opacity: 0, y: -70, x: "-50%" }}
+                transition={{
+                  type: "spring",
+                  damping: 15,
+                  stiffness: 200,
+                }}
+              >
+                <span className="mt-6 font-figtree text-sm font-medium">
+                  {popupMessage}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <FormField
             control={preregistrationForm.control}
             name="email"
