@@ -59,6 +59,7 @@ interface NavbarProps {
   panOffset?: { x: number; y: number };
   zoom?: number;
   isResetting?: boolean;
+  style?: React.CSSProperties;
 }
 
 export default function Navbar({

@@ -58,7 +58,7 @@ async function panToOffsetScene(
     {
       type: "spring",
       visualDuration: 0.5,
-      bounce: 0.2
+      bounce: 0.2,
     },
   );
 }
@@ -149,6 +149,17 @@ const Canvas: FC<Props> = ({ children }) => {
         targetElement.closest("[data-toolbar-button]") ??
         targetElement.closest("[data-navbar-button]")
       ) {
+        activePointersRef.current.delete(event.pointerId);
+        (event.target as HTMLElement).releasePointerCapture(event.pointerId);
+        return;
+      }
+
+      const isInputElement =
+        targetElement.tagName === "INPUT" ||
+        targetElement.tagName === "TEXTAREA" ||
+        targetElement.isContentEditable;
+
+      if (isInputElement) {
         activePointersRef.current.delete(event.pointerId);
         (event.target as HTMLElement).releasePointerCapture(event.pointerId);
         return;
@@ -357,6 +368,26 @@ const Canvas: FC<Props> = ({ children }) => {
       >
         <Toolbar zoom={zoom} panOffset={panOffset} />
         <div
+          style={{
+            position: "fixed",
+            bottom: "30px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 1000,
+            pointerEvents: "auto",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Navbar
+            onResetViewAndItems={onResetViewAndItems}
+            panOffset={panOffset}
+            zoom={zoom}
+            isResetting={isResetting}
+          />
+        </div>
+        <div
           ref={viewportRef}
           className="relative h-screen touch-none select-none overflow-hidden"
           style={{
@@ -379,26 +410,6 @@ const Canvas: FC<Props> = ({ children }) => {
             <Filter />
             {children}
           </motion.div>
-          <div
-            style={{
-              position: "fixed",
-              bottom: "30px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 1000,
-              pointerEvents: "auto",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Navbar
-              onResetViewAndItems={onResetViewAndItems}
-              panOffset={panOffset}
-              zoom={zoom}
-              isResetting={isResetting}
-            />
-          </div>
         </div>
       </CanvasProvider>
     </>
