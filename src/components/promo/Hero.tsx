@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { PreregistrationForm } from "../preregistration-form";
 import { Draggable } from "~/components/canvas/draggable";
 import { CanvasComponent } from "../canvas/canvas";
+import Toolbar from "../navbar/Toolbar";
 
 function Hero() {
   return (
@@ -33,10 +34,15 @@ function Hero() {
         <div className="font-jetbrains-mono text-medium">
           NOV 21 - NOV 23, 2025
         </div>
-        <div className="flex flex-col items-center justify-center font-dico text-5xl text-heavy">
-          <div>Hack</div>
-          <div>Western</div>
-          <div>XII</div>
+        <div className="flex flex-col items-center justify-center">
+          <motion.img
+            src="/HackWesternTitle.svg"
+            alt="Hack Western XII"
+            width={500}
+            height={100}
+            className="h-[150px] w-auto"
+            draggable="false"
+          />
         </div>
         <div className="font-figtree text-sm text-medium">
           The world is your canvas.

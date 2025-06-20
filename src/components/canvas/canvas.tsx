@@ -12,10 +12,11 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import Reset from "~/components/canvas/reset";
+
 import { CanvasProvider } from "~/contexts/CanvasContext";
 import { getDistance, getMidpoint } from "~/lib/canvas";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
+import Toolbar from "~/components/navbar/Toolbar";
 
 export const OffsetComponent = ({
   offset,
@@ -344,9 +345,6 @@ const Canvas: FC<Props> = ({ children }) => {
 
   return (
     <>
-      {(zoom !== 1 || panOffset.x !== -width || panOffset.y !== -height) && (
-        <Reset onResetViewAndItems={onResetViewAndItems} />
-      )}
       <CanvasProvider
         zoom={zoom}
         panOffset={panOffset}
@@ -356,7 +354,7 @@ const Canvas: FC<Props> = ({ children }) => {
       >
         <div
           ref={viewportRef}
-          className="relative h-screen w-screen touch-none select-none overflow-hidden"
+          className="relative h-screen touch-none select-none overflow-hidden"
           style={{
             touchAction: "none",
             overscrollBehavior: "contain",
@@ -377,6 +375,21 @@ const Canvas: FC<Props> = ({ children }) => {
             <Filter />
             {children}
           </motion.div>
+          <div 
+            style={{
+              position: 'fixed',
+              bottom: '30px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 1000,
+              pointerEvents: 'auto',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Toolbar onResetViewAndItems={onResetViewAndItems} panOffset={panOffset} zoom={zoom} isResetting={isResetting} />
+          </div>
         </div>
       </CanvasProvider>
     </>

@@ -95,9 +95,24 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
           y,
           zIndex,
         }}
+        initial={{
+          scale: 1,
+          filter: "drop-shadow(0 0px 0px rgba(0, 0, 0, 0)) brightness(1)"
+        }}
         onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
-        whileHover={{ scale: 1.1, cursor: "grab" }}
-        whileTap={{ cursor: "grabbing" }}
+        whileHover={{ 
+          scale: 1.1,
+          filter: "drop-shadow(0 8px 16px rgba(0, 0, 0, 0.12)) brightness(1.2)",
+          transition: {
+            duration: 0.2,
+            ease: "easeInOut"
+          }
+        }}
+        transition={{
+          duration: 0.1,
+          ease: "easeOut"
+        }}
+        whileTap={{ cursor: "url('/customcursor.svg'), grabbing" }}
         {...restProps}
       >
         {children}
