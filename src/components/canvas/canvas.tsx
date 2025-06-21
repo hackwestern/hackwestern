@@ -11,6 +11,7 @@ import React, {
   type FC,
   useEffect,
   useCallback,
+  useMemo,
 } from "react";
 
 import { CanvasProvider } from "~/contexts/CanvasContext";
@@ -293,17 +294,30 @@ const Canvas: FC<Props> = ({ children }) => {
         );
 
         const rect = viewportRef.current?.getBoundingClientRect();
-        const vpLeft = rect?.left ?? 0;
-        const vpTop = rect?.top ?? 0;
+
+        if (!rect) return;
+
+        const vpLeft = rect.left;
+        const vpTop = rect.top;
+        const viewportWidth = rect.width;
+        const viewportHeight = rect.height;
 
         const cursorSceneX = (event.clientX - vpLeft - panOffset.x) / zoom;
         const cursorSceneY = (event.clientY - vpTop - panOffset.y) / zoom;
 
-        const newPanX = event.clientX - vpLeft - cursorSceneX * nextZoom;
-        const newPanY = event.clientY - vpTop - cursorSceneY * nextZoom;
+        let newPanX = event.clientX - vpLeft - cursorSceneX * nextZoom;
+        let newPanY = event.clientY - vpTop - cursorSceneY * nextZoom;
+
+        // Clamp pan to prevent scene from escaping bounds
+        const minPanX = viewportWidth - sceneWidth * nextZoom;
+        const minPanY = viewportHeight - sceneHeight * nextZoom;
+        const maxPanX = 0;
+        const maxPanY = 0;
+
+        newPanX = Math.min(maxPanX, Math.max(minPanX, newPanX));
+        newPanY = Math.min(maxPanY, Math.max(minPanY, newPanY));
 
         sceneControls.set({ x: newPanX, y: newPanY, scale: nextZoom });
-
         setPanOffset({ x: newPanX, y: newPanY });
         setZoom(nextZoom);
       } else {
@@ -407,8 +421,8 @@ const Canvas: FC<Props> = ({ children }) => {
 };
 
 interface OffsetPoints {
-  x: string;
-  y: string;
+  x?: string;
+  y?: string;
 }
 
 interface CanvasProps {
@@ -417,9 +431,36 @@ interface CanvasProps {
 }
 
 export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
+  const margin = useMemo(() => {
+    if (!offset) {
+      return { margin: "auto" };
+    }
+
+    const style: React.CSSProperties = {};
+
+    if (offset.x != null) {
+      style.marginLeft = offset.x;
+    } else {
+      style.marginLeft = "auto";
+      style.marginRight = "auto";
+    }
+
+    if (offset.y != null) {
+      style.marginTop = offset.y;
+    } else {
+      style.marginTop = "auto";
+      style.marginBottom = "auto";
+    }
+
+    return style;
+  }, [offset]);
+
   return (
     <div
-      className={`absolute inset-0 z-30 flex h-full w-full items-center justify-center left-[${offset?.x ?? "0"}] top-[${offset?.y ?? "0"}]`}
+      className="absolute inset-0 z-30 flex h-max w-max"
+      style={{
+        ...margin,
+      }}
     >
       {children}
     </div>
