@@ -20,12 +20,13 @@ export default function SingleButton({
   icon,
   customIcon,
   onClick,
-  isPushed,
+  isPushed: isMaybePushed,
   link,
   emailAddress,
 }: SingleButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showTag, setShowTag] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const Icon = icon ? (LucideIcons[icon] as LucideIcons.LucideIcon) : null;
   const CustomIcon = customIcon;
   const TagDelay = 100;
@@ -35,6 +36,10 @@ export default function SingleButton({
   if (!Icon && !CustomIcon) {
     throw new Error("Either 'icon' or 'customIcon' prop must be provided");
   }
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -102,6 +107,8 @@ export default function SingleButton({
 
     onClick?.();
   };
+
+  const isPushed = isMounted && isMaybePushed;
 
   return (
     <motion.button
