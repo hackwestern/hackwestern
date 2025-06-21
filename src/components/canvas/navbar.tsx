@@ -1,7 +1,8 @@
 "use client";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import SingleButton from "../navbar/single-button";
+import SingleButton from "./single-button";
+import { HALF_MULT } from "./canvas";
 
 interface NavbarProps {
   onResetViewAndItems?: () => void;
@@ -24,10 +25,12 @@ export default function Navbar({
   // We need to get the window dimensions to calculate the correct center position
   const windowWidth = typeof window !== "undefined" ? window.innerWidth : 0;
   const windowHeight = typeof window !== "undefined" ? window.innerHeight : 0;
+
+  const centerX = -windowWidth * HALF_MULT;
+  const centerY = -windowHeight * HALF_MULT;
+
   const isAtCenter =
-    (panOffset.x === -windowWidth &&
-      panOffset.y === -windowHeight &&
-      zoom === 1) ||
+    (panOffset.x === centerX && panOffset.y === centerY && zoom === 1) ||
     isResetting;
 
   const handleButtonClick = (buttonId: string) => {

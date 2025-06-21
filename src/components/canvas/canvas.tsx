@@ -64,13 +64,30 @@ async function panToOffsetScene(
   );
 }
 
+// MULTIPLIER ** 2 is the number of screen-sized "tiles" in the canvas
+export const MULTIPLIER = 5; // SHOULD ALWAYS BE AN ODD NUMBER
+export const HALF_MULT = Math.floor(MULTIPLIER / 2);
+
+const canvasWidth = `${MULTIPLIER * 100}vw`;
+const canvasHeight = `${MULTIPLIER * 100}vh`;
+
+const MIN_ZOOM = 1.05 / MULTIPLIER;
+const MAX_ZOOM = 10;
+
 const Canvas: FC<Props> = ({ children }) => {
   const { height, width } = useWindowDimensions();
 
-  const sceneWidth = 3 * width;
-  const sceneHeight = 3 * height;
+  const sceneWidth = MULTIPLIER * width;
+  const sceneHeight = MULTIPLIER * height;
 
-  const [panOffset, setPanOffset] = useState<Point>({ x: width, y: height });
+  // left corner of center tile
+  const centerX = HALF_MULT * width;
+  const centerY = HALF_MULT * height;
+
+  const [panOffset, setPanOffset] = useState<Point>({
+    x: -centerX,
+    y: -centerY,
+  });
   const [zoom, setZoom] = useState<number>(1);
 
   const [isPanning, setIsPanning] = useState<boolean>(false);
@@ -106,24 +123,26 @@ const Canvas: FC<Props> = ({ children }) => {
 
   const onResetViewAndItems = (): void => {
     setIsResetting(true);
-    void panToOffsetScene({ x: -width, y: -height }, sceneControls).then(() => {
-      setIsResetting(false);
-      setPanOffset({ x: -width, y: -height });
-      setZoom(1);
-    });
+    void panToOffsetScene({ x: -centerX, y: -centerY }, sceneControls).then(
+      () => {
+        setIsResetting(false);
+        setPanOffset({ x: -centerX, y: -centerY });
+        setZoom(1);
+      },
+    );
   };
 
   useEffect(() => {
     setIsResetting(true);
-    void panToOffsetScene({ x: -width, y: -height }, sceneControls)
+    void panToOffsetScene({ x: -centerX, y: -centerY }, sceneControls)
       .then(() => {
-        setPanOffset({ x: -width, y: -height });
+        setPanOffset({ x: -centerX, y: -centerY });
         setZoom(1);
       })
       .then(() => {
         setIsResetting(false);
       });
-  }, [height, width]);
+  }, [centerY, centerX]);
 
   const panToOffset = (
     offset: Point,
@@ -281,9 +300,6 @@ const Canvas: FC<Props> = ({ children }) => {
         event.deltaMode === WheelEvent.DOM_DELTA_LINE ||
         Math.abs(event.deltaY) >= 100;
 
-      const MIN_ZOOM = 0.5;
-      const MAX_ZOOM = 10;
-
       // mouse wheel zoom and track pad zoom have different sensitivities
       const ZOOM_SENSITIVITY = isMouseWheelZoom ? 0.0015 : 0.015;
 
@@ -369,7 +385,11 @@ const Canvas: FC<Props> = ({ children }) => {
         maxZIndex={maxZIndex}
         setMaxZIndex={setMaxZIndex}
       >
-        {(!(panOffset.x === -width && panOffset.y === -height && zoom === 1) ||
+        {(!(
+          panOffset.x === -centerX &&
+          panOffset.y === -centerY &&
+          zoom === 1
+        ) ||
           isResetting) && <Toolbar zoom={zoom} panOffset={panOffset} />}
         <div
           style={{
@@ -406,7 +426,11 @@ const Canvas: FC<Props> = ({ children }) => {
         >
           <motion.div
             ref={sceneRef}
-            className="absolute z-20 h-[300vh] w-[300vw] origin-top-left"
+            className="absolute z-20 origin-top-left"
+            style={{
+              width: canvasWidth,
+              height: canvasHeight,
+            }}
             animate={sceneControls}
           >
             <Gradient />
@@ -467,11 +491,13 @@ export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
   );
 };
 
+const gradientBgImage = `radial-gradient(ellipse ${MULTIPLIER * 100}vw ${MULTIPLIER * 100}vh at ${MULTIPLIER * 50}vw ${MULTIPLIER * 100}vh, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`;
+
 const Gradient = () => (
   <div
     className="absolute inset-0 h-full w-full bg-hw-radial-gradient opacity-100"
     style={{
-      backgroundImage: `radial-gradient(ellipse 300vw 300vh at 150vw 300vh, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`,
+      backgroundImage: gradientBgImage,
     }}
   />
 );
