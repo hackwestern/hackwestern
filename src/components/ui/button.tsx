@@ -9,7 +9,7 @@ const buttonBase =
 const lift =
   "-translate-y-[3px] group-hover:-translate-y-[4px] group-active:-translate-y-[1px] transition-all duration-100";
 
-const buttonVariants = cva(buttonBase, {
+export const buttonVariants = cva(buttonBase, {
   variants: {
     variant: {
       default: "",
