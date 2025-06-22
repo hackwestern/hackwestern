@@ -14,6 +14,7 @@ export const preregistrationRouter = createTRPCRouter({
     .input(preregistrationCreateSchema)
     .mutation(async ({ input }) => {
       try {
+        const startTime = Date.now();
         const existingPreregistration =
           await db.query.preregistrations.findFirst({
             where: ({ email }, { eq }) => eq(email, input.email),
@@ -30,6 +31,11 @@ export const preregistrationRouter = createTRPCRouter({
           .insert(preregistrations)
           .values(input)
           .returning();
+
+        const remainingTime = 2000 - (Date.now() - startTime);
+        // wait 2 seconds before returning
+        if (remainingTime > 0)
+          await new Promise((res) => setTimeout(res, remainingTime));
 
         return createdPreregistration[0];
       } catch (error) {
