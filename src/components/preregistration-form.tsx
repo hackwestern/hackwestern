@@ -156,9 +156,10 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
                   <div className="pt-1">
                     <Button
                       variant="primary"
-                      className="gap-2"
+                      className="w-20 gap-2"
                       type="submit"
                       disabled={isPending}
+                      isPending={isPending}
                     >
                       <AnimatePresence mode="wait">
                         <motion.span
@@ -168,10 +169,10 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
                           exit={{ opacity: 0, y: -10 }}
                           transition={{ duration: 0.2 }}
                         >
-                          {isPending ? "Submitting..." : "Submit"}
+                          {isPending ? "" : "Submit"}
+                          <Spinner isLoading={isPending} />
                         </motion.span>
                       </AnimatePresence>
-                      <Spinner isLoading={isPending} />
                     </Button>
                   </div>
                 </div>

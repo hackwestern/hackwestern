@@ -11,6 +11,7 @@ import React, {
   type FC,
   useEffect,
   useCallback,
+  useMemo,
 } from "react";
 
 import { CanvasProvider } from "~/contexts/CanvasContext";
@@ -63,13 +64,34 @@ async function panToOffsetScene(
   );
 }
 
+const INTERACTIVE_SELECTOR =
+  "button,[role='button'],input,textarea,[contenteditable='true']," +
+  "[data-toolbar-button],[data-navbar-button]";
+
+// MULTIPLIER ** 2 is the number of screen-sized "tiles" in the canvas
+export const MULTIPLIER = 5; // SHOULD ALWAYS BE AN ODD NUMBER
+export const HALF_MULT = Math.floor(MULTIPLIER / 2);
+
+const canvasWidth = `${MULTIPLIER * 100}vw`;
+const canvasHeight = `${MULTIPLIER * 100}vh`;
+
+const MIN_ZOOM = 1.05 / MULTIPLIER;
+const MAX_ZOOM = 10;
+
 const Canvas: FC<Props> = ({ children }) => {
   const { height, width } = useWindowDimensions();
 
-  const sceneWidth = 3 * width;
-  const sceneHeight = 3 * height;
+  const sceneWidth = MULTIPLIER * width;
+  const sceneHeight = MULTIPLIER * height;
 
-  const [panOffset, setPanOffset] = useState<Point>({ x: width, y: height });
+  // left corner of center tile
+  const centerX = HALF_MULT * width;
+  const centerY = HALF_MULT * height;
+
+  const [panOffset, setPanOffset] = useState<Point>({
+    x: -centerX,
+    y: -centerY,
+  });
   const [zoom, setZoom] = useState<number>(1);
 
   const [isPanning, setIsPanning] = useState<boolean>(false);
@@ -105,24 +127,26 @@ const Canvas: FC<Props> = ({ children }) => {
 
   const onResetViewAndItems = (): void => {
     setIsResetting(true);
-    void panToOffsetScene({ x: -width, y: -height }, sceneControls).then(() => {
-      setIsResetting(false);
-      setPanOffset({ x: -width, y: -height });
-      setZoom(1);
-    });
+    void panToOffsetScene({ x: -centerX, y: -centerY }, sceneControls).then(
+      () => {
+        setIsResetting(false);
+        setPanOffset({ x: -centerX, y: -centerY });
+        setZoom(1);
+      },
+    );
   };
 
   useEffect(() => {
     setIsResetting(true);
-    void panToOffsetScene({ x: -width, y: -height }, sceneControls)
+    void panToOffsetScene({ x: -centerX, y: -centerY }, sceneControls)
       .then(() => {
-        setPanOffset({ x: -width, y: -height });
+        setPanOffset({ x: -centerX, y: -centerY });
         setZoom(1);
       })
       .then(() => {
         setIsResetting(false);
       });
-  }, [height, width]);
+  }, [centerY, centerX]);
 
   const panToOffset = (
     offset: Point,
@@ -142,21 +166,7 @@ const Canvas: FC<Props> = ({ children }) => {
     sceneControls.stop();
     if (activePointersRef.current.size === 1) {
       const targetElement = event.target as HTMLElement;
-      if (
-        targetElement.closest("[data-toolbar-button]") ??
-        targetElement.closest("[data-navbar-button]")
-      ) {
-        activePointersRef.current.delete(event.pointerId);
-        (event.target as HTMLElement).releasePointerCapture(event.pointerId);
-        return;
-      }
-
-      const isInputElement =
-        targetElement.tagName === "INPUT" ||
-        targetElement.tagName === "TEXTAREA" ||
-        targetElement.isContentEditable;
-
-      if (isInputElement) {
+      if (targetElement.closest(INTERACTIVE_SELECTOR)) {
         activePointersRef.current.delete(event.pointerId);
         (event.target as HTMLElement).releasePointerCapture(event.pointerId);
         return;
@@ -273,64 +283,66 @@ const Canvas: FC<Props> = ({ children }) => {
 
   const handleWheelZoom = useCallback(
     (event: WheelEvent) => {
-      sceneControls.stop();
+      event.preventDefault();
+      // pinch gesture on track
       const isPinch = event.ctrlKey || event.metaKey;
+      const isMouseWheelZoom =
+        event.deltaMode === WheelEvent.DOM_DELTA_LINE ||
+        Math.abs(event.deltaY) >= 100;
 
-      if (isPinch) event.preventDefault();
+      // mouse wheel zoom and track pad zoom have different sensitivities
+      const ZOOM_SENSITIVITY = isMouseWheelZoom ? 0.0015 : 0.015;
 
-      const zoomFactor = isPinch ? 0.08 : 0.16;
+      if (isPinch) {
+        const nextZoom = Math.max(
+          MIN_ZOOM,
+          Math.min(zoom * (1 - event.deltaY * ZOOM_SENSITIVITY), MAX_ZOOM),
+        );
 
-      const newZoomValue =
-        event.deltaY > 0
-          ? zoom * (1 - zoomFactor)
-          : zoom * (1 / (1 - zoomFactor));
-      const clampedZoom = Math.max(0.6, Math.min(newZoomValue, 10));
+        const rect = viewportRef.current?.getBoundingClientRect();
 
-      let mouseX = event.clientX;
-      let mouseY = event.clientY;
+        if (!rect) return;
 
-      if (viewportRef.current) {
-        const viewportRect = viewportRef.current.getBoundingClientRect();
-        mouseX = event.clientX - viewportRect.left;
-        mouseY = event.clientY - viewportRect.top;
+        const vpLeft = rect.left;
+        const vpTop = rect.top;
+        const viewportWidth = rect.width;
+        const viewportHeight = rect.height;
+
+        const cursorSceneX = (event.clientX - vpLeft - panOffset.x) / zoom;
+        const cursorSceneY = (event.clientY - vpTop - panOffset.y) / zoom;
+
+        let newPanX = event.clientX - vpLeft - cursorSceneX * nextZoom;
+        let newPanY = event.clientY - vpTop - cursorSceneY * nextZoom;
+
+        // Clamp pan to prevent scene from escaping bounds
+        const minPanX = viewportWidth - sceneWidth * nextZoom;
+        const minPanY = viewportHeight - sceneHeight * nextZoom;
+        const maxPanX = 0;
+        const maxPanY = 0;
+
+        newPanX = Math.min(maxPanX, Math.max(minPanX, newPanX));
+        newPanY = Math.min(maxPanY, Math.max(minPanY, newPanY));
+
+        sceneControls.set({ x: newPanX, y: newPanY, scale: nextZoom });
+        setPanOffset({ x: newPanX, y: newPanY });
+        setZoom(nextZoom);
+      } else {
+        sceneControls.stop();
+
+        const scrollSpeed = 1;
+        const newPanX = panOffset.x - event.deltaX * scrollSpeed;
+        const newPanY = panOffset.y - event.deltaY * scrollSpeed;
+
+        const minPanX = width - sceneWidth * zoom;
+        const maxPanX = 0;
+        const minPanY = height - sceneHeight * zoom;
+        const maxPanY = 0;
+
+        const clampedPanX = Math.min(Math.max(newPanX, minPanX), maxPanX);
+        const clampedPanY = Math.min(Math.max(newPanY, minPanY), maxPanY);
+
+        setPanOffset({ x: clampedPanX, y: clampedPanY });
       }
-
-      const minPanX = width - sceneWidth * clampedZoom;
-      const maxPanX = 0;
-      const minPanY = height - sceneHeight * clampedZoom;
-      const maxPanY = 0;
-
-      const newPanX = Math.min(
-        Math.max(
-          mouseX - ((mouseX - panOffset.x) / zoom) * clampedZoom,
-          minPanX,
-        ),
-        maxPanX,
-      );
-      const newPanY = Math.min(
-        Math.max(
-          mouseY - ((mouseY - panOffset.y) / zoom) * clampedZoom,
-          minPanY,
-        ),
-        maxPanY,
-      );
-
-      void sceneControls
-        .start(
-          {
-            x: newPanX,
-            y: newPanY,
-            scale: clampedZoom,
-          },
-          {
-            duration: 0.05,
-            ease: [0.4, 0, 0.2, 1],
-          },
-        )
-        .then(() => {
-          setZoom(clampedZoom);
-          setPanOffset({ x: newPanX, y: newPanY });
-        });
     },
     [
       zoom,
@@ -363,7 +375,11 @@ const Canvas: FC<Props> = ({ children }) => {
         maxZIndex={maxZIndex}
         setMaxZIndex={setMaxZIndex}
       >
-        {(!(panOffset.x === -width && panOffset.y === -height && zoom === 1) ||
+        {(!(
+          panOffset.x === -centerX &&
+          panOffset.y === -centerY &&
+          zoom === 1
+        ) ||
           isResetting) && <Toolbar zoom={zoom} panOffset={panOffset} />}
         <div
           style={{
@@ -400,7 +416,11 @@ const Canvas: FC<Props> = ({ children }) => {
         >
           <motion.div
             ref={sceneRef}
-            className="absolute z-20 h-[300vh] w-[300vw] origin-top-left"
+            className="absolute z-20 origin-top-left"
+            style={{
+              width: canvasWidth,
+              height: canvasHeight,
+            }}
             animate={sceneControls}
           >
             <Gradient />
@@ -415,8 +435,8 @@ const Canvas: FC<Props> = ({ children }) => {
 };
 
 interface OffsetPoints {
-  x: string;
-  y: string;
+  x?: string;
+  y?: string;
 }
 
 interface CanvasProps {
@@ -425,20 +445,49 @@ interface CanvasProps {
 }
 
 export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
+  const margin = useMemo(() => {
+    if (!offset) {
+      return { margin: "auto" };
+    }
+
+    const style: React.CSSProperties = {};
+
+    if (offset.x != null) {
+      style.marginLeft = offset.x;
+    } else {
+      style.marginLeft = "auto";
+      style.marginRight = "auto";
+    }
+
+    if (offset.y != null) {
+      style.marginTop = offset.y;
+    } else {
+      style.marginTop = "auto";
+      style.marginBottom = "auto";
+    }
+
+    return style;
+  }, [offset]);
+
   return (
     <div
-      className={`absolute inset-0 z-30 flex h-full w-full items-center justify-center left-[${offset?.x ?? "0"}] top-[${offset?.y ?? "0"}]`}
+      className="absolute inset-0 z-30 flex h-max w-max"
+      style={{
+        ...margin,
+      }}
     >
       {children}
     </div>
   );
 };
 
+const gradientBgImage = `radial-gradient(ellipse ${MULTIPLIER * 100}vw ${MULTIPLIER * 100}vh at ${MULTIPLIER * 50}vw ${MULTIPLIER * 100}vh, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`;
+
 const Gradient = () => (
   <div
     className="absolute inset-0 h-full w-full bg-hw-radial-gradient opacity-100"
     style={{
-      backgroundImage: `radial-gradient(ellipse 300vw 300vh at 150vw 300vh, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`,
+      backgroundImage: gradientBgImage,
     }}
   />
 );
