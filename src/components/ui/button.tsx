@@ -1,26 +1,25 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-
 import { cn } from "~/lib/utils";
 
 const buttonBase =
   "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-white font-figtree cursor-pointer";
 
-const move =
-  "-translate-y-[3px] group-hover:-translate-y-[4px] group-active:-translate-y-[2px] transition-all duration-100";
+const lift =
+  "-translate-y-[3px] group-hover:-translate-y-[4px] group-active:-translate-y-[1px] transition-all duration-100";
 
-const buttonVariants = cva(buttonBase, {
+export const buttonVariants = cva(buttonBase, {
   variants: {
     variant: {
       default: "",
       primary: cn(
         "bg-button-primary shadow-button-primary hover:bg-button-primary-hover active:bg-button-primary-active",
-        move,
+        lift,
       ),
       secondary: cn(
         "text-[#625679] bg-button-secondary hover:bg-button-secondary-hover active:bg-button-secondary-active active:shadow-button-secondary",
-        move,
+        lift,
       ),
       tertiary: "bg-transparent text-[#625679] px-4 active:text-[#8F57AD]",
       destructive:
@@ -39,19 +38,17 @@ const buttonVariants = cva(buttonBase, {
       icon: "h-10 w-10",
     },
   },
-  defaultVariants: {
-    variant: "default",
-    size: "default",
-  },
+  defaultVariants: { variant: "default", size: "default" },
 });
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  isPending?: boolean;
 }
 
-const overlayStyles = {
+const overlays = {
   primary: { bg: "bg-button-primary-back", border: "border border-white/30" },
   secondary: {
     bg: "bg-button-secondary-back",
@@ -59,16 +56,47 @@ const overlayStyles = {
   },
 } as const;
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button";
-    const classes = cn(buttonVariants({ variant, size, className }));
+const pressedByVariant: Record<"primary" | "secondary", string> = {
+  primary:
+    "!-translate-y-[1px] shadow-none bg-button-primary-active hover:!bg-button-primary-active",
+  secondary:
+    "!-translate-y-[1px] shadow-button-secondary bg-button-secondary-active hover:!bg-button-secondary-active",
+};
 
-    const overlay =
-      overlayStyles[variant as keyof typeof overlayStyles] ?? undefined;
+const noLift =
+  "group-hover:!translate-y-[1px] group-active:!translate-y-[1px] transition-none";
+
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      className,
+      variant = "default",
+      size,
+      isPending = false,
+      asChild = false,
+      disabled,
+      ...props
+    },
+    ref,
+  ) => {
+    const Comp = asChild ? Slot : "button";
+    const lockPressed =
+      isPending && (variant === "primary" || variant === "secondary");
+
+    const btnClasses = cn(
+      buttonVariants({ variant, size, className }),
+      lockPressed && [pressedByVariant[variant], noLift],
+    );
+
+    const overlay = overlays[variant as keyof typeof overlays];
+
+    const wrapperClasses = cn(
+      "group relative inline-block w-max",
+      lockPressed && ["pointer-events-none", noLift],
+    );
 
     return (
-      <div className="group relative inline-block w-max">
+      <div className={wrapperClasses}>
         {overlay && (
           <>
             <span
@@ -81,13 +109,18 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               className={cn(
                 "pointer-events-none absolute inset-0 z-50 h-full w-full rounded-lg",
                 overlay.border,
-                move,
+                lockPressed ? "-translate-y-[1px] " + noLift : lift,
               )}
             />
           </>
         )}
 
-        <Comp ref={ref} {...props} className={classes} />
+        <Comp
+          ref={ref}
+          {...props}
+          className={btnClasses}
+          disabled={disabled ?? isPending}
+        />
 
         {variant === "tertiary" && (
           <span className="block h-0 max-w-0 border-b-2 border-dashed border-[#625679] transition-all duration-200 group-hover:max-w-full group-active:border-[#8F57AD]" />
@@ -98,5 +131,3 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = "Button";
-
-export { Button, buttonVariants };
