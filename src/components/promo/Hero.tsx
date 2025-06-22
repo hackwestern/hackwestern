@@ -58,6 +58,7 @@ function Hero() {
               className="h-[150px] w-auto"
               draggable="false"
               priority
+              fetchPriority="high"
             />
           </div>
           <div className="font-figtree text-sm text-medium">
