@@ -50,13 +50,14 @@ function Hero() {
             NOV 21 - NOV 23, 2025
           </div>
           <div className="flex flex-col items-center justify-center">
-            <motion.img
+            <Image
               src="/hackwesterntitle.svg"
               alt="Hack Western XII"
               width={500}
               height={100}
               className="h-[150px] w-auto"
               draggable="false"
+              priority
             />
           </div>
           <div className="font-figtree text-sm text-medium">
