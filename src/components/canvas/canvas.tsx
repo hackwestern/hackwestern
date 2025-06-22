@@ -64,6 +64,10 @@ async function panToOffsetScene(
   );
 }
 
+const INTERACTIVE_SELECTOR =
+  "button,[role='button'],input,textarea,[contenteditable='true']," +
+  "[data-toolbar-button],[data-navbar-button]";
+
 // MULTIPLIER ** 2 is the number of screen-sized "tiles" in the canvas
 export const MULTIPLIER = 5; // SHOULD ALWAYS BE AN ODD NUMBER
 export const HALF_MULT = Math.floor(MULTIPLIER / 2);
@@ -162,21 +166,7 @@ const Canvas: FC<Props> = ({ children }) => {
     sceneControls.stop();
     if (activePointersRef.current.size === 1) {
       const targetElement = event.target as HTMLElement;
-      if (
-        targetElement.closest("[data-toolbar-button]") ??
-        targetElement.closest("[data-navbar-button]")
-      ) {
-        activePointersRef.current.delete(event.pointerId);
-        (event.target as HTMLElement).releasePointerCapture(event.pointerId);
-        return;
-      }
-
-      const isInputElement =
-        targetElement.tagName === "INPUT" ||
-        targetElement.tagName === "TEXTAREA" ||
-        targetElement.isContentEditable;
-
-      if (isInputElement) {
+      if (targetElement.closest(INTERACTIVE_SELECTOR)) {
         activePointersRef.current.delete(event.pointerId);
         (event.target as HTMLElement).releasePointerCapture(event.pointerId);
         return;
