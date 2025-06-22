@@ -14,7 +14,7 @@ function DiscordAuthButton({
       onClick={() => {
         void signIn("discord", { callbackUrl: redirect });
       }}
-      className="w-full rounded-md bg-[#E1E3FE] p-1 font-medium outline outline-1 outline-gray-400 hover:bg-white"
+      className="w-full cursor-pointer rounded-md bg-[#E1E3FE] p-1 font-medium outline outline-1 outline-gray-400 hover:bg-white"
     >
       <div className="flex flex-row items-center justify-center gap-1">
         <Image

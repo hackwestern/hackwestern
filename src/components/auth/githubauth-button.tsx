@@ -14,7 +14,7 @@ function GithubAuthButton({
       onClick={() => {
         void signIn("github", { callbackUrl: redirect });
       }}
-      className="w-full rounded-md bg-githubbg p-1 font-medium text-white outline outline-1 outline-gray-900 hover:bg-black"
+      className="w-full cursor-pointer rounded-md bg-githubbg p-1 font-medium text-white outline outline-1 outline-gray-900 hover:bg-black"
     >
       <div className="flex flex-row items-center justify-center gap-1">
         <Image
