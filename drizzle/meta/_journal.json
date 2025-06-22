@@ -78,6 +78,13 @@
       "when": 1744951938704,
       "tag": "0010_dizzy_grandmaster",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1750324799063,
+      "tag": "0011_useful_vindicator",
+      "breakpoints": true
     }
   ]
 }
