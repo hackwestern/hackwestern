@@ -32,7 +32,7 @@ export const preregistrationRouter = createTRPCRouter({
           .values(input)
           .returning();
 
-        const remainingTime = 1400 - (Date.now() - startTime);
+        const remainingTime = 1000 - (Date.now() - startTime);
         // wait 2 seconds before returning
         if (remainingTime > 0)
           await new Promise((res) => setTimeout(res, remainingTime));
