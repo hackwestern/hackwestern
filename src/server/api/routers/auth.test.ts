@@ -247,12 +247,13 @@ describe("auth.checkValidToken", () => {
   });
 });
 
-
 describe("auth.resendEmail", () => {
   test("unauthorized user: throws error", async () => {
     const unauthCtx = createInnerTRPCContext({ session: null });
     const unauthCaller = createCaller(unauthCtx);
-    await expect(unauthCaller.auth.resendEmail()).rejects.toThrowError("Not logged in");
+    await expect(unauthCaller.auth.resendEmail()).rejects.toThrowError(
+      "Not logged in",
+    );
   });
 
   test("non-existent user: throws error", async () => {
@@ -266,22 +267,27 @@ describe("auth.resendEmail", () => {
     };
     const fakeCtx = createInnerTRPCContext({ session: fakeSession });
     const fakeCaller = createCaller(fakeCtx);
-    await expect(fakeCaller.auth.resendEmail()).rejects.toThrowError(/not found/i);
+    await expect(fakeCaller.auth.resendEmail()).rejects.toThrowError(
+      /not found/i,
+    );
   });
 
   test("existing user: returns success", async () => {
     const sessionUser = session.user;
-    await db.insert(users).values({
-      id: sessionUser.id,
-      name: sessionUser.name ?? faker.person.fullName(),
-      email: sessionUser.email ?? faker.internet.email(),
-      emailVerified: null,
-      image: sessionUser.image ?? faker.image.avatar(),
-    }).onConflictDoNothing?.();
+    await db
+      .insert(users)
+      .values({
+        id: sessionUser.id,
+        name: sessionUser.name ?? faker.person.fullName(),
+        email: sessionUser.email ?? faker.internet.email(),
+        emailVerified: null,
+        image: sessionUser.image ?? faker.image.avatar(),
+      })
+      .onConflictDoNothing?.();
 
-    const sendEmailSpy = vi.spyOn(resend.emails, 'send').mockResolvedValue({ 
-      data: { id: "mock-email-id" }, 
-      error: null 
+    const sendEmailSpy = vi.spyOn(resend.emails, "send").mockResolvedValue({
+      data: { id: "mock-email-id" },
+      error: null,
     });
 
     try {
