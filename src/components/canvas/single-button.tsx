@@ -149,7 +149,7 @@ export default function SingleButton({
               duration: 0.1,
               ease: "easeInOut",
             }}
-            className="text-emphasis overflow-hidden whitespace-nowrap font-figtree text-sm font-medium"
+            className="overflow-hidden whitespace-nowrap font-figtree text-sm font-medium text-emphasis"
           >
             {label}
           </motion.span>
