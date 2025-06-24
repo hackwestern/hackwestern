@@ -384,7 +384,7 @@ const Canvas: FC<Props> = ({ children }) => {
         <div
           style={{
             position: "fixed",
-            bottom: "30px",
+            bottom: "16px",
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 1000,

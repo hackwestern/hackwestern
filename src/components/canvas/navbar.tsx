@@ -44,8 +44,8 @@ export default function Navbar({
   };
 
   return (
-    <motion.div className="flex items-center justify-center gap-2 rounded-xl border-[1px] border-border bg-offwhite p-1 shadow-lg">
-      <div className="flex items-center gap-2">
+    <motion.div className="flex items-center justify-center gap-1 rounded-[10px] border-[1px] border-border bg-offwhite p-1 shadow-lg">
+      <div className="flex items-center gap-1">
         <SingleButton
           label="Home"
           icon="Home"

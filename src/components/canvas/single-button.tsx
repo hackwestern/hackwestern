@@ -114,7 +114,7 @@ export default function SingleButton({
     <motion.button
       aria-label={label}
       className={`relative flex items-center rounded-md p-2 transition-colors duration-200 ${
-        isPushed ? "text-off-white bg-heavy" : isHovered ? "bg-[#F5F2F6]" : ""
+        isPushed ? "text-off-white bg-heavy" : isHovered ? "bg-highlight" : ""
       }`}
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}

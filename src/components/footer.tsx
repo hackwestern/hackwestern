@@ -8,7 +8,7 @@ export function Footer({ className }: FooterProps) {
   return (
     <footer
       className={cn(
-        "z-[100] flex w-full flex-row-reverse items-center justify-between text-heavy md:px-4 md:py-4",
+        "z-[100] flex w-full flex-row-reverse items-center justify-between text-heavy hover:text-medium",
         className,
       )}
     >
