@@ -113,8 +113,8 @@ export default function SingleButton({
   return (
     <motion.button
       aria-label={label}
-      className={`relative flex items-center rounded-md p-2 transition-colors duration-200 ${
-        isPushed ? "text-off-white bg-heavy" : isHovered ? "bg-highlight" : ""
+      className={`relative flex items-center rounded-md p-2 text-medium transition-colors duration-200 ${
+        isPushed ? "bg-[#EEE2FB]" : isHovered ? "bg-highlight" : ""
       }`}
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
@@ -131,14 +131,12 @@ export default function SingleButton({
           <div>
             {Icon ? (
               <Icon
-                className={`h-5 w-5 flex-shrink-0 ${
-                  isPushed ? "text-white" : "text-heavy"
-                }`}
+                className={`h-5 w-5 flex-shrink-0 ${isPushed ? "text-emphasis" : "text-medium"}`}
               />
             ) : CustomIcon ? (
               <CustomIcon
                 className={`h-5 w-5 flex-shrink-0 ${
-                  isPushed ? "text-white" : "text-heavy"
+                  isPushed ? "text-white" : "text-medium"
                 }`}
               />
             ) : null}
@@ -151,7 +149,7 @@ export default function SingleButton({
               duration: 0.1,
               ease: "easeInOut",
             }}
-            className="overflow-hidden whitespace-nowrap font-figtree text-sm font-medium text-white"
+            className="text-emphasis overflow-hidden whitespace-nowrap font-figtree text-sm font-medium"
           >
             {label}
           </motion.span>
@@ -161,13 +159,13 @@ export default function SingleButton({
           {Icon ? (
             <Icon
               className={`h-5 w-5 flex-shrink-0 ${
-                isPushed ? "text-white" : "text-heavy"
+                isPushed ? "text-white" : "text-medium"
               }`}
             />
           ) : CustomIcon ? (
             <CustomIcon
               className={`h-5 w-5 flex-shrink-0 ${
-                isPushed ? "text-white" : "text-heavy"
+                isPushed ? "text-white" : "text-medium"
               }`}
             />
           ) : null}
@@ -184,7 +182,7 @@ export default function SingleButton({
                 className="pointer-events-none absolute -top-10 left-1/2 z-50"
               >
                 <div className="rounded-sm bg-gradient-to-t from-black/10 to-transparent px-[1px] pb-[2.5px] pt-[1px]">
-                  <div className="whitespace-nowrap rounded-sm bg-white px-2 py-1 font-figtree text-sm text-black">
+                  <div className="whitespace-nowrap rounded-sm bg-offwhite px-2 py-1 font-figtree text-sm text-medium">
                     {label}
                   </div>
                 </div>
