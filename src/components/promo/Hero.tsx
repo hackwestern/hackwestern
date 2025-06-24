@@ -3,8 +3,11 @@ import { PreregistrationForm } from "../preregistration-form";
 import { Draggable } from "~/components/canvas/draggable";
 import { CanvasComponent } from "../canvas/canvas";
 import Image from "next/image";
+import { useState } from "react";
 
 function Hero() {
+  const [hasBeenDragged, setHasBeenDragged] = useState(false);
+
   return (
     <CanvasComponent>
       <div className="my-auto flex flex-col items-center justify-center space-y-12 pb-12">
@@ -13,12 +16,13 @@ function Hero() {
             <Image
               src="/dragme.svg"
               alt="Drag Me!"
-              className="pointer-events-none opacity-0"
+              className=" pointer-events-none opacity-0"
               width={80}
               height={80}
             />
             <Draggable
               key="hw-logo"
+              onDragStart={() => setHasBeenDragged(true)}
               animate={{
                 rotate: [2, -2],
                 transition: {
@@ -35,16 +39,21 @@ function Hero() {
                 width={80}
                 height={80}
                 draggable="false"
-                className="h-auto w-auto scale-[0.65]"
+                className="h-auto w-auto scale-[0.65] cursor-pointer"
               />
             </Draggable>
-            <Image
-              src="/dragme.svg"
-              alt="Drag Me!"
-              className="pointer-events-none"
-              width={80}
-              height={80}
-            />
+            <motion.div
+              animate={{ opacity: hasBeenDragged ? 0 : 1 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+            >
+              <Image
+                src="/dragme.svg"
+                alt="Drag Me!"
+                className="pointer-events-none -ml-2 pt-14"
+                width={80}
+                height={80}
+              />
+            </motion.div>
           </div>
           <div className="my-auto flex flex-col items-center justify-center space-y-12 pb-6">
             <div className="font-jetbrains-mono text-medium">
