@@ -15,16 +15,18 @@ html {
     --card-foreground: 222.2 84% 4.9%;
 
     --beige: #f5eade;
-    --lilac: #e2c4ff;
+    --lilac: #e1c8fa;
     --salmon: #ffd2b4;
     --coral: #ffb6a1;
 
     --heavy: #3d214c;
     --medium: #776780;
     --light: #bbb3c0;
+    --emphasis: #a16bc7;
 
     --offwhite: #fafafb; /* bg-white */
     --highlight: #f4f2f7;
+    --tinted: #eee2fb;
     --border-light: #fffefe;
 
     --primary-50: 260, 100%, 99%;

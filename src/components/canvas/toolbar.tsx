@@ -11,7 +11,7 @@ const Toolbar = ({ zoom, panOffset }: { zoom: number; panOffset: Point }) => {
 
   return (
     <div
-      className="absolute left-4 top-4 z-[1000] cursor-default select-none rounded bg-white p-2 font-mono text-xs text-heavy shadow-md md:text-sm"
+      className="absolute left-4 top-4 z-[1000] cursor-default select-none rounded-[10px] border-[1px] border-border bg-offwhite p-2 font-mono text-xs text-heavy shadow-[0_6px_12px_rgba(0,0,0,0.10)] md:text-sm"
       onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
     >
       ({(-panOffset.x / zoom - width * HALF_MULT).toFixed(0)},
