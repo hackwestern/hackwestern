@@ -194,18 +194,23 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
     if (!ctx) return;
     const alpha =
       ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data[3] ?? 0;
-    // checking alpha > n rather than 0 to not trigger on shadows and such
 
-    const opaque = alpha > 128; // Adjust this threshold as needed
+    // checking alpha > n rather than 0 to not trigger on shadows and such
+    const opaque = alpha > 128;
     setIsOpaque(opaque);
 
-    if (isMouseDown) {
-      img.style.cursor = "grabbing";
-    } else if (opaque) {
-      img.style.cursor = "grab";
-    } else {
-      img.style.cursor = "url('customcursor.svg'), auto";
-    }
+    let cursor = "url('customcursor.svg'), auto"; // default
+
+    // lowest-priority “grab”
+    if (opaque) cursor = "grab";
+
+    // “grabbing” overrides the previous rule
+    if (e.type === "pointerdown" || isMouseDown) cursor = "grabbing";
+
+    // highest-priority “grab” (must come last)
+    if (e.type === "pointerup") cursor = "grab";
+
+    img.style.cursor = cursor;
   };
 
   const handlePointerLeave = () => {
