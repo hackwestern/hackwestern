@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { PreregistrationForm } from "../preregistration-form";
-import { Draggable, DraggableImage } from "~/components/canvas/draggable";
+import { DraggableImage } from "~/components/canvas/draggable";
 import { CanvasComponent } from "../canvas/canvas";
 import Image from "next/image";
 import { useState } from "react";

@@ -215,6 +215,8 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
     }
   };
 
+  const hoverScale = isOpaque ? (scale ?? 1) * 1.05 : (scale ?? 1);
+
   return (
     <Draggable
       initialPos={initialPos}
@@ -230,13 +232,7 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
         height={height}
         animate={animate}
         draggable="false"
-        whileHover={
-          isOpaque
-            ? {
-                scale: (scale ?? 1) * 1.05,
-              }
-            : {}
-        }
+        whileHover={{ scale: hoverScale }}
         style={{
           scale: scale ?? 1,
         }}
