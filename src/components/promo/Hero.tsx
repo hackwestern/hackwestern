@@ -34,6 +34,9 @@ function Hero() {
               }}
               src="/horse.svg"
               alt="Hack Western Logo"
+              style={{
+                scale: 0.65,
+              }}
               whileHover={{
                 scale: 1.05,
               }}

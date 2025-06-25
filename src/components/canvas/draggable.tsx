@@ -9,7 +9,6 @@ import {
 } from "framer-motion";
 import { useCanvasContext } from "~/contexts/CanvasContext";
 import { useMemoPoint } from "~/lib/canvas";
-import { url } from "inspector";
 
 interface Point {
   x: number;
@@ -141,18 +140,12 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
   initialPos,
   animate,
   className,
-  whileHover,
 }) => {
   const imgRef = useRef<HTMLImageElement>(null);
   const [isOpaque, setIsOpaque] = useState(false);
   const [isMouseDown, setIsMouseDown] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  const hoverEffect = {
-    ...((whileHover as object) || {}),
-    cursor: "grab",
-  };
 
   // create a invisible canvas element to check the alpha value of the image
   useEffect(() => {
@@ -234,10 +227,17 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
         width={width}
         height={height}
         animate={animate}
+        draggable="false"
+        whileHover={
+          isOpaque
+            ? {
+                scale: 0.72,
+              }
+            : {}
+        }
         style={{
           scale: 0.65,
         }}
-        draggable="false"
         onPointerDown={(e) => {
           setIsMouseDown(true);
           checkAlpha(e);
