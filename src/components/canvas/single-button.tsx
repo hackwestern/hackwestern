@@ -27,6 +27,7 @@ export default function SingleButton({
   const [isHovered, setIsHovered] = useState(false);
   const [showTag, setShowTag] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [copiedEmail, setCopiedEmail] = useState(false);
   const Icon = icon ? (LucideIcons[icon] as LucideIcons.LucideIcon) : null;
   const CustomIcon = customIcon;
   const TagDelay = 100;
@@ -57,11 +58,17 @@ export default function SingleButton({
     };
   }, [isHovered]);
 
-  const handleClick = () => {
-    // quick toast helper
-    const notify = (msg: string) =>
-      toast({ title: msg, duration: 3000, variant: "cute" });
+  // Reset copied email state after 2 seconds
+  useEffect(() => {
+    if (copiedEmail) {
+      const timeoutId = setTimeout(() => {
+        setCopiedEmail(false);
+      }, 2000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [copiedEmail]);
 
+  const handleClick = () => {
     // minimal cross-browser copy helper
     const copyText = async (text: string): Promise<boolean> => {
       try {
@@ -90,10 +97,14 @@ export default function SingleButton({
           (await copyText(mailto)) || (await copyText(emailAddress));
 
         if (copied) {
-          notify("Email copied! 🙂");
+          setCopiedEmail(true);
         } else {
           window.open(mailto, "_blank");
-          notify("Email app opened! 🙂");
+          toast({
+            title: "Email app opened!",
+            duration: 3000,
+            variant: "cute",
+          });
         }
       })();
 
@@ -109,6 +120,7 @@ export default function SingleButton({
   };
 
   const isPushed = isMounted && isMaybePushed;
+  const displayLabel = copiedEmail ? "Email copied!" : label;
 
   return (
     <motion.button
@@ -151,7 +163,7 @@ export default function SingleButton({
             }}
             className="overflow-hidden whitespace-nowrap font-figtree text-sm font-medium text-emphasis"
           >
-            {label}
+            {displayLabel}
           </motion.span>
         </div>
       ) : (
@@ -183,7 +195,7 @@ export default function SingleButton({
               >
                 <div className="rounded-sm bg-gradient-to-t from-black/10 to-transparent px-[1px] pb-[2.5px] pt-[1px]">
                   <div className="whitespace-nowrap rounded-sm bg-offwhite px-2 py-1 font-figtree text-sm text-medium">
-                    {label}
+                    {displayLabel}
                   </div>
                 </div>
               </motion.div>
