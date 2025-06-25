@@ -84,6 +84,7 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
 
     return (
       <motion.div
+        className="cursor-grab active:cursor-grabbing"
         ref={ref}
         dragMomentum={false}
         drag
@@ -112,7 +113,6 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
           duration: 0.1,
           ease: "easeOut",
         }}
-        whileTap={{ cursor: "url('/customcursor.svg'), grabbing" }}
         {...restProps}
       >
         {children}

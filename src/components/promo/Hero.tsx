@@ -39,7 +39,7 @@ function Hero() {
                 width={80}
                 height={80}
                 draggable="false"
-                className="cursor-drag active:cursor-dragging h-auto w-auto scale-[0.65]"
+                className="h-auto w-auto scale-[0.65]"
               />
             </Draggable>
             <motion.div
