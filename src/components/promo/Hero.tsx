@@ -34,6 +34,7 @@ function Hero() {
               }}
               src="/horse.svg"
               alt="Hack Western Logo"
+              scale={0.65}
             />
             <motion.div
               animate={{ opacity: hasBeenDragged ? 0 : 1 }}

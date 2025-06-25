@@ -130,6 +130,7 @@ export interface DraggableImageProps extends DraggableProps {
   alt?: string;
   width?: string | number;
   height?: string | number;
+  scale?: number;
 }
 
 export const DraggableImage: React.FC<DraggableImageProps> = ({
@@ -140,6 +141,7 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
   initialPos,
   animate,
   className,
+  scale,
 }) => {
   const imgRef = useRef<HTMLImageElement>(null);
   const [isOpaque, setIsOpaque] = useState(false);
@@ -231,12 +233,12 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
         whileHover={
           isOpaque
             ? {
-                scale: 0.72,
+                scale: (scale ?? 1) * 1.05,
               }
             : {}
         }
         style={{
-          scale: 0.65,
+          scale: scale ?? 1,
         }}
         onPointerDown={(e) => {
           setIsMouseDown(true);
