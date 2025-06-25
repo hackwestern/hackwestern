@@ -382,9 +382,9 @@ const Canvas: FC<Props> = ({ children }) => {
         ) ||
           isResetting) && <Toolbar zoom={zoom} panOffset={panOffset} />}
         <div
+          className="bottom-10 md:bottom-4 "
           style={{
             position: "fixed",
-            bottom: "16px",
             left: "50%",
             transform: "translateX(-50%)",
             zIndex: 1000,

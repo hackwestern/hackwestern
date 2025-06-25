@@ -53,10 +53,16 @@ export default function Navbar({
           isPushed={isAtCenter}
         />
         <SingleButton
-          label="Hack Western 11 Site"
-          icon="SquareArrowOutUpRight"
-          link="https://archive.hackwestern.com/2024"
+          label="Hack Western 11 Projects"
+          icon="Folders"
+          link="https://dorahacks.io/hackathon/hackwestern-11/buidl"
           isPushed={expandedButton === "projects"}
+        />
+        <SingleButton
+          label="Hack Western 11 Site"
+          icon="ExternalLink"
+          link="https://archive.hackwestern.com/2024"
+          isPushed={expandedButton === "site"}
         />
         <SingleButton
           label="Sponsor Us!"

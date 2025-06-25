@@ -39,7 +39,7 @@ function Hero() {
                 width={80}
                 height={80}
                 draggable="false"
-                className="h-auto w-auto scale-[0.65] cursor-pointer"
+                className="cursor-drag active:cursor-dragging h-auto w-auto scale-[0.65]"
               />
             </Draggable>
             <motion.div
@@ -56,7 +56,7 @@ function Hero() {
             </motion.div>
           </div>
           <div className="my-auto flex flex-col items-center justify-center space-y-12 pb-6">
-            <div className="font-jetbrains-mono text-medium">
+            <div className="text-md font-jetbrains-mono text-medium">
               NOV 21 - NOV 23, 2025
             </div>
             <div className="flex flex-col items-center justify-center">

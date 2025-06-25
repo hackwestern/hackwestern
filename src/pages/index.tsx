@@ -20,7 +20,7 @@ export default function Home() {
           <Hero />
         </Canvas>
         {/* MLH Code of Conduct */}
-        <Footer className="absolute bottom-4 right-4 z-20 text-sm sm:text-base" />
+        <Footer className="absolute bottom-3 z-20 flex w-full justify-center text-sm sm:text-base md:bottom-4 md:right-4 md:block md:w-auto" />
         <a
           id="mlh-trust-badge"
           href="https://mlh.io/na?utm_source=na-hackathon&utm_medium=TrustBadge&utm_campaign=2026-season&utm_content=white"
