@@ -225,14 +225,6 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
       initialPos={initialPos}
       className={className}
       drag={isOpaque}
-      whileHover={
-        isOpaque ? hoverEffect : { cursor: "url('customcursor.svg')" }
-      }
-      whileTap={
-        isOpaque
-          ? { cursor: "grabbing" }
-          : { cursor: "url('customcursor.svg')" }
-      }
       shouldStopPropagation={() => isOpaque}
     >
       <motion.img
@@ -246,11 +238,13 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
           scale: 0.65,
         }}
         draggable="false"
-        onPointerDown={() => {
+        onPointerDown={(e) => {
           setIsMouseDown(true);
+          checkAlpha(e);
         }}
-        onPointerUp={() => {
+        onPointerUp={(e) => {
           setIsMouseDown(false);
+          checkAlpha(e);
         }}
         onPointerMove={checkAlpha}
         onPointerLeave={() => {
