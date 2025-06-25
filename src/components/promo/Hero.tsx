@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { PreregistrationForm } from "../preregistration-form";
-import { Draggable } from "~/components/canvas/draggable";
+import { Draggable, DraggableImage } from "~/components/canvas/draggable";
 import { CanvasComponent } from "../canvas/canvas";
 import Image from "next/image";
 import { useState } from "react";
@@ -20,7 +20,7 @@ function Hero() {
               width={80}
               height={80}
             />
-            <Draggable
+            <DraggableImage
               key="hw-logo"
               onDragStart={() => setHasBeenDragged(true)}
               animate={{
@@ -32,16 +32,12 @@ function Hero() {
                   ease: "easeInOut",
                 },
               }}
-            >
-              <motion.img
-                src="/horse.svg"
-                alt="Hack Western Logo"
-                width={80}
-                height={80}
-                draggable="false"
-                className="h-auto w-auto scale-[0.65]"
-              />
-            </Draggable>
+              src="/horse.svg"
+              alt="Hack Western Logo"
+              whileHover={{
+                scale: 1.05,
+              }}
+            />
             <motion.div
               animate={{ opacity: hasBeenDragged ? 0 : 1 }}
               transition={{ duration: 0.5, ease: "easeInOut" }}
