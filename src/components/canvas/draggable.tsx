@@ -142,6 +142,7 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
   animate,
   className,
   scale,
+  ...restProps
 }) => {
   const imgRef = useRef<HTMLImageElement>(null);
   const [isOpaque, setIsOpaque] = useState(false);
@@ -228,6 +229,7 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
       className={className}
       drag={isOpaque}
       shouldStopPropagation={() => isOpaque}
+      {...restProps}
     >
       <motion.img
         ref={imgRef}
