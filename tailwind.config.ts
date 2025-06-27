@@ -24,10 +24,6 @@ const config = {
       "4xl": "3000px",
     },
     extend: {
-      cursor: {
-        grab: "url('/customcursor.svg'), grab",
-        grabbing: "url('/customcursor.svg'), grabbing",
-      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
