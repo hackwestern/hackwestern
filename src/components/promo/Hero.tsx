@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { PreregistrationForm } from "../preregistration-form";
-import { Draggable } from "~/components/canvas/draggable";
+import { DraggableImage } from "~/components/canvas/draggable";
 import { CanvasComponent } from "../canvas/canvas";
 import Image from "next/image";
 import { useState } from "react";
@@ -20,28 +20,24 @@ function Hero() {
               width={80}
               height={80}
             />
-            <Draggable
-              key="hw-logo"
-              onDragStart={() => setHasBeenDragged(true)}
-              animate={{
-                rotate: [2, -2],
-                transition: {
-                  duration: 1,
-                  repeat: Infinity,
-                  repeatType: "mirror",
-                  ease: "easeInOut",
-                },
-              }}
-            >
-              <motion.img
+            <div className="z-[100] scale-[1.33] md:scale-100">
+              <DraggableImage
+                key="hw-logo"
+                onDragStart={() => setHasBeenDragged(true)}
+                animate={{
+                  rotate: [2, -2],
+                  transition: {
+                    duration: 1,
+                    repeat: Infinity,
+                    repeatType: "mirror",
+                    ease: "easeInOut",
+                  },
+                }}
                 src="/horse.svg"
                 alt="Hack Western Logo"
-                width={80}
-                height={80}
-                draggable="false"
-                className="cursor-drag active:cursor-dragging h-auto w-auto scale-[0.65]"
+                scale={0.65}
               />
-            </Draggable>
+            </div>
             <motion.div
               animate={{ opacity: hasBeenDragged ? 0 : 1 }}
               transition={{ duration: 0.5, ease: "easeInOut" }}
@@ -55,7 +51,7 @@ function Hero() {
               />
             </motion.div>
           </div>
-          <div className="my-auto flex flex-col items-center justify-center space-y-12 pb-6">
+          <div className="my-auto flex scale-[0.85] flex-col items-center justify-center space-y-10 pb-6 sm:scale-100 sm:space-y-12">
             <div className="text-md font-jetbrains-mono text-medium">
               NOV 21 - NOV 23, 2025
             </div>
