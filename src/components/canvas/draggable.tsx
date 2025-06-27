@@ -214,13 +214,6 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
     img.style.cursor = cursor;
   };
 
-  const handlePointerLeave = (e: React.PointerEvent) => {
-    if (e.pointerType === "touch") return;
-    if (imgRef.current) {
-      imgRef.current.style.cursor = "url('customcursor.svg'), auto";
-    }
-  };
-
   const hoverScale = isOpaque ? (scale ?? 1) * 1.05 : (scale ?? 1);
 
   return (
@@ -252,10 +245,6 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
           checkAlpha(e);
         }}
         onPointerMove={checkAlpha}
-        onPointerLeave={(e) => {
-          setIsMouseDown(false);
-          handlePointerLeave(e);
-        }}
         className="h-auto w-auto"
       />
     </Draggable>
