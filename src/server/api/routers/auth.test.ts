@@ -299,3 +299,71 @@ describe("auth.resendEmail", () => {
     }
   });
 });
+
+describe("auth.setPassword", () => {
+  test("throw an error if no such token exists", async () => {
+    const nonexistentToken = randomBytes(20).toString("hex"); // 40 characters
+    await expect(
+      caller.auth.setPassword({
+        password: "HackWestern12!",
+        token: nonexistentToken,
+      }),
+    ).rejects.toThrowError("not found");
+  });
+
+  test("throws an error if the token is expired", async () => {
+    const fakeId = faker.string.uuid();
+    const expiredToken = randomBytes(20).toString("hex"); // 40 characters
+
+    const fakeUser = {
+      id: fakeId,
+      name: faker.person.fullName(),
+      email: faker.internet.email(),
+      emailVerified: faker.date.anytime(),
+      image: faker.image.avatar(),
+    };
+
+    await db.insert(users).values(fakeUser);
+
+    await db.insert(resetPasswordTokens).values({
+      userId: fakeId,
+      token: expiredToken, // Use the 40-character token
+      expires: new Date(Date.now() - 1000 * 60 * 60),
+    });
+
+    await expect(
+      caller.auth.setPassword({
+        password: "HackWestern12!",
+        token: expiredToken,
+      }),
+    ).rejects.toThrowError("expired");
+  });
+
+  test("validates the token successfully", async () => {
+    const fakeId = faker.string.uuid();
+    const validToken = randomBytes(20).toString("hex"); // 40 characters
+
+    const fakeUser = {
+      id: fakeId,
+      name: faker.person.fullName(),
+      email: faker.internet.email(),
+      emailVerified: faker.date.anytime(),
+      image: faker.image.avatar(),
+    };
+
+    await db.insert(users).values(fakeUser);
+
+    await db.insert(resetPasswordTokens).values({
+      userId: fakeId,
+      token: validToken, // Use the 40-character token
+      expires: new Date(Date.now() + 1000 * 60 * 60),
+    });
+
+    const result = await caller.auth.setPassword({
+      password: "HackWestern12!",
+      token: validToken,
+    });
+
+    expect(result.success).toBe(true);
+  });
+});
