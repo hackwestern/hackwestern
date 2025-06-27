@@ -183,11 +183,6 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
   }, []);
 
   const checkAlpha = (e: React.PointerEvent) => {
-    if (e.pointerType === "touch") {
-      setIsOpaque(true);
-      return; // skip alpha check for touch events
-    }
-
     const img = imgRef.current;
     const canvas = canvasRef.current;
     if (!img || !canvas) return;
@@ -221,7 +216,6 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
 
   const handlePointerLeave = (e: React.PointerEvent) => {
     if (e.pointerType === "touch") return;
-    setIsOpaque(false);
     if (imgRef.current) {
       imgRef.current.style.cursor = "url('customcursor.svg'), auto";
     }
