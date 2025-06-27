@@ -304,7 +304,10 @@ describe("auth.setPassword", () => {
   test("throw an error if no such token exists", async () => {
     const nonexistentToken = randomBytes(20).toString("hex"); // 40 characters
     await expect(
-      caller.auth.setPassword({ password: "HackWestern12!", token: nonexistentToken }),
+      caller.auth.setPassword({
+        password: "HackWestern12!",
+        token: nonexistentToken,
+      }),
     ).rejects.toThrowError("not found");
   });
 
@@ -329,7 +332,10 @@ describe("auth.setPassword", () => {
     });
 
     await expect(
-      caller.auth.setPassword({ password:"HackWestern12!", token: expiredToken }),
+      caller.auth.setPassword({
+        password: "HackWestern12!",
+        token: expiredToken,
+      }),
     ).rejects.toThrowError("expired");
   });
 
@@ -353,7 +359,10 @@ describe("auth.setPassword", () => {
       expires: new Date(Date.now() + 1000 * 60 * 60),
     });
 
-    const result = await caller.auth.setPassword({ password:"HackWestern12!", token: validToken });
+    const result = await caller.auth.setPassword({
+      password: "HackWestern12!",
+      token: validToken,
+    });
 
     expect(result.success).toBe(true);
   });
