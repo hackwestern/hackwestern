@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { PreregistrationForm } from "../preregistration-form";
-import { Draggable, DraggableImage } from "~/components/canvas/draggable";
+import { DraggableImage } from "~/components/canvas/draggable";
 import { CanvasComponent } from "../canvas/canvas";
 import Image from "next/image";
 import { useState } from "react";
@@ -11,7 +11,7 @@ function Hero() {
   return (
     <CanvasComponent>
       <div className="my-auto flex flex-col items-center justify-center space-y-12 pb-12">
-        <div className="flex origin-center flex-col items-center justify-center space-y-4 transition-transform duration-300 ease-in-out">
+        <div className="flex origin-center scale-75 flex-col items-center justify-center space-y-4 transition-transform duration-300 ease-in-out md:scale-100">
           <div className="flex flex-row">
             <Image
               src="/dragme.svg"
@@ -20,44 +20,24 @@ function Hero() {
               width={80}
               height={80}
             />
-            <DraggableImage
-              key="hw-logo"
-              onDragStart={() => setHasBeenDragged(true)}
-              animate={{
-                rotate: [2, -2],
-                transition: {
-                  duration: 1,
-                  repeat: Infinity,
-                  repeatType: "mirror",
-                  ease: "easeInOut",
-                },
-              }}
-              src="/horse.svg"
-              alt="Hack Western Logo"
-              scale={0.65}
-            />
-            {/*<Draggable
-              key="hw-logo"
-              onDragStart={() => setHasBeenDragged(true)}
-              animate={{
-                rotate: [2, -2],
-                transition: {
-                  duration: 1,
-                  repeat: Infinity,
-                  repeatType: "mirror",
-                  ease: "easeInOut",
-                },
-              }}
-            >
-              <motion.img
+            <div className="z-[100] scale-[1.33] md:scale-100">
+              <DraggableImage
+                key="hw-logo"
+                onDragStart={() => setHasBeenDragged(true)}
+                animate={{
+                  rotate: [2, -2],
+                  transition: {
+                    duration: 1,
+                    repeat: Infinity,
+                    repeatType: "mirror",
+                    ease: "easeInOut",
+                  },
+                }}
                 src="/horse.svg"
                 alt="Hack Western Logo"
-                width={80}
-                height={80}
-                draggable="false"
-                className="h-auto w-auto scale-[0.65]"
+                scale={0.65}
               />
-            </Draggable>*/}
+            </div>
             <motion.div
               animate={{ opacity: hasBeenDragged ? 0 : 1 }}
               transition={{ duration: 0.5, ease: "easeInOut" }}

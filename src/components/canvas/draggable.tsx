@@ -145,7 +145,7 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
   ...restProps
 }) => {
   const imgRef = useRef<HTMLImageElement>(null);
-  const [isOpaque, setIsOpaque] = useState(false);
+  const [isOpaque, setIsOpaque] = useState(true); // default to true for better UX
   const [isMouseDown, setIsMouseDown] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -183,6 +183,11 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
   }, []);
 
   const checkAlpha = (e: React.PointerEvent) => {
+    if (e.pointerType === "touch") {
+      setIsOpaque(true);
+      return; // skip alpha check for touch events
+    }
+
     const img = imgRef.current;
     const canvas = canvasRef.current;
     if (!img || !canvas) return;
@@ -214,7 +219,8 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
     img.style.cursor = cursor;
   };
 
-  const handlePointerLeave = () => {
+  const handlePointerLeave = (e: React.PointerEvent) => {
+    if (e.pointerType === "touch") return;
     setIsOpaque(false);
     if (imgRef.current) {
       imgRef.current.style.cursor = "url('customcursor.svg'), auto";
@@ -252,9 +258,9 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
           checkAlpha(e);
         }}
         onPointerMove={checkAlpha}
-        onPointerLeave={() => {
+        onPointerLeave={(e) => {
           setIsMouseDown(false);
-          handlePointerLeave();
+          handlePointerLeave(e);
         }}
         className="h-auto w-auto"
       />
