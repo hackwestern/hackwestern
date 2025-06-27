@@ -17,11 +17,18 @@ interface Point {
 
 export interface DraggableProps extends HTMLMotionProps<"div"> {
   initialPos?: Point;
+  shouldStopPropagation?: (e: React.PointerEvent) => boolean;
 }
 
 export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
   (props, ref) => {
-    const { initialPos: passedPos, children, style, ...restProps } = props;
+    const {
+      initialPos: passedPos,
+      children,
+      style,
+      shouldStopPropagation = () => true,
+      ...restProps
+    } = props;
 
     const {
       zoom: parentZoom,
@@ -99,20 +106,15 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
           scale: 1,
           filter: "drop-shadow(0 0px 0px rgba(0, 0, 0, 0)) brightness(1)",
         }}
-        onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
-        whileHover={{
-          scale: 1.1,
-          filter: "drop-shadow(0 8px 16px rgba(0, 0, 0, 0.12)) brightness(1.2)",
-          transition: {
-            duration: 0.2,
-            ease: "easeInOut",
-          },
+        onPointerDown={(e: React.PointerEvent) => {
+          if (shouldStopPropagation?.(e)) {
+            e.stopPropagation();
+          }
         }}
         transition={{
           duration: 0.1,
           ease: "easeOut",
         }}
-        whileTap={{ cursor: "url('/customcursor.svg'), grabbing" }}
         {...restProps}
       >
         {children}
@@ -122,3 +124,129 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
 );
 
 Draggable.displayName = "Draggable";
+
+export interface DraggableImageProps extends DraggableProps {
+  src: string;
+  alt?: string;
+  width?: string | number;
+  height?: string | number;
+  scale?: number;
+}
+
+export const DraggableImage: React.FC<DraggableImageProps> = ({
+  src,
+  alt,
+  width,
+  height,
+  initialPos,
+  animate,
+  className,
+  scale,
+  ...restProps
+}) => {
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [isOpaque, setIsOpaque] = useState(true); // default to true for better UX
+  const [isMouseDown, setIsMouseDown] = useState(false);
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // create a invisible canvas element to check the alpha value of the image
+  useEffect(() => {
+    if (typeof window !== "undefined" && !canvasRef.current) {
+      canvasRef.current = document.createElement("canvas");
+    }
+    const img = imgRef.current;
+    const canvas = canvasRef.current;
+    if (!img || !canvas) return;
+    if (!img.complete) {
+      img.onload = () => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+        }
+      };
+    } else {
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+      }
+    }
+    return () => {
+      if (img) img.onload = null;
+    };
+  }, []);
+
+  const checkAlpha = (e: React.PointerEvent) => {
+    const img = imgRef.current;
+    const canvas = canvasRef.current;
+    if (!img || !canvas) return;
+
+    const rect = img.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * img.naturalWidth;
+    const y = ((e.clientY - rect.top) / rect.height) * img.naturalHeight;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const alpha =
+      ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data[3] ?? 0;
+
+    // checking alpha > n rather than 0 to not trigger on shadows and such
+    const opaque = alpha > 128;
+    setIsOpaque(opaque);
+
+    let cursor = "url('customcursor.svg'), auto"; // default
+
+    // lowest-priority “grab”
+    if (opaque) cursor = "grab";
+
+    // “grabbing” overrides the previous rule
+    if (e.type === "pointerdown" || isMouseDown) cursor = "grabbing";
+
+    // highest-priority “grab” (must come last)
+    if (e.type === "pointerup") cursor = "grab";
+
+    img.style.cursor = cursor;
+  };
+
+  const hoverScale = isOpaque ? (scale ?? 1) * 1.05 : (scale ?? 1);
+
+  return (
+    <Draggable
+      initialPos={initialPos}
+      className={className}
+      drag={isOpaque}
+      shouldStopPropagation={() => isOpaque}
+      {...restProps}
+    >
+      <motion.img
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        animate={animate}
+        draggable="false"
+        whileHover={{ scale: hoverScale }}
+        style={{
+          scale: scale ?? 1,
+        }}
+        onPointerDown={(e) => {
+          setIsMouseDown(true);
+          checkAlpha(e);
+        }}
+        onPointerUp={(e) => {
+          setIsMouseDown(false);
+          checkAlpha(e);
+        }}
+        onPointerMove={checkAlpha}
+        className="h-auto w-auto"
+      />
+    </Draggable>
+  );
+};
