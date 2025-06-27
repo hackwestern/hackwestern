@@ -140,7 +140,7 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
             name="email"
             render={({ field }) => (
               <FormItem className="space-y-4">
-                <div className="border-purple/30 flex w-max space-x-2 rounded-xl border bg-white pb-1 pr-1 pt-1 focus-within:ring focus-within:ring-2 focus-within:ring-ring">
+                <div className="flex w-max space-x-2 rounded-xl border border-offwhite bg-white/50 pb-1 pr-1 pt-1 shadow-[0_8px_16px_rgba(0,0,0,0.05)] backdrop-blur-md focus-within:ring-2 focus-within:ring-ring">
                   <FormLabel className="sr-only">Email Address</FormLabel>
                   <FormControl>
                     <div className="flex items-center gap-1 py-0.5">
