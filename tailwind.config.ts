@@ -24,10 +24,6 @@ const config = {
       "4xl": "3000px",
     },
     extend: {
-      cursor: {
-        grab: "url('/customcursor.svg'), grab",
-        grabbing: "url('/customcursor.svg'), grabbing"
-      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -40,6 +36,8 @@ const config = {
         lilac: "var(--lilac)",
         salmon: "var(--salmon)",
         heavy: "var(--heavy)",
+        emphasis: "var(--emphasis)",
+        tinted: "var(--tinted)",
         medium: "var(--medium)",
         light: "var(--light)",
         offwhite: "var(--offwhite)",
@@ -96,7 +94,7 @@ const config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        "hw-gradient-radius": "60vw"  ,
+        "hw-gradient-radius": "60vw",
       },
       backgroundImage: {
         "hw-radial-gradient": `
@@ -117,8 +115,7 @@ const config = {
           "linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(#D19AEE 0%, #8F57AD 100%)",
         "button-secondary-back":
           "linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), linear-gradient(#FFFFFF 0%,#A893B0 100%)",
-        "noise":
-          `url("https://grainy-gradients.vercel.app/noise.svg")`
+        noise: `url("https://grainy-gradients.vercel.app/noise.svg")`,
       },
       boxShadow: {
         "button-primary": "0px 2px 4px rgba(60, 32, 76, 0.2)",
@@ -130,15 +127,15 @@ const config = {
         "jetbrains-mono": ["var(--font-jetbrainsmono)"],
       },
       fontSize: {
-        'main-display': '4rem',
-        'md-display': '3rem',
-        'sm-display': '2rem',
-        'lg-sub': '1.5rem',
-        'sm-sub': '1rem',
-        'lg-p': '1.5rem',
-        'md-p': '1rem',
-        'sm-p': '.875rem'
-      }
+        "main-display": "4rem",
+        "md-display": "3rem",
+        "sm-display": "2rem",
+        "lg-sub": "1.5rem",
+        "sm-sub": "1rem",
+        "lg-p": "1.5rem",
+        "md-p": "1rem",
+        "sm-p": ".875rem",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

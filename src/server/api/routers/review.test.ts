@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, assert, describe, expect, test } from "vitest";
+import { beforeEach, afterEach, describe, expect, test } from "vitest";
 import { faker } from "@faker-js/faker";
 import { type Session } from "next-auth";
 import { eq } from "drizzle-orm";
@@ -10,7 +10,6 @@ import { users, applications, reviews } from "~/server/db/schema";
 import { ReviewSeeder } from "~/server/db/seed/reviewSeeder";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
-import { resultOf } from "node_modules/@trpc/client/dist/links/internals/urlWithConnectionParams";
 
 const session = await mockOrganizerSession(db);
 const ctx = createInnerTRPCContext({ session });
