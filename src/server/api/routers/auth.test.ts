@@ -1,4 +1,4 @@
-import { assert, describe, expect, test } from "vitest";
+import { assert, describe, expect, test, vi } from "vitest";
 import { faker } from "@faker-js/faker";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -11,6 +11,7 @@ import {
   verificationTokens,
 } from "~/server/db/schema";
 import { randomBytes } from "crypto";
+import { resend } from "~/server/mail";
 
 const session = await mockSession(db);
 
@@ -241,6 +242,127 @@ describe("auth.checkValidToken", () => {
     });
 
     const result = await caller.auth.checkValidToken({ token: "valid-token" });
+
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("auth.resendEmail", () => {
+  test("unauthorized user: throws error", async () => {
+    const unauthCtx = createInnerTRPCContext({ session: null });
+    const unauthCaller = createCaller(unauthCtx);
+    await expect(unauthCaller.auth.resendEmail()).rejects.toThrowError(
+      "Not logged in",
+    );
+  });
+
+  test("non-existent user: throws error", async () => {
+    const fakeSession = {
+      ...session,
+      user: {
+        ...session.user,
+        id: "non-existent-id",
+        email: "nonexistent@example.com",
+      },
+    };
+    const fakeCtx = createInnerTRPCContext({ session: fakeSession });
+    const fakeCaller = createCaller(fakeCtx);
+    await expect(fakeCaller.auth.resendEmail()).rejects.toThrowError(
+      /not found/i,
+    );
+  });
+
+  test("existing user: returns success", async () => {
+    const sessionUser = session.user;
+    await db
+      .insert(users)
+      .values({
+        id: sessionUser.id,
+        name: sessionUser.name ?? faker.person.fullName(),
+        email: sessionUser.email ?? faker.internet.email(),
+        emailVerified: null,
+        image: sessionUser.image ?? faker.image.avatar(),
+      })
+      .onConflictDoNothing?.();
+
+    const sendEmailSpy = vi.spyOn(resend.emails, "send").mockResolvedValue({
+      data: { id: "mock-email-id" },
+      error: null,
+    });
+
+    try {
+      const result = await caller.auth.resendEmail();
+      expect(result.success).toBe(true);
+    } finally {
+      // Restore the original method with its context
+      sendEmailSpy.mockRestore();
+    }
+  });
+});
+
+describe("auth.setPassword", () => {
+  test("throw an error if no such token exists", async () => {
+    const nonexistentToken = randomBytes(20).toString("hex"); // 40 characters
+    await expect(
+      caller.auth.setPassword({
+        password: "HackWestern12!",
+        token: nonexistentToken,
+      }),
+    ).rejects.toThrowError("not found");
+  });
+
+  test("throws an error if the token is expired", async () => {
+    const fakeId = faker.string.uuid();
+    const expiredToken = randomBytes(20).toString("hex"); // 40 characters
+
+    const fakeUser = {
+      id: fakeId,
+      name: faker.person.fullName(),
+      email: faker.internet.email(),
+      emailVerified: faker.date.anytime(),
+      image: faker.image.avatar(),
+    };
+
+    await db.insert(users).values(fakeUser);
+
+    await db.insert(resetPasswordTokens).values({
+      userId: fakeId,
+      token: expiredToken, // Use the 40-character token
+      expires: new Date(Date.now() - 1000 * 60 * 60),
+    });
+
+    await expect(
+      caller.auth.setPassword({
+        password: "HackWestern12!",
+        token: expiredToken,
+      }),
+    ).rejects.toThrowError("expired");
+  });
+
+  test("validates the token successfully", async () => {
+    const fakeId = faker.string.uuid();
+    const validToken = randomBytes(20).toString("hex"); // 40 characters
+
+    const fakeUser = {
+      id: fakeId,
+      name: faker.person.fullName(),
+      email: faker.internet.email(),
+      emailVerified: faker.date.anytime(),
+      image: faker.image.avatar(),
+    };
+
+    await db.insert(users).values(fakeUser);
+
+    await db.insert(resetPasswordTokens).values({
+      userId: fakeId,
+      token: validToken, // Use the 40-character token
+      expires: new Date(Date.now() + 1000 * 60 * 60),
+    });
+
+    const result = await caller.auth.setPassword({
+      password: "HackWestern12!",
+      token: validToken,
+    });
 
     expect(result.success).toBe(true);
   });
