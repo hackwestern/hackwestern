@@ -6,19 +6,19 @@ import { Mail } from "lucide-react";
 function SponsorSection() {
   return (
     <CanvasComponent offset={{ x: "10%", y: "10%" }}>
-      <div className="my-auto flex flex-col items-center justify-center space-y-4 sm:space-y-8 md:space-y-12 pb-12">
-        <div className="flex flex-col origin-center scale-75 items-center justify-center space-y-8 transition-transform duration-300 ease-in-out md:scale-100">
-          <div className="inline-flex w-full max-w-[794px] flex-col items-center justify-start gap-4 sm:gap-6 md:gap-8 px-4 sm:px-0">
+      <div className="my-auto flex flex-col items-center justify-center space-y-4 pb-12 sm:space-y-8 md:space-y-12">
+        <div className="flex origin-center scale-75 flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out md:scale-100">
+          <div className="inline-flex w-full max-w-[794px] flex-col items-center justify-start gap-4 px-4 sm:gap-6 sm:px-0 md:gap-8">
             {/* Our Sponsors Text Section */}
-            <div className="inline-flex w-full scale-[0.7] sm:scale-[0.85] md:scale-[0.95] lg:scale-100 max-w-full sm:max-w-[794px] flex-col items-center justify-start gap-4 sm:gap-6 md:gap-8 px-4 pb-0 sm:pb-8 md:pb-12 sm:px-0">
+            <div className="inline-flex w-full max-w-full scale-[0.7] flex-col items-center justify-start gap-4 px-4 pb-0 sm:max-w-[794px] sm:scale-[0.85] sm:gap-6 sm:px-0 sm:pb-8 md:scale-[0.95] md:gap-8 md:pb-12 lg:scale-100">
               <div className="h-5 justify-start self-stretch text-center font-jetbrains-mono text-base font-medium uppercase text-zinc-500">
                 Our sponsors
               </div>
               <div className="flex flex-col items-start justify-start gap-3 self-stretch">
-                <div className="justify-start self-stretch text-center font-dico text-3xl sm:text-3xl md:text-4xl font-medium text-indigo-950">
+                <div className="justify-start self-stretch text-center font-dico text-3xl font-medium text-indigo-950 sm:text-3xl md:text-4xl">
                   Our sponsors make Hack Western possible.
                 </div>
-                <div className="justify-start self-stretch text-center font-figtree text-sm sm:text-base font-medium text-zinc-500">
+                <div className="justify-start self-stretch text-center font-figtree text-sm font-medium text-zinc-500 sm:text-base">
                   Thank you to the organizations that support our mission.
                 </div>
               </div>
@@ -26,7 +26,7 @@ function SponsorSection() {
           </div>
 
           <div className="flex flex-row">
-            <div className="flex origin-center scale-[0.45] flex-row -mt-36 sm:-mt-20 md:-mt-8 lg:mt-0 sm:scale-[0.65] md:scale-[0.85] lg:scale-100">
+            <div className="-mt-36 flex origin-center scale-[0.45] flex-row sm:-mt-20 sm:scale-[0.65] md:-mt-8 md:scale-[0.85] lg:mt-0 lg:scale-100">
               {/* Macbook */}
               <div className="relative z-10 h-[600px] w-[854.14px] origin-top-left -rotate-[1.771deg] rounded-3xl bg-gradient-to-b from-gray-200 to-zinc-400 shadow-[0px_3.8216559886932373px_7.643311977386475px_0px_rgba(0,0,0,0.25)] shadow-[inset_0px_-1.9108279943466187px_11.464967727661133px_0px_rgba(0,0,0,0.40)]">
                 <div className="absolute left-[386.49px] top-[239.58px] h-36 w-24">
