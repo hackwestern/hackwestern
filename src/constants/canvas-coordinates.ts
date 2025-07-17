@@ -1,23 +1,23 @@
 export const coordinates = {
+  about: {
+    x: 1500,
+    y: 750,
+  },
+  projects: {
+    x: 5000,
+    y: 750,
+  },
   home: {
     x: 3040,
     y: 2041.5,
   },
   faq: {
-    x: 1500,
+    x: 750,
     y: 3000,
   },
-  about: {
-    x: 2500,
-    y: 1000,
-  },
   sponsors: {
-    x: 3070,
+    x: 3040,
     y: 3500,
-  },
-  projects: {
-    x: 5500,
-    y: 1000,
   },
   team: {
     x: 5800,

@@ -8,7 +8,10 @@ interface NavbarProps {
   onResetViewAndItems?: () => void;
 }
 
-export default function Navbar({ setPanOffset, onResetViewAndItems }: NavbarProps) {
+export default function Navbar({
+  setPanOffset,
+  onResetViewAndItems,
+}: NavbarProps) {
   const [expandedButton, setExpandedButton] = useState<string | null>("home");
 
   const handlePan = (button: string) => {
@@ -17,13 +20,18 @@ export default function Navbar({ setPanOffset, onResetViewAndItems }: NavbarProp
     setPanOffset?.({ x: coords.x, y: coords.y });
   };
 
+  const handleHome = () => {
+    setExpandedButton("home");
+    onResetViewAndItems?.();
+  };
+
   return (
     <motion.div className="flex items-center justify-center gap-1 rounded-[10px] border-[1px] border-border bg-offwhite p-1 shadow-[0_6px_12px_rgba(0,0,0,0.10)]">
       <div className="flex items-center gap-1">
         <SingleButton
           label="Home"
           icon="Home"
-          onClick={onResetViewAndItems}
+          onClick={handleHome}
           isPushed={expandedButton === "home"}
         />
         <SingleButton
