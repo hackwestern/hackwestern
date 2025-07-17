@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import SingleButton from "./single-button";
-import { HALF_MULT } from "./canvas";
+import { canvasHeight, canvasWidth } from "./canvas";
 
 interface NavbarProps {
   onResetViewAndItems?: () => void;
@@ -19,14 +19,8 @@ export default function Navbar({
 }: NavbarProps) {
   const [expandedButton, setExpandedButton] = useState<string | null>(null);
 
-  // Check if canvas is at center position or currently resetting
-  // The center position is actually { x: -width, y: -height } based on the canvas logic
-  // We need to get the window dimensions to calculate the correct center position
-  const windowWidth = typeof window !== "undefined" ? window.innerWidth : 0;
-  const windowHeight = typeof window !== "undefined" ? window.innerHeight : 0;
-
-  const centerX = -windowWidth * HALF_MULT;
-  const centerY = -windowHeight * HALF_MULT;
+  const centerX = -canvasWidth / 2;
+  const centerY = -canvasHeight / 2;
 
   const isAtCenter =
     (panOffset.x === centerX && panOffset.y === centerY && zoom === 1) ||

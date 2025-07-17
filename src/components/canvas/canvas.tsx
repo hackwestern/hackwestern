@@ -68,29 +68,24 @@ const INTERACTIVE_SELECTOR =
   "button,[role='button'],input,textarea,[contenteditable='true']," +
   "[data-toolbar-button],[data-navbar-button]";
 
-// MULTIPLIER ** 2 is the number of screen-sized "tiles" in the canvas
-export const MULTIPLIER = 5; // SHOULD ALWAYS BE AN ODD NUMBER
-export const HALF_MULT = Math.floor(MULTIPLIER / 2);
+export const canvasWidth = 8000;
+export const canvasHeight = 6000;
 
-const canvasWidth = `${MULTIPLIER * 100}vw`;
-const canvasHeight = `${MULTIPLIER * 100}vh`;
-
-const MIN_ZOOM = 1.05 / MULTIPLIER;
 const MAX_ZOOM = 10;
 
 const Canvas: FC<Props> = ({ children }) => {
   const { height, width } = useWindowDimensions();
 
-  const sceneWidth = MULTIPLIER * width;
-  const sceneHeight = MULTIPLIER * height;
+  const sceneWidth = canvasWidth;
+  const sceneHeight = canvasHeight;
 
-  // left corner of center tile
-  const centerX = HALF_MULT * width;
-  const centerY = HALF_MULT * height;
+  // center of the canvas
+  const centerX = sceneWidth / 2;
+  const centerY = sceneHeight / 2;
 
   const [panOffset, setPanOffset] = useState<Point>({
-    x: -centerX,
-    y: -centerY,
+    x: -centerX + width / 2,
+    y: -centerY + height / 2,
   });
   const [zoom, setZoom] = useState<number>(1);
 
@@ -127,26 +122,30 @@ const Canvas: FC<Props> = ({ children }) => {
 
   const onResetViewAndItems = (): void => {
     setIsResetting(true);
-    void panToOffsetScene({ x: -centerX, y: -centerY }, sceneControls).then(
-      () => {
-        setIsResetting(false);
-        setPanOffset({ x: -centerX, y: -centerY });
-        setZoom(1);
-      },
-    );
+    void panToOffsetScene(
+      { x: -centerX + width / 2, y: -centerY + height / 2 },
+      sceneControls,
+    ).then(() => {
+      setIsResetting(false);
+      setPanOffset({ x: -centerX + width / 2, y: -centerY + height / 2 });
+      setZoom(1);
+    });
   };
 
   useEffect(() => {
     setIsResetting(true);
-    void panToOffsetScene({ x: -centerX, y: -centerY }, sceneControls)
+    void panToOffsetScene(
+      { x: -centerX + width / 2, y: -centerY + height / 2 },
+      sceneControls,
+    )
       .then(() => {
-        setPanOffset({ x: -centerX, y: -centerY });
+        setPanOffset({ x: -centerX + width / 2, y: -centerY + height / 2 });
         setZoom(1);
       })
       .then(() => {
         setIsResetting(false);
       });
-  }, [centerY, centerX]);
+  }, [centerY, centerX, width, height]);
 
   const panToOffset = (
     offset: Point,
@@ -295,8 +294,8 @@ const Canvas: FC<Props> = ({ children }) => {
 
       if (isPinch) {
         const nextZoom = Math.max(
-          MIN_ZOOM,
           Math.min(zoom * (1 - event.deltaY * ZOOM_SENSITIVITY), MAX_ZOOM),
+          (window.innerWidth / canvasWidth) * 1.05, // Ensure zoom is at least the width of the canvas
         );
 
         const rect = viewportRef.current?.getBoundingClientRect();
@@ -376,8 +375,8 @@ const Canvas: FC<Props> = ({ children }) => {
         setMaxZIndex={setMaxZIndex}
       >
         {(!(
-          panOffset.x === -centerX &&
-          panOffset.y === -centerY &&
+          panOffset.x === -centerX + width / 2 &&
+          panOffset.y === -centerY + height / 2 &&
           zoom === 1
         ) ||
           isResetting) && <Toolbar zoom={zoom} panOffset={panOffset} />}
@@ -481,7 +480,7 @@ export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
   );
 };
 
-const gradientBgImage = `radial-gradient(ellipse ${MULTIPLIER * 100}vw ${MULTIPLIER * 100}vh at ${MULTIPLIER * 50}vw ${MULTIPLIER * 100}vh, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`;
+const gradientBgImage = `radial-gradient(ellipse ${canvasWidth}px ${canvasHeight}px at ${canvasWidth / 2}px ${canvasHeight}px, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`;
 
 const Gradient = () => (
   <div
