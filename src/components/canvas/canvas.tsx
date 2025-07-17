@@ -69,7 +69,7 @@ const INTERACTIVE_SELECTOR =
   "[data-toolbar-button],[data-navbar-button]";
 
 export const canvasWidth = 8000;
-export const canvasHeight = 6000;
+export const canvasHeight = 5000;
 
 const MAX_ZOOM = 10;
 
@@ -296,6 +296,7 @@ const Canvas: FC<Props> = ({ children }) => {
         const nextZoom = Math.max(
           Math.min(zoom * (1 - event.deltaY * ZOOM_SENSITIVITY), MAX_ZOOM),
           (window.innerWidth / canvasWidth) * 1.05, // Ensure zoom is at least the width of the canvas
+          (window.innerHeight / canvasHeight) * 1.05, // Ensure zoom is at least the height of the canvas
         );
 
         const rect = viewportRef.current?.getBoundingClientRect();
