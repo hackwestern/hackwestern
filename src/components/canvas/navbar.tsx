@@ -1,40 +1,20 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import SingleButton from "./single-button";
-import { canvasHeight, canvasWidth } from "./canvas";
+import { coordinates } from "~/constants/canvas-coordinates";
 
 interface NavbarProps {
+  setPanOffset?: (offset: { x: number; y: number }) => void;
   onResetViewAndItems?: () => void;
-  panOffset?: { x: number; y: number };
-  zoom?: number;
-  isResetting?: boolean;
-  style?: React.CSSProperties;
 }
 
-export default function Navbar({
-  onResetViewAndItems,
-  panOffset = { x: 0, y: 0 },
-  zoom = 1,
-  isResetting = false,
-}: NavbarProps) {
-  const [expandedButton, setExpandedButton] = useState<string | null>(null);
+export default function Navbar({ setPanOffset, onResetViewAndItems }: NavbarProps) {
+  const [expandedButton, setExpandedButton] = useState<string | null>("home");
 
-  const centerX = -canvasWidth / 2;
-  const centerY = -canvasHeight / 2;
-
-  const isAtCenter =
-    (panOffset.x === centerX && panOffset.y === centerY && zoom === 1) ||
-    isResetting;
-
-  const handleButtonClick = (buttonId: string) => {
-    if (buttonId === "home" && onResetViewAndItems) {
-      // Reset view and items when home is clicked
-      onResetViewAndItems();
-      setExpandedButton(null); // Collapse any expanded button
-    } else {
-      // If clicking the same button, collapse it. Otherwise, expand the new one
-      setExpandedButton(expandedButton === buttonId ? null : buttonId);
-    }
+  const handlePan = (button: string) => {
+    setExpandedButton(button);
+    const coords = coordinates[button as keyof typeof coordinates];
+    setPanOffset?.({ x: coords.x, y: coords.y });
   };
 
   return (
@@ -43,26 +23,38 @@ export default function Navbar({
         <SingleButton
           label="Home"
           icon="Home"
-          onClick={() => handleButtonClick("home")}
-          isPushed={isAtCenter}
+          onClick={onResetViewAndItems}
+          isPushed={expandedButton === "home"}
         />
         <SingleButton
-          label="Hack Western 11 Projects"
-          icon="Folders"
-          link="https://dorahacks.io/hackathon/hackwestern-11/buidl"
+          label="About"
+          icon="Info"
+          onClick={() => handlePan("about")}
+          isPushed={expandedButton === "about"}
+        />
+        <SingleButton
+          label="Projects"
+          icon="Code"
+          onClick={() => handlePan("projects")}
           isPushed={expandedButton === "projects"}
         />
         <SingleButton
-          label="Hack Western 11 Site"
-          icon="ExternalLink"
-          link="https://archive.hackwestern.com/2024"
-          isPushed={expandedButton === "site"}
+          label="Sponsors"
+          icon="CircleDollarSign"
+          onClick={() => handlePan("sponsors")}
+          isPushed={expandedButton === "sponsors"}
         />
         <SingleButton
-          label="Sponsor Us!"
-          icon="Handshake"
-          emailAddress="sponsorship@hackwestern.com"
-          isPushed={expandedButton === "settings"}
+          label="FAQ"
+          icon="HelpCircle"
+          onClick={() => handlePan("faq")}
+          isPushed={expandedButton === "faq"}
+        />
+        <SingleButton
+          label="Team"
+          icon="Users"
+          onClick={() => handlePan("team")}
+          isPushed={expandedButton === "team"}
         />
       </div>
     </motion.div>

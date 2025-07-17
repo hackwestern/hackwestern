@@ -154,7 +154,7 @@ const Canvas: FC<Props> = ({ children }) => {
     if (!viewportRef.current) return;
     void panToOffsetScene(offset, sceneControls).then(() => {
       setZoom(1);
-      setPanOffset({ x: -offset.x, y: -offset.y });
+      setPanOffset({ x: offset.x, y: offset.y });
     });
   };
 
@@ -395,10 +395,16 @@ const Canvas: FC<Props> = ({ children }) => {
           }}
         >
           <Navbar
+            setPanOffset={(offset: { x: number; y: number }) => {
+              panToOffset(
+                {
+                  x: -offset.x,
+                  y: -offset.y,
+                },
+                viewportRef,
+              );
+            }}
             onResetViewAndItems={onResetViewAndItems}
-            panOffset={panOffset}
-            zoom={zoom}
-            isResetting={isResetting}
           />
         </div>
         <div
@@ -435,8 +441,8 @@ const Canvas: FC<Props> = ({ children }) => {
 };
 
 interface OffsetPoints {
-  x?: string;
-  y?: string;
+  x?: number;
+  y?: number;
 }
 
 interface CanvasProps {
@@ -453,14 +459,14 @@ export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
     const style: React.CSSProperties = {};
 
     if (offset.x != null) {
-      style.marginLeft = offset.x;
+      style.marginLeft = offset.x + "px";
     } else {
       style.marginLeft = "auto";
       style.marginRight = "auto";
     }
 
     if (offset.y != null) {
-      style.marginTop = offset.y;
+      style.marginTop = offset.y + "px";
     } else {
       style.marginTop = "auto";
       style.marginBottom = "auto";

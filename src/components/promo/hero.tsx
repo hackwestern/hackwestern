@@ -4,13 +4,14 @@ import { DraggableImage } from "~/components/canvas/draggable";
 import { CanvasComponent } from "../canvas/canvas";
 import Image from "next/image";
 import { useState } from "react";
+import { coordinates } from "~/constants/canvas-coordinates";
 
 function Hero() {
   const [hasBeenDragged, setHasBeenDragged] = useState(false);
 
   return (
-    <CanvasComponent>
-      <div className="my-auto flex flex-col items-center justify-center space-y-12 pb-12">
+    <CanvasComponent offset={coordinates.home}>
+      <div className="my-auto flex h-screen w-screen flex-col items-center justify-center space-y-12 pb-12">
         <div className="flex origin-center scale-75 flex-col items-center justify-center space-y-4 transition-transform duration-300 ease-in-out md:scale-100">
           <div className="flex flex-row">
             <Image

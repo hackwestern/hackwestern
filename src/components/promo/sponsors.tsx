@@ -2,11 +2,12 @@ import { CanvasComponent } from "../canvas/canvas";
 import { motion } from "framer-motion";
 import { Button } from "../ui/button";
 import { Mail } from "lucide-react";
+import { coordinates } from "~/constants/canvas-coordinates";
 
 function Sponsors() {
   return (
-    <CanvasComponent offset={{ y: "350vh" }}>
-      <div className="my-auto flex flex-col items-center justify-center space-y-4 pb-12 sm:space-y-8 md:space-y-12">
+    <CanvasComponent offset={coordinates.sponsors}>
+      <div className="flex h-screen w-screen flex-col items-center justify-center space-y-4 pb-12 sm:space-y-8 md:space-y-12">
         <div className="flex origin-center scale-75 flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out md:scale-100">
           <div className="inline-flex w-full max-w-[794px] flex-col items-center justify-start gap-4 px-4 sm:gap-6 sm:px-0 md:gap-8">
             {/* Our Sponsors Text Section */}
