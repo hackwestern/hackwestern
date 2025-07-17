@@ -3,6 +3,7 @@ import { Footer } from "~/components/footer";
 import Hero from "~/components/promo/Hero";
 import Image from "next/image";
 import Canvas from "~/components/canvas/canvas";
+import SponsorSection from "~/components/promo/SponsorSection";
 
 export default function Home() {
   return (
@@ -18,6 +19,7 @@ export default function Home() {
       <main id="home" className="cursor-[url('/customcursor.svg'),auto]">
         <Canvas>
           <Hero />
+          <SponsorSection />
         </Canvas>
         {/* MLH Code of Conduct */}
         <Footer className="absolute bottom-3 z-20 flex w-full justify-center text-sm sm:text-base md:bottom-4 md:right-4 md:block md:w-auto" />
