@@ -42,13 +42,13 @@ export default function Navbar({
         />
         <SingleButton
           label="Projects"
-          icon="Code"
+          icon="LayoutDashboard"
           onClick={() => handlePan("projects")}
           isPushed={expandedButton === "projects"}
         />
         <SingleButton
           label="Sponsors"
-          icon="CircleDollarSign"
+          icon="Handshake"
           onClick={() => handlePan("sponsors")}
           isPushed={expandedButton === "sponsors"}
         />
