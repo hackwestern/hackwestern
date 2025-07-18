@@ -1,24 +1,52 @@
-import { type Point } from "framer-motion";
+import {
+  type Point,
+  type MotionValue,
+  useAnimationFrame,
+} from "framer-motion";
 import { useEffect, useState } from "react";
 
 const Toolbar = ({
-  zoom,
-  panOffset,
+  x,
+  y,
+  scale,
   homeCoordinates = { x: 0, y: 0 },
 }: {
-  zoom: number;
-  panOffset: Point;
+  x: MotionValue<number>;
+  y: MotionValue<number>;
+  scale: MotionValue<number>;
   homeCoordinates?: Point;
 }) => {
   const [mounted, setMounted] = useState(false);
+  // This state will hold the live, animated values
+  const [animatedValues, setAnimatedValues] = useState({
+    x: x.get(),
+    y: y.get(),
+    scale: scale.get(),
+  });
+
+  // Subscribe to animation frame updates to get smooth transitions
+  useAnimationFrame(() => {
+    setAnimatedValues({
+      x: x.get(),
+      y: y.get(),
+      scale: scale.get(),
+    });
+  });
+
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
 
-  // coordinates of top left corner of screen, where (0, 0) is when at home
-  const displayX = -(panOffset.x / zoom + homeCoordinates.x);
-  const displayY = -(panOffset.y / zoom + homeCoordinates.y);
+  // Use animated values instead of static state
+  const displayX = -(
+    animatedValues.x / animatedValues.scale +
+    homeCoordinates.x
+  );
+  const displayY = -(
+    animatedValues.y / animatedValues.scale +
+    homeCoordinates.y
+  );
 
-  if (displayX === 0 && displayY === 0 && zoom === 1) {
+  if (displayX === 0 && displayY === 0 && animatedValues.scale === 1) {
     return null; // don't show toolbar when at home
   }
 
@@ -29,7 +57,7 @@ const Toolbar = ({
       data-toolbar-button
     >
       ({displayX.toFixed(0)}, {displayY.toFixed(0)})
-      <span className="text-light"> |</span> {zoom.toFixed(2)}x
+      <span className="text-light"> |</span> {animatedValues.scale.toFixed(2)}x
     </div>
   );
 };
