@@ -92,7 +92,10 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const [panOffset, setPanOffset] = useState<Point>(offsetHomeCoordinates);
   const [zoom, setZoom] = useState<number>(1);
 
+  // tracks if user is panning the screen
   const [isPanning, setIsPanning] = useState<boolean>(false);
+  // this one is moving from scene control, not from user
+  const [isSceneMoving, setIsSceneMoving] = useState<boolean>(false);
   const [panStartPoint, setPanStartPoint] = useState<Point>({ x: 0, y: 0 });
   const [initialPanOffsetOnDrag, setInitialPanOffsetOnDrag] = useState<Point>({
     x: 0,
@@ -137,18 +140,18 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     viewportRef: React.RefObject<HTMLDivElement | null>,
   ): void => {
     if (!viewportRef.current) return;
-    setIsPanning(true);
+    setIsSceneMoving(true);
     void panToOffsetScene(offset, sceneControls).then(() => {
       setZoom(1);
       setPanOffset({ x: offset.x, y: offset.y });
-      setIsPanning(false);
+      setIsSceneMoving(false);
     });
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     activePointersRef.current.set(event.pointerId, event);
     (event.target as HTMLElement).setPointerCapture(event.pointerId);
-    if (isResetting || isPanning) return;
+    if (isResetting || isSceneMoving) return;
     sceneControls.stop();
     if (activePointersRef.current.size === 1) {
       const targetElement = event.target as HTMLElement;
@@ -199,6 +202,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
           maxPanY,
         ),
       });
+      // handles touchscreen pinching
     } else if (
       activePointersRef.current.size >= 2 &&
       initialPinchStateRef.current
@@ -220,15 +224,28 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       if (initialDistance === 0) return;
 
       let newZoom = initialZoom * (currentDistance / initialDistance);
-      newZoom = Math.max(0.6, Math.min(newZoom, 10));
+      newZoom = Math.max(
+        (window.innerWidth / canvasWidth) * 1.05, // Ensure zoom is at least the width of the canvas
+        (window.innerHeight / canvasHeight) * 1.05, // Ensure zoom is at least the height of the canvas
+        Math.min(newZoom, 10),
+      );
 
       const mx = currentMidpoint.x;
       const my = currentMidpoint.y;
 
-      const newPanX =
+      const minPanX = width - sceneWidth * newZoom;
+      const maxPanX = 0;
+      const minPanY = height - sceneHeight * newZoom;
+      const maxPanY = 0;
+
+      let newPanX =
         mx - ((mx - initialPanOffsetPinch.x) / initialZoom) * newZoom;
-      const newPanY =
+      let newPanY =
         my - ((my - initialPanOffsetPinch.y) / initialZoom) * newZoom;
+
+      // Clamp pan to prevent leaving bounds
+      newPanX = Math.min(Math.max(newPanX, minPanX), maxPanX);
+      newPanY = Math.min(Math.max(newPanY, minPanY), maxPanY);
 
       setZoom(newZoom);
       setPanOffset({ x: newPanX, y: newPanY });
