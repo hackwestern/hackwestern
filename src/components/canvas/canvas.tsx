@@ -96,6 +96,7 @@ const Canvas: FC<Props> = ({ children }) => {
     y: 0,
   });
   const [isResetting, setIsResetting] = useState<boolean>(false);
+  const [isMoving, setIsMoving] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
 
   const sceneControls = useAnimationControls();
@@ -152,16 +153,18 @@ const Canvas: FC<Props> = ({ children }) => {
     viewportRef: React.RefObject<HTMLDivElement | null>,
   ): void => {
     if (!viewportRef.current) return;
+    setIsMoving(true);
     void panToOffsetScene(offset, sceneControls).then(() => {
       setZoom(1);
       setPanOffset({ x: offset.x, y: offset.y });
+      setIsMoving(false);
     });
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     activePointersRef.current.set(event.pointerId, event);
     (event.target as HTMLElement).setPointerCapture(event.pointerId);
-    if (isResetting) return;
+    if (isResetting || isMoving) return;
     sceneControls.stop();
     if (activePointersRef.current.size === 1) {
       const targetElement = event.target as HTMLElement;

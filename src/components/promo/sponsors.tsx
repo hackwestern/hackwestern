@@ -2,7 +2,7 @@ import { CanvasComponent } from "../canvas/canvas";
 import { motion } from "framer-motion";
 import { Button } from "../ui/button";
 import { Mail } from "lucide-react";
-import { coordinates } from "~/constants/canvas-coordinates";
+import { coordinates } from "~/constants/canvas";
 
 function Sponsors() {
   return (

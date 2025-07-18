@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import SingleButton from "./single-button";
-import { coordinates } from "~/constants/canvas-coordinates";
+import { CanvasSection, coordinates } from "~/constants/canvas";
 
 interface NavbarProps {
   setPanOffset?: (offset: { x: number; y: number }) => void;
@@ -14,9 +14,9 @@ export default function Navbar({
 }: NavbarProps) {
   const [expandedButton, setExpandedButton] = useState<string | null>("home");
 
-  const handlePan = (button: string) => {
-    setExpandedButton(button);
-    const coords = coordinates[button as keyof typeof coordinates];
+  const handlePan = (section: CanvasSection) => {
+    setExpandedButton(section);
+    const coords = coordinates[section];
     setPanOffset?.({ x: coords.x, y: coords.y });
   };
 
@@ -37,32 +37,32 @@ export default function Navbar({
         <SingleButton
           label="About"
           icon="Info"
-          onClick={() => handlePan("about")}
-          isPushed={expandedButton === "about"}
+          onClick={() => handlePan(CanvasSection.About)}
+          isPushed={expandedButton === CanvasSection.About}
         />
         <SingleButton
           label="Projects"
           icon="LayoutDashboard"
-          onClick={() => handlePan("projects")}
-          isPushed={expandedButton === "projects"}
+          onClick={() => handlePan(CanvasSection.Projects)}
+          isPushed={expandedButton === CanvasSection.Projects}
         />
         <SingleButton
           label="Sponsors"
           icon="Handshake"
-          onClick={() => handlePan("sponsors")}
-          isPushed={expandedButton === "sponsors"}
+          onClick={() => handlePan(CanvasSection.Sponsors)}
+          isPushed={expandedButton === CanvasSection.Sponsors}
         />
         <SingleButton
           label="FAQ"
           icon="HelpCircle"
-          onClick={() => handlePan("faq")}
-          isPushed={expandedButton === "faq"}
+          onClick={() => handlePan(CanvasSection.FAQ)}
+          isPushed={expandedButton === CanvasSection.FAQ}
         />
         <SingleButton
           label="Team"
           icon="Users"
-          onClick={() => handlePan("team")}
-          isPushed={expandedButton === "team"}
+          onClick={() => handlePan(CanvasSection.Team)}
+          isPushed={expandedButton === CanvasSection.Team}
         />
       </div>
     </motion.div>

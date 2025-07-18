@@ -1,4 +1,4 @@
-import { coordinates } from "~/constants/canvas-coordinates";
+import { coordinates } from "~/constants/canvas";
 import { CanvasComponent } from "../canvas/canvas";
 
 function Projects() {
