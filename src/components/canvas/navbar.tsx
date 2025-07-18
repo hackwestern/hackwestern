@@ -1,28 +1,45 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SingleButton from "./single-button";
 import { CanvasSection, coordinates } from "~/constants/canvas";
 
 interface NavbarProps {
-  setPanOffset?: (offset: { x: number; y: number }) => void;
-  onResetViewAndItems?: () => void;
+  panOffset: { x: number; y: number };
+  zoom: number;
+  setPanOffset: (offset: { x: number; y: number }) => void;
+  onResetViewAndItems: () => void;
 }
 
 export default function Navbar({
   setPanOffset,
   onResetViewAndItems,
+  panOffset,
+  zoom,
 }: NavbarProps) {
   const [expandedButton, setExpandedButton] = useState<string | null>("home");
+
+  useEffect(() => {
+    // if value of panOffset doesn't match any coordinates, there should be no expanded button
+    const section = Object.keys(coordinates).find(
+      (key) =>
+        coordinates[key as CanvasSection].x === -panOffset.x &&
+        coordinates[key as CanvasSection].y === -panOffset.y,
+    );
+
+    if (!section && zoom !== 1) {
+      setExpandedButton(null);
+    }
+  }, [panOffset, zoom]);
 
   const handlePan = (section: CanvasSection) => {
     setExpandedButton(section);
     const coords = coordinates[section];
-    setPanOffset?.({ x: coords.x, y: coords.y });
+    setPanOffset({ x: coords.x, y: coords.y });
   };
 
   const handleHome = () => {
     setExpandedButton("home");
-    onResetViewAndItems?.();
+    onResetViewAndItems();
   };
 
   return (
@@ -31,8 +48,8 @@ export default function Navbar({
         <SingleButton
           label="Home"
           icon="Home"
-          onClick={handleHome}
-          isPushed={expandedButton === "home"}
+          onClick={() => handlePan(CanvasSection.Home)}
+          isPushed={expandedButton === CanvasSection.Home}
         />
         <SingleButton
           label="About"

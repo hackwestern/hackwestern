@@ -1,6 +1,7 @@
 export enum CanvasSection {
   About = "about",
   Projects = "projects",
+  Home = "home",
   FAQ = "faq",
   Sponsors = "sponsors",
   Team = "team",
@@ -15,12 +16,16 @@ export const coordinates = {
     x: 4600,
     y: 550,
   },
+  [CanvasSection.Home]: {
+    x: 3000,
+    y: 2000,
+  },
   [CanvasSection.FAQ]: {
     x: 550,
     y: 2700,
   },
   [CanvasSection.Sponsors]: {
-    x: 2750,
+    x: 3050,
     y: 3500,
   },
   [CanvasSection.Team]: {

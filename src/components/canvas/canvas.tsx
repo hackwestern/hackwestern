@@ -19,6 +19,7 @@ import { getDistance, getMidpoint } from "~/lib/canvas";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
 import Navbar from "./navbar";
 import Toolbar from "./toolbar";
+import { coordinates } from "~/constants/canvas";
 
 export const OffsetComponent = ({
   offset,
@@ -83,10 +84,7 @@ const Canvas: FC<Props> = ({ children }) => {
   const centerX = sceneWidth / 2;
   const centerY = sceneHeight / 2;
 
-  const [panOffset, setPanOffset] = useState<Point>({
-    x: -centerX + width / 2,
-    y: -centerY + height / 2,
-  });
+  const [panOffset, setPanOffset] = useState<Point>(coordinates.home);
   const [zoom, setZoom] = useState<number>(1);
 
   const [isPanning, setIsPanning] = useState<boolean>(false);
@@ -96,7 +94,6 @@ const Canvas: FC<Props> = ({ children }) => {
     y: 0,
   });
   const [isResetting, setIsResetting] = useState<boolean>(false);
-  const [isMoving, setIsMoving] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
 
   const sceneControls = useAnimationControls();
@@ -123,24 +120,18 @@ const Canvas: FC<Props> = ({ children }) => {
 
   const onResetViewAndItems = (): void => {
     setIsResetting(true);
-    void panToOffsetScene(
-      { x: -centerX + width / 2, y: -centerY + height / 2 },
-      sceneControls,
-    ).then(() => {
+    void panToOffsetScene(coordinates.home, sceneControls).then(() => {
       setIsResetting(false);
-      setPanOffset({ x: -centerX + width / 2, y: -centerY + height / 2 });
+      setPanOffset(coordinates.home);
       setZoom(1);
     });
   };
 
   useEffect(() => {
     setIsResetting(true);
-    void panToOffsetScene(
-      { x: -centerX + width / 2, y: -centerY + height / 2 },
-      sceneControls,
-    )
+    void panToOffsetScene(coordinates.home, sceneControls)
       .then(() => {
-        setPanOffset({ x: -centerX + width / 2, y: -centerY + height / 2 });
+        setPanOffset(coordinates.home);
         setZoom(1);
       })
       .then(() => {
@@ -153,18 +144,18 @@ const Canvas: FC<Props> = ({ children }) => {
     viewportRef: React.RefObject<HTMLDivElement | null>,
   ): void => {
     if (!viewportRef.current) return;
-    setIsMoving(true);
+    setIsPanning(true);
     void panToOffsetScene(offset, sceneControls).then(() => {
       setZoom(1);
       setPanOffset({ x: offset.x, y: offset.y });
-      setIsMoving(false);
+      setIsPanning(false);
     });
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     activePointersRef.current.set(event.pointerId, event);
     (event.target as HTMLElement).setPointerCapture(event.pointerId);
-    if (isResetting || isMoving) return;
+    if (isResetting || isPanning) return;
     sceneControls.stop();
     if (activePointersRef.current.size === 1) {
       const targetElement = event.target as HTMLElement;
@@ -408,6 +399,8 @@ const Canvas: FC<Props> = ({ children }) => {
               );
             }}
             onResetViewAndItems={onResetViewAndItems}
+            panOffset={panOffset}
+            zoom={zoom}
           />
         </div>
         <div
