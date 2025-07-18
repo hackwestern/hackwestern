@@ -18,6 +18,10 @@ const Toolbar = ({
   const displayX = -(panOffset.x / zoom + homeCoordinates.x);
   const displayY = -(panOffset.y / zoom + homeCoordinates.y);
 
+  if (displayX === 0 && displayY === 0 && zoom === 1) {
+    return null; // don't show toolbar when at home
+  }
+
   return (
     <div
       className="absolute left-4 top-4 z-[1000] cursor-default select-none rounded-[10px] border-[1px] border-border bg-offwhite p-2 font-mono text-xs text-heavy shadow-[0_6px_12px_rgba(0,0,0,0.10)] md:text-sm"
