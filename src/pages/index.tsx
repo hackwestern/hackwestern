@@ -8,6 +8,7 @@ import About from "~/components/promo/about";
 import Projects from "~/components/promo/projects";
 import FAQ from "~/components/promo/faq";
 import Team from "~/components/promo/team";
+import { coordinates } from "~/constants/canvas";
 
 export default function Home() {
   return (
@@ -21,7 +22,7 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main id="home" className="cursor-[url('/customcursor.svg'),auto]">
-        <Canvas>
+        <Canvas homeCoordinates={coordinates.home}>
           <Hero />
           <Sponsors />
           <About />

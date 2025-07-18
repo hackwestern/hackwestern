@@ -19,7 +19,6 @@ import { getDistance, getMidpoint } from "~/lib/canvas";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
 import Navbar from "./navbar";
 import Toolbar from "./toolbar";
-import { coordinates } from "~/constants/canvas";
 
 export const OffsetComponent = ({
   offset,
@@ -44,6 +43,7 @@ export const OffsetComponent = ({
 };
 
 interface Props {
+  homeCoordinates?: { x: number; y: number };
   children: React.ReactNode;
 }
 
@@ -74,7 +74,7 @@ export const canvasHeight = 5000;
 
 const MAX_ZOOM = 10;
 
-const Canvas: FC<Props> = ({ children }) => {
+const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const { height, width } = useWindowDimensions();
 
   const sceneWidth = canvasWidth;
@@ -84,7 +84,12 @@ const Canvas: FC<Props> = ({ children }) => {
   const centerX = sceneWidth / 2;
   const centerY = sceneHeight / 2;
 
-  const [panOffset, setPanOffset] = useState<Point>(coordinates.home);
+  const offsetHomeCoordinates = {
+    x: -(homeCoordinates?.x ?? centerX),
+    y: -(homeCoordinates?.y ?? centerY),
+  };
+
+  const [panOffset, setPanOffset] = useState<Point>(offsetHomeCoordinates);
   const [zoom, setZoom] = useState<number>(1);
 
   const [isPanning, setIsPanning] = useState<boolean>(false);
@@ -120,24 +125,12 @@ const Canvas: FC<Props> = ({ children }) => {
 
   const onResetViewAndItems = (): void => {
     setIsResetting(true);
-    void panToOffsetScene(coordinates.home, sceneControls).then(() => {
+    void panToOffsetScene(offsetHomeCoordinates, sceneControls).then(() => {
       setIsResetting(false);
-      setPanOffset(coordinates.home);
+      setPanOffset(offsetHomeCoordinates);
       setZoom(1);
     });
   };
-
-  useEffect(() => {
-    setIsResetting(true);
-    void panToOffsetScene(coordinates.home, sceneControls)
-      .then(() => {
-        setPanOffset(coordinates.home);
-        setZoom(1);
-      })
-      .then(() => {
-        setIsResetting(false);
-      });
-  }, [centerY, centerX, width, height]);
 
   const panToOffset = (
     offset: Point,
@@ -374,7 +367,13 @@ const Canvas: FC<Props> = ({ children }) => {
           panOffset.y === -centerY + height / 2 &&
           zoom === 1
         ) ||
-          isResetting) && <Toolbar zoom={zoom} panOffset={panOffset} />}
+          isResetting) && (
+          <Toolbar
+            zoom={zoom}
+            panOffset={panOffset}
+            homeCoordinates={homeCoordinates}
+          />
+        )}
         <div
           className="bottom-10 md:bottom-4 "
           style={{

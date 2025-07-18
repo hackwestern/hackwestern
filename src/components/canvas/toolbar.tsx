@@ -1,25 +1,22 @@
 import { type Point } from "framer-motion";
 import { useEffect, useState } from "react";
-import useWindowDimensions from "~/hooks/useWindowDimensions";
-import { canvasHeight, canvasWidth } from "./canvas";
 
-const Toolbar = ({ zoom, panOffset }: { zoom: number; panOffset: Point }) => {
-  const { width, height } = useWindowDimensions();
+const Toolbar = ({
+  zoom,
+  panOffset,
+  homeCoordinates = { x: 0, y: 0 },
+}: {
+  zoom: number;
+  panOffset: Point;
+  homeCoordinates?: Point;
+}) => {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
 
-  // The coordinates of the top-left of the viewport in the canvas's coordinate system
-  const currentX = -panOffset.x / zoom;
-  const currentY = -panOffset.y / zoom;
-
-  // The coordinates of the initial top-left of the viewport in the canvas's coordinate system
-  const originX = canvasWidth / 2 - width / (2 * zoom);
-  const originY = canvasHeight / 2 - height / (2 * zoom);
-
-  // The displayed coordinates are relative to the initial position
-  const displayX = currentX - originX;
-  const displayY = currentY - originY;
+  // coordinates of top left corner of screen, where (0, 0) is when at home
+  const displayX = -(panOffset.x / zoom + homeCoordinates.x);
+  const displayY = -(panOffset.y / zoom + homeCoordinates.y);
 
   return (
     <div

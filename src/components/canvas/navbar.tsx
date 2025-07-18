@@ -26,7 +26,7 @@ export default function Navbar({
         coordinates[key as CanvasSection].y === -panOffset.y,
     );
 
-    if (!section && zoom !== 1) {
+    if (!section || zoom !== 1) {
       setExpandedButton(null);
     }
   }, [panOffset, zoom]);
@@ -38,7 +38,7 @@ export default function Navbar({
   };
 
   const handleHome = () => {
-    setExpandedButton("home");
+    setExpandedButton(CanvasSection.Home);
     onResetViewAndItems();
   };
 
@@ -48,7 +48,7 @@ export default function Navbar({
         <SingleButton
           label="Home"
           icon="Home"
-          onClick={() => handlePan(CanvasSection.Home)}
+          onClick={handleHome}
           isPushed={expandedButton === CanvasSection.Home}
         />
         <SingleButton
