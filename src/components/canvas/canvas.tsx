@@ -43,6 +43,7 @@ export const OffsetComponent = ({
 };
 
 interface Props {
+  homeCoordinates?: { x: number; y: number };
   children: React.ReactNode;
 }
 
@@ -68,33 +69,33 @@ const INTERACTIVE_SELECTOR =
   "button,[role='button'],input,textarea,[contenteditable='true']," +
   "[data-toolbar-button],[data-navbar-button]";
 
-// MULTIPLIER ** 2 is the number of screen-sized "tiles" in the canvas
-export const MULTIPLIER = 5; // SHOULD ALWAYS BE AN ODD NUMBER
-export const HALF_MULT = Math.floor(MULTIPLIER / 2);
+export const canvasWidth = 8000;
+export const canvasHeight = 5000;
 
-const canvasWidth = `${MULTIPLIER * 100}vw`;
-const canvasHeight = `${MULTIPLIER * 100}vh`;
-
-const MIN_ZOOM = 1.05 / MULTIPLIER;
 const MAX_ZOOM = 10;
 
-const Canvas: FC<Props> = ({ children }) => {
+const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const { height, width } = useWindowDimensions();
 
-  const sceneWidth = MULTIPLIER * width;
-  const sceneHeight = MULTIPLIER * height;
+  const sceneWidth = canvasWidth;
+  const sceneHeight = canvasHeight;
 
-  // left corner of center tile
-  const centerX = HALF_MULT * width;
-  const centerY = HALF_MULT * height;
+  // center of the canvas
+  const centerX = sceneWidth / 2;
+  const centerY = sceneHeight / 2;
 
-  const [panOffset, setPanOffset] = useState<Point>({
-    x: -centerX,
-    y: -centerY,
-  });
+  const offsetHomeCoordinates = {
+    x: -(homeCoordinates?.x ?? centerX),
+    y: -(homeCoordinates?.y ?? centerY),
+  };
+
+  const [panOffset, setPanOffset] = useState<Point>(offsetHomeCoordinates);
   const [zoom, setZoom] = useState<number>(1);
 
+  // tracks if user is panning the screen
   const [isPanning, setIsPanning] = useState<boolean>(false);
+  // this one is moving from scene control, not from user
+  const [isSceneMoving, setIsSceneMoving] = useState<boolean>(false);
   const [panStartPoint, setPanStartPoint] = useState<Point>({ x: 0, y: 0 });
   const [initialPanOffsetOnDrag, setInitialPanOffsetOnDrag] = useState<Point>({
     x: 0,
@@ -127,42 +128,30 @@ const Canvas: FC<Props> = ({ children }) => {
 
   const onResetViewAndItems = (): void => {
     setIsResetting(true);
-    void panToOffsetScene({ x: -centerX, y: -centerY }, sceneControls).then(
-      () => {
-        setIsResetting(false);
-        setPanOffset({ x: -centerX, y: -centerY });
-        setZoom(1);
-      },
-    );
+    void panToOffsetScene(offsetHomeCoordinates, sceneControls).then(() => {
+      setIsResetting(false);
+      setPanOffset(offsetHomeCoordinates);
+      setZoom(1);
+    });
   };
-
-  useEffect(() => {
-    setIsResetting(true);
-    void panToOffsetScene({ x: -centerX, y: -centerY }, sceneControls)
-      .then(() => {
-        setPanOffset({ x: -centerX, y: -centerY });
-        setZoom(1);
-      })
-      .then(() => {
-        setIsResetting(false);
-      });
-  }, [centerY, centerX]);
 
   const panToOffset = (
     offset: Point,
     viewportRef: React.RefObject<HTMLDivElement | null>,
   ): void => {
     if (!viewportRef.current) return;
+    setIsSceneMoving(true);
     void panToOffsetScene(offset, sceneControls).then(() => {
       setZoom(1);
-      setPanOffset({ x: -offset.x, y: -offset.y });
+      setPanOffset({ x: offset.x, y: offset.y });
+      setIsSceneMoving(false);
     });
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     activePointersRef.current.set(event.pointerId, event);
     (event.target as HTMLElement).setPointerCapture(event.pointerId);
-    if (isResetting) return;
+    if (isResetting || isSceneMoving) return;
     sceneControls.stop();
     if (activePointersRef.current.size === 1) {
       const targetElement = event.target as HTMLElement;
@@ -213,6 +202,7 @@ const Canvas: FC<Props> = ({ children }) => {
           maxPanY,
         ),
       });
+      // handles touchscreen pinching
     } else if (
       activePointersRef.current.size >= 2 &&
       initialPinchStateRef.current
@@ -234,15 +224,28 @@ const Canvas: FC<Props> = ({ children }) => {
       if (initialDistance === 0) return;
 
       let newZoom = initialZoom * (currentDistance / initialDistance);
-      newZoom = Math.max(0.6, Math.min(newZoom, 10));
+      newZoom = Math.max(
+        (window.innerWidth / canvasWidth) * 1.05, // Ensure zoom is at least the width of the canvas
+        (window.innerHeight / canvasHeight) * 1.05, // Ensure zoom is at least the height of the canvas
+        Math.min(newZoom, 10),
+      );
 
       const mx = currentMidpoint.x;
       const my = currentMidpoint.y;
 
-      const newPanX =
+      const minPanX = width - sceneWidth * newZoom;
+      const maxPanX = 0;
+      const minPanY = height - sceneHeight * newZoom;
+      const maxPanY = 0;
+
+      let newPanX =
         mx - ((mx - initialPanOffsetPinch.x) / initialZoom) * newZoom;
-      const newPanY =
+      let newPanY =
         my - ((my - initialPanOffsetPinch.y) / initialZoom) * newZoom;
+
+      // Clamp pan to prevent leaving bounds
+      newPanX = Math.min(Math.max(newPanX, minPanX), maxPanX);
+      newPanY = Math.min(Math.max(newPanY, minPanY), maxPanY);
 
       setZoom(newZoom);
       setPanOffset({ x: newPanX, y: newPanY });
@@ -295,8 +298,9 @@ const Canvas: FC<Props> = ({ children }) => {
 
       if (isPinch) {
         const nextZoom = Math.max(
-          MIN_ZOOM,
           Math.min(zoom * (1 - event.deltaY * ZOOM_SENSITIVITY), MAX_ZOOM),
+          (window.innerWidth / canvasWidth) * 1.05, // Ensure zoom is at least the width of the canvas
+          (window.innerHeight / canvasHeight) * 1.05, // Ensure zoom is at least the height of the canvas
         );
 
         const rect = viewportRef.current?.getBoundingClientRect();
@@ -376,11 +380,17 @@ const Canvas: FC<Props> = ({ children }) => {
         setMaxZIndex={setMaxZIndex}
       >
         {(!(
-          panOffset.x === -centerX &&
-          panOffset.y === -centerY &&
+          panOffset.x === -centerX + width / 2 &&
+          panOffset.y === -centerY + height / 2 &&
           zoom === 1
         ) ||
-          isResetting) && <Toolbar zoom={zoom} panOffset={panOffset} />}
+          isResetting) && (
+          <Toolbar
+            zoom={zoom}
+            panOffset={panOffset}
+            homeCoordinates={homeCoordinates}
+          />
+        )}
         <div
           className="bottom-10 md:bottom-4 "
           style={{
@@ -395,10 +405,18 @@ const Canvas: FC<Props> = ({ children }) => {
           }}
         >
           <Navbar
+            setPanOffset={(offset: { x: number; y: number }) => {
+              panToOffset(
+                {
+                  x: -offset.x,
+                  y: -offset.y,
+                },
+                viewportRef,
+              );
+            }}
             onResetViewAndItems={onResetViewAndItems}
             panOffset={panOffset}
             zoom={zoom}
-            isResetting={isResetting}
           />
         </div>
         <div
@@ -435,8 +453,8 @@ const Canvas: FC<Props> = ({ children }) => {
 };
 
 interface OffsetPoints {
-  x?: string;
-  y?: string;
+  x?: number;
+  y?: number;
 }
 
 interface CanvasProps {
@@ -453,14 +471,14 @@ export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
     const style: React.CSSProperties = {};
 
     if (offset.x != null) {
-      style.marginLeft = offset.x;
+      style.marginLeft = offset.x + "px";
     } else {
       style.marginLeft = "auto";
       style.marginRight = "auto";
     }
 
     if (offset.y != null) {
-      style.marginTop = offset.y;
+      style.marginTop = offset.y + "px";
     } else {
       style.marginTop = "auto";
       style.marginBottom = "auto";
@@ -481,7 +499,7 @@ export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
   );
 };
 
-const gradientBgImage = `radial-gradient(ellipse ${MULTIPLIER * 100}vw ${MULTIPLIER * 100}vh at ${MULTIPLIER * 50}vw ${MULTIPLIER * 100}vh, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`;
+const gradientBgImage = `radial-gradient(ellipse ${canvasWidth}px ${canvasHeight}px at ${canvasWidth / 2}px ${canvasHeight}px, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`;
 
 const Gradient = () => (
   <div
