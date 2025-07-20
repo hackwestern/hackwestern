@@ -40,12 +40,12 @@ function FAQCard({
       tabIndex={0}
     >
       <motion.div
-        className="absolute inset-0 preserve-3d"
+        className="preserve-3d absolute inset-0"
         animate={{ rotateY: flipped ? 180 : 0 }}
         transition={{ duration: 0.4, ease: "easeInOut" }}
         style={{ transformStyle: "preserve-3d", rotate: rotation }}
       >
-        <div className="absolute inset-0 flex items-center justify-center bg-neutral-50 p-6 shadow-lg backface-hidden">
+        <div className="backface-hidden absolute inset-0 flex items-center justify-center bg-neutral-50 p-6 shadow-lg">
           <div className="relative h-full w-full">
             <Lines />
             <h2 className="font-jetbrainsmono relative z-10 mx-auto flex h-full w-2/3 items-center justify-center text-center text-2xl font-normal">
@@ -54,7 +54,7 @@ function FAQCard({
           </div>
         </div>
         <div
-          className="absolute inset-0 bg-neutral-50 px-4 py-2 shadow-lg backface-hidden"
+          className="backface-hidden absolute inset-0 bg-neutral-50 px-4 py-2 shadow-lg"
           style={{ transform: "rotateY(180deg)" }}
         >
           <div className="relative flex h-full w-full flex-col space-y-2 text-left">
@@ -79,19 +79,19 @@ function FAQ() {
   return (
     <CanvasComponent offset={coordinates.faq}>
       <div className="flex h-screen w-screen items-center justify-center">
-        <div className="flex grid min-w-[1800px] grid-cols-4 flex-col items-center gap-4">
+        <div className="flex grid min-w-[1800px] grid-cols-4 flex-col items-center gap-8">
           {FirstFour.map((item, index) => (
             <FAQCard key={index} title={item.question} desc={item.answer} />
           ))}
           <FAQCard title={FAQ_ITEMS[4]!.question} desc={FAQ_ITEMS[4]!.answer} />
           <div className="col-span-2 flex flex-col items-center justify-center">
-            <div className="font-jetbrainsmono mb-6 text-lg text-medium">
+            <div className="font-jetbrainsmono mb-6 text-base text-medium">
               FAQ
             </div>
-            <h2 className="mb-4 text-center font-dico text-3xl font-medium tracking-wide">
+            <h2 className="mb-4 text-center font-dico text-2xl font-medium tracking-wide">
               Frequently Asked Questions
             </h2>
-            <div className="font-figtree text-lg text-medium">
+            <div className="text-md w-1/2 text-center font-figtree text-medium">
               Can&apos;t find an answer? Reach out to us at{" "}
               <a
                 href="mailto:hello@hackwestern.com"
