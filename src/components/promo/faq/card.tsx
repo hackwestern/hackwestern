@@ -42,7 +42,7 @@ export function FAQCard({
         style={{ transformStyle: "preserve-3d", rotate: rotation }}
       >
         {/* Front of the card */}
-        <div 
+        <div
           className="absolute inset-0 flex items-center justify-center bg-neutral-50 px-4 py-2 shadow-lg"
           style={{ backfaceVisibility: "hidden" }}
         >
@@ -56,7 +56,10 @@ export function FAQCard({
         {/* Back of the card */}
         <div
           className="absolute inset-0 bg-neutral-50 px-4 py-2 shadow-lg"
-          style={{ transform: "rotateY(180deg) translateZ(1px)", backfaceVisibility: "hidden" }}
+          style={{
+            transform: "rotateY(180deg) translateZ(1px)",
+            backfaceVisibility: "hidden",
+          }}
         >
           <div className="relative flex h-full w-full flex-col space-y-2 text-left">
             <Lines />
