@@ -29,6 +29,32 @@ const backPageHoleMask: React.CSSProperties = {
   WebkitMaskPosition: "right 91px, left 0",
 };
 
+const FrontHoles = () => (
+  <>
+    <div
+      style={frontPageHoleMask}
+      className="z-[-100] h-[723px] w-[18px] bg-blue-300"
+    />
+    <div
+      style={{ transform: "rotateY(180deg)", ...frontPageHoleMask }}
+      className="-ml-1 -mr-0.5 h-[723px] w-[18px] bg-white"
+    />
+  </>
+);
+
+const BackHoles = () => (
+  <>
+    <div
+      style={{ transform: "rotateY(180deg)", ...backPageHoleMask }}
+      className="-mr-1 h-[723px] w-[18px] bg-white"
+    />
+    <div
+      style={backPageHoleMask}
+      className="-z-10 h-[723px] w-[18px] bg-white"
+    />
+  </>
+);
+
 function Page({
   label,
   front,
@@ -37,6 +63,7 @@ function Page({
   onFlipComplete,
   turnPageBackward,
   turnPageForward,
+  zIndex,
 }: {
   label: string;
   front: React.ReactNode;
@@ -45,10 +72,11 @@ function Page({
   onFlipComplete?: () => void;
   turnPageBackward: () => void;
   turnPageForward: () => void;
+  zIndex: number;
 }) {
   return (
     <motion.div
-      className="relative z-30 h-full w-full"
+      className="relative h-full w-full"
       style={{
         transformStyle: "preserve-3d",
         transformOrigin: "left center",
@@ -61,20 +89,13 @@ function Page({
     >
       {/* Front of the page */}
       <div
-        className="absolute inset-0 z-[30] my-8 ml-1 mr-6 flex overflow-hidden rounded-lg"
+        className="absolute inset-0 my-8 ml-1 mr-6 flex overflow-hidden rounded-lg"
         style={{
           backfaceVisibility: "hidden",
         }}
         onClick={turnPageForward}
       >
-        <div
-          style={frontPageHoleMask}
-          className="z-0 h-[723px] w-[18px] bg-white"
-        />
-        <div
-          style={{ transform: "rotateY(180deg)", ...frontPageHoleMask }}
-          className="z-[30] -ml-1 -mr-0.5 h-[723px] w-[18px] bg-white"
-        />
+        <FrontHoles />
         {front}
       </div>
 
@@ -88,14 +109,7 @@ function Page({
         onClick={turnPageBackward}
       >
         {back}
-        <div
-          style={{ transform: "rotateY(180deg)", ...backPageHoleMask }}
-          className="z-[30] -mr-1 h-[723px] w-[18px] bg-white"
-        />
-        <div
-          style={backPageHoleMask}
-          className="z-0 h-[723px] w-[18px] bg-white"
-        />
+        <BackHoles />
       </div>
     </motion.div>
   );

@@ -108,11 +108,10 @@ function Book() {
           return (
             <div
               key={index}
-              className="absolute left-0 top-0 h-full w-1/2"
+              className="absolute left-0 top-0 z-[100] h-full w-1/2"
               style={{
                 // Position the pages in the right half of the container
                 transform: "translateX(100%)",
-                zIndex: zIndex,
                 perspective: 3500,
               }}
             >
@@ -124,6 +123,7 @@ function Book() {
                 onFlipComplete={isFlipping ? handleFlipComplete : undefined}
                 turnPageBackward={turnPageBackward}
                 turnPageForward={turnPageForward}
+                zIndex={zIndex}
               />
             </div>
           );
