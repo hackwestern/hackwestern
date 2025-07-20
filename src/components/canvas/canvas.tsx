@@ -71,9 +71,10 @@ const INTERACTIVE_SELECTOR =
   "button,[role='button'],input,textarea,[contenteditable='true']," +
   "[data-toolbar-button],[data-navbar-button]";
 
-export const canvasWidth = 8000;
-export const canvasHeight = 5000;
+export const canvasWidth = 10000;
+export const canvasHeight = 6500;
 
+const ZOOM_BOUND = 1.1; // minimum zoom level to prevent zooming out too far
 const MAX_ZOOM = 10;
 
 const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
@@ -109,6 +110,12 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const x = useMotionValue(offsetHomeCoordinates.x);
   const y = useMotionValue(offsetHomeCoordinates.y);
   const scale = useMotionValue(1);
+
+  const stopAllMotion = useCallback(() => {
+    x.stop();
+    y.stop();
+    scale.stop();
+  }, [x, y, scale]);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -155,9 +162,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     activePointersRef.current.set(event.pointerId, event);
     (event.target as HTMLElement).setPointerCapture(event.pointerId);
     if (isResetting || isSceneMoving) return;
-    x.stop();
-    y.stop();
-    scale.stop();
+    stopAllMotion();
     if (activePointersRef.current.size === 1) {
       const targetElement = event.target as HTMLElement;
       if (targetElement.closest(INTERACTIVE_SELECTOR)) {
@@ -184,9 +189,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>): void => {
     if (isPanning || activePointersRef.current.size >= 2) {
-      x.stop();
-      y.stop();
-      scale.stop();
+      stopAllMotion();
     }
     if (!activePointersRef.current.has(event.pointerId) || isResetting) return;
     activePointersRef.current.set(event.pointerId, event);
@@ -238,8 +241,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
 
       let newZoom = initialZoom * (currentDistance / initialDistance);
       newZoom = Math.max(
-        (window.innerWidth / canvasWidth) * 1.05, // Ensure zoom is at least the width of the canvas
-        (window.innerHeight / canvasHeight) * 1.05, // Ensure zoom is at least the height of the canvas
+        (window.innerWidth / canvasWidth) * ZOOM_BOUND, // Ensure zoom is at least the width of the canvas
+        (window.innerHeight / canvasHeight) * ZOOM_BOUND, // Ensure zoom is at least the height of the canvas
         Math.min(newZoom, 10),
       );
 
@@ -271,9 +274,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const handlePointerUpOrCancel = (
     event: PointerEvent<HTMLDivElement>,
   ): void => {
-    x.stop();
-    y.stop();
-    scale.stop();
+    stopAllMotion();
     event.preventDefault();
     if ((event.target as HTMLElement).hasPointerCapture(event.pointerId)) {
       (event.target as HTMLElement).releasePointerCapture(event.pointerId);
@@ -317,8 +318,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       if (isPinch) {
         const nextZoom = Math.max(
           Math.min(zoom * (1 - event.deltaY * ZOOM_SENSITIVITY), MAX_ZOOM),
-          (window.innerWidth / canvasWidth) * 1.05, // Ensure zoom is at least the width of the canvas
-          (window.innerHeight / canvasHeight) * 1.05, // Ensure zoom is at least the height of the canvas
+          (window.innerWidth / canvasWidth) * ZOOM_BOUND, // Ensure zoom is at least the width of the canvas
+          (window.innerHeight / canvasHeight) * ZOOM_BOUND, // Ensure zoom is at least the height of the canvas
         );
 
         const rect = viewportRef.current?.getBoundingClientRect();
@@ -351,8 +352,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         setPanOffset({ x: newPanX, y: newPanY });
         setZoom(nextZoom);
       } else {
-        x.stop();
-        y.stop();
+        stopAllMotion();
 
         const scrollSpeed = 1;
         const newPanX = panOffset.x - event.deltaX * scrollSpeed;
@@ -382,6 +382,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       x,
       y,
       scale,
+      stopAllMotion,
     ],
   );
 
