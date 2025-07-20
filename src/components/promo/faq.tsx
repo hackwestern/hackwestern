@@ -40,12 +40,12 @@ function FAQCard({
       tabIndex={0}
     >
       <motion.div
-        className="preserve-3d absolute inset-0"
+        className="absolute inset-0 preserve-3d"
         animate={{ rotateY: flipped ? 180 : 0 }}
         transition={{ duration: 0.4, ease: "easeInOut" }}
         style={{ transformStyle: "preserve-3d", rotate: rotation }}
       >
-        <div className="backface-hidden absolute inset-0 flex items-center justify-center bg-neutral-50 p-6 shadow-lg">
+        <div className="absolute inset-0 flex items-center justify-center bg-neutral-50 p-6 shadow-lg backface-hidden">
           <div className="relative h-full w-full">
             <Lines />
             <h2 className="font-jetbrainsmono relative z-10 mx-auto flex h-full w-2/3 items-center justify-center text-center text-2xl font-normal">
@@ -54,7 +54,7 @@ function FAQCard({
           </div>
         </div>
         <div
-          className="backface-hidden absolute inset-0 bg-neutral-50 px-4 py-2 shadow-lg"
+          className="absolute inset-0 bg-neutral-50 px-4 py-2 shadow-lg backface-hidden"
           style={{ transform: "rotateY(180deg)" }}
         >
           <div className="relative flex h-full w-full flex-col space-y-2 text-left">
