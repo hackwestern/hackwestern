@@ -78,7 +78,7 @@ function FAQ() {
 
   return (
     <CanvasComponent offset={coordinates.faq}>
-      <div className="flex h-screen w-screen min-w-[1800px] items-center justify-center">
+      <div className="flex h-screen w-screen items-center justify-center">
         <div className="flex grid min-w-[1800px] grid-cols-4 flex-col items-center gap-4">
           {FirstFour.map((item, index) => (
             <FAQCard key={index} title={item.question} desc={item.answer} />
