@@ -1,4 +1,6 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
+import { type PluginAPI } from "tailwindcss/types/config";
 
 const config = {
   darkMode: ["class"],
@@ -138,7 +140,15 @@ const config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    plugin(function (this: void, api: PluginAPI) {
+      api.addUtilities({
+        ".backface-hidden": { backfaceVisibility: "hidden" },
+        ".preserve-3d": { transformStyle: "preserve-3d" },
+      });
+    }),
+  ],
 } satisfies Config;
 
 export default config;

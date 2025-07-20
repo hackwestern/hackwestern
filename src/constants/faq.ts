@@ -3,16 +3,29 @@ export type FaqType = {
   answer: string;
 };
 
-export const GENERALHACK_FAQ: FaqType[] = [
+export const PROMO_FAQ: readonly [
+  FaqType,
+  FaqType,
+  FaqType,
+  FaqType,
+  FaqType,
+  FaqType,
+  FaqType,
+  FaqType,
+  FaqType,
+  FaqType,
+  FaqType,
+  FaqType,
+] = [
   {
-    question: "When can I start hacking?",
+    question: "What if it's my first hackathon?",
     answer:
-      "Hacking begins at 10pm on Friday, November 29th, 2024 and ends at 10am on Sunday, December 1st, 2024. All code written for Hack Western must be written within this timeframe, with the exception of code taken from public and open source libraries, APIs, or tutorials. Any projects found to be worked on outside of this time frame will be disqualified from judging.",
+      "The first time is always intimidating, but with support from mentors, beginner-friendly workshops, and a large network of passionate students, we're confident that you'll find your stride and have a great weekend.\nHack Western is a hackathon where individuals from all disciplines, majors, and backgrounds are encouraged to participate.",
   },
   {
-    question: "Can I work on a hack I’ve started before?",
+    question: "When do hacker applications open?",
     answer:
-      "We follow the Major League Hacking guidelines, which prohibits students from bringing and continuing a project that they have already worked on. Your final project should be new and only built during the weekend of Hack Western.",
+      "We will be announcing hacker applications in early October. Follow our social media and sign up for our mailing list by pre-registering here to be the first to find out.",
   },
   {
     question: "How many people do I need in a team?",
@@ -20,47 +33,14 @@ export const GENERALHACK_FAQ: FaqType[] = [
       "Hackers can be in teams of up to 4 people, which means you could also solo hack if you wish. You do not need to tell us who your team members are, simply add them to your Devpost submission before the deadline.",
   },
   {
-    question: "What are mentors?",
-    answer:
-      "Whether you’re stuck trying to debug a project, can’t come up with an idea, or just need some overall guidance on how to proceed, mentors are here to help you succeed! We will have various mentors available on-call to help hackers with their projects throughout the weekend. Note that mentors are only available for support, and are not writing code for you. In this site, you can navigate to the <a class='underline font-semibold' href='https://hackwestern.com/live/mentors'>Mentors tab</a> to see all of our mentors for this weekend for reference.",
-  },
-];
-
-export const OTHER_FAQ: FaqType[] = [
-  {
     question: "What is a hackathon?",
     answer:
       "A hackathon is an event designed for students to experiment with tech and bring a project idea to life. At Hack Western, participants will collaborate in teams of up to four to build web, mobile, and hardware projects. Students will get the opportunity to receive mentorship from industry professionals, connect with sponsors and recruiters, and compete for some cool prizes!",
   },
   {
-    question: "Who can participate?",
+    question: "When can I start hacking?",
     answer:
-      "Hack Western applications are open to post-secondary students from across the world. Whether you are a freshman or completing your Ph.D., we want you to apply! Unfortunately, we will not be accepting high school students at this time.\nEach application is reviewed from the Hack Western organizing team, and decisions will be sent out on a rolling basis.",
-  },
-  {
-    question: "How much does it cost to attend Hack Western?",
-    answer:
-      "Hack Western is completely free to attend, including free food and swag! Participants travelling to the event outside of Western and provided bus routes however may incur additional costs. ",
-  },
-  {
-    question: "What if it's my first hackathon?",
-    answer:
-      "There's always a first time for everything, right?  The first time is always intimidating, but with support from company mentors, beginner-friendly workshops, and a large network of passionate students, we're confident that you'll find your stride and have a great weekend.\nHack Western is a hackathon where individuals from various disciplines, majors, and backgrounds are encouraged to come out and participate.",
-  },
-  {
-    question: "Can I start working on my hack before the event?",
-    answer:
-      "We follow the Major League Hacking guidelines, which prohibits students from bringing and continuing a project that they have already worked on. Your final project should be new and only built during the weekend of Hack Western.",
-  },
-  {
-    question: "Hacking? What is that?",
-    answer:
-      "If you're attending a hackathon, you'll probably be spending majority of your weekend hacking - that is, ideating, prototyping, and building an innovative solution to the issue that you're trying to solve. Contrary to popular belief, hacking isn't just about coding. As a hacker, you'll also be brainstorming, designing, testing, and pitching your project (among many other things)!",
-  },
-  {
-    question: "When do hacker applications open?",
-    answer:
-      "We will be announcing hacker applications in early October. Follow our social media and sign up for our mailing list by pre-registering here to be the first to find out.",
+      "Hacking begins at 10pm on Friday, November 21st, 2025 and ends at 10am on Sunday, November 23rd, 2025. All code written for Hack Western must be written within this timeframe, with the exception of code taken from public and open source libraries, APIs, or tutorials. Any projects found to be worked on outside of this time frame will be disqualified from judging.",
   },
   {
     question: "What workshops and activities will there be?",
@@ -73,11 +53,31 @@ export const OTHER_FAQ: FaqType[] = [
       "Your team cannot exceed more than four members. You can also work on a project by yourself, but we believe that hacking is more fun with friends. The more, the merrier!",
   },
   {
-    question: "Question not here?",
+    question: "Can I start working on my hack before the event?",
     answer:
-      "Feel free to reach out to us on social media or directly at <a class='text-bold underline' href='mailto:hello@hackwestern.com'>hello@hackwestern.com</a> and we will be more than happy to answer any of your questions.",
+      "We follow the Major League Hacking guidelines, which prohibits students from bringing and continuing a project that they have already worked on. Your final project should be new and only built during the weekend of Hack Western.",
   },
-];
+  {
+    question: "How much does it cost to attend Hack Western?",
+    answer:
+      "Hack Western is completely free to attend, including free food and swag! Participants travelling to the event outside of Western and provided bus routes however may incur additional costs. ",
+  },
+  {
+    question: "Who can participate?",
+    answer:
+      "Hack Western applications are open to post-secondary students from across the world. Whether you are a freshman or completing your Ph.D., we want you to apply! Unfortunately, we will not be accepting high school students at this time.\nEach application is reviewed from the Hack Western organizing team, and decisions will be sent out on a rolling basis.",
+  },
+  {
+    question: "Will there be food and drinks??",
+    answer:
+      "All meals, snacks, and drinks will be provided throughout the hackathon to keep you fueled and hydrated.",
+  },
+  {
+    question: "Are there travel reimbursements?",
+    answer:
+      "Yes, we provide partial reimbursements for travel costs after the event. To be eligible, you must submit a project during the hackathon. Reimbursements are contingent on available funds and are not guaranteed. To request reimbursement, email hello@hackwestern.com after the event with your travel receipts and project submission details.",
+  },
+] as const;
 
 export const HACKATHON_FAQ: FaqType[] = [
   {
@@ -111,7 +111,7 @@ export const HACKATHON_FAQ: FaqType[] = [
   },
   {
     question: "When can I start hacking?",
-    answer: "Hacking begins on Friday, November 29th at 10pm.",
+    answer: "Hacking begins on Friday, November 23th at 10pm.",
   },
   {
     question: "What workshops and activities will there be?",
