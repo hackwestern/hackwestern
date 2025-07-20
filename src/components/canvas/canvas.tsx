@@ -74,7 +74,7 @@ const INTERACTIVE_SELECTOR =
 export const canvasWidth = 10000;
 export const canvasHeight = 6500;
 
-const ZOOM_BOUND = 1.1; // minimum zoom level to prevent zooming out too far
+const ZOOM_BOUND = 1.05; // minimum zoom level to prevent zooming out too far
 const MAX_ZOOM = 10;
 
 const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
@@ -151,11 +151,27 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   ): void => {
     if (!viewportRef.current) return;
     setIsSceneMoving(true);
-    void panToOffsetScene(offset, x, y, scale).then(() => {
-      setZoom(1);
-      setPanOffset({ x: offset.x, y: offset.y });
-      setIsSceneMoving(false);
-    });
+
+    // Calculate bounds based on scene and viewport dimensions
+    const viewportWidth = viewportRef.current.offsetWidth;
+    const viewportHeight = viewportRef.current.offsetHeight;
+
+    const minPanX = viewportWidth - sceneWidth * 1; // 1 is the zoom level after pan
+    const maxPanX = 0;
+    const minPanY = viewportHeight - sceneHeight * 1;
+    const maxPanY = 0;
+
+    // Clamp the offset to keep the scene within bounds
+    const clampedX = Math.min(Math.max(offset.x, minPanX), maxPanX);
+    const clampedY = Math.min(Math.max(offset.y, minPanY), maxPanY);
+
+    void panToOffsetScene({ x: clampedX, y: clampedY }, x, y, scale).then(
+      () => {
+        setZoom(1);
+        setPanOffset({ x: clampedX, y: clampedY });
+        setIsSceneMoving(false);
+      },
+    );
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
