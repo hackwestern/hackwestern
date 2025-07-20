@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { Draggable } from "~/components/canvas/draggable";
 
 function Lines() {
   return (
@@ -28,19 +29,20 @@ export function FAQCard({
 
   return (
     <button
-      className={`w-2xl relative h-64 cursor-pointer text-medium transition-all hover:scale-[1.02] ${className}`}
+      className={`w-2xl relative h-64 w-96 cursor-pointer text-medium transition-all hover:scale-[1.02] ${className}`}
       style={{ perspective: 1200 }}
       onClick={() => setFlipped(!flipped)}
       onKeyDown={(e) => e.key === " " && setFlipped(!flipped)}
       tabIndex={0}
     >
       <motion.div
-        className="absolute inset-0 preserve-3d"
+        className="preserve-3d absolute inset-0"
         animate={{ rotateY: flipped ? 180 : 0 }}
         transition={{ duration: 0.4, ease: "easeInOut" }}
         style={{ transformStyle: "preserve-3d", rotate: rotation }}
       >
-        <div className="absolute inset-0 flex items-center justify-center bg-neutral-50 p-6 shadow-lg backface-hidden">
+        {/* Front of the card */}
+        <div className="backface-hidden absolute inset-0 flex items-center justify-center bg-neutral-50 px-4 py-2 shadow-lg">
           <div className="relative h-full w-full">
             <Lines />
             <h2 className="font-jetbrainsmono relative z-10 mx-auto flex h-full w-2/3 items-center justify-center text-center text-2xl font-normal">
@@ -48,8 +50,9 @@ export function FAQCard({
             </h2>
           </div>
         </div>
+        {/* Back of the card */}
         <div
-          className="absolute inset-0 bg-neutral-50 px-4 py-2 shadow-lg backface-hidden"
+          className="backface-hidden absolute inset-0 bg-neutral-50 px-4 py-2 shadow-lg"
           style={{ transform: "rotateY(180deg)" }}
         >
           <div className="relative flex h-full w-full flex-col space-y-2 text-left">
@@ -58,7 +61,7 @@ export function FAQCard({
               <h2 className="font-jetbrainsmono relative z-10 min-h-14 text-lg font-medium">
                 {title.toUpperCase()}
               </h2>
-              <p className="text-md font-figtree leading-[25px]">{desc}</p>
+              <p className="font-figtree text-sm leading-[25px]">{desc}</p>
             </div>
           </div>
         </div>
