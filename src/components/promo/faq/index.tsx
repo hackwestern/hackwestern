@@ -8,7 +8,7 @@ function FAQ() {
     <CanvasComponent offset={coordinates.faq}>
       <div className="flex h-screen w-screen items-center justify-center">
         <div className="h-[900px]">
-          <div className="mx-auto flex grid grid-flow-col h-[900px] grid-rows-3 gap-x-8 gap-y-8">
+          <div className="mx-auto flex grid h-[900px] grid-flow-col grid-rows-3 gap-x-8 gap-y-8">
             {/* top 2 cards */}
             <div className="row-span-3 my-auto grid grid-rows-2 gap-10">
               <FAQCard
@@ -29,10 +29,7 @@ function FAQ() {
               desc={PROMO_FAQ[2].answer}
               rotation="-4deg"
             />
-            <FAQCard
-              title={PROMO_FAQ[3].question}
-              desc={PROMO_FAQ[3].answer}
-            />
+            <FAQCard title={PROMO_FAQ[3].question} desc={PROMO_FAQ[3].answer} />
             <FAQCard
               title={PROMO_FAQ[4].question}
               desc={PROMO_FAQ[4].answer}
