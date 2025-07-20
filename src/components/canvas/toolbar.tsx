@@ -1,8 +1,4 @@
-import {
-  type Point,
-  type MotionValue,
-  useAnimationFrame,
-} from "framer-motion";
+import { type Point, type MotionValue, useAnimationFrame } from "framer-motion";
 import { useState } from "react";
 
 const Toolbar = ({
