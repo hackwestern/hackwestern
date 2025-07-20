@@ -7,10 +7,10 @@ function FAQ() {
   return (
     <CanvasComponent offset={coordinates.faq}>
       <div className="flex h-screen w-screen items-center justify-center">
-        <div className="w-[1600px]">
-          <div className="mx-auto flex grid w-[1600px] grid-cols-3 flex-col gap-y-8 pl-[120px]">
+        <div className="h-[900px]">
+          <div className="mx-auto flex grid grid-flow-col h-[900px] grid-rows-3 gap-x-8 gap-y-8">
             {/* top 2 cards */}
-            <div className="col-span-3 mx-auto grid grid-cols-2 gap-10 pr-[120px]">
+            <div className="row-span-3 my-auto grid grid-rows-2 gap-10">
               <FAQCard
                 title={PROMO_FAQ[0].question}
                 desc={PROMO_FAQ[0].answer}
@@ -32,8 +32,6 @@ function FAQ() {
             <FAQCard
               title={PROMO_FAQ[3].question}
               desc={PROMO_FAQ[3].answer}
-              rotation="4deg"
-              className="-mb-8"
             />
             <FAQCard
               title={PROMO_FAQ[4].question}
@@ -45,10 +43,9 @@ function FAQ() {
             <FAQCard
               title={PROMO_FAQ[5].question}
               desc={PROMO_FAQ[5].answer}
-              className="ml-24"
               rotation="3deg"
             />
-            <div className="col-span-1 flex w-96 flex-col items-center justify-center">
+            <div className="row-span-1 flex w-96 flex-col items-center justify-center">
               <div className="font-jetbrainsmono mb-6 text-base text-medium">
                 FAQ
               </div>
@@ -69,7 +66,6 @@ function FAQ() {
               title={PROMO_FAQ[6].question}
               desc={PROMO_FAQ[6].answer}
               rotation="-5deg"
-              className="-ml-24"
             />
 
             <FAQCard
@@ -86,10 +82,9 @@ function FAQ() {
               title={PROMO_FAQ[9].question}
               desc={PROMO_FAQ[9].answer}
               rotation="3deg"
-              className="mt-3"
             />
 
-            <div className="col-span-3 mx-auto grid grid-cols-2 gap-10 pr-[120px]">
+            <div className="row-span-3 my-auto grid grid-rows-2 gap-10">
               <FAQCard
                 title={PROMO_FAQ[10].question}
                 desc={PROMO_FAQ[10].answer}
