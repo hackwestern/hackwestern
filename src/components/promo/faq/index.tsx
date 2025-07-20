@@ -1,43 +1,99 @@
 import { coordinates } from "~/constants/canvas";
-import { GENERALHACK_FAQ, OTHER_FAQ } from "~/constants/faq";
 import { CanvasComponent } from "~/components/canvas/canvas";
 import { FAQCard } from "./card";
-
-const FAQ_ITEMS = [...OTHER_FAQ, ...GENERALHACK_FAQ];
+import { PROMO_FAQ } from "~/constants/faq";
 
 function FAQ() {
-  const FirstFour = FAQ_ITEMS.slice(0, 4);
-  const LastFour = FAQ_ITEMS.slice(6, 10);
-
   return (
     <CanvasComponent offset={coordinates.faq}>
       <div className="flex h-screen w-screen items-center justify-center">
-        <div className="flex grid min-w-[1850px] grid-cols-4 flex-col items-center gap-8 gap-y-10">
-          {FirstFour.map((item, index) => (
-            <FAQCard key={index} title={item.question} desc={item.answer} />
-          ))}
-          <FAQCard title={FAQ_ITEMS[4]!.question} desc={FAQ_ITEMS[4]!.answer} />
-          <div className="col-span-2 flex flex-col items-center justify-center">
-            <div className="font-jetbrainsmono mb-6 text-base text-medium">
-              FAQ
+        <div className="h-[900px]">
+          <div className="mx-auto flex grid h-[900px] grid-flow-col grid-rows-3 gap-x-8 gap-y-8">
+            {/* top 2 cards */}
+            <div className="row-span-3 my-auto grid grid-rows-2 gap-10">
+              <FAQCard
+                title={PROMO_FAQ[0].question}
+                desc={PROMO_FAQ[0].answer}
+                rotation="6deg"
+              />
+              <FAQCard
+                title={PROMO_FAQ[1].question}
+                desc={PROMO_FAQ[1].answer}
+                rotation="2deg"
+              />
             </div>
-            <h2 className="mb-4 text-center font-dico text-2xl font-medium tracking-wide">
-              Frequently Asked Questions
-            </h2>
-            <div className="text-md w-1/2 text-center font-figtree text-medium">
-              Can&apos;t find an answer? Reach out to us at{" "}
-              <a
-                href="mailto:hello@hackwestern.com"
-                className="text-blue-600 transition-all hover:text-blue-700"
-              >
-                hello@hackwestern.com
-              </a>
+
+            {/* next 3 cards */}
+            <FAQCard
+              title={PROMO_FAQ[2].question}
+              desc={PROMO_FAQ[2].answer}
+              rotation="-4deg"
+            />
+            <FAQCard title={PROMO_FAQ[3].question} desc={PROMO_FAQ[3].answer} />
+            <FAQCard
+              title={PROMO_FAQ[4].question}
+              desc={PROMO_FAQ[4].answer}
+              rotation="-2deg"
+            />
+
+            {/* middle cards and title */}
+            <FAQCard
+              title={PROMO_FAQ[5].question}
+              desc={PROMO_FAQ[5].answer}
+              rotation="3deg"
+            />
+            <div className="row-span-1 flex w-96 flex-col items-center justify-center">
+              <div className="font-jetbrainsmono mb-6 text-base text-medium">
+                FAQ
+              </div>
+              <h2 className="mb-4 text-center font-dico text-xl font-medium ">
+                Frequently Asked Questions
+              </h2>
+              <div className="w-1/2 text-center font-figtree text-sm text-medium">
+                Can&apos;t find an answer? Reach out to us at{" "}
+                <a
+                  href="mailto:hello@hackwestern.com"
+                  className="text-blue-600 transition-all hover:text-blue-700"
+                >
+                  hello@hackwestern.com
+                </a>
+              </div>
+            </div>
+            <FAQCard
+              title={PROMO_FAQ[6].question}
+              desc={PROMO_FAQ[6].answer}
+              rotation="-5deg"
+            />
+
+            <FAQCard
+              title={PROMO_FAQ[7].question}
+              desc={PROMO_FAQ[7].answer}
+              rotation="-4deg"
+            />
+            <FAQCard
+              title={PROMO_FAQ[8].question}
+              desc={PROMO_FAQ[8].answer}
+              rotation="-2deg"
+            />
+            <FAQCard
+              title={PROMO_FAQ[9].question}
+              desc={PROMO_FAQ[9].answer}
+              rotation="3deg"
+            />
+
+            <div className="row-span-3 my-auto grid grid-rows-2 gap-10">
+              <FAQCard
+                title={PROMO_FAQ[10].question}
+                desc={PROMO_FAQ[10].answer}
+                rotation="-2deg"
+              />
+              <FAQCard
+                title={PROMO_FAQ[11].question}
+                desc={PROMO_FAQ[11].answer}
+                rotation="3deg"
+              />
             </div>
           </div>
-          <FAQCard title={FAQ_ITEMS[5]!.question} desc={FAQ_ITEMS[5]!.answer} />
-          {LastFour.map((item, index) => (
-            <FAQCard key={index} title={item.question} desc={item.answer} />
-          ))}
         </div>
       </div>
     </CanvasComponent>
