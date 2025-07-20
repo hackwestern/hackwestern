@@ -42,7 +42,10 @@ export function FAQCard({
         style={{ transformStyle: "preserve-3d", rotate: rotation }}
       >
         {/* Front of the card */}
-        <div className="absolute inset-0 flex items-center justify-center bg-neutral-50 px-4 py-2 shadow-lg backface-hidden">
+        <div 
+          className="absolute inset-0 flex items-center justify-center bg-neutral-50 px-4 py-2 shadow-lg"
+          style={{ backfaceVisibility: "hidden" }}
+        >
           <div className="relative h-full w-full">
             <Lines />
             <h2 className="font-jetbrainsmono relative z-10 mx-auto flex h-full w-2/3 items-center justify-center text-center text-2xl font-normal">
@@ -52,8 +55,8 @@ export function FAQCard({
         </div>
         {/* Back of the card */}
         <div
-          className="absolute inset-0 bg-neutral-50 px-4 py-2 shadow-lg backface-hidden"
-          style={{ transform: "rotateY(180deg)" }}
+          className="absolute inset-0 bg-neutral-50 px-4 py-2 shadow-lg"
+          style={{ transform: "rotateY(180deg) translateZ(1px)", backfaceVisibility: "hidden" }}
         >
           <div className="relative flex h-full w-full flex-col space-y-2 text-left">
             <Lines />
