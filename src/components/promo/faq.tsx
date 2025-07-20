@@ -6,6 +6,18 @@ import { GENERALHACK_FAQ, OTHER_FAQ } from "~/constants/faq";
 
 const FAQ_ITEMS = [...OTHER_FAQ, ...GENERALHACK_FAQ];
 
+function Lines() {
+  return (
+    <div className="relative z-0">
+      <div className="absolute left-0 right-0 mt-14 space-y-6 pt-0.5">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="w-full border-t border-[rgba(0,0,0,0.1)]" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function FAQCard({
   title,
   desc,
@@ -34,17 +46,25 @@ function FAQCard({
         style={{ transformStyle: "preserve-3d", rotate: rotation }}
       >
         <div className="backface-hidden absolute inset-0 flex items-center justify-center bg-neutral-50 p-6 shadow-lg">
-          <h2 className="font-jetbrainsmono text-center text-2xl tracking-wide">
-            {title}
-          </h2>
+          <div className="relative h-full w-full">
+            <Lines />
+            <h2 className="font-jetbrainsmono relative z-10 mx-auto flex h-full w-2/3 items-center justify-center text-center text-2xl font-normal">
+              {title.toUpperCase()}
+            </h2>
+          </div>
         </div>
         <div
-          className="backface-hidden absolute inset-0 bg-neutral-50 p-4 shadow-lg"
+          className="backface-hidden absolute inset-0 bg-neutral-50 px-4 py-2 shadow-lg"
           style={{ transform: "rotateY(180deg)" }}
         >
-          <div className="flex h-full flex-col space-y-2 text-left">
-            <h2 className="font-jetbrainsmono text-lg">{title}</h2>
-            <p className="text-md font-figtree">{desc}</p>
+          <div className="relative flex h-full w-full flex-col space-y-2 text-left">
+            <Lines />
+            <div className="z-10">
+              <h2 className="font-jetbrainsmono relative z-10 min-h-14 text-lg font-normal">
+                {title.toUpperCase()}
+              </h2>
+              <p className="text-md font-figtree leading-[25px]">{desc}</p>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -61,24 +81,17 @@ function FAQ() {
       <div className="flex h-screen w-screen min-w-[1800px] items-center justify-center">
         <div className="flex grid min-w-[1800px] grid-cols-4 flex-col items-center gap-4">
           {FirstFour.map((item, index) => (
-            <FAQCard
-              key={index}
-              title={item.question}
-              desc={item.answer}
-              className="rotate-30"
-            />
+            <FAQCard key={index} title={item.question} desc={item.answer} />
           ))}
-          <FAQCard
-            title={FAQ_ITEMS[4]!.question}
-            desc={FAQ_ITEMS[4]!.answer}
-            className="rotate-30"
-          />
+          <FAQCard title={FAQ_ITEMS[4]!.question} desc={FAQ_ITEMS[4]!.answer} />
           <div className="col-span-2 flex flex-col items-center justify-center">
-            <div> FAQ</div>
-            <h2 className="mb-4 text-center font-mono text-2xl font-semibold tracking-wide">
+            <div className="font-jetbrainsmono mb-6 text-lg text-medium">
+              FAQ
+            </div>
+            <h2 className="mb-4 text-center font-dico text-3xl font-medium tracking-wide">
               Frequently Asked Questions
             </h2>
-            <div>
+            <div className="font-figtree text-lg text-medium">
               Can&apos;t find an answer? Reach out to us at{" "}
               <a
                 href="mailto:hello@hackwestern.com"
