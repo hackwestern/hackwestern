@@ -9,27 +9,27 @@ export enum CanvasSection {
 
 export const coordinates = {
   [CanvasSection.About]: {
-    x: 900,
+    x: 1900,
     y: 550,
   },
   [CanvasSection.Projects]: {
-    x: 4400,
+    x: 6100,
     y: 550,
   },
   [CanvasSection.Home]: {
-    x: 2800,
-    y: 2000,
+    x: 4300,
+    y: 2200,
   },
   [CanvasSection.FAQ]: {
-    x: 350,
-    y: 2700,
+    x: 1350,
+    y: 3000,
   },
   [CanvasSection.Sponsors]: {
-    x: 2850,
-    y: 3500,
+    x: 4350,
+    y: 4100,
   },
   [CanvasSection.Team]: {
-    x: 4900,
-    y: 2700,
+    x: 6400,
+    y: 3000,
   },
 };

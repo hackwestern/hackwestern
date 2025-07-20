@@ -1,8 +1,9 @@
 import {
-  type AnimationControls,
   motion,
   type Point,
-  useAnimationControls,
+  useMotionValue,
+  type MotionValue,
+  animate,
 } from "framer-motion";
 import React, {
   useState,
@@ -47,31 +48,33 @@ interface Props {
   children: React.ReactNode;
 }
 
+const panSpring = {
+  visualDuration: 0.34,
+  type: "spring",
+  stiffness: 200,
+  damping: 25,
+} as const;
+
 async function panToOffsetScene(
   offset: Point,
-  sceneControls: AnimationControls,
+  x: MotionValue<number>,
+  y: MotionValue<number>,
+  scale: MotionValue<number>,
 ): Promise<void> {
-  await sceneControls.start(
-    {
-      x: offset.x,
-      y: offset.y,
-      scale: 1,
-    },
-    {
-      type: "spring",
-      visualDuration: 0.4,
-      bounce: 0.2,
-    },
-  );
+  const animX = animate(x, offset.x, panSpring);
+  const animY = animate(y, offset.y, panSpring);
+  const animScale = animate(scale, 1, panSpring);
+  await Promise.all([animScale, animX, animY]);
 }
 
 const INTERACTIVE_SELECTOR =
   "button,[role='button'],input,textarea,[contenteditable='true']," +
   "[data-toolbar-button],[data-navbar-button]";
 
-export const canvasWidth = 8000;
-export const canvasHeight = 5000;
+export const canvasWidth = 10000;
+export const canvasHeight = 6500;
 
+const ZOOM_BOUND = 1.05; // minimum zoom level to prevent zooming out too far
 const MAX_ZOOM = 10;
 
 const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
@@ -104,7 +107,16 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
 
-  const sceneControls = useAnimationControls();
+  const x = useMotionValue(offsetHomeCoordinates.x);
+  const y = useMotionValue(offsetHomeCoordinates.y);
+  const scale = useMotionValue(1);
+
+  const stopAllMotion = useCallback(() => {
+    x.stop();
+    y.stop();
+    scale.stop();
+  }, [x, y, scale]);
+
   const viewportRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
 
@@ -119,16 +131,14 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   } | null>(null);
 
   useEffect(() => {
-    sceneControls.set({
-      x: panOffset.x,
-      y: panOffset.y,
-      scale: zoom,
-    });
-  }, [panOffset, zoom, sceneControls]);
+    x.set(panOffset.x);
+    y.set(panOffset.y);
+    scale.set(zoom);
+  }, [panOffset, zoom, x, y, scale]);
 
   const onResetViewAndItems = (): void => {
     setIsResetting(true);
-    void panToOffsetScene(offsetHomeCoordinates, sceneControls).then(() => {
+    void panToOffsetScene(offsetHomeCoordinates, x, y, scale).then(() => {
       setIsResetting(false);
       setPanOffset(offsetHomeCoordinates);
       setZoom(1);
@@ -141,18 +151,34 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   ): void => {
     if (!viewportRef.current) return;
     setIsSceneMoving(true);
-    void panToOffsetScene(offset, sceneControls).then(() => {
-      setZoom(1);
-      setPanOffset({ x: offset.x, y: offset.y });
-      setIsSceneMoving(false);
-    });
+
+    // Calculate bounds based on scene and viewport dimensions
+    const viewportWidth = viewportRef.current.offsetWidth;
+    const viewportHeight = viewportRef.current.offsetHeight;
+
+    const minPanX = viewportWidth - sceneWidth * 1; // 1 is the zoom level after pan
+    const maxPanX = 0;
+    const minPanY = viewportHeight - sceneHeight * 1;
+    const maxPanY = 0;
+
+    // Clamp the offset to keep the scene within bounds
+    const clampedX = Math.min(Math.max(offset.x, minPanX), maxPanX);
+    const clampedY = Math.min(Math.max(offset.y, minPanY), maxPanY);
+
+    void panToOffsetScene({ x: clampedX, y: clampedY }, x, y, scale).then(
+      () => {
+        setZoom(1);
+        setPanOffset({ x: clampedX, y: clampedY });
+        setIsSceneMoving(false);
+      },
+    );
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     activePointersRef.current.set(event.pointerId, event);
     (event.target as HTMLElement).setPointerCapture(event.pointerId);
     if (isResetting || isSceneMoving) return;
-    sceneControls.stop();
+    stopAllMotion();
     if (activePointersRef.current.size === 1) {
       const targetElement = event.target as HTMLElement;
       if (targetElement.closest(INTERACTIVE_SELECTOR)) {
@@ -178,7 +204,9 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>): void => {
-    if (isPanning || activePointersRef.current.size >= 2) sceneControls.stop();
+    if (isPanning || activePointersRef.current.size >= 2) {
+      stopAllMotion();
+    }
     if (!activePointersRef.current.has(event.pointerId) || isResetting) return;
     activePointersRef.current.set(event.pointerId, event);
 
@@ -192,15 +220,19 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       const minPanY = height - sceneHeight * zoom;
       const maxPanY = 0;
 
+      const newX = Math.min(
+        Math.max(initialPanOffsetOnDrag.x + deltaX, minPanX),
+        maxPanX,
+      );
+      const newY = Math.min(
+        Math.max(initialPanOffsetOnDrag.y + deltaY, minPanY),
+        maxPanY,
+      );
+      x.set(newX);
+      y.set(newY);
       setPanOffset({
-        x: Math.min(
-          Math.max(initialPanOffsetOnDrag.x + deltaX, minPanX),
-          maxPanX,
-        ),
-        y: Math.min(
-          Math.max(initialPanOffsetOnDrag.y + deltaY, minPanY),
-          maxPanY,
-        ),
+        x: newX,
+        y: newY,
       });
       // handles touchscreen pinching
     } else if (
@@ -225,8 +257,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
 
       let newZoom = initialZoom * (currentDistance / initialDistance);
       newZoom = Math.max(
-        (window.innerWidth / canvasWidth) * 1.05, // Ensure zoom is at least the width of the canvas
-        (window.innerHeight / canvasHeight) * 1.05, // Ensure zoom is at least the height of the canvas
+        (window.innerWidth / canvasWidth) * ZOOM_BOUND, // Ensure zoom is at least the width of the canvas
+        (window.innerHeight / canvasHeight) * ZOOM_BOUND, // Ensure zoom is at least the height of the canvas
         Math.min(newZoom, 10),
       );
 
@@ -247,6 +279,9 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       newPanX = Math.min(Math.max(newPanX, minPanX), maxPanX);
       newPanY = Math.min(Math.max(newPanY, minPanY), maxPanY);
 
+      scale.set(newZoom);
+      x.set(newPanX);
+      y.set(newPanY);
       setZoom(newZoom);
       setPanOffset({ x: newPanX, y: newPanY });
     }
@@ -255,7 +290,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const handlePointerUpOrCancel = (
     event: PointerEvent<HTMLDivElement>,
   ): void => {
-    sceneControls.stop();
+    stopAllMotion();
     event.preventDefault();
     if ((event.target as HTMLElement).hasPointerCapture(event.pointerId)) {
       (event.target as HTMLElement).releasePointerCapture(event.pointerId);
@@ -299,8 +334,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       if (isPinch) {
         const nextZoom = Math.max(
           Math.min(zoom * (1 - event.deltaY * ZOOM_SENSITIVITY), MAX_ZOOM),
-          (window.innerWidth / canvasWidth) * 1.05, // Ensure zoom is at least the width of the canvas
-          (window.innerHeight / canvasHeight) * 1.05, // Ensure zoom is at least the height of the canvas
+          (window.innerWidth / canvasWidth) * ZOOM_BOUND, // Ensure zoom is at least the width of the canvas
+          (window.innerHeight / canvasHeight) * ZOOM_BOUND, // Ensure zoom is at least the height of the canvas
         );
 
         const rect = viewportRef.current?.getBoundingClientRect();
@@ -327,11 +362,13 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         newPanX = Math.min(maxPanX, Math.max(minPanX, newPanX));
         newPanY = Math.min(maxPanY, Math.max(minPanY, newPanY));
 
-        sceneControls.set({ x: newPanX, y: newPanY, scale: nextZoom });
+        x.set(newPanX);
+        y.set(newPanY);
+        scale.set(nextZoom);
         setPanOffset({ x: newPanX, y: newPanY });
         setZoom(nextZoom);
       } else {
-        sceneControls.stop();
+        stopAllMotion();
 
         const scrollSpeed = 1;
         const newPanX = panOffset.x - event.deltaX * scrollSpeed;
@@ -345,6 +382,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         const clampedPanX = Math.min(Math.max(newPanX, minPanX), maxPanX);
         const clampedPanY = Math.min(Math.max(newPanY, minPanY), maxPanY);
 
+        x.set(clampedPanX);
+        y.set(clampedPanY);
         setPanOffset({ x: clampedPanX, y: clampedPanY });
       }
     },
@@ -356,7 +395,10 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       sceneHeight,
       panOffset.x,
       panOffset.y,
-      sceneControls,
+      x,
+      y,
+      scale,
+      stopAllMotion,
     ],
   );
 
@@ -386,8 +428,9 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         ) ||
           isResetting) && (
           <Toolbar
-            zoom={zoom}
-            panOffset={panOffset}
+            x={x}
+            y={y}
+            scale={scale}
             homeCoordinates={homeCoordinates}
           />
         )}
@@ -405,7 +448,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
           }}
         >
           <Navbar
-            setPanOffset={(offset: { x: number; y: number }) => {
+            panToOffset={(offset: { x: number; y: number }) => {
               panToOffset(
                 {
                   x: -offset.x,
@@ -438,8 +481,10 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
             style={{
               width: canvasWidth,
               height: canvasHeight,
+              x,
+              y,
+              scale,
             }}
-            animate={sceneControls}
           >
             <Gradient />
             <Dots />

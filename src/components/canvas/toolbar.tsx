@@ -1,24 +1,28 @@
-import { type Point } from "framer-motion";
-import { useEffect, useState } from "react";
+import { type Point, type MotionValue, useAnimationFrame } from "framer-motion";
+import { useState } from "react";
 
 const Toolbar = ({
-  zoom,
-  panOffset,
+  x,
+  y,
+  scale,
   homeCoordinates = { x: 0, y: 0 },
 }: {
-  zoom: number;
-  panOffset: Point;
+  x: MotionValue<number>;
+  y: MotionValue<number>;
+  scale: MotionValue<number>;
   homeCoordinates?: Point;
 }) => {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
+  const [, forceRerender] = useState(0);
 
-  // coordinates of top left corner of screen, where (0, 0) is when at home
-  const displayX = -(panOffset.x / zoom + homeCoordinates.x);
-  const displayY = -(panOffset.y / zoom + homeCoordinates.y);
+  // Force a re-render on every animation frame
+  useAnimationFrame(() => {
+    forceRerender((v) => v + 1);
+  });
 
-  if (displayX === 0 && displayY === 0 && zoom === 1) {
+  const displayX = -(x.get() / scale.get() + homeCoordinates.x);
+  const displayY = -(y.get() / scale.get() + homeCoordinates.y);
+
+  if (displayX === 0 && displayY === 0 && scale.get() === 1) {
     return null; // don't show toolbar when at home
   }
 
@@ -29,7 +33,7 @@ const Toolbar = ({
       data-toolbar-button
     >
       ({displayX.toFixed(0)}, {displayY.toFixed(0)})
-      <span className="text-light"> |</span> {zoom.toFixed(2)}x
+      <span className="text-light"> |</span> {scale.get().toFixed(2)}x
     </div>
   );
 };
