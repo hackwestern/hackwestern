@@ -1,46 +1,45 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SingleButton from "./single-button";
-import { HALF_MULT } from "./canvas";
+import { CanvasSection, coordinates } from "~/constants/canvas";
 
 interface NavbarProps {
-  onResetViewAndItems?: () => void;
-  panOffset?: { x: number; y: number };
-  zoom?: number;
-  isResetting?: boolean;
-  style?: React.CSSProperties;
+  panOffset: { x: number; y: number };
+  zoom: number;
+  setPanOffset: (offset: { x: number; y: number }) => void;
+  onResetViewAndItems: () => void;
 }
 
 export default function Navbar({
+  setPanOffset,
   onResetViewAndItems,
-  panOffset = { x: 0, y: 0 },
-  zoom = 1,
-  isResetting = false,
+  panOffset,
+  zoom,
 }: NavbarProps) {
-  const [expandedButton, setExpandedButton] = useState<string | null>(null);
+  const [expandedButton, setExpandedButton] = useState<string | null>("home");
 
-  // Check if canvas is at center position or currently resetting
-  // The center position is actually { x: -width, y: -height } based on the canvas logic
-  // We need to get the window dimensions to calculate the correct center position
-  const windowWidth = typeof window !== "undefined" ? window.innerWidth : 0;
-  const windowHeight = typeof window !== "undefined" ? window.innerHeight : 0;
+  useEffect(() => {
+    // if value of panOffset doesn't match any coordinates, there should be no expanded button
+    const section = Object.keys(coordinates).find(
+      (key) =>
+        coordinates[key as CanvasSection].x === -panOffset.x &&
+        coordinates[key as CanvasSection].y === -panOffset.y,
+    );
 
-  const centerX = -windowWidth * HALF_MULT;
-  const centerY = -windowHeight * HALF_MULT;
-
-  const isAtCenter =
-    (panOffset.x === centerX && panOffset.y === centerY && zoom === 1) ||
-    isResetting;
-
-  const handleButtonClick = (buttonId: string) => {
-    if (buttonId === "home" && onResetViewAndItems) {
-      // Reset view and items when home is clicked
-      onResetViewAndItems();
-      setExpandedButton(null); // Collapse any expanded button
-    } else {
-      // If clicking the same button, collapse it. Otherwise, expand the new one
-      setExpandedButton(expandedButton === buttonId ? null : buttonId);
+    if (!section || zoom !== 1) {
+      setExpandedButton(null);
     }
+  }, [panOffset, zoom]);
+
+  const handlePan = (section: CanvasSection) => {
+    setExpandedButton(section);
+    const coords = coordinates[section];
+    setPanOffset({ x: coords.x, y: coords.y });
+  };
+
+  const handleHome = () => {
+    setExpandedButton(CanvasSection.Home);
+    onResetViewAndItems();
   };
 
   return (
@@ -49,26 +48,38 @@ export default function Navbar({
         <SingleButton
           label="Home"
           icon="Home"
-          onClick={() => handleButtonClick("home")}
-          isPushed={isAtCenter}
+          onClick={handleHome}
+          isPushed={expandedButton === CanvasSection.Home}
         />
         <SingleButton
-          label="Hack Western 11 Projects"
-          icon="Folders"
-          link="https://dorahacks.io/hackathon/hackwestern-11/buidl"
-          isPushed={expandedButton === "projects"}
+          label="About"
+          icon="Info"
+          onClick={() => handlePan(CanvasSection.About)}
+          isPushed={expandedButton === CanvasSection.About}
         />
         <SingleButton
-          label="Hack Western 11 Site"
-          icon="ExternalLink"
-          link="https://archive.hackwestern.com/2024"
-          isPushed={expandedButton === "site"}
+          label="Projects"
+          icon="LayoutDashboard"
+          onClick={() => handlePan(CanvasSection.Projects)}
+          isPushed={expandedButton === CanvasSection.Projects}
         />
         <SingleButton
-          label="Sponsor Us!"
+          label="FAQ"
+          icon="HelpCircle"
+          onClick={() => handlePan(CanvasSection.FAQ)}
+          isPushed={expandedButton === CanvasSection.FAQ}
+        />
+        <SingleButton
+          label="Sponsors"
           icon="Handshake"
-          emailAddress="sponsorship@hackwestern.com"
-          isPushed={expandedButton === "settings"}
+          onClick={() => handlePan(CanvasSection.Sponsors)}
+          isPushed={expandedButton === CanvasSection.Sponsors}
+        />
+        <SingleButton
+          label="Team"
+          icon="Users"
+          onClick={() => handlePan(CanvasSection.Team)}
+          isPushed={expandedButton === CanvasSection.Team}
         />
       </div>
     </motion.div>
