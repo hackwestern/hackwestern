@@ -4,7 +4,7 @@ import { useState } from "react";
 function Lines() {
   return (
     <div className="relative z-0">
-      <div className="absolute left-0 right-0 mt-14 space-y-6 pt-0.5">
+      <div className="absolute left-0 right-0 mt-16 space-y-6">
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="w-full border-t border-[rgba(0,0,0,0.1)]" />
         ))}
@@ -55,7 +55,7 @@ export function FAQCard({
           <div className="relative flex h-full w-full flex-col space-y-2 text-left">
             <Lines />
             <div className="z-10">
-              <h2 className="font-jetbrainsmono relative z-10 min-h-14 text-lg font-normal">
+              <h2 className="font-jetbrainsmono relative z-10 min-h-14 text-lg font-medium">
                 {title.toUpperCase()}
               </h2>
               <p className="text-md font-figtree leading-[25px]">{desc}</p>
