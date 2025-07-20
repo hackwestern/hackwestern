@@ -6,12 +6,12 @@ import { CanvasSection, coordinates } from "~/constants/canvas";
 interface NavbarProps {
   panOffset: { x: number; y: number };
   zoom: number;
-  setPanOffset: (offset: { x: number; y: number }) => void;
+  panToOffset: (offset: { x: number; y: number }) => void;
   onResetViewAndItems: () => void;
 }
 
 export default function Navbar({
-  setPanOffset,
+  panToOffset,
   onResetViewAndItems,
   panOffset,
   zoom,
@@ -34,7 +34,7 @@ export default function Navbar({
   const handlePan = (section: CanvasSection) => {
     setExpandedButton(section);
     const coords = coordinates[section];
-    setPanOffset({ x: coords.x, y: coords.y });
+    panToOffset({ x: coords.x, y: coords.y });
   };
 
   const handleHome = () => {
