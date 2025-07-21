@@ -19,7 +19,7 @@ export const Bindings = React.memo(function Bindings() {
   );
 });
 
-export function LeftCover() {
+export const LeftCover = React.memo(function LeftCover() {
   return (
     <svg
       width="555"
@@ -85,9 +85,9 @@ export function LeftCover() {
       </defs>
     </svg>
   );
-}
+});
 
-export function RightCover() {
+export const RightCover = React.memo(function RightCover() {
   return (
     <svg
       width="555"
@@ -153,7 +153,7 @@ export function RightCover() {
       </defs>
     </svg>
   );
-}
+});
 
 const maskImage =
   "radial-gradient(circle at center, transparent 12px, black 12px), linear-gradient(black, black)";
