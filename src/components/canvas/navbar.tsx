@@ -43,7 +43,7 @@ export default function Navbar({
   };
 
   return (
-    <div className="px-4">
+    <div className="px-8">
       <motion.div className="flex select-none items-center justify-center gap-1 rounded-[10px] border-[1px] border-border bg-offwhite p-1 shadow-[0_6px_12px_rgba(0,0,0,0.10)]">
         <div className="flex items-center gap-1">
           <SingleButton
