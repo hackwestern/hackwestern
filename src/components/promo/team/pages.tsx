@@ -86,7 +86,7 @@ const Pages = () => {
         return (
           <div
             key={index}
-            className="pointer-events-none absolute left-0 top-0 h-full w-1/2"
+            className="pointer-events-none absolute left-0 top-0 h-[723px] w-[555px]"
             style={{
               transform: "translateX(100%)",
               perspective: 3200,

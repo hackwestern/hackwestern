@@ -11,7 +11,7 @@ function Label({
   offset: number;
   onClick?: () => void;
 }) {
-  const labelClass = `flex h-[45px] items-center justify-center rounded-t-md border-t border-gray-200 bg-beige px-2 text-xs uppercase tracking-wider absolute -mt-2 text-medium hover:text-heavy hover:-mt-3 transition-all z-[10000]`;
+  const labelClass = `flex h-[45px] items-center justify-center rounded-t-md border-t border-gray-200 bg-beige px-[8px] text-xs uppercase tracking-wider absolute -mt-[8px] text-medium hover:text-heavy hover:-mt-[12px] transition-all z-[10000]`;
 
   return (
     <>
@@ -67,7 +67,7 @@ function Page({
 }) {
   return (
     <motion.div
-      className="pointer-events-none relative h-full w-full cursor-pointer"
+      className="pointer-events-none relative h-[723px] w-[555px] cursor-pointer"
       style={{
         transformStyle: "preserve-3d",
         transformOrigin: "left center",
@@ -85,7 +85,7 @@ function Page({
       <Label label={label} offset={labelOffset} onClick={onLabelClick} />
       {/* Front of the page */}
       <div
-        className="pointer-events-auto absolute inset-0 my-8 ml-1 mr-6 flex cursor-pointer overflow-hidden rounded-lg"
+        className="pointer-events-auto absolute inset-0 my-[32px] ml-[4px] mr-[24px] flex cursor-pointer overflow-hidden rounded-lg"
         style={{
           backfaceVisibility: "hidden",
         }}
@@ -97,24 +97,23 @@ function Page({
           <Bindings />
         </div>
         <FrontHoles />
-        <div className="h-full w-full bg-beige p-8">{front}</div>
+        <div className="h-full w-full bg-beige p-[32px]">{front}</div>
       </div>
-      {/* Back of the page */}(
+      {/* Back of the page */}
       <div
-        className="pointer-events-auto absolute inset-0 my-8 ml-1 mr-6 flex cursor-pointer overflow-hidden rounded-lg"
+        className="pointer-events-auto absolute inset-0 my-[32px] ml-[4px] mr-[24px] flex cursor-pointer overflow-hidden rounded-lg"
         style={{
           transform: "rotateY(180deg)",
           backfaceVisibility: "hidden",
         }}
         onClick={turnPageBackward}
       >
-        <div className="h-full w-full bg-beige p-8">{back}</div>
+        <div className="h-full w-full bg-beige p-[32px]">{back}</div>
         <BackHoles />
         <div className="pointer-events-none absolute inset-0 -mr-[36px] ml-[499px]">
           <Bindings />
         </div>
       </div>
-      )
     </motion.div>
   );
 }
