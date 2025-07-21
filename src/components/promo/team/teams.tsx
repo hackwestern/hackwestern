@@ -4,17 +4,22 @@ export const PAGES = [
     labelOffset: 10,
     front: (
       <div>
-        <h1 className="text-3xl font-bold">A Guide to the Cosmos</h1>
-        <p className="mt-4 text-lg">Page 1: The Cover</p>
-        <p className="mt-20">Click the right side of the book to begin.</p>
+        Edison Swathi
+        <img
+          src="/horse.svg"
+          alt="aboutcloud"
+          className="mx-auto h-24 w-24"
+        />
       </div>
     ),
     back: (
       <div>
-        <h2 className="text-2xl font-semibold">Page 2: Introduction</h2>
-        <p className="mt-4">
-          In the beginning, there was... a lot of empty space.
-        </p>
+        design design
+        <img
+          src="/images/aboutcloud2.svg"
+          alt="aboutcloud2"
+          className="mx-auto h-24 w-24"
+        />
       </div>
     ),
   },
@@ -23,18 +28,22 @@ export const PAGES = [
     labelOffset: 126,
     front: (
       <div>
-        <h2 className="text-2xl font-semibold">Page 3: The Stars</h2>
-        <p className="mt-4">
-          Stars are giant celestial bodies made mostly of hydrogen and helium.
-        </p>
+        horse horse horse
+        <img
+          src="/images/aboutticket.svg"
+          alt="aboutticket"
+          className="mx-auto h-24 w-24"
+        />
       </div>
     ),
     back: (
       <div>
-        <h2 className="text-2xl font-semibold">Page 4: The Planets</h2>
-        <p className="mt-4">
-          Our solar system has eight planets. Pluto is a dwarf planet.
-        </p>
+        text text text
+        <img
+          src="/images/beachbum.svg"
+          alt="beachbum"
+          className="mx-auto h-24 w-24"
+        />
       </div>
     ),
   },
@@ -43,14 +52,22 @@ export const PAGES = [
     labelOffset: 195,
     front: (
       <div>
-        <h2 className="text-2xl font-semibold">Page 5: The End?</h2>
-        <p className="mt-4">The end of the book, but not the universe.</p>
+        events 2
+        <img
+          src="/images/citycruiser.svg"
+          alt="citycruiser"
+          className="mx-auto h-24 w-24"
+        />
       </div>
     ),
     back: (
       <div>
-        <h2 className="text-2xl font-semibold">The Back Cover</h2>
-        <p className="mt-4">Click the left side to go back.</p>
+        marketing
+        <img
+          src="/images/cloud1.svg"
+          alt="cloud1"
+          className="mx-auto h-24 w-24"
+        />
       </div>
     ),
   },
@@ -59,18 +76,22 @@ export const PAGES = [
     labelOffset: 264,
     front: (
       <div>
-        <h2 className="text-2xl font-semibold">Page 6: The Universe</h2>
-        <p className="mt-4">
-          The universe is vast and ever-expanding, filled with mysteries.
-        </p>
+        marketing marketing
+        <img
+          src="/images/cloud2.svg"
+          alt="cloud2"
+          className="mx-auto h-24 w-24"
+        />
       </div>
     ),
     back: (
       <div>
-        <h2 className="text-2xl font-semibold">Page 6: The Universe</h2>
-        <p className="mt-4">
-          The universe is vast and ever-expanding, filled with mysteries.
-        </p>
+        spon
+        <img
+          src="/images/cloud3.svg"
+          alt="cloud3"
+          className="mx-auto h-24 w-24"
+        />
       </div>
     ),
   },
@@ -79,20 +100,22 @@ export const PAGES = [
     labelOffset: 357,
     front: (
       <div>
-        <h2 className="text-2xl font-semibold">Page 7: The Future</h2>
-        <p className="mt-4">
-          The future holds endless possibilities, driven by technology and
-          innovation.
-        </p>
+        spon
+        <img
+          src="/images/cloud4.svg"
+          alt="cloud4"
+          className="mx-auto h-24 w-24"
+        />
       </div>
     ),
     back: (
       <div>
-        <h2 className="text-2xl font-semibold">Page 8: The Future</h2>
-        <p className="mt-4">
-          The future holds endless possibilities, driven by technology and
-          innovation.
-        </p>
+        web
+        <img
+          src="/images/cloud5.svg"
+          alt="cloud5"
+          className="mx-auto h-24 w-24"
+        />
       </div>
     ),
   },
@@ -101,16 +124,22 @@ export const PAGES = [
     labelOffset: 466,
     front: (
       <div>
-        <h2 className="text-2xl font-semibold">Page 9: The Contributors</h2>
-        <p className="mt-4">
-          This book was made possible by the contributions of many talented
-          individuals.
-        </p>
+        web web web
+        <img
+          src="/images/cloud6.svg"
+          alt="cloud6"
+          className="mx-auto h-24 w-24"
+        />
       </div>
     ),
     back: (
       <div>
-
+        bonus page
+        <img
+          src="/images/cloud7.svg"
+          alt="cloud7"
+          className="mx-auto h-24 w-24"
+        />
       </div>
     ),
   },
