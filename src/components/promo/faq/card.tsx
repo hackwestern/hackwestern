@@ -35,7 +35,7 @@ export function FAQCard({
       tabIndex={0}
     >
       <motion.div
-        className="preserve-3d absolute inset-0"
+        className="absolute inset-0 preserve-3d"
         animate={{ rotateY: flipped ? 180 : 0 }}
         transition={{ duration: 0.4, ease: "easeInOut" }}
         style={{ transformStyle: "preserve-3d", rotate: rotation }}
@@ -66,7 +66,7 @@ export function FAQCard({
               <h2 className="font-jetbrainsmono text-md relative z-10 min-h-14 font-medium">
                 {title.toUpperCase()}
               </h2>
-              <p className="font-figtree text-[12.5px] leading-[20px] mt-0.5">
+              <p className="mt-0.5 font-figtree text-[12.5px] leading-[20px]">
                 {desc}
               </p>
             </div>
