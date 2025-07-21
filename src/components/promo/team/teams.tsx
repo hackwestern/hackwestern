@@ -108,14 +108,6 @@ export const PAGES = [
         </p>
       </div>
     ),
-    back: (
-      <div>
-        <h2 className="text-2xl font-semibold">Page 10: The Contributors</h2>
-        <p className="mt-4">
-          This book was made possible by the contributions of many talented
-          individuals.
-        </p>
-      </div>
-    ),
+    back: null,
   },
 ] as const;
