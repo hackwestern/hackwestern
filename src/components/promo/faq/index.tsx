@@ -6,9 +6,9 @@ import { PROMO_FAQ } from "~/constants/faq";
 function FAQ() {
   return (
     <CanvasComponent offset={coordinates.faq}>
-      <div className="flex h-screen w-screen items-center justify-center pb-8 sm:pb-0">
+      <div className="flex h-screen w-screen items-center justify-center pb-8 sm:pb-0 sm:pt-4">
         <div className="h-[900px]">
-          <div className="mx-auto flex grid h-[900px] grid-flow-col grid-rows-3 gap-x-8 gap-y-8">
+          <div className="mx-auto flex grid h-[900px] grid-flow-col grid-rows-3 gap-x-8 gap-y-4">
             {/* left 2 cards */}
             <div className="row-span-3 my-auto grid grid-rows-2 gap-10">
               <FAQCard
@@ -28,6 +28,7 @@ function FAQ() {
               title={PROMO_FAQ[2].question}
               desc={PROMO_FAQ[2].answer}
               rotation="-4deg"
+              className="ml-4"
             />
             <FAQCard title={PROMO_FAQ[3].question} desc={PROMO_FAQ[3].answer} />
             <FAQCard
@@ -41,6 +42,7 @@ function FAQ() {
               title={PROMO_FAQ[5].question}
               desc={PROMO_FAQ[5].answer}
               rotation="3deg"
+              className="ml-8 mt-8"
             />
             <div className="row-span-1 mb-20 flex w-96 flex-col items-center justify-center">
               <div className="font-jetbrainsmono -mt-4 mb-6 text-lg text-medium">
@@ -63,7 +65,7 @@ function FAQ() {
               title={PROMO_FAQ[6].question}
               desc={PROMO_FAQ[6].answer}
               rotation="-5deg"
-              className="-mt-16"
+              className="-mt-16 ml-8"
             />
 
             {/* right 3 cards */}
