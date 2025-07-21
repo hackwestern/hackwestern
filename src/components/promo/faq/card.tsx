@@ -1,12 +1,11 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Draggable } from "~/components/canvas/draggable";
 
 function Lines() {
   return (
     <div className="relative z-0">
-      <div className="absolute left-0 right-0 mt-16 space-y-6">
-        {Array.from({ length: 8 }).map((_, i) => (
+      <div className="absolute left-0 right-0 mt-16 space-y-[19px]">
+        {Array.from({ length: 9 }).map((_, i) => (
           <div key={i} className="w-full border-t border-[rgba(0,0,0,0.1)]" />
         ))}
       </div>
@@ -29,7 +28,7 @@ export function FAQCard({
 
   return (
     <button
-      className={`w-2xl relative h-64 w-96 cursor-pointer text-medium transition-all hover:scale-[1.02] ${className}`}
+      className={`w-2xl relative h-[250px] w-[310px] cursor-pointer text-medium transition-all hover:scale-[1.02] ${className}`}
       style={{ perspective: 1200 }}
       onClick={() => setFlipped(!flipped)}
       onKeyDown={(e) => e.key === " " && setFlipped(!flipped)}
@@ -48,7 +47,7 @@ export function FAQCard({
         >
           <div className="relative h-full w-full">
             <Lines />
-            <h2 className="font-jetbrainsmono relative z-10 mx-auto flex h-full w-2/3 items-center justify-center text-center text-2xl font-normal">
+            <h2 className="font-jetbrainsmono relative z-10 mx-auto flex h-full w-2/3 items-center justify-center text-center text-xl font-medium">
               {title.toUpperCase()}
             </h2>
           </div>
@@ -64,10 +63,12 @@ export function FAQCard({
           <div className="relative flex h-full w-full flex-col space-y-2 text-left">
             <Lines />
             <div className="z-10">
-              <h2 className="font-jetbrainsmono relative z-10 min-h-14 text-lg font-medium">
+              <h2 className="font-jetbrainsmono text-md relative z-10 min-h-14 font-medium">
                 {title.toUpperCase()}
               </h2>
-              <p className="font-figtree text-sm leading-[25px]">{desc}</p>
+              <p className="mt-0.5 font-figtree text-[12.5px] leading-[20px]">
+                {desc}
+              </p>
             </div>
           </div>
         </div>
