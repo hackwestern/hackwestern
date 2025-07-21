@@ -27,7 +27,7 @@ export function LeftCover() {
       viewBox="0 0 555 723"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="absolute left-0 top-0 ml-[3px] h-full w-1/2"
+      className="absolute left-0 top-0 z-[-5] ml-[3px] h-full w-1/2"
     >
       <g filter="url(#filter0_d_857_2218)">
         <path
@@ -95,7 +95,7 @@ export function RightCover() {
       viewBox="0 0 555 723"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="absolute right-0 top-0 mr-[3px] h-full w-1/2"
+      className="absolute right-0 top-0 z-[-5] mr-[3px] h-full w-1/2"
     >
       <g filter="url(#filter0_d_857_2225)">
         <path

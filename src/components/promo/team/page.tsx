@@ -11,7 +11,7 @@ function Label({
   offset: number;
   onClick?: () => void;
 }) {
-  const labelClass = `flex h-[45px] items-center justify-center rounded-t-md border-t border-gray-200 bg-beige px-2 text-xs uppercase tracking-wider absolute -mt-2 text-medium hover:text-heavy hover:-mt-3 transition-all`;
+  const labelClass = `flex h-[45px] items-center justify-center rounded-t-md border-t border-gray-200 bg-beige px-2 text-xs uppercase tracking-wider absolute -mt-2 text-medium hover:text-heavy hover:-mt-3 transition-all z-[10000]`;
 
   return (
     <>
@@ -48,6 +48,7 @@ function Page({
   front,
   back,
   isFlipped,
+  flipDuration,
   onFlipComplete,
   turnPageBackward,
   turnPageForward,
@@ -58,6 +59,7 @@ function Page({
   front: React.ReactNode;
   back?: React.ReactNode;
   isFlipped: boolean;
+  flipDuration: number;
   onFlipComplete?: () => void;
   turnPageBackward: () => void;
   turnPageForward: () => void;
@@ -74,9 +76,9 @@ function Page({
       // Animate based on the isFlipped prop
       animate={{ rotateY: isFlipped ? -180 : 0 }}
       transition={{
-        duration: 0.5,
-        ease: [0.645, 0.045, 0.355, 1.0], // Custom cubic-bezier for smoother motion
-        type: "tween", // Try tween instead of keyframes
+        duration: flipDuration / 1000, // Convert ms to seconds for framer-motion
+        ease: [0.645, 0.045, 0.355, 1.0],
+        type: "tween",
       }}
       onAnimationComplete={onFlipComplete}
     >
