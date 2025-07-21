@@ -5,14 +5,14 @@ import { LeftCover, RightCover, Bindings } from "./constants";
 const PAGES = [
   {
     front: (
-      <div className="h-full w-full rounded-lg bg-stone-100 p-10 shadow-inner">
+      <div className="h-full w-full rounded-lg bg-beige p-10 ">
         <h1 className="text-3xl font-bold">A Guide to the Cosmos</h1>
         <p className="mt-4 text-lg">Page 1: The Cover</p>
         <p className="mt-20">Click the right side of the book to begin.</p>
       </div>
     ),
     back: (
-      <div className="h-full w-full bg-stone-100 p-10 shadow-inner">
+      <div className="h-full w-full bg-beige p-10 ">
         <h2 className="text-2xl font-semibold">Page 2: Introduction</h2>
         <p className="mt-4">
           In the beginning, there was... a lot of empty space.
@@ -22,7 +22,7 @@ const PAGES = [
   },
   {
     front: (
-      <div className="h-full w-full bg-stone-100 p-10 shadow-inner">
+      <div className="h-full w-full bg-beige p-10 ">
         <h2 className="text-2xl font-semibold">Page 3: The Stars</h2>
         <p className="mt-4">
           Stars are giant celestial bodies made mostly of hydrogen and helium.
@@ -30,7 +30,7 @@ const PAGES = [
       </div>
     ),
     back: (
-      <div className="h-full w-full bg-stone-100 p-10 shadow-inner">
+      <div className="h-full w-full bg-beige p-10 ">
         <h2 className="text-2xl font-semibold">Page 4: The Planets</h2>
         <p className="mt-4">
           Our solar system has eight planets. Pluto is a dwarf planet.
@@ -40,13 +40,13 @@ const PAGES = [
   },
   {
     front: (
-      <div className="h-full w-full bg-stone-100 p-10 shadow-inner">
+      <div className="h-full w-full bg-beige p-10 ">
         <h2 className="text-2xl font-semibold">Page 5: The End?</h2>
         <p className="mt-4">The end of the book, but not the universe.</p>
       </div>
     ),
     back: (
-      <div className="h-full w-full bg-stone-100 p-10 shadow-inner">
+      <div className="h-full w-full bg-beige p-10 ">
         <h2 className="text-2xl font-semibold">The Back Cover</h2>
         <p className="mt-4">Click the left side to go back.</p>
       </div>
@@ -112,7 +112,7 @@ function Book() {
               style={{
                 // Position the pages in the right half of the container
                 transform: "translateX(100%)",
-                perspective: 3500,
+                perspective: 3200,
                 zIndex: zIndex,
               }}
             >
@@ -124,7 +124,6 @@ function Book() {
                 onFlipComplete={isFlipping ? handleFlipComplete : undefined}
                 turnPageBackward={turnPageBackward}
                 turnPageForward={turnPageForward}
-                zIndex={zIndex}
               />
             </div>
           );
