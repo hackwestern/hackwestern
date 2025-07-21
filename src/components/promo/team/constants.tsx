@@ -155,7 +155,6 @@ export function RightCover() {
   );
 }
 
-
 const maskImage =
   "radial-gradient(circle at center, transparent 12px, black 12px), linear-gradient(black, black)";
 
