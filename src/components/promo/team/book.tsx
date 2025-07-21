@@ -1,59 +1,7 @@
 import React, { useState } from "react";
 import Page from "./page";
 import { LeftCover, RightCover, Bindings } from "./constants";
-
-const PAGES = [
-  {
-    front: (
-      <div className="h-full w-full rounded-lg bg-beige p-10 ">
-        <h1 className="text-3xl font-bold">A Guide to the Cosmos</h1>
-        <p className="mt-4 text-lg">Page 1: The Cover</p>
-        <p className="mt-20">Click the right side of the book to begin.</p>
-      </div>
-    ),
-    back: (
-      <div className="h-full w-full bg-beige p-10 ">
-        <h2 className="text-2xl font-semibold">Page 2: Introduction</h2>
-        <p className="mt-4">
-          In the beginning, there was... a lot of empty space.
-        </p>
-      </div>
-    ),
-  },
-  {
-    front: (
-      <div className="h-full w-full bg-beige p-10 ">
-        <h2 className="text-2xl font-semibold">Page 3: The Stars</h2>
-        <p className="mt-4">
-          Stars are giant celestial bodies made mostly of hydrogen and helium.
-        </p>
-      </div>
-    ),
-    back: (
-      <div className="h-full w-full bg-beige p-10 ">
-        <h2 className="text-2xl font-semibold">Page 4: The Planets</h2>
-        <p className="mt-4">
-          Our solar system has eight planets. Pluto is a dwarf planet.
-        </p>
-      </div>
-    ),
-  },
-  {
-    front: (
-      <div className="h-full w-full bg-beige p-10 ">
-        <h2 className="text-2xl font-semibold">Page 5: The End?</h2>
-        <p className="mt-4">The end of the book, but not the universe.</p>
-      </div>
-    ),
-    back: (
-      <div className="h-full w-full bg-beige p-10 ">
-        <h2 className="text-2xl font-semibold">The Back Cover</h2>
-        <p className="mt-4">Click the left side to go back.</p>
-      </div>
-    ),
-  },
-  // Add as many pages as you like
-];
+import { PAGES } from "./teams";
 
 function Book() {
   const [turnedPages, setTurnedPages] = useState(0);
@@ -95,31 +43,28 @@ function Book() {
 
           let zIndex;
           if (isFlipping) {
-            // The currently flipping page gets the highest z-index to fly over everything.
-            zIndex = totalPages + 1;
+            zIndex = 100; // Highest while flipping
           } else if (isFlipped) {
-            // Flipped pages on the left stack up from the back.
-            zIndex = index;
+            zIndex = index; // Lower for already-flipped pages
           } else {
-            // Unflipped pages on the right stack up from the front.
-            zIndex = totalPages - index;
+            zIndex = PAGES.length * 2 - index; // Much higher for unflipped pages
           }
 
           return (
             <div
               key={index}
-              className="absolute left-0 top-0 z-[100] h-full w-1/2"
+              className="absolute left-0 top-0 h-full w-1/2"
               style={{
-                // Position the pages in the right half of the container
                 transform: "translateX(100%)",
                 perspective: 3200,
-                zIndex: zIndex,
+                zIndex,
               }}
             >
               <Page
-                label="test"
+                label={page.label}
                 front={page.front}
                 back={page.back}
+                labelOffset={page.labelOffset}
                 isFlipped={isFlipped}
                 onFlipComplete={isFlipping ? handleFlipComplete : undefined}
                 turnPageBackward={turnPageBackward}

@@ -154,3 +154,56 @@ export function RightCover() {
     </svg>
   );
 }
+
+
+const maskImage =
+  "radial-gradient(circle at center, transparent 12px, black 12px), linear-gradient(black, black)";
+
+const maskSize = "30px 80px, calc(100% - 30px) 100%";
+
+const maskRepeat = "repeat-y, no-repeat";
+
+const pageHoleMask: React.CSSProperties = {
+  maskImage,
+  maskSize,
+  maskRepeat,
+  WebkitMaskImage: maskImage,
+  WebkitMaskSize: maskSize,
+  WebkitMaskRepeat: maskRepeat,
+};
+
+const frontPos = "0px 340px, 30px 0";
+
+const frontPageHoleMask: React.CSSProperties = {
+  ...pageHoleMask,
+  maskPosition: frontPos,
+  WebkitMaskPosition: frontPos,
+};
+
+const backPos = "right 340px, left 0";
+
+const backPageHoleMask: React.CSSProperties = {
+  ...pageHoleMask,
+  maskPosition: backPos,
+  WebkitMaskPosition: backPos,
+};
+
+export const FrontHoles = () => (
+  <>
+    <div style={frontPageHoleMask} className="h-[723px] w-[18px] bg-beige" />
+    <div
+      style={{ transform: "rotateY(180deg)", ...frontPageHoleMask }}
+      className="-ml-1 -mr-0.5 h-[723px] w-[18px] bg-beige"
+    />
+  </>
+);
+
+export const BackHoles = () => (
+  <>
+    <div
+      style={{ transform: "rotateY(180deg)", ...backPageHoleMask }}
+      className="-mr-1 h-[723px] w-[18px] bg-beige"
+    />
+    <div style={backPageHoleMask} className="h-[723px] w-[18px] bg-beige" />
+  </>
+);
