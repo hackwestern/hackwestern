@@ -35,7 +35,7 @@ function About() {
             </div>
             <div className="relative h-fit w-fit max-w-md -rotate-[2deg] rounded-sm bg-white shadow-md">
               <div className="absolute -left-[55px] -top-[45px] z-10 h-20 w-40">
-                <motion.img src="/tape1.png" alt="tape1" />
+                <motion.img src="/tape1.png" alt="tape1" draggable={false} />
               </div>
               <div className="flex flex-col items-center justify-center gap-x-8 gap-y-4 p-8">
                 <div>
