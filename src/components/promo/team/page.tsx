@@ -57,7 +57,7 @@ function Page({
   label: string;
   labelOffset: number;
   front: React.ReactNode;
-  back?: React.ReactNode;
+  back: React.ReactNode;
   isFlipped: boolean;
   flipDuration: number;
   onFlipComplete?: () => void;
@@ -99,24 +99,22 @@ function Page({
         <FrontHoles />
         <div className="h-full w-full bg-beige p-8">{front}</div>
       </div>
-
-      {/* Back of the page */}
-      {back && (
-        <div
-          className="pointer-events-auto absolute inset-0 my-8 ml-1 mr-6 flex cursor-pointer overflow-hidden rounded-lg"
-          style={{
-            transform: "rotateY(180deg)",
-            backfaceVisibility: "hidden",
-          }}
-          onClick={turnPageBackward}
-        >
-          <div className="h-full w-full bg-beige p-8">{back}</div>
-          <BackHoles />
-          <div className="pointer-events-none absolute inset-0 -mr-[36px] ml-[499px]">
-            <Bindings />
-          </div>
+      {/* Back of the page */}(
+      <div
+        className="pointer-events-auto absolute inset-0 my-8 ml-1 mr-6 flex cursor-pointer overflow-hidden rounded-lg"
+        style={{
+          transform: "rotateY(180deg)",
+          backfaceVisibility: "hidden",
+        }}
+        onClick={turnPageBackward}
+      >
+        <div className="h-full w-full bg-beige p-8">{back}</div>
+        <BackHoles />
+        <div className="pointer-events-none absolute inset-0 -mr-[36px] ml-[499px]">
+          <Bindings />
         </div>
-      )}
+      </div>
+      )
     </motion.div>
   );
 }
