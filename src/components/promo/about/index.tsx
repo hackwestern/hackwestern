@@ -53,7 +53,7 @@ function About() {
                   for prizes, and meet like-minded hackers.
                 </div>
                 <div className="absolute -bottom-[10px] -right-[50px] z-10 h-20 w-40">
-                  <motion.img src="/tape1.png" alt="tape1" />
+                  <motion.img src="/tape1.png" alt="tape1" draggable={false} />
                 </div>
               </div>
             </div>
