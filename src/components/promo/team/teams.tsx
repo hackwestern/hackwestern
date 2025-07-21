@@ -108,10 +108,6 @@ export const PAGES = [
         </p>
       </div>
     ),
-    back: (
-      <div>
-
-      </div>
-    ),
+    back: <div></div>,
   },
 ] as const;
