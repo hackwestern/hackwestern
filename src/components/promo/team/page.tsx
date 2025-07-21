@@ -2,8 +2,16 @@ import React from "react";
 import { motion } from "framer-motion";
 import { BackHoles, Bindings, FrontHoles } from "./constants";
 
-function Label({ label, offset }: { label: string; offset: number }) {
-  const labelClass = `flex h-10 items-center justify-center rounded-t-md border border-gray-200 bg-white px-2 py-1 text-xs uppercase tracking-wider shadow-md z-30 absolute -mt-2 text-medium hover:text-heavy `;
+function Label({
+  label,
+  offset,
+  onClick,
+}: {
+  label: string;
+  offset: number;
+  onClick?: () => void;
+}) {
+  const labelClass = `flex h-[45px] items-center justify-center rounded-t-md border-t border-gray-200 bg-beige px-2 text-xs uppercase tracking-wider absolute -mt-2 text-medium hover:text-heavy hover:-mt-3 transition-all`;
 
   return (
     <>
@@ -12,7 +20,9 @@ function Label({ label, offset }: { label: string; offset: number }) {
         style={{
           backfaceVisibility: "hidden",
           left: offset !== 0 ? `${offset}px` : "0",
+          pointerEvents: "auto",
         }}
+        onClick={onClick}
       >
         {label}
       </div>
@@ -22,7 +32,10 @@ function Label({ label, offset }: { label: string; offset: number }) {
           transform: "rotateY(180deg)",
           backfaceVisibility: "hidden",
           left: offset !== 0 ? `${offset}px` : "0",
+          zIndex: 9999,
+          pointerEvents: "auto",
         }}
+        onClick={onClick}
       >
         <span style={{ display: "inline-block" }}>{label}</span>
       </div>
