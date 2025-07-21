@@ -7,26 +7,26 @@ import { coordinates } from "~/constants/canvas";
 function Sponsors() {
   return (
     <CanvasComponent offset={coordinates.sponsors}>
-      <div className="mt-24 flex h-screen w-screen flex-col items-center justify-center space-y-4">
+      <div className="mt-16 flex h-screen w-screen flex-col items-center justify-center space-y-4">
         <div className="flex origin-center scale-150 flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out">
-          <div className="-mb-32 inline-flex w-[794px] flex-col items-center justify-start gap-4 px-4">
+          <div className="-mb-24 inline-flex w-[794px] flex-col items-center justify-start gap-4 px-4">
             {/* Our Sponsors Text Section */}
             <div className="inline-flex w-[794px] max-w-[794px] scale-[0.7] flex-col items-center justify-start gap-4 px-4 pb-0">
-              <div className="h-5 justify-start self-stretch text-center font-jetbrains-mono text-base font-medium uppercase text-zinc-500">
+              <div className="h-5 justify-start self-stretch text-center font-jetbrains-mono text-base font-medium uppercase text-medium">
                 Our sponsors
               </div>
               <div className="flex flex-col items-start justify-start gap-3 self-stretch">
-                <div className="justify-start self-stretch text-center font-dico text-[32px] font-medium text-indigo-950">
+                <div className="justify-start self-stretch text-center font-dico text-[24px] font-medium text-heavy">
                   Our sponsors make Hack Western possible.
                 </div>
-                <div className="justify-start self-stretch text-center font-figtree text-[16px] font-medium text-zinc-500">
+                <div className="justify-start self-stretch text-center font-figtree text-[16px] font-medium text-medium">
                   Thank you to the organizations that support our mission.
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="flex scale-125 flex-row">
+          <div className="flex scale-150 flex-row">
             <div className="flex origin-center scale-[0.45] flex-row">
               {/* Macbook */}
               <div className="relative z-10 h-[600px] w-[854.14px] origin-top-left -rotate-[1.771deg] rounded-3xl bg-gradient-to-b from-gray-200 to-zinc-400 shadow-[0px_3.82px_7.64px_0px_rgba(0,0,0,0.25)] shadow-[inset_0px_-1.91px_11.46px_0px_rgba(0,0,0,0.40)]">
