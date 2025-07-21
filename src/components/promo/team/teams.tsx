@@ -5,11 +5,7 @@ export const PAGES = [
     front: (
       <div>
         Edison Swathi
-        <img
-          src="/horse.svg"
-          alt="aboutcloud"
-          className="mx-auto h-24 w-24"
-        />
+        <img src="/horse.svg" alt="aboutcloud" className="mx-auto h-24 w-24" />
       </div>
     ),
     back: (
