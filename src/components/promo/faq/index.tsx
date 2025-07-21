@@ -6,10 +6,10 @@ import { PROMO_FAQ } from "~/constants/faq";
 function FAQ() {
   return (
     <CanvasComponent offset={coordinates.faq}>
-      <div className="flex h-screen w-screen items-center justify-center">
+      <div className="flex h-screen w-screen items-center justify-center pb-8 sm:pb-0">
         <div className="h-[900px]">
           <div className="mx-auto flex grid h-[900px] grid-flow-col grid-rows-3 gap-x-8 gap-y-8">
-            {/* top 2 cards */}
+            {/* left 2 cards */}
             <div className="row-span-3 my-auto grid grid-rows-2 gap-10">
               <FAQCard
                 title={PROMO_FAQ[0].question}
@@ -42,11 +42,11 @@ function FAQ() {
               desc={PROMO_FAQ[5].answer}
               rotation="3deg"
             />
-            <div className="row-span-1 flex w-96 flex-col items-center justify-center">
-              <div className="font-jetbrainsmono mb-6 text-base text-medium">
+            <div className="row-span-1 mb-20 flex w-96 flex-col items-center justify-center">
+              <div className="font-jetbrainsmono -mt-4 mb-6 text-lg text-medium">
                 FAQ
               </div>
-              <h2 className="mb-4 text-center font-dico text-xl font-medium ">
+              <h2 className="mb-4 text-center font-dico text-2xl font-medium ">
                 Frequently Asked Questions
               </h2>
               <div className="w-1/2 text-center font-figtree text-sm text-medium">
@@ -63,8 +63,10 @@ function FAQ() {
               title={PROMO_FAQ[6].question}
               desc={PROMO_FAQ[6].answer}
               rotation="-5deg"
+              className="-mt-16"
             />
 
+            {/* right 3 cards */}
             <FAQCard
               title={PROMO_FAQ[7].question}
               desc={PROMO_FAQ[7].answer}
@@ -81,6 +83,7 @@ function FAQ() {
               rotation="3deg"
             />
 
+            {/* last 2 cards */}
             <div className="row-span-3 my-auto grid grid-rows-2 gap-10">
               <FAQCard
                 title={PROMO_FAQ[10].question}
