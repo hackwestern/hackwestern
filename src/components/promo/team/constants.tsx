@@ -3,7 +3,7 @@ import React from "react";
 // using PNG for performance reasons
 export const Bindings = React.memo(function Bindings() {
   return (
-    <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-8 pt-4">
+    <div className="pointer-events-none absolute inset-0 z-50 flex flex-col items-center justify-center gap-8 pt-4">
       {Array.from({ length: 10 }).map((_, index) => (
         // DON'T USE NEXT IMAGE OR IT WILL "OPTIMIZE" THE PNG TOO SMALL
         // eslint-disable-next-line @next/next/no-img-element

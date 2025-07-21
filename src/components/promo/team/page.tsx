@@ -31,13 +31,10 @@ const backPageHoleMask: React.CSSProperties = {
 
 const FrontHoles = () => (
   <>
-    <div
-      style={frontPageHoleMask}
-      className="z-[-100] h-[723px] w-[18px] bg-blue-300"
-    />
+    <div style={frontPageHoleMask} className="h-[723px] w-[18px] bg-gray-500" />
     <div
       style={{ transform: "rotateY(180deg)", ...frontPageHoleMask }}
-      className="-ml-1 -mr-0.5 h-[723px] w-[18px] bg-white"
+      className="-ml-1 -mr-0.5 h-[723px] w-[18px] bg-red-500"
     />
   </>
 );
@@ -46,12 +43,9 @@ const BackHoles = () => (
   <>
     <div
       style={{ transform: "rotateY(180deg)", ...backPageHoleMask }}
-      className="-mr-1 h-[723px] w-[18px] bg-white"
+      className="-mr-1 h-[723px] w-[18px] bg-red-500"
     />
-    <div
-      style={backPageHoleMask}
-      className="-z-10 h-[723px] w-[18px] bg-white"
-    />
+    <div style={backPageHoleMask} className="h-[723px] w-[18px] bg-gray-500" />
   </>
 );
 

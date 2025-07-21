@@ -113,6 +113,7 @@ function Book() {
                 // Position the pages in the right half of the container
                 transform: "translateX(100%)",
                 perspective: 3500,
+                zIndex: zIndex,
               }}
             >
               <Page
