@@ -1,19 +1,21 @@
 import React from "react";
+import Image from "next/image";
 
 // using PNG for performance reasons
 export const Bindings = React.memo(function Bindings() {
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-[51px] pt-[26px]">
       {Array.from({ length: 8 }).map((_, index) => (
-        // DON'T USE NEXT IMAGE OR IT WILL "OPTIMIZE" THE PNG TOO SMALL
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={index}
-          src="/images/promo/team/binding.png"
-          alt="Binding"
-          width={60}
-          draggable={false}
-        />
+        <div key={index} className="w-[60px]">
+          <Image
+            src="/images/promo/team/binding.png"
+            alt="Binding"
+            width={500}
+            height={500}
+            draggable={false}
+            className="h-auto w-full" // Scale down to container
+          />
+        </div>
       ))}
     </div>
   );

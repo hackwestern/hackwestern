@@ -32,6 +32,7 @@ const Pages = () => {
   };
 
   const turnPageForward = useCallback(() => {
+    console.log("Turning page forward");
     if (turnedPages >= totalPages) return;
     setFlipDuration(DEFAULT_FLIP_DURATION); // Ensure default speed
     setFlippingPage(turnedPages);
@@ -39,6 +40,7 @@ const Pages = () => {
   }, [turnedPages, totalPages]);
 
   const turnPageBackward = useCallback(() => {
+    console.log("Turning page backward");
     if (turnedPages <= 0) return;
     setFlipDuration(DEFAULT_FLIP_DURATION); // Ensure default speed
     setFlippingPage(turnedPages - 1);
@@ -75,6 +77,12 @@ const Pages = () => {
       {PAGES.map((page, index) => {
         const isFlipped = index < turnedPages;
         const isFlipping = flippingPage === index;
+        const isActive =
+          isFlipping ||
+          index === turnedPages + 1 ||
+          index === turnedPages ||
+          index === turnedPages - 1 ||
+          index === turnedPages - 2;
 
         let zIndex;
         if (isFlipping) {
@@ -104,6 +112,7 @@ const Pages = () => {
               back={page.back}
               labelOffset={page.labelOffset}
               isFlipped={isFlipped}
+              isActive={isActive}
               flipDuration={flipDuration}
               onFlipComplete={isFlipping ? handleFlipComplete : undefined}
               turnPageBackward={turnPageBackward}

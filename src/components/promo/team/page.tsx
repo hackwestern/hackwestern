@@ -48,6 +48,7 @@ function Page({
   front,
   back,
   isFlipped,
+  isActive,
   flipDuration,
   onFlipComplete,
   turnPageBackward,
@@ -59,6 +60,7 @@ function Page({
   front: React.ReactNode;
   back: React.ReactNode;
   isFlipped: boolean;
+  isActive: boolean;
   flipDuration: number;
   onFlipComplete?: () => void;
   turnPageBackward: () => void;
@@ -97,7 +99,7 @@ function Page({
           <Bindings />
         </div>
         <FrontHoles />
-        <div className="h-full w-full bg-beige p-[32px]">{front}</div>
+        <div className="h-full w-full bg-beige p-[32px]">{isActive && front}</div>
       </div>
       {/* Back of the page */}
       <div
@@ -108,7 +110,7 @@ function Page({
         }}
         onClick={turnPageBackward}
       >
-        <div className="h-full w-full bg-beige p-[32px]">{back}</div>
+        <div className="h-full w-full bg-beige p-[32px]">{isActive && back}</div>
         <BackHoles />
         <div className="pointer-events-none absolute inset-0 -mr-[36px] ml-[499px]">
           <Bindings />
