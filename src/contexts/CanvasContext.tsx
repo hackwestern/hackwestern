@@ -1,8 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  type ReactNode,
-} from "react";
+import React, { createContext, useContext, type ReactNode } from "react";
 import { MotionValue } from "framer-motion";
 
 export interface Point {
@@ -39,6 +35,4 @@ interface CanvasProviderProps extends CanvasContextState {
 export const CanvasProvider: React.FC<CanvasProviderProps> = ({
   children,
   ...value
-}) => (
-  <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>
-);
+}) => <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>;

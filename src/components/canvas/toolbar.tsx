@@ -1,7 +1,4 @@
-import {
-  type Point,
-  useMotionValueEvent,
-} from "framer-motion";
+import { type Point, useMotionValueEvent } from "framer-motion";
 import { useState } from "react";
 import { useCanvasContext } from "~/contexts/CanvasContext";
 
