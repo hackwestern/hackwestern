@@ -1,22 +1,54 @@
-import { type Point } from "framer-motion";
-import { useEffect, useState } from "react";
-import useWindowDimensions from "~/hooks/useWindowDimensions";
-import { HALF_MULT } from "./canvas";
+import {
+  type Point,
+  type MotionValue,
+  useMotionValueEvent,
+} from "framer-motion";
+import { useState } from "react";
 
-const Toolbar = ({ zoom, panOffset }: { zoom: number; panOffset: Point }) => {
-  const { width, height } = useWindowDimensions();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
+const Toolbar = ({
+  x,
+  y,
+  scale,
+  homeCoordinates = { x: 0, y: 0 },
+}: {
+  x: MotionValue<number>;
+  y: MotionValue<number>;
+  scale: MotionValue<number>;
+  homeCoordinates?: Point;
+}) => {
+  const [values, setValues] = useState({
+    x: x.get(),
+    y: y.get(),
+    scale: scale.get(),
+  });
+
+  useMotionValueEvent(x, "change", (latest) => {
+    setValues((v) => ({ ...v, x: latest }));
+  });
+
+  useMotionValueEvent(y, "change", (latest) => {
+    setValues((v) => ({ ...v, y: latest }));
+  });
+
+  useMotionValueEvent(scale, "change", (latest) => {
+    setValues((v) => ({ ...v, scale: latest }));
+  });
+
+  const displayX = -(values.x / values.scale + homeCoordinates.x);
+  const displayY = -(values.y / values.scale + homeCoordinates.y);
+
+  if (displayX === 0 && displayY === 0 && values.scale === 1) {
+    return null; // don't show toolbar when at home
+  }
 
   return (
     <div
       className="absolute left-4 top-4 z-[1000] cursor-default select-none rounded-[10px] border-[1px] border-border bg-offwhite p-2 font-mono text-xs text-heavy shadow-[0_6px_12px_rgba(0,0,0,0.10)] md:text-sm"
       onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
+      data-toolbar-button
     >
-      ({(-panOffset.x / zoom - width * HALF_MULT).toFixed(0)},
-      {(-panOffset.y / zoom - height * HALF_MULT).toFixed(0)})
-      <span className="text-light"> |</span> {zoom.toFixed(2)}x
+      ({displayX.toFixed(0)}, {displayY.toFixed(0)})
+      <span className="text-light"> |</span> {values.scale.toFixed(2)}x
     </div>
   );
 };
