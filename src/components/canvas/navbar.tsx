@@ -1,45 +1,66 @@
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { motion, useMotionValueEvent } from "framer-motion";
+import { useState, useRef } from "react";
 import SingleButton from "./single-button";
 import { CanvasSection, coordinates } from "~/constants/canvas";
+import { useCanvasContext } from "~/contexts/CanvasContext";
 
 interface NavbarProps {
-  panOffset: { x: number; y: number };
-  zoom: number;
-  panToOffset: (offset: { x: number; y: number }) => void;
+  panToOffset: (
+    offset: { x: number; y: number },
+    onComplete?: () => void,
+  ) => void;
   onResetViewAndItems: () => void;
 }
 
 export default function Navbar({
   panToOffset,
   onResetViewAndItems,
-  panOffset,
-  zoom,
 }: NavbarProps) {
+  const { x, y, scale } = useCanvasContext();
   const [expandedButton, setExpandedButton] = useState<string | null>("home");
+  const activePans = useRef(0);
 
-  useEffect(() => {
-    // if value of panOffset doesn't match any coordinates, there should be no expanded button
+  const updateExpandedButton = () => {
+    // activePans.current is only > 0 during a programmatic pan via button click
+    if (activePans.current > 0) return;
+
+    const currentX = -x.get();
+    const currentY = -y.get();
+    const currentScale = scale.get();
+
     const section = Object.keys(coordinates).find(
       (key) =>
-        coordinates[key as CanvasSection].x === Math.round(-panOffset.x) &&
-        coordinates[key as CanvasSection].y === Math.round(-panOffset.y),
+        coordinates[key as CanvasSection].x === Math.round(currentX) &&
+        coordinates[key as CanvasSection].y === Math.round(currentY),
     );
 
-    if (!section || zoom !== 1) {
+    if (section && currentScale === 1) {
+      setExpandedButton(section);
+    } else {
       setExpandedButton(null);
     }
-  }, [panOffset, zoom]);
+  };
+
+  useMotionValueEvent(x, "change", updateExpandedButton);
+  useMotionValueEvent(y, "change", updateExpandedButton);
+  useMotionValueEvent(scale, "change", updateExpandedButton);
 
   const handlePan = (section: CanvasSection) => {
     setExpandedButton(section);
+    activePans.current++;
     const coords = coordinates[section];
-    panToOffset({ x: coords.x, y: coords.y });
+    panToOffset({ x: coords.x, y: coords.y }, () => {
+      activePans.current--;
+    });
   };
 
   const handleHome = () => {
     setExpandedButton(CanvasSection.Home);
-    onResetViewAndItems();
+    activePans.current++;
+    panToOffset({ x: coordinates.home.x, y: coordinates.home.y }, () => {
+      onResetViewAndItems();
+      activePans.current--;
+    });
   };
 
   return (

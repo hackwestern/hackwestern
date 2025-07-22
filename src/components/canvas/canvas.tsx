@@ -138,6 +138,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const panToOffset = (
     offset: Point,
     viewportRef: React.RefObject<HTMLDivElement | null>,
+    onComplete?: () => void,
   ): void => {
     if (!viewportRef.current) return;
     setIsSceneMoving(true);
@@ -158,6 +159,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     void panToOffsetScene({ x: clampedX, y: clampedY }, x, y, scale).then(
       () => {
         setIsSceneMoving(false);
+        if (onComplete) onComplete();
       },
     );
   };
@@ -385,13 +387,14 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   }, [handleWheelZoom]);
 
   const handlePanToOffset = useCallback(
-    (offset: { x: number; y: number }) => {
+    (offset: { x: number; y: number }, onComplete?: () => void) => {
       panToOffset(
         {
           x: -offset.x,
           y: -offset.y,
         },
         viewportRef,
+        onComplete,
       );
     },
     [panToOffset, viewportRef],
@@ -400,18 +403,17 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   return (
     <>
       <CanvasProvider
-        zoom={scale.get()}
-        panOffset={{ x: x.get(), y: y.get() }}
+        x={x}
+        y={y}
+        scale={scale}
         isResetting={isResetting}
         maxZIndex={maxZIndex}
         setMaxZIndex={setMaxZIndex}
       >
-        <Toolbar x={x} y={y} scale={scale} homeCoordinates={homeCoordinates} />
+        <Toolbar homeCoordinates={homeCoordinates} />
         <Navbar
           panToOffset={handlePanToOffset}
           onResetViewAndItems={onResetViewAndItems}
-          panOffset={{ x: x.get(), y: y.get() }}
-          zoom={scale.get()}
         />
         <div
           ref={viewportRef}
