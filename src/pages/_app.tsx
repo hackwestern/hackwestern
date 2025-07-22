@@ -7,7 +7,7 @@ import localFont from "next/font/local";
 import { api } from "~/utils/api";
 
 import "~/styles/globals.css";
-import { Toaster } from "~/components/ui/toaster";
+import { Toaster } from "sonner";
 import { TooltipProvider } from "~/components/ui/tooltip";
 
 const dico = localFont({
@@ -43,7 +43,10 @@ const MyApp: AppType<{ session: Session | null }> = ({
           <Component {...pageProps} />
         </TooltipProvider>
       </main>
-      <Toaster />
+      <Toaster 
+        visibleToasts={1}
+        style={{ zIndex: 90 }}
+      />
     </SessionProvider>
   );
 };

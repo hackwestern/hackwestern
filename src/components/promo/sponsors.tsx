@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "../ui/button";
 import { Mail } from "lucide-react";
 import { coordinates } from "~/constants/canvas";
+import { toast } from "sonner";
 
 function Sponsors() {
   return (
@@ -75,6 +76,13 @@ function Sponsors() {
                         variant="primary"
                         className="w-auto gap-2 px-6 py-3"
                         type="submit"
+                        onClick={() => {  
+                          console.log("clicked!");
+                          toast.success("Email Copied!", {  
+                            position: "top-center",
+                            style: { zIndex: 9999 }
+                          });  
+                        }} 
                       >
                         <Mail className="h-5 w-5" />
                         Get in touch
