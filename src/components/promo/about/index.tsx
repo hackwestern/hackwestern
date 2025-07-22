@@ -25,19 +25,26 @@ function About() {
                   style={{ rotate: "-5deg" }}
                 />
               </div>
-              <div className="absolute -right-[110px] bottom-[60px]">
-                <DraggableImage
-                  key="lightbulb"
-                  src="/lightbulb.svg"
-                  alt="Lightbulb"
-                  scale={0.85}
-                  style={{ rotate: "12deg" }}
-                />
-              </div>
+              <DraggableImage
+                className="absolute -right-[320px] bottom-[-110px]"
+                key="lightbulb"
+                src="/lightbulb.png"
+                alt="Lightbulb"
+                scale={0.25}
+                animate={{
+                  rotate: [2, -2],
+                  transition: {
+                    duration: 1,
+                    repeat: Infinity,
+                    repeatType: "mirror",
+                    ease: "easeInOut",
+                  },
+                }}
+              />
             </div>
           </div>
           <div className="flex flex-col gap-10">
-            <div className="flex items-center justify-center gap-32">
+            <div className="flex items-center justify-center gap-16">
               <div className="shrink-0">
                 <motion.img
                   src="/photo.png"
@@ -48,7 +55,7 @@ function About() {
                   style={{ rotate: "-5deg" }}
                 />
               </div>
-              <div className="relative flex w-fit max-w-xs rotate-[8deg] items-center justify-center bg-[url('/speech.svg')] bg-contain bg-center bg-no-repeat text-center">
+              <div className="relative -mt-12 mb-24 flex w-fit max-w-xs rotate-[8deg] items-center justify-center bg-[url('/speech.svg')] bg-contain bg-center bg-no-repeat text-center">
                 <div className="mb-2 p-12 font-figtree text-xs text-white sm:text-sm md:text-base lg:text-base">
                   We cover food, travel, and lodging so you can focus on
                   bringing your ideas to life!
