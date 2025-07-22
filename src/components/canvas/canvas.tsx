@@ -93,9 +93,6 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     y: -(homeCoordinates?.y ?? centerY),
   };
 
-  const [panOffset, setPanOffset] = useState<Point>(offsetHomeCoordinates);
-  const [zoom, setZoom] = useState<number>(1);
-
   // tracks if user is panning the screen
   const [isPanning, setIsPanning] = useState<boolean>(false);
   // this one is moving from scene control, not from user
@@ -131,18 +128,10 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     panOffset: Point;
   } | null>(null);
 
-  useEffect(() => {
-    x.set(panOffset.x);
-    y.set(panOffset.y);
-    scale.set(zoom);
-  }, [panOffset, zoom, x, y, scale]);
-
   const onResetViewAndItems = (): void => {
     setIsResetting(true);
     void panToOffsetScene(offsetHomeCoordinates, x, y, scale).then(() => {
       setIsResetting(false);
-      setPanOffset(offsetHomeCoordinates);
-      setZoom(1);
     });
   };
 
@@ -168,8 +157,6 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
 
     void panToOffsetScene({ x: clampedX, y: clampedY }, x, y, scale).then(
       () => {
-        setZoom(1);
-        setPanOffset({ x: clampedX, y: clampedY });
         setIsSceneMoving(false);
       },
     );
@@ -190,7 +177,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
 
       setIsPanning(true);
       setPanStartPoint({ x: event.clientX, y: event.clientY });
-      setInitialPanOffsetOnDrag({ ...panOffset });
+      setInitialPanOffsetOnDrag({ x: x.get(), y: y.get() });
       if (viewportRef.current) viewportRef.current.style.cursor = "grabbing";
     } else if (activePointersRef.current.size === 2) {
       setIsPanning(false);
@@ -198,8 +185,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       initialPinchStateRef.current = {
         distance: getDistance(pointers[0]!, pointers[1]!),
         midpoint: getMidpoint(pointers[0]!, pointers[1]!),
-        zoom: zoom,
-        panOffset: { ...panOffset },
+        zoom: scale.get(),
+        panOffset: { x: x.get(), y: y.get() },
       };
     }
   };
@@ -216,9 +203,10 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       const deltaX = event.clientX - panStartPoint.x;
       const deltaY = event.clientY - panStartPoint.y;
 
-      const minPanX = width - sceneWidth * zoom;
+      // UPDATE to use motion value
+      const minPanX = width - sceneWidth * scale.get();
       const maxPanX = 0;
-      const minPanY = height - sceneHeight * zoom;
+      const minPanY = height - sceneHeight * scale.get();
       const maxPanY = 0;
 
       const newX = Math.min(
@@ -231,11 +219,6 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       );
       x.set(newX);
       y.set(newY);
-      setPanOffset({
-        x: newX,
-        y: newY,
-      });
-      // handles touchscreen pinching
     } else if (
       activePointersRef.current.size >= 2 &&
       initialPinchStateRef.current
@@ -284,8 +267,6 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       scale.set(newZoom);
       x.set(newPanX);
       y.set(newPanY);
-      setZoom(newZoom);
-      setPanOffset({ x: newPanX, y: newPanY });
     }
   };
 
@@ -317,7 +298,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       const lastPointer = Array.from(activePointersRef.current.values())[0]!;
       setIsPanning(true);
       setPanStartPoint({ x: lastPointer.clientX, y: lastPointer.clientY });
-      setInitialPanOffsetOnDrag({ ...panOffset });
+      setInitialPanOffsetOnDrag({ x: x.get(), y: y.get() });
     }
   };
 
@@ -334,9 +315,13 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       const ZOOM_SENSITIVITY = isMouseWheelZoom ? 0.0015 : 0.015;
 
       if (isPinch) {
+        const currentZoom = scale.get();
         const nextZoom = Math.max(
-          Math.min(zoom * (1 - event.deltaY * ZOOM_SENSITIVITY), MAX_ZOOM),
-          MIN_ZOOM, // Ensure zoom is not less than MIN_ZOOM
+          Math.min(
+            currentZoom * (1 - event.deltaY * ZOOM_SENSITIVITY),
+            MAX_ZOOM,
+          ),
+          MIN_ZOOM,
           (window.innerWidth / canvasWidth) * ZOOM_BOUND, // Ensure zoom is at least the width of the canvas
           (window.innerHeight / canvasHeight) * ZOOM_BOUND, // Ensure zoom is at least the height of the canvas
         );
@@ -350,13 +335,12 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         const viewportWidth = rect.width;
         const viewportHeight = rect.height;
 
-        const cursorSceneX = (event.clientX - vpLeft - panOffset.x) / zoom;
-        const cursorSceneY = (event.clientY - vpTop - panOffset.y) / zoom;
+        const cursorSceneX = (event.clientX - vpLeft - x.get()) / currentZoom;
+        const cursorSceneY = (event.clientY - vpTop - y.get()) / currentZoom;
 
         let newPanX = event.clientX - vpLeft - cursorSceneX * nextZoom;
         let newPanY = event.clientY - vpTop - cursorSceneY * nextZoom;
 
-        // Clamp pan to prevent scene from escaping bounds
         const minPanX = viewportWidth - sceneWidth * nextZoom;
         const minPanY = viewportHeight - sceneHeight * nextZoom;
         const maxPanX = 0;
@@ -368,18 +352,16 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         x.set(newPanX);
         y.set(newPanY);
         scale.set(nextZoom);
-        setPanOffset({ x: newPanX, y: newPanY });
-        setZoom(nextZoom);
       } else {
         stopAllMotion();
 
         const scrollSpeed = 1;
-        const newPanX = panOffset.x - event.deltaX * scrollSpeed;
-        const newPanY = panOffset.y - event.deltaY * scrollSpeed;
+        const newPanX = x.get() - event.deltaX * scrollSpeed;
+        const newPanY = y.get() - event.deltaY * scrollSpeed;
 
-        const minPanX = width - sceneWidth * zoom;
+        const minPanX = width - sceneWidth * scale.get();
         const maxPanX = 0;
-        const minPanY = height - sceneHeight * zoom;
+        const minPanY = height - sceneHeight * scale.get();
         const maxPanY = 0;
 
         const clampedPanX = Math.min(Math.max(newPanX, minPanX), maxPanX);
@@ -387,22 +369,9 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
 
         x.set(clampedPanX);
         y.set(clampedPanY);
-        setPanOffset({ x: clampedPanX, y: clampedPanY });
       }
     },
-    [
-      zoom,
-      width,
-      sceneWidth,
-      height,
-      sceneHeight,
-      panOffset.x,
-      panOffset.y,
-      x,
-      y,
-      scale,
-      stopAllMotion,
-    ],
+    [width, sceneWidth, height, sceneHeight, x, y, scale, stopAllMotion],
   );
 
   useEffect(() => {
@@ -415,56 +384,35 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     }
   }, [handleWheelZoom]);
 
+  const handlePanToOffset = useCallback(
+    (offset: { x: number; y: number }) => {
+      panToOffset(
+        {
+          x: -offset.x,
+          y: -offset.y,
+        },
+        viewportRef,
+      );
+    },
+    [panToOffset, viewportRef],
+  );
+
   return (
     <>
       <CanvasProvider
-        zoom={zoom}
-        panOffset={panOffset}
+        zoom={scale.get()}
+        panOffset={{ x: x.get(), y: y.get() }}
         isResetting={isResetting}
         maxZIndex={maxZIndex}
         setMaxZIndex={setMaxZIndex}
       >
-        {(!(
-          panOffset.x === -centerX + width / 2 &&
-          panOffset.y === -centerY + height / 2 &&
-          zoom === 1
-        ) ||
-          isResetting) && (
-          <Toolbar
-            x={x}
-            y={y}
-            scale={scale}
-            homeCoordinates={homeCoordinates}
-          />
-        )}
-        <div
-          className="bottom-10 md:bottom-4 "
-          style={{
-            position: "fixed",
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 1000,
-            pointerEvents: "auto",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Navbar
-            panToOffset={(offset: { x: number; y: number }) => {
-              panToOffset(
-                {
-                  x: -offset.x,
-                  y: -offset.y,
-                },
-                viewportRef,
-              );
-            }}
-            onResetViewAndItems={onResetViewAndItems}
-            panOffset={panOffset}
-            zoom={zoom}
-          />
-        </div>
+        <Toolbar x={x} y={y} scale={scale} homeCoordinates={homeCoordinates} />
+        <Navbar
+          panToOffset={handlePanToOffset}
+          onResetViewAndItems={onResetViewAndItems}
+          panOffset={{ x: x.get(), y: y.get() }}
+          zoom={scale.get()}
+        />
         <div
           ref={viewportRef}
           className="relative h-screen touch-none select-none overflow-hidden"
