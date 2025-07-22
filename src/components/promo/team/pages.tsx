@@ -1,9 +1,9 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import Page from "./page";
 import { PAGES } from "./teams";
 
-const DEFAULT_FLIP_DURATION = 500; // Default speed in ms for a single flip
-const TOTAL_JUMP_DURATION = 1000; // Total time in ms for a multi-page jump
+const DEFAULT_FLIP_DURATION = 400; // Default speed in ms for a single flip
+const TOTAL_JUMP_DURATION = 800; // Total time in ms for a multi-page jump
 
 const Pages = () => {
   const [turnedPages, setTurnedPages] = useState(0);
@@ -31,39 +31,42 @@ const Pages = () => {
     setFlipDuration(DEFAULT_FLIP_DURATION); // Reset to default speed
   };
 
-  const turnPageForward = () => {
+  const turnPageForward = useCallback(() => {
     if (turnedPages >= totalPages) return;
     setFlipDuration(DEFAULT_FLIP_DURATION); // Ensure default speed
     setFlippingPage(turnedPages);
     setTurnedPages((prev) => prev + 1);
-  };
+  }, [turnedPages, totalPages]);
 
-  const turnPageBackward = () => {
+  const turnPageBackward = useCallback(() => {
     if (turnedPages <= 0) return;
     setFlipDuration(DEFAULT_FLIP_DURATION); // Ensure default speed
     setFlippingPage(turnedPages - 1);
     setTurnedPages((prev) => prev - 1);
-  };
+  }, [turnedPages]);
 
-  const handleLabelClick = (index: number) => {
-    if (index === turnedPages || flippingPage !== null) return;
+  const handleLabelClick = useCallback(
+    (index: number) => {
+      if (index === turnedPages || flippingPage !== null) return;
 
-    const numPagesToFlip = Math.abs(index - turnedPages);
-    if (numPagesToFlip > 0) {
-      // Calculate duration for each page to meet the total jump time
-      setFlipDuration(TOTAL_JUMP_DURATION / numPagesToFlip);
-    }
+      const numPagesToFlip = Math.abs(index - turnedPages);
+      if (numPagesToFlip > 0) {
+        // Calculate duration for each page to meet the total jump time
+        setFlipDuration(TOTAL_JUMP_DURATION / numPagesToFlip);
+      }
 
-    targetPage.current = index;
+      targetPage.current = index;
 
-    if (index > turnedPages) {
-      setFlippingPage(turnedPages);
-      setTurnedPages((prev) => prev + 1);
-    } else {
-      setFlippingPage(turnedPages - 1);
-      setTurnedPages((prev) => prev - 1);
-    }
-  };
+      if (index > turnedPages) {
+        setFlippingPage(turnedPages);
+        setTurnedPages((prev) => prev + 1);
+      } else {
+        setFlippingPage(turnedPages - 1);
+        setTurnedPages((prev) => prev - 1);
+      }
+    },
+    [turnedPages, flippingPage],
+  );
 
   return (
     <>
