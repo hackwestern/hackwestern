@@ -10,11 +10,11 @@ function About() {
       <div className="flex h-screen w-screen flex-col items-center justify-center space-y-4 pb-12">
         <div className="flex origin-center flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out">
           <div className="relative">
-            <div className="flex w-full max-w-full flex-col items-center justify-start gap-4 px-4 pt-24 pb-0">
+            <div className="flex w-full max-w-full flex-col items-center justify-start gap-4 px-4 pb-0 pt-24">
               <div className="h-5 text-center font-jetbrains-mono text-base font-medium uppercase text-zinc-500">
                 About
               </div>
-              <div className="text-center font-dico text-2xl font-medium text-indigo-950 mb-12">
+              <div className="mb-12 text-center font-dico text-2xl font-medium text-indigo-950">
                 Create. Collaborate. Innovate.
               </div>
               <div className="absolute -left-[200px] bottom-[50px]">
@@ -31,13 +31,13 @@ function About() {
                   src="/lightbulb.svg"
                   alt="Lightbulb"
                   scale={0.85}
-                  style={{ rotate: "12deg"}}
+                  style={{ rotate: "12deg" }}
                 />
               </div>
             </div>
           </div>
           <div className="flex flex-col gap-10">
-            <div className="flex justify-center items-center gap-32">
+            <div className="flex items-center justify-center gap-32">
               <div className="shrink-0">
                 <motion.img
                   src="/photo.png"
@@ -50,13 +50,13 @@ function About() {
               </div>
               <div className="relative flex w-fit max-w-xs rotate-[8deg] items-center justify-center bg-[url('/speech.svg')] bg-contain bg-center bg-no-repeat text-center">
                 <div className="mb-2 p-12 font-figtree text-xs text-white sm:text-sm md:text-base lg:text-base">
-                  We cover food, travel, and lodging so you can focus on bringing
-                  your ideas to life!
+                  We cover food, travel, and lodging so you can focus on
+                  bringing your ideas to life!
                 </div>
               </div>
             </div>
-            <div className="flex justify-center items-center gap-10">
-              <div className="relative h-fit w-fit shrink-0 max-w-md -rotate-[2deg] rounded-sm bg-white shadow-md mr-[75px]">
+            <div className="flex items-center justify-center gap-10">
+              <div className="relative mr-[75px] h-fit w-fit max-w-md shrink-0 -rotate-[2deg] rounded-sm bg-white shadow-md">
                 <div className="absolute -left-[55px] -top-[45px] z-10 h-20 w-40">
                   <motion.img src="/tape1.png" alt="tape1" draggable={false} />
                 </div>
@@ -71,12 +71,16 @@ function About() {
                     />
                   </div>
                   <div className="font-figtree text-sm text-medium">
-                    Collaborate in teams of up to 4 to create tech projects, while
-                    participating in workshops, learning from mentors, competing
-                    for prizes, and meet like-minded hackers.
+                    Collaborate in teams of up to 4 to create tech projects,
+                    while participating in workshops, learning from mentors,
+                    competing for prizes, and meet like-minded hackers.
                   </div>
                   <div className="absolute -bottom-[10px] -right-[50px] z-10 h-20 w-40">
-                    <motion.img src="/tape1.png" alt="tape1" draggable={false} />
+                    <motion.img
+                      src="/tape1.png"
+                      alt="tape1"
+                      draggable={false}
+                    />
                   </div>
                 </div>
               </div>
