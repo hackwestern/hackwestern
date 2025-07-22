@@ -18,16 +18,7 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
   const { x, y, scale } = useCanvasContext();
   const [expandedButton, setExpandedButton] = useState<string | null>("home");
   const activePans = useRef(0);
-
-  // make sure activePans doesn't stay too big
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (activePans.current > 1) {
-        activePans.current = 0;
-      }
-    }, 500);
-    return () => clearInterval(interval);
-  }, []);
+  const panTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const { height, width } = useWindowDimensions();
 
@@ -47,6 +38,12 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
   }
 
   const updateExpandedButton = () => {
+    // reset activePans if no movement has occurred recently
+    if (panTimeout.current) clearTimeout(panTimeout.current);
+    panTimeout.current = setTimeout(() => {
+      activePans.current = 0;
+    }, 500);
+
     if (activePans.current > 0) return;
 
     const currentX = -x.get();
@@ -97,6 +94,13 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
     activePans.current++;
     onReset();
   };
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (panTimeout.current) clearTimeout(panTimeout.current);
+    };
+  }, []);
 
   return (
     <div
