@@ -26,8 +26,9 @@ export default function Envelope() {
   }, []);
 
   return (
+    <div className="flex flex-col gap-4 rotate-[8deg] justify-center items-center">
     <div
-      className="pointer-events-none relative -mt-[150px] h-[375px] w-[450px] rotate-[8deg]"
+      className="pointer-events-none relative -mt-[150px] h-[375px] w-[450px]"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
