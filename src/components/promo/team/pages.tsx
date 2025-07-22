@@ -77,6 +77,9 @@ const Pages = () => {
       {PAGES.map((page, index) => {
         const isFlipped = index < turnedPages;
         const isFlipping = flippingPage === index;
+
+        // don't render non-active pages (pages that aren't "physically" visible)
+        // neighbouring pages and flipping pages are considered "active" and should be rendered
         const isActive =
           isFlipping ||
           index === turnedPages + 1 ||
