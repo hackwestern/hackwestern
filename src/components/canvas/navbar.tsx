@@ -67,7 +67,7 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
     const coords = coordinates[section];
 
     // Calculate the center of the section
-    const sectionCenterX = coords.x + coords.width / 2;
+    const sectionCenterX = coords.x + (coords.width ?? 1) / 2;
     const sectionCenterY = coords.y + height / 2;
 
     // Calculate the required pan offset to center the section in the viewport

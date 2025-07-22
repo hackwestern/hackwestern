@@ -21,6 +21,7 @@ export const coordinates = {
   [CanvasSection.Home]: {
     x: 3400,
     y: 1800,
+    width: undefined, // home is screen width
   },
   [CanvasSection.FAQ]: {
     x: 1350,
