@@ -1,21 +1,16 @@
 import {
   type Point,
-  type MotionValue,
   useMotionValueEvent,
 } from "framer-motion";
 import { useState } from "react";
+import { useCanvasContext } from "~/contexts/CanvasContext";
 
 const Toolbar = ({
-  x,
-  y,
-  scale,
   homeCoordinates = { x: 0, y: 0 },
 }: {
-  x: MotionValue<number>;
-  y: MotionValue<number>;
-  scale: MotionValue<number>;
   homeCoordinates?: Point;
 }) => {
+  const { x, y, scale } = useCanvasContext();
   const [values, setValues] = useState({
     x: x.get(),
     y: y.get(),
