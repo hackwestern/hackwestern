@@ -60,10 +60,11 @@ async function panToOffsetScene(
   x: MotionValue<number>,
   y: MotionValue<number>,
   scale: MotionValue<number>,
+  newZoom?: number,
 ): Promise<void> {
   const animX = animate(x, offset.x, panSpring);
   const animY = animate(y, offset.y, panSpring);
-  const animScale = animate(scale, 1, panSpring);
+  const animScale = animate(scale, newZoom ?? 1, panSpring);
   await Promise.all([animScale, animX, animY]);
 }
 
@@ -128,10 +129,11 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     panOffset: Point;
   } | null>(null);
 
-  const onResetViewAndItems = (): void => {
+  const onResetViewAndItems = (onComplete?: () => void): void => {
     setIsResetting(true);
-    void panToOffsetScene(offsetHomeCoordinates, x, y, scale).then(() => {
+    void panToOffsetScene(offsetHomeCoordinates, x, y, scale, 1).then(() => {
       setIsResetting(false);
+      if (onComplete) onComplete();
     });
   };
 
@@ -139,6 +141,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     offset: Point,
     viewportRef: React.RefObject<HTMLDivElement | null>,
     onComplete?: () => void,
+    zoom?: number,
   ): void => {
     if (!viewportRef.current) return;
     setIsSceneMoving(true);
@@ -147,16 +150,16 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     const viewportWidth = viewportRef.current.offsetWidth;
     const viewportHeight = viewportRef.current.offsetHeight;
 
-    const minPanX = viewportWidth - sceneWidth * 1; // 1 is the zoom level after pan
+    const minPanX = viewportWidth - sceneWidth * (zoom ?? 1); // 1 is the zoom level after pan
     const maxPanX = 0;
-    const minPanY = viewportHeight - sceneHeight * 1;
+    const minPanY = viewportHeight - sceneHeight * (zoom ?? 1); // 1 is the zoom level after pan
     const maxPanY = 0;
 
     // Clamp the offset to keep the scene within bounds
     const clampedX = Math.min(Math.max(offset.x, minPanX), maxPanX);
     const clampedY = Math.min(Math.max(offset.y, minPanY), maxPanY);
 
-    void panToOffsetScene({ x: clampedX, y: clampedY }, x, y, scale).then(
+    void panToOffsetScene({ x: clampedX, y: clampedY }, x, y, scale, zoom).then(
       () => {
         setIsSceneMoving(false);
         if (onComplete) onComplete();
@@ -387,7 +390,11 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   }, [handleWheelZoom]);
 
   const handlePanToOffset = useCallback(
-    (offset: { x: number; y: number }, onComplete?: () => void) => {
+    (
+      offset: { x: number; y: number },
+      onComplete?: () => void,
+      zoom?: number,
+    ) => {
       panToOffset(
         {
           x: -offset.x,
@@ -395,6 +402,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         },
         viewportRef,
         onComplete,
+        zoom,
       );
     },
     [panToOffset, viewportRef],
@@ -413,7 +421,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         <Toolbar homeCoordinates={homeCoordinates} />
         <Navbar
           panToOffset={handlePanToOffset}
-          onResetViewAndItems={onResetViewAndItems}
+          onReset={onResetViewAndItems}
         />
         <div
           ref={viewportRef}
@@ -453,6 +461,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
 interface OffsetPoints {
   x?: number;
   y?: number;
+  width?: number;
 }
 
 interface CanvasProps {
@@ -487,9 +496,11 @@ export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
 
   return (
     <div
-      className="absolute inset-0 z-30 flex h-max w-max"
+      className="absolute inset-0 z-30 flex"
       style={{
         ...margin,
+        width: offset?.width ? offset.width + "px" : "100vw",
+        height: "100vh",
       }}
     >
       {children}

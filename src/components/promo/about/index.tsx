@@ -7,7 +7,9 @@ import { DraggableImage } from "~/components/canvas/draggable";
 function About() {
   return (
     <CanvasComponent offset={coordinates.about}>
-      <div className="flex h-screen w-screen flex-col items-center justify-center space-y-4 pb-12">
+      <div
+        className="flex h-screen flex-col items-center justify-center space-y-4 pb-12"
+      >
         <div className="flex origin-center flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out">
           <div className="relative">
             <div className="flex w-full max-w-full flex-col items-center justify-start gap-4 px-4 pb-0 pt-24">

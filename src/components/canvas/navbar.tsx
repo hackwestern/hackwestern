@@ -3,22 +3,38 @@ import { useState, useRef } from "react";
 import SingleButton from "./single-button";
 import { CanvasSection, coordinates } from "~/constants/canvas";
 import { useCanvasContext } from "~/contexts/CanvasContext";
+import useWindowDimensions from "~/hooks/useWindowDimensions";
 
 interface NavbarProps {
   panToOffset: (
     offset: { x: number; y: number },
     onComplete?: () => void,
+    zoom?: number,
   ) => void;
-  onResetViewAndItems: () => void;
+  onReset: () => void;
 }
 
-export default function Navbar({
-  panToOffset,
-  onResetViewAndItems,
-}: NavbarProps) {
+export default function Navbar({ panToOffset, onReset }: NavbarProps) {
   const { x, y, scale } = useCanvasContext();
   const [expandedButton, setExpandedButton] = useState<string | null>("home");
   const activePans = useRef(0);
+
+  const { height, width } = useWindowDimensions();
+
+  // smaller default scale for smaller screens, larger for larger screens
+  // default is for 1920x1080p screens
+  let defaultZoom = 1;
+  if (width < 768) {
+    defaultZoom = 0.6; // mobile
+  } else if (width < 1440) {
+    defaultZoom = 0.8; // tablet
+  } else if (width < 1920) {
+    defaultZoom = 0.9; // small desktop
+  } else if (width < 2560) {
+    defaultZoom = 1; // medium desktop
+  } else {
+    defaultZoom = 1.2; // large desktop
+  }
 
   const updateExpandedButton = () => {
     // activePans.current is only > 0 during a programmatic pan via button click
@@ -49,18 +65,28 @@ export default function Navbar({
     setExpandedButton(section);
     activePans.current++;
     const coords = coordinates[section];
-    panToOffset({ x: coords.x, y: coords.y }, () => {
-      activePans.current--;
-    });
+
+    // Calculate the center of the section
+    const sectionCenterX = coords.x + coords.width / 2;
+    const sectionCenterY = coords.y + height / 2;
+
+    // Calculate the required pan offset to center the section in the viewport
+    const targetX = width / 2 - sectionCenterX * defaultZoom;
+    const targetY = height / 2 - sectionCenterY * defaultZoom;
+
+    panToOffset(
+      { x: -targetX, y: -targetY },
+      () => {
+        activePans.current--;
+      },
+      defaultZoom,
+    );
   };
 
   const handleHome = () => {
     setExpandedButton(CanvasSection.Home);
     activePans.current++;
-    panToOffset({ x: coordinates.home.x, y: coordinates.home.y }, () => {
-      onResetViewAndItems();
-      activePans.current--;
-    });
+    onReset();
   };
 
   return (
