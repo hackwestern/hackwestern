@@ -75,6 +75,7 @@ export const canvasWidth = 10000;
 export const canvasHeight = 6500;
 
 const ZOOM_BOUND = 1.05; // minimum zoom level to prevent zooming out too far
+const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 10;
 
 const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
@@ -260,6 +261,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         (window.innerWidth / canvasWidth) * ZOOM_BOUND, // Ensure zoom is at least the width of the canvas
         (window.innerHeight / canvasHeight) * ZOOM_BOUND, // Ensure zoom is at least the height of the canvas
         Math.min(newZoom, 10),
+        MIN_ZOOM, // Ensure zoom is not less than MIN_ZOOM
       );
 
       const mx = currentMidpoint.x;
@@ -334,6 +336,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       if (isPinch) {
         const nextZoom = Math.max(
           Math.min(zoom * (1 - event.deltaY * ZOOM_SENSITIVITY), MAX_ZOOM),
+          MIN_ZOOM, // Ensure zoom is not less than MIN_ZOOM
           (window.innerWidth / canvasWidth) * ZOOM_BOUND, // Ensure zoom is at least the width of the canvas
           (window.innerHeight / canvasHeight) * ZOOM_BOUND, // Ensure zoom is at least the height of the canvas
         );
