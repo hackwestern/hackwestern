@@ -384,6 +384,19 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     }
   }, [handleWheelZoom]);
 
+  const handlePanToOffset = useCallback(
+    (offset: { x: number; y: number }) => {
+      panToOffset(
+        {
+          x: -offset.x,
+          y: -offset.y,
+        },
+        viewportRef,
+      );
+    },
+    [panToOffset, viewportRef],
+  );
+
   return (
     <>
       <CanvasProvider
@@ -395,15 +408,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       >
         <Toolbar x={x} y={y} scale={scale} homeCoordinates={homeCoordinates} />
         <Navbar
-          panToOffset={(offset: { x: number; y: number }) => {
-            panToOffset(
-              {
-                x: -offset.x,
-                y: -offset.y,
-              },
-              viewportRef,
-            );
-          }}
+          panToOffset={handlePanToOffset}
           onResetViewAndItems={onResetViewAndItems}
           panOffset={{ x: x.get(), y: y.get() }}
           zoom={scale.get()}
