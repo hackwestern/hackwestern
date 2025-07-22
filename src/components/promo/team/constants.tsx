@@ -21,13 +21,13 @@ export const Bindings = React.memo(function Bindings() {
 
 export function LeftCover() {
   return (
-    <div className="absolute left-0 top-0 z-[-5] mr-[18px] mt-2 h-[700px] w-[554px] rounded-l-[20px] rounded-r-[8px] bg-gradient-to-l from-[#7E4C9B] to-[#C296EB] drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)]" />
+    <div className="absolute left-0 top-0 z-[-5] mr-[18px] mt-2 h-[700px] w-[553.75px] rounded-l-[20px] rounded-r-[8px] bg-gradient-to-l from-[#7E4C9B] to-[#C296EB] drop-shadow-[0_2px_2px_rgba(0,0,0,0.25)]" />
   );
 }
 
 export function RightCover() {
   return (
-    <div className="absolute right-0 top-0 z-[-5] ml-[18px] mt-2 h-[700px] w-[554px] rounded-l-[8px] rounded-r-[20px] bg-gradient-to-r from-[#7E4C9B] to-[#C296EB] drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]" />
+    <div className="absolute right-0 top-0 z-[-5] ml-[18px] mt-2 h-[700px] w-[553.75px] rounded-l-[8px] rounded-r-[20px] bg-gradient-to-r from-[#7E4C9B] to-[#C296EB] drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]" />
   );
 }
 
