@@ -150,12 +150,12 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     const viewportWidth = viewportRef.current.offsetWidth;
     const viewportHeight = viewportRef.current.offsetHeight;
 
-    const minPanX = viewportWidth - sceneWidth * (zoom ?? 1); // 1 is the zoom level after pan
+    const minPanX = viewportWidth - sceneWidth * (zoom ?? 1);
     const maxPanX = 0;
-    const minPanY = viewportHeight - sceneHeight * (zoom ?? 1); // 1 is the zoom level after pan
+    const minPanY = viewportHeight - sceneHeight * (zoom ?? 1);
     const maxPanY = 0;
 
-    // Clamp the offset to keep the scene within bounds
+    // Clamp the offset to keep the scene within bounds, shouldn't be needed but still implemented
     const clampedX = Math.min(Math.max(offset.x, minPanX), maxPanX);
     const clampedY = Math.min(Math.max(offset.y, minPanY), maxPanY);
 
