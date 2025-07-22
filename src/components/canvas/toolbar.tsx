@@ -1,4 +1,8 @@
-import { type Point, type MotionValue, useAnimationFrame } from "framer-motion";
+import {
+  type Point,
+  type MotionValue,
+  useMotionValueEvent,
+} from "framer-motion";
 import { useState } from "react";
 
 const Toolbar = ({
@@ -12,17 +16,28 @@ const Toolbar = ({
   scale: MotionValue<number>;
   homeCoordinates?: Point;
 }) => {
-  const [, forceRerender] = useState(0);
-
-  // Force a re-render on every animation frame
-  useAnimationFrame(() => {
-    forceRerender((v) => v + 1);
+  const [values, setValues] = useState({
+    x: x.get(),
+    y: y.get(),
+    scale: scale.get(),
   });
 
-  const displayX = -(x.get() / scale.get() + homeCoordinates.x);
-  const displayY = -(y.get() / scale.get() + homeCoordinates.y);
+  useMotionValueEvent(x, "change", (latest) => {
+    setValues((v) => ({ ...v, x: latest }));
+  });
 
-  if (displayX === 0 && displayY === 0 && scale.get() === 1) {
+  useMotionValueEvent(y, "change", (latest) => {
+    setValues((v) => ({ ...v, y: latest }));
+  });
+
+  useMotionValueEvent(scale, "change", (latest) => {
+    setValues((v) => ({ ...v, scale: latest }));
+  });
+
+  const displayX = -(values.x / values.scale + homeCoordinates.x);
+  const displayY = -(values.y / values.scale + homeCoordinates.y);
+
+  if (displayX === 0 && displayY === 0 && values.scale === 1) {
     return null; // don't show toolbar when at home
   }
 
@@ -33,7 +48,7 @@ const Toolbar = ({
       data-toolbar-button
     >
       ({displayX.toFixed(0)}, {displayY.toFixed(0)})
-      <span className="text-light"> |</span> {scale.get().toFixed(2)}x
+      <span className="text-light"> |</span> {values.scale.toFixed(2)}x
     </div>
   );
 };
