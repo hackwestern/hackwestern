@@ -35,8 +35,8 @@ export default function Envelope() {
       <motion.div
         className="absolute bottom-0 left-[15px] z-10 w-[420px] overflow-hidden bg-white p-8"
         initial={{ height: "90px" }}
-        animate={{ height: isOpen ? "650px" : "90px" }}
-        transition={{ duration: 0.4, delay: 0.2 }}
+        animate={{ height: isOpen ? "650px" : "150px" }}
+        transition={{ duration: 0.4, delay: isOpen ? 0.5 : 0 }}
       >
         <div className="mb-2 font-figtree italic text-medium">
           Dear Hacker,
@@ -118,7 +118,7 @@ export default function Envelope() {
       <motion.div
         className="absolute top-[188px] z-30 h-0 w-0 origin-top shadow-lg"
         animate={{ rotateX: isOpen ? 180 : 0 }}
-        transition={{ duration: 0.7 }}
+        transition={{ duration: 0.4, delay: isOpen ? 0 : 0.5 }}
         style={{
           width: "450px",
           height: "113px",
