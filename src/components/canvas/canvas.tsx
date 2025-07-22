@@ -419,10 +419,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         setMaxZIndex={setMaxZIndex}
       >
         <Toolbar homeCoordinates={homeCoordinates} />
-        <Navbar
-          panToOffset={handlePanToOffset}
-          onReset={onResetViewAndItems}
-        />
+        <Navbar panToOffset={handlePanToOffset} onReset={onResetViewAndItems} />
         <div
           ref={viewportRef}
           className="relative h-screen touch-none select-none overflow-hidden"
