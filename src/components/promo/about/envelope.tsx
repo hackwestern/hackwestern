@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 
 export default function Envelope() {
+  const [envelopeToggled, setEnvelopeToggled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [flapZ, setFlapZ] = useState(20);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -9,21 +10,34 @@ export default function Envelope() {
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     setIsOpen(true);
+    setEnvelopeToggled(true);
     setFlapZ(0); // instantly send flap behind
   };
 
   const handleMouseLeave = () => {
     setIsOpen(false);
+    setEnvelopeToggled(false);
     timeoutRef.current = setTimeout(() => {
       setFlapZ(20); // delay raising flap back on top
     }, 650);
   };
 
+  const handleClick = () => {
+    console.log(envelopeToggled);
+    setEnvelopeToggled(!envelopeToggled);
+  }
+
   useEffect(() => {
+    if (envelopeToggled) {
+      handleMouseEnter();
+    }
+    else {
+      handleMouseLeave();
+    }
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, []);
+  }, [envelopeToggled]);
 
   return (
     <div className="flex flex-col gap-4 rotate-[8deg] justify-center items-center">
@@ -31,6 +45,7 @@ export default function Envelope() {
       className="pointer-events-none relative -mt-[150px] h-[375px] w-[450px]"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onMouseDown={handleClick}
     >
       {/* Letter */}
       <motion.div
