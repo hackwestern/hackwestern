@@ -2,8 +2,8 @@ import React, { useState, useRef, useCallback } from "react";
 import Page from "./page";
 import { PAGES } from "./teams";
 
-const DEFAULT_FLIP_DURATION = 400; // Default speed in ms for a single flip
-const TOTAL_JUMP_DURATION = 800; // Total time in ms for a multi-page jump
+const DEFAULT_FLIP_DURATION = 300; // Default speed in ms for a single flip
+const TOTAL_JUMP_DURATION = 700; // Total time in ms for a multi-page jump
 
 const Pages = () => {
   const [turnedPages, setTurnedPages] = useState(0);
@@ -52,7 +52,9 @@ const Pages = () => {
       const numPagesToFlip = Math.abs(index - turnedPages);
       if (numPagesToFlip > 0) {
         // Calculate duration for each page to meet the total jump time
-        setFlipDuration(TOTAL_JUMP_DURATION / numPagesToFlip);
+        setFlipDuration(
+          Math.min(TOTAL_JUMP_DURATION / numPagesToFlip, DEFAULT_FLIP_DURATION),
+        );
       }
 
       targetPage.current = index;
