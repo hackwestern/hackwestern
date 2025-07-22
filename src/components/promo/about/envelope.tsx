@@ -27,13 +27,13 @@ export default function Envelope() {
 
   return (
     <div
-      className="relative -mt-[150px] h-[375px] w-[450px] rotate-[8deg] pointer-events-none"
+      className="pointer-events-none relative -mt-[150px] h-[375px] w-[450px] rotate-[8deg]"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* Letter */}
       <motion.div
-        className="absolute bottom-0 left-[15px] z-10 w-[420px] overflow-hidden bg-white p-8 pointer-events-auto"
+        className="pointer-events-auto absolute bottom-0 left-[15px] z-10 w-[420px] overflow-hidden bg-white p-8"
         initial={{ height: "90px" }}
         animate={{ height: isOpen ? "650px" : "90px" }}
         transition={{ duration: 0.4, delay: 0.2 }}
@@ -73,7 +73,7 @@ export default function Envelope() {
 
       {/* Back fold */}
       <motion.div
-        className="absolute bottom-0 right-0 z-0 h-0 w-0 pointer-events-auto"
+        className="pointer-events-auto absolute bottom-0 right-0 z-0 h-0 w-0"
         style={{
           width: "450px",
           height: "188px",
@@ -83,7 +83,7 @@ export default function Envelope() {
 
       {/* Left fold */}
       <motion.div
-        className="absolute bottom-0 z-10 h-0 w-0 pointer-events-auto"
+        className="pointer-events-auto absolute bottom-0 z-10 h-0 w-0"
         style={{
           width: "275px",
           height: "188px",
@@ -94,7 +94,7 @@ export default function Envelope() {
 
       {/* Right fold */}
       <motion.div
-        className="absolute bottom-0 right-0 z-10 h-0 w-0 pointer-events-auto"
+        className="pointer-events-auto absolute bottom-0 right-0 z-10 h-0 w-0"
         style={{
           width: "275px",
           height: "188px",
@@ -105,7 +105,7 @@ export default function Envelope() {
 
       {/* Bottom fold */}
       <motion.div
-        className="absolute bottom-0 right-0 z-20 h-0 w-0 shadow-lg pointer-events-auto"
+        className="pointer-events-auto absolute bottom-0 right-0 z-20 h-0 w-0 shadow-lg"
         style={{
           width: "450px",
           height: "113px",
@@ -116,7 +116,7 @@ export default function Envelope() {
 
       {/* Top fold (flap) */}
       <motion.div
-        className="absolute top-[188px] z-30 h-0 w-0 origin-top shadow-lg pointer-events-none"
+        className="pointer-events-none absolute top-[188px] z-30 h-0 w-0 origin-top shadow-lg"
         animate={{ rotateX: isOpen ? 180 : 0 }}
         transition={{ duration: 0.7 }}
         style={{
