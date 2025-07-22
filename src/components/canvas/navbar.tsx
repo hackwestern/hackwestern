@@ -1,5 +1,5 @@
 import { motion, useMotionValueEvent } from "framer-motion";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import SingleButton from "./single-button";
 import { CanvasSection, coordinates } from "~/constants/canvas";
 import { useCanvasContext } from "~/contexts/CanvasContext";
@@ -19,6 +19,16 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
   const [expandedButton, setExpandedButton] = useState<string | null>("home");
   const activePans = useRef(0);
 
+  // make sure activePans doesn't stay too big
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (activePans.current > 1) {
+        activePans.current = 0;
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
   const { height, width } = useWindowDimensions();
 
   // smaller default scale for smaller screens, larger for larger screens
@@ -37,7 +47,6 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
   }
 
   const updateExpandedButton = () => {
-    // activePans.current is only > 0 during a programmatic pan via button click
     if (activePans.current > 0) return;
 
     const currentX = -x.get();
