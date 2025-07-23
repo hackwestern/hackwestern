@@ -17,9 +17,7 @@ type ToolbarProps = {
 const OPACITY_POS_EPS = 1; // px
 const OPACITY_SCALE_EPS = 0.01; // scale delta
 
-const Toolbar = ({
-  homeCoordinates = { x: 0, y: 0 },
-}: ToolbarProps) => {
+const Toolbar = ({ homeCoordinates = { x: 0, y: 0 } }: ToolbarProps) => {
   const { x, y, scale } = useCanvasContext();
 
   // numeric MotionValues
