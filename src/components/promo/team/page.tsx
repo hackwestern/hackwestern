@@ -97,9 +97,16 @@ function Page({
           <Bindings />
         </div>
         <FrontHoles />
-        <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
-          <motion.div 
-            className="h-full w-full bg-beige p-[32px] relative border border-gray-300"
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            overflow: "hidden",
+          }}
+        >
+          <motion.div
+            className="relative h-full w-full border border-gray-300 bg-beige p-[32px]"
             whileHover="hover"
             initial="rest"
             animate="rest"
@@ -110,7 +117,8 @@ function Page({
               },
               hover: {
                 borderRadius: "0 0 40% 0 / 0 0 30% 0",
-                filter: "drop-shadow(4px 4px 8px rgba(0,0,0,0.3)) drop-shadow(2px 2px 4px rgba(0,0,0,0.2))",
+                filter:
+                  "drop-shadow(4px 4px 8px rgba(0,0,0,0.3)) drop-shadow(2px 2px 4px rgba(0,0,0,0.2))",
               },
             }}
             transition={{ duration: 0.25 }}
