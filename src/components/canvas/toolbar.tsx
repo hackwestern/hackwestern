@@ -1,9 +1,9 @@
 import {
   type Point,
   type MotionValue,
-  useMotionValueEvent,
+  useTransform,
+  motion,
 } from "framer-motion";
-import { useState } from "react";
 
 const Toolbar = ({
   x,
@@ -16,40 +16,37 @@ const Toolbar = ({
   scale: MotionValue<number>;
   homeCoordinates?: Point;
 }) => {
-  const [values, setValues] = useState({
-    x: x.get(),
-    y: y.get(),
-    scale: scale.get(),
+  const displayX = useTransform([x, scale], (latest) => {
+    const [latestX, latestScale] = latest as [number, number];
+    return -(latestX / latestScale + homeCoordinates.x).toFixed(0);
   });
-
-  useMotionValueEvent(x, "change", (latest) => {
-    setValues((v) => ({ ...v, x: latest }));
+  const displayY = useTransform([y, scale], (latest) => {
+    const [latestY, latestScale] = latest as [number, number];
+    return -(latestY / latestScale + homeCoordinates.y).toFixed(0);
   });
+  const displayScale = useTransform(scale, (latest) => latest.toFixed(2));
 
-  useMotionValueEvent(y, "change", (latest) => {
-    setValues((v) => ({ ...v, y: latest }));
+  const opacity = useTransform([x, y, scale], (latest) => {
+    const [lx, ly, ls] = latest as [number, number, number];
+    const dx = -(lx / ls + homeCoordinates.x);
+    const dy = -(ly / ls + homeCoordinates.y);
+    // Use a small epsilon for float comparison
+    return Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01 && Math.abs(ls - 1) < 0.01
+      ? 0
+      : 1;
   });
-
-  useMotionValueEvent(scale, "change", (latest) => {
-    setValues((v) => ({ ...v, scale: latest }));
-  });
-
-  const displayX = -(values.x / values.scale + homeCoordinates.x);
-  const displayY = -(values.y / values.scale + homeCoordinates.y);
-
-  if (displayX === 0 && displayY === 0 && values.scale === 1) {
-    return null; // don't show toolbar when at home
-  }
 
   return (
-    <div
+    <motion.div
       className="absolute left-4 top-4 z-[1000] cursor-default select-none rounded-[10px] border-[1px] border-border bg-offwhite p-2 font-mono text-xs text-heavy shadow-[0_6px_12px_rgba(0,0,0,0.10)] md:text-sm"
       onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
       data-toolbar-button
+      style={{ opacity }}
     >
-      ({displayX.toFixed(0)}, {displayY.toFixed(0)})
-      <span className="text-light"> |</span> {values.scale.toFixed(2)}x
-    </div>
+      (<motion.span>{displayX}</motion.span>,{" "}
+      <motion.span>{displayY}</motion.span>)
+      <span className="text-light"> |</span> <motion.span>{displayScale}</motion.span>x
+    </motion.div>
   );
 };
 
