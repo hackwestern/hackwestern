@@ -32,7 +32,6 @@ const Pages = () => {
   };
 
   const turnPageForward = useCallback(() => {
-    console.log("Turning page forward");
     if (turnedPages >= totalPages) return;
     setFlipDuration(DEFAULT_FLIP_DURATION); // Ensure default speed
     setFlippingPage(turnedPages);
@@ -40,7 +39,6 @@ const Pages = () => {
   }, [turnedPages, totalPages]);
 
   const turnPageBackward = useCallback(() => {
-    console.log("Turning page backward");
     if (turnedPages <= 0) return;
     setFlipDuration(DEFAULT_FLIP_DURATION); // Ensure default speed
     setFlippingPage(turnedPages - 1);
