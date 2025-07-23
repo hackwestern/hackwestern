@@ -521,7 +521,7 @@ const Dots = () => (
 );
 
 const Filter = () => (
-  <div className="pointer-events-none absolute inset-0 hidden h-full w-full bg-noise opacity-100 brightness-[105%] contrast-[170%] filter sm:inline" />
+  <div className="pointer-events-none absolute inset-0 hidden h-full w-full bg-none contrast-125 filter md:inline md:bg-noise" />
 );
 
 export default Canvas;

@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export const PAGES = [
   {
     label: "CO-DIRECTORS",
@@ -5,15 +7,30 @@ export const PAGES = [
     front: (
       <div>
         Edison Swathi
-        <img src="/horse.svg" alt="aboutcloud" className="mx-auto h-24 w-24" />
+        <Image
+          src="/images/organizers/edison.png"
+          alt="edison"
+          width={96}
+          height={96}
+          className="mx-auto h-24 w-24"
+        />
+        <Image
+          src="/images/organizers/swathi.png"
+          alt="swathi"
+          width={96}
+          height={96}
+          className="mx-auto h-24 w-24"
+        />
       </div>
     ),
     back: (
       <div>
         design design
-        <img
-          src="/images/aboutcloud2.svg"
-          alt="aboutcloud2"
+        <Image
+          src="/images/organizers/rachel.png"
+          alt="swathi"
+          width={96}
+          height={96}
           className="mx-auto h-24 w-24"
         />
       </div>
@@ -25,9 +42,11 @@ export const PAGES = [
     front: (
       <div>
         horse horse horse
-        <img
-          src="/images/aboutticket.svg"
-          alt="aboutticket"
+        <Image
+          src="/images/organizers/william.png"
+          alt="bonnie"
+          width={96}
+          height={96}
           className="mx-auto h-24 w-24"
         />
       </div>
@@ -35,9 +54,11 @@ export const PAGES = [
     back: (
       <div>
         text text text
-        <img
-          src="/images/beachbum.svg"
-          alt="beachbum"
+        <Image
+          src="/images/organizers/arsalaan.png"
+          alt="arsalaan"
+          width={96}
+          height={96}
           className="mx-auto h-24 w-24"
         />
       </div>
@@ -49,9 +70,11 @@ export const PAGES = [
     front: (
       <div>
         events 2
-        <img
-          src="/images/citycruiser.svg"
-          alt="citycruiser"
+        <Image
+          src="/images/organizers/ben.png"
+          alt="ben"
+          width={96}
+          height={96}
           className="mx-auto h-24 w-24"
         />
       </div>
@@ -59,9 +82,11 @@ export const PAGES = [
     back: (
       <div>
         marketing
-        <img
-          src="/images/cloud1.svg"
-          alt="cloud1"
+        <Image
+          src="/images/organizers/laurel.png"
+          alt="cynthia"
+          width={96}
+          height={96}
           className="mx-auto h-24 w-24"
         />
       </div>
@@ -73,9 +98,11 @@ export const PAGES = [
     front: (
       <div>
         marketing marketing
-        <img
-          src="/images/cloud2.svg"
-          alt="cloud2"
+        <Image
+          src="/images/organizers/dennis.png"
+          alt="dennis"
+          width={96}
+          height={96}
           className="mx-auto h-24 w-24"
         />
       </div>
@@ -83,9 +110,11 @@ export const PAGES = [
     back: (
       <div>
         spon
-        <img
-          src="/images/cloud3.svg"
-          alt="cloud3"
+        <Image
+          src="/images/organizers/hunter.png"
+          alt="hunter"
+          width={96}
+          height={96}
           className="mx-auto h-24 w-24"
         />
       </div>
@@ -97,9 +126,11 @@ export const PAGES = [
     front: (
       <div>
         spon
-        <img
-          src="/images/cloud4.svg"
-          alt="cloud4"
+        <Image
+          src="/images/organizers/jerry.png"
+          alt="jerry"
+          width={96}
+          height={96}
           className="mx-auto h-24 w-24"
         />
       </div>
@@ -107,9 +138,11 @@ export const PAGES = [
     back: (
       <div>
         web
-        <img
-          src="/images/cloud5.svg"
-          alt="cloud5"
+        <Image
+          src="/images/organizers/joy.png"
+          alt="joy"
+          width={96}
+          height={96}
           className="mx-auto h-24 w-24"
         />
       </div>
@@ -121,9 +154,11 @@ export const PAGES = [
     front: (
       <div>
         web web web
-        <img
-          src="/images/cloud6.svg"
-          alt="cloud6"
+        <Image
+          src="/images/organizers/kyle.png"
+          alt="kyle"
+          width={96}
+          height={96}
           className="mx-auto h-24 w-24"
         />
       </div>
@@ -131,9 +166,11 @@ export const PAGES = [
     back: (
       <div>
         bonus page
-        <img
-          src="/images/cloud7.svg"
-          alt="cloud7"
+        <Image
+          src="/images/organizers/laura.png"
+          alt="laura"
+          width={96}
+          height={96}
           className="mx-auto h-24 w-24"
         />
       </div>
