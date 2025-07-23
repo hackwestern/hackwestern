@@ -1,46 +1,106 @@
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { motion, useMotionValueEvent } from "framer-motion";
+import { useState, useRef, useEffect } from "react";
 import SingleButton from "./single-button";
 import { CanvasSection, coordinates } from "~/constants/canvas";
+import { useCanvasContext } from "~/contexts/CanvasContext";
+import useWindowDimensions from "~/hooks/useWindowDimensions";
 
 interface NavbarProps {
-  panOffset: { x: number; y: number };
-  zoom: number;
-  panToOffset: (offset: { x: number; y: number }) => void;
-  onResetViewAndItems: () => void;
+  panToOffset: (
+    offset: { x: number; y: number },
+    onComplete?: () => void,
+    zoom?: number,
+  ) => void;
+  onReset: () => void;
 }
 
-export default function Navbar({
-  panToOffset,
-  onResetViewAndItems,
-  panOffset,
-  zoom,
-}: NavbarProps) {
+export default function Navbar({ panToOffset, onReset }: NavbarProps) {
+  const { x, y, scale } = useCanvasContext();
   const [expandedButton, setExpandedButton] = useState<string | null>("home");
+  const activePans = useRef(0);
+  const panTimeout = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    // if value of panOffset doesn't match any coordinates, there should be no expanded button
+  const { height, width } = useWindowDimensions();
+
+  // smaller default scale for smaller screens, larger for larger screens
+  // default is for 1920x1080p screens
+  let defaultZoom = 1;
+  if (width < 768) {
+    defaultZoom = 0.6; // mobile
+  } else if (width < 1440) {
+    defaultZoom = 0.8; // tablet
+  } else if (width < 1920) {
+    defaultZoom = 0.9; // small desktop
+  } else if (width < 2560) {
+    defaultZoom = 1; // medium desktop
+  } else {
+    defaultZoom = 1.2; // large desktop
+  }
+
+  const updateExpandedButton = () => {
+    // reset activePans if no movement has occurred recently
+    if (panTimeout.current) clearTimeout(panTimeout.current);
+    panTimeout.current = setTimeout(() => {
+      activePans.current = 0;
+    }, 500);
+
+    if (activePans.current > 0) return;
+
+    const currentX = -x.get();
+    const currentY = -y.get();
+    const currentScale = scale.get();
+
     const section = Object.keys(coordinates).find(
       (key) =>
-        coordinates[key as CanvasSection].x === Math.round(-panOffset.x) &&
-        coordinates[key as CanvasSection].y === Math.round(-panOffset.y),
+        coordinates[key as CanvasSection].x === Math.round(currentX) &&
+        coordinates[key as CanvasSection].y === Math.round(currentY),
     );
 
-    if (!section || zoom !== 1) {
+    if (section && currentScale === 1) {
+      setExpandedButton(section);
+    } else {
       setExpandedButton(null);
     }
-  }, [panOffset, zoom]);
+  };
+
+  useMotionValueEvent(x, "change", updateExpandedButton);
+  useMotionValueEvent(y, "change", updateExpandedButton);
+  useMotionValueEvent(scale, "change", updateExpandedButton);
 
   const handlePan = (section: CanvasSection) => {
     setExpandedButton(section);
+    activePans.current++;
     const coords = coordinates[section];
-    panToOffset({ x: coords.x, y: coords.y });
+
+    // Calculate the center of the section
+    const sectionCenterX = coords.x + (coords.width ?? 1) / 2;
+    const sectionCenterY = coords.y + height / 2;
+
+    // Calculate the required pan offset to center the section in the viewport
+    const targetX = width / 2 - sectionCenterX * defaultZoom;
+    const targetY = height / 2 - sectionCenterY * defaultZoom;
+
+    panToOffset(
+      { x: -targetX, y: -targetY },
+      () => {
+        activePans.current--;
+      },
+      defaultZoom,
+    );
   };
 
   const handleHome = () => {
     setExpandedButton(CanvasSection.Home);
-    onResetViewAndItems();
+    activePans.current++;
+    onReset();
   };
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (panTimeout.current) clearTimeout(panTimeout.current);
+    };
+  }, []);
 
   return (
     <div

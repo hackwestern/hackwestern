@@ -7,7 +7,7 @@ import { coordinates } from "~/constants/canvas";
 function Sponsors() {
   return (
     <CanvasComponent offset={coordinates.sponsors}>
-      <div className="mt-16 flex h-screen w-screen flex-col items-center justify-center space-y-4">
+      <div className="mt-16 flex h-screen flex-col items-center justify-center space-y-4">
         <div className="flex origin-center scale-150 flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out">
           <div className="-mb-24 inline-flex w-[794px] flex-col items-center justify-start gap-4 px-4">
             {/* Our Sponsors Text Section */}
