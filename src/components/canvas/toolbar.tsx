@@ -4,48 +4,63 @@ import {
   useTransform,
   motion,
 } from "framer-motion";
+import { useCallback } from "react";
+
+type ToolbarProps = {
+  x: MotionValue<number>;
+  y: MotionValue<number>;
+  scale: MotionValue<number>;
+  homeCoordinates?: Point;
+};
+
+const OPACITY_POS_EPS = 1; // px
+const OPACITY_SCALE_EPS = 0.01; // scale delta
 
 const Toolbar = ({
   x,
   y,
   scale,
   homeCoordinates = { x: 0, y: 0 },
-}: {
-  x: MotionValue<number>;
-  y: MotionValue<number>;
-  scale: MotionValue<number>;
-  homeCoordinates?: Point;
-}) => {
-  const displayX = useTransform([x, scale], (latest) => {
-    const [latestX, latestScale] = latest as [number, number];
-    return -(latestX / latestScale + homeCoordinates.x).toFixed(0);
-  });
-  const displayY = useTransform([y, scale], (latest) => {
-    const [latestY, latestScale] = latest as [number, number];
-    return -(latestY / latestScale + homeCoordinates.y).toFixed(0);
-  });
-  const displayScale = useTransform(scale, (latest) => latest.toFixed(2));
+}: ToolbarProps) => {
+  // numeric MotionValues
+  const rawDx = useTransform(
+    [x, scale],
+    ([lx, ls]) => -((lx as number) / (ls as number) + homeCoordinates.x),
+  );
+  const rawDy = useTransform(
+    [y, scale],
+    ([ly, ls]) => -((ly as number) / (ls as number) + homeCoordinates.y),
+  );
 
-  const opacity = useTransform([x, y, scale], (latest) => {
-    const [lx, ly, ls] = latest as [number, number, number];
-    const dx = -(lx / ls + homeCoordinates.x);
-    const dy = -(ly / ls + homeCoordinates.y);
-    // Use a small epsilon for float comparison
-    return Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01 && Math.abs(ls - 1) < 0.01
+  // formatted MotionValues
+  const displayX = useTransform(rawDx, (v) => Math.round(v).toString());
+  const displayY = useTransform(rawDy, (v) => Math.round(v).toString());
+  const displayScale = useTransform(scale, (v) => v.toFixed(2));
+
+  const opacity = useTransform([rawDx, rawDy, scale], ([dx, dy, ls]) =>
+    Math.abs(dx as number) < OPACITY_POS_EPS &&
+    Math.abs(dy as number) < OPACITY_POS_EPS &&
+    Math.abs((ls as number) - 1) < OPACITY_SCALE_EPS
       ? 0
-      : 1;
-  });
+      : 1,
+  );
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => e.stopPropagation(),
+    [],
+  );
 
   return (
     <motion.div
-      className="absolute left-4 top-4 z-[1000] cursor-default select-none rounded-[10px] border-[1px] border-border bg-offwhite p-2 font-mono text-xs text-heavy shadow-[0_6px_12px_rgba(0,0,0,0.10)] md:text-sm"
-      onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
+      className="absolute left-4 top-4 z-[1000] cursor-default select-none rounded-[10px] border border-border bg-offwhite p-2 font-mono text-xs text-heavy shadow-[0_6px_12px_rgba(0,0,0,0.10)] md:text-sm"
+      onPointerDown={handlePointerDown}
       data-toolbar-button
       style={{ opacity }}
     >
       (<motion.span>{displayX}</motion.span>,{" "}
       <motion.span>{displayY}</motion.span>)
-      <span className="text-light"> |</span> <motion.span>{displayScale}</motion.span>x
+      <span className="text-light"> |</span>{" "}
+      <motion.span>{displayScale}</motion.span>x
     </motion.div>
   );
 };
