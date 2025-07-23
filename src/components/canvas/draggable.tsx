@@ -1,4 +1,10 @@
-import React, { useRef, useEffect, forwardRef, useState, useCallback } from "react";
+import React, {
+  useRef,
+  useEffect,
+  forwardRef,
+  useState,
+  useCallback,
+} from "react";
 import {
   animate,
   motion,
@@ -182,37 +188,40 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
     };
   }, []);
 
-  const checkAlpha = useCallback((e: React.PointerEvent) => {
-    const img = imgRef.current;
-    const canvas = canvasRef.current;
-    if (!img || !canvas) return;
+  const checkAlpha = useCallback(
+    (e: React.PointerEvent) => {
+      const img = imgRef.current;
+      const canvas = canvasRef.current;
+      if (!img || !canvas) return;
 
-    const rect = img.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * img.naturalWidth;
-    const y = ((e.clientY - rect.top) / rect.height) * img.naturalHeight;
+      const rect = img.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * img.naturalWidth;
+      const y = ((e.clientY - rect.top) / rect.height) * img.naturalHeight;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const alpha =
-      ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data[3] ?? 0;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const alpha =
+        ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data[3] ?? 0;
 
-    // checking alpha > n rather than 0 to not trigger on shadows and such
-    const opaque = alpha > 128;
-    setIsOpaque(opaque);
+      // checking alpha > n rather than 0 to not trigger on shadows and such
+      const opaque = alpha > 128;
+      setIsOpaque(opaque);
 
-    let cursor = "url('customcursor.svg'), auto"; // default
+      let cursor = "url('customcursor.svg'), auto"; // default
 
-    // lowest-priority “grab”
-    if (opaque) cursor = "grab";
+      // lowest-priority “grab”
+      if (opaque) cursor = "grab";
 
-    // “grabbing” overrides the previous rule
-    if (e.type === "pointerdown" || isMouseDown) cursor = "grabbing";
+      // “grabbing” overrides the previous rule
+      if (e.type === "pointerdown" || isMouseDown) cursor = "grabbing";
 
-    // highest-priority “grab” (must come last)
-    if (e.type === "pointerup") cursor = "grab";
+      // highest-priority “grab” (must come last)
+      if (e.type === "pointerup") cursor = "grab";
 
-    img.style.cursor = cursor;
-  }, [isMouseDown]);
+      img.style.cursor = cursor;
+    },
+    [isMouseDown],
+  );
 
   const hoverScale = isOpaque ? (scale ?? 1) * 1.05 : (scale ?? 1);
 
