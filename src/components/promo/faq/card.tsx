@@ -28,7 +28,7 @@ export function FAQCard({
 
   return (
     <button
-      className={`w-2xl relative h-[250px] w-[310px] cursor-pointer text-medium transition-all hover:scale-[1.02] ${className}`}
+      className={`w-2xl relative h-[255px] w-[315px] cursor-pointer text-medium transition-all hover:scale-[1.02] ${className}`}
       style={{ perspective: 1200 }}
       onClick={() => setFlipped(!flipped)}
       onKeyDown={(e) => e.key === " " && setFlipped(!flipped)}
@@ -66,7 +66,7 @@ export function FAQCard({
               <h2 className="font-jetbrainsmono text-md relative z-10 min-h-14 font-medium">
                 {title.toUpperCase()}
               </h2>
-              <p className="mt-0.5 font-figtree text-[12.5px] leading-[20px]">
+              <p className="mt-0.5 font-figtree text-[12px] leading-[20px]">
                 {desc}
               </p>
             </div>
