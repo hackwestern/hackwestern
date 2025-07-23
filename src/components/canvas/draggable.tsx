@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, forwardRef, useState } from "react";
+import React, { useRef, useEffect, forwardRef, useState, useCallback } from "react";
 import {
   animate,
   motion,
@@ -182,7 +182,7 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
     };
   }, []);
 
-  const checkAlpha = (e: React.PointerEvent) => {
+  const checkAlpha = useCallback((e: React.PointerEvent) => {
     const img = imgRef.current;
     const canvas = canvasRef.current;
     if (!img || !canvas) return;
@@ -212,7 +212,7 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
     if (e.type === "pointerup") cursor = "grab";
 
     img.style.cursor = cursor;
-  };
+  }, [isMouseDown]);
 
   const hoverScale = isOpaque ? (scale ?? 1) * 1.05 : (scale ?? 1);
 
