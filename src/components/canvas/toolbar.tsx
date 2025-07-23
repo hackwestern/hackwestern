@@ -5,6 +5,7 @@ import {
   motion,
 } from "framer-motion";
 import { useCallback } from "react";
+import { useCanvasContext } from "~/contexts/CanvasContext";
 
 type ToolbarProps = {
   x: MotionValue<number>;
@@ -17,11 +18,10 @@ const OPACITY_POS_EPS = 1; // px
 const OPACITY_SCALE_EPS = 0.01; // scale delta
 
 const Toolbar = ({
-  x,
-  y,
-  scale,
   homeCoordinates = { x: 0, y: 0 },
 }: ToolbarProps) => {
+  const { x, y, scale } = useCanvasContext();
+
   // numeric MotionValues
   const rawDx = useTransform(
     [x, scale],

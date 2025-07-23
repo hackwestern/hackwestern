@@ -37,12 +37,15 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
     } = props;
 
     const {
-      zoom: parentZoom,
-      panOffset,
+      scale: parentZoom,
+      x: panOffsetX,
+      y: panOffsetY,
       isResetting,
       maxZIndex,
       setMaxZIndex,
     } = useCanvasContext();
+
+    const panOffset = useMemoPoint(panOffsetX.get(), panOffsetY.get());
 
     const defaultPos = useMemoPoint(0, 0);
     const initialPos = passedPos ?? defaultPos;
@@ -80,8 +83,8 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
       info: PanInfo,
     ) => {
       controls.stop();
-      const deltaParentX = info.delta.x / parentZoom;
-      const deltaParentY = info.delta.y / parentZoom;
+      const deltaParentX = info.delta.x / parentZoom.get();
+      const deltaParentY = info.delta.y / parentZoom.get();
 
       logicalPositionRef.current.x += deltaParentX;
       logicalPositionRef.current.y += deltaParentY;

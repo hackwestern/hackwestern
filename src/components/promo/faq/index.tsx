@@ -6,7 +6,7 @@ import { PROMO_FAQ } from "~/constants/faq";
 function FAQ() {
   return (
     <CanvasComponent offset={coordinates.faq}>
-      <div className="flex h-screen w-screen items-center justify-center pb-8 sm:pb-0 sm:pt-4">
+      <div className="flex h-screen items-center justify-center pb-8 sm:pb-0 sm:pt-4">
         <div className="h-[900px]">
           <div className="mx-auto flex grid h-[900px] grid-flow-col grid-rows-3 gap-x-8 gap-y-4">
             {/* left 2 cards */}
