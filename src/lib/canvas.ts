@@ -22,8 +22,9 @@ export const getDistance = (
 export const getMidpoint = (
   p1: MinimalPointerInput,
   p2: MinimalPointerInput,
-) => {
-  const midX = (p1.clientX + p2.clientX) / 2;
-  const midY = (p1.clientY + p2.clientY) / 2;
-  return { x: midX, y: midY };
+): Point => {
+  return {
+    x: (p1.clientX + p2.clientX) / 2,
+    y: (p1.clientY + p2.clientY) / 2,
+  };
 };

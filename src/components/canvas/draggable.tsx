@@ -14,7 +14,6 @@ import {
   type PanInfo,
 } from "framer-motion";
 import { useCanvasContext } from "~/contexts/CanvasContext";
-import { useMemoPoint } from "~/lib/canvas";
 
 interface Point {
   x: number;
@@ -25,6 +24,8 @@ export interface DraggableProps extends HTMLMotionProps<"div"> {
   initialPos?: Point;
   shouldStopPropagation?: (e: React.PointerEvent) => boolean;
 }
+
+const defaultPos = { x: 0, y: 0 };
 
 export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
   (props, ref) => {
@@ -38,16 +39,11 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
 
     const {
       scale: parentZoom,
-      x: panOffsetX,
-      y: panOffsetY,
       isResetting,
       maxZIndex,
       setMaxZIndex,
     } = useCanvasContext();
 
-    const panOffset = useMemoPoint(panOffsetX.get(), panOffsetY.get());
-
-    const defaultPos = useMemoPoint(0, 0);
     const initialPos = passedPos ?? defaultPos;
 
     const x = useMotionValue(initialPos.x);
@@ -76,7 +72,7 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
           mass: 1,
         });
       }
-    }, [initialPos, controls, isResetting, panOffset, x, y]);
+    }, [initialPos, controls, isResetting, x, y]);
 
     const handleDrag = (
       _event: MouseEvent | TouchEvent | PointerEvent,
