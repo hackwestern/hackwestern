@@ -26,6 +26,7 @@ import {
 import useWindowDimensions from "~/hooks/useWindowDimensions";
 import Navbar from "./navbar";
 import Toolbar from "./toolbar";
+import { SectionCoordinates } from "~/constants/canvas";
 
 export const OffsetComponent = ({
   offset,
@@ -50,7 +51,7 @@ export const OffsetComponent = ({
 };
 
 interface Props {
-  homeCoordinates: { x: number; y: number; width: number };
+  homeCoordinates: SectionCoordinates;
   children: React.ReactNode;
 }
 
@@ -530,15 +531,9 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   );
 };
 
-interface OffsetPoints {
-  x?: number;
-  y?: number;
-  width?: number;
-}
-
 interface CanvasProps {
   children: React.ReactNode;
-  offset?: OffsetPoints;
+  offset?: SectionCoordinates;
 }
 
 export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
@@ -572,7 +567,7 @@ export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
       style={{
         ...margin(),
         width: offset?.width ? offset.width + "px" : "100vw",
-        height: "100vh",
+        height: offset?.height ? offset.height + "px" : "100vh",
       }}
     >
       {children}

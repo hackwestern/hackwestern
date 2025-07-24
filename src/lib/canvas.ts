@@ -57,14 +57,14 @@ export function getSectionPanCoordinates({
   negative,
 }: {
   windowDimensions: { width: number; height: number };
-  coords: { x: number; y: number; width: number };
+  coords: { x: number; y: number; width: number; height: number };
   targetZoom: number;
   negative?: boolean;
 }) {
   const { width, height } = windowDimensions;
   // Calculate the center of the section
   const sectionCenterX = coords.x + coords.width / 2;
-  const sectionCenterY = coords.y + height / 2;
+  const sectionCenterY = coords.y + coords.height / 2;
 
   // Calculate the required pan offset to center the section in the viewport
   const targetX = width / 2 - sectionCenterX * targetZoom;
