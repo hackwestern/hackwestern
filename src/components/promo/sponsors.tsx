@@ -48,7 +48,7 @@ function Sponsors() {
               </div>
 
               {/* Notepad */}
-              <div className="flex h-[380px] w-[400px] origin-top-left flex-col items-center">
+              <div className="mt-10 flex h-[380px] w-[400px] origin-top-left scale-90 flex-col items-center">
                 <div className="relative h-[418px] w-[440px] scale-[1.1]">
                   <motion.img
                     src="/notepad.svg"
