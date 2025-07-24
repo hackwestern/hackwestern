@@ -542,7 +542,7 @@ interface CanvasProps {
 }
 
 export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
-  const margin = useMemo(() => {
+  const margin = () => {
     if (!offset) {
       return { margin: "auto" };
     }
@@ -564,13 +564,13 @@ export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
     }
 
     return style;
-  }, [offset]);
+  };
 
   return (
     <div
       className="absolute inset-0 z-30 flex"
       style={{
-        ...margin,
+        ...margin(),
         width: offset?.width ? offset.width + "px" : "100vw",
         height: "100vh",
       }}

@@ -40,10 +40,7 @@ const Toolbar = ({ homeCoordinates = { x: 0, y: 0 } }: ToolbarProps) => {
       : 1,
   );
 
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => e.stopPropagation(),
-    [],
-  );
+  const handlePointerDown = (e: React.PointerEvent) => e.stopPropagation();
 
   return (
     <motion.div

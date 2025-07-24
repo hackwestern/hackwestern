@@ -46,23 +46,7 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
       activePans.current = 0;
     }, 500);
 
-    if (activePans.current > 0) return;
-
-    const currentX = -x.get();
-    const currentY = -y.get();
-    const currentScale = scale.get();
-
-    const section = Object.keys(coordinates).find(
-      (key) =>
-        coordinates[key as CanvasSection].x === Math.round(currentX) &&
-        coordinates[key as CanvasSection].y === Math.round(currentY),
-    );
-
-    if (section && currentScale === 1) {
-      setExpandedButton(section);
-    } else {
-      setExpandedButton(null);
-    }
+    if (activePans.current == 0) setExpandedButton(null);
   };
 
   useMotionValueEvent(x, "change", updateExpandedButton);
@@ -72,6 +56,11 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
   const handlePan = (section: CanvasSection) => {
     setExpandedButton(section);
     activePans.current++;
+
+    if (section === CanvasSection.Home) {
+      onReset();
+      return;
+    }
 
     const panCoords = getSectionPanCoordinates({
       windowDimensions: { width, height },
@@ -87,12 +76,6 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
       },
       defaultZoom,
     );
-  };
-
-  const handleHome = () => {
-    setExpandedButton(CanvasSection.Home);
-    activePans.current++;
-    onReset();
   };
 
   // Clean up timer on unmount
@@ -123,7 +106,7 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
             <SingleButton
               label="Home"
               icon="Home"
-              onClick={handleHome}
+              onClick={() => handlePan(CanvasSection.Home)}
               isPushed={expandedButton === CanvasSection.Home}
             />
             <SingleButton
