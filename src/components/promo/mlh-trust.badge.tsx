@@ -4,7 +4,7 @@ function MLHTrustBadge() {
   return (
     <a
       id="mlh-trust-badge"
-      className="fixed right-4 top-0 z-50 block w-24 scale-50 sm:scale-75 md:right-8 md:scale-90 lg:right-16 lg:scale-100"
+      className="fixed right-6 top-0 z-50 block w-16 md:right-8 md:w-20 lg:right-16 lg:w-24"
       href="https://mlh.io/na?utm_source=na-hackathon&utm_medium=TrustBadge&`utm_campaign=2026-season&utm_content=white"
       target="_blank"
     >
