@@ -31,7 +31,7 @@ const RESPONSIVE_ZOOM_MAP: Record<ScreenSizeEnum, number> = {
 
 export default function Navbar({ panToOffset, onReset }: NavbarProps) {
   const { x, y, scale } = useCanvasContext();
-  const [expandedButton, setExpandedButton] = useState<string | null>("home");
+  const [expandedButton, setExpandedButton] = useState<string | null>(null);
   const activePans = useRef(0);
   const panTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -80,6 +80,7 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
 
   // Clean up timer on unmount
   useEffect(() => {
+    handlePan(CanvasSection.Home); // Default to Home on mount
     return () => {
       if (panTimeout.current) clearTimeout(panTimeout.current);
     };

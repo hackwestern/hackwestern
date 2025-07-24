@@ -159,11 +159,6 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     [x, y, scale, width],
   );
 
-  useEffect(() => {
-    // Reset the scene to the home coordinates on mount
-    onResetViewAndItems();
-  }, []);
-
   const panToOffset = useCallback(
     (
       offset: Point,
