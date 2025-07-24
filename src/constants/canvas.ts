@@ -14,12 +14,12 @@ export const coordinates = {
     width: 1013,
   },
   [CanvasSection.Projects]: {
-    x: 5550,
+    x: 5600,
     y: 100,
     width: 1200,
   },
   [CanvasSection.Home]: {
-    x: 3900,
+    x: 4000,
     y: 1200,
     width: 409,
   },
@@ -29,12 +29,12 @@ export const coordinates = {
     width: 1768,
   },
   [CanvasSection.Sponsors]: {
-    x: 3484,
+    x: 3584,
     y: 3300,
     width: 1240,
   },
   [CanvasSection.Team]: {
-    x: 5700,
+    x: 5850,
     y: 2200,
     width: 1080,
   },
