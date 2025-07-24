@@ -9,33 +9,33 @@ export enum CanvasSection {
 
 export const coordinates = {
   [CanvasSection.About]: {
-    x: 2350,
-    y: 550,
+    x: 1550,
+    y: 100,
     width: 1013,
   },
   [CanvasSection.Projects]: {
-    x: 6550,
-    y: 550,
+    x: 5550,
+    y: 100,
     width: 1200,
   },
   [CanvasSection.Home]: {
-    x: 3850,
-    y: 1800,
-    width: undefined, // home is screen width
+    x: 3900,
+    y: 1200,
+    width: 409,
   },
   [CanvasSection.FAQ]: {
-    x: 1800,
-    y: 3000,
+    x: 850,
+    y: 2300,
     width: 1768,
   },
   [CanvasSection.Sponsors]: {
-    x: 4800,
-    y: 4100,
+    x: 3484,
+    y: 3300,
     width: 1240,
   },
   [CanvasSection.Team]: {
-    x: 6850,
-    y: 3000,
+    x: 5700,
+    y: 2200,
     width: 1080,
   },
 };

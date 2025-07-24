@@ -4,6 +4,11 @@ import SingleButton from "./single-button";
 import { CanvasSection, coordinates } from "~/constants/canvas";
 import { useCanvasContext } from "~/contexts/CanvasContext";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
+import {
+  ScreenSizeEnum,
+  getScreenSizeEnum,
+  getSectionPanCoordinates,
+} from "~/lib/canvas";
 
 interface NavbarProps {
   panToOffset: (
@@ -14,6 +19,16 @@ interface NavbarProps {
   onReset: () => void;
 }
 
+const RESPONSIVE_ZOOM_MAP: Record<ScreenSizeEnum, number> = {
+  [ScreenSizeEnum.SMALL_MOBILE]: 0.5,
+  [ScreenSizeEnum.MOBILE]: 0.6,
+  [ScreenSizeEnum.TABLET]: 0.8,
+  [ScreenSizeEnum.SMALL_DESKTOP]: 0.9,
+  [ScreenSizeEnum.MEDIUM_DESKTOP]: 1,
+  [ScreenSizeEnum.LARGE_DESKTOP]: 1.2,
+  [ScreenSizeEnum.HUGE_DESKTOP]: 1.5,
+} as const;
+
 export default function Navbar({ panToOffset, onReset }: NavbarProps) {
   const { x, y, scale } = useCanvasContext();
   const [expandedButton, setExpandedButton] = useState<string | null>("home");
@@ -22,20 +37,7 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
 
   const { height, width } = useWindowDimensions();
 
-  // smaller default scale for smaller screens, larger for larger screens
-  // default is for 1920x1080p screens
-  let defaultZoom = 1;
-  if (width < 768) {
-    defaultZoom = 0.6; // mobile
-  } else if (width < 1440) {
-    defaultZoom = 0.8; // tablet
-  } else if (width < 1920) {
-    defaultZoom = 0.9; // small desktop
-  } else if (width < 2560) {
-    defaultZoom = 1; // medium desktop
-  } else {
-    defaultZoom = 1.2; // large desktop
-  }
+  const defaultZoom = RESPONSIVE_ZOOM_MAP[getScreenSizeEnum(width)];
 
   const updateExpandedButton = () => {
     // reset activePans if no movement has occurred recently
@@ -70,18 +72,16 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
   const handlePan = (section: CanvasSection) => {
     setExpandedButton(section);
     activePans.current++;
-    const coords = coordinates[section];
 
-    // Calculate the center of the section
-    const sectionCenterX = coords.x + (coords.width ?? 1) / 2;
-    const sectionCenterY = coords.y + height / 2;
-
-    // Calculate the required pan offset to center the section in the viewport
-    const targetX = width / 2 - sectionCenterX * defaultZoom;
-    const targetY = height / 2 - sectionCenterY * defaultZoom;
+    const panCoords = getSectionPanCoordinates({
+      windowDimensions: { width, height },
+      coords: coordinates[section],
+      targetZoom: defaultZoom,
+      negative: true,
+    });
 
     panToOffset(
-      { x: -targetX, y: -targetY },
+      panCoords,
       () => {
         activePans.current--;
       },

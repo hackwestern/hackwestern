@@ -16,7 +16,13 @@ import React, {
 } from "react";
 
 import { CanvasProvider } from "~/contexts/CanvasContext";
-import { getDistance, getMidpoint } from "~/lib/canvas";
+import {
+  getDistance,
+  getMidpoint,
+  getScreenSizeEnum,
+  getSectionPanCoordinates,
+  ScreenSizeEnum,
+} from "~/lib/canvas";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
 import Navbar from "./navbar";
 import Toolbar from "./toolbar";
@@ -44,7 +50,7 @@ export const OffsetComponent = ({
 };
 
 interface Props {
-  homeCoordinates?: { x: number; y: number };
+  homeCoordinates: { x: number; y: number; width: number };
   children: React.ReactNode;
 }
 
@@ -72,12 +78,21 @@ const INTERACTIVE_SELECTOR =
   "button,[role='button'],input,textarea,[contenteditable='true']," +
   "[data-toolbar-button],[data-navbar-button]";
 
-export const canvasWidth = 10000;
-export const canvasHeight = 6500;
+export const canvasWidth = 8000;
+export const canvasHeight = 5000;
 
 const ZOOM_BOUND = 1.05; // minimum zoom level to prevent zooming out too far
-const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 10;
+
+const MIN_ZOOMS: Record<ScreenSizeEnum, number> = {
+  [ScreenSizeEnum.SMALL_MOBILE]: 0.33,
+  [ScreenSizeEnum.MOBILE]: 0.2,
+  [ScreenSizeEnum.TABLET]: 0.15,
+  [ScreenSizeEnum.SMALL_DESKTOP]: 0.1,
+  [ScreenSizeEnum.MEDIUM_DESKTOP]: 0.1,
+  [ScreenSizeEnum.LARGE_DESKTOP]: 0.1,
+  [ScreenSizeEnum.HUGE_DESKTOP]: 0.1,
+} as const;
 
 const stopAllMotion = (
   x: MotionValue<number>,
@@ -95,14 +110,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const sceneWidth = canvasWidth;
   const sceneHeight = canvasHeight;
 
-  // center of the canvas
-  const centerX = sceneWidth / 2;
-  const centerY = sceneHeight / 2;
-
-  const offsetHomeCoordinates = {
-    x: -(homeCoordinates?.x ?? centerX),
-    y: -(homeCoordinates?.y ?? centerY),
-  };
+  const MIN_ZOOM = MIN_ZOOMS[getScreenSizeEnum(width)];
 
   // tracks if user is panning the screen
   const [isPanning, setIsPanning] = useState<boolean>(false);
@@ -116,8 +124,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
 
-  const x = useMotionValue(offsetHomeCoordinates.x);
-  const y = useMotionValue(offsetHomeCoordinates.y);
+  const x = useMotionValue(-3500);
+  const y = useMotionValue(0);
   const scale = useMotionValue(1);
 
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -133,16 +141,28 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     panOffset: Point;
   } | null>(null);
 
+  const offsetHomeCoordinates = getSectionPanCoordinates({
+    windowDimensions: { width, height },
+    coords: homeCoordinates,
+    targetZoom: 1,
+  });
+
   const onResetViewAndItems = useCallback(
     (onComplete?: () => void): void => {
       setIsResetting(true);
+
       void panToOffsetScene(offsetHomeCoordinates, x, y, scale, 1).then(() => {
         setIsResetting(false);
         if (onComplete) onComplete();
       });
     },
-    [offsetHomeCoordinates, x, y, scale],
+    [x, y, scale, width],
   );
+
+  useEffect(() => {
+    // Reset the scene to the home coordinates on mount
+    onResetViewAndItems();
+  }, []);
 
   const panToOffset = useCallback(
     (
@@ -473,7 +493,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         maxZIndex={maxZIndex}
         setMaxZIndex={setMaxZIndex}
       >
-        <Toolbar homeCoordinates={homeCoordinates} />
+        <Toolbar homeCoordinates={offsetHomeCoordinates} />
         <Navbar panToOffset={handlePanToOffset} onReset={onResetViewAndItems} />
         <div
           ref={viewportRef}

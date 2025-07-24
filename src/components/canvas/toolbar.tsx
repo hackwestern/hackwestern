@@ -1,5 +1,5 @@
 import { type Point, useTransform, motion } from "framer-motion";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useCanvasContext } from "~/contexts/CanvasContext";
 
 type ToolbarProps = {
@@ -11,15 +11,20 @@ const OPACITY_SCALE_EPS = 0.01; // scale delta
 
 const Toolbar = ({ homeCoordinates = { x: 0, y: 0 } }: ToolbarProps) => {
   const { x, y, scale } = useCanvasContext();
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   // numeric MotionValues
   const rawDx = useTransform(
     [x, scale],
-    ([lx, ls]) => -((lx as number) / (ls as number) + homeCoordinates.x),
+    ([lx, ls]) => -((lx as number) / (ls as number)) + homeCoordinates.x,
   );
   const rawDy = useTransform(
     [y, scale],
-    ([ly, ls]) => -((ly as number) / (ls as number) + homeCoordinates.y),
+    ([ly, ls]) => -((ly as number) / (ls as number)) + homeCoordinates.y,
   );
 
   // formatted MotionValues
@@ -47,10 +52,16 @@ const Toolbar = ({ homeCoordinates = { x: 0, y: 0 } }: ToolbarProps) => {
       data-toolbar-button
       style={{ opacity }}
     >
-      (<motion.span>{displayX}</motion.span>,{" "}
-      <motion.span>{displayY}</motion.span>)
-      <span className="text-light"> |</span>{" "}
-      <motion.span>{displayScale}</motion.span>x
+      {hasMounted ? (
+        <>
+          (<motion.span>{displayX}</motion.span>,{" "}
+          <motion.span>{displayY}</motion.span>)
+          <span className="text-light"> |</span>{" "}
+          <motion.span>{displayScale}</motion.span>x
+        </>
+      ) : (
+        <span style={{ opacity: 0 }}>(0, 0) | 1.00x</span>
+      )}
     </motion.div>
   );
 };
