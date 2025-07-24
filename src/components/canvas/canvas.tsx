@@ -86,7 +86,7 @@ const ZOOM_BOUND = 1.05; // minimum zoom level to prevent zooming out too far
 const MAX_ZOOM = 10;
 
 const MIN_ZOOMS: Record<ScreenSizeEnum, number> = {
-  [ScreenSizeEnum.SMALL_MOBILE]: 0.33,
+  [ScreenSizeEnum.SMALL_MOBILE]: 0.25,
   [ScreenSizeEnum.MOBILE]: 0.2,
   [ScreenSizeEnum.TABLET]: 0.15,
   [ScreenSizeEnum.SMALL_DESKTOP]: 0.1,
