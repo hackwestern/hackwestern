@@ -25,7 +25,7 @@ const RESPONSIVE_ZOOM_MAP: Record<ScreenSizeEnum, number> = {
   [ScreenSizeEnum.TABLET]: 0.8,
   [ScreenSizeEnum.SMALL_DESKTOP]: 0.9,
   [ScreenSizeEnum.MEDIUM_DESKTOP]: 1,
-  [ScreenSizeEnum.LARGE_DESKTOP]: 1.2,
+  [ScreenSizeEnum.LARGE_DESKTOP]: 1.25,
   [ScreenSizeEnum.HUGE_DESKTOP]: 1.5,
 } as const;
 

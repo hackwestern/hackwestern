@@ -46,7 +46,7 @@ export const getScreenSizeEnum = (width: number): ScreenSizeEnum => {
   if (width < 1440) return ScreenSizeEnum.TABLET;
   if (width < 1920) return ScreenSizeEnum.SMALL_DESKTOP;
   if (width < 2560) return ScreenSizeEnum.MEDIUM_DESKTOP;
-  if (width < 3840) return ScreenSizeEnum.LARGE_DESKTOP;
+  if (width <= 3440) return ScreenSizeEnum.LARGE_DESKTOP;
   return ScreenSizeEnum.HUGE_DESKTOP;
 };
 

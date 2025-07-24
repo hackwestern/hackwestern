@@ -1,7 +1,6 @@
 import Head from "next/head";
 import { Footer } from "~/components/footer";
 import Hero from "~/components/promo/hero";
-import Image from "next/image";
 import Canvas from "~/components/canvas/canvas";
 import Sponsors from "~/components/promo/sponsors";
 import About from "~/components/promo/about";

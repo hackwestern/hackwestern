@@ -12,9 +12,7 @@ import React, {
   type FC,
   useEffect,
   useCallback,
-  useMemo,
 } from "react";
-
 import { CanvasProvider } from "~/contexts/CanvasContext";
 import {
   getDistance,
