@@ -125,7 +125,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
 
-  const x = useMotionValue(-3500);
+  // somewhere near the middle-ish
+  const x = useMotionValue(-2500);
   const y = useMotionValue(0);
   const scale = useMotionValue(1);
 
