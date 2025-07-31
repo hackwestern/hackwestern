@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import * as LucideIcons from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useToast } from "../hooks/use-toast";
-import { toast as SonnerToast } from "sonner";
 
 type IconName = keyof typeof LucideIcons;
 
