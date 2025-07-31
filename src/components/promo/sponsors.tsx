@@ -89,12 +89,6 @@ function Sponsors() {
 												<Mail className="h-5 w-5" />
 												Get in touch
 											</Button>
-											<SingleButton
-												label="Sponsor Us!"
-												icon="Handshake"
-												emailAddress="sponsorship@hackwestern.com"
-												isPushed={false}
-											/>
 										</div>
 									</div>
 								</div>
