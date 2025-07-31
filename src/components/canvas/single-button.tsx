@@ -11,7 +11,7 @@ interface SingleButtonProps {
 	icon?: IconName;
 	customIcon?: React.ComponentType<{ className?: string }>;
 	onClick?: () => void;
-	isPushed?: boolean;
+	isPushed: boolean;
 	link?: string;
 	emailAddress?: string;
 }
@@ -101,7 +101,7 @@ export default function SingleButton({
 					setCopiedEmail(true);
 					toast({
 						title: "Email copied!",
-						variant: "tooltip",
+						variant: "cute",
 						duration: 2000,
 					});
 				} else {
