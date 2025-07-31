@@ -1,24 +1,35 @@
-import { type Point } from "framer-motion";
-import { useEffect, useState } from "react";
+import { type Point, useMotionValueEvent } from "framer-motion";
+import { useState } from "react";
+import { useCanvasContext } from "~/contexts/CanvasContext";
 
 const Toolbar = ({
-  zoom,
-  panOffset,
   homeCoordinates = { x: 0, y: 0 },
 }: {
-  zoom: number;
-  panOffset: Point;
   homeCoordinates?: Point;
 }) => {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
+  const { x, y, scale } = useCanvasContext();
+  const [values, setValues] = useState({
+    x: x.get(),
+    y: y.get(),
+    scale: scale.get(),
+  });
 
-  // coordinates of top left corner of screen, where (0, 0) is when at home
-  const displayX = -(panOffset.x / zoom + homeCoordinates.x);
-  const displayY = -(panOffset.y / zoom + homeCoordinates.y);
+  useMotionValueEvent(x, "change", (latest) => {
+    setValues((v) => ({ ...v, x: latest }));
+  });
 
-  if (displayX === 0 && displayY === 0 && zoom === 1) {
+  useMotionValueEvent(y, "change", (latest) => {
+    setValues((v) => ({ ...v, y: latest }));
+  });
+
+  useMotionValueEvent(scale, "change", (latest) => {
+    setValues((v) => ({ ...v, scale: latest }));
+  });
+
+  const displayX = -(values.x / values.scale + homeCoordinates.x);
+  const displayY = -(values.y / values.scale + homeCoordinates.y);
+
+  if (displayX === 0 && displayY === 0 && values.scale === 1) {
     return null; // don't show toolbar when at home
   }
 
@@ -29,7 +40,7 @@ const Toolbar = ({
       data-toolbar-button
     >
       ({displayX.toFixed(0)}, {displayY.toFixed(0)})
-      <span className="text-light"> |</span> {zoom.toFixed(2)}x
+      <span className="text-light"> |</span> {values.scale.toFixed(2)}x
     </div>
   );
 };

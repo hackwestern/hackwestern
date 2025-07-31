@@ -17,14 +17,12 @@ const dico = localFont({
 });
 
 const figtree = Figtree({
-  weight: ["500"],
   subsets: ["latin"],
   variable: "--font-figtree",
   fallback: ["Inter", "sans-serif"],
 });
 
 const jetbrainsmono = JetBrains_Mono({
-  weight: ["500"],
   subsets: ["latin"],
   variable: "--font-jetbrainsmono",
   fallback: ["monospace"],
