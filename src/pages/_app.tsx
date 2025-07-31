@@ -41,10 +41,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
           <Component {...pageProps} />
         </TooltipProvider>
       </main>
-      <Toaster 
-        visibleToasts={1}
-        style={{ zIndex: 90 }}
-      />
+      <Toaster visibleToasts={1} style={{ zIndex: 90 }} />
     </SessionProvider>
   );
 };
