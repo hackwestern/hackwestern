@@ -24,7 +24,7 @@ import {
 import useWindowDimensions from "~/hooks/useWindowDimensions";
 import Navbar from "./navbar";
 import Toolbar from "./toolbar";
-import { SectionCoordinates } from "~/constants/canvas";
+import { type SectionCoordinates } from "~/constants/canvas";
 
 export const OffsetComponent = ({
   offset,
