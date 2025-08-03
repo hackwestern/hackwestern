@@ -227,6 +227,10 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
       drag={isOpaque}
       shouldStopPropagation={() => isOpaque}
       {...restProps}
+      style={{
+        backgroundColor: "rgba(0, 0, 0, 0.3)",
+        height: 0,
+      }}
     >
       <motion.img
         ref={imgRef}

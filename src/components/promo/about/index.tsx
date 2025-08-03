@@ -26,7 +26,7 @@ function About() {
                 />
               </div>
               <DraggableImage
-                className="absolute -right-[320px] bottom-[-110px]"
+                className="absolute -right-[320px] bottom-[350px]"
                 key="lightbulb"
                 src="/lightbulb.png"
                 alt="Lightbulb"
