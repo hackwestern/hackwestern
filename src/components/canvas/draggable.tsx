@@ -108,6 +108,7 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
         initial={{
           scale: 1,
           filter: "drop-shadow(0 0px 0px rgba(0, 0, 0, 0)) brightness(1)",
+          position: "relative",
         }}
         onPointerDown={(e: React.PointerEvent) => {
           if (shouldStopPropagation?.(e)) {
