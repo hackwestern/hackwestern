@@ -144,14 +144,20 @@ export interface DraggableImageProps extends DraggableProps {
 }
 
 function getAlphaAtCoords(
-  x: number,
-  y: number,
-  canvas: HTMLCanvasElement,
-): number | null {
-  if (!canvas) return null;
+  clientX: number,
+  clientY: number,
+  canvas: HTMLCanvasElement | null,
+  img: HTMLImageElement | null,
+): number {
+  if (!canvas || !img) return 0;
 
   const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
+  if (!ctx) return 0;
+
+  const rect = img.getBoundingClientRect();
+
+  const x = ((clientX - rect.left) / rect.width) * img.naturalWidth;
+  const y = ((clientY - rect.top) / rect.height) * img.naturalHeight;
 
   const alpha = ctx.getImageData(x, y, 1, 1).data[3] ?? 0;
   return alpha;
@@ -162,6 +168,33 @@ function drawImageToCanvas(img: HTMLImageElement, canvas: HTMLCanvasElement) {
   if (!ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(img, 0, 0);
+}
+
+// Helper to check if mouse is over the image
+function isMouseOverImage(
+  clientX: number,
+  clientY: number,
+  img: HTMLImageElement | null,
+) {
+  if (!img) return false;
+  const rect = img.getBoundingClientRect();
+  return (
+    clientX >= rect.left &&
+    clientX <= rect.right &&
+    clientY >= rect.top &&
+    clientY <= rect.bottom
+  );
+}
+
+function updateCursor(
+  opaque: boolean,
+  isMouseDown: boolean,
+  img: HTMLImageElement | null,
+) {
+  let cursor = "url('customcursor.svg'), auto"; // default
+  if (opaque) cursor = "grab";
+  if (isMouseDown) cursor = "grabbing";
+  if (img) img.style.cursor = cursor;
 }
 
 export function DraggableImage(props: DraggableImageProps) {
@@ -199,66 +232,42 @@ export function DraggableImage(props: DraggableImageProps) {
     };
   }, []);
 
-  // Helper to check if mouse is over the image
-  const isMouseOverImage = useCallback((clientX: number, clientY: number) => {
-    const img = imgRef.current;
-    if (!img) return false;
-    const rect = img.getBoundingClientRect();
-    return (
-      clientX >= rect.left &&
-      clientX <= rect.right &&
-      clientY >= rect.top &&
-      clientY <= rect.bottom
-    );
-  }, []);
-
-  const updateCursor = useCallback((opaque: boolean) => {
-    const img = imgRef.current;
-    let cursor = "url('customcursor.svg'), auto"; // default
-    if (opaque) cursor = "grab";
-    if (isMouseDown.current) cursor = "grabbing";
-    if (img) img.style.cursor = cursor;
-  }, []);
-
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
-      if (isMouseOverImage(e.clientX, e.clientY)) {
-        // Use the utility directly, keep logic unchanged
-        const img = imgRef.current;
-        const canvas = canvasRef.current;
-        if (!img || !canvas) return;
-        const rect = img.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * img.naturalWidth;
-        const y = ((e.clientY - rect.top) / rect.height) * img.naturalHeight;
-        const alpha = getAlphaAtCoords(Math.floor(x), Math.floor(y), canvas);
-        if (alpha === null) return;
+      if (
+        !isMouseDown.current &&
+        isMouseOverImage(e.clientX, e.clientY, imgRef.current)
+      ) {
+        const alpha = getAlphaAtCoords(
+          e.clientX,
+          e.clientY,
+          canvasRef.current,
+          imgRef.current,
+        );
+
         // checking alpha > n rather than 0 to not trigger on shadows and such
         const opaque = alpha > 128;
+
         setIsOpaque(opaque);
-        updateCursor(opaque);
+        updateCursor(opaque, false, imgRef.current);
       }
     };
     window.addEventListener("mousemove", handleGlobalMouseMove);
     return () => {
       window.removeEventListener("mousemove", handleGlobalMouseMove);
     };
-  }, [updateCursor, isMouseOverImage]);
+  }, []);
 
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => {
-      if (isOpaque) {
-        isMouseDown.current = true;
-        e.stopPropagation(); // Prevents the event from bubbling up
-        updateCursor(true);
-      }
-    },
-    [isOpaque, updateCursor],
-  );
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    isMouseDown.current = true;
+    e.stopPropagation(); // Prevents the event from bubbling up
+    updateCursor(true, true, imgRef.current);
+  }, []);
 
   const handlePointerUp = useCallback(() => {
     isMouseDown.current = false;
-    updateCursor(isOpaque);
-  }, [isOpaque, updateCursor]);
+    updateCursor(isOpaque, false, imgRef.current);
+  }, [isOpaque]);
 
   const hoverScale = isOpaque ? (scale ?? 1) * 1.05 : (scale ?? 1);
 
