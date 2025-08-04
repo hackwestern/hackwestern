@@ -143,6 +143,13 @@ export interface DraggableImageProps extends DraggableProps {
   scale?: number;
 }
 
+function drawImageToCanvas(img: HTMLImageElement, canvas: HTMLCanvasElement) {
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0);
+}
+
 function getAlphaAtCoords(
   clientX: number,
   clientY: number,
@@ -163,14 +170,6 @@ function getAlphaAtCoords(
   return alpha;
 }
 
-function drawImageToCanvas(img: HTMLImageElement, canvas: HTMLCanvasElement) {
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  if (!ctx) return;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(img, 0, 0);
-}
-
-// Helper to check if mouse is over the image
 function isMouseOverImage(
   clientX: number,
   clientY: number,
