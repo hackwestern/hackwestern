@@ -26,11 +26,10 @@ function About() {
                 />
               </div>
               <DraggableImage
-                className="absolute -right-[320px] bottom-[350px]"
+                className="absolute -right-[320px] bottom-[150px] w-24"
                 key="lightbulb"
-                src="/lightbulb.png"
+                src="/lightbulb.svg"
                 alt="Lightbulb"
-                scale={0.25}
                 animate={{
                   rotate: [2, -2],
                   transition: {
