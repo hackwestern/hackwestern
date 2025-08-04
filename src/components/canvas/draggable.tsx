@@ -232,6 +232,7 @@ export function DraggableImage(props: DraggableImageProps) {
     };
   }, []);
 
+  // handle global mouse move to update cursor and opacity
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (
@@ -264,10 +265,10 @@ export function DraggableImage(props: DraggableImageProps) {
     updateCursor(true, true, imgRef.current);
   }, []);
 
-  const handlePointerUp = useCallback(() => {
+  const handlePointerUp = () => {
     isMouseDown.current = false;
     updateCursor(isOpaque, false, imgRef.current);
-  }, [isOpaque]);
+  };
 
   const hoverScale = isOpaque ? (scale ?? 1) * 1.05 : (scale ?? 1);
 
@@ -276,11 +277,10 @@ export function DraggableImage(props: DraggableImageProps) {
       initialPos={initialPos}
       className={className}
       drag={isOpaque}
-      shouldStopPropagation={() => isOpaque}
-      {...restProps}
       style={{
         height: 0,
       }}
+      {...restProps}
     >
       <motion.img
         ref={imgRef}
