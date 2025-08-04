@@ -37,22 +37,6 @@ function Hero() {
               alt="Hack Western Logo"
               className="m-4 mb-12 w-24"
             />
-            <DraggableImage
-              key="hw-logo2"
-              onDragStart={() => setHasBeenDragged(true)}
-              animate={{
-                rotate: [2, -2],
-                transition: {
-                  duration: 1,
-                  repeat: Infinity,
-                  repeatType: "mirror",
-                  ease: "easeInOut",
-                },
-              }}
-              src="/horse.svg"
-              alt="Hack Western Logo"
-              className="m-4 mb-12 w-24"
-            />
             <motion.div
               animate={{ opacity: hasBeenDragged ? 0 : 1 }}
               transition={{ duration: 0.5, ease: "easeInOut" }}
