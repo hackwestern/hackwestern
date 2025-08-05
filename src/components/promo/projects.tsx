@@ -1,9 +1,18 @@
 import { CanvasComponent } from "../canvas/canvas";
 import { coordinates } from "~/constants/canvas";
 import { motion } from "framer-motion";
-import FolderIcon from "../ui/FolderIcon";
+import { useState } from "react";
+import { ProjectPreview } from "../ui/PreviewProjects";
 
 function Projects() {
+	const folderData = [
+		{ label: "CREATIVE ARTS", gradientId: "red", align: "self-end", cards: ["Git-place.png", "Ghostwriter.png", "Dream Scape.png"] },
+		{ label: "AI-POWERED", gradientId: "blue", align: "self-start", cards: ["Co:Herent.png", "Talk to Duckie.png", "Bravo Dispatch.png"] },
+		{ label: "GAMES", gradientId: "green", align: "self-end", cards: ["Ar-cade.png", "PacRoyale.png", "Credit Crimes.png"] },
+		{ label: "DELIGHTFUL DESIGN", gradientId: "purple", align: "self-start", cards: ["Genee.png", "Harbor-Ed.png", "Blocks.png"] },
+		{ label: "HARDWARE HACKS", gradientId: "orange", align: "self-end", cards: ["infu.png", "SuperStage.png", "HoverTouch.png"] },
+	];
+	const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 	return (
 		<CanvasComponent offset={coordinates.projects}>
 			<div className="flex flex-col w-[60rem] items-center">
@@ -27,29 +36,24 @@ function Projects() {
 				</div>
 
 				{/* Folders */}
-				<div className="flex h-44 w-200 shrink-0 justify-between w-[60rem]">
-					<div className="self-end flex flex-col">
-						<FolderIcon className="w-32" gradientId="red" />
-						<span className="font-jetbrains-mono font-medium text-medium text-[12px] text-center mt-4 block">CREATIVE ARTS</span>
-					</div>
-					<div className="self-start">
-						<FolderIcon className="w-32" gradientId="blue" />
-						<span className="font-jetbrains-mono font-medium text-medium text-[12px] text-center mt-4 block">AI-POWERED</span>
-					</div>
-					<div className="self-end">
-						<FolderIcon className="w-32" gradientId="green" />
-						<span className="font-jetbrains-mono font-medium text-medium text-[12px] text-center mt-4 block">GAMES</span>
-					</div>
-					<div className="self-start">
-						<FolderIcon className="w-32" gradientId="purple" />
-						<span className="font-jetbrains-mono font-medium text-medium text-[12px] text-center mt-4 block">DELIGHTFUL DESIGN</span>
-					</div>
-					<div className="self-end">
-						<FolderIcon className="w-32" gradientId="orange" />
-						<span className="font-jetbrains-mono font-medium text-medium text-[12px] text-center mt-4 block">HARDWARE</span>
-					</div>
-				</div>
-			</div>
+				<div className="flex h-44 w-[60rem] shrink-0 justify-between">
+					{folderData.map((folder, index) => (
+						<div
+							key={folder.label}
+							className={`${folder.align} flex flex-col items-center relative`}
+							onMouseEnter={() => setHoveredIndex(index)}
+							onMouseLeave={() => setHoveredIndex(null)}
+						>
+							<ProjectPreview
+								label={folder.label}
+								gradientId={folder.gradientId}
+								isOpen={hoveredIndex === index}
+								cardNames={folder.cards}
+								folder={folder.label}
+							/>
+						</div>
+					))}
+				</div>		</div>
 		</CanvasComponent >
 	);
 }
