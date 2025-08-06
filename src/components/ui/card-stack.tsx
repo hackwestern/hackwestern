@@ -4,23 +4,26 @@ import React from "react";
 
 export type CardStackProps = {
 	isOpen?: boolean;
-	names?: string[];
+	names?: {
+		image?: string;
+		link?: string;
+	}[]
 	folder?: string;
 };
 
 export const CardStack = ({ isOpen = false, names = [], folder }: CardStackProps) => {
-	const rotations = [-10, 0, 10];
+	const rotations = [-15, 0, 15];
 	const x_pos = [-40, 20, 80];
-	const y_open = [-40, -60, -40]
+	const y_open = [-50, -60, -50]
 
 	return (
-		<div className="relative w-36 h-28">
+		<div className="relative w-32 h-24">
 			{names.map((name, i) => {
-				const cleanName = name.replace(/\.png$/, "");
+				const cleanName = name.image.replace(/\.png$/, "");
 				return (
 					<motion.div
-						key={name}
-						className="flex flex-col absolute top-0 left-0 w-16 h-15 gap-y-1"
+						key={name.image}
+						className="group flex flex-col absolute top-0 left-0 w-16 h-15 gap-y-1"
 						style={{
 							zIndex: 10 - i,
 							transformOrigin: "center",
@@ -48,25 +51,37 @@ export const CardStack = ({ isOpen = false, names = [], folder }: CardStackProps
 									rotate: -20,
 								}
 						}
+						whileHover={{
+							// Calculate an offset vector rotated by rotations[i]
+							x: (x_pos[i] || 0) + 0 * Math.cos((rotations[i] * Math.PI) / 180) + 10 * Math.sin((rotations[i] * Math.PI) / 180),
+							y: (y_open[i] || 0) + 0 * Math.sin((rotations[i] * Math.PI) / 180) - 10 * Math.cos((rotations[i] * Math.PI) / 180),
+							scale: 1.35,
+						}}
 						transition={{
 							delay: i * 0.05,
 							duration: 0.3,
 							ease: [0.4, 0, 0.2, 1],
 						}}
 					>
-						<div className="flex items-center justify-center pt-1 pb-1 pr-2 pl-2 rounded-[4px] bg-[var(--text-heavy,#3C204C)]">
+						<div className="flex items-center justify-center pt-1 pb-1 pr-2 pl-2 rounded-[4px] bg-[var(--text-heavy,#3C204C)] opacity-0 group-hover:opacity-100  duration-300 ">
 							<span className="text-white font-figtree text-[7px] font-light leading-none">
 								{cleanName}
 							</span>
 						</div>
 						<div className="rounded-lg bg-white shadow-lg border-4 border-gray-100 overflow-hidden">
-							<Image
-								src={`/projects/${folder}/${name}`}
-								alt={`Card image ${i}`}
-								width={100}
-								height={76}
-								className="object-cover"
-							/>
+							<a
+								href={name.link}
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								<Image
+									src={`/projects/${folder}/${name.image}`}
+									alt={`Card image ${i}`}
+									width={100}
+									height={76}
+									className="object-cover"
+								/>
+							</a>
 						</div>
 					</motion.div>
 				)
