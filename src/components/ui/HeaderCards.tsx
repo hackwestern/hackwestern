@@ -21,14 +21,13 @@ function HeaderCards({
 	const xIndexes = [-20, 0, 20];
 
 	return (
-		<div className="relative flex h-[800px] w-[1199px] justify-center">
+		<div className=" flex h-[800px] w-[1199px] justify-center">
 			{names.map((name, i) => {
-				const cleanName = name.image?.replace(/\.png$/, "") || "";
+				const cleanName = name.image?.replace(/\.png$/, "");
 				const rotate = rotations[i % 3];
 				const y = yOffsets[i % 3];
 				const z = zIndexes[i % 3];
 				const x = xIndexes[i % 3];
-
 				return (
 					<motion.div
 						key={name.image}
@@ -42,7 +41,7 @@ function HeaderCards({
 						variants={{
 							hover: {},
 						}}
-						className="group absolute flex h-[292px] w-[369px] flex-col items-center rounded-2xl border border-gray-200 bg-white p-[11px] shadow-xl"
+						className="group pointer-events-auto absolute relative flex h-[292px] w-[369px] flex-col items-center rounded-2xl border border-gray-200 bg-white p-[11px] shadow-xl"
 					>
 						<motion.div
 							className="relative w-full overflow-hidden rounded"
@@ -58,7 +57,7 @@ function HeaderCards({
 						>
 							<Image
 								src={`/projects/${folder[i]}/${name.image}`}
-								alt={cleanName}
+								alt={cleanName || "project image"}
 								fill
 								style={{ objectFit: "cover" }}
 								className="bg-[lightgray]"
@@ -81,7 +80,7 @@ function HeaderCards({
 						</motion.span>
 						{isOpen && (
 							<motion.p
-								className="absolute bottom-2 left-2 right-2 text-center text-xs text-[color:var(--text-medium,#776780)]"
+								className="absolute bottom-0 left-2 right-2 text-center text-xs text-[color:var(--text-medium,#776780)]"
 								variants={{
 									hover: {
 										opacity: 1,
