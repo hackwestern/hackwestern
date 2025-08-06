@@ -2,23 +2,23 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 
 type HeaderCardsProps = {
-	isOpen?: boolean;
-	names?: {
-		image?: string;
-		description?: string;
-	}[];
-	folder?: string[];
+  isOpen?: boolean;
+  names?: {
+    image?: string;
+    description?: string;
+  }[];
+  folder?: string[];
 };
 
 function HeaderCards({
-	isOpen = true,
-	names = [],
-	folder = [],
+  isOpen = true,
+  names = [],
+  folder = [],
 }: HeaderCardsProps) {
-	const rotations = [-16, 3.214, 22];
-	const yOffsets = [-10, -60, 5];
-	const zIndexes = [0, 40, 50];
-	const xIndexes = [-20, 0, 20];
+  const rotations = [-16, 3.214, 22];
+  const yOffsets = [-10, -60, 5];
+  const zIndexes = [0, 40, 50];
+  const xIndexes = [-20, 0, 20];
 
 	return (
 		<div className=" flex h-[800px] w-[1199px] justify-center">
