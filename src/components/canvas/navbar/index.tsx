@@ -1,5 +1,5 @@
 import { motion, useMotionValueEvent } from "framer-motion";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import SingleButton from "./single-button";
 import { CanvasSection, coordinates } from "~/constants/canvas";
 import { useCanvasContext } from "~/contexts/CanvasContext";
@@ -53,30 +53,33 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
   useMotionValueEvent(y, "change", updateExpandedButton);
   useMotionValueEvent(scale, "change", updateExpandedButton);
 
-  const handlePan = (section: CanvasSection) => {
-    setExpandedButton(section);
-    activePans.current++;
+  const handlePan = useCallback(
+    function handlePan(section: CanvasSection) {
+      setExpandedButton(section);
+      activePans.current++;
 
-    if (section === CanvasSection.Home) {
-      onReset();
-      return;
-    }
+      if (section === CanvasSection.Home) {
+        onReset();
+        return;
+      }
 
-    const panCoords = getSectionPanCoordinates({
-      windowDimensions: { width, height },
-      coords: coordinates[section],
-      targetZoom: defaultZoom,
-      negative: true,
-    });
+      const panCoords = getSectionPanCoordinates({
+        windowDimensions: { width, height },
+        coords: coordinates[section],
+        targetZoom: defaultZoom,
+        negative: true,
+      });
 
-    panToOffset(
-      panCoords,
-      () => {
-        activePans.current--;
-      },
-      defaultZoom,
-    );
-  };
+      panToOffset(
+        panCoords,
+        () => {
+          activePans.current--;
+        },
+        defaultZoom,
+      );
+    },
+    [panToOffset, onReset, width, height, defaultZoom],
+  );
 
   // Clean up timer on unmount
   useEffect(() => {
@@ -84,7 +87,7 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
     return () => {
       if (panTimeout.current) clearTimeout(panTimeout.current);
     };
-  }, []);
+  }, [handlePan]);
 
   return (
     <div

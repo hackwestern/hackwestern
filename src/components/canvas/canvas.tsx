@@ -12,6 +12,7 @@ import React, {
   type FC,
   useEffect,
   useCallback,
+  useMemo,
 } from "react";
 import { CanvasProvider } from "~/contexts/CanvasContext";
 import {
@@ -141,11 +142,15 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     panOffset: Point;
   } | null>(null);
 
-  const offsetHomeCoordinates = getSectionPanCoordinates({
-    windowDimensions: { width, height },
-    coords: homeCoordinates,
-    targetZoom: 1,
-  });
+  const offsetHomeCoordinates = useMemo(
+    () =>
+      getSectionPanCoordinates({
+        windowDimensions: { width, height },
+        coords: homeCoordinates,
+        targetZoom: 1,
+      }),
+    [homeCoordinates, width, height],
+  );
 
   const onResetViewAndItems = useCallback(
     (onComplete?: () => void): void => {
@@ -156,7 +161,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         if (onComplete) onComplete();
       });
     },
-    [x, y, scale, width],
+    [offsetHomeCoordinates, x, y, scale],
   );
 
   const panToOffset = useCallback(
@@ -323,15 +328,18 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     [
       isPanning,
       isResetting,
-      panStartPoint,
+      x,
+      y,
+      scale,
+      panStartPoint.x,
+      panStartPoint.y,
       width,
       sceneWidth,
       height,
       sceneHeight,
-      scale,
-      initialPanOffsetOnDrag,
-      x,
-      y,
+      initialPanOffsetOnDrag.x,
+      initialPanOffsetOnDrag.y,
+      MIN_ZOOM,
     ],
   );
 
@@ -365,16 +373,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         setInitialPanOffsetOnDrag({ x: x.get(), y: y.get() });
       }
     },
-    [
-      isPanning,
-      setIsPanning,
-      setPanStartPoint,
-      setInitialPanOffsetOnDrag,
-      viewportRef,
-      initialPinchStateRef,
-      x,
-      y,
-    ],
+    [x, y, scale, isPanning],
   );
 
   const handleWheelZoom = useCallback(
@@ -446,7 +445,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         y.set(clampedPanY);
       }
     },
-    [width, sceneWidth, height, sceneHeight, x, y, scale],
+    [scale, MIN_ZOOM, x, y, sceneWidth, sceneHeight, width, height],
   );
 
   useEffect(() => {
@@ -528,9 +527,14 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
 interface CanvasProps {
   children: React.ReactNode;
   offset?: SectionCoordinates;
+  optimize?: boolean;
 }
 
-export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
+export const CanvasComponent: FC<CanvasProps> = ({
+  children,
+  offset,
+  optimize = true,
+}) => {
   const margin = () => {
     if (!offset) {
       return { margin: "auto" };
@@ -555,6 +559,11 @@ export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
     return style;
   };
 
+  // TODO:
+  if (optimize) {
+    // check if component is inside of viewport, return null if not
+  }
+
   return (
     <div
       className="absolute inset-0 z-30 flex"
@@ -571,21 +580,27 @@ export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
 
 const gradientBgImage = `radial-gradient(ellipse ${canvasWidth}px ${canvasHeight}px at ${canvasWidth / 2}px ${canvasHeight}px, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`;
 
-const Gradient = () => (
-  <div
-    className="absolute inset-0 h-full w-full bg-hw-radial-gradient opacity-100"
-    style={{
-      backgroundImage: gradientBgImage,
-    }}
-  />
-);
+const Gradient = React.memo(function Gradient() {
+  return (
+    <div
+      className="absolute inset-0 h-full w-full bg-hw-radial-gradient opacity-100"
+      style={{
+        backgroundImage: gradientBgImage,
+      }}
+    />
+  );
+});
 
-const Dots = () => (
-  <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-40 [background-size:20px_20px]" />
-);
+const Dots = React.memo(function Dots() {
+  return (
+    <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-40 [background-size:20px_20px]" />
+  );
+});
 
-const Filter = () => (
-  <div className="pointer-events-none absolute inset-0 hidden h-full w-full bg-none contrast-125 filter md:inline md:bg-noise" />
-);
+const Filter = React.memo(function Filter() {
+  return (
+    <div className="pointer-events-none absolute inset-0 hidden h-full w-full bg-none contrast-125 filter md:inline md:bg-noise" />
+  );
+});
 
 export default Canvas;

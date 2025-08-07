@@ -1,5 +1,5 @@
 import { type Point, useTransform, motion } from "framer-motion";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useCanvasContext } from "~/contexts/CanvasContext";
 
 type ToolbarProps = {

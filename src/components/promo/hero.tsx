@@ -11,7 +11,7 @@ function Hero() {
 
   return (
     <CanvasComponent offset={coordinates.home}>
-      <div className="my-auto flex origin-center flex-col items-center justify-center space-y-12 pb-12">
+      <div className="my-auto flex origin-center flex-col items-center justify-center space-y-12">
         <div className="flex origin-center scale-75 flex-col items-center justify-center space-y-4 transition-transform duration-300 ease-in-out md:scale-100">
           <div className="my-16 flex flex-row">
             <Image
