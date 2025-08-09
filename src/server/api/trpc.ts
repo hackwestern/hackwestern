@@ -12,7 +12,11 @@ import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 import { type Session } from "next-auth";
 import superjson from "superjson";
 import { ZodError } from "zod";
-
+import { users } from "~/server/db/schema";
+import { db } from "~/server/db";
+import {
+  eq,
+} from "drizzle-orm";
 import { getServerAuthSession } from "~/server/auth";
 
 /**
@@ -131,3 +135,29 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
     },
   });
 });
+
+export const protectedOrganizerProcedure = t.procedure.use(async ({ ctx, next }) => {
+  if (!ctx.session || !ctx.session.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+
+  const reviewerId = ctx.session.user.id;
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, reviewerId),
+  });
+
+  if (user?.type !== "organizer") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "User is not authorized to view reviews",
+    });
+  }
+
+  return next({
+    ctx: {
+      session: { ...ctx.session, user: ctx.session.user },
+    },
+  });
+});
+
+
