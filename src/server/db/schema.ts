@@ -462,3 +462,19 @@ export const scavengerHuntRedemptions = createTable(
   },
   (t) => [index("redemption_user_idx").on(t.userId)],
 );
+
+export const rotatingQrCode = createTable(
+  "rotating_qr_code",
+  {
+    id: serial("id").primaryKey(),
+    expires: timestamp("expires", { mode: "date" }).notNull(),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    creatorId: varchar("creator_id", { length: 255 })
+    .notNull()
+    .references(() => users.id),
+    eventId: integer("event_id").notNull(),
+    token: varchar("token", { length: 255 }).notNull(),
+  }
+);
