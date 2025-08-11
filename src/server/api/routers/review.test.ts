@@ -145,7 +145,7 @@ describe("review.getReviewCounts", () => {
 
   test("throws error if user is not an organizer", async () => {
     await expect(hackerCaller.review.getReviewCounts()).rejects.toThrowError(
-      /FORBIDDEN/,
+      "User is not an organizer",
     );
   });
 
