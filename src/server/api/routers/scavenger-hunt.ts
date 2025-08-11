@@ -1,21 +1,3 @@
-/**
-  getScavengerHuntItem: gets an item by code
-  scan: takes in a code of an item and creates a submission in the scavenger_hunt_scans table
-  getPoints: gets user's earned points, redeemed, and balance
-  getPointsByUserId: gets a user's earned points, redeemed, and balance by ID (for admin use probably)
-
-  // Redeem
-  redeem: redeem points for something
-  getRedemptions: get user's redeemed items
-  getRedemptionsByUserId: get a user's redeemed items by ID
-
-  getScans: gets a users item scans
-  getScansByUserId: get a users item scans by ID
-
-  getLeadershipBoard: get the top 10 users by points
- */
-
-
 import { eq, and, sql, asc } from "drizzle-orm";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
