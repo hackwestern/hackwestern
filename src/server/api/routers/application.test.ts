@@ -76,10 +76,14 @@ describe("application.getById", async () => {
     await db.insert(applications).values(application);
 
     const getByIdOrganizerSession = await mockOrganizerSession(db);
-    const getByIdOrganizerCtx = createInnerTRPCContext({ session: getByIdOrganizerSession });
+    const getByIdOrganizerCtx = createInnerTRPCContext({
+      session: getByIdOrganizerSession,
+    });
     const getByIdOrganizerCaller = createCaller(getByIdOrganizerCtx);
 
-    const result = await getByIdOrganizerCaller.application.getById({ applicantId: userId });
+    const result = await getByIdOrganizerCaller.application.getById({
+      applicantId: userId,
+    });
     assert(!!result);
 
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;

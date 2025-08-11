@@ -1,6 +1,10 @@
 import { TRPCError } from "@trpc/server";
 
-import { createTRPCRouter, protectedOrganizerProcedure, protectedProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedOrganizerProcedure,
+  protectedProcedure,
+} from "~/server/api/trpc";
 import { applications, users } from "~/server/db/schema";
 import { db } from "~/server/db";
 import {
@@ -101,7 +105,7 @@ export const applicationRouter = createTRPCRouter({
 
   save: protectedProcedure
     .input(applicationSaveSchema)
-    .mutation(async ({ input, ctx }) => { 
+    .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
         const applicationData = input;
