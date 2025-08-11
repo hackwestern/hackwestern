@@ -1,198 +1,94 @@
+import { CanvasComponent } from "../canvas/canvas";
+import { motion } from "framer-motion";
 import { Button } from "../ui/button";
-import Image from "next/image";
+import { Mail } from "lucide-react";
+import { coordinates } from "~/constants/canvas";
 
-interface Sponsor {
-  name: string;
-  logo: string;
-  link: string;
+function Sponsors() {
+  return (
+    <CanvasComponent offset={coordinates.sponsors}>
+      <div className="mt-16 flex h-screen flex-col items-center justify-center space-y-4">
+        <div className="flex origin-center scale-150 flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out">
+          <div className="-mb-24 inline-flex w-[794px] flex-col items-center justify-start gap-4 px-4">
+            {/* Our Sponsors Text Section */}
+            <div className="inline-flex w-[794px] max-w-[794px] scale-[0.7] flex-col items-center justify-start gap-4 px-4 pb-0">
+              <div className="h-5 justify-start self-stretch text-center font-jetbrains-mono text-base font-medium uppercase text-medium">
+                Our sponsors
+              </div>
+              <div className="flex flex-col items-start justify-start gap-3 self-stretch">
+                <div className="justify-start self-stretch text-center font-dico text-[24px] font-medium text-heavy">
+                  Our sponsors make Hack Western possible.
+                </div>
+                <div className="justify-start self-stretch text-center font-figtree text-[16px] font-medium text-medium">
+                  Thank you to the organizations that support our mission.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex scale-150 flex-row">
+            <div className="flex origin-center scale-[0.45] flex-row">
+              {/* Macbook */}
+              <div className="relative z-10 h-[600px] w-[854.14px] origin-top-left -rotate-[1.771deg] rounded-3xl bg-gradient-to-b from-gray-200 to-zinc-400 shadow-[0px_3.82px_7.64px_0px_rgba(0,0,0,0.25)] shadow-[inset_0px_-1.91px_11.46px_0px_rgba(0,0,0,0.40)]">
+                <div className="absolute left-[386.49px] top-[239.58px] h-[144px] w-[96px]">
+                  <motion.img
+                    src="/hackwesternmaclogo.svg"
+                    alt="hackwestern"
+                    width={95.541}
+                    height={144.834}
+                    draggable="false"
+                  />
+                </div>
+                <div
+                  data-property-1="Default"
+                  className="absolute left-[29.33px] top-[49px] h-[112px] w-[384px] origin-top-left rotate-[1.77deg]"
+                >
+                  <div className="absolute left-[1.13px] top-[16px] h-[80px] w-[384px]"></div>
+                </div>
+              </div>
+
+              {/* Notepad */}
+              <div className="flex h-[380px] w-[400px] origin-top-left flex-col items-center">
+                <div className="relative h-[418px] w-[440px] scale-[1.1]">
+                  <motion.img
+                    src="/notepad.svg"
+                    alt="notepad"
+                    width={440}
+                    height={418}
+                    draggable="false"
+                  />
+                  <div className="absolute inset-0 left-1/2 top-1/2 flex h-[418px] w-[450px] -translate-x-1/2 -translate-y-1/2 rotate-[7.647deg] flex-col items-center justify-center gap-[29px] px-10">
+                    <div className="space-y-2">
+                      <div className="w-[350px] text-center font-jetbrains-mono text-xl font-medium uppercase tracking-tighter text-[#3C204C]">
+                        <span className="inline-block break-words">
+                          SPONSOR A WEEKEND OF
+                          <br />
+                          INSPIRATION AND CREATION.
+                        </span>
+                      </div>
+                      <div className="w-[320px] justify-center break-words text-center font-figtree text-sm font-medium text-zinc-500">
+                        Interested in supporting the event?
+                      </div>
+                    </div>
+                    <div className="flex w-full justify-center">
+                      <Button
+                        variant="primary"
+                        className="w-auto gap-2 px-6 py-3"
+                        type="submit"
+                      >
+                        <Mail className="h-5 w-5" />
+                        Get in touch
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </CanvasComponent>
+  );
 }
-
-const SponsorCard = ({ name, logo, link }: Sponsor) => {
-  return (
-    <a
-      className="mx-auto flex h-36 w-full cursor-pointer select-none justify-center rounded-xl bg-primary-700 p-4 align-middle transition-all hover:scale-[1.0075] hover:shadow-2xl xl:h-40 2xl:h-48"
-      href={link}
-      target="_blank"
-      rel="noreferrer noopener"
-    >
-      <Image
-        src={logo}
-        alt={name}
-        width={150}
-        height={150}
-        className="h-auto w-auto"
-      />
-    </a>
-  );
-};
-
-export { SponsorCard };
-
-const Sponsors = () => {
-  return (
-    <div className="min-h-screen bg-[#713eba] pt-28 text-center">
-      <h1 className="font-MagicRetro text-5xl text-primary-100" id="sponsors">
-        thank you to our sponsors
-      </h1>
-      <div className="font-dmsans p-5 py-12 text-xl text-primary-100">
-        We&apos;d like to extend our appreciation to all of our sponsors that
-        help make Hack Western a reality.
-      </div>
-      <div className="mx-auto flex w-11/12 flex-col gap-8 py-12 md:w-5/6 lg:w-4/5 2xl:w-3/5 3xl:w-2/5">
-        {/* Title Sponsors */}
-        <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
-          Title Sponsor
-        </h1>
-        <div>
-          <SponsorCard
-            name="Scotiabank"
-            logo="/sponsors/Scotiabank.svg"
-            link="https://www.scotiabank.com/"
-          />
-        </div>
-        {/* Diamond Sponsors */}
-        <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
-          Diamond Sponsors
-        </h1>
-        <div className="flex flex-col gap-2 lg:gap-8">
-          <div className="grid grid-cols-2 gap-2 lg:gap-8">
-            <SponsorCard
-              name="Canada Life"
-              logo="/sponsors/CanadaLife.svg"
-              link="https://www.canadalife.com/"
-            />
-            <SponsorCard
-              name="Sun Life"
-              logo="/sponsors/Sun Life.svg"
-              link="https://www.sunlife.ca/"
-            />
-          </div>
-          <SponsorCard
-            name="Starknet"
-            logo="/sponsors/Starknet.svg"
-            link="https://www.starknet.io/"
-          />
-        </div>
-        {/* Gold Sponsors */}
-        <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
-          Gold Sponsors
-        </h1>
-        <div className="grid grid-cols-3 gap-2 lg:gap-8">
-          <SponsorCard
-            name="TD invent"
-            logo="/sponsors/TD Invent.svg"
-            link="https://tdinvent.td.com/"
-          />
-          <SponsorCard
-            name="DoraHacks"
-            logo="/sponsors/DoraHacks.svg"
-            link="https://dorahacks.io/"
-          />
-          <SponsorCard
-            name="Big Blue Bubble"
-            logo="/sponsors/Big Blue Bubble.svg"
-            link="https://www.bigbluebubble.com/"
-          />
-        </div>
-        {/* Bronze Sponsors */}
-        <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
-          Bronze Sponsors
-        </h1>
-        <div className="grid grid-cols-3 flex-col gap-2 lg:gap-8">
-          <SponsorCard
-            name="P&G"
-            logo="/sponsors/P&G.svg"
-            link="https://www.pg.ca/"
-          />
-          <SponsorCard
-            name="Accenture"
-            logo="/sponsors/Accenture.svg"
-            link="https://www.accenture.com/"
-          />
-          <SponsorCard
-            name="Morrissette"
-            logo="/sponsors/Morrissette.svg"
-            link="https://entrepreneurship.uwo.ca/"
-          />
-          <SponsorCard
-            name="Digital Extreme"
-            logo="/sponsors/digitalextreme.svg"
-            link="https://www.digitalextremes.com/"
-          />
-          <SponsorCard
-            name="GEOTAB"
-            logo="/sponsors/geotab.svg"
-            link="https://www.geotab.com/"
-          />
-          <SponsorCard
-            name="Notion"
-            logo="/sponsors/notion.png"
-            link="https://notion.com"
-          />
-          <SponsorCard
-            name="Tempo Labs"
-            logo="/sponsors/tempo-logo-white.svg"
-            link="https://www.tempolabs.ai/"
-          />
-        </div>
-        {/* In-kind Sponsors */}
-        <h1 className="font-DM_Sans text-3xl font-bold text-primary-100">
-          In-kind Sponsors
-        </h1>
-        <div className="grid grid-cols-3 gap-2 lg:gap-8">
-          <SponsorCard
-            name="Canada Learning Code"
-            logo="/sponsors/Canada Learning Code.svg"
-            link="https://www.canadalearningcode.ca/"
-          />
-          <SponsorCard
-            name="Warp"
-            logo="/sponsors/Warp.svg"
-            link="https://www.warp.dev/"
-          />
-          <SponsorCard
-            name="Voiceflow"
-            logo="/sponsors/Voiceflow.svg"
-            link="https://www.voiceflow.com/"
-          />
-          <SponsorCard
-            name="StandOut Stickers"
-            logo="/sponsors/StandOut.svg"
-            link="http://hackp.ac/mlh-StandOutStickers-hackathons"
-          />
-          <SponsorCard
-            name="Western Engineering"
-            logo="/sponsors/WesternEngineering.svg"
-            link="https://www.eng.uwo.ca/outreach/index.html"
-          />
-          <SponsorCard
-            name="Awake Caffeinated Chocolate"
-            logo="/sponsors/Awake Chocolate.svg"
-            link="https://awakechocolate.com/"
-          />
-          <SponsorCard
-            name="Hack the North"
-            logo="/sponsors/HacktheNorthLogo_White.svg"
-            link="https://hackthenorth.com/"
-          />
-        </div>
-        <div className="mt-8 flex h-64 flex-col justify-around rounded-xl border-2 border-[#B07ACA] bg-gradient-to-tr from-[#7B3FDF] via-[#DE81A8] to-[#FFBD80] p-5 py-2.5 md:mt-20">
-          <div className="text-3xl font-bold text-white">
-            Help us set some ideas ablaze.
-          </div>
-          <div className="text-xl text-white">
-            For our sponsorship package and other inquiries:
-          </div>
-          <Button variant="primary" className="mx-auto w-max text-xl" asChild>
-            <a href="https://drive.google.com/file/d/1a8Pf5XKAr-FPT-8RyWyycuj_YI9PNk4X/view?usp=sharing">
-              Become a Sponsor
-            </a>
-          </Button>
-        </div>
-      </div>
-      <div className="-mt-12 h-48 bg-gradient-to-b from-[#713EBA] via-[#582B95] to-[#320862] lg:-mt-8 lg:h-64 2xl:h-80" />
-    </div>
-  );
-};
 
 export default Sponsors;

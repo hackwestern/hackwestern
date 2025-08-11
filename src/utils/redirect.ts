@@ -181,3 +181,12 @@ export const isVerifiedRedirect = async (
     props: {},
   };
 };
+
+export const disabledRedirect = async () => {
+  return {
+    redirect: {
+      destination: "/",
+      permanent: false,
+    },
+  };
+};
