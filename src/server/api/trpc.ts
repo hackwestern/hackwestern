@@ -135,7 +135,7 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
 });
 
 
-export const organizerProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+export const protectedOrganizerProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   const userId = ctx.session.user.id;
 
   const dbUser = await db.query.users.findFirst({

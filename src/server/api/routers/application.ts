@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 
-import { createTRPCRouter, organizerProcedure, protectedProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, protectedOrganizerProcedure, protectedProcedure } from "~/server/api/trpc";
 import { applications, users } from "~/server/db/schema";
 import { db } from "~/server/db";
 import {
@@ -36,7 +36,7 @@ export const applicationRouter = createTRPCRouter({
     }
   }),
 
-  getById: organizerProcedure
+  getById: protectedOrganizerProcedure
     .input(
       z.object({
         applicantId: z.string().nullish(),
@@ -71,7 +71,7 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
 
-  getAllApplicants: organizerProcedure.query(async ({ ctx }) => {
+  getAllApplicants: protectedOrganizerProcedure.query(async ({ ctx }) => {
     try {
       const applicants = await db
         .select({
@@ -143,7 +143,7 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
 
-  getAppStats: organizerProcedure.query(async ({}) => {
+  getAppStats: protectedOrganizerProcedure.query(async ({}) => {
     try {
       const applicationStats = await db
         .select({
