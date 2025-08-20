@@ -14,7 +14,7 @@ export const folderData = [
     gradientId: "blue",
     align: "self-start",
     cards: [
-      ["Co:Herent.png", "https://devpost.com/software/co-herent"],
+      ["CoHerent.png", "https://devpost.com/software/co-herent"],
       ["Talk to Duckie.png", "https://dorahacks.io/buidl/20337"],
       ["Bravo Dispatch.png", "https://dorahacks.io/buidl/20371"],
     ],
