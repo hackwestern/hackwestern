@@ -9,7 +9,7 @@ function Projects() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   return (
     <CanvasComponent offset={coordinates.projects}>
-      <div className="flex w-full m-auto shrink-0 flex-col items-center">
+      <div className="m-auto flex w-full shrink-0 flex-col items-center">
         {/* Top projects */}
         <HeaderCards />
         <div className="mb-[100px] flex h-[111px] w-full shrink-0 items-center justify-center">
