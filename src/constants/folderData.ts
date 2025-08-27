@@ -1,4 +1,11 @@
-export const folderData = [
+export interface FolderData {
+  label: string;
+  gradientId: string;
+  align: string;
+  cards: [string, string][];
+}
+
+export const folderData: FolderData[] = [
   {
     label: "CREATIVE ARTS",
     gradientId: "red",
@@ -15,7 +22,7 @@ export const folderData = [
     align: "self-start",
     cards: [
       ["CoHerent.png", "https://devpost.com/software/co-herent"],
-      ["Talk to Duckie.png", "https://dorahacks.io/buidl/20337"],
+      ["Talk To Duckie.png", "https://dorahacks.io/buidl/20337"],
       ["Bravo Dispatch.png", "https://dorahacks.io/buidl/20371"],
     ],
   },

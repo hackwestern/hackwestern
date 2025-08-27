@@ -21,7 +21,7 @@ export const CardStack = ({
   const y_open = [-50, -60, -50];
 
   return (
-    <div className="relative h-24 w-32">
+    <div className="relative h-36 w-72">
       {names.map((name, i) => {
         const cleanName = name.image?.replace(/\.png$/, "");
         const rotation = rotations[i] ?? 0;
@@ -31,14 +31,14 @@ export const CardStack = ({
         return (
           <motion.div
             key={name.image}
-            className="h-15 group absolute left-0 top-0 flex w-16 flex-col gap-y-1"
+            className="group absolute left-0 top-0 ml-4 flex h-32 w-24 flex-col gap-y-1"
             style={{
               zIndex: 10 - i,
               transformOrigin: "center",
             }}
             initial={{
               y: 10,
-              x: 20,
+              x: 25,
               opacity: 0.1,
               scale: 0.95,
               rotate: -20,
@@ -69,6 +69,7 @@ export const CardStack = ({
                 0 * Math.sin((rotation * Math.PI) / 180) -
                 10 * Math.cos((rotation * Math.PI) / 180),
               scale: 1.35,
+              zIndex: 1000,
             }}
             transition={{
               delay: i * 0.05,
@@ -76,8 +77,8 @@ export const CardStack = ({
               ease: [0.4, 0, 0.2, 1],
             }}
           >
-            <div className="flex items-center justify-center rounded-[4px] bg-[var(--text-heavy,#3C204C)] pb-1 pl-2 pr-2 pt-1 opacity-0 duration-300  group-hover:opacity-100 ">
-              <span className="font-figtree text-[7px] font-light leading-none text-white">
+            <div className="flex items-center justify-center rounded-[4px] bg-[var(--text-heavy,#3C204C)] pb-1 pl-2 pr-2 pt-1 opacity-0 duration-300 group-hover:opacity-100 ">
+              <span className="font-figtree text-[12px] font-light leading-none text-white">
                 {cleanName}
               </span>
             </div>

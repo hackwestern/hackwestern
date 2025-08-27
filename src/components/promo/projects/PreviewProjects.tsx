@@ -1,5 +1,5 @@
-import FolderIcon from "../ui/FolderIcon";
-import { CardStack } from "../ui/card-stack";
+import FolderIcon from "../../ui/FolderIcon";
+import { CardStack } from "./card-stack";
 
 type ProjectPreviewProps = {
   label: string;
@@ -17,9 +17,9 @@ export const ProjectPreview = ({
   folder,
 }: ProjectPreviewProps) => {
   return (
-    <div className="relative h-32 w-32">
+    <div className="relative h-48 w-48">
       <FolderIcon
-        className="absolute inset-0 z-10 w-32"
+        className="absolute inset-0 z-10"
         gradientId={gradientId}
         isOpen={isOpen}
       />
@@ -35,8 +35,7 @@ export const ProjectPreview = ({
           folder={folder.toLowerCase()}
         />
       </div>
-
-      <span className="absolute bottom-1 left-1/2 block -translate-x-1/2 whitespace-nowrap text-center font-jetbrains-mono text-[12px] font-light">
+      <span className="absolute bottom-4 left-1/2 block -translate-x-1/2 whitespace-nowrap text-center font-jetbrains-mono text-[15px] font-light">
         {label}
       </span>
     </div>

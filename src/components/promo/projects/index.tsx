@@ -1,9 +1,9 @@
-import { CanvasComponent } from "../canvas/canvas";
+import { CanvasComponent } from "../../canvas/canvas";
 import { coordinates } from "~/constants/canvas";
 import { useState } from "react";
 import { folderData } from "~/constants/folderData";
-import { ProjectPreview } from "../ui/PreviewProjects";
-import HeaderCards from "../ui/HeaderCards";
+import { ProjectPreview } from "./PreviewProjects";
+import HeaderCards from "./HeaderCards";
 
 function Projects() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -27,7 +27,7 @@ function Projects() {
           </div>
         </div>
         {/* Folders */}
-        <div className="flex h-[180px] w-[60rem] shrink-0 justify-between">
+        <div className="flex h-[280px] w-[75rem] shrink-0 justify-between">
           {folderData.map((folder, index) => (
             <div
               key={folder.label}
