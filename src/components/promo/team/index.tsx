@@ -6,7 +6,7 @@ import Title from "./title";
 function Team() {
   return (
     <CanvasComponent offset={coordinates.team}>
-      <div className="flex h-screen scale-90 flex-col items-center justify-center">
+      <div className="flex scale-90 flex-col items-center justify-center">
         <Title />
         <Book />
       </div>

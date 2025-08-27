@@ -85,41 +85,41 @@ function Page({
       onAnimationComplete={onFlipComplete}
     >
       <Label label={label} offset={labelOffset} onClick={onLabelClick} />
-      {/* Front of the page */}
-      <div
-        className="pointer-events-auto absolute inset-0 my-[32px] ml-[4px] mr-[24px] flex cursor-pointer overflow-hidden rounded-lg"
-        style={{
-          backfaceVisibility: "hidden",
-        }}
-        onClick={() => {
-          if (back) turnPageForward();
-        }}
-      >
-        <div className="pointer-events-none absolute inset-0 z-20 -ml-[535px]">
-          <Bindings />
-        </div>
-        <FrontHoles />
-        <div className="h-full w-full bg-beige p-[32px]">
-          {isActive && front}
-        </div>
-      </div>
-      {/* Back of the page */}
-      <div
-        className="pointer-events-auto absolute inset-0 my-[32px] ml-[4px] mr-[24px] flex cursor-pointer overflow-hidden rounded-lg"
-        style={{
-          transform: "rotateY(180deg)",
-          backfaceVisibility: "hidden",
-        }}
-        onClick={turnPageBackward}
-      >
-        <div className="h-full w-full bg-beige p-[32px]">
-          {isActive && back}
-        </div>
-        <BackHoles />
-        <div className="pointer-events-none absolute inset-0 -mr-[36px] ml-[499px]">
-          <Bindings />
-        </div>
-      </div>
+      {isActive && (
+        <>
+          {/* Front page (right side) */}
+          <div
+            className="pointer-events-auto absolute inset-0 my-[32px] ml-[4px] mr-[24px] flex cursor-pointer overflow-hidden rounded-lg"
+            style={{
+              backfaceVisibility: "hidden",
+            }}
+            onClick={() => {
+              if (back) turnPageForward();
+            }}
+          >
+            <div className="pointer-events-none absolute inset-0 z-20 -ml-[535px]">
+              <Bindings />
+            </div>
+            <FrontHoles />
+            <div className="h-full w-full bg-beige p-[32px]">{front}</div>
+          </div>
+          {/* Back page (left side) */}
+          <div
+            className="pointer-events-auto absolute inset-0 my-[32px] ml-[4px] mr-[24px] flex cursor-pointer overflow-hidden rounded-lg"
+            style={{
+              transform: "rotateY(180deg)",
+              backfaceVisibility: "hidden",
+            }}
+            onClick={turnPageBackward}
+          >
+            <div className="h-full w-full bg-beige p-[32px]">{back}</div>
+            <BackHoles />
+            <div className="pointer-events-none absolute inset-0 -mr-[36px] ml-[499px]">
+              <Bindings />
+            </div>
+          </div>
+        </>
+      )}
     </motion.div>
   );
 }

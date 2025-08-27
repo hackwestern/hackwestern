@@ -15,6 +15,7 @@
     "dev": "next dev --turbopack",
     "dev:prod": "dotenv -e .env.prod next dev --turbopack",
     "lint": "next lint",
+    "scan": "next dev --turbopack && npx react-scan@latest localhost:3000",
     "start": "next start"
   },
   "dependencies": {
@@ -63,6 +64,7 @@
     "react-day-picker": "^9.6.3",
     "react-dom": "19.0.0",
     "react-hook-form": "^7.51.5",
+    "react-scan": "^0.4.3",
     "resend": "^4.3.0",
     "sonner": "^2.0.5",
     "superjson": "^2.2.1",
@@ -82,6 +84,7 @@
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
     "@vitejs/plugin-react": "^4.3.0",
+    "babel-plugin-react-compiler": "^19.1.0-rc.2",
     "dotenv": "^16.4.5",
     "dotenv-cli": "^7.4.2",
     "drizzle-kit": "^0.30.5",

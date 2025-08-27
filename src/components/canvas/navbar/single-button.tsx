@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import * as LucideIcons from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useToast } from "../hooks/use-toast";
+import { useToast } from "../../hooks/use-toast";
 
 type IconName = keyof typeof LucideIcons;
 
@@ -20,13 +20,12 @@ export default function SingleButton({
   icon,
   customIcon,
   onClick,
-  isPushed: isMaybePushed,
+  isPushed,
   link,
   emailAddress,
 }: SingleButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showTag, setShowTag] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const Icon = icon ? (LucideIcons[icon] as LucideIcons.LucideIcon) : null;
   const CustomIcon = customIcon;
@@ -37,10 +36,6 @@ export default function SingleButton({
   if (!Icon && !CustomIcon) {
     throw new Error("Either 'icon' or 'customIcon' prop must be provided");
   }
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -119,7 +114,6 @@ export default function SingleButton({
     onClick?.();
   };
 
-  const isPushed = isMounted && isMaybePushed;
   const displayLabel = copiedEmail ? "Email copied!" : label;
 
   return (

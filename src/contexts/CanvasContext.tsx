@@ -34,7 +34,10 @@ interface CanvasProviderProps extends CanvasContextState {
   children: ReactNode;
 }
 
-export const CanvasProvider: React.FC<CanvasProviderProps> = ({
-  children,
-  ...value
-}) => <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>;
+export const CanvasProvider: React.FC<CanvasProviderProps> = React.memo(
+  ({ children, ...value }) => (
+    <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>
+  ),
+);
+
+CanvasProvider.displayName = "CanvasProvider";

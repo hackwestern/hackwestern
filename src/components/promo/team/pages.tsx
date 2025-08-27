@@ -4,12 +4,14 @@ import { PAGES } from "./teams";
 
 const DEFAULT_FLIP_DURATION = 300; // Default speed in ms for a single flip
 const TOTAL_JUMP_DURATION = 700; // Total time in ms for a multi-page jump
+const DEBOUNCE_MS = DEFAULT_FLIP_DURATION / 2; // Debounce time for flipping actions
 
 const Pages = () => {
   const [turnedPages, setTurnedPages] = useState(0);
   const [flippingPage, setFlippingPage] = useState<number | null>(null);
   const [flipDuration, setFlipDuration] = useState(DEFAULT_FLIP_DURATION);
   const targetPage = useRef<number | null>(null);
+  const lastFlipTime = useRef<number>(0);
 
   const totalPages = PAGES.length;
 
@@ -32,6 +34,9 @@ const Pages = () => {
   };
 
   const turnPageForward = useCallback(() => {
+    const now = Date.now();
+    if (now - lastFlipTime.current < DEBOUNCE_MS) return;
+    lastFlipTime.current = now;
     if (turnedPages >= totalPages) return;
     setFlipDuration(DEFAULT_FLIP_DURATION); // Ensure default speed
     setFlippingPage(turnedPages);
@@ -39,13 +44,16 @@ const Pages = () => {
   }, [turnedPages, totalPages]);
 
   const turnPageBackward = useCallback(() => {
+    const now = Date.now();
+    if (now - lastFlipTime.current < DEBOUNCE_MS) return;
+    lastFlipTime.current = now;
     if (turnedPages <= 0) return;
     setFlipDuration(DEFAULT_FLIP_DURATION); // Ensure default speed
     setFlippingPage(turnedPages - 1);
     setTurnedPages((prev) => prev - 1);
   }, [turnedPages]);
 
-  const handleLabelClick = useCallback(
+  const handleClickLabel = useCallback(
     (index: number) => {
       if (index === turnedPages || flippingPage !== null) return;
 
@@ -118,7 +126,7 @@ const Pages = () => {
               onFlipComplete={isFlipping ? handleFlipComplete : undefined}
               turnPageBackward={turnPageBackward}
               turnPageForward={turnPageForward}
-              onLabelClick={() => handleLabelClick(index)}
+              onLabelClick={() => handleClickLabel(index)}
             />
           </div>
         );

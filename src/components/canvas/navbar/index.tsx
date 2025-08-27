@@ -1,9 +1,14 @@
 import { motion, useMotionValueEvent } from "framer-motion";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import SingleButton from "./single-button";
 import { CanvasSection, coordinates } from "~/constants/canvas";
 import { useCanvasContext } from "~/contexts/CanvasContext";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
+import {
+  ScreenSizeEnum,
+  getScreenSizeEnum,
+  getSectionPanCoordinates,
+} from "~/lib/canvas";
 
 interface NavbarProps {
   panToOffset: (
@@ -14,28 +19,25 @@ interface NavbarProps {
   onReset: () => void;
 }
 
+const RESPONSIVE_ZOOM_MAP: Record<ScreenSizeEnum, number> = {
+  [ScreenSizeEnum.SMALL_MOBILE]: 0.5,
+  [ScreenSizeEnum.MOBILE]: 0.6,
+  [ScreenSizeEnum.TABLET]: 0.8,
+  [ScreenSizeEnum.SMALL_DESKTOP]: 0.9,
+  [ScreenSizeEnum.MEDIUM_DESKTOP]: 1,
+  [ScreenSizeEnum.LARGE_DESKTOP]: 1.25,
+  [ScreenSizeEnum.HUGE_DESKTOP]: 1.5,
+} as const;
+
 export default function Navbar({ panToOffset, onReset }: NavbarProps) {
   const { x, y, scale } = useCanvasContext();
-  const [expandedButton, setExpandedButton] = useState<string | null>("home");
+  const [expandedButton, setExpandedButton] = useState<string | null>(null);
   const activePans = useRef(0);
   const panTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const { height, width } = useWindowDimensions();
 
-  // smaller default scale for smaller screens, larger for larger screens
-  // default is for 1920x1080p screens
-  let defaultZoom = 1;
-  if (width < 768) {
-    defaultZoom = 0.6; // mobile
-  } else if (width < 1440) {
-    defaultZoom = 0.8; // tablet
-  } else if (width < 1920) {
-    defaultZoom = 0.9; // small desktop
-  } else if (width < 2560) {
-    defaultZoom = 1; // medium desktop
-  } else {
-    defaultZoom = 1.2; // large desktop
-  }
+  const defaultZoom = RESPONSIVE_ZOOM_MAP[getScreenSizeEnum(width)];
 
   const updateExpandedButton = () => {
     // reset activePans if no movement has occurred recently
@@ -44,63 +46,48 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
       activePans.current = 0;
     }, 500);
 
-    if (activePans.current > 0) return;
-
-    const currentX = -x.get();
-    const currentY = -y.get();
-    const currentScale = scale.get();
-
-    const section = Object.keys(coordinates).find(
-      (key) =>
-        coordinates[key as CanvasSection].x === Math.round(currentX) &&
-        coordinates[key as CanvasSection].y === Math.round(currentY),
-    );
-
-    if (section && currentScale === 1) {
-      setExpandedButton(section);
-    } else {
-      setExpandedButton(null);
-    }
+    if (activePans.current == 0) setExpandedButton(null);
   };
 
   useMotionValueEvent(x, "change", updateExpandedButton);
   useMotionValueEvent(y, "change", updateExpandedButton);
   useMotionValueEvent(scale, "change", updateExpandedButton);
 
-  const handlePan = (section: CanvasSection) => {
-    setExpandedButton(section);
-    activePans.current++;
-    const coords = coordinates[section];
+  const handlePan = useCallback(
+    function handlePan(section: CanvasSection) {
+      setExpandedButton(section);
+      activePans.current++;
 
-    // Calculate the center of the section
-    const sectionCenterX = coords.x + (coords.width ?? 1) / 2;
-    const sectionCenterY = coords.y + height / 2;
+      if (section === CanvasSection.Home) {
+        onReset();
+        return;
+      }
 
-    // Calculate the required pan offset to center the section in the viewport
-    const targetX = width / 2 - sectionCenterX * defaultZoom;
-    const targetY = height / 2 - sectionCenterY * defaultZoom;
+      const panCoords = getSectionPanCoordinates({
+        windowDimensions: { width, height },
+        coords: coordinates[section],
+        targetZoom: defaultZoom,
+        negative: true,
+      });
 
-    panToOffset(
-      { x: -targetX, y: -targetY },
-      () => {
-        activePans.current--;
-      },
-      defaultZoom,
-    );
-  };
-
-  const handleHome = () => {
-    setExpandedButton(CanvasSection.Home);
-    activePans.current++;
-    onReset();
-  };
+      panToOffset(
+        panCoords,
+        () => {
+          activePans.current--;
+        },
+        defaultZoom,
+      );
+    },
+    [panToOffset, onReset, width, height, defaultZoom],
+  );
 
   // Clean up timer on unmount
   useEffect(() => {
+    handlePan(CanvasSection.Home); // Default to Home on mount
     return () => {
       if (panTimeout.current) clearTimeout(panTimeout.current);
     };
-  }, []);
+  }, [handlePan]);
 
   return (
     <div
@@ -123,7 +110,7 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
             <SingleButton
               label="Home"
               icon="Home"
-              onClick={handleHome}
+              onClick={() => handlePan(CanvasSection.Home)}
               isPushed={expandedButton === CanvasSection.Home}
             />
             <SingleButton
