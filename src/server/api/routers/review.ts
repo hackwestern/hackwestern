@@ -1,6 +1,9 @@
 import { TRPCError } from "@trpc/server";
 
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedOrganizerProcedure,
+} from "~/server/api/trpc";
 import { applications, reviews, users } from "~/server/db/schema";
 import { db } from "~/server/db";
 import { z } from "zod";
@@ -26,20 +29,11 @@ import {
 const REQUIRED_REVIEWS = 2;
 
 export const reviewRouter = createTRPCRouter({
-  save: protectedProcedure
+  save: protectedOrganizerProcedure
     .input(reviewSaveSchema)
     .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
-        const reviewer = await db.query.users.findFirst({
-          where: eq(users.id, userId),
-        });
-        if (!reviewer || reviewer.type !== "organizer") {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "User is not authorized to submit reviews",
-          });
-        }
 
         const reviewData = input;
         const isCompleteReview =
@@ -71,20 +65,11 @@ export const reviewRouter = createTRPCRouter({
       }
     }),
 
-  referApplicant: protectedProcedure
+  referApplicant: protectedOrganizerProcedure
     .input(referApplicantSchema)
     .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
-        const reviewer = await db.query.users.findFirst({
-          where: eq(users.id, userId),
-        });
-        if (!reviewer || reviewer.type !== "organizer") {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "User is not authorized to modify reviews",
-          });
-        }
 
         const applicantData = input;
         await db.insert(reviews).values({
@@ -101,17 +86,8 @@ export const reviewRouter = createTRPCRouter({
       }
     }),
 
-  getByOrganizer: protectedProcedure.query(async ({ ctx }) => {
+  getByOrganizer: protectedOrganizerProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
-    const reviewer = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-    if (!reviewer || reviewer.type !== "organizer") {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "User is not authorized to view reviews",
-      });
-    }
 
     return db.query.reviews.findMany({
       with: {
@@ -133,7 +109,7 @@ export const reviewRouter = createTRPCRouter({
   }),
 
   //TODO: Write unit tests for this router path
-  getNextId: protectedProcedure
+  getNextId: protectedOrganizerProcedure
     .input(
       z.object({
         skipId: z.string().nullish(),
@@ -235,7 +211,7 @@ export const reviewRouter = createTRPCRouter({
       }
     }),
 
-  getById: protectedProcedure
+  getById: protectedOrganizerProcedure
     .input(
       z.object({
         applicantId: z.string().nullish(),
@@ -251,16 +227,6 @@ export const reviewRouter = createTRPCRouter({
         }
 
         const reviewerId = ctx.session.user.id;
-        const user = await db.query.users.findFirst({
-          where: eq(users.id, reviewerId),
-        });
-
-        if (user?.type !== "organizer") {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "User is not authorized to view reviews",
-          });
-        }
 
         await db
           .insert(reviews)
@@ -284,20 +250,8 @@ export const reviewRouter = createTRPCRouter({
       }
     }),
 
-  getReviewCounts: protectedProcedure.query(async ({ ctx }) => {
+  getReviewCounts: protectedOrganizerProcedure.query(async ({}) => {
     try {
-      const userId = ctx.session.user.id;
-      const reviewer = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-      });
-
-      if (!reviewer || reviewer.type !== "organizer") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "User is not authorized to view reviews",
-        });
-      }
-
       const reviewCounts = await db
         .select({
           reviewerId: reviews.reviewerUserId,
