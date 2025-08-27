@@ -1,6 +1,10 @@
 import { TRPCError } from "@trpc/server";
 
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedOrganizerProcedure,
+  protectedProcedure,
+} from "~/server/api/trpc";
 import { applications, users } from "~/server/db/schema";
 import { db } from "~/server/db";
 import {
@@ -36,7 +40,7 @@ export const applicationRouter = createTRPCRouter({
     }
   }),
 
-  getById: protectedProcedure
+  getById: protectedOrganizerProcedure
     .input(
       z.object({
         applicantId: z.string().nullish(),
@@ -71,19 +75,8 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
 
-  getAllApplicants: protectedProcedure.query(async ({ ctx }) => {
+  getAllApplicants: protectedOrganizerProcedure.query(async ({ ctx }) => {
     try {
-      const userId = ctx.session.user.id;
-      const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-      });
-      if (user?.type !== "organizer") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "User is not authorized to get all applicants",
-        });
-      }
-
       const applicants = await db
         .select({
           userId: applications.userId,
@@ -154,7 +147,7 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
 
-  getAppStats: protectedProcedure.query(async ({}) => {
+  getAppStats: protectedOrganizerProcedure.query(async ({}) => {
     try {
       const applicationStats = await db
         .select({
