@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import React, { useState } from "react";
 
-function Lines() {
+const Lines = React.memo(function Lines() {
   return (
     <div className="relative z-0">
       <div className="absolute left-0 right-0 mt-16 space-y-[19px]">
@@ -11,9 +11,9 @@ function Lines() {
       </div>
     </div>
   );
-}
+});
 
-export function FAQCard({
+export const FAQCard = React.memo(function FAQCard({
   title,
   desc,
   className,
@@ -75,4 +75,4 @@ export function FAQCard({
       </motion.div>
     </button>
   );
-}
+});
