@@ -1,47 +1,65 @@
-import { type Point, useMotionValueEvent } from "framer-motion";
-import { useState } from "react";
+import { type Point, useTransform, motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { useCanvasContext } from "~/contexts/CanvasContext";
 
-const Toolbar = ({
-  homeCoordinates = { x: 0, y: 0 },
-}: {
+type ToolbarProps = {
   homeCoordinates?: Point;
-}) => {
+};
+
+const OPACITY_POS_EPS = 1; // px
+const OPACITY_SCALE_EPS = 0.01; // scale delta
+
+const Toolbar = ({ homeCoordinates = { x: 0, y: 0 } }: ToolbarProps) => {
   const { x, y, scale } = useCanvasContext();
-  const [values, setValues] = useState({
-    x: x.get(),
-    y: y.get(),
-    scale: scale.get(),
-  });
+  const [hasMounted, setHasMounted] = useState(false);
 
-  useMotionValueEvent(x, "change", (latest) => {
-    setValues((v) => ({ ...v, x: latest }));
-  });
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
-  useMotionValueEvent(y, "change", (latest) => {
-    setValues((v) => ({ ...v, y: latest }));
-  });
+  // numeric MotionValues
+  const rawDx = useTransform(
+    [x, scale],
+    ([lx, ls]) => -((lx as number) / (ls as number)) + homeCoordinates.x,
+  );
+  const rawDy = useTransform(
+    [y, scale],
+    ([ly, ls]) => -((ly as number) / (ls as number)) + homeCoordinates.y,
+  );
 
-  useMotionValueEvent(scale, "change", (latest) => {
-    setValues((v) => ({ ...v, scale: latest }));
-  });
+  // formatted MotionValues
+  const displayX = useTransform(rawDx, (v) => Math.round(v).toString());
+  const displayY = useTransform(rawDy, (v) => Math.round(v).toString());
+  const displayScale = useTransform(scale, (v) => v.toFixed(2));
 
-  const displayX = -(values.x / values.scale + homeCoordinates.x);
-  const displayY = -(values.y / values.scale + homeCoordinates.y);
+  const opacity = useTransform([rawDx, rawDy, scale], ([dx, dy, ls]) =>
+    Math.abs(dx as number) < OPACITY_POS_EPS &&
+    Math.abs(dy as number) < OPACITY_POS_EPS &&
+    Math.abs((ls as number) - 1) < OPACITY_SCALE_EPS
+      ? 0
+      : 1,
+  );
 
-  if (displayX === 0 && displayY === 0 && values.scale === 1) {
-    return null; // don't show toolbar when at home
-  }
+  const handlePointerDown = (e: React.PointerEvent) => e.stopPropagation();
 
   return (
-    <div
-      className="absolute left-4 top-4 z-[1000] cursor-default select-none rounded-[10px] border-[1px] border-border bg-offwhite p-2 font-mono text-xs text-heavy shadow-[0_6px_12px_rgba(0,0,0,0.10)] md:text-sm"
-      onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
+    <motion.div
+      className="absolute left-4 top-4 z-[1000] cursor-default select-none rounded-[10px] border border-border bg-offwhite p-2 font-mono text-xs text-heavy shadow-[0_6px_12px_rgba(0,0,0,0.10)] md:text-sm"
+      onPointerDown={handlePointerDown}
       data-toolbar-button
+      style={{ opacity }}
     >
-      ({displayX.toFixed(0)}, {displayY.toFixed(0)})
-      <span className="text-light"> |</span> {values.scale.toFixed(2)}x
-    </div>
+      {hasMounted ? (
+        <>
+          (<motion.span>{displayX}</motion.span>,{" "}
+          <motion.span>{displayY}</motion.span>)
+          <span className="text-light"> |</span>{" "}
+          <motion.span>{displayScale}</motion.span>x
+        </>
+      ) : (
+        <span style={{ opacity: 0 }}>(0, 0) | 1.00x</span>
+      )}
+    </motion.div>
   );
 };
 
