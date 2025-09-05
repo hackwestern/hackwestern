@@ -6,7 +6,6 @@ import { Passport } from "~/components/apply/passport";
 import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
 import {
-  disabledRedirect,
   notVerifiedRedirectDashboard,
 } from "~/utils/redirect";
 import Link from "next/link";
@@ -170,5 +169,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-// export const getServerSideProps = notVerifiedRedirectDashboard;
-export const getServerSideProps = disabledRedirect;
+export const getServerSideProps = notVerifiedRedirectDashboard;
