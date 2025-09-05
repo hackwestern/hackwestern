@@ -44,7 +44,7 @@ export const applicationStatus = pgEnum("application_status", [
   "DECLINED",
 ]);
 
-export const avatarColor = pgEnum("avatar_color", [
+export const avatarColour = pgEnum("avatar_colour", [
   "red",
   "orange",
   "yellow",
@@ -255,7 +255,7 @@ export const applications = createTable(
     status: applicationStatus("status").default("IN_PROGRESS").notNull(),
 
     // Avatar
-    avatarColor: avatarColor("avatar_color"),
+    avatarColour: avatarColour("avatar_colour"),
     avatarFace: integer("avatar_face"),
     avatarLeftHand: integer("avatar_left_hand"),
     avatarRightHand: integer("avatar_right_hand"),
