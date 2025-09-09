@@ -54,8 +54,9 @@ function About() {
                   style={{ rotate: "-5deg" }}
                 />
               </div>
-              <div className="relative -mt-12 mb-24 flex w-fit max-w-xs rotate-[8deg] items-center justify-center bg-[url('/speech.svg')] bg-contain bg-center bg-no-repeat text-center">
-                <div className="mb-2 p-12 font-figtree text-xs text-white sm:text-sm md:text-base lg:text-base">
+              <div className="relative flex w-fit max-w-xs rotate-[8deg] items-center justify-center text-center">
+                <img src="/speech.svg" alt="" className="w-full h-auto" />
+                <div className="absolute inset-[1/2] px-8 font-figtree text-xs text-white sm:text-sm md:text-base lg:text-base">
                   We cover food, travel, and lodging so you can focus on
                   bringing your ideas to life!
                 </div>
