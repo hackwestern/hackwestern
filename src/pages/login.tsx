@@ -6,7 +6,7 @@ import { useState } from "react";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import Link from "next/link";
-import { disabledRedirect, hackerLoginRedirect } from "~/utils/redirect";
+import { hackerLoginRedirect } from "~/utils/redirect";
 import { useRouter } from "next/router";
 import { useToast } from "~/components/hooks/use-toast";
 import CloudBackground from "~/components/cloud-background";
@@ -116,5 +116,4 @@ export default function Login() {
   );
 }
 
-// export const getServerSideProps = hackerLoginRedirect;
-export const getServerSideProps = disabledRedirect;
+export const getServerSideProps = hackerLoginRedirect;
