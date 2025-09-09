@@ -44,11 +44,14 @@ export const applicationStatus = pgEnum("application_status", [
   "DECLINED",
 ]);
 
-export const avatar = pgEnum("avatar", [
-  "Wildlife Wanderer",
-  "City Cruiser",
-  "Foodie Fanatic",
-  "Beach Bum",
+export const avatarColour = pgEnum("avatar_colour", [
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "blue",
+  "purple",
+  "pink",
 ]);
 
 /**
@@ -251,8 +254,14 @@ export const applications = createTable(
       .notNull(),
     status: applicationStatus("status").default("IN_PROGRESS").notNull(),
 
+    // Avatar
+    avatarColour: avatarColour("avatar_colour"),
+    avatarFace: integer("avatar_face"),
+    avatarLeftHand: integer("avatar_left_hand"),
+    avatarRightHand: integer("avatar_right_hand"),
+    avatarHat: integer("avatar_hat"),
+
     // About You
-    avatar: avatar("avatar"),
     firstName: varchar("first_name", { length: 255 }),
     lastName: varchar("last_name", { length: 255 }),
     age: integer("age"), // 18+
