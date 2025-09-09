@@ -6,11 +6,10 @@ import GoogleAuthButton from "~/components/auth/googleauth-button";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { useToast } from "~/components/hooks/use-toast";
-
 import { api } from "~/utils/api";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { disabledRedirect, hackerLoginRedirect } from "~/utils/redirect";
+import { hackerLoginRedirect } from "~/utils/redirect";
 import CloudBackground from "~/components/cloud-background";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
 
@@ -118,5 +117,4 @@ export default function Register() {
   );
 }
 
-// export const getServerSideProps = hackerLoginRedirect;
-export const getServerSideProps = disabledRedirect;
+export const getServerSideProps = hackerLoginRedirect;
