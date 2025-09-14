@@ -6,19 +6,18 @@ import { preregistrationRouter } from "./routers/preregistration";
 import { reviewRouter } from "./routers/review";
 import { scavengerHuntRouter } from "./routers/scavenger-hunt";
 
-
 /**
  * This is the primary router for your server.
  *
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-	example: exampleRouter,
-	application: applicationRouter,
-	auth: authRouter,
-	preregistration: preregistrationRouter,
-	review: reviewRouter,
-	scvenger: scavengerHuntRouter,
+  example: exampleRouter,
+  application: applicationRouter,
+  auth: authRouter,
+  preregistration: preregistrationRouter,
+  review: reviewRouter,
+  scvenger: scavengerHuntRouter,
 });
 
 // export type definition of API
