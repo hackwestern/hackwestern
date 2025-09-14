@@ -83,19 +83,22 @@ function Sponsors() {
 										</div>
 										<div className="flex w-full justify-center">
 											<Button
-												variant="primary"
+												variant={wide ? "apply" : "primary"}
 												size="default"
-												onClick={handleClick}
-												onTransitionEnd={() => setIsAnimating(false)}
+												onClick={() => {
+													setWide(true);
+													handleClick();
+												}}
 												className={clsx(
 													"transition-all duration-500 gap-2",
-													wide ? "w-52" : "w-40"
-												)
-												}
+													wide ? "w-52" : "w-40",
+													wide && "!translate-y-[1px] shadow-none"
+												)}
 											>
 												{wide ? (<CopyCheck className="h-5 w-5" />) : (<Mail className="h-5 w-5" />)}
 												{wide ? "Email copied!" : "Get in touch"}
 											</Button>
+
 										</div>
 									</div>
 								</div>
