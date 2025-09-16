@@ -59,7 +59,9 @@ export function seed<T extends PgTable>(s: Seeder<T>, tx: Transaction) {
   const numColumns = Object.keys(firstRow).length;
 
   // Determine how many rows we can insert per batch without exceeding parameter limit.
-  const rowsPerBatch = Math.floor(MAX_INSERT_PARAMETERS / Math.max(numColumns, 1));
+  const rowsPerBatch = Math.floor(
+    MAX_INSERT_PARAMETERS / Math.max(numColumns, 1),
+  );
 
   if (rowsPerBatch < 1) {
     throw new Error(
