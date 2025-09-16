@@ -55,7 +55,7 @@ function About() {
                 />
               </div>
               <div className="relative flex w-fit max-w-xs rotate-[8deg] items-center justify-center text-center">
-                <img src="/speech.svg" alt="" className="w-full h-auto" />
+                <img src="/speech.svg" alt="" className="h-auto w-full" />
                 <div className="absolute inset-[1/2] px-8 font-figtree text-xs text-white sm:text-sm md:text-base lg:text-base">
                   We cover food, travel, and lodging so you can focus on
                   bringing your ideas to life!
