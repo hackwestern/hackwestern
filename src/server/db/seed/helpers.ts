@@ -51,7 +51,23 @@ function chunkArray<T>(array: T[], size: number): T[][] {
 export function seed<T extends PgTable>(s: Seeder<T>, tx: Transaction) {
   const vals = Array.from(Array(s.numRows), () => s.createRandom());
 
-  const batches = chunkArray(vals, MAX_INSERT_PARAMETERS);
+  if (vals.length === 0) return [];
+
+  // Estimate number of columns by inspecting the first generated row.
+  // The number of SQL parameters for a multi-row insert is columns * rows.
+  const firstRow = vals[0] as unknown as Record<string, unknown>;
+  const numColumns = Object.keys(firstRow).length;
+
+  // Determine how many rows we can insert per batch without exceeding parameter limit.
+  const rowsPerBatch = Math.floor(MAX_INSERT_PARAMETERS / Math.max(numColumns, 1));
+
+  if (rowsPerBatch < 1) {
+    throw new Error(
+      `Seeder ${s.tableName} produces rows with ${numColumns} columns which exceeds the MAX_INSERT_PARAMETERS (${MAX_INSERT_PARAMETERS}). Reduce columns or increase MAX_INSERT_PARAMETERS.`,
+    );
+  }
+
+  const batches = chunkArray(vals, rowsPerBatch);
   return batches.map((b) => tx.insert(s.table).values(b).onConflictDoNothing());
 }
 
