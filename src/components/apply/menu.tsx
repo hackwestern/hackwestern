@@ -40,13 +40,17 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
   };
 
   return (
-    <div className="mx-auto h-screen w-full gap-3 border-[1px] bg-white shadow-[5px_0px_10px_0px_rgba(129,74,83,0.1)] py-3">
+    <div className="mx-auto h-screen w-full gap-3 border-[1px] bg-white py-3 shadow-[5px_0px_10px_0px_rgba(129,74,83,0.1)]">
       <div className="ml-4 mr-auto hidden gap-2 md:flex md:flex-col">
-        <div className="ml-2 gap-8 flex flex-col">
+        <div className="ml-2 flex flex-col gap-8">
           <HWLogo />
           <div className="gap-2">
-            <h1 className="font-figtree font-bold text-heavy">Application Portal</h1>
-            <h2 className="font-figtree font-semibold text-medium">Hack Western 12</h2>
+            <h1 className="font-figtree font-bold text-heavy">
+              Application Portal
+            </h1>
+            <h2 className="font-figtree font-semibold text-medium">
+              Hack Western 12
+            </h2>
           </div>
         </div>
         {applySteps.map((s) => (
