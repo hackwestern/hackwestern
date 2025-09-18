@@ -10,7 +10,7 @@ import { api } from "~/utils/api";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { hackerLoginRedirect } from "~/utils/redirect";
-import CloudBackground from "~/components/cloud-background";
+import CanvasBackground from "~/components/canvas-background";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
 
 export default function Register() {
@@ -55,7 +55,7 @@ export default function Register() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
-        <CloudBackground />
+        <CanvasBackground />
         <div className="z-10 w-full max-w-2xl rounded-lg bg-violet-50 bg-white p-12 shadow-md">
           <h2 className="mb-2 text-4xl font-bold">Start Your Journey!</h2>
           <h2 className="mb-6 text-lg">
