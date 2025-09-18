@@ -38,9 +38,7 @@ export default function Apply() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center bg-primary-50">
-        <div className="fixed z-20 bg-primary-50">
-          <ApplyNavbar />
-        </div>
+        {/* Mobile View */}
         <Tabs defaultValue="application" className="w-screen pt-16 md:hidden">
           <TabsList className="fixed z-50 w-screen justify-around rounded-none bg-primary-100">
             <TabsTrigger
@@ -83,33 +81,41 @@ export default function Apply() {
             <CloudBackground />
           </TabsContent>
         </Tabs>
+        {/* End of Mobile View */}
+
+        {/* Desktop View */}
         <div className="relative z-10 hidden w-full flex-grow items-center md:flex">
+          
           <div
             id="left-panel"
-            className="z-10 flex h-screen flex-grow flex-col justify-between space-y-8 overflow-auto bg-primary-100 p-9 pb-[4.1rem] pt-24 md:w-2/3 2xl:w-1/2"
+            className="z-30 flex h-full w-1/5 items-center justify-center"
           >
-            <div className="space-y-2 p-1">
-              <h1 className="text-2xl font-medium">{heading}</h1>
-              <h2 className="text-sm text-slate-500 lg:text-base">
-                {subheading}
-              </h2>
-              <ApplyForm step={step} />
-            </div>
-            <ApplyNavigation step={step} />
+            <ApplyMenu step={step} />
           </div>
           <div
             id="right-panel"
             className="bg-hw-linear-gradient-day flex h-full flex-col items-center justify-center px-4 md:w-full"
           >
             <CloudBackground />
-            <div className="z-10 flex w-[100%] flex-col items-center justify-center">
-              <Passport />
+            <div className="z-10 flex flex-col items-center justify-center">
+              <div className="flex flex-col h-full w-full space-y-8 bg-white rounded-md px-6 pt-12">
+              <div className="space-y-2 py-1.5">
+                <h1 className="text-2xl font-medium">{heading}</h1>
+                <h2 className="text-sm text-slate-500">{subheading}</h2>
+              </div>
+              <div className="">
+                <ApplyForm step={step} />
+              </div>
+              <div className="self-end pb-3">
+                <SavedIndicator />
+              </div>
+            </div>
             </div>
           </div>
         </div>
         <div className="relative z-10 flex w-[100%] flex-col items-center justify-center">
-          <ApplyMenu step={step} />
         </div>
+        {/* End of Desktop View */}
       </main>
     </>
   );

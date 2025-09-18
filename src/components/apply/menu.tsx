@@ -1,3 +1,4 @@
+import { HWLogo } from "~/components/apply/hw-logo";
 import { applySteps, type ApplyStep } from "~/constants/apply";
 import { Button } from "../ui/button";
 import Link from "next/link";
@@ -39,12 +40,20 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
   };
 
   return (
-    <div className="fixed bottom-0 mx-auto h-fit w-screen justify-center gap-3 border-[1px] border-t-primary-300 bg-violet-100 py-3">
-      <div className="mx-auto hidden w-fit gap-1 md:flex">
+    <div className="mx-auto h-screen w-full gap-3 border-[1px] bg-white shadow-[5px_0px_10px_0px_rgba(129,74,83,0.1)] py-3">
+      <div className="ml-4 mr-auto hidden gap-2 md:flex md:flex-col">
+        <div className="ml-2 gap-8 flex flex-col">
+          <HWLogo />
+          <div className="gap-2">
+            <h1 className="font-figtree font-bold text-heavy">Application Portal</h1>
+            <h2 className="font-figtree font-semibold text-medium">Hack Western 12</h2>
+          </div>
+        </div>
         {applySteps.map((s) => (
           <Button
             key={s.step}
-            variant={s.step === step ? "apply" : "apply-ghost"}
+            variant={s.step === step ? "apply-ghost" : "apply"}
+            className="w-full"
             asChild
           >
             <Link href={{ pathname: "/apply", query: { step: s.step } }}>
@@ -54,6 +63,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
         ))}
       </div>
 
+      {/* Mobile View */}
       <div className="flex h-auto items-center justify-between overflow-clip px-4 py-1.5 md:hidden md:h-0">
         <Button
           asChild
