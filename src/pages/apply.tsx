@@ -10,7 +10,7 @@ import { Passport } from "~/components/apply/passport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { SavedIndicator } from "~/components/apply/saved-indicator";
 import { notVerifiedRedirect } from "~/utils/redirect";
-import CloudBackground from "~/components/cloud-background";
+import CanvasBackground from "~/components/canvas-background";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   return applySteps.find((s) => s.step === stepValue) ?? null;
@@ -80,7 +80,7 @@ export default function Apply() {
             <div className="flex h-[85vh] w-screen flex-col items-center justify-center px-4">
               <Passport />
             </div>
-            <CloudBackground />
+            <CanvasBackground />
           </TabsContent>
         </Tabs>
         <div className="relative z-10 hidden w-full flex-grow items-center md:flex">
@@ -101,7 +101,7 @@ export default function Apply() {
             id="right-panel"
             className="bg-hw-linear-gradient-day flex h-full flex-col items-center justify-center px-4 md:w-full"
           >
-            <CloudBackground />
+            <CanvasBackground />
             <div className="z-10 flex w-[100%] flex-col items-center justify-center">
               <Passport />
             </div>
