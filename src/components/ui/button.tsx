@@ -28,8 +28,8 @@ export const buttonVariants = cva(buttonBase, {
       ghost: "hover:bg-accent hover:text-accent-foreground",
       link: "text-primary underline-offset-4 hover:underline",
       "apply-ghost":
-        "text-slate-400 hover:bg-primary-300 hover:text-primary-600",
-      apply: "bg-primary-300 text-primary-600 hover:bg-primary-400",
+        "bg-[#ebdff7] bg-opacity-50 text-heavy font-semibold hover:bg-[#e6cdff] w-full justify-start",
+      apply: "text-medium hover:bg-[#ebdff7] hover:text-heavy",
     },
     size: {
       default: "h-10 px-4 py-2",
