@@ -13,7 +13,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "~/components/ui/accordion";
-import CloudBackground from "~/components/cloud-background";
+import CanvasBackground from "~/components/canvas-background";
 import { Input } from "~/components/ui/input";
 import { useState } from "react";
 
@@ -64,7 +64,7 @@ const Internal = () => {
 
   return (
     <div className="bg-hw-linear-gradient-day flex flex-col items-center justify-center bg-primary-100 py-4">
-      <CloudBackground />
+      <CanvasBackground />
       <h1 className="z-10 mb-5 text-3xl">Internal Dashboard</h1>
       <Accordion type="multiple" className="z-10">
         <AccordionItem key="leaderboard" value="leaderboard">
