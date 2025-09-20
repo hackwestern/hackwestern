@@ -110,10 +110,14 @@ export default function Login() {
               </div>
             </div>
             <div className="mt-4 font-figtree">
-              Don&apos;t have an account yet?{" "}
-              <Button asChild variant="tertiary" size="default">
+              Don&apos;t have an account yet?
+              <Button
+                asChild
+                variant="tertiary"
+                className="ml-2 h-max p-0 text-base"
+              >
                 <Link
-                  className="font-figtree text-purple-500 hover:text-violet-700"
+                  className="text-purple-500 hover:text-violet-700"
                   href="/register"
                 >
                   Create Account
@@ -121,8 +125,12 @@ export default function Login() {
               </Button>
             </div>
             <div className="font-figtree">
-              Forget password?{" "}
-              <Button asChild variant="tertiary" size="default">
+              Forget password?
+              <Button
+                asChild
+                variant="tertiary"
+                className="ml-2 h-max p-0 text-base"
+              >
                 <Link href="/forgot-password">Reset Password</Link>
               </Button>
             </div>
