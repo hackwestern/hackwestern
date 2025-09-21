@@ -8,7 +8,7 @@ import { Button } from "~/components/ui/button";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import CloudBackground from "~/components/cloud-background";
+import CanvasBackground from "~/components/canvas-background";
 
 export default function ResetRequest() {
   const { toast } = useToast();
@@ -82,7 +82,7 @@ export default function ResetRequest() {
       </Head>
 
       <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
-        <CloudBackground />
+        <CanvasBackground />
         <div className="z-10 w-full max-w-2xl rounded-lg bg-[rgba(248,245,255,0.75)] p-12 text-base shadow-md backdrop-blur-xl">
           {isValidToken ? (
             <>
