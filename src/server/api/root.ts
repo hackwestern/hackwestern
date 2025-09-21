@@ -12,12 +12,12 @@ import { scavengerHuntRouter } from "./routers/scavenger-hunt";
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-	example: exampleRouter,
-	application: applicationRouter,
-	auth: authRouter,
-	preregistration: preregistrationRouter,
-	review: reviewRouter,
-	scavenger: scavengerHuntRouter,
+  example: exampleRouter,
+  application: applicationRouter,
+  auth: authRouter,
+  preregistration: preregistrationRouter,
+  review: reviewRouter,
+  scavenger: scavengerHuntRouter,
 });
 
 // export type definition of API
