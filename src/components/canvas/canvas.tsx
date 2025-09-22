@@ -14,12 +14,18 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-
 import { CanvasProvider } from "~/contexts/CanvasContext";
-import { getDistance, getMidpoint } from "~/lib/canvas";
+import {
+  getDistance,
+  getMidpoint,
+  getScreenSizeEnum,
+  getSectionPanCoordinates,
+  ScreenSizeEnum,
+} from "~/lib/canvas";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
 import Navbar from "./navbar";
 import Toolbar from "./toolbar";
+import { type SectionCoordinates } from "~/constants/canvas";
 
 export const OffsetComponent = ({
   offset,
@@ -44,7 +50,7 @@ export const OffsetComponent = ({
 };
 
 interface Props {
-  homeCoordinates?: { x: number; y: number };
+  homeCoordinates: SectionCoordinates;
   children: React.ReactNode;
 }
 
@@ -72,12 +78,31 @@ const INTERACTIVE_SELECTOR =
   "button,[role='button'],input,textarea,[contenteditable='true']," +
   "[data-toolbar-button],[data-navbar-button]";
 
-export const canvasWidth = 10000;
-export const canvasHeight = 6500;
+export const canvasWidth = 8000;
+export const canvasHeight = 5000;
 
 const ZOOM_BOUND = 1.05; // minimum zoom level to prevent zooming out too far
-const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 10;
+
+const MIN_ZOOMS: Record<ScreenSizeEnum, number> = {
+  [ScreenSizeEnum.SMALL_MOBILE]: 0.25,
+  [ScreenSizeEnum.MOBILE]: 0.2,
+  [ScreenSizeEnum.TABLET]: 0.15,
+  [ScreenSizeEnum.SMALL_DESKTOP]: 0.1,
+  [ScreenSizeEnum.MEDIUM_DESKTOP]: 0.1,
+  [ScreenSizeEnum.LARGE_DESKTOP]: 0.1,
+  [ScreenSizeEnum.HUGE_DESKTOP]: 0.1,
+} as const;
+
+const stopAllMotion = (
+  x: MotionValue<number>,
+  y: MotionValue<number>,
+  scale: MotionValue<number>,
+) => {
+  x.stop();
+  y.stop();
+  scale.stop();
+};
 
 const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const { height, width } = useWindowDimensions();
@@ -85,14 +110,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const sceneWidth = canvasWidth;
   const sceneHeight = canvasHeight;
 
-  // center of the canvas
-  const centerX = sceneWidth / 2;
-  const centerY = sceneHeight / 2;
-
-  const offsetHomeCoordinates = {
-    x: -(homeCoordinates?.x ?? centerX),
-    y: -(homeCoordinates?.y ?? centerY),
-  };
+  const MIN_ZOOM = MIN_ZOOMS[getScreenSizeEnum(width)];
 
   // tracks if user is panning the screen
   const [isPanning, setIsPanning] = useState<boolean>(false);
@@ -106,15 +124,10 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
 
-  const x = useMotionValue(offsetHomeCoordinates.x);
-  const y = useMotionValue(offsetHomeCoordinates.y);
+  // somewhere near the middle-ish
+  const x = useMotionValue(-2500);
+  const y = useMotionValue(0);
   const scale = useMotionValue(1);
-
-  const stopAllMotion = useCallback(() => {
-    x.stop();
-    y.stop();
-    scale.stop();
-  }, [x, y, scale]);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -129,183 +142,239 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     panOffset: Point;
   } | null>(null);
 
-  const onResetViewAndItems = (onComplete?: () => void): void => {
-    setIsResetting(true);
-    void panToOffsetScene(offsetHomeCoordinates, x, y, scale, 1).then(() => {
-      setIsResetting(false);
-      if (onComplete) onComplete();
-    });
-  };
+  const offsetHomeCoordinates = useMemo(
+    () =>
+      getSectionPanCoordinates({
+        windowDimensions: { width, height },
+        coords: homeCoordinates,
+        targetZoom: 1,
+      }),
+    [homeCoordinates, width, height],
+  );
 
-  const panToOffset = (
-    offset: Point,
-    viewportRef: React.RefObject<HTMLDivElement | null>,
-    onComplete?: () => void,
-    zoom?: number,
-  ): void => {
-    if (!viewportRef.current) return;
-    setIsSceneMoving(true);
+  const onResetViewAndItems = useCallback(
+    (onComplete?: () => void): void => {
+      setIsResetting(true);
 
-    // Calculate bounds based on scene and viewport dimensions
-    const viewportWidth = viewportRef.current.offsetWidth;
-    const viewportHeight = viewportRef.current.offsetHeight;
+      void panToOffsetScene(offsetHomeCoordinates, x, y, scale, 1).then(() => {
+        setIsResetting(false);
+        if (onComplete) onComplete();
+      });
+    },
+    [offsetHomeCoordinates, x, y, scale],
+  );
 
-    const minPanX = viewportWidth - sceneWidth * (zoom ?? 1);
-    const maxPanX = 0;
-    const minPanY = viewportHeight - sceneHeight * (zoom ?? 1);
-    const maxPanY = 0;
+  const panToOffset = useCallback(
+    (
+      offset: Point,
+      viewportRef: React.RefObject<HTMLDivElement | null>,
+      onComplete?: () => void,
+      zoom?: number,
+    ): void => {
+      if (!viewportRef.current) return;
+      setIsSceneMoving(true);
 
-    // Clamp the offset to keep the scene within bounds, shouldn't be needed but still implemented
-    const clampedX = Math.min(Math.max(offset.x, minPanX), maxPanX);
-    const clampedY = Math.min(Math.max(offset.y, minPanY), maxPanY);
+      // Calculate bounds based on scene and viewport dimensions
+      const viewportWidth = viewportRef.current.offsetWidth;
+      const viewportHeight = viewportRef.current.offsetHeight;
 
-    void panToOffsetScene({ x: clampedX, y: clampedY }, x, y, scale, zoom).then(
-      () => {
+      const minPanX = viewportWidth - sceneWidth * (zoom ?? 1);
+      const maxPanX = 0;
+      const minPanY = viewportHeight - sceneHeight * (zoom ?? 1);
+      const maxPanY = 0;
+
+      // Clamp the offset to keep the scene within bounds, shouldn't be needed but still implemented
+      const clampedX = Math.min(Math.max(offset.x, minPanX), maxPanX);
+      const clampedY = Math.min(Math.max(offset.y, minPanY), maxPanY);
+
+      void panToOffsetScene(
+        { x: clampedX, y: clampedY },
+        x,
+        y,
+        scale,
+        zoom,
+      ).then(() => {
         setIsSceneMoving(false);
         if (onComplete) onComplete();
-      },
-    );
-  };
+      });
+    },
+    [sceneWidth, sceneHeight, x, y, scale],
+  );
 
-  const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
-    activePointersRef.current.set(event.pointerId, event);
-    (event.target as HTMLElement).setPointerCapture(event.pointerId);
-    if (isResetting || isSceneMoving) return;
-    stopAllMotion();
-    if (activePointersRef.current.size === 1) {
-      const targetElement = event.target as HTMLElement;
-      if (targetElement.closest(INTERACTIVE_SELECTOR)) {
-        activePointersRef.current.delete(event.pointerId);
-        (event.target as HTMLElement).releasePointerCapture(event.pointerId);
+  const handlePointerDown = useCallback(
+    (event: PointerEvent<HTMLDivElement>): void => {
+      activePointersRef.current.set(event.pointerId, event);
+      (event.target as HTMLElement).setPointerCapture(event.pointerId);
+      if (isResetting || isSceneMoving) return;
+      stopAllMotion(x, y, scale);
+      // pan with 1 pointer, pinch with 2 pointers
+      if (activePointersRef.current.size === 1) {
+        // do not pan from interactive elements
+        const targetElement = event.target as HTMLElement;
+        if (targetElement.closest(INTERACTIVE_SELECTOR)) {
+          activePointersRef.current.delete(event.pointerId);
+          (event.target as HTMLElement).releasePointerCapture(event.pointerId);
+          return;
+        }
+
+        setIsPanning(true);
+        setPanStartPoint({ x: event.clientX, y: event.clientY });
+        setInitialPanOffsetOnDrag({ x: x.get(), y: y.get() });
+        if (viewportRef.current) viewportRef.current.style.cursor = "grabbing";
+      } else if (activePointersRef.current.size === 2) {
+        setIsPanning(false);
+        const pointers = Array.from(activePointersRef.current.values());
+        initialPinchStateRef.current = {
+          distance: getDistance(pointers[0]!, pointers[1]!),
+          midpoint: getMidpoint(pointers[0]!, pointers[1]!),
+          zoom: scale.get(),
+          panOffset: { x: x.get(), y: y.get() },
+        };
+      }
+    },
+    [
+      isResetting,
+      isSceneMoving,
+      setIsPanning,
+      setPanStartPoint,
+      setInitialPanOffsetOnDrag,
+      x,
+      y,
+      scale,
+      viewportRef,
+    ],
+  );
+
+  const handlePointerMove = useCallback(
+    (event: PointerEvent<HTMLDivElement>): void => {
+      if (isPanning || activePointersRef.current.size >= 2) {
+        stopAllMotion(x, y, scale);
+      }
+      if (!activePointersRef.current.has(event.pointerId) || isResetting)
         return;
+      activePointersRef.current.set(event.pointerId, event);
+
+      if (isPanning && activePointersRef.current.size === 1) {
+        event.preventDefault();
+        const deltaX = event.clientX - panStartPoint.x;
+        const deltaY = event.clientY - panStartPoint.y;
+
+        // UPDATE to use motion value
+        const minPanX = width - sceneWidth * scale.get();
+        const maxPanX = 0;
+        const minPanY = height - sceneHeight * scale.get();
+        const maxPanY = 0;
+
+        const newX = Math.min(
+          Math.max(initialPanOffsetOnDrag.x + deltaX, minPanX),
+          maxPanX,
+        );
+        const newY = Math.min(
+          Math.max(initialPanOffsetOnDrag.y + deltaY, minPanY),
+          maxPanY,
+        );
+        x.set(newX);
+        y.set(newY);
+      } else if (
+        activePointersRef.current.size >= 2 &&
+        initialPinchStateRef.current
+      ) {
+        event.preventDefault();
+        const pointers = Array.from(activePointersRef.current.values());
+        const p1 = pointers[0]!;
+        const p2 = pointers[1]!;
+
+        const currentDistance = getDistance(p1, p2);
+        const currentMidpoint = getMidpoint(p1, p2);
+
+        const {
+          distance: initialDistance,
+          zoom: initialZoom,
+          panOffset: initialPanOffsetPinch,
+        } = initialPinchStateRef.current;
+
+        if (initialDistance === 0) return;
+
+        let newZoom = initialZoom * (currentDistance / initialDistance);
+        newZoom = Math.max(
+          (window.innerWidth / canvasWidth) * ZOOM_BOUND, // Ensure zoom is at least the width of the canvas
+          (window.innerHeight / canvasHeight) * ZOOM_BOUND, // Ensure zoom is at least the height of the canvas
+          Math.min(newZoom, 10),
+          MIN_ZOOM, // Ensure zoom is not less than MIN_ZOOM
+        );
+
+        const mx = currentMidpoint.x;
+        const my = currentMidpoint.y;
+
+        const minPanX = width - sceneWidth * newZoom;
+        const maxPanX = 0;
+        const minPanY = height - sceneHeight * newZoom;
+        const maxPanY = 0;
+
+        let newPanX =
+          mx - ((mx - initialPanOffsetPinch.x) / initialZoom) * newZoom;
+        let newPanY =
+          my - ((my - initialPanOffsetPinch.y) / initialZoom) * newZoom;
+
+        // Clamp pan to prevent leaving bounds
+        newPanX = Math.min(Math.max(newPanX, minPanX), maxPanX);
+        newPanY = Math.min(Math.max(newPanY, minPanY), maxPanY);
+
+        scale.set(newZoom);
+        x.set(newPanX);
+        y.set(newPanY);
+      }
+    },
+    [
+      isPanning,
+      isResetting,
+      x,
+      y,
+      scale,
+      panStartPoint.x,
+      panStartPoint.y,
+      width,
+      sceneWidth,
+      height,
+      sceneHeight,
+      initialPanOffsetOnDrag.x,
+      initialPanOffsetOnDrag.y,
+      MIN_ZOOM,
+    ],
+  );
+
+  const handlePointerUpOrCancel = useCallback(
+    (event: PointerEvent<HTMLDivElement>): void => {
+      stopAllMotion(x, y, scale);
+      event.preventDefault();
+      if ((event.target as HTMLElement).hasPointerCapture(event.pointerId)) {
+        (event.target as HTMLElement).releasePointerCapture(event.pointerId);
+      }
+      activePointersRef.current.delete(event.pointerId);
+
+      if (isPanning && activePointersRef.current.size < 1) {
+        setIsPanning(false);
+        if (viewportRef.current)
+          viewportRef.current.style.cursor = "url('/customcursor.svg'), grab";
       }
 
-      setIsPanning(true);
-      setPanStartPoint({ x: event.clientX, y: event.clientY });
-      setInitialPanOffsetOnDrag({ x: x.get(), y: y.get() });
-      if (viewportRef.current) viewportRef.current.style.cursor = "grabbing";
-    } else if (activePointersRef.current.size === 2) {
-      setIsPanning(false);
-      const pointers = Array.from(activePointersRef.current.values());
-      initialPinchStateRef.current = {
-        distance: getDistance(pointers[0]!, pointers[1]!),
-        midpoint: getMidpoint(pointers[0]!, pointers[1]!),
-        zoom: scale.get(),
-        panOffset: { x: x.get(), y: y.get() },
-      };
-    }
-  };
+      if (initialPinchStateRef.current && activePointersRef.current.size < 2) {
+        initialPinchStateRef.current = null;
+      }
 
-  const handlePointerMove = (event: PointerEvent<HTMLDivElement>): void => {
-    if (isPanning || activePointersRef.current.size >= 2) {
-      stopAllMotion();
-    }
-    if (!activePointersRef.current.has(event.pointerId) || isResetting) return;
-    activePointersRef.current.set(event.pointerId, event);
-
-    if (isPanning && activePointersRef.current.size === 1) {
-      event.preventDefault();
-      const deltaX = event.clientX - panStartPoint.x;
-      const deltaY = event.clientY - panStartPoint.y;
-
-      // UPDATE to use motion value
-      const minPanX = width - sceneWidth * scale.get();
-      const maxPanX = 0;
-      const minPanY = height - sceneHeight * scale.get();
-      const maxPanY = 0;
-
-      const newX = Math.min(
-        Math.max(initialPanOffsetOnDrag.x + deltaX, minPanX),
-        maxPanX,
-      );
-      const newY = Math.min(
-        Math.max(initialPanOffsetOnDrag.y + deltaY, minPanY),
-        maxPanY,
-      );
-      x.set(newX);
-      y.set(newY);
-    } else if (
-      activePointersRef.current.size >= 2 &&
-      initialPinchStateRef.current
-    ) {
-      event.preventDefault();
-      const pointers = Array.from(activePointersRef.current.values());
-      const p1 = pointers[0]!;
-      const p2 = pointers[1]!;
-
-      const currentDistance = getDistance(p1, p2);
-      const currentMidpoint = getMidpoint(p1, p2);
-
-      const {
-        distance: initialDistance,
-        zoom: initialZoom,
-        panOffset: initialPanOffsetPinch,
-      } = initialPinchStateRef.current;
-
-      if (initialDistance === 0) return;
-
-      let newZoom = initialZoom * (currentDistance / initialDistance);
-      newZoom = Math.max(
-        (window.innerWidth / canvasWidth) * ZOOM_BOUND, // Ensure zoom is at least the width of the canvas
-        (window.innerHeight / canvasHeight) * ZOOM_BOUND, // Ensure zoom is at least the height of the canvas
-        Math.min(newZoom, 10),
-        MIN_ZOOM, // Ensure zoom is not less than MIN_ZOOM
-      );
-
-      const mx = currentMidpoint.x;
-      const my = currentMidpoint.y;
-
-      const minPanX = width - sceneWidth * newZoom;
-      const maxPanX = 0;
-      const minPanY = height - sceneHeight * newZoom;
-      const maxPanY = 0;
-
-      let newPanX =
-        mx - ((mx - initialPanOffsetPinch.x) / initialZoom) * newZoom;
-      let newPanY =
-        my - ((my - initialPanOffsetPinch.y) / initialZoom) * newZoom;
-
-      // Clamp pan to prevent leaving bounds
-      newPanX = Math.min(Math.max(newPanX, minPanX), maxPanX);
-      newPanY = Math.min(Math.max(newPanY, minPanY), maxPanY);
-
-      scale.set(newZoom);
-      x.set(newPanX);
-      y.set(newPanY);
-    }
-  };
-
-  const handlePointerUpOrCancel = (
-    event: PointerEvent<HTMLDivElement>,
-  ): void => {
-    stopAllMotion();
-    event.preventDefault();
-    if ((event.target as HTMLElement).hasPointerCapture(event.pointerId)) {
-      (event.target as HTMLElement).releasePointerCapture(event.pointerId);
-    }
-    activePointersRef.current.delete(event.pointerId);
-
-    if (isPanning && activePointersRef.current.size < 1) {
-      setIsPanning(false);
-      if (viewportRef.current)
-        viewportRef.current.style.cursor = "url('/customcursor.svg'), grab";
-    }
-
-    if (initialPinchStateRef.current && activePointersRef.current.size < 2) {
-      initialPinchStateRef.current = null;
-    }
-
-    if (
-      !isPanning &&
-      activePointersRef.current.size === 1 &&
-      !initialPinchStateRef.current
-    ) {
-      const lastPointer = Array.from(activePointersRef.current.values())[0]!;
-      setIsPanning(true);
-      setPanStartPoint({ x: lastPointer.clientX, y: lastPointer.clientY });
-      setInitialPanOffsetOnDrag({ x: x.get(), y: y.get() });
-    }
-  };
+      if (
+        !isPanning &&
+        activePointersRef.current.size === 1 &&
+        !initialPinchStateRef.current
+      ) {
+        const lastPointer = Array.from(activePointersRef.current.values())[0]!;
+        setIsPanning(true);
+        setPanStartPoint({ x: lastPointer.clientX, y: lastPointer.clientY });
+        setInitialPanOffsetOnDrag({ x: x.get(), y: y.get() });
+      }
+    },
+    [x, y, scale, isPanning],
+  );
 
   const handleWheelZoom = useCallback(
     (event: WheelEvent) => {
@@ -358,7 +427,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         y.set(newPanY);
         scale.set(nextZoom);
       } else {
-        stopAllMotion();
+        stopAllMotion(x, y, scale);
 
         const scrollSpeed = 1;
         const newPanX = x.get() - event.deltaX * scrollSpeed;
@@ -376,7 +445,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         y.set(clampedPanY);
       }
     },
-    [width, sceneWidth, height, sceneHeight, x, y, scale, stopAllMotion],
+    [scale, MIN_ZOOM, x, y, sceneWidth, sceneHeight, width, height],
   );
 
   useEffect(() => {
@@ -418,7 +487,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         maxZIndex={maxZIndex}
         setMaxZIndex={setMaxZIndex}
       >
-        <Toolbar homeCoordinates={homeCoordinates} />
+        <Toolbar homeCoordinates={offsetHomeCoordinates} />
         <Navbar panToOffset={handlePanToOffset} onReset={onResetViewAndItems} />
         <div
           ref={viewportRef}
@@ -455,19 +524,18 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   );
 };
 
-interface OffsetPoints {
-  x?: number;
-  y?: number;
-  width?: number;
-}
-
 interface CanvasProps {
   children: React.ReactNode;
-  offset?: OffsetPoints;
+  offset?: SectionCoordinates;
+  optimize?: boolean;
 }
 
-export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
-  const margin = useMemo(() => {
+export const CanvasComponent: FC<CanvasProps> = ({
+  children,
+  offset,
+  optimize = true,
+}) => {
+  const margin = () => {
     if (!offset) {
       return { margin: "auto" };
     }
@@ -489,15 +557,20 @@ export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
     }
 
     return style;
-  }, [offset]);
+  };
+
+  // TODO:
+  if (optimize) {
+    // check if component is inside of viewport, return null if not
+  }
 
   return (
     <div
       className="absolute inset-0 z-30 flex"
       style={{
-        ...margin,
+        ...margin(),
         width: offset?.width ? offset.width + "px" : "100vw",
-        height: "100vh",
+        height: offset?.height ? offset.height + "px" : "100vh",
       }}
     >
       {children}
@@ -507,21 +580,27 @@ export const CanvasComponent: FC<CanvasProps> = ({ children, offset }) => {
 
 const gradientBgImage = `radial-gradient(ellipse ${canvasWidth}px ${canvasHeight}px at ${canvasWidth / 2}px ${canvasHeight}px, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`;
 
-const Gradient = () => (
-  <div
-    className="absolute inset-0 h-full w-full bg-hw-radial-gradient opacity-100"
-    style={{
-      backgroundImage: gradientBgImage,
-    }}
-  />
-);
+const Gradient = React.memo(function Gradient() {
+  return (
+    <div
+      className="absolute inset-0 h-full w-full bg-hw-radial-gradient opacity-100"
+      style={{
+        backgroundImage: gradientBgImage,
+      }}
+    />
+  );
+});
 
-const Dots = () => (
-  <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-40 [background-size:20px_20px]" />
-);
+const Dots = React.memo(function Dots() {
+  return (
+    <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-40 [background-size:20px_20px]" />
+  );
+});
 
-const Filter = () => (
-  <div className="pointer-events-none absolute inset-0 hidden h-full w-full bg-none contrast-125 filter md:inline md:bg-noise" />
-);
+const Filter = React.memo(function Filter() {
+  return (
+    <div className="pointer-events-none absolute inset-0 hidden h-full w-full bg-none contrast-125 filter md:inline md:bg-noise" />
+  );
+});
 
 export default Canvas;

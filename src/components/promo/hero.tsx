@@ -11,9 +11,9 @@ function Hero() {
 
   return (
     <CanvasComponent offset={coordinates.home}>
-      <div className="my-auto flex h-screen w-screen origin-center flex-col items-center justify-center space-y-12 pb-12">
+      <div className="my-auto flex origin-center flex-col items-center justify-center space-y-12">
         <div className="flex origin-center scale-75 flex-col items-center justify-center space-y-4 transition-transform duration-300 ease-in-out md:scale-100">
-          <div className="flex flex-row">
+          <div className="my-16 flex flex-row">
             <Image
               src="/dragme.svg"
               alt="Drag Me!"
@@ -21,24 +21,22 @@ function Hero() {
               width={80}
               height={80}
             />
-            <div className="z-[100] scale-[1.33] md:scale-100">
-              <DraggableImage
-                key="hw-logo"
-                onDragStart={() => setHasBeenDragged(true)}
-                animate={{
-                  rotate: [2, -2],
-                  transition: {
-                    duration: 1,
-                    repeat: Infinity,
-                    repeatType: "mirror",
-                    ease: "easeInOut",
-                  },
-                }}
-                src="/horse.svg"
-                alt="Hack Western Logo"
-                scale={0.65}
-              />
-            </div>
+            <DraggableImage
+              key="hw-logo"
+              onDragStart={() => setHasBeenDragged(true)}
+              animate={{
+                rotate: [2, -2],
+                transition: {
+                  duration: 1,
+                  repeat: Infinity,
+                  repeatType: "mirror",
+                  ease: "easeInOut",
+                },
+              }}
+              src="/horse.svg"
+              alt="Hack Western Logo"
+              className="m-4 mt-8 w-20"
+            />
             <motion.div
               animate={{ opacity: hasBeenDragged ? 0 : 1 }}
               transition={{ duration: 0.5, ease: "easeInOut" }}

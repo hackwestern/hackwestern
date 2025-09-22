@@ -4,9 +4,9 @@ import { api } from "~/utils/api";
 import { useToast } from "~/components/hooks/use-toast";
 import { useState } from "react";
 import { signOut } from "next-auth/react";
-import { disabledRedirect, isVerifiedRedirect } from "~/utils/redirect";
+import { isVerifiedRedirect } from "~/utils/redirect";
 import { useRouter } from "next/router";
-import CloudBackground from "~/components/cloud-background";
+import CanvasBackground from "~/components/canvas-background";
 
 const NotVerified = () => {
   const { toast } = useToast();
@@ -54,7 +54,7 @@ const NotVerified = () => {
       </Head>
 
       <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
-        <CloudBackground />
+        <CanvasBackground />
         <div className="z-10 flex w-full max-w-2xl flex-col justify-center gap-6 rounded-lg bg-violet-50 bg-white p-8 shadow-md">
           <p>
             You have registered successfully! Please verify your email before
@@ -83,5 +83,4 @@ const NotVerified = () => {
 };
 
 export default NotVerified;
-// export const getServerSideProps = isVerifiedRedirect;
-export const getServerSideProps = disabledRedirect;
+export const getServerSideProps = isVerifiedRedirect;

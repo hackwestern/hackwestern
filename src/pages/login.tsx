@@ -6,11 +6,11 @@ import { useState } from "react";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import Link from "next/link";
-import { disabledRedirect, hackerLoginRedirect } from "~/utils/redirect";
+import { hackerLoginRedirect } from "~/utils/redirect";
 import { useRouter } from "next/router";
 import { useToast } from "~/components/hooks/use-toast";
-import CloudBackground from "~/components/cloud-background";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
+import CanvasBackground from "~/components/canvas-background";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -48,7 +48,7 @@ export default function Login() {
       </Head>
 
       <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
-        <CloudBackground />
+        <CanvasBackground />
         <div className="z-10 w-full max-w-2xl rounded-lg bg-violet-50 bg-white p-12 shadow-md">
           <h2 className="mb-2 text-4xl font-bold">Welcome Back!</h2>
           <h2 className="mb-6 text-lg">
@@ -116,5 +116,4 @@ export default function Login() {
   );
 }
 
-// export const getServerSideProps = hackerLoginRedirect;
-export const getServerSideProps = disabledRedirect;
+export const getServerSideProps = hackerLoginRedirect;

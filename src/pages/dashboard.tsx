@@ -5,14 +5,11 @@ import { ApplyNavbar } from "~/components/apply/navbar";
 import { Passport } from "~/components/apply/passport";
 import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
-import {
-  disabledRedirect,
-  notVerifiedRedirectDashboard,
-} from "~/utils/redirect";
+import { notVerifiedRedirectDashboard } from "~/utils/redirect";
 import Link from "next/link";
 import { cn } from "~/lib/utils";
 import { isPastDeadline } from "~/lib/date";
-import CloudBackground from "~/components/cloud-background";
+import CanvasBackground from "~/components/canvas-background";
 
 type ApplicationStatusType =
   | "IN_PROGRESS"
@@ -158,7 +155,7 @@ const Dashboard = () => {
             id="right-panel"
             className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center"
           >
-            <CloudBackground />
+            <CanvasBackground />
             <div className="z-10 flex w-[100%] flex-col items-center justify-center">
               <Passport />
             </div>
@@ -170,5 +167,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-// export const getServerSideProps = notVerifiedRedirectDashboard;
-export const getServerSideProps = disabledRedirect;
+export const getServerSideProps = notVerifiedRedirectDashboard;

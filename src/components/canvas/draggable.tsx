@@ -1,4 +1,10 @@
-import React, { useRef, useEffect, forwardRef, useState } from "react";
+import React, {
+  useRef,
+  useEffect,
+  forwardRef,
+  useState,
+  useCallback,
+} from "react";
 import {
   animate,
   motion,
@@ -8,7 +14,6 @@ import {
   type PanInfo,
 } from "framer-motion";
 import { useCanvasContext } from "~/contexts/CanvasContext";
-import { useMemoPoint } from "~/lib/canvas";
 
 interface Point {
   x: number;
@@ -19,6 +24,8 @@ export interface DraggableProps extends HTMLMotionProps<"div"> {
   initialPos?: Point;
   shouldStopPropagation?: (e: React.PointerEvent) => boolean;
 }
+
+const defaultPos = { x: 0, y: 0 };
 
 export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
   (props, ref) => {
@@ -32,16 +39,11 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
 
     const {
       scale: parentZoom,
-      x: panOffsetX,
-      y: panOffsetY,
       isResetting,
       maxZIndex,
       setMaxZIndex,
     } = useCanvasContext();
 
-    const panOffset = useMemoPoint(panOffsetX.get(), panOffsetY.get());
-
-    const defaultPos = useMemoPoint(0, 0);
     const initialPos = passedPos ?? defaultPos;
 
     const x = useMotionValue(initialPos.x);
@@ -70,7 +72,7 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
           mass: 1,
         });
       }
-    }, [initialPos, controls, isResetting, panOffset, x, y]);
+    }, [initialPos, controls, isResetting, x, y]);
 
     const handleDrag = (
       _event: MouseEvent | TouchEvent | PointerEvent,
@@ -108,6 +110,7 @@ export const Draggable = forwardRef<HTMLDivElement, DraggableProps>(
         initial={{
           scale: 1,
           filter: "drop-shadow(0 0px 0px rgba(0, 0, 0, 0)) brightness(1)",
+          position: "relative",
         }}
         onPointerDown={(e: React.PointerEvent) => {
           if (shouldStopPropagation?.(e)) {
@@ -136,22 +139,75 @@ export interface DraggableImageProps extends DraggableProps {
   scale?: number;
 }
 
-export const DraggableImage: React.FC<DraggableImageProps> = ({
-  src,
-  alt,
-  width,
-  height,
-  initialPos,
-  animate,
-  className,
-  scale,
-  ...restProps
-}) => {
+function drawImageToCanvas(img: HTMLImageElement, canvas: HTMLCanvasElement) {
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0);
+}
+
+function getAlphaAtCoords(
+  clientX: number,
+  clientY: number,
+  canvas: HTMLCanvasElement | null,
+  img: HTMLImageElement | null,
+): number {
+  if (!canvas || !img) return 0;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return 0;
+
+  const rect = img.getBoundingClientRect();
+
+  const x = ((clientX - rect.left) / rect.width) * img.naturalWidth;
+  const y = ((clientY - rect.top) / rect.height) * img.naturalHeight;
+
+  const alpha = ctx.getImageData(x, y, 1, 1).data[3] ?? 0;
+  return alpha;
+}
+
+function isMouseOverImage(
+  clientX: number,
+  clientY: number,
+  img: HTMLImageElement | null,
+) {
+  if (!img) return false;
+  const rect = img.getBoundingClientRect();
+  return (
+    clientX >= rect.left &&
+    clientX <= rect.right &&
+    clientY >= rect.top &&
+    clientY <= rect.bottom
+  );
+}
+
+function updateCursor(
+  opaque: boolean,
+  isMouseDown: boolean,
+  img: HTMLImageElement | null,
+) {
+  let cursor = "url('customcursor.svg'), auto"; // default
+  if (opaque) cursor = "grab";
+  if (isMouseDown) cursor = "grabbing";
+  if (img) img.style.cursor = cursor;
+}
+
+export function DraggableImage(props: DraggableImageProps) {
+  const {
+    src,
+    alt,
+    width,
+    height,
+    initialPos,
+    animate,
+    className,
+    scale,
+    ...restProps
+  } = props;
   const imgRef = useRef<HTMLImageElement>(null);
   const [isOpaque, setIsOpaque] = useState(true); // default to true for better UX
-  const [isMouseDown, setIsMouseDown] = useState(false);
-
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isMouseDown = useRef(false);
 
   // create a invisible canvas element to check the alpha value of the image
   useEffect(() => {
@@ -162,59 +218,51 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
     const canvas = canvasRef.current;
     if (!img || !canvas) return;
     if (!img.complete) {
-      img.onload = () => {
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0);
-        }
-      };
+      img.onload = () => drawImageToCanvas(img, canvas);
     } else {
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-      }
+      drawImageToCanvas(img, canvas);
     }
     return () => {
       if (img) img.onload = null;
     };
   }, []);
 
-  const checkAlpha = (e: React.PointerEvent) => {
-    const img = imgRef.current;
-    const canvas = canvasRef.current;
-    if (!img || !canvas) return;
+  // handle global mouse move to update cursor and opacity
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (
+        !isMouseDown.current &&
+        isMouseOverImage(e.clientX, e.clientY, imgRef.current)
+      ) {
+        const alpha = getAlphaAtCoords(
+          e.clientX,
+          e.clientY,
+          canvasRef.current,
+          imgRef.current,
+        );
 
-    const rect = img.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * img.naturalWidth;
-    const y = ((e.clientY - rect.top) / rect.height) * img.naturalHeight;
+        // checking alpha > n rather than 0 to not trigger on shadows and such
+        const opaque = alpha > 128;
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const alpha =
-      ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data[3] ?? 0;
+        setIsOpaque(opaque);
+        updateCursor(opaque, false, imgRef.current);
+      }
+    };
+    window.addEventListener("mousemove", handleGlobalMouseMove);
+    return () => {
+      window.removeEventListener("mousemove", handleGlobalMouseMove);
+    };
+  }, []);
 
-    // checking alpha > n rather than 0 to not trigger on shadows and such
-    const opaque = alpha > 128;
-    setIsOpaque(opaque);
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    isMouseDown.current = true;
+    e.stopPropagation(); // Prevents the event from bubbling up
+    updateCursor(true, true, imgRef.current);
+  }, []);
 
-    let cursor = "url('customcursor.svg'), auto"; // default
-
-    // lowest-priority “grab”
-    if (opaque) cursor = "grab";
-
-    // “grabbing” overrides the previous rule
-    if (e.type === "pointerdown" || isMouseDown) cursor = "grabbing";
-
-    // highest-priority “grab” (must come last)
-    if (e.type === "pointerup") cursor = "grab";
-
-    img.style.cursor = cursor;
+  const handlePointerUp = () => {
+    isMouseDown.current = false;
+    updateCursor(isOpaque, false, imgRef.current);
   };
 
   const hoverScale = isOpaque ? (scale ?? 1) * 1.05 : (scale ?? 1);
@@ -224,7 +272,9 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
       initialPos={initialPos}
       className={className}
       drag={isOpaque}
-      shouldStopPropagation={() => isOpaque}
+      style={{
+        height: 0,
+      }}
       {...restProps}
     >
       <motion.img
@@ -238,18 +288,11 @@ export const DraggableImage: React.FC<DraggableImageProps> = ({
         whileHover={{ scale: hoverScale }}
         style={{
           scale: scale ?? 1,
+          pointerEvents: isOpaque ? "auto" : "none",
         }}
-        onPointerDown={(e) => {
-          setIsMouseDown(true);
-          checkAlpha(e);
-        }}
-        onPointerUp={(e) => {
-          setIsMouseDown(false);
-          checkAlpha(e);
-        }}
-        onPointerMove={checkAlpha}
-        className="h-auto w-auto"
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
       />
     </Draggable>
   );
-};
+}

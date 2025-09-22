@@ -7,7 +7,7 @@ import { DraggableImage } from "~/components/canvas/draggable";
 function About() {
   return (
     <CanvasComponent offset={coordinates.about}>
-      <div className="flex h-screen flex-col items-center justify-center space-y-4 pb-12">
+      <div className="mt-8 flex flex-col items-center justify-center space-y-4 pb-12 sm:-mt-12">
         <div className="flex origin-center flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out">
           <div className="relative">
             <div className="flex w-full max-w-full flex-col items-center justify-start gap-4 px-4 pb-0 pt-24">
@@ -26,11 +26,10 @@ function About() {
                 />
               </div>
               <DraggableImage
-                className="absolute -right-[320px] bottom-[-110px]"
+                className="absolute -right-[320px] bottom-[150px] w-24"
                 key="lightbulb"
-                src="/lightbulb.png"
+                src="/lightbulb.svg"
                 alt="Lightbulb"
-                scale={0.25}
                 animate={{
                   rotate: [2, -2],
                   transition: {
@@ -55,8 +54,9 @@ function About() {
                   style={{ rotate: "-5deg" }}
                 />
               </div>
-              <div className="relative -mt-12 mb-24 flex w-fit max-w-xs rotate-[8deg] items-center justify-center bg-[url('/speech.svg')] bg-contain bg-center bg-no-repeat text-center">
-                <div className="mb-2 p-12 font-figtree text-xs text-white sm:text-sm md:text-base lg:text-base">
+              <div className="relative flex w-fit max-w-xs rotate-[8deg] items-center justify-center text-center">
+                <img src="/speech.svg" alt="" className="h-auto w-full" />
+                <div className="absolute inset-[1/2] px-8 font-figtree text-white">
                   We cover food, travel, and lodging so you can focus on
                   bringing your ideas to life!
                 </div>

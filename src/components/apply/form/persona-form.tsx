@@ -5,7 +5,6 @@ import { Form, FormControl, FormField, FormItem } from "~/components/ui/form";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { personaSaveSchema } from "~/schemas/application";
-import AvatarRadio from "../../ui/avatar-radio";
 
 export function PersonaForm() {
   const utils = api.useUtils();
@@ -32,22 +31,7 @@ export function PersonaForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
-        <div className="flex w-full flex-wrap gap-2">
-          <FormField
-            control={form.control}
-            name="avatar"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <AvatarRadio
-                    value={field.value === null ? undefined : field.value}
-                    onChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </div>
+        <div className="flex w-full flex-wrap gap-2"></div>
       </form>
     </Form>
   );

@@ -1,11 +1,11 @@
 import Head from "next/head";
 import { useState } from "react";
-import { disabledRedirect, hackerLoginRedirect } from "~/utils/redirect";
+import { hackerLoginRedirect } from "~/utils/redirect";
 import { useToast } from "~/components/hooks/use-toast";
 import { api } from "~/utils/api";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import CloudBackground from "~/components/cloud-background";
+import CanvasBackground from "~/components/canvas-background";
 
 export default function ResetRequest() {
   const [email, setEmail] = useState("");
@@ -63,7 +63,7 @@ export default function ResetRequest() {
       </Head>
 
       <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
-        <CloudBackground />
+        <CanvasBackground />
         <div className="z-10 w-full max-w-2xl rounded-lg bg-[rgba(248,245,255,0.75)] p-12 shadow-md backdrop-blur-xl">
           <h2 className="mb-2 text-3xl font-bold">Reset Password</h2>
           <h2>We&apos;ll send you a link to reset your password.</h2>
@@ -82,5 +82,4 @@ export default function ResetRequest() {
   );
 }
 
-// export const getServerSideProps = hackerLoginRedirect;
-export const getServerSideProps = disabledRedirect;
+export const getServerSideProps = hackerLoginRedirect;
