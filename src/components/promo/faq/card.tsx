@@ -28,7 +28,7 @@ export const FAQCard = React.memo(function FAQCard({
 
   return (
     <button
-      className={`w-2xl relative h-[255px] w-[315px] cursor-pointer text-medium transition-all hover:scale-[1.02] ${className}`}
+      className={`relative h-[255px] w-2xl w-[315px] cursor-pointer text-medium transition-all hover:scale-[1.02] ${className}`}
       style={{ perspective: 1200 }}
       onClick={() => setFlipped(!flipped)}
       onKeyDown={(e) => e.key === " " && setFlipped(!flipped)}
