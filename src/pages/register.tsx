@@ -66,10 +66,10 @@ export default function Register() {
         <CanvasBackground />
         <div className="sm:w-xl md:w-2xl z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:rounded-[48px] sm:p-12">
           <h2 className="mb-2 self-start font-dico text-[32px] text-heavy">
-            Start Your Journey!
+            Create your account
           </h2>
           <h2 className="mb-6 self-start font-figtree text-2xl text-medium">
-            It&apos;s time to turn your ideas into realities
+            The world is your canvas.
           </h2>
           <form action={handleSubmit}>
             <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
