@@ -64,7 +64,7 @@ export default function ResetRequest() {
 
       <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />
-        <div className="sm:w-xl md:w-2xl z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:rounded-[48px] sm:p-12">
+        <div className="z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:w-xl sm:rounded-[48px] sm:p-12 md:w-2xl">
           <h2 className="mb-2 text-3xl font-bold">Reset Password</h2>
           <h2>We&apos;ll send you a link to reset your password.</h2>
           <h2 className="mb-2 mt-6 text-sm">Email</h2>
