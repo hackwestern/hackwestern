@@ -188,10 +188,10 @@ export const Avatar = () => {
                 
               <div className="grid grid-cols-1 gap-4 md:gap-4 lg:grid-cols-[7fr_8fr]">
                 {/* Left Side - Character Preview */}
-                <div className="space-y-6 p-4">
+                <div className="space-y-6">
                {/* Header */}
                 <h1
-  className="text-violet-950 text-xl sm:text-2xl md:text-3xl"
+  className="text-violet-950 text-xl sm:text-2xl md:text-3xl p-4 "
   style={{ fontFamily: 'Dico, sans-serif' }}
 >
                     Choose your character
