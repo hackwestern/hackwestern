@@ -18,6 +18,11 @@ html {
     --lilac: #e1c8fa;
     --salmon: #ffd2b4;
     --coral: #ffb6a1;
+    
+    /* Lilac gradient colors */
+    --lilac-light: #eBdff7;
+    --hw-purple: #d19aee;
+    --lilac-bg: #eBdff7;
 
     --heavy: #3d214c;
     --medium: #776780;
@@ -109,4 +114,13 @@ html {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--hw-purple);
+  border-radius: 9999px;
 }
