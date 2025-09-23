@@ -28,8 +28,8 @@ export const buttonVariants = cva(buttonBase, {
       ghost: "hover:bg-accent hover:text-accent-foreground",
       link: "text-primary underline-offset-4 hover:underline",
       "apply-ghost":
-        "text-slate-400 hover:bg-primary-300 hover:text-primary-600",
-      apply: "bg-primary-300 text-primary-600 hover:bg-primary-400",
+        "bg-[#ebdff7] bg-opacity-50 text-heavy font-semibold hover:bg-[#e6cdff] w-full justify-start",
+      apply: "text-medium hover:bg-[#ebdff7] hover:text-heavy",
     },
     size: {
       default: "h-10 px-4 py-2",
@@ -46,6 +46,7 @@ export interface ButtonProps
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   isPending?: boolean;
+  full?: boolean;
 }
 
 const overlays = {
@@ -73,6 +74,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       variant = "default",
       size,
       isPending = false,
+      full = false,
       asChild = false,
       disabled,
       ...props
@@ -86,12 +88,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const btnClasses = cn(
       buttonVariants({ variant, size, className }),
       lockPressed && [pressedByVariant[variant], noLift],
+      full && "w-full",
     );
 
     const overlay = overlays[variant as keyof typeof overlays];
 
     const wrapperClasses = cn(
       "group relative inline-block w-max",
+      full && "block w-full",
       lockPressed && ["pointer-events-none", noLift],
     );
 
