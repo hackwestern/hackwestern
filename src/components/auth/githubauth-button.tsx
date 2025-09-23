@@ -16,7 +16,7 @@ function GithubAuthButton({
       }}
       variant="secondary"
       size="default"
-      className="w-[524px]"
+      full
     >
       <div className="flex flex-row items-center justify-center gap-1">
         <Image

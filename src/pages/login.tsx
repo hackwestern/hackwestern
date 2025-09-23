@@ -47,93 +47,78 @@ export default function Login() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="m-auto flex w-[684px] flex-col items-center justify-center bg-hw-radial-gradient">
+      <div className="m-auto flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />
-        <div className="z-10 m-[50px] flex w-[684px] max-w-2xl flex-col items-center rounded-[48px] bg-violet-50 bg-white p-12 shadow-md">
-          <div className="w-[524px]">
-            <h2 className="mb-2 self-start font-dico text-[32px] text-heavy">
-              Sign into your account
+        <div className="sm:w-xl md:w-2xl z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:rounded-[48px] sm:p-12">
+          <h2 className="mb-2 self-start font-dico text-[32px] text-heavy">
+            Sign into your account
+          </h2>
+          <h2 className="mb-6 self-start font-figtree text-2xl text-medium">
+            The world is your canvas.
+          </h2>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleSubmit();
+            }}
+          >
+            <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
+              Email
             </h2>
-            <h2 className="mb-6 self-start font-figtree text-2xl text-medium">
-              The world is your canvas.
+            <Input
+              type="email"
+              onChange={(e) => setEmail(e.target.value)}
+              className="mb-4 h-[60px] bg-highlight font-jetbrains-mono text-medium"
+              placeholder="hello@hackwestern.com"
+            />
+            <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
+              Password
             </h2>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void handleSubmit();
-              }}
-            >
-              <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
-                Email
-              </h2>
-              <Input
-                type="email"
-                onChange={(e) => setEmail(e.target.value)}
-                className="mb-4 h-[60px] bg-highlight font-jetbrains-mono text-medium"
-                placeholder="Email"
-              />
-              <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
-                Password
-              </h2>
-              <Input
-                type="password"
-                onChange={(e) => setPassword(e.target.value)}
-                className="mb-8 h-[60px] bg-highlight font-jetbrains-mono text-medium"
-                placeholder="Password"
-              />
-              <div className="flex">
-                <Button
-                  variant="primary"
-                  type="submit"
-                  size="default"
-                  className="w-[524px]"
-                >
-                  Sign In
-                </Button>
-              </div>
-            </form>
+            <Input
+              type="password"
+              onChange={(e) => setPassword(e.target.value)}
+              className="mb-8 h-[60px] bg-highlight font-jetbrains-mono text-medium"
+              placeholder="enter your password"
+            />
+            <Button variant="primary" type="submit" size="default" full>
+              Sign In
+            </Button>
+          </form>
 
-            <div className="relative flex w-full items-center md:py-5">
-              <div className="flex-grow border-t border-gray-400" />
-              <span className="mx-4 flex-shrink text-gray-400">or</span>
-              <div className="flex-grow border-t border-gray-400" />
-            </div>
-            <div className="flex flex-col items-stretch">
-              <div className="mt-3">
-                <GoogleAuthButton redirect="/dashboard" />
-              </div>
-              <div className="mt-3">
-                <GithubAuthButton redirect="/dashboard" />
-              </div>
-              <div className="mt-3">
-                <DiscordAuthButton redirect="/dashboard" />
-              </div>
-            </div>
-            <div className="mt-4 font-figtree">
-              Don&apos;t have an account yet?
-              <Button
-                asChild
-                variant="tertiary"
-                className="ml-2 h-max p-0 text-base"
+          <div className="relative flex w-full items-center py-2 md:py-5">
+            <div className="flex-grow border-t border-gray-400" />
+            <span className="mx-4 flex-shrink text-gray-400">or</span>
+            <div className="flex-grow border-t border-gray-400" />
+          </div>
+          <div className="flex flex-col items-stretch gap-3">
+            <GoogleAuthButton redirect="/dashboard" />
+            <GithubAuthButton redirect="/dashboard" />
+            <DiscordAuthButton redirect="/dashboard" />
+          </div>
+          <div className="mt-4 font-figtree">
+            Don&apos;t have an account yet?
+            <Button
+              asChild
+              variant="tertiary"
+              className="ml-2 h-max p-0 text-base"
+            >
+              <Link
+                className="text-purple-500 hover:text-violet-700"
+                href="/register"
               >
-                <Link
-                  className="text-purple-500 hover:text-violet-700"
-                  href="/register"
-                >
-                  Create Account
-                </Link>
-              </Button>
-            </div>
-            <div className="font-figtree">
-              Forget password?
-              <Button
-                asChild
-                variant="tertiary"
-                className="ml-2 h-max p-0 text-base"
-              >
-                <Link href="/forgot-password">Reset Password</Link>
-              </Button>
-            </div>
+                Create Account
+              </Link>
+            </Button>
+          </div>
+          <div className="font-figtree">
+            Forget password?
+            <Button
+              asChild
+              variant="tertiary"
+              className="ml-2 h-max p-0 text-base"
+            >
+              <Link href="/forgot-password">Reset Password</Link>
+            </Button>
           </div>
         </div>
       </div>

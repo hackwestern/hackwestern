@@ -46,6 +46,8 @@ export interface ButtonProps
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   isPending?: boolean;
+  /** Make the button's outer wrapper display:block and width:100% */
+  full?: boolean;
 }
 
 const overlays = {
@@ -73,6 +75,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       variant = "default",
       size,
       isPending = false,
+      full = false,
       asChild = false,
       disabled,
       ...props
@@ -86,12 +89,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const btnClasses = cn(
       buttonVariants({ variant, size, className }),
       lockPressed && [pressedByVariant[variant], noLift],
+      full && "w-full",
     );
 
     const overlay = overlays[variant as keyof typeof overlays];
 
     const wrapperClasses = cn(
       "group relative inline-block w-max",
+      full && "block w-full",
       lockPressed && ["pointer-events-none", noLift],
     );
 
