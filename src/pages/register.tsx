@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { type FormEvent, useState } from "react";
+import { useActionState } from "react";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import { Button } from "~/components/ui/button";
@@ -15,8 +15,6 @@ import DiscordAuthButton from "~/components/auth/discordauth-button";
 
 export default function Register() {
   const { toast } = useToast();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
   const router = useRouter();
   const { mutate: register } = api.auth.create.useMutation({
@@ -28,8 +26,11 @@ export default function Register() {
         variant: "destructive",
       });
     },
-    onSuccess: () =>
-      signIn("credentials", { username: email, password }).then(() => {
+    onSuccess: (_data, variables) =>
+      signIn("credentials", {
+        username: variables.email,
+        password: variables.password,
+      }).then(() => {
         toast({
           title: "Success",
           description: "Account created successfully",
@@ -39,10 +40,16 @@ export default function Register() {
       }),
   });
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event?.preventDefault();
-    register({ email, password });
-  };
+  const [_message, handleSubmit, pending] = useActionState<
+    string | null,
+    FormData
+  >(async (_prev, formData) => {
+    register({
+      email: formData.get("email") as string,
+      password: formData.get("password") as string,
+    });
+    return null;
+  }, null);
 
   return (
     <>
@@ -57,23 +64,24 @@ export default function Register() {
 
       <div className="m-auto flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />
-        <div className="z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:w-xl sm:rounded-[48px] sm:p-12 md:w-2xl">
+        <div className="sm:w-xl md:w-2xl z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:rounded-[48px] sm:p-12">
           <h2 className="mb-2 self-start font-dico text-[32px] text-heavy">
             Start Your Journey!
           </h2>
           <h2 className="mb-6 self-start font-figtree text-2xl text-medium">
             It&apos;s time to turn your ideas into realities
           </h2>
-          <form onSubmit={(e) => handleSubmit(e)}>
+          <form action={handleSubmit}>
             <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
               Email
             </h2>
             <Input
               required
               type="email"
-              onChange={(e) => setEmail(e.target.value)}
+              name="email"
+              autoComplete="email"
               className="mb-4 h-[60px] bg-highlight font-jetbrains-mono text-medium"
-              placeholder="Email"
+              placeholder="hello@hackwestern.com"
             />
             <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
               Password
@@ -81,11 +89,18 @@ export default function Register() {
             <Input
               required
               type="password"
-              onChange={(e) => setPassword(e.target.value)}
+              name="password"
+              autoComplete="new-password"
               className="mb-8 h-[60px] bg-highlight font-jetbrains-mono text-medium"
-              placeholder="Password"
+              placeholder="enter your password"
             />
-            <Button variant="primary" type="submit" size="default" full>
+            <Button
+              variant="primary"
+              type="submit"
+              size="default"
+              full
+              isPending={pending}
+            >
               Create Account
             </Button>
           </form>

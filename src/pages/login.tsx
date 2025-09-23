@@ -20,15 +20,10 @@ export default function Login() {
     string | null,
     FormData
   >(async (_prev, formData) => {
-    const email = (formData?.get("email") as string) ?? "";
-    const password = (formData?.get("password") as string) ?? "";
-
-    console.log("email, password", email, password);
-
     const response = await signIn("credentials", {
       redirect: false,
-      username: email,
-      password,
+      username: formData.get("email"),
+      password: formData.get("password"),
     });
 
     if (response && response.ok === false) {
