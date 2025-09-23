@@ -47,7 +47,7 @@ const requestVerifyEmail = async (user: AdapterUser) => {
   return await resend.emails.send({
     from: HACK_WESTERN_EMAIL,
     to: user.email,
-    subject: "Hack Western 11 Account Verification",
+    subject: "Hack Western 12 Account Verification",
     html: verifyTemplate(verifyLink),
   });
 };
@@ -95,7 +95,7 @@ export const authRouter = createTRPCRouter({
       const { data: emailReq, error } = await resend.emails.send({
         from: HACK_WESTERN_EMAIL,
         to: input.email,
-        subject: "Hack Western 11 Password Reset",
+        subject: "Hack Western 12 Password Reset",
         html: resetTemplate(resetLink, user.name ?? "there"),
       });
 

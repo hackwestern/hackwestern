@@ -2,30 +2,72 @@ import { useRouter } from "next/router";
 import React, { useState } from "react";
 
 export const Avatar = () => {
-    const router = useRouter();
-  
+  const router = useRouter();
+
   const [selectedColor, setSelectedColor] = useState("green");
   const [selectedAccessories, setSelectedAccessories] = useState({
     face: "",
     right: "",
     left: "",
     hat: "",
-    special: ""
+    special: "",
   });
   const [selectedCategory, setSelectedCategory] = useState("face");
 
   const colors = [
-        { name: "brown", value: "#D0816B", gradient:"#FFA59B", bg: "#F8DDD6", body: "001" },
+    {
+      name: "brown",
+      value: "#D0816B",
+      gradient: "#FFA59B",
+      bg: "#F8DDD6",
+      body: "001",
+    },
 
-    { name: "orange", value: "#F0AF73", gradient:"#FFCB9B", bg: "#FAE4CE", body: "002" },
+    {
+      name: "orange",
+      value: "#F0AF73",
+      gradient: "#FFCB9B",
+      bg: "#FAE4CE",
+      body: "002",
+    },
 
-    { name: "yellow", value: "#F9D962", gradient:"#FFE98D", bg: "#FEF7D7", body: "003" },
+    {
+      name: "yellow",
+      value: "#F9D962",
+      gradient: "#FFE98D",
+      bg: "#FEF7D7",
+      body: "003",
+    },
 
-    { name: "green", value: "#A5CD72", gradient:"#A7FB73", bg: "#F1FDE0", body: "004" },
-    { name: "blue", value: "#87C5EA", gradient:"#A9D5FF", bg: "#D8F0FF", body: "005" },
-    { name: "purple", value: "#B592DA", gradient:"#E1C2FF", bg: "#F0E6F8", body: "006" },
+    {
+      name: "green",
+      value: "#A5CD72",
+      gradient: "#A7FB73",
+      bg: "#F1FDE0",
+      body: "004",
+    },
+    {
+      name: "blue",
+      value: "#87C5EA",
+      gradient: "#A9D5FF",
+      bg: "#D8F0FF",
+      body: "005",
+    },
+    {
+      name: "purple",
+      value: "#B592DA",
+      gradient: "#E1C2FF",
+      bg: "#F0E6F8",
+      body: "006",
+    },
 
-    { name: "pink", value: "#EAAFB3", gradient:"#FEBFCB", bg: "#F7E0EA", body: "007" }
+    {
+      name: "pink",
+      value: "#EAAFB3",
+      gradient: "#FEBFCB",
+      bg: "#F7E0EA",
+      body: "007",
+    },
   ];
 
   const categories = [
@@ -33,7 +75,7 @@ export const Avatar = () => {
     { id: "left", src: "/lefthand.png" },
     { id: "right", src: "/righthand.png" },
     { id: "hat", src: "/hat.png" },
-    { id: "special", src: "/star.png" }
+    { id: "special", src: "/star.png" },
   ];
 
   const getAccessoriesForCategory = (category: string) => {
@@ -59,7 +101,7 @@ export const Avatar = () => {
           { id: "none3", name: "", src: "" },
           { id: "none4", name: "", src: "" },
           { id: "none5", name: "", src: "" },
-          { id: "none6", name: "", src: "" }
+          { id: "none6", name: "", src: "" },
         ];
       case "right":
         return [
@@ -80,7 +122,7 @@ export const Avatar = () => {
           { id: "none3", name: "", src: "" },
           { id: "none4", name: "", src: "" },
           { id: "none5", name: "", src: "" },
-          { id: "none6", name: "", src: "" }
+          { id: "none6", name: "", src: "" },
         ];
       case "left":
         return [
@@ -101,7 +143,7 @@ export const Avatar = () => {
           { id: "none3", name: "", src: "" },
           { id: "none4", name: "", src: "" },
           { id: "none5", name: "", src: "" },
-          { id: "none6", name: "", src: "" }
+          { id: "none6", name: "", src: "" },
         ];
       case "hat":
         return [
@@ -133,7 +175,7 @@ export const Avatar = () => {
           { id: "none3", name: "", src: "" },
           { id: "none4", name: "", src: "" },
           { id: "none5", name: "", src: "" },
-          { id: "none6", name: "", src: "" }
+          { id: "none6", name: "", src: "" },
         ];
       case "special":
         return [
@@ -162,7 +204,7 @@ export const Avatar = () => {
           { id: "none23", name: "", src: "" },
           { id: "none24", name: "", src: "" },
           { id: "none25", name: "", src: "" },
-          { id: "none26", name: "", src: "" }
+          { id: "none26", name: "", src: "" },
         ];
       default:
         return [];
@@ -203,163 +245,171 @@ export const Avatar = () => {
                       style={{ 
                     background: `linear-gradient(
   135deg,
-  ${colors.find(c => c.name === selectedColor)?.bg || "#F1FDE0"} 30%,
-  ${colors.find(c => c.name === selectedColor)?.gradient || "#A7FB73"} 95%
-)`
+  ${colors.find((c) => c.name === selectedColor)?.bg || "#F1FDE0"} 30%,
+  ${colors.find((c) => c.name === selectedColor)?.gradient || "#A7FB73"} 95%
+)`,
+              }}
+            >
+              <div className="flex h-full items-center justify-center">
+                <div className="relative">
+                  {/* Character Base */}
+                  <div className="h-64 w-64">
+                    <img
+                      src={`/avatar/body/${colors.find((c) => c.name === selectedColor)?.body || "002"}.webp`}
+                      alt="Character body"
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
 
-                      }}
-                  >
-                    
-                    <div className="flex h-full items-center justify-center">
-                      <div className="relative">
-                        {/* Character Base */}
-                        <div className="h-64 w-64">
-                          <img 
-                            src={`/avatar/body/${colors.find(c => c.name === selectedColor)?.body || "002"}.webp`}
-                            alt="Character body"
-                            className="h-full w-full object-contain"
-                          />
-                        </div>
-                        
-                         {/* Selected Accessory - Face */}
-                         {selectedAccessories.face && selectedAccessories.face.startsWith("face") && (
-                           <div className="absolute top-1/2 left-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2">
-                             <img 
-                               src={`/avatar/face/${selectedAccessories.face.replace("face", "").padStart(3, "0")}.webp`}
-                               alt={selectedAccessories.face}
-                               className="h-full w-full object-contain"
-                             />
-                           </div>
-                         )}
-                         
-                         {/* Selected Accessory - Hat */}
-                         {selectedAccessories.hat && selectedAccessories.hat.startsWith("hat") && (
-                           <div className="absolute -top-3 left-1/2 h-16 w-16 -translate-x-1/2">
-                             <img 
-                               src={`/avatar/hat/${selectedAccessories.hat.replace("hat", "").padStart(3, "0")}.webp`}
-                               alt={selectedAccessories.hat}
-                               className="h-full w-full object-contain"
-                             />
-                           </div>
-                         )}
-                         
-                         {/* Selected Accessory - Left Hand */}
-                         {selectedAccessories.left && selectedAccessories.left.startsWith("left") && (
-                    <div className="absolute bottom-20 -left-4 h-16 w-16">
-                             <img 
-                               src={`/avatar/left/${selectedAccessories.left.replace("left", "").padStart(3, "0")}.webp`}
-                               alt={selectedAccessories.left}
-                               className="h-full w-full object-contain"
-                             />
-                           </div>
-                         )}
-                         
-                         {/* Selected Accessory - Right Hand */}
-                         {selectedAccessories.right && selectedAccessories.right.startsWith("right") && (
-<div className="absolute bottom-20 -right-4 h-16 w-16">
-                   
-           
-                             <img 
-                               src={`/avatar/right/${selectedAccessories.right.replace("right", "").padStart(3, "0")}.webp`}
-                               alt={selectedAccessories.right}
-                               className="h-full w-full object-contain"
-                             />
-                           </div>
-                         )}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Color Palette */}
-                  <div className="space-y-3">
-                    <div className="flex justify-evenly">
-                      {colors.map((color) => (
-                        <button
-                          key={color.name}
-                          onClick={() => setSelectedColor(color.name)}
-                          className={`h-8 w-8 rounded-lg transition-all hover:scale-110 ${
-                            selectedColor === color.name 
-                              ? "ring-2 ring-purple-200" 
-                              : ""
-                          }`}
-                          style={{ 
-                            backgroundColor: color.value,
-                                  borderTop: '1px solid rgba(0, 0, 0, 0.08)',
-                                  borderLeft: '1px solid rgba(0, 0, 0, 0.08)', 
-                                  borderRight: '1px solid rgba(0, 0, 0, 0.08)',
-                                  borderBottom: '3px solid rgba(0, 0, 0, 0.08)'
-                          }}
+                  {/* Selected Accessory - Face */}
+                  {selectedAccessories.face &&
+                    selectedAccessories.face.startsWith("face") && (
+                      <div className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2">
+                        <img
+                          src={`/avatar/face/${selectedAccessories.face.replace("face", "").padStart(3, "0")}.webp`}
+                          alt={selectedAccessories.face}
+                          className="h-full w-full object-contain"
                         />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Right Side - Accessory Selection */}
-                <div className="space-y-6 ">
-               {/* Category Selection */}
-                     <div className="flex w-full gap-3 p-4">
-                       {categories.map((category) => (
-                         <button
-                           key={category.id}
-                           onClick={() => setSelectedCategory(category.id)}
-                           className={`flex flex-1 h-10 items-center justify-center rounded-lg transition-all hover:scale-105 ${
-                             selectedCategory === category.id
-                               ? "bg-[#F5F2F6]"
-                               : "bg-transparent hover:bg-gray-50"
-                           }`}
-                           title={category.id}
-                         >
-                           <img 
-                             src={category.src} 
-                             alt={category.id}
-                             className="h-6 w-6"
-                           />
-                         </button>
-                       ))}
-                     </div>
-       
-                  
-                   {/* Accessory Grid */}
-                   <div className="aspect-square overflow-y-auto rounded-2xl custom-scroll overflow-x-hidden mt-4 pl-4 pb-4 pr-4 w-full ">
-                     <div className="grid w-full grid-cols-3 gap-4">
-                       {getAccessoriesForCategory(selectedCategory).map((accessory) => ( 
-                         <button
-                           key={accessory.id}
-                           onClick={() => {
-                             setSelectedAccessories(prev => ({
-                               ...prev,
-                               [selectedCategory]: accessory.id
-                             }));
-                           }}
-                           className={`flex w-full aspect-[7/5] items-center justify-center rounded-lg border-2 transition-all hover:scale-105 ${
-                             selectedAccessories[selectedCategory as keyof typeof selectedAccessories] === accessory.id
-                               ? "bg-lilac"
-                               : "border-gray-200 bg-white hover:border-gray-300"
-                           }`}
-                           style={selectedAccessories[selectedCategory as keyof typeof selectedAccessories] === accessory.id ? { borderColor: 'var(--hw-purple)' } : {}}
-                         >
-                           {accessory.src ? (
-                             <img 
-                               src={accessory.src} 
-                               alt={accessory.name}
-                               className="h-12 w-12 object-contain"
-                             />
-                           ) : (
-             <img 
-                             src={`/ellipse.png`}
-                             alt="No selection"
-                             className="h-8 w-8"
-                           />
-                           )}
-                         </button>
-                       ))}
-                     </div>
-                   </div>
+                      </div>
+                    )}
+
+                  {/* Selected Accessory - Hat */}
+                  {selectedAccessories.hat &&
+                    selectedAccessories.hat.startsWith("hat") && (
+                      <div className="absolute -top-3 left-1/2 h-16 w-16 -translate-x-1/2">
+                        <img
+                          src={`/avatar/hat/${selectedAccessories.hat.replace("hat", "").padStart(3, "0")}.webp`}
+                          alt={selectedAccessories.hat}
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                    )}
+
+                  {/* Selected Accessory - Left Hand */}
+                  {selectedAccessories.left &&
+                    selectedAccessories.left.startsWith("left") && (
+                      <div className="absolute -left-4 bottom-20 h-16 w-16">
+                        <img
+                          src={`/avatar/left/${selectedAccessories.left.replace("left", "").padStart(3, "0")}.webp`}
+                          alt={selectedAccessories.left}
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                    )}
+
+                  {/* Selected Accessory - Right Hand */}
+                  {selectedAccessories.right &&
+                    selectedAccessories.right.startsWith("right") && (
+                      <div className="absolute -right-4 bottom-20 h-16 w-16">
+                        <img
+                          src={`/avatar/right/${selectedAccessories.right.replace("right", "").padStart(3, "0")}.webp`}
+                          alt={selectedAccessories.right}
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                    )}
                 </div>
               </div>
             </div>
 
-      </>
-  )
+            {/* Color Palette */}
+            <div className="space-y-3">
+              <div className="flex justify-evenly">
+                {colors.map((color) => (
+                  <button
+                    key={color.name}
+                    onClick={() => setSelectedColor(color.name)}
+                    className={`h-8 w-8 rounded-lg transition-all hover:scale-110 ${
+                      selectedColor === color.name
+                        ? "ring-2 ring-purple-200"
+                        : ""
+                    }`}
+                    style={{
+                      backgroundColor: color.value,
+                      borderTop: "1px solid rgba(0, 0, 0, 0.08)",
+                      borderLeft: "1px solid rgba(0, 0, 0, 0.08)",
+                      borderRight: "1px solid rgba(0, 0, 0, 0.08)",
+                      borderBottom: "3px solid rgba(0, 0, 0, 0.08)",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side - Accessory Selection */}
+          <div className="space-y-6 ">
+            {/* Category Selection */}
+            <div className="flex w-full gap-3 p-4">
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`flex h-10 flex-1 items-center justify-center rounded-lg transition-all hover:scale-105 ${
+                    selectedCategory === category.id
+                      ? "bg-[#F5F2F6]"
+                      : "bg-transparent hover:bg-gray-50"
+                  }`}
+                  title={category.id}
+                >
+                  <img
+                    src={category.src}
+                    alt={category.id}
+                    className="h-6 w-6"
+                  />
+                </button>
+              ))}
+            </div>
+
+            {/* Accessory Grid */}
+            <div className="custom-scroll mt-4 aspect-square w-full overflow-y-auto overflow-x-hidden rounded-2xl pb-4 pl-4 pr-4 ">
+              <div className="grid w-full grid-cols-3 gap-4">
+                {getAccessoriesForCategory(selectedCategory).map(
+                  (accessory) => (
+                    <button
+                      key={accessory.id}
+                      onClick={() => {
+                        setSelectedAccessories((prev) => ({
+                          ...prev,
+                          [selectedCategory]: accessory.id,
+                        }));
+                      }}
+                      className={`flex aspect-[7/5] w-full items-center justify-center rounded-lg border-2 transition-all hover:scale-105 ${
+                        selectedAccessories[
+                          selectedCategory as keyof typeof selectedAccessories
+                        ] === accessory.id
+                          ? "bg-lilac"
+                          : "border-gray-200 bg-white hover:border-gray-300"
+                      }`}
+                      style={
+                        selectedAccessories[
+                          selectedCategory as keyof typeof selectedAccessories
+                        ] === accessory.id
+                          ? { borderColor: "var(--hw-purple)" }
+                          : {}
+                      }
+                    >
+                      {accessory.src ? (
+                        <img
+                          src={accessory.src}
+                          alt={accessory.name}
+                          className="h-12 w-12 object-contain"
+                        />
+                      ) : (
+                        <img
+                          src={`/ellipse.png`}
+                          alt="No selection"
+                          className="h-8 w-8"
+                        />
+                      )}
+                    </button>
+                  ),
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
 };
