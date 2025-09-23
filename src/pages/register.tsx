@@ -57,13 +57,17 @@ export default function Register() {
 
       <div className="m-auto flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />
-        <div className="sm:w-xl md:w-2xl z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:rounded-[48px] sm:p-12">
-          <h2 className="mb-2 self-start font-dico text-[32px] text-heavy">Start Your Journey!</h2>
+        <div className="z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:w-xl sm:rounded-[48px] sm:p-12 md:w-2xl">
+          <h2 className="mb-2 self-start font-dico text-[32px] text-heavy">
+            Start Your Journey!
+          </h2>
           <h2 className="mb-6 self-start font-figtree text-2xl text-medium">
             It&apos;s time to turn your ideas into realities
           </h2>
           <form onSubmit={(e) => handleSubmit(e)}>
-            <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">Email</h2>
+            <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
+              Email
+            </h2>
             <Input
               required
               type="email"
@@ -71,7 +75,9 @@ export default function Register() {
               className="mb-4 h-[60px] bg-highlight font-jetbrains-mono text-medium"
               placeholder="Email"
             />
-            <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">Password</h2>
+            <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
+              Password
+            </h2>
             <Input
               required
               type="password"
@@ -96,15 +102,26 @@ export default function Register() {
           </div>
           <div className="mt-4 font-figtree">
             Already have an account?
-            <Button asChild variant="tertiary" className="ml-2 h-max p-0 text-base">
-              <Link href="/login" className="text-purple-500 hover:text-violet-700">
+            <Button
+              asChild
+              variant="tertiary"
+              className="ml-2 h-max p-0 text-base"
+            >
+              <Link
+                href="/login"
+                className="text-purple-500 hover:text-violet-700"
+              >
                 Login
               </Link>
             </Button>
           </div>
           <div className="font-figtree">
             Forget password?
-            <Button asChild variant="tertiary" className="ml-2 h-max p-0 text-base">
+            <Button
+              asChild
+              variant="tertiary"
+              className="ml-2 h-max p-0 text-base"
+            >
               <Link href="/forgot-password">Reset Password</Link>
             </Button>
           </div>
