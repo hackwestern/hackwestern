@@ -119,7 +119,7 @@ const Dashboard = () => {
         <div className="relative flex w-full flex-grow flex-col items-center md:flex-row">
           <div
             id="left-panel"
-            className="lg:w-xl z-10 flex w-full flex-grow flex-col items-center justify-center gap-4 bg-primary-100 p-9 pt-12 text-center md:h-full lg:max-w-xl"
+            className="z-10 flex w-full flex-grow flex-col items-center justify-center gap-4 bg-primary-100 p-9 pt-12 text-center md:h-full lg:w-xl lg:max-w-xl"
           >
             <div className="pb-2.5 text-3xl font-bold text-slate-700">
               {
