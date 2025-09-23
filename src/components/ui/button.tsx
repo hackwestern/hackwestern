@@ -46,7 +46,6 @@ export interface ButtonProps
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   isPending?: boolean;
-  /** Make the button's outer wrapper display:block and width:100% */
   full?: boolean;
 }
 

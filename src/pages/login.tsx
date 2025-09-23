@@ -2,7 +2,7 @@ import { signIn } from "next-auth/react";
 import Head from "next/head";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { useState } from "react";
+import { useActionState } from "react";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import Link from "next/link";
@@ -13,28 +13,35 @@ import DiscordAuthButton from "~/components/auth/discordauth-button";
 import CanvasBackground from "~/components/canvas-background";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const router = useRouter();
   const { toast } = useToast();
 
-  async function handleSubmit() {
-    void signIn("credentials", {
+  const [_message, handleSubmit, pending] = useActionState<
+    string | null,
+    FormData
+  >(async (_prev, formData) => {
+    const email = (formData?.get("email") as string) ?? "";
+    const password = (formData?.get("password") as string) ?? "";
+
+    console.log("email, password", email, password);
+
+    const response = await signIn("credentials", {
       redirect: false,
       username: email,
       password,
-    }).then((response) => {
-      if (response && response.ok === false) {
-        toast({
-          title: "Error",
-          description: "Invalid email or password",
-          variant: "destructive",
-        });
-        return;
-      }
-      void router.push("/dashboard");
     });
-  }
+
+    if (response && response.ok === false) {
+      toast({
+        title: "Error",
+        description: "Invalid email or password.",
+        variant: "destructive",
+      });
+    }
+
+    void router.push("/dashboard");
+    return null;
+  }, null);
 
   return (
     <>
@@ -49,39 +56,44 @@ export default function Login() {
 
       <div className="m-auto flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />
-        <div className="z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:w-xl sm:rounded-[48px] sm:p-12 md:w-2xl">
+        <div className="sm:w-xl md:w-2xl z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:rounded-[48px] sm:p-12">
           <h2 className="mb-2 self-start font-dico text-[32px] text-heavy">
             Sign into your account
           </h2>
           <h2 className="mb-6 self-start font-figtree text-2xl text-medium">
             The world is your canvas.
           </h2>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void handleSubmit();
-            }}
-          >
+          <form action={handleSubmit}>
             <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
               Email
             </h2>
             <Input
+              name="email"
               type="email"
-              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               className="mb-4 h-[60px] bg-highlight font-jetbrains-mono text-medium"
               placeholder="hello@hackwestern.com"
+              required
             />
             <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
               Password
             </h2>
             <Input
+              name="password"
               type="password"
-              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
               className="mb-8 h-[60px] bg-highlight font-jetbrains-mono text-medium"
               placeholder="enter your password"
+              required
             />
-            <Button variant="primary" type="submit" size="default" full>
-              Sign In
+            <Button
+              variant="primary"
+              type="submit"
+              size="default"
+              full
+              isPending={pending}
+            >
+              {pending ? "Signing In..." : "Sign In"}
             </Button>
           </form>
 

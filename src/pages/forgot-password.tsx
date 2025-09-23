@@ -64,16 +64,17 @@ export default function ResetRequest() {
 
       <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />
-        <div className="z-10 w-full max-w-2xl rounded-lg bg-[rgba(248,245,255,0.75)] p-12 shadow-md backdrop-blur-xl">
+        <div className="sm:w-xl md:w-2xl z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:rounded-[48px] sm:p-12">
           <h2 className="mb-2 text-3xl font-bold">Reset Password</h2>
           <h2>We&apos;ll send you a link to reset your password.</h2>
           <h2 className="mb-2 mt-6 text-sm">Email</h2>
-          <Input type="email" onChange={(e) => setEmail(e.target.value)} />
-          <Button
-            variant="primary"
-            className="mt-6 w-full"
-            onClick={handleSubmit}
-          >
+          <Input
+            type="email"
+            onChange={(e) => setEmail(e.target.value)}
+            className="mb-8 h-[60px] bg-highlight font-jetbrains-mono text-medium"
+            placeholder="hello@hackwestern.com"
+          />
+          <Button variant="primary" onClick={handleSubmit} size="default" full>
             Reset Password
           </Button>
         </div>
