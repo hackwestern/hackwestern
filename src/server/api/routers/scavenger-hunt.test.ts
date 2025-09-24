@@ -75,11 +75,7 @@ describe("scavengerHuntRouter", () => {
   describe("getScavengerHuntItem", () => {
     test.only("returns inserted item", async () => {
       const item = await insertTestItem();
-
       const result = await caller.scavengerHunt.getScavengerHuntItem({ code: item.code });
-
-      console.log("result", "adfafas");
-      console.log("item", "cat");
       expect(result.id).toBe(item.id);
     });
 
