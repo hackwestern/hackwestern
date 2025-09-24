@@ -53,6 +53,11 @@ export default function SingleButton({
     };
   }, [isHovered]);
 
+  useEffect(() => {
+    setShowTag(false);
+    setIsHovered(false);
+  }, [isPushed]);
+
   // Reset copied email state after 2 seconds
   useEffect(() => {
     if (copiedEmail) {
