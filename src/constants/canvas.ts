@@ -16,38 +16,38 @@ export interface SectionCoordinates {
 
 export const coordinates: Record<CanvasSection, SectionCoordinates> = {
   [CanvasSection.About]: {
-    x: 1550,
+    x: 1350,
     y: 400,
     width: 1013,
     height: 800,
   },
   [CanvasSection.Projects]: {
-    x: 5600,
+    x: 3800,
     y: 400,
     width: 1200,
     height: 895,
   },
   [CanvasSection.Home]: {
-    x: 4000,
-    y: 1500,
+    x: 3000,
+    y: 1200,
     width: 409,
     height: 1200,
   },
   [CanvasSection.FAQ]: {
-    x: 850,
-    y: 2600,
+    x: 550,
+    y: 1700,
     width: 1768,
     height: 917,
   },
   [CanvasSection.Sponsors]: {
-    x: 3584,
-    y: 3600,
+    x: 2600,
+    y: 2600,
     width: 1240,
     height: 900,
   },
   [CanvasSection.Team]: {
-    x: 5850,
-    y: 2500,
+    x: 4150,
+    y: 1700,
     width: 1080,
     height: 917,
   },

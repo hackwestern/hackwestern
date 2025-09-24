@@ -78,8 +78,8 @@ const INTERACTIVE_SELECTOR =
   "button,[role='button'],input,textarea,[contenteditable='true']," +
   "[data-toolbar-button],[data-navbar-button]";
 
-export const canvasWidth = 8000;
-export const canvasHeight = 5000;
+export const canvasWidth = 6000;
+export const canvasHeight = 4000;
 
 const ZOOM_BOUND = 1.05; // minimum zoom level to prevent zooming out too far
 const MAX_ZOOM = 10;
@@ -478,49 +478,47 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   );
 
   return (
-    <>
-      <CanvasProvider
-        x={x}
-        y={y}
-        scale={scale}
-        isResetting={isResetting}
-        maxZIndex={maxZIndex}
-        setMaxZIndex={setMaxZIndex}
+    <CanvasProvider
+      x={x}
+      y={y}
+      scale={scale}
+      isResetting={isResetting}
+      maxZIndex={maxZIndex}
+      setMaxZIndex={setMaxZIndex}
+    >
+      <Toolbar homeCoordinates={offsetHomeCoordinates} />
+      <Navbar panToOffset={handlePanToOffset} onReset={onResetViewAndItems} />
+      <div
+        ref={viewportRef}
+        className="relative h-screen touch-none select-none overflow-hidden"
+        style={{
+          touchAction: "none",
+          overscrollBehavior: "contain",
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUpOrCancel}
+        onPointerLeave={handlePointerUpOrCancel}
+        onPointerCancel={handlePointerUpOrCancel}
       >
-        <Toolbar homeCoordinates={offsetHomeCoordinates} />
-        <Navbar panToOffset={handlePanToOffset} onReset={onResetViewAndItems} />
-        <div
-          ref={viewportRef}
-          className="relative h-screen touch-none select-none overflow-hidden"
+        <motion.div
+          ref={sceneRef}
+          className="absolute z-20 origin-top-left"
           style={{
-            touchAction: "none",
-            overscrollBehavior: "contain",
+            width: canvasWidth,
+            height: canvasHeight,
+            x,
+            y,
+            scale,
           }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUpOrCancel}
-          onPointerLeave={handlePointerUpOrCancel}
-          onPointerCancel={handlePointerUpOrCancel}
         >
-          <motion.div
-            ref={sceneRef}
-            className="absolute z-20 origin-top-left"
-            style={{
-              width: canvasWidth,
-              height: canvasHeight,
-              x,
-              y,
-              scale,
-            }}
-          >
-            <Gradient />
-            <Dots />
-            <Filter />
-            {children}
-          </motion.div>
-        </div>
-      </CanvasProvider>
-    </>
+          <Gradient />
+          <Dots />
+          <Filter />
+          {children}
+        </motion.div>
+      </div>
+    </CanvasProvider>
   );
 };
 
