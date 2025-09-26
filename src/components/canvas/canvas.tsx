@@ -181,6 +181,27 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const viewportRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
 
+  // Stable wheel listener wrapper that always calls the latest handler via ref
+  const wheelHandlerRef = useRef<((e: WheelEvent) => void) | null>(null);
+  const wheelWrapper = useCallback((e: WheelEvent) => {
+    wheelHandlerRef.current?.(e);
+  }, []);
+
+  // Ensure wheel listener attaches when the element actually mounts (wrapper delays child mount)
+  const setViewportRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      // Clean up old listener if ref changes/unmounts
+      if (viewportRef.current) {
+        viewportRef.current.removeEventListener("wheel", wheelWrapper);
+      }
+      viewportRef.current = node;
+      if (node) {
+        node.addEventListener("wheel", wheelWrapper, { passive: false });
+      }
+    },
+    [wheelWrapper],
+  );
+
   const activePointersRef = useRef<Map<number, PointerEvent<HTMLDivElement>>>(
     new Map(),
   );
@@ -475,14 +496,9 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     [scale, MIN_ZOOM, x, y, sceneWidth, sceneHeight, windowWidth, windowHeight],
   );
 
+  // Keep the wheel handler ref pointing to the latest implementation
   useEffect(() => {
-    const element = viewportRef.current;
-    if (element) {
-      element.addEventListener("wheel", handleWheelZoom, { passive: false });
-      return () => {
-        element.removeEventListener("wheel", handleWheelZoom);
-      };
-    }
+    wheelHandlerRef.current = handleWheelZoom;
   }, [handleWheelZoom]);
 
   const handlePanToOffset = useCallback(
@@ -525,7 +541,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
           </>
         )}
         <div
-          ref={viewportRef}
+          ref={setViewportRef}
           className="relative h-full w-full touch-none select-none overflow-hidden"
           style={{
             touchAction: "none",
@@ -549,8 +565,24 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
             }}
           >
             <Gradient />
-            <Dots />
-            {animationFinished && <Filter />}
+            {animationFinished && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              >
+                <Dots />
+              </motion.div>
+            )}
+            {animationFinished && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              >
+                <Filter />
+              </motion.div>
+            )}
             {children}
           </motion.div>
         </div>
