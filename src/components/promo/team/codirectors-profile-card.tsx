@@ -6,6 +6,7 @@ import {
   DesignLeadFrame,
   MarketingLeadFrame,
   SponsorshipLeadFrame,
+  SponsorshipOrganizerFrame,
   WebLeadFrame,
   WebFrame,
 } from "./frames";
@@ -59,7 +60,13 @@ const frameMap: Record<string, FrameConfig> = {
   },
   "sponsorship lead": {
     Component: SponsorshipLeadFrame,
-    style: { width: 316, height: 347, padding: "" },
+    style: { width: 316, height: 347, padding: "20px 0px 0px 0px" },
+    captionInside: true,
+  },
+  "sponsorship organizer": {
+    Component: SponsorshipOrganizerFrame,
+    style: { width: 209, height: 209, padding: "20px 0px 0px 0px" },
+    captionInside: true,
   },
   "web lead": {
     Component: WebLeadFrame,
@@ -212,14 +219,25 @@ export function CdCard({
     >
       {/* Frame + Photo + Caption (rotates together) */}
       <div
-        className="relative bg-white shadow-lg"
+        className="relative"
         style={{
           width: frameWidthFinal,
           height: frameHeightFinal,
           padding: framePadding,
           transform: `rotate(${rotate}deg)`,
+          backgroundColor:
+            role.toLowerCase() === "sponsorship lead" ||
+            role.toLowerCase() === "sponsorship organizer"
+              ? "transparent"
+              : "white",
+          boxShadow:
+            role.toLowerCase() === "sponsorship lead" ||
+            role.toLowerCase() === "sponsorship organizer"
+              ? "none"
+              : "0 4px 6px rgba(0, 0, 0, 0.1)",
         }}
       >
+        {" "}
         <Frame className="absolute inset-0 z-0 h-full w-full" />
         <Photo
           photo={photo}
@@ -229,7 +247,6 @@ export function CdCard({
           borderRadius={borderRadius}
         />
         {isWebLead && <SideRole role={role} side={webRoleSide} />}
-
         {/* Inside caption (unchanged) */}
         {frameData.captionInside && (
           <Caption
@@ -240,7 +257,6 @@ export function CdCard({
             frameWidth={frameWidthFinal}
           />
         )}
-
         {/* Outside caption BUT still rotates with parent */}
         {!frameData.captionInside && (
           <div

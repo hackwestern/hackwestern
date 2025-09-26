@@ -109,12 +109,103 @@ export const PAGES = [
         />
       </div>
     ),
-    back: <div></div>,
+    back: (
+      <div>
+        <div className="flex flex-col items-center">
+          <div className="mt-24 flex justify-center align-middle">
+            <Image
+              src="/images/promo/book/events-book-title.svg"
+              alt="events"
+              width={120}
+              height={80}
+            />
+          </div>
+          <CdCard
+            name="Marissa Wang"
+            role="Events Lead"
+            photo="/images/organizers/marissa.jpeg"
+            imageWidth={217}
+            imageHeight={171}
+            frameWidth={246}
+            frameHeight={200}
+            style={{
+              position: "absolute",
+              top: 200,
+              left: 56,
+            }}
+            borderRadius="0px"
+          />
+          <CdCard
+            name="Jerry Zhang"
+            role="Events Lead"
+            photo="/images/organizers/jerry.jpeg"
+            imageWidth={179}
+            imageHeight={224}
+            frameWidth={208}
+            frameHeight={253}
+            style={{
+              position: "absolute",
+              top: 317,
+              left: 254,
+            }}
+            borderRadius="0px"
+          />
+        </div>
+      </div>
+    ),
   },
   {
     label: "EVENTS",
     labelOffset: 195,
-    front: <div></div>,
+    front: (
+      <div>
+        <CdCard
+          name="Sarah Lieng"
+          role="Events Organizer"
+          photo="/images/organizers/lieng.jpeg"
+          imageWidth={207}
+          imageHeight={138}
+          frameWidth={236}
+          frameHeight={174}
+          style={{
+            position: "absolute",
+            top: 109,
+            left: 72,
+          }}
+          borderRadius="0px"
+        />
+        <CdCard
+          name="Yash Gandhi"
+          role="Events Organizer"
+          photo="/images/organizers/yash.jpg"
+          imageWidth={189}
+          imageHeight={150}
+          frameWidth={220}
+          frameHeight={180}
+          style={{
+            position: "absolute",
+            top: 215,
+            left: 259,
+          }}
+          borderRadius="0px"
+        />
+        <CdCard
+          name="Julian Laxman"
+          role="Events Organizer"
+          photo="/images/organizers/julian.JPG"
+          imageWidth={183}
+          imageHeight={183}
+          frameWidth={220}
+          frameHeight={215}
+          style={{
+            position: "absolute",
+            top: 355,
+            left: 80,
+          }}
+          borderRadius="0px"
+        />
+      </div>
+    ),
     back: (
       <div>
         <div className="ml-8 mt-8 flex justify-center align-middle">
@@ -197,6 +288,13 @@ export const PAGES = [
           photo="/images/organizers/freda.jpg"
           imageWidth={177}
           imageHeight={199}
+          frameWidth={234}
+          frameHeight={284}
+          style={{
+            position: "absolute",
+            top: 211,
+            left: 146,
+          }}
           borderRadius="0px"
         />
       </div>
@@ -205,7 +303,55 @@ export const PAGES = [
   {
     label: "SPONSORSHIP",
     labelOffset: 357,
-    front: <div></div>,
+    front: (
+      <div>
+        <CdCard
+          name="Sarina Cheng"
+          role="Sponsorship Organizer"
+          photo="/images/organizers/sarina.jpg"
+          imageWidth={151}
+          imageHeight={139}
+          frameWidth={209}
+          frameHeight={209}
+          style={{
+            position: "absolute",
+            top: 44,
+            left: 58,
+          }}
+          borderRadius="0px"
+        />
+        <CdCard
+          name="Shaun Ahuja"
+          role="Sponsorship Organizer"
+          photo="/images/organizers/shaun.jpeg"
+          imageWidth={147}
+          imageHeight={139}
+          frameWidth={220}
+          frameHeight={220}
+          style={{
+            position: "absolute",
+            top: 201,
+            left: 280,
+          }}
+          borderRadius="0px"
+        />
+        <CdCard
+          name="Derrick Ha"
+          role="Sponsorship Organizer"
+          photo="/images/organizers/derrick.png"
+          imageWidth={137}
+          imageHeight={161}
+          frameWidth={183}
+          frameHeight={223}
+          style={{
+            position: "absolute",
+            top: 333,
+            left: 70,
+          }}
+          borderRadius="0px"
+        />
+      </div>
+    ),
     back: (
       <div>
         <Image
