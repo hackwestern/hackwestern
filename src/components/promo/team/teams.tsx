@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { CdCard } from "./codirectors-profile-card";
 
 export const PAGES = [
   {
@@ -6,33 +7,61 @@ export const PAGES = [
     labelOffset: 10,
     front: (
       <div>
-        Edison Swathi
-        <Image
-          src="/images/organizers/edison.png"
-          alt="edison"
-          width={96}
-          height={96}
-          className="mx-auto h-24 w-24"
+        <div className="flex justify-center align-middle">
+          <Image
+            src="/images/promo/book/codirector-title.svg"
+            alt="codirector"
+            width={261}
+            height={80}
+          />
+        </div>
+        <CdCard
+          name="Swathi Thushiyandan"
+          role="Co-Director"
+          photo="/images/organizers/swathi.JPG"
+          rotate={-8}
+          imageWidth={180}
+          imageHeight={180}
+          style={{
+            position: "absolute",
+            top: 136,
+            left: 61,
+          }}
         />
-        <Image
-          src="/images/organizers/swathi.png"
-          alt="swathi"
-          width={96}
-          height={96}
-          className="mx-auto h-24 w-24"
+        <CdCard
+          name="Sarah Huang"
+          role="Co-Director"
+          photo="/images/organizers/huang.png"
+          imageWidth={180}
+          imageHeight={180}
+          rotate={9}
+          style={{
+            position: "absolute",
+            top: 330,
+            left: 280,
+          }}
         />
       </div>
     ),
     back: (
       <div>
-        design design
-        <Image
-          src="/images/organizers/rachel.png"
-          alt="swathi"
-          width={96}
-          height={96}
-          className="mx-auto h-24 w-24"
-        />
+        <div>
+          <CdCard
+            name="Rachel Chen"
+            role="Design Lead"
+            photo="/images/organizers/rachel.jpg"
+            imageWidth={220}
+            imageHeight={263}
+            style={{
+              position: "absolute",
+              top: 330,
+              left: 280,
+            }}
+          />
+          <div className="absolute bottom-4 z-20 w-full text-center text-sm font-bold">
+            <div className="text-xs text-gray-500">Rachel Chen</div>
+          </div>
+        </div>
       </div>
     ),
   },
@@ -43,7 +72,7 @@ export const PAGES = [
       <div>
         horse horse horse
         <Image
-          src="/images/organizers/william.png"
+          src="/images/organizers/william.jpeg"
           alt="bonnie"
           width={96}
           height={96}
@@ -51,43 +80,35 @@ export const PAGES = [
         />
       </div>
     ),
-    back: (
-      <div>
-        text text text
-        <Image
-          src="/images/organizers/arsalaan.png"
-          alt="arsalaan"
-          width={96}
-          height={96}
-          className="mx-auto h-24 w-24"
-        />
-      </div>
-    ),
+    back: <div></div>,
   },
   {
     label: "EVENTS",
     labelOffset: 195,
-    front: (
-      <div>
-        events 2
-        <Image
-          src="/images/organizers/ben.png"
-          alt="ben"
-          width={96}
-          height={96}
-          className="mx-auto h-24 w-24"
-        />
-      </div>
-    ),
+    front: <div></div>,
     back: (
       <div>
-        marketing
-        <Image
-          src="/images/organizers/laurel.png"
-          alt="cynthia"
-          width={96}
-          height={96}
-          className="mx-auto h-24 w-24"
+        <div className="ml-8 mt-8 flex justify-center align-middle">
+          <Image
+            src="/images/promo/book/marketing-book-title.svg"
+            alt="marketing"
+            width={215}
+            height={80}
+          />
+        </div>
+
+        <CdCard
+          name="Laurel Dong"
+          role="Marketing Lead"
+          photo="/images/organizers/laurel.jpg"
+          imageWidth={202}
+          imageHeight={240}
+          style={{
+            position: "absolute",
+            top: 160,
+            left: 138,
+          }}
+          borderRadius="0px"
         />
       </div>
     ),
@@ -97,25 +118,53 @@ export const PAGES = [
     labelOffset: 264,
     front: (
       <div>
-        marketing marketing
-        <Image
-          src="/images/organizers/dennis.png"
-          alt="dennis"
-          width={96}
-          height={96}
-          className="mx-auto h-24 w-24"
+        <CdCard
+          name="Brittney Chong"
+          role="Marketing Organizer"
+          photo="/images/organizers/brittney.jpg"
+          imageWidth={156}
+          imageHeight={188}
+          style={{
+            position: "absolute",
+            top: 74,
+            left: 65,
+          }}
+          borderRadius="0px"
+          rotate={-4}
+        />
+        <CdCard
+          name="Allison Ye"
+          role="Marketing Organizer"
+          photo="/images/organizers/allison.png"
+          imageWidth={156}
+          imageHeight={188}
+          style={{
+            position: "absolute",
+            top: 340,
+            left: 260,
+          }}
+          borderRadius="0px"
+          rotate={9}
         />
       </div>
     ),
     back: (
       <div>
-        spon
-        <Image
-          src="/images/organizers/hunter.png"
-          alt="hunter"
-          width={96}
-          height={96}
-          className="mx-auto h-24 w-24"
+        <div className="mt-16 flex justify-center align-middle">
+          <Image
+            src="/images/promo/book/sponsorship-book-title.svg"
+            alt="Sponsorship"
+            width={261}
+            height={80}
+          />
+        </div>
+        <CdCard
+          name="Freda Zhao"
+          role="Sponsorship Lead"
+          photo="/images/organizers/freda.jpg"
+          imageWidth={177}
+          imageHeight={199}
+          borderRadius="0px"
         />
       </div>
     ),
@@ -125,9 +174,8 @@ export const PAGES = [
     labelOffset: 357,
     front: (
       <div>
-        spon
         <Image
-          src="/images/organizers/jerry.png"
+          src="/images/organizers/jerry.jpeg"
           alt="jerry"
           width={96}
           height={96}
@@ -139,11 +187,18 @@ export const PAGES = [
       <div>
         web
         <Image
-          src="/images/organizers/joy.png"
+          src="/images/promo/book/web_book_title.svg"
           alt="joy"
           width={96}
           height={96}
           className="mx-auto h-24 w-24"
+        />
+        <Image
+          src="/images/promo/book/william_book.svg"
+          alt="joy"
+          width={226}
+          height={248}
+          className="mx-auto h-[226px] w-[248px]"
         />
       </div>
     ),
@@ -153,13 +208,12 @@ export const PAGES = [
     labelOffset: 466,
     front: (
       <div>
-        web web web
         <Image
-          src="/images/organizers/kyle.png"
+          src="/images/promo/book/web_organizers.svg"
           alt="kyle"
-          width={96}
-          height={96}
-          className="mx-auto h-24 w-24"
+          width={169}
+          height={557}
+          className="mx-auto h-[557px] w-[169px]"
         />
       </div>
     ),
@@ -167,8 +221,8 @@ export const PAGES = [
       <div>
         bonus page
         <Image
-          src="/images/organizers/laura.png"
-          alt="laura"
+          src="/images/organizers/marissa.jpeg"
+          alt="marissa"
           width={96}
           height={96}
           className="mx-auto h-24 w-24"
