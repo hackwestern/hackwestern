@@ -141,31 +141,34 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         animate(scale, finalScale, {
           duration: growTransition.duration,
           delay: growTransition.delay + 0.1,
+          ease: "easeOut",
         }),
         animate(x, finalCenterX, {
           duration: growTransition.duration,
           delay: growTransition.delay + 0.1,
+          ease: "easeOut",
         }),
         animate(y, finalCenterY, {
           duration: growTransition.duration,
           delay: growTransition.delay + 0.1,
+          ease: "easeOut",
         }),
       ]);
     };
 
-    // 2. pan to center the "home" section (make this a little bouncy)
-
-    const bounce = {
-      duration: 1,
+    // 2. pan to center the "home" section (seamless continuation)
+    const stage2Transition = {
+      duration: 1.2,
+      ease: [0.25, 0.1, 0.25, 1], // smooth continuation easing
     } as const;
 
     const { x: homeX, y: homeY } = offsetHomeCoordinates;
 
     const stage2 = async () => {
       await Promise.all([
-        animate(x, homeX, bounce),
-        animate(y, homeY, bounce),
-        animate(scale, 1, bounce),
+        animate(x, homeX, stage2Transition),
+        animate(y, homeY, stage2Transition),
+        animate(scale, 1, stage2Transition),
       ]);
     };
 

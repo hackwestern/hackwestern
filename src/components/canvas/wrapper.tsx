@@ -87,8 +87,9 @@ export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
               backdropFilter: "blur(0px)",
             }}
             transition={{
-              duration: 1.5,
-              delay: 1.5,
+              duration: 2,
+              delay: 1,
+              ease: "easeIn",
             }}
             className="absolute left-1/2 top-1/2 z-20 origin-center -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg"
           ></motion.div>
