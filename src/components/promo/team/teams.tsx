@@ -45,23 +45,30 @@ export const PAGES = [
     ),
     back: (
       <div>
-        <div>
-          <CdCard
-            name="Rachel Chen"
-            role="Design Lead"
-            photo="/images/organizers/rachel.jpg"
-            imageWidth={220}
-            imageHeight={263}
-            style={{
-              position: "absolute",
-              top: 330,
-              left: 280,
-            }}
-          />
-          <div className="absolute bottom-4 z-20 w-full text-center text-sm font-bold">
-            <div className="text-xs text-gray-500">Rachel Chen</div>
+        <div className="mt-16 flex justify-center align-middle">
+          <div className="flex flex-col items-center">
+            <div className="flex justify-center align-middle">
+              <Image
+                src="/images/promo/book/design-book-title.svg"
+                alt="design"
+                width={135}
+                height={80}
+              />
+            </div>
+            <CdCard
+              name="Rachel Chen"
+              role="Design Lead"
+              photo="/images/organizers/rachel.jpg"
+              imageWidth={220}
+              imageHeight={263}
+              style={{
+                position: "absolute",
+                top: 182,
+                left: 121,
+              }}
+            />
           </div>
-        </div>
+        </div>{" "}
       </div>
     ),
   },
@@ -70,13 +77,35 @@ export const PAGES = [
     labelOffset: 126,
     front: (
       <div>
-        horse horse horse
-        <Image
-          src="/images/organizers/william.jpeg"
-          alt="bonnie"
-          width={96}
-          height={96}
-          className="mx-auto h-24 w-24"
+        <CdCard
+          name="Jessica Wang"
+          role="Design Organizer"
+          photo="/images/organizers/jessica.jpg"
+          imageWidth={149}
+          imageHeight={191}
+          frameWidth={190}
+          frameHeight={229}
+          style={{
+            position: "absolute",
+            top: 94,
+            left: 266,
+          }}
+          rotate={8}
+        />
+        <CdCard
+          name="Anthony Ung"
+          role="Design Organizer"
+          photo="/images/organizers/anthony.jpeg"
+          imageWidth={153}
+          imageHeight={186}
+          frameWidth={187}
+          frameHeight={216}
+          style={{
+            position: "absolute",
+            top: 316,
+            left: 53,
+          }}
+          rotate={-9}
         />
       </div>
     ),
@@ -124,6 +153,8 @@ export const PAGES = [
           photo="/images/organizers/brittney.jpg"
           imageWidth={156}
           imageHeight={188}
+          frameHeight={256}
+          frameWidth={187}
           style={{
             position: "absolute",
             top: 74,
@@ -138,6 +169,8 @@ export const PAGES = [
           photo="/images/organizers/allison.png"
           imageWidth={156}
           imageHeight={188}
+          frameHeight={256}
+          frameWidth={194}
           style={{
             position: "absolute",
             top: 340,
@@ -172,20 +205,9 @@ export const PAGES = [
   {
     label: "SPONSORSHIP",
     labelOffset: 357,
-    front: (
-      <div>
-        <Image
-          src="/images/organizers/jerry.jpeg"
-          alt="jerry"
-          width={96}
-          height={96}
-          className="mx-auto h-24 w-24"
-        />
-      </div>
-    ),
+    front: <div></div>,
     back: (
       <div>
-        web
         <Image
           src="/images/promo/book/web_book_title.svg"
           alt="joy"
@@ -193,12 +215,34 @@ export const PAGES = [
           height={96}
           className="mx-auto h-24 w-24"
         />
-        <Image
-          src="/images/promo/book/william_book.svg"
-          alt="joy"
-          width={226}
-          height={248}
-          className="mx-auto h-[226px] w-[248px]"
+        <CdCard
+          name="William Liu"
+          role="Web Lead"
+          photo="/images/organizers/william.jpeg"
+          imageWidth={191}
+          imageHeight={179}
+          style={{
+            position: "absolute",
+            top: 305,
+            left: 220,
+          }}
+          borderRadius="0px"
+        />
+        <CdCard
+          name="Hunter Chen"
+          role="Web Lead"
+          photo="/images/organizers/hunter.jpg"
+          imageWidth={167}
+          imageHeight={160}
+          frameHeight={218}
+          frameWidth={226}
+          style={{
+            position: "absolute",
+            top: 144,
+            left: 58,
+          }}
+          borderRadius="0px"
+          webRoleSide="left"
         />
       </div>
     ),
@@ -206,17 +250,7 @@ export const PAGES = [
   {
     label: "WEB",
     labelOffset: 466,
-    front: (
-      <div>
-        <Image
-          src="/images/promo/book/web_organizers.svg"
-          alt="kyle"
-          width={169}
-          height={557}
-          className="mx-auto h-[557px] w-[169px]"
-        />
-      </div>
-    ),
+    front: <div></div>,
     back: (
       <div>
         bonus page

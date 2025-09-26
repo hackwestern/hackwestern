@@ -6,42 +6,52 @@ import {
   DesignLeadFrame,
   MarketingLeadFrame,
   SponsorshipLeadFrame,
-  // SponsorshipFrame, WebFrame, EventsFrame
+  WebLeadFrame,
+  WebFrame,
 } from "./frames";
 
 type Props = {
   name: string;
   role: string;
   photo: string;
-  imageWidth?: number; // size of the photo inside the frame
+  imageWidth?: number;
   imageHeight?: number;
+  frameWidth?: number;
+  frameHeight?: number;
   rotate?: number;
-  style?: React.CSSProperties; // NEW: for positioning on the page
-  borderRadius?: string | number; // NEW: allow dynamic rounding
+  style?: React.CSSProperties;
+  borderRadius?: string | number;
+  webRoleSide?: "left" | "right";
 };
 
-// Map roles to frame components AND their specific wrapper styles
-const frameMap: Record<
-  string,
-  {
-    Component: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-    style: React.CSSProperties;
-    captionInside?: boolean; // NEW: whether the caption is inside the frame
-  }
-> = {
+type FrameConfig = {
+  Component: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  style: React.CSSProperties;
+  captionInside?: boolean;
+};
+
+const frameMap: Record<string, FrameConfig> = {
   "co-director": {
     Component: CoDirectorFrame,
     style: { width: 196, height: 253, padding: "12px 8px 8px 8px" },
+    captionInside: true,
   },
-  marketing: {
+  "marketing organizer": {
     Component: MarketingFrame,
-    style: { width: 260, height: 300, padding: "12px 8px 8px 8px" },
+    style: { width: 260, height: 300, padding: "12px " },
+    captionInside: true,
   },
   "design lead": {
     Component: DesignLeadFrame,
-    style: { width: 260, height: 300, padding: "12px 8px 8px 8px" },
+    style: { width: 260, height: 300, padding: "18px 20px 8px 20px" },
     captionInside: false,
   },
+  "design organizer": {
+    Component: DesignLeadFrame,
+    style: { width: 260, height: 300, padding: "18px 0px 8px 0px" },
+    captionInside: false,
+  },
+
   "marketing lead": {
     Component: MarketingLeadFrame,
     style: { width: 250, height: 343, padding: "28px 0px 0px 0px" },
@@ -51,9 +61,15 @@ const frameMap: Record<
     Component: SponsorshipLeadFrame,
     style: { width: 316, height: 347, padding: "" },
   },
-  web: {
-    Component: DefaultFrame,
-    style: { width: 210, height: 270, padding: "12px" },
+  "web lead": {
+    Component: WebLeadFrame,
+    style: { width: 248, height: 226, padding: "16px 35px 30px 12px" },
+    captionInside: true,
+  },
+  "web organizer": {
+    Component: WebFrame,
+    style: { width: 248, height: 226, padding: "16px 35px 30px 12px" },
+    captionInside: true,
   },
   events: {
     Component: DefaultFrame,
@@ -61,68 +77,186 @@ const frameMap: Record<
   },
 };
 
+function getFrameData(role: string): FrameConfig {
+  return (
+    frameMap[role.toLowerCase()] ?? {
+      Component: DefaultFrame,
+      style: { width: 196, height: 253, padding: "12px 8px 8px 8px" },
+      captionInside: true,
+    }
+  );
+}
+
+/* ---- Subcomponents ---- */
+
+function Photo({
+  photo,
+  name,
+  width,
+  height,
+  borderRadius,
+}: {
+  photo: string;
+  name: string;
+  width: number;
+  height: number;
+  borderRadius: string | number;
+}) {
+  return (
+    <div
+      className="relative z-10 mx-auto overflow-hidden"
+      style={{ width, height, borderRadius }}
+    >
+      <Image
+        src={photo}
+        alt={name}
+        fill
+        className="object-cover"
+        style={{ borderRadius }}
+      />
+    </div>
+  );
+}
+
+function SideRole({ role, side }: { role: string; side: "left" | "right" }) {
+  return (
+    <div
+      className="absolute z-20 text-xs font-bold text-gray-500"
+      style={{
+        top: "60%",
+        [side]: 30,
+        transform:
+          side === "right"
+            ? "rotate(90deg) translateY(-50%)"
+            : "rotate(90deg) translateY(100%)",
+        transformOrigin: side === "right" ? "right center" : "left center",
+      }}
+    >
+      {role}
+    </div>
+  );
+}
+
+function Caption({
+  name,
+  role,
+  isWebLead,
+  captionInside,
+  frameWidth,
+}: {
+  name: string;
+  role: string;
+  isWebLead: boolean;
+  captionInside?: boolean;
+  frameWidth: number;
+}) {
+  if (captionInside) {
+    return (
+      <div
+        className="absolute z-20 text-center font-figtree font-bold text-heavy"
+        style={{
+          bottom: isWebLead ? "0.5rem" : ".5rem",
+          width: frameWidth, // lock to card width
+          left: 0, // anchor inside frame
+        }}
+      >
+        {name}
+        {!isWebLead && (
+          <div className="font-figtree text-sm text-medium">{role}</div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="mt-2 text-center font-figtree font-bold text-heavy"
+      style={{ width: frameWidth }}
+    >
+      {name}
+      {!isWebLead && (
+        <div className="font-figtree text-sm text-medium">{role}</div>
+      )}
+    </div>
+  );
+}
+/* ---- Main Component ---- */
+
 export function CdCard({
   name,
   role,
   photo,
   imageWidth,
   imageHeight,
+  frameWidth,
+  frameHeight,
   style,
   rotate = 0,
-  borderRadius = "8px", // default same as before
+  borderRadius = "8px",
+  webRoleSide = "right",
 }: Props) {
-  const frameData = frameMap[role.toLowerCase()] ?? {
-    Component: DefaultFrame,
-    style: { width: 196, height: 253, padding: "12px 8px 8px 8px" },
-    captionInside: true,
-  };
+  const frameData = getFrameData(role);
   const Frame = frameData.Component;
-  const frameWidth = frameData.style.width as number;
-  const frameHeight = frameData.style.height as number;
+  const defaultFrameWidth = frameData.style.width as number;
+  const defaultFrameHeight = frameData.style.height as number;
   const framePadding = frameData.style.padding as string;
+
+  const frameWidthFinal = frameWidth ?? defaultFrameWidth;
+  const frameHeightFinal = frameHeight ?? defaultFrameHeight;
+  const isWebLead = role.toLowerCase() === "web lead";
 
   return (
     <div
-      className="relative flex flex-col items-center gap-3 bg-transparent "
-      style={{
-        width: frameWidth,
-        height: frameHeight,
-        padding: framePadding,
-        transform: `rotate(${rotate}deg)`,
-        ...style,
-      }}
+      className="flex flex-col items-center"
+      style={{ width: frameWidthFinal, ...style }} // 👈 lock parent width
     >
-      {/* Frame */}
-      <Frame className="absolute inset-0 z-0 h-full w-full" />
-      {/* Photo with exact size */}
+      {/* Frame + Photo + Caption (rotates together) */}
       <div
-        className="relative z-10 mx-auto overflow-hidden"
+        className="relative bg-white shadow-lg"
         style={{
-          width: imageWidth ?? frameWidth,
-          height: imageHeight ?? frameHeight,
-          borderRadius, // apply dynamic rounding
+          width: frameWidthFinal,
+          height: frameHeightFinal,
+          padding: framePadding,
+          transform: `rotate(${rotate}deg)`,
         }}
       >
-        <Image
-          src={photo}
-          alt={name}
-          fill
-          className="object-cover"
-          style={{ borderRadius }} // also apply to Image for Safari / consistency
+        <Frame className="absolute inset-0 z-0 h-full w-full" />
+        <Photo
+          photo={photo}
+          name={name}
+          width={imageWidth ?? frameWidthFinal}
+          height={imageHeight ?? frameHeightFinal}
+          borderRadius={borderRadius}
         />
+        {isWebLead && <SideRole role={role} side={webRoleSide} />}
+
+        {/* Inside caption (unchanged) */}
+        {frameData.captionInside && (
+          <Caption
+            name={name}
+            role={role}
+            isWebLead={isWebLead}
+            captionInside
+            frameWidth={frameWidthFinal}
+          />
+        )}
+
+        {/* Outside caption BUT still rotates with parent */}
+        {!frameData.captionInside && (
+          <div
+            className="absolute left-0 right-0 text-center font-figtree font-bold"
+            style={{ bottom: "-3rem", width: frameWidthFinal }} // push it outside frame
+          >
+            <Caption
+              name={name}
+              role={role}
+              isWebLead={isWebLead}
+              captionInside={false}
+              frameWidth={frameWidthFinal}
+            />
+          </div>
+        )}
       </div>
-      {/* Name + Role */}
-      {frameData.captionInside ? (
-        <div className="absolute bottom-4 z-20 w-full text-center text-sm font-bold">
-          {name}
-          <div className="text-xs text-gray-500">{role}</div>
-        </div>
-      ) : (
-        <div className="mt-2 w-full text-center text-sm font-bold">
-          {name}
-          <div className="text-xs text-gray-500">{role}</div>
-        </div>
-      )}
     </div>
   );
 }

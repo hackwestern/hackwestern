@@ -8,37 +8,11 @@ export function CoDirectorFrame(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export function MarketingLeadFrame(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      viewBox="0 0 251 343"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect width="250.269" height="342.614" rx="5" fill="white" />
-    </svg>
-  );
+  return <></>;
 }
 
 export function MarketingFrame(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      viewBox="0 0 196 253"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <svg
-        width="251"
-        height="343"
-        viewBox="0 0 251 343"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <rect width="250.269" height="342.614" rx="5" fill="white" />
-      </svg>{" "}
-    </svg>
-  );
+  return <></>;
 }
 
 // Repeat for SponsorshipFrame, WebFrame, EventsFrame, etc.
@@ -57,16 +31,7 @@ export function DefaultFrame(props: React.SVGProps<SVGSVGElement>) {
 
 // Repeat for SponsorshipFrame, WebFrame, EventsFrame, etc.
 export function DesignLeadFrame(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      viewBox="0 0 196 253"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect width="196" height="253" rx="6" fill="#FFF" />
-    </svg>
-  );
+  return <></>;
 }
 
 export function SponsorshipLeadFrame(props: React.SVGProps<SVGSVGElement>) {
@@ -85,5 +50,20 @@ export function SponsorshipLeadFrame(props: React.SVGProps<SVGSVGElement>) {
         />
       </svg>{" "}
     </div>
+  );
+}
+
+export function WebLeadFrame(props: React.SVGProps<SVGSVGElement>) {
+  return <></>;
+}
+
+export function WebFrame(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      viewBox="0 0 169 530"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    ></svg>
   );
 }
