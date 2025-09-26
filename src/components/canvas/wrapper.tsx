@@ -6,7 +6,7 @@ export const MAX_DIM_RATIO = { width: 0.8, height: 0.5 };
 
 export const growTransition = {
   duration: 0.75,
-  delay: 2.25,
+  delay: 2.5,
   ease: "easeOut",
 };
 
@@ -63,7 +63,7 @@ export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
       style={{ backgroundImage: gradientBgImage }}
       initial={{ backdropFilter: "blur(20px)", opacity: 0 }}
       animate={{ backdropFilter: "blur(0px)", opacity: 1 }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
     >
       <div className="absolute left-1/2 top-64 z-0 -translate-x-1/2 -translate-y-[200px] text-center">
         <Image
