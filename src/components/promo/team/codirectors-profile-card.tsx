@@ -7,6 +7,7 @@ import {
   MarketingLeadFrame,
   SponsorshipLeadFrame,
   SponsorshipOrganizerFrame,
+  EventsOrganizerFrame,
   WebLeadFrame,
   WebFrame,
 } from "./frames";
@@ -22,6 +23,8 @@ type Props = {
   rotate?: number;
   style?: React.CSSProperties;
   borderRadius?: string | number;
+  roundFrame?: boolean;
+  roundImage?: boolean;
   webRoleSide?: "left" | "right";
 };
 
@@ -52,7 +55,6 @@ const frameMap: Record<string, FrameConfig> = {
     style: { width: 260, height: 300, padding: "18px 0px 8px 0px" },
     captionInside: false,
   },
-
   "marketing lead": {
     Component: MarketingLeadFrame,
     style: { width: 250, height: 343, padding: "28px 0px 0px 0px" },
@@ -75,9 +77,15 @@ const frameMap: Record<string, FrameConfig> = {
   },
   "web organizer": {
     Component: WebFrame,
-    style: { width: 248, height: 226, padding: "16px 35px 30px 12px" },
+    style: { width: 169, height: 530, padding: "" },
     captionInside: true,
   },
+  "events organizer": {
+    Component: EventsOrganizerFrame,
+    style: { width: 169, height: 530, padding: "12px 0px 0px 0px" },
+    captionInside: false,
+  },
+
   events: {
     Component: DefaultFrame,
     style: { width: 196, height: 253, padding: "12px 8px 8px 8px" },
@@ -103,28 +111,50 @@ function Photo({
   height,
   borderRadius,
 }: {
-  photo: string;
+  photo: string | string[];
   name: string;
   width: number;
   height: number;
   borderRadius: string | number;
 }) {
+  // Single photo → same as before
+  if (typeof photo === "string") {
+    return (
+      <div
+        className="relative z-10 mx-auto overflow-hidden"
+        style={{ width, height, borderRadius }}
+      >
+        <Image
+          src={photo}
+          alt={name}
+          fill
+          className="object-cover"
+          style={{ borderRadius }}
+        />
+      </div>
+    );
+  }
+
+  // Multiple photos → 4×1 vertical grid
   return (
     <div
-      className="relative z-10 mx-auto overflow-hidden"
+      className="relative z-10 mx-auto grid grid-rows-4 gap-[2px] overflow-hidden"
       style={{ width, height, borderRadius }}
     >
-      <Image
-        src={photo}
-        alt={name}
-        fill
-        className="object-cover"
-        style={{ borderRadius }}
-      />
+      {photo.map((src, i) => (
+        <div key={i} className="relative h-full w-full overflow-hidden">
+          <Image
+            src={src}
+            alt={`${name}-${i}`}
+            fill
+            className="object-cover"
+            style={{ borderRadius }}
+          />
+        </div>
+      ))}
     </div>
   );
 }
-
 function SideRole({ role, side }: { role: string; side: "left" | "right" }) {
   return (
     <div
@@ -157,20 +187,28 @@ function Caption({
   captionInside?: boolean;
   frameWidth: number;
 }) {
+  const content = (
+    <div className="flex flex-col items-center leading-tight">
+      <span className="block">{name}</span>
+      {!isWebLead && (
+        <span className="text-md -mt-0.5 block leading-tight text-medium">
+          {role}
+        </span>
+      )}
+    </div>
+  );
+
   if (captionInside) {
     return (
       <div
         className="absolute z-20 text-center font-figtree font-bold text-heavy"
         style={{
-          bottom: isWebLead ? "0.5rem" : ".5rem",
-          width: frameWidth, // lock to card width
-          left: 0, // anchor inside frame
+          bottom: isWebLead ? "0.5rem" : "1rem",
+          width: frameWidth,
+          left: 0,
         }}
       >
-        {name}
-        {!isWebLead && (
-          <div className="font-figtree text-sm text-medium">{role}</div>
-        )}
+        {content}
       </div>
     );
   }
@@ -180,13 +218,11 @@ function Caption({
       className="mt-2 text-center font-figtree font-bold text-heavy"
       style={{ width: frameWidth }}
     >
-      {name}
-      {!isWebLead && (
-        <div className="font-figtree text-sm text-medium">{role}</div>
-      )}
+      {content}
     </div>
   );
 }
+
 /* ---- Main Component ---- */
 
 export function CdCard({
@@ -200,6 +236,8 @@ export function CdCard({
   style,
   rotate = 0,
   borderRadius = "8px",
+  roundFrame = false,
+  roundImage = false,
   webRoleSide = "right",
 }: Props) {
   const frameData = getFrameData(role);
@@ -211,13 +249,13 @@ export function CdCard({
   const frameWidthFinal = frameWidth ?? defaultFrameWidth;
   const frameHeightFinal = frameHeight ?? defaultFrameHeight;
   const isWebLead = role.toLowerCase() === "web lead";
+  const isWebOrganizer = role.toLowerCase() === "web organizer";
 
   return (
     <div
       className="flex flex-col items-center"
-      style={{ width: frameWidthFinal, ...style }} // 👈 lock parent width
+      style={{ width: frameWidthFinal, ...style }}
     >
-      {/* Frame + Photo + Caption (rotates together) */}
       <div
         className="relative"
         style={{
@@ -227,28 +265,44 @@ export function CdCard({
           transform: `rotate(${rotate}deg)`,
           backgroundColor:
             role.toLowerCase() === "sponsorship lead" ||
-            role.toLowerCase() === "sponsorship organizer"
+            role.toLowerCase() === "sponsorship organizer" ||
+            role.toLowerCase() === "web organizer"
               ? "transparent"
               : "white",
           boxShadow:
             role.toLowerCase() === "sponsorship lead" ||
-            role.toLowerCase() === "sponsorship organizer"
+            role.toLowerCase() === "sponsorship organizer" ||
+            role.toLowerCase() === "web organizer"
               ? "none"
               : "0 4px 6px rgba(0, 0, 0, 0.1)",
+          borderRadius: roundFrame ? borderRadius : 0,
         }}
       >
-        {" "}
-        <Frame className="absolute inset-0 z-0 h-full w-full" />
-        <Photo
-          photo={photo}
-          name={name}
-          width={imageWidth ?? frameWidthFinal}
-          height={imageHeight ?? frameHeightFinal}
-          borderRadius={borderRadius}
-        />
+        {isWebOrganizer ? (
+          <svg
+            width={frameWidthFinal}
+            height={frameHeightFinal}
+            className="absolute inset-0 z-0"
+          >
+            <Frame />
+          </svg>
+        ) : (
+          <>
+            <Frame className="absolute inset-0 z-0 h-full w-full" />
+            <Photo
+              photo={photo}
+              name={name}
+              width={imageWidth ?? frameWidthFinal}
+              height={imageHeight ?? frameHeightFinal}
+              borderRadius={roundImage ? borderRadius : 0}
+            />
+          </>
+        )}
+
         {isWebLead && <SideRole role={role} side={webRoleSide} />}
-        {/* Inside caption (unchanged) */}
-        {frameData.captionInside && (
+
+        {/* Hide caption for web organizers */}
+        {!isWebOrganizer && frameData.captionInside && (
           <Caption
             name={name}
             role={role}
@@ -257,11 +311,10 @@ export function CdCard({
             frameWidth={frameWidthFinal}
           />
         )}
-        {/* Outside caption BUT still rotates with parent */}
-        {!frameData.captionInside && (
+        {!isWebOrganizer && !frameData.captionInside && (
           <div
             className="absolute left-0 right-0 text-center font-figtree font-bold"
-            style={{ bottom: "-3rem", width: frameWidthFinal }} // push it outside frame
+            style={{ bottom: "-3rem", width: frameWidthFinal }}
           >
             <Caption
               name={name}

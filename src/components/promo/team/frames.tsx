@@ -1,6 +1,5 @@
 // components/frames.tsx
 import React from "react";
-import Image from "next/image";
 
 // Example: manually converted SVGs from Figma
 
@@ -76,12 +75,9 @@ export function WebLeadFrame(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export function WebFrame(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      viewBox="0 0 169 530"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    ></svg>
-  );
+  return <></>;
+}
+
+export function EventsOrganizerFrame(props: React.SVGProps<SVGSVGElement>) {
+  return <></>;
 }

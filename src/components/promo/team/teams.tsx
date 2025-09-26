@@ -27,6 +27,7 @@ export const PAGES = [
             top: 136,
             left: 61,
           }}
+          roundFrame={true}
         />
         <CdCard
           name="Sarah Huang"
@@ -40,6 +41,7 @@ export const PAGES = [
             top: 330,
             left: 280,
           }}
+          roundFrame={true}
         />
       </div>
     ),
@@ -66,6 +68,7 @@ export const PAGES = [
                 top: 182,
                 left: 121,
               }}
+              roundFrame={true}
             />
           </div>
         </div>{" "}
@@ -91,6 +94,7 @@ export const PAGES = [
             left: 266,
           }}
           rotate={8}
+          roundFrame={true}
         />
         <CdCard
           name="Anthony Ung"
@@ -106,6 +110,7 @@ export const PAGES = [
             left: 53,
           }}
           rotate={-9}
+          roundFrame={true}
         />
       </div>
     ),
@@ -133,7 +138,8 @@ export const PAGES = [
               top: 200,
               left: 56,
             }}
-            borderRadius="0px"
+            roundFrame={true}
+            roundImage={true}
           />
           <CdCard
             name="Jerry Zhang"
@@ -148,7 +154,7 @@ export const PAGES = [
               top: 317,
               left: 254,
             }}
-            borderRadius="0px"
+            roundFrame={true}
           />
         </div>
       </div>
@@ -159,21 +165,6 @@ export const PAGES = [
     labelOffset: 195,
     front: (
       <div>
-        <CdCard
-          name="Sarah Lieng"
-          role="Events Organizer"
-          photo="/images/organizers/lieng.jpeg"
-          imageWidth={207}
-          imageHeight={138}
-          frameWidth={236}
-          frameHeight={174}
-          style={{
-            position: "absolute",
-            top: 109,
-            left: 72,
-          }}
-          borderRadius="0px"
-        />
         <CdCard
           name="Yash Gandhi"
           role="Events Organizer"
@@ -187,8 +178,24 @@ export const PAGES = [
             top: 215,
             left: 259,
           }}
-          borderRadius="0px"
+          roundFrame={true}
         />
+        <CdCard
+          name="Sarah Lieng"
+          role="Events Organizer"
+          photo="/images/organizers/lieng.jpeg"
+          imageWidth={207}
+          imageHeight={138}
+          frameWidth={236}
+          frameHeight={174}
+          style={{
+            position: "absolute",
+            top: 109,
+            left: 72,
+          }}
+          roundFrame={true}
+        />
+
         <CdCard
           name="Julian Laxman"
           role="Events Organizer"
@@ -202,7 +209,7 @@ export const PAGES = [
             top: 355,
             left: 80,
           }}
-          borderRadius="0px"
+          roundFrame={true}
         />
       </div>
     ),
@@ -228,7 +235,7 @@ export const PAGES = [
             top: 160,
             left: 138,
           }}
-          borderRadius="0px"
+          roundFrame={true}
         />
       </div>
     ),
@@ -251,8 +258,8 @@ export const PAGES = [
             top: 74,
             left: 65,
           }}
-          borderRadius="0px"
           rotate={-4}
+          roundFrame={true}
         />
         <CdCard
           name="Allison Ye"
@@ -267,8 +274,8 @@ export const PAGES = [
             top: 340,
             left: 260,
           }}
-          borderRadius="0px"
           rotate={9}
+          roundFrame={true}
         />
       </div>
     ),
@@ -311,8 +318,8 @@ export const PAGES = [
           photo="/images/organizers/sarina.jpg"
           imageWidth={151}
           imageHeight={139}
-          frameWidth={209}
-          frameHeight={209}
+          frameWidth={211}
+          frameHeight={215}
           style={{
             position: "absolute",
             top: 44,
@@ -372,7 +379,7 @@ export const PAGES = [
             top: 305,
             left: 220,
           }}
-          borderRadius="0px"
+          roundFrame={true}
         />
         <CdCard
           name="Hunter Chen"
@@ -387,8 +394,8 @@ export const PAGES = [
             top: 144,
             left: 58,
           }}
-          borderRadius="0px"
           webRoleSide="left"
+          roundFrame={true}
         />
       </div>
     ),
@@ -396,7 +403,21 @@ export const PAGES = [
   {
     label: "WEB",
     labelOffset: 466,
-    front: <div></div>,
+    front: (
+      <div>
+        <Image
+          src="/images/promo/book/web_organizers.svg"
+          alt="web organizers"
+          width={169}
+          height={557}
+          style={{
+            position: "absolute",
+            top: 47,
+            left: 179,
+          }}
+        />{" "}
+      </div>
+    ),
     back: (
       <div>
         bonus page
