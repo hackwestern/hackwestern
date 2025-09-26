@@ -296,6 +296,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
 
   const handlePointerMove = useCallback(
     (event: PointerEvent<HTMLDivElement>): void => {
+      if (animationStage < 2) return;
       if (isPanning || activePointersRef.current.size >= 2) {
         stopAllMotion(x, y, scale);
       }
@@ -389,6 +390,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       initialPanOffsetOnDrag.x,
       initialPanOffsetOnDrag.y,
       MIN_ZOOM,
+      animationStage,
     ],
   );
 
@@ -546,6 +548,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
           className="relative h-full w-full touch-none select-none overflow-hidden"
           style={{
             touchAction: "none",
+            pointerEvents: animationStage >= 2 ? "auto" : "none",
             overscrollBehavior: "contain",
           }}
           onPointerDown={handlePointerDown}

@@ -59,7 +59,13 @@ export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
   return (
     <motion.div
       className="fixed inset-0 overflow-hidden"
-      style={{ backgroundImage: gradientBgImage }}
+      style={{
+        backgroundImage: gradientBgImage,
+        touchAction: "none",
+        userSelect: "none",
+        pointerEvents: "none",
+      }}
+      onContextMenu={(e) => e.preventDefault()}
       initial={{ backdropFilter: "blur(20px)", opacity: 0 }}
       animate={{ backdropFilter: "blur(0px)", opacity: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
