@@ -81,16 +81,16 @@ export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
             initial={{
               width: dimensions.width,
               height: dimensions.height,
-              opacity: 1,
+              backdropFilter: "blur(20px)",
             }}
             animate={{
-              opacity: 0,
+              backdropFilter: "blur(0px)",
             }}
             transition={{
-              duration: 2,
-              delay: 2,
+              duration: 1.5,
+              delay: 1.5,
             }}
-            className="absolute left-1/2 top-1/2 z-20 origin-center -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg bg-violet-300 shadow-[0_20px_40px_rgba(0,0,0,0.15)]"
+            className="absolute left-1/2 top-1/2 z-20 origin-center -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg"
           ></motion.div>
           <motion.div
             initial={{
