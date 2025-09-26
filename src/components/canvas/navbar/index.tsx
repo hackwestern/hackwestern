@@ -127,16 +127,16 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
               isPushed={expandedButton === CanvasSection.Projects}
             />
             <SingleButton
-              label="FAQ"
-              icon="HelpCircle"
-              onClick={() => handlePan(CanvasSection.FAQ)}
-              isPushed={expandedButton === CanvasSection.FAQ}
-            />
-            <SingleButton
               label="Sponsors"
               icon="Handshake"
               onClick={() => handlePan(CanvasSection.Sponsors)}
               isPushed={expandedButton === CanvasSection.Sponsors}
+            />
+            <SingleButton
+              label="FAQ"
+              icon="HelpCircle"
+              onClick={() => handlePan(CanvasSection.FAQ)}
+              isPushed={expandedButton === CanvasSection.FAQ}
             />
             <SingleButton
               label="Team"
