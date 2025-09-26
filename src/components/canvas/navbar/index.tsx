@@ -84,7 +84,7 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
   // Clean up timer on unmount
   useEffect(() => {
     if (!animationFinished) return;
-    handlePan(CanvasSection.Home); // Default to Home on mount
+    handlePan(CanvasSection.Home);
     return () => {
       if (panTimeout.current) clearTimeout(panTimeout.current);
     };

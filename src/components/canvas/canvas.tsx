@@ -16,84 +16,29 @@ import React, {
 } from "react";
 import { CanvasProvider } from "~/contexts/CanvasContext";
 import {
+  calcInitialBoxWidth,
+  canvasHeight,
+  canvasWidth,
   getDistance,
   getMidpoint,
   getScreenSizeEnum,
   getSectionPanCoordinates,
-  ScreenSizeEnum,
+  INTERACTIVE_SELECTOR,
+  MAX_ZOOM,
+  MIN_ZOOMS,
+  panToOffsetScene,
+  ZOOM_BOUND,
 } from "~/lib/canvas";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
-import Navbar, { RESPONSIVE_ZOOM_MAP } from "./navbar";
+import Navbar from "./navbar";
 import Toolbar from "./toolbar";
-import { coordinates, type SectionCoordinates } from "~/constants/canvas";
+import { type SectionCoordinates } from "~/constants/canvas";
 import { CanvasWrapper, growTransition, MAX_DIM_RATIO } from "./wrapper";
-
-export const OffsetComponent = ({
-  offset,
-  children,
-}: {
-  offset: Point;
-  children: React.ReactNode;
-}) => {
-  return (
-    <motion.div
-      style={{
-        position: "absolute",
-        top: offset.y,
-        left: offset.x,
-        width: "100%",
-        height: "100%",
-      }}
-    >
-      {children}
-    </motion.div>
-  );
-};
 
 interface Props {
   homeCoordinates: SectionCoordinates;
   children: React.ReactNode;
 }
-
-const panSpring = {
-  visualDuration: 0.34,
-  type: "spring",
-  stiffness: 200,
-  damping: 25,
-} as const;
-
-async function panToOffsetScene(
-  offset: Point,
-  x: MotionValue<number>,
-  y: MotionValue<number>,
-  scale: MotionValue<number>,
-  newZoom?: number,
-): Promise<void> {
-  const animX = animate(x, offset.x, panSpring);
-  const animY = animate(y, offset.y, panSpring);
-  const animScale = animate(scale, newZoom ?? 1, panSpring);
-  await Promise.all([animScale, animX, animY]);
-}
-
-const INTERACTIVE_SELECTOR =
-  "button,[role='button'],input,textarea,[contenteditable='true']," +
-  "[data-toolbar-button],[data-navbar-button]";
-
-export const canvasWidth = 6000;
-export const canvasHeight = 4000;
-
-const ZOOM_BOUND = 1.05; // minimum zoom level to prevent zooming out too far
-const MAX_ZOOM = 10;
-
-const MIN_ZOOMS: Record<ScreenSizeEnum, number> = {
-  [ScreenSizeEnum.SMALL_MOBILE]: 0.25,
-  [ScreenSizeEnum.MOBILE]: 0.2,
-  [ScreenSizeEnum.TABLET]: 0.15,
-  [ScreenSizeEnum.SMALL_DESKTOP]: 0.1,
-  [ScreenSizeEnum.MEDIUM_DESKTOP]: 0.1,
-  [ScreenSizeEnum.LARGE_DESKTOP]: 0.1,
-  [ScreenSizeEnum.HUGE_DESKTOP]: 0.1,
-} as const;
 
 const stopAllMotion = (
   x: MotionValue<number>,
@@ -107,27 +52,6 @@ const stopAllMotion = (
 
 const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
-
-  const initialBoxWidth = useMemo(() => {
-    // math CanvasWrapper's bounding box size and compute scale s.t. canvas fits entirely within
-    const aspectRatio = 3 / 2;
-
-    const maxWidth = windowWidth * MAX_DIM_RATIO.width;
-    const maxHeight = windowHeight * MAX_DIM_RATIO.height;
-
-    let boxWidth, boxHeight;
-
-    if (maxWidth / aspectRatio <= maxHeight) {
-      boxWidth = maxWidth;
-      boxHeight = boxWidth / aspectRatio;
-    } else {
-      boxHeight = maxHeight;
-      boxWidth = boxHeight * aspectRatio;
-    }
-
-    // Scale so the canvas fits inside the computed 3:2 box
-    return Math.min(boxWidth / canvasWidth, boxHeight / canvasHeight);
-  }, [windowWidth, windowHeight]);
 
   const sceneWidth = canvasWidth;
   const sceneHeight = canvasHeight;
@@ -147,10 +71,37 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
   const [animationFinished, setAnimationFinished] = useState<boolean>(false);
 
+  const initialBoxWidth = useMemo(
+    () => calcInitialBoxWidth(windowWidth, windowHeight),
+    [windowWidth, windowHeight],
+  );
+
   // somewhere near the middle-ish
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const scale = useMotionValue(initialBoxWidth);
+
+  const offsetHomeCoordinates = useMemo(
+    () =>
+      getSectionPanCoordinates({
+        windowDimensions: { width: windowWidth, height: windowHeight },
+        coords: homeCoordinates,
+        targetZoom: 1,
+      }),
+    [homeCoordinates, windowWidth, windowHeight],
+  );
+
+  const onResetViewAndItems = useCallback(
+    (onComplete?: () => void): void => {
+      setIsResetting(true);
+
+      void panToOffsetScene(offsetHomeCoordinates, x, y, scale, 1).then(() => {
+        setIsResetting(false);
+        if (onComplete) onComplete();
+      });
+    },
+    [offsetHomeCoordinates, x, y, scale],
+  );
 
   // grow canvas scale at same rate as CanvasWrapper
   useEffect(() => {
@@ -202,22 +153,18 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       ]);
     };
 
-    const panCoords = getSectionPanCoordinates({
-      windowDimensions: { width: windowWidth, height: windowHeight },
-      coords: coordinates.home,
-      targetZoom: RESPONSIVE_ZOOM_MAP[getScreenSizeEnum(windowWidth)],
-    });
-
     // 2. pan to center the "home" section (make this a little bouncy)
 
     const bounce = {
       duration: 1,
     } as const;
 
+    const { x: homeX, y: homeY } = offsetHomeCoordinates;
+
     const stage2 = async () => {
       await Promise.all([
-        animate(x, panCoords.x, bounce),
-        animate(y, panCoords.y, bounce),
+        animate(x, homeX, bounce),
+        animate(y, homeY, bounce),
         animate(scale, 1, bounce),
       ]);
     };
@@ -227,9 +174,9 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         setAnimationFinished(true);
       });
     });
-
-
-  }, [initialBoxWidth, windowWidth, windowHeight, scale, x, y]);
+    // only want this to run on mount; it's a load-in animation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -243,28 +190,6 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     zoom: number;
     panOffset: Point;
   } | null>(null);
-
-  const offsetHomeCoordinates = useMemo(
-    () =>
-      getSectionPanCoordinates({
-        windowDimensions: { width: windowWidth, height: windowHeight },
-        coords: homeCoordinates,
-        targetZoom: 1,
-      }),
-    [homeCoordinates, windowWidth, windowHeight],
-  );
-
-  const onResetViewAndItems = useCallback(
-    (onComplete?: () => void): void => {
-      setIsResetting(true);
-
-      void panToOffsetScene(offsetHomeCoordinates, x, y, scale, 1).then(() => {
-        setIsResetting(false);
-        if (onComplete) onComplete();
-      });
-    },
-    [offsetHomeCoordinates, x, y, scale],
-  );
 
   const panToOffset = useCallback(
     (
@@ -590,8 +515,15 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         setMaxZIndex={setMaxZIndex}
         animationFinished={animationFinished}
       >
-        <Toolbar homeCoordinates={offsetHomeCoordinates} />
-        <Navbar panToOffset={handlePanToOffset} onReset={onResetViewAndItems} />
+        {animationFinished && (
+          <>
+            <Toolbar homeCoordinates={offsetHomeCoordinates} />
+            <Navbar
+              panToOffset={handlePanToOffset}
+              onReset={onResetViewAndItems}
+            />
+          </>
+        )}
         <div
           ref={viewportRef}
           className="relative h-full w-full touch-none select-none overflow-hidden"
@@ -627,59 +559,6 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   );
 };
 
-interface CanvasProps {
-  children: React.ReactNode;
-  offset?: SectionCoordinates;
-  optimize?: boolean;
-}
-
-export const CanvasComponent: FC<CanvasProps> = ({
-  children,
-  offset,
-  optimize = true,
-}) => {
-  const margin = () => {
-    if (!offset) {
-      return { margin: "auto" };
-    }
-
-    const style: React.CSSProperties = {};
-
-    if (offset.x != null) {
-      style.marginLeft = offset.x + "px";
-    } else {
-      style.marginLeft = "auto";
-      style.marginRight = "auto";
-    }
-
-    if (offset.y != null) {
-      style.marginTop = offset.y + "px";
-    } else {
-      style.marginTop = "auto";
-      style.marginBottom = "auto";
-    }
-
-    return style;
-  };
-
-  // TODO:
-  if (optimize) {
-    // check if component is inside of viewport, return null if not
-  }
-
-  return (
-    <div
-      className="absolute inset-0 z-30 flex"
-      style={{
-        ...margin(),
-        width: offset?.width ? offset.width + "px" : "100vw",
-        height: offset?.height ? offset.height + "px" : "100vh",
-      }}
-    >
-      {children}
-    </div>
-  );
-};
 
 export const gradientBgImage = `radial-gradient(ellipse ${canvasWidth}px ${canvasHeight}px at ${canvasWidth / 2}px ${canvasHeight}px, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`;
 
@@ -696,13 +575,13 @@ const Gradient = React.memo(function Gradient() {
 
 const Dots = React.memo(function Dots() {
   return (
-    <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-40 [background-size:20px_20px]" />
+    <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-60 [background-size:22px_22px]" />
   );
 });
 
 const Filter = React.memo(function Filter() {
   return (
-    <div className="pointer-events-none absolute inset-0 hidden h-full w-full bg-none contrast-125 filter md:inline md:bg-noise" />
+    <div className="contrast-60 pointer-events-none absolute inset-0 hidden h-full w-full bg-none opacity-60 filter md:inline md:bg-noise" />
   );
 });
 

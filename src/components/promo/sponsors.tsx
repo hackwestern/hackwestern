@@ -1,4 +1,4 @@
-import { CanvasComponent } from "../canvas/canvas";
+import { CanvasComponent } from "../canvas/component";
 import { motion } from "framer-motion";
 import { Button } from "../ui/button";
 import { Mail } from "lucide-react";
