@@ -1,5 +1,5 @@
 import React, { createContext, useContext, type ReactNode } from "react";
-import { MotionValue } from "framer-motion";
+import { type MotionValue } from "framer-motion";
 
 export interface Point {
   x: number;
@@ -13,6 +13,7 @@ export interface CanvasContextState {
   isResetting: boolean;
   maxZIndex: number;
   setMaxZIndex: (zIndex: number) => void;
+  animationFinished?: boolean;
 }
 
 const defaultState = {
@@ -24,6 +25,7 @@ const defaultState = {
   setMaxZIndex: () => {
     console.log("setMaxZIndex not set");
   },
+  animationFinished: false,
 };
 
 export const CanvasContext = createContext<CanvasContextState>(defaultState);

@@ -1,8 +1,8 @@
 import {
   motion,
+  type MotionValue,
   type Point,
   useMotionValue,
-  type MotionValue,
   animate,
 } from "framer-motion";
 import React, {
@@ -23,9 +23,10 @@ import {
   ScreenSizeEnum,
 } from "~/lib/canvas";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
-import Navbar from "./navbar";
+import Navbar, { RESPONSIVE_ZOOM_MAP } from "./navbar";
 import Toolbar from "./toolbar";
-import { type SectionCoordinates } from "~/constants/canvas";
+import { coordinates, type SectionCoordinates } from "~/constants/canvas";
+import { CanvasWrapper, growTransition, MAX_DIM_RATIO } from "./wrapper";
 
 export const OffsetComponent = ({
   offset,
@@ -105,12 +106,33 @@ const stopAllMotion = (
 };
 
 const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
-  const { height, width } = useWindowDimensions();
+  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+
+  const initialBoxWidth = useMemo(() => {
+    // math CanvasWrapper's bounding box size and compute scale s.t. canvas fits entirely within
+    const aspectRatio = 3 / 2;
+
+    const maxWidth = windowWidth * MAX_DIM_RATIO.width;
+    const maxHeight = windowHeight * MAX_DIM_RATIO.height;
+
+    let boxWidth, boxHeight;
+
+    if (maxWidth / aspectRatio <= maxHeight) {
+      boxWidth = maxWidth;
+      boxHeight = boxWidth / aspectRatio;
+    } else {
+      boxHeight = maxHeight;
+      boxWidth = boxHeight * aspectRatio;
+    }
+
+    // Scale so the canvas fits inside the computed 3:2 box
+    return Math.min(boxWidth / canvasWidth, boxHeight / canvasHeight);
+  }, [windowWidth, windowHeight]);
 
   const sceneWidth = canvasWidth;
   const sceneHeight = canvasHeight;
 
-  const MIN_ZOOM = MIN_ZOOMS[getScreenSizeEnum(width)];
+  const MIN_ZOOM = MIN_ZOOMS[getScreenSizeEnum(windowWidth)];
 
   // tracks if user is panning the screen
   const [isPanning, setIsPanning] = useState<boolean>(false);
@@ -123,11 +145,91 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   });
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
+  const [animationFinished, setAnimationFinished] = useState<boolean>(false);
 
   // somewhere near the middle-ish
-  const x = useMotionValue(-2500);
+  const x = useMotionValue(0);
   const y = useMotionValue(0);
-  const scale = useMotionValue(1);
+  const scale = useMotionValue(initialBoxWidth);
+
+  // grow canvas scale at same rate as CanvasWrapper
+  useEffect(() => {
+    const finalScale = Math.max(
+      (windowWidth || 0) / canvasWidth,
+      (windowHeight || 0) / canvasHeight,
+    );
+
+    // 2 stage animation: grow canvas to fill screen, then zoom & pan to home
+
+    // 1. grow canvas to fill screen
+    const stage1 = async () => {
+      // compute initial wrapper 3:2 box dimensions to center within
+      const aspectRatio = 3 / 2;
+      const maxW = windowWidth * MAX_DIM_RATIO.width;
+      const maxH = windowHeight * MAX_DIM_RATIO.height;
+      const initWrapperWidth =
+        maxW / aspectRatio <= maxH ? maxW : maxH * aspectRatio;
+      const initWrapperHeight =
+        maxW / aspectRatio <= maxH ? maxW / aspectRatio : maxH;
+
+      const initialScale = initialBoxWidth;
+      const initialCenterX =
+        (initWrapperWidth - canvasWidth * initialScale) / 2;
+      const initialCenterY =
+        (initWrapperHeight - canvasHeight * initialScale) / 2;
+
+      // set start as centered in the initial box (no animation)
+      x.set(initialCenterX);
+      y.set(initialCenterY);
+
+      // compute final centered offsets for full viewport
+      const finalCenterX = (windowWidth - canvasWidth * finalScale) / 2;
+      const finalCenterY = (windowHeight - canvasHeight * finalScale) / 2;
+
+      await Promise.all([
+        animate(scale, finalScale, {
+          duration: growTransition.duration,
+          delay: growTransition.delay + 0.1,
+        }),
+        animate(x, finalCenterX, {
+          duration: growTransition.duration,
+          delay: growTransition.delay + 0.1,
+        }),
+        animate(y, finalCenterY, {
+          duration: growTransition.duration,
+          delay: growTransition.delay + 0.1,
+        }),
+      ]);
+    };
+
+    const panCoords = getSectionPanCoordinates({
+      windowDimensions: { width: windowWidth, height: windowHeight },
+      coords: coordinates.home,
+      targetZoom: RESPONSIVE_ZOOM_MAP[getScreenSizeEnum(windowWidth)],
+    });
+
+    // 2. pan to center the "home" section (make this a little bouncy)
+
+    const bounce = {
+      duration: 1,
+    } as const;
+
+    const stage2 = async () => {
+      await Promise.all([
+        animate(x, panCoords.x, bounce),
+        animate(y, panCoords.y, bounce),
+        animate(scale, 1, bounce),
+      ]);
+    };
+
+    void stage1().then(() => {
+      void stage2().then(() => {
+        setAnimationFinished(true);
+      });
+    });
+
+
+  }, [initialBoxWidth, windowWidth, windowHeight, scale, x, y]);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -145,11 +247,11 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const offsetHomeCoordinates = useMemo(
     () =>
       getSectionPanCoordinates({
-        windowDimensions: { width, height },
+        windowDimensions: { width: windowWidth, height: windowHeight },
         coords: homeCoordinates,
         targetZoom: 1,
       }),
-    [homeCoordinates, width, height],
+    [homeCoordinates, windowWidth, windowHeight],
   );
 
   const onResetViewAndItems = useCallback(
@@ -260,9 +362,9 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         const deltaY = event.clientY - panStartPoint.y;
 
         // UPDATE to use motion value
-        const minPanX = width - sceneWidth * scale.get();
+        const minPanX = windowWidth - sceneWidth * scale.get();
         const maxPanX = 0;
-        const minPanY = height - sceneHeight * scale.get();
+        const minPanY = windowHeight - sceneHeight * scale.get();
         const maxPanY = 0;
 
         const newX = Math.min(
@@ -306,9 +408,9 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         const mx = currentMidpoint.x;
         const my = currentMidpoint.y;
 
-        const minPanX = width - sceneWidth * newZoom;
+        const minPanX = windowWidth - sceneWidth * newZoom;
         const maxPanX = 0;
-        const minPanY = height - sceneHeight * newZoom;
+        const minPanY = windowHeight - sceneHeight * newZoom;
         const maxPanY = 0;
 
         let newPanX =
@@ -333,9 +435,9 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       scale,
       panStartPoint.x,
       panStartPoint.y,
-      width,
+      windowWidth,
       sceneWidth,
-      height,
+      windowHeight,
       sceneHeight,
       initialPanOffsetOnDrag.x,
       initialPanOffsetOnDrag.y,
@@ -433,9 +535,9 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         const newPanX = x.get() - event.deltaX * scrollSpeed;
         const newPanY = y.get() - event.deltaY * scrollSpeed;
 
-        const minPanX = width - sceneWidth * scale.get();
+        const minPanX = windowWidth - sceneWidth * scale.get();
         const maxPanX = 0;
-        const minPanY = height - sceneHeight * scale.get();
+        const minPanY = windowHeight - sceneHeight * scale.get();
         const maxPanY = 0;
 
         const clampedPanX = Math.min(Math.max(newPanX, minPanX), maxPanX);
@@ -445,7 +547,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         y.set(clampedPanY);
       }
     },
-    [scale, MIN_ZOOM, x, y, sceneWidth, sceneHeight, width, height],
+    [scale, MIN_ZOOM, x, y, sceneWidth, sceneHeight, windowWidth, windowHeight],
   );
 
   useEffect(() => {
@@ -478,47 +580,50 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   );
 
   return (
-    <CanvasProvider
-      x={x}
-      y={y}
-      scale={scale}
-      isResetting={isResetting}
-      maxZIndex={maxZIndex}
-      setMaxZIndex={setMaxZIndex}
-    >
-      <Toolbar homeCoordinates={offsetHomeCoordinates} />
-      <Navbar panToOffset={handlePanToOffset} onReset={onResetViewAndItems} />
-      <div
-        ref={viewportRef}
-        className="relative h-screen touch-none select-none overflow-hidden"
-        style={{
-          touchAction: "none",
-          overscrollBehavior: "contain",
-        }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUpOrCancel}
-        onPointerLeave={handlePointerUpOrCancel}
-        onPointerCancel={handlePointerUpOrCancel}
+    <CanvasWrapper>
+      <CanvasProvider
+        x={x}
+        y={y}
+        scale={scale}
+        isResetting={isResetting}
+        maxZIndex={maxZIndex}
+        setMaxZIndex={setMaxZIndex}
+        animationFinished={animationFinished}
       >
-        <motion.div
-          ref={sceneRef}
-          className="absolute z-20 origin-top-left"
+        <Toolbar homeCoordinates={offsetHomeCoordinates} />
+        <Navbar panToOffset={handlePanToOffset} onReset={onResetViewAndItems} />
+        <div
+          ref={viewportRef}
+          className="relative h-full w-full touch-none select-none overflow-hidden"
           style={{
-            width: canvasWidth,
-            height: canvasHeight,
-            x,
-            y,
-            scale,
+            touchAction: "none",
+            overscrollBehavior: "contain",
           }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUpOrCancel}
+          onPointerLeave={handlePointerUpOrCancel}
+          onPointerCancel={handlePointerUpOrCancel}
         >
-          <Gradient />
-          <Dots />
-          <Filter />
-          {children}
-        </motion.div>
-      </div>
-    </CanvasProvider>
+          <motion.div
+            ref={sceneRef}
+            className="absolute z-20 origin-top-left"
+            style={{
+              width: `${canvasWidth}px`,
+              height: `${canvasHeight}px`,
+              x,
+              y,
+              scale,
+            }}
+          >
+            <Gradient />
+            <Dots />
+            {animationFinished && <Filter />}
+            {children}
+          </motion.div>
+        </div>
+      </CanvasProvider>
+    </CanvasWrapper>
   );
 };
 
@@ -576,7 +681,7 @@ export const CanvasComponent: FC<CanvasProps> = ({
   );
 };
 
-const gradientBgImage = `radial-gradient(ellipse ${canvasWidth}px ${canvasHeight}px at ${canvasWidth / 2}px ${canvasHeight}px, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`;
+export const gradientBgImage = `radial-gradient(ellipse ${canvasWidth}px ${canvasHeight}px at ${canvasWidth / 2}px ${canvasHeight}px, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`;
 
 const Gradient = React.memo(function Gradient() {
   return (
