@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { CdCard } from "./codirectors-profile-card";
+import { SponsorshipLeadFrame } from "./frames";
 
 export const PAGES = [
   {
@@ -140,7 +141,16 @@ export const PAGES = [
             }}
             roundFrame={true}
             roundImage={true}
+            showCaption={false}
           />
+          <div className="absolute left-[40px] top-[410px] ml-4 flex flex-col items-start justify-center gap-0">
+            <span className="font-figtree font-bold leading-tight text-heavy">
+              Marrissa Wang
+            </span>
+            <span className="text-md -mt-0.3 font-bold leading-tight text-medium">
+              Events Lead
+            </span>
+          </div>{" "}
           <CdCard
             name="Jerry Zhang"
             role="Events Lead"
@@ -155,7 +165,16 @@ export const PAGES = [
               left: 254,
             }}
             roundFrame={true}
+            showCaption={false}
           />
+          <div className="absolute left-[340px] top-[275px] ml-4 flex flex-col items-end justify-center gap-0">
+            <span className="font-figtree font-bold leading-tight text-heavy">
+              Jerry Zhang
+            </span>
+            <span className="text-md -mt-0.3 font-bold leading-tight text-medium">
+              Events Lead
+            </span>
+          </div>{" "}
         </div>
       </div>
     ),
@@ -179,7 +198,16 @@ export const PAGES = [
             left: 259,
           }}
           roundFrame={true}
+          showCaption={false}
         />
+        <div className="absolute left-20 top-[300px] ml-4 flex flex-col items-end justify-center gap-0">
+          <span className="font-figtree font-bold leading-tight text-heavy">
+            Yash Gandhi
+          </span>
+          <span className="text-md -mt-0.5 font-bold leading-tight text-medium">
+            Events Organizer
+          </span>
+        </div>{" "}
         <CdCard
           name="Sarah Lieng"
           role="Events Organizer"
@@ -194,8 +222,16 @@ export const PAGES = [
             left: 72,
           }}
           roundFrame={true}
+          showCaption={false}
         />
-
+        <div className="absolute left-[300px] top-[160px] ml-4 flex flex-col items-start justify-center gap-0">
+          <span className="font-figtree font-bold leading-tight text-heavy">
+            Sarah Lieng
+          </span>
+          <span className="text-md -mt-0.5 font-bold leading-tight text-medium">
+            Events Organizer
+          </span>
+        </div>{" "}
         <CdCard
           name="Julian Laxman"
           role="Events Organizer"
@@ -210,7 +246,16 @@ export const PAGES = [
             left: 80,
           }}
           roundFrame={true}
+          showCaption={false}
         />
+        <div className="absolute left-[300px] top-[415px] ml-4 flex flex-col items-start justify-center gap-0">
+          <span className="font-figtree font-bold leading-tight text-heavy">
+            Julian Laxman
+          </span>
+          <span className="text-md -mt-0.5 font-bold leading-tight text-medium">
+            Events Organizer
+          </span>
+        </div>{" "}
       </div>
     ),
     back: (
@@ -345,15 +390,16 @@ export const PAGES = [
         <CdCard
           name="Derrick Ha"
           role="Sponsorship Organizer"
+          CustomFrame={SponsorshipLeadFrame}
           photo="/images/organizers/derrick.png"
           imageWidth={137}
           imageHeight={161}
-          frameWidth={183}
-          frameHeight={223}
+          frameWidth={190}
+          frameHeight={240}
           style={{
             position: "absolute",
             top: 333,
-            left: 70,
+            left: 65,
           }}
           borderRadius="0px"
         />
@@ -363,7 +409,7 @@ export const PAGES = [
       <div>
         <Image
           src="/images/promo/book/web_book_title.svg"
-          alt="joy"
+          alt="web"
           width={96}
           height={96}
           className="mx-auto h-24 w-24"
@@ -396,6 +442,7 @@ export const PAGES = [
           }}
           webRoleSide="left"
           roundFrame={true}
+          webRoleTop="30%"
         />
       </div>
     ),

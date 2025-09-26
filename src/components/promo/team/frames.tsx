@@ -1,8 +1,3 @@
-// components/frames.tsx
-import React from "react";
-
-// Example: manually converted SVGs from Figma
-
 export function CoDirectorFrame(props: React.SVGProps<SVGSVGElement>) {
   return <></>;
 }
@@ -79,5 +74,9 @@ export function WebFrame(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export function EventsOrganizerFrame(props: React.SVGProps<SVGSVGElement>) {
+  return <></>;
+}
+
+export function EventsLeadFrame(props: React.SVGProps<SVGSVGElement>) {
   return <></>;
 }

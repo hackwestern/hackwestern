@@ -8,6 +8,7 @@ import {
   SponsorshipLeadFrame,
   SponsorshipOrganizerFrame,
   EventsOrganizerFrame,
+  EventsLeadFrame,
   WebLeadFrame,
   WebFrame,
 } from "./frames";
@@ -26,6 +27,9 @@ type Props = {
   roundFrame?: boolean;
   roundImage?: boolean;
   webRoleSide?: "left" | "right";
+  webRoleTop?: string | number;
+  showCaption?: boolean;
+  CustomFrame?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 };
 
 type FrameConfig = {
@@ -42,7 +46,7 @@ const frameMap: Record<string, FrameConfig> = {
   },
   "marketing organizer": {
     Component: MarketingFrame,
-    style: { width: 260, height: 300, padding: "12px " },
+    style: { width: 260, height: 300, padding: "12px" },
     captionInside: true,
   },
   "design lead": {
@@ -85,7 +89,11 @@ const frameMap: Record<string, FrameConfig> = {
     style: { width: 169, height: 530, padding: "12px 0px 0px 0px" },
     captionInside: false,
   },
-
+  "events lead": {
+    Component: EventsLeadFrame,
+    style: { width: 169, height: 530, padding: "12px 0px 0px 0px" },
+    captionInside: false,
+  },
   events: {
     Component: DefaultFrame,
     style: { width: 196, height: 253, padding: "12px 8px 8px 8px" },
@@ -103,7 +111,6 @@ function getFrameData(role: string): FrameConfig {
 }
 
 /* ---- Subcomponents ---- */
-
 function Photo({
   photo,
   name,
@@ -111,61 +118,47 @@ function Photo({
   height,
   borderRadius,
 }: {
-  photo: string | string[];
+  photo: string;
   name: string;
   width: number;
   height: number;
   borderRadius: string | number;
 }) {
-  // Single photo → same as before
-  if (typeof photo === "string") {
-    return (
-      <div
-        className="relative z-10 mx-auto overflow-hidden"
-        style={{ width, height, borderRadius }}
-      >
-        <Image
-          src={photo}
-          alt={name}
-          fill
-          className="object-cover"
-          style={{ borderRadius }}
-        />
-      </div>
-    );
-  }
-
-  // Multiple photos → 4×1 vertical grid
   return (
     <div
-      className="relative z-10 mx-auto grid grid-rows-4 gap-[2px] overflow-hidden"
+      className="relative z-10 mx-auto overflow-hidden"
       style={{ width, height, borderRadius }}
     >
-      {photo.map((src, i) => (
-        <div key={i} className="relative h-full w-full overflow-hidden">
-          <Image
-            src={src}
-            alt={`${name}-${i}`}
-            fill
-            className="object-cover"
-            style={{ borderRadius }}
-          />
-        </div>
-      ))}
+      <Image
+        src={photo}
+        alt={name}
+        fill
+        className="object-cover"
+        style={{ borderRadius }}
+      />
     </div>
   );
 }
-function SideRole({ role, side }: { role: string; side: "left" | "right" }) {
+
+function SideRole({
+  role,
+  side,
+  top,
+}: {
+  role: string;
+  side: "left" | "right";
+  top?: string | number;
+}) {
   return (
     <div
-      className="absolute z-20 text-xs font-bold text-gray-500"
+      className="absolute z-20 text-sm font-bold text-gray-500"
       style={{
-        top: "60%",
+        top: top ?? "60%",
         [side]: 30,
         transform:
           side === "right"
             ? "rotate(90deg) translateY(-50%)"
-            : "rotate(90deg) translateY(100%)",
+            : "rotate(90deg) translateY(50%)",
         transformOrigin: side === "right" ? "right center" : "left center",
       }}
     >
@@ -224,7 +217,6 @@ function Caption({
 }
 
 /* ---- Main Component ---- */
-
 export function CdCard({
   name,
   role,
@@ -239,17 +231,23 @@ export function CdCard({
   roundFrame = false,
   roundImage = false,
   webRoleSide = "right",
+  webRoleTop,
+  showCaption = true,
+  CustomFrame,
 }: Props) {
   const frameData = getFrameData(role);
-  const Frame = frameData.Component;
+  const Frame = CustomFrame ?? frameData.Component;
   const defaultFrameWidth = frameData.style.width as number;
   const defaultFrameHeight = frameData.style.height as number;
   const framePadding = frameData.style.padding as string;
 
   const frameWidthFinal = frameWidth ?? defaultFrameWidth;
   const frameHeightFinal = frameHeight ?? defaultFrameHeight;
+
   const isWebLead = role.toLowerCase() === "web lead";
   const isWebOrganizer = role.toLowerCase() === "web organizer";
+
+  const imageOffset = isWebLead ? 20 : 0; // adjust as needed
 
   return (
     <div
@@ -263,18 +261,20 @@ export function CdCard({
           height: frameHeightFinal,
           padding: framePadding,
           transform: `rotate(${rotate}deg)`,
-          backgroundColor:
-            role.toLowerCase() === "sponsorship lead" ||
-            role.toLowerCase() === "sponsorship organizer" ||
-            role.toLowerCase() === "web organizer"
-              ? "transparent"
-              : "white",
-          boxShadow:
-            role.toLowerCase() === "sponsorship lead" ||
-            role.toLowerCase() === "sponsorship organizer" ||
-            role.toLowerCase() === "web organizer"
-              ? "none"
-              : "0 4px 6px rgba(0, 0, 0, 0.1)",
+          backgroundColor: [
+            "sponsorship lead",
+            "sponsorship organizer",
+            "web organizer",
+          ].includes(role.toLowerCase())
+            ? "transparent"
+            : "white",
+          boxShadow: [
+            "sponsorship lead",
+            "sponsorship organizer",
+            "web organizer",
+          ].includes(role.toLowerCase())
+            ? "none"
+            : "0 4px 6px rgba(0, 0, 0, 0.1)",
           borderRadius: roundFrame ? borderRadius : 0,
         }}
       >
@@ -289,20 +289,31 @@ export function CdCard({
         ) : (
           <>
             <Frame className="absolute inset-0 z-0 h-full w-full" />
-            <Photo
-              photo={photo}
-              name={name}
-              width={imageWidth ?? frameWidthFinal}
-              height={imageHeight ?? frameHeightFinal}
-              borderRadius={roundImage ? borderRadius : 0}
-            />
+            <div
+              style={{
+                marginLeft:
+                  isWebLead && webRoleSide === "left" ? imageOffset : 0,
+                marginRight:
+                  isWebLead && webRoleSide === "right" ? imageOffset : 0,
+              }}
+            >
+              <Photo
+                photo={photo}
+                name={name}
+                width={imageWidth ?? frameWidthFinal}
+                height={imageHeight ?? frameHeightFinal}
+                borderRadius={roundImage ? borderRadius : 0}
+              />
+            </div>
           </>
         )}
 
-        {isWebLead && <SideRole role={role} side={webRoleSide} />}
+        {isWebLead && (
+          <SideRole role={role} side={webRoleSide} top={webRoleTop} />
+        )}
 
-        {/* Hide caption for web organizers */}
-        {!isWebOrganizer && frameData.captionInside && (
+        {/* Captions */}
+        {!isWebOrganizer && frameData.captionInside && showCaption && (
           <Caption
             name={name}
             role={role}
@@ -311,7 +322,7 @@ export function CdCard({
             frameWidth={frameWidthFinal}
           />
         )}
-        {!isWebOrganizer && !frameData.captionInside && (
+        {!isWebOrganizer && !frameData.captionInside && showCaption && (
           <div
             className="absolute left-0 right-0 text-center font-figtree font-bold"
             style={{ bottom: "-3rem", width: frameWidthFinal }}
