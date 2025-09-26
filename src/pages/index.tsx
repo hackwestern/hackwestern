@@ -33,10 +33,8 @@ export default function Home() {
           <FAQ />
           <Team />
         </Canvas>
-        <div className="relative z-50">
-          <Footer />
-          <MLHTrustBadge />
-        </div>
+        <Footer />
+        <MLHTrustBadge />
       </main>
     </>
   );

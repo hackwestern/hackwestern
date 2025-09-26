@@ -70,6 +70,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
   const [animationStage, setAnimationStage] = useState<number>(0); // 0: initial, 1: finish grow, 2: pan to home
+  // Track if the intro (stage1 + stage2) is still running, to avoid accidental cancellation
+  const isIntroAnimatingRef = useRef(true);
 
   const initialBoxWidth = useMemo(
     () => calcInitialBoxWidth(windowWidth, windowHeight),
@@ -138,25 +140,16 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       const finalCenterY = (windowHeight - canvasHeight * finalScale) / 2;
 
       await Promise.all([
-        animate(scale, finalScale, {
-          duration: growTransition.duration - 0.1,
-          delay: growTransition.delay + 0.1,
-        }),
-        animate(x, finalCenterX, {
-          duration: growTransition.duration - 0.1,
-          delay: growTransition.delay + 0.1,
-        }),
-        animate(y, finalCenterY, {
-          duration: growTransition.duration - 0.1,
-          delay: growTransition.delay + 0.1,
-        }),
+        animate(scale, finalScale, growTransition),
+        animate(x, finalCenterX, growTransition),
+        animate(y, finalCenterY, growTransition),
       ]);
     };
 
-    // 2. pan to center the "home" section (seamless continuation)
+    // 2. pan to center the "home" section
     const stage2Transition = {
-      duration: 0.75,
-      ease: [0.25, 0.1, 0.25, 1], // smooth continuation easing
+      duration: 1.25,
+      ease: [0, 0.1, 0.6, 1],
     } as const;
 
     const { x: homeX, y: homeY } = offsetHomeCoordinates;
@@ -169,12 +162,22 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       ]);
     };
 
-    void stage1().then(() => {
-      setAnimationStage(1);
-      void stage2().then(() => {
+    void stage1()
+      .then(() => {
+        setAnimationStage(1);
+        return stage2();
+      })
+      .then(() => {
         setAnimationStage(2);
+        isIntroAnimatingRef.current = false;
+      })
+      .catch(() => {
+        isIntroAnimatingRef.current = false;
       });
-    });
+
+    return () => {
+      isIntroAnimatingRef.current = false;
+    };
     // only want this to run on mount; it's a load-in animation
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -250,12 +253,19 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     [sceneWidth, sceneHeight, x, y, scale],
   );
 
+  // Guarded stop that ignores attempts during intro animations
+  const stopAllSceneMotion = useCallback(() => {
+    if (isIntroAnimatingRef.current) return; // ignore stops while intro runs
+    stopAllMotion(x, y, scale);
+  }, [x, y, scale]);
+
   const handlePointerDown = useCallback(
     (event: PointerEvent<HTMLDivElement>): void => {
+      if (animationStage < 2) return; // ignore during intro animations
       activePointersRef.current.set(event.pointerId, event);
       (event.target as HTMLElement).setPointerCapture(event.pointerId);
       if (isResetting || isSceneMoving) return;
-      stopAllMotion(x, y, scale);
+      stopAllSceneMotion();
       // pan with 1 pointer, pinch with 2 pointers
       if (activePointersRef.current.size === 1) {
         // do not pan from interactive elements
@@ -291,6 +301,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       y,
       scale,
       viewportRef,
+      animationStage,
+      stopAllSceneMotion,
     ],
   );
 
@@ -298,7 +310,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     (event: PointerEvent<HTMLDivElement>): void => {
       if (animationStage < 2) return;
       if (isPanning || activePointersRef.current.size >= 2) {
-        stopAllMotion(x, y, scale);
+        stopAllSceneMotion();
       }
       if (!activePointersRef.current.has(event.pointerId) || isResetting)
         return;
@@ -391,12 +403,17 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       initialPanOffsetOnDrag.y,
       MIN_ZOOM,
       animationStage,
+      stopAllSceneMotion,
     ],
   );
 
   const handlePointerUpOrCancel = useCallback(
     (event: PointerEvent<HTMLDivElement>): void => {
-      stopAllMotion(x, y, scale);
+      if (animationStage < 2) {
+        event.preventDefault();
+        return; // ignore pointer up during intro
+      }
+      stopAllSceneMotion();
       event.preventDefault();
       if ((event.target as HTMLElement).hasPointerCapture(event.pointerId)) {
         (event.target as HTMLElement).releasePointerCapture(event.pointerId);
@@ -424,11 +441,15 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         setInitialPanOffsetOnDrag({ x: x.get(), y: y.get() });
       }
     },
-    [x, y, scale, isPanning],
+    [x, y, isPanning, animationStage, stopAllSceneMotion],
   );
 
   const handleWheelZoom = useCallback(
     (event: WheelEvent) => {
+      if (animationStage < 2) {
+        event.preventDefault();
+        return; // block wheel interaction during intro animations
+      }
       event.preventDefault();
       // pinch gesture on track
       const isPinch = event.ctrlKey || event.metaKey;
@@ -478,7 +499,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         y.set(newPanY);
         scale.set(nextZoom);
       } else {
-        stopAllMotion(x, y, scale);
+        stopAllSceneMotion();
 
         const scrollSpeed = 1;
         const newPanX = x.get() - event.deltaX * scrollSpeed;
@@ -496,7 +517,18 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         y.set(clampedPanY);
       }
     },
-    [scale, MIN_ZOOM, x, y, sceneWidth, sceneHeight, windowWidth, windowHeight],
+    [
+      scale,
+      MIN_ZOOM,
+      x,
+      y,
+      sceneWidth,
+      sceneHeight,
+      windowWidth,
+      windowHeight,
+      animationStage,
+      stopAllSceneMotion,
+    ],
   );
 
   // Keep the wheel handler ref pointing to the latest implementation
@@ -600,7 +632,7 @@ export const gradientBgImage = `radial-gradient(ellipse ${canvasWidth}px ${canva
 const Gradient = React.memo(function Gradient() {
   return (
     <div
-      className="absolute inset-0 h-full w-full bg-hw-radial-gradient opacity-100"
+      className="pointer-events-none absolute inset-0 h-full w-full bg-hw-radial-gradient opacity-100"
       style={{
         backgroundImage: gradientBgImage,
       }}
@@ -610,7 +642,7 @@ const Gradient = React.memo(function Gradient() {
 
 const Dots = React.memo(function Dots() {
   return (
-    <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-35 [background-size:22px_22px]" />
+    <div className="pointer-events-none absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-35 [background-size:22px_22px] " />
   );
 });
 

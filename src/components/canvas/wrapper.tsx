@@ -1,12 +1,13 @@
-import { motion } from "framer-motion";
+import { type Easing, motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 
 export const MAX_DIM_RATIO = { width: 0.8, height: 0.5 };
 
 export const growTransition = {
-  duration: 1,
+  duration: 0.5,
   delay: 2.5,
+  ease: "linear" as Easing,
 };
 
 export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
@@ -97,7 +98,7 @@ export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
             }}
             transition={{
               duration: 0.75,
-              delay: 1,
+              delay: 0.75,
               ease: "easeIn",
             }}
             className="absolute left-1/2 top-1/2 z-20 origin-center -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg"
