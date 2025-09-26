@@ -65,13 +65,13 @@ export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
       animate={{ backdropFilter: "blur(0px)", opacity: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
-      <div className="absolute left-1/2 top-64 z-0 -translate-x-1/2 -translate-y-[200px] text-center">
+      <div className="absolute left-1/2 top-64 z-0 grid -translate-x-1/2 -translate-y-[200px] place-items-center text-center">
         <Image
           src="/horse.svg"
           alt="Hack Western Logo"
           width={64}
           height={64}
-          className="mx-auto mb-4"
+          className="mb-4"
         />
         <div className="font-jetbrains-mono font-semibold text-[#543C5AB2]">
           HACK WESTERN 12
