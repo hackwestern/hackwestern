@@ -420,6 +420,8 @@ export const PAGES = [
           photo="/images/organizers/william.jpeg"
           imageWidth={191}
           imageHeight={179}
+          frameWidth={235}
+          frameHeight={226}
           style={{
             position: "absolute",
             top: 305,
@@ -433,7 +435,7 @@ export const PAGES = [
           photo="/images/organizers/hunter.jpg"
           imageWidth={167}
           imageHeight={160}
-          frameHeight={218}
+          frameHeight={210}
           frameWidth={226}
           style={{
             position: "absolute",

@@ -151,14 +151,14 @@ function SideRole({
 }) {
   return (
     <div
-      className="absolute z-20 text-sm font-bold text-gray-500"
+      className="absolute z-20 text-sm font-bold text-medium"
       style={{
         top: top ?? "60%",
         [side]: 30,
         transform:
           side === "right"
-            ? "rotate(90deg) translateY(-50%)"
-            : "rotate(90deg) translateY(50%)",
+            ? "rotate(90deg) translateY(-70%)"
+            : "rotate(90deg) translateY(60%)",
         transformOrigin: side === "right" ? "right center" : "left center",
       }}
     >
