@@ -227,8 +227,6 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         setAnimationFinished(true);
       });
     });
-
-
   }, [initialBoxWidth, windowWidth, windowHeight, scale, x, y]);
 
   const viewportRef = useRef<HTMLDivElement>(null);
