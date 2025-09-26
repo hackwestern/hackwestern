@@ -33,7 +33,7 @@ import useWindowDimensions from "~/hooks/useWindowDimensions";
 import Navbar from "./navbar";
 import Toolbar from "./toolbar";
 import { type SectionCoordinates } from "~/constants/canvas";
-import { CanvasWrapper, growTransition, MAX_DIM_RATIO } from "./wrapper";
+import { CanvasWrapper, growTransition } from "./wrapper";
 
 interface Props {
   homeCoordinates: SectionCoordinates;
@@ -116,40 +116,26 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
 
     // 1. grow canvas to fill screen
     const stage1 = async () => {
-      // compute initial wrapper 3:2 box dimensions to center within
-      const aspectRatio = 3 / 2;
-      const maxW = windowWidth * MAX_DIM_RATIO.width;
-      const maxH = windowHeight * MAX_DIM_RATIO.height;
-      const initWrapperWidth =
-        maxW / aspectRatio <= maxH ? maxW : maxH * aspectRatio;
-      const initWrapperHeight =
-        maxW / aspectRatio <= maxH ? maxW / aspectRatio : maxH;
-
-      const initialScale = initialBoxWidth;
-      const initialCenterX =
-        (initWrapperWidth - canvasWidth * initialScale) / 2;
-      const initialCenterY =
-        (initWrapperHeight - canvasHeight * initialScale) / 2;
-
-      // set start as centered in the initial box (no animation)
-      x.set(initialCenterX);
-      y.set(initialCenterY);
-
-      // compute final centered offsets for full viewport
-      const finalCenterX = (windowWidth - canvasWidth * finalScale) / 2;
-      const finalCenterY = (windowHeight - canvasHeight * finalScale) / 2;
-
+      // centered offsets for full viewport
       await Promise.all([
         animate(scale, finalScale, growTransition),
-        animate(x, finalCenterX, growTransition),
-        animate(y, finalCenterY, growTransition),
+        animate(
+          x,
+          ((windowWidth - canvasWidth * finalScale) / 2) * 0.75,
+          growTransition,
+        ),
+        animate(
+          y,
+          ((windowHeight - canvasHeight * finalScale) / 2) * 0.75,
+          growTransition,
+        ),
       ]);
     };
 
     // 2. pan to center the "home" section
     const stage2Transition = {
-      duration: 1.25,
-      ease: [0, 0.1, 0.6, 1],
+      duration: 1,
+      ease: [0.25, 0.1, 0.6, 1],
     } as const;
 
     const { x: homeX, y: homeY } = offsetHomeCoordinates;

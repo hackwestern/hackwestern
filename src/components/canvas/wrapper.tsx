@@ -5,9 +5,15 @@ import Image from "next/image";
 export const MAX_DIM_RATIO = { width: 0.8, height: 0.5 };
 
 export const growTransition = {
-  duration: 0.5,
-  delay: 2.5,
-  ease: "linear" as Easing,
+  duration: 0.65,
+  delay: 2.65,
+  ease: [0.35, 0.1, 0.9, 1] as Easing,
+};
+
+const blurTransition = {
+  duration: 0.75,
+  delay: 1,
+  ease: "easeIn",
 };
 
 export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
@@ -69,7 +75,7 @@ export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
       onContextMenu={(e) => e.preventDefault()}
       initial={{ backdropFilter: "blur(20px)", opacity: 0 }}
       animate={{ backdropFilter: "blur(0px)", opacity: 1 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <div className="absolute left-1/2 top-64 z-0 grid -translate-x-1/2 -translate-y-[200px] place-items-center text-center">
         <Image
@@ -96,11 +102,7 @@ export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
               backdropFilter: "blur(0px)",
               display: "none",
             }}
-            transition={{
-              duration: 0.75,
-              delay: 0.75,
-              ease: "easeIn",
-            }}
+            transition={blurTransition}
             className="absolute left-1/2 top-1/2 z-20 origin-center -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg"
           />
           <motion.div
