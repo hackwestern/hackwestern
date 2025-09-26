@@ -559,7 +559,6 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   );
 };
 
-
 export const gradientBgImage = `radial-gradient(ellipse ${canvasWidth}px ${canvasHeight}px at ${canvasWidth / 2}px ${canvasHeight}px, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`;
 
 const Gradient = React.memo(function Gradient() {
