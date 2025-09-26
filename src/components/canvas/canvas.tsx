@@ -610,7 +610,7 @@ const Gradient = React.memo(function Gradient() {
 
 const Dots = React.memo(function Dots() {
   return (
-    <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-60 [background-size:22px_22px]" />
+    <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-35 [background-size:22px_22px]" />
   );
 });
 
