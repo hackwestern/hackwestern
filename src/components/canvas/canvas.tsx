@@ -69,7 +69,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   });
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
-  const [animationFinished, setAnimationFinished] = useState<boolean>(false);
+  const [animationStage, setAnimationStage] = useState<number>(0); // 0: initial, 1: finish grow, 2: pan to home
 
   const initialBoxWidth = useMemo(
     () => calcInitialBoxWidth(windowWidth, windowHeight),
@@ -158,7 +158,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
 
     // 2. pan to center the "home" section (seamless continuation)
     const stage2Transition = {
-      duration: 1.2,
+      duration: 0.75,
       ease: [0.25, 0.1, 0.25, 1], // smooth continuation easing
     } as const;
 
@@ -173,8 +173,9 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     };
 
     void stage1().then(() => {
+      setAnimationStage(1);
       void stage2().then(() => {
-        setAnimationFinished(true);
+        setAnimationStage(2);
       });
     });
     // only want this to run on mount; it's a load-in animation
@@ -532,9 +533,9 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         isResetting={isResetting}
         maxZIndex={maxZIndex}
         setMaxZIndex={setMaxZIndex}
-        animationFinished={animationFinished}
+        animationStage={animationStage}
       >
-        {animationFinished && (
+        {animationStage >= 2 && (
           <>
             <Toolbar homeCoordinates={offsetHomeCoordinates} />
             <Navbar
@@ -568,20 +569,20 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
             }}
           >
             <Gradient />
-            {animationFinished && (
+            {animationStage >= 1 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
+                transition={{ duration: 0.5, ease: "easeIn" }}
               >
                 <Dots />
               </motion.div>
             )}
-            {animationFinished && (
+            {animationStage >= 1 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
+                transition={{ duration: 0.5, ease: "easeIn" }}
               >
                 <Filter />
               </motion.div>

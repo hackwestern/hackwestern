@@ -13,7 +13,7 @@ export interface CanvasContextState {
   isResetting: boolean;
   maxZIndex: number;
   setMaxZIndex: (zIndex: number) => void;
-  animationFinished?: boolean;
+  animationStage: number;
 }
 
 const defaultState = {
@@ -25,7 +25,7 @@ const defaultState = {
   setMaxZIndex: () => {
     console.log("setMaxZIndex not set");
   },
-  animationFinished: false,
+  animationStage: 0,
 };
 
 export const CanvasContext = createContext<CanvasContextState>(defaultState);
