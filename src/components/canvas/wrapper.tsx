@@ -6,7 +6,7 @@ export const MAX_DIM_RATIO = { width: 0.8, height: 0.5 };
 
 export const growTransition = {
   duration: 1,
-  delay: 4,
+  delay: 2.75,
   easeIn,
 };
 
@@ -58,9 +58,12 @@ export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
     : undefined;
 
   return (
-    <div
+    <motion.div
       className="fixed inset-0 overflow-hidden"
       style={{ backgroundImage: gradientBgImage }}
+      initial={{ backdropFilter: "blur(20px)", opacity: 0 }}
+      animate={{ backdropFilter: "blur(0px)", opacity: 1 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
     >
       <div className="absolute left-1/2 top-64 z-0 -translate-x-1/2 -translate-y-[200px] text-center">
         <Image
@@ -85,14 +88,15 @@ export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
             }}
             animate={{
               backdropFilter: "blur(0px)",
+              display: "none",
             }}
             transition={{
-              duration: 2,
+              duration: 1,
               delay: 1,
               ease: "easeIn",
             }}
             className="absolute left-1/2 top-1/2 z-20 origin-center -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg"
-          ></motion.div>
+          />
           <motion.div
             initial={{
               width: dimensions.width,
@@ -112,6 +116,6 @@ export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
       <div className="absolute bottom-32 left-1/2 -translate-x-1/2 text-center font-jetbrains-mono font-semibold text-[#543C5AB2]">
         LOADING CANVAS{dots}
       </div>
-    </div>
+    </motion.div>
   );
 };
