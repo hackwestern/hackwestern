@@ -92,7 +92,7 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
 
   return (
     <div
-      className="bottom-10 md:bottom-4 "
+      className="bottom-12 md:bottom-4"
       style={{
         position: "fixed",
         left: "50%",
