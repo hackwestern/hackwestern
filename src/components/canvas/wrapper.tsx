@@ -5,9 +5,8 @@ import Image from "next/image";
 export const MAX_DIM_RATIO = { width: 0.8, height: 0.5 };
 
 export const growTransition = {
-  duration: 0.75,
+  duration: 1,
   delay: 2.5,
-  ease: "easeOut",
 };
 
 export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {

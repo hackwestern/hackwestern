@@ -139,19 +139,16 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
 
       await Promise.all([
         animate(scale, finalScale, {
-          duration: growTransition.duration,
+          duration: growTransition.duration - 0.1,
           delay: growTransition.delay + 0.1,
-          ease: "easeOut",
         }),
         animate(x, finalCenterX, {
-          duration: growTransition.duration,
+          duration: growTransition.duration - 0.1,
           delay: growTransition.delay + 0.1,
-          ease: "easeOut",
         }),
         animate(y, finalCenterY, {
-          duration: growTransition.duration,
+          duration: growTransition.duration - 0.1,
           delay: growTransition.delay + 0.1,
-          ease: "easeOut",
         }),
       ]);
     };
