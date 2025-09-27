@@ -11,6 +11,10 @@ export const PAGES = [
     back: (
       <div>
         <div className="mt-16 flex justify-center align-middle">
+          <div className="w-[351px] h-[271px] bg-white shadow-md absolute rounded-md -rotate-2 translate-y-[67px] p-2.5">
+            <Image src={"/images/promo/book/team.png"} alt="frame" width={351} height={271} />
+            <div className="text-center font-figtree mt-2 text-[#776780]">Hack Western 12</div>
+          </div>
           <Image
             src="/images/promo/book/dream-team.svg"
             alt="dream team"
@@ -33,11 +37,11 @@ export const PAGES = [
               left: 161,
             }}
           />
-          <div className="relative h-40 w-40">
+          <div className="relative h-28 w-28">
             <img
               src="/horse.svg"
               alt="Frame"
-              className="absolute inset-0 h-full w-full"
+              className="absolute inset-0 h-full w-full translate-x-[160px] translate-y-[287px] rotate-12 object-contain"
               draggable={false}
             />
           </div>
