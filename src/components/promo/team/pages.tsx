@@ -8,7 +8,6 @@ const DEBOUNCE_MS = DEFAULT_FLIP_DURATION / 2; // Debounce time for flipping act
 
 const totalPages = PAGES.length;
 
-// Helpers: keep UI logic simple and declarative
 const isPageActive = (
   index: number,
   turnedPages: number,
