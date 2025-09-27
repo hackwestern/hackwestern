@@ -1,13 +1,13 @@
-import { type Easing, motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { type Easing, motion, type MotionValue } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 
 export const MAX_DIM_RATIO = { width: 0.8, height: 0.5 };
 
 export const growTransition = {
-  duration: 0.65,
+  duration: 0.75,
   delay: 2.65,
-  ease: [0.35, 0.1, 0.9, 1] as Easing,
+  ease: [0.35, 0.1, 0.8, 1] as Easing,
 };
 
 const blurTransition = {
@@ -16,12 +16,25 @@ const blurTransition = {
   ease: "easeIn",
 };
 
-export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
+interface CanvasWrapperProps {
+  children: React.ReactNode;
+  /** Shared progress MV (0->1) for the grow animation */
+  introProgress: MotionValue<number>;
+  /** Callback when the grow (stage1) completes */
+  onIntroGrowComplete?: () => void;
+}
+
+export const CanvasWrapper = ({
+  children,
+  introProgress,
+  onIntroGrowComplete,
+}: CanvasWrapperProps) => {
   const [dimensions, setDimensions] = useState<{
     width: number;
     height: number;
   } | null>(null);
   const [dots, setDots] = useState<string>("..");
+  const completedRef = useRef(false);
 
   // add up to 4 dots, then go back down to 2
   useEffect(() => {
@@ -63,6 +76,21 @@ export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
     ? `radial-gradient(ellipse ${dimensions.width * 3}px ${dimensions.height * 2}px at ${dimensions.width * 1.5}px ${dimensions.height}px, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`
     : undefined;
 
+  // target viewport size (snapshot once; no responsive re-flow during intro)
+  const targetViewport = useRef<{ width: number; height: number } | null>(null);
+  useEffect(() => {
+    if (!dimensions) return;
+    if (!targetViewport.current) {
+      targetViewport.current = {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      };
+    }
+  }, [dimensions]);
+
+  const targetWidth = targetViewport.current?.width;
+  const targetHeight = targetViewport.current?.height;
+
   return (
     <motion.div
       className="fixed inset-0 overflow-hidden"
@@ -90,8 +118,9 @@ export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
         </div>
       </div>
 
-      {dimensions && (
+      {dimensions && targetWidth != null && targetHeight != null && (
         <>
+          {/* Blurring mask box */}
           <motion.div
             initial={{
               width: dimensions.width,
@@ -105,16 +134,35 @@ export const CanvasWrapper = ({ children }: { children: React.ReactNode }) => {
             transition={blurTransition}
             className="absolute left-1/2 top-1/2 z-20 origin-center -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg"
           />
+          {/* Growing wrapper drives introProgress */}
           <motion.div
             initial={{
               width: dimensions.width,
               height: dimensions.height,
             }}
             animate={{
-              width: "100vw", // Expand beyond viewport for spill over
-              height: "100vh", // Expand beyond viewport for spill over
+              width: targetWidth,
+              height: targetHeight,
             }}
             transition={growTransition}
+            onUpdate={(latest: { width?: number; height?: number }) => {
+              if (completedRef.current) return;
+              if (typeof latest.width === "number") {
+                const w0 = dimensions.width;
+                const w1 = targetWidth;
+                const progress =
+                  w1 === w0 ? 1 : (latest.width - w0) / (w1 - w0);
+                const clamped = Math.min(Math.max(progress, 0), 1);
+                introProgress.set(clamped);
+              }
+            }}
+            onAnimationComplete={() => {
+              if (!completedRef.current) {
+                completedRef.current = true;
+                introProgress.set(1);
+                onIntroGrowComplete?.();
+              }
+            }}
             className="absolute left-1/2 top-1/2 z-10 origin-center -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg shadow-[0_20px_40px_rgba(0,0,0,0.15)]"
           >
             <div className="h-full w-full">{children}</div>

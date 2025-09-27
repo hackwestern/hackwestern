@@ -4,6 +4,7 @@ import {
   type Point,
   useMotionValue,
   animate,
+  useTransform,
 } from "framer-motion";
 import React, {
   useState,
@@ -33,7 +34,7 @@ import useWindowDimensions from "~/hooks/useWindowDimensions";
 import Navbar from "./navbar";
 import Toolbar from "./toolbar";
 import { type SectionCoordinates } from "~/constants/canvas";
-import { CanvasWrapper, growTransition } from "./wrapper";
+import { CanvasWrapper } from "./wrapper";
 
 interface Props {
   homeCoordinates: SectionCoordinates;
@@ -105,54 +106,61 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     [offsetHomeCoordinates, x, y, scale],
   );
 
-  // grow canvas scale at same rate as CanvasWrapper
-  useEffect(() => {
+  // Shared intro progress (0->1) driven by CanvasWrapper
+  const introProgress = useMotionValue(0);
+
+  // Precompute final stage1 scale and offsets (snapshot dimensions once on mount)
+  const stage1Targets = useMemo(() => {
     const finalScale = Math.max(
       (windowWidth || 0) / canvasWidth,
       (windowHeight || 0) / canvasHeight,
     );
+    const endX = (windowWidth - canvasWidth * finalScale) / 2;
+    const endY = (windowHeight - canvasHeight * finalScale) / 2;
+    return { finalScale, endX, endY };
+  }, [windowWidth, windowHeight]);
 
-    // 2 stage animation: grow canvas to fill screen, then zoom & pan to home
+  // Replace direct motion values with derived transforms during stage1
+  const derivedScale = useTransform(
+    introProgress,
+    [0, 1],
+    [initialBoxWidth, stage1Targets.finalScale],
+  );
+  const derivedX = useTransform(introProgress, [0, 1], [0, stage1Targets.endX]);
+  const derivedY = useTransform(introProgress, [0, 1], [0, stage1Targets.endY]);
 
-    // 1. grow canvas to fill screen
-    const stage1 = async () => {
-      // centered offsets for full viewport
-      await Promise.all([
-        animate(scale, finalScale, growTransition),
-        animate(
-          x,
-          ((windowWidth - canvasWidth * finalScale) / 2) * 0.75,
-          growTransition,
-        ),
-        animate(
-          y,
-          ((windowHeight - canvasHeight * finalScale) / 2) * 0.75,
-          growTransition,
-        ),
-      ]);
+  // While intro (stage1) is running, bind x/y/scale to derived versions.
+  useEffect(() => {
+    const unsubscribeScale = derivedScale.on("change", (v) => {
+      if (animationStage === 0) scale.set(v);
+    });
+    const unsubscribeX = derivedX.on("change", (v) => {
+      if (animationStage === 0) x.set(v);
+    });
+    const unsubscribeY = derivedY.on("change", (v) => {
+      if (animationStage === 0) y.set(v);
+    });
+    return () => {
+      unsubscribeScale();
+      unsubscribeX();
+      unsubscribeY();
     };
+  }, [derivedScale, derivedX, derivedY, animationStage, scale, x, y]);
 
-    // 2. pan to center the "home" section
+  // Kick off stage2 (pan to home) when grow completes (introProgress hits 1)
+  const startStage2 = useCallback(() => {
+    if (animationStage !== 0) return;
+    setAnimationStage(1);
     const stage2Transition = {
       duration: 1,
       ease: [0.25, 0.1, 0.6, 1],
     } as const;
-
     const { x: homeX, y: homeY } = offsetHomeCoordinates;
-
-    const stage2 = async () => {
-      await Promise.all([
-        animate(x, homeX, stage2Transition),
-        animate(y, homeY, stage2Transition),
-        animate(scale, 1, stage2Transition),
-      ]);
-    };
-
-    void stage1()
-      .then(() => {
-        setAnimationStage(1);
-        return stage2();
-      })
+    Promise.all([
+      animate(x, homeX, stage2Transition),
+      animate(y, homeY, stage2Transition),
+      animate(scale, 1, stage2Transition),
+    ])
       .then(() => {
         setAnimationStage(2);
         isIntroAnimatingRef.current = false;
@@ -160,13 +168,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       .catch(() => {
         isIntroAnimatingRef.current = false;
       });
-
-    return () => {
-      isIntroAnimatingRef.current = false;
-    };
-    // only want this to run on mount; it's a load-in animation
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [animationStage, offsetHomeCoordinates, x, y, scale]);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -542,7 +544,10 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   );
 
   return (
-    <CanvasWrapper>
+    <CanvasWrapper
+      introProgress={introProgress}
+      onIntroGrowComplete={startStage2}
+    >
       <CanvasProvider
         x={x}
         y={y}

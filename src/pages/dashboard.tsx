@@ -130,7 +130,7 @@ const Dashboard = () => {
             <div className="text-xl font-medium text-slate-700">Status:</div>
             <ApplicationStatus status={application?.status ?? "IN_PROGRESS"} />
             {application?.status !== "REJECTED" && !pastDeadline && (
-              <Button variant="primary" className="mt-6 w-fit" asChild>
+              <Button variant="primary" className="w-fit" asChild>
                 <Link href={getApplyLink(application?.status)}>
                   {buttonStatus(application?.status ?? "IN_PROGRESS")}
                 </Link>
