@@ -51,6 +51,11 @@ const stopAllMotion = (
   scale.stop();
 };
 
+const stage2Transition = {
+  duration: 1,
+  ease: [0.25, 0.1, 0.6, 1],
+} as const;
+
 const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
 
@@ -149,16 +154,11 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
 
   // Kick off stage2 (pan to home) when grow completes (introProgress hits 1)
   const startStage2 = useCallback(() => {
-    if (animationStage !== 0) return;
     setAnimationStage(1);
-    const stage2Transition = {
-      duration: 1,
-      ease: [0.25, 0.1, 0.6, 1],
-    } as const;
-    const { x: homeX, y: homeY } = offsetHomeCoordinates;
+
     Promise.all([
-      animate(x, homeX, stage2Transition),
-      animate(y, homeY, stage2Transition),
+      animate(x, offsetHomeCoordinates.x, stage2Transition),
+      animate(y, offsetHomeCoordinates.y, stage2Transition),
       animate(scale, 1, stage2Transition),
     ])
       .then(() => {
@@ -168,7 +168,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       .catch(() => {
         isIntroAnimatingRef.current = false;
       });
-  }, [animationStage, offsetHomeCoordinates, x, y, scale]);
+  }, [offsetHomeCoordinates, x, y, scale]);
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -583,6 +583,9 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
           <motion.div
             ref={sceneRef}
             className="absolute z-20 origin-top-left"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, ease: "easeIn" }}
             style={{
               width: `${canvasWidth}px`,
               height: `${canvasHeight}px`,

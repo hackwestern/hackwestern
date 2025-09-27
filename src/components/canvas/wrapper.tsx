@@ -6,7 +6,7 @@ export const MAX_DIM_RATIO = { width: 0.8, height: 0.5 };
 
 export const growTransition = {
   duration: 0.75,
-  delay: 2.65,
+  delay: 2.5,
   ease: [0.35, 0.1, 0.8, 1] as Easing,
 };
 
