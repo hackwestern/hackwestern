@@ -11,9 +11,16 @@ export const PAGES = [
     back: (
       <div>
         <div className="mt-16 flex justify-center align-middle">
-          <div className="w-[351px] h-[271px] bg-white shadow-md absolute rounded-md -rotate-2 translate-y-[67px] p-2.5">
-            <Image src={"/images/promo/book/team.png"} alt="frame" width={351} height={271} />
-            <div className="text-center font-figtree mt-2 text-[#776780]">Hack Western 12</div>
+          <div className="absolute h-[271px] w-[351px] translate-y-[67px] -rotate-2 rounded-md bg-white p-2.5 shadow-md">
+            <Image
+              src={"/images/promo/book/team.png"}
+              alt="frame"
+              width={351}
+              height={271}
+            />
+            <div className="mt-2 text-center font-figtree text-[#776780]">
+              Hack Western 12
+            </div>
           </div>
           <Image
             src="/images/promo/book/dream-team.svg"
