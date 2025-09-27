@@ -9,7 +9,11 @@ const DEBOUNCE_MS = DEFAULT_FLIP_DURATION / 2; // Debounce time for flipping act
 const totalPages = PAGES.length;
 
 // Helpers: keep UI logic simple and declarative
-const isPageActive = (index: number, turnedPages: number, flippingPage: number | null) => {
+const isPageActive = (
+  index: number,
+  turnedPages: number,
+  flippingPage: number | null,
+) => {
   // neighbouring pages and flipping pages are considered "active" and should be rendered
   return (
     flippingPage === index ||
@@ -20,7 +24,12 @@ const isPageActive = (index: number, turnedPages: number, flippingPage: number |
   );
 };
 
-const computeZIndex = (index: number, isFlipped: boolean, isFlipping: boolean, pagesCount: number) => {
+const computeZIndex = (
+  index: number,
+  isFlipped: boolean,
+  isFlipping: boolean,
+  pagesCount: number,
+) => {
   if (isFlipping) {
     // The page currently flipping is always on top.
     return pagesCount * 2 + 1;
@@ -34,7 +43,10 @@ const computeZIndex = (index: number, isFlipped: boolean, isFlipping: boolean, p
 };
 
 const calculatePerPageDuration = (numPagesToFlip: number) =>
-  Math.min(TOTAL_JUMP_DURATION / Math.max(1, numPagesToFlip), DEFAULT_FLIP_DURATION);
+  Math.min(
+    TOTAL_JUMP_DURATION / Math.max(1, numPagesToFlip),
+    DEFAULT_FLIP_DURATION,
+  );
 
 const Pages = () => {
   const [turnedPages, setTurnedPages] = useState(1);
@@ -112,7 +124,12 @@ const Pages = () => {
         const isFlipped = index < turnedPages;
         const isFlipping = flippingPage === index;
         const isActive = isPageActive(index, turnedPages, flippingPage);
-        const zIndex = computeZIndex(index, isFlipped, isFlipping, PAGES.length);
+        const zIndex = computeZIndex(
+          index,
+          isFlipped,
+          isFlipping,
+          PAGES.length,
+        );
 
         return (
           <div
