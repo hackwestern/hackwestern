@@ -5,8 +5,8 @@ import Image from "next/image";
 export const MAX_DIM_RATIO = { width: 0.8, height: 0.5 };
 
 export const growTransition = {
-  duration: 0.75,
-  delay: 2.5,
+  duration: 0.86,
+  delay: 2.79,
   ease: [0.35, 0.1, 0.8, 1] as Easing,
 };
 
@@ -76,21 +76,6 @@ export const CanvasWrapper = ({
     ? `radial-gradient(ellipse ${dimensions.width * 3}px ${dimensions.height * 2}px at ${dimensions.width * 1.5}px ${dimensions.height}px, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`
     : undefined;
 
-  // target viewport size (snapshot once; no responsive re-flow during intro)
-  const targetViewport = useRef<{ width: number; height: number } | null>(null);
-  useEffect(() => {
-    if (!dimensions) return;
-    if (!targetViewport.current) {
-      targetViewport.current = {
-        width: window.innerWidth,
-        height: window.innerHeight,
-      };
-    }
-  }, [dimensions]);
-
-  const targetWidth = targetViewport.current?.width;
-  const targetHeight = targetViewport.current?.height;
-
   return (
     <motion.div
       className="fixed inset-0 overflow-hidden"
@@ -118,7 +103,7 @@ export const CanvasWrapper = ({
         </div>
       </div>
 
-      {dimensions && targetWidth != null && targetHeight != null && (
+      {dimensions && (
         <>
           {/* Blurring mask box */}
           <motion.div
@@ -141,15 +126,15 @@ export const CanvasWrapper = ({
               height: dimensions.height,
             }}
             animate={{
-              width: targetWidth,
-              height: targetHeight,
+              width: "100vw",
+              height: "100vh",
             }}
             transition={growTransition}
             onUpdate={(latest: { width?: number; height?: number }) => {
               if (completedRef.current) return;
               if (typeof latest.width === "number") {
                 const w0 = dimensions.width;
-                const w1 = targetWidth;
+                const w1 = window.innerWidth;
                 const progress =
                   w1 === w0 ? 1 : (latest.width - w0) / (w1 - w0);
                 const clamped = Math.min(Math.max(progress, 0), 1);

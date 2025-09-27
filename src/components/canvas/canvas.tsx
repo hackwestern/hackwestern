@@ -52,8 +52,8 @@ const stopAllMotion = (
 };
 
 const stage2Transition = {
-  duration: 1,
-  ease: [0.25, 0.1, 0.6, 1],
+  duration: 0.96,
+  ease: [0.37, 0.1, 0.6, 1],
 } as const;
 
 const Canvas: FC<Props> = ({ children, homeCoordinates }) => {

@@ -22,13 +22,13 @@ export const coordinates: Record<CanvasSection, SectionCoordinates> = {
     height: 800,
   },
   [CanvasSection.Projects]: {
-    x: 3700,
+    x: 3663,
     y: 400,
     width: 1200,
     height: 895,
   },
   [CanvasSection.Home]: {
-    x: 2850,
+    x: 2788,
     y: 1200,
     width: 409,
     height: 1200,
@@ -40,14 +40,14 @@ export const coordinates: Record<CanvasSection, SectionCoordinates> = {
     height: 900,
   },
   [CanvasSection.FAQ]: {
-    x: 2120,
+    x: 2070,
     y: 2600,
     width: 1768,
     height: 917,
   },
 
   [CanvasSection.Team]: {
-    x: 4150,
+    x: 4050,
     y: 1660,
     width: 1080,
     height: 917,
