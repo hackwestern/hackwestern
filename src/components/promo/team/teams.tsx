@@ -4,6 +4,18 @@ import { SponsorshipLeadFrame } from "./frames";
 
 export const PAGES = [
   {
+    label: undefined,
+    labelOffset: 0,
+    front: <></>,
+    back: (
+      <div>
+        <div className="mt-16 flex justify-center align-middle">
+          hw photo or whatever
+        </div>
+      </div>
+    ),
+  },
+  {
     label: "CO-DIRECTORS",
     labelOffset: 10,
     front: (

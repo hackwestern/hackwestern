@@ -55,8 +55,8 @@ function Page({
   turnPageForward,
   onLabelClick,
 }: {
-  label: string;
-  labelOffset: number;
+  label?: string;
+  labelOffset?: number;
   front: React.ReactNode;
   back: React.ReactNode;
   isFlipped: boolean;
@@ -84,7 +84,9 @@ function Page({
       }}
       onAnimationComplete={onFlipComplete}
     >
-      <Label label={label} offset={labelOffset} onClick={onLabelClick} />
+      {label && labelOffset && (
+        <Label label={label} offset={labelOffset} onClick={onLabelClick} />
+      )}
       {isActive && (
         <>
           {/* Front page (right side) */}

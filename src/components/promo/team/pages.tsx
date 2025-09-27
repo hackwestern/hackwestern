@@ -7,7 +7,7 @@ const TOTAL_JUMP_DURATION = 700; // Total time in ms for a multi-page jump
 const DEBOUNCE_MS = DEFAULT_FLIP_DURATION / 2; // Debounce time for flipping actions
 
 const Pages = () => {
-  const [turnedPages, setTurnedPages] = useState(0);
+  const [turnedPages, setTurnedPages] = useState(1);
   const [flippingPage, setFlippingPage] = useState<number | null>(null);
   const [flipDuration, setFlipDuration] = useState(DEFAULT_FLIP_DURATION);
   const targetPage = useRef<number | null>(null);
