@@ -148,6 +148,7 @@ const Pages = () => {
               labelOffset={page.labelOffset}
               isFlipped={isFlipped}
               isActive={isActive}
+              isSelected={index === turnedPages}
               flipDuration={flipDuration}
               onFlipComplete={isFlipping ? handleFlipComplete : undefined}
               turnPageBackward={turnPageBackward}

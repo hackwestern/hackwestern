@@ -6,13 +6,21 @@ function Label({
   label,
   offset,
   onClick,
+  isSelected,
 }: {
   label: string;
   offset: number;
   onClick?: () => void;
+  isSelected?: boolean;
 }) {
-  const labelClass = `flex h-[45px] items-center justify-center rounded-t-md border-t border-gray-200 bg-beige px-[8px] text-xs uppercase tracking-wider absolute -mt-[8px] text-medium hover:text-heavy hover:-mt-[12px] transition-all z-[10000]`;
+  const baseClass = `
+  flex h-[45px] items-center justify-center rounded-t-md bg-lilac px-[8px] text-xs uppercase tracking-wider absolute -mt-[8px] 
+  hover:-mt-[12px] transition-all 
+`;
 
+  const labelClass = isSelected
+    ? `${baseClass} text-heavy z-[20000]`
+    : `${baseClass} text-medium hover:text-heavy z-[0]`;
   return (
     <>
       <div
@@ -41,7 +49,6 @@ function Label({
     </>
   );
 }
-
 function Page({
   label,
   labelOffset,
@@ -49,6 +56,7 @@ function Page({
   back,
   isFlipped,
   isActive,
+  isSelected,
   flipDuration,
   onFlipComplete,
   turnPageBackward,
@@ -61,6 +69,7 @@ function Page({
   back: React.ReactNode;
   isFlipped: boolean;
   isActive: boolean;
+  isSelected?: boolean;
   flipDuration: number;
   onFlipComplete?: () => void;
   turnPageBackward: () => void;
@@ -85,7 +94,12 @@ function Page({
       onAnimationComplete={onFlipComplete}
     >
       {label && labelOffset && (
-        <Label label={label} offset={labelOffset} onClick={onLabelClick} />
+        <Label
+          label={label}
+          offset={labelOffset}
+          onClick={onLabelClick}
+          isSelected={isSelected}
+        />
       )}
       {isActive && (
         <>
