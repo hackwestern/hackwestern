@@ -10,7 +10,36 @@ export const PAGES = [
     back: (
       <div>
         <div className="mt-16 flex justify-center align-middle">
-          hw photo or whatever
+          <Image
+            src="/images/promo/book/dream-team.svg"
+            alt="dream team"
+            height={54}
+            width={90}
+            style={{
+              position: "absolute",
+              top: 458,
+              left: 50,
+            }}
+          />
+          <Image
+            src="/images/promo/book/front-page-doodle.svg"
+            alt="doodle"
+            height={75}
+            width={204}
+            style={{
+              position: "absolute",
+              top: 465,
+              left: 161,
+            }}
+          />
+          <div className="relative h-40 w-40">
+            <img
+              src="/horse.svg"
+              alt="Frame"
+              className="absolute inset-0 h-full w-full"
+              draggable={false}
+            />
+          </div>
         </div>
       </div>
     ),
