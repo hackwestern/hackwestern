@@ -26,12 +26,12 @@ export default function Envelope() {
       setIsOpen(true);
       timeoutRef.current = setTimeout(() => {
         setFlapZ(0);
-      }, 250);
+      }, 150);
     } else {
       setIsOpen(false);
       timeoutRef.current = setTimeout(() => {
         setFlapZ(20);
-      }, 650);
+      }, 350);
     }
   };
 
@@ -54,7 +54,11 @@ export default function Envelope() {
           className="pointer-events-auto absolute bottom-0 left-[15px] z-10 w-[420px] overflow-hidden bg-white p-8"
           initial={{ height: "175px" }}
           animate={{ height: isOpen ? "650px" : "175px" }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          transition={{
+            duration: 0.3,
+            delay: 0.15,
+            ease: [0.25, 0.46, 0.45, 0.94],
+          }}
         >
           <div className="mb-2 font-figtree  text-medium">
             Dear Hacker,
@@ -98,7 +102,7 @@ export default function Envelope() {
           style={{
             width: "450px",
             height: "188px",
-            background: "linear-gradient(to bottom, #D19AEE -125px, #8F57AD)",
+            background: "linear-gradient(to bottom, #AA73C8 -125px, #C189DE)",
           }}
         />
 
@@ -108,8 +112,9 @@ export default function Envelope() {
           style={{
             width: "275px",
             height: "188px",
-            background: "linear-gradient(to bottom, #D19AEE, #8F57AD 500px)",
+            background: "linear-gradient(0deg, #8F57AD -100%, #D19AEE 100%)",
             clipPath: "polygon(0 0, 100% 50%, 0 100%)",
+            filter: "drop-shadow(0 4px 4px rgba(0,0,0,0.4))",
           }}
         />
 
@@ -119,8 +124,9 @@ export default function Envelope() {
           style={{
             width: "275px",
             height: "188px",
-            background: "linear-gradient(to bottom, #D19AEE, #8F57AD 500px)",
+            background: "linear-gradient(0deg, #8F57AD -100%, #D19AEE 100%)",
             clipPath: "polygon(100% 0, 0 50%, 100% 100%)",
+            filter: "drop-shadow(0 4px 4px rgba(0,0,0,0.4))",
           }}
         />
 
@@ -130,8 +136,9 @@ export default function Envelope() {
           style={{
             width: "450px",
             height: "113px",
-            background: "linear-gradient(to bottom, #D19AEE, #8F57AD 125px)",
             clipPath: "polygon(50% 0, 0 100%, 100% 100%)",
+            background: "linear-gradient(0deg, #8F57AD -100%, #D19AEE 100%)",
+            filter: "drop-shadow(0 0 3.309px rgba(0, 0, 0, 0.25))",
           }}
         />
 
@@ -139,16 +146,20 @@ export default function Envelope() {
         <motion.div
           className="pointer-events-none absolute top-[188px] z-30 h-0 w-0 origin-top shadow-sm"
           animate={{ rotateX: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.5, delay: isOpen ? 0 : 0.5 }}
+          transition={{
+            duration: 0.3,
+            delay: isOpen ? 0 : 0.3,
+            ease: [0.25, 0.46, 0.45, 0.94],
+          }}
           style={{
             width: "450px",
             height: "113px",
-            background:
-              "linear-gradient(to bottom, #8F57AD -75px, #D19AEE 75px)",
+            background: "linear-gradient(180deg, #8F57AD -150%, #D19AEE 100%)",
             clipPath: "polygon(0 0, 100% 0, 50% 100%)",
             transformStyle: "preserve-3d",
             zIndex: flapZ,
-            filter: "drop-shadow(0 4px 4px rgba(0,0,0,0.3))",
+            filter:
+              "drop-shadow(0 0 3.309px rgba(0, 0, 0, 0.25)) drop-shadow(0 0 0 1px #8F57AD)",
           }}
         />
       </div>
