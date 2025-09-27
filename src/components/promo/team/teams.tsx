@@ -476,7 +476,7 @@ export const PAGES = [
             top: 47,
             left: 179,
           }}
-        />{" "}
+        />
       </div>
     ),
     back: (
