@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { CdCard } from "./codirectors-profile-card";
 import { SponsorshipLeadFrame } from "./frames";
+import { Button } from "~/components/ui/button";
 
 export const PAGES = [
   {
@@ -505,19 +506,131 @@ export const PAGES = [
             top: 47,
             left: 179,
           }}
-        />{" "}
+        />
       </div>
     ),
     back: (
-      <div>
-        bonus page
-        <Image
-          src="/images/organizers/marissa.jpeg"
-          alt="marissa"
-          width={96}
-          height={96}
-          className="mx-auto h-24 w-24"
-        />
+      <div className="flex h-full w-full items-center justify-center">
+        <div
+          className="flex flex-col items-center justify-center gap-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-center gap-6">
+            <a
+              href="https://www.instagram.com/hackwestern"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Hack Western on Instagram"
+              className="text-medium transition-colors hover:scale-105 hover:text-heavy"
+            >
+              <svg
+                className="h-8 w-8"
+                viewBox="0 0 24 25"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <g id="Instagram">
+                  <path
+                    id="Vector"
+                    d="M17 2.08325H7C4.23858 2.08325 2 4.4151 2 7.29159V17.7083C2 20.5847 4.23858 22.9166 7 22.9166H17C19.7614 22.9166 22 20.5847 22 17.7083V7.29159C22 4.4151 19.7614 2.08325 17 2.08325Z"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    id="Vector_2"
+                    d="M16 11.8437C16.1234 12.7106 15.9812 13.596 15.5937 14.3739C15.2062 15.1518 14.5931 15.7827 13.8416 16.1767C13.0901 16.5707 12.2384 16.7079 11.4077 16.5686C10.5771 16.4294 9.80971 16.0209 9.21479 15.4012C8.61987 14.7814 8.22768 13.9821 8.09402 13.1168C7.96035 12.2516 8.09202 11.3644 8.47028 10.5816C8.84854 9.79875 9.45414 9.16009 10.2009 8.75645C10.9477 8.3528 11.7977 8.20473 12.63 8.33328C13.4789 8.46441 14.2648 8.87647 14.8716 9.5086C15.4785 10.1407 15.8741 10.9594 16 11.8437Z"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    id="Vector_3"
+                    d="M17.5 6.77075H17.51"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </g>
+              </svg>
+            </a>
+            <a
+              href="https://www.linkedin.com/company/hack-western"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Hack Western on LinkedIn"
+              className="text-medium transition-colors hover:scale-105 hover:text-heavy"
+            >
+              <svg
+                className="h-8 w-8"
+                viewBox="0 0 22 23"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <g id="linkedin">
+                  <path
+                    id="Vector 2"
+                    d="M12.8529 8.21688H8.38098V22.4995H12.8529V17.0385C12.8529 15.5682 12.8529 13.6779 13.2594 13.0478C13.666 12.4176 14.6823 11.7875 16.1052 12.2076C17.5281 12.6277 17.5281 14.308 17.5281 14.518V22.4995H22V14.9381C22 9.47712 19.5608 8.42693 17.3248 8.21688C15.3217 8.02871 13.5305 9.4071 12.8529 10.3173V8.21688Z"
+                    fill="currentColor"
+                  />
+                  <rect
+                    id="Rectangle 3"
+                    y="8.19983"
+                    width="5.2381"
+                    height="14.3"
+                    fill="currentColor"
+                  />
+                  <ellipse
+                    id="Ellipse 1"
+                    cx="2.61905"
+                    cy="3.25024"
+                    rx="2.61905"
+                    ry="2.75"
+                    fill="currentColor"
+                  />
+                </g>
+              </svg>
+            </a>
+            <a
+              href="https://github.com/hackwestern"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Hack Western on GitHub"
+              className="text-medium transition-colors hover:scale-105 hover:text-heavy"
+            >
+              <svg
+                className="h-8 w-8"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 1024 1024"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  clipRule="evenodd"
+                  d="M8 0C3.58 0 0 3.58 0 8C0 11.54 2.29 14.53 5.47 15.59C5.87 15.66 6.02 15.42 6.02 15.21C6.02 15.02 6.01 14.39 6.01 13.72C4 14.09 3.48 13.23 3.32 12.78C3.23 12.55 2.84 11.84 2.5 11.65C2.22 11.5 1.82 11.13 2.49 11.12C3.12 11.11 3.57 11.7 3.72 11.94C4.44 13.15 5.59 12.81 6.05 12.6C6.12 12.08 6.33 11.73 6.56 11.53C4.78 11.33 2.92 10.64 2.92 7.58C2.92 6.71 3.23 5.99 3.74 5.43C3.66 5.23 3.38 4.41 3.82 3.31C3.82 3.31 4.49 3.1 6.02 4.13C6.66 3.95 7.34 3.86 8.02 3.86C8.7 3.86 9.38 3.95 10.02 4.13C11.55 3.09 12.22 3.31 12.22 3.31C12.66 4.41 12.38 5.23 12.3 5.43C12.81 5.99 13.12 6.7 13.12 7.58C13.12 10.65 11.25 11.33 9.47 11.53C9.76 11.78 10.01 12.26 10.01 13.01C10.01 14.08 10 14.94 10 15.21C10 15.42 10.15 15.67 10.55 15.59C13.71 14.53 16 11.53 16 8C16 3.58 12.42 0 8 0Z"
+                  transform="scale(64)"
+                />
+              </svg>
+            </a>
+          </div>
+          <a
+            href="mailto:hello@hackwestern.com"
+            className="flex items-center gap-2"
+            aria-label="Email Hack Western"
+          >
+            <Button
+              variant="tertiary"
+              size="sm"
+              className="-pb-3 p-0 text-center font-jetbrains-mono text-sm font-medium text-medium hover:text-heavy"
+              secondClass="-mt-1"
+            >
+              hello@hackwestern.com
+            </Button>
+          </a>
+        </div>
       </div>
     ),
   },
