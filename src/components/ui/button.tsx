@@ -47,6 +47,7 @@ export interface ButtonProps
   asChild?: boolean;
   isPending?: boolean;
   full?: boolean;
+  secondClass?: string;
 }
 
 const overlays = {
@@ -77,6 +78,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       full = false,
       asChild = false,
       disabled,
+      secondClass = "",
       ...props
     },
     ref,
@@ -127,7 +129,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         />
 
         {variant === "tertiary" && (
-          <span className="block h-0 max-w-0 border-b-2 border-dashed border-[#625679] transition-all duration-200 group-hover:max-w-full group-active:border-[#8F57AD]" />
+          <span
+            className={cn(
+              "block h-0 max-w-0 border-b-2 border-dashed border-[#625679] transition-all duration-200 group-hover:max-w-full group-active:border-[#8F57AD]",
+              secondClass,
+            )}
+          />
         )}
       </div>
     );
