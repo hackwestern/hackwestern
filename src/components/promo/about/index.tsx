@@ -8,28 +8,50 @@ function About() {
   return (
     <CanvasComponent offset={coordinates.about}>
       <div className="mt-8 flex flex-col items-center justify-center space-y-4 pb-12 sm:-mt-12">
-        <div className="flex origin-center flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out">
+        <div className="flex origin-center flex-col items-center justify-center transition-transform duration-300 ease-in-out">
           <div className="relative">
             <div className="flex w-full max-w-full flex-col items-center justify-start gap-4 px-4 pb-0 pt-24">
               <div className="h-5 text-center font-jetbrains-mono text-base font-medium uppercase text-zinc-500">
                 About
               </div>
-              <div className="mb-12 text-center font-dico text-2xl font-medium text-indigo-950">
+              <div className="mb-8 text-center font-dico text-2xl font-medium text-indigo-950">
                 Create. Collaborate. Innovate.
               </div>
-              <div className="absolute -left-[200px] bottom-[50px]">
-                <motion.img
-                  src="/lightningdash.svg"
-                  alt="Lightning Dash"
-                  draggable="false"
-                  style={{ rotate: "-5deg" }}
-                />
-              </div>
               <DraggableImage
-                className="absolute -right-[320px] bottom-[150px] w-24"
+                className="absolute -left-[600px] -bottom-[200px] w-36"
+                key="pencils"
+                src="/pencils.svg"
+                alt="Pencils"
+                animate={{
+                  rotate: [2, -2],
+                  transition: {
+                    duration: 1,
+                    repeat: Infinity,
+                    repeatType: "mirror",
+                    ease: "easeInOut",
+                  },
+                }}
+              />
+              <DraggableImage
+                className="absolute -right-[300px] bottom-[190px] w-24"
                 key="lightbulb"
                 src="/lightbulb.svg"
                 alt="Lightbulb"
+                animate={{
+                  rotate: [2, -2],
+                  transition: {
+                    duration: 1,
+                    repeat: Infinity,
+                    repeatType: "mirror",
+                    ease: "easeInOut",
+                  },
+                }}
+              />
+               <DraggableImage
+                className="absolute -right-[650px] -bottom-[400px] w-24"
+                key="paintbrush"
+                src="/paintbrush.svg"
+                alt="Paintbrush"
                 animate={{
                   rotate: [2, -2],
                   transition: {
@@ -72,8 +94,8 @@ function About() {
                     <motion.img
                       src="/people.svg"
                       alt="hackwestern"
-                      width={150}
-                      height={75}
+                      width={300}
+                      height={150}
                       draggable="false"
                     />
                   </div>
@@ -91,7 +113,7 @@ function About() {
                   </div>
                 </div>
               </div>
-              <div className="shrink-0">
+              <div className="shrink-0 pt-8">
                 <Envelope />
               </div>
             </div>
