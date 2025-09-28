@@ -1,9 +1,9 @@
-import { CanvasComponent } from "../../canvas/canvas";
 import { coordinates } from "~/constants/canvas";
 import { useState } from "react";
 import { folderData } from "~/constants/folderData";
 import { ProjectPreview } from "./project-preview";
 import HeaderCards from "./header-cards";
+import { CanvasComponent } from "~/components/canvas/component";
 
 function Projects() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);

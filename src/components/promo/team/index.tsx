@@ -1,7 +1,7 @@
 import { coordinates } from "~/constants/canvas";
-import { CanvasComponent } from "../../canvas/canvas";
 import Book from "./book";
 import Title from "./title";
+import { CanvasComponent } from "~/components/canvas/component";
 
 function Team() {
   return (

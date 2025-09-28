@@ -1,8 +1,8 @@
 import { coordinates } from "~/constants/canvas";
-import { CanvasComponent } from "../../canvas/canvas";
 import { motion } from "framer-motion";
 import Envelope from "./envelope";
 import { DraggableImage } from "~/components/canvas/draggable";
+import { CanvasComponent } from "~/components/canvas/component";
 
 function About() {
   return (

@@ -44,7 +44,7 @@ const Toolbar = ({ homeCoordinates = { x: 0, y: 0 } }: ToolbarProps) => {
 
   return (
     <motion.div
-      className="absolute left-4 top-4 z-[1000] cursor-default select-none rounded-[10px] border border-border bg-offwhite p-2 font-mono text-xs text-heavy shadow-[0_6px_12px_rgba(0,0,0,0.10)] md:text-sm"
+      className="absolute left-4 top-6 z-[1000] cursor-default select-none rounded-[10px] border border-border bg-offwhite p-2 font-mono text-xs text-heavy shadow-[0_6px_12px_rgba(0,0,0,0.10)] sm:top-4 md:text-sm"
       onPointerDown={handlePointerDown}
       data-toolbar-button
       style={{ opacity }}

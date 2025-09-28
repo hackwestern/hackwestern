@@ -21,7 +21,10 @@ export default function Home() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main id="home" className="cursor-[url('/customcursor.svg'),auto]">
+      <main
+        id="home"
+        className="relative min-h-screen cursor-[url('/customcursor.svg'),auto]"
+      >
         <Canvas homeCoordinates={coordinates.home}>
           <Hero />
           <Sponsors />
