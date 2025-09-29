@@ -18,7 +18,7 @@ function About() {
                 Create. Collaborate. Innovate.
               </div>
               <DraggableImage
-                className="absolute -left-[600px] -bottom-[200px] w-36"
+                className="absolute -bottom-[200px] -left-[600px] w-36"
                 key="pencils"
                 src="/pencils.svg"
                 alt="Pencils"
@@ -47,8 +47,8 @@ function About() {
                   },
                 }}
               />
-               <DraggableImage
-                className="absolute -right-[650px] -bottom-[400px] w-24"
+              <DraggableImage
+                className="absolute -bottom-[400px] -right-[650px] w-24"
                 key="paintbrush"
                 src="/paintbrush.svg"
                 alt="Paintbrush"
