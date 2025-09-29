@@ -86,8 +86,8 @@ export const CanvasWrapper = ({
         pointerEvents: "none",
       }}
       onContextMenu={(e) => e.preventDefault()}
-      initial={{ backdropFilter: "blur(20px)", opacity: 0 }}
-      animate={{ backdropFilter: "blur(0px)", opacity: 1 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <div className="absolute left-1/2 top-64 z-0 grid -translate-x-1/2 -translate-y-[200px] place-items-center text-center">
