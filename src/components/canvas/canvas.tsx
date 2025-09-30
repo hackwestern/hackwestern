@@ -598,6 +598,13 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
             }}
           >
             <Gradient />
+            {/* Home stays real */}
+            {React.Children.toArray(children).find(
+              (child: any) =>
+                child.type?.displayName === "Hero" ||
+                child.type?.name === "Hero",
+            )}
+
             {animationStage >= 1 && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -614,12 +621,6 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
                 <Filter />
                 <Dots />
               </motion.div>
-            )}
-            {/* Home stays real */}
-            {React.Children.toArray(children).find(
-              (child: any) =>
-                child.type?.displayName === "Hero" ||
-                child.type?.name === "Hero",
             )}
             {/* Other sections swap between images and real components */}
             {animationStage < 2 ? (
