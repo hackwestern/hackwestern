@@ -141,6 +141,7 @@ const Pages = () => {
             }}
           >
             <Page
+              page={index}
               label={page.label}
               front={page.front}
               back={page.back}

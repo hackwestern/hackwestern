@@ -17,16 +17,9 @@ function About() {
               <div className="mb-12 text-center font-dico text-2xl font-medium text-indigo-950">
                 Create. Collaborate. Innovate.
               </div>
-              <div className="absolute -left-[200px] bottom-[50px]">
-                <motion.img
-                  src="/lightningdash.svg"
-                  alt="Lightning Dash"
-                  draggable="false"
-                  style={{ rotate: "-5deg" }}
-                />
-              </div>
+
               <DraggableImage
-                className="absolute -right-[320px] bottom-[150px] w-24"
+                className="absolute -left-[320px] bottom-[150px] w-24"
                 key="lightbulb"
                 src="/lightbulb.svg"
                 alt="Lightbulb"
@@ -43,7 +36,7 @@ function About() {
             </div>
           </div>
           <div className="flex flex-col gap-10">
-            <div className="flex items-center justify-center gap-16">
+            <div className="flex items-center justify-center gap-16 ">
               <div className="shrink-0">
                 <motion.img
                   src="/photo.png"
@@ -52,6 +45,7 @@ function About() {
                   height={250}
                   draggable="false"
                   style={{ rotate: "-5deg" }}
+                  className="rounded-md shadow-md"
                 />
               </div>
               <div className="relative flex w-fit max-w-xs rotate-[8deg] items-center justify-center text-center">
@@ -63,17 +57,14 @@ function About() {
               </div>
             </div>
             <div className="flex items-center justify-center gap-10">
-              <div className="relative mr-[75px] h-fit w-fit max-w-md shrink-0 -rotate-[2deg] rounded-sm bg-white shadow-md">
-                <div className="absolute -left-[55px] -top-[45px] z-10 h-20 w-40">
-                  <motion.img src="/tape1.png" alt="tape1" draggable={false} />
-                </div>
-                <div className="flex flex-col items-center justify-center gap-x-8 gap-y-4 p-8">
+              <div className="relative mr-[20px] h-fit w-fit max-w-md shrink-0 -rotate-[2deg] rounded-sm bg-white shadow-md">
+                <div className="flex max-w-96 flex-col items-center justify-center gap-x-8 gap-y-2 p-8">
                   <div>
                     <motion.img
-                      src="/people.svg"
+                      src="/collab.png"
                       alt="hackwestern"
-                      width={150}
-                      height={75}
+                      width={250}
+                      height={150}
                       draggable="false"
                     />
                   </div>
@@ -82,13 +73,7 @@ function About() {
                     while participating in workshops, learning from mentors,
                     competing for prizes, and meet like-minded hackers.
                   </div>
-                  <div className="absolute -bottom-[10px] -right-[50px] z-10 h-20 w-40">
-                    <motion.img
-                      src="/tape1.png"
-                      alt="tape1"
-                      draggable={false}
-                    />
-                  </div>
+                  <div className="absolute -bottom-[10px] -right-[50px] z-10 h-20 w-40"></div>
                 </div>
               </div>
               <div className="shrink-0">
