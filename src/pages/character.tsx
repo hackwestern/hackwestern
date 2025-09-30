@@ -10,7 +10,6 @@ import { api } from "~/utils/api";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { hackerLoginRedirect } from "~/utils/redirect";
-import CloudBackground from "~/components/cloud-background";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
 import { ApplyNavbar } from "~/components/apply/navbar";
 import { Passport } from "~/components/apply/passport";
