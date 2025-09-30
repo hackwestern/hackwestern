@@ -1,4 +1,3 @@
-import html2canvas from "html2canvas";
 import { type Easing, motion, type MotionValue } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
