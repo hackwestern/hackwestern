@@ -121,7 +121,17 @@ function Page({
               <Bindings />
             </div>
             <FrontHoles />
-            <div className="h-full w-full bg-beige p-[32px]" style={{ backgroundImage: "url(images/promo/book/paper.png)", backgroundSize: "cover", backgroundPositionX: `-${11 * offset}px`, backgroundPositionY: `-${21 * offset}px` }}>{front}</div>
+            <div
+              className="h-full w-full bg-beige p-[32px]"
+              style={{
+                backgroundImage: "url(images/promo/book/paper.png)",
+                backgroundSize: "cover",
+                backgroundPositionX: `-${11 * offset}px`,
+                backgroundPositionY: `-${21 * offset}px`,
+              }}
+            >
+              {front}
+            </div>
           </div>
           {/* Back page (left side) */}
           <div
@@ -132,7 +142,17 @@ function Page({
             }}
             onClick={turnPageBackward}
           >
-            <div className="h-full w-full bg-beige p-[32px]" style={{ backgroundImage: "url(images/promo/book/paper.png)", backgroundSize: "cover", backgroundPositionX: `-${14 * offset}px`, backgroundPositionY: `-${18 * offset}px` }}>{back}</div>
+            <div
+              className="h-full w-full bg-beige p-[32px]"
+              style={{
+                backgroundImage: "url(images/promo/book/paper.png)",
+                backgroundSize: "cover",
+                backgroundPositionX: `-${14 * offset}px`,
+                backgroundPositionY: `-${18 * offset}px`,
+              }}
+            >
+              {back}
+            </div>
             <BackHoles />
             <div className="pointer-events-none absolute inset-0 -mr-[36px] ml-[499px]">
               <Bindings />

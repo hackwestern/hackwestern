@@ -72,7 +72,7 @@ const backPageHoleMask: React.CSSProperties = {
 export const FrontHoles = React.memo(function FrontHoles() {
   return (
     <>
-      <div style={frontPageHoleMask} className="h-[723px] w-[18px] bg-beige"  />
+      <div style={frontPageHoleMask} className="h-[723px] w-[18px] bg-beige" />
       <div
         style={{ transform: "rotateY(180deg)", ...frontPageHoleMask }}
         className="-ml-[4px] -mr-[2px] h-[723px] w-[18px] bg-beige"
