@@ -1,23 +1,23 @@
 // import { useRouter } from "next/router";
 import React, { useState } from "react";
 /* eslint-disable @next/next/no-img-element */
-import { categories, colors, avatarManifest} from "../../constants/avatar";
+import { categories, colors, avatarManifest } from "../../constants/avatar";
 
 export const Avatar = () => {
   // const router = useRouter();
 
   const [selectedColor, setSelectedColor] = useState("green");
-const [selectedAccessories, setSelectedAccessories] = useState<{
-  face: { id: number; name: string; src: string } | null;
-  right: { id: number; name: string; src: string }  | null;
-  left:  { id: number; name: string; src: string } | null;
-  hat: { id: number; name: string; src: string }  | null;
-}>({
-  face: null,
-  right: null,
-  left: null,
-  hat: null,
-});
+  const [selectedAccessories, setSelectedAccessories] = useState<{
+    face: { id: number; name: string; src: string } | null;
+    right: { id: number; name: string; src: string } | null;
+    left: { id: number; name: string; src: string } | null;
+    hat: { id: number; name: string; src: string } | null;
+  }>({
+    face: null,
+    right: null,
+    left: null,
+    hat: null,
+  });
 
   const [selectedCategory, setSelectedCategory] = useState("face");
 
@@ -101,49 +101,48 @@ const [selectedAccessories, setSelectedAccessories] = useState<{
                   </div>
 
                   {/* Selected Accessory - Face */}
-                  {selectedAccessories.face &&
-                    (
-                      <div className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2">
-                        <img
-                          src={selectedAccessories.face.src}
-                          alt={selectedAccessories.face.name}
-                          className="h-full w-full object-contain"
-                        />
-                      </div>
-                    )}
+                  {selectedAccessories.face && (
+                    <div className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2">
+                      <img
+                        src={selectedAccessories.face.src}
+                        alt={selectedAccessories.face.name}
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                  )}
 
                   {/* Selected Accessory - Hat */}
                   {selectedAccessories.hat && (
-                      <div className="absolute -top-12 left-1/2 h-24 w-24 -translate-x-1/2">
-                        <img
-                          src={selectedAccessories.hat.src}
-                          alt={selectedAccessories.hat.name}
-                          className="h-full w-full object-contain"
-                        />
-                      </div>
-                    )}
+                    <div className="absolute -top-12 left-1/2 h-24 w-24 -translate-x-1/2">
+                      <img
+                        src={selectedAccessories.hat.src}
+                        alt={selectedAccessories.hat.name}
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                  )}
 
                   {/* Selected Accessory - Left Hand */}
-                  {selectedAccessories.left &&(
-                      <div className="absolute -left-4 bottom-20 h-16 w-16">
-                        <img
-                          src={selectedAccessories.left.src}
-                          alt={selectedAccessories.left.name}
-                          className="h-full w-full object-contain"
-                        />
-                      </div>
-                    )}
+                  {selectedAccessories.left && (
+                    <div className="absolute -left-4 bottom-20 h-16 w-16">
+                      <img
+                        src={selectedAccessories.left.src}
+                        alt={selectedAccessories.left.name}
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                  )}
 
                   {/* Selected Accessory - Right Hand */}
-                  {selectedAccessories.right &&(
-                      <div className="absolute -right-4 bottom-20 h-16 w-16">
-                        <img
-                          src={selectedAccessories.right.src}
-                          alt={selectedAccessories.right.name}
-                          className="h-full w-full object-contain"
-                        />
-                      </div>
-                    )}
+                  {selectedAccessories.right && (
+                    <div className="absolute -right-4 bottom-20 h-16 w-16">
+                      <img
+                        src={selectedAccessories.right.src}
+                        alt={selectedAccessories.right.name}
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -211,9 +210,9 @@ const [selectedAccessories, setSelectedAccessories] = useState<{
                         }));
                       }}
                       className={`flex aspect-[7/5] w-full items-center justify-center rounded-lg border-2 transition-all hover:scale-105 ${
-                        (selectedAccessories[
+                        selectedAccessories[
                           selectedCategory as keyof typeof selectedAccessories
-                        ]?.id === accessory.id)
+                        ]?.id === accessory.id
                           ? "bg-lilac"
                           : "border-gray-200 bg-white hover:border-gray-300"
                       }`}
