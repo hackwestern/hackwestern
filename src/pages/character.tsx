@@ -1,37 +1,9 @@
 import Head from "next/head";
-import { useRouter } from "next/router";
-import { type FormEvent, useState } from "react";
-import GithubAuthButton from "~/components/auth/githubauth-button";
-import GoogleAuthButton from "~/components/auth/googleauth-button";
-import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
-import { useToast } from "~/components/hooks/use-toast";
-import { api } from "~/utils/api";
-import Link from "next/link";
-import { signIn } from "next-auth/react";
 import { hackerLoginRedirect } from "~/utils/redirect";
-import DiscordAuthButton from "~/components/auth/discordauth-button";
 import { ApplyNavbar } from "~/components/apply/navbar";
-import { Passport } from "~/components/apply/passport";
-import logout from "./logout";
-import {
-  CanvasComponent,
-  canvasHeight,
-  canvasWidth,
-} from "~/components/canvas/canvas";
 import { Avatar } from "~/components/apply/avatar";
 
 export default function Register() {
-  type ApplicationStatusType =
-    | "IN_PROGRESS"
-    | "PENDING_REVIEW"
-    | "IN_REVIEW"
-    | "ACCEPTED"
-    | "REJECTED"
-    | "WAITLISTED"
-    | "DECLINED";
-
-  const application = { firstName: "jasmine" };
   return (
     <>
       <Head>
