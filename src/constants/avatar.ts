@@ -575,3 +575,66 @@ export const avatarManifest: AvatarManifest = {
 };
 
 export default avatarManifest;
+
+export const colors = [
+  {
+    name: "brown",
+    value: "#D0816B",
+    gradient: "#FFA59B",
+    bg: "#F8DDD6",
+    body: "001",
+  },
+
+  {
+    name: "orange",
+    value: "#F0AF73",
+    gradient: "#FFCB9B",
+    bg: "#FAE4CE",
+    body: "002",
+  },
+
+  {
+    name: "yellow",
+    value: "#F9D962",
+    gradient: "#FFE98D",
+    bg: "#FEF7D7",
+    body: "003",
+  },
+
+  {
+    name: "green",
+    value: "#A5CD72",
+    gradient: "#A7FB73",
+    bg: "#F1FDE0",
+    body: "004",
+  },
+  {
+    name: "blue",
+    value: "#87C5EA",
+    gradient: "#A9D5FF",
+    bg: "#D8F0FF",
+    body: "005",
+  },
+  {
+    name: "purple",
+    value: "#B592DA",
+    gradient: "#E1C2FF",
+    bg: "#F0E6F8",
+    body: "006",
+  },
+
+  {
+    name: "pink",
+    value: "#EAAFB3",
+    gradient: "#FEBFCB",
+    bg: "#F7E0EA",
+    body: "007",
+  },
+];
+
+export const categories = [
+  { id: "face", src: "/smile.png" },
+  { id: "left", src: "/lefthand.png" },
+  { id: "right", src: "/righthand.png" },
+  { id: "hat", src: "/hat.png" },
+];
