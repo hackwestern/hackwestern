@@ -55,6 +55,8 @@ const frontPageHoleMask: React.CSSProperties = {
   ...pageHoleMask,
   maskPosition: frontPos,
   WebkitMaskPosition: frontPos,
+  backgroundImage: "url(images/promo/book/paper.png)",
+  backgroundSize: "cover",
 };
 
 const backPos = "right 340px, left 0";
@@ -63,6 +65,8 @@ const backPageHoleMask: React.CSSProperties = {
   ...pageHoleMask,
   maskPosition: backPos,
   WebkitMaskPosition: backPos,
+  backgroundImage: "url(images/promo/book/paper.png)",
+  backgroundSize: "cover",
 };
 
 export const FrontHoles = React.memo(function FrontHoles() {
