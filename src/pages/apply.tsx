@@ -35,7 +35,7 @@ export default function Apply() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center bg-primary-50">
+      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center bg-primary-50 overscroll-contain">
         {/* Mobile View */}
         <Tabs defaultValue="application" className="w-screen pt-16 md:hidden">
           <TabsList className="fixed z-50 w-screen justify-around rounded-none bg-primary-100">
@@ -94,8 +94,8 @@ export default function Apply() {
             className="bg-hw-linear-gradient-day flex h-full flex-col items-center justify-center px-4 md:w-full"
           >
             <CanvasBackground />
-            <div className="z-10 flex flex-col items-center justify-center">
-              <div className="flex h-full w-full flex-col space-y-8 rounded-md bg-white px-6 pt-12">
+            <div className="z-10 h-[80%] w-4xl max-h-6xl max-w-6xl flex flex-col items-center justify-center overflow-contain">
+              <div className="flex h-full w-full flex-col space-y-8 rounded-md bg-white p-12 overflow-auto">
                 <div className="space-y-2 py-1.5">
                   <h1 className="text-2xl font-medium">{heading}</h1>
                   <h2 className="text-sm text-slate-500">{subheading}</h2>
@@ -109,7 +109,6 @@ export default function Apply() {
               </div>
 
               <div className="z-10 flex w-[100%] flex-col items-center justify-center">
-                <Passport />
               </div>
             </div>
           </div>
