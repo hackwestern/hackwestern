@@ -20,7 +20,7 @@ function About() {
               <DraggableImage
                 className="absolute -left-[600px] -bottom-[200px] w-36"
                 key="pencils"
-                src="/pencils.svg"
+                src="/pencils.png"
                 alt="Pencils"
                 animate={{
                   rotate: [2, -2],
@@ -35,7 +35,7 @@ function About() {
               <DraggableImage
                 className="absolute -right-[300px] bottom-[190px] w-24"
                 key="lightbulb"
-                src="/lightbulb.svg"
+                src="/lightbulb.png"
                 alt="Lightbulb"
                 animate={{
                   rotate: [2, -2],
@@ -50,7 +50,7 @@ function About() {
                <DraggableImage
                 className="absolute -right-[650px] -bottom-[400px] w-24"
                 key="paintbrush"
-                src="/paintbrush.svg"
+                src="/paintbrush.png"
                 alt="Paintbrush"
                 animate={{
                   rotate: [2, -2],
@@ -92,7 +92,7 @@ function About() {
                 <div className="flex flex-col items-center justify-center gap-x-8 gap-y-4 p-8">
                   <div>
                     <motion.img
-                      src="/people.svg"
+                      src="/people.png"
                       alt="hackwestern"
                       width={300}
                       height={150}
