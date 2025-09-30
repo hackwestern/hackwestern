@@ -55,6 +55,8 @@ const frontPageHoleMask: React.CSSProperties = {
   ...pageHoleMask,
   maskPosition: frontPos,
   WebkitMaskPosition: frontPos,
+  backgroundImage: "url(images/promo/book/paper.png)",
+  backgroundSize: "cover",
 };
 
 const backPos = "right 340px, left 0";
@@ -63,12 +65,14 @@ const backPageHoleMask: React.CSSProperties = {
   ...pageHoleMask,
   maskPosition: backPos,
   WebkitMaskPosition: backPos,
+  backgroundImage: "url(images/promo/book/paper.png)",
+  backgroundSize: "cover",
 };
 
 export const FrontHoles = React.memo(function FrontHoles() {
   return (
     <>
-      <div style={frontPageHoleMask} className="h-[723px] w-[18px] bg-beige" />
+      <div style={frontPageHoleMask} className="h-[723px] w-[18px] bg-beige"  />
       <div
         style={{ transform: "rotateY(180deg)", ...frontPageHoleMask }}
         className="-ml-[4px] -mr-[2px] h-[723px] w-[18px] bg-beige"
