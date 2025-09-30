@@ -1,3 +1,4 @@
+import html2canvas from "html2canvas";
 import { type Easing, motion, type MotionValue } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
@@ -6,7 +7,7 @@ export const MAX_DIM_RATIO = { width: 0.8, height: 0.5 };
 
 export const growTransition = {
   duration: 0.86,
-  delay: 2.79,
+  delay: 5,
   ease: [0.35, 0.1, 0.8, 1] as Easing,
 };
 
@@ -86,9 +87,6 @@ export const CanvasWrapper = ({
         pointerEvents: "none",
       }}
       onContextMenu={(e) => e.preventDefault()}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <div className="absolute left-1/2 top-64 z-0 grid -translate-x-1/2 -translate-y-[200px] place-items-center text-center">
         <Image

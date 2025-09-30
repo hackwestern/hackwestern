@@ -600,9 +600,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, ease: "easeIn" }}
-              >
-                <Dots />
-              </motion.div>
+              ></motion.div>
             )}
             {animationStage >= 1 && (
               <motion.div
@@ -611,9 +609,81 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
                 transition={{ duration: 0.5, ease: "easeIn" }}
               >
                 <Filter />
+                <Dots />
               </motion.div>
             )}
-            {children}
+            {/* Home stays real */}
+            {React.Children.toArray(children).find(
+              (child: any) =>
+                child.type?.displayName === "Hero" ||
+                child.type?.name === "Hero",
+            )}
+            {/* Other sections swap between images and real components */}
+            {animationStage < 2 ? (
+              <>
+                <img
+                  src="/about.png"
+                  alt="About"
+                  className="absolute"
+                  style={{
+                    left: `1400px`,
+                    top: `400px`,
+                    width: `1013px`,
+                    height: `auto`,
+                  }}
+                />
+                <img
+                  src="/sponsors.png"
+                  alt="Sponsors"
+                  className="absolute"
+                  style={{
+                    left: `760px`,
+                    top: `1700px`,
+                    width: `1240px`,
+                    height: `auto`,
+                  }}
+                />
+                <img
+                  src="/faq.png"
+                  alt="FAQ"
+                  className="absolute"
+                  style={{
+                    left: `2070px`,
+                    top: `2600px`,
+                    width: `1768px`,
+                    height: `auto`,
+                  }}
+                />
+                <img
+                  src="/team.png"
+                  alt="Team"
+                  className="absolute"
+                  style={{
+                    left: `4050px`,
+                    top: `1660px`,
+                    width: `1080px`,
+                    height: `auto`,
+                  }}
+                />
+                <img
+                  src="/projects.png"
+                  alt="Projects"
+                  className="absolute"
+                  style={{
+                    left: `3663px`,
+                    top: `400px`,
+                    width: `1200px`,
+                    height: `auto`,
+                  }}
+                />
+              </>
+            ) : (
+              React.Children.toArray(children).filter(
+                (child: any) =>
+                  child.type?.displayName !== "Hero" &&
+                  child.type?.name !== "Hero",
+              )
+            )}
           </motion.div>
         </div>
       </CanvasProvider>
@@ -626,7 +696,7 @@ export const gradientBgImage = `radial-gradient(ellipse ${canvasWidth}px ${canva
 const Gradient = React.memo(function Gradient() {
   return (
     <div
-      className="pointer-events-none absolute inset-0 h-full w-full bg-hw-radial-gradient opacity-100"
+      className="pointer-events-none absolute inset-0 h-full w-full bg-white opacity-100"
       style={{
         backgroundImage: gradientBgImage,
       }}
