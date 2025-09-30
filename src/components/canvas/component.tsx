@@ -1,17 +1,23 @@
 import { type FC } from "react";
 import { type SectionCoordinates } from "~/constants/canvas";
+import { useCanvasContext } from "~/contexts/CanvasContext";
+import Image from "next/image";
 
 interface CanvasProps {
   children: React.ReactNode;
   offset?: SectionCoordinates;
   optimize?: boolean;
+  imageFallback?: string;
 }
 
 export const CanvasComponent: FC<CanvasProps> = ({
   children,
   offset,
   optimize = true,
+  imageFallback,
 }) => {
+  const { animationStage } = useCanvasContext();
+
   const margin = () => {
     if (!offset) {
       return { margin: "auto" };
@@ -50,7 +56,17 @@ export const CanvasComponent: FC<CanvasProps> = ({
         height: offset?.height ? offset.height + "px" : "100vh",
       }}
     >
-      {children}
+      {animationStage >= 2 || !imageFallback ? (
+        children
+      ) : (
+        <Image
+          src={imageFallback}
+          alt="Canvas Fallback"
+          width={offset?.width ?? 1920}
+          height={offset?.height ?? 1080}
+          className="m-auto h-auto w-full object-contain"
+        />
+      )}
     </div>
   );
 };
