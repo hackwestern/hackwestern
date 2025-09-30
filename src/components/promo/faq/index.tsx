@@ -1,5 +1,5 @@
 import { coordinates } from "~/constants/canvas";
-import { CanvasComponent } from "~/components/canvas/canvas";
+import { CanvasComponent } from "~/components/canvas/component";
 import { FAQCard } from "./card";
 import { PROMO_FAQ } from "~/constants/faq";
 

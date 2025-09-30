@@ -19,7 +19,7 @@ interface NavbarProps {
   onReset: () => void;
 }
 
-const RESPONSIVE_ZOOM_MAP: Record<ScreenSizeEnum, number> = {
+export const RESPONSIVE_ZOOM_MAP: Record<ScreenSizeEnum, number> = {
   [ScreenSizeEnum.SMALL_MOBILE]: 0.5,
   [ScreenSizeEnum.MOBILE]: 0.6,
   [ScreenSizeEnum.TABLET]: 0.8,
@@ -30,7 +30,7 @@ const RESPONSIVE_ZOOM_MAP: Record<ScreenSizeEnum, number> = {
 } as const;
 
 export default function Navbar({ panToOffset, onReset }: NavbarProps) {
-  const { x, y, scale } = useCanvasContext();
+  const { x, y, scale, animationStage } = useCanvasContext();
   const [expandedButton, setExpandedButton] = useState<string | null>(null);
   const activePans = useRef(0);
   const panTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -83,15 +83,16 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
 
   // Clean up timer on unmount
   useEffect(() => {
-    handlePan(CanvasSection.Home); // Default to Home on mount
+    if (animationStage < 2) return;
+    handlePan(CanvasSection.Home);
     return () => {
       if (panTimeout.current) clearTimeout(panTimeout.current);
     };
-  }, [handlePan]);
+  }, [handlePan, animationStage]);
 
   return (
     <div
-      className="bottom-10 md:bottom-4 "
+      className="bottom-12 md:bottom-4"
       style={{
         position: "fixed",
         left: "50%",
@@ -126,16 +127,16 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
               isPushed={expandedButton === CanvasSection.Projects}
             />
             <SingleButton
-              label="FAQ"
-              icon="HelpCircle"
-              onClick={() => handlePan(CanvasSection.FAQ)}
-              isPushed={expandedButton === CanvasSection.FAQ}
-            />
-            <SingleButton
               label="Sponsors"
               icon="Handshake"
               onClick={() => handlePan(CanvasSection.Sponsors)}
               isPushed={expandedButton === CanvasSection.Sponsors}
+            />
+            <SingleButton
+              label="FAQ"
+              icon="HelpCircle"
+              onClick={() => handlePan(CanvasSection.FAQ)}
+              isPushed={expandedButton === CanvasSection.FAQ}
             />
             <SingleButton
               label="Team"
