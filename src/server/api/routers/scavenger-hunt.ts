@@ -1,20 +1,23 @@
 import { eq, sql, SQL } from "drizzle-orm";
-import { createTRPCRouter, } from "~/server/api/trpc";
+import { createTRPCRouter } from "~/server/api/trpc";
 import { db, Transaction } from "~/server/db";
-import { scavengerHuntScans, users, scavengerHuntRedemptions } from "~/server/db/schema";
+import {
+  scavengerHuntScans,
+  users,
+  scavengerHuntRedemptions,
+} from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
-
 
 export const _addPoints = async (
   tx: Transaction,
   userId: string,
-  points: number
+  points: number,
 ) => {
   try {
     const updateData: Record<string, SQL> = {
       scavengerHuntBalance: sql`scavenger_hunt_balance + ${points}`,
     };
-    
+
     if (points > 0) {
       updateData.scavengerHuntEarned = sql`scavenger_hunt_earned + ${points}`;
     }
@@ -81,10 +84,14 @@ const getUserPoints = async (userId: string) => {
     earned: user.scavengerHuntEarned,
     balance: user.scavengerHuntBalance,
   };
-}
+};
 
 // ! Unsafe Functions: Need to check if caller has enough points to redeem item before invoking */
-const redeemItem = async (userId: string, rewardId: number, costPoints: number) => {
+const redeemItem = async (
+  userId: string,
+  rewardId: number,
+  costPoints: number,
+) => {
   try {
     await db.transaction(async (tx) => {
       // Add points to user
@@ -102,7 +109,6 @@ const redeemItem = async (userId: string, rewardId: number, costPoints: number) 
       message: "Failed to redeem item: " + JSON.stringify(error),
     });
   }
-}
+};
 
-export const scavengerHuntRouter = createTRPCRouter({
-})
+export const scavengerHuntRouter = createTRPCRouter({});
