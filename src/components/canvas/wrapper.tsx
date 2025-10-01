@@ -5,14 +5,14 @@ import Image from "next/image";
 export const MAX_DIM_RATIO = { width: 0.8, height: 0.5 };
 
 export const growTransition = {
-  duration: 0.86,
-  delay: 2.79,
+  duration: 0.96,
+  delay: 3.14,
   ease: [0.35, 0.1, 0.8, 1] as Easing,
 };
 
 const blurTransition = {
-  duration: 0.75,
-  delay: 1,
+  duration: 0.85,
+  delay: 1.25,
   ease: "easeIn",
 };
 
@@ -86,9 +86,6 @@ export const CanvasWrapper = ({
         pointerEvents: "none",
       }}
       onContextMenu={(e) => e.preventDefault()}
-      initial={{ backdropFilter: "blur(20px)", opacity: 0 }}
-      animate={{ backdropFilter: "blur(0px)", opacity: 1 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <div className="absolute left-1/2 top-64 z-0 grid -translate-x-1/2 -translate-y-[200px] place-items-center text-center">
         <Image
@@ -110,10 +107,11 @@ export const CanvasWrapper = ({
             initial={{
               width: dimensions.width,
               height: dimensions.height,
-              backdropFilter: "blur(20px)",
+              opacity: 1,
+              backgroundColor: "#e1c8fa",
             }}
             animate={{
-              backdropFilter: "blur(0px)",
+              opacity: 0,
               display: "none",
             }}
             transition={blurTransition}
