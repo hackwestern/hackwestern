@@ -75,7 +75,7 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
 
-  getAllApplicants: protectedOrganizerProcedure.query(async ({  }) => {
+  getAllApplicants: protectedOrganizerProcedure.query(async ({}) => {
     try {
       const applicants = await db
         .select({
