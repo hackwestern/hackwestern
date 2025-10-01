@@ -111,4 +111,88 @@ const redeemItem = async (
   }
 };
 
-export const scavengerHuntRouter = createTRPCRouter({});
+
+export const scavengerHuntRouter = createTRPCRouter({
+  getScavengerHuntItem: publicProcedure
+    .input(z.object({ code: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const { code } = input;
+        const item = await db.query.scavengerHuntItems.findFirst({
+          where: eq(scavengerHuntItems.code, code),
+        });
+
+        if (!item) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+        }
+
+        return item;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch item: " + JSON.stringify(error),
+        });
+      }
+    }),
+
+  // Scan Item
+  scan: protectedProcedure
+    .input(z.object({ code: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const { code } = input;
+        const item = await db.query.scavengerHuntItems.findFirst({
+          where: eq(scavengerHuntItems.code, code),
+        });
+
+        if (!item) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+        }
+
+        // Check if user has already scanned this item
+        const scan = await db.query.scavengerHuntScans.findFirst({
+          where: and(eq(scavengerHuntScans.userId, ctx.session.user.id), eq(scavengerHuntScans.itemId, item.id)),
+        });
+        if (scan) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Item already scanned" });
+        }
+
+        await recordScan(ctx.session.user.id, item.points, item.id);
+
+        return {
+          success: true,
+          message: "Item scanned successfully",
+        };
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to scan item: " + JSON.stringify(error),
+        });
+      }
+    }),
+
+  getPoints: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    return await getUserPoints(userId);
+  }),
+
+  getPointsByUserId: protectedProcedure.input(z.object({ requestedUserId: z.string() })).query(async ({ input, ctx }) => {
+    const { requestedUserId } = input;
+    const userId = ctx.session.user.id;
+
+    // TODO: Replace with protectedOrganizerProcedure
+    const authUser = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!authUser) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+    }
+    if (authUser.type !== "organizer") {
+      throw new TRPCError({ code: "FORBIDDEN", message: "User is not authorized to view points" });
+    }
+
+    // Get points for requestedUserId
+    return await getUserPoints(requestedUserId);
+  }),
+});
