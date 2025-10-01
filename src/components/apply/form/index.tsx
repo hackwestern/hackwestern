@@ -6,6 +6,7 @@ import { ApplicationForm } from "./application-form";
 import { LinksForm } from "./links-form";
 import { AgreementsForm } from "./agreements-form";
 import { OptionalForm } from "./optional-form";
+import { CanvasForm } from "./canvas-form";
 import { ReviewForm } from "./review-form";
 
 type ApplyFormProps = {
@@ -28,6 +29,8 @@ export function ApplyForm({ step }: ApplyFormProps) {
       return <AgreementsForm />;
     case "optional":
       return <OptionalForm />;
+    case "canvas":
+      return <CanvasForm />;
     case "review":
       return <ReviewForm />;
     default:
