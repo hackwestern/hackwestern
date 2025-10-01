@@ -3,10 +3,14 @@ import { motion } from "framer-motion";
 import Envelope from "./envelope";
 import { DraggableImage } from "~/components/canvas/draggable";
 import { CanvasComponent } from "~/components/canvas/component";
+import Image from "next/image";
 
 function About() {
   return (
-    <CanvasComponent offset={coordinates.about}>
+    <CanvasComponent
+      offset={coordinates.about}
+      imageFallback="/images/promo/about.png"
+    >
       <div className="mt-8 flex flex-col items-center justify-center space-y-4 pb-12 sm:-mt-12">
         <div className="flex origin-center flex-col items-center justify-center transition-transform duration-300 ease-in-out">
           <div className="relative">
@@ -78,7 +82,13 @@ function About() {
                 />
               </div>
               <div className="relative flex w-fit max-w-xs rotate-[8deg] items-center justify-center text-center">
-                <img src="/speech.svg" alt="" className="h-auto w-full" />
+                <Image
+                  src="/speech.svg"
+                  alt=""
+                  width={400}
+                  height={200}
+                  className="h-auto w-full"
+                />
                 <div className="absolute inset-[1/2] px-8 font-figtree text-white">
                   We cover food, travel, and lodging so you can focus on
                   bringing your ideas to life!
