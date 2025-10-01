@@ -618,7 +618,7 @@ export const gradientBgImage = `radial-gradient(ellipse ${canvasWidth}px ${canva
 const Gradient = React.memo(function Gradient() {
   return (
     <div
-      className="pointer-events-none absolute inset-0 h-full w-full bg-white opacity-100"
+      className="pointer-events-none absolute inset-0 h-full w-full opacity-100"
       style={{
         backgroundImage: gradientBgImage,
       }}
