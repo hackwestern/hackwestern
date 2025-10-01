@@ -8,7 +8,10 @@ import { CanvasComponent } from "~/components/canvas/component";
 function Projects() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   return (
-    <CanvasComponent offset={coordinates.projects}>
+    <CanvasComponent
+      offset={coordinates.projects}
+      imageFallback="/images/promo/projects.png"
+    >
       <div className="m-auto flex w-full shrink-0 flex-col items-center">
         {/* Top projects */}
         <HeaderCards />
