@@ -6,10 +6,8 @@ import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
-import CloudBackground from "~/components/cloud-background";
-import { disabledRedirect } from "~/utils/redirect";
+import CanvasBackground from "~/components/canvas-background";
 
-/*
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const session = await getServerSession(context.req, context.res, authOptions);
 
@@ -36,9 +34,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   }
 
   return { props: {} };
-}*/
-
-export const getServerSideProps = disabledRedirect;
+}
 
 export default function Submitted() {
   const { data: application } = api.application.get.useQuery();
@@ -46,7 +42,7 @@ export default function Submitted() {
     <div className="flex h-svh flex-col">
       <ApplyNavbar />
       <div className="bg-hw-linear-gradient-day relative flex flex-grow items-center justify-center">
-        <CloudBackground />
+        <CanvasBackground />
         <div className="relative m-5 flex max-w-screen-sm flex-col items-start gap-2 rounded-lg border-primary-300 bg-violet-100 p-10 ">
           <h2 className="font-DM_Sans text-2xl font-bold">Submitted! ✈️</h2>
           <h4 className="font-DM_Sans text-xl font-medium">

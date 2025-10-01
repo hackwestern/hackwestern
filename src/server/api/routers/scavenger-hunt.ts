@@ -105,4 +105,4 @@ const redeemItem = async (userId: string, rewardId: number, costPoints: number) 
 }
 
 export const scavengerHuntRouter = createTRPCRouter({
-});
+})
