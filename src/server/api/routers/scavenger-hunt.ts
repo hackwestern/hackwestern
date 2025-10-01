@@ -1,19 +1,20 @@
-import { eq, and, sql, asc } from "drizzle-orm";
-import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "~/server/api/trpc";
+import { eq, sql, SQL } from "drizzle-orm";
+import { createTRPCRouter, } from "~/server/api/trpc";
 import { db, Transaction } from "~/server/db";
-import { scavengerHuntItems, scavengerHuntScans, users, scavengerHuntRewards, scavengerHuntRedemptions } from "~/server/db/schema";
+import { scavengerHuntScans, users, scavengerHuntRedemptions } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 
-// Helper Functions
-// ! Unsafe Functions: Need to check if caller can add points before invoking */
-const addPoints = async (tx: Transaction, userId: string, points: number) => {
+
+export const _addPoints = async (
+  tx: Transaction,
+  userId: string,
+  points: number
+) => {
   try {
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, SQL> = {
       scavengerHuntBalance: sql`scavenger_hunt_balance + ${points}`,
     };
-
-    // If user is redeeming points, we don't want to subtract to earned points
+    
     if (points > 0) {
       updateData.scavengerHuntEarned = sql`scavenger_hunt_earned + ${points}`;
     }
@@ -27,12 +28,20 @@ const addPoints = async (tx: Transaction, userId: string, points: number) => {
         scavengerHuntBalance: users.scavengerHuntBalance,
       });
 
-    return updatedUser;
+    if (!updatedUser) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: `User ${userId} not found when updating points`,
+      });
+    }
 
+    return updatedUser;
   } catch (error) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message: "Failed to add points: " + JSON.stringify(error),
+      message:
+        "Failed to add points: " +
+        (error instanceof Error ? error.message : JSON.stringify(error)),
     });
   }
 };
@@ -42,7 +51,7 @@ const recordScan = async (userId: string, points: number, itemId: number) => {
   try {
     await db.transaction(async (tx) => {
       // Add points to user
-      await addPoints(tx, userId, points);
+      await _addPoints(tx, userId, points);
 
       // Mark that points have been added to user
       await tx.insert(scavengerHuntScans).values({
@@ -79,9 +88,9 @@ const redeemItem = async (userId: string, rewardId: number, costPoints: number) 
   try {
     await db.transaction(async (tx) => {
       // Add points to user
-      await addPoints(tx, userId, -costPoints);
+      await _addPoints(tx, userId, -costPoints);
 
-      // Create Transaction Record
+      // Record that we have redeemed an item
       await tx.insert(scavengerHuntRedemptions).values({
         userId: userId,
         rewardId: rewardId,
