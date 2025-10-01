@@ -5,7 +5,6 @@ import { authRouter } from "./routers/auth";
 import { preregistrationRouter } from "./routers/preregistration";
 import { scavengerHuntRouter } from "./routers/scavenger-hunt";
 import { reviewRouter } from "./routers/review";
-import { scavengerHuntRouter } from "./routers/scavenger-hunt";
 
 /**
  * This is the primary router for your server.
