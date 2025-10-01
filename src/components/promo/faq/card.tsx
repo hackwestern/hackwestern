@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import React, { useState } from "react";
 
-function Lines() {
+const Lines = React.memo(function Lines() {
   return (
     <div className="relative z-0">
       <div className="absolute left-0 right-0 mt-16 space-y-[19px]">
@@ -11,9 +11,9 @@ function Lines() {
       </div>
     </div>
   );
-}
+});
 
-export function FAQCard({
+export const FAQCard = React.memo(function FAQCard({
   title,
   desc,
   className,
@@ -28,7 +28,7 @@ export function FAQCard({
 
   return (
     <button
-      className={`w-2xl relative h-[255px] w-[315px] cursor-pointer text-medium transition-all hover:scale-[1.02] ${className}`}
+      className={`relative h-[255px] w-2xl w-[315px] cursor-pointer text-medium transition-all hover:scale-[1.02] ${className}`}
       style={{ perspective: 1200 }}
       onClick={() => setFlipped(!flipped)}
       onKeyDown={(e) => e.key === " " && setFlipped(!flipped)}
@@ -75,4 +75,4 @@ export function FAQCard({
       </motion.div>
     </button>
   );
-}
+});

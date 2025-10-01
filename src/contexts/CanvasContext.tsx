@@ -1,5 +1,5 @@
 import React, { createContext, useContext, type ReactNode } from "react";
-import { MotionValue } from "framer-motion";
+import { type MotionValue } from "framer-motion";
 
 export interface Point {
   x: number;
@@ -13,6 +13,7 @@ export interface CanvasContextState {
   isResetting: boolean;
   maxZIndex: number;
   setMaxZIndex: (zIndex: number) => void;
+  animationStage: number;
 }
 
 const defaultState = {
@@ -24,6 +25,7 @@ const defaultState = {
   setMaxZIndex: () => {
     console.log("setMaxZIndex not set");
   },
+  animationStage: 0,
 };
 
 export const CanvasContext = createContext<CanvasContextState>(defaultState);
@@ -34,7 +36,10 @@ interface CanvasProviderProps extends CanvasContextState {
   children: ReactNode;
 }
 
-export const CanvasProvider: React.FC<CanvasProviderProps> = ({
-  children,
-  ...value
-}) => <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>;
+export const CanvasProvider: React.FC<CanvasProviderProps> = React.memo(
+  ({ children, ...value }) => (
+    <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>
+  ),
+);
+
+CanvasProvider.displayName = "CanvasProvider";

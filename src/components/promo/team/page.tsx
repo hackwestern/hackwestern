@@ -6,13 +6,21 @@ function Label({
   label,
   offset,
   onClick,
+  isSelected,
 }: {
   label: string;
   offset: number;
   onClick?: () => void;
+  isSelected?: boolean;
 }) {
-  const labelClass = `flex h-[45px] items-center justify-center rounded-t-md border-t border-gray-200 bg-beige px-[8px] text-xs uppercase tracking-wider absolute -mt-[8px] text-medium hover:text-heavy hover:-mt-[12px] transition-all z-[10000]`;
+  const baseClass = `
+  flex h-[45px] items-center justify-center rounded-t-md bg-lilac px-[8px] text-xs uppercase tracking-wider absolute -mt-[8px] 
+  hover:-mt-[12px] transition-all 
+`;
 
+  const labelClass = isSelected
+    ? `${baseClass} text-heavy z-[20000]`
+    : `${baseClass} text-medium hover:text-heavy z-[0]`;
   return (
     <>
       <div
@@ -41,7 +49,6 @@ function Label({
     </>
   );
 }
-
 function Page({
   label,
   labelOffset,
@@ -49,24 +56,30 @@ function Page({
   back,
   isFlipped,
   isActive,
+  isSelected,
   flipDuration,
   onFlipComplete,
   turnPageBackward,
   turnPageForward,
   onLabelClick,
+  page,
 }: {
-  label: string;
-  labelOffset: number;
+  label?: string;
+  labelOffset?: number;
   front: React.ReactNode;
   back: React.ReactNode;
   isFlipped: boolean;
   isActive: boolean;
+  isSelected?: boolean;
   flipDuration: number;
   onFlipComplete?: () => void;
   turnPageBackward: () => void;
   turnPageForward: () => void;
   onLabelClick?: () => void;
+  page: number;
 }) {
+  const offset = (page * 37) % 23;
+
   return (
     <motion.div
       className="pointer-events-none relative h-[723px] w-[555px] cursor-pointer"
@@ -84,42 +97,69 @@ function Page({
       }}
       onAnimationComplete={onFlipComplete}
     >
-      <Label label={label} offset={labelOffset} onClick={onLabelClick} />
-      {/* Front of the page */}
-      <div
-        className="pointer-events-auto absolute inset-0 my-[32px] ml-[4px] mr-[24px] flex cursor-pointer overflow-hidden rounded-lg"
-        style={{
-          backfaceVisibility: "hidden",
-        }}
-        onClick={() => {
-          if (back) turnPageForward();
-        }}
-      >
-        <div className="pointer-events-none absolute inset-0 z-20 -ml-[535px]">
-          <Bindings />
-        </div>
-        <FrontHoles />
-        <div className="h-full w-full bg-beige p-[32px]">
-          {isActive && front}
-        </div>
-      </div>
-      {/* Back of the page */}
-      <div
-        className="pointer-events-auto absolute inset-0 my-[32px] ml-[4px] mr-[24px] flex cursor-pointer overflow-hidden rounded-lg"
-        style={{
-          transform: "rotateY(180deg)",
-          backfaceVisibility: "hidden",
-        }}
-        onClick={turnPageBackward}
-      >
-        <div className="h-full w-full bg-beige p-[32px]">
-          {isActive && back}
-        </div>
-        <BackHoles />
-        <div className="pointer-events-none absolute inset-0 -mr-[36px] ml-[499px]">
-          <Bindings />
-        </div>
-      </div>
+      {label && labelOffset && (
+        <Label
+          label={label}
+          offset={labelOffset}
+          onClick={onLabelClick}
+          isSelected={isSelected}
+        />
+      )}
+      {isActive && (
+        <>
+          {/* Front page (right side) */}
+          <div
+            className="pointer-events-auto absolute inset-0 my-[32px] ml-[4px] mr-[24px] flex cursor-pointer overflow-hidden rounded-lg"
+            style={{
+              backfaceVisibility: "hidden",
+            }}
+            onClick={() => {
+              if (back) turnPageForward();
+            }}
+          >
+            <div className="pointer-events-none absolute inset-0 z-20 -ml-[535px]">
+              <Bindings />
+            </div>
+            <FrontHoles />
+            <div
+              className="h-full w-full bg-beige p-[32px]"
+              style={{
+                backgroundImage: "url(images/promo/book/paper.png)",
+                backgroundSize: "cover",
+                backgroundPositionX: `-${11 * offset}px`,
+                backgroundPositionY: `-${21 * offset}px`,
+              }}
+            >
+              {front}
+            </div>
+          </div>
+          {/* Back page (left side) */}
+          <div
+            className="pointer-events-auto absolute inset-0 my-[32px] ml-[4px] mr-[24px] flex cursor-pointer overflow-hidden rounded-lg"
+            style={{
+              transform: "rotateY(180deg)",
+              backfaceVisibility: "hidden",
+            }}
+            onClick={turnPageBackward}
+          >
+            <div
+              className="h-full w-full bg-beige p-[32px]"
+              style={{
+                backgroundImage: "url(images/promo/book/paper.png)",
+                backgroundSize: "cover",
+                backgroundPositionX: `-${14 * offset}px`,
+                backgroundPositionY: `-${18 * offset}px`,
+              }}
+            >
+              {back}
+            </div>
+            <BackHoles />
+            <div className="pointer-events-none absolute inset-0 -mr-[36px] ml-[499px]">
+              <Bindings />
+            </div>
+          </div>
+        </>
+      )}
     </motion.div>
   );
 }

@@ -1,4 +1,4 @@
-import { CanvasComponent } from "../canvas/canvas";
+import { CanvasComponent } from "../canvas/component";
 import { motion } from "framer-motion";
 import { Button } from "../ui/button";
 import { Mail } from "lucide-react";
@@ -6,8 +6,11 @@ import { coordinates } from "~/constants/canvas";
 
 function Sponsors() {
   return (
-    <CanvasComponent offset={coordinates.sponsors}>
-      <div className="mt-16 flex h-screen flex-col items-center justify-center space-y-4">
+    <CanvasComponent
+      offset={coordinates.sponsors}
+      imageFallback="/images/promo/sponsors.png"
+    >
+      <div className="mt-16 flex flex-col items-center justify-center space-y-4">
         <div className="flex origin-center scale-150 flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out">
           <div className="-mb-24 inline-flex w-[794px] flex-col items-center justify-start gap-4 px-4">
             {/* Our Sponsors Text Section */}
@@ -48,7 +51,7 @@ function Sponsors() {
               </div>
 
               {/* Notepad */}
-              <div className="flex h-[380px] w-[400px] origin-top-left flex-col items-center">
+              <div className="mt-10 flex h-[380px] w-[400px] origin-top-left scale-90 flex-col items-center">
                 <div className="relative h-[418px] w-[440px] scale-[1.1]">
                   <motion.img
                     src="/notepad.svg"
