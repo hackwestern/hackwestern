@@ -3,14 +3,12 @@ import Head from "next/head";
 import { useSearchParams } from "next/navigation";
 import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
-import { ApplyNavbar } from "~/components/apply/navbar";
 import { ApplyForm } from "~/components/apply/form";
-import { ApplyNavigation } from "~/components/apply/navigation";
 import { Passport } from "~/components/apply/passport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { SavedIndicator } from "~/components/apply/saved-indicator";
-import { disabledRedirect, notVerifiedRedirect } from "~/utils/redirect";
-import CloudBackground from "~/components/cloud-background";
+import { notVerifiedRedirect } from "~/utils/redirect";
+import CanvasBackground from "~/components/canvas-background";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   return applySteps.find((s) => s.step === stepValue) ?? null;
@@ -37,10 +35,8 @@ export default function Apply() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center bg-primary-50">
-        <div className="fixed z-20 bg-primary-50">
-          <ApplyNavbar />
-        </div>
+      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50">
+        {/* Mobile View */}
         <Tabs defaultValue="application" className="w-screen pt-16 md:hidden">
           <TabsList className="fixed z-50 w-screen justify-around rounded-none bg-primary-100">
             <TabsTrigger
@@ -80,40 +76,47 @@ export default function Apply() {
             <div className="flex h-[85vh] w-screen flex-col items-center justify-center px-4">
               <Passport />
             </div>
-            <CloudBackground />
+            <CanvasBackground />
           </TabsContent>
         </Tabs>
+        {/* End of Mobile View */}
+
+        {/* Desktop View */}
         <div className="relative z-10 hidden w-full flex-grow items-center md:flex">
           <div
             id="left-panel"
-            className="z-10 flex h-screen flex-grow flex-col justify-between space-y-8 overflow-auto bg-primary-100 p-9 pb-[4.1rem] pt-24 md:w-2/3 2xl:w-1/2"
+            className="z-30 flex h-full w-1/5 items-center justify-center"
           >
-            <div className="space-y-2 p-1">
-              <h1 className="text-2xl font-medium">{heading}</h1>
-              <h2 className="text-sm text-slate-500 lg:text-base">
-                {subheading}
-              </h2>
-              <ApplyForm step={step} />
-            </div>
-            <ApplyNavigation step={step} />
+            <ApplyMenu step={step} />
           </div>
           <div
             id="right-panel"
             className="bg-hw-linear-gradient-day flex h-full flex-col items-center justify-center px-4 md:w-full"
           >
-            <CloudBackground />
-            <div className="z-10 flex w-[100%] flex-col items-center justify-center">
-              <Passport />
+            <CanvasBackground />
+            <div className="max-h-6xl overflow-contain z-10 flex h-[80%] w-4xl max-w-6xl flex-col items-center justify-center">
+              <div className="flex h-full w-full flex-col space-y-8 overflow-auto rounded-md bg-white p-12">
+                <div className="space-y-2 py-1.5">
+                  <h1 className="text-2xl font-medium">{heading}</h1>
+                  <h2 className="text-sm text-slate-500">{subheading}</h2>
+                </div>
+                <div className="">
+                  <ApplyForm step={step} />
+                </div>
+                <div className="self-end pb-3">
+                  <SavedIndicator />
+                </div>
+              </div>
+
+              <div className="z-10 flex w-[100%] flex-col items-center justify-center"></div>
             </div>
           </div>
         </div>
-        <div className="relative z-10 flex w-[100%] flex-col items-center justify-center">
-          <ApplyMenu step={step} />
-        </div>
+        <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
+        {/* End of Desktop View */}
       </main>
     </>
   );
 }
 
-// export const getServerSideProps = notVerifiedRedirect;
-export const getServerSideProps = disabledRedirect;
+export const getServerSideProps = notVerifiedRedirect;

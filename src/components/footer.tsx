@@ -1,17 +1,6 @@
-import { cn } from "~/lib/utils";
-
-type FooterProps = {
-  className?: string;
-};
-
-export function Footer({ className }: FooterProps) {
+export function Footer() {
   return (
-    <footer
-      className={cn(
-        "z-[100] flex items-center justify-center font-figtree text-heavy hover:text-medium",
-        className,
-      )}
-    >
+    <footer className="absolute bottom-3 z-[100] flex w-full items-center justify-center font-figtree text-sm text-heavy hover:text-medium sm:text-base md:bottom-2 md:right-4 md:block md:w-auto">
       <a
         href="https://static.mlh.io/docs/mlh-code-of-conduct.pdf"
         target="_blank"

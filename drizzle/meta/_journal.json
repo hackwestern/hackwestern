@@ -85,6 +85,13 @@
       "when": 1750324799063,
       "tag": "0011_useful_vindicator",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1758030827575,
+      "tag": "0012_green_chat",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,7 @@ import { JetBrains_Mono, Figtree } from "next/font/google";
 import localFont from "next/font/local";
 
 import { api } from "~/utils/api";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import "~/styles/globals.css";
 import { Toaster } from "~/components/ui/toaster";
@@ -17,14 +18,12 @@ const dico = localFont({
 });
 
 const figtree = Figtree({
-  weight: ["500"],
   subsets: ["latin"],
   variable: "--font-figtree",
   fallback: ["Inter", "sans-serif"],
 });
 
 const jetbrainsmono = JetBrains_Mono({
-  weight: ["500"],
   subsets: ["latin"],
   variable: "--font-jetbrainsmono",
   fallback: ["monospace"],
@@ -36,6 +35,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
 }) => {
   return (
     <SessionProvider session={session}>
+      <SpeedInsights />
       <main
         className={`${figtree.variable} font-figtree ${jetbrainsmono.variable} font-jetbrains-mono ${dico.variable} font-dico`}
       >

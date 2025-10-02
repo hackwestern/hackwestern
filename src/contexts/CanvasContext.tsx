@@ -1,9 +1,5 @@
-import React, {
-  createContext,
-  useContext,
-  type ReactNode,
-  useMemo,
-} from "react";
+import React, { createContext, useContext, type ReactNode } from "react";
+import { type MotionValue } from "framer-motion";
 
 export interface Point {
   x: number;
@@ -11,51 +7,39 @@ export interface Point {
 }
 
 export interface CanvasContextState {
-  zoom: number;
-  panOffset: Point;
+  x: MotionValue<number>;
+  y: MotionValue<number>;
+  scale: MotionValue<number>;
   isResetting: boolean;
   maxZIndex: number;
   setMaxZIndex: (zIndex: number) => void;
+  animationStage: number;
 }
 
-const defaultState: CanvasContextState = {
-  zoom: 1,
-  panOffset: { x: 0, y: 0 },
+const defaultState = {
+  x: undefined as unknown as MotionValue<number>,
+  y: undefined as unknown as MotionValue<number>,
+  scale: 1 as unknown as MotionValue<number>,
   isResetting: false,
   maxZIndex: 1,
   setMaxZIndex: () => {
     console.log("setMaxZIndex not set");
   },
+  animationStage: 0,
 };
+
 export const CanvasContext = createContext<CanvasContextState>(defaultState);
 
-export const useCanvasContext = (): CanvasContextState => {
-  const context = useContext(CanvasContext);
-  if (context === undefined) {
-    throw new Error("useCanvasContext must be used within a CanvasProvider");
-  }
-  return context;
-};
+export const useCanvasContext = () => useContext(CanvasContext);
 
 interface CanvasProviderProps extends CanvasContextState {
   children: ReactNode;
 }
 
-export const CanvasProvider: React.FC<CanvasProviderProps> = ({
-  children,
-  zoom,
-  panOffset,
-  isResetting,
-  maxZIndex,
-  setMaxZIndex,
-}) => {
-  const contextValue = useMemo(() => {
-    return { zoom, panOffset, isResetting, maxZIndex, setMaxZIndex };
-  }, [zoom, panOffset, isResetting, maxZIndex, setMaxZIndex]);
+export const CanvasProvider: React.FC<CanvasProviderProps> = React.memo(
+  ({ children, ...value }) => (
+    <CanvasContext.Provider value={value}>{children}</CanvasContext.Provider>
+  ),
+);
 
-  return (
-    <CanvasContext.Provider value={contextValue}>
-      {children}
-    </CanvasContext.Provider>
-  );
-};
+CanvasProvider.displayName = "CanvasProvider";

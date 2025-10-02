@@ -34,7 +34,11 @@ export const basicsSaveSchema = applicationSaveSchema.pick({
 });
 
 export const personaSaveSchema = applicationSaveSchema.pick({
-  avatar: true,
+  avatarColour: true,
+  avatarFace: true,
+  avatarLeftHand: true,
+  avatarRightHand: true,
+  avatarHat: true,
 });
 
 export const infoSaveSchema = applicationSaveSchema

@@ -29,7 +29,7 @@ import { Spinner } from "~/components/loading-spinner";
 import { Textarea } from "~/components/ui/textarea";
 import { useToast } from "~/components/hooks/use-toast";
 import { useSession } from "next-auth/react";
-import CloudBackground from "~/components/cloud-background";
+import CanvasBackground from "~/components/canvas-background";
 
 const Review = () => {
   const { data: session } = useSession();
@@ -359,7 +359,7 @@ const Review = () => {
             className="bg-hw-linear-gradient-day -z-10 flex h-full flex-col items-center justify-center px-4 md:w-full"
           >
             <div className="-z-10">
-              <CloudBackground />
+              <CanvasBackground />
             </div>
             <div className="z-10 my-8 flex w-[100%] flex-col items-center justify-center overflow-auto text-sm md:my-auto md:max-h-[96vh]">
               <div className="z-50 flex w-11/12 flex-col rounded-[10px] border border-primary-300 bg-primary-100 p-8 2xl:w-3/5 3xl:w-2/5 4xl:w-1/3">

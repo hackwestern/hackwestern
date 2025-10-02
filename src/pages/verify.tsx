@@ -5,8 +5,8 @@ import { api } from "~/utils/api";
 import { useToast } from "~/components/hooks/use-toast";
 import { useRouter } from "next/router";
 import { Button } from "~/components/ui/button";
-import { disabledRedirect, isVerifiedRedirect } from "~/utils/redirect";
-import CloudBackground from "~/components/cloud-background";
+import { isVerifiedRedirect } from "~/utils/redirect";
+import CanvasBackground from "~/components/canvas-background";
 
 const Verify = () => {
   const router = useRouter();
@@ -97,7 +97,7 @@ const Verify = () => {
       </Head>
 
       <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
-        <CloudBackground />
+        <CanvasBackground />
         <div className="z-10 w-full max-w-2xl rounded-lg bg-violet-50 bg-white p-12 shadow-md">
           {verifySuccess && (
             <div>
@@ -131,5 +131,4 @@ const Verify = () => {
 };
 
 export default Verify;
-// export const getServerSideProps = isVerifiedRedirect;
-export const getServerSideProps = disabledRedirect;
+export const getServerSideProps = isVerifiedRedirect;
