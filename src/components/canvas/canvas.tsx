@@ -106,7 +106,14 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     (onComplete?: () => void): void => {
       setIsResetting(true);
 
-      void panToOffsetScene(offsetHomeCoordinates, x, y, scale, 1, mode === "low").then(() => {
+      void panToOffsetScene(
+        offsetHomeCoordinates,
+        x,
+        y,
+        scale,
+        1,
+        mode === "low",
+      ).then(() => {
         setIsResetting(false);
         if (onComplete) onComplete();
       });
@@ -601,8 +608,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
             }}
           >
             <Gradient />
-            {animationStage >= 1 && (
-              mode === "high" ? (
+            {animationStage >= 1 &&
+              (mode === "high" ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -616,13 +623,12 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
                   <Filter />
                   <Dots />
                 </>
-              )
-            )}
+              ))}
             {children}
           </motion.div>
         </div>
       </CanvasProvider>
-    </CanvasWrapper >
+    </CanvasWrapper>
   );
 };
 

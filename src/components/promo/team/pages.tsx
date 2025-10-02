@@ -57,12 +57,14 @@ const Pages = () => {
   const [flipDuration, setFlipDuration] = useState(DEFAULT_FLIP_DURATION);
   const targetPage = useRef<number | null>(null);
   const lastFlipTime = useRef<number>(0);
-  
+
   // Use performance-appropriate debounce timing
-  const debounceMs = 
-    mode === "low" ? LOW_PERF_DEBOUNCE_MS :
-    mode === "medium" ? MED_PERF_DEBOUNCE_MS :
-    DEBOUNCE_MS;
+  const debounceMs =
+    mode === "low"
+      ? LOW_PERF_DEBOUNCE_MS
+      : mode === "medium"
+        ? MED_PERF_DEBOUNCE_MS
+        : DEBOUNCE_MS;
 
   function handleFlipComplete() {
     const target = targetPage.current;

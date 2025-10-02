@@ -38,7 +38,9 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
 
   // Debounce state
   const debounceBlocked = useRef(false);
-  const debounceCooldownTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceCooldownTimeout = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const { height, width } = useWindowDimensions();
   const { mode } = usePerformanceMode();
@@ -136,7 +138,8 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
     handlePan(CanvasSection.Home);
     return () => {
       if (panTimeout.current) clearTimeout(panTimeout.current);
-      if (debounceCooldownTimeout.current) clearTimeout(debounceCooldownTimeout.current);
+      if (debounceCooldownTimeout.current)
+        clearTimeout(debounceCooldownTimeout.current);
     };
   }, [handlePan, animationStage]);
 
