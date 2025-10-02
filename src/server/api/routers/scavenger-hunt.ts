@@ -1,13 +1,12 @@
-import { eq, sql, SQL } from "drizzle-orm";
-import { createTRPCRouter } from "~/server/api/trpc";
+import { eq, and, sql, SQL } from "drizzle-orm";
+import { z } from "zod";
+import { createTRPCRouter, protectedProcedure, publicProcedure, protectedOrganizerProcedure } from "~/server/api/trpc";
 import { db, Transaction } from "~/server/db";
-import {
-  scavengerHuntScans,
-  users,
-  scavengerHuntRedemptions,
-} from "~/server/db/schema";
+import { scavengerHuntItems, scavengerHuntScans, users, scavengerHuntRewards, scavengerHuntRedemptions } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 
+
+// ! Unsafe Functions: Need to check if caller can add points before invoking */
 export const _addPoints = async (
   tx: Transaction,
   userId: string,
@@ -113,6 +112,7 @@ const redeemItem = async (
 
 
 export const scavengerHuntRouter = createTRPCRouter({
+  // Get Scavenger Hunt Item
   getScavengerHuntItem: publicProcedure
     .input(z.object({ code: z.string() }))
     .query(async ({ input }) => {
@@ -171,26 +171,18 @@ export const scavengerHuntRouter = createTRPCRouter({
       }
     }),
 
-  getPoints: protectedProcedure.query(async ({ ctx }) => {
+  // Gets a User's Own Points
+  getPoints: protectedProcedure
+    .query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
     return await getUserPoints(userId);
   }),
 
-  getPointsByUserId: protectedProcedure.input(z.object({ requestedUserId: z.string() })).query(async ({ input, ctx }) => {
+  // Gets a User's Points by UserId (only accessible to organizers)
+  getPointsByUserId: protectedOrganizerProcedure
+    .input(z.object({ requestedUserId: z.string() }))
+    .query(async ({ input }) => {
     const { requestedUserId } = input;
-    const userId = ctx.session.user.id;
-
-    // TODO: Replace with protectedOrganizerProcedure
-    const authUser = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (!authUser) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-    }
-    if (authUser.type !== "organizer") {
-      throw new TRPCError({ code: "FORBIDDEN", message: "User is not authorized to view points" });
-    }
 
     // Get points for requestedUserId
     return await getUserPoints(requestedUserId);
