@@ -47,7 +47,6 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
 
   // Derive debounce duration from performance mode
   const debounceMs = (() => {
-    console.log("Performance mode:", mode);
     switch (mode) {
       case "high":
         return 0;
