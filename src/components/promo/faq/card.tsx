@@ -41,7 +41,7 @@ export const FAQCard = ({
   return (
     <button
       className={`relative h-[255px] w-2xl w-[315px] cursor-pointer text-medium transition-all hover:scale-[1.02] ${className}`}
-      style={{ perspective: 1200 }}
+      style={{ perspective: 1200, willChange: flipped ? "transform" : "auto" }}
       onClick={() => setFlipped(!flipped)}
       onKeyDown={(e) => e.key === " " && setFlipped(!flipped)}
       tabIndex={0}
@@ -50,12 +50,20 @@ export const FAQCard = ({
         className="absolute inset-0 preserve-3d"
         animate={{ rotateY: flipped ? 180 : 0 }}
         transition={{ duration: 0.4, ease: "easeInOut" }}
-        style={{ transformStyle: "preserve-3d", rotate: rotation }}
+        style={{
+          transformStyle: "preserve-3d",
+          WebkitTransformStyle: "preserve-3d",
+          rotate: rotation,
+          willChange: flipped ? "transform" : "auto"
+        }}
       >
         {/* Front of the card */}
         <div
           className="absolute inset-0 flex items-center justify-center bg-neutral-50 shadow-lg"
-          style={{ backfaceVisibility: "hidden" }}
+          style={{
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden"
+          }}
         >
           <div className="relative h-full w-full">
             <Lines />
@@ -70,6 +78,7 @@ export const FAQCard = ({
           style={{
             transform: "rotateY(180deg) translateZ(1px)",
             backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden"
           }}
         >
           <div className="relative flex h-full w-full flex-col space-y-2 text-left">

@@ -4,8 +4,11 @@ import Envelope from "./envelope";
 import { DraggableImage } from "~/components/canvas/draggable";
 import { CanvasComponent } from "~/components/canvas/component";
 import Image from "next/image";
+import { usePerformanceMode } from "~/hooks/usePerformanceMode";
 
 function About() {
+  const { enableComplexShadows } = usePerformanceMode();
+
   return (
     <CanvasComponent
       offset={coordinates.about}
@@ -77,8 +80,12 @@ function About() {
                   width={375}
                   height={250}
                   draggable="false"
-                  style={{ rotate: "-5deg" }}
-                  className="rounded-md shadow-md"
+                  style={{
+                    rotate: "-5deg",
+                    boxShadow:
+                      enableComplexShadows ? "0 10px 20px rgba(0,0,0,0.2)" : "",
+                  }}
+                  className={`rounded-md`}
                 />
               </div>
               <div className="relative flex w-fit max-w-xs rotate-[8deg] items-center justify-center text-center">

@@ -48,6 +48,7 @@ export default function Envelope() {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onClick={handleClick}
+        style={{ willChange: isHovered || envelopeToggled ? "transform" : "auto" }}
       >
         {/* Letter */}
         <motion.div
@@ -59,6 +60,7 @@ export default function Envelope() {
             delay: 0.15,
             ease: [0.25, 0.46, 0.45, 0.94],
           }}
+          style={{ willChange: isOpen || isHovered ? "height" : "auto" }}
         >
           <div className="mb-2 font-figtree  text-medium">
             Dear Hacker,
