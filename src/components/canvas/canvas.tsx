@@ -592,6 +592,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
               x,
               y,
               scale,
+              willChange:
+                animationStage < 2 || isPanning ? "transform" : "auto",
             }}
           >
             <Gradient />

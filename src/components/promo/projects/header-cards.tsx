@@ -39,6 +39,7 @@ function HeaderCards() {
             variants={{ hover: {} }}
             onClick={() => handleCardClick(name.url)}
             className="group pointer-events-auto absolute relative flex h-[292px] w-[369px] cursor-pointer flex-col items-center rounded-2xl border border-gray-200 bg-white p-[11px] shadow-xl transition-transform hover:scale-105"
+            style={{ willChange: "transform" }}
           >
             <motion.div
               className="relative w-full overflow-hidden rounded"

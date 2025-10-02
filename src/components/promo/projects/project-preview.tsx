@@ -25,8 +25,8 @@ export const ProjectPreview = ({
       />
 
       <div
-        className={`z-9 absolute left-2 top-0 transition-all duration-300 ${
-          !isOpen ? "opacity-60 blur-sm" : "opacity-100 blur-0"
+        className={`absolute left-2 top-0 transition-all duration-300 ${
+          !isOpen ? "opacity-60 sm:blur-sm" : "opacity-100 sm:blur-0"
         }`}
       >
         <CardStack

@@ -34,6 +34,7 @@ export const CardStack = ({
             style={{
               zIndex: 10 - i,
               transformOrigin: "center",
+              willChange: isOpen ? "transform" : "auto",
             }}
             initial={{
               y: 10,

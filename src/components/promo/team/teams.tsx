@@ -45,11 +45,13 @@ export const PAGES = [
             }}
           />
           <div className="relative h-28 w-28">
-            <img
+            <Image
               src="/horse.svg"
               alt="Frame"
               className="absolute inset-0 h-full w-full translate-x-[160px] translate-y-[287px] rotate-12 object-contain"
               draggable={false}
+              width={112}
+              height={112}
             />
           </div>
         </div>
