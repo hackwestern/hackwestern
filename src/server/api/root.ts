@@ -3,8 +3,8 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 import { applicationRouter } from "./routers/application";
 import { authRouter } from "./routers/auth";
 import { preregistrationRouter } from "./routers/preregistration";
-import { reviewRouter } from "./routers/review";
 import { scavengerHuntRouter } from "./routers/scavenger-hunt";
+import { reviewRouter } from "./routers/review";
 
 /**
  * This is the primary router for your server.
@@ -17,7 +17,7 @@ export const appRouter = createTRPCRouter({
   auth: authRouter,
   preregistration: preregistrationRouter,
   review: reviewRouter,
-  scavenger: scavengerHuntRouter,
+  scavengerHunt: scavengerHuntRouter,
 });
 
 // export type definition of API
