@@ -46,14 +46,14 @@ function Sponsors() {
                   data-property-1="Default"
                   className="absolute left-[29.33px] top-[49px] h-[112px] w-[384px] origin-top-left rotate-[1.77deg]"
                 >
-                  <div className="absolute left-[180px] -top-[20px] h-[87px] w-[448px]">
+                  <div className="absolute -top-[20px] left-[180px] h-[87px] w-[448px]">
                     <motion.img
                       src="/scotiabank.png"
                       alt="Scotiabank"
                       width={448}
                       height={87}
                       style={{
-                        rotate: "-1.8deg"
+                        rotate: "-1.8deg",
                       }}
                       draggable="false"
                     />
@@ -65,7 +65,7 @@ function Sponsors() {
                       width={312}
                       height={108}
                       style={{
-                        rotate: "-2.6deg"
+                        rotate: "-2.6deg",
                       }}
                       draggable="false"
                     />
@@ -77,7 +77,7 @@ function Sponsors() {
                       width={270}
                       height={86}
                       style={{
-                        rotate: "0.2deg"
+                        rotate: "0.2deg",
                       }}
                       draggable="false"
                     />
@@ -89,7 +89,7 @@ function Sponsors() {
                       width={148}
                       height={62}
                       style={{
-                        rotate: "-4.6deg"
+                        rotate: "-4.6deg",
                       }}
                       draggable="false"
                     />
@@ -101,7 +101,7 @@ function Sponsors() {
                       width={295}
                       height={72}
                       style={{
-                        rotate: "0.5deg"
+                        rotate: "0.5deg",
                       }}
                       draggable="false"
                     />
@@ -113,7 +113,7 @@ function Sponsors() {
                       width={398}
                       height={82}
                       style={{
-                        rotate: "-1.8deg"
+                        rotate: "-1.8deg",
                       }}
                       draggable="false"
                     />
