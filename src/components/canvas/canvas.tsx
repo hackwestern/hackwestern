@@ -602,8 +602,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
             }}
           >
             <Gradient />
-            {animationStage >= 1 && (
-              mode === "high" ? (
+            {animationStage >= 1 &&
+              (mode === "high" ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -617,13 +617,12 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
                   <Filter />
                   <Dots />
                 </>
-              )
-            )}
+              ))}
             {children}
           </motion.div>
         </div>
       </CanvasProvider>
-    </CanvasWrapper >
+    </CanvasWrapper>
   );
 };
 
