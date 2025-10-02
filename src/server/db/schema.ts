@@ -44,11 +44,14 @@ export const applicationStatus = pgEnum("application_status", [
   "DECLINED",
 ]);
 
-export const avatar = pgEnum("avatar", [
-  "Wildlife Wanderer",
-  "City Cruiser",
-  "Foodie Fanatic",
-  "Beach Bum",
+export const avatarColour = pgEnum("avatar_colour", [
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "blue",
+  "purple",
+  "pink",
 ]);
 
 /**
@@ -251,8 +254,14 @@ export const applications = createTable(
       .notNull(),
     status: applicationStatus("status").default("IN_PROGRESS").notNull(),
 
+    // Avatar
+    avatarColour: avatarColour("avatar_colour"),
+    avatarFace: integer("avatar_face"),
+    avatarLeftHand: integer("avatar_left_hand"),
+    avatarRightHand: integer("avatar_right_hand"),
+    avatarHat: integer("avatar_hat"),
+
     // About You
-    avatar: avatar("avatar"),
     firstName: varchar("first_name", { length: 255 }),
     lastName: varchar("last_name", { length: 255 }),
     age: integer("age"), // 18+
@@ -326,17 +335,27 @@ export const applicationsRelations = relations(
 
 export const userType = pgEnum("user_type", ["hacker", "organizer", "sponsor"]);
 
-export const users = createTable("user", {
-  id: varchar("id", { length: 255 }).notNull().primaryKey(),
-  name: varchar("name", { length: 255 }),
-  password: varchar("password", { length: 255 }),
-  email: varchar("email", { length: 255 }).notNull(),
-  emailVerified: timestamp("emailVerified", {
-    mode: "date",
-  }).default(sql`CURRENT_TIMESTAMP`),
-  image: varchar("image", { length: 255 }),
-  type: userType("type").default("hacker"),
-});
+export const users = createTable(
+  "user",
+  {
+    id: varchar("id", { length: 255 }).notNull().primaryKey(),
+    name: varchar("name", { length: 255 }),
+    password: varchar("password", { length: 255 }),
+    email: varchar("email", { length: 255 }).notNull(),
+    emailVerified: timestamp("emailVerified", {
+      mode: "date",
+    }).default(sql`CURRENT_TIMESTAMP`),
+    image: varchar("image", { length: 255 }),
+    type: userType("type").default("hacker"),
+
+    scavengerHuntEarned: integer("scavenger_hunt_earned").default(0),
+    scavengerHuntBalance: integer("scavenger_hunt_balance").default(0),
+  },
+  (user) => [
+    index("user_scavenger_hunt_earned_idx").on(user.scavengerHuntEarned),
+    index("user_scavenger_hunt_balance_idx").on(user.scavengerHuntBalance),
+  ],
+);
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   accounts: many(accounts),
