@@ -108,7 +108,7 @@ function About() {
               <div className="relative mr-[20px] h-fit w-fit max-w-md shrink-0 -rotate-[2deg] rounded-sm bg-white shadow-md">
                 <div className="flex max-w-96 flex-col items-center justify-center gap-x-8 gap-y-2 p-8 pt-2.5">
                   <div>
-                    <motion.img
+                    <Image
                       src="/about/people.png"
                       alt="hackwestern"
                       width={300}
