@@ -100,7 +100,14 @@ export async function panToOffsetScene(
   y: MotionValue<number>,
   scale: MotionValue<number>,
   newZoom?: number,
+  skipAnim?: boolean,
 ): Promise<void> {
+  if (skipAnim) {
+    x.set(offset.x);
+    y.set(offset.y);
+    if (newZoom) scale.set(newZoom);
+    return;
+  }
   const animX = animate(x, offset.x, panSpring);
   const animY = animate(y, offset.y, panSpring);
   const animScale = animate(scale, newZoom ?? 1, panSpring);
