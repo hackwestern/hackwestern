@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { SavedIndicator } from "~/components/apply/saved-indicator";
 import { notVerifiedRedirect } from "~/utils/redirect";
 import CanvasBackground from "~/components/canvas-background";
+import { ApplyNavigation } from "~/components/apply/navigation";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   return applySteps.find((s) => s.step === stepValue) ?? null;
@@ -95,19 +96,21 @@ export default function Apply() {
           >
             <CanvasBackground />
             <div className="z-10 h-[80%] w-4xl max-h-6xl max-w-6xl flex flex-col items-center justify-center overflow-contain">
-              <div className="flex h-full w-full flex-col space-y-8 rounded-md bg-white p-12 overflow-auto">
-                <div className="space-y-2 py-1.5">
-                  <h1 className="text-2xl font-medium">{heading}</h1>
-                  <h2 className="text-sm text-slate-500">{subheading}</h2>
-                </div>
-                <div className="">
-                  <ApplyForm step={step} />
-                </div>
-                <div className="self-end pb-3">
-                  <SavedIndicator />
+              <div className="h-screen w-full space-y-4">
+              <div className="flex flex-col space-y-8 justify-between rounded-md shadow-lg bg-white p-12 overflow-auto">
+                <div className="overflow-auto">
+                  <div className="space-y-2 py-1.5">
+                    <h1 className="text-2xl font-medium text-heavy font-dico">{heading}</h1>
+                    <h2 className="text-sm text-medium font-figtree">{subheading}</h2>
+                  </div>
+                  <div className="font-figtree">
+                    <ApplyForm step={step} />
+                  </div>
                 </div>
               </div>
-
+              <ApplyNavigation step={step} />
+              </div>
+              
               <div className="z-10 flex w-[100%] flex-col items-center justify-center">
               </div>
             </div>

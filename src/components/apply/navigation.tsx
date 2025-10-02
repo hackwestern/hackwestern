@@ -50,7 +50,8 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
   };
 
   return (
-    <div className="sticky bottom-0 flex w-full justify-between bg-primary-100 py-3">
+    <div className="sticky bottom-0 flex w-full justify-between py-3">
+      <SavedIndicator />
       {!step ||
         (previousStep && (
           <Button variant="secondary" asChild className="w-20">
@@ -58,7 +59,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
           </Button>
         ))}
       <div className="ml-auto flex items-center gap-3">
-        <SavedIndicator />
+       
         <Button
           variant="primary"
           asChild

@@ -261,10 +261,10 @@ export function ReviewForm() {
   const error = result.error?.format();
   console.log({ error, result });
   return (
-    <>
+    <div className="overflow-auto">
       {reviewSteps.map((step, idx) => (
         <ReviewSection step={step} key={idx} error={error} />
       ))}
-    </>
+    </div>
   );
 }

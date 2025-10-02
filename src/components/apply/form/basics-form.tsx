@@ -46,7 +46,7 @@ export function BasicsForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="flex w-full flex-wrap gap-2">
           <FormLabel className="w-full">Full Name</FormLabel>
           <FormField
