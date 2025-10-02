@@ -3,11 +3,19 @@ import { eq } from "drizzle-orm";
 import { db } from "~/server/db";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
-import { scavengerHuntItems, scavengerHuntRewards, scavengerHuntScans, scavengerHuntRedemptions, users } from "~/server/db/schema";
+import {
+  scavengerHuntItems,
+  scavengerHuntRewards,
+  scavengerHuntScans,
+  scavengerHuntRedemptions,
+  users,
+} from "~/server/db/schema";
 import { mockSession, mockOrganizerSession } from "~/server/auth";
 
 // ---- helpers ----
-const insertTestUser = async (overrides: Partial<typeof users.$inferInsert> = {}) => {
+const insertTestUser = async (
+  overrides: Partial<typeof users.$inferInsert> = {},
+) => {
   const generatedId = `user_${Date.now()}_${Math.random()}`;
   const [user] = await db
     .insert(users)
@@ -25,7 +33,9 @@ const insertTestUser = async (overrides: Partial<typeof users.$inferInsert> = {}
   return user;
 };
 
-const insertTestItem = async (overrides: Partial<typeof scavengerHuntItems.$inferInsert> = {}) => {
+const insertTestItem = async (
+  overrides: Partial<typeof scavengerHuntItems.$inferInsert> = {},
+) => {
   const [item] = await db
     .insert(scavengerHuntItems)
     .values({
@@ -38,7 +48,9 @@ const insertTestItem = async (overrides: Partial<typeof scavengerHuntItems.$infe
   return item;
 };
 
-const insertTestReward = async (overrides: Partial<typeof scavengerHuntRewards.$inferInsert> = {}) => {
+const insertTestReward = async (
+  overrides: Partial<typeof scavengerHuntRewards.$inferInsert> = {},
+) => {
   const [reward] = await db
     .insert(scavengerHuntRewards)
     .values({
@@ -59,8 +71,12 @@ const caller = createCaller(ctx);
 // ---- tests ----
 describe("scavengerHuntRouter", () => {
   afterEach(async () => {
-    await db.delete(scavengerHuntScans).where(eq(scavengerHuntScans.userId, testUser.id));
-    await db.delete(scavengerHuntRedemptions).where(eq(scavengerHuntRedemptions.userId, testUser.id));
+    await db
+      .delete(scavengerHuntScans)
+      .where(eq(scavengerHuntScans.userId, testUser.id));
+    await db
+      .delete(scavengerHuntRedemptions)
+      .where(eq(scavengerHuntRedemptions.userId, testUser.id));
     await db.delete(users).where(eq(users.id, testUser.id));
   });
 
@@ -68,13 +84,15 @@ describe("scavengerHuntRouter", () => {
   describe("getScavengerHuntItem", () => {
     test.only("returns inserted item", async () => {
       const item = await insertTestItem();
-      const result = await caller.scavengerHunt.getScavengerHuntItem({ code: item.code });
+      const result = await caller.scavengerHunt.getScavengerHuntItem({
+        code: item.code,
+      });
       expect(result.id).toBe(item.id);
     });
 
     test("throws error if code not found", async () => {
       await expect(
-        caller.scavengerHunt.getScavengerHuntItem({ code: "nonexistent" })
+        caller.scavengerHunt.getScavengerHuntItem({ code: "nonexistent" }),
       ).rejects.toThrow();
     });
   });
@@ -101,7 +119,7 @@ describe("scavengerHuntRouter", () => {
       const item = await insertTestItem();
       await caller.scavengerHunt.scan({ code: item.code });
       await expect(
-        caller.scavengerHunt.scan({ code: item.code })
+        caller.scavengerHunt.scan({ code: item.code }),
       ).rejects.toThrow();
     });
   });

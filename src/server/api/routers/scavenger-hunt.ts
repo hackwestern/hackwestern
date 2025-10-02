@@ -1,10 +1,20 @@
 import { eq, and, sql, SQL } from "drizzle-orm";
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, publicProcedure, protectedOrganizerProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+  protectedOrganizerProcedure,
+} from "~/server/api/trpc";
 import { db, Transaction } from "~/server/db";
-import { scavengerHuntItems, scavengerHuntScans, users, scavengerHuntRewards, scavengerHuntRedemptions } from "~/server/db/schema";
+import {
+  scavengerHuntItems,
+  scavengerHuntScans,
+  users,
+  scavengerHuntRewards,
+  scavengerHuntRedemptions,
+} from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
-
 
 // ! Unsafe Functions: Need to check if caller can add points before invoking */
 export const _addPoints = async (
@@ -110,7 +120,6 @@ const redeemItem = async (
   }
 };
 
-
 export const scavengerHuntRouter = createTRPCRouter({
   // Get Scavenger Hunt Item
   getScavengerHuntItem: publicProcedure
@@ -151,10 +160,16 @@ export const scavengerHuntRouter = createTRPCRouter({
 
         // Check if user has already scanned this item
         const scan = await db.query.scavengerHuntScans.findFirst({
-          where: and(eq(scavengerHuntScans.userId, ctx.session.user.id), eq(scavengerHuntScans.itemId, item.id)),
+          where: and(
+            eq(scavengerHuntScans.userId, ctx.session.user.id),
+            eq(scavengerHuntScans.itemId, item.id),
+          ),
         });
         if (scan) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Item already scanned" });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Item already scanned",
+          });
         }
 
         await recordScan(ctx.session.user.id, item.points, item.id);
@@ -172,8 +187,7 @@ export const scavengerHuntRouter = createTRPCRouter({
     }),
 
   // Gets a User's Own Points
-  getPoints: protectedProcedure
-    .query(async ({ ctx }) => {
+  getPoints: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
     return await getUserPoints(userId);
   }),
@@ -182,9 +196,9 @@ export const scavengerHuntRouter = createTRPCRouter({
   getPointsByUserId: protectedOrganizerProcedure
     .input(z.object({ requestedUserId: z.string() }))
     .query(async ({ input }) => {
-    const { requestedUserId } = input;
+      const { requestedUserId } = input;
 
-    // Get points for requestedUserId
-    return await getUserPoints(requestedUserId);
-  }),
+      // Get points for requestedUserId
+      return await getUserPoints(requestedUserId);
+    }),
 });
