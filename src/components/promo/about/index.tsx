@@ -96,6 +96,7 @@ function About() {
                   width={400}
                   height={200}
                   className="h-auto w-full"
+                  loading="eager"
                 />
                 <div className="absolute inset-[1/2] px-8 font-figtree text-white">
                   We cover food, travel, and lodging so you can focus on
@@ -105,13 +106,13 @@ function About() {
             </div>
             <div className="flex items-center justify-center gap-10">
               <div className="relative mr-[20px] h-fit w-fit max-w-md shrink-0 -rotate-[2deg] rounded-sm bg-white shadow-md">
-                <div className="flex max-w-96 flex-col items-center justify-center gap-x-8 gap-y-2 p-8">
+                <div className="flex max-w-96 flex-col items-center justify-center gap-x-8 gap-y-2 p-8 pt-2.5">
                   <div>
                     <motion.img
-                      src="/people.png"
+                      src="/about/people.png"
                       alt="hackwestern"
                       width={300}
-                      height={150}
+                      height={130}
                       draggable="false"
                     />
                   </div>
