@@ -5,6 +5,7 @@ import { JetBrains_Mono, Figtree } from "next/font/google";
 import localFont from "next/font/local";
 
 import { api } from "~/utils/api";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import "~/styles/globals.css";
 import { Toaster } from "~/components/ui/toaster";
@@ -34,6 +35,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
 }) => {
   return (
     <SessionProvider session={session}>
+      <SpeedInsights />
       <main
         className={`${figtree.variable} font-figtree ${jetbrainsmono.variable} font-jetbrains-mono ${dico.variable} font-dico`}
       >
