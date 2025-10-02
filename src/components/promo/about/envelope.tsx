@@ -48,7 +48,9 @@ export default function Envelope() {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onClick={handleClick}
-        style={{ willChange: isHovered || envelopeToggled ? "transform" : "auto" }}
+        style={{
+          willChange: isHovered || envelopeToggled ? "transform" : "auto",
+        }}
       >
         {/* Letter */}
         <motion.div

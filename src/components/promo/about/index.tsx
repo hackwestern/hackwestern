@@ -82,8 +82,9 @@ function About() {
                   draggable="false"
                   style={{
                     rotate: "-5deg",
-                    boxShadow:
-                      enableComplexShadows ? "0 10px 20px rgba(0,0,0,0.2)" : "",
+                    boxShadow: enableComplexShadows
+                      ? "0 10px 20px rgba(0,0,0,0.2)"
+                      : "",
                   }}
                   className={`rounded-md`}
                 />

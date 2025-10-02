@@ -7,8 +7,10 @@
 export const isIOS = (): boolean => {
   if (typeof window === "undefined") return false;
 
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
 };
 
 // Detect if the device is a mobile device
@@ -16,7 +18,7 @@ export const isMobile = (): boolean => {
   if (typeof window === "undefined") return false;
 
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
+    navigator.userAgent,
   );
 };
 
@@ -30,7 +32,7 @@ export const prefersReducedMotion = (): boolean => {
 // Get optimized will-change value based on state
 export const getWillChange = (
   isAnimating: boolean,
-  properties: string[] = ["transform"]
+  properties: string[] = ["transform"],
 ): string => {
   // Only apply will-change when actually animating
   // Leaving it on causes memory issues on iOS

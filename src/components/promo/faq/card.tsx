@@ -54,7 +54,7 @@ export const FAQCard = ({
           transformStyle: "preserve-3d",
           WebkitTransformStyle: "preserve-3d",
           rotate: rotation,
-          willChange: flipped ? "transform" : "auto"
+          willChange: flipped ? "transform" : "auto",
         }}
       >
         {/* Front of the card */}
@@ -62,7 +62,7 @@ export const FAQCard = ({
           className="absolute inset-0 flex items-center justify-center bg-neutral-50 shadow-lg"
           style={{
             backfaceVisibility: "hidden",
-            WebkitBackfaceVisibility: "hidden"
+            WebkitBackfaceVisibility: "hidden",
           }}
         >
           <div className="relative h-full w-full">
@@ -78,7 +78,7 @@ export const FAQCard = ({
           style={{
             transform: "rotateY(180deg) translateZ(1px)",
             backfaceVisibility: "hidden",
-            WebkitBackfaceVisibility: "hidden"
+            WebkitBackfaceVisibility: "hidden",
           }}
         >
           <div className="relative flex h-full w-full flex-col space-y-2 text-left">

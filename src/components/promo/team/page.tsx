@@ -87,7 +87,7 @@ function Page({
         transformStyle: "preserve-3d",
         WebkitTransformStyle: "preserve-3d",
         transformOrigin: "left center",
-        willChange: isFlipped !== (flipDuration > 0) ? "transform" : "auto"
+        willChange: isFlipped !== flipDuration > 0 ? "transform" : "auto",
       }}
       initial={false}
       // Animate based on the isFlipped prop
@@ -114,7 +114,7 @@ function Page({
             className="pointer-events-auto absolute inset-0 my-[32px] ml-[4px] mr-[24px] flex cursor-pointer overflow-hidden rounded-lg"
             style={{
               backfaceVisibility: "hidden",
-              WebkitBackfaceVisibility: "hidden"
+              WebkitBackfaceVisibility: "hidden",
             }}
             onClick={() => {
               if (back) turnPageForward();
@@ -142,7 +142,7 @@ function Page({
             style={{
               transform: "rotateY(180deg)",
               backfaceVisibility: "hidden",
-              WebkitBackfaceVisibility: "hidden"
+              WebkitBackfaceVisibility: "hidden",
             }}
             onClick={turnPageBackward}
           >
