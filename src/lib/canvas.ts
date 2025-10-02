@@ -136,7 +136,7 @@ export const INTERACTIVE_SELECTOR =
   "[data-toolbar-button],[data-navbar-button]";
 
 export const ZOOM_BOUND = 1.05; // minimum zoom level to prevent zooming out too far
-export const MAX_ZOOM = 10;
+export const MAX_ZOOM = 5;
 
 export const MIN_ZOOMS: Record<ScreenSizeEnum, number> = {
   [ScreenSizeEnum.SMALL_MOBILE]: 0.25,
