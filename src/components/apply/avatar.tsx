@@ -2,16 +2,17 @@
 import React, { useState } from "react";
 /* eslint-disable @next/next/no-img-element */
 import { categories, colors, avatarManifest } from "../../constants/avatar";
+import type { AvatarObject } from "../../constants/avatar";
 
 export const Avatar = () => {
   // const router = useRouter();
 
   const [selectedColor, setSelectedColor] = useState("green");
   const [selectedAccessories, setSelectedAccessories] = useState<{
-    face: { id: number; name: string; src: string } | null;
-    right: { id: number; name: string; src: string } | null;
-    left: { id: number; name: string; src: string } | null;
-    hat: { id: number; name: string; src: string } | null;
+    face: AvatarObject | null;
+    right: AvatarObject | null;
+    left: AvatarObject | null;
+    hat: AvatarObject | null;
   }>({
     face: null,
     right: null,
@@ -24,31 +25,33 @@ export const Avatar = () => {
   const getAccessoriesForCategory = (category: string) => {
     switch (category) {
       case "face":
-        return avatarManifest.face.map((AvatarEntry) => ({
+        return avatarManifest.face.map((AvatarEntry) => (
+          {
           id: AvatarEntry.id,
           name: AvatarEntry.alt,
           src: AvatarEntry.file,
-        }));
+        } as AvatarObject));
 
       case "right":
         return avatarManifest.right.map((AvatarEntry) => ({
           id: AvatarEntry.id,
           name: AvatarEntry.alt,
           src: AvatarEntry.file,
-        }));
+        } as AvatarObject));
 
       case "left":
         return avatarManifest.left.map((AvatarEntry) => ({
           id: AvatarEntry.id,
           name: AvatarEntry.alt,
           src: AvatarEntry.file,
-        }));
+        } as AvatarObject));
       case "hat":
         return avatarManifest.hat.map((AvatarEntry) => ({
           id: AvatarEntry.id,
           name: AvatarEntry.alt,
           src: AvatarEntry.file,
-        }));
+          sizing: AvatarEntry?.sizing
+        } as AvatarObject));
 
       default:
         return [];
@@ -63,7 +66,6 @@ export const Avatar = () => {
   // const handleBack = () => {
   //   router.back();
   // };
-
   return (
     <>
       <div className="w-full max-w-[70%] overflow-auto rounded-2xl bg-white p-6 shadow-2xl">
@@ -102,7 +104,7 @@ export const Avatar = () => {
 
                   {/* Selected Accessory - Face */}
                   {selectedAccessories.face && (
-                    <div className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2">
+                    <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2">
                       <img
                         src={selectedAccessories.face.src}
                         alt={selectedAccessories.face.name}
@@ -113,11 +115,11 @@ export const Avatar = () => {
 
                   {/* Selected Accessory - Hat */}
                   {selectedAccessories.hat && (
-                    <div className="absolute -top-12 left-1/2 h-24 w-24 -translate-x-1/2">
+                    <div className="absolute -top-16 left-1/2 h-56 w-56 -translate-x-1/2">
                       <img
                         src={selectedAccessories.hat.src}
                         alt={selectedAccessories.hat.name}
-                        className="h-full w-full object-contain"
+                        className={`h-full w-full ${selectedAccessories.hat?.sizing} object-contain`}
                       />
                     </div>
                   )}
