@@ -46,7 +46,78 @@ function Sponsors() {
                   data-property-1="Default"
                   className="absolute left-[29.33px] top-[49px] h-[112px] w-[384px] origin-top-left rotate-[1.77deg]"
                 >
-                  <div className="absolute left-[1.13px] top-[16px] h-[80px] w-[384px]"></div>
+                  <div className="absolute left-[180px] -top-[20px] h-[87px] w-[448px]">
+                    <motion.img
+                      src="/scotiabank.png"
+                      alt="Scotiabank"
+                      width={448}
+                      height={87}
+                      style={{
+                        rotate: "-1.8deg"
+                      }}
+                      draggable="false"
+                    />
+                  </div>
+                  <div className="absolute left-[20px] top-[110px] h-[108px] w-[312px]">
+                    <motion.img
+                      src="/canadalife.png"
+                      alt="Canada Life"
+                      width={312}
+                      height={108}
+                      style={{
+                        rotate: "-2.6deg"
+                      }}
+                      draggable="false"
+                    />
+                  </div>
+                  <div className="absolute left-[525px] top-[95px] h-[86px] w-[270px]">
+                    <motion.img
+                      src="/accenture.png"
+                      alt="Accenture"
+                      width={270}
+                      height={86}
+                      style={{
+                        rotate: "0.2deg"
+                      }}
+                      draggable="false"
+                    />
+                  </div>
+                  <div className="absolute left-[100px] top-[280px] h-[62px] w-[148px]">
+                    <motion.img
+                      src="/pg.png"
+                      alt="P&G"
+                      width={148}
+                      height={62}
+                      style={{
+                        rotate: "-4.6deg"
+                      }}
+                      draggable="false"
+                    />
+                  </div>
+                  <div className="absolute left-[505px] top-[245px] h-[72px] w-[295px]">
+                    <motion.img
+                      src="/sunlife.png"
+                      alt="Sun Life"
+                      width={295}
+                      height={72}
+                      style={{
+                        rotate: "0.5deg"
+                      }}
+                      draggable="false"
+                    />
+                  </div>
+                  <div className="absolute left-[230px] top-[395px] h-[82px] w-[398px]">
+                    <motion.img
+                      src="/manulife.png"
+                      alt="Manulife"
+                      width={398}
+                      height={82}
+                      style={{
+                        rotate: "-1.8deg"
+                      }}
+                      draggable="false"
+                    />
+                  </div>
                 </div>
               </div>
 
