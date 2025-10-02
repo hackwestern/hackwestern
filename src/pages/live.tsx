@@ -61,3 +61,7 @@ const TabComponent = ({ tab }: { tab: string }) => {
 };
 
 export default Live;
+
+export const getServerSideProps = () => {
+  return { redirect: { destination: "/", permanent: false } };
+};
