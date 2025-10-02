@@ -61,6 +61,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
 
   const { mode } = usePerformanceMode();
+  const notHigh = mode !== "high";
 
   const sceneWidth = canvasWidth;
   const sceneHeight = canvasHeight;
@@ -106,7 +107,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     (onComplete?: () => void): void => {
       setIsResetting(true);
 
-      void panToOffsetScene(offsetHomeCoordinates, x, y, scale, 1, mode === "low").then(() => {
+      void panToOffsetScene(offsetHomeCoordinates, x, y, scale, 1, notHigh).then(() => {
         setIsResetting(false);
         if (onComplete) onComplete();
       });
@@ -236,7 +237,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         y,
         scale,
         zoom,
-        mode === "low",
+        notHigh,
       ).then(() => {
         setIsSceneMoving(false);
         if (onComplete) onComplete();
