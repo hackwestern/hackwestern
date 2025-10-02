@@ -25,33 +25,44 @@ export const Avatar = () => {
   const getAccessoriesForCategory = (category: string) => {
     switch (category) {
       case "face":
-        return avatarManifest.face.map((AvatarEntry) => (
-          {
-          id: AvatarEntry.id,
-          name: AvatarEntry.alt,
-          src: AvatarEntry.file,
-        } as AvatarObject));
+        return avatarManifest.face.map(
+          (AvatarEntry) =>
+            ({
+              id: AvatarEntry.id,
+              name: AvatarEntry.alt,
+              src: AvatarEntry.file,
+            }) as AvatarObject,
+        );
 
       case "right":
-        return avatarManifest.right.map((AvatarEntry) => ({
-          id: AvatarEntry.id,
-          name: AvatarEntry.alt,
-          src: AvatarEntry.file,
-        } as AvatarObject));
+        return avatarManifest.right.map(
+          (AvatarEntry) =>
+            ({
+              id: AvatarEntry.id,
+              name: AvatarEntry.alt,
+              src: AvatarEntry.file,
+            }) as AvatarObject,
+        );
 
       case "left":
-        return avatarManifest.left.map((AvatarEntry) => ({
-          id: AvatarEntry.id,
-          name: AvatarEntry.alt,
-          src: AvatarEntry.file,
-        } as AvatarObject));
+        return avatarManifest.left.map(
+          (AvatarEntry) =>
+            ({
+              id: AvatarEntry.id,
+              name: AvatarEntry.alt,
+              src: AvatarEntry.file,
+            }) as AvatarObject,
+        );
       case "hat":
-        return avatarManifest.hat.map((AvatarEntry) => ({
-          id: AvatarEntry.id,
-          name: AvatarEntry.alt,
-          src: AvatarEntry.file,
-          sizing: AvatarEntry?.sizing
-        } as AvatarObject));
+        return avatarManifest.hat.map(
+          (AvatarEntry) =>
+            ({
+              id: AvatarEntry.id,
+              name: AvatarEntry.alt,
+              src: AvatarEntry.file,
+              sizing: AvatarEntry?.sizing,
+            }) as AvatarObject,
+        );
 
       default:
         return [];
