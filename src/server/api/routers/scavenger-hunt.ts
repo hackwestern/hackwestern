@@ -1,13 +1,22 @@
-import { eq, sql, SQL } from "drizzle-orm";
-import { createTRPCRouter } from "~/server/api/trpc";
+import { eq, and, sql, SQL } from "drizzle-orm";
+import { z } from "zod";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+  protectedOrganizerProcedure,
+} from "~/server/api/trpc";
 import { db, Transaction } from "~/server/db";
 import {
+  scavengerHuntItems,
   scavengerHuntScans,
   users,
+  scavengerHuntRewards,
   scavengerHuntRedemptions,
 } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 
+// ! Unsafe Functions: Need to check if caller can add points before invoking */
 export const _addPoints = async (
   tx: Transaction,
   userId: string,
@@ -111,4 +120,85 @@ const redeemItem = async (
   }
 };
 
-export const scavengerHuntRouter = createTRPCRouter({});
+export const scavengerHuntRouter = createTRPCRouter({
+  // Get Scavenger Hunt Item
+  getScavengerHuntItem: publicProcedure
+    .input(z.object({ code: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const { code } = input;
+        const item = await db.query.scavengerHuntItems.findFirst({
+          where: eq(scavengerHuntItems.code, code),
+        });
+
+        if (!item) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+        }
+
+        return item;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch item: " + JSON.stringify(error),
+        });
+      }
+    }),
+
+  // Scan Item
+  scan: protectedProcedure
+    .input(z.object({ code: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const { code } = input;
+        const item = await db.query.scavengerHuntItems.findFirst({
+          where: eq(scavengerHuntItems.code, code),
+        });
+
+        if (!item) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+        }
+
+        // Check if user has already scanned this item
+        const scan = await db.query.scavengerHuntScans.findFirst({
+          where: and(
+            eq(scavengerHuntScans.userId, ctx.session.user.id),
+            eq(scavengerHuntScans.itemId, item.id),
+          ),
+        });
+        if (scan) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Item already scanned",
+          });
+        }
+
+        await recordScan(ctx.session.user.id, item.points, item.id);
+
+        return {
+          success: true,
+          message: "Item scanned successfully",
+        };
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to scan item: " + JSON.stringify(error),
+        });
+      }
+    }),
+
+  // Gets a User's Own Points
+  getPoints: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    return await getUserPoints(userId);
+  }),
+
+  // Gets a User's Points by UserId (only accessible to organizers)
+  getPointsByUserId: protectedOrganizerProcedure
+    .input(z.object({ requestedUserId: z.string() }))
+    .query(async ({ input }) => {
+      const { requestedUserId } = input;
+
+      // Get points for requestedUserId
+      return await getUserPoints(requestedUserId);
+    }),
+});
