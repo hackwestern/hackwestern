@@ -107,7 +107,14 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     (onComplete?: () => void): void => {
       setIsResetting(true);
 
-      void panToOffsetScene(offsetHomeCoordinates, x, y, scale, 1, notHigh).then(() => {
+      void panToOffsetScene(
+        offsetHomeCoordinates,
+        x,
+        y,
+        scale,
+        1,
+        notHigh,
+      ).then(() => {
         setIsResetting(false);
         if (onComplete) onComplete();
       });
