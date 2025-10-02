@@ -1,10 +1,13 @@
 import React, { useState, useRef } from "react";
 import Page from "./page";
 import { PAGES } from "./teams";
+import { usePerformanceMode } from "~/hooks/usePerformanceMode";
 
 const DEFAULT_FLIP_DURATION = 300; // Default speed in ms for a single flip
 const TOTAL_JUMP_DURATION = 700; // Total time in ms for a multi-page jump
 const DEBOUNCE_MS = DEFAULT_FLIP_DURATION / 2; // Debounce time for flipping actions
+const LOW_PERF_DEBOUNCE_MS = DEFAULT_FLIP_DURATION * 2; // Longer debounce for low-performance devices
+const MED_PERF_DEBOUNCE_MS = DEFAULT_FLIP_DURATION; // Slower flip for medium-performance devices
 
 const totalPages = PAGES.length;
 
@@ -48,11 +51,18 @@ const calculatePerPageDuration = (numPagesToFlip: number) =>
   );
 
 const Pages = () => {
+  const { mode } = usePerformanceMode();
   const [turnedPages, setTurnedPages] = useState(1);
   const [flippingPage, setFlippingPage] = useState<number | null>(null);
   const [flipDuration, setFlipDuration] = useState(DEFAULT_FLIP_DURATION);
   const targetPage = useRef<number | null>(null);
   const lastFlipTime = useRef<number>(0);
+  
+  // Use performance-appropriate debounce timing
+  const debounceMs = 
+    mode === "low" ? LOW_PERF_DEBOUNCE_MS :
+    mode === "medium" ? MED_PERF_DEBOUNCE_MS :
+    DEBOUNCE_MS;
 
   function handleFlipComplete() {
     const target = targetPage.current;
@@ -77,7 +87,7 @@ const Pages = () => {
 
   function tryDebounced(fn: () => void) {
     const now = Date.now();
-    if (now - lastFlipTime.current < DEBOUNCE_MS) return;
+    if (now - lastFlipTime.current < debounceMs) return;
     lastFlipTime.current = now;
     fn();
   }

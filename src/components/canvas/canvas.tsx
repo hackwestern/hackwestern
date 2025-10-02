@@ -35,6 +35,7 @@ import Navbar from "./navbar";
 import Toolbar from "./toolbar";
 import { type SectionCoordinates } from "~/constants/canvas";
 import { CanvasWrapper } from "./wrapper";
+import { usePerformanceMode } from "~/hooks/usePerformanceMode";
 
 interface Props {
   homeCoordinates: SectionCoordinates;
@@ -58,6 +59,8 @@ const stage2Transition = {
 
 const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+
+  const { mode } = usePerformanceMode();
 
   const sceneWidth = canvasWidth;
   const sceneHeight = canvasHeight;
@@ -598,20 +601,27 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
           >
             <Gradient />
             {animationStage >= 1 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, ease: "easeIn" }}
-              >
-                <Filter />
-                <Dots />
-              </motion.div>
+              mode === "high" ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5, ease: "easeIn" }}
+                >
+                  <Filter />
+                  <Dots />
+                </motion.div>
+              ) : (
+                <>
+                  <Filter />
+                  <Dots />
+                </>
+              )
             )}
             {children}
           </motion.div>
         </div>
       </CanvasProvider>
-    </CanvasWrapper>
+    </CanvasWrapper >
   );
 };
 
