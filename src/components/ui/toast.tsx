@@ -31,7 +31,14 @@ const toastVariants = cva(
         destructive:
           "destructive group border-destructive bg-destructive text-destructive-foreground",
         success: "border-green-200 bg-green-50 text-green-900 shadow-lg",
-        cute: "border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 text-purple-900 shadow-lg rounded-lg",
+        cute: cn(
+          "border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 text-purple-900 shadow-lg rounded-lg", // Base styling
+          "w-[calc(100vw-4rem)]", // Mobile: take (100vw - 4rem) width for near full-bleed with margin
+          "mx-auto", // Center it (viewport already centers, but keep safety)
+          "min-w-0", // Prevent it from shrinking too small if content wraps
+          "sm:w-auto", // On larger screens revert to intrinsic sizing
+          "justify-center text-center space-x-0", // Center content & text horizontally
+        ),
       },
     },
     defaultVariants: {

@@ -19,6 +19,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@auth/core": "^0.34.2",
     "@auth/drizzle-adapter": "^0.7.0",
     "@electric-sql/pglite": "^0.2.17",
     "@hookform/resolvers": "^3.4.2",
@@ -45,6 +46,7 @@
     "@trpc/react-query": "next",
     "@trpc/server": "next",
     "@types/bcrypt": "^5.0.2",
+    "@vercel/speed-insights": "^1.2.0",
     "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",

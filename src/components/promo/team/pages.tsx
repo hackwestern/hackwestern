@@ -1,109 +1,146 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef } from "react";
 import Page from "./page";
 import { PAGES } from "./teams";
+import { usePerformanceMode } from "~/hooks/usePerformanceMode";
 
 const DEFAULT_FLIP_DURATION = 300; // Default speed in ms for a single flip
 const TOTAL_JUMP_DURATION = 700; // Total time in ms for a multi-page jump
 const DEBOUNCE_MS = DEFAULT_FLIP_DURATION / 2; // Debounce time for flipping actions
+const LOW_PERF_DEBOUNCE_MS = DEFAULT_FLIP_DURATION * 2; // Longer debounce for low-performance devices
+const MED_PERF_DEBOUNCE_MS = DEFAULT_FLIP_DURATION; // Slower flip for medium-performance devices
+
+const totalPages = PAGES.length;
+
+const isPageActive = (
+  index: number,
+  turnedPages: number,
+  flippingPage: number | null,
+) => {
+  // neighbouring pages and flipping pages are considered "active" and should be rendered
+  return (
+    flippingPage === index ||
+    index === turnedPages + 1 ||
+    index === turnedPages ||
+    index === turnedPages - 1 ||
+    index === turnedPages - 2
+  );
+};
+
+const computeZIndex = (
+  index: number,
+  isFlipped: boolean,
+  isFlipping: boolean,
+  pagesCount: number,
+) => {
+  if (isFlipping) {
+    // The page currently flipping is always on top.
+    return pagesCount * 2 + 1;
+  }
+  if (isFlipped) {
+    // Flipped pages (left side) stack from bottom up.
+    return index;
+  }
+  // Unflipped pages (right side) stack from top down.
+  return pagesCount * 2 - index;
+};
+
+const calculatePerPageDuration = (numPagesToFlip: number) =>
+  Math.min(
+    TOTAL_JUMP_DURATION / Math.max(1, numPagesToFlip),
+    DEFAULT_FLIP_DURATION,
+  );
 
 const Pages = () => {
-  const [turnedPages, setTurnedPages] = useState(0);
+  const { mode } = usePerformanceMode();
+  const [turnedPages, setTurnedPages] = useState(1);
   const [flippingPage, setFlippingPage] = useState<number | null>(null);
   const [flipDuration, setFlipDuration] = useState(DEFAULT_FLIP_DURATION);
   const targetPage = useRef<number | null>(null);
   const lastFlipTime = useRef<number>(0);
 
-  const totalPages = PAGES.length;
+  // Use performance-appropriate debounce timing
+  const debounceMs =
+    mode === "low"
+      ? LOW_PERF_DEBOUNCE_MS
+      : mode === "medium"
+        ? MED_PERF_DEBOUNCE_MS
+        : DEBOUNCE_MS;
 
-  const handleFlipComplete = () => {
-    if (targetPage.current !== null) {
-      if (turnedPages < targetPage.current) {
+  function handleFlipComplete() {
+    const target = targetPage.current;
+    if (target !== null) {
+      if (turnedPages < target) {
         setFlippingPage(turnedPages);
         setTurnedPages((prev) => prev + 1);
         return;
-      } else if (turnedPages > targetPage.current) {
+      }
+      if (turnedPages > target) {
         setFlippingPage(turnedPages - 1);
         setTurnedPages((prev) => prev - 1);
         return;
       }
     }
 
+    // reset state when we've reached the target (or no target)
     setFlippingPage(null);
     targetPage.current = null;
-    setFlipDuration(DEFAULT_FLIP_DURATION); // Reset to default speed
-  };
+    setFlipDuration(DEFAULT_FLIP_DURATION);
+  }
 
-  const turnPageForward = useCallback(() => {
+  function tryDebounced(fn: () => void) {
     const now = Date.now();
-    if (now - lastFlipTime.current < DEBOUNCE_MS) return;
+    if (now - lastFlipTime.current < debounceMs) return;
     lastFlipTime.current = now;
-    if (turnedPages >= totalPages) return;
-    setFlipDuration(DEFAULT_FLIP_DURATION); // Ensure default speed
-    setFlippingPage(turnedPages);
-    setTurnedPages((prev) => prev + 1);
-  }, [turnedPages, totalPages]);
+    fn();
+  }
 
-  const turnPageBackward = useCallback(() => {
-    const now = Date.now();
-    if (now - lastFlipTime.current < DEBOUNCE_MS) return;
-    lastFlipTime.current = now;
-    if (turnedPages <= 0) return;
-    setFlipDuration(DEFAULT_FLIP_DURATION); // Ensure default speed
-    setFlippingPage(turnedPages - 1);
-    setTurnedPages((prev) => prev - 1);
-  }, [turnedPages]);
+  function turnPageForward() {
+    tryDebounced(() => {
+      if (turnedPages >= totalPages) return;
+      setFlipDuration(DEFAULT_FLIP_DURATION);
+      setFlippingPage(turnedPages);
+      setTurnedPages((prev) => prev + 1);
+    });
+  }
 
-  const handleClickLabel = useCallback(
-    (index: number) => {
-      if (index === turnedPages || flippingPage !== null) return;
+  function turnPageBackward() {
+    tryDebounced(() => {
+      if (turnedPages <= 1) return;
+      setFlipDuration(DEFAULT_FLIP_DURATION);
+      setFlippingPage(turnedPages - 1);
+      setTurnedPages((prev) => prev - 1);
+    });
+  }
 
-      const numPagesToFlip = Math.abs(index - turnedPages);
-      if (numPagesToFlip > 0) {
-        // Calculate duration for each page to meet the total jump time
-        setFlipDuration(
-          Math.min(TOTAL_JUMP_DURATION / numPagesToFlip, DEFAULT_FLIP_DURATION),
-        );
-      }
+  function handleClickLabel(index: number) {
+    if (index === turnedPages || flippingPage !== null) return;
 
-      targetPage.current = index;
+    const numPagesToFlip = Math.abs(index - turnedPages);
+    setFlipDuration(calculatePerPageDuration(numPagesToFlip));
 
-      if (index > turnedPages) {
-        setFlippingPage(turnedPages);
-        setTurnedPages((prev) => prev + 1);
-      } else {
-        setFlippingPage(turnedPages - 1);
-        setTurnedPages((prev) => prev - 1);
-      }
-    },
-    [turnedPages, flippingPage],
-  );
+    targetPage.current = index;
+
+    if (index > turnedPages) {
+      setFlippingPage(turnedPages);
+      setTurnedPages((prev) => prev + 1);
+    } else {
+      setFlippingPage(turnedPages - 1);
+      setTurnedPages((prev) => prev - 1);
+    }
+  }
 
   return (
     <>
       {PAGES.map((page, index) => {
         const isFlipped = index < turnedPages;
         const isFlipping = flippingPage === index;
-
-        // don't render non-active pages (pages that aren't "physically" visible)
-        // neighbouring pages and flipping pages are considered "active" and should be rendered
-        const isActive =
-          isFlipping ||
-          index === turnedPages + 1 ||
-          index === turnedPages ||
-          index === turnedPages - 1 ||
-          index === turnedPages - 2;
-
-        let zIndex;
-        if (isFlipping) {
-          // The page currently flipping is always on top.
-          zIndex = PAGES.length * 2 + 1;
-        } else if (isFlipped) {
-          // Flipped pages (left side) stack from bottom up.
-          zIndex = index;
-        } else {
-          // Unflipped pages (right side) stack from top down.
-          zIndex = PAGES.length * 2 - index;
-        }
+        const isActive = isPageActive(index, turnedPages, flippingPage);
+        const zIndex = computeZIndex(
+          index,
+          isFlipped,
+          isFlipping,
+          PAGES.length,
+        );
 
         return (
           <div
@@ -116,12 +153,14 @@ const Pages = () => {
             }}
           >
             <Page
+              page={index}
               label={page.label}
               front={page.front}
               back={page.back}
               labelOffset={page.labelOffset}
               isFlipped={isFlipped}
               isActive={isActive}
+              isSelected={index === turnedPages}
               flipDuration={flipDuration}
               onFlipComplete={isFlipping ? handleFlipComplete : undefined}
               turnPageBackward={turnPageBackward}

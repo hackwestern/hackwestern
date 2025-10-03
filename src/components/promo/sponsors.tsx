@@ -1,11 +1,50 @@
-import { CanvasComponent } from "../canvas/canvas";
-import { useState } from "react";
-import clsx from "clsx";
+import { CanvasComponent } from "../canvas/component";
 import { motion } from "framer-motion";
 import { Button } from "../ui/button";
 import { Mail } from "lucide-react";
 import { CopyCheck } from "lucide-react";
 import { coordinates } from "~/constants/canvas";
+import Image from "next/image";
+import { SPONSORS, type SponsorLogoProps } from "~/constants/sponsors";
+
+const SponsorLogo = ({
+  src,
+  alt,
+  width,
+  height,
+  x,
+  y,
+  rotation,
+  href,
+}: SponsorLogoProps) => {
+  return (
+    <a
+      className="absolute cursor-pointer"
+      style={{
+        transform: `rotate(${rotation}deg)`,
+        left: x,
+        top: y,
+        width,
+        height,
+        willChange: "transform",
+      }}
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      draggable={false}
+    >
+      <Image
+        src={src}
+        alt={alt}
+        width={width * 4}
+        height={height * 4}
+        draggable="false"
+        className="hover:contrast-105 object-contain transition-all hover:scale-[1.01] hover:brightness-105"
+      />
+    </a>
+  );
+};
+
 function Sponsors() {
   const [wide, setWide] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -16,10 +55,13 @@ function Sponsors() {
   };
 
   return (
-    <CanvasComponent offset={coordinates.sponsors}>
-      <div className="flex h-screen w-screen flex-col items-center justify-center space-y-4 pb-12 sm:space-y-8 md:space-y-12">
-        <div className="flex origin-center scale-75 flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out md:scale-100">
-          <div className="inline-flex w-full max-w-[794px] flex-col items-center justify-start gap-4 px-4 sm:gap-6 sm:px-0 md:gap-8">
+    <CanvasComponent
+      offset={coordinates.sponsors}
+      imageFallback="/images/promo/sponsors.png"
+    >
+      <div className="mt-16 flex flex-col items-center justify-center space-y-4">
+        <div className="flex origin-center scale-150 flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out">
+          <div className="-mb-24 inline-flex w-[794px] flex-col items-center justify-start gap-4 px-4">
             {/* Our Sponsors Text Section */}
             <div className="inline-flex w-full max-w-full scale-[0.7] flex-col items-center justify-start gap-4 px-4 pb-0 sm:max-w-[794px] sm:scale-[0.85] sm:gap-6 sm:px-0 sm:pb-8 md:scale-[0.95] md:gap-8 md:pb-12 lg:scale-100">
               <div className="h-5 justify-start self-stretch text-center font-jetbrains-mono text-base font-medium uppercase text-zinc-500">
@@ -49,12 +91,9 @@ function Sponsors() {
                     draggable="false"
                   />
                 </div>
-                <div
-                  data-property-1="Default"
-                  className="absolute left-[29.33px] top-[49px] h-28 w-96 origin-top-left rotate-[1.77deg]"
-                >
-                  <div className="absolute left-[1.13px] top-[16px] h-20 w-96"></div>
-                </div>
+                {SPONSORS.map((sponsor, i) => (
+                  <SponsorLogo key={i} {...sponsor} />
+                ))}
               </div>
 
               {/* Notepad */}

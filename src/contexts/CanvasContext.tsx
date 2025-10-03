@@ -1,5 +1,6 @@
 import React, { createContext, useContext, type ReactNode } from "react";
-import { MotionValue } from "framer-motion";
+import { type MotionValue } from "framer-motion";
+import type { CanvasSection } from "~/constants/canvas";
 
 export interface Point {
   x: number;
@@ -13,6 +14,9 @@ export interface CanvasContextState {
   isResetting: boolean;
   maxZIndex: number;
   setMaxZIndex: (zIndex: number) => void;
+  animationStage: number;
+  nextTargetSection: CanvasSection | null; // predictive pre-render target
+  setNextTargetSection: (section: CanvasSection | null) => void;
 }
 
 const defaultState = {
@@ -23,6 +27,11 @@ const defaultState = {
   maxZIndex: 1,
   setMaxZIndex: () => {
     console.log("setMaxZIndex not set");
+  },
+  animationStage: 0,
+  nextTargetSection: null,
+  setNextTargetSection: () => {
+    console.log("setNextTargetSection not set");
   },
 };
 

@@ -1,5 +1,9 @@
-import { type Point } from "framer-motion";
+import { animate, type MotionValue, type Point } from "framer-motion";
 import { useMemo } from "react";
+import { MAX_DIM_RATIO } from "~/components/canvas/wrapper";
+
+export const canvasWidth = 6000;
+export const canvasHeight = 4000;
 
 export const useMemoPoint = (x: number, y: number): Point => {
   return useMemo(() => ({ x, y }), [x, y]);
@@ -82,3 +86,66 @@ export function getSectionPanCoordinates({
     y: targetY,
   };
 }
+
+const panSpring = {
+  visualDuration: 0.34,
+  type: "spring",
+  stiffness: 200,
+  damping: 25,
+} as const;
+
+export async function panToOffsetScene(
+  offset: Point,
+  x: MotionValue<number>,
+  y: MotionValue<number>,
+  scale: MotionValue<number>,
+  newZoom?: number,
+): Promise<void> {
+  const anim = panSpring;
+
+  const animX = animate(x, offset.x, anim);
+  const animY = animate(y, offset.y, anim);
+  const animScale = animate(scale, newZoom ?? 1, anim);
+  await Promise.all([animScale, animX, animY]);
+}
+
+export const calcInitialBoxWidth = (
+  windowWidth: number,
+  windowHeight: number,
+) => {
+  // math CanvasWrapper's bounding box size and compute scale s.t. canvas fits entirely within
+  const aspectRatio = 3 / 2;
+
+  const maxWidth = windowWidth * MAX_DIM_RATIO.width;
+  const maxHeight = windowHeight * MAX_DIM_RATIO.height;
+
+  let boxWidth, boxHeight;
+
+  if (maxWidth / aspectRatio <= maxHeight) {
+    boxWidth = maxWidth;
+    boxHeight = boxWidth / aspectRatio;
+  } else {
+    boxHeight = maxHeight;
+    boxWidth = boxHeight * aspectRatio;
+  }
+
+  // scale so the canvas fits inside the computed 3:2 box
+  return Math.min(boxWidth / canvasWidth, boxHeight / canvasHeight);
+};
+
+export const INTERACTIVE_SELECTOR =
+  "button,[role='button'],input,textarea,[contenteditable='true']," +
+  "[data-toolbar-button],[data-navbar-button]";
+
+export const ZOOM_BOUND = 1.05; // minimum zoom level to prevent zooming out too far
+export const MAX_ZOOM = 3;
+
+export const MIN_ZOOMS: Record<ScreenSizeEnum, number> = {
+  [ScreenSizeEnum.SMALL_MOBILE]: 0.3,
+  [ScreenSizeEnum.MOBILE]: 0.35,
+  [ScreenSizeEnum.TABLET]: 0.25,
+  [ScreenSizeEnum.SMALL_DESKTOP]: 0.15,
+  [ScreenSizeEnum.MEDIUM_DESKTOP]: 0.1,
+  [ScreenSizeEnum.LARGE_DESKTOP]: 0.1,
+  [ScreenSizeEnum.HUGE_DESKTOP]: 0.1,
+} as const;

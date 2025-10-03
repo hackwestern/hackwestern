@@ -5,7 +5,7 @@ function MLHTrustBadge() {
     <a
       id="mlh-trust-badge"
       className="fixed right-6 top-0 z-50 block w-12 md:right-8 md:w-16 lg:right-16 lg:w-20"
-      href="https://mlh.io/na?utm_source=na-hackathon&utm_medium=TrustBadge&`utm_campaign=2026-season&utm_content=white"
+      href="https://mlh.io/na?utm_source=na-hackathon&utm_medium=TrustBadge&utm_campaign=2026-season&utm_content=white"
       target="_blank"
     >
       <Image
