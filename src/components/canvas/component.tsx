@@ -1,5 +1,8 @@
 import { type FC, useEffect, useState } from "react";
-import { type SectionCoordinates, coordinatesToSection } from "~/constants/canvas";
+import {
+  type SectionCoordinates,
+  coordinatesToSection,
+} from "~/constants/canvas";
 import { useCanvasContext } from "~/contexts/CanvasContext";
 import Image from "next/image";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
@@ -213,7 +216,11 @@ export const CanvasComponent: FC<CanvasProps> = ({
         />
       ) : (
         // In high mode always render; otherwise render when within visibility OR predicted next target
-        (mode === "high" || visible || (nextTargetSection && coordinatesToSection(offset) === nextTargetSection)) && children
+        (mode === "high" ||
+          visible ||
+          (nextTargetSection &&
+            coordinatesToSection(offset) === nextTargetSection)) &&
+        children
       )}
     </div>
   );
