@@ -66,7 +66,7 @@ function Sponsors() {
     setTimeout(() => {
       setIsPending(false);
     }, 1500);
-  }
+  };
 
   return (
     <CanvasComponent
@@ -133,7 +133,7 @@ function Sponsors() {
                         Interested in supporting the event?
                       </div>
                     </div>
-                    <div className="flex w-full justify-center" >
+                    <div className="flex w-full justify-center">
                       <Button
                         variant="primary"
                         className="w-auto gap-2 px-6 py-3"
