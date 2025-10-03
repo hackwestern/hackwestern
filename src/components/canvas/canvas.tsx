@@ -16,6 +16,7 @@ import React, {
   useMemo,
 } from "react";
 import { CanvasProvider } from "~/contexts/CanvasContext";
+import { useToast } from "~/components/hooks/use-toast";
 import {
   calcInitialBoxWidth,
   canvasHeight,
@@ -59,6 +60,21 @@ const stage2Transition = {
 
 const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+  const { toast } = useToast();
+  const hasToasted = useRef(false);
+
+  useEffect(() => {
+    if (windowWidth < 768 && !hasToasted.current) {
+      setTimeout(() => {
+        toast({
+          title: "Please use desktop for the best experience.",
+          duration: 6700,
+          variant: "cute",
+        });
+        hasToasted.current = true;
+      }, 1200);
+    }
+  }, [windowWidth, toast]);
 
   const { mode } = usePerformanceMode();
   const notHigh = mode !== "high";
