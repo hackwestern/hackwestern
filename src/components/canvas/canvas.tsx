@@ -77,7 +77,6 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   }, [windowWidth, toast]);
 
   const { mode } = usePerformanceMode();
-  const notHigh = mode !== "high";
 
   const sceneWidth = canvasWidth;
   const sceneHeight = canvasHeight;
@@ -125,19 +124,12 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
     (onComplete?: () => void): void => {
       setIsResetting(true);
 
-      void panToOffsetScene(
-        offsetHomeCoordinates,
-        x,
-        y,
-        scale,
-        1,
-        notHigh,
-      ).then(() => {
+      void panToOffsetScene(offsetHomeCoordinates, x, y, scale, 1).then(() => {
         setIsResetting(false);
         if (onComplete) onComplete();
       });
     },
-    [offsetHomeCoordinates, x, y, scale, notHigh],
+    [offsetHomeCoordinates, x, y, scale],
   );
 
   // Shared intro progress (0->1) driven by CanvasWrapper
@@ -262,13 +254,12 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         y,
         scale,
         zoom,
-        notHigh,
       ).then(() => {
         setIsSceneMoving(false);
         if (onComplete) onComplete();
       });
     },
-    [sceneWidth, sceneHeight, x, y, scale, notHigh],
+    [sceneWidth, sceneHeight, x, y, scale],
   );
 
   // Guarded stop that ignores attempts during intro animations
