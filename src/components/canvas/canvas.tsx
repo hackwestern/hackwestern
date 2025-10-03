@@ -119,7 +119,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         if (onComplete) onComplete();
       });
     },
-    [offsetHomeCoordinates, x, y, scale],
+    [offsetHomeCoordinates, x, y, scale, notHigh],
   );
 
   // Shared intro progress (0->1) driven by CanvasWrapper
@@ -250,7 +250,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         if (onComplete) onComplete();
       });
     },
-    [sceneWidth, sceneHeight, x, y, scale],
+    [sceneWidth, sceneHeight, x, y, scale, notHigh],
   );
 
   // Guarded stop that ignores attempts during intro animations
