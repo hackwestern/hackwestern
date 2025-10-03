@@ -33,7 +33,7 @@ import {
 import useWindowDimensions from "~/hooks/useWindowDimensions";
 import Navbar from "./navbar";
 import Toolbar from "./toolbar";
-import { type SectionCoordinates } from "~/constants/canvas";
+import type { CanvasSection, SectionCoordinates } from "~/constants/canvas";
 import { CanvasWrapper } from "./wrapper";
 import { usePerformanceMode } from "~/hooks/usePerformanceMode";
 
@@ -80,6 +80,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
   const [animationStage, setAnimationStage] = useState<number>(0); // 0: initial, 1: finish grow, 2: pan to home
+  const [nextTargetSection, setNextTargetSection] =
+    useState<CanvasSection | null>(null);
   // Track if the intro (stage1 + stage2) is still running, to avoid accidental cancellation
   const isIntroAnimatingRef = useRef(true);
 
@@ -568,6 +570,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         maxZIndex={maxZIndex}
         setMaxZIndex={setMaxZIndex}
         animationStage={animationStage}
+        nextTargetSection={nextTargetSection}
+        setNextTargetSection={setNextTargetSection}
       >
         {animationStage >= 2 && (
           <>

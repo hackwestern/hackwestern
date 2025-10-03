@@ -1,5 +1,5 @@
 import { type FC, useEffect, useState } from "react";
-import { type SectionCoordinates } from "~/constants/canvas";
+import { type SectionCoordinates, coordinatesToSection } from "~/constants/canvas";
 import { useCanvasContext } from "~/contexts/CanvasContext";
 import Image from "next/image";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
@@ -82,7 +82,7 @@ export const CanvasComponent: FC<CanvasProps> = ({
   offset,
   imageFallback,
 }) => {
-  const { x, y, scale, animationStage } = useCanvasContext();
+  const { x, y, scale, animationStage, nextTargetSection } = useCanvasContext();
   const { width } = useWindowDimensions();
   const { mode } = usePerformanceMode();
 
@@ -212,8 +212,8 @@ export const CanvasComponent: FC<CanvasProps> = ({
           className="m-auto h-auto w-full object-contain"
         />
       ) : (
-        // In high mode always render; otherwise render only when within hysteresis visibility
-        (mode === "high" || visible) && children
+        // In high mode always render; otherwise render when within visibility OR predicted next target
+        (mode === "high" || visible || (nextTargetSection && coordinatesToSection(offset) === nextTargetSection)) && children
       )}
     </div>
   );

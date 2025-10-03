@@ -31,7 +31,7 @@ export const RESPONSIVE_ZOOM_MAP: Record<ScreenSizeEnum, number> = {
 } as const;
 
 export default function Navbar({ panToOffset, onReset }: NavbarProps) {
-  const { x, y, scale, animationStage } = useCanvasContext();
+  const { x, y, scale, animationStage, setNextTargetSection } = useCanvasContext();
   const [expandedButton, setExpandedButton] = useState<string | null>(null);
   const activePans = useRef(0);
   const panTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -109,6 +109,10 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
       setExpandedButton(section);
       activePans.current++;
 
+      // Predictive pre-render hint: mark the target section so its CanvasComponent can
+      // render even before it comes fully into view.
+      setNextTargetSection(section);
+
       if (section === CanvasSection.Home) {
         onReset();
         return;
@@ -129,7 +133,7 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
         defaultZoom,
       );
     },
-    [panToOffset, onReset, width, height, defaultZoom],
+    [panToOffset, onReset, width, height, defaultZoom, setNextTargetSection],
   );
 
   // Clean up timers on unmount

@@ -1,7 +1,6 @@
 import { animate, type MotionValue, type Point } from "framer-motion";
 import { useMemo } from "react";
 import { MAX_DIM_RATIO } from "~/components/canvas/wrapper";
-import { type SectionCoordinates } from "~/constants/canvas";
 
 export const canvasWidth = 6000;
 export const canvasHeight = 4000;
@@ -151,16 +150,3 @@ export const MIN_ZOOMS: Record<ScreenSizeEnum, number> = {
   [ScreenSizeEnum.LARGE_DESKTOP]: 0.1,
   [ScreenSizeEnum.HUGE_DESKTOP]: 0.1,
 } as const;
-
-export const coordinatesToName = (coords: SectionCoordinates) => {
-  if (coords === undefined) return "unknown";
-
-  if (coords.x === 1400 && coords.y === 400) return "about";
-  if (coords.x === 3663 && coords.y === 400) return "sponsors";
-  if (coords.x === 2788 && coords.y === 1200) return "home";
-  if (coords.x === 760 && coords.y === 1700) return "projects";
-  if (coords.x === 2070 && coords.y === 2600) return "faq";
-  if (coords.x === 4050 && coords.y === 1660) return "team";
-
-  return "unknown";
-};
