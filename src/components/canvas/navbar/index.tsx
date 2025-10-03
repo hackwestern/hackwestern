@@ -31,7 +31,8 @@ export const RESPONSIVE_ZOOM_MAP: Record<ScreenSizeEnum, number> = {
 } as const;
 
 export default function Navbar({ panToOffset, onReset }: NavbarProps) {
-  const { x, y, scale, animationStage, setNextTargetSection } = useCanvasContext();
+  const { x, y, scale, animationStage, setNextTargetSection } =
+    useCanvasContext();
   const [expandedButton, setExpandedButton] = useState<string | null>(null);
   const activePans = useRef(0);
   const panTimeout = useRef<NodeJS.Timeout | null>(null);
