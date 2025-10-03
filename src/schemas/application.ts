@@ -171,6 +171,11 @@ export const applicationSubmitSchema = z.object({
   agreeEmailsFromMLH: z.boolean().optional(),
 });
 
+export const canvasSaveSchema = applicationSaveSchema.pick({
+  canvasDescription: true,
+  canvasData: true,
+});
+
 export const applicationStepSaveSchema = applicationSaveSchema.pick({
   question1: true,
   question2: true,
