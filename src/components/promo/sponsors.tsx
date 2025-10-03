@@ -53,7 +53,7 @@ function Sponsors() {
 
   // copy email & toast
   const handleContactClick = () => {
-    copyText("hello@hackwestern.com");
+    void copyText("hello@hackwestern.com");
     toast({
       title: "Email copied!",
       variant: "cute",
