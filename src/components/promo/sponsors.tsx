@@ -5,6 +5,9 @@ import { Mail } from "lucide-react";
 import { coordinates } from "~/constants/canvas";
 import Image from "next/image";
 import { SPONSORS, type SponsorLogoProps } from "~/constants/sponsors";
+import { useToast } from "../hooks/use-toast";
+import { copyText } from "~/lib/copy";
+import { useState } from "react";
 
 const SponsorLogo = ({
   src,
@@ -45,6 +48,26 @@ const SponsorLogo = ({
 };
 
 function Sponsors() {
+  const { toast } = useToast();
+  const [isPending, setIsPending] = useState(false);
+
+  // copy email & toast
+  const handleContactClick = () => {
+    void copyText("hello@hackwestern.com");
+    toast({
+      title: "Email copied!",
+      variant: "cute",
+      description: "hello@hackwestern.com copied to clipboard",
+      duration: 3000,
+    });
+
+    // Keep button pressed for 3 seconds
+    setIsPending(true);
+    setTimeout(() => {
+      setIsPending(false);
+    }, 1500);
+  };
+
   return (
     <CanvasComponent
       offset={coordinates.sponsors}
@@ -115,6 +138,8 @@ function Sponsors() {
                         variant="primary"
                         className="w-auto gap-2 px-6 py-3"
                         type="submit"
+                        onClick={handleContactClick}
+                        isPending={isPending}
                       >
                         <Mail className="h-5 w-5" />
                         Get in touch

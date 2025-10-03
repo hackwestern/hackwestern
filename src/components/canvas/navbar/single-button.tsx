@@ -81,6 +81,11 @@ export default function SingleButton({
 
         if (copied) {
           setCopiedEmail(true);
+          toast({
+            title: "Email copied!",
+            variant: "cute",
+            duration: 2000,
+          });
         } else {
           window.open(mailto, "_blank");
           toast({
