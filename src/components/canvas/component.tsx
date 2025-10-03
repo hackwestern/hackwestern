@@ -149,24 +149,48 @@ export const CanvasComponent: FC<CanvasProps> = ({
     return style;
   };
 
-  const inViewport =
-    offset &&
-    isComponentInViewport({
-      offset,
-      // NOTE: x and y motion values already represent the translated top-left of the scene
-      // in viewport coordinates. They are typically negative when the scene has been panned.
-      // Passing the negated values caused all calculations to shift in the wrong direction,
-      // making every component appear outside the viewport. Use the raw values.
-      sceneX,
-      sceneY,
-      scale: sceneScale,
-      viewportWidth: width,
-      viewportHeight: typeof window !== "undefined" ? window.innerHeight : 0,
-    });
+  // --- Hysteresis Visibility ---
+  // We keep a sticky visibility flag that only turns off when the component moves
+  // beyond a buffered boundary, and turns on when it re-enters that boundary.
+  const HYSTERESIS_BUFFER = 120; // px, tune if needed
+  const [visible, setVisible] = useState(true);
 
-  // don't show fallback for sufficiently large screens because there is a pixel shift that occurs
-  // when switching from the image to the real component, and on larger screens this happens on screen
-  // also unlikely to find a weaker device on a 1440p+ screen so performance is less of a concern
+  useEffect(() => {
+    if (!offset) return; // no offset => full screen or auto; keep visible
+    const vpHeight = typeof window !== "undefined" ? window.innerHeight : 0;
+    const vpWidth = width;
+    // raw bounding box in viewport space
+    const left = sceneX + offset.x * sceneScale;
+    const top = sceneY + offset.y * sceneScale;
+    const right = left + offset.width * sceneScale;
+    const bottom = top + offset.height * sceneScale;
+
+    setVisible((prev) => {
+      if (prev) {
+        // Only mark invisible if completely outside expanded bounds
+        const outside =
+          right < -HYSTERESIS_BUFFER ||
+          left > vpWidth + HYSTERESIS_BUFFER ||
+          bottom < -HYSTERESIS_BUFFER ||
+          top > vpHeight + HYSTERESIS_BUFFER;
+        return !outside;
+      } else {
+        // Become visible once we intersect the expanded bounds
+        const intersects =
+          right >= -HYSTERESIS_BUFFER &&
+          left <= vpWidth + HYSTERESIS_BUFFER &&
+          bottom >= -HYSTERESIS_BUFFER &&
+          top <= vpHeight + HYSTERESIS_BUFFER;
+        return intersects;
+      }
+    });
+  }, [offset, sceneX, sceneY, sceneScale, width]);
+
+  // don't show fallback for sufficiently large screens
+  // because there is a pixel shift that occurs when switching
+  // from the image to the real component, and on larger screens
+  // this happens on screen also unlikely to find a weaker
+  // device on a 1440p+ screen so performance is less of a concern
   const shouldShowFallback =
     animationStage < 2 && imageFallback && width < 2000;
 
@@ -188,7 +212,8 @@ export const CanvasComponent: FC<CanvasProps> = ({
           className="m-auto h-auto w-full object-contain"
         />
       ) : (
-        (mode === "high" || inViewport) && children
+        // In high mode always render; otherwise render only when within hysteresis visibility
+        (mode === "high" || visible) && children
       )}
     </div>
   );
