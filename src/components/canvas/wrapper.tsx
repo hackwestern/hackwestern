@@ -76,29 +76,33 @@ export const CanvasWrapper = ({
     ? `radial-gradient(ellipse ${dimensions.width * 3}px ${dimensions.height * 2}px at ${dimensions.width * 1.5}px ${dimensions.height}px, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`
     : undefined;
 
+  const stage1NotFinished = introProgress.get() !== 1;
+
   return (
     <motion.div
       className="fixed inset-0 overflow-hidden"
       style={{
-        backgroundImage: gradientBgImage,
+        backgroundImage: stage1NotFinished ? gradientBgImage : undefined,
         touchAction: "none",
         userSelect: "none",
         pointerEvents: "none",
       }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <div className="absolute left-1/2 top-64 z-0 grid -translate-x-1/2 -translate-y-[200px] place-items-center text-center">
-        <Image
-          src="/horse.svg"
-          alt="Hack Western Logo"
-          width={64}
-          height={64}
-          className="mb-4"
-        />
-        <div className="font-jetbrains-mono font-semibold text-[#543C5AB2]">
-          HACK WESTERN 12
+      {stage1NotFinished && (
+        <div className="absolute left-1/2 top-64 z-0 grid -translate-x-1/2 -translate-y-[200px] place-items-center text-center">
+          <Image
+            src="/horse.svg"
+            alt="Hack Western Logo"
+            width={64}
+            height={64}
+            className="mb-4"
+          />
+          <div className="font-jetbrains-mono font-semibold text-[#543C5AB2]">
+            HACK WESTERN 12
+          </div>
         </div>
-      </div>
+      )}
 
       {dimensions && (
         <>
@@ -152,9 +156,11 @@ export const CanvasWrapper = ({
           </motion.div>
         </>
       )}
-      <div className="absolute bottom-32 left-1/2 -translate-x-1/2 text-center font-jetbrains-mono font-semibold text-[#543C5AB2]">
-        LOADING CANVAS{dots}
-      </div>
+      {stage1NotFinished && (
+        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 text-center font-jetbrains-mono font-semibold text-[#543C5AB2]">
+          LOADING CANVAS{dots}
+        </div>
+      )}
     </motion.div>
   );
 };

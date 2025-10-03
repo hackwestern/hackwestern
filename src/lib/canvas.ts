@@ -101,9 +101,11 @@ export async function panToOffsetScene(
   scale: MotionValue<number>,
   newZoom?: number,
 ): Promise<void> {
-  const animX = animate(x, offset.x, panSpring);
-  const animY = animate(y, offset.y, panSpring);
-  const animScale = animate(scale, newZoom ?? 1, panSpring);
+  const anim = panSpring;
+
+  const animX = animate(x, offset.x, anim);
+  const animY = animate(y, offset.y, anim);
+  const animScale = animate(scale, newZoom ?? 1, anim);
   await Promise.all([animScale, animX, animY]);
 }
 
@@ -139,7 +141,7 @@ export const ZOOM_BOUND = 1.05; // minimum zoom level to prevent zooming out too
 export const MAX_ZOOM = 3;
 
 export const MIN_ZOOMS: Record<ScreenSizeEnum, number> = {
-  [ScreenSizeEnum.SMALL_MOBILE]: 0.4,
+  [ScreenSizeEnum.SMALL_MOBILE]: 0.3,
   [ScreenSizeEnum.MOBILE]: 0.35,
   [ScreenSizeEnum.TABLET]: 0.25,
   [ScreenSizeEnum.SMALL_DESKTOP]: 0.15,
