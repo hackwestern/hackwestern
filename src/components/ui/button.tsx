@@ -1,4 +1,5 @@
 import * as React from "react";
+import Image from "next/image";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "~/lib/utils";
@@ -22,6 +23,8 @@ export const buttonVariants = cva(buttonBase, {
         lift,
       ),
       tertiary: "bg-transparent text-[#625679] px-4 active:text-[#8F57AD]",
+      "tertiary-arrow":
+        "bg-transparent text-[#625679] px-4 active:text-[#8F57AD] flex items-center gap-2",
       destructive:
         "bg-destructive text-destructive-foreground hover:bg-destructive-dark",
       outline: "bg-violet-100 hover:bg-muted border border-[1px] border-muted",
@@ -79,6 +82,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       asChild = false,
       disabled,
       secondClass = "",
+      children,
       ...props
     },
     ref,
@@ -124,11 +128,25 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         <Comp
           ref={ref}
           {...props}
-          className={btnClasses}
+          className={cn("flex flex-row gap-2", btnClasses)}
           disabled={disabled ?? isPending}
-        />
+        >
+          {variant === "tertiary-arrow" ? (
+            <div className="w-full">
+            <Image
+              src="/arrow-left.svg"
+              alt="Left Arrow"
+              width={10}
+              height={10}
+            />
+            {children}
+            </div>
+          ) : (
+            children
+          )}
+        </Comp>
 
-        {variant === "tertiary" && (
+        {(variant === "tertiary" || variant === "tertiary-arrow") && (
           <span
             className={cn(
               "block h-0 max-w-0 border-b-2 border-dashed border-[#625679] transition-all duration-200 group-hover:max-w-full group-active:border-[#8F57AD]",

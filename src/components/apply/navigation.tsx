@@ -1,6 +1,7 @@
 import Link from "next/link";
 import React from "react";
 import { applySteps, type ApplyStep } from "~/constants/apply";
+import Image from "next/image";
 import { Button } from "../ui/button";
 import { SavedIndicator } from "./saved-indicator";
 import { api } from "~/utils/api";
@@ -52,22 +53,33 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
   return (
     <div className="sticky bottom-0 flex w-full justify-between py-3">
       <SavedIndicator />
-      {!step ||
+      <div className="ml-auto flex items-center gap-12">
+        {!step ||
         (previousStep && (
-          <Button variant="secondary" asChild className="w-20">
-            <Link href={`/apply?step=${previousStep}`}>Back</Link>
+          <Button variant="tertiary-arrow" asChild className="font-medium text-base text-heavy h-6 w-16">
+            <Link href={`/apply?step=${previousStep}`}>  
+              Back
+            </Link>
           </Button>
         ))}
-      <div className="ml-auto flex items-center gap-3">
-       
         <Button
           variant="primary"
           asChild
-          className="w-20"
+          className="w-28"
           onClick={onClickSubmit}
         >
           {!step || !!nextStep ? (
-            <Link href={`/apply?step=${nextStep}`}>Next</Link>
+            <Link href={`/apply?step=${nextStep}`}>
+              <div className="flex gap-2">
+                Next
+                <Image 
+                  src="/arrow-right.svg"
+                  alt="Right Arrow"
+                  width={10}
+                  height={10}
+                />
+              </div>
+            </Link>
           ) : (
             <Link href={`/submitted`}>Submit!</Link>
           )}

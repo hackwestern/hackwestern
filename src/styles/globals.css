@@ -110,3 +110,29 @@ html {
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  @supports (-moz-appearance: none) {
+    .scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: #D19AEE transparent;
+    }
+  }
+
+  .scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+    scrollbar-width: none;
+    scrollbar-color: none;
+  }
+
+  .scrollbar::-webkit-scrollbar-track {
+    border-radius: 100vh;
+    background: transparent
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb {
+    background: #D19AEE;;
+    border-radius: 100vh;
+  }
+}

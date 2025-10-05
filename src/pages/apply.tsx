@@ -95,20 +95,20 @@ export default function Apply() {
             className="bg-hw-linear-gradient-day flex h-full flex-col items-center justify-center px-4 md:w-full"
           >
             <CanvasBackground />
-            <div className="z-10 h-[80%] w-4xl max-h-6xl max-w-6xl flex flex-col items-center justify-center overflow-contain">
-              <div className="h-screen w-full space-y-4">
-              <div className="flex flex-col space-y-8 justify-between rounded-md shadow-lg bg-white p-12 overflow-auto">
-                <div className="overflow-auto">
-                  <div className="space-y-2 py-1.5">
-                    <h1 className="text-2xl font-medium text-heavy font-dico">{heading}</h1>
-                    <h2 className="text-sm text-medium font-figtree">{subheading}</h2>
-                  </div>
-                  <div className="font-figtree">
-                    <ApplyForm step={step} />
+            <div className="z-10 flex flex-col items-center justify-center overflow-contain">
+              <div className="space-y-4">
+                <div className="h-[400px] w-[800px] flex flex-col space-y-8 justify-between rounded-md shadow-lg bg-white py-12 pl-12 pr-8 overflow-auto">
+                  <div className="overflow-auto pr-4 scrollbar">
+                    <div className="space-y-2 py-1.5">
+                      <h1 className="text-2xl font-medium text-heavy font-dico">{heading}</h1>
+                      <h2 className="text-sm text-medium font-figtree">{subheading}</h2>
+                    </div>
+                    <div className="font-figtree">
+                      <ApplyForm step={step} />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <ApplyNavigation step={step} />
+                <ApplyNavigation step={step} />
               </div>
               
               <div className="z-10 flex w-[100%] flex-col items-center justify-center">
