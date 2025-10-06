@@ -83,7 +83,7 @@ export default function Apply() {
         {/* End of Mobile View */}
 
         {/* Desktop View */}
-        <div className="relative z-10 hidden w-full flex-grow items-center md:flex">
+        <div className="relative z-10 hidden h-full w-full flex-grow items-center md:flex">
           <div
             id="left-panel"
             className="z-30 flex h-full w-1/5 items-center justify-center"
@@ -92,21 +92,21 @@ export default function Apply() {
           </div>
           <div
             id="right-panel"
-            className="bg-hw-linear-gradient-day flex h-full flex-col items-center justify-center px-4 md:w-full"
+            className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
             <CanvasBackground />
-            <div className="z-10 flex flex-col items-center justify-center overflow-contain">
-              <div className="space-y-4">
-                <div className="h-[400px] w-[800px] flex flex-col space-y-8 justify-between rounded-md shadow-lg bg-white py-12 pl-12 pr-8 overflow-auto">
-                  <div className="overflow-auto pr-4 scrollbar">
-                    <div className="space-y-2 py-1.5">
+            <div className="z-10 flex flex-col items-center justify-center overflow-auto">
+              <div className="h-full w-full space-y-4">
+                <div className="h-[400px] 2xl:h-[500px] w-[800px] 2xl:w-[1000px] flex flex-col space-y-8 justify-start rounded-md shadow-lg bg-white py-12 pl-11 pr-8">
+                    <div className="space-y-4 py-1.5">
                       <h1 className="text-2xl font-medium text-heavy font-dico">{heading}</h1>
-                      <h2 className="text-sm text-medium font-figtree">{subheading}</h2>
+                      {subheading ? <h2 className="text-sm text-medium font-figtree">{subheading}</h2> : <></>}
                     </div>
-                    <div className="font-figtree">
-                      <ApplyForm step={step} />
+                    <div className="overflow-auto pl-1 pr-4 scrollbar">
+                      <div className="font-figtree">
+                        <ApplyForm step={step} />
+                      </div>
                     </div>
-                  </div>
                 </div>
                 <ApplyNavigation step={step} />
               </div>
