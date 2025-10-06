@@ -81,7 +81,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
               </div>
             </Link>
           ) : (
-            <Link href={`/submitted`}>Submit!</Link>
+            <Link href={`/submitted`}>Submit</Link>
           )}
         </Button>
       </div>
