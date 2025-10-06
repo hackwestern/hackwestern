@@ -592,6 +592,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
               x,
               y,
               scale,
+              willChange:
+                animationStage < 2 || isPanning ? "transform" : "auto",
             }}
           >
             <Gradient />
@@ -601,16 +603,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, ease: "easeIn" }}
               >
-                <Dots />
-              </motion.div>
-            )}
-            {animationStage >= 1 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, ease: "easeIn" }}
-              >
                 <Filter />
+                <Dots />
               </motion.div>
             )}
             {children}
@@ -626,7 +620,7 @@ export const gradientBgImage = `radial-gradient(ellipse ${canvasWidth}px ${canva
 const Gradient = React.memo(function Gradient() {
   return (
     <div
-      className="pointer-events-none absolute inset-0 h-full w-full bg-hw-radial-gradient opacity-100"
+      className="pointer-events-none absolute inset-0 h-full w-full opacity-100"
       style={{
         backgroundImage: gradientBgImage,
       }}

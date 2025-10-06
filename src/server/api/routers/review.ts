@@ -250,7 +250,7 @@ export const reviewRouter = createTRPCRouter({
       }
     }),
 
-  getReviewCounts: protectedOrganizerProcedure.query(async ({}) => {
+  getReviewCounts: protectedOrganizerProcedure.query(async () => {
     try {
       const reviewCounts = await db
         .select({

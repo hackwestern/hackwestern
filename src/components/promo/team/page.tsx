@@ -14,8 +14,8 @@ function Label({
   isSelected?: boolean;
 }) {
   const baseClass = `
-  flex h-[45px] items-center justify-center rounded-t-md bg-lilac px-[8px] text-xs uppercase tracking-wider absolute -mt-[8px] 
-  hover:-mt-[12px] transition-all 
+  flex h-[45px] items-center justify-center rounded-t-md bg-lilac px-[8px] text-xs uppercase tracking-wider absolute -mt-[8px]
+  hover:-mt-[12px] transition-all
 `;
 
   const labelClass = isSelected
@@ -62,6 +62,7 @@ function Page({
   turnPageBackward,
   turnPageForward,
   onLabelClick,
+  page,
 }: {
   label?: string;
   labelOffset?: number;
@@ -75,13 +76,18 @@ function Page({
   turnPageBackward: () => void;
   turnPageForward: () => void;
   onLabelClick?: () => void;
+  page: number;
 }) {
+  const offset = (page * 37) % 23;
+
   return (
     <motion.div
       className="pointer-events-none relative h-[723px] w-[555px] cursor-pointer"
       style={{
         transformStyle: "preserve-3d",
+        WebkitTransformStyle: "preserve-3d",
         transformOrigin: "left center",
+        willChange: isFlipped !== flipDuration > 0 ? "transform" : "auto",
       }}
       initial={false}
       // Animate based on the isFlipped prop
@@ -108,6 +114,7 @@ function Page({
             className="pointer-events-auto absolute inset-0 my-[32px] ml-[4px] mr-[24px] flex cursor-pointer overflow-hidden rounded-lg"
             style={{
               backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
             }}
             onClick={() => {
               if (back) turnPageForward();
@@ -117,7 +124,17 @@ function Page({
               <Bindings />
             </div>
             <FrontHoles />
-            <div className="h-full w-full bg-beige p-[32px]">{front}</div>
+            <div
+              className="h-full w-full bg-beige p-[32px]"
+              style={{
+                backgroundImage: "url(images/promo/book/paper.png)",
+                backgroundSize: "cover",
+                backgroundPositionX: `-${11 * offset}px`,
+                backgroundPositionY: `-${21 * offset}px`,
+              }}
+            >
+              {front}
+            </div>
           </div>
           {/* Back page (left side) */}
           <div
@@ -125,10 +142,21 @@ function Page({
             style={{
               transform: "rotateY(180deg)",
               backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
             }}
             onClick={turnPageBackward}
           >
-            <div className="h-full w-full bg-beige p-[32px]">{back}</div>
+            <div
+              className="h-full w-full bg-beige p-[32px]"
+              style={{
+                backgroundImage: "url(images/promo/book/paper.png)",
+                backgroundSize: "cover",
+                backgroundPositionX: `-${14 * offset}px`,
+                backgroundPositionY: `-${18 * offset}px`,
+              }}
+            >
+              {back}
+            </div>
             <BackHoles />
             <div className="pointer-events-none absolute inset-0 -mr-[36px] ml-[499px]">
               <Bindings />

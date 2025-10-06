@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import useWindowDimensions from "~/hooks/useWindowDimensions";
 
 type FolderIconProps = {
   className?: string;
@@ -13,6 +14,8 @@ const AnimatedFolderIcon = ({
   strokeColor = "rgba(119, 103, 128, 0.1)",
   isOpen = false,
 }: FolderIconProps) => {
+  const { width } = useWindowDimensions();
+
   return (
     <svg
       viewBox="0 0 208 163"
@@ -25,7 +28,7 @@ const AnimatedFolderIcon = ({
         <motion.g
           initial={false}
           animate={{
-            opacity: isOpen ? 0 : 1,
+            opacity: !isOpen || width < 640 ? 1 : 0,
             scale: isOpen ? 1 : 1,
             y: isOpen ? 5 : 0,
             x: isOpen ? 15 : 15,
@@ -40,7 +43,7 @@ const AnimatedFolderIcon = ({
             fill={`url(#${gradientId})`}
             stroke={strokeColor}
             strokeWidth="0.75"
-            fillOpacity="0.8"
+            fillOpacity={width < 640 ? "1" : "0.8"}
           />
         </motion.g>
 
