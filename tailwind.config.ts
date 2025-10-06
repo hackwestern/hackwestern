@@ -42,6 +42,7 @@ const config = {
         tinted: "var(--tinted)",
         medium: "var(--medium)",
         light: "var(--light)",
+        "faint-lilac": "var(--faint-lilac)",
         offwhite: "var(--offwhite)",
         highlight: "var(--highlight)",
         "border-light": "hsl(var(--border-light))",

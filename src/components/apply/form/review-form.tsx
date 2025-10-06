@@ -19,8 +19,8 @@ function ReviewSection({ step, error }: ReviewSectionProps) {
     <div className="py-4">
       <Separator />
       <div className="flex justify-between pt-4">
-        <h2>{step.label}</h2>
-        <Button asChild variant="apply" className="gap-2">
+        <h2 className="font-jetbrains-mono uppercase text-medium text-base">{step.label}</h2>
+        <Button asChild variant="secondary" className="gap-2">
           <Link href={{ pathname: "/apply", query: { step: step.step } }}>
             <PencilLine className="w-4" />
             Edit
@@ -66,8 +66,8 @@ function ReviewField({ value, label, error }: ReviewFieldProps) {
     <div className="space-y-2">
       <Label>{label}</Label>
       <p
-        className={cn("text-sm text-slate-600", {
-          "text-slate-400": isEmptyValue,
+        className={cn("text-sm text-heavy", {
+          "text-medium": isEmptyValue,
         })}
       >
         {isEmptyValue ? "(no answer)" : value?.toString()}
