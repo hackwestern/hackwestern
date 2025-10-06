@@ -102,7 +102,7 @@ export default function Apply() {
                       <h1 className="text-2xl font-medium text-heavy font-dico">{heading}</h1>
                       {subheading ? <h2 className="text-sm text-medium font-figtree">{subheading}</h2> : <></>}
                     </div>
-                    <div className="overflow-auto pl-1 pr-4 scrollbar">
+                    <div className="overflow-auto pl-1 pr-4 pb-2 scrollbar">
                       <div className="font-figtree">
                         <ApplyForm step={step} />
                       </div>

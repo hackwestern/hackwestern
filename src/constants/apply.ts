@@ -2,38 +2,38 @@ type Step = {
   step: string;
   label: string;
   heading: string;
-  subheading: string;
+  subheading: string | null;
 };
 
 export const applySteps = [
   {
-    step: "persona",
-    label: "Persona",
-    heading: "What kind of traveller are you?",
-    subheading: "We all approach our vacations a little bit differently.",
+    step: "character",
+    label: "Character",
+    heading: "Choose your character",
+    subheading: null,
   },
   {
     step: "basics",
     label: "Basics",
-    heading: "Let’s start with the basics",
-    subheading: "Tell us a little about yourself.",
+    heading: "Let's start with the basics",
+    subheading: null,
   },
   {
     step: "info",
     label: "Info",
-    heading: "Tell us more!",
-    subheading: "Tell us a little about yourself.",
+    heading: "A little bit more info about you...",
+    subheading: null,
   },
   {
     step: "application",
     label: "Application",
-    heading: "Application Questions",
-    subheading: "",
+    heading: "Tell us your story",
+    subheading: null,
   },
   {
     step: "links",
     label: "Links",
-    heading: "Link us to your digital spaces!",
+    heading: "Where can we find you?",
     subheading:
       "This is optional! Show off your cool stuff if you want us to see it.",
   },
@@ -42,6 +42,12 @@ export const applySteps = [
     label: "Agreements",
     heading: "Agreements",
     subheading: "Our hackers must agree to the following agreements:",
+  },
+  {
+    step: "drawing",
+    label: "Drawing",
+    heading: "Lastly, draw something!",
+    subheading: "This won't impact your application :)",
   },
   {
     step: "optional",
@@ -55,7 +61,7 @@ export const applySteps = [
     label: "Review",
     heading: "Review Your Application",
     subheading:
-      "Review your entire application here and make it the best it can be!",
+      "You won't be able to change it after it's submitted!",
   },
 ] as const satisfies Step[];
 
