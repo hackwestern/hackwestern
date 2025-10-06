@@ -116,7 +116,7 @@ html {
   @supports (-moz-appearance: none) {
     .scrollbar {
       scrollbar-width: thin;
-      scrollbar-color: #D19AEE transparent;
+      scrollbar-color: #d19aee transparent;
     }
   }
 
@@ -129,11 +129,11 @@ html {
 
   .scrollbar::-webkit-scrollbar-track {
     border-radius: 100vh;
-    background: transparent
+    background: transparent;
   }
 
   .scrollbar::-webkit-scrollbar-thumb {
-    background: #D19AEE;;
+    background: #d19aee;
     border-radius: 100vh;
   }
 }

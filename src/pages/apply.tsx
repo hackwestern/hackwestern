@@ -36,7 +36,7 @@ export default function Apply() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center bg-primary-50 overscroll-contain">
+      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50">
         {/* Mobile View */}
         <Tabs defaultValue="application" className="w-screen pt-16 md:hidden">
           <TabsList className="fixed z-50 w-screen justify-around rounded-none bg-primary-100">
@@ -97,22 +97,29 @@ export default function Apply() {
             <CanvasBackground />
             <div className="z-10 flex flex-col items-center justify-center overflow-auto">
               <div className="h-full w-full space-y-4">
-                <div className="h-[400px] 2xl:h-[500px] w-[800px] 2xl:w-[1000px] flex flex-col space-y-8 justify-start rounded-md shadow-lg bg-white py-12 pl-11 pr-8">
-                    <div className="space-y-4 py-1.5">
-                      <h1 className="text-2xl font-medium text-heavy font-dico">{heading}</h1>
-                      {subheading ? <h2 className="text-sm text-medium font-figtree">{subheading}</h2> : <></>}
+                <div className="flex h-[400px] w-[800px] flex-col justify-start space-y-8 rounded-md bg-white py-12 pl-11 pr-8 shadow-lg 2xl:h-[500px] 2xl:w-[1000px]">
+                  <div className="space-y-4 py-1.5">
+                    <h1 className="font-dico text-2xl font-medium text-heavy">
+                      {heading}
+                    </h1>
+                    {subheading ? (
+                      <h2 className="font-figtree text-sm text-medium">
+                        {subheading}
+                      </h2>
+                    ) : (
+                      <></>
+                    )}
+                  </div>
+                  <div className="scrollbar overflow-auto pb-2 pl-1 pr-4">
+                    <div className="font-figtree">
+                      <ApplyForm step={step} />
                     </div>
-                    <div className="overflow-auto pl-1 pr-4 pb-2 scrollbar">
-                      <div className="font-figtree">
-                        <ApplyForm step={step} />
-                      </div>
-                    </div>
+                  </div>
                 </div>
                 <ApplyNavigation step={step} />
               </div>
-              
-              <div className="z-10 flex w-[100%] flex-col items-center justify-center">
-              </div>
+
+              <div className="z-10 flex w-[100%] flex-col items-center justify-center"></div>
             </div>
           </div>
         </div>

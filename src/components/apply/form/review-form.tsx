@@ -19,7 +19,9 @@ function ReviewSection({ step, error }: ReviewSectionProps) {
     <div className="py-4">
       <Separator />
       <div className="flex justify-between pt-4">
-        <h2 className="font-jetbrains-mono uppercase text-medium text-base">{step.label}</h2>
+        <h2 className="font-jetbrains-mono text-base uppercase text-medium">
+          {step.label}
+        </h2>
         <Button asChild variant="secondary" className="gap-2">
           <Link href={{ pathname: "/apply", query: { step: step.step } }}>
             <PencilLine className="w-4" />

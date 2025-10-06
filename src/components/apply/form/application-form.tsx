@@ -42,7 +42,8 @@ export function ApplicationForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="flex w-full flex-wrap gap-2">
           <FormLabel className="w-full">
-            If your laptop suddenly gained consciousness, what do you think it would say about your working style and why? (30 to 150 words)
+            If your laptop suddenly gained consciousness, what do you think it
+            would say about your working style and why? (30 to 150 words)
           </FormLabel>
           <FormField
             control={form.control}
@@ -54,10 +55,17 @@ export function ApplicationForm() {
                     {...field}
                     value={field.value ?? ""}
                     placeholder="Type your message here"
-                    variant={(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "primary" : "invalid"}
+                    variant={
+                      (field.value?.split(/\s+/).filter(Boolean).length ?? 0) <=
+                      150
+                        ? "primary"
+                        : "invalid"
+                    }
                   />
                 </FormControl>
-                <div className={`text-sm ${((field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150) ? "text-gray-500" : "text-destructive"}`}>
+                <div
+                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "text-gray-500" : "text-destructive"}`}
+                >
                   {field.value?.split(/\s+/).filter(Boolean).length ?? 0} / 150
                   words
                 </div>
@@ -67,7 +75,8 @@ export function ApplicationForm() {
         </div>
         <div className="flex w-full flex-wrap gap-2">
           <FormLabel className="w-full">
-            What’s one piece of feedback you’ve received that stuck with you and why? (30 to 150 words)
+            What’s one piece of feedback you’ve received that stuck with you and
+            why? (30 to 150 words)
           </FormLabel>
           <FormField
             control={form.control}
@@ -79,10 +88,17 @@ export function ApplicationForm() {
                     {...field}
                     value={field.value ?? ""}
                     placeholder="Type your message here"
-                    variant={(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "primary" : "invalid"}
+                    variant={
+                      (field.value?.split(/\s+/).filter(Boolean).length ?? 0) <=
+                      150
+                        ? "primary"
+                        : "invalid"
+                    }
                   />
                 </FormControl>
-                <div className={`text-sm ${((field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150) ? "text-gray-500" : "text-destructive"}`}>
+                <div
+                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "text-gray-500" : "text-destructive"}`}
+                >
                   {field.value?.split(/\s+/).filter(Boolean).length ?? 0} / 150
                   words
                 </div>
@@ -92,7 +108,8 @@ export function ApplicationForm() {
         </div>
         <div className="flex w-full flex-wrap gap-2">
           <FormLabel className="w-full">
-            What’s a project you’d love to revisit and improve if you had the time, and why? (30 to 150 words)
+            What’s a project you’d love to revisit and improve if you had the
+            time, and why? (30 to 150 words)
           </FormLabel>
           <FormField
             control={form.control}
@@ -104,10 +121,17 @@ export function ApplicationForm() {
                     {...field}
                     value={field.value ?? ""}
                     placeholder="Type your message here"
-                    variant={(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "primary" : "invalid"}
+                    variant={
+                      (field.value?.split(/\s+/).filter(Boolean).length ?? 0) <=
+                      150
+                        ? "primary"
+                        : "invalid"
+                    }
                   />
                 </FormControl>
-                <div className={`text-sm ${((field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150) ? "text-gray-500" : "text-destructive"}`}>
+                <div
+                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "text-gray-500" : "text-destructive"}`}
+                >
                   {field.value?.split(/\s+/).filter(Boolean).length ?? 0} / 150
                   words
                 </div>

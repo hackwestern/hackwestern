@@ -55,13 +55,15 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
       <SavedIndicator />
       <div className="ml-auto flex items-center gap-12">
         {!step ||
-        (previousStep && (
-          <Button variant="tertiary-arrow" asChild className="font-medium text-base text-heavy h-6 w-16">
-            <Link href={`/apply?step=${previousStep}`}>  
-              Back
-            </Link>
-          </Button>
-        ))}
+          (previousStep && (
+            <Button
+              variant="tertiary-arrow"
+              asChild
+              className="h-6 w-16 text-base font-medium text-heavy"
+            >
+              <Link href={`/apply?step=${previousStep}`}>Back</Link>
+            </Button>
+          ))}
         <Button
           variant="primary"
           asChild
@@ -72,7 +74,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
             <Link href={`/apply?step=${nextStep}`}>
               <div className="flex gap-2">
                 Next
-                <Image 
+                <Image
                   src="/arrow-right.svg"
                   alt="Right Arrow"
                   width={10}
