@@ -29,7 +29,7 @@ function Dots() {
 
 function Filter() {
   return (
-    <div className="contrast-60 pointer-events-none absolute inset-0 hidden h-full w-full bg-none filter md:inline md:bg-noise" />
+    <div className="contrast-60 md:bg-noise pointer-events-none absolute inset-0 hidden h-full w-full bg-none filter md:inline" />
   );
 }
 

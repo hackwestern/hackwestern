@@ -38,7 +38,10 @@ export default function Apply() {
       </Head>
       <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50">
         {/* Mobile View */}
-        <Tabs defaultValue="application" className="w-screen bg-primary-100 font-figtree md:hidden">
+        <Tabs
+          defaultValue="application"
+          className="w-screen bg-primary-100 font-figtree md:hidden"
+        >
           <TabsList className="fixed z-50 w-screen justify-around rounded-none bg-primary-100">
             <TabsTrigger
               value="application"
@@ -56,10 +59,14 @@ export default function Apply() {
           <TabsContent value="application" className="z-40 w-screen">
             <div className="fixed flex h-screen w-screen flex-col space-y-8 bg-white px-6 pt-12">
               <div className="space-y-2 pt-12">
-                <h1 className="text-2xl font-dico font-medium text-heavy">{heading}</h1>
-                <h2 className="text-sm font-figtree text-medium">{subheading}</h2>
+                <h1 className="font-dico text-2xl font-medium text-heavy">
+                  {heading}
+                </h1>
+                <h2 className="font-figtree text-sm text-medium">
+                  {subheading}
+                </h2>
               </div>
-              <div className="font-figtree overflow-y-auto">
+              <div className="overflow-y-auto font-figtree">
                 <ApplyForm step={step} />
               </div>
               <div className="pb-3">
@@ -99,7 +106,7 @@ export default function Apply() {
               <div className="h-full w-full space-y-4">
                 <div className="flex h-[400px] w-[800px] flex-col justify-start space-y-8 rounded-md bg-white py-12 pl-11 pr-8 shadow-lg 2xl:h-[500px] 2xl:w-[1000px]">
                   <div className="space-y-4 py-1.5">
-                    <h1 className="font-dico text-2xl mt-12 font-medium text-heavy">
+                    <h1 className="mt-12 font-dico text-2xl font-medium text-heavy">
                       {heading}
                     </h1>
                     {subheading ? (
