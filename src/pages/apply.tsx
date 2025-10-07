@@ -38,34 +38,34 @@ export default function Apply() {
       </Head>
       <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50">
         {/* Mobile View */}
-        <Tabs defaultValue="application" className="w-screen pt-16 md:hidden">
+        <Tabs defaultValue="application" className="w-screen bg-primary-100 font-figtree md:hidden">
           <TabsList className="fixed z-50 w-screen justify-around rounded-none bg-primary-100">
             <TabsTrigger
               value="application"
-              className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
+              className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
             >
               Application
             </TabsTrigger>
             <TabsTrigger
               value="passport"
-              className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
+              className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
             >
               Passport
             </TabsTrigger>
           </TabsList>
           <TabsContent value="application" className="z-40 w-screen">
-            <div className="fixed flex h-screen w-screen flex-col space-y-8 bg-primary-100 px-6 pt-12">
-              <div className="space-y-2 py-1.5">
-                <h1 className="text-2xl font-medium">{heading}</h1>
-                <h2 className="text-sm text-slate-500">{subheading}</h2>
+            <div className="fixed flex h-screen w-screen flex-col space-y-8 bg-white px-6 pt-12">
+              <div className="space-y-2 pt-12">
+                <h1 className="text-2xl font-dico font-medium text-heavy">{heading}</h1>
+                <h2 className="text-sm font-figtree text-medium">{subheading}</h2>
               </div>
-              <div className="overflow-y-auto">
+              <div className="font-figtree overflow-y-auto">
                 <ApplyForm step={step} />
               </div>
-              <div className="self-end pb-3">
-                <SavedIndicator />
+              <div className="pb-3">
+                <ApplyNavigation step={step} />
               </div>
-              <div className="select-none bg-primary-100 py-12 text-primary-100">
+              <div className="select-none bg-white py-12 text-primary-100">
                 this is a secret
               </div>
             </div>
@@ -99,7 +99,7 @@ export default function Apply() {
               <div className="h-full w-full space-y-4">
                 <div className="flex h-[400px] w-[800px] flex-col justify-start space-y-8 rounded-md bg-white py-12 pl-11 pr-8 shadow-lg 2xl:h-[500px] 2xl:w-[1000px]">
                   <div className="space-y-4 py-1.5">
-                    <h1 className="font-dico text-2xl font-medium text-heavy">
+                    <h1 className="font-dico text-2xl mt-12 font-medium text-heavy">
                       {heading}
                     </h1>
                     {subheading ? (
