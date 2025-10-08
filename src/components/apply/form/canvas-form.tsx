@@ -2,10 +2,6 @@ import React, { useState, useRef, useCallback, useMemo } from "react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "~/components/ui/form";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
-import { CanvasProvider } from "~/contexts/CanvasContext";
-import { CanvasComponent } from "~/components/canvas/component";
-import { useCanvasContext } from "~/contexts/CanvasContext";
-import { motion, useMotionValue } from "framer-motion";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { useForm } from "react-hook-form";
@@ -17,7 +13,6 @@ type CanvasFormData = z.infer<typeof canvasSaveSchema>;
 
 // Simple canvas component for the form
 const SimpleCanvas = React.forwardRef<{ clear: () => void; isEmpty: () => boolean }, { onDrawingChange?: (isEmpty: boolean, data?: string) => void }>(({ onDrawingChange }, ref) => {
-  const { x, y, scale } = useCanvasContext();
   const [isDrawing, setIsDrawing] = useState(false);
   const [paths, setPaths] = useState<Array<{ x: number; y: number }[]>>([]);
   const [currentPath, setCurrentPath] = useState<{ x: number; y: number }[]>([]);
@@ -35,10 +30,10 @@ const SimpleCanvas = React.forwardRef<{ clear: () => void; isEmpty: () => boolea
     }
     const rect = rectRef.current;
     return {
-      x: (e.clientX - rect.left) / scale.get(),
-      y: (e.clientY - rect.top) / scale.get()
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
     };
-  }, [scale]);
+  }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     setIsDrawing(true);
@@ -116,7 +111,7 @@ const SimpleCanvas = React.forwardRef<{ clear: () => void; isEmpty: () => boolea
   }));
 
   return (
-    <div className="w-full h-80 max-h-80 border-2 border-dashed border-gray-300 rounded-lg relative overflow-hidden bg-white cursor-crosshair">
+    <div className="w-full h-[28rem] max-h-[28rem] border-2 border-dashed border-gray-300 rounded-lg relative overflow-hidden bg-white cursor-crosshair">
       <svg
         className="w-full h-full"
         onMouseDown={handleMouseDown}
@@ -197,69 +192,43 @@ export function CanvasForm() {
     });
   }
 
-  // Canvas context values
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const scale = useMotionValue(1);
-
   return (
-    <CanvasProvider
-      x={x}
-      y={y}
-      scale={scale}
-      isResetting={false}
-      maxZIndex={1}
-      setMaxZIndex={() => {}}
-      animationStage={0}
-    >
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="border rounded-lg p-6 bg-white shadow-sm">
-            <div className="mb-4">
-              <p className="text-gray-600 mt-1">
-                Use the canvas below to draw, sketch, or create something that represents you. 
-                This is your chance to be creative and show your personality!
-              </p>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div></div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isCanvasEmpty}
+                onClick={() => {
+                  canvasRef.current?.clear();
+                  setIsCanvasEmpty(true);
+                }}
+                className={`${
+                  isCanvasEmpty 
+                    ? "disabled:opacity-50 disabled:cursor-not-allowed" 
+                    : "bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700"
+                }`}
+              >
+                Clear
+              </Button>
             </div>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <FormLabel>Your Canvas</FormLabel>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={isCanvasEmpty}
-                    onClick={() => {
-                      canvasRef.current?.clear();
-                      setIsCanvasEmpty(true);
-                    }}
-                    className={`${
-                      isCanvasEmpty 
-                        ? "disabled:opacity-50 disabled:cursor-not-allowed" 
-                        : "bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700"
-                    }`}
-                  >
-                    Clear
-                  </Button>
-                </div>
-                <SimpleCanvas 
-                  ref={canvasRef} 
-                  onDrawingChange={(isEmpty, data) => {
-                    setIsCanvasEmpty(isEmpty);
-                    if (data) {
-                      form.setValue('canvasData', data);
-                    }
-                  }}
-                />
-                <p className="text-sm text-gray-500">
-                  Click and drag to draw. Express yourself!
-                </p>
-              </div>
-            </div>
+            <SimpleCanvas 
+              ref={canvasRef} 
+              onDrawingChange={(isEmpty, data) => {
+                setIsCanvasEmpty(isEmpty);
+                if (data) {
+                  form.setValue('canvasData', data);
+                }
+              }}
+            />
           </div>
-        </form>
-      </Form>
-    </CanvasProvider>
+        </div>
+      </form>
+    </Form>
   );
 }
