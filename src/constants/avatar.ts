@@ -5,6 +5,7 @@ export interface AvatarEntry {
   label: string;
   slug: string;
   alt: string;
+  sizing?: string;
 }
 
 export enum AvatarCategory {
@@ -14,7 +15,12 @@ export enum AvatarCategory {
   body = "body",
   hat = "hat",
 }
-
+export type AvatarObject = {
+  id: number;
+  name: string;
+  src: string;
+  sizing?: string;
+};
 export type AvatarManifest = Record<AvatarCategory, AvatarEntry[]>;
 
 export const avatarManifest: AvatarManifest = {
@@ -394,6 +400,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Barrette",
       slug: "barrette",
       alt: "Barrette",
+      sizing: "pb-212",
     },
     {
       id: 2,
@@ -402,6 +409,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Bear Hat",
       slug: "bear-hat",
       alt: "Bear Hat",
+      sizing: "pb-0",
     },
     {
       id: 3,
@@ -410,6 +418,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Bow Tie",
       slug: "bow-tie",
       alt: "Bow Tie",
+      sizing: "pb-12",
     },
     {
       id: 4,
@@ -418,6 +427,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Cowboy Hat",
       slug: "cowboy-hat",
       alt: "Cowboy Hat",
+      sizing: "pb-12",
     },
     {
       id: 5,
@@ -426,6 +436,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Crown",
       slug: "crown",
       alt: "Crown",
+      sizing: "pb-24",
     },
     {
       id: 6,
@@ -434,6 +445,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Duck",
       slug: "duck",
       alt: "Duck",
+      sizing: "pb-28",
     },
     {
       id: 7,
@@ -442,6 +454,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Efficiency Hat",
       slug: "efficiency-hat",
       alt: "Efficiency Hat",
+      sizing: "pb-0",
     },
     {
       id: 8,
@@ -450,6 +463,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Flower",
       slug: "flower",
       alt: "Flower",
+      sizing: "pb-20 pr-20 pt-12",
     },
     {
       id: 9,
@@ -458,6 +472,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Frog Hat",
       slug: "frog-hat",
       alt: "Frog Hat",
+      sizing: "pb-8",
     },
     {
       id: 10,
@@ -466,6 +481,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Grad Cap",
       slug: "grad-cap",
       alt: "Grad Cap",
+      sizing: "pb-8 pl-8",
     },
     {
       id: 11,
@@ -474,6 +490,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Hw Cap",
       slug: "hw-cap",
       alt: "Hw Cap",
+      sizing: "pb-8",
     },
     {
       id: 12,
@@ -482,6 +499,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Kitten Headset",
       slug: "kitten-headset",
       alt: "Kitten Headset",
+      sizing: "pb-8",
     },
     {
       id: 13,
@@ -490,6 +508,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Leaf",
       slug: "leaf",
       alt: "Leaf",
+      sizing: "pb-32 pt-8",
     },
     {
       id: 14,
@@ -498,6 +517,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Luffy Straw Hat",
       slug: "luffy-straw-hat",
       alt: "Luffy Straw Hat",
+      sizing: "pb-8",
     },
     {
       id: 15,
@@ -506,6 +526,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Party Hat 1",
       slug: "party-hat-1",
       alt: "Party Hat 1",
+      sizing: "pb-24",
     },
     {
       id: 16,
@@ -514,6 +535,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Party Hat 2",
       slug: "party-hat-2",
       alt: "Party Hat 2",
+      sizing: "pb-24",
     },
     {
       id: 17,
@@ -522,6 +544,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Pirate",
       slug: "pirate",
       alt: "Pirate",
+      sizing: "pb-28 pl-9",
     },
     {
       id: 18,
@@ -530,6 +553,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Pylon",
       slug: "pylon",
       alt: "Pylon",
+      sizing: "pb-28",
     },
     {
       id: 19,
@@ -538,6 +562,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Stinky",
       slug: "stinky",
       alt: "Stinky",
+      sizing: "pb-28",
     },
     {
       id: 20,
@@ -546,6 +571,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Tiara",
       slug: "tiara",
       alt: "Tiara",
+      sizing: "pb-28 pt-8",
     },
     {
       id: 21,
@@ -554,6 +580,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Top Hat",
       slug: "top-hat",
       alt: "Top Hat",
+      sizing: "pb-14",
     },
     {
       id: 22,
@@ -562,6 +589,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Viking",
       slug: "viking",
       alt: "Viking",
+      sizing: "pb-8",
     },
     {
       id: 23,
@@ -570,8 +598,72 @@ export const avatarManifest: AvatarManifest = {
       label: "Witch Hat",
       slug: "witch-hat",
       alt: "Witch Hat",
+      sizing: "pb-28",
     },
   ],
 };
 
 export default avatarManifest;
+
+export const colors = [
+  {
+    name: "brown",
+    value: "#D0816B",
+    gradient: "#FFA59B",
+    bg: "#F8DDD6",
+    body: "001",
+  },
+
+  {
+    name: "orange",
+    value: "#F0AF73",
+    gradient: "#FFCB9B",
+    bg: "#FAE4CE",
+    body: "002",
+  },
+
+  {
+    name: "yellow",
+    value: "#F9D962",
+    gradient: "#FFE98D",
+    bg: "#FEF7D7",
+    body: "003",
+  },
+
+  {
+    name: "green",
+    value: "#A5CD72",
+    gradient: "#A7FB73",
+    bg: "#F1FDE0",
+    body: "004",
+  },
+  {
+    name: "blue",
+    value: "#87C5EA",
+    gradient: "#A9D5FF",
+    bg: "#D8F0FF",
+    body: "005",
+  },
+  {
+    name: "purple",
+    value: "#B592DA",
+    gradient: "#E1C2FF",
+    bg: "#F0E6F8",
+    body: "006",
+  },
+
+  {
+    name: "pink",
+    value: "#EAAFB3",
+    gradient: "#FEBFCB",
+    bg: "#F7E0EA",
+    body: "007",
+  },
+];
+
+export const categories = [
+  { id: "face", src: "/smile.png" },
+  { id: "left", src: "/lefthand.png" },
+  { id: "right", src: "/righthand.png" },
+  { id: "hat", src: "/hat.png" },
+];
