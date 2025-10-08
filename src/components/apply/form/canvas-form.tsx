@@ -42,12 +42,16 @@ const SimpleCanvas = React.forwardRef<
   React.useEffect(() => {
     if (initialData?.paths && Array.isArray(initialData.paths)) {
       const serverTimestamp = initialData.timestamp || 0;
-      const hasNewerServerData = serverTimestamp > lastLocalModificationRef.current;
+      const hasNewerServerData =
+        serverTimestamp > lastLocalModificationRef.current;
 
       // Only apply server data if:
       // 1. We have no local changes, OR
       // 2. Server data is newer AND user is not currently drawing/about to save
-      if (!hasLocalChangesRef.current || (hasNewerServerData && !isDrawing && !saveTimerRef.current)) {
+      if (
+        !hasLocalChangesRef.current ||
+        (hasNewerServerData && !isDrawing && !saveTimerRef.current)
+      ) {
         setPaths(initialData.paths);
         // Don't update lastLocalModificationRef here - only update on actual user input
       }
