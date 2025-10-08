@@ -1,5 +1,12 @@
 import React, { useState, useRef, useCallback, useMemo } from "react";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "~/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "~/components/ui/form";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { api } from "~/utils/api";
@@ -12,14 +19,19 @@ import { z } from "zod";
 type CanvasFormData = z.infer<typeof canvasSaveSchema>;
 
 // Simple canvas component for the form
-const SimpleCanvas = React.forwardRef<{ clear: () => void; isEmpty: () => boolean }, { onDrawingChange?: (isEmpty: boolean, data?: string) => void }>(({ onDrawingChange }, ref) => {
+const SimpleCanvas = React.forwardRef<
+  { clear: () => void; isEmpty: () => boolean },
+  { onDrawingChange?: (isEmpty: boolean, data?: string) => void }
+>(({ onDrawingChange }, ref) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [paths, setPaths] = useState<Array<{ x: number; y: number }[]>>([]);
-  const [currentPath, setCurrentPath] = useState<{ x: number; y: number }[]>([]);
-  
+  const [currentPath, setCurrentPath] = useState<{ x: number; y: number }[]>(
+    [],
+  );
+
   // Memoize rect calculation to avoid repeated getBoundingClientRect calls
   const rectRef = useRef<DOMRect | null>(null);
-  
+
   // Throttle mouse move events to improve performance
   const lastMoveTimeRef = useRef(0);
   const THROTTLE_MS = 4; // ~250fps for very smooth lines
@@ -31,32 +43,38 @@ const SimpleCanvas = React.forwardRef<{ clear: () => void; isEmpty: () => boolea
     const rect = rectRef.current;
     return {
       x: e.clientX - rect.left,
-      y: e.clientY - rect.top
+      y: e.clientY - rect.top,
     };
   }, []);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    setIsDrawing(true);
-    rectRef.current = e.currentTarget.getBoundingClientRect();
-    const point = getPointFromEvent(e);
-    setCurrentPath([point]);
-  }, [getPointFromEvent]);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      setIsDrawing(true);
+      rectRef.current = e.currentTarget.getBoundingClientRect();
+      const point = getPointFromEvent(e);
+      setCurrentPath([point]);
+    },
+    [getPointFromEvent],
+  );
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDrawing) return;
-    
-    // Throttle mouse move events
-    const now = Date.now();
-    if (now - lastMoveTimeRef.current < THROTTLE_MS) return;
-    lastMoveTimeRef.current = now;
-    
-    const point = getPointFromEvent(e);
-    setCurrentPath(prev => [...prev, point]);
-  }, [isDrawing, getPointFromEvent]);
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isDrawing) return;
+
+      // Throttle mouse move events
+      const now = Date.now();
+      if (now - lastMoveTimeRef.current < THROTTLE_MS) return;
+      lastMoveTimeRef.current = now;
+
+      const point = getPointFromEvent(e);
+      setCurrentPath((prev) => [...prev, point]);
+    },
+    [isDrawing, getPointFromEvent],
+  );
 
   const handleMouseUp = useCallback(() => {
     if (isDrawing) {
-      setPaths(prev => {
+      setPaths((prev) => {
         const newPaths = [...prev, currentPath];
         onDrawingChange?.(newPaths.length === 0);
         return newPaths;
@@ -72,7 +90,7 @@ const SimpleCanvas = React.forwardRef<{ clear: () => void; isEmpty: () => boolea
       const drawingData = {
         paths: paths,
         timestamp: Date.now(),
-        version: "1.0"
+        version: "1.0",
       };
       // This will be picked up by the parent form's auto-save
       onDrawingChange?.(false, JSON.stringify(drawingData));
@@ -81,11 +99,11 @@ const SimpleCanvas = React.forwardRef<{ clear: () => void; isEmpty: () => boolea
 
   // Memoize path string generation to avoid recalculating on every render
   const pathStrings = useMemo(() => {
-    return paths.map(path => 
+    return paths.map((path) =>
       path.reduce((acc, point, index) => {
         if (index === 0) return `M ${point.x} ${point.y}`;
         return `${acc} L ${point.x} ${point.y}`;
-      }, "")
+      }, ""),
     );
   }, [paths]);
 
@@ -107,13 +125,13 @@ const SimpleCanvas = React.forwardRef<{ clear: () => void; isEmpty: () => boolea
     },
     isEmpty: () => {
       return paths.length === 0 && currentPath.length === 0;
-    }
+    },
   }));
 
   return (
-    <div className="w-full h-[28rem] max-h-[28rem] border-2 border-dashed border-gray-300 rounded-lg relative overflow-hidden bg-white cursor-crosshair">
+    <div className="relative h-[28rem] max-h-[28rem] w-full cursor-crosshair overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white">
       <svg
-        className="w-full h-full"
+        className="h-full w-full"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -142,7 +160,7 @@ const SimpleCanvas = React.forwardRef<{ clear: () => void; isEmpty: () => boolea
         )}
       </svg>
       {paths.length === 0 && currentPath.length === 0 && (
-        <div className="absolute top-2 left-2 text-sm text-gray-500 bg-white px-2 py-1 rounded">
+        <div className="absolute left-2 top-2 rounded bg-white px-2 py-1 text-sm text-gray-500">
           Draw something to express yourself!
         </div>
       )}
@@ -158,7 +176,9 @@ export function CanvasForm() {
       return utils.application.get.invalidate();
     },
   });
-  const canvasRef = React.useRef<{ clear: () => void; isEmpty: () => boolean }>(null);
+  const canvasRef = React.useRef<{ clear: () => void; isEmpty: () => boolean }>(
+    null,
+  );
   const [isCanvasEmpty, setIsCanvasEmpty] = useState(true);
 
   const form = useForm<CanvasFormData>({
@@ -178,7 +198,7 @@ export function CanvasForm() {
           setIsCanvasEmpty(false);
         }
       } catch (error) {
-        console.warn('Failed to parse canvas data:', error);
+        console.warn("Failed to parse canvas data:", error);
       }
     }
   }, [defaultValues?.canvasData]);
@@ -209,20 +229,20 @@ export function CanvasForm() {
                   setIsCanvasEmpty(true);
                 }}
                 className={`${
-                  isCanvasEmpty 
-                    ? "disabled:opacity-50 disabled:cursor-not-allowed" 
-                    : "bg-purple-600 text-white border-purple-600 hover:bg-purple-700 hover:border-purple-700"
+                  isCanvasEmpty
+                    ? "disabled:cursor-not-allowed disabled:opacity-50"
+                    : "border-purple-600 bg-purple-600 text-white hover:border-purple-700 hover:bg-purple-700"
                 }`}
               >
                 Clear
               </Button>
             </div>
-            <SimpleCanvas 
-              ref={canvasRef} 
+            <SimpleCanvas
+              ref={canvasRef}
               onDrawingChange={(isEmpty, data) => {
                 setIsCanvasEmpty(isEmpty);
                 if (data) {
-                  form.setValue('canvasData', data);
+                  form.setValue("canvasData", data);
                 }
               }}
             />
