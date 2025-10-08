@@ -1,20 +1,12 @@
 import React, { useState, useRef, useCallback, useMemo } from "react";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "~/components/ui/form";
+import { Form } from "~/components/ui/form";
 import { Button } from "~/components/ui/button";
-import { Textarea } from "~/components/ui/textarea";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { canvasSaveSchema } from "~/schemas/application";
-import { z } from "zod";
+import type { z } from "zod";
 
 type CanvasFormData = z.infer<typeof canvasSaveSchema>;
 
@@ -168,6 +160,8 @@ const SimpleCanvas = React.forwardRef<
   );
 });
 
+SimpleCanvas.displayName = "SimpleCanvas";
+
 export function CanvasForm() {
   const utils = api.useUtils();
   const { data: defaultValues } = api.application.get.useQuery();
@@ -184,7 +178,7 @@ export function CanvasForm() {
   const form = useForm<CanvasFormData>({
     resolver: zodResolver(canvasSaveSchema),
     defaultValues: {
-      canvasData: defaultValues?.canvasData || "",
+      canvasData: defaultValues?.canvasData ?? "",
     },
   });
 
@@ -192,8 +186,13 @@ export function CanvasForm() {
   React.useEffect(() => {
     if (defaultValues?.canvasData) {
       try {
-        const drawingData = JSON.parse(defaultValues.canvasData);
-        if (drawingData.paths && Array.isArray(drawingData.paths)) {
+        const drawingData = JSON.parse(defaultValues.canvasData) as unknown;
+        if (
+          drawingData &&
+          typeof drawingData === "object" &&
+          "paths" in drawingData &&
+          Array.isArray((drawingData as { paths: unknown }).paths)
+        ) {
           // We could restore the drawing here, but for now just mark as not empty
           setIsCanvasEmpty(false);
         }
