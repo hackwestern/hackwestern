@@ -174,60 +174,73 @@ export function AvatarForm() {
                   />
 
                   {/* Selected Accessory - Face */}
-                  {avatarFace && (() => {
-                    const faceAccessory = getAccessoryFromId("face", avatarFace);
-                    return faceAccessory ? (
-                      <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2">
-                        <img
-                          src={faceAccessory.src}
-                          alt={faceAccessory.name}
-                          className="h-full w-full object-contain"
-                        />
-                      </div>
-                    ) : null;
-                  })()}
+                  {avatarFace &&
+                    (() => {
+                      const faceAccessory = getAccessoryFromId(
+                        "face",
+                        avatarFace,
+                      );
+                      return faceAccessory ? (
+                        <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2">
+                          <img
+                            src={faceAccessory.src}
+                            alt={faceAccessory.name}
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                      ) : null;
+                    })()}
 
                   {/* Selected Accessory - Hat */}
-                  {avatarHat && (() => {
-                    const hatAccessory = getAccessoryFromId("hat", avatarHat);
-                    return hatAccessory ? (
-                      <div className="absolute -top-16 left-1/2 h-56 w-56 -translate-x-1/2">
-                        <img
-                          src={hatAccessory.src}
-                          alt={hatAccessory.name}
-                          className={`h-full w-full ${hatAccessory.sizing ?? ""} object-contain`}
-                        />
-                      </div>
-                    ) : null;
-                  })()}
+                  {avatarHat &&
+                    (() => {
+                      const hatAccessory = getAccessoryFromId("hat", avatarHat);
+                      return hatAccessory ? (
+                        <div className="absolute -top-16 left-1/2 h-56 w-56 -translate-x-1/2">
+                          <img
+                            src={hatAccessory.src}
+                            alt={hatAccessory.name}
+                            className={`h-full w-full ${hatAccessory.sizing ?? ""} object-contain`}
+                          />
+                        </div>
+                      ) : null;
+                    })()}
 
                   {/* Selected Accessory - Left Hand */}
-                  {avatarLeftHand && (() => {
-                    const leftAccessory = getAccessoryFromId("left", avatarLeftHand);
-                    return leftAccessory ? (
-                      <div className="absolute -left-4 bottom-20 h-16 w-16">
-                        <img
-                          src={leftAccessory.src}
-                          alt={leftAccessory.name}
-                          className="h-full w-full object-contain"
-                        />
-                      </div>
-                    ) : null;
-                  })()}
+                  {avatarLeftHand &&
+                    (() => {
+                      const leftAccessory = getAccessoryFromId(
+                        "left",
+                        avatarLeftHand,
+                      );
+                      return leftAccessory ? (
+                        <div className="absolute -left-4 bottom-20 h-16 w-16">
+                          <img
+                            src={leftAccessory.src}
+                            alt={leftAccessory.name}
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                      ) : null;
+                    })()}
 
                   {/* Selected Accessory - Right Hand */}
-                  {avatarRightHand && (() => {
-                    const rightAccessory = getAccessoryFromId("right", avatarRightHand);
-                    return rightAccessory ? (
-                      <div className="absolute -right-4 bottom-20 h-16 w-16">
-                        <img
-                          src={rightAccessory.src}
-                          alt={rightAccessory.name}
-                          className="h-full w-full object-contain"
-                        />
-                      </div>
-                    ) : null;
-                  })()}
+                  {avatarRightHand &&
+                    (() => {
+                      const rightAccessory = getAccessoryFromId(
+                        "right",
+                        avatarRightHand,
+                      );
+                      return rightAccessory ? (
+                        <div className="absolute -right-4 bottom-20 h-16 w-16">
+                          <img
+                            src={rightAccessory.src}
+                            alt={rightAccessory.name}
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                      ) : null;
+                    })()}
                 </div>
               </div>
             </div>
