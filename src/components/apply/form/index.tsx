@@ -14,7 +14,7 @@ type ApplyFormProps = {
 
 export function ApplyForm({ step }: ApplyFormProps) {
   switch (step) {
-    case "persona":
+    case "character":
       return <PersonaForm />;
     case "basics":
       return <BasicsForm />;

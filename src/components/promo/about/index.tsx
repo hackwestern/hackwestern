@@ -4,8 +4,11 @@ import Envelope from "./envelope";
 import { DraggableImage } from "~/components/canvas/draggable";
 import { CanvasComponent } from "~/components/canvas/component";
 import Image from "next/image";
+import { usePerformanceMode } from "~/hooks/usePerformanceMode";
 
 function About() {
+  const { enableComplexShadows } = usePerformanceMode();
+
   return (
     <CanvasComponent
       offset={coordinates.about}
@@ -77,8 +80,13 @@ function About() {
                   width={375}
                   height={250}
                   draggable="false"
-                  style={{ rotate: "-5deg" }}
-                  className="rounded-md shadow-md"
+                  style={{
+                    rotate: "-5deg",
+                    boxShadow: enableComplexShadows
+                      ? "0 10px 20px rgba(0,0,0,0.2)"
+                      : "",
+                  }}
+                  className={`rounded-md`}
                 />
               </div>
               <div className="relative flex w-fit max-w-xs rotate-[8deg] items-center justify-center text-center">
@@ -88,6 +96,7 @@ function About() {
                   width={400}
                   height={200}
                   className="h-auto w-full"
+                  loading="eager"
                 />
                 <div className="absolute inset-[1/2] px-8 font-figtree text-white">
                   We cover food, travel, and lodging so you can focus on
@@ -97,13 +106,13 @@ function About() {
             </div>
             <div className="flex items-center justify-center gap-10">
               <div className="relative mr-[20px] h-fit w-fit max-w-md shrink-0 -rotate-[2deg] rounded-sm bg-white shadow-md">
-                <div className="flex max-w-96 flex-col items-center justify-center gap-x-8 gap-y-2 p-8">
+                <div className="flex max-w-96 flex-col items-center justify-center gap-x-8 gap-y-2 p-8 pt-2.5">
                   <div>
-                    <motion.img
-                      src="/people.png"
+                    <Image
+                      src="/about/people.png"
                       alt="hackwestern"
                       width={300}
-                      height={150}
+                      height={130}
                       draggable="false"
                     />
                   </div>

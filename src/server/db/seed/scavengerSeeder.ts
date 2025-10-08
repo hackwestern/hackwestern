@@ -6,7 +6,6 @@ const ITEMS = 20;
 export class ScavengerHuntItemSeeder
   implements Seeder<typeof scavengerHuntItems>
 {
-  private itemIds = faker.helpers.uniqueArray(() => faker.string.uuid(), ITEMS);
   tableName = "ScavengerHuntItems";
   table = scavengerHuntItems;
 
