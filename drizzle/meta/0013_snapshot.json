@@ -1,5 +1,5 @@
 {
-  "id": "29b1177e-7ba3-49f2-a149-d6c7026dabb6",
+  "id": "c63310af-8770-4fbf-adb3-dd6073559a94",
   "prevId": "e3c91eab-29cc-4044-9ef8-09abfb6ad88c",
   "version": "7",
   "dialect": "postgresql",
@@ -354,15 +354,9 @@
           "primaryKey": false,
           "notNull": false
         },
-        "canvas_description": {
-          "name": "canvas_description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "canvas_data": {
           "name": "canvas_data",
-          "type": "text",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         }
@@ -996,9 +990,54 @@
           "primaryKey": false,
           "notNull": false,
           "default": "'hacker'"
+        },
+        "scavenger_hunt_earned": {
+          "name": "scavenger_hunt_earned",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "scavenger_hunt_balance": {
+          "name": "scavenger_hunt_balance",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
         }
       },
-      "indexes": {},
+      "indexes": {
+        "user_scavenger_hunt_earned_idx": {
+          "name": "user_scavenger_hunt_earned_idx",
+          "columns": [
+            {
+              "expression": "scavenger_hunt_earned",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "user_scavenger_hunt_balance_idx": {
+          "name": "user_scavenger_hunt_balance_idx",
+          "columns": [
+            {
+              "expression": "scavenger_hunt_balance",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -1079,6 +1118,7 @@
       "values": [
         "Canada",
         "United States",
+        "India",
         "Other"
       ]
     },
