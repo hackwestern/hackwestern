@@ -29,19 +29,44 @@ const SimpleCanvas = React.forwardRef<
     [],
   );
 
+  // Debounce timer for saving strokes
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const SAVE_DEBOUNCE_MS = 300;
+
+  // Track the last local modification timestamp to prioritize local data
+  const lastLocalModificationRef = useRef<number>(0);
+  const hasLocalChangesRef = useRef<boolean>(false);
+
   // Load initial data when component mounts or initialData changes
+  // Only update if server data is newer than local data AND user isn't actively drawing
   React.useEffect(() => {
     if (initialData?.paths && Array.isArray(initialData.paths)) {
-      setPaths(initialData.paths);
+      const serverTimestamp = initialData.timestamp || 0;
+      const hasNewerServerData = serverTimestamp > lastLocalModificationRef.current;
+
+      // Only apply server data if:
+      // 1. We have no local changes, OR
+      // 2. Server data is newer AND user is not currently drawing/about to save
+      if (!hasLocalChangesRef.current || (hasNewerServerData && !isDrawing && !saveTimerRef.current)) {
+        setPaths(initialData.paths);
+        // Don't update lastLocalModificationRef here - only update on actual user input
+      }
     }
-  }, [initialData]);
+
+    // Cleanup timer on unmount
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [initialData, isDrawing]);
 
   // Memoize rect calculation to avoid repeated getBoundingClientRect calls
   const rectRef = useRef<DOMRect | null>(null);
 
   // Throttle mouse move events to improve performance
   const lastMoveTimeRef = useRef(0);
-  const THROTTLE_MS = 4; // ~250fps for very smooth lines
+  const THROTTLE_MS = 16; // ~60fps for smooth lines with better performance
 
   const getPointFromEvent = useCallback((e: React.MouseEvent) => {
     if (!rectRef.current) {
@@ -81,15 +106,30 @@ const SimpleCanvas = React.forwardRef<
 
   const handleMouseUp = useCallback(() => {
     if (isDrawing) {
+      const timestamp = Date.now();
+
+      // Clear any existing save timer
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+
+      // Mark that we have local changes
+      hasLocalChangesRef.current = true;
+      lastLocalModificationRef.current = timestamp;
+
       setPaths((prev) => {
         const newPaths = [...prev, currentPath];
-        // Notify parent about the change immediately when path is added
-        const drawingData: CanvasData = {
-          paths: newPaths,
-          timestamp: Date.now(),
-          version: "1.0",
-        };
-        onDrawingChange?.(newPaths.length === 0, drawingData);
+
+        // Debounce the save - only save if no new stroke starts within 300ms
+        saveTimerRef.current = setTimeout(() => {
+          const drawingData: CanvasData = {
+            paths: newPaths,
+            timestamp: timestamp,
+            version: "1.0",
+          };
+          onDrawingChange?.(newPaths.length === 0, drawingData);
+        }, SAVE_DEBOUNCE_MS);
+
         return newPaths;
       });
       setCurrentPath([]);
@@ -121,7 +161,17 @@ const SimpleCanvas = React.forwardRef<
       setPaths([]);
       setCurrentPath([]);
       setIsDrawing(false);
-      // Notify parent that canvas is now empty (and save this state)
+
+      // Mark as local change and update timestamp
+      hasLocalChangesRef.current = true;
+      lastLocalModificationRef.current = Date.now();
+
+      // Clear any pending save timer
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+
+      // Notify parent that canvas is now empty (and save this state immediately)
       onDrawingChange?.(true, {
         paths: [],
         timestamp: Date.now(),
@@ -134,9 +184,9 @@ const SimpleCanvas = React.forwardRef<
   }));
 
   return (
-    <div className="relative cursor-crosshair overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white">
+    <div className="relative h-80 w-lg cursor-crosshair overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white">
       <svg
-        className="4xl 4xl:h-112 h-56 w-full lg:h-64 2xl:h-72 3xl:h-96"
+        className="h-full w-full"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -146,7 +196,7 @@ const SimpleCanvas = React.forwardRef<
           <path
             key={pathIndex}
             d={pathString}
-            stroke="#3b82f6"
+            stroke="#a16bc7"
             strokeWidth="4"
             fill="none"
             strokeLinecap="round"
@@ -156,7 +206,7 @@ const SimpleCanvas = React.forwardRef<
         {currentPathString && (
           <path
             d={currentPathString}
-            stroke="#3b82f6"
+            stroke="#a16bc7"
             strokeWidth="4"
             fill="none"
             strokeLinecap="round"
@@ -164,11 +214,6 @@ const SimpleCanvas = React.forwardRef<
           />
         )}
       </svg>
-      {paths.length === 0 && currentPath.length === 0 && (
-        <div className="absolute left-2 top-2 rounded bg-white px-2 py-1 text-sm text-gray-500">
-          Draw something to express yourself!
-        </div>
-      )}
     </div>
   );
 });
@@ -223,34 +268,27 @@ export function CanvasForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <div>
           <FormField
             control={form.control}
             name="canvasData"
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div></div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={isCanvasEmpty}
-                        onClick={() => {
-                          canvasRef.current?.clear();
-                        }}
-                        className={`${
-                          isCanvasEmpty
-                            ? "disabled:cursor-not-allowed disabled:opacity-50"
-                            : "border-purple-600 bg-purple-600 text-white hover:border-purple-700 hover:bg-purple-700"
-                        }`}
-                      >
-                        Clear
-                      </Button>
-                    </div>
+                  <div className="-ml-1 -mt-5">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isCanvasEmpty}
+                      onClick={() => {
+                        canvasRef.current?.clear();
+                      }}
+                      className={`absolute z-[999] -mb-2 ml-2 mt-4 h-max bg-beige text-heavy`}
+                    >
+                      Clear
+                    </Button>
                     <SimpleCanvas
                       ref={canvasRef}
                       initialData={
