@@ -1,4 +1,3 @@
-import { HWLogo } from "~/components/apply/hw-logo";
 import { applySteps, type ApplyStep } from "~/constants/apply";
 import { Button } from "../ui/button";
 import Link from "next/link";
@@ -15,6 +14,7 @@ import { ArrowLeft, ArrowRight, Menu, Send } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { useToast } from "../hooks/use-toast";
 import { api } from "~/utils/api";
+import Image from "next/image";
 
 type ApplyMenuProps = {
   step: ApplyStep | null;
@@ -41,9 +41,14 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
 
   return (
     <div className="mx-auto h-screen w-full gap-3 border-[1px] bg-white py-3 shadow-[5px_0px_10px_0px_rgba(129,74,83,0.1)]">
-      <div className="ml-4 mr-auto hidden gap-2 md:flex md:flex-col">
-        <div className="ml-2 flex flex-col gap-8">
-          <HWLogo />
+      <div className="mx-4 gap-2 md:flex md:flex-col">
+        <div className="my-8 ml-2 flex flex-col gap-8">
+          <Image
+            src="/horse.svg"
+            alt="Hack Western Logo"
+            width={40}
+            height={60}
+          />
           <div className="gap-2">
             <h1 className="font-figtree font-bold text-heavy">
               Application Portal
@@ -57,7 +62,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
           <Button
             key={s.step}
             variant={s.step === step ? "apply-ghost" : "apply"}
-            className="w-full"
+            className="w-48 justify-start text-left xl:w-64"
             asChild
           >
             <Link href={{ pathname: "/apply", query: { step: s.step } }}>

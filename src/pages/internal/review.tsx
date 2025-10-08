@@ -23,7 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { formattedDate } from "~/components/apply/saved-indicator";
+import { formattedLastSavedAt } from "~/components/apply/saved-indicator";
 import { useIsMutating } from "@tanstack/react-query";
 import { Spinner } from "~/components/loading-spinner";
 import { Textarea } from "~/components/ui/textarea";
@@ -439,23 +439,21 @@ function SavedIndicator() {
   const { data: review } = api.review.getById.useQuery({ applicantId });
   const isSaving = useIsMutating();
 
-  const formattedLastSavedAt = formattedDate(review?.updatedAt ?? null);
+  const formattedLastSaved = formattedLastSavedAt(review?.updatedAt ?? null);
 
   if (isSaving) {
     return (
-      <div className="flex items-center justify-end gap-1 text-xs italic text-slate-400">
-        <Spinner isLoading className="size-3 fill-primary-100 text-slate-400" />
+      <div className="flex items-center justify-end gap-1 text-xs italic text-heavy">
+        <Spinner isLoading className="size-3 fill-primary-100 text-heavy" />
         <span>Saving</span>
       </div>
     );
   }
 
-  if (formattedLastSavedAt) {
+  if (formattedLastSaved) {
     return (
-      <div className="text-right text-xs italic text-slate-400">
-        Last Saved:
-        <br />
-        {formattedLastSavedAt}
+      <div className="text-right text-xs italic text-heavy">
+        Last saved {formattedLastSaved}
       </div>
     );
   }

@@ -10,7 +10,9 @@ const textareaVariants = cva(
       variant: {
         default: "",
         primary:
-          "rounded-xl bg-violet-100 px-3 py-2 text-black outline outline-1 outline-muted",
+          "rounded-xl bg-faint-lilac px-3 py-2 text-heavy outline outline-1 outline-muted",
+        invalid:
+          "rounded-xl bg-faint-lilac px-3 py-2 text-heavy outline outline-1 outline-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2",
       },
     },
   },

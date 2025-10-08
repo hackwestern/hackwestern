@@ -58,7 +58,7 @@ export function LinksForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
           control={form.control}
           name="githubLink"
@@ -66,7 +66,7 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>Github</FormLabel>
               <FormControl>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <span>github.com/</span>
                   <Input
                     onPaste={onGithubPaste}
@@ -88,7 +88,7 @@ export function LinksForm() {
               <FormLabel>LinkedIn</FormLabel>
               <FormControl>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>linkedin.com/in/</span>
+                  <span className="w-32">linkedin.com/in/</span>
                   <Input
                     onPaste={onLinkedinPaste}
                     {...field}
