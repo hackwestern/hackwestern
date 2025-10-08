@@ -1,11 +1,12 @@
 import React, { useState, useRef, useCallback, useMemo } from "react";
-import { Form } from "~/components/ui/form";
+import { Form, FormControl, FormField, FormItem } from "~/components/ui/form";
 import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { canvasSaveSchema } from "~/schemas/application";
+import type { z } from "zod";
 
 // Define the canvas data structure explicitly
 type CanvasData = {
@@ -14,21 +15,26 @@ type CanvasData = {
   version: string;
 };
 
-type CanvasFormData = {
-  canvasDescription?: string | null;
-  canvasData?: CanvasData | null;
-};
-
 // Simple canvas component for the form
 const SimpleCanvas = React.forwardRef<
   { clear: () => void; isEmpty: () => boolean },
-  { onDrawingChange?: (isEmpty: boolean, data?: CanvasData) => void }
->(({ onDrawingChange }, ref) => {
+  {
+    onDrawingChange?: (isEmpty: boolean, data?: CanvasData) => void;
+    initialData?: CanvasData | null;
+  }
+>(({ onDrawingChange, initialData }, ref) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [paths, setPaths] = useState<Array<{ x: number; y: number }[]>>([]);
   const [currentPath, setCurrentPath] = useState<{ x: number; y: number }[]>(
     [],
   );
+
+  // Load initial data when component mounts or initialData changes
+  React.useEffect(() => {
+    if (initialData?.paths && Array.isArray(initialData.paths)) {
+      setPaths(initialData.paths);
+    }
+  }, [initialData]);
 
   // Memoize rect calculation to avoid repeated getBoundingClientRect calls
   const rectRef = useRef<DOMRect | null>(null);
@@ -77,26 +83,19 @@ const SimpleCanvas = React.forwardRef<
     if (isDrawing) {
       setPaths((prev) => {
         const newPaths = [...prev, currentPath];
-        onDrawingChange?.(newPaths.length === 0);
+        // Notify parent about the change immediately when path is added
+        const drawingData: CanvasData = {
+          paths: newPaths,
+          timestamp: Date.now(),
+          version: "1.0",
+        };
+        onDrawingChange?.(newPaths.length === 0, drawingData);
         return newPaths;
       });
       setCurrentPath([]);
       setIsDrawing(false);
     }
   }, [isDrawing, currentPath, onDrawingChange]);
-
-  // Save drawing data whenever paths change
-  React.useEffect(() => {
-    if (paths.length > 0) {
-      const drawingData = {
-        paths: paths,
-        timestamp: Date.now(),
-        version: "1.0",
-      };
-      // Send as object instead of JSON string since we're using JSONB
-      onDrawingChange?.(false, drawingData);
-    }
-  }, [paths, onDrawingChange]);
 
   // Memoize path string generation to avoid recalculating on every render
   const pathStrings = useMemo(() => {
@@ -122,7 +121,12 @@ const SimpleCanvas = React.forwardRef<
       setPaths([]);
       setCurrentPath([]);
       setIsDrawing(false);
-      onDrawingChange?.(true);
+      // Notify parent that canvas is now empty (and save this state)
+      onDrawingChange?.(true, {
+        paths: [],
+        timestamp: Date.now(),
+        version: "1.0",
+      });
     },
     isEmpty: () => {
       return paths.length === 0 && currentPath.length === 0;
@@ -130,9 +134,9 @@ const SimpleCanvas = React.forwardRef<
   }));
 
   return (
-    <div className="relative h-[28rem] max-h-[28rem] w-full cursor-crosshair overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white">
+    <div className="relative cursor-crosshair overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white">
       <svg
-        className="h-full w-full"
+        className="4xl 4xl:h-112 h-56 w-full lg:h-64 2xl:h-72 3xl:h-96"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -184,11 +188,8 @@ export function CanvasForm() {
   );
   const [isCanvasEmpty, setIsCanvasEmpty] = useState(true);
 
-  const form = useForm<CanvasFormData>({
+  const form = useForm<z.infer<typeof canvasSaveSchema>>({
     resolver: zodResolver(canvasSaveSchema),
-    defaultValues: {
-      canvasData: (defaultValues?.canvasData as CanvasData | null) ?? null,
-    },
   });
 
   // Load existing drawing data when form loads
@@ -213,7 +214,7 @@ export function CanvasForm() {
 
   useAutoSave(form, onSubmit, defaultValues);
 
-  function onSubmit(data: CanvasFormData) {
+  function onSubmit(data: z.infer<typeof canvasSaveSchema>) {
     mutate({
       ...defaultValues,
       ...data,
@@ -224,37 +225,49 @@ export function CanvasForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div></div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={isCanvasEmpty}
-                onClick={() => {
-                  canvasRef.current?.clear();
-                  setIsCanvasEmpty(true);
-                }}
-                className={`${
-                  isCanvasEmpty
-                    ? "disabled:cursor-not-allowed disabled:opacity-50"
-                    : "border-purple-600 bg-purple-600 text-white hover:border-purple-700 hover:bg-purple-700"
-                }`}
-              >
-                Clear
-              </Button>
-            </div>
-            <SimpleCanvas
-              ref={canvasRef}
-              onDrawingChange={(isEmpty, data) => {
-                setIsCanvasEmpty(isEmpty);
-                if (data) {
-                  form.setValue("canvasData", data);
-                }
-              }}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="canvasData"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div></div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isCanvasEmpty}
+                        onClick={() => {
+                          canvasRef.current?.clear();
+                        }}
+                        className={`${
+                          isCanvasEmpty
+                            ? "disabled:cursor-not-allowed disabled:opacity-50"
+                            : "border-purple-600 bg-purple-600 text-white hover:border-purple-700 hover:bg-purple-700"
+                        }`}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                    <SimpleCanvas
+                      ref={canvasRef}
+                      initialData={
+                        defaultValues?.canvasData as CanvasData | null
+                      }
+                      onDrawingChange={(isEmpty, data) => {
+                        setIsCanvasEmpty(isEmpty);
+                        if (data) {
+                          field.onChange(data);
+                        }
+                      }}
+                    />
+                  </div>
+                </FormControl>
+              </FormItem>
+            )}
+          />
         </div>
       </form>
     </Form>
