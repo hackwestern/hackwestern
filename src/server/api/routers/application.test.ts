@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, assert, describe, expect, test } from "vitest";
+import { afterEach, assert, describe, expect, test } from "vitest";
 import { faker } from "@faker-js/faker";
 import { type Session } from "next-auth";
 
@@ -48,6 +48,8 @@ describe("application.get", async () => {
       ...application,
       githubLink: application?.githubLink?.substring(19),
       linkedInLink: application?.linkedInLink?.substring(24),
+      canvasData: null,
+      canvasDescription: null,
     };
 
     return expect(got).toEqual(want);
@@ -91,6 +93,8 @@ describe("application.getById", async () => {
       ...application,
       githubLink: application?.githubLink,
       linkedInLink: application?.linkedInLink,
+      canvasData: null,
+      canvasDescription: null,
     };
 
     return expect(got).toEqual(want);
@@ -167,7 +171,11 @@ describe.sequential("application.save", async () => {
     await expect(caller.application.get()).resolves.toBeNull();
 
     const application = createRandomApplication(session);
-    const want = application;
+    const want = {
+      ...application,
+      canvasData: null,
+      canvasDescription: null,
+    };
 
     await caller.application.save(application);
     const result = await caller.application.get();
@@ -184,7 +192,11 @@ describe.sequential("application.save", async () => {
     await caller.application.save(application);
     const updatedApplication = createRandomApplication(session);
 
-    const want = updatedApplication;
+    const want = {
+      ...updatedApplication,
+      canvasData: null,
+      canvasDescription: null,
+    };
 
     await caller.application.save(updatedApplication);
     const result = await caller.application.get();
@@ -202,6 +214,8 @@ describe.sequential("application.save", async () => {
     const want = {
       ...completeApplication,
       status: "PENDING_REVIEW",
+      canvasData: null,
+      canvasDescription: null,
     };
 
     await caller.application.save(completeApplication);
