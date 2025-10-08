@@ -46,7 +46,7 @@ export function BasicsForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="flex w-full flex-wrap gap-2">
           <FormLabel className="w-full">Full Name</FormLabel>
           <FormField
@@ -116,13 +116,17 @@ export function BasicsForm() {
                   }}
                   type="number"
                   value={field.value ? Number(field.value) : undefined}
-                  placeholder="Your age as of November 29th, 2024"
-                  variant="primary"
+                  placeholder="Your age as of November 21, 2025"
+                  variant={(field.value ?? 18) >= 18 ? "primary" : "invalid"}
                 />
               </FormControl>
-              <FormDescription>
-                You must be 18 years of age by November 29, 2024.
-              </FormDescription>
+              {(field.value ?? 18) < 18 && (
+                <FormDescription>
+                  <p className="text-destructive">
+                    You must be 18 years of age by November 21, 2025.
+                  </p>
+                </FormDescription>
+              )}
             </FormItem>
           )}
         />
