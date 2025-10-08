@@ -114,7 +114,11 @@ export const applicationRouter = createTRPCRouter({
 
         // Type the canvasData properly for JSONB
         const typedCanvasData = canvasData as
-          | { paths: Array<Array<{ x: number; y: number }>>; timestamp: number; version: string }
+          | {
+              paths: Array<Array<{ x: number; y: number }>>;
+              timestamp: number;
+              version: string;
+            }
           | null
           | undefined;
 
