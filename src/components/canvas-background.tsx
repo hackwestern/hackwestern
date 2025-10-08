@@ -23,7 +23,7 @@ function Gradient() {
 
 function Dots() {
   return (
-    <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-60 [background-size:20px_20px]" />
+    <div className="absolute inset-0 h-full w-full bg-[radial-gradient(#776780_1.5px,transparent_1px)] opacity-40 [background-size:20px_20px]" />
   );
 }
 

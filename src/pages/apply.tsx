@@ -6,7 +6,6 @@ import { ApplyMenu } from "~/components/apply/menu";
 import { ApplyForm } from "~/components/apply/form";
 import { Passport } from "~/components/apply/passport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { SavedIndicator } from "~/components/apply/saved-indicator";
 import { notVerifiedRedirect } from "~/utils/redirect";
 import CanvasBackground from "~/components/canvas-background";
 import { ApplyNavigation } from "~/components/apply/navigation";
@@ -93,7 +92,7 @@ export default function Apply() {
         <div className="relative z-10 hidden h-full w-full flex-grow items-center md:flex">
           <div
             id="left-panel"
-            className="z-30 flex h-full w-1/5 items-center justify-center"
+            className="z-30 flex h-full items-center justify-center"
           >
             <ApplyMenu step={step} />
           </div>
@@ -104,17 +103,15 @@ export default function Apply() {
             <CanvasBackground />
             <div className="z-10 flex flex-col items-center justify-center overflow-auto">
               <div className="h-full w-full space-y-4">
-                <div className="flex h-[400px] w-[800px] flex-col justify-start space-y-8 rounded-md bg-white py-12 pl-11 pr-8 shadow-lg 2xl:h-[500px] 2xl:w-[1000px]">
+                <div className="h-lg flex w-lg flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-xl md:h-[85vh] md:px-12 md:py-12 lg:h-[80vh] lg:w-3xl 2xl:h-[75vh] 2xl:w-4xl 3xl:h-[65vh] 3xl:w-6xl 4xl:w-7xl">
                   <div className="space-y-4 py-1.5">
-                    <h1 className="mt-12 font-dico text-2xl font-medium text-heavy">
+                    <h1 className="font-dico text-2xl font-medium text-heavy">
                       {heading}
                     </h1>
-                    {subheading ? (
+                    {subheading && (
                       <h2 className="font-figtree text-sm text-medium">
                         {subheading}
                       </h2>
-                    ) : (
-                      <></>
                     )}
                   </div>
                   <div className="scrollbar overflow-auto pb-2 pl-1 pr-4">
