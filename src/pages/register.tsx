@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useActionState } from "react";
+import { useActionState, useState, useRef } from "react";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import { Button } from "~/components/ui/button";
@@ -15,6 +15,9 @@ import DiscordAuthButton from "~/components/auth/discordauth-button";
 
 export default function Register() {
   const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
 
   const router = useRouter();
   const { mutate: register } = api.auth.create.useMutation({
@@ -71,17 +74,20 @@ export default function Register() {
           <h2 className="mb-6 self-start font-figtree text-2xl text-medium">
             The world is your canvas.
           </h2>
-          <form action={handleSubmit}>
+          <form ref={formRef} action={handleSubmit}>
             <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
               Email
             </h2>
             <Input
               required
+              id="register-email"
               type="email"
               name="email"
               autoComplete="email"
               className="mb-4 h-[60px] bg-highlight font-jetbrains-mono text-medium"
               placeholder="hello@hackwestern.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
             <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
               Password
@@ -93,6 +99,8 @@ export default function Register() {
               autoComplete="new-password"
               className="mb-8 h-[60px] bg-highlight font-jetbrains-mono text-medium"
               placeholder="enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
             <Button
               variant="primary"

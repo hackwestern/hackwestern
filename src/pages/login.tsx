@@ -2,7 +2,7 @@ import { signIn } from "next-auth/react";
 import Head from "next/head";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { useActionState } from "react";
+import { useActionState, useState, useRef } from "react";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import Link from "next/link";
@@ -15,6 +15,9 @@ import CanvasBackground from "~/components/canvas-background";
 export default function Login() {
   const router = useRouter();
   const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
 
   const [_message, handleSubmit, pending] = useActionState<
     string | null,
@@ -27,11 +30,14 @@ export default function Login() {
     });
 
     if (response && response.ok === false) {
+      // Clear only the password on error
+      setPassword("");
       toast({
         title: "Error",
         description: "Invalid email or password.",
         variant: "destructive",
       });
+      return null;
     }
 
     void router.push("/dashboard");
@@ -58,16 +64,18 @@ export default function Login() {
           <h2 className="mb-6 self-start font-figtree text-2xl text-medium">
             The world is your canvas.
           </h2>
-          <form action={handleSubmit}>
+          <form ref={formRef} action={handleSubmit}>
             <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
               Email
             </h2>
             <Input
               name="email"
-              type="email"
-              autoComplete="email"
+              type="text"
+              autoComplete="username"
               className="mb-4 h-[60px] bg-highlight font-jetbrains-mono text-medium"
               placeholder="hello@hackwestern.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
             <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
@@ -79,6 +87,8 @@ export default function Login() {
               autoComplete="current-password"
               className="mb-8 h-[60px] bg-highlight font-jetbrains-mono text-medium"
               placeholder="enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
             />
             <Button
