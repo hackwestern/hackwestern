@@ -172,7 +172,6 @@ export const applicationSubmitSchema = z.object({
 });
 
 export const canvasSaveSchema = applicationSaveSchema.pick({
-  canvasDescription: true,
   canvasData: true,
 });
 

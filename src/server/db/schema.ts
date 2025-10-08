@@ -4,6 +4,7 @@ import {
   index,
   serial,
   integer,
+  jsonb,
   pgEnum,
   pgTableCreator,
   primaryKey,
@@ -313,8 +314,11 @@ export const applications = createTable(
     sexualOrientation: sexualOrientation("sexual_orientation"),
 
     // Canvas
-    canvasDescription: text("canvas_description"),
-    canvasData: text("canvas_data"),
+    canvasData: jsonb("canvas_data").$type<{
+      paths: Array<Array<{ x: number; y: number }>>;
+      timestamp: number;
+      version: string;
+    }>(),
   },
   (application) => [index("user_id_idx").on(application.userId)],
 );

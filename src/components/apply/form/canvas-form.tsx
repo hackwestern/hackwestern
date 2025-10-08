@@ -6,14 +6,23 @@ import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { canvasSaveSchema } from "~/schemas/application";
-import type { z } from "zod";
 
-type CanvasFormData = z.infer<typeof canvasSaveSchema>;
+// Define the canvas data structure explicitly
+type CanvasData = {
+  paths: Array<Array<{ x: number; y: number }>>;
+  timestamp: number;
+  version: string;
+};
+
+type CanvasFormData = {
+  canvasDescription?: string | null;
+  canvasData?: CanvasData | null;
+};
 
 // Simple canvas component for the form
 const SimpleCanvas = React.forwardRef<
   { clear: () => void; isEmpty: () => boolean },
-  { onDrawingChange?: (isEmpty: boolean, data?: string) => void }
+  { onDrawingChange?: (isEmpty: boolean, data?: CanvasData) => void }
 >(({ onDrawingChange }, ref) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [paths, setPaths] = useState<Array<{ x: number; y: number }[]>>([]);
@@ -84,8 +93,8 @@ const SimpleCanvas = React.forwardRef<
         timestamp: Date.now(),
         version: "1.0",
       };
-      // This will be picked up by the parent form's auto-save
-      onDrawingChange?.(false, JSON.stringify(drawingData));
+      // Send as object instead of JSON string since we're using JSONB
+      onDrawingChange?.(false, drawingData);
     }
   }, [paths, onDrawingChange]);
 
@@ -178,7 +187,7 @@ export function CanvasForm() {
   const form = useForm<CanvasFormData>({
     resolver: zodResolver(canvasSaveSchema),
     defaultValues: {
-      canvasData: defaultValues?.canvasData ?? "",
+      canvasData: (defaultValues?.canvasData as CanvasData | null) ?? null,
     },
   });
 
@@ -186,12 +195,12 @@ export function CanvasForm() {
   React.useEffect(() => {
     if (defaultValues?.canvasData) {
       try {
-        const drawingData = JSON.parse(defaultValues.canvasData) as unknown;
+        const drawingData = defaultValues.canvasData;
         if (
           drawingData &&
           typeof drawingData === "object" &&
           "paths" in drawingData &&
-          Array.isArray((drawingData as { paths: unknown }).paths)
+          Array.isArray(drawingData.paths)
         ) {
           // We could restore the drawing here, but for now just mark as not empty
           setIsCanvasEmpty(false);
