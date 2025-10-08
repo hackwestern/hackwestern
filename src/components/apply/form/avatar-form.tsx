@@ -381,7 +381,7 @@ export function AvatarForm() {
                           {/* Blurred white layer behind the thumbnail to feather edges */}
                           <div
                             aria-hidden
-                            className="absolute inset-0 z-0 scale-105 transform rounded-2xl bg-white blur-md filter"
+                            className="absolute inset-0 z-0 scale-105 transform rounded-full bg-white blur-md filter"
                           />
                           <img
                             src={accessory.src}
