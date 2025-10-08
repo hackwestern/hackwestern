@@ -311,6 +311,10 @@ export const applications = createTable(
     gender: gender("gender"),
     ethnicity: ethnicity("ethnicity"),
     sexualOrientation: sexualOrientation("sexual_orientation"),
+
+    // Canvas
+    canvasDescription: text("canvas_description"),
+    canvasData: text("canvas_data"),
   },
   (application) => [index("user_id_idx").on(application.userId)],
 );
