@@ -40,7 +40,7 @@ export default function Login() {
       return null;
     }
 
-    void router.push("/dashboard");
+    await router.push("/dashboard");
     return null;
   }, null);
 
@@ -69,6 +69,7 @@ export default function Login() {
               Email
             </h2>
             <Input
+              id="email"
               name="email"
               type="text"
               autoComplete="username"
@@ -82,6 +83,7 @@ export default function Login() {
               Password
             </h2>
             <Input
+              id="password"
               name="password"
               type="password"
               autoComplete="current-password"

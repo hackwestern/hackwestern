@@ -1,5 +1,4 @@
 import Head from "next/head";
-import { useRouter } from "next/router";
 import { useActionState, useState, useRef } from "react";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
@@ -19,8 +18,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
 
-  const router = useRouter();
-  const { mutate: register } = api.auth.create.useMutation({
+  const { mutateAsync: register } = api.auth.create.useMutation({
     onError: (error) => {
       toast({
         title: "Error",
@@ -29,28 +27,31 @@ export default function Register() {
         variant: "destructive",
       });
     },
-    onSuccess: (_data, variables) =>
-      signIn("credentials", {
-        username: variables.email,
-        password: variables.password,
-      }).then(() => {
-        toast({
-          title: "Success",
-          description: "Account created successfully",
-          variant: "default",
-        });
-        void router.push("/dashboard");
-      }),
   });
 
   const [_message, handleSubmit, pending] = useActionState<
     string | null,
     FormData
   >(async (_prev, formData) => {
-    register({
+    await register({
       email: formData.get("email") as string,
       password: formData.get("password") as string,
     });
+
+    const response = await signIn("credentials", {
+      username: formData.get("email"),
+      password: formData.get("password"),
+      callbackUrl: "/dashboard",
+    });
+
+    if (response?.ok) {
+      toast({
+        title: "Success",
+        description: "Account created successfully",
+        variant: "default",
+      });
+    }
+
     return null;
   }, null);
 
@@ -80,10 +81,10 @@ export default function Register() {
             </h2>
             <Input
               required
-              id="register-email"
-              type="email"
+              id="email"
+              type="text"
               name="email"
-              autoComplete="email"
+              autoComplete="username"
               className="mb-4 h-[60px] bg-highlight font-jetbrains-mono text-medium"
               placeholder="hello@hackwestern.com"
               value={email}
@@ -94,6 +95,7 @@ export default function Register() {
             </h2>
             <Input
               required
+              id="password"
               type="password"
               name="password"
               autoComplete="new-password"
@@ -109,7 +111,7 @@ export default function Register() {
               full
               isPending={pending}
             >
-              Create Account
+              {pending ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
 
