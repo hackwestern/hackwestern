@@ -1,11 +1,11 @@
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { Form } from "~/components/ui/form";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { personaSaveSchema } from "~/schemas/application";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 /* eslint-disable @next/next/no-img-element */
 import { categories, colors, avatarManifest } from "../../../constants/avatar";
 import type { AvatarObject } from "../../../constants/avatar";
@@ -30,114 +30,31 @@ export function AvatarForm() {
 
   const form = useForm<z.infer<typeof personaSaveSchema>>({
     resolver: zodResolver(personaSaveSchema),
-    defaultValues: {
-      avatarColour: defaultValues?.avatarColour ?? "green",
-      avatarFace: defaultValues?.avatarFace ?? null,
-      avatarLeftHand: defaultValues?.avatarLeftHand ?? null,
-      avatarRightHand: defaultValues?.avatarRightHand ?? null,
-      avatarHat: defaultValues?.avatarHat ?? null,
-    },
-  });
-
-  const [selectedColor, setSelectedColor] = useState<AvatarColor>(
-    defaultValues?.avatarColour ?? "green",
-  );
-  const [selectedAccessories, setSelectedAccessories] = useState<{
-    face: AvatarObject | null;
-    right: AvatarObject | null;
-    left: AvatarObject | null;
-    hat: AvatarObject | null;
-  }>({
-    face: null,
-    right: null,
-    left: null,
-    hat: null,
   });
 
   const [selectedCategory, setSelectedCategory] = useState("face");
 
-  // Initialize state from defaultValues
-  useEffect(() => {
-    if (defaultValues) {
-      if (defaultValues.avatarColour) {
-        setSelectedColor(defaultValues.avatarColour);
-      }
-      if (defaultValues.avatarFace) {
-        const faceItem = avatarManifest.face.find(
-          (item) => item.id === defaultValues.avatarFace,
-        );
-        if (faceItem) {
-          setSelectedAccessories((prev) => ({
-            ...prev,
-            face: {
-              id: faceItem.id,
-              name: faceItem.alt,
-              src: faceItem.file,
-            },
-          }));
-        }
-      }
-      if (defaultValues.avatarLeftHand) {
-        const leftItem = avatarManifest.left.find(
-          (item) => item.id === defaultValues.avatarLeftHand,
-        );
-        if (leftItem) {
-          setSelectedAccessories((prev) => ({
-            ...prev,
-            left: {
-              id: leftItem.id,
-              name: leftItem.alt,
-              src: leftItem.file,
-            },
-          }));
-        }
-      }
-      if (defaultValues.avatarRightHand) {
-        const rightItem = avatarManifest.right.find(
-          (item) => item.id === defaultValues.avatarRightHand,
-        );
-        if (rightItem) {
-          setSelectedAccessories((prev) => ({
-            ...prev,
-            right: {
-              id: rightItem.id,
-              name: rightItem.alt,
-              src: rightItem.file,
-            },
-          }));
-        }
-      }
-      if (defaultValues.avatarHat) {
-        const hatItem = avatarManifest.hat.find(
-          (item) => item.id === defaultValues.avatarHat,
-        );
-        if (hatItem) {
-          setSelectedAccessories((prev) => ({
-            ...prev,
-            hat: {
-              id: hatItem.id,
-              name: hatItem.alt,
-              src: hatItem.file,
-              sizing: hatItem?.sizing,
-            },
-          }));
-        }
-      }
-    }
-  }, [defaultValues]);
-
-  // Sync color changes to form
-  useEffect(() => {
-    form.setValue("avatarColour", selectedColor);
-  }, [selectedColor, form]);
-
-  // Sync accessory changes to form
-  useEffect(() => {
-    form.setValue("avatarFace", selectedAccessories.face?.id ?? null);
-    form.setValue("avatarLeftHand", selectedAccessories.left?.id ?? null);
-    form.setValue("avatarRightHand", selectedAccessories.right?.id ?? null);
-    form.setValue("avatarHat", selectedAccessories.hat?.id ?? null);
-  }, [selectedAccessories, form]);
+  // Watch form values for rendering
+  const avatarColour = useWatch({
+    control: form.control,
+    name: "avatarColour",
+  });
+  const avatarFace = useWatch({
+    control: form.control,
+    name: "avatarFace",
+  });
+  const avatarLeftHand = useWatch({
+    control: form.control,
+    name: "avatarLeftHand",
+  });
+  const avatarRightHand = useWatch({
+    control: form.control,
+    name: "avatarRightHand",
+  });
+  const avatarHat = useWatch({
+    control: form.control,
+    name: "avatarHat",
+  });
 
   useAutoSave(form, onSubmit, defaultValues);
 
@@ -147,6 +64,22 @@ export function AvatarForm() {
       ...data,
     });
   }
+
+  // Helper to get accessory object from ID
+  const getAccessoryFromId = (
+    category: "face" | "left" | "right" | "hat",
+    id: number | null,
+  ): AvatarObject | null => {
+    if (!id) return null;
+    const item = avatarManifest[category].find((item) => item.id === id);
+    if (!item) return null;
+    return {
+      id: item.id,
+      name: item.alt,
+      src: item.file,
+      sizing: "sizing" in item ? item.sizing : undefined,
+    };
+  };
 
   const getAccessoriesForCategory = (category: string) => {
     const noneOption: AvatarObject = {
@@ -225,8 +158,8 @@ export function AvatarForm() {
               style={{
                 background: `linear-gradient(
                               135deg,
-                              ${colors.find((c) => c.name === selectedColor)?.bg ?? "#F1FDE0"} 30%,
-                              ${colors.find((c) => c.name === selectedColor)?.gradient ?? "#A7FB73"} 95%
+                              ${colors.find((c) => c.name === (avatarColour ?? "green"))?.bg ?? "#F1FDE0"} 30%,
+                              ${colors.find((c) => c.name === (avatarColour ?? "green"))?.gradient ?? "#A7FB73"} 95%
                             )`,
               }}
             >
@@ -235,54 +168,66 @@ export function AvatarForm() {
                   {/* Character Base */}
 
                   <img
-                    src={`/avatar/body/${colors.find((c) => c.name === selectedColor)?.body ?? "002"}.webp`}
+                    src={`/avatar/body/${colors.find((c) => c.name === (avatarColour ?? "green"))?.body ?? "002"}.webp`}
                     alt="Character body"
                     className="h-full w-full object-contain"
                   />
 
                   {/* Selected Accessory - Face */}
-                  {selectedAccessories.face && (
-                    <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2">
-                      <img
-                        src={selectedAccessories.face.src}
-                        alt={selectedAccessories.face.name}
-                        className="h-full w-full object-contain"
-                      />
-                    </div>
-                  )}
+                  {avatarFace && (() => {
+                    const faceAccessory = getAccessoryFromId("face", avatarFace);
+                    return faceAccessory ? (
+                      <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2">
+                        <img
+                          src={faceAccessory.src}
+                          alt={faceAccessory.name}
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                    ) : null;
+                  })()}
 
                   {/* Selected Accessory - Hat */}
-                  {selectedAccessories.hat && (
-                    <div className="absolute -top-16 left-1/2 h-56 w-56 -translate-x-1/2">
-                      <img
-                        src={selectedAccessories.hat.src}
-                        alt={selectedAccessories.hat.name}
-                        className={`h-full w-full ${selectedAccessories.hat?.sizing} object-contain`}
-                      />
-                    </div>
-                  )}
+                  {avatarHat && (() => {
+                    const hatAccessory = getAccessoryFromId("hat", avatarHat);
+                    return hatAccessory ? (
+                      <div className="absolute -top-16 left-1/2 h-56 w-56 -translate-x-1/2">
+                        <img
+                          src={hatAccessory.src}
+                          alt={hatAccessory.name}
+                          className={`h-full w-full ${hatAccessory.sizing ?? ""} object-contain`}
+                        />
+                      </div>
+                    ) : null;
+                  })()}
 
                   {/* Selected Accessory - Left Hand */}
-                  {selectedAccessories.left && (
-                    <div className="absolute -left-4 bottom-20 h-16 w-16">
-                      <img
-                        src={selectedAccessories.left.src}
-                        alt={selectedAccessories.left.name}
-                        className="h-full w-full object-contain"
-                      />
-                    </div>
-                  )}
+                  {avatarLeftHand && (() => {
+                    const leftAccessory = getAccessoryFromId("left", avatarLeftHand);
+                    return leftAccessory ? (
+                      <div className="absolute -left-4 bottom-20 h-16 w-16">
+                        <img
+                          src={leftAccessory.src}
+                          alt={leftAccessory.name}
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                    ) : null;
+                  })()}
 
                   {/* Selected Accessory - Right Hand */}
-                  {selectedAccessories.right && (
-                    <div className="absolute -right-4 bottom-20 h-16 w-16">
-                      <img
-                        src={selectedAccessories.right.src}
-                        alt={selectedAccessories.right.name}
-                        className="h-full w-full object-contain"
-                      />
-                    </div>
-                  )}
+                  {avatarRightHand && (() => {
+                    const rightAccessory = getAccessoryFromId("right", avatarRightHand);
+                    return rightAccessory ? (
+                      <div className="absolute -right-4 bottom-20 h-16 w-16">
+                        <img
+                          src={rightAccessory.src}
+                          alt={rightAccessory.name}
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               </div>
             </div>
@@ -294,9 +239,13 @@ export function AvatarForm() {
                   <button
                     key={color.name}
                     type="button"
-                    onClick={() => setSelectedColor(color.name as AvatarColor)}
+                    onClick={() => {
+                      form.setValue("avatarColour", color.name as AvatarColor, {
+                        shouldDirty: true,
+                      });
+                    }}
                     className={`h-8 w-8 flex-shrink-0 rounded-lg transition-all hover:scale-110 2xl:h-10 2xl:w-10 ${
-                      selectedColor === color.name
+                      avatarColour === color.name
                         ? "ring-2 ring-purple-200"
                         : ""
                     }`}
@@ -342,62 +291,80 @@ export function AvatarForm() {
             <div className="custom-scroll flex-1 overflow-y-auto overflow-x-hidden pr-2">
               <div className="grid h-0 w-full gap-3 md:grid-cols-2 lg:grid-cols-2 3xl:grid-cols-3">
                 {getAccessoriesForCategory(selectedCategory).map(
-                  (accessory) => (
-                    <button
-                      key={accessory.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedAccessories((prev) => ({
-                          ...prev,
-                          [selectedCategory]:
-                            accessory.id === 0 ? null : accessory,
-                        }));
-                      }}
-                      className={`flex aspect-[7/5] w-full items-center justify-center rounded-lg border-2 transition-all hover:scale-[1.01] ${
-                        selectedAccessories[
-                          selectedCategory as keyof typeof selectedAccessories
-                        ]?.id === accessory.id ||
-                        (accessory.id === 0 &&
-                          !selectedAccessories[
-                            selectedCategory as keyof typeof selectedAccessories
-                          ])
-                          ? "bg-lilac"
-                          : "border-gray-200 bg-white hover:border-gray-300"
-                      }`}
-                      style={
-                        selectedAccessories[
-                          selectedCategory as keyof typeof selectedAccessories
-                        ]?.id === accessory.id ||
-                        (accessory.id === 0 &&
-                          !selectedAccessories[
-                            selectedCategory as keyof typeof selectedAccessories
-                          ])
-                          ? { borderColor: "var(--hw-purple)" }
-                          : {}
-                      }
-                    >
-                      {accessory.src ? (
-                        <div className="relative h-12 w-12 rounded-2xl lg:h-20 lg:w-20">
-                          {/* Blurred white layer behind the thumbnail to feather edges */}
-                          <div
-                            aria-hidden
-                            className="absolute inset-0 z-0 scale-105 transform rounded-full bg-white blur-md filter"
-                          />
+                  (accessory) => {
+                    // Get current value for this category
+                    const currentValue =
+                      selectedCategory === "face"
+                        ? avatarFace
+                        : selectedCategory === "left"
+                          ? avatarLeftHand
+                          : selectedCategory === "right"
+                            ? avatarRightHand
+                            : selectedCategory === "hat"
+                              ? avatarHat
+                              : null;
+
+                    const isSelected =
+                      currentValue === accessory.id ||
+                      (accessory.id === 0 && !currentValue);
+
+                    return (
+                      <button
+                        key={accessory.id}
+                        type="button"
+                        onClick={() => {
+                          // update the corresponding form field immediately so auto-save sees it
+                          const fieldName =
+                            selectedCategory === "face"
+                              ? "avatarFace"
+                              : selectedCategory === "left"
+                                ? "avatarLeftHand"
+                                : selectedCategory === "right"
+                                  ? "avatarRightHand"
+                                  : selectedCategory === "hat"
+                                    ? "avatarHat"
+                                    : null;
+
+                          if (fieldName) {
+                            form.setValue(
+                              fieldName,
+                              accessory.id === 0 ? null : accessory.id,
+                              { shouldDirty: true },
+                            );
+                          }
+                        }}
+                        className={`flex aspect-[7/5] w-full items-center justify-center rounded-lg border-2 transition-all hover:scale-[1.01] ${
+                          isSelected
+                            ? "bg-lilac"
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}
+                        style={
+                          isSelected ? { borderColor: "var(--hw-purple)" } : {}
+                        }
+                      >
+                        {accessory.src ? (
+                          <div className="relative h-12 w-12 rounded-2xl lg:h-20 lg:w-20">
+                            {/* Blurred white layer behind the thumbnail to feather edges */}
+                            <div
+                              aria-hidden
+                              className="absolute inset-0 z-0 scale-105 transform rounded-full bg-white blur-md filter"
+                            />
+                            <img
+                              src={accessory.src}
+                              alt={accessory.name}
+                              className="relative z-10 h-full w-full rounded-2xl object-contain p-1"
+                            />
+                          </div>
+                        ) : (
                           <img
-                            src={accessory.src}
-                            alt={accessory.name}
-                            className="relative z-10 h-full w-full rounded-2xl object-contain p-1"
+                            src={`/ellipse.png`}
+                            alt="No selection"
+                            className="h-8 w-8"
                           />
-                        </div>
-                      ) : (
-                        <img
-                          src={`/ellipse.png`}
-                          alt="No selection"
-                          className="h-8 w-8"
-                        />
-                      )}
-                    </button>
-                  ),
+                        )}
+                      </button>
+                    );
+                  },
                 )}
               </div>
             </div>
