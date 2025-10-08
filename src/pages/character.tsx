@@ -38,4 +38,4 @@ export default function Register() {
   );
 }
 
-export const getServerSideProps = hackerLoginRedirect;
+// export const getServerSideProps = hackerLoginRedirect;

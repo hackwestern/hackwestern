@@ -1,5 +1,5 @@
 import type { ApplyStep } from "~/constants/apply";
-import { PersonaForm } from "./persona-form";
+import { AvatarForm } from "./avatar-form";
 import { BasicsForm } from "./basics-form";
 import { InfoForm } from "./info-form";
 import { ApplicationForm } from "./application-form";
@@ -15,7 +15,7 @@ type ApplyFormProps = {
 export function ApplyForm({ step }: ApplyFormProps) {
   switch (step) {
     case "character":
-      return <PersonaForm />;
+      return <AvatarForm />;
     case "basics":
       return <BasicsForm />;
     case "info":
