@@ -6,9 +6,9 @@ import { ApplyMenu } from "~/components/apply/menu";
 import { ApplyForm } from "~/components/apply/form";
 import { Passport } from "~/components/apply/passport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { SavedIndicator } from "~/components/apply/saved-indicator";
 import { notVerifiedRedirect } from "~/utils/redirect";
 import CanvasBackground from "~/components/canvas-background";
+import { ApplyNavigation } from "~/components/apply/navigation";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   return applySteps.find((s) => s.step === stepValue) ?? null;
@@ -37,34 +37,41 @@ export default function Apply() {
       </Head>
       <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50">
         {/* Mobile View */}
-        <Tabs defaultValue="application" className="w-screen pt-16 md:hidden">
+        <Tabs
+          defaultValue="application"
+          className="w-screen bg-primary-100 font-figtree md:hidden"
+        >
           <TabsList className="fixed z-50 w-screen justify-around rounded-none bg-primary-100">
             <TabsTrigger
               value="application"
-              className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
+              className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
             >
               Application
             </TabsTrigger>
             <TabsTrigger
               value="passport"
-              className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-2.5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
+              className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
             >
               Passport
             </TabsTrigger>
           </TabsList>
           <TabsContent value="application" className="z-40 w-screen">
-            <div className="fixed flex h-screen w-screen flex-col space-y-8 bg-primary-100 px-6 pt-12">
-              <div className="space-y-2 py-1.5">
-                <h1 className="text-2xl font-medium">{heading}</h1>
-                <h2 className="text-sm text-slate-500">{subheading}</h2>
+            <div className="fixed flex h-screen w-screen flex-col space-y-8 bg-white px-6 pt-12">
+              <div className="space-y-2 pt-12">
+                <h1 className="font-dico text-2xl font-medium text-heavy">
+                  {heading}
+                </h1>
+                <h2 className="font-figtree text-sm text-medium">
+                  {subheading}
+                </h2>
               </div>
-              <div className="overflow-y-auto">
+              <div className="overflow-y-auto font-figtree">
                 <ApplyForm step={step} />
               </div>
-              <div className="self-end pb-3">
-                <SavedIndicator />
+              <div className="pb-3">
+                <ApplyNavigation step={step} />
               </div>
-              <div className="select-none bg-primary-100 py-12 text-primary-100">
+              <div className="select-none bg-white py-12 text-primary-100">
                 this is a secret
               </div>
             </div>
@@ -82,30 +89,38 @@ export default function Apply() {
         {/* End of Mobile View */}
 
         {/* Desktop View */}
-        <div className="relative z-10 hidden w-full flex-grow items-center md:flex">
+        <div className="relative z-10 hidden h-full w-full flex-grow items-center md:flex">
           <div
             id="left-panel"
-            className="z-30 flex h-full w-1/5 items-center justify-center"
+            className="z-30 flex h-full items-center justify-center"
           >
             <ApplyMenu step={step} />
           </div>
           <div
             id="right-panel"
-            className="bg-hw-linear-gradient-day flex h-full flex-col items-center justify-center px-4 md:w-full"
+            className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
             <CanvasBackground />
-            <div className="max-h-6xl overflow-contain z-10 flex h-[80%] w-4xl max-w-6xl flex-col items-center justify-center">
-              <div className="flex h-full w-full flex-col space-y-8 overflow-auto rounded-md bg-white p-12">
-                <div className="space-y-2 py-1.5">
-                  <h1 className="text-2xl font-medium">{heading}</h1>
-                  <h2 className="text-sm text-slate-500">{subheading}</h2>
+            <div className="z-10 flex flex-col items-center justify-center overflow-auto">
+              <div className="h-full w-full space-y-4">
+                <div className="flex h-lg w-lg flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-xl md:h-[85vh] md:px-12 md:py-12 lg:h-[80vh] lg:w-3xl 2xl:h-[75vh] 2xl:w-4xl 3xl:h-[65vh] 3xl:w-6xl 4xl:w-7xl">
+                  <div className="space-y-4 py-1.5">
+                    <h1 className="font-dico text-2xl font-medium text-heavy">
+                      {heading}
+                    </h1>
+                    {subheading && (
+                      <h2 className="font-figtree text-sm text-medium">
+                        {subheading}
+                      </h2>
+                    )}
+                  </div>
+                  <div className="scrollbar overflow-auto pb-2 pl-1 pr-4">
+                    <div className="font-figtree">
+                      <ApplyForm step={step} />
+                    </div>
+                  </div>
                 </div>
-                <div className="">
-                  <ApplyForm step={step} />
-                </div>
-                <div className="self-end pb-3">
-                  <SavedIndicator />
-                </div>
+                <ApplyNavigation step={step} />
               </div>
 
               <div className="z-10 flex w-[100%] flex-col items-center justify-center"></div>
