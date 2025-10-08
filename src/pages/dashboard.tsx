@@ -82,11 +82,11 @@ const buttonStatus = (status: ApplicationStatusType) => {
 function getApplyLink(status: ApplicationStatusType | undefined) {
   switch (status) {
     case "IN_PROGRESS":
-      return "/apply?step=persona";
+      return "/apply?step=character";
     case "PENDING_REVIEW":
       return "/apply?step=review";
     default:
-      return "/apply?step=persona";
+      return "/apply?step=character";
   }
 }
 

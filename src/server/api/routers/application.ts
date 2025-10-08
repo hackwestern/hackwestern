@@ -75,7 +75,7 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
 
-  getAllApplicants: protectedOrganizerProcedure.query(async ({ ctx }) => {
+  getAllApplicants: protectedOrganizerProcedure.query(async () => {
     try {
       const applicants = await db
         .select({
@@ -108,33 +108,47 @@ export const applicationRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
-        const applicationData = input;
+        const { canvasData, ...restData } = input;
         const isCompleteApplication =
-          applicationSubmitSchema.safeParse(applicationData).success;
+          applicationSubmitSchema.safeParse(input).success;
+
+        // Type the canvasData properly for JSONB
+        const typedCanvasData = canvasData as
+          | {
+              paths: Array<Array<{ x: number; y: number }>>;
+              timestamp: number;
+              version: string;
+            }
+          | null
+          | undefined;
+
+        const dataToSave = {
+          ...restData,
+          canvasData: typedCanvasData,
+          githubLink: restData.githubLink
+            ? `${GITHUB_URL}${restData.githubLink}`
+            : null,
+          linkedInLink: restData.linkedInLink
+            ? `${LINKEDIN_URL}${restData.linkedInLink}`
+            : null,
+          userId,
+          status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
+        } as const;
 
         await db
           .insert(applications)
-          .values({
-            ...applicationData,
-            githubLink: applicationData.githubLink
-              ? `${GITHUB_URL}${applicationData.githubLink}`
-              : null,
-            linkedInLink: applicationData.linkedInLink
-              ? `${LINKEDIN_URL}${applicationData.linkedInLink}`
-              : null,
-            userId,
-            status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
-          })
+          .values(dataToSave)
           .onConflictDoUpdate({
             target: applications.userId,
             set: {
-              ...applicationData,
+              ...restData,
+              canvasData: typedCanvasData,
               updatedAt: new Date(),
-              githubLink: applicationData.githubLink
-                ? `${GITHUB_URL}${applicationData.githubLink}`
+              githubLink: restData.githubLink
+                ? `${GITHUB_URL}${restData.githubLink}`
                 : null,
-              linkedInLink: applicationData.linkedInLink
-                ? `${LINKEDIN_URL}${applicationData.linkedInLink}`
+              linkedInLink: restData.linkedInLink
+                ? `${LINKEDIN_URL}${restData.linkedInLink}`
                 : null,
               status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
             },
