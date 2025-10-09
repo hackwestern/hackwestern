@@ -11,6 +11,7 @@ import { signIn } from "next-auth/react";
 import { hackerLoginRedirect } from "~/utils/redirect";
 import CanvasBackground from "~/components/canvas-background";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
+import { TRPCClientError } from "@trpc/client";
 
 export default function Register() {
   const { toast } = useToast();
@@ -18,37 +19,67 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
 
-  const { mutateAsync: register } = api.auth.create.useMutation({
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description:
-          error.data?.zodError?.fieldErrors?.password?.[0] ?? error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const { mutateAsync: register } = api.auth.create.useMutation();
 
   const [_message, handleSubmit, pending] = useActionState<
     string | null,
     FormData
   >(async (_prev, formData) => {
-    await register({
-      email: formData.get("email") as string,
-      password: formData.get("password") as string,
-    });
+    try {
+      await register({
+        email: formData.get("email") as string,
+        password: formData.get("password") as string,
+      });
 
-    const response = await signIn("credentials", {
-      username: formData.get("email"),
-      password: formData.get("password"),
-      callbackUrl: "/dashboard",
-    });
+      const response = await signIn("credentials", {
+        redirect: false,
+        username: formData.get("email"),
+        password: formData.get("password"),
+      });
 
-    if (response?.ok) {
+      if (response?.ok) {
+        toast({
+          title: "Success",
+          description: "Account created successfully",
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      // Handle all errors here to prevent page crashes
+      console.error("Registration error:", error);
+
+      // Handle Zod validation errors from TRPC
+      if (error instanceof TRPCClientError) {
+        // Type guard for the error data structure
+        const errorData = error.data as { zodError?: { fieldErrors?: Record<string, string[]> } };
+        const zodError = errorData?.zodError;
+
+        if (zodError?.fieldErrors) {
+          const allErrors: string[] = [];
+
+          // Collect all error messages from all fields
+          Object.values(zodError.fieldErrors).forEach((errors) => {
+            if (Array.isArray(errors)) {
+              allErrors.push(...errors);
+            }
+          });
+
+          // Display only the first error
+          toast({
+            title: "Validation Error",
+            description: allErrors[0] ?? "Invalid input",
+            variant: "destructive",
+          });
+          return null;
+        }
+      }
+
+      // Handle other errors
+      const errorMessage = error instanceof Error ? error.message : "An error occurred during registration";
       toast({
-        title: "Success",
-        description: "Account created successfully",
-        variant: "default",
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
       });
     }
 
