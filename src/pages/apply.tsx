@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { notVerifiedRedirect } from "~/utils/redirect";
 import CanvasBackground from "~/components/canvas-background";
 import { ApplyNavigation } from "~/components/apply/navigation";
+import { StampContainer } from "~/components/apply/stamp";
+import { api } from "~/utils/api";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   return applySteps.find((s) => s.step === stepValue) ?? null;
@@ -21,6 +23,7 @@ export default function Apply() {
     [searchParams],
   );
 
+  const { data } = api.application.get.useQuery();
   const step = applyStep?.step ?? null;
   const heading = applyStep?.heading ?? null;
   const subheading = applyStep?.subheading ?? null;
@@ -127,6 +130,9 @@ export default function Apply() {
             </div>
           </div>
         </div>
+
+        <StampContainer step={step} data={data} />
+          
         <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
         {/* End of Desktop View */}
       </main>

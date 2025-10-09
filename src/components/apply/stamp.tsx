@@ -151,3 +151,52 @@ export function LinksStamp() {
     />
   );
 }
+
+interface StampContainerProps {
+  step: string | null;
+  data: any;
+}
+
+export function StampContainer({ step, data }: StampContainerProps) {
+  const showMajorStamp = step === "info" && data?.major;
+  const showSchoolStamp = step === "info" && data?.school;
+  const showHackerStamp = step === "info" && data?.numOfHackathons;
+  const showHWStamp = step === "info" && data?.attendedBefore !== undefined;
+  const showLinksStamp = step === "links" && data?.githubLink && data?.linkedInLink && data?.otherLink && data?.resumeLink;
+  const showSubmittedStamp = step === "review" && data?.status !== "IN_PROGRESS";
+
+  return (
+    <div className="absolute inset-0 z-40 pointer-events-none md:flex pointer-events-none">
+      {showMajorStamp && (
+        <div className="absolute top-20 left-80">
+          <MajorStamp type={data.major as any} />
+        </div>
+      )}
+      {showSchoolStamp && (
+        <div className="absolute top-32 right-8">
+          <SchoolStamp type={data.school as any} />
+        </div>
+      )}
+      {showHackerStamp && (
+        <div className="absolute bottom-40 right-12">
+          <HackerStamp numHackathons={data.numOfHackathons} />
+        </div>
+      )}
+      {showHWStamp && (
+        <div className="absolute bottom-20 left-80">
+          <HWStamp returning={data?.attendedBefore ? "returnee" : "newcomer"} />
+        </div>
+      )}
+      {showLinksStamp && (
+        <div className="absolute top-1/4 right-16 transform-translate-y-10">
+          <LinksStamp />
+        </div>
+      )}
+      {showSubmittedStamp && (
+        <div className="absolute top-1/2 left-1/4 transform -translate-x-1/2 -translate-y-1/2">
+          <SubmittedStamp />
+        </div>
+      )}
+    </div>
+  );
+}
