@@ -82,13 +82,13 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
   };
 
   return (
-    <div className="flex w-full items-center justify-between">
+    <div className="z-10 flex w-full items-center justify-between">
       {/* Mobile Layout */}
       <div className="flex w-screen items-center justify-between px-3 md:hidden">
         <div className="flex w-1/4 items-center gap-3">
           {!step || mobilePreviousStep ? (
             <Button
-              variant="outline"
+              variant="secondary"
               asChild
               className="h-10 border-gray-300 px-4 text-gray-700 hover:bg-gray-50"
             >
@@ -99,7 +99,6 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
                     alt="Left Arrow"
                     width={12}
                     height={12}
-                    className="rotate-180"
                   />
                   Back
                 </div>
