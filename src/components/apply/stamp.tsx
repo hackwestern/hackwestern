@@ -86,7 +86,7 @@ const experienceMap = (
   }
 };
 
-const sharedStampClass = "h-16 sm:h-20 2xl:h-28 3xl:h-32 4xl:h-36";
+const sharedStampClass = "h-24 xl:h-20 2xl:h-28 3xl:h-32 4xl:h-36";
 
 export function MajorStamp({
   type,

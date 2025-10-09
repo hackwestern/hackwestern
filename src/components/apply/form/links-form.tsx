@@ -14,11 +14,19 @@ import { Input } from "~/components/ui/input";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { linksSaveSchema } from "~/schemas/application";
-import { getGithubUsername, getLinkedinUsername } from "~/utils/urls";
+import {
+  getGithubUsername,
+  getLinkedinUsername,
+  ensureUrlHasProtocol,
+} from "~/utils/urls";
 
 export function LinksForm() {
   const utils = api.useUtils();
   const { data: defaultValues } = api.application.get.useQuery();
+
+  const status = defaultValues?.status ?? "NOT_STARTED";
+  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
       return utils.application.get.invalidate();
@@ -32,9 +40,16 @@ export function LinksForm() {
   useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof linksSaveSchema>) {
+    // Normalize resume and other links so they validate as URLs (prepend https:// if missing)
+    const normalizedData = {
+      ...data,
+      resumeLink: ensureUrlHasProtocol(data.resumeLink),
+      otherLink: ensureUrlHasProtocol(data.otherLink),
+    } as z.infer<typeof linksSaveSchema>;
+
     mutate({
       ...defaultValues,
-      ...data,
+      ...normalizedData,
     });
   }
 
@@ -74,6 +89,7 @@ export function LinksForm() {
                     value={field.value ?? ""}
                     placeholder="hacker"
                     variant="primary"
+                    disabled={!canEdit}
                   />
                 </div>
               </FormControl>
@@ -95,6 +111,7 @@ export function LinksForm() {
                     value={field.value ?? ""}
                     placeholder="hacker"
                     variant="primary"
+                    disabled={!canEdit}
                   />
                 </div>
               </FormControl>
@@ -113,6 +130,7 @@ export function LinksForm() {
                   value={field.value ?? ""}
                   placeholder="hackerportfolio.com"
                   variant="primary"
+                  disabled={!canEdit}
                 />
               </FormControl>
             </FormItem>
@@ -130,6 +148,7 @@ export function LinksForm() {
                   value={field.value ?? ""}
                   placeholder="drive.google.com/myresume"
                   variant="primary"
+                  disabled={!canEdit}
                 />
               </FormControl>
               <FormDescription>

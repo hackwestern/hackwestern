@@ -227,6 +227,10 @@ SimpleCanvas.displayName = "SimpleCanvas";
 export function CanvasForm() {
   const utils = api.useUtils();
   const { data: defaultValues } = api.application.get.useQuery();
+
+  const status = defaultValues?.status ?? "NOT_STARTED";
+  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
       return utils.application.get.invalidate();
@@ -272,52 +276,87 @@ export function CanvasForm() {
     });
   }
 
+  type CanvasData = {
+    paths: Array<Array<{ x: number; y: number }>>;
+    timestamp: number;
+    version: string;
+  };
+
+  const canvasData = defaultValues?.canvasData as CanvasData | null | undefined;
+  const pathStrings =
+    canvasData?.paths?.map((path) =>
+      path.reduce((acc, point, index) => {
+        if (index === 0) return `M ${point.x} ${point.y}`;
+        return `${acc} L ${point.x} ${point.y}`;
+      }, ""),
+    ) ?? [];
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <div>
-          <FormField
-            control={form.control}
-            name="canvasData"
-            // Provide a defaultValue so react-hook-form registers this Controller
-            defaultValue={defaultValues?.canvasData ?? null}
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <div className="-ml-1 -mt-5">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={isCanvasEmpty}
-                      onClick={() => {
-                        canvasRef.current?.clear();
-                      }}
-                      className={`absolute z-[999] -mb-2 ml-2 mt-4 h-max bg-beige text-heavy`}
-                    >
-                      Clear
-                    </Button>
-                    <SimpleCanvas
-                      ref={canvasRef}
-                      // Use the controller's value when available so the canvas
-                      // reflects the form state and the field is properly controlled
-                      initialData={
-                        (field.value as CanvasData | null) ??
-                        (defaultValues?.canvasData as CanvasData | null) ??
-                        null
-                      }
-                      onDrawingChange={(isEmpty, data) => {
-                        setIsCanvasEmpty(isEmpty);
-                        if (data) {
-                          field.onChange(data);
+          {canEdit ? (
+            <FormField
+              control={form.control}
+              name="canvasData"
+              // Provide a defaultValue so react-hook-form registers this Controller
+              defaultValue={defaultValues?.canvasData ?? null}
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <div className="-ml-1 -mt-5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isCanvasEmpty}
+                        onClick={() => {
+                          canvasRef.current?.clear();
+                        }}
+                        className={`absolute z-[999] -mb-2 ml-2 mt-4 h-max bg-beige text-heavy`}
+                      >
+                        Clear
+                      </Button>
+                      <SimpleCanvas
+                        ref={canvasRef}
+                        // Use the controller's value when available so the canvas
+                        // reflects the form state and the field is properly controlled
+                        initialData={
+                          (field.value as CanvasData | null) ??
+                          (defaultValues?.canvasData as CanvasData | null) ??
+                          null
                         }
-                      }}
-                    />
-                  </div>
-                </FormControl>
-              </FormItem>
-            )}
-          />
+                        onDrawingChange={(isEmpty, data) => {
+                          setIsCanvasEmpty(isEmpty);
+                          if (data) {
+                            field.onChange(data);
+                          }
+                        }}
+                      />
+                    </div>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          ) : pathStrings.length > 0 ? (
+            <div className="overflow-hidden rounded-lg border-2 border-gray-300 bg-white">
+              <svg className="h-64 w-full lg:h-72">
+                {pathStrings.map((pathString, pathIndex) => (
+                  <path
+                    key={pathIndex}
+                    d={pathString}
+                    stroke="#a16bc7"
+                    strokeWidth="4"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                ))}
+              </svg>
+            </div>
+          ) : (
+            <p className="text-sm text-medium">No drawing :(</p>
+          )}
         </div>
       </form>
     </Form>
