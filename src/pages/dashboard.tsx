@@ -19,8 +19,12 @@ import Link from "next/link";
 import { cn } from "~/lib/utils";
 import { isPastDeadline } from "~/lib/date";
 import CanvasBackground from "~/components/canvas-background";
-import CountdownTimer from "~/components/apply/countdown-timer";
 import { APPLICATION_DEADLINE_ISO } from "~/lib/date";
+import dynamic from "next/dynamic";
+
+const CountdownTimer = dynamic(() => import("~/components/apply/countdown-timer"), {
+  ssr: false,
+});
 
 type ApplicationStatusType =
   | "IN_PROGRESS"
