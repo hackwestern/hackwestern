@@ -151,7 +151,7 @@ export function BasicsForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-medium text-gray-700">
-                Your School
+                Your Country of Residence
               </FormLabel>
               <FormControl>
                 <Select
@@ -160,7 +160,7 @@ export function BasicsForm() {
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger className="form-input-mobile h-12 w-full">
-                    <SelectValue placeholder="eg. Western University" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {countrySelection.enumValues.map((item) => (
