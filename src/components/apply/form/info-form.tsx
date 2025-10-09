@@ -51,7 +51,7 @@ export function InfoForm() {
 
   const form = useForm<z.infer<typeof infoSaveSchema>>({
     resolver: zodResolver(infoSaveSchema),
-    defaultValues: formValues // Use the complete data object
+    defaultValues: formValues, // Use the complete data object
   });
 
   useAutoSave(form, onSubmit, formValues);
@@ -67,11 +67,12 @@ export function InfoForm() {
     mutate({
       ...data, // Keep all existing application data
       ...formData, // Override with new form values
-      attendedBefore: formData.attendedBefore === "yes" 
-        ? true 
-        : formData.attendedBefore === "no" 
-          ? false 
-          : undefined,
+      attendedBefore:
+        formData.attendedBefore === "yes"
+          ? true
+          : formData.attendedBefore === "no"
+            ? false
+            : undefined,
     });
   }
 

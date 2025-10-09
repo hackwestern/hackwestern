@@ -30,11 +30,7 @@ import {
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { AvatarDisplay } from "~/components/apply/avatar-display";
-import { 
-  Drawer, 
-  DrawerContent, 
-  DrawerTrigger 
-} from "~/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerTrigger } from "~/components/ui/drawer";
 
 function getApplyStep(
   stepValue: string | null,
@@ -134,12 +130,12 @@ function MobileStickerDrawer() {
     <div className="fixed bottom-20 right-4 z-50 overscroll-contain md:hidden">
       <Drawer direction="bottom">
         <DrawerTrigger asChild>
-            {/* eslint-disable @next/next/no-img-element */}
-            <img
-              src="/mobile-sticker.png"
-              alt="Sticker Drawer"
-              className="h-full w-full object-contain"
-            />
+          {/* eslint-disable @next/next/no-img-element */}
+          <img
+            src="/mobile-sticker.png"
+            alt="Sticker Drawer"
+            className="h-full w-full object-contain"
+          />
         </DrawerTrigger>
         <DrawerContent className="h-fit overflow-hidden overscroll-contain">
           <div className="z-[100] mx-auto h-2 w-[100px] rounded-full bg-muted" />
@@ -147,7 +143,7 @@ function MobileStickerDrawer() {
             <CanvasBackground />
           </div>
           <div className="relative h-full w-full overscroll-contain">
-            <div className="relative z-10 flex flex-wrap justify-center items-center gap-8 p-6">
+            <div className="relative z-10 flex flex-wrap items-center justify-center gap-8 p-6">
               {data?.avatarColour && (
                 <div className="self-center">
                   <AvatarDisplay
@@ -164,10 +160,10 @@ function MobileStickerDrawer() {
               <MajorStamp type={data?.major} />
               {data?.attendedBefore !== undefined &&
                 data?.attendedBefore !== null && (
-                <HWStamp
-                  returning={data?.attendedBefore ? "returnee" : "newcomer"}
-                />
-              )}
+                  <HWStamp
+                    returning={data?.attendedBefore ? "returnee" : "newcomer"}
+                  />
+                )}
               <HackerStamp numHackathons={data?.numOfHackathons} />
               {data?.githubLink &&
                 data?.linkedInLink &&
