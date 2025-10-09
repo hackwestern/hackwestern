@@ -237,6 +237,39 @@ function MobileCharacterIcon() {
   );
 }
 
+function DesktopCharacterIcon() {
+  const { data: applicationData } = api.application.get.useQuery();
+
+  const bodyColor =
+    colors.find((c) => c.name === applicationData?.avatarColour)?.body ?? "002";
+
+  const selectedColor = colors.find(
+    (c) => c.name === (applicationData?.avatarColour ?? "green"),
+  );
+
+  return (
+    <div 
+      className="rounded-full p-1"
+      style={{
+        background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
+      }}
+    >
+      <div className="relative h-6 w-6 overflow-hidden rounded-full">
+        {/* eslint-disable @next/next/no-img-element */}
+        {applicationData?.avatarColour ? (
+          <img
+            src={`/avatar/body/${bodyColor}.webp`}
+            alt="Character"
+            className="h-full w-full object-contain"
+          />
+        ) : (
+          <span className="text-sm">🎨</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const Dashboard = () => {
   const { data: application } = api.application.get.useQuery();
   const status = application?.status ?? "NOT_STARTED";
@@ -322,8 +355,9 @@ const Dashboard = () => {
             className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
             <CanvasBackground />
-            <div className="absolute right-7 top-7">
+            <div className="flex items-center gap-4 absolute right-6 top-6">
               <Logout />
+              <DesktopCharacterIcon />
             </div>
             <div className="z-10 flex flex-col items-center justify-center overflow-auto">
               <div className="flex h-full w-full flex-col items-center">
