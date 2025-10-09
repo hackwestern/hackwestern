@@ -22,6 +22,7 @@ import {
 import { schools } from "~/constants/schools";
 import { levelOfStudy, major, numOfHackathons } from "~/server/db/schema";
 import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
+import { useEffect } from "react";
 
 export function InfoForm() {
   const utils = api.useUtils();
@@ -32,48 +33,42 @@ export function InfoForm() {
     },
   });
 
-  const defaultValues = useMemo(():
-    | z.infer<typeof infoSaveSchema>
-    | undefined => {
+  // Transform the form values for display
+  const formValues = useMemo(() => {
     if (!data) return undefined;
-    // If the DB value is null/undefined, preserve undefined so the form shows no selection.
-    const attendedBefore =
-      data.attendedBefore === true
-        ? ("yes" as const)
-        : data.attendedBefore === false
-          ? ("no" as const)
-          : undefined;
     return {
-      school: (data.school ?? undefined) as z.infer<
-        typeof infoSaveSchema
-      >["school"],
-      levelOfStudy: data.levelOfStudy ?? undefined,
-      major: data.major ?? undefined,
-      numOfHackathons: data.numOfHackathons ?? undefined,
-      attendedBefore,
+      ...data, // Keep all existing data
+      attendedBefore: data.attendedBefore === true 
+        ? "yes" 
+        : data.attendedBefore === false 
+          ? "no" 
+          : undefined
     };
   }, [data]);
 
   const form = useForm<z.infer<typeof infoSaveSchema>>({
     resolver: zodResolver(infoSaveSchema),
-    defaultValues,
+    defaultValues: formValues // Use the complete data object
   });
 
-  useAutoSave(form, onSubmit, defaultValues);
+  useAutoSave(form, onSubmit, formValues);
 
-  function onSubmit(data: z.infer<typeof infoSaveSchema>) {
+  useEffect(() => {
+    if (formValues) {
+      form.reset(formValues);
+    }
+  }, [formValues, form]);
+
+  function onSubmit(formData: z.infer<typeof infoSaveSchema>) {
+    if (!data) return;
     mutate({
-      school: data.school,
-      levelOfStudy: data.levelOfStudy,
-      major: data.major,
-      numOfHackathons: data.numOfHackathons,
-      // Map the form value to boolean | undefined so we don't implicitly save false when unset
-      attendedBefore:
-        data.attendedBefore === "yes"
-          ? true
-          : data.attendedBefore === "no"
-            ? false
-            : undefined,
+      ...data, // Keep all existing application data
+      ...formData, // Override with new form values
+      attendedBefore: formData.attendedBefore === "yes" 
+        ? true 
+        : formData.attendedBefore === "no" 
+          ? false 
+          : undefined,
     });
   }
 
