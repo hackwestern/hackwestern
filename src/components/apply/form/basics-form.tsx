@@ -46,9 +46,14 @@ export function BasicsForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 md:space-y-8">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-6 md:space-y-8"
+      >
         <div className="flex w-full flex-col gap-3 md:flex-row md:gap-2">
-          <FormLabel className="w-full text-sm font-medium text-gray-700">Full Name</FormLabel>
+          <FormLabel className="w-full text-sm font-medium text-gray-700">
+            Full Name
+          </FormLabel>
           <div className="flex w-full gap-3 md:gap-2">
             <FormField
               control={form.control}
@@ -62,7 +67,7 @@ export function BasicsForm() {
                       value={field.value ?? ""}
                       placeholder="First Name"
                       variant="primary"
-                      className="h-12 form-input-mobile"
+                      className="form-input-mobile h-12"
                     />
                   </FormControl>
                 </FormItem>
@@ -80,7 +85,7 @@ export function BasicsForm() {
                       value={field.value ?? ""}
                       placeholder="Last Name"
                       variant="primary"
-                      className="h-12 form-input-mobile"
+                      className="form-input-mobile h-12"
                     />
                   </FormControl>
                 </FormItem>
@@ -93,7 +98,9 @@ export function BasicsForm() {
           name="phoneNumber"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700">Phone Number</FormLabel>
+              <FormLabel className="text-sm font-medium text-gray-700">
+                Phone Number
+              </FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -101,7 +108,7 @@ export function BasicsForm() {
                   type="tel"
                   placeholder="Enter your phone number"
                   variant="primary"
-                  className="h-12 form-input-mobile"
+                  className="form-input-mobile h-12"
                 />
               </FormControl>
             </FormItem>
@@ -112,7 +119,9 @@ export function BasicsForm() {
           name="age"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700">Date of Birth</FormLabel>
+              <FormLabel className="text-sm font-medium text-gray-700">
+                Date of Birth
+              </FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -123,7 +132,7 @@ export function BasicsForm() {
                   value={field.value ? Number(field.value) : undefined}
                   placeholder="Enter your date of birth (YY/MM/DD)"
                   variant={(field.value ?? 18) >= 18 ? "primary" : "invalid"}
-                  className="h-12 form-input-mobile"
+                  className="form-input-mobile h-12"
                 />
               </FormControl>
               {(field.value ?? 18) < 18 && (
@@ -141,14 +150,16 @@ export function BasicsForm() {
           name="countryOfResidence"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700">Your School</FormLabel>
+              <FormLabel className="text-sm font-medium text-gray-700">
+                Your School
+              </FormLabel>
               <FormControl>
                 <Select
                   {...field}
                   value={field.value ?? undefined}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger className="w-full h-12 form-input-mobile">
+                  <SelectTrigger className="form-input-mobile h-12 w-full">
                     <SelectValue placeholder="eg. Western University" />
                   </SelectTrigger>
                   <SelectContent>

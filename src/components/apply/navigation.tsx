@@ -1,6 +1,10 @@
 import Link from "next/link";
 import React from "react";
-import { applySteps, mobileApplySteps, type ApplyStep } from "~/constants/apply";
+import {
+  applySteps,
+  mobileApplySteps,
+  type ApplyStep,
+} from "~/constants/apply";
 import Image from "next/image";
 import { Button } from "../ui/button";
 import { SavedIndicator } from "./saved-indicator";
@@ -33,7 +37,9 @@ export function getStepIndex(step: ApplyStep | null): number | null {
 }
 
 // Mobile-specific navigation functions
-export function getMobilePreviousStep(stepIndex: number | null): ApplyStep | null {
+export function getMobilePreviousStep(
+  stepIndex: number | null,
+): ApplyStep | null {
   if (stepIndex === null) return null;
   return mobileApplySteps[stepIndex - 1]?.step ?? null;
 }
@@ -76,15 +82,15 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
   };
 
   return (
-    <div className="flex w-full justify-between items-center">
+    <div className="flex w-full items-center justify-between">
       {/* Mobile Layout */}
-      <div className="flex w-full justify-between items-center md:hidden">
+      <div className="flex w-full items-center justify-between md:hidden">
         <div className="flex items-center gap-3">
           {!step || mobilePreviousStep ? (
             <Button
               variant="outline"
               asChild
-              className="h-10 px-4 border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="h-10 border-gray-300 px-4 text-gray-700 hover:bg-gray-50"
             >
               <Link href={`/apply?step=${mobilePreviousStep ?? step}`}>
                 <div className="flex items-center gap-2">
@@ -103,11 +109,11 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
             <div className="h-10"></div>
           )}
         </div>
-        
-        <div className="flex-1 flex justify-center">
+
+        <div className="flex flex-1 justify-center">
           <SavedIndicator />
         </div>
-        
+
         <div className="flex items-center">
           <Button
             variant="primary"
@@ -135,7 +141,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
       </div>
 
       {/* Desktop Layout */}
-      <div className="hidden md:flex w-full justify-between py-3">
+      <div className="hidden w-full justify-between py-3 md:flex">
         <SavedIndicator />
         <div className="ml-auto flex items-center gap-12">
           {!step ||

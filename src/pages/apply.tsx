@@ -1,7 +1,11 @@
 import React from "react";
 import Head from "next/head";
 import { useSearchParams } from "next/navigation";
-import { type ApplyStepFull, applySteps, mobileApplySteps } from "~/constants/apply";
+import {
+  type ApplyStepFull,
+  applySteps,
+  mobileApplySteps,
+} from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
 import { ApplyForm } from "~/components/apply/form";
 import { Passport } from "~/components/apply/passport";
@@ -13,7 +17,10 @@ import { useIsMobile } from "~/hooks/use-mobile";
 import { api } from "~/utils/api";
 import { colors } from "~/constants/avatar";
 
-function getApplyStep(stepValue: string | null, isMobile: boolean): ApplyStepFull | null {
+function getApplyStep(
+  stepValue: string | null,
+  isMobile: boolean,
+): ApplyStepFull | null {
   const steps = isMobile ? mobileApplySteps : applySteps;
   return steps.find((s) => s.step === stepValue) ?? null;
 }
@@ -21,13 +28,14 @@ function getApplyStep(stepValue: string | null, isMobile: boolean): ApplyStepFul
 // Small character component for mobile header
 function MobileCharacterIcon() {
   const { data: applicationData } = api.application.get.useQuery();
-  
+
   if (!applicationData?.avatarColour) {
     return <span className="text-sm">🎨</span>;
   }
 
-  const bodyColor = colors.find((c) => c.name === applicationData.avatarColour)?.body ?? "002";
-  
+  const bodyColor =
+    colors.find((c) => c.name === applicationData.avatarColour)?.body ?? "002";
+
   return (
     <div className="relative h-6 w-6">
       <img
@@ -65,23 +73,25 @@ export default function Apply() {
         {/* Mobile View */}
         <div className="relative z-10 flex h-screen w-screen flex-col md:hidden">
           <ApplyMenu step={step} />
-          
+
           {/* Mobile Header */}
           <div className="flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
             <div className="h-8 w-8"></div>
             <h1 className="font-figtree text-lg font-semibold text-heavy">
-              {step ? step.charAt(0).toUpperCase() + step.slice(1) : 'Application'}
+              {step
+                ? step.charAt(0).toUpperCase() + step.slice(1)
+                : "Application"}
             </h1>
-            <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
               <MobileCharacterIcon />
             </div>
           </div>
 
           {/* Mobile Content */}
           <div className="flex-1 bg-white py-6">
-            <div className="h-full flex flex-col mx-6">
+            <div className="mx-6 flex h-full flex-col">
               <div className="mb-6">
-                <h1 className="font-dico text-2xl font-medium text-heavy mb-2">
+                <h1 className="mb-2 font-dico text-2xl font-medium text-heavy">
                   {heading}
                 </h1>
                 {subheading && (
@@ -90,7 +100,7 @@ export default function Apply() {
                   </h2>
                 )}
               </div>
-              
+
               <div className="flex-1 overflow-visible">
                 <div className="font-figtree">
                   <ApplyForm step={step} />
@@ -100,7 +110,7 @@ export default function Apply() {
           </div>
 
           {/* Mobile Navigation - Fixed at Bottom */}
-          <div className="bg-white border-t border-gray-200 px-6 py-4">
+          <div className="border-t border-gray-200 bg-white px-6 py-4">
             <ApplyNavigation step={step} />
           </div>
         </div>

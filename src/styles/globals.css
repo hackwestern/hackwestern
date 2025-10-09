@@ -126,16 +126,17 @@ html {
   body {
     @apply bg-background text-foreground;
   }
-  
+
   /* Ensure full viewport coverage on mobile */
   @media (max-width: 767px) {
-    html, body {
+    html,
+    body {
       margin: 0;
       padding: 0;
       height: 100%;
       overflow-x: hidden;
     }
-    
+
     /* Allow focus rings to overflow into padding */
     .form-input-mobile {
       box-sizing: border-box;

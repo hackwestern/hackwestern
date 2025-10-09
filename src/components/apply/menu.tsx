@@ -1,4 +1,8 @@
-import { applySteps, mobileApplySteps, type ApplyStep } from "~/constants/apply";
+import {
+  applySteps,
+  mobileApplySteps,
+  type ApplyStep,
+} from "~/constants/apply";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { useMemo } from "react";
@@ -43,7 +47,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
     <>
       {/* Desktop Sidebar */}
       <div className="mx-auto hidden h-screen w-full gap-3 border-[1px] bg-white py-3 shadow-[5px_0px_10px_0px_rgba(129,74,83,0.1)] md:block">
-        <div className="mx-4 gap-2 flex flex-col">
+        <div className="mx-4 flex flex-col gap-2">
           <div className="my-8 ml-2 flex flex-col gap-8">
             <Image
               src="/horse.svg"
@@ -64,7 +68,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
             <Button
               key={s.step}
               variant={s.step === step ? "apply-ghost" : "apply"}
-              className="w-48 justify-start text-left xl:w-64 mx-10"
+              className="mx-10 w-48 justify-start text-left xl:w-64"
               asChild
             >
               <Link href={{ pathname: "/apply", query: { step: s.step } }}>
@@ -76,7 +80,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
       </div>
 
       {/* Mobile Hamburger Menu */}
-      <div className="fixed top-4 left-4 z-50 md:hidden">
+      <div className="fixed left-4 top-4 z-50 md:hidden">
         <Drawer>
           <DrawerTrigger asChild>
             <Button variant="apply" className="rounded-2xl p-2.5 shadow-lg">
@@ -93,15 +97,15 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
                   height={48}
                 />
                 <div>
-                  <h1 className="font-figtree font-bold text-heavy text-lg">
+                  <h1 className="font-figtree text-lg font-bold text-heavy">
                     Application Portal
                   </h1>
-                  <h2 className="font-figtree font-semibold text-medium text-sm">
+                  <h2 className="font-figtree text-sm font-semibold text-medium">
                     Hack Western 12
                   </h2>
                 </div>
               </div>
-              <div className="space-y-2 space-x-2">
+              <div className="space-x-2 space-y-2">
                 {mobileApplySteps.map((s) => (
                   <DrawerClose key={s.step} asChild>
                     <Button
