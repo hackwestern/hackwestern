@@ -233,10 +233,10 @@ describe.sequential("application.save", async () => {
       },
     };
 
-  // Save the complete application first, then call submit() which validates the
-  // stored application and flips the status to PENDING_REVIEW.
-  await caller.application.save(completeApplication);
-  await caller.application.submit();
+    // Save the complete application first, then call submit() which validates the
+    // stored application and flips the status to PENDING_REVIEW.
+    await caller.application.save(completeApplication);
+    await caller.application.submit();
     const result = await caller.application.get();
     assert(!!result);
 
