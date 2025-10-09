@@ -29,6 +29,12 @@ export const env = createEnv({
     DISCORD_CLIENT_ID: z.string(),
     DISCORD_CLIENT_SECRET: z.string(),
     RESEND_API_KEY: z.string(),
+    // S3 / object storage for resume uploads (optional)
+    SERVER_S3_BUCKET_NAME: z.string().optional(),
+    SERVER_S3_REGION: z.string().optional(),
+    SERVER_S3_ENDPOINT: z.string().optional(),
+    SERVER_S3_ACCESS_KEY_ID: z.string().optional(),
+    SERVER_S3_SECRET_ACCESS_KEY: z.string().optional(),
   },
 
   /**
@@ -56,6 +62,12 @@ export const env = createEnv({
     DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
     DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
+    // S3 / object storage for resume uploads
+    SERVER_S3_BUCKET_NAME: process.env.SERVER_S3_BUCKET_NAME,
+    SERVER_S3_REGION: process.env.SERVER_S3_REGION,
+    SERVER_S3_ENDPOINT: process.env.SERVER_S3_ENDPOINT,
+    SERVER_S3_ACCESS_KEY_ID: process.env.SERVER_S3_ACCESS_KEY_ID,
+    SERVER_S3_SECRET_ACCESS_KEY: process.env.SERVER_S3_SECRET_ACCESS_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

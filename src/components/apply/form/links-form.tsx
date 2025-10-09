@@ -14,6 +14,7 @@ import { Input } from "~/components/ui/input";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { linksSaveSchema } from "~/schemas/application";
+import { useState } from "react";
 import {
   getGithubUsername,
   getLinkedinUsername,
@@ -36,6 +37,8 @@ export function LinksForm() {
   const form = useForm<z.infer<typeof linksSaveSchema>>({
     resolver: zodResolver(linksSaveSchema),
   });
+
+  const [isUploading, setIsUploading] = useState(false);
 
   useAutoSave(form, onSubmit, defaultValues);
 
@@ -60,6 +63,35 @@ export function LinksForm() {
 
     form.setValue("githubLink", githubUsername);
     return form.handleSubmit(onSubmit)();
+  }
+
+  async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload/resume", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+
+      const json = (await res.json()) as { url?: string };
+      const url = json.url ?? "";
+
+      if (url) form.setValue("resumeLink", url);
+      // autosave after setting resume link
+      await form.handleSubmit(onSubmit)();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsUploading(false);
+    }
   }
 
   function onLinkedinPaste(e: ClipboardEvent<HTMLInputElement>) {
@@ -143,13 +175,23 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>Resume</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ""}
-                  placeholder="drive.google.com/myresume"
-                  variant="primary"
-                  disabled={!canEdit}
-                />
+                <div className="flex flex-col gap-2">
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="drive.google.com/myresume or uploaded file URL"
+                    variant="primary"
+                    disabled={!canEdit || isUploading}
+                  />
+                  <input
+                    type="file"
+                    accept="application/pdf,.pdf,.doc,.docx"
+                    onChange={onFileChange}
+                    disabled={!canEdit || isUploading}
+                    className="text-sm"
+                  />
+                  {isUploading ? <span className="text-sm">Uploading...</span> : null}
+                </div>
               </FormControl>
               <FormDescription>
                 Make sure that this link is public.
