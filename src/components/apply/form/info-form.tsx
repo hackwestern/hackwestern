@@ -36,18 +36,20 @@ export function InfoForm() {
     | z.infer<typeof infoSaveSchema>
     | undefined => {
     if (!data) return undefined;
-    const attendedBefore = data.attendedBefore
-      ? ("yes" as const)
-      : ("no" as const);
+    // If the DB value is null/undefined, preserve undefined so the form shows no selection.
+    const attendedBefore =
+      data.attendedBefore === true
+        ? ("yes" as const)
+        : data.attendedBefore === false
+        ? ("no" as const)
+        : undefined;
     return {
       school: (data.school ?? undefined) as z.infer<
         typeof infoSaveSchema
       >["school"],
       levelOfStudy: data.levelOfStudy ?? undefined,
       major: data.major ?? undefined,
-      numOfHackathons: (data.numOfHackathons ?? undefined) as z.infer<
-        typeof infoSaveSchema
-      >["numOfHackathons"],
+      numOfHackathons: data.numOfHackathons ?? undefined,
       attendedBefore,
     };
   }, [data]);
@@ -65,7 +67,13 @@ export function InfoForm() {
       levelOfStudy: data.levelOfStudy,
       major: data.major,
       numOfHackathons: data.numOfHackathons,
-      attendedBefore: data.attendedBefore === "yes",
+      // Map the form value to boolean | undefined so we don't implicitly save false when unset
+      attendedBefore:
+        data.attendedBefore === "yes"
+          ? true
+          : data.attendedBefore === "no"
+          ? false
+          : undefined,
     });
   }
 

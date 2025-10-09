@@ -175,7 +175,7 @@ export default function Apply() {
             <div className="overflow-y-none z-10 flex flex-col items-center justify-center overflow-auto">
               <div className="flex h-full w-full flex-col items-start justify-center gap-8 overflow-hidden 2xl:flex-row">
                 {/* Left stamps column (up to 3) */}
-                <div className="mx-auto hidden h-full w-full justify-around md:flex md:items-center md:space-y-6 2xl:flex-col 2xl:pb-12">
+                <div className="mx-auto hidden h-full w-full justify-around md:flex md:items-center md:space-y-6 2xl:w-64 2xl:flex-col 2xl:pb-12">
                   <MajorStamp type={data?.major} />
                   <SchoolStamp type={data?.school} />
                   {data?.githubLink &&
@@ -207,7 +207,7 @@ export default function Apply() {
                 </div>
 
                 {/* Right stamps column (up to 3) */}
-                <div className="mx-auto hidden h-full w-full justify-around md:flex md:items-center md:space-y-6 2xl:flex-col 2xl:pb-12">
+                <div className="mx-auto hidden h-full w-full justify-around md:flex md:items-center md:space-y-6 2xl:w-64 2xl:flex-col 2xl:pb-12">
                   {data?.attendedBefore !== undefined ? (
                     <HWStamp
                       returning={data?.attendedBefore ? "returnee" : "newcomer"}
