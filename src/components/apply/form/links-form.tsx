@@ -19,6 +19,10 @@ import { getGithubUsername, getLinkedinUsername } from "~/utils/urls";
 export function LinksForm() {
   const utils = api.useUtils();
   const { data: defaultValues } = api.application.get.useQuery();
+
+  const status = defaultValues?.status ?? "NOT_STARTED";
+  const canEdit = (status == "NOT_STARTED" || status == "IN_PROGRESS");
+
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
       return utils.application.get.invalidate();
@@ -74,6 +78,7 @@ export function LinksForm() {
                     value={field.value ?? ""}
                     placeholder="hacker"
                     variant="primary"
+                    disabled={!canEdit}
                   />
                 </div>
               </FormControl>
@@ -95,6 +100,7 @@ export function LinksForm() {
                     value={field.value ?? ""}
                     placeholder="hacker"
                     variant="primary"
+                    disabled={!canEdit}
                   />
                 </div>
               </FormControl>
@@ -113,6 +119,7 @@ export function LinksForm() {
                   value={field.value ?? ""}
                   placeholder="hackerportfolio.com"
                   variant="primary"
+                  disabled={!canEdit}
                 />
               </FormControl>
             </FormItem>
@@ -130,6 +137,7 @@ export function LinksForm() {
                   value={field.value ?? ""}
                   placeholder="drive.google.com/myresume"
                   variant="primary"
+                  disabled={!canEdit}
                 />
               </FormControl>
               <FormDescription>
