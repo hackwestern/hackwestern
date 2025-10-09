@@ -208,7 +208,8 @@ export default function Apply() {
 
                 {/* Right stamps column (up to 3) */}
                 <div className="mx-auto hidden h-full w-full justify-around md:flex md:items-center md:space-y-6 2xl:w-64 2xl:flex-col 2xl:pb-12">
-                  {data?.attendedBefore !== undefined ? (
+                  {data?.attendedBefore !== undefined &&
+                  data?.attendedBefore !== null ? (
                     <HWStamp
                       returning={data?.attendedBefore ? "returnee" : "newcomer"}
                     />

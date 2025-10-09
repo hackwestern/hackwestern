@@ -42,7 +42,7 @@ export default function Submitted() {
       <div className="bg-hw-linear-gradient-day relative flex flex-grow items-center justify-center">
         <CanvasBackground />
         <div className="relative m-5 flex max-w-screen-sm flex-col items-start gap-2 rounded-lg border-primary-300 bg-violet-100 p-10 ">
-          <h2 className="font-dico text-4xl font-semibold">Submitted! ✈️</h2>
+          <h2 className="font-dico text-4xl font-semibold">Submitted! 🎨</h2>
           <h4 className="font-jetbrainsmono text-xl font-medium">
             Thanks for applying, {application?.firstName}.
           </h4>

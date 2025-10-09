@@ -41,8 +41,8 @@ export function InfoForm() {
       data.attendedBefore === true
         ? ("yes" as const)
         : data.attendedBefore === false
-        ? ("no" as const)
-        : undefined;
+          ? ("no" as const)
+          : undefined;
     return {
       school: (data.school ?? undefined) as z.infer<
         typeof infoSaveSchema
@@ -72,8 +72,8 @@ export function InfoForm() {
         data.attendedBefore === "yes"
           ? true
           : data.attendedBefore === "no"
-          ? false
-          : undefined,
+            ? false
+            : undefined,
     });
   }
 
