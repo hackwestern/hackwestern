@@ -113,14 +113,16 @@ export const applicationRouter = createTRPCRouter({
           applicationSubmitSchema.safeParse(input).success;
 
         // Type the canvasData properly for JSONB
-        const typedCanvasData = canvasData as
-          | {
-              paths: Array<Array<{ x: number; y: number }>>;
-              timestamp: number;
-              version: string;
-            }
-          | null
-          | undefined;
+        const typedCanvasData =
+          canvasData === null
+            ? undefined
+            : (canvasData as
+                | {
+                    paths: Array<Array<{ x: number; y: number }>>;
+                    timestamp: number;
+                    version: string;
+                  }
+                | undefined);
 
         const dataToSave = {
           ...restData,

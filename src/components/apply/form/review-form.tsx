@@ -273,7 +273,7 @@ function AvatarReview({}: ReviewSectionProps) {
     <div className="space-y-2">
       <Label>Your Avatar</Label>
       <div
-        className="mx-auto flex h-64 w-64 flex-col justify-center rounded-2xl p-4"
+        className="mx-auto -mt-4 flex h-80 w-80 scale-90 flex-col justify-center rounded-2xl p-4 pt-8"
         style={{
           background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
         }}
@@ -285,7 +285,6 @@ function AvatarReview({}: ReviewSectionProps) {
             avatarLeftHand={data?.avatarLeftHand}
             avatarRightHand={data?.avatarRightHand}
             avatarHat={data?.avatarHat}
-            size="md"
           />
         </div>
       </div>
