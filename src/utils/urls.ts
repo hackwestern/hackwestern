@@ -33,3 +33,14 @@ export function getLinkedinUsername(text: string) {
 
   return text;
 }
+
+/**
+ * Ensure a URL string has an http(s) protocol. Returns the original value for
+ * falsy inputs. If the text already starts with http:// or https:// (case
+ * insensitive) it is returned unchanged; otherwise `https://` is prepended.
+ */
+export function ensureUrlHasProtocol(text?: string | null) {
+  if (!text) return text;
+  if (/^https?:\/\//i.test(text)) return text;
+  return `https://${text}`;
+}

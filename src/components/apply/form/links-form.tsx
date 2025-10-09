@@ -14,7 +14,11 @@ import { Input } from "~/components/ui/input";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { linksSaveSchema } from "~/schemas/application";
-import { getGithubUsername, getLinkedinUsername } from "~/utils/urls";
+import {
+  getGithubUsername,
+  getLinkedinUsername,
+  ensureUrlHasProtocol,
+} from "~/utils/urls";
 
 export function LinksForm() {
   const utils = api.useUtils();
@@ -32,9 +36,16 @@ export function LinksForm() {
   useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof linksSaveSchema>) {
+    // Normalize resume and other links so they validate as URLs (prepend https:// if missing)
+    const normalizedData = {
+      ...data,
+      resumeLink: ensureUrlHasProtocol(data.resumeLink),
+      otherLink: ensureUrlHasProtocol(data.otherLink),
+    } as z.infer<typeof linksSaveSchema>;
+
     mutate({
       ...defaultValues,
-      ...data,
+      ...normalizedData,
     });
   }
 
