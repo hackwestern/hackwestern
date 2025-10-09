@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useActionState, useState, useRef } from "react";
+import { useState, type FormEvent } from "react";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import { Button } from "~/components/ui/button";
@@ -11,80 +11,42 @@ import { signIn } from "next-auth/react";
 import { hackerLoginRedirect } from "~/utils/redirect";
 import CanvasBackground from "~/components/canvas-background";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
-import { TRPCClientError } from "@trpc/client";
+import { useRouter } from "next/router";
 
 export default function Register() {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const formRef = useRef<HTMLFormElement>(null);
+  const [pending, setPending] = useState(false);
 
-  const { mutateAsync: register } = api.auth.create.useMutation();
-
-  const [_message, handleSubmit, pending] = useActionState<
-    string | null,
-    FormData
-  >(async (_prev, formData) => {
-    try {
-      await register({
-        email: formData.get("email") as string,
-        password: formData.get("password") as string,
+  const router = useRouter();
+  const { mutate: register } = api.auth.create.useMutation({
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description:
+          error.data?.zodError?.fieldErrors?.password?.[0] ?? error.message,
+        variant: "destructive",
       });
-
-      const response = await signIn("credentials", {
-        redirect: false,
-        username: formData.get("email"),
-        password: formData.get("password"),
-      });
-
-      if (response?.ok) {
+      setPending(false);
+    },
+    onSuccess: () =>
+      signIn("credentials", { username: email, password }).then(() => {
         toast({
           title: "Success",
           description: "Account created successfully",
           variant: "default",
         });
-      }
-    } catch (error) {
-      // Handle all errors here to prevent page crashes
-      console.error("Registration error:", error);
+        setPending(false);
+        void router.push("/dashboard");
+      }),
+  });
 
-      // Handle Zod validation errors from TRPC
-      if (error instanceof TRPCClientError) {
-        // Type guard for the error data structure
-        const errorData = error.data as { zodError?: { fieldErrors?: Record<string, string[]> } };
-        const zodError = errorData?.zodError;
-
-        if (zodError?.fieldErrors) {
-          const allErrors: string[] = [];
-
-          // Collect all error messages from all fields
-          Object.values(zodError.fieldErrors).forEach((errors) => {
-            if (Array.isArray(errors)) {
-              allErrors.push(...errors);
-            }
-          });
-
-          // Display only the first error
-          toast({
-            title: "Validation Error",
-            description: allErrors[0] ?? "Invalid input",
-            variant: "destructive",
-          });
-          return null;
-        }
-      }
-
-      // Handle other errors
-      const errorMessage = error instanceof Error ? error.message : "An error occurred during registration";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-
-    return null;
-  }, null);
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    setPending(true);
+    register({ email, password });
+  };
 
   return (
     <>
@@ -106,7 +68,7 @@ export default function Register() {
           <h2 className="mb-6 self-start font-figtree text-2xl text-medium">
             The world is your canvas.
           </h2>
-          <form ref={formRef} action={handleSubmit}>
+          <form onSubmit={handleSubmit}>
             <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
               Email
             </h2>

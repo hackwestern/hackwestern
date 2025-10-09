@@ -2,7 +2,8 @@ import { signIn } from "next-auth/react";
 import Head from "next/head";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { useActionState, useState, useRef } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import Link from "next/link";
@@ -13,36 +14,32 @@ import DiscordAuthButton from "~/components/auth/discordauth-button";
 import CanvasBackground from "~/components/canvas-background";
 
 export default function Login() {
-  const router = useRouter();
-  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const formRef = useRef<HTMLFormElement>(null);
+  const [pending, setPending] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
 
-  const [_message, handleSubmit, pending] = useActionState<
-    string | null,
-    FormData
-  >(async (_prev, formData) => {
-    const response = await signIn("credentials", {
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setPending(true);
+    void signIn("credentials", {
+      username: email,
+      password,
       redirect: false,
-      username: formData.get("email"),
-      password: formData.get("password"),
+    }).then((response) => {
+      if (response && response.ok === false) {
+        toast({
+          title: "Error",
+          description: "Invalid email or password",
+          variant: "destructive",
+        });
+        setPending(false);
+        return;
+      }
+      void router.push("/dashboard");
     });
-
-    if (response && response.ok === false) {
-      // Clear only the password on error
-      setPassword("");
-      toast({
-        title: "Error",
-        description: "Invalid email or password.",
-        variant: "destructive",
-      });
-      return null;
-    }
-
-    await router.push("/dashboard");
-    return null;
-  }, null);
+  }
 
   return (
     <>
@@ -64,7 +61,7 @@ export default function Login() {
           <h2 className="mb-6 self-start font-figtree text-2xl text-medium">
             The world is your canvas.
           </h2>
-          <form ref={formRef} action={handleSubmit}>
+          <form onSubmit={handleSubmit}>
             <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
               Email
             </h2>
