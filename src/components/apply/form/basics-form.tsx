@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { countrySelection } from "~/server/db/schema";
+import { useEffect } from "react";
 
 export function BasicsForm() {
   const utils = api.useUtils();
@@ -33,9 +34,16 @@ export function BasicsForm() {
 
   const form = useForm<z.infer<typeof basicsSaveSchema>>({
     resolver: zodResolver(basicsSaveSchema),
+    defaultValues,
   });
 
   useAutoSave(form, onSubmit, defaultValues);
+
+  useEffect(() => {
+    if (defaultValues) {
+      form.reset(defaultValues);
+    }
+  }, [defaultValues, form]);
 
   function onSubmit(data: z.infer<typeof basicsSaveSchema>) {
     mutate({
