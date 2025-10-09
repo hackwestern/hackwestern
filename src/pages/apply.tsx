@@ -30,7 +30,11 @@ import {
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { AvatarDisplay } from "~/components/apply/avatar-display";
-
+import { 
+  Drawer, 
+  DrawerContent, 
+  DrawerTrigger 
+} from "~/components/ui/drawer";
 
 function getApplyStep(
   stepValue: string | null,
@@ -121,6 +125,59 @@ function DesktopCharacterIcon() {
   );
 }
 
+function MobileStickerDrawer() {
+  const { data } = api.application.get.useQuery();
+
+  return (
+    <div className="fixed bottom-20 right-4 z-50 overscroll-contain md:hidden">
+      <Drawer direction="bottom">
+        <DrawerTrigger asChild>
+            {/* eslint-disable @next/next/no-img-element */}
+            <img
+              src="/mobile-sticker.png"
+              alt="Sticker Drawer"
+              className="h-full w-full object-contain"
+            />
+        </DrawerTrigger>
+        <DrawerContent className="h-fit overflow-hidden overscroll-contain">
+          <div className="z-[100] mx-auto h-2 w-[100px] rounded-full bg-muted" />
+          <div className="absolute inset-0 overflow-hidden rounded-t-xl">
+            <CanvasBackground />
+          </div>
+          <div className="relative h-full w-full overscroll-contain">
+            <div className="relative z-10 flex flex-wrap justify-center items-center gap-8 p-6">
+              {data?.avatarColour && (
+                <div className="self-center">
+                  <AvatarDisplay
+                    avatarColour={data?.avatarColour}
+                    avatarFace={data?.avatarFace}
+                    avatarLeftHand={data?.avatarLeftHand}
+                    avatarRightHand={data?.avatarRightHand}
+                    avatarHat={data?.avatarHat}
+                    size="sm"
+                  />
+                </div>
+              )}
+              <SchoolStamp type={data?.school} />
+              <MajorStamp type={data?.major} />
+              {data?.attendedBefore !== undefined &&
+                data?.attendedBefore !== null && (
+                <HWStamp
+                  returning={data?.attendedBefore ? "returnee" : "newcomer"}
+                />
+              )}
+              <HackerStamp numHackathons={data?.numOfHackathons} />
+              {data?.githubLink &&
+                data?.linkedInLink &&
+                data?.otherLink &&
+                data?.resumeLink && <LinksStamp />}
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </div>
+  );
+}
 
 export default function Apply() {
   const searchParams = useSearchParams();
@@ -183,6 +240,8 @@ export default function Apply() {
               </div>
             </div>
           </div>
+
+          <MobileStickerDrawer />
 
           {/* Mobile Navigation - Fixed at Bottom */}
           <div className="fixed bottom-0 z-[9999] border-t border-gray-200 bg-white py-4">
