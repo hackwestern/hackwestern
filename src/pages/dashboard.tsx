@@ -19,8 +19,15 @@ import Link from "next/link";
 import { cn } from "~/lib/utils";
 import { isPastDeadline } from "~/lib/date";
 import CanvasBackground from "~/components/canvas-background";
-import CountdownTimer from "~/components/apply/countdown-timer";
 import { APPLICATION_DEADLINE_ISO } from "~/lib/date";
+import dynamic from "next/dynamic";
+
+const CountdownTimer = dynamic(
+  () => import("~/components/apply/countdown-timer"),
+  {
+    ssr: false,
+  },
+);
 
 type ApplicationStatusType =
   | "IN_PROGRESS"
@@ -212,7 +219,9 @@ function MobileCharacterIcon() {
       </PopoverTrigger>
       <PopoverContent className="mr-4 mt-2 w-48 bg-offwhite p-4 font-figtree">
         <div className="rounded-md">
-          <h3 className="mb-3 text-sm font-medium text-medium">Hi, {name}!</h3>
+          <h3 className="mb-3 text-sm font-medium text-medium">
+            {name == "Username" ? `Hi, ${name}` : "Hello, hacker"}!
+          </h3>
           <div className="mb-4 h-px w-full bg-violet-200" />
 
           <div className="mb-3 font-figtree text-heavy">
@@ -230,6 +239,39 @@ function MobileCharacterIcon() {
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function DesktopCharacterIcon() {
+  const { data: applicationData } = api.application.get.useQuery();
+
+  const bodyColor =
+    colors.find((c) => c.name === applicationData?.avatarColour)?.body ?? "002";
+
+  const selectedColor = colors.find(
+    (c) => c.name === (applicationData?.avatarColour ?? "green"),
+  );
+
+  return (
+    <div
+      className="rounded-full p-1"
+      style={{
+        background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
+      }}
+    >
+      <div className="relative h-6 w-6 overflow-hidden rounded-full">
+        {/* eslint-disable @next/next/no-img-element */}
+        {applicationData?.avatarColour ? (
+          <img
+            src={`/avatar/body/${bodyColor}.webp`}
+            alt="Character"
+            className="h-full w-full object-contain"
+          />
+        ) : (
+          <span className="text-sm">🎨</span>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -318,8 +360,9 @@ const Dashboard = () => {
             className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
             <CanvasBackground />
-            <div className="absolute right-7 top-7">
+            <div className="absolute right-6 top-6 flex items-center gap-4">
               <Logout />
+              <DesktopCharacterIcon />
             </div>
             <div className="z-10 flex flex-col items-center justify-center overflow-auto">
               <div className="flex h-full w-full flex-col items-center">
@@ -343,7 +386,9 @@ const Dashboard = () => {
                       <Link href={`/apply?step=${continueStep}`}>
                         {status == "NOT_STARTED"
                           ? "Start Application"
-                          : "Continue Application"}
+                          : status == "IN_PROGRESS"
+                            ? "Continue Application"
+                            : "Review Application"}
                       </Link>
                     </Button>
                   </div>

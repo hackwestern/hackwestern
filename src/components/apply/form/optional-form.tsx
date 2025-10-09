@@ -47,6 +47,10 @@ function isUnderrepGroup(answer: UnderrepGroupAnswer) {
 export function OptionalForm() {
   const utils = api.useUtils();
   const { data } = api.application.get.useQuery();
+
+  const status = data?.status ?? "NOT_STARTED";
+  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
       return utils.application.get.invalidate();
@@ -93,7 +97,11 @@ export function OptionalForm() {
                 technology industry?
               </FormLabel>
               <FormControl>
-                <RadioButtonGroup {...field} onValueChange={field.onChange}>
+                <RadioButtonGroup
+                  {...field}
+                  onValueChange={field.onChange}
+                  disabled={!canEdit}
+                >
                   {underrepGroupAnswers.map((option) => (
                     <RadioButtonItem
                       key={option}
@@ -117,6 +125,7 @@ export function OptionalForm() {
                   {...field}
                   value={field.value ?? undefined}
                   onValueChange={field.onChange}
+                  disabled={!canEdit}
                 >
                   {gender.enumValues.map((option) => (
                     <RadioButtonItem
@@ -141,6 +150,7 @@ export function OptionalForm() {
                   {...field}
                   value={field.value ?? undefined}
                   onValueChange={field.onChange}
+                  disabled={!canEdit}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select race/ethnicity" />
@@ -168,6 +178,7 @@ export function OptionalForm() {
                   {...field}
                   value={field.value ?? undefined}
                   onValueChange={field.onChange}
+                  disabled={!canEdit}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select sexual/orientation" />

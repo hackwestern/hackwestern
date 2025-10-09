@@ -17,7 +17,6 @@ import {
   HackerStamp,
   HWStamp,
   LinksStamp,
-  SubmittedStamp,
 } from "~/components/apply/stamp";
 import { useIsMobile } from "~/hooks/use-mobile";
 import { api } from "~/utils/api";
@@ -30,6 +29,11 @@ import {
 } from "~/components/ui/popover";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import { AvatarDisplay } from "~/components/apply/avatar-display";
+import { Drawer, DrawerContent, DrawerTrigger } from "~/components/ui/drawer";
+import Image from "next/image";
+import { motion, useAnimation } from "framer-motion";
+import { DialogTitle } from "@radix-ui/react-dialog";
 
 function getApplyStep(
   stepValue: string | null,
@@ -66,7 +70,9 @@ function MobileCharacterIcon() {
       </PopoverTrigger>
       <PopoverContent className="mr-4 mt-2 w-48 bg-offwhite p-4 font-figtree">
         <div className="rounded-md">
-          <h3 className="mb-3 text-lg font-medium text-medium">Hi, {name}!</h3>
+          <h3 className="mb-3 text-lg font-medium text-medium">
+            {name == "Username" ? `Hi, ${name}` : "Hello, hacker"}!
+          </h3>
           <div className="mb-4 h-px w-full bg-violet-200" />
 
           <div className="mb-3 font-figtree text-heavy">
@@ -84,6 +90,113 @@ function MobileCharacterIcon() {
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function DesktopCharacterIcon() {
+  const { data: applicationData } = api.application.get.useQuery();
+
+  const bodyColor =
+    colors.find((c) => c.name === applicationData?.avatarColour)?.body ?? "002";
+
+  const selectedColor = colors.find(
+    (c) => c.name === (applicationData?.avatarColour ?? "green"),
+  );
+
+  return (
+    <div
+      className="rounded-full p-1"
+      style={{
+        background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
+      }}
+    >
+      <div className="relative h-6 w-6 overflow-hidden rounded-full">
+        {/* eslint-disable @next/next/no-img-element */}
+        {applicationData?.avatarColour ? (
+          <img
+            src={`/avatar/body/${bodyColor}.webp`}
+            alt="Character"
+            className="h-full w-full object-contain"
+          />
+        ) : (
+          <span className="text-sm">🎨</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MobileStickerDrawer() {
+  const { data } = api.application.get.useQuery();
+  const controls = useAnimation();
+
+  async function handleStickerClick() {
+    await controls.start({
+      rotate: 180,
+      transition: { duration: 0.2, ease: "easeInOut" },
+    });
+    await controls.start({
+      rotate: 0,
+      transition: { duration: 0.2, ease: "easeInOut" },
+    });
+  }
+
+  return (
+    <div className="fixed bottom-20 right-4 z-50 overscroll-contain md:hidden">
+      <Drawer direction="bottom">
+        <DrawerTrigger asChild>
+          <motion.div
+            onClick={handleStickerClick}
+            animate={controls}
+            whileTap={{ scale: 0.96 }}
+            style={{ display: "inline-block", cursor: "pointer" }}
+          >
+            <Image
+              src="/mobile-sticker.png"
+              alt="Sticker Drawer"
+              width={64}
+              height={64}
+            />
+          </motion.div>
+        </DrawerTrigger>
+        <DrawerContent className="h-fit overflow-hidden overscroll-contain">
+          <DialogTitle className="sr-only">Your Stickers</DialogTitle>
+          <div className="z-[100] mx-auto h-2 w-[100px] rounded-full bg-muted" />
+          <div className="absolute inset-0 overflow-hidden rounded-t-xl">
+            <CanvasBackground />
+          </div>
+          <div className="relative h-full w-full overscroll-contain">
+            <div className="relative z-10 flex flex-wrap items-center justify-center gap-8 p-6">
+              {data?.avatarColour && (
+                <div className="-ml-8 mb-4 mr-6 h-36 w-36 scale-50 self-center">
+                  <AvatarDisplay
+                    avatarColour={data?.avatarColour}
+                    avatarFace={data?.avatarFace}
+                    avatarLeftHand={data?.avatarLeftHand}
+                    avatarRightHand={data?.avatarRightHand}
+                    avatarHat={data?.avatarHat}
+                    size="lg"
+                  />
+                </div>
+              )}
+              <SchoolStamp type={data?.school} />
+              <MajorStamp type={data?.major} />
+              {data?.attendedBefore !== undefined &&
+                data?.attendedBefore !== null && (
+                  <HWStamp
+                    returning={data?.attendedBefore ? "returnee" : "newcomer"}
+                  />
+                )}
+              <HackerStamp numHackathons={data?.numOfHackathons} />
+              {data?.githubLink &&
+                data?.linkedInLink &&
+                data?.otherLink &&
+                data?.resumeLink && <LinksStamp />}
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </div>
   );
 }
 
@@ -149,6 +262,8 @@ export default function Apply() {
             </div>
           </div>
 
+          <MobileStickerDrawer />
+
           {/* Mobile Navigation - Fixed at Bottom */}
           <div className="fixed bottom-0 z-[9999] border-t border-gray-200 bg-white py-4">
             <ApplyNavigation step={step} />
@@ -169,13 +284,14 @@ export default function Apply() {
             className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
             <CanvasBackground />
-            <div className="absolute right-7 top-7">
+            <div className="absolute right-6 top-6 flex items-center gap-4">
               <Logout />
+              <DesktopCharacterIcon />
             </div>
             <div className="overflow-y-none z-10 flex flex-col items-center justify-center overflow-auto">
-              <div className="flex h-full w-full flex-col items-start justify-center gap-8 overflow-hidden 2xl:flex-row">
+              <div className="flex h-full w-full items-start justify-center gap-8 overflow-hidden 2xl:flex-row">
                 {/* Left stamps column (up to 3) */}
-                <div className="mx-auto hidden h-full w-full justify-around md:flex md:items-center md:space-y-6 2xl:w-64 2xl:flex-col 2xl:pb-12">
+                <div className="mx-auto hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:w-64 2xl:pb-12">
                   <MajorStamp type={data?.major} />
                   <SchoolStamp type={data?.school} />
                   {data?.githubLink &&
@@ -207,7 +323,7 @@ export default function Apply() {
                 </div>
 
                 {/* Right stamps column (up to 3) */}
-                <div className="mx-auto hidden h-full w-full justify-around md:flex md:items-center md:space-y-6 2xl:w-64 2xl:flex-col 2xl:pb-12">
+                <div className="2xl: mx-auto hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:w-64 2xl:pb-12">
                   {data?.attendedBefore !== undefined &&
                   data?.attendedBefore !== null ? (
                     <HWStamp
@@ -215,15 +331,22 @@ export default function Apply() {
                     />
                   ) : null}
 
-                  <HackerStamp numHackathons={data?.numOfHackathons} />
+                  <div className="self-center">
+                    {data?.avatarColour && (
+                      <AvatarDisplay
+                        avatarColour={data?.avatarColour}
+                        avatarFace={data?.avatarFace}
+                        avatarLeftHand={data?.avatarLeftHand}
+                        avatarRightHand={data?.avatarRightHand}
+                        avatarHat={data?.avatarHat}
+                        size="sm"
+                      />
+                    )}
+                  </div>
 
-                  {data?.status && data?.status !== "IN_PROGRESS" && (
-                    <SubmittedStamp />
-                  )}
+                  <HackerStamp numHackathons={data?.numOfHackathons} />
                 </div>
               </div>
-
-              <div className="z-10 flex w-[100%] flex-col items-center justify-center"></div>
             </div>
           </div>
         </div>
