@@ -193,7 +193,7 @@ export default function Apply() {
         </div>
 
         <StampContainer step={step} data={data} />
-          
+
         <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
         {/* End of Desktop View */}
       </main>

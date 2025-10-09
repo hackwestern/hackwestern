@@ -162,18 +162,24 @@ export function StampContainer({ step, data }: StampContainerProps) {
   const showSchoolStamp = step === "info" && data?.school;
   const showHackerStamp = step === "info" && data?.numOfHackathons;
   const showHWStamp = step === "info" && data?.attendedBefore !== undefined;
-  const showLinksStamp = step === "links" && data?.githubLink && data?.linkedInLink && data?.otherLink && data?.resumeLink;
-  const showSubmittedStamp = step === "review" && data?.status !== "IN_PROGRESS";
+  const showLinksStamp =
+    step === "links" &&
+    data?.githubLink &&
+    data?.linkedInLink &&
+    data?.otherLink &&
+    data?.resumeLink;
+  const showSubmittedStamp =
+    step === "review" && data?.status !== "IN_PROGRESS";
 
   return (
-    <div className="absolute inset-0 z-40 pointer-events-none md:flex pointer-events-none">
+    <div className="pointer-events-none pointer-events-none absolute inset-0 z-40 md:flex">
       {showMajorStamp && (
-        <div className="absolute top-20 left-80">
+        <div className="absolute left-80 top-20">
           <MajorStamp type={data.major as any} />
         </div>
       )}
       {showSchoolStamp && (
-        <div className="absolute top-32 right-8">
+        <div className="absolute right-8 top-32">
           <SchoolStamp type={data.school as any} />
         </div>
       )}
@@ -188,12 +194,12 @@ export function StampContainer({ step, data }: StampContainerProps) {
         </div>
       )}
       {showLinksStamp && (
-        <div className="absolute top-1/4 right-16 transform-translate-y-10">
+        <div className="transform-translate-y-10 absolute right-16 top-1/4">
           <LinksStamp />
         </div>
       )}
       {showSubmittedStamp && (
-        <div className="absolute top-1/2 left-1/4 transform -translate-x-1/2 -translate-y-1/2">
+        <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 transform">
           <SubmittedStamp />
         </div>
       )}
