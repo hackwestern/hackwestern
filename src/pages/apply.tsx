@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { notVerifiedRedirect } from "~/utils/redirect";
 import CanvasBackground from "~/components/canvas-background";
 import { ApplyNavigation } from "~/components/apply/navigation";
+import Logout from "~/pages/logout";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   return applySteps.find((s) => s.step === stepValue) ?? null;
@@ -101,6 +102,9 @@ export default function Apply() {
             className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
             <CanvasBackground />
+            <div className="absolute top-7 right-7">
+              <Logout />
+            </div>
             <div className="z-10 flex flex-col items-center justify-center overflow-auto">
               <div className="h-full w-full space-y-4">
                 <div className="flex h-md w-lg flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-xl md:h-[75vh] md:px-12 md:py-12 lg:h-[70vh] lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">

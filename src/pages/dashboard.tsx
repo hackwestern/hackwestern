@@ -1,8 +1,12 @@
 import { signOut } from "next-auth/react";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { ApplyNavbar } from "~/components/apply/navbar";
+import { useSearchParams } from "next/navigation";
+import React from "react";
 import { Passport } from "~/components/apply/passport";
+import Logout from "~/pages/logout"
+import { type ApplyStepFull, applySteps } from "~/constants/apply";
+import { ApplyMenu } from "~/components/apply/menu";
 import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
 import { notVerifiedRedirectDashboard } from "~/utils/redirect";
@@ -90,8 +94,13 @@ function getApplyLink(status: ApplicationStatusType | undefined) {
   }
 }
 
+function getApplyStep(stepValue: string | null): ApplyStepFull | null {
+  return applySteps.find((s) => s.step === stepValue) ?? null;
+}
+
 const Dashboard = () => {
   const { data: application } = api.application.get.useQuery();
+  const status = application?.status ?? "NOT_STARTED";
   const router = useRouter();
 
   const logout = () => {
@@ -102,8 +111,16 @@ const Dashboard = () => {
       .catch((e) => console.log("error logging out:", e));
   };
 
-  const pastDeadline = isPastDeadline();
+  // const pastDeadline = isPastDeadline();
 
+  const searchParams = useSearchParams();
+  const applyStep = React.useMemo(
+    () => getApplyStep(searchParams.get("step")),
+    [searchParams],
+  );
+
+  const step = applyStep?.step ?? null;
+  
   return (
     <>
       <Head>
@@ -114,53 +131,57 @@ const Dashboard = () => {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="flex h-svh max-h-svh flex-col items-center bg-primary-50">
-        <ApplyNavbar />
-        <div className="relative flex w-full flex-grow flex-col items-center md:flex-row">
+      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50">
+        {/* Mobile View */}
+        {/* End of Mobile View */}
+
+        {/* Desktop View */}
+        <div className="relative z-10 hidden h-full w-full flex-grow items-center md:flex">
           <div
             id="left-panel"
-            className="z-10 flex w-full flex-grow flex-col items-center justify-center gap-4 bg-primary-100 p-9 pt-12 text-center md:h-full lg:w-xl lg:max-w-xl"
+            className="z-30 flex h-full items-center justify-center"
           >
-            <div className="pb-2.5 text-3xl font-bold text-slate-700">
-              {
-                // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-                `Welcome Back, ${application?.firstName || "Hacker"}!`
-              }
-            </div>
-            <div className="text-xl font-medium text-slate-700">Status:</div>
-            <ApplicationStatus status={application?.status ?? "IN_PROGRESS"} />
-            {application?.status !== "REJECTED" && !pastDeadline && (
-              <Button variant="primary" className="w-fit" asChild>
-                <Link href={getApplyLink(application?.status)}>
-                  {buttonStatus(application?.status ?? "IN_PROGRESS")}
-                </Link>
-              </Button>
-            )}
-            {application?.status === "REJECTED" && (
-              <div className="text-slate-700">
-                Due to the volume of applicants, we were unable to accept
-                everyone. That doesn&apos;t mean it&apos;s the end of your Hack
-                Western journey. We encourage you to apply again next year!
-              </div>
-            )}
-            <Button
-              variant="destructive"
-              className="mx-auto w-fit"
-              onClick={logout}
-            >
-              Logout
-            </Button>
+            <ApplyMenu step={step} />
           </div>
           <div
             id="right-panel"
-            className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center"
+            className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
             <CanvasBackground />
-            <div className="z-10 flex w-[100%] flex-col items-center justify-center">
-              <Passport />
+            <div className="absolute top-7 right-7">
+              <Logout />
+            </div>
+            <div className="z-10 flex flex-col items-center justify-center overflow-auto">
+              <div className="flex flex-col items-center h-full w-full">
+                <div className="space-y-12">
+                  <div>
+                    <h1 className="flex flex-col items-center font-dico text-6xl font-medium text-heavy">
+                      Hack Western 12
+                    </h1>
+                    <h1 className=" flex flex-col items-center font-dico text-6xl font-medium text-heavy">
+                      Application
+                    </h1>
+                  </div>
+                  <h2 className="flex flex-col items-center font-figtree text-2xl font-medium text-medium">
+                    The world is your canvas.
+                  </h2>
+                  <div className="flex flex-col items-center">
+                  <Button
+                    variant="primary"
+                    className="w-full p-6 text-base font-figtree font-medium"
+                  >
+                    <Link href="/apply?step=character">
+                      { status == "NOT_STARTED" ? "Start Application" : "Continue Application"}
+                    </Link>
+                  </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+        <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
+        {/* End of Desktop View */}
       </main>
     </>
   );
