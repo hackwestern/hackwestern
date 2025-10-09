@@ -35,7 +35,7 @@ export default function Apply() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50">
+      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overflow-y-hidden overscroll-contain bg-primary-50">
         {/* Mobile View */}
         <Tabs
           defaultValue="application"
@@ -101,9 +101,9 @@ export default function Apply() {
             className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
             <CanvasBackground />
-            <div className="z-10 flex flex-col items-center justify-center overflow-auto">
+            <div className="z-10 flex flex-col items-center justify-center overflow-auto overflow-y-hidden">
               <div className="h-full w-full space-y-4">
-                <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
+                <div className="h-lg flex w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
                   <div className="space-y-4 py-1.5">
                     <h1 className="font-dico text-2xl font-medium text-heavy">
                       {heading}
