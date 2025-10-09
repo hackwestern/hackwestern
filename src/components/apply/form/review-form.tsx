@@ -8,15 +8,18 @@ import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { cn } from "~/lib/utils";
 import { applicationSubmitSchema } from "~/schemas/application";
 import { api } from "~/utils/api";
+import { AvatarDisplay } from "../avatar-display";
+import { colors } from "~/constants/avatar";
 
 type ReviewSectionProps = {
   step: ApplyStepFull;
   error: z.inferFormattedError<typeof applicationSubmitSchema> | undefined;
+  className?: string;
 };
 
-function ReviewSection({ step, error }: ReviewSectionProps) {
+function ReviewSection({ step, error, className }: ReviewSectionProps) {
   return (
-    <div className="py-4">
+    <div className={cn("py-4", className)}>
       <Separator />
       <div className="flex justify-between pt-4">
         <h2 className="font-jetbrains-mono text-base uppercase text-medium">
@@ -50,6 +53,10 @@ function ReviewSectionInfo({ step, error }: ReviewSectionProps) {
       return <AgreementsReview step={step} error={error} />;
     case "optional":
       return <OptionalReview step={step} error={error} />;
+    case "character":
+      return <AvatarReview step={step} error={error} />;
+    case "canvas":
+      return <CanvasReview step={step} error={error} />;
     default:
       return <></>;
   }
@@ -255,7 +262,82 @@ function OptionalReview({}: ReviewSectionProps) {
   );
 }
 
-const reviewSteps = applySteps.slice(1, -1);
+function AvatarReview({}: ReviewSectionProps) {
+  const { data } = api.application.get.useQuery();
+
+  const selectedColor = colors.find(
+    (c) => c.name === (data?.avatarColour ?? "green"),
+  );
+
+  return (
+    <div className="space-y-2">
+      <Label>Your Avatar</Label>
+      <div
+        className="mx-auto flex h-64 w-64 flex-col justify-center rounded-2xl p-4"
+        style={{
+          background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
+        }}
+      >
+        <div className="flex items-center justify-center">
+          <AvatarDisplay
+            avatarColour={data?.avatarColour}
+            avatarFace={data?.avatarFace}
+            avatarLeftHand={data?.avatarLeftHand}
+            avatarRightHand={data?.avatarRightHand}
+            avatarHat={data?.avatarHat}
+            size="md"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CanvasReview({}: ReviewSectionProps) {
+  const { data } = api.application.get.useQuery();
+
+  type CanvasData = {
+    paths: Array<Array<{ x: number; y: number }>>;
+    timestamp: number;
+    version: string;
+  };
+
+  const canvasData = data?.canvasData as CanvasData | null | undefined;
+  const pathStrings =
+    canvasData?.paths?.map((path) =>
+      path.reduce((acc, point, index) => {
+        if (index === 0) return `M ${point.x} ${point.y}`;
+        return `${acc} L ${point.x} ${point.y}`;
+      }, ""),
+    ) ?? [];
+
+  return (
+    <div className="space-y-2">
+      <Label>Your Drawing</Label>
+      {pathStrings.length > 0 ? (
+        <div className="overflow-hidden rounded-lg border-2 border-gray-300 bg-white">
+          <svg className="h-64 w-full lg:h-72">
+            {pathStrings.map((pathString, pathIndex) => (
+              <path
+                key={pathIndex}
+                d={pathString}
+                stroke="#a16bc7"
+                strokeWidth="4"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ))}
+          </svg>
+        </div>
+      ) : (
+        <p className="text-sm text-medium">(no drawing)</p>
+      )}
+    </div>
+  );
+}
+
+const reviewSteps = applySteps.slice(0, -1);
 
 export function ReviewForm() {
   const { data } = api.application.get.useQuery();
@@ -265,7 +347,12 @@ export function ReviewForm() {
   return (
     <div className="overflow-auto">
       {reviewSteps.map((step, idx) => (
-        <ReviewSection step={step} key={idx} error={error} />
+        <ReviewSection
+          step={step}
+          key={idx}
+          error={error}
+          className={step.step === "canvas" ? "hidden sm:block" : ""}
+        />
       ))}
     </div>
   );

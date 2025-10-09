@@ -68,7 +68,7 @@ export function SavedIndicatorComponent({
 
   if (formattedLastSaved) {
     return (
-      <div className="mt-2 text-sm font-medium italic text-heavy">
+      <div className="mx-2 text-center text-xs font-medium italic text-heavy md:mt-2 md:text-sm">
         Last saved {formattedLastSaved}
       </div>
     );

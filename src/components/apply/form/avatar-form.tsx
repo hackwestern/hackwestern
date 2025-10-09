@@ -9,6 +9,7 @@ import { useState } from "react";
 /* eslint-disable @next/next/no-img-element */
 import { categories, colors, avatarManifest } from "../../../constants/avatar";
 import type { AvatarObject } from "../../../constants/avatar";
+import { AvatarDisplay } from "../avatar-display";
 
 type AvatarColor =
   | "red"
@@ -18,6 +19,87 @@ type AvatarColor =
   | "blue"
   | "purple"
   | "pink";
+
+// Helper to get accessory object from ID
+export const getAccessoryFromId = (
+  category: "face" | "left" | "right" | "hat",
+  id: number | null,
+): AvatarObject | null => {
+  if (!id) return null;
+  const item = avatarManifest[category].find((item) => item.id === id);
+  if (!item) return null;
+  return {
+    id: item.id,
+    name: item.alt,
+    src: item.file,
+    sizing: "sizing" in item ? item.sizing : undefined,
+  };
+};
+
+export const getAccessoriesForCategory = (category: string) => {
+  const noneOption: AvatarObject = {
+    id: 0,
+    name: "None",
+    src: "",
+  };
+
+  switch (category) {
+    case "face":
+      return [
+        noneOption,
+        ...avatarManifest.face.map(
+          (AvatarEntry) =>
+            ({
+              id: AvatarEntry.id,
+              name: AvatarEntry.alt,
+              src: AvatarEntry.file,
+            }) as AvatarObject,
+        ),
+      ];
+
+    case "right":
+      return [
+        noneOption,
+        ...avatarManifest.right.map(
+          (AvatarEntry) =>
+            ({
+              id: AvatarEntry.id,
+              name: AvatarEntry.alt,
+              src: AvatarEntry.file,
+            }) as AvatarObject,
+        ),
+      ];
+
+    case "left":
+      return [
+        noneOption,
+        ...avatarManifest.left.map(
+          (AvatarEntry) =>
+            ({
+              id: AvatarEntry.id,
+              name: AvatarEntry.alt,
+              src: AvatarEntry.file,
+            }) as AvatarObject,
+        ),
+      ];
+    case "hat":
+      return [
+        noneOption,
+        ...avatarManifest.hat.map(
+          (AvatarEntry) =>
+            ({
+              id: AvatarEntry.id,
+              name: AvatarEntry.alt,
+              src: AvatarEntry.file,
+              sizing: AvatarEntry?.sizing,
+            }) as AvatarObject,
+        ),
+      ];
+
+    default:
+      return [];
+  }
+};
 
 export function AvatarForm() {
   const utils = api.useUtils();
@@ -65,87 +147,6 @@ export function AvatarForm() {
     });
   }
 
-  // Helper to get accessory object from ID
-  const getAccessoryFromId = (
-    category: "face" | "left" | "right" | "hat",
-    id: number | null,
-  ): AvatarObject | null => {
-    if (!id) return null;
-    const item = avatarManifest[category].find((item) => item.id === id);
-    if (!item) return null;
-    return {
-      id: item.id,
-      name: item.alt,
-      src: item.file,
-      sizing: "sizing" in item ? item.sizing : undefined,
-    };
-  };
-
-  const getAccessoriesForCategory = (category: string) => {
-    const noneOption: AvatarObject = {
-      id: 0,
-      name: "None",
-      src: "",
-    };
-
-    switch (category) {
-      case "face":
-        return [
-          noneOption,
-          ...avatarManifest.face.map(
-            (AvatarEntry) =>
-              ({
-                id: AvatarEntry.id,
-                name: AvatarEntry.alt,
-                src: AvatarEntry.file,
-              }) as AvatarObject,
-          ),
-        ];
-
-      case "right":
-        return [
-          noneOption,
-          ...avatarManifest.right.map(
-            (AvatarEntry) =>
-              ({
-                id: AvatarEntry.id,
-                name: AvatarEntry.alt,
-                src: AvatarEntry.file,
-              }) as AvatarObject,
-          ),
-        ];
-
-      case "left":
-        return [
-          noneOption,
-          ...avatarManifest.left.map(
-            (AvatarEntry) =>
-              ({
-                id: AvatarEntry.id,
-                name: AvatarEntry.alt,
-                src: AvatarEntry.file,
-              }) as AvatarObject,
-          ),
-        ];
-      case "hat":
-        return [
-          noneOption,
-          ...avatarManifest.hat.map(
-            (AvatarEntry) =>
-              ({
-                id: AvatarEntry.id,
-                name: AvatarEntry.alt,
-                src: AvatarEntry.file,
-                sizing: AvatarEntry?.sizing,
-              }) as AvatarObject,
-          ),
-        ];
-
-      default:
-        return [];
-    }
-  };
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -164,84 +165,13 @@ export function AvatarForm() {
               }}
             >
               <div className="mt-8 flex scale-75 items-center justify-center 2xl:scale-90 3xl:scale-110">
-                <div className="relative h-64 w-64">
-                  {/* Character Base */}
-
-                  <img
-                    src={`/avatar/body/${colors.find((c) => c.name === (avatarColour ?? "green"))?.body ?? "002"}.webp`}
-                    alt="Character body"
-                    className="h-full w-full object-contain"
-                  />
-
-                  {/* Selected Accessory - Face */}
-                  {avatarFace &&
-                    (() => {
-                      const faceAccessory = getAccessoryFromId(
-                        "face",
-                        avatarFace,
-                      );
-                      return faceAccessory ? (
-                        <div className="absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2">
-                          <img
-                            src={faceAccessory.src}
-                            alt={faceAccessory.name}
-                            className="h-full w-full object-contain"
-                          />
-                        </div>
-                      ) : null;
-                    })()}
-
-                  {/* Selected Accessory - Hat */}
-                  {avatarHat &&
-                    (() => {
-                      const hatAccessory = getAccessoryFromId("hat", avatarHat);
-                      return hatAccessory ? (
-                        <div className="absolute -top-16 left-1/2 h-56 w-56 -translate-x-1/2">
-                          <img
-                            src={hatAccessory.src}
-                            alt={hatAccessory.name}
-                            className={`h-full w-full ${hatAccessory.sizing ?? ""} object-contain`}
-                          />
-                        </div>
-                      ) : null;
-                    })()}
-
-                  {/* Selected Accessory - Left Hand */}
-                  {avatarLeftHand &&
-                    (() => {
-                      const leftAccessory = getAccessoryFromId(
-                        "left",
-                        avatarLeftHand,
-                      );
-                      return leftAccessory ? (
-                        <div className="absolute -left-4 bottom-20 h-16 w-16">
-                          <img
-                            src={leftAccessory.src}
-                            alt={leftAccessory.name}
-                            className="h-full w-full object-contain"
-                          />
-                        </div>
-                      ) : null;
-                    })()}
-
-                  {/* Selected Accessory - Right Hand */}
-                  {avatarRightHand &&
-                    (() => {
-                      const rightAccessory = getAccessoryFromId(
-                        "right",
-                        avatarRightHand,
-                      );
-                      return rightAccessory ? (
-                        <div className="absolute -right-4 bottom-20 h-16 w-16">
-                          <img
-                            src={rightAccessory.src}
-                            alt={rightAccessory.name}
-                            className="h-full w-full object-contain"
-                          />
-                        </div>
-                      ) : null;
-                    })()}
-                </div>
+                <AvatarDisplay
+                  avatarColour={avatarColour}
+                  avatarFace={avatarFace}
+                  avatarLeftHand={avatarLeftHand}
+                  avatarRightHand={avatarRightHand}
+                  avatarHat={avatarHat}
+                />
               </div>
             </div>
 
@@ -302,7 +232,7 @@ export function AvatarForm() {
 
             {/* Accessory Grid */}
             <div className="custom-scroll flex-1 overflow-y-auto overflow-x-hidden pr-2">
-              <div className="grid h-0 w-full gap-3 md:grid-cols-2 lg:grid-cols-2 3xl:grid-cols-3">
+              <div className="z-0 grid w-full grid-cols-3 gap-3 md:h-0 md:grid-cols-2 lg:grid-cols-2 3xl:grid-cols-3">
                 {getAccessoriesForCategory(selectedCategory).map(
                   (accessory) => {
                     // Get current value for this category
