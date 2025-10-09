@@ -50,7 +50,7 @@ export function BasicsForm() {
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-6 md:space-y-8"
       >
-        <div className="flex w-full flex-col gap-3 md:flex-row md:gap-2">
+        <div className="flex w-full flex-col gap-3 md:gap-2">
           <FormLabel className="w-full text-sm font-medium text-gray-700">
             Full Name
           </FormLabel>
