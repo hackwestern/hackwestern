@@ -10,6 +10,7 @@ import { Button } from "../ui/button";
 import { SavedIndicator } from "./saved-indicator";
 import { api } from "~/utils/api";
 import { useToast } from "../hooks/use-toast";
+import { useRouter } from "next/router";
 
 type ApplyNavigationProps = {
   step: ApplyStep | null;
@@ -73,14 +74,30 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
   const status = applicationData?.status ?? "NOT_STARTED";
   const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
 
-  const onClickSubmit = () => {
-    if (applicationData?.status !== "PENDING_REVIEW" && step === "review") {
+  const router = useRouter();
+
+  const submitMutation = api.application.submit.useMutation();
+
+  const onClickSubmit = async (e?: React.MouseEvent) => {
+    // Prevent default navigation when we handle submission
+    e?.preventDefault();
+
+    if (step !== "review") return;
+
+    submitMutation.mutateAsync().then(() => {
+      toast({
+        title: "Application Submitted",
+        description: "Your application was submitted successfully.",
+        variant: "success",
+      });
+      void router.push("/dashboard");
+    }).catch(() => {
       toast({
         title: "Application Incomplete",
         description: "Please complete all required steps before submitting.",
         variant: "destructive",
       });
-    }
+    });
   };
 
   return (
@@ -116,12 +133,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
         </div>
 
         <div className="flex w-1/4 items-center">
-          <Button
-            variant="primary"
-            asChild
-            className="h-10 px-6"
-            onClick={onClickSubmit}
-          >
+          <Button variant="primary" className="h-10 px-6">
             {!step || !!mobileNextStep ? (
               <Link href={`/apply?step=${mobileNextStep}`}>
                 <div className="flex items-center gap-2">
@@ -135,7 +147,10 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
                 </div>
               </Link>
             ) : canEdit ? (
-              <Link href={`/submitted`}>Submit</Link>
+              // Submit button triggers submit flow
+              <a href="#" onClick={onClickSubmit} className="block">
+                Submit
+              </a>
             ) : (
               <Link href={`/dashboard`}>Home</Link>
             )}
@@ -157,12 +172,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
                 <Link href={`/apply?step=${previousStep}`}>Back</Link>
               </Button>
             ))}
-          <Button
-            variant="primary"
-            asChild
-            className="w-28"
-            onClick={onClickSubmit}
-          >
+          <Button variant="primary" className="w-28">
             {!step || !!nextStep ? (
               <Link href={`/apply?step=${nextStep}`}>
                 <div className="flex gap-2">
@@ -176,7 +186,9 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
                 </div>
               </Link>
             ) : canEdit ? (
-              <Link href={`/submitted`}>Submit</Link>
+              <a href="#" onClick={onClickSubmit} className="block">
+                Submit
+              </a>
             ) : (
               <Link href={`/dashboard`}>Home</Link>
             )}
