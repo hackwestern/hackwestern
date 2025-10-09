@@ -320,9 +320,8 @@ export const applications = createTable(
         timestamp: number;
         version: string;
       }>()
-      .default(
-        sql`'${JSON.stringify({ paths: [], timestamp: 0, version: "" })}'::jsonb`,
-      ),
+      .default(sql`'{"paths":[],"timestamp":0,"version":""}'::jsonb`)
+      .notNull(),
   },
   (application) => [index("user_id_idx").on(application.userId)],
 );
