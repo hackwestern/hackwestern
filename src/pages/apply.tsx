@@ -1,7 +1,7 @@
 import React from "react";
 import Head from "next/head";
 import { useSearchParams } from "next/navigation";
-import { type ApplyStepFull, applySteps } from "~/constants/apply";
+import { type ApplyStepFull, applySteps, mobileApplySteps } from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
 import { ApplyForm } from "~/components/apply/form";
 import { Passport } from "~/components/apply/passport";
@@ -9,16 +9,42 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { notVerifiedRedirect } from "~/utils/redirect";
 import CanvasBackground from "~/components/canvas-background";
 import { ApplyNavigation } from "~/components/apply/navigation";
+import { useIsMobile } from "~/hooks/use-mobile";
+import { api } from "~/utils/api";
+import { colors } from "~/constants/avatar";
 
-function getApplyStep(stepValue: string | null): ApplyStepFull | null {
-  return applySteps.find((s) => s.step === stepValue) ?? null;
+function getApplyStep(stepValue: string | null, isMobile: boolean): ApplyStepFull | null {
+  const steps = isMobile ? mobileApplySteps : applySteps;
+  return steps.find((s) => s.step === stepValue) ?? null;
+}
+
+// Small character component for mobile header
+function MobileCharacterIcon() {
+  const { data: applicationData } = api.application.get.useQuery();
+  
+  if (!applicationData?.avatarColour) {
+    return <span className="text-sm">🎨</span>;
+  }
+
+  const bodyColor = colors.find((c) => c.name === applicationData.avatarColour)?.body ?? "002";
+  
+  return (
+    <div className="relative h-6 w-6">
+      <img
+        src={`/avatar/body/${bodyColor}.webp`}
+        alt="Character"
+        className="h-full w-full object-contain"
+      />
+    </div>
+  );
 }
 
 export default function Apply() {
   const searchParams = useSearchParams();
+  const isMobile = useIsMobile();
   const applyStep = React.useMemo(
-    () => getApplyStep(searchParams.get("step")),
-    [searchParams],
+    () => getApplyStep(searchParams.get("step"), isMobile),
+    [searchParams, isMobile],
   );
 
   const step = applyStep?.step ?? null;
@@ -35,57 +61,49 @@ export default function Apply() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50">
+      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center bg-primary-50">
         {/* Mobile View */}
-        <Tabs
-          defaultValue="application"
-          className="w-screen bg-primary-100 font-figtree md:hidden"
-        >
-          <TabsList className="fixed z-50 w-screen justify-around rounded-none bg-primary-100">
-            <TabsTrigger
-              value="application"
-              className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
-            >
-              Application
-            </TabsTrigger>
-            <TabsTrigger
-              value="passport"
-              className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
-            >
-              Passport
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="application" className="z-40 w-screen">
-            <div className="fixed flex h-screen w-screen flex-col space-y-8 bg-white px-6 pt-12">
-              <div className="space-y-2 pt-12">
-                <h1 className="font-dico text-2xl font-medium text-heavy">
+        <div className="relative z-10 flex h-screen w-screen flex-col md:hidden">
+          <ApplyMenu step={step} />
+          
+          {/* Mobile Header */}
+          <div className="flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
+            <div className="h-8 w-8"></div>
+            <h1 className="font-figtree text-lg font-semibold text-heavy">
+              {step ? step.charAt(0).toUpperCase() + step.slice(1) : 'Application'}
+            </h1>
+            <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+              <MobileCharacterIcon />
+            </div>
+          </div>
+
+          {/* Mobile Content */}
+          <div className="flex-1 bg-white py-6">
+            <div className="h-full flex flex-col mx-6">
+              <div className="mb-6">
+                <h1 className="font-dico text-2xl font-medium text-heavy mb-2">
                   {heading}
                 </h1>
-                <h2 className="font-figtree text-sm text-medium">
-                  {subheading}
-                </h2>
+                {subheading && (
+                  <h2 className="font-figtree text-sm text-medium">
+                    {subheading}
+                  </h2>
+                )}
               </div>
-              <div className="overflow-y-auto font-figtree">
-                <ApplyForm step={step} />
-              </div>
-              <div className="pb-3">
-                <ApplyNavigation step={step} />
-              </div>
-              <div className="select-none bg-white py-12 text-primary-100">
-                this is a secret
+              
+              <div className="flex-1 overflow-visible">
+                <div className="font-figtree">
+                  <ApplyForm step={step} />
+                </div>
               </div>
             </div>
-          </TabsContent>
-          <TabsContent
-            value="passport"
-            className="flex flex-col justify-center"
-          >
-            <div className="flex h-[85vh] w-screen flex-col items-center justify-center px-4">
-              <Passport />
-            </div>
-            <CanvasBackground />
-          </TabsContent>
-        </Tabs>
+          </div>
+
+          {/* Mobile Navigation - Fixed at Bottom */}
+          <div className="bg-white border-t border-gray-200 px-6 py-4">
+            <ApplyNavigation step={step} />
+          </div>
+        </div>
         {/* End of Mobile View */}
 
         {/* Desktop View */}

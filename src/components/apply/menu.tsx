@@ -1,4 +1,4 @@
-import { applySteps, type ApplyStep } from "~/constants/apply";
+import { applySteps, mobileApplySteps, type ApplyStep } from "~/constants/apply";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { useMemo } from "react";
@@ -40,81 +40,73 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
   };
 
   return (
-    <div className="mx-auto h-screen w-full gap-3 border-[1px] bg-white py-3 shadow-[5px_0px_10px_0px_rgba(129,74,83,0.1)]">
-      <div className="mx-4 gap-2 md:flex md:flex-col">
-        <div className="my-8 ml-2 flex flex-col gap-8">
-          <Image
-            src="/horse.svg"
-            alt="Hack Western Logo"
-            width={40}
-            height={60}
-          />
-          <div className="gap-2">
-            <h1 className="font-figtree font-bold text-heavy">
-              Application Portal
-            </h1>
-            <h2 className="font-figtree font-semibold text-medium">
-              Hack Western 12
-            </h2>
+    <>
+      {/* Desktop Sidebar */}
+      <div className="mx-auto hidden h-screen w-full gap-3 border-[1px] bg-white py-3 shadow-[5px_0px_10px_0px_rgba(129,74,83,0.1)] md:block">
+        <div className="mx-4 gap-2 flex flex-col">
+          <div className="my-8 ml-2 flex flex-col gap-8">
+            <Image
+              src="/horse.svg"
+              alt="Hack Western Logo"
+              width={40}
+              height={60}
+            />
+            <div className="gap-2">
+              <h1 className="font-figtree font-bold text-heavy">
+                Application Portal
+              </h1>
+              <h2 className="font-figtree font-semibold text-medium">
+                Hack Western 12
+              </h2>
+            </div>
           </div>
+          {applySteps.map((s) => (
+            <Button
+              key={s.step}
+              variant={s.step === step ? "apply-ghost" : "apply"}
+              className="w-48 justify-start text-left xl:w-64 mx-10"
+              asChild
+            >
+              <Link href={{ pathname: "/apply", query: { step: s.step } }}>
+                {s.label}
+              </Link>
+            </Button>
+          ))}
         </div>
-        {applySteps.map((s) => (
-          <Button
-            key={s.step}
-            variant={s.step === step ? "apply-ghost" : "apply"}
-            className="w-48 justify-start text-left xl:w-64"
-            asChild
-          >
-            <Link href={{ pathname: "/apply", query: { step: s.step } }}>
-              {s.label}
-            </Link>
-          </Button>
-        ))}
       </div>
 
-      {/* Mobile View */}
-      <div className="flex h-auto items-center justify-between overflow-clip px-4 py-1.5 md:hidden md:h-0">
-        <Button
-          asChild
-          variant="apply-ghost"
-          className="h-full rounded-full p-2 hover:bg-primary-400"
-          disabled={!prevStep}
-        >
-          <Link
-            href={{ pathname: "/apply", query: { step: prevStep ?? step } }}
-          >
-            <ArrowLeft
-              className={cn(
-                "size-6",
-                prevStep ? "text-primary-600" : "text-slate-300",
-              )}
-            />
-          </Link>
-        </Button>
-
-        <div className="flex gap-2">
-          <Drawer>
-            <div className="flex items-center gap-2">
-              <DrawerTrigger asChild>
-                <Button variant="apply" className="rounded-2xl p-2.5">
-                  <Menu strokeWidth={2.5} className="size-5 text-primary-600" />
-                </Button>
-              </DrawerTrigger>
-              <DrawerTrigger asChild>
-                <Button
-                  variant="apply"
-                  className="h-full rounded-2xl p-2.5 text-base font-semibold"
-                >
-                  {stepName}
-                </Button>
-              </DrawerTrigger>
-            </div>
-            <DrawerContent>
-              <DrawerFooter>
-                {applySteps.map((s) => (
+      {/* Mobile Hamburger Menu */}
+      <div className="fixed top-4 left-4 z-50 md:hidden">
+        <Drawer>
+          <DrawerTrigger asChild>
+            <Button variant="apply" className="rounded-2xl p-2.5 shadow-lg">
+              <Menu strokeWidth={2.5} className="size-5 text-primary-600" />
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent className="max-h-[80vh]">
+            <div className="mx-4 my-6 space-y-4">
+              <div className="flex items-center gap-4">
+                <Image
+                  src="/horse.svg"
+                  alt="Hack Western Logo"
+                  width={32}
+                  height={48}
+                />
+                <div>
+                  <h1 className="font-figtree font-bold text-heavy text-lg">
+                    Application Portal
+                  </h1>
+                  <h2 className="font-figtree font-semibold text-medium text-sm">
+                    Hack Western 12
+                  </h2>
+                </div>
+              </div>
+              <div className="space-y-2 space-x-2">
+                {mobileApplySteps.map((s) => (
                   <DrawerClose key={s.step} asChild>
                     <Button
                       variant={s.step === step ? "apply" : "apply-ghost"}
+                      className="w-full justify-start text-left"
                       asChild
                     >
                       <Link
@@ -125,37 +117,11 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
                     </Button>
                   </DrawerClose>
                 ))}
-              </DrawerFooter>
-            </DrawerContent>
-          </Drawer>
-        </div>
-        <Button
-          asChild
-          variant="apply-ghost"
-          className="h-full rounded-full p-2 hover:bg-primary-400"
-          disabled={!nextStep && step !== "review"}
-          onClick={onClickSubmit}
-        >
-          <Link
-            href={
-              step === "review"
-                ? "/submitted"
-                : { pathname: "/apply", query: { step: nextStep ?? step } }
-            }
-          >
-            {step !== "review" ? (
-              <ArrowRight
-                className={cn(
-                  "size-6",
-                  nextStep ? "text-primary-600" : "text-slate-300",
-                )}
-              />
-            ) : (
-              <Send className="size-6 text-primary-600" />
-            )}
-          </Link>
-        </Button>
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
       </div>
-    </div>
+    </>
   );
 }
