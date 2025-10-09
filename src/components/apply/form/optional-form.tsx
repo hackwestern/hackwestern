@@ -63,6 +63,14 @@ export function OptionalForm() {
     return {
       ...data,
       underrepGroup,
+      // The database stores nullable enum columns as `null` when the user
+      // hasn't selected anything. Our zod schema expects these fields to be
+      // optional (i.e. string | undefined). Convert null -> undefined so
+      // react-hook-form's reset and zod validation don't complain about
+      // `null` being passed where an optional enum/string is expected.
+      gender: data.gender ?? undefined,
+      ethnicity: data.ethnicity ?? undefined,
+      sexualOrientation: data.sexualOrientation ?? undefined,
     };
   }, [data]);
 
