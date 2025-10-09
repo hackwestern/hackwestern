@@ -71,7 +71,9 @@ function MobileCharacterIcon() {
       </PopoverTrigger>
       <PopoverContent className="mr-4 mt-2 w-48 bg-offwhite p-4 font-figtree">
         <div className="rounded-md">
-          <h3 className="mb-3 text-lg font-medium text-medium">{name == "Username" ? `Hi, ${name}` : "Hello, hacker"}!</h3>
+          <h3 className="mb-3 text-lg font-medium text-medium">
+            {name == "Username" ? `Hi, ${name}` : "Hello, hacker"}!
+          </h3>
           <div className="mb-4 h-px w-full bg-violet-200" />
 
           <div className="mb-3 font-figtree text-heavy">
@@ -103,7 +105,7 @@ function DesktopCharacterIcon() {
   );
 
   return (
-    <div 
+    <div
       className="rounded-full p-1"
       style={{
         background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
@@ -263,7 +265,7 @@ export default function Apply() {
             className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
             <CanvasBackground />
-            <div className="flex items-center gap-4 absolute right-6 top-6">
+            <div className="absolute right-6 top-6 flex items-center gap-4">
               <Logout />
               <DesktopCharacterIcon />
             </div>
@@ -302,7 +304,7 @@ export default function Apply() {
                 </div>
 
                 {/* Right stamps column (up to 3) */}
-                <div className="mx-auto hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:w-64 2xl: 2xl:pb-12">
+                <div className="2xl: mx-auto hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:w-64 2xl:pb-12">
                   {data?.attendedBefore !== undefined &&
                   data?.attendedBefore !== null ? (
                     <HWStamp

@@ -22,9 +22,12 @@ import CanvasBackground from "~/components/canvas-background";
 import { APPLICATION_DEADLINE_ISO } from "~/lib/date";
 import dynamic from "next/dynamic";
 
-const CountdownTimer = dynamic(() => import("~/components/apply/countdown-timer"), {
-  ssr: false,
-});
+const CountdownTimer = dynamic(
+  () => import("~/components/apply/countdown-timer"),
+  {
+    ssr: false,
+  },
+);
 
 type ApplicationStatusType =
   | "IN_PROGRESS"
@@ -216,7 +219,9 @@ function MobileCharacterIcon() {
       </PopoverTrigger>
       <PopoverContent className="mr-4 mt-2 w-48 bg-offwhite p-4 font-figtree">
         <div className="rounded-md">
-          <h3 className="mb-3 text-sm font-medium text-medium">{name == "Username" ? `Hi, ${name}` : "Hello, hacker"}!</h3>
+          <h3 className="mb-3 text-sm font-medium text-medium">
+            {name == "Username" ? `Hi, ${name}` : "Hello, hacker"}!
+          </h3>
           <div className="mb-4 h-px w-full bg-violet-200" />
 
           <div className="mb-3 font-figtree text-heavy">
@@ -248,7 +253,7 @@ function DesktopCharacterIcon() {
   );
 
   return (
-    <div 
+    <div
       className="rounded-full p-1"
       style={{
         background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
@@ -355,7 +360,7 @@ const Dashboard = () => {
             className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
             <CanvasBackground />
-            <div className="flex items-center gap-4 absolute right-6 top-6">
+            <div className="absolute right-6 top-6 flex items-center gap-4">
               <Logout />
               <DesktopCharacterIcon />
             </div>
