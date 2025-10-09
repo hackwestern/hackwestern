@@ -27,7 +27,10 @@ export default function CountdownTimer({ targetDate }: CountdownTimerProps) {
     return () => clearInterval(timer);
   }, [targetDate]);
 
-  if (!timeLeft) return <p className="text-2xl font-medium text-medium">🎉 Time&apos;s up!</p>;
+  if (!timeLeft)
+    return (
+      <p className="text-2xl font-medium text-medium">🎉 Time&apos;s up!</p>
+    );
 
   const { days, hours, minutes, seconds } = timeLeft;
 
