@@ -272,7 +272,7 @@ export default function Apply() {
         {/* End of Mobile View */}
 
         {/* Desktop View */}
-        <div className="relative z-10 hidden h-full w-full flex-grow items-center md:flex">
+        <div className="relative z-10 hidden h-full w-full flex-grow items-center overflow-x-hidden md:flex">
           <div
             id="left-panel"
             className="z-30 flex h-full items-center justify-center"
@@ -288,7 +288,7 @@ export default function Apply() {
               <Logout />
               <DesktopCharacterIcon />
             </div>
-            <div className="overflow-y-none z-10 flex flex-col items-center justify-center overflow-auto">
+            <div className="overflow-y-none overflow-x-none z-10 flex flex-col items-center justify-center">
               <div className="flex h-full w-full items-start justify-center gap-8 overflow-hidden 2xl:flex-row">
                 {/* Left stamps column (up to 3) */}
                 <div className="mx-auto hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:w-64 2xl:pb-12">
@@ -302,7 +302,7 @@ export default function Apply() {
 
                 {/* Main card */}
                 <div>
-                  <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
+                  <div className="h-lg flex w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
                     <div className="space-y-4 py-1.5">
                       <h1 className="font-dico text-2xl font-medium text-heavy">
                         {heading}
