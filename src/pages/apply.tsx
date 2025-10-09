@@ -272,7 +272,7 @@ export default function Apply() {
         {/* End of Mobile View */}
 
         {/* Desktop View */}
-        <div className="relative z-10 hidden h-full w-full flex-grow items-center md:flex">
+        <div className="relative z-10 hidden h-full w-full flex-grow items-center overflow-x-hidden md:flex">
           <div
             id="left-panel"
             className="z-30 flex h-full items-center justify-center"
@@ -288,7 +288,7 @@ export default function Apply() {
               <Logout />
               <DesktopCharacterIcon />
             </div>
-            <div className="overflow-y-none z-10 flex flex-col items-center justify-center overflow-auto">
+            <div className="overflow-y-none overflow-x-none z-10 flex flex-col items-center justify-center">
               <div className="flex h-full w-full items-start justify-center gap-8 overflow-hidden 2xl:flex-row">
                 {/* Left stamps column (up to 3) */}
                 <div className="mx-auto hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:w-64 2xl:pb-12">
@@ -323,7 +323,7 @@ export default function Apply() {
                 </div>
 
                 {/* Right stamps column (up to 3) */}
-                <div className="2xl: mx-auto hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:w-64 2xl:pb-12">
+                <div className="hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:mx-auto 2xl:w-64 2xl:pb-12">
                   {data?.attendedBefore !== undefined &&
                   data?.attendedBefore !== null ? (
                     <HWStamp
@@ -331,7 +331,7 @@ export default function Apply() {
                     />
                   ) : null}
 
-                  <div className="self-center">
+                  <div className="scale-50 self-center ">
                     {data?.avatarColour && (
                       <AvatarDisplay
                         avatarColour={data?.avatarColour}
@@ -339,7 +339,7 @@ export default function Apply() {
                         avatarLeftHand={data?.avatarLeftHand}
                         avatarRightHand={data?.avatarRightHand}
                         avatarHat={data?.avatarHat}
-                        size="sm"
+                        size="lg"
                       />
                     )}
                   </div>
