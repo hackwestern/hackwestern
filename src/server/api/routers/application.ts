@@ -160,58 +160,59 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
 
-  submit: protectedProcedure
-    .mutation(async ({ ctx }) => {
-      try {
-        const userId = ctx.session.user.id;
+  submit: protectedProcedure.mutation(async ({ ctx }) => {
+    try {
+      const userId = ctx.session.user.id;
 
-        // Fetch existing application for the user
-        const application = await db.query.applications.findFirst({
-          where: (schema, { eq }) => eq(schema.userId, userId),
+      // Fetch existing application for the user
+      const application = await db.query.applications.findFirst({
+        where: (schema, { eq }) => eq(schema.userId, userId),
+      });
+
+      if (!application) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No application found to submit",
         });
-
-        if (!application) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "No application found to submit",
-          });
-        }
-
-        // Transform stored links to the shape expected by the submit schema
-        const normalized = {
-          ...application,
-          // strip configured prefixes if present so schema preprocessing matches tests
-          githubLink: application.githubLink
-            ? application.githubLink.replace(GITHUB_URL, "")
-            : undefined,
-          linkedInLink: application.linkedInLink
-            ? application.linkedInLink.replace(LINKEDIN_URL, "")
-            : undefined,
-        } as any;
-
-        // Validate the existing application against the submission schema
-        const parseResult = applicationSubmitSchema.safeParse(normalized);
-        if (!parseResult.success) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Application is not complete: " + JSON.stringify(parseResult.error.format()),
-          });
-        }
-
-        // Update status only
-        await db
-          .update(applications)
-          .set({ status: "PENDING_REVIEW", updatedAt: new Date() })
-          .where(eq(applications.userId, userId));
-      } catch (error) {
-        throw error instanceof TRPCError
-          ? error
-          : new TRPCError({
-              code: "INTERNAL_SERVER_ERROR",
-              message: "Failed to submit application: " + JSON.stringify(error),
-            });
       }
-    }),
+
+      // Transform stored links to the shape expected by the submit schema
+      const normalized = {
+        ...application,
+        // strip configured prefixes if present so schema preprocessing matches tests
+        githubLink: application.githubLink
+          ? application.githubLink.replace(GITHUB_URL, "")
+          : undefined,
+        linkedInLink: application.linkedInLink
+          ? application.linkedInLink.replace(LINKEDIN_URL, "")
+          : undefined,
+      } as any;
+
+      // Validate the existing application against the submission schema
+      const parseResult = applicationSubmitSchema.safeParse(normalized);
+      if (!parseResult.success) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Application is not complete: " +
+            JSON.stringify(parseResult.error.format()),
+        });
+      }
+
+      // Update status only
+      await db
+        .update(applications)
+        .set({ status: "PENDING_REVIEW", updatedAt: new Date() })
+        .where(eq(applications.userId, userId));
+    } catch (error) {
+      throw error instanceof TRPCError
+        ? error
+        : new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to submit application: " + JSON.stringify(error),
+          });
+    }
+  }),
 
   getAppStats: protectedOrganizerProcedure.query(async ({}) => {
     try {

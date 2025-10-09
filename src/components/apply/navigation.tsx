@@ -84,20 +84,23 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
 
     if (step !== "review") return;
 
-    submitMutation.mutateAsync().then(() => {
-      toast({
-        title: "Application Submitted",
-        description: "Your application was submitted successfully.",
-        variant: "success",
+    submitMutation
+      .mutateAsync()
+      .then(() => {
+        toast({
+          title: "Application Submitted",
+          description: "Your application was submitted successfully.",
+          variant: "success",
+        });
+        void router.push("/dashboard");
+      })
+      .catch(() => {
+        toast({
+          title: "Application Incomplete",
+          description: "Please complete all required steps before submitting.",
+          variant: "destructive",
+        });
       });
-      void router.push("/dashboard");
-    }).catch(() => {
-      toast({
-        title: "Application Incomplete",
-        description: "Please complete all required steps before submitting.",
-        variant: "destructive",
-      });
-    });
   };
 
   return (
