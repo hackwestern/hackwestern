@@ -26,6 +26,10 @@ import { useEffect } from "react";
 export function BasicsForm() {
   const utils = api.useUtils();
   const { data: defaultValues } = api.application.get.useQuery();
+  const status = defaultValues?.status ?? "NOT_STARTED";
+
+  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
       return utils.application.get.invalidate();
@@ -76,6 +80,7 @@ export function BasicsForm() {
                       placeholder="First Name"
                       variant="primary"
                       className="form-input-mobile h-12"
+                      disabled={!canEdit}
                     />
                   </FormControl>
                 </FormItem>
@@ -94,6 +99,7 @@ export function BasicsForm() {
                       placeholder="Last Name"
                       variant="primary"
                       className="form-input-mobile h-12"
+                      disabled={!canEdit}
                     />
                   </FormControl>
                 </FormItem>
@@ -117,6 +123,7 @@ export function BasicsForm() {
                   placeholder="Enter your phone number"
                   variant="primary"
                   className="form-input-mobile h-12"
+                  disabled={!canEdit}
                 />
               </FormControl>
             </FormItem>
@@ -151,6 +158,7 @@ export function BasicsForm() {
                   placeholder="Enter your age"
                   variant={(field.value ?? 18) >= 18 ? "primary" : "invalid"}
                   className="form-input-mobile h-12"
+                  disabled={!canEdit}
                 />
               </FormControl>
               {(field.value ?? 18) < 18 && (
@@ -176,6 +184,7 @@ export function BasicsForm() {
                   {...field}
                   value={field.value ?? undefined}
                   onValueChange={field.onChange}
+                  disabled={!canEdit}
                 >
                   <SelectTrigger className="form-input-mobile h-12 w-full">
                     <SelectValue />

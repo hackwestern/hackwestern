@@ -386,7 +386,9 @@ const Dashboard = () => {
                       <Link href={`/apply?step=${continueStep}`}>
                         {status == "NOT_STARTED"
                           ? "Start Application"
-                          : "Continue Application"}
+                          : status == "IN_PROGRESS"
+                            ? "Continue Application"
+                            : "Review Application"}
                       </Link>
                     </Button>
                   </div>

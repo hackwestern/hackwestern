@@ -17,6 +17,10 @@ import { text } from "stream/consumers";
 export function ApplicationForm() {
   const utils = api.useUtils();
   const { data: defaultValues } = api.application.get.useQuery();
+
+  const status = defaultValues?.status ?? "NOT_STARTED";
+  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
       return utils.application.get.invalidate();
@@ -61,6 +65,7 @@ export function ApplicationForm() {
                         ? "primary"
                         : "invalid"
                     }
+                    disabled={!canEdit}
                   />
                 </FormControl>
                 <div
@@ -94,6 +99,7 @@ export function ApplicationForm() {
                         ? "primary"
                         : "invalid"
                     }
+                    disabled={!canEdit}
                   />
                 </FormControl>
                 <div
@@ -127,6 +133,7 @@ export function ApplicationForm() {
                         ? "primary"
                         : "invalid"
                     }
+                    disabled={!canEdit}
                   />
                 </FormControl>
                 <div

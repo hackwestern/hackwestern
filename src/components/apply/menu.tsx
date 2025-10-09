@@ -23,7 +23,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="mx-auto hidden h-screen w-56 gap-3 border-[1px] bg-white py-3 shadow-[5px_0px_10px_0px_rgba(129,74,83,0.1)] md:block 2xl:w-72 3xl:w-80">
+      <div className="mx-auto hidden h-screen w-56 gap-3 border-[1px] bg-white py-3 shadow-[5px_0px_10px_0px_rgba(129,74,83,0.1)] md:block 2xl:w-64 3xl:w-72">
         <div className="mx-4 flex flex-col gap-2">
           <div className="my-8 ml-2 flex flex-col gap-8">
             <Image
@@ -45,7 +45,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
             <Button
               key={s.step}
               variant={s.step === step ? "apply-ghost" : "apply"}
-              className="mx-auto w-48 justify-start text-left 2xl:w-64 3xl:w-72"
+              className="mx-auto w-48 justify-start text-left 2xl:w-56 3xl:w-64"
               asChild
             >
               <Link href={{ pathname: "/apply", query: { step: s.step } }}>

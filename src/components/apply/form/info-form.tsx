@@ -27,6 +27,10 @@ import { useEffect } from "react";
 export function InfoForm() {
   const utils = api.useUtils();
   const { data } = api.application.get.useQuery();
+
+  const status = data?.status ?? "NOT_STARTED";
+  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
       return utils.application.get.invalidate();
@@ -92,6 +96,7 @@ export function InfoForm() {
                   {...field}
                   value={field.value ?? undefined}
                   onValueChange={field.onChange}
+                  disabled={!canEdit}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select school" />
@@ -119,6 +124,7 @@ export function InfoForm() {
                   {...field}
                   value={field.value ?? undefined}
                   onValueChange={field.onChange}
+                  disabled={!canEdit}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select level of study" />
@@ -146,6 +152,7 @@ export function InfoForm() {
                   {...field}
                   value={field.value ?? undefined}
                   onValueChange={field.onChange}
+                  disabled={!canEdit}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select major" />
@@ -172,6 +179,7 @@ export function InfoForm() {
                 <RadioButtonGroup
                   value={field.value}
                   onValueChange={field.onChange}
+                  disabled={!canEdit}
                 >
                   <RadioButtonItem key="yes" label="Yes" value="yes" />
                   <RadioButtonItem key="no" label="No" value="no" />
@@ -190,6 +198,7 @@ export function InfoForm() {
                 <RadioButtonGroup
                   value={field.value}
                   onValueChange={field.onChange}
+                  disabled={!canEdit}
                 >
                   {numOfHackathons.enumValues.map((option) => (
                     <RadioButtonItem
