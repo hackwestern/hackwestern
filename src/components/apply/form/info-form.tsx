@@ -42,14 +42,16 @@ export function InfoForm() {
     if (!data) return undefined;
     return {
       major: data.major ?? undefined,
-      school: (data.school as typeof schools[number] | undefined) ?? undefined,
+      school:
+        (data.school as (typeof schools)[number] | undefined) ?? undefined,
       levelOfStudy: data.levelOfStudy ?? undefined,
       numOfHackathons: data.numOfHackathons ?? undefined,
-      attendedBefore: data.attendedBefore === true 
-        ? "yes" 
-        : data.attendedBefore === false 
-          ? "no" 
-          : undefined
+      attendedBefore:
+        data.attendedBefore === true
+          ? "yes"
+          : data.attendedBefore === false
+            ? "no"
+            : undefined,
     } satisfies z.infer<typeof infoSaveSchema>;
   }, [data]);
 
