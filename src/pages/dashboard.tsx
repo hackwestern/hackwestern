@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { useSearchParams } from "next/navigation";
 import React from "react";
 import { Passport } from "~/components/apply/passport";
-import Logout from "~/pages/logout"
+import Logout from "~/pages/logout";
 import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
 import { Button } from "~/components/ui/button";
@@ -122,7 +122,7 @@ const Dashboard = () => {
   );
 
   const step = applyStep?.step ?? null;
-  
+
   return (
     <>
       <Head>
@@ -150,11 +150,11 @@ const Dashboard = () => {
             className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
             <CanvasBackground />
-            <div className="absolute top-7 right-7">
+            <div className="absolute right-7 top-7">
               <Logout />
             </div>
             <div className="z-10 flex flex-col items-center justify-center overflow-auto">
-              <div className="flex flex-col items-center h-full w-full">
+              <div className="flex h-full w-full flex-col items-center">
                 <div className="space-y-12">
                   <div>
                     <h1 className="flex flex-col items-center font-dico text-6xl font-medium text-heavy">
@@ -168,14 +168,16 @@ const Dashboard = () => {
                     <CountdownTimer targetDate={APPLICATION_DEADLINE_ISO} />
                   </h2>
                   <div className="flex flex-col items-center">
-                  <Button
-                    variant="primary"
-                    className="w-full p-6 text-base font-figtree font-medium"
-                  >
-                    <Link href="/apply?step=character">
-                      { status == "NOT_STARTED" ? "Start Application" : "Continue Application"}
-                    </Link>
-                  </Button>
+                    <Button
+                      variant="primary"
+                      className="w-full p-6 font-figtree text-base font-medium"
+                    >
+                      <Link href="/apply?step=character">
+                        {status == "NOT_STARTED"
+                          ? "Start Application"
+                          : "Continue Application"}
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               </div>
