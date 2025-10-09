@@ -172,9 +172,6 @@ const config = {
         "6xl": "72rem",
         "7xl": "80rem",
       },
-      screens: {
-        "3xl": "1920px",
-      }
     },
   },
   plugins: [
