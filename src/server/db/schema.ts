@@ -274,10 +274,8 @@ export const applications = createTable(
     levelOfStudy: levelOfStudy("level_of_study"),
     major: major("major"),
 
-    attendedBefore: boolean("attended").default(false).notNull(),
-    numOfHackathons: numOfHackathons("num_of_hackathons")
-      .default("0")
-      .notNull(),
+    attendedBefore: boolean("attended"),
+    numOfHackathons: numOfHackathons("num_of_hackathons"),
 
     // Your Story
     question1: text("question1"),
