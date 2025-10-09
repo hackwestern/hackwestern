@@ -8,6 +8,9 @@ import {
   levelOfStudy,
   major,
   numOfHackathons,
+  gender,
+  ethnicity,
+  sexualOrientation,
 } from "~/server/db/schema";
 
 // Save schema
@@ -88,6 +91,21 @@ export const optionalSaveSchema = applicationSaveSchema
   })
   .extend({
     underrepGroup: z.enum(underrepGroupAnswers),
+    // Allow empty string values (which can occur from uncontrolled selects) to
+    // be treated as undefined so validation of optional enum fields doesn't
+    // fail during autosave/navigation.
+    gender: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(gender.enumValues).optional(),
+    ),
+    ethnicity: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(ethnicity.enumValues).optional(),
+    ),
+    sexualOrientation: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(sexualOrientation.enumValues).optional(),
+    ),
   });
 
 function minWordCount(value: string, min: number) {

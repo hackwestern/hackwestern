@@ -323,7 +323,7 @@ export default function Apply() {
                 </div>
 
                 {/* Right stamps column (up to 3) */}
-                <div className="2xl: mx-auto hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:w-64 2xl:pb-12">
+                <div className="hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:mx-auto 2xl:w-64 2xl:pb-12">
                   {data?.attendedBefore !== undefined &&
                   data?.attendedBefore !== null ? (
                     <HWStamp
@@ -331,7 +331,7 @@ export default function Apply() {
                     />
                   ) : null}
 
-                  <div className="self-center">
+                  <div className="scale-50 self-center ">
                     {data?.avatarColour && (
                       <AvatarDisplay
                         avatarColour={data?.avatarColour}
@@ -339,7 +339,7 @@ export default function Apply() {
                         avatarLeftHand={data?.avatarLeftHand}
                         avatarRightHand={data?.avatarRightHand}
                         avatarHat={data?.avatarHat}
-                        size="sm"
+                        size="lg"
                       />
                     )}
                   </div>
