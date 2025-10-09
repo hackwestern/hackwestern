@@ -41,17 +41,25 @@ export const personaSaveSchema = applicationSaveSchema.pick({
   avatarHat: true,
 });
 
-export const infoSaveSchema = applicationSaveSchema
-  .pick({
-    school: true,
-    levelOfStudy: true,
-    major: true,
-    attendedBefore: true,
-    numOfHackathons: true,
-  })
-  .extend({
-    attendedBefore: z.enum(["yes", "no"]),
-  });
+export const infoSaveSchema = z.object({
+  school: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.enum(schools).optional(),
+  ),
+  levelOfStudy: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.enum(levelOfStudy.enumValues).optional(),
+  ),
+  major: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.enum(major.enumValues).optional(),
+  ),
+  attendedBefore: z.enum(["yes", "no"]),
+  numOfHackathons: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.enum(numOfHackathons.enumValues).optional(),
+  ),
+});
 
 export const agreementsSaveSchema = applicationSaveSchema.pick({
   agreeCodeOfConduct: true,

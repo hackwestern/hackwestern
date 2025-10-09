@@ -46,50 +46,61 @@ export function BasicsForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="flex w-full flex-wrap gap-2">
-          <FormLabel className="w-full">Full Name</FormLabel>
-          <FormField
-            control={form.control}
-            name="firstName"
-            render={({ field }) => (
-              <FormItem className="min-w-48 flex-1">
-                <FormLabel className="hidden">First Name</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value ?? ""}
-                    placeholder="First Name"
-                    variant="primary"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="lastName"
-            render={({ field }) => (
-              <FormItem className="min-w-48 flex-1">
-                <FormLabel className="hidden">Last Name</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value ?? ""}
-                    placeholder="Last Name"
-                    variant="primary"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-6 md:space-y-8"
+      >
+        <div className="flex w-full flex-col gap-3 md:flex-row md:gap-2">
+          <FormLabel className="w-full text-sm font-medium text-gray-700">
+            Full Name
+          </FormLabel>
+          <div className="flex w-full gap-3 md:gap-2">
+            <FormField
+              control={form.control}
+              name="firstName"
+              render={({ field }) => (
+                <FormItem className="flex-1">
+                  <FormLabel className="hidden">First Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      placeholder="First Name"
+                      variant="primary"
+                      className="form-input-mobile h-12"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="lastName"
+              render={({ field }) => (
+                <FormItem className="flex-1">
+                  <FormLabel className="hidden">Last Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      placeholder="Last Name"
+                      variant="primary"
+                      className="form-input-mobile h-12"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
         <FormField
           control={form.control}
           name="phoneNumber"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Phone Number</FormLabel>
+              <FormLabel className="text-sm font-medium text-gray-700">
+                Phone Number
+              </FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -97,6 +108,7 @@ export function BasicsForm() {
                   type="tel"
                   placeholder="Enter your phone number"
                   variant="primary"
+                  className="form-input-mobile h-12"
                 />
               </FormControl>
             </FormItem>
@@ -107,17 +119,30 @@ export function BasicsForm() {
           name="age"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Age</FormLabel>
+              <FormLabel className="text-sm font-medium text-gray-700">
+                Age
+              </FormLabel>
               <FormControl>
                 <Input
                   {...field}
                   onChange={(e) => {
-                    if (e.target.value) field.onChange(+e.target.value);
+                    const v = e.target.value;
+                    if (v === "") {
+                      // allow clearing the field
+                      field.onChange(undefined);
+                    } else {
+                      const n = Number(v);
+                      if (Number.isNaN(n)) return;
+                      // never allow negative ages
+                      field.onChange(Math.max(0, n));
+                    }
                   }}
                   type="number"
-                  value={field.value ? Number(field.value) : undefined}
-                  placeholder="Your age as of November 21, 2025"
+                  value={field.value ?? ""}
+                  min={0}
+                  placeholder="Enter your age"
                   variant={(field.value ?? 18) >= 18 ? "primary" : "invalid"}
+                  className="form-input-mobile h-12"
                 />
               </FormControl>
               {(field.value ?? 18) < 18 && (
@@ -135,15 +160,17 @@ export function BasicsForm() {
           name="countryOfResidence"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>What is your country of residence?</FormLabel>
+              <FormLabel className="text-sm font-medium text-gray-700">
+                Your Country of Residence
+              </FormLabel>
               <FormControl>
                 <Select
                   {...field}
                   value={field.value ?? undefined}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a country" />
+                  <SelectTrigger className="form-input-mobile h-12 w-full">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {countrySelection.enumValues.map((item) => (

@@ -14,11 +14,12 @@ import { colors } from "~/constants/avatar";
 type ReviewSectionProps = {
   step: ApplyStepFull;
   error: z.inferFormattedError<typeof applicationSubmitSchema> | undefined;
+  className?: string;
 };
 
-function ReviewSection({ step, error }: ReviewSectionProps) {
+function ReviewSection({ step, error, className }: ReviewSectionProps) {
   return (
-    <div className="py-4">
+    <div className={cn("py-4", className)}>
       <Separator />
       <div className="flex justify-between pt-4">
         <h2 className="font-jetbrains-mono text-base uppercase text-medium">
@@ -346,7 +347,12 @@ export function ReviewForm() {
   return (
     <div className="overflow-auto">
       {reviewSteps.map((step, idx) => (
-        <ReviewSection step={step} key={idx} error={error} />
+        <ReviewSection
+          step={step}
+          key={idx}
+          error={error}
+          className={step.step === "canvas" ? "hidden sm:block" : ""}
+        />
       ))}
     </div>
   );

@@ -59,7 +59,9 @@ export function AvatarDisplay({
   const s = sizeClasses[size];
 
   return (
-    <div className={`relative ${s.container} ${className} pointer-events-none select-none group:pointer-events-none group-hover:pointer-events-none`}>
+    <div
+      className={`relative ${s.container} ${className} group:pointer-events-none pointer-events-none select-none group-hover:pointer-events-none`}
+    >
       {/* Character Base */}
       <img
         src={`/avatar/body/${selectedColor?.body ?? "004"}.webp`}

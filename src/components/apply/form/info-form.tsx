@@ -32,27 +32,39 @@ export function InfoForm() {
     },
   });
 
-  const defaultValues = useMemo(() => {
-    if (!data) return data;
+  const defaultValues = useMemo(():
+    | z.infer<typeof infoSaveSchema>
+    | undefined => {
+    if (!data) return undefined;
     const attendedBefore = data.attendedBefore
       ? ("yes" as const)
       : ("no" as const);
     return {
-      ...data,
+      school: (data.school ?? undefined) as z.infer<
+        typeof infoSaveSchema
+      >["school"],
+      levelOfStudy: data.levelOfStudy ?? undefined,
+      major: data.major ?? undefined,
+      numOfHackathons: (data.numOfHackathons ?? undefined) as z.infer<
+        typeof infoSaveSchema
+      >["numOfHackathons"],
       attendedBefore,
     };
   }, [data]);
 
   const form = useForm<z.infer<typeof infoSaveSchema>>({
     resolver: zodResolver(infoSaveSchema),
+    defaultValues,
   });
 
   useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof infoSaveSchema>) {
     mutate({
-      ...defaultValues,
-      ...data,
+      school: data.school,
+      levelOfStudy: data.levelOfStudy,
+      major: data.major,
+      numOfHackathons: data.numOfHackathons,
       attendedBefore: data.attendedBefore === "yes",
     });
   }
@@ -148,7 +160,10 @@ export function InfoForm() {
             <FormItem>
               <FormLabel>Have you attended Hack Western before?</FormLabel>
               <FormControl>
-                <RadioButtonGroup {...field} onValueChange={field.onChange}>
+                <RadioButtonGroup
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
                   <RadioButtonItem key="yes" label="Yes" value="yes" />
                   <RadioButtonItem key="no" label="No" value="no" />
                 </RadioButtonGroup>
@@ -163,7 +178,10 @@ export function InfoForm() {
             <FormItem>
               <FormLabel>How many hackathons have you attended?</FormLabel>
               <FormControl>
-                <RadioButtonGroup {...field} onValueChange={field.onChange}>
+                <RadioButtonGroup
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
                   {numOfHackathons.enumValues.map((option) => (
                     <RadioButtonItem
                       key={option}
