@@ -69,13 +69,11 @@ export default function Apply() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overflow-y-hidden overscroll-contain bg-primary-50">
+      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-y-hidden">
         {/* Mobile View */}
         <div className="relative z-10 flex h-screen w-screen flex-col md:hidden">
-          <ApplyMenu step={step} />
-
           {/* Mobile Header */}
-          <div className="fixed flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
+          <div className="fixed z-[99] flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
             <div className="h-8 w-8"></div>
             <h1 className="font-figtree text-lg font-semibold text-heavy">
               {step
@@ -84,6 +82,7 @@ export default function Apply() {
             </h1>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
               <MobileCharacterIcon />
+              <ApplyMenu step={step} />
             </div>
           </div>
 
@@ -110,7 +109,7 @@ export default function Apply() {
           </div>
 
           {/* Mobile Navigation - Fixed at Bottom */}
-          <div className="fixed bottom-0 border-t border-gray-200 bg-white py-4">
+          <div className="fixed bottom-0 z-[9999] border-t border-gray-200 bg-white py-4">
             <ApplyNavigation step={step} />
           </div>
         </div>

@@ -59,7 +59,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
       <div className="fixed left-4 top-4 z-50 md:hidden">
         <Drawer direction="left">
           <DrawerTrigger asChild>
-            <Button variant="apply" className="rounded-2xl p-2.5 shadow-lg">
+            <Button variant="apply" className="rounded-2xl p-2.5">
               <Menu strokeWidth={2.5} className="size-5 text-primary-600" />
             </Button>
           </DrawerTrigger>
