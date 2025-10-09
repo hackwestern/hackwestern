@@ -14,6 +14,8 @@ import Link from "next/link";
 import { cn } from "~/lib/utils";
 import { isPastDeadline } from "~/lib/date";
 import CanvasBackground from "~/components/canvas-background";
+import CountdownTimer from "~/components/apply/countdown-timer";
+import { APPLICATION_DEADLINE_ISO } from "~/lib/date";
 
 type ApplicationStatusType =
   | "IN_PROGRESS"
@@ -162,8 +164,8 @@ const Dashboard = () => {
                       Application
                     </h1>
                   </div>
-                  <h2 className="flex flex-col items-center font-figtree text-2xl font-medium text-medium">
-                    The world is your canvas.
+                  <h2 className="flex flex-col items-center">
+                    <CountdownTimer targetDate={APPLICATION_DEADLINE_ISO} />
                   </h2>
                   <div className="flex flex-col items-center">
                   <Button
