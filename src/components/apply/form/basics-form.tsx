@@ -34,7 +34,7 @@ export function BasicsForm() {
 
   const form = useForm<z.infer<typeof basicsSaveSchema>>({
     resolver: zodResolver(basicsSaveSchema),
-    defaultValues,
+    defaultValues: defaultValues as z.infer<typeof basicsSaveSchema>,
   });
 
   useAutoSave(form, onSubmit, defaultValues);

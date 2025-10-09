@@ -37,13 +37,16 @@ export function InfoForm() {
   const formValues = useMemo(() => {
     if (!data) return undefined;
     return {
-      ...data, // Keep all existing data
+      major: data.major ?? undefined,
+      school: (data.school as typeof schools[number] | undefined) ?? undefined,
+      levelOfStudy: data.levelOfStudy ?? undefined,
+      numOfHackathons: data.numOfHackathons ?? undefined,
       attendedBefore: data.attendedBefore === true 
         ? "yes" 
         : data.attendedBefore === false 
           ? "no" 
           : undefined
-    };
+    } satisfies z.infer<typeof infoSaveSchema>;
   }, [data]);
 
   const form = useForm<z.infer<typeof infoSaveSchema>>({
