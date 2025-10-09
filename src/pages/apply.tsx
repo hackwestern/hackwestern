@@ -15,6 +15,13 @@ import { useIsMobile } from "~/hooks/use-mobile";
 import { api } from "~/utils/api";
 import { colors } from "~/constants/avatar";
 import Logout from "~/pages/logout";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "~/components/ui/popover";
+import Link from "next/link";
+import { signOut } from "next-auth/react";
 
 function getApplyStep(
   stepValue: string | null,
@@ -27,23 +34,48 @@ function getApplyStep(
 // Small character component for mobile header
 function MobileCharacterIcon() {
   const { data: applicationData } = api.application.get.useQuery();
-
-  if (!applicationData?.avatarColour) {
-    return <span className="text-sm">🎨</span>;
-  }
+  const name = applicationData?.firstName ?? "Username";
 
   const bodyColor =
-    colors.find((c) => c.name === applicationData.avatarColour)?.body ?? "002";
+    colors.find((c) => c.name === applicationData?.avatarColour)?.body ?? "002";
 
+  // Popover trigger wraps the avatar (or emoji) to open the small menu
   return (
-    <div className="relative h-6 w-6">
-      {/* eslint-disable @next/next/no-img-element */}
-      <img
-        src={`/avatar/body/${bodyColor}.webp`}
-        alt="Character"
-        className="h-full w-full object-contain"
-      />
-    </div>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="relative h-6 w-6 overflow-hidden rounded-full">
+          {/* eslint-disable @next/next/no-img-element */}
+          {applicationData?.avatarColour ? (
+            <img
+              src={`/avatar/body/${bodyColor}.webp`}
+              alt="Character"
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            <span className="text-sm">🎨</span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="mr-4 mt-2 w-48 bg-offwhite p-4 font-figtree">
+        <div className="rounded-md">
+          <h3 className="mb-3 text-lg font-medium text-medium">Hi, {name}!</h3>
+          <div className="mb-4 h-px w-full bg-violet-200" />
+
+          <div className="mb-3 font-figtree text-heavy">
+            <Link href="/dashboard">Home</Link>
+          </div>
+
+          <div>
+            <button
+              className="font-figtree text-base text-heavy underline"
+              onClick={() => void signOut()}
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -81,8 +113,8 @@ export default function Apply() {
                 : "Application"}
             </h1>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-              <MobileCharacterIcon />
               <ApplyMenu step={step} />
+              <MobileCharacterIcon />
             </div>
           </div>
 
@@ -133,7 +165,7 @@ export default function Apply() {
             </div>
             <div className="overflow-y-none z-10 flex flex-col items-center justify-center overflow-auto">
               <div className="h-full w-full space-y-4">
-                <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
+                <div className="h-lg flex w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
                   <div className="space-y-4 py-1.5">
                     <h1 className="font-dico text-2xl font-medium text-heavy">
                       {heading}

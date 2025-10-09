@@ -13,6 +13,7 @@ import {
 } from "../ui/drawer";
 import { Menu } from "lucide-react";
 import Image from "next/image";
+import { DialogTitle } from "@radix-ui/react-dialog";
 
 type ApplyMenuProps = {
   step: ApplyStep | null;
@@ -64,42 +65,44 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
             </Button>
           </DrawerTrigger>
           <DrawerContent side="left" className="max-h-screen">
-            <div className="mx-4 my-6 space-y-4">
-              <div className="flex items-center gap-4">
-                <Image
-                  src="/horse.svg"
-                  alt="Hack Western Logo"
-                  width={32}
-                  height={48}
-                />
-                <div>
-                  <h1 className="font-figtree text-lg font-bold text-heavy">
-                    Application Portal
-                  </h1>
-                  <h2 className="font-figtree text-sm font-semibold text-medium">
-                    Hack Western 12
-                  </h2>
+            <DialogTitle aria-describedby="mobile-apply-menu">
+              <div className="mx-4 my-6 space-y-4">
+                <div className="flex items-center gap-4">
+                  <Image
+                    src="/horse.svg"
+                    alt="Hack Western Logo"
+                    width={32}
+                    height={48}
+                  />
+                  <div>
+                    <h1 className="font-figtree text-lg font-bold text-heavy">
+                      Application Portal
+                    </h1>
+                    <h2 className="font-figtree text-sm font-semibold text-medium">
+                      Hack Western 12
+                    </h2>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {mobileApplySteps.map((s) => (
+                    <DrawerClose key={s.step} asChild>
+                      <Button
+                        key={s.step}
+                        variant={s.step === step ? "apply-ghost" : "apply"}
+                        className="w-64 justify-start px-4 text-left"
+                        asChild
+                      >
+                        <Link
+                          href={{ pathname: "/apply", query: { step: s.step } }}
+                        >
+                          {s.label}
+                        </Link>
+                      </Button>
+                    </DrawerClose>
+                  ))}
                 </div>
               </div>
-              <div className="space-y-2">
-                {mobileApplySteps.map((s) => (
-                  <DrawerClose key={s.step} asChild>
-                    <Button
-                      key={s.step}
-                      variant={s.step === step ? "apply-ghost" : "apply"}
-                      className="w-64 justify-start px-4 text-left"
-                      asChild
-                    >
-                      <Link
-                        href={{ pathname: "/apply", query: { step: s.step } }}
-                      >
-                        {s.label}
-                      </Link>
-                    </Button>
-                  </DrawerClose>
-                ))}
-              </div>
-            </div>
+            </DialogTitle>
           </DrawerContent>
         </Drawer>
       </div>
