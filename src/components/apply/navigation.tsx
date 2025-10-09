@@ -84,8 +84,8 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
   return (
     <div className="flex w-full items-center justify-between">
       {/* Mobile Layout */}
-      <div className="flex w-full items-center justify-between md:hidden">
-        <div className="flex items-center gap-3">
+      <div className="flex w-screen items-center justify-between px-3 md:hidden">
+        <div className="flex w-1/4 items-center gap-3">
           {!step || mobilePreviousStep ? (
             <Button
               variant="outline"
@@ -110,11 +110,11 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
           )}
         </div>
 
-        <div className="flex flex-1 justify-center">
+        <div className="flex w-1/2 flex-1 justify-center">
           <SavedIndicator />
         </div>
 
-        <div className="flex items-center">
+        <div className="flex w-1/4 items-center">
           <Button
             variant="primary"
             asChild

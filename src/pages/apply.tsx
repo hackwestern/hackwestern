@@ -75,7 +75,7 @@ export default function Apply() {
           <ApplyMenu step={step} />
 
           {/* Mobile Header */}
-          <div className="flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
+          <div className="fixed flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
             <div className="h-8 w-8"></div>
             <h1 className="font-figtree text-lg font-semibold text-heavy">
               {step
@@ -88,7 +88,7 @@ export default function Apply() {
           </div>
 
           {/* Mobile Content */}
-          <div className="flex-1 bg-white py-6">
+          <div className="flex-1 bg-white py-24">
             <div className="mx-6 flex h-full flex-col">
               <div className="mb-6">
                 <h1 className="mb-2 font-dico text-2xl font-medium text-heavy">
@@ -110,7 +110,7 @@ export default function Apply() {
           </div>
 
           {/* Mobile Navigation - Fixed at Bottom */}
-          <div className="border-t border-gray-200 bg-white px-6 py-4">
+          <div className="fixed bottom-0 border-t border-gray-200 bg-white py-4">
             <ApplyNavigation step={step} />
           </div>
         </div>
