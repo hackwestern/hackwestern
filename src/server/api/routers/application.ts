@@ -187,7 +187,7 @@ export const applicationRouter = createTRPCRouter({
           linkedInLink: application.linkedInLink
             ? application.linkedInLink.replace(LINKEDIN_URL, "")
             : undefined,
-        } as any;
+        };
 
         // Validate the existing application against the submission schema
         const parseResult = applicationSubmitSchema.safeParse(normalized);
