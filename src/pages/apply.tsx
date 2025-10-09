@@ -102,7 +102,7 @@ export default function Apply() {
             className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
             <CanvasBackground />
-            <div className="absolute top-7 right-7">
+            <div className="absolute right-7 top-7">
               <Logout />
             </div>
             <div className="z-10 flex flex-col items-center justify-center overflow-auto">

@@ -5,7 +5,7 @@ import { api } from "~/utils/api";
 
 const Logout = () => {
   const router = useRouter();
-  
+
   const { data: application } = api.application.get.useQuery();
   const name = application?.firstName;
 
@@ -18,7 +18,10 @@ const Logout = () => {
   };
   return (
     <div className="font-figtree font-semibold text-heavy">
-      Hi there{name ? `, ${name}` : ""}! | <button className="hover:underline" onClick={() => logout()}>Sign Out</button>
+      Hi there{name ? `, ${name}` : ""}! |{" "}
+      <button className="hover:underline" onClick={() => logout()}>
+        Sign Out
+      </button>
     </div>
   );
 };
