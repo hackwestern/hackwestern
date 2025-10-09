@@ -11,6 +11,14 @@ import { ApplyForm } from "~/components/apply/form";
 import { notVerifiedRedirect } from "~/utils/redirect";
 import CanvasBackground from "~/components/canvas-background";
 import { ApplyNavigation } from "~/components/apply/navigation";
+import {
+  MajorStamp,
+  SchoolStamp,
+  HackerStamp,
+  HWStamp,
+  LinksStamp,
+  SubmittedStamp,
+} from "~/components/apply/stamp";
 import { useIsMobile } from "~/hooks/use-mobile";
 import { api } from "~/utils/api";
 import { colors } from "~/constants/avatar";
@@ -87,6 +95,7 @@ export default function Apply() {
     [searchParams, isMobile],
   );
 
+  const { data } = api.application.get.useQuery();
   const step = applyStep?.step ?? null;
   const heading = applyStep?.heading ?? null;
   const subheading = applyStep?.subheading ?? null;
@@ -164,31 +173,61 @@ export default function Apply() {
               <Logout />
             </div>
             <div className="overflow-y-none z-10 flex flex-col items-center justify-center overflow-auto">
-              <div className="h-full w-full space-y-4">
-                <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
-                  <div className="space-y-4 py-1.5">
-                    <h1 className="font-dico text-2xl font-medium text-heavy">
-                      {heading}
-                    </h1>
-                    {subheading && (
-                      <h2 className="font-figtree text-sm text-medium">
-                        {subheading}
-                      </h2>
-                    )}
-                  </div>
-                  <div className="scrollbar overflow-auto pb-2 pl-1 pr-4">
-                    <div className="font-figtree">
-                      <ApplyForm step={step} />
+              <div className="flex h-full w-full flex-col items-start justify-center gap-8 overflow-hidden 2xl:flex-row">
+                {/* Left stamps column (up to 3) */}
+                <div className="mx-auto hidden h-full w-full justify-around md:flex md:items-center md:space-y-6 2xl:w-64 2xl:flex-col 2xl:pb-12">
+                  <MajorStamp type={data?.major} />
+                  <SchoolStamp type={data?.school} />
+                  {data?.githubLink &&
+                    data?.linkedInLink &&
+                    data?.otherLink &&
+                    data?.resumeLink && <LinksStamp />}
+                </div>
+
+                {/* Main card */}
+                <div>
+                  <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
+                    <div className="space-y-4 py-1.5">
+                      <h1 className="font-dico text-2xl font-medium text-heavy">
+                        {heading}
+                      </h1>
+                      {subheading && (
+                        <h2 className="font-figtree text-sm text-medium">
+                          {subheading}
+                        </h2>
+                      )}
+                    </div>
+                    <div className="scrollbar overflow-auto pb-2 pl-1 pr-4">
+                      <div className="font-figtree">
+                        <ApplyForm step={step} />
+                      </div>
                     </div>
                   </div>
+                  <ApplyNavigation step={step} />
                 </div>
-                <ApplyNavigation step={step} />
+
+                {/* Right stamps column (up to 3) */}
+                <div className="mx-auto hidden h-full w-full justify-around md:flex md:items-center md:space-y-6 2xl:w-64 2xl:flex-col 2xl:pb-12">
+                  {data?.attendedBefore !== undefined &&
+                  data?.attendedBefore !== null ? (
+                    <HWStamp
+                      returning={data?.attendedBefore ? "returnee" : "newcomer"}
+                    />
+                  ) : null}
+
+                  <HackerStamp numHackathons={data?.numOfHackathons} />
+
+                  {data?.status && data?.status !== "IN_PROGRESS" && (
+                    <SubmittedStamp />
+                  )}
+                </div>
               </div>
 
               <div className="z-10 flex w-[100%] flex-col items-center justify-center"></div>
             </div>
           </div>
         </div>
+
         <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
         {/* End of Desktop View */}
       </main>

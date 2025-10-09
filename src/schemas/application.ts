@@ -54,7 +54,10 @@ export const infoSaveSchema = z.object({
     (val) => (val === "" ? undefined : val),
     z.enum(major.enumValues).optional(),
   ),
-  attendedBefore: z.enum(["yes", "no"]),
+  attendedBefore: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.enum(["yes", "no"]).optional(),
+  ),
   numOfHackathons: z.preprocess(
     (val) => (val === "" ? undefined : val),
     z.enum(numOfHackathons.enumValues).optional(),
