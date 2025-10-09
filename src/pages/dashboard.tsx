@@ -6,6 +6,12 @@ import React from "react";
 import Logout from "~/pages/logout";
 import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "~/components/ui/popover";
+import { colors } from "~/constants/avatar";
 import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
 import { notVerifiedRedirectDashboard } from "~/utils/redirect";
@@ -179,6 +185,54 @@ function getNextIncompleteStep(
   return "review";
 }
 
+// Small character component for mobile header
+function MobileCharacterIcon() {
+  const { data: applicationData } = api.application.get.useQuery();
+  const name = applicationData?.firstName ?? "Username";
+
+  const bodyColor =
+    colors.find((c) => c.name === applicationData?.avatarColour)?.body ?? "002";
+
+  // Popover trigger wraps the avatar (or emoji) to open the small menu
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="relative h-6 w-6 overflow-hidden rounded-full">
+          {/* eslint-disable @next/next/no-img-element */}
+          {applicationData?.avatarColour ? (
+            <img
+              src={`/avatar/body/${bodyColor}.webp`}
+              alt="Character"
+              className="h-full w-full object-contain"
+            />
+          ) : (
+            <span className="text-sm">🎨</span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="mr-4 mt-2 w-48 bg-offwhite p-4 font-figtree">
+        <div className="rounded-md">
+          <h3 className="mb-3 text-sm font-medium text-medium">Hi, {name}!</h3>
+          <div className="mb-4 h-px w-full bg-violet-200" />
+
+          <div className="mb-3 font-figtree text-heavy">
+            <Link href="/dashboard">Home</Link>
+          </div>
+
+          <div>
+            <button
+              className="font-figtree text-sm text-heavy underline"
+              onClick={() => void signOut()}
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 const Dashboard = () => {
   const { data: application } = api.application.get.useQuery();
   const status = application?.status ?? "NOT_STARTED";
@@ -204,8 +258,51 @@ const Dashboard = () => {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50">
+      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-y-hidden">
         {/* Mobile View */}
+        <div className="relative z-10 flex h-screen w-screen flex-col md:hidden">
+          {/* Mobile Header */}
+          <div className="fixed z-[99] flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
+            <div className="h-8 w-8" />
+            <h1 className="font-figtree text-sm font-semibold text-heavy">
+              Home
+            </h1>
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+              <ApplyMenu step={step} />
+              <MobileCharacterIcon />
+            </div>
+          </div>
+
+          {/* Mobile Content */}
+          <div className="flex w-full flex-1 flex-col items-center justify-center bg-white px-6 py-20">
+            <div className="z-[99] w-full max-w-md space-y-8 text-center">
+              <div>
+                <h1 className="font-dico text-3xl font-medium text-heavy">
+                  Hack Western 12
+                </h1>
+                <h2 className="font-dico text-3xl font-medium text-heavy">
+                  Application
+                </h2>
+              </div>
+              <div>
+                <CountdownTimer targetDate={APPLICATION_DEADLINE_ISO} />
+              </div>
+              <div>
+                <Button
+                  variant="primary"
+                  className="w-full p-4 font-figtree text-base font-medium"
+                >
+                  <Link href={`/apply?step=${continueStep}`}>
+                    {status == "NOT_STARTED"
+                      ? "Start Application"
+                      : "Continue Application"}
+                  </Link>
+                </Button>
+              </div>
+            </div>
+            <CanvasBackground />
+          </div>
+        </div>
         {/* End of Mobile View */}
 
         {/* Desktop View */}

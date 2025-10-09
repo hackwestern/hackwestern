@@ -120,17 +120,27 @@ export function BasicsForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm font-medium text-gray-700">
-                Date of Birth
+                Age
               </FormLabel>
               <FormControl>
                 <Input
                   {...field}
                   onChange={(e) => {
-                    if (e.target.value) field.onChange(+e.target.value);
+                    const v = e.target.value;
+                    if (v === "") {
+                      // allow clearing the field
+                      field.onChange(undefined);
+                    } else {
+                      const n = Number(v);
+                      if (Number.isNaN(n)) return;
+                      // never allow negative ages
+                      field.onChange(Math.max(0, n));
+                    }
                   }}
                   type="number"
-                  value={field.value ? Number(field.value) : undefined}
-                  placeholder="Enter your date of birth (YY/MM/DD)"
+                  value={field.value ?? ""}
+                  min={0}
+                  placeholder="Enter your age"
                   variant={(field.value ?? 18) >= 18 ? "primary" : "invalid"}
                   className="form-input-mobile h-12"
                 />
