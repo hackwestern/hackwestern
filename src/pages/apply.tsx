@@ -8,14 +8,13 @@ import {
 } from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
 import { ApplyForm } from "~/components/apply/form";
-import { Passport } from "~/components/apply/passport";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { notVerifiedRedirect } from "~/utils/redirect";
 import CanvasBackground from "~/components/canvas-background";
 import { ApplyNavigation } from "~/components/apply/navigation";
 import { useIsMobile } from "~/hooks/use-mobile";
 import { api } from "~/utils/api";
 import { colors } from "~/constants/avatar";
+import Logout from "~/pages/logout";
 
 function getApplyStep(
   stepValue: string | null,
@@ -38,6 +37,7 @@ function MobileCharacterIcon() {
 
   return (
     <div className="relative h-6 w-6">
+      {/* eslint-disable @next/next/no-img-element */}
       <img
         src={`/avatar/body/${bodyColor}.webp`}
         alt="Character"
@@ -129,9 +129,12 @@ export default function Apply() {
             className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
             <CanvasBackground />
+            <div className="absolute right-7 top-7">
+              <Logout />
+            </div>
             <div className="z-10 flex flex-col items-center justify-center overflow-auto">
               <div className="h-full w-full space-y-4">
-                <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
+                <div className="h-lg flex w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
                   <div className="space-y-4 py-1.5">
                     <h1 className="font-dico text-2xl font-medium text-heavy">
                       {heading}
