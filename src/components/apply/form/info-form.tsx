@@ -29,7 +29,7 @@ export function InfoForm() {
   const { data } = api.application.get.useQuery();
 
   const status = data?.status ?? "NOT_STARTED";
-  const canEdit = (status == "NOT_STARTED" || status == "IN_PROGRESS");
+  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
 
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {

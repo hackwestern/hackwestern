@@ -28,7 +28,7 @@ export function BasicsForm() {
   const { data: defaultValues } = api.application.get.useQuery();
   const status = defaultValues?.status ?? "NOT_STARTED";
 
-  const canEdit = (status == "NOT_STARTED" || status == "IN_PROGRESS");
+  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
 
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {

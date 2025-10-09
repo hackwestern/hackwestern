@@ -71,7 +71,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
 
   const { data: applicationData } = api.application.get.useQuery();
   const status = applicationData?.status ?? "NOT_STARTED";
-  const canEdit = (status == "NOT_STARTED" || status == "IN_PROGRESS");
+  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
 
   const onClickSubmit = () => {
     if (applicationData?.status !== "PENDING_REVIEW" && step === "review") {
@@ -134,9 +134,9 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
                   />
                 </div>
               </Link>
-            ) : (canEdit ?
+            ) : canEdit ? (
               <Link href={`/submitted`}>Submit</Link>
-              :
+            ) : (
               <Link href={`/dashboard`}>Home</Link>
             )}
           </Button>
@@ -175,9 +175,9 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
                   />
                 </div>
               </Link>
-            ) : (canEdit ?
+            ) : canEdit ? (
               <Link href={`/submitted`}>Submit</Link>
-              :
+            ) : (
               <Link href={`/dashboard`}>Home</Link>
             )}
           </Button>

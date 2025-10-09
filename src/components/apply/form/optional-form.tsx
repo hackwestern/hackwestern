@@ -49,7 +49,7 @@ export function OptionalForm() {
   const { data } = api.application.get.useQuery();
 
   const status = data?.status ?? "NOT_STARTED";
-  const canEdit = (status == "NOT_STARTED" || status == "IN_PROGRESS");
+  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
 
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
@@ -97,7 +97,11 @@ export function OptionalForm() {
                 technology industry?
               </FormLabel>
               <FormControl>
-                <RadioButtonGroup {...field} onValueChange={field.onChange} disabled={!canEdit}>
+                <RadioButtonGroup
+                  {...field}
+                  onValueChange={field.onChange}
+                  disabled={!canEdit}
+                >
                   {underrepGroupAnswers.map((option) => (
                     <RadioButtonItem
                       key={option}
