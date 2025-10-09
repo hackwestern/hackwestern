@@ -109,8 +109,6 @@ export const applicationRouter = createTRPCRouter({
       try {
         const userId = ctx.session.user.id;
         const { canvasData, ...restData } = input;
-        const isCompleteApplication =
-          applicationSubmitSchema.safeParse(input).success;
 
         // Type the canvasData properly for JSONB
         const typedCanvasData =
@@ -134,7 +132,6 @@ export const applicationRouter = createTRPCRouter({
             ? `${LINKEDIN_URL}${restData.linkedInLink}`
             : null,
           userId,
-          status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
         } as const;
 
         await db
@@ -152,7 +149,7 @@ export const applicationRouter = createTRPCRouter({
               linkedInLink: restData.linkedInLink
                 ? `${LINKEDIN_URL}${restData.linkedInLink}`
                 : null,
-              status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
+              // Do not change status on save. Submission should explicitly change status.
             },
           });
       } catch (error) {
@@ -162,6 +159,60 @@ export const applicationRouter = createTRPCRouter({
         });
       }
     }),
+
+  submit: protectedProcedure.mutation(async ({ ctx }) => {
+    try {
+      const userId = ctx.session.user.id;
+
+      // Fetch existing application for the user
+      const application = await db.query.applications.findFirst({
+        where: (schema, { eq }) => eq(schema.userId, userId),
+      });
+
+      if (!application) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No application found to submit",
+        });
+      }
+
+      // Transform stored links to the shape expected by the submit schema
+      const normalized = {
+        ...application,
+        // strip configured prefixes if present so schema preprocessing matches tests
+        githubLink: application.githubLink
+          ? application.githubLink.replace(GITHUB_URL, "")
+          : undefined,
+        linkedInLink: application.linkedInLink
+          ? application.linkedInLink.replace(LINKEDIN_URL, "")
+          : undefined,
+      };
+
+      // Validate the existing application against the submission schema
+      const parseResult = applicationSubmitSchema.safeParse(normalized);
+      if (!parseResult.success) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Application is not complete: " +
+            JSON.stringify(parseResult.error.format()),
+        });
+      }
+
+      // Update status only
+      await db
+        .update(applications)
+        .set({ status: "PENDING_REVIEW", updatedAt: new Date() })
+        .where(eq(applications.userId, userId));
+    } catch (error) {
+      throw error instanceof TRPCError
+        ? error
+        : new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to submit application: " + JSON.stringify(error),
+          });
+    }
+  }),
 
   getAppStats: protectedOrganizerProcedure.query(async ({}) => {
     try {

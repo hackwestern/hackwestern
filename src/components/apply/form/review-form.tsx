@@ -221,7 +221,7 @@ function AgreementsReview({ error }: ReviewSectionProps) {
         error={error?.agreeShareWithSponsors?._errors}
       />
       <ReviewField
-        label="I will be at least 18 years old on November 29th, 2024"
+        label="I will be at least 18 years old on November 21st, 2025"
         value={data?.agreeWillBe18}
         error={error?.agreeWillBe18?._errors}
       />

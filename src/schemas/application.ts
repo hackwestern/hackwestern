@@ -194,7 +194,7 @@ export const applicationSubmitSchema = z.object({
   }),
   agreeWillBe18: z.literal(true, {
     errorMap: () => ({
-      message: "You must be at least 18 years old as of November 29th, 2024",
+      message: "You must be at least 18 years old as of November 21st, 2025",
     }),
   }),
   agreeEmailsFromMLH: z.boolean().optional(),
