@@ -14,8 +14,13 @@ import Link from "next/link";
 import { cn } from "~/lib/utils";
 import { isPastDeadline } from "~/lib/date";
 import CanvasBackground from "~/components/canvas-background";
-import CountdownTimer from "~/components/apply/countdown-timer";
 import { APPLICATION_DEADLINE_ISO } from "~/lib/date";
+import dynamic from "next/dynamic";
+
+// 👇 import dynamically, disable SSR
+const CountdownTimer = dynamic(() => import("~/components/apply/countdown-timer"), {
+  ssr: false,
+});
 
 type ApplicationStatusType =
   | "IN_PROGRESS"
@@ -133,8 +138,36 @@ const Dashboard = () => {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50">
+      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center bg-primary-50">
         {/* Mobile View */}
+        <CanvasBackground />
+        <div className="fixed flex h-screen w-screen flex-col space-y-8 px-6 pt-12">
+          <div className="flex flex-col h-full w-full items-center justify-center space-y-12">
+            <div className="flex flex-col items-center">
+              <h1 className="flex flex-col items-center font-dico text-4xl font-medium text-heavy">
+                Hack Western 12
+              </h1>
+              <h1 className=" flex flex-col items-center font-dico text-4xl font-medium text-heavy">
+                Application
+              </h1>
+            </div>
+            <h2 className="flex flex-col items-center">
+              <CountdownTimer targetDate={APPLICATION_DEADLINE_ISO} />
+            </h2>
+            <div className="flex flex-col items-center">
+              <Button
+                variant="primary"
+                className="w-full p-6 font-figtree text-base font-medium"
+              >
+                <Link href="/apply?step=character">
+                  {status == "NOT_STARTED"
+                    ? "Start Application"
+                    : "Continue Application"}
+                </Link>
+              </Button>
+            </div>  
+          </div>  
+        </div>
         {/* End of Mobile View */}
 
         {/* Desktop View */}
@@ -184,7 +217,6 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-        <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
         {/* End of Desktop View */}
       </main>
     </>

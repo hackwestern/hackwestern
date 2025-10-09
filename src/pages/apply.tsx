@@ -36,7 +36,7 @@ export default function Apply() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50">
+      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center bg-primary-50">
         {/* Mobile View */}
         <Tabs
           defaultValue="application"

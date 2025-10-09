@@ -32,7 +32,7 @@ export default function CountdownTimer({ targetDate }: CountdownTimerProps) {
   const { days, hours, minutes, seconds } = timeLeft;
 
   return (
-    <p className="text-2xl font-medium text-medium">
+    <p className="text-lg sm:text-2xl font-medium text-medium">
       {days}d {hours}h {minutes}m {seconds}s left
     </p>
   );
