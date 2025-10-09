@@ -313,12 +313,16 @@ export const applications = createTable(
     ethnicity: ethnicity("ethnicity"),
     sexualOrientation: sexualOrientation("sexual_orientation"),
 
-    // Canvas
-    canvasData: jsonb("canvas_data").$type<{
-      paths: Array<Array<{ x: number; y: number }>>;
-      timestamp: number;
-      version: string;
-    }>(),
+    // Canvas - default to an empty but well-typed structure so new rows are valid
+    canvasData: jsonb("canvas_data")
+      .$type<{
+        paths: Array<Array<{ x: number; y: number }>>;
+        timestamp: number;
+        version: string;
+      }>()
+      .default(
+        sql`'${JSON.stringify({ paths: [], timestamp: 0, version: "" })}'::jsonb`,
+      ),
   },
   (application) => [index("user_id_idx").on(application.userId)],
 );

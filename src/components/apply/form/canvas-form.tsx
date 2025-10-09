@@ -243,23 +243,25 @@ export function CanvasForm() {
 
   // Load existing drawing data when form loads
   React.useEffect(() => {
-    if (defaultValues?.canvasData) {
-      try {
-        const drawingData = defaultValues.canvasData;
-        if (
-          drawingData &&
-          typeof drawingData === "object" &&
-          "paths" in drawingData &&
-          Array.isArray(drawingData.paths)
-        ) {
-          // We could restore the drawing here, but for now just mark as not empty
-          setIsCanvasEmpty(false);
-        }
-      } catch (error) {
-        console.warn("Failed to parse canvas data:", error);
+    try {
+      // Prefer controller/form value if available, otherwise fall back to server defaults
+      const drawingData =
+        form.getValues?.("canvasData") ?? defaultValues?.canvasData;
+
+      const isObject = drawingData && typeof drawingData === "object";
+      let hasPaths = false;
+
+      if (isObject) {
+        const maybePaths = (drawingData as Partial<CanvasData>).paths;
+        hasPaths = Array.isArray(maybePaths) && maybePaths.length > 0;
       }
+
+      setIsCanvasEmpty(!hasPaths);
+    } catch (error) {
+      console.warn("Failed to determine initial canvas data state:", error);
+      setIsCanvasEmpty(true);
     }
-  }, [defaultValues?.canvasData]);
+  }, [defaultValues?.canvasData, form]);
 
   useAutoSave(form, onSubmit, defaultValues);
 
@@ -277,6 +279,8 @@ export function CanvasForm() {
           <FormField
             control={form.control}
             name="canvasData"
+            // Provide a defaultValue so react-hook-form registers this Controller
+            defaultValue={defaultValues?.canvasData ?? null}
             render={({ field }) => (
               <FormItem>
                 <FormControl>
@@ -295,8 +299,12 @@ export function CanvasForm() {
                     </Button>
                     <SimpleCanvas
                       ref={canvasRef}
+                      // Use the controller's value when available so the canvas
+                      // reflects the form state and the field is properly controlled
                       initialData={
-                        defaultValues?.canvasData as CanvasData | null
+                        (field.value as CanvasData | null) ??
+                        (defaultValues?.canvasData as CanvasData | null) ??
+                        null
                       }
                       onDrawingChange={(isEmpty, data) => {
                         setIsCanvasEmpty(isEmpty);
