@@ -216,7 +216,7 @@ function MobileCharacterIcon() {
       </PopoverTrigger>
       <PopoverContent className="mr-4 mt-2 w-48 bg-offwhite p-4 font-figtree">
         <div className="rounded-md">
-          <h3 className="mb-3 text-sm font-medium text-medium">Hi, {name}!</h3>
+          <h3 className="mb-3 text-sm font-medium text-medium">{name == "Username" ? `Hi, ${name}` : "Hello, hacker"}!</h3>
           <div className="mb-4 h-px w-full bg-violet-200" />
 
           <div className="mb-3 font-figtree text-heavy">
