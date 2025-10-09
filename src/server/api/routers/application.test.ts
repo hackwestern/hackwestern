@@ -48,7 +48,11 @@ describe("application.get", async () => {
       ...application,
       githubLink: application?.githubLink?.substring(19),
       linkedInLink: application?.linkedInLink?.substring(24),
-      canvasData: null,
+      canvasData: {
+        paths: [],
+        timestamp: 0,
+        version: "",
+      },
     };
 
     return expect(got).toEqual(want);
@@ -92,7 +96,11 @@ describe("application.getById", async () => {
       ...application,
       githubLink: application?.githubLink,
       linkedInLink: application?.linkedInLink,
-      canvasData: null,
+      canvasData: {
+        paths: [],
+        timestamp: 0,
+        version: "",
+      },
     };
 
     return expect(got).toEqual(want);
@@ -171,7 +179,11 @@ describe.sequential("application.save", async () => {
     const application = createRandomApplication(session);
     const want = {
       ...application,
-      canvasData: null,
+      canvasData: {
+        paths: [],
+        timestamp: 0,
+        version: "",
+      },
     };
 
     await caller.application.save(application);
@@ -191,7 +203,11 @@ describe.sequential("application.save", async () => {
 
     const want = {
       ...updatedApplication,
-      canvasData: null,
+      canvasData: {
+        paths: [],
+        timestamp: 0,
+        version: "",
+      },
     };
 
     await caller.application.save(updatedApplication);
@@ -210,7 +226,11 @@ describe.sequential("application.save", async () => {
     const want = {
       ...completeApplication,
       status: "PENDING_REVIEW",
-      canvasData: null,
+      canvasData: {
+        paths: [],
+        timestamp: 0,
+        version: "",
+      },
     };
 
     await caller.application.save(completeApplication);
