@@ -8,8 +8,9 @@ import { colors } from "~/constants/avatar";
 import { api } from "~/utils/api";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import Image from "next/image";
 
-export default function MobileCharacterIcon() {
+export default function CharacterIcon() {
   const { data: applicationData } = api.application.get.useQuery();
   const name = applicationData?.firstName ?? "Username";
 
@@ -24,17 +25,18 @@ export default function MobileCharacterIcon() {
     <Popover>
       <PopoverTrigger asChild>
         <button
-          className="relative h-8 w-8 overflow-hidden rounded-full p-2"
+          className="hover:ring-heavy/70 relative h-8 w-8 overflow-hidden rounded-full p-2 transition-all hover:ring-2 lg:h-10 lg:w-10"
           style={{
             background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
           }}
         >
-          {/* eslint-disable @next/next/no-img-element */}
           {applicationData?.avatarColour ? (
-            <img
+            <Image
               src={`/avatar/body/${bodyColor}.webp`}
               alt="Character"
-              className="h-full w-full object-contain"
+              width={32}
+              height={32}
+              className="h-full w-full object-cover"
             />
           ) : (
             <span className="text-sm">🎨</span>
