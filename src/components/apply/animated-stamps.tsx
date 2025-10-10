@@ -58,23 +58,21 @@ export function MobileStampGroup() {
     >
       <AnimatePresence initial={false} mode="popLayout">
         {data?.avatarColour && (
-          <div className="scale-90">
-            <motion.div
-              key="mobile-avatar"
-              layout
-              {...itemAnim}
-              className=" h-36 w-36 self-center"
-            >
-              <AvatarDisplay
-                avatarColour={data?.avatarColour}
-                avatarFace={data?.avatarFace}
-                avatarLeftHand={data?.avatarLeftHand}
-                avatarRightHand={data?.avatarRightHand}
-                avatarHat={data?.avatarHat}
-                size="sm"
-              />
-            </motion.div>
-          </div>
+          <motion.div
+            key="mobile-avatar"
+            layout
+            {...itemAnim}
+            className="-mr-1 ml-3 mt-4 h-36 w-36 self-center"
+          >
+            <AvatarDisplay
+              avatarColour={data?.avatarColour}
+              avatarFace={data?.avatarFace}
+              avatarLeftHand={data?.avatarLeftHand}
+              avatarRightHand={data?.avatarRightHand}
+              avatarHat={data?.avatarHat}
+              size="sm"
+            />
+          </motion.div>
         )}
 
         <div className="scale-[0.8]">
