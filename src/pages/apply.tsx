@@ -71,7 +71,7 @@ function MobileCharacterIcon() {
       <PopoverContent className="mr-4 mt-2 w-48 bg-offwhite p-4 font-figtree">
         <div className="rounded-md">
           <h3 className="mb-3 text-lg font-medium text-medium">
-            {name == "Username" ? `Hi, ${name}` : "Hello, hacker"}!
+            {name == "Username" ? "Hello, hacker" : `Hi, ${name}`}!
           </h3>
           <div className="mb-4 h-px w-full bg-violet-200" />
 
@@ -286,7 +286,7 @@ export default function Apply() {
             <CanvasBackground />
             <div className="absolute right-6 top-6 flex items-center gap-4">
               <Logout />
-              <DesktopCharacterIcon />
+              <MobileCharacterIcon />
             </div>
             <div className="overflow-y-none overflow-x-none z-10 flex flex-col items-center justify-center">
               <div className="flex h-full w-full items-start justify-center gap-8 overflow-hidden 2xl:flex-row">

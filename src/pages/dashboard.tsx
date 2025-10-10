@@ -237,7 +237,7 @@ function MobileCharacterIcon() {
       <PopoverContent className="mr-4 mt-2 w-48 bg-offwhite p-4 font-figtree">
         <div className="rounded-md">
           <h3 className="mb-3 text-sm font-medium text-medium">
-            {name == "Username" ? `Hi, ${name}` : "Hello, hacker"}!
+            {name == "Username" ? "Hello, hacker" : `Hi, ${name}`}!
           </h3>
           <div className="mb-4 h-px w-full bg-violet-200" />
 
@@ -494,95 +494,25 @@ const Dashboard = () => {
               >
                 <ApplyMenu step={step} />
               </div>
-            </div>
-          </div>
-        </div>
-        <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
-        </>) :
-        (<div className="hidden flex flex-grow md:flex h-svh w-svw flex-col">
-              <div className="bg-hw-linear-gradient-day relative flex flex-grow items-center justify-center">
+              <div
+                id="right-panel"
+                className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
+              >
                 <CanvasBackground />
-                <div className="absolute right-6 top-6 flex items-center gap-4">
+                <div className="absolute right-6 top-6 flex items-center gap-4 z-[100]">
                   <Logout />
                   <MobileCharacterIcon />
                 </div>
-                <div className="relative m-5 flex flex-row gap-6 items-center rounded-lg bg-violet-100 p-10">
-                  <div className="flex flex-col gap-6">
-                    <h2 className="font-dico text-4xl font-semibold text-heavy ">Your application has been submitted!</h2>
-                    <h4 className="font-figtree text-heavy">
-                      Thanks for applying to Hack Western XII, {application?.firstName}!
-                    </h4>
-                    <p className="font-figtree text-heavy">
-                      You&apos;ll hear back from us about your status in a few weeks!
-                    </p>
-                  </div>
-                  <div 
-                    className="h-80 w-80 rounded-lg"
-                    style={{
-                      background: `${selectedColor?.bg} 30%`,
-                    }}
-                  >
-                      <div className="relative rounded-lg h-80 w-80">
-                        {pathStrings.length > 0 && (
-                        <svg className="h-80 w-80">
-                          {pathStrings.map((pathString, pathIndex) => (
-                            <path
-                              key={pathIndex}
-                              d={pathString}
-                              stroke={selectedColor?.gradient ?? "#a16bc7"}
-                              strokeWidth="4"
-                              fill="none"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          ))}
-                        </svg>)}
-                        <div className="absolute top-1/2 -translate-y-1/2 z-[1000] right-6 flex flex-col items-end gap-4">
-                          <div className="-right-2 border-heavy border rounded-full px-2 py-1 text-xs font-jetbrains-mono">
-                            HACK WESTERN XII
-                          </div>
-                          <h1 className="text-3xl font-dico text-heavy z-[1000]">
-                            {`${application?.firstName ?? "Hacker"} ${application?.lastName ?? ""}`}
-                          </h1>
-                        </div>
-                        {application?.avatarColour && (
-                          <div className="absolute top-4 left-2 -ml-8 mb-4 mr-6 h-36 w-36 scale-[0.3] self-center">
-                            <AvatarDisplay
-                              avatarColour={application?.avatarColour}
-                              avatarFace={application?.avatarFace}
-                              avatarLeftHand={application?.avatarLeftHand}
-                              avatarRightHand={application?.avatarRightHand}
-                              avatarHat={application?.avatarHat}
-                              size="lg"
-                            />
-                          </div>
-                        )}
-                        <div className="absolute bottom-[2] -right-4 scale-[0.5]">
-                          <SchoolStamp type={application?.school} />
-                        </div>
-                        <div className="absolute bottom-3 right-24 scale-[0.7]">
-                          <MajorStamp type={application?.major} />
-                        </div>
-                        {application?.attendedBefore !== undefined &&
-                        application?.attendedBefore !== null && (
-                          <div className="absolute top-3 left-52 scale-[0.9]">
-                          <HWStamp
-                            returning={application?.attendedBefore ? "returnee" : "newcomer"}
-                          />
-                          </div>
-                        )}
-                        <div className="absolute bottom-12 left-4 scale-[0.7]">
-                          <HackerStamp numHackathons={application?.numOfHackathons} />  
-                        </div>
-
-                        {application?.githubLink &&
-                          application?.linkedInLink &&
-                          application?.otherLink &&
-                          application?.resumeLink && 
-                          <div className="absolute top-4 left-28 scale-[0.9]">
-                            <LinksStamp />
-                          </div>
-                        }
+                <div className="z-10 flex flex-col items-center justify-center overflow-auto">
+                  <div className="flex h-full w-full flex-col items-center">
+                    <div className="space-y-12">
+                      <div>
+                        <h1 className="flex flex-col items-center font-dico text-6xl font-medium text-heavy">
+                          Hack Western 12
+                        </h1>
+                        <h1 className=" flex flex-col items-center font-dico text-6xl font-medium text-heavy">
+                          Application
+                        </h1>
                       </div>
                       <h2 className="flex flex-col items-center">
                         <CountdownTimer targetDate={APPLICATION_DEADLINE_ISO} />
@@ -609,8 +539,12 @@ const Dashboard = () => {
             <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
           </>
         ) : (
-          <div className="flex h-svh w-svw flex-col">
+          <div className="hidden flex-grow md:flex h-svh w-svw flex-col">
             <div className="bg-hw-linear-gradient-day relative flex flex-grow items-center justify-center">
+              <div className="absolute right-6 top-6 flex items-center gap-4 z-[100]">
+                <Logout />
+                <MobileCharacterIcon />
+              </div>
               <CanvasBackground />
               <div className="relative m-5 flex flex-row items-center gap-6 rounded-lg bg-violet-100 p-10">
                 <div className="flex flex-col gap-6">
