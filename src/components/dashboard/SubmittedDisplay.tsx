@@ -57,19 +57,10 @@ export default function SubmittedDisplay({
       const dataUrl = await (
         toPng as (
           node: HTMLElement,
-          options: {
-            width: number;
-            height: number;
-            style: React.CSSProperties;
-          },
+          options: { pixelRatio: number },
         ) => Promise<string>
       )(ref, {
-        width: cardRef.current.offsetWidth * 8,
-        height: cardRef.current.offsetHeight * 8,
-        style: {
-          transform: "scale(8)",
-          transformOrigin: "top left",
-        },
+        pixelRatio: 8,
       });
 
       const link = document.createElement("a");
@@ -115,7 +106,7 @@ export default function SubmittedDisplay({
       <div className="flex w-full justify-start lg:ml-16 lg:ml-8">
         <div
           ref={cardRef}
-          className="h-80 w-80 rounded-lg lg:mt-0"
+          className="h-80 w-80 overflow-hidden rounded-lg lg:mt-0"
           style={{
             background: `${selectedColor?.bg} 30%`,
           }}
