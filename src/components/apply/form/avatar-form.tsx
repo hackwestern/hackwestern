@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { Form } from "~/components/ui/form";
 import { api } from "~/utils/api";
-import { useAutoSave } from "~/components/hooks/use-auto-save";
+import { useAutoSave } from "~/hooks/use-auto-save";
 import { personaSaveSchema } from "~/schemas/application";
 import { useState } from "react";
 /* eslint-disable @next/next/no-img-element */
@@ -147,37 +147,26 @@ export function AvatarForm() {
     });
   }
 
+  const showPreview = !!(
+    avatarFace ??
+    avatarLeftHand ??
+    avatarRightHand ??
+    avatarHat
+  );
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="overflow-hidden">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="h-fit overflow-hidden"
+      >
         <div className="grid h-max gap-6 lg:grid-cols-2">
           {/* Left Side - Character Preview */}
+
           <div className="flex flex-col space-y-4">
             {/* Character Preview Area */}
-            <div
-              className="mx-auto my-auto flex h-[17rem] w-full flex-col justify-center overflow-y-hidden rounded-2xl p-4 py-10 2xl:h-[22rem] 3xl:h-[31rem]"
-              style={{
-                background: `linear-gradient(
-                              135deg,
-                              ${colors.find((c) => c.name === (avatarColour ?? "green"))?.bg ?? "#F1FDE0"} 30%,
-                              ${colors.find((c) => c.name === (avatarColour ?? "green"))?.gradient ?? "#A7FB73"} 95%
-                            )`,
-              }}
-            >
-              <div className="mt-8 flex scale-75 items-center justify-center 2xl:scale-90 3xl:scale-110">
-                <AvatarDisplay
-                  avatarColour={avatarColour}
-                  avatarFace={avatarFace}
-                  avatarLeftHand={avatarLeftHand}
-                  avatarRightHand={avatarRightHand}
-                  avatarHat={avatarHat}
-                />
-              </div>
-            </div>
-
-            {/* Color Palette */}
-            <div className="flex-shrink-0">
-              <div className="flex justify-evenly gap-2">
+            <div className="z-[9999] flex-shrink-0">
+              <div className="mb-0.5 flex justify-evenly gap-2">
                 {colors.map((color) => (
                   <button
                     key={color.name}
@@ -203,6 +192,32 @@ export function AvatarForm() {
                 ))}
               </div>
             </div>
+            <div
+              className="mx-auto my-auto flex w-full flex-col justify-center overflow-y-hidden rounded-2xl p-4 py-10"
+              style={{
+                background: showPreview
+                  ? `linear-gradient(
+                              135deg,
+                              ${colors.find((c) => c.name === (avatarColour ?? "green"))?.bg ?? "#F1FDE0"} 30%,
+                              ${colors.find((c) => c.name === (avatarColour ?? "green"))?.gradient ?? "#A7FB73"} 95%
+                            )`
+                  : "transparent",
+              }}
+            >
+              <div className="mt-8 flex scale-75 items-center justify-center 2xl:scale-90 3xl:scale-110">
+                {showPreview ? (
+                  <AvatarDisplay
+                    avatarColour={avatarColour}
+                    avatarFace={avatarFace}
+                    avatarLeftHand={avatarLeftHand}
+                    avatarRightHand={avatarRightHand}
+                    avatarHat={avatarHat}
+                  />
+                ) : null}
+              </div>
+            </div>
+
+            {/* Color Palette */}
           </div>
 
           {/* Right Side - Accessory Selection */}

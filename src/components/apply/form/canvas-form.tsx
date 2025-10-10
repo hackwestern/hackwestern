@@ -4,7 +4,7 @@ import { Form, FormControl, FormField, FormItem } from "~/components/ui/form";
 import { Button } from "~/components/ui/button";
 import { Undo, Redo, Trash2 } from "lucide-react";
 import { api } from "~/utils/api";
-import { useAutoSave } from "~/components/hooks/use-auto-save";
+import { useAutoSave } from "~/hooks/use-auto-save";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { canvasSaveSchema } from "~/schemas/application";

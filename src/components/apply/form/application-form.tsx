@@ -10,7 +10,7 @@ import {
 } from "~/components/ui/form";
 import { Textarea } from "~/components/ui/textarea";
 import { api } from "~/utils/api";
-import { useAutoSave } from "~/components/hooks/use-auto-save";
+import { useAutoSave } from "~/hooks/use-auto-save";
 import { applicationStepSaveSchema } from "~/schemas/application";
 import { text } from "stream/consumers";
 

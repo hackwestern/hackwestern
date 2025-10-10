@@ -8,7 +8,7 @@ import { authRedirectOrganizer } from "~/utils/redirect";
 import type { z } from "zod";
 import { reviewSaveSchema } from "~/schemas/review";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAutoSave } from "~/components/hooks/use-auto-save";
+import { useAutoSave } from "~/hooks/use-auto-save";
 import {
   Form,
   FormControl,
@@ -27,7 +27,7 @@ import { formattedLastSavedAt } from "~/components/apply/saved-indicator";
 import { useIsMutating } from "@tanstack/react-query";
 import { Spinner } from "~/components/loading-spinner";
 import { Textarea } from "~/components/ui/textarea";
-import { useToast } from "~/components/hooks/use-toast";
+import { useToast } from "~/hooks/use-toast";
 import { useSession } from "next-auth/react";
 import CanvasBackground from "~/components/canvas-background";
 

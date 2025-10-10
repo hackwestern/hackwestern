@@ -1,7 +1,7 @@
 import Head from "next/head";
 import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
-import { useToast } from "~/components/hooks/use-toast";
+import { useToast } from "~/hooks/use-toast";
 import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { isVerifiedRedirect } from "~/utils/redirect";

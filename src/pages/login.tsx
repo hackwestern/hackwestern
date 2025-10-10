@@ -9,7 +9,7 @@ import GithubAuthButton from "~/components/auth/githubauth-button";
 import Link from "next/link";
 import { hackerLoginRedirect } from "~/utils/redirect";
 import { useRouter } from "next/router";
-import { useToast } from "~/components/hooks/use-toast";
+import { useToast } from "~/hooks/use-toast";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
 import CanvasBackground from "~/components/canvas-background";
 
