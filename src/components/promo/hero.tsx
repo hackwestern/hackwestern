@@ -70,11 +70,7 @@ function Hero() {
               The world is your canvas.
             </div>
           </div>
-          <Button 
-            className="w-48"
-            variant="primary"
-            size="lg"
-          >
+          <Button className="w-48" variant="primary" size="lg">
             <Link href="/login">Apply Now!</Link>
           </Button>
         </div>
