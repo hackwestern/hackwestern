@@ -1,11 +1,7 @@
 import React from "react";
 import Head from "next/head";
 import { useSearchParams } from "next/navigation";
-import {
-  type ApplyStepFull,
-  applySteps,
-  mobileApplySteps,
-} from "~/constants/apply";
+import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
 import { ApplyForm } from "~/components/apply/form";
 import { notVerifiedRedirect } from "~/utils/redirect";
@@ -40,7 +36,7 @@ function getApplyStep(
   stepValue: string | null,
   isMobile: boolean,
 ): ApplyStepFull | null {
-  const steps = isMobile ? mobileApplySteps : applySteps;
+  const steps = applySteps;
   return steps.find((s) => s.step === stepValue) ?? null;
 }
 

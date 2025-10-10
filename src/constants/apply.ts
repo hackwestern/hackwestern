@@ -67,10 +67,5 @@ const allSteps = [
 // Desktop includes all steps
 export const applySteps = allSteps;
 
-// Mobile excludes canvas step
-export const mobileApplySteps = allSteps.filter(
-  (step) => step.step !== "canvas",
-);
-
 export type ApplyStepFull = (typeof applySteps)[number];
 export type ApplyStep = (typeof applySteps)[number]["step"];

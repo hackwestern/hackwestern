@@ -1,8 +1,4 @@
-import {
-  applySteps,
-  mobileApplySteps,
-  type ApplyStep,
-} from "~/constants/apply";
+import { applySteps, type ApplyStep } from "~/constants/apply";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import {
@@ -88,7 +84,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  {mobileApplySteps.map((s) => (
+                  {applySteps.map((s) => (
                     <DrawerClose key={s.step} asChild>
                       <Button
                         key={s.step}
