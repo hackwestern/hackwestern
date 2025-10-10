@@ -121,7 +121,7 @@ const Dashboard = () => {
   );
 
   type CanvasData = {
-    paths: Array<Array<{ x: number; y: number }>>;
+    paths: Array<Array<[number, number]>>; // [x, y] tuples
     timestamp: number;
     version: string;
   };
@@ -130,8 +130,8 @@ const Dashboard = () => {
   const pathStrings =
     canvasData?.paths?.map((path) =>
       path.reduce((acc, point, index) => {
-        if (index === 0) return `M ${point.x} ${point.y}`;
-        return `${acc} L ${point.x} ${point.y}`;
+        if (index === 0) return `M ${point[0]} ${point[1]}`;
+        return `${acc} L ${point[0]} ${point[1]}`;
       }, ""),
     ) ?? [];
 

@@ -296,7 +296,7 @@ function CanvasReview({}: ReviewSectionProps) {
   const { data } = api.application.get.useQuery();
 
   type CanvasData = {
-    paths: Array<Array<{ x: number; y: number }>>;
+    paths: Array<Array<[number, number]>>; // [x, y] tuples
     timestamp: number;
     version: string;
   };
@@ -305,8 +305,8 @@ function CanvasReview({}: ReviewSectionProps) {
   const pathStrings =
     canvasData?.paths?.map((path) =>
       path.reduce((acc, point, index) => {
-        if (index === 0) return `M ${point.x} ${point.y}`;
-        return `${acc} L ${point.x} ${point.y}`;
+        if (index === 0) return `M ${point[0]} ${point[1]}`;
+        return `${acc} L ${point[0]} ${point[1]}`;
       }, ""),
     ) ?? [];
 
