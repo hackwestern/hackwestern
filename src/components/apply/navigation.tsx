@@ -1,16 +1,11 @@
 import React from "react";
-import { useRouter } from "next/router";
 import Image from "next/image";
 import { Button } from "../ui/button";
 import { SavedIndicator } from "./saved-indicator";
 import { api } from "~/utils/api";
 import { useToast } from "~/components/hooks/use-toast";
 import { usePendingNavigation } from "~/hooks/use-pending-navigation";
-import {
-  applySteps,
-  mobileApplySteps,
-  type ApplyStep,
-} from "~/constants/apply";
+import { applySteps, type ApplyStep } from "~/constants/apply";
 
 type ApplyNavigationProps = {
   step: ApplyStep | null;
@@ -37,44 +32,16 @@ export function getStepIndex(step: ApplyStep | null): number | null {
   return null;
 }
 
-// Mobile-specific navigation functions
-export function getMobilePreviousStep(
-  stepIndex: number | null,
-): ApplyStep | null {
-  if (stepIndex === null) return null;
-  return mobileApplySteps[stepIndex - 1]?.step ?? null;
-}
-
-export function getMobileNextStep(stepIndex: number | null): ApplyStep | null {
-  if (stepIndex === null) return null;
-  return mobileApplySteps[stepIndex + 1]?.step ?? null;
-}
-
-export function getMobileStepIndex(step: ApplyStep | null): number | null {
-  if (!step) return null;
-
-  const stepIndex = mobileApplySteps.findIndex((s) => s.step === step);
-  if (stepIndex >= 0) {
-    return stepIndex;
-  }
-
-  return null;
-}
-
 export function ApplyNavigation({ step }: ApplyNavigationProps) {
   const stepIndex = React.useMemo(() => getStepIndex(step), [step]);
-  const mobileStepIndex = React.useMemo(() => getMobileStepIndex(step), [step]);
   const previousStep = getPreviousStep(stepIndex);
   const nextStep = getNextStep(stepIndex);
-  const mobilePreviousStep = getMobilePreviousStep(mobileStepIndex);
-  const mobileNextStep = getMobileNextStep(mobileStepIndex);
   const { toast } = useToast();
 
   const { data: applicationData } = api.application.get.useQuery();
   const status = applicationData?.status ?? "NOT_STARTED";
   const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
 
-  const router = useRouter();
   const { pending, navigate } = usePendingNavigation();
 
   const submitMutation = api.application.submit.useMutation();
@@ -90,6 +57,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
           title: "Application Submitted",
           description: "Your application was submitted successfully.",
           variant: "success",
+          duration: 4000,
         });
         navigate("/dashboard");
       })
@@ -98,6 +66,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
           title: "Application Incomplete",
           description: "Please complete all required steps before submitting.",
           variant: "destructive",
+          duration: 4000,
         });
       });
   };
@@ -107,13 +76,11 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
       {/* Mobile Layout */}
       <div className="flex w-screen items-center justify-between px-3 md:hidden">
         <div className="flex w-1/4 items-center gap-3">
-          {!step || mobilePreviousStep ? (
+          {!step || previousStep ? (
             <Button
               variant="secondary"
               className="h-10 border-gray-300 px-4 text-gray-700 hover:bg-gray-50"
-              onClick={() =>
-                navigate(`/apply?step=${mobilePreviousStep ?? step}`)
-              }
+              onClick={() => navigate(`/apply?step=${previousStep ?? step}`)}
               disabled={pending}
               aria-busy={pending}
             >
@@ -141,8 +108,8 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
             variant="primary"
             className="h-10 px-6"
             onClick={() => {
-              if (!step || mobileNextStep) {
-                void navigate(`/apply?step=${mobileNextStep}`);
+              if (!step || nextStep) {
+                void navigate(`/apply?step=${nextStep}`);
               } else if (canEdit) {
                 void onClickSubmit();
               } else {
@@ -152,7 +119,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
             disabled={pending}
             aria-busy={pending}
           >
-            {!step || !!mobileNextStep ? (
+            {!step || !!nextStep ? (
               <div className="flex items-center gap-2">
                 Next
                 <Image

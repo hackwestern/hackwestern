@@ -314,8 +314,8 @@ function CanvasReview({}: ReviewSectionProps) {
     <div className="space-y-2">
       <Label>Your Drawing</Label>
       {pathStrings.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border-2 border-gray-300 bg-white">
-          <svg className="h-64 w-full lg:h-72">
+        <div className="h-64 w-64 overflow-hidden rounded-lg border-2 border-gray-300 bg-white lg:h-72 lg:w-72">
+          <svg className="h-full w-full">
             {pathStrings.map((pathString, pathIndex) => (
               <path
                 key={pathIndex}
@@ -346,12 +346,7 @@ export function ReviewForm() {
   return (
     <div className="overflow-auto">
       {reviewSteps.map((step, idx) => (
-        <ReviewSection
-          step={step}
-          key={idx}
-          error={error}
-          className={step.step === "canvas" ? "hidden sm:block" : ""}
-        />
+        <ReviewSection step={step} key={idx} error={error} />
       ))}
     </div>
   );
