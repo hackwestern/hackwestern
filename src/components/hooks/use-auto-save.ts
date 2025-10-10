@@ -44,11 +44,14 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
           }, 100);
         },
         (fieldErrors) => {
-          console.error("There were errors in one or more fields on the form:", {
-            fieldErrors,
-          });
+          console.error(
+            "There were errors in one or more fields on the form:",
+            {
+              fieldErrors,
+            },
+          );
           isSavingRef.current = false;
-        }
+        },
       )();
     }, 750);
   }
@@ -62,11 +65,18 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
       context.reset(defaultValues);
       setHasReset(true);
       lastSubmittedRef.current = defaultValues;
-    } else if (defaultValues && hasReset && !hasDirtyFields && !isSavingRef.current) {
+    } else if (
+      defaultValues &&
+      hasReset &&
+      !hasDirtyFields &&
+      !isSavingRef.current
+    ) {
       // Only update if the new defaultValues are different from what we last submitted
       // This prevents overwriting local changes with stale server data
       const currentValues = context.getValues();
-      const hasLocalChanges = JSON.stringify(currentValues) !== JSON.stringify(lastSubmittedRef.current);
+      const hasLocalChanges =
+        JSON.stringify(currentValues) !==
+        JSON.stringify(lastSubmittedRef.current);
 
       if (!hasLocalChanges) {
         context.reset(defaultValues, { keepDirty: false });
