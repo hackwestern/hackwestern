@@ -8,7 +8,7 @@ type AvatarDisplayProps = {
   avatarLeftHand?: number | null;
   avatarRightHand?: number | null;
   avatarHat?: number | null;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "lg";
   className?: string;
 };
 
@@ -21,31 +21,21 @@ export function AvatarDisplay({
   size = "lg",
   className = "",
 }: AvatarDisplayProps) {
-  const selectedColor = colors.find(
-    (c) => c.name === (avatarColour ?? "green"),
-  );
+  const selectedColor = colors.find((c) => c.name === avatarColour);
 
   // Size variants
   const sizeClasses = {
     sm: {
       container: "h-32 w-32",
-      face: "h-10 w-10",
-      hat: "h-20 w-20 -top-6",
-      hand: "h-6 w-6",
-      handBottom: "bottom-10",
-      handLeft: "-left-1.5",
-      handRight: "-right-1.5",
-    },
-    md: {
-      container: "h-48 w-48 -mb-8",
-      face: "h-20 w-20",
-      hat: "h-48 w-48 -top-10",
+      face: "h-12 w-12",
+      hat: "h-28 w-28 -top-8",
       hand: "h-12 w-12",
-      handBottom: "bottom-16",
-      handLeft: "-left-3",
-      handRight: "-right-3",
+      handBottom: "bottom-7",
+      handLeft: "-left-5",
+      handRight: "-right-5",
     },
     lg: {
+      // double of sm
       container: "h-64 w-64",
       face: "h-24 w-24",
       hat: "h-56 w-56 -top-16",
@@ -63,11 +53,13 @@ export function AvatarDisplay({
       className={`relative ${s.container} ${className} group:pointer-events-none pointer-events-none select-none group-hover:pointer-events-none`}
     >
       {/* Character Base */}
-      <img
-        src={`/avatar/body/${selectedColor?.body ?? "004"}.webp`}
-        alt="Character body"
-        className="h-full w-full object-contain"
-      />
+      {selectedColor && (
+        <img
+          src={`/avatar/body/${selectedColor.body}.webp`}
+          alt="Character body"
+          className="h-full w-full object-contain"
+        />
+      )}
 
       {/* Selected Accessory - Face */}
       {avatarFace &&
@@ -110,7 +102,7 @@ export function AvatarDisplay({
               <img
                 src={leftAccessory.src}
                 alt={leftAccessory.name}
-                className="h-full w-full object-contain"
+                className={`h-full w-full ${leftAccessory.sizing ?? ""} object-contain`}
               />
             </div>
           ) : null;
@@ -127,7 +119,7 @@ export function AvatarDisplay({
               <img
                 src={rightAccessory.src}
                 alt={rightAccessory.name}
-                className="h-full w-full object-contain"
+                className={`h-full w-full ${rightAccessory.sizing ?? ""} object-contain`}
               />
             </div>
           ) : null;

@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Button } from "../ui/button";
 import { SavedIndicator } from "./saved-indicator";
 import { api } from "~/utils/api";
-import { useToast } from "~/components/hooks/use-toast";
+import { useToast } from "~/hooks/use-toast";
 import { usePendingNavigation } from "~/hooks/use-pending-navigation";
 import { applySteps, type ApplyStep } from "~/constants/apply";
 
