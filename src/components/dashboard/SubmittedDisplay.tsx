@@ -147,7 +147,7 @@ export default function SubmittedDisplay({
                 />
               </div>
             )}
-            <div className="absolute -right-10 bottom-[2] scale-[0.5]">
+            <div className="absolute -right-10 bottom-0 scale-[0.5]">
               <SchoolStamp type={application?.school} />
             </div>
             <div className="absolute bottom-4 right-24 scale-[0.7]">
