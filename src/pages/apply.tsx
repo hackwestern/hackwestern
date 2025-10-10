@@ -239,7 +239,7 @@ export default function Apply() {
                         stepKey={step}
                       />
                     </div>
-                    <div className="scrollbar overflow-auto pb-2 pl-1 pr-4">
+                    <div className="scrollbar overflow-auto rounded-md pb-2 pl-1 pr-4">
                       <div className="font-figtree">
                         <ApplyForm step={step} />
                       </div>
