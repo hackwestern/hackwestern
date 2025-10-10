@@ -121,7 +121,7 @@ export default function SubmittedDisplay({
       >
         <div className="relative h-80 w-80 rounded-lg">
           {pathStrings.length > 0 && (
-            <svg className="ml-6 h-96 w-96 scale-110 pt-5">
+            <svg className="h-80 w-80">
               {pathStrings.map((pathString, pathIndex) => (
                 <path
                   key={pathIndex}
