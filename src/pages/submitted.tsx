@@ -62,9 +62,11 @@ export default function Submitted() {
     <div className="flex h-svh flex-col">
       <div className="bg-hw-linear-gradient-day relative flex flex-grow items-center justify-center">
         <CanvasBackground />
-        <div className="relative m-5 flex gap-6 items-center rounded-lg bg-violet-100 p-10">
+        <div className="relative m-5 flex items-center gap-6 rounded-lg bg-violet-100 p-10">
           <div className="flex flex-col gap-6">
-            <h2 className="font-dico text-4xl font-semibold text-heavy ">Your application has been submitted!</h2>
+            <h2 className="font-dico text-4xl font-semibold text-heavy ">
+              Your application has been submitted!
+            </h2>
             <h4 className="font-figtree text-heavy">
               Thanks for applying to Hack Western XII, {application?.firstName}!
             </h4>
@@ -72,7 +74,7 @@ export default function Submitted() {
               You&apos;ll hear back from us about your status in a few weeks!
             </p>
           </div>
-          <div 
+          <div
             className="h-full w-full rounded-lg"
             style={{
               background: `${selectedColor?.bg} 30%`,
