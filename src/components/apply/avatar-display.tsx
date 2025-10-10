@@ -49,10 +49,10 @@ export function AvatarDisplay({
       container: "h-64 w-64",
       face: "h-24 w-24",
       hat: "h-56 w-56 -top-16",
-      hand: "h-16 w-16",
-      handBottom: "bottom-20",
-      handLeft: "-left-4",
-      handRight: "-right-4",
+      hand: "h-24 w-24",
+      handBottom: "bottom-14",
+      handLeft: "-left-10",
+      handRight: "-right-10",
     },
   };
 
