@@ -226,6 +226,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Tote",
       slug: "tote",
       alt: "Tote",
+      sizing: "mt-7 ml-3",
     },
     {
       id: 12,
@@ -324,6 +325,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Tote",
       slug: "tote",
       alt: "Tote",
+      sizing: "mt-7 -ml-3",
     },
     {
       id: 12,
@@ -409,7 +411,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Bear Hat",
       slug: "bear-hat",
       alt: "Bear Hat",
-      sizing: "pb-0",
+      sizing: "mt-2",
     },
     {
       id: 3,
@@ -454,7 +456,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Efficiency Hat",
       slug: "efficiency-hat",
       alt: "Efficiency Hat",
-      sizing: "pb-0",
+      sizing: "mt-2",
     },
     {
       id: 8,
@@ -490,7 +492,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Hw Cap",
       slug: "hw-cap",
       alt: "Hw Cap",
-      sizing: "pb-8",
+      sizing: "pb-2 px-3",
     },
     {
       id: 12,
@@ -544,7 +546,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Pirate",
       slug: "pirate",
       alt: "Pirate",
-      sizing: "pb-28 pl-9",
+      sizing: "ml-6 -mt-10 scale-110",
     },
     {
       id: 18,
@@ -553,7 +555,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Pylon",
       slug: "pylon",
       alt: "Pylon",
-      sizing: "pb-28",
+      sizing: "-mt-12 px-7",
     },
     {
       id: 19,
@@ -571,7 +573,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Tiara",
       slug: "tiara",
       alt: "Tiara",
-      sizing: "pb-28 pt-8",
+      sizing: "pb-24 -mt-1 pt-8",
     },
     {
       id: 21,
@@ -580,7 +582,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Top Hat",
       slug: "top-hat",
       alt: "Top Hat",
-      sizing: "pb-14",
+      sizing: "px-4 -mt-10",
     },
     {
       id: 22,
@@ -589,7 +591,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Viking",
       slug: "viking",
       alt: "Viking",
-      sizing: "pb-8",
+      sizing: "-mt-10 scale-105",
     },
     {
       id: 23,
@@ -598,7 +600,7 @@ export const avatarManifest: AvatarManifest = {
       label: "Witch Hat",
       slug: "witch-hat",
       alt: "Witch Hat",
-      sizing: "pb-28",
+      sizing: "-mt-10 rotate-2 px-1",
     },
   ],
 };

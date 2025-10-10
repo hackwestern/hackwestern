@@ -234,7 +234,7 @@ export function AvatarForm({
           </div>
 
           {/* Accessory Grid */}
-          <div className="custom-scroll flex-1 overflow-y-auto overflow-x-hidden pr-2">
+          <div className="custom-scroll flex-1 overflow-y-auto overflow-x-hidden px-1">
             <div className="z-0 grid w-full grid-cols-3 gap-3 md:grid-cols-2 lg:h-0 lg:grid-cols-2 3xl:grid-cols-3">
               {getAccessoriesForCategory(selectedCategory).map((accessory) => {
                 // Get current value for this category

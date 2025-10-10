@@ -102,7 +102,7 @@ export function AvatarDisplay({
               <img
                 src={leftAccessory.src}
                 alt={leftAccessory.name}
-                className="h-full w-full object-contain"
+                className={`h-full w-full ${leftAccessory.sizing ?? ""} object-contain`}
               />
             </div>
           ) : null;
@@ -119,7 +119,7 @@ export function AvatarDisplay({
               <img
                 src={rightAccessory.src}
                 alt={rightAccessory.name}
-                className="h-full w-full object-contain"
+                className={`h-full w-full ${rightAccessory.sizing ?? ""} object-contain`}
               />
             </div>
           ) : null;
