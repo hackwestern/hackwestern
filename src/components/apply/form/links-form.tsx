@@ -227,7 +227,7 @@ export function LinksForm() {
                         href={field.value}
                         target="_blank"
                         rel="noreferrer"
-                        className="underline underline-offset-2"
+                        className="max-w-64 overflow-hidden whitespace-nowrap text-ellipsis underline underline-offset-2"
                       >
                         {resumeName ?? fileNameFromUrl(field.value)}
                       </a>
