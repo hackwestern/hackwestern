@@ -37,12 +37,11 @@ export default function Home() {
         </Canvas>
         <Footer />
         <MLHTrustBadge />
-        <Button
-          className="fixed right-24 top-6 z-50 w-fit md:right-28 md:top-10 lg:right-48 lg:top-14"
-          variant="primary"
-        >
-          <Link href="/login">Log In</Link>
-        </Button>
+        <div className="fixed right-24 top-6 z-50 w-fit md:right-28 lg:right-44">
+          <Button variant="primary">
+            <Link href="/login">Apply</Link>
+          </Button>
+        </div>
       </main>
     </>
   );

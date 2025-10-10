@@ -28,9 +28,9 @@ export const coordinates: Record<CanvasSection, SectionCoordinates> = {
     height: 895,
   },
   [CanvasSection.Home]: {
-    x: 2788,
+    x: 2867,
     y: 1200,
-    width: 409,
+    width: 264,
     height: 1200,
   },
   [CanvasSection.Sponsors]: {
