@@ -161,11 +161,11 @@ export function AvatarForm({
 
         <div
           className={`flex flex-col space-y-4`}
-          style={{ height: previewHeight ?? 300 }}
+          style={{ height: Math.min(previewHeight ?? 300, 600) }}
         >
           {/* Character */}
           <div
-            className="mx-auto my-auto flex w-full flex-col justify-center overflow-y-hidden rounded-2xl border p-4 py-10"
+            className="mx-auto my-auto flex w-full flex-col justify-center overflow-x-hidden overflow-y-hidden rounded-2xl border p-4 py-10 3xl:py-16"
             style={{
               background: `linear-gradient(
                               135deg,
@@ -174,7 +174,7 @@ export function AvatarForm({
                             )`,
             }}
           >
-            <div className="mt-8 flex scale-75 items-center justify-center 2xl:scale-90 3xl:scale-110">
+            <div className="mt-8 flex scale-75 items-center justify-center 2xl:scale-90 3xl:scale-110 4xl:scale-125">
               <AvatarDisplay
                 avatarColour={avatarColour}
                 avatarFace={avatarFace}
