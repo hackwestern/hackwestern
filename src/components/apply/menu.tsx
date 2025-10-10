@@ -1,6 +1,5 @@
 import {
   applySteps,
-  mobileApplySteps,
   type ApplyStep,
 } from "~/constants/apply";
 import { Button } from "../ui/button";
