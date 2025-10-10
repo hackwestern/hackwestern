@@ -61,38 +61,31 @@ export default function Register() {
 
       <div className="m-auto flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />
-        <div className="z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:w-xl sm:rounded-[48px] sm:p-12 md:w-2xl">
-          <h2 className="mb-2 self-start font-dico text-[32px] text-heavy">
+        <div className="z-10 mx-4 flex-col items-center rounded-xl bg-background p-8 shadow-md sm:w-xl sm:p-12 md:w-2xl">
+          <h2 className="mb-4 self-start font-dico text-[32px] text-heavy">
             Create your account
           </h2>
-          <h2 className="mb-6 self-start font-figtree text-2xl text-medium">
-            The world is your canvas.
-          </h2>
           <form onSubmit={handleSubmit}>
-            <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
-              Email
-            </h2>
+            <h2 className="mb-2 font-figtree text-medium">Email</h2>
             <Input
               required
               id="email"
               type="text"
               name="email"
               autoComplete="username"
-              className="mb-4 h-[60px] bg-highlight font-jetbrains-mono text-medium"
+              className="mb-4 h-[60px] bg-highlight text-medium"
               placeholder="hello@hackwestern.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            <h2 className="mb-2 font-jetbrains-mono text-sm text-medium">
-              Password
-            </h2>
+            <h2 className="mb-2 font-figtree text-medium">Password</h2>
             <Input
               required
               id="password"
               type="password"
               name="password"
               autoComplete="new-password"
-              className="mb-8 h-[60px] bg-highlight font-jetbrains-mono text-medium"
+              className="mb-8 h-[60px] bg-highlight text-medium"
               placeholder="enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -100,7 +93,7 @@ export default function Register() {
             <Button
               variant="primary"
               type="submit"
-              size="default"
+              size="lg"
               full
               isPending={pending}
             >
@@ -109,16 +102,16 @@ export default function Register() {
           </form>
 
           <div className="relative flex w-full items-center py-2 md:py-5">
-            <div className="flex-grow border-t border-gray-400" />
+            <div className="flex-grow border-t border-gray-400 opacity-20" />
             <span className="mx-4 flex-shrink text-gray-400">or</span>
-            <div className="flex-grow border-t border-gray-400" />
+            <div className="flex-grow border-t border-gray-400 opacity-20" />
           </div>
           <div className="flex flex-col items-stretch gap-3">
             <GoogleAuthButton redirect="/dashboard" register={true} />
             <GithubAuthButton redirect="/dashboard" register={true} />
             <DiscordAuthButton redirect="/dashboard" register={true} />
           </div>
-          <div className="mt-4 font-figtree">
+          <div className="mt-6 font-figtree text-medium">
             Already have an account?
             <Button
               asChild
@@ -133,14 +126,19 @@ export default function Register() {
               </Link>
             </Button>
           </div>
-          <div className="font-figtree">
+          <div className="font-figtree text-medium">
             Forget password?
             <Button
               asChild
               variant="tertiary"
               className="ml-2 h-max p-0 text-base"
             >
-              <Link href="/forgot-password">Reset Password</Link>
+              <Link
+                className="text-purple-500 hover:text-violet-700"
+                href="/forgot-password"
+              >
+                Reset Password
+              </Link>
             </Button>
           </div>
         </div>
