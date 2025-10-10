@@ -149,10 +149,7 @@ export function AvatarForm() {
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="overflow-hidden"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="overflow-hidden">
         <div className="grid h-max gap-6 lg:grid-cols-2">
           {/* Left Side - Character Preview */}
           <div className="flex flex-col space-y-4">
