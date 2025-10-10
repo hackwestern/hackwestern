@@ -88,6 +88,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
           title: "Application Submitted",
           description: "Your application was submitted successfully.",
           variant: "success",
+          duration: 4000,
         });
         navigate("/dashboard");
       })
@@ -96,6 +97,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
           title: "Application Incomplete",
           description: "Please complete all required steps before submitting.",
           variant: "destructive",
+          duration: 4000,
         });
       });
   };

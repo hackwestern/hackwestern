@@ -151,7 +151,7 @@ export function AvatarForm() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="overflow-y-hidden"
+        className="overflow-hidden"
       >
         <div className="grid h-max gap-6 lg:grid-cols-2">
           {/* Left Side - Character Preview */}

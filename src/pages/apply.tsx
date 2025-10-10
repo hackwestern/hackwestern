@@ -13,12 +13,10 @@ import CanvasBackground from "~/components/canvas-background";
 import { ApplyNavigation } from "~/components/apply/navigation";
 import ApplyHeading from "~/components/apply/heading";
 import {
-  MajorStamp,
-  SchoolStamp,
-  HackerStamp,
-  HWStamp,
-  LinksStamp,
-} from "~/components/apply/stamp";
+  LeftStampColumn,
+  RightStampColumn,
+  MobileStampGroup,
+} from "~/components/apply/animated-stamps";
 import { useIsMobile } from "~/hooks/use-mobile";
 import { api } from "~/utils/api";
 import { colors } from "~/constants/avatar";
@@ -30,7 +28,6 @@ import {
 } from "~/components/ui/popover";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { AvatarDisplay } from "~/components/apply/avatar-display";
 import { Drawer, DrawerContent, DrawerTrigger } from "~/components/ui/drawer";
 import Image from "next/image";
 import { motion, useAnimation } from "framer-motion";
@@ -95,7 +92,6 @@ function MobileCharacterIcon() {
 }
 
 function MobileStickerDrawer() {
-  const { data } = api.application.get.useQuery();
   const controls = useAnimation();
 
   async function handleStickerClick() {
@@ -134,33 +130,7 @@ function MobileStickerDrawer() {
             <CanvasBackground />
           </div>
           <div className="relative h-full w-full overscroll-contain">
-            <div className="relative z-10 flex flex-wrap items-center justify-center gap-8 p-6">
-              {data?.avatarColour && (
-                <div className="-ml-8 mb-4 mr-6 h-36 w-36 scale-50 self-center">
-                  <AvatarDisplay
-                    avatarColour={data?.avatarColour}
-                    avatarFace={data?.avatarFace}
-                    avatarLeftHand={data?.avatarLeftHand}
-                    avatarRightHand={data?.avatarRightHand}
-                    avatarHat={data?.avatarHat}
-                    size="lg"
-                  />
-                </div>
-              )}
-              <SchoolStamp type={data?.school} />
-              <MajorStamp type={data?.major} />
-              {data?.attendedBefore !== undefined &&
-                data?.attendedBefore !== null && (
-                  <HWStamp
-                    returning={data?.attendedBefore ? "returnee" : "newcomer"}
-                  />
-                )}
-              <HackerStamp numHackathons={data?.numOfHackathons} />
-              {data?.githubLink &&
-                data?.linkedInLink &&
-                data?.otherLink &&
-                data?.resumeLink && <LinksStamp />}
-            </div>
+            <MobileStampGroup />
           </div>
         </DrawerContent>
       </Drawer>
@@ -176,7 +146,6 @@ export default function Apply() {
     [searchParams, isMobile],
   );
 
-  const { data } = api.application.get.useQuery();
   const step = applyStep?.step ?? null;
   const heading = applyStep?.heading ?? null;
   const subheading = applyStep?.subheading ?? null;
@@ -262,18 +231,11 @@ export default function Apply() {
             <div className="overflow-y-none overflow-x-none z-10 flex flex-col items-center justify-center">
               <div className="flex h-full w-full items-start justify-center gap-8 overflow-hidden 2xl:flex-row">
                 {/* Left stamps column (up to 3) */}
-                <div className="mx-auto hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:w-64 2xl:pb-12">
-                  <MajorStamp type={data?.major} />
-                  <SchoolStamp type={data?.school} />
-                  {data?.githubLink &&
-                    data?.linkedInLink &&
-                    data?.otherLink &&
-                    data?.resumeLink && <LinksStamp />}
-                </div>
+                <LeftStampColumn />
 
                 {/* Main card */}
                 <div>
-                  <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
+                  <div className="h-lg flex w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
                     <div className="space-y-4 py-1.5">
                       <ApplyHeading
                         heading={heading}
@@ -291,29 +253,7 @@ export default function Apply() {
                 </div>
 
                 {/* Right stamps column (up to 3) */}
-                <div className="hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:mx-auto 2xl:w-64 2xl:pb-12">
-                  {data?.attendedBefore !== undefined &&
-                  data?.attendedBefore !== null ? (
-                    <HWStamp
-                      returning={data?.attendedBefore ? "returnee" : "newcomer"}
-                    />
-                  ) : null}
-
-                  <div className="scale-50 self-center ">
-                    {data?.avatarColour && (
-                      <AvatarDisplay
-                        avatarColour={data?.avatarColour}
-                        avatarFace={data?.avatarFace}
-                        avatarLeftHand={data?.avatarLeftHand}
-                        avatarRightHand={data?.avatarRightHand}
-                        avatarHat={data?.avatarHat}
-                        size="lg"
-                      />
-                    )}
-                  </div>
-
-                  <HackerStamp numHackathons={data?.numOfHackathons} />
-                </div>
+                <RightStampColumn />
               </div>
             </div>
           </div>
