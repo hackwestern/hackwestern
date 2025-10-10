@@ -1,7 +1,4 @@
-import {
-  applySteps,
-  type ApplyStep,
-} from "~/constants/apply";
+import { applySteps, type ApplyStep } from "~/constants/apply";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import {
