@@ -186,7 +186,7 @@ export function AvatarForm({
           </div>
           {/* Color Palette */}
           <div className="flex-shrink-0">
-            <div className="mb-0.5 flex justify-evenly gap-2">
+            <div className="mb-1.5 flex justify-evenly gap-2">
               {colors.map((color) => (
                 <button
                   key={color.name}
@@ -196,7 +196,7 @@ export function AvatarForm({
                       shouldDirty: true,
                     });
                   }}
-                  className={`h-8 w-8 flex-shrink-0 rounded-lg transition-all hover:scale-110 2xl:h-10 2xl:w-10 ${
+                  className={`h-8 w-8 flex-shrink-0 rounded-lg transition-all hover:scale-[1.04] 2xl:h-10 2xl:w-10 ${
                     avatarColour === color.name ? "ring-2 ring-purple-200" : ""
                   }`}
                   style={{
