@@ -216,8 +216,8 @@ function MobileCharacterIcon() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button 
-          className="relative h-8 w-8 p-2 overflow-hidden rounded-full"
+        <button
+          className="relative h-8 w-8 overflow-hidden rounded-full p-2"
           style={{
             background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
           }}
@@ -466,7 +466,7 @@ const Dashboard = () => {
                 className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
               >
                 <CanvasBackground />
-                <div className="absolute right-6 top-6 flex items-center gap-4 z-[100]">
+                <div className="absolute right-6 top-6 z-[100] flex items-center gap-4">
                   <Logout />
                   <MobileCharacterIcon />
                 </div>
@@ -506,9 +506,9 @@ const Dashboard = () => {
             </div>
           </>
         ) : (
-          <div className="hidden flex-grow md:flex h-svh w-svw flex-col">
+          <div className="hidden h-svh w-svw flex-grow flex-col md:flex">
             <div className="bg-hw-linear-gradient-day relative flex flex-grow items-center justify-center">
-              <div className="absolute right-6 top-6 flex items-center gap-4 z-[100]">
+              <div className="absolute right-6 top-6 z-[100] flex items-center gap-4">
                 <Logout />
                 <MobileCharacterIcon />
               </div>
