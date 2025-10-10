@@ -1,16 +1,12 @@
-import Link from "next/link";
 import React from "react";
-import {
-  applySteps,
-  mobileApplySteps,
-  type ApplyStep,
-} from "~/constants/apply";
+import { useRouter } from "next/router";
 import Image from "next/image";
 import { Button } from "../ui/button";
 import { SavedIndicator } from "./saved-indicator";
 import { api } from "~/utils/api";
-import { useToast } from "../hooks/use-toast";
-import { useRouter } from "next/router";
+import { useToast } from "~/components/hooks/use-toast";
+import { usePendingNavigation } from "~/hooks/use-pending-navigation";
+import { applySteps, mobileApplySteps, type ApplyStep } from "~/constants/apply";
 
 type ApplyNavigationProps = {
   step: ApplyStep | null;
@@ -75,13 +71,12 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
   const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
 
   const router = useRouter();
+  const { pending, navigate } = usePendingNavigation();
 
   const submitMutation = api.application.submit.useMutation();
 
   const onClickSubmit = async (e?: React.MouseEvent) => {
-    // Prevent default navigation when we handle submission
     e?.preventDefault();
-
     if (step !== "review") return;
 
     submitMutation
@@ -92,7 +87,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
           description: "Your application was submitted successfully.",
           variant: "success",
         });
-        void router.push("/dashboard");
+        navigate("/dashboard");
       })
       .catch(() => {
         toast({
@@ -111,20 +106,15 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
           {!step || mobilePreviousStep ? (
             <Button
               variant="secondary"
-              asChild
               className="h-10 border-gray-300 px-4 text-gray-700 hover:bg-gray-50"
+              onClick={() => navigate(`/apply?step=${mobilePreviousStep ?? step}`)}
+              disabled={pending}
+              aria-busy={pending}
             >
-              <Link href={`/apply?step=${mobilePreviousStep ?? step}`}>
-                <div className="flex items-center gap-2">
-                  <Image
-                    src="/arrow-left.svg"
-                    alt="Left Arrow"
-                    width={12}
-                    height={12}
-                  />
-                  Back
-                </div>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Image src="/arrow-left.svg" alt="Left Arrow" width={12} height={12} />
+                <div className="text-sm">Back</div>
+              </div>
             </Button>
           ) : (
             <div className="h-10"></div>
@@ -136,26 +126,30 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
         </div>
 
         <div className="flex w-1/4 items-center">
-          <Button variant="primary" className="h-10 px-6">
+          <Button
+            variant="primary"
+            className="h-10 px-6"
+            onClick={() => {
+              if (!step || mobileNextStep) {
+                void navigate(`/apply?step=${mobileNextStep}`);
+              } else if (canEdit) {
+                void onClickSubmit();
+              } else {
+                void navigate(`/dashboard`);
+              }
+            }}
+            disabled={pending}
+            aria-busy={pending}
+          >
             {!step || !!mobileNextStep ? (
-              <Link href={`/apply?step=${mobileNextStep}`}>
-                <div className="flex items-center gap-2">
-                  Next
-                  <Image
-                    src="/arrow-right.svg"
-                    alt="Right Arrow"
-                    width={12}
-                    height={12}
-                  />
-                </div>
-              </Link>
+              <div className="flex items-center gap-2">
+                Next
+                <Image src="/arrow-right.svg" alt="Right Arrow" width={12} height={12} />
+              </div>
             ) : canEdit ? (
-              // Submit button triggers submit flow
-              <a href="#" onClick={onClickSubmit} className="block">
-                Submit
-              </a>
+              <div className="block">Submit</div>
             ) : (
-              <Link href={`/dashboard`}>Home</Link>
+              <div className="block">Home</div>
             )}
           </Button>
         </div>
@@ -165,35 +159,44 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
       <div className="hidden w-full justify-between py-3 md:flex">
         <SavedIndicator />
         <div className="ml-auto flex items-center gap-12">
-          {!step ||
-            (previousStep && (
-              <Button
-                variant="tertiary-arrow"
-                asChild
-                className="h-6 w-16 text-base font-medium text-heavy"
-              >
-                <Link href={`/apply?step=${previousStep}`}>Back</Link>
-              </Button>
-            ))}
-          <Button variant="primary" className="w-28">
+          {!step || (previousStep && (
+            <Button
+              variant="tertiary"
+              className="h-6 w-16 text-base font-medium text-heavy"
+              onClick={() => navigate(`/apply?step=${previousStep}`)}
+              disabled={pending}
+              aria-busy={pending}
+            >
+              <div className="flex items-center gap-2 pr-2">
+                <Image src="/arrow-left.svg" alt="Left Arrow" width={12} height={12} />
+                <div className="text-sm">Back</div>
+              </div>
+            </Button>
+          ))}
+          <Button
+            variant="primary"
+            className="w-28"
+            onClick={() => {
+              if (!step || nextStep) {
+                void navigate(`/apply?step=${nextStep}`);
+              } else if (canEdit) {
+                void onClickSubmit();
+              } else {
+                void navigate(`/dashboard`);
+              }
+            }}
+            disabled={pending}
+            aria-busy={pending}
+          >
             {!step || !!nextStep ? (
-              <Link href={`/apply?step=${nextStep}`}>
-                <div className="flex gap-2">
-                  Next
-                  <Image
-                    src="/arrow-right.svg"
-                    alt="Right Arrow"
-                    width={10}
-                    height={10}
-                  />
-                </div>
-              </Link>
+              <div className="flex gap-2">
+                Next
+                <Image src="/arrow-right.svg" alt="Right Arrow" width={10} height={10} />
+              </div>
             ) : canEdit ? (
-              <a href="#" onClick={onClickSubmit} className="block">
-                Submit
-              </a>
+              <div className="block">Submit</div>
             ) : (
-              <Link href={`/dashboard`}>Home</Link>
+              <div className="block">Home</div>
             )}
           </Button>
         </div>
@@ -201,3 +204,4 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
     </div>
   );
 }
+
