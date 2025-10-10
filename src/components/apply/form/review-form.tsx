@@ -346,12 +346,7 @@ export function ReviewForm() {
   return (
     <div className="overflow-auto">
       {reviewSteps.map((step, idx) => (
-        <ReviewSection
-          step={step}
-          key={idx}
-          error={error}
-          className={step.step === "canvas" ? "hidden sm:block" : ""}
-        />
+        <ReviewSection step={step} key={idx} error={error} />
       ))}
     </div>
   );
