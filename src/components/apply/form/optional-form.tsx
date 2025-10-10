@@ -10,7 +10,7 @@ import {
   FormLabel,
 } from "~/components/ui/form";
 import { api } from "~/utils/api";
-import { useAutoSave } from "~/components/hooks/use-auto-save";
+import { useAutoSave } from "~/hooks/use-auto-save";
 import {
   type UnderrepGroupAnswer,
   optionalSaveSchema,

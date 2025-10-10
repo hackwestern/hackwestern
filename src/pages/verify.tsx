@@ -2,7 +2,7 @@ import { useSearchParams } from "next/navigation";
 import Head from "next/head";
 import { useEffect, useState } from "react";
 import { api } from "~/utils/api";
-import { useToast } from "~/components/hooks/use-toast";
+import { useToast } from "~/hooks/use-toast";
 import { useRouter } from "next/router";
 import { Button } from "~/components/ui/button";
 import { isVerifiedRedirect } from "~/utils/redirect";

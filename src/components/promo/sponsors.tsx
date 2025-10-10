@@ -5,7 +5,7 @@ import { Mail } from "lucide-react";
 import { coordinates } from "~/constants/canvas";
 import Image from "next/image";
 import { SPONSORS, type SponsorLogoProps } from "~/constants/sponsors";
-import { useToast } from "../hooks/use-toast";
+import { useToast } from "../../hooks/use-toast";
 import { copyText } from "~/lib/copy";
 import { useState } from "react";
 
