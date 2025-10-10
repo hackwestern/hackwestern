@@ -21,6 +21,7 @@ import { isPastDeadline } from "~/lib/date";
 import CanvasBackground from "~/components/canvas-background";
 import { APPLICATION_DEADLINE_ISO } from "~/lib/date";
 import dynamic from "next/dynamic";
+import { motion } from "framer-motion";
 
 const CountdownTimer = dynamic(
   () => import("~/components/apply/countdown-timer"),
@@ -300,7 +301,14 @@ const Dashboard = () => {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-y-hidden">
+      <motion.main
+        className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-y-hidden"
+        key={"dashboard-page"}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         {/* Mobile View */}
         <div className="relative z-10 flex h-screen w-screen flex-col md:hidden">
           {/* Mobile Header */}
@@ -399,7 +407,7 @@ const Dashboard = () => {
         </div>
         <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
         {/* End of Desktop View */}
-      </main>
+  </motion.main>
     </>
   );
 };

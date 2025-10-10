@@ -212,7 +212,6 @@ export default function Apply() {
   const step = applyStep?.step ?? null;
   const heading = applyStep?.heading ?? null;
   const subheading = applyStep?.subheading ?? null;
-
   return (
     <>
       <Head>
@@ -223,7 +222,14 @@ export default function Apply() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-y-hidden">
+      <motion.main
+        className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-y-hidden md:overflow-x-hidden"
+        key={"apply-page"}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         {/* Mobile View */}
         <div className="relative z-10 flex h-screen w-screen flex-col md:hidden">
           {/* Mobile Header */}
@@ -325,7 +331,7 @@ export default function Apply() {
                 {/* Right stamps column (up to 3) */}
                 <div className="hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:mx-auto 2xl:w-64 2xl:pb-12">
                   {data?.attendedBefore !== undefined &&
-                  data?.attendedBefore !== null ? (
+                    data?.attendedBefore !== null ? (
                     <HWStamp
                       returning={data?.attendedBefore ? "returnee" : "newcomer"}
                     />
@@ -353,7 +359,7 @@ export default function Apply() {
 
         <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
         {/* End of Desktop View */}
-      </main>
+      </motion.main>
     </>
   );
 }
