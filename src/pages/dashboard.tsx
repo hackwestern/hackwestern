@@ -3,7 +3,7 @@ import Head from "next/head";
 // removed unused useRouter import
 import { useSearchParams, useRouter } from "next/navigation";
 import React from "react";
-import { motion, useAnimation } from "framer-motion";
+import { motion, useAnimation, AnimatePresence } from "framer-motion";
 import Logout from "~/pages/logout";
 import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
@@ -296,6 +296,7 @@ const Dashboard = () => {
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
   const controls = useAnimation();
+  const [dots, setDots] = React.useState("..");
 
   // entrance animation on mount
   React.useEffect(() => {
@@ -310,6 +311,15 @@ const Dashboard = () => {
     // navigate immediately
     void router.push(`/apply?step=${step}`);
   };
+
+  // animate loading dots while pending
+  React.useEffect(() => {
+    if (!pending) return;
+    const id = setInterval(() => {
+      setDots((prev) => (prev.length < 3 ? prev + "." : "."));
+    }, 500);
+    return () => clearInterval(id);
+  }, [pending]);
 
   return (
     <>
@@ -635,6 +645,23 @@ const Dashboard = () => {
         )}
         {/* End of Desktop View */}
       </motion.main>
+      {/* Loading overlay during transition */}
+      <AnimatePresence>
+        {pending && (
+          <motion.div
+            key="dashboard-loading-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-white"
+          >
+            <div className="font-jetbrains-mono text-base font-semibold text-[#543C5AB2]">
+              LOADING APPLICATION{dots}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 };
