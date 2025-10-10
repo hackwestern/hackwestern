@@ -21,9 +21,7 @@ export function AvatarDisplay({
   size = "lg",
   className = "",
 }: AvatarDisplayProps) {
-  const selectedColor = colors.find(
-    (c) => c.name === (avatarColour ?? "green"),
-  );
+  const selectedColor = colors.find((c) => c.name === avatarColour);
 
   // Size variants
   const sizeClasses = {
@@ -55,11 +53,13 @@ export function AvatarDisplay({
       className={`relative ${s.container} ${className} group:pointer-events-none pointer-events-none select-none group-hover:pointer-events-none`}
     >
       {/* Character Base */}
-      <img
-        src={`/avatar/body/${selectedColor?.body ?? "004"}.webp`}
-        alt="Character body"
-        className="h-full w-full object-contain"
-      />
+      {selectedColor && (
+        <img
+          src={`/avatar/body/${selectedColor.body}.webp`}
+          alt="Character body"
+          className="h-full w-full object-contain"
+        />
+      )}
 
       {/* Selected Accessory - Face */}
       {avatarFace &&

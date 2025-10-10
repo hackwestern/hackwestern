@@ -15,6 +15,8 @@ import {
 import { motion } from "framer-motion";
 import { MobileStickerDrawer } from "~/components/apply/mobile-sticker-drawer";
 import CharacterIcon from "~/components/dashboard/CharacterIcon";
+import { AvatarForm } from "~/components/apply/form/avatar-form";
+import { useEffect, useRef, useState } from "react";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   const steps = applySteps;
@@ -31,6 +33,24 @@ export default function Apply() {
   const step = applyStep?.step ?? null;
   const heading = applyStep?.heading ?? null;
   const subheading = applyStep?.subheading ?? null;
+  const desktopScrollRef = useRef<HTMLDivElement | null>(null);
+  const [desktopPreviewHeight, setDesktopPreviewHeight] = useState<
+    number | null
+  >(null);
+
+  useEffect(() => {
+    const el = desktopScrollRef.current;
+    if (!el) return;
+    const update = () => setDesktopPreviewHeight(el.clientHeight ?? null);
+    // initial
+    update();
+    const ro = new ResizeObserver(() => {
+      update();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   return (
     <>
       <Head>
@@ -124,10 +144,17 @@ export default function Apply() {
                         stepKey={step}
                       />
                     </div>
-                    <div className="scrollbar overflow-auto rounded-md pb-2 pl-1 pr-4">
-                      <div className="font-figtree">
+                    <div
+                      className="scrollbar min-h-0 flex-1 overflow-auto rounded-md pb-2 pl-1 pr-4 font-figtree"
+                      ref={desktopScrollRef}
+                    >
+                      {step === "character" ? (
+                        <AvatarForm
+                          previewHeight={(desktopPreviewHeight ?? 300) - 15}
+                        />
+                      ) : (
                         <ApplyForm step={step} />
-                      </div>
+                      )}
                     </div>
                   </div>
                   <ApplyNavigation step={step} />
