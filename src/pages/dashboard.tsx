@@ -3,7 +3,6 @@ import Head from "next/head";
 import { useSearchParams, useRouter } from "next/navigation";
 import React from "react";
 import { motion, useAnimation, AnimatePresence } from "framer-motion";
-import Logout from "~/pages/logout";
 import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
 import { colors } from "~/constants/avatar";
@@ -13,7 +12,7 @@ import { notVerifiedRedirectDashboard } from "~/utils/redirect";
 import CanvasBackground from "~/components/canvas-background";
 import { APPLICATION_DEADLINE_ISO } from "~/lib/date";
 import dynamic from "next/dynamic";
-import MobileCharacterIcon from "~/components/dashboard/MobileCharacterIcon";
+import CharacterIcon from "~/components/dashboard/CharacterIcon";
 import ApplicationPrompt from "~/components/dashboard/ApplicationPrompt";
 import SubmittedDisplay from "~/components/dashboard/SubmittedDisplay";
 import { type CanvasPaths } from "~/types/canvas";
@@ -110,7 +109,7 @@ function getNextIncompleteStep(
 }
 
 // Small character component for mobile header
-// MobileCharacterIcon pulled out to components/dashboard/MobileCharacterIcon.tsx
+// CharacterIcon pulled out to components/dashboard/CharacterIcon.tsx
 
 const Dashboard = () => {
   const { data: application } = api.application.get.useQuery();
@@ -200,7 +199,7 @@ const Dashboard = () => {
             </h1>
             <div className="flex h-8 w-8 items-center justify-center">
               <ApplyMenu step={step} />
-              <MobileCharacterIcon />
+              <CharacterIcon />
             </div>
           </div>
 
@@ -246,8 +245,7 @@ const Dashboard = () => {
               >
                 <CanvasBackground />
                 <div className="absolute right-6 top-6 z-[100] flex items-center gap-4">
-                  <Logout />
-                  <MobileCharacterIcon />
+                  <CharacterIcon />
                 </div>
                 <div className="z-10 flex flex-col items-center justify-center overflow-auto">
                   <div className="flex h-full w-full flex-col items-center">
@@ -289,8 +287,7 @@ const Dashboard = () => {
           <div className="hidden h-svh w-svw flex-grow flex-col md:flex">
             <div className="bg-hw-linear-gradient-day relative flex flex-grow items-center justify-center">
               <div className="absolute right-6 top-6 z-[100] flex items-center gap-4">
-                <Logout />
-                <MobileCharacterIcon />
+                <CharacterIcon />
               </div>
               <CanvasBackground />
               <SubmittedDisplay

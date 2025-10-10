@@ -1,7 +1,7 @@
 import Head from "next/head";
 import { type FormEvent, useState } from "react";
 import { hackerLoginRedirect } from "~/utils/redirect";
-import { useToast } from "~/components/hooks/use-toast";
+import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
