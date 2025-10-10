@@ -231,7 +231,7 @@ export default function Apply() {
 
                 {/* Main card */}
                 <div>
-                  <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
+                  <div className="h-lg flex w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
                     <div className="space-y-4 py-1.5">
                       <ApplyHeading
                         heading={heading}
@@ -239,7 +239,7 @@ export default function Apply() {
                         stepKey={step}
                       />
                     </div>
-                    <div className="scrollbar overflow-auto pb-2 pl-1 pr-4">
+                    <div className="scrollbar overflow-auto rounded-md pb-2 pl-1 pr-4">
                       <div className="font-figtree">
                         <ApplyForm step={step} />
                       </div>
