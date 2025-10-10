@@ -188,7 +188,7 @@ const SimpleCanvas = React.forwardRef<
   }));
 
   return (
-    <div className="relative h-80 w-lg cursor-crosshair overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white">
+    <div className="relative h-72 w-72 cursor-crosshair overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white">
       <svg
         className="h-full w-full"
         onMouseDown={handleMouseDown}

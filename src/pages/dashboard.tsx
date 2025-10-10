@@ -20,6 +20,14 @@ import { cn } from "~/lib/utils";
 import { isPastDeadline } from "~/lib/date";
 import CanvasBackground from "~/components/canvas-background";
 import { APPLICATION_DEADLINE_ISO } from "~/lib/date";
+import { AvatarDisplay } from "~/components/apply/avatar-display";
+import {
+  MajorStamp,
+  SchoolStamp,
+  HackerStamp,
+  HWStamp,
+  LinksStamp,
+} from "~/components/apply/stamp";
 import dynamic from "next/dynamic";
 
 const CountdownTimer = dynamic(
@@ -280,6 +288,25 @@ const Dashboard = () => {
   const status = application?.status ?? "NOT_STARTED";
   // router not used in this component
 
+  const selectedColor = colors.find(
+      (c) => c.name === (application?.avatarColour ?? "green"),
+    );
+  
+  type CanvasData = {
+    paths: Array<Array<{ x: number; y: number }>>;
+    timestamp: number;
+    version: string;
+  };
+
+  const canvasData = application?.canvasData as CanvasData | null | undefined;
+  const pathStrings =
+    canvasData?.paths?.map((path) =>
+      path.reduce((acc, point, index) => {
+        if (index === 0) return `M ${point.x} ${point.y}`;
+        return `${acc} L ${point.x} ${point.y}`;
+      }, ""),
+    ) ?? [];
+
   const searchParams = useSearchParams();
   const applyStep = React.useMemo(
     () => getApplyStep(searchParams.get("step")),
@@ -316,7 +343,8 @@ const Dashboard = () => {
           </div>
 
           {/* Mobile Content */}
-          <div className="flex w-full flex-1 flex-col items-center justify-center bg-white px-6 py-20">
+          {(status == "NOT_STARTED" || status == "IN_PROGRESS") ?
+          (<div className="flex w-full flex-1 flex-col items-center justify-center bg-white px-6 py-20">
             <div className="z-[99] w-full max-w-md space-y-8 text-center">
               <div>
                 <h1 className="font-dico text-3xl font-medium text-heavy">
@@ -337,17 +365,109 @@ const Dashboard = () => {
                   <Link href={`/apply?step=${continueStep}`}>
                     {status == "NOT_STARTED"
                       ? "Start Application"
-                      : "Continue Application"}
+                      : status == "IN_PROGRESS"
+                        ? "Continue Application"
+                        : "Review Application"}
                   </Link>
                 </Button>
               </div>
             </div>
             <CanvasBackground />
-          </div>
+          </div>) :
+          (
+            <div className="flex h-svh flex-col">
+              <div className="bg-hw-linear-gradient-day relative flex flex-grow items-center justify-center">
+                <CanvasBackground />
+                <div className="relative m-5 flex flex-col gap-6 items-center rounded-lg bg-violet-100 p-10">
+                  <div className="flex flex-col gap-6">
+                    <h2 className="font-dico text-4xl font-semibold text-heavy ">Your application has been submitted!</h2>
+                    <h4 className="font-figtree text-heavy">
+                      Thanks for applying to Hack Western XII, {application?.firstName}!
+                    </h4>
+                    <p className="font-figtree text-heavy">
+                      You&apos;ll hear back from us about your status in a few weeks!
+                    </p>
+                  </div>
+                  <div 
+                    className="h-full w-full rounded-lg"
+                    style={{
+                      background: `${selectedColor?.bg} 30%`,
+                    }}
+                  >
+                      <div className="relative rounded-lg h-80 w-80">
+                        {pathStrings.length > 0 && (
+                        <svg className="h-80 w-80">
+                          {pathStrings.map((pathString, pathIndex) => (
+                            <path
+                              key={pathIndex}
+                              d={pathString}
+                              stroke={selectedColor?.gradient ?? "#a16bc7"}
+                              strokeWidth="4"
+                              fill="none"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          ))}
+                        </svg>)}
+                        <div className="absolute top-1/2 -translate-y-1/2 z-[1000] right-6 flex flex-col items-end gap-4">
+                          <div className="-right-2 border-heavy border rounded-full px-2 py-1 text-xs font-jetbrains-mono">
+                            HACK WESTERN XII
+                          </div>
+                          <h1 className="text-3xl font-dico text-heavy z-[1000]">
+                            {`${application?.firstName ?? "Hacker"} ${application?.lastName ?? ""}`}
+                          </h1>
+                        </div>
+                        {application?.avatarColour && (
+                          <div className="absolute top-4 left-2 -ml-8 mb-4 mr-6 h-36 w-36 scale-[0.3] self-center">
+                            <AvatarDisplay
+                              avatarColour={application?.avatarColour}
+                              avatarFace={application?.avatarFace}
+                              avatarLeftHand={application?.avatarLeftHand}
+                              avatarRightHand={application?.avatarRightHand}
+                              avatarHat={application?.avatarHat}
+                              size="lg"
+                            />
+                          </div>
+                        )}
+                        <div className="absolute bottom-[2] -right-4 scale-[0.5]">
+                          <SchoolStamp type={application?.school} />
+                        </div>
+                        <div className="absolute bottom-3 right-24 scale-[0.7]">
+                          <MajorStamp type={application?.major} />
+                        </div>
+                        {application?.attendedBefore !== undefined &&
+                        application?.attendedBefore !== null && (
+                          <div className="absolute top-3 left-52 scale-[0.9]">
+                          <HWStamp
+                            returning={application?.attendedBefore ? "returnee" : "newcomer"}
+                          />
+                          </div>
+                        )}
+                        <div className="absolute bottom-12 left-4 scale-[0.7]">
+                          <HackerStamp numHackathons={application?.numOfHackathons} />  
+                        </div>
+
+                        {application?.githubLink &&
+                          application?.linkedInLink &&
+                          application?.otherLink &&
+                          application?.resumeLink && 
+                          <div className="absolute top-4 left-28 scale-[0.9]">
+                            <LinksStamp />
+                          </div>
+                        }
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+          }
         </div>
         {/* End of Mobile View */}
 
         {/* Desktop View */}
+        {(status == "NOT_STARTED" || status == "IN_PROGRESS") ? (
+        <>
         <div className="relative z-10 hidden h-full w-full flex-grow items-center md:flex">
           <div
             id="left-panel"
@@ -398,6 +518,92 @@ const Dashboard = () => {
           </div>
         </div>
         <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
+        </>) :
+        (<div className="flex h-svh w-svw flex-col">
+              <div className="bg-hw-linear-gradient-day relative flex flex-grow items-center justify-center">
+                <CanvasBackground />
+                <div className="relative m-5 flex flex-row gap-6 items-center rounded-lg bg-violet-100 p-10">
+                  <div className="flex flex-col gap-6">
+                    <h2 className="font-dico text-4xl font-semibold text-heavy ">Your application has been submitted!</h2>
+                    <h4 className="font-figtree text-heavy">
+                      Thanks for applying to Hack Western XII, {application?.firstName}!
+                    </h4>
+                    <p className="font-figtree text-heavy">
+                      You&apos;ll hear back from us about your status in a few weeks!
+                    </p>
+                  </div>
+                  <div 
+                    className="h-80 w-80 rounded-lg"
+                    style={{
+                      background: `${selectedColor?.bg} 30%`,
+                    }}
+                  >
+                      <div className="relative rounded-lg h-80 w-80">
+                        {pathStrings.length > 0 && (
+                        <svg className="h-80 w-80">
+                          {pathStrings.map((pathString, pathIndex) => (
+                            <path
+                              key={pathIndex}
+                              d={pathString}
+                              stroke={selectedColor?.gradient ?? "#a16bc7"}
+                              strokeWidth="4"
+                              fill="none"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          ))}
+                        </svg>)}
+                        <div className="absolute top-1/2 -translate-y-1/2 z-[1000] right-6 flex flex-col items-end gap-4">
+                          <div className="-right-2 border-heavy border rounded-full px-2 py-1 text-xs font-jetbrains-mono">
+                            HACK WESTERN XII
+                          </div>
+                          <h1 className="text-3xl font-dico text-heavy z-[1000]">
+                            {`${application?.firstName ?? "Hacker"} ${application?.lastName ?? ""}`}
+                          </h1>
+                        </div>
+                        {application?.avatarColour && (
+                          <div className="absolute top-4 left-2 -ml-8 mb-4 mr-6 h-36 w-36 scale-[0.3] self-center">
+                            <AvatarDisplay
+                              avatarColour={application?.avatarColour}
+                              avatarFace={application?.avatarFace}
+                              avatarLeftHand={application?.avatarLeftHand}
+                              avatarRightHand={application?.avatarRightHand}
+                              avatarHat={application?.avatarHat}
+                              size="lg"
+                            />
+                          </div>
+                        )}
+                        <div className="absolute bottom-[2] -right-4 scale-[0.5]">
+                          <SchoolStamp type={application?.school} />
+                        </div>
+                        <div className="absolute bottom-3 right-24 scale-[0.7]">
+                          <MajorStamp type={application?.major} />
+                        </div>
+                        {application?.attendedBefore !== undefined &&
+                        application?.attendedBefore !== null && (
+                          <div className="absolute top-3 left-52 scale-[0.9]">
+                          <HWStamp
+                            returning={application?.attendedBefore ? "returnee" : "newcomer"}
+                          />
+                          </div>
+                        )}
+                        <div className="absolute bottom-12 left-4 scale-[0.7]">
+                          <HackerStamp numHackathons={application?.numOfHackathons} />  
+                        </div>
+
+                        {application?.githubLink &&
+                          application?.linkedInLink &&
+                          application?.otherLink &&
+                          application?.resumeLink && 
+                          <div className="absolute top-4 left-28 scale-[0.9]">
+                            <LinksStamp />
+                          </div>
+                        }
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>)}
         {/* End of Desktop View */}
       </main>
     </>
