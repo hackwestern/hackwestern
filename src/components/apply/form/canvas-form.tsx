@@ -256,7 +256,7 @@ const SimpleCanvas = React.forwardRef<
   }));
 
   return (
-    <div 
+    <div
       className="relative h-72 w-72 cursor-crosshair touch-none overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white"
       onTouchMove={(e) => e.preventDefault()}
     >

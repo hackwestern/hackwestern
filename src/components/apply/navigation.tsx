@@ -5,10 +5,7 @@ import { SavedIndicator } from "./saved-indicator";
 import { api } from "~/utils/api";
 import { useToast } from "~/components/hooks/use-toast";
 import { usePendingNavigation } from "~/hooks/use-pending-navigation";
-import {
-  applySteps,
-  type ApplyStep,
-} from "~/constants/apply";
+import { applySteps, type ApplyStep } from "~/constants/apply";
 
 type ApplyNavigationProps = {
   step: ApplyStep | null;
@@ -81,9 +78,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
             <Button
               variant="secondary"
               className="h-10 border-gray-300 px-4 text-gray-700 hover:bg-gray-50"
-              onClick={() =>
-                navigate(`/apply?step=${previousStep ?? step}`)
-              }
+              onClick={() => navigate(`/apply?step=${previousStep ?? step}`)}
               disabled={pending}
               aria-busy={pending}
             >
