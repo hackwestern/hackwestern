@@ -141,6 +141,74 @@ const SimpleCanvas = React.forwardRef<
     }
   }, [isDrawing, currentPath, onDrawingChange]);
 
+  const getPointFromTouch = useCallback((e: React.TouchEvent) => {
+    if (!rectRef.current) {
+      rectRef.current = e.currentTarget.getBoundingClientRect();
+    }
+    const rect = rectRef.current;
+    const touch = e.touches[0];
+    return {
+      x: touch!.clientX - rect.left,
+      y: touch!.clientY - rect.top,
+    };
+  }, []);
+
+  // Touch handlers
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      e.preventDefault(); // Prevent scrolling
+      setIsDrawing(true);
+      rectRef.current = e.currentTarget.getBoundingClientRect();
+      const point = getPointFromTouch(e);
+      setCurrentPath([point]);
+    },
+    [getPointFromTouch],
+  );
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      e.preventDefault(); // Prevent scrolling
+      if (!isDrawing) return;
+
+      // Throttle touch move events
+      const now = Date.now();
+      if (now - lastMoveTimeRef.current < THROTTLE_MS) return;
+      lastMoveTimeRef.current = now;
+
+      const point = getPointFromTouch(e);
+      setCurrentPath((prev) => [...prev, point]);
+    },
+    [isDrawing, getPointFromTouch],
+  );
+
+  const handleTouchEnd = useCallback(() => {
+    if (isDrawing) {
+      const timestamp = Date.now();
+
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+
+      hasLocalChangesRef.current = true;
+      lastLocalModificationRef.current = timestamp;
+
+      setPaths((prev) => {
+        const newPaths = [...prev, currentPath];
+        saveTimerRef.current = setTimeout(() => {
+          const drawingData: CanvasData = {
+            paths: newPaths,
+            timestamp: timestamp,
+            version: "1.0",
+          };
+          onDrawingChange?.(newPaths.length === 0, drawingData);
+        }, SAVE_DEBOUNCE_MS);
+        return newPaths;
+      });
+      setCurrentPath([]);
+      setIsDrawing(false);
+    }
+  }, [isDrawing, currentPath, onDrawingChange]);
+
   // Memoize path string generation to avoid recalculating on every render
   const pathStrings = useMemo(() => {
     return paths.map((path) =>
@@ -188,13 +256,20 @@ const SimpleCanvas = React.forwardRef<
   }));
 
   return (
-    <div className="relative h-72 w-72 cursor-crosshair overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white">
+    <div 
+      className="relative h-72 w-72 cursor-crosshair touch-none overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-white"
+      onTouchMove={(e) => e.preventDefault()}
+    >
       <svg
         className="h-full w-full"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
       >
         {pathStrings.map((pathString, pathIndex) => (
           <path

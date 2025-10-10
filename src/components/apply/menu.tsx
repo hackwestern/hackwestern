@@ -88,7 +88,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  {mobileApplySteps.map((s) => (
+                  {applySteps.map((s) => (
                     <DrawerClose key={s.step} asChild>
                       <Button
                         key={s.step}

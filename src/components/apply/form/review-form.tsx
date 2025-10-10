@@ -350,7 +350,6 @@ export function ReviewForm() {
           step={step}
           key={idx}
           error={error}
-          className={step.step === "canvas" ? "hidden sm:block" : ""}
         />
       ))}
     </div>
