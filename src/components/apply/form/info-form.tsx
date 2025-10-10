@@ -22,7 +22,6 @@ import {
 import { schools } from "~/constants/schools";
 import { levelOfStudy, major, numOfHackathons } from "~/server/db/schema";
 import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
-import { useEffect } from "react";
 
 export function InfoForm() {
   const utils = api.useUtils();
@@ -61,12 +60,6 @@ export function InfoForm() {
   });
 
   useAutoSave(form, onSubmit, formValues);
-
-  useEffect(() => {
-    if (formValues) {
-      form.reset(formValues);
-    }
-  }, [formValues, form]);
 
   function onSubmit(formData: z.infer<typeof infoSaveSchema>) {
     if (!data) return;
