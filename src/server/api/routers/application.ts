@@ -14,6 +14,7 @@ import {
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
 import { eq, count } from "drizzle-orm";
 import { z } from "zod";
+import { type CanvasPaths } from "~/types/canvas";
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure.query(async ({ ctx }) => {
@@ -116,7 +117,7 @@ export const applicationRouter = createTRPCRouter({
             ? undefined
             : (canvasData as
                 | {
-                    paths: Array<Array<{ x: number; y: number }>>;
+                    paths: CanvasPaths;
                     timestamp: number;
                     version: string;
                   }

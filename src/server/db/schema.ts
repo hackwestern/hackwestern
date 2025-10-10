@@ -315,7 +315,7 @@ export const applications = createTable(
     // Canvas - default to an empty but well-typed structure so new rows are valid
     canvasData: jsonb("canvas_data")
       .$type<{
-        paths: CanvasPaths; // [x, y] tuples instead of {x, y} objects
+        paths: CanvasPaths;
         timestamp: number;
         version: string;
       }>()
