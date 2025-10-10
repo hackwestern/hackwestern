@@ -105,8 +105,9 @@ export default function SubmittedDisplay({
             variant="primary"
             onClick={handleExportPNG}
             disabled={exporting}
+            className="w-64"
           >
-            {exporting ? "Exporting…" : "Share my sticker book!"}{" "}
+            Share my sticker book!
             <ExternalLink />
           </Button>
         </div>
