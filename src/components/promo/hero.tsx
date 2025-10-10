@@ -5,6 +5,8 @@ import { CanvasComponent } from "../canvas/component";
 import Image from "next/image";
 import { useState } from "react";
 import { coordinates } from "~/constants/canvas";
+import { Button } from "../ui/button";
+import Link from "next/link";
 
 function Hero() {
   const [hasBeenDragged, setHasBeenDragged] = useState(false);
@@ -68,7 +70,13 @@ function Hero() {
               The world is your canvas.
             </div>
           </div>
-          <PreregistrationForm />
+          <Button 
+            className="w-48"
+            variant="primary"
+            size="lg"
+          >
+            <Link href="/login">Apply Now!</Link>
+          </Button>
         </div>
         <div className="h-[150px] sm:h-[80px]" />
       </div>
