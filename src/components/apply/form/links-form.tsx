@@ -13,9 +13,9 @@ import {
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { useState, useRef, useEffect } from "react";
-import { useToast } from "~/components/hooks/use-toast";
+import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
-import { useAutoSave } from "~/components/hooks/use-auto-save";
+import { useAutoSave } from "~/hooks/use-auto-save";
 import { linksSaveSchema } from "~/schemas/application";
 import {
   getGithubUsername,

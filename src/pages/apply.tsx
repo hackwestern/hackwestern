@@ -11,140 +11,46 @@ import ApplyHeading from "~/components/apply/heading";
 import {
   LeftStampColumn,
   RightStampColumn,
-  MobileStampGroup,
 } from "~/components/apply/animated-stamps";
-import { useIsMobile } from "~/hooks/use-mobile";
-import { api } from "~/utils/api";
-import { colors } from "~/constants/avatar";
-import Logout from "~/pages/logout";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "~/components/ui/popover";
-import Link from "next/link";
-import { signOut } from "next-auth/react";
-import { Drawer, DrawerContent, DrawerTrigger } from "~/components/ui/drawer";
-import Image from "next/image";
-import { motion, useAnimation } from "framer-motion";
-import { DialogTitle } from "@radix-ui/react-dialog";
+import { motion } from "framer-motion";
+import { MobileStickerDrawer } from "~/components/apply/mobile-sticker-drawer";
+import CharacterIcon from "~/components/dashboard/CharacterIcon";
+import { AvatarForm } from "~/components/apply/form/avatar-form";
+import { useEffect, useRef, useState } from "react";
 
-function getApplyStep(
-  stepValue: string | null,
-  isMobile: boolean,
-): ApplyStepFull | null {
+function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   const steps = applySteps;
   return steps.find((s) => s.step === stepValue) ?? null;
 }
 
-// Small character component for mobile header
-function MobileCharacterIcon() {
-  const { data: applicationData } = api.application.get.useQuery();
-  const name = applicationData?.firstName ?? "Username";
-
-  const bodyColor =
-    colors.find((c) => c.name === applicationData?.avatarColour)?.body ?? "002";
-
-  // Popover trigger wraps the avatar (or emoji) to open the small menu
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button className="relative h-6 w-6 overflow-hidden rounded-full">
-          {/* eslint-disable @next/next/no-img-element */}
-          {applicationData?.avatarColour ? (
-            <img
-              src={`/avatar/body/${bodyColor}.webp`}
-              alt="Character"
-              className="h-full w-full object-contain"
-            />
-          ) : (
-            <span className="text-sm">🎨</span>
-          )}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="mr-4 mt-2 w-48 bg-offwhite p-4 font-figtree">
-        <div className="rounded-md">
-          <h3 className="mb-3 text-lg font-medium text-medium">
-            {name == "Username" ? "Hello, hacker" : `Hi, ${name}`}!
-          </h3>
-          <div className="mb-4 h-px w-full bg-violet-200" />
-
-          <div className="mb-3 font-figtree text-heavy">
-            <Link href="/dashboard">Home</Link>
-          </div>
-
-          <div>
-            <button
-              className="font-figtree text-base text-heavy underline"
-              onClick={() => void signOut()}
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function MobileStickerDrawer() {
-  const controls = useAnimation();
-
-  async function handleStickerClick() {
-    await controls.start({
-      rotate: 180,
-      transition: { duration: 0.2, ease: "easeInOut" },
-    });
-    await controls.start({
-      rotate: 0,
-      transition: { duration: 0.2, ease: "easeInOut" },
-    });
-  }
-
-  return (
-    <div className="fixed bottom-20 right-4 z-50 overscroll-contain md:hidden">
-      <Drawer direction="bottom">
-        <DrawerTrigger asChild>
-          <motion.div
-            onClick={handleStickerClick}
-            animate={controls}
-            whileTap={{ scale: 0.96 }}
-            style={{ display: "inline-block", cursor: "pointer" }}
-          >
-            <Image
-              src="/mobile-sticker.png"
-              alt="Sticker Drawer"
-              width={64}
-              height={64}
-            />
-          </motion.div>
-        </DrawerTrigger>
-        <DrawerContent className="h-fit overflow-hidden overscroll-contain">
-          <DialogTitle className="sr-only">Your Stickers</DialogTitle>
-          <div className="z-[100] mx-auto h-2 w-[100px] rounded-full bg-muted" />
-          <div className="absolute inset-0 overflow-hidden rounded-t-xl">
-            <CanvasBackground />
-          </div>
-          <div className="relative h-full w-full overscroll-contain">
-            <MobileStampGroup />
-          </div>
-        </DrawerContent>
-      </Drawer>
-    </div>
-  );
-}
-
 export default function Apply() {
   const searchParams = useSearchParams();
-  const isMobile = useIsMobile();
   const applyStep = React.useMemo(
-    () => getApplyStep(searchParams.get("step"), isMobile),
-    [searchParams, isMobile],
+    () => getApplyStep(searchParams.get("step")),
+    [searchParams],
   );
 
   const step = applyStep?.step ?? null;
   const heading = applyStep?.heading ?? null;
   const subheading = applyStep?.subheading ?? null;
+  const desktopScrollRef = useRef<HTMLDivElement | null>(null);
+  const [desktopPreviewHeight, setDesktopPreviewHeight] = useState<
+    number | null
+  >(null);
+
+  useEffect(() => {
+    const el = desktopScrollRef.current;
+    if (!el) return;
+    const update = () => setDesktopPreviewHeight(el.clientHeight ?? null);
+    // initial
+    update();
+    const ro = new ResizeObserver(() => {
+      update();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   return (
     <>
       <Head>
@@ -175,7 +81,7 @@ export default function Apply() {
             </h1>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
               <ApplyMenu step={step} />
-              <MobileCharacterIcon />
+              <CharacterIcon />
             </div>
           </div>
 
@@ -221,8 +127,7 @@ export default function Apply() {
           >
             <CanvasBackground />
             <div className="absolute right-6 top-6 flex items-center gap-4">
-              <Logout />
-              <MobileCharacterIcon />
+              <CharacterIcon />
             </div>
             <div className="overflow-y-none overflow-x-none z-10 flex flex-col items-center justify-center">
               <div className="flex h-full w-full items-start justify-center gap-8 overflow-hidden 2xl:flex-row">
@@ -239,10 +144,17 @@ export default function Apply() {
                         stepKey={step}
                       />
                     </div>
-                    <div className="scrollbar overflow-auto rounded-md pb-2 pl-1 pr-4">
-                      <div className="font-figtree">
+                    <div
+                      className="scrollbar min-h-0 flex-1 overflow-auto rounded-md pb-2 pl-1 pr-4 font-figtree"
+                      ref={desktopScrollRef}
+                    >
+                      {step === "character" ? (
+                        <AvatarForm
+                          previewHeight={(desktopPreviewHeight ?? 300) - 15}
+                        />
+                      ) : (
                         <ApplyForm step={step} />
-                      </div>
+                      )}
                     </div>
                   </div>
                   <ApplyNavigation step={step} />
