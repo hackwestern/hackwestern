@@ -10,6 +10,7 @@ import { applicationSubmitSchema } from "~/schemas/application";
 import { api } from "~/utils/api";
 import { AvatarDisplay } from "../avatar-display";
 import { colors } from "~/constants/avatar";
+import { type CanvasPaths } from "~/types/canvas";
 
 type ReviewSectionProps = {
   step: ApplyStepFull;
@@ -295,8 +296,9 @@ function AvatarReview({}: ReviewSectionProps) {
 function CanvasReview({}: ReviewSectionProps) {
   const { data } = api.application.get.useQuery();
 
+  // reuse shared canvas types
   type CanvasData = {
-    paths: Array<Array<{ x: number; y: number }>>;
+    paths: CanvasPaths;
     timestamp: number;
     version: string;
   };
@@ -305,8 +307,8 @@ function CanvasReview({}: ReviewSectionProps) {
   const pathStrings =
     canvasData?.paths?.map((path) =>
       path.reduce((acc, point, index) => {
-        if (index === 0) return `M ${point.x} ${point.y}`;
-        return `${acc} L ${point.x} ${point.y}`;
+        if (index === 0) return `M ${point[0]} ${point[1]}`;
+        return `${acc} L ${point[0]} ${point[1]}`;
       }, ""),
     ) ?? [];
 
@@ -346,12 +348,7 @@ export function ReviewForm() {
   return (
     <div className="overflow-auto">
       {reviewSteps.map((step, idx) => (
-        <ReviewSection
-          step={step}
-          key={idx}
-          error={error}
-          className={step.step === "canvas" ? "hidden sm:block" : ""}
-        />
+        <ReviewSection step={step} key={idx} error={error} />
       ))}
     </div>
   );

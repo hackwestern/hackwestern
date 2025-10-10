@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { countrySelection } from "~/server/db/schema";
-import { useEffect } from "react";
 
 export function BasicsForm() {
   const utils = api.useUtils();
@@ -42,12 +41,6 @@ export function BasicsForm() {
   });
 
   useAutoSave(form, onSubmit, defaultValues);
-
-  useEffect(() => {
-    if (defaultValues) {
-      form.reset(defaultValues);
-    }
-  }, [defaultValues, form]);
 
   function onSubmit(data: z.infer<typeof basicsSaveSchema>) {
     mutate({
@@ -144,7 +137,7 @@ export function BasicsForm() {
                     const v = e.target.value;
                     if (v === "") {
                       // allow clearing the field
-                      field.onChange(undefined);
+                      field.onChange(null);
                     } else {
                       const n = Number(v);
                       if (Number.isNaN(n)) return;
@@ -154,7 +147,6 @@ export function BasicsForm() {
                   }}
                   type="number"
                   value={field.value ?? ""}
-                  min={0}
                   placeholder="Enter your age"
                   variant={(field.value ?? 18) >= 18 ? "primary" : "invalid"}
                   className="form-input-mobile h-12"

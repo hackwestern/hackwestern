@@ -1,8 +1,4 @@
-import {
-  applySteps,
-  mobileApplySteps,
-  type ApplyStep,
-} from "~/constants/apply";
+import { applySteps, type ApplyStep } from "~/constants/apply";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import {
@@ -14,12 +10,20 @@ import {
 import { Menu } from "lucide-react";
 import Image from "next/image";
 import { DialogTitle } from "@radix-ui/react-dialog";
+import { api } from "~/utils/api";
 
 type ApplyMenuProps = {
   step: ApplyStep | null;
 };
 
 export function ApplyMenu({ step }: ApplyMenuProps) {
+  const { data: application } = api.application.get.useQuery();
+  const status = application?.status ?? "NOT_STARTED";
+
+  if (status !== "NOT_STARTED" && status !== "IN_PROGRESS") {
+    return null;
+  }
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -88,7 +92,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  {mobileApplySteps.map((s) => (
+                  {applySteps.map((s) => (
                     <DrawerClose key={s.step} asChild>
                       <Button
                         key={s.step}
@@ -97,7 +101,10 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
                         asChild
                       >
                         <Link
-                          href={{ pathname: "/apply", query: { step: s.step } }}
+                          href={{
+                            pathname: "/apply",
+                            query: { step: s.step },
+                          }}
                         >
                           {s.label}
                         </Link>
