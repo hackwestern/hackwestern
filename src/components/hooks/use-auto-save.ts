@@ -20,7 +20,7 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
           fieldErrors,
         });
       })();
-    }, 500),
+    }, 750),
     [],
   );
 

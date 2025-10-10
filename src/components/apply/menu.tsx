@@ -10,12 +10,20 @@ import {
 import { Menu } from "lucide-react";
 import Image from "next/image";
 import { DialogTitle } from "@radix-ui/react-dialog";
+import { api } from "~/utils/api";
 
 type ApplyMenuProps = {
   step: ApplyStep | null;
 };
 
 export function ApplyMenu({ step }: ApplyMenuProps) {
+  const { data: application } = api.application.get.useQuery();
+  const status = application?.status ?? "NOT_STARTED";
+
+  if (status !== "NOT_STARTED" && status !== "IN_PROGRESS") {
+    return null;
+  }
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -93,7 +101,10 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
                         asChild
                       >
                         <Link
-                          href={{ pathname: "/apply", query: { step: s.step } }}
+                          href={{
+                            pathname: "/apply",
+                            query: { step: s.step },
+                          }}
                         >
                           {s.label}
                         </Link>
