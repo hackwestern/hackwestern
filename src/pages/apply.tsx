@@ -191,7 +191,7 @@ export default function Apply() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <motion.main
-        className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-y-hidden md:overflow-x-hidden"
+        className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-x-hidden md:overflow-y-hidden"
         key={"apply-page"}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -218,7 +218,11 @@ export default function Apply() {
           <div className="flex-1 bg-white py-24">
             <div className="mx-6 flex h-full flex-col">
               <div className="mb-6">
-                <ApplyHeading heading={heading} subheading={subheading} stepKey={step} />
+                <ApplyHeading
+                  heading={heading}
+                  subheading={subheading}
+                  stepKey={step}
+                />
               </div>
 
               <div className="flex-1 overflow-visible">
@@ -271,7 +275,11 @@ export default function Apply() {
                 <div>
                   <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
                     <div className="space-y-4 py-1.5">
-                      <ApplyHeading heading={heading} subheading={subheading} stepKey={step} />
+                      <ApplyHeading
+                        heading={heading}
+                        subheading={subheading}
+                        stepKey={step}
+                      />
                     </div>
                     <div className="scrollbar overflow-auto pb-2 pl-1 pr-4">
                       <div className="font-figtree">
@@ -285,7 +293,7 @@ export default function Apply() {
                 {/* Right stamps column (up to 3) */}
                 <div className="hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:mx-auto 2xl:w-64 2xl:pb-12">
                   {data?.attendedBefore !== undefined &&
-                    data?.attendedBefore !== null ? (
+                  data?.attendedBefore !== null ? (
                     <HWStamp
                       returning={data?.attendedBefore ? "returnee" : "newcomer"}
                     />

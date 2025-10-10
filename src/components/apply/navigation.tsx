@@ -6,7 +6,11 @@ import { SavedIndicator } from "./saved-indicator";
 import { api } from "~/utils/api";
 import { useToast } from "~/components/hooks/use-toast";
 import { usePendingNavigation } from "~/hooks/use-pending-navigation";
-import { applySteps, mobileApplySteps, type ApplyStep } from "~/constants/apply";
+import {
+  applySteps,
+  mobileApplySteps,
+  type ApplyStep,
+} from "~/constants/apply";
 
 type ApplyNavigationProps = {
   step: ApplyStep | null;
@@ -107,12 +111,19 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
             <Button
               variant="secondary"
               className="h-10 border-gray-300 px-4 text-gray-700 hover:bg-gray-50"
-              onClick={() => navigate(`/apply?step=${mobilePreviousStep ?? step}`)}
+              onClick={() =>
+                navigate(`/apply?step=${mobilePreviousStep ?? step}`)
+              }
               disabled={pending}
               aria-busy={pending}
             >
               <div className="flex items-center gap-2">
-                <Image src="/arrow-left.svg" alt="Left Arrow" width={12} height={12} />
+                <Image
+                  src="/arrow-left.svg"
+                  alt="Left Arrow"
+                  width={12}
+                  height={12}
+                />
                 <div className="text-sm">Back</div>
               </div>
             </Button>
@@ -144,7 +155,12 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
             {!step || !!mobileNextStep ? (
               <div className="flex items-center gap-2">
                 Next
-                <Image src="/arrow-right.svg" alt="Right Arrow" width={12} height={12} />
+                <Image
+                  src="/arrow-right.svg"
+                  alt="Right Arrow"
+                  width={12}
+                  height={12}
+                />
               </div>
             ) : canEdit ? (
               <div className="block">Submit</div>
@@ -159,20 +175,26 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
       <div className="hidden w-full justify-between py-3 md:flex">
         <SavedIndicator />
         <div className="ml-auto flex items-center gap-12">
-          {!step || (previousStep && (
-            <Button
-              variant="tertiary"
-              className="h-6 w-16 text-base font-medium text-heavy"
-              onClick={() => navigate(`/apply?step=${previousStep}`)}
-              disabled={pending}
-              aria-busy={pending}
-            >
-              <div className="flex items-center gap-2 pr-2">
-                <Image src="/arrow-left.svg" alt="Left Arrow" width={12} height={12} />
-                <div className="text-sm">Back</div>
-              </div>
-            </Button>
-          ))}
+          {!step ||
+            (previousStep && (
+              <Button
+                variant="tertiary"
+                className="h-6 w-16 text-base font-medium text-heavy"
+                onClick={() => navigate(`/apply?step=${previousStep}`)}
+                disabled={pending}
+                aria-busy={pending}
+              >
+                <div className="flex items-center gap-2 pr-2">
+                  <Image
+                    src="/arrow-left.svg"
+                    alt="Left Arrow"
+                    width={12}
+                    height={12}
+                  />
+                  <div className="text-sm">Back</div>
+                </div>
+              </Button>
+            ))}
           <Button
             variant="primary"
             className="w-28"
@@ -191,7 +213,12 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
             {!step || !!nextStep ? (
               <div className="flex gap-2">
                 Next
-                <Image src="/arrow-right.svg" alt="Right Arrow" width={10} height={10} />
+                <Image
+                  src="/arrow-right.svg"
+                  alt="Right Arrow"
+                  width={10}
+                  height={10}
+                />
               </div>
             ) : canEdit ? (
               <div className="block">Submit</div>
@@ -204,4 +231,3 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
     </div>
   );
 }
-

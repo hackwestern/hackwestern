@@ -149,13 +149,16 @@ export function AvatarForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="overflow-y-hidden">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="overflow-y-hidden"
+      >
         <div className="grid h-max gap-6 lg:grid-cols-2">
           {/* Left Side - Character Preview */}
           <div className="flex flex-col space-y-4">
             {/* Character Preview Area */}
             <div
-              className="mx-auto my-auto overflow-y-hidden flex h-[17rem] w-full flex-col justify-center rounded-2xl p-4 py-10 2xl:h-[22rem] 3xl:h-[31rem]"
+              className="mx-auto my-auto flex h-[17rem] w-full flex-col justify-center overflow-y-hidden rounded-2xl p-4 py-10 2xl:h-[22rem] 3xl:h-[31rem]"
               style={{
                 background: `linear-gradient(
                               135deg,

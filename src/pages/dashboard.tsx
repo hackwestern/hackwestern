@@ -634,7 +634,7 @@ const Dashboard = () => {
           </div>
         )}
         {/* End of Desktop View */}
-  </motion.main>
+      </motion.main>
     </>
   );
 };

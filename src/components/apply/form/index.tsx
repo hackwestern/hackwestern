@@ -18,8 +18,16 @@ type ApplyFormProps = {
 
 const formFade = {
   initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.28, ease: [0.37, 0.1, 0.6, 1] } },
-  exit: { opacity: 0, y: -6, transition: { duration: 0.18, ease: [0.37, 0.1, 0.6, 1] } },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.28, ease: [0.37, 0.1, 0.6, 1] },
+  },
+  exit: {
+    opacity: 0,
+    y: -6,
+    transition: { duration: 0.18, ease: [0.37, 0.1, 0.6, 1] },
+  },
 };
 
 export function ApplyForm({ step }: ApplyFormProps) {
