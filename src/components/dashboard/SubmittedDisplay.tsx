@@ -64,10 +64,10 @@ export default function SubmittedDisplay({
           },
         ) => Promise<string>
       )(ref, {
-        width: cardRef.current.offsetWidth * 6,
-        height: cardRef.current.offsetHeight * 6,
+        width: cardRef.current.offsetWidth * 8,
+        height: cardRef.current.offsetHeight * 8,
         style: {
-          transform: "scale(6)",
+          transform: "scale(8)",
           transformOrigin: "top left",
         },
       });

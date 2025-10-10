@@ -16,6 +16,7 @@ import dynamic from "next/dynamic";
 import MobileCharacterIcon from "~/components/dashboard/MobileCharacterIcon";
 import ApplicationPrompt from "~/components/dashboard/ApplicationPrompt";
 import SubmittedDisplay from "~/components/dashboard/SubmittedDisplay";
+import { type CanvasPaths } from "~/types/canvas";
 
 const CountdownTimer = dynamic(
   () => import("~/components/apply/countdown-timer"),
@@ -121,7 +122,7 @@ const Dashboard = () => {
   );
 
   type CanvasData = {
-    paths: Array<Array<{ x: number; y: number }>>;
+    paths: CanvasPaths;
     timestamp: number;
     version: string;
   };
@@ -130,8 +131,8 @@ const Dashboard = () => {
   const pathStrings =
     canvasData?.paths?.map((path) =>
       path.reduce((acc, point, index) => {
-        if (index === 0) return `M ${point.x} ${point.y}`;
-        return `${acc} L ${point.x} ${point.y}`;
+        if (index === 0) return `M ${point[0]} ${point[1]}`;
+        return `${acc} L ${point[0]} ${point[1]}`;
       }, ""),
     ) ?? [];
 

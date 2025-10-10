@@ -1,6 +1,8 @@
 import React, { useState, useRef, useCallback, useMemo } from "react";
+import type { Point, Stroke, CanvasPaths } from "~/types/canvas";
 import { Form, FormControl, FormField, FormItem } from "~/components/ui/form";
 import { Button } from "~/components/ui/button";
+import { Undo, Redo, Trash2 } from "lucide-react";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/components/hooks/use-auto-save";
 import { useForm } from "react-hook-form";
@@ -10,24 +12,35 @@ import type { z } from "zod";
 
 // Define the canvas data structure explicitly
 type CanvasData = {
-  paths: Array<Array<{ x: number; y: number }>>;
+  paths: CanvasPaths; // array of strokes composed of points
   timestamp: number;
   version: string;
 };
 
 // Simple canvas component for the form
 const SimpleCanvas = React.forwardRef<
-  { clear: () => void; isEmpty: () => boolean },
+  {
+    clear: () => void;
+    isEmpty: () => boolean;
+    undo: () => void;
+    redo: () => void;
+    canUndo: () => boolean;
+    canRedo: () => boolean;
+  },
   {
     onDrawingChange?: (isEmpty: boolean, data?: CanvasData) => void;
+    onHistoryChange?: (canUndo: boolean, canRedo: boolean) => void;
     initialData?: CanvasData | null;
   }
->(({ onDrawingChange, initialData }, ref) => {
+>(({ onDrawingChange, onHistoryChange, initialData }, ref) => {
   const [isDrawing, setIsDrawing] = useState(false);
-  const [paths, setPaths] = useState<Array<{ x: number; y: number }[]>>([]);
-  const [currentPath, setCurrentPath] = useState<{ x: number; y: number }[]>(
-    [],
-  );
+  const [paths, setPaths] = useState<CanvasPaths>([]);
+  const [currentPath, setCurrentPath] = useState<Stroke>([]);
+
+  // History for undo/redo
+  const [history, setHistory] = useState<CanvasPaths[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const initializedRef = useRef(false);
 
   // Debounce timer for saving strokes
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -36,6 +49,76 @@ const SimpleCanvas = React.forwardRef<
   // Track the last local modification timestamp to prioritize local data
   const lastLocalModificationRef = useRef<number>(0);
   const hasLocalChangesRef = useRef<boolean>(false);
+
+  // Helper to save current state to history
+  // Only call this for discrete events: stroke completion, clear (NOT for undo/redo)
+  const saveToHistory = useCallback(
+    (newPaths: CanvasPaths) => {
+      // Cheap equality: compare lengths and first/last points of outer/inner arrays
+      const isLikelySame = (a?: CanvasPaths, b?: CanvasPaths) => {
+        if (!a || !b) return false;
+        if (a.length !== b.length) return false;
+        if (a.length === 0) return true;
+
+        const aFirst: Stroke | undefined = a[0];
+        const bFirst: Stroke | undefined = b[0];
+        const aLast: Stroke | undefined = a[a.length - 1];
+        const bLast: Stroke | undefined = b[b.length - 1];
+
+        if (!aFirst || !bFirst || !aLast || !bLast) return false;
+
+        // Compare first/last path lengths quickly
+        if (aFirst.length !== bFirst.length || aLast.length !== bLast.length)
+          return false;
+
+        // If any path is empty, fall back to length-based check
+        if (aFirst.length === 0 || aLast.length === 0) return true;
+
+        const aFirstPoint = aFirst[0];
+        const bFirstPoint = bFirst[0];
+        const aLastPoint = aLast[aLast.length - 1];
+        const bLastPoint = bLast[bLast.length - 1];
+
+        if (!aFirstPoint || !bFirstPoint || !aLastPoint || !bLastPoint)
+          return false;
+
+        return (
+          aFirstPoint[0] === bFirstPoint[0] &&
+          aFirstPoint[1] === bFirstPoint[1] &&
+          aLastPoint[0] === bLastPoint[0] &&
+          aLastPoint[1] === bLastPoint[1]
+        );
+      };
+      setHistoryIndex((currentIndex) => {
+        setHistory((prevHistory) => {
+          // Truncate any "future" history if we're not at the latest state
+          const truncatedHistory =
+            currentIndex === -1 ? [] : prevHistory.slice(0, currentIndex + 1);
+
+          // Check if the new state is identical to the last state (deduplication)
+          const lastState = truncatedHistory[truncatedHistory.length - 1];
+          if (lastState && isLikelySame(lastState, newPaths)) {
+            return prevHistory;
+          }
+
+          // Add new state to history
+          const newHistory = [...truncatedHistory, newPaths];
+
+          // Notify parent of history changes
+          const newIndex = newHistory.length - 1;
+          const newCanUndo = newIndex > 0;
+          const newCanRedo = false; // We're at the latest state
+          onHistoryChange?.(newCanUndo, newCanRedo);
+          return newHistory;
+        });
+
+        // Return new index (pointing to the newly added state)
+        const newIndex = currentIndex + 1;
+        return newIndex;
+      });
+    },
+    [onHistoryChange],
+  );
 
   // Load initial data when component mounts or initialData changes
   // Only update if server data is newer than local data AND user isn't actively drawing
@@ -53,17 +136,36 @@ const SimpleCanvas = React.forwardRef<
         (hasNewerServerData && !isDrawing && !saveTimerRef.current)
       ) {
         setPaths(initialData.paths);
+        // Initialize history with the loaded data
+        if (!initializedRef.current) {
+          if (initialData.paths.length > 0) {
+            setHistory([initialData.paths]);
+            setHistoryIndex(0);
+          } else {
+            // Start with empty state in history
+            setHistory([[]]);
+            setHistoryIndex(0);
+          }
+          initializedRef.current = true;
+        }
         // Don't update lastLocalModificationRef here - only update on actual user input
       }
+    } else if (!initializedRef.current) {
+      // No initial data - start with empty state in history
+      setHistory([[]]);
+      setHistoryIndex(0);
+      initializedRef.current = true;
     }
+  }, [initialData, isDrawing]);
 
-    // Cleanup timer on unmount
+  // Cleanup timer on unmount only
+  React.useEffect(() => {
     return () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
       }
     };
-  }, [initialData, isDrawing]);
+  }, []);
 
   // Memoize rect calculation to avoid repeated getBoundingClientRect calls
   const rectRef = useRef<DOMRect | null>(null);
@@ -72,15 +174,12 @@ const SimpleCanvas = React.forwardRef<
   const lastMoveTimeRef = useRef(0);
   const THROTTLE_MS = 16; // ~60fps for smooth lines with better performance
 
-  const getPointFromEvent = useCallback((e: React.MouseEvent) => {
+  const getPointFromEvent = useCallback((e: React.MouseEvent): Point => {
     if (!rectRef.current) {
       rectRef.current = e.currentTarget.getBoundingClientRect();
     }
     const rect = rectRef.current;
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
+    return [e.clientX - rect.left, e.clientY - rect.top];
   }, []);
 
   const handleMouseDown = useCallback(
@@ -109,48 +208,48 @@ const SimpleCanvas = React.forwardRef<
   );
 
   const handleMouseUp = useCallback(() => {
-    if (isDrawing) {
+    if (isDrawing && currentPath.length > 0) {
       const timestamp = Date.now();
-
-      // Clear any existing save timer
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-      }
 
       // Mark that we have local changes
       hasLocalChangesRef.current = true;
       lastLocalModificationRef.current = timestamp;
 
-      setPaths((prev) => {
-        const newPaths = [...prev, currentPath];
+      // Create the new paths array
+      const newPaths = [...paths, currentPath];
 
-        // Debounce the save - only save if no new stroke starts within 300ms
-        saveTimerRef.current = setTimeout(() => {
-          const drawingData: CanvasData = {
-            paths: newPaths,
-            timestamp: timestamp,
-            version: "1.0",
-          };
-          onDrawingChange?.(newPaths.length === 0, drawingData);
-        }, SAVE_DEBOUNCE_MS);
+      // Update paths state
+      setPaths(newPaths);
 
-        return newPaths;
-      });
+      // Immediately save to history (no debounce for undo/redo)
+      saveToHistory(newPaths);
+
+      // Debounce only the database save - wait to see if more strokes come
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+
+      saveTimerRef.current = setTimeout(() => {
+        const drawingData: CanvasData = {
+          paths: newPaths,
+          timestamp: timestamp,
+          version: "1.0",
+        };
+        onDrawingChange?.(newPaths.length === 0, drawingData);
+      }, SAVE_DEBOUNCE_MS);
+
       setCurrentPath([]);
       setIsDrawing(false);
     }
-  }, [isDrawing, currentPath, onDrawingChange]);
+  }, [isDrawing, currentPath, paths, onDrawingChange, saveToHistory]);
 
-  const getPointFromTouch = useCallback((e: React.TouchEvent) => {
+  const getPointFromTouch = useCallback((e: React.TouchEvent): Point => {
     if (!rectRef.current) {
       rectRef.current = e.currentTarget.getBoundingClientRect();
     }
     const rect = rectRef.current;
     const touch = e.touches[0];
-    return {
-      x: touch!.clientX - rect.left,
-      y: touch!.clientY - rect.top,
-    };
+    return [touch!.clientX - rect.left, touch!.clientY - rect.top];
   }, []);
 
   // Touch handlers
@@ -182,39 +281,46 @@ const SimpleCanvas = React.forwardRef<
   );
 
   const handleTouchEnd = useCallback(() => {
-    if (isDrawing) {
+    if (isDrawing && currentPath.length > 0) {
       const timestamp = Date.now();
-
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-      }
 
       hasLocalChangesRef.current = true;
       lastLocalModificationRef.current = timestamp;
 
-      setPaths((prev) => {
-        const newPaths = [...prev, currentPath];
-        saveTimerRef.current = setTimeout(() => {
-          const drawingData: CanvasData = {
-            paths: newPaths,
-            timestamp: timestamp,
-            version: "1.0",
-          };
-          onDrawingChange?.(newPaths.length === 0, drawingData);
-        }, SAVE_DEBOUNCE_MS);
-        return newPaths;
-      });
+      // Create the new paths array
+      const newPaths = [...paths, currentPath];
+
+      // Update paths state
+      setPaths(newPaths);
+
+      // Immediately save to history (no debounce for undo/redo)
+      saveToHistory(newPaths);
+
+      // Debounce only the database save - wait to see if more strokes come
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+
+      saveTimerRef.current = setTimeout(() => {
+        const drawingData: CanvasData = {
+          paths: newPaths,
+          timestamp: timestamp,
+          version: "1.0",
+        };
+        onDrawingChange?.(newPaths.length === 0, drawingData);
+      }, SAVE_DEBOUNCE_MS);
+
       setCurrentPath([]);
       setIsDrawing(false);
     }
-  }, [isDrawing, currentPath, onDrawingChange]);
+  }, [isDrawing, currentPath, paths, onDrawingChange, saveToHistory]);
 
   // Memoize path string generation to avoid recalculating on every render
   const pathStrings = useMemo(() => {
     return paths.map((path) =>
       path.reduce((acc, point, index) => {
-        if (index === 0) return `M ${point.x} ${point.y}`;
-        return `${acc} L ${point.x} ${point.y}`;
+        if (index === 0) return `M ${point[0]} ${point[1]}`;
+        return `${acc} L ${point[0]} ${point[1]}`;
       }, ""),
     );
   }, [paths]);
@@ -222,38 +328,122 @@ const SimpleCanvas = React.forwardRef<
   const currentPathString = useMemo(() => {
     if (currentPath.length === 0) return "";
     return currentPath.reduce((acc, point, index) => {
-      if (index === 0) return `M ${point.x} ${point.y}`;
-      return `${acc} L ${point.x} ${point.y}`;
+      if (index === 0) return `M ${point[0]} ${point[1]}`;
+      return `${acc} L ${point[0]} ${point[1]}`;
     }, "");
   }, [currentPath]);
 
   // Expose clear function and isEmpty check to parent
-  React.useImperativeHandle(ref, () => ({
-    clear: () => {
-      setPaths([]);
-      setCurrentPath([]);
-      setIsDrawing(false);
+  React.useImperativeHandle(
+    ref,
+    () => ({
+      clear: () => {
+        setHistoryIndex((currentIndex) => {
+          setHistory((prevHistory) => {
+            const newPaths: CanvasPaths = [];
 
-      // Mark as local change and update timestamp
-      hasLocalChangesRef.current = true;
-      lastLocalModificationRef.current = Date.now();
+            // Truncate future history
+            const truncatedHistory =
+              currentIndex === -1 ? [] : prevHistory.slice(0, currentIndex + 1);
 
-      // Clear any pending save timer
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-      }
+            // Deduplicate: if last state is already empty, don't add another
+            const lastState = truncatedHistory[truncatedHistory.length - 1];
+            if (
+              lastState &&
+              JSON.stringify(lastState) === JSON.stringify(newPaths)
+            ) {
+              // Already empty, just update UI
+              setPaths([]);
+              setCurrentPath([]);
+              return prevHistory;
+            }
 
-      // Notify parent that canvas is now empty (and save this state immediately)
-      onDrawingChange?.(true, {
-        paths: [],
-        timestamp: Date.now(),
-        version: "1.0",
-      });
-    },
-    isEmpty: () => {
-      return paths.length === 0 && currentPath.length === 0;
-    },
-  }));
+            // Add new cleared state
+            const newHistory = [...truncatedHistory, newPaths];
+
+            // Notify history change
+            const newIndex = newHistory.length - 1;
+            const newCanUndo = newIndex > 0;
+            const newCanRedo = false;
+            onHistoryChange?.(newCanUndo, newCanRedo);
+
+            return newHistory;
+          });
+
+          return currentIndex + 1;
+        });
+
+        setPaths([]);
+        setCurrentPath([]);
+
+        // Save immediately to database (don't debounce clear)
+        onDrawingChange?.(true, {
+          paths: [],
+          timestamp: Date.now(),
+          version: "1.0",
+        });
+      },
+      isEmpty: () => {
+        return paths.length === 0 && currentPath.length === 0;
+      },
+      undo: () => {
+        if (historyIndex > 0) {
+          const newIndex = historyIndex - 1;
+          setHistoryIndex(newIndex);
+          const previousPaths = history[newIndex] ?? [];
+          setPaths(previousPaths);
+
+          // Save the undo action
+          hasLocalChangesRef.current = true;
+          lastLocalModificationRef.current = Date.now();
+
+          // Notify history change
+          const newCanUndo = newIndex > 0;
+          const newCanRedo = newIndex < history.length - 1;
+          onHistoryChange?.(newCanUndo, newCanRedo);
+
+          onDrawingChange?.(previousPaths.length === 0, {
+            paths: previousPaths,
+            timestamp: Date.now(),
+            version: "1.0",
+          });
+        }
+      },
+      redo: () => {
+        if (historyIndex < history.length - 1) {
+          const newIndex = historyIndex + 1;
+          setHistoryIndex(newIndex);
+          const nextPaths = history[newIndex] ?? [];
+          setPaths(nextPaths);
+
+          // Save the redo action
+          hasLocalChangesRef.current = true;
+          lastLocalModificationRef.current = Date.now();
+
+          // Notify history change
+          const newCanUndo = newIndex > 0;
+          const newCanRedo = newIndex < history.length - 1;
+          onHistoryChange?.(newCanUndo, newCanRedo);
+
+          onDrawingChange?.(nextPaths.length === 0, {
+            paths: nextPaths,
+            timestamp: Date.now(),
+            version: "1.0",
+          });
+        }
+      },
+      canUndo: () => historyIndex > 0,
+      canRedo: () => historyIndex < history.length - 1,
+    }),
+    [
+      paths,
+      currentPath,
+      history,
+      historyIndex,
+      onDrawingChange,
+      onHistoryChange,
+    ],
+  );
 
   return (
     <div
@@ -311,10 +501,17 @@ export function CanvasForm() {
       return utils.application.get.invalidate();
     },
   });
-  const canvasRef = React.useRef<{ clear: () => void; isEmpty: () => boolean }>(
-    null,
-  );
+  const canvasRef = React.useRef<{
+    clear: () => void;
+    isEmpty: () => boolean;
+    undo: () => void;
+    redo: () => void;
+    canUndo: () => boolean;
+    canRedo: () => boolean;
+  }>(null);
   const [isCanvasEmpty, setIsCanvasEmpty] = useState(true);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
 
   const form = useForm<z.infer<typeof canvasSaveSchema>>({
     resolver: zodResolver(canvasSaveSchema),
@@ -352,7 +549,7 @@ export function CanvasForm() {
   }
 
   type CanvasData = {
-    paths: Array<Array<{ x: number; y: number }>>;
+    paths: CanvasPaths;
     timestamp: number;
     version: string;
   };
@@ -361,8 +558,8 @@ export function CanvasForm() {
   const pathStrings =
     canvasData?.paths?.map((path) =>
       path.reduce((acc, point, index) => {
-        if (index === 0) return `M ${point.x} ${point.y}`;
-        return `${acc} L ${point.x} ${point.y}`;
+        if (index === 0) return `M ${point[0]} ${point[1]}`;
+        return `${acc} L ${point[0]} ${point[1]}`;
       }, ""),
     ) ?? [];
 
@@ -379,19 +576,51 @@ export function CanvasForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <div className="-ml-1 -mt-5">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={isCanvasEmpty}
-                        onClick={() => {
-                          canvasRef.current?.clear();
-                        }}
-                        className={`absolute z-[999] -mb-2 ml-2 mt-4 h-max bg-beige text-heavy`}
-                      >
-                        Clear
-                      </Button>
+                    <div className="-mr-1">
+                      <div className="absolute z-[999] mt-2 flex w-[17.5rem] justify-end gap-2">
+                        <Button
+                          type="button"
+                          size="icon"
+                          disabled={!canUndo}
+                          onClick={() => {
+                            canvasRef.current?.undo();
+                            setCanUndo(canvasRef.current?.canUndo() ?? false);
+                            setCanRedo(canvasRef.current?.canRedo() ?? false);
+                          }}
+                          className="h-6 w-6 text-heavy"
+                          title="Undo"
+                        >
+                          <Undo className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          disabled={!canRedo}
+                          onClick={() => {
+                            canvasRef.current?.redo();
+                            setCanUndo(canvasRef.current?.canUndo() ?? false);
+                            setCanRedo(canvasRef.current?.canRedo() ?? false);
+                          }}
+                          className="h-6 w-6 text-heavy"
+                          title="Redo"
+                        >
+                          <Redo className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          disabled={isCanvasEmpty}
+                          onClick={() => {
+                            canvasRef.current?.clear();
+                            setCanUndo(canvasRef.current?.canUndo() ?? false);
+                            setCanRedo(canvasRef.current?.canRedo() ?? false);
+                          }}
+                          className="h-6 w-6 text-heavy"
+                          title="Clear"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                       <SimpleCanvas
                         ref={canvasRef}
                         // Use the controller's value when available so the canvas
@@ -401,8 +630,14 @@ export function CanvasForm() {
                           (defaultValues?.canvasData as CanvasData | null) ??
                           null
                         }
+                        onHistoryChange={(newCanUndo, newCanRedo) => {
+                          setCanUndo(newCanUndo);
+                          setCanRedo(newCanRedo);
+                        }}
                         onDrawingChange={(isEmpty, data) => {
                           setIsCanvasEmpty(isEmpty);
+                          setCanUndo(canvasRef.current?.canUndo() ?? false);
+                          setCanRedo(canvasRef.current?.canRedo() ?? false);
                           if (data) {
                             field.onChange(data);
                           }

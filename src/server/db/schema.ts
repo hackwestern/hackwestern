@@ -14,6 +14,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
+import type { CanvasPaths } from "~/types/canvas";
 
 /**
  * This is the prefix for tables from this year's hack western!
@@ -314,7 +315,7 @@ export const applications = createTable(
     // Canvas - default to an empty but well-typed structure so new rows are valid
     canvasData: jsonb("canvas_data")
       .$type<{
-        paths: Array<Array<{ x: number; y: number }>>;
+        paths: CanvasPaths;
         timestamp: number;
         version: string;
       }>()
