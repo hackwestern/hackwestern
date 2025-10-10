@@ -93,39 +93,6 @@ function MobileCharacterIcon() {
   );
 }
 
-function DesktopCharacterIcon() {
-  const { data: applicationData } = api.application.get.useQuery();
-
-  const bodyColor =
-    colors.find((c) => c.name === applicationData?.avatarColour)?.body ?? "002";
-
-  const selectedColor = colors.find(
-    (c) => c.name === (applicationData?.avatarColour ?? "green"),
-  );
-
-  return (
-    <div
-      className="rounded-full p-1"
-      style={{
-        background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
-      }}
-    >
-      <div className="relative h-6 w-6 overflow-hidden rounded-full">
-        {/* eslint-disable @next/next/no-img-element */}
-        {applicationData?.avatarColour ? (
-          <img
-            src={`/avatar/body/${bodyColor}.webp`}
-            alt="Character"
-            className="h-full w-full object-contain"
-          />
-        ) : (
-          <span className="text-sm">🎨</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function MobileStickerDrawer() {
   const { data } = api.application.get.useQuery();
   const controls = useAnimation();
