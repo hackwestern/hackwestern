@@ -124,9 +124,7 @@ function About() {
                   <div className="absolute -bottom-[10px] -right-[50px] z-10 h-20 w-40"></div>
                 </div>
               </div>
-              <div className="shrink-0 pt-8">
-                <Envelope />
-              </div>
+              <Envelope />
             </div>
           </div>
         </div>
