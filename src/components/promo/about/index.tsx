@@ -124,20 +124,7 @@ function About() {
                   <div className="absolute -bottom-[10px] -right-[50px] z-10 h-20 w-40"></div>
                 </div>
               </div>
-              <motion.div
-                className="shrink-0 pt-8"
-                animate={{
-                  rotate: [0.5, -0.5],
-                  transition: {
-                    duration: 4,
-                    repeat: Infinity,
-                    repeatType: "mirror",
-                    ease: "easeInOut",
-                  },
-                }}
-              >
-                <Envelope />
-              </motion.div>
+              <Envelope />
             </div>
           </div>
         </div>
