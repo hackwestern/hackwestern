@@ -26,12 +26,14 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
       <div className="mx-auto hidden h-screen w-56 gap-3 border-[1px] bg-white py-3 shadow-[5px_0px_10px_0px_rgba(129,74,83,0.1)] md:block 2xl:w-72 3xl:w-80">
         <div className="mx-4 flex flex-col gap-2">
           <div className="my-8 ml-2 flex flex-col gap-8">
-            <Image
-              src="/horse.svg"
-              alt="Hack Western Logo"
-              width={40}
-              height={60}
-            />
+            <Link href="/dashboard" className="cursor-pointer">
+              <Image
+                src="/horse.svg"
+                alt="Hack Western Logo"
+                width={40}
+                height={60}
+              />
+            </Link>
             <div className="gap-2">
               <h1 className="font-figtree font-bold text-heavy">
                 Application Portal
@@ -68,12 +70,14 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
             <DialogTitle aria-describedby="mobile-apply-menu">
               <div className="mx-4 my-6 space-y-4">
                 <div className="flex items-center gap-4">
-                  <Image
-                    src="/horse.svg"
-                    alt="Hack Western Logo"
-                    width={32}
-                    height={48}
-                  />
+                  <Link href="/dashboard">
+                    <Image
+                      src="/horse.svg"
+                      alt="Hack Western Logo"
+                      width={32}
+                      height={48}
+                    />
+                  </Link>
                   <div>
                     <h1 className="font-figtree text-lg font-bold text-heavy">
                       Application Portal
