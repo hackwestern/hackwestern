@@ -346,11 +346,7 @@ export function ReviewForm() {
   return (
     <div className="overflow-auto">
       {reviewSteps.map((step, idx) => (
-        <ReviewSection
-          step={step}
-          key={idx}
-          error={error}
-        />
+        <ReviewSection step={step} key={idx} error={error} />
       ))}
     </div>
   );
