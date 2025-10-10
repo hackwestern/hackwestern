@@ -5,6 +5,8 @@ import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
 import { ApplyForm } from "~/components/apply/form";
 import { notVerifiedRedirect } from "~/utils/redirect";
+import { api } from "~/utils/api";
+import ApplicationPrompt from "~/components/dashboard/ApplicationPrompt";
 import CanvasBackground from "~/components/canvas-background";
 import { ApplyNavigation } from "~/components/apply/navigation";
 import ApplyHeading from "~/components/apply/heading";
@@ -15,12 +17,89 @@ import {
 import { motion } from "framer-motion";
 import { MobileStickerDrawer } from "~/components/apply/mobile-sticker-drawer";
 import CharacterIcon from "~/components/dashboard/CharacterIcon";
-import { AvatarForm } from "~/components/apply/form/avatar-form";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/router";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   const steps = applySteps;
   return steps.find((s) => s.step === stepValue) ?? null;
+}
+
+function getNextIncompleteStep(
+  application: Record<string, unknown> | null | undefined,
+) {
+  // application may be null/unset — start at first step
+  if (!application) return applySteps[0].step;
+
+  const isEmpty = (v: unknown) =>
+    v === null || v === undefined || (typeof v === "string" && v.trim() === "");
+
+  for (const step of applySteps) {
+    if (step.step === "review") continue; // review is final
+
+    switch (step.step) {
+      case "character": {
+        if (
+          isEmpty(application.avatarColour) ||
+          isEmpty(application.avatarFace) ||
+          isEmpty(application.avatarLeftHand) ||
+          isEmpty(application.avatarRightHand) ||
+          isEmpty(application.avatarHat)
+        )
+          return step.step;
+        break;
+      }
+      case "basics": {
+        if (
+          isEmpty(application.firstName) ||
+          isEmpty(application.lastName) ||
+          isEmpty(application.phoneNumber) ||
+          isEmpty(application.age) ||
+          isEmpty(application.countryOfResidence)
+        )
+          return step.step;
+        break;
+      }
+      case "info": {
+        if (
+          isEmpty(application.school) ||
+          isEmpty(application.levelOfStudy) ||
+          isEmpty(application.major) ||
+          isEmpty(application.attendedBefore) ||
+          isEmpty(application.numOfHackathons)
+        )
+          return step.step;
+        break;
+      }
+      case "application": {
+        if (
+          isEmpty(application.question1) ||
+          isEmpty(application.question2) ||
+          isEmpty(application.question3)
+        )
+          return step.step;
+        break;
+      }
+      case "links": {
+        if (isEmpty(application.resumeLink)) return step.step;
+        break;
+      }
+      case "agreements": {
+        if (
+          application.agreeCodeOfConduct !== true ||
+          application.agreeShareWithMLH !== true ||
+          application.agreeShareWithSponsors !== true ||
+          application.agreeWillBe18 !== true
+        )
+          return step.step;
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  return "review";
 }
 
 export default function Apply() {
@@ -37,6 +116,15 @@ export default function Apply() {
   const [desktopPreviewHeight, setDesktopPreviewHeight] = useState<
     number | null
   >(null);
+  const { data: application } = api.application.get.useQuery();
+  const continueStep = getNextIncompleteStep(application);
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+
+  const handleApplyNavigate = (stepKey: string) => {
+    setPending(true);
+    void router.push(`/apply?step=${stepKey}`).then(() => setPending(false));
+  };
 
   useEffect(() => {
     const el = desktopScrollRef.current;
@@ -49,7 +137,7 @@ export default function Apply() {
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [applyStep]);
 
   return (
     <>
@@ -96,11 +184,18 @@ export default function Apply() {
                 />
               </div>
 
-              <div className="flex-1 overflow-visible">
-                <div className="font-figtree">
+              {step ? (
+                <div className="flex-1 overflow-visible font-figtree">
                   <ApplyForm step={step} />
                 </div>
-              </div>
+              ) : (
+                <ApplicationPrompt
+                  status={application?.status ?? "NOT_STARTED"}
+                  continueStep={continueStep}
+                  onApplyNavigate={handleApplyNavigate}
+                  pending={pending}
+                />
+              )}
             </div>
           </div>
 
@@ -130,39 +225,45 @@ export default function Apply() {
               <CharacterIcon />
             </div>
             <div className="overflow-y-none overflow-x-none z-10 flex flex-col items-center justify-center">
-              <div className="flex h-full w-full items-start justify-center gap-8 overflow-hidden 2xl:flex-row">
-                {/* Left stamps column (up to 3) */}
-                <LeftStampColumn />
+              {!step ? (
+                <ApplicationPrompt
+                  status={application?.status ?? "NOT_STARTED"}
+                  continueStep={continueStep}
+                  onApplyNavigate={handleApplyNavigate}
+                  pending={pending}
+                />
+              ) : (
+                <div className="flex h-full w-full items-start justify-center gap-8 overflow-hidden 2xl:flex-row">
+                  {/* Left stamps column (up to 3) */}
+                  <LeftStampColumn />
 
-                {/* Main card */}
-                <div>
-                  <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
-                    <div className="space-y-4 py-1.5">
-                      <ApplyHeading
-                        heading={heading}
-                        subheading={subheading}
-                        stepKey={step}
-                      />
-                    </div>
-                    <div
-                      className="scrollbar min-h-0 flex-1 overflow-auto rounded-md pb-2 pl-1 pr-4 font-figtree"
-                      ref={desktopScrollRef}
-                    >
-                      {step === "character" ? (
-                        <AvatarForm
-                          previewHeight={(desktopPreviewHeight ?? 300) - 15}
+                  {/* Main card */}
+                  <div>
+                    <div className="h-lg flex w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
+                      <div className="space-y-4 py-1.5">
+                        <ApplyHeading
+                          heading={heading}
+                          subheading={subheading}
+                          stepKey={step}
                         />
-                      ) : (
-                        <ApplyForm step={step} />
-                      )}
+                      </div>
+                      <div
+                        className="scrollbar min-h-0 flex-1 overflow-auto rounded-md pb-2 pl-1 pr-4 font-figtree"
+                        ref={desktopScrollRef}
+                      >
+                        <ApplyForm
+                          step={step}
+                          previewHeight={(desktopPreviewHeight ?? 300) - 10}
+                        />
+                      </div>
                     </div>
+                    <ApplyNavigation step={step} />
                   </div>
-                  <ApplyNavigation step={step} />
-                </div>
 
-                {/* Right stamps column (up to 3) */}
-                <RightStampColumn />
-              </div>
+                  {/* Right stamps column (up to 3) */}
+                  <RightStampColumn />
+                </div>
+              )}
             </div>
           </div>
         </div>

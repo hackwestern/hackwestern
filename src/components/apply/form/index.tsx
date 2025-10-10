@@ -11,9 +11,11 @@ import { CanvasForm } from "./canvas-form";
 import { ReviewForm } from "./review-form";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePendingNavigation } from "~/hooks/use-pending-navigation";
+import { useIsMobile } from "~/hooks/use-mobile";
 
 type ApplyFormProps = {
   step: ApplyStep | null;
+  previewHeight?: number | null;
 };
 
 const formFade = {
@@ -30,8 +32,10 @@ const formFade = {
   },
 };
 
-export function ApplyForm({ step }: ApplyFormProps) {
+export function ApplyForm({ step, previewHeight }: ApplyFormProps) {
   const { pending } = usePendingNavigation();
+
+  const isMobile = useIsMobile();
 
   // Render the active form inside AnimatePresence so when `step` changes
   // we get a brief crossfade. When `pending` is true (navigating away),
@@ -44,12 +48,19 @@ export function ApplyForm({ step }: ApplyFormProps) {
         animate={pending ? "exit" : "animate"}
         exit="exit"
         variants={formFade}
-        className="w-full"
+        style={
+          previewHeight
+            ? {
+                height: isMobile ? "full" : Math.min(previewHeight ?? 300, 600),
+                overflowY: isMobile ? "auto" : "hidden",
+              }
+            : {}
+        }
       >
         {(() => {
           switch (step) {
             case "character":
-              return <AvatarForm />;
+              return <AvatarForm previewHeight={previewHeight} />;
             case "basics":
               return <BasicsForm />;
             case "info":
