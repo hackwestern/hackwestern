@@ -1,5 +1,4 @@
 import React from "react";
-import { useRouter } from "next/router";
 import Image from "next/image";
 import { Button } from "../ui/button";
 import { SavedIndicator } from "./saved-indicator";
@@ -74,7 +73,6 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
   const status = applicationData?.status ?? "NOT_STARTED";
   const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
 
-  const router = useRouter();
   const { pending, navigate } = usePendingNavigation();
 
   const submitMutation = api.application.submit.useMutation();
