@@ -73,8 +73,10 @@ export const CanvasWrapper = ({
   }, []);
 
   const gradientBgImage = dimensions
-    ? `radial-gradient(ellipse ${dimensions.width * 3}px ${dimensions.height * 2}px at ${dimensions.width * 1.5}px ${dimensions.height}px, var(--coral) 0%, var(--salmon) 41%, var(--lilac) 59%, var(--beige) 90%)`
+    ? `linear-gradient(to top, #FEB6AF 0%, var(--salmon) 15%, var(--beige) 50%`
     : undefined;
+
+  const gradientCanvasBg = `radial-gradient(130.38% 95% at 50.03% 97.25%, #EFB8A0 0%, #EAD2DF 48.09%, #EFE3E1 100%)`;
 
   const stage1NotFinished = introProgress.get() !== 1;
 
@@ -112,7 +114,7 @@ export const CanvasWrapper = ({
               width: dimensions.width,
               height: dimensions.height,
               opacity: 1,
-              backgroundColor: "#e1c8fa",
+              backgroundImage: gradientCanvasBg,
             }}
             animate={{
               opacity: 0,
@@ -150,7 +152,7 @@ export const CanvasWrapper = ({
                 onIntroGrowComplete?.();
               }
             }}
-            className="absolute left-1/2 top-1/2 z-10 origin-center -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg shadow-[0_20px_40px_rgba(0,0,0,0.15)]"
+            className="absolute left-1/2 top-1/2 z-10 origin-center -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-lg shadow-[0_20px_40px_rgba(103,86,86,0.15)]"
           >
             <div className="h-full w-full">{children}</div>
           </motion.div>

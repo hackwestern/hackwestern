@@ -15,15 +15,15 @@ function GoogleAuthButton({
         void signIn("google", { callbackUrl: redirect });
       }}
       variant="secondary"
-      size="default"
+      size="lg"
       full
     >
-      <div className="flex flex-row items-center justify-center gap-1">
+      <div className="flex flex-row items-center justify-center gap-2">
         <Image
           src="/images/googlelogo.svg"
           alt="google logo"
-          width={25}
-          height={25}
+          width={20}
+          height={20}
         />
         <span>Sign {register ? "up" : "in"} with Google</span>
       </div>

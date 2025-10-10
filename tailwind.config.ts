@@ -60,8 +60,8 @@ const config = {
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: "hsl(var(--secondary))",
-        "button-secondary": "rgb(250, 250, 250)",
-        "button-secondary-hover": "rgb(255, 255, 255)",
+        "button-secondary": "rgb(244, 242, 247)",
+        "button-secondary-hover": "rgb(248, 247, 249)",
         "button-secondary-active": "rgb(253, 252, 253)",
         violet: {
           "100": "hsl(var(--violet-100))",
