@@ -16,6 +16,7 @@ import dynamic from "next/dynamic";
 import MobileCharacterIcon from "~/components/dashboard/MobileCharacterIcon";
 import ApplicationPrompt from "~/components/dashboard/ApplicationPrompt";
 import SubmittedDisplay from "~/components/dashboard/SubmittedDisplay";
+import { type CanvasPaths } from "~/types/canvas";
 
 const CountdownTimer = dynamic(
   () => import("~/components/apply/countdown-timer"),
@@ -121,7 +122,7 @@ const Dashboard = () => {
   );
 
   type CanvasData = {
-    paths: Array<Array<[number, number]>>; // [x, y] tuples
+    paths: CanvasPaths;
     timestamp: number;
     version: string;
   };

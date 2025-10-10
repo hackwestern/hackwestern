@@ -10,6 +10,7 @@ import { applicationSubmitSchema } from "~/schemas/application";
 import { api } from "~/utils/api";
 import { AvatarDisplay } from "../avatar-display";
 import { colors } from "~/constants/avatar";
+import { type CanvasPaths } from "~/types/canvas";
 
 type ReviewSectionProps = {
   step: ApplyStepFull;
@@ -295,8 +296,9 @@ function AvatarReview({}: ReviewSectionProps) {
 function CanvasReview({}: ReviewSectionProps) {
   const { data } = api.application.get.useQuery();
 
+  // reuse shared canvas types
   type CanvasData = {
-    paths: Array<Array<[number, number]>>; // [x, y] tuples
+    paths: CanvasPaths;
     timestamp: number;
     version: string;
   };
