@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { AvatarDisplay } from "~/components/apply/avatar-display";
 import {
   MajorStamp,
@@ -8,6 +8,9 @@ import {
   LinksStamp,
 } from "~/components/apply/stamp";
 import type { major, numOfHackathons } from "~/server/db/schema";
+import { toPng } from "html-to-image";
+import { Button } from "../ui/button";
+import { ExternalLink } from "lucide-react";
 
 type MajorType = (typeof major.enumValues)[number];
 type ExperienceType = (typeof numOfHackathons.enumValues)[number];
@@ -41,6 +44,49 @@ export default function SubmittedDisplay({
   pathStrings,
   selectedColor,
 }: Props) {
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExportPNG() {
+    if (!cardRef.current) return;
+    setExporting(true);
+
+    const ref = cardRef.current;
+
+    try {
+      const dataUrl = await (
+        toPng as (
+          node: HTMLElement,
+          options: {
+            width: number;
+            height: number;
+            style: React.CSSProperties;
+          },
+        ) => Promise<string>
+      )(ref, {
+        width: cardRef.current.offsetWidth * 6,
+        height: cardRef.current.offsetHeight * 6,
+        style: {
+          transform: "scale(6)",
+          transformOrigin: "top left",
+        },
+      });
+
+      const link = document.createElement("a");
+      link.download = `${application?.firstName ?? "hacker"}_hw12.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("Export failed", err);
+      // optionally show a toast here
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="relative m-5 mr-2 flex flex-col items-center gap-6 rounded-lg p-10 xl:flex-row">
       <div className="flex flex-col gap-6">
@@ -54,8 +100,19 @@ export default function SubmittedDisplay({
         <p className="font-figtree text-heavy">
           You&apos;ll hear back from us about your status in a few weeks!
         </p>
+        <div>
+          <Button
+            variant="primary"
+            onClick={handleExportPNG}
+            disabled={exporting}
+          >
+            {exporting ? "Exporting…" : "Share my sticker book!"}{" "}
+            <ExternalLink />
+          </Button>
+        </div>
       </div>
       <div
+        ref={cardRef}
         className="-pr-4 h-80 w-80 rounded-lg"
         style={{
           background: `${selectedColor?.bg} 30%`,
