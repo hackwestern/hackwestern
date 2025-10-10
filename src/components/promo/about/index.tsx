@@ -73,7 +73,6 @@ function About() {
           </div>
           <div className="flex flex-col gap-10">
             <div className="flex items-center justify-center gap-16 ">
-            <div className="flex items-center justify-center gap-16 ">
               <div className="shrink-0">
                 <motion.img
                   src="/photo.png"
@@ -122,7 +121,6 @@ function About() {
                     while participating in workshops, learning from mentors,
                     competing for prizes, and meet like-minded hackers.
                   </div>
-                  <div className="absolute -bottom-[10px] -right-[50px] z-10 h-20 w-40"></div>
                   <div className="absolute -bottom-[10px] -right-[50px] z-10 h-20 w-40"></div>
                 </div>
               </div>
