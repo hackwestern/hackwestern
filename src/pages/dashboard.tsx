@@ -208,11 +208,20 @@ function MobileCharacterIcon() {
   const bodyColor =
     colors.find((c) => c.name === applicationData?.avatarColour)?.body ?? "002";
 
+  const selectedColor = colors.find(
+    (c) => c.name === (applicationData?.avatarColour ?? "green"),
+  );
+
   // Popover trigger wraps the avatar (or emoji) to open the small menu
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="relative h-6 w-6 overflow-hidden rounded-full">
+        <button 
+          className="relative h-8 w-8 p-2 overflow-hidden rounded-full"
+          style={{
+            background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
+          }}
+        >
           {/* eslint-disable @next/next/no-img-element */}
           {applicationData?.avatarColour ? (
             <img
@@ -336,7 +345,7 @@ const Dashboard = () => {
             <h1 className="font-figtree text-sm font-semibold text-heavy">
               Home
             </h1>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+            <div className="flex h-8 w-8 items-center justify-center">
               <ApplyMenu step={step} />
               <MobileCharacterIcon />
             </div>
@@ -519,9 +528,13 @@ const Dashboard = () => {
         </div>
         <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
         </>) :
-        (<div className="flex h-svh w-svw flex-col">
+        (<div className="hidden flex flex-grow md:flex h-svh w-svw flex-col">
               <div className="bg-hw-linear-gradient-day relative flex flex-grow items-center justify-center">
                 <CanvasBackground />
+                <div className="absolute right-6 top-6 flex items-center gap-4">
+                  <Logout />
+                  <MobileCharacterIcon />
+                </div>
                 <div className="relative m-5 flex flex-row gap-6 items-center rounded-lg bg-violet-100 p-10">
                   <div className="flex flex-col gap-6">
                     <h2 className="font-dico text-4xl font-semibold text-heavy ">Your application has been submitted!</h2>
