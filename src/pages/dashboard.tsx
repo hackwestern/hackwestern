@@ -1,8 +1,9 @@
 import { signOut } from "next-auth/react";
 import Head from "next/head";
 // removed unused useRouter import
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import React from "react";
+import { motion, useAnimation } from "framer-motion";
 import Logout from "~/pages/logout";
 import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
@@ -292,6 +293,23 @@ const Dashboard = () => {
   const step = applyStep?.step ?? null;
 
   const continueStep = getNextIncompleteStep(application);
+  const router = useRouter();
+  const [pending, setPending] = React.useState(false);
+  const controls = useAnimation();
+
+  // entrance animation on mount
+  React.useEffect(() => {
+    void controls.start({ opacity: 1, transition: { duration: 0.5 } });
+  }, [controls]);
+
+  // helper to start exit animation and navigate to the apply page
+  const handleApplyNavigate = (step: string) => {
+    setPending(true);
+    // kick off exit animation (don't await)
+    void controls.start({ opacity: 0, transition: { duration: 0.5 } });
+    // navigate immediately
+    void router.push(`/apply?step=${step}`);
+  };
 
   return (
     <>
@@ -303,7 +321,13 @@ const Dashboard = () => {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-y-hidden">
+      <motion.main
+        className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-y-hidden"
+        key={"dashboard-page"}
+        initial={{ opacity: 0 }}
+        animate={controls}
+        exit={{ opacity: 0 }}
+      >
         {/* Mobile View */}
         <div className="relative z-10 flex h-screen w-screen flex-col md:hidden">
           {/* Mobile Header */}
@@ -337,14 +361,15 @@ const Dashboard = () => {
                   <Button
                     variant="primary"
                     className="w-full p-4 font-figtree text-base font-medium"
+                    onClick={() => void handleApplyNavigate(continueStep)}
+                    disabled={pending}
+                    aria-busy={pending}
                   >
-                    <Link href={`/apply?step=${continueStep}`}>
-                      {status == "NOT_STARTED"
-                        ? "Start Application"
-                        : status == "IN_PROGRESS"
-                          ? "Continue Application"
-                          : "Review Application"}
-                    </Link>
+                    {status == "NOT_STARTED"
+                      ? "Start Application"
+                      : status == "IN_PROGRESS"
+                        ? "Continue Application"
+                        : "Review Application"}
                   </Button>
                 </div>
               </div>
@@ -488,14 +513,15 @@ const Dashboard = () => {
                         <Button
                           variant="primary"
                           className="w-full p-6 font-figtree text-base font-medium"
+                          onClick={() => void handleApplyNavigate(continueStep)}
+                          disabled={pending}
+                          aria-busy={pending}
                         >
-                          <Link href={`/apply?step=${continueStep}`}>
-                            {status == "NOT_STARTED"
-                              ? "Start Application"
-                              : status == "IN_PROGRESS"
-                                ? "Continue Application"
-                                : "Review Application"}
-                          </Link>
+                          {status == "NOT_STARTED"
+                            ? "Start Application"
+                            : status == "IN_PROGRESS"
+                              ? "Continue Application"
+                              : "Review Application"}
                         </Button>
                       </div>
                     </div>
@@ -608,7 +634,7 @@ const Dashboard = () => {
           </div>
         )}
         {/* End of Desktop View */}
-      </main>
+      </motion.main>
     </>
   );
 };

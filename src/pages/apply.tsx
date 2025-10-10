@@ -11,6 +11,7 @@ import { ApplyForm } from "~/components/apply/form";
 import { notVerifiedRedirect } from "~/utils/redirect";
 import CanvasBackground from "~/components/canvas-background";
 import { ApplyNavigation } from "~/components/apply/navigation";
+import ApplyHeading from "~/components/apply/heading";
 import {
   MajorStamp,
   SchoolStamp,
@@ -179,7 +180,6 @@ export default function Apply() {
   const step = applyStep?.step ?? null;
   const heading = applyStep?.heading ?? null;
   const subheading = applyStep?.subheading ?? null;
-
   return (
     <>
       <Head>
@@ -190,7 +190,14 @@ export default function Apply() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-y-hidden">
+      <motion.main
+        className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-x-hidden md:overflow-y-hidden"
+        key={"apply-page"}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         {/* Mobile View */}
         <div className="relative z-10 flex h-screen w-screen flex-col md:hidden">
           {/* Mobile Header */}
@@ -211,14 +218,11 @@ export default function Apply() {
           <div className="flex-1 bg-white py-24">
             <div className="mx-6 flex h-full flex-col">
               <div className="mb-6">
-                <h1 className="mb-2 font-dico text-2xl font-medium text-heavy">
-                  {heading}
-                </h1>
-                {subheading && (
-                  <h2 className="font-figtree text-sm text-medium">
-                    {subheading}
-                  </h2>
-                )}
+                <ApplyHeading
+                  heading={heading}
+                  subheading={subheading}
+                  stepKey={step}
+                />
               </div>
 
               <div className="flex-1 overflow-visible">
@@ -271,14 +275,11 @@ export default function Apply() {
                 <div>
                   <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-lg md:px-12 md:py-12 lg:w-3xl 2xl:h-[65vh] 2xl:w-4xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
                     <div className="space-y-4 py-1.5">
-                      <h1 className="font-dico text-2xl font-medium text-heavy">
-                        {heading}
-                      </h1>
-                      {subheading && (
-                        <h2 className="font-figtree text-sm text-medium">
-                          {subheading}
-                        </h2>
-                      )}
+                      <ApplyHeading
+                        heading={heading}
+                        subheading={subheading}
+                        stepKey={step}
+                      />
                     </div>
                     <div className="scrollbar overflow-auto pb-2 pl-1 pr-4">
                       <div className="font-figtree">
@@ -320,7 +321,7 @@ export default function Apply() {
 
         <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
         {/* End of Desktop View */}
-      </main>
+      </motion.main>
     </>
   );
 }
