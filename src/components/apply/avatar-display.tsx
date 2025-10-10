@@ -8,7 +8,7 @@ type AvatarDisplayProps = {
   avatarLeftHand?: number | null;
   avatarRightHand?: number | null;
   avatarHat?: number | null;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "lg";
   className?: string;
 };
 
@@ -29,23 +29,15 @@ export function AvatarDisplay({
   const sizeClasses = {
     sm: {
       container: "h-32 w-32",
-      face: "h-10 w-10",
-      hat: "h-20 w-20 -top-6",
-      hand: "h-6 w-6",
-      handBottom: "bottom-10",
-      handLeft: "-left-1.5",
-      handRight: "-right-1.5",
-    },
-    md: {
-      container: "h-48 w-48 -mb-8",
-      face: "h-20 w-20",
-      hat: "h-48 w-48 -top-10",
+      face: "h-12 w-12",
+      hat: "h-28 w-28 -top-8",
       hand: "h-12 w-12",
-      handBottom: "bottom-16",
-      handLeft: "-left-3",
-      handRight: "-right-3",
+      handBottom: "bottom-7",
+      handLeft: "-left-5",
+      handRight: "-right-5",
     },
     lg: {
+      // double of sm
       container: "h-64 w-64",
       face: "h-24 w-24",
       hat: "h-56 w-56 -top-16",
