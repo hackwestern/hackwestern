@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 interface CountdownTimerProps {
   targetDate: string; // ISO string, e.g. "2025-12-31T23:59:59"
+  size?: "sm" | "md" | "lg";
 }
 
 const calculateTimeLeft = (targetDate: string) => {
@@ -17,7 +18,16 @@ const calculateTimeLeft = (targetDate: string) => {
   return { days, hours, minutes, seconds };
 };
 
-export default function CountdownTimer({ targetDate }: CountdownTimerProps) {
+const sizeClasses = {
+  sm: "text-md font-medium text-medium",
+  md: "text-lg font-medium text-medium",
+  lg: "text-xl font-medium text-medium",
+};
+
+export default function CountdownTimer({
+  targetDate,
+  size = "lg",
+}: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(targetDate));
 
   useEffect(() => {
@@ -27,15 +37,12 @@ export default function CountdownTimer({ targetDate }: CountdownTimerProps) {
     return () => clearInterval(timer);
   }, [targetDate]);
 
-  if (!timeLeft)
-    return (
-      <p className="text-2xl font-medium text-medium">🎉 Time&apos;s up!</p>
-    );
+  if (!timeLeft) return <p className={sizeClasses[size]}>🎉 Time&apos;s up!</p>;
 
   const { days, hours, minutes, seconds } = timeLeft;
 
   return (
-    <p className="text-2xl font-medium text-medium">
+    <p className={sizeClasses[size]}>
       {days}d {hours}h {minutes}m {seconds}s left
     </p>
   );
