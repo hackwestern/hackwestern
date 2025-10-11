@@ -153,7 +153,7 @@ function computeStepStatuses(
   const result = {} as Record<ApplyStep, StepStatus>;
 
   for (const stepObj of applySteps) {
-    const stepName = stepObj.step as ApplyStep;
+    const stepName: ApplyStep = stepObj.step;
     const fields = stepFields[stepName] ?? [];
     const mandatory = mandatoryFields[stepName] ?? [];
 
@@ -190,13 +190,13 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
   const { data: application } = api.application.get.useQuery();
   const status = application?.status ?? "NOT_STARTED";
 
-  if (status !== "NOT_STARTED" && status !== "IN_PROGRESS") {
-    return null;
-  }
-
   const stepStatuses: Record<ApplyStep, StepStatus> = useMemo(() => {
     return computeStepStatuses(application);
   }, [application]);
+
+  if (status !== "NOT_STARTED" && status !== "IN_PROGRESS") {
+    return null;
+  }
 
   return (
     <>
