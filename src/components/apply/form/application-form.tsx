@@ -20,12 +20,7 @@ export const QUESTION3 = `What’s a project you’d love to revisit and improve
 export function ApplicationForm() {
   const utils = api.useUtils();
   const { data: defaultValues } = api.application.get.useQuery({
-    fields: [
-      "status",
-      "question1",
-      "question2",
-      "question3",
-    ],
+    fields: ["status", "question1", "question2", "question3"],
   });
 
   const status = defaultValues?.status ?? "NOT_STARTED";
