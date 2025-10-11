@@ -325,12 +325,16 @@ export const applicationRouter = createTRPCRouter({
               // No fields specified: fall back to previous behavior but avoid overwriting links unless provided
               Object.assign(setObj, restData);
               setObj.canvasData = typedCanvasData;
-              if (Object.prototype.hasOwnProperty.call(restData, "githubLink")) {
+              if (
+                Object.prototype.hasOwnProperty.call(restData, "githubLink")
+              ) {
                 setObj.githubLink = restData.githubLink
                   ? `${GITHUB_URL}${restData.githubLink}`
                   : null;
               }
-              if (Object.prototype.hasOwnProperty.call(restData, "linkedInLink")) {
+              if (
+                Object.prototype.hasOwnProperty.call(restData, "linkedInLink")
+              ) {
                 setObj.linkedInLink = restData.linkedInLink
                   ? `${LINKEDIN_URL}${restData.linkedInLink}`
                   : null;
