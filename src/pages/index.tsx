@@ -11,8 +11,19 @@ import { coordinates } from "~/constants/canvas";
 import MLHTrustBadge from "~/components/promo/mlh-trust.badge";
 import { Button } from "~/components/ui/button";
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { growTransition } from "~/components/canvas/wrapper";
+import { useEffect } from "react";
+import { useRouter } from "next/router";
 
 export default function Home() {
+  const router = useRouter();
+  // prefetch register and login
+  useEffect(() => {
+    void router.prefetch("/register");
+    void router.prefetch("/login");
+  }, [router]);
+
   return (
     <>
       <Head>
@@ -37,11 +48,16 @@ export default function Home() {
         </Canvas>
         <Footer />
         <MLHTrustBadge />
-        <div className="fixed right-24 top-6 z-50 w-fit md:right-28 lg:right-44">
-          <Button variant="primary">
-            <Link href="/login">Apply</Link>
-          </Button>
-        </div>
+        <Link href="/register" prefetch={true}>
+          <motion.div
+            className="fixed right-24 top-6 z-50 w-fit md:right-28 lg:right-44"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1, transition: growTransition }}
+            exit={{ opacity: 0 }}
+          >
+            <Button variant="primary">Apply</Button>
+          </motion.div>
+        </Link>
       </main>
     </>
   );
