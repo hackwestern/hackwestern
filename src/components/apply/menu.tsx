@@ -7,7 +7,7 @@ import {
   DrawerContent,
   DrawerTrigger,
 } from "../ui/drawer";
-import { Menu, Check, CheckCheck } from "lucide-react";
+import { Menu, Check } from "lucide-react";
 import Image from "next/image";
 import { useMemo } from "react";
 import { DialogTitle } from "@radix-ui/react-dialog";
@@ -17,12 +17,11 @@ type ApplyMenuProps = {
   step: ApplyStep | null;
 };
 
-type StepStatus = "not_started" | "started" | "completed";
-
+// Step completed boolean: true when the step is completed (all mandatory fields filled and at least one field present)
 type MenuItemProps = {
   s: { step: string; label: string };
   currentStep: ApplyStep | null;
-  stepStatuses: Record<ApplyStep, StepStatus>;
+  stepStatuses: Record<ApplyStep, boolean>;
   className?: string;
 };
 
@@ -37,17 +36,16 @@ function MenuItem({ s, currentStep, stepStatuses, className }: MenuItemProps) {
     >
       <Link href={{ pathname: "/apply", query: { step: s.step } }}>
         <span>{s.label}</span>
-        {status === "started" && <Check className="h-4 w-4" />}
-        {status === "completed" && <CheckCheck className="h-4 w-4" />}
+        {status && <Check className="h-4 w-4" />}
       </Link>
     </Button>
   );
 }
 
-// Helper: compute status for each step (not_started, started, or completed)
+// Helper: compute completed status for each step (true = completed)
 function computeStepStatuses(
   application: Record<string, unknown> | null | undefined,
-): Record<ApplyStep, StepStatus> {
+): Record<ApplyStep, boolean> {
   // Agreement fields where false should be treated as empty
   const agreementFields = new Set([
     "agreeCodeOfConduct",
@@ -150,7 +148,7 @@ function computeStepStatuses(
     review: [],
   };
 
-  const result = {} as Record<ApplyStep, StepStatus>;
+  const result = {} as Record<ApplyStep, boolean>;
 
   for (const stepObj of applySteps) {
     const stepName: ApplyStep = stepObj.step;
@@ -174,13 +172,9 @@ function computeStepStatuses(
           ),
       );
 
-    if (filledCount === 0) {
-      result[stepName] = "not_started";
-    } else if (allMandatoryFilled) {
-      result[stepName] = "completed";
-    } else {
-      result[stepName] = "started";
-    }
+    // A step is considered completed when at least one field is filled
+    // and all mandatory fields for that step are filled.
+    result[stepName] = filledCount > 0 && allMandatoryFilled;
   }
 
   return result;
@@ -190,7 +184,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
   const { data: application } = api.application.get.useQuery();
   const status = application?.status ?? "NOT_STARTED";
 
-  const stepStatuses: Record<ApplyStep, StepStatus> = useMemo(() => {
+  const stepStatuses: Record<ApplyStep, boolean> = useMemo(() => {
     return computeStepStatuses(application);
   }, [application]);
 
