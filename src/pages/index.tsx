@@ -46,7 +46,7 @@ export default function Home() {
           exit={{ opacity: 0 }}
         >
           <Button variant="primary">
-            <Link href="/login" prefetch={true}>
+            <Link href="/register" prefetch={true}>
               Apply
             </Link>
           </Button>

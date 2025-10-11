@@ -70,7 +70,7 @@ function Hero() {
             </div>
           </div>
           <Button className="w-48" variant="primary" size="lg">
-            <Link href="/login">Apply Now!</Link>
+            <Link href="/register">Apply Now!</Link>
           </Button>
         </div>
         <div className="h-[150px] sm:h-[80px]" />
