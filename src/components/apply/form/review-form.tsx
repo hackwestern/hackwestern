@@ -12,6 +12,7 @@ import { AvatarDisplay } from "../avatar-display";
 import { colors } from "~/constants/avatar";
 import { type CanvasPaths } from "~/types/canvas";
 import { QUESTION1, QUESTION2, QUESTION3 } from "./application-form";
+import React from "react";
 
 type ReviewSectionProps = {
   step: ApplyStepFull;
@@ -73,6 +74,43 @@ type ReviewFieldProps = {
 function ReviewField({ value, label, error }: ReviewFieldProps) {
   const errorMessage = error?.join(", ") ?? null;
   const isEmptyValue = value === "" || value === null || value === undefined;
+
+  let displayValue: React.ReactNode = "";
+  if (typeof value === "boolean") {
+    displayValue = value ? "Yes" : "No";
+  } else if (typeof value === "number") {
+    displayValue = value.toString();
+  } else if (typeof value === "string") {
+    displayValue = value;
+  } else if (isEmptyValue) {
+    displayValue = "(no answer)";
+  }
+
+  if (label === "Resume") {
+    // if value is a url, show only the filename
+    if (typeof value === "string" && value.startsWith("http")) {
+      try {
+        const url = new URL(value);
+        const pathname = url.pathname;
+        const filename = pathname.substring(pathname.lastIndexOf("/") + 1);
+        displayValue = filename ? (
+          <a
+            href={value}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 text-blue-600 hover:text-emphasis transition-colors"
+          >
+            {filename}
+          </a>
+        ) : (
+          "(no resume uploaded)"
+        );
+      } catch {
+        displayValue = value;
+      }
+    }
+  }
+
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
@@ -81,7 +119,7 @@ function ReviewField({ value, label, error }: ReviewFieldProps) {
           "text-medium": isEmptyValue,
         })}
       >
-        {isEmptyValue ? "(no answer)" : value?.toString()}
+        {displayValue}
       </p>
       {errorMessage && (
         <p className="text-sm text-destructive">{errorMessage ?? ""}</p>
