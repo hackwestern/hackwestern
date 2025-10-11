@@ -23,14 +23,19 @@ export function LeftStampColumn() {
     <motion.div
       layout
       transition={{ layout: { duration: 0.28, ease: "easeInOut" } }}
-      className="mx-auto hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:w-64 2xl:pb-12"
+      className="mx-auto hidden h-full w-36 justify-around bg-blue-300 lg:flex lg:w-40 lg:flex-col 2xl:w-48 2xl:pb-12 3xl:w-64 4xl:w-80"
     >
       <AnimatePresence initial={false} mode="popLayout">
-        <motion.div key="major" layout {...itemAnim}>
+        <motion.div key="major" className="ml-4" layout {...itemAnim}>
           <MajorStamp type={data?.major} />
         </motion.div>
 
-        <motion.div key="school" layout {...itemAnim}>
+        <motion.div
+          key="school"
+          className="-ml-4 mr-4 pl-4"
+          layout
+          {...itemAnim}
+        >
           <SchoolStamp type={data?.school} />
         </motion.div>
 
@@ -38,7 +43,7 @@ export function LeftStampColumn() {
           data?.linkedInLink &&
           data?.otherLink &&
           data?.resumeLink && (
-            <motion.div key="links" layout {...itemAnim}>
+            <motion.div key="links" className="ml-4" layout {...itemAnim}>
               <LinksStamp />
             </motion.div>
           )}
@@ -126,7 +131,7 @@ export function RightStampColumn() {
     <motion.div
       layout
       transition={{ layout: { duration: 0.28, ease: "easeInOut" } }}
-      className="hidden h-full w-full justify-around xl:flex xl:flex-col 2xl:mx-auto 2xl:w-64 2xl:pb-12"
+      className="mx-auto hidden h-full w-36 justify-around bg-blue-300 lg:flex lg:w-40 lg:flex-col lg:items-end 2xl:w-48 2xl:pb-12 3xl:w-64 4xl:w-80"
     >
       <AnimatePresence initial={false} mode="popLayout">
         {data?.attendedBefore !== undefined && data?.attendedBefore !== null ? (
@@ -138,7 +143,7 @@ export function RightStampColumn() {
         ) : null}
 
         <motion.div key="avatar-desktop" layout {...itemAnim}>
-          <div className="scale-50 self-center ">
+          <div className="mr-8 scale-90 self-center ">
             {data?.avatarColour && (
               <AvatarDisplay
                 avatarColour={data?.avatarColour}
@@ -146,13 +151,18 @@ export function RightStampColumn() {
                 avatarLeftHand={data?.avatarLeftHand}
                 avatarRightHand={data?.avatarRightHand}
                 avatarHat={data?.avatarHat}
-                size="lg"
+                size="sm"
               />
             )}
           </div>
         </motion.div>
 
-        <motion.div key="hacker-desktop" layout {...itemAnim}>
+        <motion.div
+          key="hacker-desktop"
+          className="mr-8 lg:mr-16"
+          layout
+          {...itemAnim}
+        >
           <HackerStamp numHackathons={data?.numOfHackathons} />
         </motion.div>
       </AnimatePresence>

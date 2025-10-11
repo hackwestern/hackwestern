@@ -48,11 +48,12 @@ export function ApplyForm({ step, previewHeight }: ApplyFormProps) {
         animate={pending ? "exit" : "animate"}
         exit="exit"
         variants={formFade}
+        className="custom-scroll -ml-2 px-2"
         style={
           previewHeight
             ? {
                 height: isMobile ? "full" : Math.min(previewHeight ?? 300, 600),
-                overflowY: isMobile ? "auto" : "hidden",
+                overflowY: "auto",
               }
             : {}
         }
