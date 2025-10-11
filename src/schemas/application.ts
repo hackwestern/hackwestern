@@ -124,13 +124,16 @@ export const phoneRegex =
 const MIN_WORDS = 30;
 const MAX_WORDS = 150;
 
+const tooFewWords = `Response must be at least ${MIN_WORDS} words`;
+const tooManyWords = `Response must be fewer than ${MAX_WORDS} words`;
+
 // Submission schema with data validation
 export const applicationSubmitSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   phoneNumber: z.string().min(1).regex(phoneRegex, "Invalid phone number"),
   countryOfResidence: z.enum(countrySelection.enumValues),
-  age: z.number().min(18),
+  age: z.number().min(18).max(99),
   school: z.enum(schools),
   levelOfStudy: z.enum(levelOfStudy.enumValues),
   major: z.enum(major.enumValues),
@@ -139,36 +142,18 @@ export const applicationSubmitSchema = z.object({
   question1: z
     .string()
     .min(1)
-    .refine(
-      (value) => minWordCount(value, MIN_WORDS),
-      `Response must be at least ${MIN_WORDS} words`,
-    )
-    .refine(
-      (value) => maxWordCount(value, MAX_WORDS),
-      `Response must be less than ${MAX_WORDS} words`,
-    ),
+    .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
+    .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
   question2: z
     .string()
     .min(1)
-    .refine(
-      (value) => minWordCount(value, MIN_WORDS),
-      `Response must be at least ${MIN_WORDS} words`,
-    )
-    .refine(
-      (value) => maxWordCount(value, MAX_WORDS),
-      `Response must be less than ${MAX_WORDS} words`,
-    ),
+    .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
+    .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
   question3: z
     .string()
     .min(1)
-    .refine(
-      (value) => minWordCount(value, MIN_WORDS),
-      `Response must be at least ${MIN_WORDS} words`,
-    )
-    .refine(
-      (value) => maxWordCount(value, MAX_WORDS),
-      `Response must be less than ${MAX_WORDS} words`,
-    ),
+    .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
+    .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
   resumeLink: z.preprocess((v) => (!v ? undefined : v), z.string().url()),
   githubLink: z.preprocess((v) => (!v ? undefined : v), z.string().optional()),
   linkedInLink: z.preprocess(

@@ -13,6 +13,10 @@ import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { applicationStepSaveSchema } from "~/schemas/application";
 
+export const QUESTION1 = `If your laptop suddenly gained consciousness, what do you think it would say about your working style and why? (30 to 150 words)`;
+export const QUESTION2 = `What’s one piece of feedback you’ve received that stuck with you and why? (30 to 150 words)`;
+export const QUESTION3 = `What’s a project you’d love to revisit and improve if you had the time, and why? (30 to 150 words)`;
+
 export function ApplicationForm() {
   const utils = api.useUtils();
   const { data: defaultValues } = api.application.get.useQuery();
@@ -44,10 +48,7 @@ export function ApplicationForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="flex w-full flex-wrap gap-2">
-          <FormLabel className="w-full">
-            If your laptop suddenly gained consciousness, what do you think it
-            would say about your working style and why? (30 to 150 words)
-          </FormLabel>
+          <FormLabel className="w-full">{QUESTION1}</FormLabel>
           <FormField
             control={form.control}
             name="question1"
@@ -78,10 +79,7 @@ export function ApplicationForm() {
           />
         </div>
         <div className="flex w-full flex-wrap gap-2">
-          <FormLabel className="w-full">
-            What’s one piece of feedback you’ve received that stuck with you and
-            why? (30 to 150 words)
-          </FormLabel>
+          <FormLabel className="w-full">{QUESTION2}</FormLabel>
           <FormField
             control={form.control}
             name="question2"
@@ -112,10 +110,7 @@ export function ApplicationForm() {
           />
         </div>
         <div className="flex w-full flex-wrap gap-2">
-          <FormLabel className="w-full">
-            What’s a project you’d love to revisit and improve if you had the
-            time, and why? (30 to 150 words)
-          </FormLabel>
+          <FormLabel className="w-full">{QUESTION3}</FormLabel>
           <FormField
             control={form.control}
             name="question3"
