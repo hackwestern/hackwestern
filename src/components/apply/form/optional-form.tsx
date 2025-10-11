@@ -93,7 +93,7 @@ export function OptionalForm() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-8 overflow-y-auto p-1"
+        className="grid h-fit space-y-8 overflow-y-auto p-1"
       >
         <FormField
           control={form.control}
