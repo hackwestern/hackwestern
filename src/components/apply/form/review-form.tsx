@@ -98,7 +98,7 @@ function ReviewField({ value, label, error }: ReviewFieldProps) {
             href={value}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline underline-offset-2 text-blue-600 hover:text-emphasis transition-colors"
+            className="text-blue-600 underline underline-offset-2 transition-colors hover:text-emphasis"
           >
             {filename}
           </a>
