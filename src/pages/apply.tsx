@@ -189,20 +189,25 @@ export default function Apply() {
                   <ApplyForm step={step} />
                 </div>
               ) : (
-                <ApplicationPrompt
-                  status={application?.status ?? "NOT_STARTED"}
-                  continueStep={continueStep}
-                  onApplyNavigate={handleApplyNavigate}
-                  pending={pending}
-                />
+                <>
+                  <ApplicationPrompt
+                    status={application?.status ?? "NOT_STARTED"}
+                    continueStep={continueStep}
+                    onApplyNavigate={handleApplyNavigate}
+                    pending={pending}
+                  />
+                  <CanvasBackground />
+                </>
               )}
             </div>
           </div>
 
           {/* Mobile Navigation - Fixed at Bottom */}
-          <div className="fixed bottom-0 z-[9999] border-t border-gray-200 bg-white py-4">
-            <ApplyNavigation step={step} />
-          </div>
+          {step && (
+            <div className="fixed bottom-0 z-[9999] border-t border-gray-200 bg-white py-4">
+              <ApplyNavigation step={step} />
+            </div>
+          )}
         </div>
         {/* End of Mobile View */}
 

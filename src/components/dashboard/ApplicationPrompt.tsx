@@ -25,12 +25,12 @@ export default function ApplicationPrompt({
 }: Props) {
   return (
     <>
-      <div className="z-[99] w-screen max-w-md space-y-12 text-center">
+      <div className="z-[99] -ml-6 mt-10 w-screen max-w-md space-y-12 text-center md:ml-auto md:mt-0">
         <div>
-          <h1 className="-ml-4 flex w-max flex-col items-center font-dico text-6xl font-medium text-heavy">
+          <h1 className="flex flex-col items-center font-dico text-3xl font-medium text-heavy md:-ml-4 md:w-max md:text-6xl">
             Hack Western 12
           </h1>
-          <h1 className=" flex flex-col items-center font-dico text-6xl font-medium text-heavy">
+          <h1 className=" flex flex-col items-center font-dico text-3xl font-medium text-heavy md:text-6xl">
             Application
           </h1>
         </div>
