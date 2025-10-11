@@ -609,7 +609,7 @@ export default avatarManifest;
 
 export const colors = [
   {
-    name: "brown",
+    name: "red",
     value: "#D0816B",
     gradient: "#FFA59B",
     bg: "#F8DDD6",
