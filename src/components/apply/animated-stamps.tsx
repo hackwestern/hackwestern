@@ -23,7 +23,7 @@ export function LeftStampColumn() {
     <motion.div
       layout
       transition={{ layout: { duration: 0.28, ease: "easeInOut" } }}
-      className="mx-auto hidden h-full w-36 justify-around bg-blue-300 lg:flex lg:w-40 lg:flex-col 2xl:w-48 2xl:pb-12 3xl:w-64 4xl:w-80"
+      className="h-lg mx-auto hidden w-36 justify-around lg:flex lg:w-40 lg:flex-col 2xl:h-[65vh] 2xl:w-48 2xl:pb-12 3xl:h-[60vh] 3xl:w-64 4xl:w-80"
     >
       <AnimatePresence initial={false} mode="popLayout">
         <motion.div key="major" className="ml-4" layout {...itemAnim}>
@@ -131,7 +131,7 @@ export function RightStampColumn() {
     <motion.div
       layout
       transition={{ layout: { duration: 0.28, ease: "easeInOut" } }}
-      className="mx-auto hidden h-full w-36 justify-around bg-blue-300 lg:flex lg:w-40 lg:flex-col lg:items-end 2xl:w-48 2xl:pb-12 3xl:w-64 4xl:w-80"
+      className="h-lg mx-auto hidden w-36 lg:flex lg:w-40 lg:flex-col lg:items-end lg:justify-evenly 2xl:h-[65vh] 2xl:w-48 2xl:pb-12 3xl:h-[60vh] 3xl:w-64 4xl:w-80"
     >
       <AnimatePresence initial={false} mode="popLayout">
         {data?.attendedBefore !== undefined && data?.attendedBefore !== null ? (

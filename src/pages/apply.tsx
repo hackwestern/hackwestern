@@ -209,7 +209,7 @@ export default function Apply() {
         <MobileStickerDrawer />
 
         {/* Desktop View */}
-        <div className="relative z-10 hidden h-full w-full flex-grow items-center overflow-x-hidden md:flex">
+        <div className="relative z-10 hidden h-full w-full flex-grow items-center overflow-x-hidden overflow-y-hidden md:flex">
           <div
             id="left-panel"
             className="z-30 flex h-full items-center justify-center"
