@@ -59,8 +59,8 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
   }, [defaultValues ? true : false]); // Only react to defaultValues becoming truthy, not its contents
 
   useDeepCompareEffect(() => {
-    // Skip if we haven't initialized yet or if we're currently saving
-    if (!hasInitializedRef.current || isSavingRef.current) {
+    // if we're currently saving
+    if (isSavingRef.current) {
       return;
     }
 
