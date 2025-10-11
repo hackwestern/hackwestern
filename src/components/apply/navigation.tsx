@@ -122,10 +122,9 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
         navigate("/dashboard");
       })
       .catch((e) => {
-        console.log(e.data.zodError);
         toast({
           title: "Error Submitting Application",
-          description: e,
+          description: JSON.stringify(e),
           variant: "destructive",
           duration: 4000,
         });
