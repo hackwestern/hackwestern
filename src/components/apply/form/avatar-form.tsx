@@ -165,7 +165,7 @@ export function AvatarForm({
         >
           {/* Character */}
           <div
-            className="mx-auto my-auto flex w-full flex-col justify-center overflow-x-hidden overflow-y-hidden rounded-2xl border p-4 py-10 3xl:py-16"
+            className="mx-auto my-auto flex w-1/2 w-full flex-col justify-center overflow-x-hidden overflow-y-hidden rounded-2xl border p-4 py-10 3xl:py-16"
             style={{
               background: `linear-gradient(
                               135deg,
@@ -174,7 +174,7 @@ export function AvatarForm({
                             )`,
             }}
           >
-            <div className="mt-8 flex scale-75 items-center justify-center 2xl:scale-90 3xl:scale-110 4xl:scale-125">
+            <div className="mt-8 hidden items-center justify-center 2xl:flex">
               <AvatarDisplay
                 avatarColour={avatarColour}
                 avatarFace={avatarFace}
@@ -183,9 +183,19 @@ export function AvatarForm({
                 avatarHat={avatarHat}
               />
             </div>
+            <div className="mt-8 flex items-center justify-center 2xl:hidden">
+              <AvatarDisplay
+                avatarColour={avatarColour}
+                avatarFace={avatarFace}
+                avatarLeftHand={avatarLeftHand}
+                avatarRightHand={avatarRightHand}
+                avatarHat={avatarHat}
+                size="sm"
+              />
+            </div>
           </div>
           {/* Color Palette */}
-          <div className="flex-shrink-0">
+          <div className="w-full">
             <div className="mb-1.5 flex justify-evenly gap-2">
               {colors.map((color) => (
                 <button
@@ -197,7 +207,7 @@ export function AvatarForm({
                       shouldDirty: true,
                     });
                   }}
-                  className={`h-8 w-8 flex-shrink-0 rounded-lg transition-all hover:scale-[1.04] 2xl:h-10 2xl:w-10 ${
+                  className={`h-8 w-8 flex-shrink-0 rounded-lg transition-all hover:scale-[1.04] lg:h-6 lg:w-6 2xl:h-10 2xl:h-8 2xl:w-10 2xl:w-8 ${
                     avatarColour === color.name ? "ring-2 ring-purple-200" : ""
                   }`}
                   style={{
