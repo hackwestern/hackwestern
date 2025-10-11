@@ -239,7 +239,7 @@ export default function Apply() {
 
                   {/* Main card */}
                   <div>
-                    <div className="h-lg flex w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-md md:px-12 md:py-12 lg:w-xl 2xl:h-[65vh] 2xl:w-3xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
+                    <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-md md:px-12 md:py-12 lg:w-xl 2xl:h-[65vh] 2xl:w-3xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
                       <div className="space-y-4 py-1.5">
                         <ApplyHeading
                           heading={heading}
