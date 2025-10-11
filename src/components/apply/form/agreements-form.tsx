@@ -29,7 +29,16 @@ const StyledLink = ({ url, text }: { url: string; text: string }) => {
 
 export function AgreementsForm() {
   const utils = api.useUtils();
-  const { data: defaultValues } = api.application.get.useQuery();
+  const { data: defaultValues } = api.application.get.useQuery({
+    fields: [
+      "status",
+      "agreeCodeOfConduct",
+      "agreeShareWithMLH",
+      "agreeShareWithSponsors",
+      "agreeWillBe18",
+      "agreeEmailsFromMLH",
+    ],
+  });
 
   const status = defaultValues?.status ?? "NOT_STARTED";
   const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
@@ -44,12 +53,20 @@ export function AgreementsForm() {
     resolver: zodResolver(agreementsSaveSchema),
   });
 
-  useAutoSave(form, onSubmit, defaultValues);
+  const FIELDS: Array<keyof z.infer<typeof agreementsSaveSchema>> = [
+    "agreeCodeOfConduct",
+    "agreeShareWithMLH",
+    "agreeShareWithSponsors",
+    "agreeWillBe18",
+    "agreeEmailsFromMLH",
+  ];
+
+  useAutoSave(form, onSubmit, defaultValues, { fields: FIELDS });
 
   function onSubmit(data: z.infer<typeof agreementsSaveSchema>) {
     mutate({
-      ...defaultValues,
       ...data,
+      fields: FIELDS,
     });
   }
 

@@ -25,7 +25,16 @@ import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
 
 export function InfoForm() {
   const utils = api.useUtils();
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: [
+      "status",
+      "school",
+      "levelOfStudy",
+      "major",
+      "attendedBefore",
+      "numOfHackathons",
+    ],
+  });
 
   const status = data?.status ?? "NOT_STARTED";
   const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
@@ -59,12 +68,19 @@ export function InfoForm() {
     defaultValues: formValues, // Use the complete data object
   });
 
-  useAutoSave(form, onSubmit, formValues);
+  const FIELDS: Array<keyof z.infer<typeof infoSaveSchema>> = [
+    "school",
+    "levelOfStudy",
+    "major",
+    "attendedBefore",
+    "numOfHackathons",
+  ];
+
+  useAutoSave(form, onSubmit, formValues, { fields: FIELDS });
 
   function onSubmit(formData: z.infer<typeof infoSaveSchema>) {
     if (!data) return;
     mutate({
-      ...data, // Keep all existing application data
       ...formData, // Override with new form values
       attendedBefore:
         formData.attendedBefore === "yes"
@@ -72,6 +88,7 @@ export function InfoForm() {
           : formData.attendedBefore === "no"
             ? false
             : undefined,
+      fields: FIELDS,
     });
   }
 

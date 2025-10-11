@@ -17,29 +17,138 @@ import { z } from "zod";
 import { type CanvasPaths } from "~/types/canvas";
 
 export const applicationRouter = createTRPCRouter({
-  get: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const userId = ctx.session.user.id;
-      const application = await db.query.applications.findFirst({
-        where: (schema, { eq }) => eq(schema.userId, userId),
-      });
-
-      const modifiedApplication = application
-        ? {
-            ...application,
-            githubLink: application?.githubLink?.substring(19) ?? null,
-            linkedInLink: application?.linkedInLink?.substring(24) ?? null,
+  get: protectedProcedure
+    .input(
+      z
+        .object({
+          // Optional list of application columns to fetch; if omitted, fetch all as before
+          fields: z
+            .array(
+              z.enum([
+                "userId",
+                "createdAt",
+                "updatedAt",
+                "status",
+                // Avatar
+                "avatarColour",
+                "avatarFace",
+                "avatarLeftHand",
+                "avatarRightHand",
+                "avatarHat",
+                // Basics
+                "firstName",
+                "lastName",
+                "age",
+                "phoneNumber",
+                "countryOfResidence",
+                // Info
+                "school",
+                "levelOfStudy",
+                "major",
+                "attendedBefore",
+                "numOfHackathons",
+                // Essays
+                "question1",
+                "question2",
+                "question3",
+                // Links
+                "resumeLink",
+                "githubLink",
+                "linkedInLink",
+                "otherLink",
+                // Agreements
+                "agreeCodeOfConduct",
+                "agreeShareWithSponsors",
+                "agreeShareWithMLH",
+                "agreeEmailsFromMLH",
+                "agreeWillBe18",
+                // Optional demographics
+                "underrepGroup",
+                "gender",
+                "ethnicity",
+                "sexualOrientation",
+                // Canvas
+                "canvasData",
+              ] as const),
+            )
+            .optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        const userId = ctx.session.user.id;
+        const application = await (async () => {
+          // If specific fields were requested, build a Drizzle columns map to select only those
+          const fields = input?.fields;
+          if (fields && fields.length > 0) {
+            const columns = Object.fromEntries(
+              fields.map((f) => [f, true]),
+            ) as Record<string, true>;
+            return db.query.applications.findFirst({
+              columns: columns as unknown as {
+                // Drizzle infers column names from this shape; casting keeps it flexible
+                [K in keyof typeof columns]: true;
+              },
+              where: (schema, { eq }) => eq(schema.userId, userId),
+            });
           }
-        : null;
+          // Default: fetch all columns (existing behavior)
+          return db.query.applications.findFirst({
+            where: (schema, { eq }) => eq(schema.userId, userId),
+          });
+        })();
 
-      return modifiedApplication;
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch application: " + JSON.stringify(error),
-      });
-    }
-  }),
+        // When selecting a subset of fields, normalize only those link fields if present
+        const modifiedApplication = application
+          ? (() => {
+              // If no specific fields were requested, preserve prior full-shape behavior
+              if (!input?.fields || input.fields.length === 0) {
+                return {
+                  ...application,
+                  githubLink:
+                    (
+                      application as { githubLink?: string | null }
+                    )?.githubLink?.substring(19) ?? null,
+                  linkedInLink:
+                    (
+                      application as { linkedInLink?: string | null }
+                    )?.linkedInLink?.substring(24) ?? null,
+                } as typeof application;
+              }
+
+              // fields were specified: only transform if those keys exist in the selection
+              const selected = { ...(application as Record<string, unknown>) };
+              if (
+                input.fields.includes("githubLink") &&
+                "githubLink" in selected
+              ) {
+                selected.githubLink =
+                  (selected.githubLink as string | null | undefined)?.substring(
+                    19,
+                  ) ?? null;
+              }
+              if (
+                input.fields.includes("linkedInLink") &&
+                "linkedInLink" in selected
+              ) {
+                selected.linkedInLink =
+                  (
+                    selected.linkedInLink as string | null | undefined
+                  )?.substring(24) ?? null;
+              }
+              return selected as typeof application;
+            })()
+          : null;
+
+        return modifiedApplication;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch application: " + JSON.stringify(error),
+        });
+      }
+    }),
 
   getById: protectedOrganizerProcedure
     .input(
@@ -105,11 +214,52 @@ export const applicationRouter = createTRPCRouter({
   }),
 
   save: protectedProcedure
-    .input(applicationSaveSchema)
+    .input(
+      applicationSaveSchema.extend({
+        fields: z
+          .array(
+            z.enum([
+              "avatarColour",
+              "avatarFace",
+              "avatarLeftHand",
+              "avatarRightHand",
+              "avatarHat",
+              "firstName",
+              "lastName",
+              "age",
+              "phoneNumber",
+              "countryOfResidence",
+              "school",
+              "levelOfStudy",
+              "major",
+              "attendedBefore",
+              "numOfHackathons",
+              "question1",
+              "question2",
+              "question3",
+              "resumeLink",
+              "githubLink",
+              "linkedInLink",
+              "otherLink",
+              "agreeCodeOfConduct",
+              "agreeShareWithSponsors",
+              "agreeShareWithMLH",
+              "agreeEmailsFromMLH",
+              "agreeWillBe18",
+              "underrepGroup",
+              "gender",
+              "ethnicity",
+              "sexualOrientation",
+              "canvasData",
+            ] as const),
+          )
+          .optional(),
+      }),
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
-        const { canvasData, ...restData } = input;
+        const { canvasData, fields, ...restData } = input;
 
         // Type the canvasData properly for JSONB
         const typedCanvasData =
@@ -140,18 +290,53 @@ export const applicationRouter = createTRPCRouter({
           .values(dataToSave)
           .onConflictDoUpdate({
             target: applications.userId,
-            set: {
-              ...restData,
-              canvasData: typedCanvasData,
-              updatedAt: new Date(),
-              githubLink: restData.githubLink
-                ? `${GITHUB_URL}${restData.githubLink}`
-                : null,
-              linkedInLink: restData.linkedInLink
-                ? `${LINKEDIN_URL}${restData.linkedInLink}`
-                : null,
-              // Do not change status on save. Submission should explicitly change status.
-            },
+            set: (() => {
+              const setObj: Record<string, unknown> = {
+                // Always bump updatedAt
+                updatedAt: new Date(),
+                // Do not change status on save. Submission should explicitly change status.
+              };
+
+              // If a fields list was provided, only set those fields.
+              if (fields && fields.length > 0) {
+                for (const key of fields) {
+                  switch (key) {
+                    case "githubLink":
+                      setObj.githubLink = restData.githubLink
+                        ? `${GITHUB_URL}${restData.githubLink}`
+                        : null;
+                      break;
+                    case "linkedInLink":
+                      setObj.linkedInLink = restData.linkedInLink
+                        ? `${LINKEDIN_URL}${restData.linkedInLink}`
+                        : null;
+                      break;
+                    case "canvasData":
+                      setObj.canvasData = typedCanvasData;
+                      break;
+                    default:
+                      // Assign scalar/enum/boolean fields directly
+                      setObj[key] = restData[key];
+                  }
+                }
+                return setObj as { updatedAt: Date } & Record<string, unknown>;
+              }
+
+              // No fields specified: fall back to previous behavior but avoid overwriting links unless provided
+              Object.assign(setObj, restData);
+              setObj.canvasData = typedCanvasData;
+              if (Object.prototype.hasOwnProperty.call(restData, "githubLink")) {
+                setObj.githubLink = restData.githubLink
+                  ? `${GITHUB_URL}${restData.githubLink}`
+                  : null;
+              }
+              if (Object.prototype.hasOwnProperty.call(restData, "linkedInLink")) {
+                setObj.linkedInLink = restData.linkedInLink
+                  ? `${LINKEDIN_URL}${restData.linkedInLink}`
+                  : null;
+              }
+              return setObj as { updatedAt: Date } & Record<string, unknown>;
+            })(),
           });
       } catch (error) {
         throw new TRPCError({

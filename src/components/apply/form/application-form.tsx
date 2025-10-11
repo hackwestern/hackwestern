@@ -19,7 +19,14 @@ export const QUESTION3 = `What’s a project you’d love to revisit and improve
 
 export function ApplicationForm() {
   const utils = api.useUtils();
-  const { data: defaultValues } = api.application.get.useQuery();
+  const { data: defaultValues } = api.application.get.useQuery({
+    fields: [
+      "status",
+      "question1",
+      "question2",
+      "question3",
+    ],
+  });
 
   const status = defaultValues?.status ?? "NOT_STARTED";
   const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
@@ -35,12 +42,18 @@ export function ApplicationForm() {
     mode: "onBlur",
   });
 
-  useAutoSave(form, onSubmit, defaultValues);
+  const FIELDS: Array<keyof z.infer<typeof applicationStepSaveSchema>> = [
+    "question1",
+    "question2",
+    "question3",
+  ];
+
+  useAutoSave(form, onSubmit, defaultValues, { fields: FIELDS });
 
   function onSubmit(data: z.infer<typeof applicationStepSaveSchema>) {
     mutate({
-      ...defaultValues,
       ...data,
+      fields: FIELDS,
     });
   }
 

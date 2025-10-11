@@ -25,7 +25,9 @@ import {
 
 export function LinksForm() {
   const utils = api.useUtils();
-  const { data: defaultValues } = api.application.get.useQuery();
+  const { data: defaultValues } = api.application.get.useQuery({
+    fields: ["status", "githubLink", "linkedInLink", "otherLink", "resumeLink"],
+  });
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -56,7 +58,14 @@ export function LinksForm() {
     resolver: zodResolver(linksSaveSchema),
   });
 
-  useAutoSave(form, onSubmit, defaultValues);
+  const FIELDS: Array<keyof z.infer<typeof linksSaveSchema>> = [
+    "githubLink",
+    "linkedInLink",
+    "otherLink",
+    "resumeLink",
+  ];
+
+  useAutoSave(form, onSubmit, defaultValues, { fields: FIELDS });
 
   function onSubmit(data: z.infer<typeof linksSaveSchema>) {
     // Normalize resume and other links so they validate as URLs (prepend https:// if missing)
@@ -67,8 +76,8 @@ export function LinksForm() {
     } as z.infer<typeof linksSaveSchema>;
 
     mutate({
-      ...defaultValues,
       ...normalizedData,
+      fields: FIELDS,
     });
   }
 

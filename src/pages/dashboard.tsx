@@ -21,7 +21,26 @@ function getApplyStep(stepValue: string | null): ApplyStepFull | null {
 }
 
 const Dashboard = () => {
-  const { data: application } = api.application.get.useQuery();
+  const { data: application } = api.application.get.useQuery({
+    fields: [
+      "firstName",
+      "lastName",
+      "avatarColour",
+      "avatarFace",
+      "avatarLeftHand",
+      "avatarRightHand",
+      "avatarHat",
+      "school",
+      "major",
+      "attendedBefore",
+      "numOfHackathons",
+      "githubLink",
+      "linkedInLink",
+      "otherLink",
+      "resumeLink",
+      "canvasData",
+    ],
+  });
 
   const selectedColor = colors.find(
     (c) => c.name === (application?.avatarColour ?? "green"),

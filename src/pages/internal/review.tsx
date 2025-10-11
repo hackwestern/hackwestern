@@ -23,9 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { formattedLastSavedAt } from "~/components/apply/saved-indicator";
-import { useIsMutating } from "@tanstack/react-query";
-import { Spinner } from "~/components/loading-spinner";
+import { SavedIndicator } from "~/components/apply/saved-indicator";
 import { Textarea } from "~/components/ui/textarea";
 import { useToast } from "~/hooks/use-toast";
 import { useSession } from "next-auth/react";
@@ -432,34 +430,6 @@ const linkName = (link: string) => {
       return "Resume";
   }
 };
-
-function SavedIndicator() {
-  const searchParams = useSearchParams();
-  const applicantId = searchParams.get("applicant");
-  const { data: review } = api.review.getById.useQuery({ applicantId });
-  const isSaving = useIsMutating();
-
-  const formattedLastSaved = formattedLastSavedAt(review?.updatedAt ?? null);
-
-  if (isSaving) {
-    return (
-      <div className="flex items-center justify-end gap-1 text-xs italic text-heavy">
-        <Spinner isLoading className="size-3 fill-primary-100 text-heavy" />
-        <span>Saving</span>
-      </div>
-    );
-  }
-
-  if (formattedLastSaved) {
-    return (
-      <div className="text-right text-xs italic text-heavy">
-        Last saved {formattedLastSaved}
-      </div>
-    );
-  }
-
-  return <></>;
-}
 
 const postfix = (num: number) => {
   const lastDigit = num % 10;
