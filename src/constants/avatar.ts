@@ -6,6 +6,7 @@ export interface AvatarEntry {
   slug: string;
   alt: string;
   sizing?: string;
+  sizingSm?: string;
 }
 
 export enum AvatarCategory {
@@ -20,6 +21,7 @@ export type AvatarObject = {
   name: string;
   src: string;
   sizing?: string;
+  sizingSm?: string;
 };
 export type AvatarManifest = Record<AvatarCategory, AvatarEntry[]>;
 
@@ -227,6 +229,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "tote",
       alt: "Tote",
       sizing: "mt-7 ml-3",
+      sizingSm: "mt-3.5 ml-1.5",
     },
     {
       id: 12,
@@ -326,6 +329,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "tote",
       alt: "Tote",
       sizing: "mt-7 -ml-3",
+      sizingSm: "mt-3.5 -ml-1.5",
     },
     {
       id: 12,
@@ -403,6 +407,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "barrette",
       alt: "Barrette",
       sizing: "pb-212",
+      sizingSm: "pb-106",
     },
     {
       id: 2,
@@ -412,6 +417,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "bear-hat",
       alt: "Bear Hat",
       sizing: "mt-2",
+      sizingSm: "mt-1",
     },
     {
       id: 3,
@@ -421,6 +427,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "bow-tie",
       alt: "Bow Tie",
       sizing: "pb-12",
+      sizingSm: "pb-6",
     },
     {
       id: 4,
@@ -430,6 +437,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "cowboy-hat",
       alt: "Cowboy Hat",
       sizing: "pb-12",
+      sizingSm: "pb-6",
     },
     {
       id: 5,
@@ -439,6 +447,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "crown",
       alt: "Crown",
       sizing: "pb-24",
+      sizingSm: "pb-12",
     },
     {
       id: 6,
@@ -448,6 +457,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "duck",
       alt: "Duck",
       sizing: "pb-28",
+      sizingSm: "pb-14",
     },
     {
       id: 7,
@@ -457,6 +467,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "efficiency-hat",
       alt: "Efficiency Hat",
       sizing: "mt-2",
+      sizingSm: "mt-1",
     },
     {
       id: 8,
@@ -466,6 +477,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "flower",
       alt: "Flower",
       sizing: "pb-20 pr-20 pt-12",
+      sizingSm: "pb-10 pr-10 pt-6",
     },
     {
       id: 9,
@@ -475,6 +487,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "frog-hat",
       alt: "Frog Hat",
       sizing: "pb-8",
+      sizingSm: "pb-4",
     },
     {
       id: 10,
@@ -484,6 +497,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "grad-cap",
       alt: "Grad Cap",
       sizing: "pb-8 pl-8",
+      sizingSm: "pb-4 pl-4",
     },
     {
       id: 11,
@@ -493,6 +507,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "hw-cap",
       alt: "Hw Cap",
       sizing: "pb-2 px-3",
+      sizingSm: "pb-1 px-1.5",
     },
     {
       id: 12,
@@ -502,6 +517,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "kitten-headset",
       alt: "Kitten Headset",
       sizing: "pb-8",
+      sizingSm: "pb-4",
     },
     {
       id: 13,
@@ -511,6 +527,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "leaf",
       alt: "Leaf",
       sizing: "pb-32 pt-8",
+      sizingSm: "pb-16 pt-4",
     },
     {
       id: 14,
@@ -520,6 +537,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "luffy-straw-hat",
       alt: "Luffy Straw Hat",
       sizing: "pb-8",
+      sizingSm: "pb-4",
     },
     {
       id: 15,
@@ -529,6 +547,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "party-hat-1",
       alt: "Party Hat 1",
       sizing: "pb-24",
+      sizingSm: "pb-12",
     },
     {
       id: 16,
@@ -538,6 +557,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "party-hat-2",
       alt: "Party Hat 2",
       sizing: "pb-24",
+      sizingSm: "pb-12",
     },
     {
       id: 17,
@@ -547,6 +567,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "pirate",
       alt: "Pirate",
       sizing: "ml-6 -mt-10 scale-110",
+      sizingSm: "ml-3 -mt-5 scale-[0.55]",
     },
     {
       id: 18,
@@ -556,6 +577,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "pylon",
       alt: "Pylon",
       sizing: "-mt-12 px-7",
+      sizingSm: "-mt-6 px-3.5",
     },
     {
       id: 19,
@@ -565,6 +587,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "stinky",
       alt: "Stinky",
       sizing: "pb-28",
+      sizingSm: "pb-14",
     },
     {
       id: 20,
@@ -574,6 +597,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "tiara",
       alt: "Tiara",
       sizing: "pb-24 -mt-1 pt-8",
+      sizingSm: "pb-12 -mt-0.5 pt-4",
     },
     {
       id: 21,
@@ -583,6 +607,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "top-hat",
       alt: "Top Hat",
       sizing: "px-4 -mt-10",
+      sizingSm: "px-2 -mt-5",
     },
     {
       id: 22,
@@ -592,6 +617,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "viking",
       alt: "Viking",
       sizing: "-mt-10 scale-105",
+      sizingSm: "-mt-5 scale-[0.525]",
     },
     {
       id: 23,
@@ -601,6 +627,7 @@ export const avatarManifest: AvatarManifest = {
       slug: "witch-hat",
       alt: "Witch Hat",
       sizing: "-mt-10 rotate-2 px-1",
+      sizingSm: "-mt-5 rotate-1 px-0.5",
     },
   ],
 };
