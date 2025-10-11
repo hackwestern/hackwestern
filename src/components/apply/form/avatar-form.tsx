@@ -208,7 +208,7 @@ export function AvatarForm({
                       shouldDirty: true,
                     });
                   }}
-                  className={`h-8 w-8 flex-shrink-0 rounded-lg transition-all hover:scale-[1.04] lg:h-6 lg:w-6 2xl:h-10 2xl:h-8 2xl:w-10 2xl:w-8 ${
+                  className={`h-8 w-8 flex-shrink-0 rounded-lg transition-all hover:scale-[1.04] lg:h-6 lg:w-6 2xl:h-8 2xl:w-8 3xl:h-10 3xl:w-10 ${
                     avatarColour === color.name ? "ring-2 ring-purple-200" : ""
                   }`}
                   style={{
