@@ -11,6 +11,8 @@ import { coordinates } from "~/constants/canvas";
 import MLHTrustBadge from "~/components/promo/mlh-trust.badge";
 import { Button } from "~/components/ui/button";
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { growTransition } from "~/components/canvas/wrapper";
 
 export default function Home() {
   return (
@@ -37,11 +39,18 @@ export default function Home() {
         </Canvas>
         <Footer />
         <MLHTrustBadge />
-        <div className="fixed right-24 top-6 z-50 w-fit md:right-28 lg:right-44">
+        <motion.div
+          className="fixed right-24 top-6 z-50 w-fit md:right-28 lg:right-44"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1, transition: growTransition }}
+          exit={{ opacity: 0 }}
+        >
           <Button variant="primary">
-            <Link href="/login">Apply</Link>
+            <Link href="/login" prefetch={true}>
+              Apply
+            </Link>
           </Button>
-        </div>
+        </motion.div>
       </main>
     </>
   );

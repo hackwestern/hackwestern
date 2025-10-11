@@ -1,24 +1,30 @@
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import Head from "next/head";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import Link from "next/link";
-import { hackerLoginRedirect } from "~/utils/redirect";
 import { useRouter } from "next/router";
 import { useToast } from "~/hooks/use-toast";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
 import CanvasBackground from "~/components/canvas-background";
 
 export default function Login() {
+  const { status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      void router.push("/dashboard");
+    }
+  }, [status, router]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -39,6 +45,10 @@ export default function Login() {
       }
       void router.push("/dashboard");
     });
+  }
+
+  if (status === "loading") {
+    return <div>Loading...</div>;
   }
 
   return (
@@ -139,5 +149,3 @@ export default function Login() {
     </>
   );
 }
-
-export const getServerSideProps = hackerLoginRedirect;

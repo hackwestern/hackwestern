@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import { Button } from "~/components/ui/button";
@@ -7,19 +7,26 @@ import { Input } from "~/components/ui/input";
 import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
-import { hackerLoginRedirect } from "~/utils/redirect";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 import CanvasBackground from "~/components/canvas-background";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
-import { useRouter } from "next/router";
 
 export default function Register() {
+  const { status } = useSession();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
 
   const router = useRouter();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      void router.push("/dashboard");
+    }
+  }, [status, router]);
+
   const { mutate: register } = api.auth.create.useMutation({
     onError: (error) => {
       toast({
@@ -47,6 +54,10 @@ export default function Register() {
     setPending(true);
     register({ email, password });
   };
+
+  if (status === "loading") {
+    return <div>Loading...</div>;
+  }
 
   return (
     <>
@@ -146,5 +157,3 @@ export default function Register() {
     </>
   );
 }
-
-export const getServerSideProps = hackerLoginRedirect;
