@@ -65,9 +65,10 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
     }
 
     // Save if there are dirty fields OR if watch values changed from last submitted
-    const shouldSave = hasDirtyFields ||
+    const shouldSave =
+      hasDirtyFields ||
       (lastSubmittedRef.current &&
-       JSON.stringify(watch) !== JSON.stringify(lastSubmittedRef.current));
+        JSON.stringify(watch) !== JSON.stringify(lastSubmittedRef.current));
 
     if (shouldSave && debouncedRemoteSaveRef.current) {
       // Validate the form synchronously
