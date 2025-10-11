@@ -6,6 +6,8 @@ import { api } from "~/utils/api";
 import { useToast } from "~/hooks/use-toast";
 import { usePendingNavigation } from "~/hooks/use-pending-navigation";
 import { applySteps, type ApplyStep } from "~/constants/apply";
+import { applicationSubmitSchema } from "~/schemas/application";
+import { ZodFormattedError } from "zod";
 
 type ApplyNavigationProps = {
   step: ApplyStep | null;
@@ -44,11 +46,69 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
 
   const { pending, navigate } = usePendingNavigation();
 
+  const { data } = api.application.get.useQuery();
+  const result = applicationSubmitSchema.safeParse(data);
+  const error = result.error?.format();
+
   const submitMutation = api.application.submit.useMutation();
 
   const onClickSubmit = async (e?: React.MouseEvent) => {
     e?.preventDefault();
     if (step !== "review") return;
+
+    console.log("errors: ", error);
+
+    // toast the first 5 incorrect fields
+    if (error) {
+      const errorMessages: string[] = [];
+      for (const key in error) {
+        if (key === "_errors") continue;
+
+        const currError = error[key as keyof typeof error];
+
+        // check if currError is a valid error object
+        const has_errors =
+          currError && typeof currError === "object" && "_errors" in currError;
+        if (!has_errors) continue;
+
+        const fieldErrors = (currError as { _errors?: string[] })._errors;
+        // keys is a string in camelCase, convert to words
+        const formattedKey = key
+          .replace(/([A-Z]+|[0-9]+)/g, " $1") // also separate numbers
+          .trim()
+          .toLowerCase()
+          .replace(/^./, (str) => str.toUpperCase());
+        const fieldErrorsArray = Array.isArray(fieldErrors)
+          ? fieldErrors
+          : [fieldErrors];
+        if (fieldErrors && fieldErrors.length > 0) {
+          errorMessages.push(
+            `${formattedKey}: ${fieldErrorsArray[0]?.includes("received null") ? "field required" : fieldErrorsArray[0]}`,
+          );
+        }
+        if (errorMessages.length >= 5) break;
+      }
+
+      toast({
+        title: "Application Incomplete",
+        description: (
+          <div>
+            <div>The following fields had errors</div>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+              {errorMessages.map((msg, idx) => (
+                <li key={idx}>{msg}</li>
+              ))}
+              {Object.keys(error).length > errorMessages.length + 1 && (
+                <li>And more...</li>
+              )}
+            </ul>
+          </div>
+        ),
+        variant: "destructive",
+        duration: 4000,
+      });
+      return;
+    }
 
     submitMutation
       .mutateAsync()
@@ -61,10 +121,10 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
         });
         navigate("/dashboard");
       })
-      .catch(() => {
+      .catch((e) => {
         toast({
-          title: "Application Incomplete",
-          description: "Please complete all required steps before submitting.",
+          title: "Error Submitting Application",
+          description: JSON.stringify(e),
           variant: "destructive",
           duration: 4000,
         });
