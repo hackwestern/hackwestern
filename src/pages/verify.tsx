@@ -98,7 +98,7 @@ const Verify = () => {
 
       <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />
-        <div className="z-10 w-full max-w-2xl rounded-lg bg-violet-50 bg-white p-12 shadow-md">
+        <div className="z-10 w-full max-w-lg rounded-lg bg-violet-50 bg-white p-5 shadow-md">
           {verifySuccess && (
             <div>
               <div className="text-center">Email Verified!</div>
@@ -107,13 +107,13 @@ const Verify = () => {
           )}
           {verifyFailed && (
             <div className="flex flex-col justify-center">
-              <div className="text-center">
+              <div className="mb-6 text-left font-figtree">
                 Invalid or Expired Verification Token.
               </div>
               {verifyToken && (
                 <Button
                   variant="primary"
-                  className="mx-auto mt-6 w-fit text-sm"
+                  className="mx-auto w-fit text-sm"
                   onClick={handleResendVerification}
                 >
                   Request New Verification Link

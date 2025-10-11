@@ -20,7 +20,7 @@ export function MobileStickerDrawer() {
   }
 
   return (
-    <div className="fixed bottom-20 right-4 z-50 overscroll-contain md:hidden">
+    <div className="fixed bottom-20 right-4 z-50 overscroll-contain md:bottom-0 lg:hidden">
       <Drawer direction="bottom">
         <DrawerTrigger asChild>
           <motion.div

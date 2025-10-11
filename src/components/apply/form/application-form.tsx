@@ -12,7 +12,6 @@ import { Textarea } from "~/components/ui/textarea";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { applicationStepSaveSchema } from "~/schemas/application";
-import { text } from "stream/consumers";
 
 export function ApplicationForm() {
   const utils = api.useUtils();

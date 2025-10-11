@@ -25,14 +25,14 @@ export default function ApplicationPrompt({
 }: Props) {
   return (
     <>
-      <div className="z-[99] w-full max-w-md space-y-8 text-center">
+      <div className="z-[99] w-screen max-w-md space-y-12 text-center">
         <div>
-          <h1 className="font-dico text-3xl font-medium text-heavy">
+          <h1 className="-ml-4 flex w-max flex-col items-center font-dico text-6xl font-medium text-heavy">
             Hack Western 12
           </h1>
-          <h2 className="font-dico text-3xl font-medium text-heavy">
+          <h1 className=" flex flex-col items-center font-dico text-6xl font-medium text-heavy">
             Application
-          </h2>
+          </h1>
         </div>
         <div>
           <CountdownTimer targetDate={APPLICATION_DEADLINE_ISO} />
@@ -40,7 +40,7 @@ export default function ApplicationPrompt({
         <div>
           <Button
             variant="primary"
-            className="w-full p-4 font-figtree text-base font-medium"
+            className="w-full p-6 font-figtree text-base font-medium"
             onClick={() => void onApplyNavigate(continueStep)}
             disabled={pending}
             aria-busy={pending}
