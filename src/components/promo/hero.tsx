@@ -67,7 +67,7 @@ function Hero() {
                 draggable="false"
               />
             </div>
-            <div className="font-figtree text-lg text-medium font-medium">
+            <div className="font-figtree text-lg font-medium text-medium">
               The world is your canvas.
             </div>
           </div>
