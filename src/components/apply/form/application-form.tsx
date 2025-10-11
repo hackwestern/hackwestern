@@ -43,7 +43,10 @@ export function ApplicationForm() {
     "question3",
   ];
 
-  useAutoSave(form, onSubmit, defaultValues, { fields: FIELDS });
+  useAutoSave(form, onSubmit, defaultValues, {
+    fields: FIELDS,
+    debounceMs: 2000,
+  });
 
   function onSubmit(data: z.infer<typeof applicationStepSaveSchema>) {
     mutate({

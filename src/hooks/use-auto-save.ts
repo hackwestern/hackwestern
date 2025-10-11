@@ -7,12 +7,13 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
   context: ReturnType<typeof useForm<TFieldValues>>,
   onSubmit: (data: TFieldValues) => void,
   defaultValues: TFieldValues | null | undefined,
-  options?: { fields?: Array<keyof TFieldValues> },
-  debounceMs = 750,
+  options?: { fields?: Array<keyof TFieldValues>, debounceMs?: number },
 ) {
   const watch = useWatch({ control: context.control });
   const { dirtyFields } = context.formState;
   const hasDirtyFields = Object.keys(dirtyFields).length > 0;
+
+  const debounceMs = options?.debounceMs ?? 750;
 
   // Track the last submitted values to avoid resetting with stale data
   const lastSubmittedRef = useRef<TFieldValues | null>(null);
