@@ -6,9 +6,8 @@ import { api } from "~/utils/api";
 import { useToast } from "~/hooks/use-toast";
 import { usePendingNavigation } from "~/hooks/use-pending-navigation";
 import { applySteps, type ApplyStep } from "~/constants/apply";
-import { TRPCClientError } from "@trpc/client";
-import { AppRouter } from "~/server/api/root";
 import { applicationSubmitSchema } from "~/schemas/application";
+import { ZodFormattedError } from "zod";
 
 type ApplyNavigationProps = {
   step: ApplyStep | null;
@@ -59,12 +58,20 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
 
     console.log("errors: ", error);
 
-    // toast the first 3 incorrect fields
+    // toast the first 5 incorrect fields
     if (error) {
       const errorMessages: string[] = [];
       for (const key in error) {
         if (key === "_errors") continue;
-        const fieldErrors = (error as any)[key]?._errors;
+
+        const currError = error[key as keyof typeof error];
+
+        // check if currError is a valid error object
+        const has_errors =
+          currError && typeof currError === "object" && "_errors" in currError;
+        if (!has_errors) continue;
+
+        const fieldErrors = (currError as { _errors?: string[] })._errors;
         // keys is a string in camelCase, convert to words
         const formattedKey = key
           .replace(/([A-Z]+|[0-9]+)/g, " $1") // also separate numbers
@@ -76,7 +83,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
           : [fieldErrors];
         if (fieldErrors && fieldErrors.length > 0) {
           errorMessages.push(
-            `${formattedKey}: ${fieldErrorsArray[0].includes("received null") ? "field required" : fieldErrorsArray[0]}`,
+            `${formattedKey}: ${fieldErrorsArray[0]?.includes("received null") ? "field required" : fieldErrorsArray[0]}`,
           );
         }
         if (errorMessages.length >= 5) break;
@@ -86,7 +93,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
         title: "Application Incomplete",
         description: (
           <div>
-            <p>The following fields had errors</p>
+            <div>The following fields had errors</div>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
               {errorMessages.map((msg, idx) => (
                 <li key={idx}>{msg}</li>
