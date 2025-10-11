@@ -11,6 +11,7 @@ import { api } from "~/utils/api";
 import { AvatarDisplay } from "../avatar-display";
 import { colors } from "~/constants/avatar";
 import { type CanvasPaths } from "~/types/canvas";
+import { QUESTION1, QUESTION2, QUESTION3 } from "./application-form";
 
 type ReviewSectionProps = {
   step: ApplyStepFull;
@@ -150,21 +151,21 @@ function ApplicationReview({ error }: ReviewSectionProps) {
   return (
     <>
       <ReviewField
-        label="If you could have any superpower to help you during Hack Western, what would it be and why?"
+        label={QUESTION1}
         value={data?.question1}
         error={error?.question1?._errors.map((e) =>
           e.includes("Response") ? e : "Response is required",
         )}
       />
       <ReviewField
-        label="If you could build your own dream destination what would it look like? Be as detailed and creative as you want!"
+        label={QUESTION2}
         value={data?.question2}
         error={error?.question2?._errors.map((e) =>
           e.includes("Response") ? e : "Response is required",
         )}
       />
       <ReviewField
-        label="What project (anything you have ever worked on not just restricted to tech) of yours are you the most proud of and why? What did you learn throughout the process?"
+        label={QUESTION3}
         value={data?.question3}
         error={error?.question3?._errors.map((e) =>
           e.includes("Response") ? e : "Response is required",
