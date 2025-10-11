@@ -45,7 +45,7 @@ export default function Register() {
           variant: "default",
         });
         setPending(false);
-        void router.push("/dashboard");
+        void router.push("/not-verified");
       }),
   });
 
