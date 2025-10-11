@@ -7,7 +7,6 @@ import { useToast } from "~/hooks/use-toast";
 import { usePendingNavigation } from "~/hooks/use-pending-navigation";
 import { applySteps, type ApplyStep } from "~/constants/apply";
 import { applicationSubmitSchema } from "~/schemas/application";
-import { ZodFormattedError } from "zod";
 
 type ApplyNavigationProps = {
   step: ApplyStep | null;

@@ -192,7 +192,8 @@ export function AvatarForm({
                   key={color.name}
                   type="button"
                   onClick={() => {
-                    form.setValue("avatarColour", color.name as AvatarColor, {
+                    const fieldName = "avatarColour";
+                    form.setValue(fieldName, color.name as AvatarColor, {
                       shouldDirty: true,
                     });
                   }}

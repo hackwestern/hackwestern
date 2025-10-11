@@ -1,6 +1,6 @@
-import { eq, sql, SQL } from "drizzle-orm";
+import { eq, sql, type SQL } from "drizzle-orm";
 import { createTRPCRouter } from "~/server/api/trpc";
-import { db, Transaction } from "~/server/db";
+import { db, type Transaction } from "~/server/db";
 import {
   scavengerHuntScans,
   users,
