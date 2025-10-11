@@ -8,6 +8,7 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
   onSubmit: (data: TFieldValues) => void,
   defaultValues: TFieldValues | null | undefined,
   options?: { fields?: Array<keyof TFieldValues> },
+  debounceMs = 750,
 ) {
   const watch = useWatch({ control: context.control });
   const { dirtyFields } = context.formState;
@@ -50,8 +51,11 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
       const payload = (() => {
         const keys = options?.fields;
         if (!keys || keys.length === 0) return data;
-        const picked = pickSubset(data, keys as ReadonlyArray<keyof typeof data>);
-        return picked ;
+        const picked = pickSubset(
+          data,
+          keys as ReadonlyArray<keyof typeof data>,
+        );
+        return picked;
       })();
       isSavingRef.current = true;
       lastSubmittedRef.current = data;
@@ -61,7 +65,7 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
         isSavingRef.current = false;
       }, 100);
     };
-    debouncedRemoteSaveRef.current = debounce(saveFn, 750);
+    debouncedRemoteSaveRef.current = debounce(saveFn, debounceMs);
   }
 
   useEffect(() => {
