@@ -6,6 +6,8 @@ import { useState } from "react";
 import { coordinates } from "~/constants/canvas";
 import { Button } from "../ui/button";
 import Link from "next/link";
+import CountdownTimer from "../apply/countdown-timer";
+import { APPLICATION_DEADLINE_ISO } from "~/lib/date";
 
 function Hero() {
   const [hasBeenDragged, setHasBeenDragged] = useState(false);
@@ -51,7 +53,7 @@ function Hero() {
               />
             </motion.div>
           </div>
-          <div className="my-auto flex scale-[0.85] flex-col items-center justify-center space-y-10 pb-6 sm:scale-100 sm:space-y-12">
+          <div className="my-auto flex scale-[0.85] flex-col items-center justify-center space-y-10 pb-4 sm:scale-100 sm:space-y-12">
             <div className="text-md font-jetbrains-mono text-medium">
               NOV 21 - NOV 23, 2025
             </div>
@@ -65,7 +67,7 @@ function Hero() {
                 draggable="false"
               />
             </div>
-            <div className="text-md font-figtree text-medium">
+            <div className="font-figtree text-lg font-medium text-medium">
               The world is your canvas.
             </div>
           </div>
@@ -74,6 +76,7 @@ function Hero() {
               Apply Now!
             </Button>
           </Link>
+          <CountdownTimer targetDate={APPLICATION_DEADLINE_ISO} size="sm" />
         </div>
         <div className="h-[150px] sm:h-[80px]" />
       </div>

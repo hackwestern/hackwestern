@@ -61,8 +61,8 @@ export default function Register() {
 
       <div className="m-auto flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />
-        <div className="z-10 mx-4 flex-col items-center rounded-xl bg-background p-8 shadow-md sm:w-xl sm:p-12 md:w-2xl">
-          <h2 className="mb-4 self-start font-dico text-[32px] text-heavy">
+        <div className="z-10 mx-4 flex-col items-center rounded-xl bg-background p-8 text-sm shadow-md sm:w-xl sm:p-12 md:w-2xl md:text-base">
+          <h2 className="mb-4 self-start font-dico text-[30px] text-heavy md:text-[34px] ">
             Create your account
           </h2>
           <form onSubmit={handleSubmit}>
@@ -116,7 +116,7 @@ export default function Register() {
             <Button
               asChild
               variant="tertiary"
-              className="ml-2 h-max p-0 text-base"
+              className="ml-2 h-max p-0 text-sm md:text-base"
             >
               <Link
                 href="/login"
@@ -131,7 +131,7 @@ export default function Register() {
             <Button
               asChild
               variant="tertiary"
-              className="ml-2 h-max p-0 text-base"
+              className="ml-2 h-max p-0 text-sm md:text-base"
             >
               <Link
                 className="text-purple-500 hover:text-violet-700"
