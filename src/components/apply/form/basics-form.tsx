@@ -53,7 +53,7 @@ export function BasicsForm() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-6 md:pb-4 md:space-y-8"
+        className="space-y-6 md:space-y-8 md:pb-4"
       >
         <div className="flex w-full flex-col gap-3 md:gap-2">
           <FormLabel className="w-full text-sm font-medium text-gray-700">
