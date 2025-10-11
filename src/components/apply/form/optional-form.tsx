@@ -76,6 +76,7 @@ export function OptionalForm() {
 
   const form = useForm<z.infer<typeof optionalSaveSchema>>({
     resolver: zodResolver(optionalSaveSchema),
+    defaultValues: defaultValues ?? undefined,
   });
 
   useAutoSave(form, onSubmit, defaultValues);
