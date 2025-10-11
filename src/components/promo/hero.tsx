@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { PreregistrationForm } from "../preregistration-form";
 import { DraggableImage } from "~/components/canvas/draggable";
 import { CanvasComponent } from "../canvas/component";
 import Image from "next/image";
@@ -70,9 +69,11 @@ function Hero() {
               The world is your canvas.
             </div>
           </div>
-          <Button className="w-48" variant="primary" size="lg">
-            <Link href="/login">Apply Now!</Link>
-          </Button>
+          <Link href="/register">
+            <Button className="w-48" variant="primary" size="lg">
+              Apply Now!
+            </Button>
+          </Link>
         </div>
         <div className="h-[150px] sm:h-[80px]" />
       </div>
