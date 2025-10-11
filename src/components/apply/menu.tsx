@@ -151,7 +151,7 @@ function computeStepStatuses(
   const result = {} as Record<ApplyStep, boolean>;
 
   for (const stepObj of applySteps) {
-    const stepName = stepObj.step as ApplyStep;
+    const stepName: ApplyStep = stepObj.step;
     const fields = stepFields[stepName] ?? [];
     const mandatory = mandatoryFields[stepName] ?? [];
 
@@ -160,17 +160,6 @@ function computeStepStatuses(
       (f) =>
         !isEmpty((application as Record<string, unknown> | undefined)?.[f], f),
     ).length;
-
-    // Check if all mandatory fields are filled
-    const allMandatoryFilled =
-      mandatory.length === 0 ||
-      mandatory.every(
-        (f) =>
-          !isEmpty(
-            (application as Record<string, unknown> | undefined)?.[f],
-            f,
-          ),
-      );
 
     // A step is considered "started" if any of its fields are filled.
     result[stepName] = filledCount > 0;
@@ -183,13 +172,13 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
   const { data: application } = api.application.get.useQuery();
   const status = application?.status ?? "NOT_STARTED";
 
-  if (status !== "NOT_STARTED" && status !== "IN_PROGRESS") {
-    return null;
-  }
-
   const stepStatuses: Record<ApplyStep, boolean> = useMemo(() => {
     return computeStepStatuses(application);
   }, [application]);
+
+  if (status !== "NOT_STARTED" && status !== "IN_PROGRESS") {
+    return null;
+  }
 
   return (
     <>
