@@ -59,7 +59,17 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
   }, [defaultValues ? true : false]); // Only react to defaultValues becoming truthy, not its contents
 
   useDeepCompareEffect(() => {
-    if (hasDirtyFields && debouncedRemoteSaveRef.current) {
+    // Skip if we haven't initialized yet or if we're currently saving
+    if (!hasInitializedRef.current || isSavingRef.current) {
+      return;
+    }
+
+    // Save if there are dirty fields OR if watch values changed from last submitted
+    const shouldSave = hasDirtyFields ||
+      (lastSubmittedRef.current &&
+       JSON.stringify(watch) !== JSON.stringify(lastSubmittedRef.current));
+
+    if (shouldSave && debouncedRemoteSaveRef.current) {
       // Validate the form synchronously
       void context.handleSubmit(
         (validData) => {
