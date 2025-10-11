@@ -87,7 +87,7 @@ export function AvatarDisplay({
               <img
                 src={hatAccessory.src}
                 alt={hatAccessory.name}
-                className={`h-full w-full ${hatAccessory.sizing ?? ""} object-contain`}
+                className={`h-full w-full ${(size === "lg" ? hatAccessory.sizing : hatAccessory.sizingSm) ?? ""} object-contain`}
               />
             </div>
           ) : null;
@@ -102,7 +102,7 @@ export function AvatarDisplay({
               <img
                 src={leftAccessory.src}
                 alt={leftAccessory.name}
-                className={`h-full w-full ${leftAccessory.sizing ?? ""} object-contain`}
+                className={`h-full w-full ${(size === "lg" ? leftAccessory.sizing : leftAccessory.sizingSm) ?? ""} object-contain`}
               />
             </div>
           ) : null;
@@ -119,7 +119,7 @@ export function AvatarDisplay({
               <img
                 src={rightAccessory.src}
                 alt={rightAccessory.name}
-                className={`h-full w-full ${rightAccessory.sizing ?? ""} object-contain`}
+                className={`h-full w-full ${(size === "lg" ? rightAccessory.sizing : rightAccessory.sizingSm) ?? ""} object-contain`}
               />
             </div>
           ) : null;

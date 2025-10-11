@@ -33,6 +33,7 @@ export const getAccessoryFromId = (
     name: item.alt,
     src: item.file,
     sizing: "sizing" in item ? item.sizing : undefined,
+    sizingSm: "sizingSm" in item ? item.sizingSm : undefined,
   };
 };
 
