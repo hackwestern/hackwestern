@@ -212,7 +212,7 @@ export const applicationRouter = createTRPCRouter({
   }),
 
   save: protectedProcedure
-    .input(applicationSaveSchema.extend({}))
+    .input(applicationSaveSchema)
     .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
@@ -249,7 +249,7 @@ export const applicationRouter = createTRPCRouter({
             : null;
         }
 
-        console.log('data inserting', dataToInsert);
+        console.log("data inserting", dataToInsert);
 
         await db
           .insert(applications)
