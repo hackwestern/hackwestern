@@ -28,9 +28,10 @@ export const SimpleCanvas = React.forwardRef<
   {
     onDrawingChange?: (isEmpty: boolean, data?: CanvasData) => void;
     onHistoryChange?: (canUndo: boolean, canRedo: boolean) => void;
+    onFormFieldChange?: (data: CanvasData) => void;
     initialData?: CanvasData | null;
   }
->(({ onDrawingChange, onHistoryChange, initialData }, ref) => {
+>(({ onDrawingChange, onHistoryChange, onFormFieldChange, initialData }, ref) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [paths, setPaths] = useState<CanvasPaths>([]);
   const [currentPath, setCurrentPath] = useState<Stroke>([]);
@@ -115,7 +116,7 @@ export const SimpleCanvas = React.forwardRef<
         return newIndex;
       });
     },
-    [onHistoryChange],
+    [onHistoryChange, historyIndex, history],
   );
 
   // Load initial data when component mounts or initialData changes
@@ -368,7 +369,9 @@ export const SimpleCanvas = React.forwardRef<
             return newHistory;
           });
 
-          return currentIndex + 1;
+          // Return new index (pointing to the newly added state)
+          const newIndex = currentIndex + 1;
+          return newIndex;
         });
 
         setPaths([]);
@@ -387,6 +390,8 @@ export const SimpleCanvas = React.forwardRef<
       undo: () => {
         if (historyIndex > 0) {
           const newIndex = historyIndex - 1;
+          
+          // Update both states together
           setHistoryIndex(newIndex);
           const previousPaths = history[newIndex] ?? [];
           setPaths(previousPaths);
@@ -395,12 +400,13 @@ export const SimpleCanvas = React.forwardRef<
           hasLocalChangesRef.current = true;
           lastLocalModificationRef.current = Date.now();
 
-          // Notify history change
+          // Notify history change IMMEDIATELY with the new values
           const newCanUndo = newIndex > 0;
           const newCanRedo = newIndex < history.length - 1;
           onHistoryChange?.(newCanUndo, newCanRedo);
 
-          onDrawingChange?.(previousPaths.length === 0, {
+          // Update form field without triggering the full onDrawingChange callback
+          onFormFieldChange?.({
             paths: previousPaths,
             timestamp: Date.now(),
             version: "1.0",
@@ -423,15 +429,23 @@ export const SimpleCanvas = React.forwardRef<
           const newCanRedo = newIndex < history.length - 1;
           onHistoryChange?.(newCanUndo, newCanRedo);
 
-          onDrawingChange?.(nextPaths.length === 0, {
+          // Update form field without triggering the full onDrawingChange callback
+          onFormFieldChange?.({
             paths: nextPaths,
             timestamp: Date.now(),
             version: "1.0",
           });
         }
       },
-      canUndo: () => historyIndex > 0,
-      canRedo: () => historyIndex < history.length - 1,
+      canUndo: () => {
+        // Can undo if we're not at the first state (index 0)
+        return historyIndex > 0;
+      },
+      canRedo: () => {
+        // Can redo if we're not at the last state
+        // Special case: if we're at index 0 (empty state) and there's more history, we can redo
+        return historyIndex < history.length - 1;
+      },
     }),
     [
       paths,

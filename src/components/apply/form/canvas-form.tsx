@@ -107,8 +107,7 @@ export function CanvasForm() {
                           disabled={!canUndo}
                           onClick={() => {
                             canvasRef.current?.undo();
-                            setCanUndo(canvasRef.current?.canUndo() ?? false);
-                            setCanRedo(canvasRef.current?.canRedo() ?? false);
+                            // Button states are updated via onHistoryChange callback
                           }}
                           className="h-6 w-6 text-heavy"
                           title="Undo"
@@ -121,8 +120,7 @@ export function CanvasForm() {
                           disabled={!canRedo}
                           onClick={() => {
                             canvasRef.current?.redo();
-                            setCanUndo(canvasRef.current?.canUndo() ?? false);
-                            setCanRedo(canvasRef.current?.canRedo() ?? false);
+                            // Button states are updated via onHistoryChange callback
                           }}
                           className="h-6 w-6 text-heavy"
                           title="Redo"
@@ -135,8 +133,7 @@ export function CanvasForm() {
                           disabled={isCanvasEmpty}
                           onClick={() => {
                             canvasRef.current?.clear();
-                            setCanUndo(canvasRef.current?.canUndo() ?? false);
-                            setCanRedo(canvasRef.current?.canRedo() ?? false);
+                            // Button states are updated via onHistoryChange callback
                           }}
                           className="h-6 w-6 text-heavy"
                           title="Clear"
@@ -159,11 +156,15 @@ export function CanvasForm() {
                         }}
                         onDrawingChange={(isEmpty, data) => {
                           setIsCanvasEmpty(isEmpty);
-                          setCanUndo(canvasRef.current?.canUndo() ?? false);
-                          setCanRedo(canvasRef.current?.canRedo() ?? false);
+                          // Don't call canUndo/canRedo here - it causes race conditions
+                          // Button states are handled by onHistoryChange
                           if (data) {
                             field.onChange(data);
                           }
+                        }}
+                        onFormFieldChange={(data) => {
+                          // Only update the form field, don't trigger button state checks
+                          field.onChange(data);
                         }}
                       />
                     </div>
