@@ -100,17 +100,15 @@ export function CanvasForm() {
                 <FormItem>
                   <FormControl>
                     <div className="-mr-1">
-                      <div className="absolute z-[999] mt-2 flex w-[17.5rem] justify-end gap-2">
+                      <div className="pointer-events-none absolute z-[999] mt-2 flex w-[17.5rem] justify-end gap-2">
                         <Button
                           type="button"
                           size="icon"
                           disabled={!canUndo}
                           onClick={() => {
                             canvasRef.current?.undo();
-                            setCanUndo(canvasRef.current?.canUndo() ?? false);
-                            setCanRedo(canvasRef.current?.canRedo() ?? false);
                           }}
-                          className="h-6 w-6 text-heavy"
+                          className="pointer-events-auto h-6 w-6 text-heavy hover:bg-gray-200/80"
                           title="Undo"
                         >
                           <Undo className="h-4 w-4" />
@@ -121,10 +119,8 @@ export function CanvasForm() {
                           disabled={!canRedo}
                           onClick={() => {
                             canvasRef.current?.redo();
-                            setCanUndo(canvasRef.current?.canUndo() ?? false);
-                            setCanRedo(canvasRef.current?.canRedo() ?? false);
                           }}
-                          className="h-6 w-6 text-heavy"
+                          className="pointer-events-auto h-6 w-6 text-heavy hover:bg-gray-200/80"
                           title="Redo"
                         >
                           <Redo className="h-4 w-4" />
@@ -135,10 +131,8 @@ export function CanvasForm() {
                           disabled={isCanvasEmpty}
                           onClick={() => {
                             canvasRef.current?.clear();
-                            setCanUndo(canvasRef.current?.canUndo() ?? false);
-                            setCanRedo(canvasRef.current?.canRedo() ?? false);
                           }}
-                          className="h-6 w-6 text-heavy"
+                          className="pointer-events-auto h-6 w-6 text-heavy hover:bg-gray-200/80"
                           title="Clear"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -159,11 +153,18 @@ export function CanvasForm() {
                         }}
                         onDrawingChange={(isEmpty, data) => {
                           setIsCanvasEmpty(isEmpty);
-                          setCanUndo(canvasRef.current?.canUndo() ?? false);
-                          setCanRedo(canvasRef.current?.canRedo() ?? false);
+                          // Don't call canUndo/canRedo here - it causes race conditions
                           if (data) {
                             field.onChange(data);
                           }
+                        }}
+                        onFormFieldChange={(data) => {
+                          // Only update the form field, don't trigger button state checks
+                          field.onChange(data);
+                        }}
+                        onCanvasEmptyChange={(isEmpty) => {
+                          // Update trash button state during undo/redo operations
+                          setIsCanvasEmpty(isEmpty);
                         }}
                       />
                     </div>
