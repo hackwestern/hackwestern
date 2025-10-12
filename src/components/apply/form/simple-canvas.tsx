@@ -29,9 +29,10 @@ export const SimpleCanvas = React.forwardRef<
     onDrawingChange?: (isEmpty: boolean, data?: CanvasData) => void;
     onHistoryChange?: (canUndo: boolean, canRedo: boolean) => void;
     onFormFieldChange?: (data: CanvasData) => void;
+    onCanvasEmptyChange?: (isEmpty: boolean) => void;
     initialData?: CanvasData | null;
   }
->(({ onDrawingChange, onHistoryChange, onFormFieldChange, initialData }, ref) => {
+>(({ onDrawingChange, onHistoryChange, onFormFieldChange, onCanvasEmptyChange, initialData }, ref) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [paths, setPaths] = useState<CanvasPaths>([]);
   const [currentPath, setCurrentPath] = useState<Stroke>([]);
@@ -405,6 +406,10 @@ export const SimpleCanvas = React.forwardRef<
           const newCanRedo = newIndex < history.length - 1;
           onHistoryChange?.(newCanUndo, newCanRedo);
 
+          // Update canvas empty state
+          const isEmpty = previousPaths.length === 0;
+          onCanvasEmptyChange?.(isEmpty);
+
           // Update form field without triggering the full onDrawingChange callback
           onFormFieldChange?.({
             paths: previousPaths,
@@ -428,6 +433,10 @@ export const SimpleCanvas = React.forwardRef<
           const newCanUndo = newIndex > 0;
           const newCanRedo = newIndex < history.length - 1;
           onHistoryChange?.(newCanUndo, newCanRedo);
+
+          // Update canvas empty state
+          const isEmpty = nextPaths.length === 0;
+          onCanvasEmptyChange?.(isEmpty);
 
           // Update form field without triggering the full onDrawingChange callback
           onFormFieldChange?.({

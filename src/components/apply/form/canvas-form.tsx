@@ -166,6 +166,10 @@ export function CanvasForm() {
                           // Only update the form field, don't trigger button state checks
                           field.onChange(data);
                         }}
+                        onCanvasEmptyChange={(isEmpty) => {
+                          // Update trash button state during undo/redo operations
+                          setIsCanvasEmpty(isEmpty);
+                        }}
                       />
                     </div>
                   </FormControl>
