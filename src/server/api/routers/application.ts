@@ -220,34 +220,47 @@ export const applicationRouter = createTRPCRouter({
         const userId = ctx.session.user.id;
         const { canvasData, ...restData } = input;
 
-        // Type the canvasData properly for JSONB
-        const typedCanvasData =
-          canvasData === null
-            ? undefined
-            : (canvasData as
-                | {
-                    paths: CanvasPaths;
-                    timestamp: number;
-                    version: string;
-                  }
-                | undefined);
-
-        const dataToSave = {
+        const dataToInsert = {
           ...restData,
-          canvasData: typedCanvasData,
-          githubLink: restData.githubLink
-            ? `${GITHUB_URL}${restData.githubLink}`
-            : null,
-          linkedInLink: restData.linkedInLink
-            ? `${LINKEDIN_URL}${restData.linkedInLink}`
-            : null,
           userId,
-        } as const;
+        };
 
-        await db.insert(applications).values(dataToSave).onConflictDoUpdate({
-          target: applications.userId,
-          set: dataToSave,
-        });
+        // Only include these 3 specially formatted fields if they were actually provided
+        if (Object.prototype.hasOwnProperty.call(input, "canvasData")) {
+          (dataToInsert as typeof input).canvasData =
+            canvasData === null
+              ? undefined
+              : (canvasData as
+                  | {
+                      paths: CanvasPaths;
+                      timestamp: number;
+                      version: string;
+                    }
+                  | undefined);
+        }
+
+        if (Object.prototype.hasOwnProperty.call(input, "githubLink")) {
+          dataToInsert.githubLink = restData.githubLink
+            ? `${GITHUB_URL}${restData.githubLink}`
+            : null;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(input, "linkedInLink")) {
+          dataToInsert.linkedInLink = restData.linkedInLink
+            ? `${LINKEDIN_URL}${restData.linkedInLink}`
+            : null;
+        }
+
+        await db
+          .insert(applications)
+          .values(dataToInsert)
+          .onConflictDoUpdate({
+            target: applications.userId,
+            set: {
+              ...dataToInsert,
+              updatedAt: new Date(),
+            },
+          });
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
