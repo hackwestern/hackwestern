@@ -116,7 +116,9 @@ export default function Apply() {
   const [desktopPreviewHeight, setDesktopPreviewHeight] = useState<
     number | null
   >(null);
-  const { data: application } = api.application.get.useQuery();
+  const { data: application } = api.application.get.useQuery({
+    fields: ["status"],
+  });
   const continueStep = getNextIncompleteStep(application);
   const router = useRouter();
   const [pending, setPending] = useState(false);

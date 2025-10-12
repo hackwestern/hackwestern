@@ -129,7 +129,9 @@ function ReviewField({ value, label, error }: ReviewFieldProps) {
 }
 
 function BasicsReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: ["firstName", "lastName", "phoneNumber", "age"],
+  });
 
   const nameErrors: string[] = [];
   if (!data?.firstName) nameErrors.push("First name is required");
@@ -152,7 +154,15 @@ function BasicsReview({ error }: ReviewSectionProps) {
 }
 
 function InfoReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: [
+      "school",
+      "levelOfStudy",
+      "major",
+      "attendedBefore",
+      "numOfHackathons",
+    ],
+  });
   return (
     <>
       <ReviewField
@@ -185,7 +195,9 @@ function InfoReview({ error }: ReviewSectionProps) {
 }
 
 function ApplicationReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: ["question1", "question2", "question3"],
+  });
   return (
     <>
       <ReviewField
@@ -214,7 +226,9 @@ function ApplicationReview({ error }: ReviewSectionProps) {
 }
 
 function LinksReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: ["githubLink", "linkedInLink", "otherLink", "resumeLink"],
+  });
   return (
     <>
       <ReviewField
@@ -242,7 +256,15 @@ function LinksReview({ error }: ReviewSectionProps) {
 }
 
 function AgreementsReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: [
+      "agreeCodeOfConduct",
+      "agreeShareWithMLH",
+      "agreeShareWithSponsors",
+      "agreeWillBe18",
+      "agreeEmailsFromMLH",
+    ],
+  });
   return (
     <>
       <ReviewField
@@ -275,7 +297,9 @@ function AgreementsReview({ error }: ReviewSectionProps) {
 }
 
 function OptionalReview({}: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: ["underrepGroup", "gender", "ethnicity", "sexualOrientation"],
+  });
   return (
     <>
       <ReviewField
@@ -303,7 +327,15 @@ function OptionalReview({}: ReviewSectionProps) {
 }
 
 function AvatarReview({}: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: [
+      "avatarColour",
+      "avatarFace",
+      "avatarLeftHand",
+      "avatarRightHand",
+      "avatarHat",
+    ],
+  });
 
   const selectedColor = colors.find(
     (c) => c.name === (data?.avatarColour ?? "green"),
@@ -333,7 +365,7 @@ function AvatarReview({}: ReviewSectionProps) {
 }
 
 function CanvasReview({}: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({ fields: ["canvasData"] });
 
   // reuse shared canvas types
   type CanvasData = {
@@ -380,10 +412,35 @@ function CanvasReview({}: ReviewSectionProps) {
 const reviewSteps = applySteps.slice(0, -1);
 
 export function ReviewForm() {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    // fields required by applicationSubmitSchema
+    fields: [
+      "firstName",
+      "lastName",
+      "phoneNumber",
+      "countryOfResidence",
+      "age",
+      "school",
+      "levelOfStudy",
+      "major",
+      "attendedBefore",
+      "numOfHackathons",
+      "question1",
+      "question2",
+      "question3",
+      "resumeLink",
+      "githubLink",
+      "linkedInLink",
+      "otherLink",
+      "agreeCodeOfConduct",
+      "agreeShareWithMLH",
+      "agreeShareWithSponsors",
+      "agreeWillBe18",
+      "agreeEmailsFromMLH",
+    ],
+  });
   const result = applicationSubmitSchema.safeParse(data);
   const error = result.error?.format();
-  console.log({ error, result });
   return (
     <div className="overflow-auto">
       {reviewSteps.map((step, idx) => (

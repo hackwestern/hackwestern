@@ -11,7 +11,9 @@ import { signOut } from "next-auth/react";
 import Image from "next/image";
 
 export default function CharacterIcon() {
-  const { data: applicationData } = api.application.get.useQuery();
+  const { data: applicationData } = api.application.get.useQuery({
+    fields: ["firstName", "avatarColour"],
+  });
   const name = applicationData?.firstName ?? "Username";
 
   const bodyColor =

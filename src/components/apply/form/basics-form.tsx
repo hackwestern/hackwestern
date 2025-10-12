@@ -24,7 +24,16 @@ import { countrySelection } from "~/server/db/schema";
 
 export function BasicsForm() {
   const utils = api.useUtils();
-  const { data: defaultValues } = api.application.get.useQuery();
+  const { data: defaultValues } = api.application.get.useQuery({
+    fields: [
+      "status",
+      "firstName",
+      "lastName",
+      "phoneNumber",
+      "age",
+      "countryOfResidence",
+    ],
+  });
   const status = defaultValues?.status ?? "NOT_STARTED";
 
   const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
@@ -44,7 +53,6 @@ export function BasicsForm() {
 
   function onSubmit(data: z.infer<typeof basicsSaveSchema>) {
     mutate({
-      ...defaultValues,
       ...data,
     });
   }

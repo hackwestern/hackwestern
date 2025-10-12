@@ -45,8 +45,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
 
   const { pending, navigate } = usePendingNavigation();
 
-  const { data } = api.application.get.useQuery();
-  const result = applicationSubmitSchema.safeParse(data);
+  const result = applicationSubmitSchema.safeParse(applicationData);
   const error = result.error?.format();
 
   const submitMutation = api.application.submit.useMutation();
@@ -54,8 +53,6 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
   const onClickSubmit = async (e?: React.MouseEvent) => {
     e?.preventDefault();
     if (step !== "review") return;
-
-    console.log("errors: ", error);
 
     // toast the first 5 incorrect fields
     if (error) {

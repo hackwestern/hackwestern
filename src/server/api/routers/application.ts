@@ -17,29 +17,127 @@ import { z } from "zod";
 import { type CanvasPaths } from "~/types/canvas";
 
 export const applicationRouter = createTRPCRouter({
-  get: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const userId = ctx.session.user.id;
-      const application = await db.query.applications.findFirst({
-        where: (schema, { eq }) => eq(schema.userId, userId),
-      });
-
-      const modifiedApplication = application
-        ? {
-            ...application,
-            githubLink: application?.githubLink?.substring(19) ?? null,
-            linkedInLink: application?.linkedInLink?.substring(24) ?? null,
+  get: protectedProcedure
+    .input(
+      z
+        .object({
+          // Optional list of application columns to fetch; if omitted, fetch all as before
+          fields: z
+            .array(
+              z.enum([
+                "userId",
+                "createdAt",
+                "updatedAt",
+                "status",
+                // Avatar
+                "avatarColour",
+                "avatarFace",
+                "avatarLeftHand",
+                "avatarRightHand",
+                "avatarHat",
+                // Basics
+                "firstName",
+                "lastName",
+                "age",
+                "phoneNumber",
+                "countryOfResidence",
+                // Info
+                "school",
+                "levelOfStudy",
+                "major",
+                "attendedBefore",
+                "numOfHackathons",
+                // Essays
+                "question1",
+                "question2",
+                "question3",
+                // Links
+                "resumeLink",
+                "githubLink",
+                "linkedInLink",
+                "otherLink",
+                // Agreements
+                "agreeCodeOfConduct",
+                "agreeShareWithSponsors",
+                "agreeShareWithMLH",
+                "agreeEmailsFromMLH",
+                "agreeWillBe18",
+                // Optional demographics
+                "underrepGroup",
+                "gender",
+                "ethnicity",
+                "sexualOrientation",
+                // Canvas
+                "canvasData",
+              ] as const),
+            )
+            .optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        const userId = ctx.session.user.id;
+        const application = await (async () => {
+          // if specific fields were requested, build a Drizzle columns map to select only those
+          const fields = input?.fields;
+          if (fields && fields.length > 0) {
+            const columns = Object.fromEntries(
+              fields.map((f) => [f, true]),
+            ) as Record<string, true>;
+            return db.query.applications.findFirst({
+              columns,
+              where: (schema, { eq }) => eq(schema.userId, userId),
+            }) as Partial<typeof applications.$inferSelect>;
           }
-        : null;
 
-      return modifiedApplication;
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch application: " + JSON.stringify(error),
-      });
-    }
-  }),
+          // default: fetch all columns (existing behavior)
+          return db.query.applications.findFirst({
+            where: (schema, { eq }) => eq(schema.userId, userId),
+          });
+        })();
+
+        // When selecting a subset of fields, normalize only those link fields if present
+        const modifiedApplication = application
+          ? (() => {
+              // If no specific fields were requested, preserve prior full-shape behavior
+              if (!input?.fields || input.fields.length === 0) {
+                return {
+                  ...application,
+                  githubLink: application?.githubLink?.substring(19) ?? null,
+                  linkedInLink:
+                    application?.linkedInLink?.substring(24) ?? null,
+                } as typeof application;
+              }
+
+              // fields were specified: only transform if those keys exist in the selection
+              const selected = application;
+              if (
+                input.fields.includes("githubLink") &&
+                "githubLink" in selected
+              ) {
+                selected.githubLink =
+                  selected.githubLink?.substring(19) ?? null;
+              }
+              if (
+                input.fields.includes("linkedInLink") &&
+                "linkedInLink" in selected
+              ) {
+                selected.linkedInLink =
+                  selected.linkedInLink?.substring(24) ?? null;
+              }
+              return selected;
+            })()
+          : null;
+
+        return modifiedApplication;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch application: " + JSON.stringify(error),
+        });
+      }
+    }),
 
   getById: protectedOrganizerProcedure
     .input(
@@ -111,46 +209,47 @@ export const applicationRouter = createTRPCRouter({
         const userId = ctx.session.user.id;
         const { canvasData, ...restData } = input;
 
-        // Type the canvasData properly for JSONB
-        const typedCanvasData =
-          canvasData === null
-            ? undefined
-            : (canvasData as
-                | {
-                    paths: CanvasPaths;
-                    timestamp: number;
-                    version: string;
-                  }
-                | undefined);
-
-        const dataToSave = {
+        const dataToInsert = {
           ...restData,
-          canvasData: typedCanvasData,
-          githubLink: restData.githubLink
-            ? `${GITHUB_URL}${restData.githubLink}`
-            : null,
-          linkedInLink: restData.linkedInLink
-            ? `${LINKEDIN_URL}${restData.linkedInLink}`
-            : null,
           userId,
-        } as const;
+        };
+
+        // Only include these 3 specially formatted fields if they were actually provided
+        if (Object.prototype.hasOwnProperty.call(input, "canvasData")) {
+          (dataToInsert as typeof input).canvasData =
+            canvasData === null
+              ? undefined
+              : (canvasData as
+                  | {
+                      paths: CanvasPaths;
+                      timestamp: number;
+                      version: string;
+                    }
+                  | undefined);
+        }
+
+        if (Object.prototype.hasOwnProperty.call(input, "githubLink")) {
+          dataToInsert.githubLink = restData.githubLink
+            ? `${GITHUB_URL}${restData.githubLink}`
+            : null;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(input, "linkedInLink")) {
+          dataToInsert.linkedInLink = restData.linkedInLink
+            ? `${LINKEDIN_URL}${restData.linkedInLink}`
+            : null;
+        }
+
+        console.log("data inserting", dataToInsert);
 
         await db
           .insert(applications)
-          .values(dataToSave)
+          .values(dataToInsert)
           .onConflictDoUpdate({
             target: applications.userId,
             set: {
-              ...restData,
-              canvasData: typedCanvasData,
+              ...dataToInsert,
               updatedAt: new Date(),
-              githubLink: restData.githubLink
-                ? `${GITHUB_URL}${restData.githubLink}`
-                : null,
-              linkedInLink: restData.linkedInLink
-                ? `${LINKEDIN_URL}${restData.linkedInLink}`
-                : null,
-              // Do not change status on save. Submission should explicitly change status.
             },
           });
       } catch (error) {

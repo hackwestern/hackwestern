@@ -46,7 +46,15 @@ function isUnderrepGroup(answer: UnderrepGroupAnswer) {
 
 export function OptionalForm() {
   const utils = api.useUtils();
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: [
+      "status",
+      "underrepGroup",
+      "gender",
+      "ethnicity",
+      "sexualOrientation",
+    ],
+  });
 
   const status = data?.status ?? "NOT_STARTED";
   const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
@@ -59,7 +67,7 @@ export function OptionalForm() {
 
   const defaultValues = useMemo(() => {
     if (!data) return data;
-    const underrepGroup = getUnderrepGroup(data.underrepGroup);
+    const underrepGroup = getUnderrepGroup(data.underrepGroup!);
     return {
       ...data,
       underrepGroup,
@@ -84,7 +92,6 @@ export function OptionalForm() {
   function onSubmit(data: z.infer<typeof optionalSaveSchema>) {
     const underrepGroup = isUnderrepGroup(data.underrepGroup);
     mutate({
-      ...defaultValues,
       ...data,
       underrepGroup,
     });
