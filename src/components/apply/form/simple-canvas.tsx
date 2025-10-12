@@ -6,13 +6,36 @@ import React, {
   useEffect,
   useImperativeHandle,
 } from "react";
+import { colors } from "~/constants/avatar";
 import type { Point, Stroke, CanvasPaths } from "~/types/canvas";
+import { api } from "~/utils/api";
 
 // Define the canvas data structure used in callbacks
 export type CanvasData = {
   paths: CanvasPaths; // array of strokes composed of points
   timestamp: number;
   version: string;
+};
+
+function isTouchEvent(
+  e: React.MouseEvent | React.TouchEvent,
+): e is React.TouchEvent {
+  return (e as React.TouchEvent).touches !== undefined;
+}
+
+const getPointFromEvent = (
+  e: React.MouseEvent | React.TouchEvent,
+  rectRef: React.RefObject<DOMRect | null>,
+): Point => {
+  if (!rectRef.current) {
+    rectRef.current = e.currentTarget.getBoundingClientRect();
+  }
+  const rect = rectRef.current;
+  if (isTouchEvent(e)) {
+    const touch = e.touches[0];
+    return [touch!.clientX - rect.left, touch!.clientY - rect.top];
+  }
+  return [e.clientX - rect.left, e.clientY - rect.top];
 };
 
 // Simple canvas component for the form
@@ -59,6 +82,14 @@ export const SimpleCanvas = React.forwardRef<
     // Track the last local modification timestamp to prioritize local data
     const lastLocalModificationRef = useRef<number>(0);
     const hasLocalChangesRef = useRef<boolean>(false);
+
+    const { data } = api.application.get.useQuery({ fields: ["avatarColour"] });
+
+    const selectedColour = colors.find(
+      (color) => color.name === data?.avatarColour,
+    )?.value;
+
+    const strokeColour = selectedColour ? selectedColour + "dd" : "#a16bc7";
 
     // Helper to save current state to history
     // Only call this for discrete events: stroke completion, clear (NOT for undo/redo)
@@ -127,7 +158,7 @@ export const SimpleCanvas = React.forwardRef<
           return newIndex;
         });
       },
-      [onHistoryChange, historyIndex, history],
+      [onHistoryChange],
     );
 
     // Load initial data when component mounts or initialData changes
@@ -184,40 +215,27 @@ export const SimpleCanvas = React.forwardRef<
     const lastMoveTimeRef = useRef(0);
     const THROTTLE_MS = 16; // ~60fps for smooth lines with better performance
 
-    const getPointFromEvent = useCallback((e: React.MouseEvent): Point => {
-      if (!rectRef.current) {
-        rectRef.current = e.currentTarget.getBoundingClientRect();
-      }
-      const rect = rectRef.current;
-      return [e.clientX - rect.left, e.clientY - rect.top];
-    }, []);
+    const handleStrokeStart = (e: React.MouseEvent | React.TouchEvent) => {
+      e.preventDefault();
+      setIsDrawing(true);
+      rectRef.current = e.currentTarget.getBoundingClientRect();
+      const point = getPointFromEvent(e, rectRef);
+      setCurrentPath([point]);
+    };
 
-    const handleMouseDown = useCallback(
-      (e: React.MouseEvent) => {
-        setIsDrawing(true);
-        rectRef.current = e.currentTarget.getBoundingClientRect();
-        const point = getPointFromEvent(e);
-        setCurrentPath([point]);
-      },
-      [getPointFromEvent],
-    );
+    const handleStrokeDraw = (e: React.MouseEvent | React.TouchEvent) => {
+      if (!isDrawing) return;
 
-    const handleMouseMove = useCallback(
-      (e: React.MouseEvent) => {
-        if (!isDrawing) return;
+      // Throttle mouse move events
+      const now = Date.now();
+      if (now - lastMoveTimeRef.current < THROTTLE_MS) return;
+      lastMoveTimeRef.current = now;
 
-        // Throttle mouse move events
-        const now = Date.now();
-        if (now - lastMoveTimeRef.current < THROTTLE_MS) return;
-        lastMoveTimeRef.current = now;
+      const point = getPointFromEvent(e, rectRef);
+      setCurrentPath((prev) => [...prev, point]);
+    };
 
-        const point = getPointFromEvent(e);
-        setCurrentPath((prev) => [...prev, point]);
-      },
-      [isDrawing, getPointFromEvent],
-    );
-
-    const handleMouseUp = useCallback(() => {
+    const handleStrokeEnd = () => {
       if (isDrawing && currentPath.length > 0) {
         const timestamp = Date.now();
 
@@ -251,79 +269,7 @@ export const SimpleCanvas = React.forwardRef<
         setCurrentPath([]);
         setIsDrawing(false);
       }
-    }, [isDrawing, currentPath, paths, onDrawingChange, saveToHistory]);
-
-    const getPointFromTouch = useCallback((e: React.TouchEvent): Point => {
-      if (!rectRef.current) {
-        rectRef.current = e.currentTarget.getBoundingClientRect();
-      }
-      const rect = rectRef.current;
-      const touch = e.touches[0];
-      return [touch!.clientX - rect.left, touch!.clientY - rect.top];
-    }, []);
-
-    // Touch handlers
-    const handleTouchStart = useCallback(
-      (e: React.TouchEvent) => {
-        e.preventDefault(); // Prevent scrolling
-        setIsDrawing(true);
-        rectRef.current = e.currentTarget.getBoundingClientRect();
-        const point = getPointFromTouch(e);
-        setCurrentPath([point]);
-      },
-      [getPointFromTouch],
-    );
-
-    const handleTouchMove = useCallback(
-      (e: React.TouchEvent) => {
-        e.preventDefault(); // Prevent scrolling
-        if (!isDrawing) return;
-
-        // Throttle touch move events
-        const now = Date.now();
-        if (now - lastMoveTimeRef.current < THROTTLE_MS) return;
-        lastMoveTimeRef.current = now;
-
-        const point = getPointFromTouch(e);
-        setCurrentPath((prev) => [...prev, point]);
-      },
-      [isDrawing, getPointFromTouch],
-    );
-
-    const handleTouchEnd = useCallback(() => {
-      if (isDrawing && currentPath.length > 0) {
-        const timestamp = Date.now();
-
-        hasLocalChangesRef.current = true;
-        lastLocalModificationRef.current = timestamp;
-
-        // Create the new paths array
-        const newPaths = [...paths, currentPath];
-
-        // Update paths state
-        setPaths(newPaths);
-
-        // Immediately save to history (no debounce for undo/redo)
-        saveToHistory(newPaths);
-
-        // Debounce only the database save - wait to see if more strokes come
-        if (saveTimerRef.current) {
-          clearTimeout(saveTimerRef.current);
-        }
-
-        saveTimerRef.current = setTimeout(() => {
-          const drawingData: CanvasData = {
-            paths: newPaths,
-            timestamp: timestamp,
-            version: "1.0",
-          };
-          onDrawingChange?.(newPaths.length === 0, drawingData);
-        }, SAVE_DEBOUNCE_MS);
-
-        setCurrentPath([]);
-        setIsDrawing(false);
-      }
-    }, [isDrawing, currentPath, paths, onDrawingChange, saveToHistory]);
+    };
 
     // Memoize path string generation to avoid recalculating on every render
     const pathStrings = useMemo(() => {
@@ -475,6 +421,8 @@ export const SimpleCanvas = React.forwardRef<
         historyIndex,
         onDrawingChange,
         onHistoryChange,
+        onCanvasEmptyChange,
+        onFormFieldChange,
       ],
     );
 
@@ -485,20 +433,20 @@ export const SimpleCanvas = React.forwardRef<
       >
         <svg
           className="h-full w-full"
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchEnd}
+          onMouseDown={handleStrokeStart}
+          onMouseMove={handleStrokeDraw}
+          onMouseUp={handleStrokeEnd}
+          onMouseLeave={handleStrokeEnd}
+          onTouchStart={handleStrokeStart}
+          onTouchMove={handleStrokeDraw}
+          onTouchEnd={handleStrokeEnd}
+          onTouchCancel={handleStrokeEnd}
         >
           {pathStrings.map((pathString, pathIndex) => (
             <path
               key={pathIndex}
               d={pathString}
-              stroke="#a16bc7"
+              stroke={strokeColour}
               strokeWidth="4"
               fill="none"
               strokeLinecap="round"
@@ -508,7 +456,7 @@ export const SimpleCanvas = React.forwardRef<
           {currentPathString && (
             <path
               d={currentPathString}
-              stroke="#a16bc7"
+              stroke={strokeColour}
               strokeWidth="4"
               fill="none"
               strokeLinecap="round"

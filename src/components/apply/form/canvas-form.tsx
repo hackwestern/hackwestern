@@ -100,7 +100,7 @@ export function CanvasForm() {
                 <FormItem>
                   <FormControl>
                     <div className="-mr-1">
-                      <div className="absolute z-[999] mt-2 flex w-[17.5rem] justify-end gap-2">
+                      <div className="pointer-events-none absolute z-[999] mt-2 flex w-[17.5rem] justify-end gap-2">
                         <Button
                           type="button"
                           size="icon"
@@ -109,7 +109,7 @@ export function CanvasForm() {
                             canvasRef.current?.undo();
                             // Button states are updated via onHistoryChange callback
                           }}
-                          className="h-6 w-6 text-heavy"
+                          className="pointer-events-auto h-6 w-6 text-heavy hover:bg-gray-200/80"
                           title="Undo"
                         >
                           <Undo className="h-4 w-4" />
@@ -122,7 +122,7 @@ export function CanvasForm() {
                             canvasRef.current?.redo();
                             // Button states are updated via onHistoryChange callback
                           }}
-                          className="h-6 w-6 text-heavy"
+                          className="pointer-events-auto h-6 w-6 text-heavy hover:bg-gray-200/80"
                           title="Redo"
                         >
                           <Redo className="h-4 w-4" />
@@ -135,7 +135,7 @@ export function CanvasForm() {
                             canvasRef.current?.clear();
                             // Button states are updated via onHistoryChange callback
                           }}
-                          className="h-6 w-6 text-heavy"
+                          className="pointer-events-auto h-6 w-6 text-heavy hover:bg-gray-200/80"
                           title="Clear"
                         >
                           <Trash2 className="h-4 w-4" />
