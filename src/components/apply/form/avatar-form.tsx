@@ -152,15 +152,7 @@ export function AvatarForm({
     name: "avatarHat",
   });
 
-  const FIELDS: Array<keyof z.infer<typeof personaSaveSchema>> = [
-    "avatarColour",
-    "avatarFace",
-    "avatarLeftHand",
-    "avatarRightHand",
-    "avatarHat",
-  ];
-
-  useAutoSave(form, onSubmit, defaultValues, { fields: FIELDS });
+  useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof personaSaveSchema>) {
     mutate({

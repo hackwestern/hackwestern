@@ -87,14 +87,7 @@ export function OptionalForm() {
     defaultValues: defaultValues ?? undefined,
   });
 
-  const FIELDS: Array<keyof z.infer<typeof optionalSaveSchema>> = [
-    "underrepGroup",
-    "gender",
-    "ethnicity",
-    "sexualOrientation",
-  ];
-
-  useAutoSave(form, onSubmit, defaultValues, { fields: FIELDS });
+  useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof optionalSaveSchema>) {
     const underrepGroup = isUnderrepGroup(data.underrepGroup);

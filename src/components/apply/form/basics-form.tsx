@@ -49,15 +49,7 @@ export function BasicsForm() {
     defaultValues: defaultValues as z.infer<typeof basicsSaveSchema>,
   });
 
-  const FIELDS: Array<keyof z.infer<typeof basicsSaveSchema>> = [
-    "firstName",
-    "lastName",
-    "phoneNumber",
-    "age",
-    "countryOfResidence",
-  ];
-
-  useAutoSave(form, onSubmit, defaultValues, { fields: FIELDS });
+  useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof basicsSaveSchema>) {
     mutate({

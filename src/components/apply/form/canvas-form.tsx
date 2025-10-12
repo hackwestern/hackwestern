@@ -63,12 +63,7 @@ export function CanvasForm() {
     }
   }, [defaultValues?.canvasData, form]);
 
-  const FIELDS: Array<keyof z.infer<typeof canvasSaveSchema>> = ["canvasData"];
-
-  useAutoSave(form, onSubmit, defaultValues, {
-    fields: FIELDS,
-    debounceMs: 2000,
-  });
+  useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof canvasSaveSchema>) {
     mutate({

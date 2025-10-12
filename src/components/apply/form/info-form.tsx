@@ -68,15 +68,7 @@ export function InfoForm() {
     defaultValues: formValues, // Use the complete data object
   });
 
-  const FIELDS: Array<keyof z.infer<typeof infoSaveSchema>> = [
-    "school",
-    "levelOfStudy",
-    "major",
-    "attendedBefore",
-    "numOfHackathons",
-  ];
-
-  useAutoSave(form, onSubmit, formValues, { fields: FIELDS });
+  useAutoSave(form, onSubmit, formValues);
 
   function onSubmit(formData: z.infer<typeof infoSaveSchema>) {
     if (!data) return;

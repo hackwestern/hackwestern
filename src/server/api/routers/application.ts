@@ -79,21 +79,19 @@ export const applicationRouter = createTRPCRouter({
       try {
         const userId = ctx.session.user.id;
         const application = await (async () => {
-          // If specific fields were requested, build a Drizzle columns map to select only those
+          // if specific fields were requested, build a Drizzle columns map to select only those
           const fields = input?.fields;
           if (fields && fields.length > 0) {
             const columns = Object.fromEntries(
               fields.map((f) => [f, true]),
             ) as Record<string, true>;
             return db.query.applications.findFirst({
-              columns: columns as unknown as {
-                // Drizzle infers column names from this shape; casting keeps it flexible
-                [K in keyof typeof columns]: true;
-              },
+              columns,
               where: (schema, { eq }) => eq(schema.userId, userId),
             });
           }
-          // Default: fetch all columns (existing behavior)
+
+          // default: fetch all columns (existing behavior)
           return db.query.applications.findFirst({
             where: (schema, { eq }) => eq(schema.userId, userId),
           });
@@ -250,6 +248,8 @@ export const applicationRouter = createTRPCRouter({
             ? `${LINKEDIN_URL}${restData.linkedInLink}`
             : null;
         }
+
+        console.log('data inserting', dataToInsert);
 
         await db
           .insert(applications)

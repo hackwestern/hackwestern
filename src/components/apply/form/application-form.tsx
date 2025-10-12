@@ -37,16 +37,7 @@ export function ApplicationForm() {
     mode: "onBlur",
   });
 
-  const FIELDS: Array<keyof z.infer<typeof applicationStepSaveSchema>> = [
-    "question1",
-    "question2",
-    "question3",
-  ];
-
-  useAutoSave(form, onSubmit, defaultValues, {
-    fields: FIELDS,
-    debounceMs: 2000,
-  });
+  useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof applicationStepSaveSchema>) {
     mutate({

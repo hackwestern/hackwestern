@@ -7,7 +7,7 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
   context: ReturnType<typeof useForm<TFieldValues>>,
   onSubmit: (data: TFieldValues) => void,
   defaultValues: TFieldValues | null | undefined,
-  options?: { fields?: Array<keyof TFieldValues>; debounceMs?: number },
+  options?: { debounceMs?: number },
 ) {
   const watch = useWatch({ control: context.control });
   const { dirtyFields } = context.formState;
@@ -39,28 +39,10 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
   if (!debouncedRemoteSaveRef.current) {
     const saveFn = (...args: unknown[]) => {
       const data = args[0] as TFieldValues;
-      // Strongly-typed pick helper to avoid any/suppressions
-      const pickSubset = <T, K extends keyof T>(
-        obj: T,
-        keys: ReadonlyArray<K>,
-      ): Pick<T, K> => {
-        const out = {} as Pick<T, K>;
-        for (const k of keys) out[k] = obj[k];
-        return out;
-      };
-      // If specific fields were provided, pluck only those keys
-      const payload = (() => {
-        const keys = options?.fields;
-        if (!keys || keys.length === 0) return data;
-        const picked = pickSubset(
-          data,
-          keys as ReadonlyArray<keyof typeof data>,
-        );
-        return picked;
-      })();
+
       isSavingRef.current = true;
       lastSubmittedRef.current = data;
-      onSubmitRef.current(payload);
+      onSubmitRef.current(data);
       // Mark as not saving after a short delay to allow mutation to complete
       setTimeout(() => {
         isSavingRef.current = false;

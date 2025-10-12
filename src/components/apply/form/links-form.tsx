@@ -58,14 +58,7 @@ export function LinksForm() {
     resolver: zodResolver(linksSaveSchema),
   });
 
-  const FIELDS: Array<keyof z.infer<typeof linksSaveSchema>> = [
-    "githubLink",
-    "linkedInLink",
-    "otherLink",
-    "resumeLink",
-  ];
-
-  useAutoSave(form, onSubmit, defaultValues, { fields: FIELDS });
+  useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof linksSaveSchema>) {
     // Normalize resume and other links so they validate as URLs (prepend https:// if missing)

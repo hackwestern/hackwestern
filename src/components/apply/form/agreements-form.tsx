@@ -53,15 +53,7 @@ export function AgreementsForm() {
     resolver: zodResolver(agreementsSaveSchema),
   });
 
-  const FIELDS: Array<keyof z.infer<typeof agreementsSaveSchema>> = [
-    "agreeCodeOfConduct",
-    "agreeShareWithMLH",
-    "agreeShareWithSponsors",
-    "agreeWillBe18",
-    "agreeEmailsFromMLH",
-  ];
-
-  useAutoSave(form, onSubmit, defaultValues, { fields: FIELDS });
+  useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof agreementsSaveSchema>) {
     mutate({
