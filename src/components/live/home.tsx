@@ -3,7 +3,9 @@ import { Button } from "../ui/button";
 import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 const Home = () => {
-  const { data: application } = api.application.get.useQuery();
+  const { data: application } = api.application.get.useQuery({
+    fields: ["firstName"],
+  });
 
   return (
     <div className="flex w-full flex-row justify-start p-10 ">

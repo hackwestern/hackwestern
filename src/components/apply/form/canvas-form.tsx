@@ -13,7 +13,9 @@ import SimpleCanvas from "./simple-canvas";
 
 export function CanvasForm() {
   const utils = api.useUtils();
-  const { data: defaultValues } = api.application.get.useQuery();
+  const { data: defaultValues } = api.application.get.useQuery({
+    fields: ["status", "canvasData"],
+  });
 
   const status = defaultValues?.status ?? "NOT_STARTED";
   const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
@@ -65,7 +67,6 @@ export function CanvasForm() {
 
   function onSubmit(data: z.infer<typeof canvasSaveSchema>) {
     mutate({
-      ...defaultValues,
       ...data,
     });
   }

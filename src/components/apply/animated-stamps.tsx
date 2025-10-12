@@ -18,7 +18,17 @@ const itemAnim = {
 };
 
 export function LeftStampColumn() {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: [
+      "major",
+      "school",
+      "githubLink",
+      "linkedInLink",
+      "otherLink",
+      "resumeLink",
+    ],
+  });
+
   return (
     <motion.div
       layout
@@ -53,7 +63,23 @@ export function LeftStampColumn() {
 }
 
 export function MobileStampGroup() {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: [
+      "avatarColour",
+      "avatarFace",
+      "avatarLeftHand",
+      "avatarRightHand",
+      "avatarHat",
+      "school",
+      "major",
+      "attendedBefore",
+      "numOfHackathons",
+      "githubLink",
+      "linkedInLink",
+      "otherLink",
+      "resumeLink",
+    ],
+  });
 
   return (
     <motion.div
@@ -125,7 +151,19 @@ export function MobileStampGroup() {
 }
 
 export function RightStampColumn() {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: [
+      "attendedBefore",
+      "avatarColour",
+      "avatarFace",
+      "avatarLeftHand",
+      "avatarRightHand",
+      "avatarHat",
+      "numOfHackathons",
+      "school",
+      "major",
+    ],
+  });
 
   return (
     <motion.div

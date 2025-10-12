@@ -6,7 +6,9 @@ import { api } from "~/utils/api";
 const Logout = () => {
   const router = useRouter();
 
-  const { data: application } = api.application.get.useQuery();
+  const { data: application } = api.application.get.useQuery({
+    fields: ["firstName"],
+  });
   const name = application?.firstName;
 
   const logout = () => {

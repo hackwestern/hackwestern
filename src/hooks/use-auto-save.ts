@@ -7,10 +7,13 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
   context: ReturnType<typeof useForm<TFieldValues>>,
   onSubmit: (data: TFieldValues) => void,
   defaultValues: TFieldValues | null | undefined,
+  options?: { debounceMs?: number },
 ) {
   const watch = useWatch({ control: context.control });
   const { dirtyFields } = context.formState;
   const hasDirtyFields = Object.keys(dirtyFields).length > 0;
+
+  const debounceMs = options?.debounceMs ?? 750;
 
   // Track the last submitted values to avoid resetting with stale data
   const lastSubmittedRef = useRef<TFieldValues | null>(null);
@@ -36,6 +39,7 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
   if (!debouncedRemoteSaveRef.current) {
     const saveFn = (...args: unknown[]) => {
       const data = args[0] as TFieldValues;
+
       isSavingRef.current = true;
       lastSubmittedRef.current = data;
       onSubmitRef.current(data);
@@ -44,7 +48,7 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
         isSavingRef.current = false;
       }, 100);
     };
-    debouncedRemoteSaveRef.current = debounce(saveFn, 750);
+    debouncedRemoteSaveRef.current = debounce(saveFn, debounceMs);
   }
 
   useEffect(() => {

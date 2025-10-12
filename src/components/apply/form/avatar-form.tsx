@@ -108,7 +108,16 @@ export function AvatarForm({
   previewHeight?: number | null;
 }) {
   const utils = api.useUtils();
-  const { data: defaultValues } = api.application.get.useQuery();
+  const { data: defaultValues } = api.application.get.useQuery({
+    fields: [
+      "status",
+      "avatarColour",
+      "avatarFace",
+      "avatarLeftHand",
+      "avatarRightHand",
+      "avatarHat",
+    ],
+  });
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
       return utils.application.get.invalidate();
@@ -147,7 +156,6 @@ export function AvatarForm({
 
   function onSubmit(data: z.infer<typeof personaSaveSchema>) {
     mutate({
-      ...defaultValues,
       ...data,
     });
   }
