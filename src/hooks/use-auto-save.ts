@@ -7,7 +7,7 @@ export function useAutoSave<TFieldValues extends FieldValues = FieldValues>(
   context: ReturnType<typeof useForm<TFieldValues>>,
   onSubmit: (data: TFieldValues) => void,
   defaultValues: TFieldValues | null | undefined,
-  options?: { fields?: Array<keyof TFieldValues>, debounceMs?: number },
+  options?: { fields?: Array<keyof TFieldValues>; debounceMs?: number },
 ) {
   const watch = useWatch({ control: context.control });
   const { dirtyFields } = context.formState;
