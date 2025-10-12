@@ -67,7 +67,7 @@ export function OptionalForm() {
 
   const defaultValues = useMemo(() => {
     if (!data) return data;
-    const underrepGroup = getUnderrepGroup(data.underrepGroup);
+    const underrepGroup = getUnderrepGroup(data.underrepGroup!);
     return {
       ...data,
       underrepGroup,

@@ -88,7 +88,7 @@ export const applicationRouter = createTRPCRouter({
             return db.query.applications.findFirst({
               columns,
               where: (schema, { eq }) => eq(schema.userId, userId),
-            });
+            }) as Partial<typeof applications.$inferSelect>;
           }
 
           // default: fetch all columns (existing behavior)
@@ -104,38 +104,29 @@ export const applicationRouter = createTRPCRouter({
               if (!input?.fields || input.fields.length === 0) {
                 return {
                   ...application,
-                  githubLink:
-                    (
-                      application as { githubLink?: string | null }
-                    )?.githubLink?.substring(19) ?? null,
+                  githubLink: application?.githubLink?.substring(19) ?? null,
                   linkedInLink:
-                    (
-                      application as { linkedInLink?: string | null }
-                    )?.linkedInLink?.substring(24) ?? null,
+                    application?.linkedInLink?.substring(24) ?? null,
                 } as typeof application;
               }
 
               // fields were specified: only transform if those keys exist in the selection
-              const selected = { ...(application as Record<string, unknown>) };
+              const selected = application;
               if (
                 input.fields.includes("githubLink") &&
                 "githubLink" in selected
               ) {
                 selected.githubLink =
-                  (selected.githubLink as string | null | undefined)?.substring(
-                    19,
-                  ) ?? null;
+                  selected.githubLink?.substring(19) ?? null;
               }
               if (
                 input.fields.includes("linkedInLink") &&
                 "linkedInLink" in selected
               ) {
                 selected.linkedInLink =
-                  (
-                    selected.linkedInLink as string | null | undefined
-                  )?.substring(24) ?? null;
+                  selected.linkedInLink?.substring(24) ?? null;
               }
-              return selected as typeof application;
+              return selected;
             })()
           : null;
 
