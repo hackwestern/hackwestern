@@ -107,7 +107,6 @@ export function CanvasForm() {
                           disabled={!canUndo}
                           onClick={() => {
                             canvasRef.current?.undo();
-                            // Button states are updated via onHistoryChange callback
                           }}
                           className="pointer-events-auto h-6 w-6 text-heavy hover:bg-gray-200/80"
                           title="Undo"
@@ -120,7 +119,6 @@ export function CanvasForm() {
                           disabled={!canRedo}
                           onClick={() => {
                             canvasRef.current?.redo();
-                            // Button states are updated via onHistoryChange callback
                           }}
                           className="pointer-events-auto h-6 w-6 text-heavy hover:bg-gray-200/80"
                           title="Redo"
@@ -133,7 +131,6 @@ export function CanvasForm() {
                           disabled={isCanvasEmpty}
                           onClick={() => {
                             canvasRef.current?.clear();
-                            // Button states are updated via onHistoryChange callback
                           }}
                           className="pointer-events-auto h-6 w-6 text-heavy hover:bg-gray-200/80"
                           title="Clear"
@@ -157,7 +154,6 @@ export function CanvasForm() {
                         onDrawingChange={(isEmpty, data) => {
                           setIsCanvasEmpty(isEmpty);
                           // Don't call canUndo/canRedo here - it causes race conditions
-                          // Button states are handled by onHistoryChange
                           if (data) {
                             field.onChange(data);
                           }
