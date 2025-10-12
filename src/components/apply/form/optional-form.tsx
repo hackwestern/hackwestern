@@ -101,7 +101,6 @@ export function OptionalForm() {
     mutate({
       ...data,
       underrepGroup,
-      fields: FIELDS,
     });
   }
 

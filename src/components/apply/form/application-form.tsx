@@ -51,7 +51,6 @@ export function ApplicationForm() {
   function onSubmit(data: z.infer<typeof applicationStepSaveSchema>) {
     mutate({
       ...data,
-      fields: FIELDS,
     });
   }
 

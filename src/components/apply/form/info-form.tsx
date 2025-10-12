@@ -88,7 +88,6 @@ export function InfoForm() {
           : formData.attendedBefore === "no"
             ? false
             : undefined,
-      fields: FIELDS,
     });
   }
 

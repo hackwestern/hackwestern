@@ -73,7 +73,6 @@ export function CanvasForm() {
   function onSubmit(data: z.infer<typeof canvasSaveSchema>) {
     mutate({
       ...data,
-      fields: FIELDS,
     });
   }
 

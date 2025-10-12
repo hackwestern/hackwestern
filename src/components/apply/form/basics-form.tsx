@@ -62,7 +62,6 @@ export function BasicsForm() {
   function onSubmit(data: z.infer<typeof basicsSaveSchema>) {
     mutate({
       ...data,
-      fields: FIELDS,
     });
   }
 

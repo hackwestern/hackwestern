@@ -165,7 +165,6 @@ export function AvatarForm({
   function onSubmit(data: z.infer<typeof personaSaveSchema>) {
     mutate({
       ...data,
-      fields: FIELDS,
     });
   }
 

@@ -77,7 +77,6 @@ export function LinksForm() {
 
     mutate({
       ...normalizedData,
-      fields: FIELDS,
     });
   }
 

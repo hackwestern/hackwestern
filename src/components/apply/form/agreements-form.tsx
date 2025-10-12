@@ -66,7 +66,6 @@ export function AgreementsForm() {
   function onSubmit(data: z.infer<typeof agreementsSaveSchema>) {
     mutate({
       ...data,
-      fields: FIELDS,
     });
   }
 

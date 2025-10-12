@@ -214,52 +214,11 @@ export const applicationRouter = createTRPCRouter({
   }),
 
   save: protectedProcedure
-    .input(
-      applicationSaveSchema.extend({
-        fields: z
-          .array(
-            z.enum([
-              "avatarColour",
-              "avatarFace",
-              "avatarLeftHand",
-              "avatarRightHand",
-              "avatarHat",
-              "firstName",
-              "lastName",
-              "age",
-              "phoneNumber",
-              "countryOfResidence",
-              "school",
-              "levelOfStudy",
-              "major",
-              "attendedBefore",
-              "numOfHackathons",
-              "question1",
-              "question2",
-              "question3",
-              "resumeLink",
-              "githubLink",
-              "linkedInLink",
-              "otherLink",
-              "agreeCodeOfConduct",
-              "agreeShareWithSponsors",
-              "agreeShareWithMLH",
-              "agreeEmailsFromMLH",
-              "agreeWillBe18",
-              "underrepGroup",
-              "gender",
-              "ethnicity",
-              "sexualOrientation",
-              "canvasData",
-            ] as const),
-          )
-          .optional(),
-      }),
-    )
+    .input(applicationSaveSchema.extend({}))
     .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
-        const { canvasData, fields, ...restData } = input;
+        const { canvasData, ...restData } = input;
 
         // Type the canvasData properly for JSONB
         const typedCanvasData =
@@ -285,63 +244,10 @@ export const applicationRouter = createTRPCRouter({
           userId,
         } as const;
 
-        await db
-          .insert(applications)
-          .values(dataToSave)
-          .onConflictDoUpdate({
-            target: applications.userId,
-            set: (() => {
-              const setObj: Record<string, unknown> = {
-                // Always bump updatedAt
-                updatedAt: new Date(),
-                // Do not change status on save. Submission should explicitly change status.
-              };
-
-              // If a fields list was provided, only set those fields.
-              if (fields && fields.length > 0) {
-                for (const key of fields) {
-                  switch (key) {
-                    case "githubLink":
-                      setObj.githubLink = restData.githubLink
-                        ? `${GITHUB_URL}${restData.githubLink}`
-                        : null;
-                      break;
-                    case "linkedInLink":
-                      setObj.linkedInLink = restData.linkedInLink
-                        ? `${LINKEDIN_URL}${restData.linkedInLink}`
-                        : null;
-                      break;
-                    case "canvasData":
-                      setObj.canvasData = typedCanvasData;
-                      break;
-                    default:
-                      // Assign scalar/enum/boolean fields directly
-                      setObj[key] = restData[key];
-                  }
-                }
-                return setObj as { updatedAt: Date } & Record<string, unknown>;
-              }
-
-              // No fields specified: fall back to previous behavior but avoid overwriting links unless provided
-              Object.assign(setObj, restData);
-              setObj.canvasData = typedCanvasData;
-              if (
-                Object.prototype.hasOwnProperty.call(restData, "githubLink")
-              ) {
-                setObj.githubLink = restData.githubLink
-                  ? `${GITHUB_URL}${restData.githubLink}`
-                  : null;
-              }
-              if (
-                Object.prototype.hasOwnProperty.call(restData, "linkedInLink")
-              ) {
-                setObj.linkedInLink = restData.linkedInLink
-                  ? `${LINKEDIN_URL}${restData.linkedInLink}`
-                  : null;
-              }
-              return setObj as { updatedAt: Date } & Record<string, unknown>;
-            })(),
-          });
+        await db.insert(applications).values(dataToSave).onConflictDoUpdate({
+          target: applications.userId,
+          set: dataToSave,
+        });
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
