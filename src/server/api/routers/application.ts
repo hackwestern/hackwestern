@@ -249,7 +249,7 @@ export const applicationRouter = createTRPCRouter({
             : null;
         }
 
-        console.log('data inserting', dataToInsert);
+        console.log("data inserting", dataToInsert);
 
         await db
           .insert(applications)
