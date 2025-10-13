@@ -63,7 +63,7 @@ describe("review.save", async () => {
     await caller.application.save(application);
 
     const emptyReview = createEmptyReview(session);
- 
+
     await caller.review.save(emptyReview);
 
     // Verify that nothing was inserted for this user
