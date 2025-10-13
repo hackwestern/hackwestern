@@ -37,7 +37,12 @@ export const reviewRouter = createTRPCRouter({
         const reviewData = input;
 
         // Don't save anything if there is nothing to save to avoid overpolluting the database
-        if (!reviewData.originalityRating && !reviewData.technicalityRating && !reviewData.passionRating && !reviewData.comments) {
+        if (
+          !reviewData.originalityRating &&
+          !reviewData.technicalityRating &&
+          !reviewData.passionRating &&
+          !reviewData.comments
+        ) {
           return;
         }
 
