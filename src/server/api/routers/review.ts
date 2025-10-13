@@ -34,8 +34,13 @@ export const reviewRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
-
         const reviewData = input;
+
+        // Don't save anything if there is nothing to save to avoid overpolluting the database
+        if (!reviewData.originalityRating && !reviewData.technicalityRating && !reviewData.passionRating && !reviewData.comments) {
+          return;
+        }
+
         const isCompleteReview =
           reviewSubmitSchema.safeParse(reviewData).success;
 
@@ -112,16 +117,16 @@ export const reviewRouter = createTRPCRouter({
   getNextId: protectedOrganizerProcedure
     .input(
       z.object({
-        skipId: z.string().nullish(),
+        skipId: z.string().nullish(), // used if a reviewer is currently reviewing something (stored as a cookie or something on the client side)
       }),
     )
     .query(async ({ ctx, input }) => {
       try {
-        // Remove expired reviews from the review table
-        // This is a SQL string because drizzle doesn't have USING (drizzle bad)
-        await db.execute(
-          sql`DELETE FROM hw_review USING hw_application AS app WHERE applicant_user_id = app.user_id AND NOW() - app.updated_at::timestamp > INTERVAL '24 hours' AND completed != TRUE;`,
-        );
+        // // Remove expired reviews from the review table
+        // // This is a SQL string because drizzle doesn't have USING (drizzle bad)
+        // await db.execute(
+        //   sql`DELETE FROM hw_review USING hw_application AS app WHERE applicant_user_id = app.user_id AND NOW() - app.updated_at::timestamp > INTERVAL '24 hours' AND completed != TRUE;`,
+        // );
 
         // Put applications with expired reviews back on the queue
         await db
@@ -151,6 +156,7 @@ export const reviewRouter = createTRPCRouter({
           }
         }
 
+        // all the userIds of the applicants the reviewer already reviewed
         const alreadyReviewedByReviewer = db
           .select({ data: reviews.applicantUserId })
           .from(reviews)
@@ -181,7 +187,7 @@ export const reviewRouter = createTRPCRouter({
           .groupBy(applications.userId)
           .having(({ reviewCount }) => lt(reviewCount, REQUIRED_REVIEWS))
           // order by random
-          .orderBy(asc(sql`RANDOM()`))
+          .orderBy(asc(sql.identifier("reviewCount")), asc(sqlRANDOM()))
           .limit(1);
 
         const appAwaitingReview = appAwaitingReviews[0];
