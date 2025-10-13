@@ -100,17 +100,17 @@ export const PAGES = [
           roundFrame={true}
         />
         <Image
-            src="/images/promo/book/stickers/headphones.png"
-            alt="headphones"
-            height={82}
-            width={90}
-            style={{
-              position: "absolute",
-              top: 120,
-              left: 275,
-              transform: "rotate(5deg)"
-            }}
-          />
+          src="/images/promo/book/stickers/headphones.png"
+          alt="headphones"
+          height={82}
+          width={90}
+          style={{
+            position: "absolute",
+            top: 120,
+            left: 275,
+            transform: "rotate(5deg)",
+          }}
+        />
         <Image
           src="/images/promo/book/stickers/palette.png"
           alt="palette"
@@ -131,7 +131,7 @@ export const PAGES = [
             position: "absolute",
             top: 343,
             left: 20,
-            transform: "rotate(-25deg)"
+            transform: "rotate(-25deg)",
           }}
         />
         <Image
@@ -446,39 +446,39 @@ export const PAGES = [
           </span>
         </div>{" "}
         <Image
-            src="/images/promo/book/stickers/goggles.png"
-            alt="goggles"
-            height={66}
-            width={134}
-            style={{
-              position: "absolute",
-              top: 32,
-              left: 274,
-              transform: "rotate(10deg)"
-            }}
-          />
-          <Image
-            src="/images/promo/book/stickers/dancer-2.png"
-            alt="dancer"
-            height={90}
-            width={117}
-            style={{
-              position: "absolute",
-              top: 495,
-              left: 315,
-            }}
-          />
-          <Image
-            src="/images/promo/book/stickers/can't-wait.svg"
-            alt="can't wait for HW XII >.<"
-            height={23}
-            width={265}
-            style={{
-              position: "absolute",
-              top: 595,
-              left: 219,
-            }}
-          />
+          src="/images/promo/book/stickers/goggles.png"
+          alt="goggles"
+          height={66}
+          width={134}
+          style={{
+            position: "absolute",
+            top: 32,
+            left: 274,
+            transform: "rotate(10deg)",
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/dancer-2.png"
+          alt="dancer"
+          height={90}
+          width={117}
+          style={{
+            position: "absolute",
+            top: 495,
+            left: 315,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/can't-wait.svg"
+          alt="can't wait for HW XII >.<"
+          height={23}
+          width={265}
+          style={{
+            position: "absolute",
+            top: 595,
+            left: 219,
+          }}
+        />
       </div>
     ),
     back: (
@@ -525,7 +525,7 @@ export const PAGES = [
             position: "absolute",
             top: 518,
             left: 290,
-            transform: "scaleX(-1)"
+            transform: "scaleX(-1)",
           }}
         />
       </div>
@@ -568,74 +568,74 @@ export const PAGES = [
           rotate={9}
           roundFrame={true}
         />
-          <Image
-            src="/images/promo/book/stickers/cat-2.png"
-            alt="cat"
-            height={130}
-            width={117}
-            style={{
-              position: "absolute",
-              top: 522,
-              left: 120,
-              transform: "rotate(5deg)"
-            }}
-          />
-          <Image
-            src="/images/promo/book/stickers/treble.png"
-            alt="treble clef"
-            height={60}
-            width={52}
-            style={{
-              position: "absolute",
-              top: 571,
-              left: 434,
-            }}
-          />
-          <Image
-            src="/images/promo/book/stickers/rope.png"
-            alt="rope and rock"
-            height={130}
-            width={157}
-            style={{
-              position: "absolute",
-              top: 200,
-              left: 334,
-            }}
-          />
-          <Image
-            src="/images/promo/book/stickers/rock-1.png"
-            alt="rock"
-            height={90}
-            width={80}
-            style={{
-              position: "absolute",
-              top: 141,
-              left: 255,
-              transform: "rotate(-60deg)"
-            }}
-          />
-          <Image
-            src="/images/promo/book/stickers/rock-2.png"
-            alt="rock"
-            height={74}
-            width={82}
-            style={{
-              position: "absolute",
-              top: 72,
-              left: 313,
-            }}
-          />
-          <Image
-            src="/images/promo/book/stickers/rock-climbing.svg"
-            alt="rock climbing!"
-            height={13}
-            width={125}
-            style={{
-              position: "absolute",
-              top: 154,
-              left: 350,
-            }}
-          />
+        <Image
+          src="/images/promo/book/stickers/cat-2.png"
+          alt="cat"
+          height={130}
+          width={117}
+          style={{
+            position: "absolute",
+            top: 522,
+            left: 120,
+            transform: "rotate(5deg)",
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/treble.png"
+          alt="treble clef"
+          height={60}
+          width={52}
+          style={{
+            position: "absolute",
+            top: 571,
+            left: 434,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/rope.png"
+          alt="rope and rock"
+          height={130}
+          width={157}
+          style={{
+            position: "absolute",
+            top: 200,
+            left: 334,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/rock-1.png"
+          alt="rock"
+          height={90}
+          width={80}
+          style={{
+            position: "absolute",
+            top: 141,
+            left: 255,
+            transform: "rotate(-60deg)",
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/rock-2.png"
+          alt="rock"
+          height={74}
+          width={82}
+          style={{
+            position: "absolute",
+            top: 72,
+            left: 313,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/rock-climbing.svg"
+          alt="rock climbing!"
+          height={13}
+          width={125}
+          style={{
+            position: "absolute",
+            top: 154,
+            left: 350,
+          }}
+        />
       </div>
     ),
     back: (
