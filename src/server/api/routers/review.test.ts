@@ -10,6 +10,8 @@ import { users, applications, reviews } from "~/server/db/schema";
 import { ReviewSeeder } from "~/server/db/seed/reviewSeeder";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
+import { z } from "zod";
+import { reviewSaveSchema } from "~/schemas/review";
 
 const session = await mockOrganizerSession(db);
 const ctx = createInnerTRPCContext({ session });
@@ -54,6 +56,23 @@ describe("review.save", async () => {
     };
 
     await expect(caller.review.save(updatedReview)).resolves.not.toThrow();
+  });
+
+  test("tries to save empty review, shouldn't save", async () => {
+    const application = createRandomApplication(session);
+    await caller.application.save(application);
+
+    const emptyReview = createEmptyReview(session);
+ 
+    await caller.review.save(emptyReview);
+
+    // Verify that nothing was inserted for this user
+    const savedReviews = await db
+      .select()
+      .from(reviews)
+      .where(eq(reviews.reviewerUserId, session.user.id));
+
+    expect(savedReviews.length).toBe(0);
   });
 });
 
@@ -293,5 +312,20 @@ function createRandomApplication(session: Session) {
     lastName,
     githubLink: `${GITHUB_URL}${application.githubLink}`,
     linkedInLink: `${LINKEDIN_URL}${application.linkedInLink}`,
+  };
+}
+
+function createEmptyReview(session: Session) {
+  const reviewerUserId = session.user.id;
+  const applicantUserId = session.user.id;
+
+  return {
+    applicantUserId,
+    reviewerUserId,
+    // All rating fields are undefined/null to create an empty review
+    originalityRating: undefined,
+    technicalityRating: undefined,
+    passionRating: undefined,
+    comments: undefined,
   };
 }
