@@ -837,6 +837,40 @@ export const PAGES = [
             left: 43,
           }}
         />
+        <Image
+          src="/images/promo/book/stickers/rock-1.png"
+          alt="rock"
+          height={90}
+          width={80}
+          style={{
+            position: "absolute",
+            top: 141,
+            left: 395,
+            transform: "rotate(-150deg)",
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/rock-2.png"
+          alt="rock"
+          height={74}
+          width={82}
+          style={{
+            position: "absolute",
+            top: 220,
+            left: 313,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/rock-3.png"
+          alt="rock"
+          height={60}
+          width={80}
+          style={{
+            position: "absolute",
+            top: 80,
+            left: 314,
+          }}
+        />
       </div>
     ),
   },
