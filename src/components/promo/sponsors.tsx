@@ -28,7 +28,6 @@ const SponsorLogo = ({
         top: y,
         width,
         height,
-        willChange: "transform",
       }}
       href={href}
       target="_blank"
