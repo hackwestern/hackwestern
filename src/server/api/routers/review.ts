@@ -208,8 +208,7 @@ export const reviewRouter = createTRPCRouter({
           .having(({ reviewCount }) => lt(reviewCount, REQUIRED_REVIEWS))
           .orderBy(
             asc(count(reviews.applicantUserId).mapWith(Number)), sql`RANDOM()`,
-            sql`RANDOM()`                               // randomize among equal counts
-          )
+           )
           .limit(1);
 
         const appAwaitingReview = appAwaitingReviews[0];
