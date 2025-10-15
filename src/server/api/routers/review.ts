@@ -29,8 +29,10 @@ import type { InferSelectModel } from "drizzle-orm";
 
 const REQUIRED_REVIEWS = 2;
 
-
-export const createEmptyReview = (reviewerUserId: string, applicantUserId: string) => {
+export const createEmptyReview = (
+  reviewerUserId: string,
+  applicantUserId: string,
+) => {
   return {
     applicantUserId,
     reviewerUserId,
@@ -43,7 +45,7 @@ export const createEmptyReview = (reviewerUserId: string, applicantUserId: strin
     completed: false,
     referral: false,
   } as InferSelectModel<typeof reviews>;
-}
+};
 
 export const reviewRouter = createTRPCRouter({
   save: protectedOrganizerProcedure
@@ -55,10 +57,10 @@ export const reviewRouter = createTRPCRouter({
         const applicantId = reviewData.applicantUserId;
 
         const isEmpty =
-          (reviewData.originalityRating == 0) &&
-          (reviewData.technicalityRating == 0) &&
-          (reviewData.passionRating == 0) &&
-          (!reviewData.comments || reviewData.comments.trim() == '');
+          reviewData.originalityRating == 0 &&
+          reviewData.technicalityRating == 0 &&
+          reviewData.passionRating == 0 &&
+          (!reviewData.comments || reviewData.comments.trim() == "");
 
         // We never want to save an empty review, so if a user resets the rating to empty, we need to delete the existing record too
         if (isEmpty) {
@@ -67,8 +69,8 @@ export const reviewRouter = createTRPCRouter({
             .where(
               and(
                 eq(reviews.applicantUserId, applicantId),
-                eq(reviews.reviewerUserId, userId)
-              )
+                eq(reviews.reviewerUserId, userId),
+              ),
             );
           return;
         }
@@ -213,10 +215,10 @@ export const reviewRouter = createTRPCRouter({
           .groupBy(applications.userId)
           .having(({ reviewCount }) => lt(reviewCount, REQUIRED_REVIEWS))
           .orderBy(
-
             // STILL NEED TO TEST LMAO
-            asc(count(reviews.applicantUserId).mapWith(Number)), sql`RANDOM()`,
-            sql`RANDOM()`                               // randomize among equal counts
+            asc(count(reviews.applicantUserId).mapWith(Number)),
+            sql`RANDOM()`,
+            sql`RANDOM()`, // randomize among equal counts
           )
           .limit(1);
 
