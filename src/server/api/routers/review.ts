@@ -154,14 +154,6 @@ export const reviewRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       try {
-        // Put applications with expired reviews back on the queue
-        await db
-          .update(applications)
-          .set({ status: "PENDING_REVIEW" })
-          .where(
-            sql`${applications.status}='IN_REVIEW' and ${applications.updatedAt}::timestamp < now() - interval '2 hours'`,
-          );
-
         // If reviewer has a review in progress, return that and not skipping current
         if (!input.skipId) {
           const reviewInProgress = (
@@ -213,8 +205,6 @@ export const reviewRouter = createTRPCRouter({
           .groupBy(applications.userId)
           .having(({ reviewCount }) => lt(reviewCount, REQUIRED_REVIEWS))
           .orderBy(
-
-            // STILL NEED TO TEST LMAO
             asc(count(reviews.applicantUserId).mapWith(Number)), sql`RANDOM()`,
             sql`RANDOM()`                               // randomize among equal counts
           )
@@ -229,14 +219,6 @@ export const reviewRouter = createTRPCRouter({
             message: "There are no applications matching this query.",
           });
         }
-
-        // Update the application status to in_review
-        await db
-          .update(applications)
-          .set({ status: "IN_REVIEW" })
-          .where(eq(applications.userId, appAwaitingReview.userId));
-
-        // console.log("updated application status to IN_REVIEW")
 
         return appAwaitingReview?.userId;
       } catch (error) {
