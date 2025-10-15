@@ -10,8 +10,7 @@ import { users, applications, reviews } from "~/server/db/schema";
 import { ReviewSeeder } from "~/server/db/seed/reviewSeeder";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
-import { z } from "zod";
-import { reviewSaveSchema } from "~/schemas/review";
+import { createEmptyReview } from "~/server/api/routers/review";
 
 const session = await mockOrganizerSession(db);
 const ctx = createInnerTRPCContext({ session });
@@ -62,7 +61,7 @@ describe("review.save", async () => {
     const application = createRandomApplication(session);
     await caller.application.save(application);
 
-    const emptyReview = createEmptyReview(session);
+    const emptyReview = createEmptyReview(session.user.id, session.user.id);
  
     await caller.review.save(emptyReview);
 
@@ -312,20 +311,5 @@ function createRandomApplication(session: Session) {
     lastName,
     githubLink: `${GITHUB_URL}${application.githubLink}`,
     linkedInLink: `${LINKEDIN_URL}${application.linkedInLink}`,
-  };
-}
-
-function createEmptyReview(session: Session) {
-  const reviewerUserId = session.user.id;
-  const applicantUserId = session.user.id;
-
-  return {
-    applicantUserId,
-    reviewerUserId,
-    // All rating fields are undefined/null to create an empty review
-    originalityRating: undefined,
-    technicalityRating: undefined,
-    passionRating: undefined,
-    comments: undefined,
   };
 }

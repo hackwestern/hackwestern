@@ -25,8 +25,25 @@ import {
   desc,
   notInArray,
 } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 
 const REQUIRED_REVIEWS = 2;
+
+
+export const createEmptyReview = (reviewerUserId: string, applicantUserId: string) => {
+  return {
+    applicantUserId,
+    reviewerUserId,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    originalityRating: 0,
+    technicalityRating: 0,
+    passionRating: 0,
+    comments: null,
+    completed: false,
+    referral: false,
+  } as InferSelectModel<typeof reviews>;
+}
 
 export const reviewRouter = createTRPCRouter({
   save: protectedOrganizerProcedure
@@ -35,14 +52,24 @@ export const reviewRouter = createTRPCRouter({
       try {
         const userId = ctx.session.user.id;
         const reviewData = input;
+        const applicantId = reviewData.applicantUserId;
 
-        // Don't save anything if there is nothing to save to avoid overpolluting the database
-        if (
-          !reviewData.originalityRating &&
-          !reviewData.technicalityRating &&
-          !reviewData.passionRating &&
-          !reviewData.comments
-        ) {
+        const isEmpty =
+          (reviewData.originalityRating == 0) &&
+          (reviewData.technicalityRating == 0) &&
+          (reviewData.passionRating == 0) &&
+          (!reviewData.comments || reviewData.comments.trim() == '');
+
+        // We never want to save an empty review, so if a user resets the rating to empty, we need to delete the existing record too
+        if (isEmpty) {
+          await db
+            .delete(reviews)
+            .where(
+              and(
+                eq(reviews.applicantUserId, applicantId),
+                eq(reviews.reviewerUserId, userId)
+              )
+            );
           return;
         }
 
@@ -118,21 +145,15 @@ export const reviewRouter = createTRPCRouter({
     });
   }),
 
-  //TODO: Write unit tests for this router path
+  // TODO: Write unit tests for this router path
   getNextId: protectedOrganizerProcedure
     .input(
       z.object({
-        skipId: z.string().nullish(), // used if a reviewer is currently reviewing something (stored as a cookie or something on the client side)
+        skipId: z.string().nullish(), // used if a reviewer is currently reviewing something (stored as a search param on the client side)
       }),
     )
     .query(async ({ ctx, input }) => {
       try {
-        // // Remove expired reviews from the review table
-        // // This is a SQL string because drizzle doesn't have USING (drizzle bad)
-        // await db.execute(
-        //   sql`DELETE FROM hw_review USING hw_application AS app WHERE applicant_user_id = app.user_id AND NOW() - app.updated_at::timestamp > INTERVAL '24 hours' AND completed != TRUE;`,
-        // );
-
         // Put applications with expired reviews back on the queue
         await db
           .update(applications)
@@ -191,8 +212,12 @@ export const reviewRouter = createTRPCRouter({
           )
           .groupBy(applications.userId)
           .having(({ reviewCount }) => lt(reviewCount, REQUIRED_REVIEWS))
-          // order by random with priority with to applications with less reviewCount
-          .orderBy(asc(sql.identifier("reviewCount")), asc(sql`RANDOM()`))
+          .orderBy(
+
+            // STILL NEED TO TEST LMAO
+            asc(count(reviews.applicantUserId).mapWith(Number)), sql`RANDOM()`,
+            sql`RANDOM()`                               // randomize among equal counts
+          )
           .limit(1);
 
         const appAwaitingReview = appAwaitingReviews[0];
@@ -239,20 +264,19 @@ export const reviewRouter = createTRPCRouter({
 
         const reviewerId = ctx.session.user.id;
 
-        await db
-          .insert(reviews)
-          .values({
-            reviewerUserId: reviewerId,
-            applicantUserId: input.applicantId,
-          })
-          .onConflictDoNothing();
-
-        return await db.query.reviews.findFirst({
+        const existingReview = await db.query.reviews.findFirst({
           where: and(
             eq(reviews.applicantUserId, input.applicantId),
             eq(reviews.reviewerUserId, reviewerId),
           ),
         });
+
+        // If no review exists, return an empty review that conforms to the schema
+        if (!existingReview) {
+          return createEmptyReview(reviewerId, input.applicantId);
+        }
+
+        return existingReview;
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
