@@ -66,7 +66,7 @@ const Review = () => {
         comments: reviewData?.comments ?? "",
       });
     }
-  }, [applicantId, session, form]);
+  }, [applicantId, session, form, reviewData?.comments, reviewData?.originalityRating, reviewData?.passionRating, reviewData?.technicalityRating]);
 
   const onSubmit = (data: z.infer<typeof reviewSaveSchema>) => {
     mutate({
@@ -377,7 +377,7 @@ const Review = () => {
                 {applicationData && (
                   <div className="mt-4 space-y-2">
                     <h3 className="text-lg font-semibold">
-                      {applicationData.firstName}'s Avatar
+                      {applicationData.firstName}&apos;s Avatar
                     </h3>
                     <div className="flex justify-center">
                       <div
@@ -445,7 +445,7 @@ const Review = () => {
                     return (
                       <div className="mt-4 space-y-2">
                         <h3 className="text-lg font-semibold">
-                          {applicationData.firstName}'s Drawing
+                          {applicationData.firstName}&apos;s Drawing
                         </h3>
                         {pathStrings.length > 0 ? (
                           <div className="flex justify-center">
