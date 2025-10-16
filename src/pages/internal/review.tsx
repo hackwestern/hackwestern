@@ -372,7 +372,7 @@ const Review = () => {
                     {`User ID: ${applicationData?.userId}`}
                   </TooltipContent>
                 </Tooltip>
-                
+
                 {/* Avatar Section */}
                 {applicationData && (
                   <div className="mt-4 space-y-2">
@@ -384,9 +384,17 @@ const Review = () => {
                         className="flex h-80 w-80 scale-90 flex-col justify-center rounded-2xl p-4 pt-8"
                         style={{
                           background: `linear-gradient(135deg, ${
-                            colors.find((c) => c.name === (applicationData.avatarColour ?? "green"))?.bg ?? "#F1FDE0"
+                            colors.find(
+                              (c) =>
+                                c.name ===
+                                (applicationData.avatarColour ?? "green"),
+                            )?.bg ?? "#F1FDE0"
                           } 30%, ${
-                            colors.find((c) => c.name === (applicationData.avatarColour ?? "green"))?.gradient ?? "#A7FB73"
+                            colors.find(
+                              (c) =>
+                                c.name ===
+                                (applicationData.avatarColour ?? "green"),
+                            )?.gradient ?? "#A7FB73"
                           } 95%)`,
                         }}
                       >
@@ -406,59 +414,67 @@ const Review = () => {
                 )}
 
                 {/* Canvas Section */}
-                {applicationData && (() => {
-                  type CanvasData = {
-                    paths: CanvasPaths;
-                    timestamp: number;
-                    version: string;
-                  };
-                  
-                  const canvasData = applicationData.canvasData as CanvasData | null | undefined;
-                  const pathStrings =
-                    canvasData?.paths?.map((path) =>
-                      path.reduce((acc, point, index) => {
-                        if (index === 0) return `M ${point[0]} ${point[1]}`;
-                        return `${acc} L ${point[0]} ${point[1]}`;
-                      }, ""),
-                    ) ?? [];
+                {applicationData &&
+                  (() => {
+                    type CanvasData = {
+                      paths: CanvasPaths;
+                      timestamp: number;
+                      version: string;
+                    };
 
-                  // Get the stroke color based on avatar color (same logic as SimpleCanvas)
-                  const selectedColour = colors.find(
-                    (color) => color.name === applicationData.avatarColour,
-                  )?.value;
-                  const strokeColour = selectedColour ? selectedColour + "dd" : "#a16bc7";
+                    const canvasData = applicationData.canvasData as
+                      | CanvasData
+                      | null
+                      | undefined;
+                    const pathStrings =
+                      canvasData?.paths?.map((path) =>
+                        path.reduce((acc, point, index) => {
+                          if (index === 0) return `M ${point[0]} ${point[1]}`;
+                          return `${acc} L ${point[0]} ${point[1]}`;
+                        }, ""),
+                      ) ?? [];
 
-                  return (
-                    <div className="mt-4 space-y-2">
-                      <h3 className="text-lg font-semibold">
-                        {applicationData.firstName}'s Drawing
-                      </h3>
-                      {pathStrings.length > 0 ? (
-                        <div className="flex justify-center">
-                          <div className="h-64 w-64 overflow-hidden rounded-lg border-2 border-primary-300 bg-white lg:h-80 lg:w-80">
-                            <svg className="h-full w-full">
-                              {pathStrings.map((pathString, pathIndex) => (
-                                <path
-                                  key={pathIndex}
-                                  d={pathString}
-                                  stroke={strokeColour}
-                                  strokeWidth="4"
-                                  fill="none"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              ))}
-                            </svg>
+                    // Get the stroke color based on avatar color (same logic as SimpleCanvas)
+                    const selectedColour = colors.find(
+                      (color) => color.name === applicationData.avatarColour,
+                    )?.value;
+                    const strokeColour = selectedColour
+                      ? selectedColour + "dd"
+                      : "#a16bc7";
+
+                    return (
+                      <div className="mt-4 space-y-2">
+                        <h3 className="text-lg font-semibold">
+                          {applicationData.firstName}'s Drawing
+                        </h3>
+                        {pathStrings.length > 0 ? (
+                          <div className="flex justify-center">
+                            <div className="h-64 w-64 overflow-hidden rounded-lg border-2 border-primary-300 bg-white lg:h-80 lg:w-80">
+                              <svg className="h-full w-full">
+                                {pathStrings.map((pathString, pathIndex) => (
+                                  <path
+                                    key={pathIndex}
+                                    d={pathString}
+                                    stroke={strokeColour}
+                                    strokeWidth="4"
+                                    fill="none"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                ))}
+                              </svg>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="flex justify-center">
-                          <p className="text-sm text-primary-600">(no drawing)</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
+                        ) : (
+                          <div className="flex justify-center">
+                            <p className="text-sm text-primary-600">
+                              (no drawing)
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 <div className="pt-3 font-semibold">
                   If you could have any superpower to help you during Hack
                   Western, what would it be and why?
