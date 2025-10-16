@@ -109,7 +109,7 @@ const Internal = () => {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
-      <div className="z-10 text-medium font-figtree">
+      <div className="z-10 font-figtree text-medium">
         {reviewData && filteredData ? (
           <DataTable columns={reviewDashboardColumns} data={filteredData} />
         ) : (

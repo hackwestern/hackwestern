@@ -53,7 +53,9 @@ export const getAccessoriesForCategory = (category: string) => {
             ({
               id: AvatarEntry.id,
               name: AvatarEntry.alt,
-              src: AvatarEntry.file?.startsWith("/") ? AvatarEntry.file : `/${AvatarEntry.file}`,
+              src: AvatarEntry.file?.startsWith("/")
+                ? AvatarEntry.file
+                : `/${AvatarEntry.file}`,
             }) as AvatarObject,
         ),
       ];
@@ -66,7 +68,9 @@ export const getAccessoriesForCategory = (category: string) => {
             ({
               id: AvatarEntry.id,
               name: AvatarEntry.alt,
-              src: AvatarEntry.file?.startsWith("/") ? AvatarEntry.file : `/${AvatarEntry.file}`,
+              src: AvatarEntry.file?.startsWith("/")
+                ? AvatarEntry.file
+                : `/${AvatarEntry.file}`,
             }) as AvatarObject,
         ),
       ];
@@ -79,7 +83,9 @@ export const getAccessoriesForCategory = (category: string) => {
             ({
               id: AvatarEntry.id,
               name: AvatarEntry.alt,
-              src: AvatarEntry.file?.startsWith("/") ? AvatarEntry.file : `/${AvatarEntry.file}`,
+              src: AvatarEntry.file?.startsWith("/")
+                ? AvatarEntry.file
+                : `/${AvatarEntry.file}`,
             }) as AvatarObject,
         ),
       ];
@@ -91,7 +97,9 @@ export const getAccessoriesForCategory = (category: string) => {
             ({
               id: AvatarEntry.id,
               name: AvatarEntry.alt,
-              src: AvatarEntry.file?.startsWith("/") ? AvatarEntry.file : `/${AvatarEntry.file}`,
+              src: AvatarEntry.file?.startsWith("/")
+                ? AvatarEntry.file
+                : `/${AvatarEntry.file}`,
               sizing: AvatarEntry?.sizing,
             }) as AvatarObject,
         ),
