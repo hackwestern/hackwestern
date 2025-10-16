@@ -389,10 +389,10 @@ const Review = () => {
                     </TooltipContent>
                   </Tooltip>
 
-                  <div className="ml-8 flex flex-col justify-center md:flex-row">
+                  <div className="md:ml-8 flex flex-col justify-center md:flex-row">
                     {/* Avatar Section */}
                     {applicationData && (
-                      <div className="mt-4 space-y-2">
+                      <div className="ml-8 md:ml-0 mt-4 space-y-2">
                         <div className="flex h-64 w-64 justify-center">
                           <div
                             className="flex h-64 w-64 flex-col justify-center rounded-2xl p-4 pt-8"
@@ -461,7 +461,7 @@ const Review = () => {
                           : "#a16bc7";
 
                         return (
-                          <div className="mt-4 space-y-2">
+                          <div className="mt-4 space-y-2 -ml-4 md:ml-0">
                             {pathStrings.length > 0 ? (
                               <div className="flex justify-center">
                                 <div className="-mt-8 h-80 w-80 scale-[0.78] overflow-hidden rounded-lg border-2 border-primary-300 bg-white">
