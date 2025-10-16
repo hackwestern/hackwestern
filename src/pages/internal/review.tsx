@@ -66,7 +66,15 @@ const Review = () => {
         comments: reviewData?.comments ?? "",
       });
     }
-  }, [applicantId, session, form, reviewData?.comments, reviewData?.originalityRating, reviewData?.passionRating, reviewData?.technicalityRating]);
+  }, [
+    applicantId,
+    session,
+    form,
+    reviewData?.comments,
+    reviewData?.originalityRating,
+    reviewData?.passionRating,
+    reviewData?.technicalityRating,
+  ]);
 
   const onSubmit = (data: z.infer<typeof reviewSaveSchema>) => {
     mutate({
