@@ -375,7 +375,7 @@ const Review = () => {
                 
                 {/* Avatar Section */}
                 {applicationData && (
-                  <div className="mt-6 space-y-3">
+                  <div className="mt-4 space-y-2">
                     <h3 className="text-lg font-semibold">
                       {applicationData.firstName}'s Avatar
                     </h3>
@@ -429,13 +429,13 @@ const Review = () => {
                   const strokeColour = selectedColour ? selectedColour + "dd" : "#a16bc7";
 
                   return (
-                    <div className="mt-6 space-y-3">
+                    <div className="mt-4 space-y-2">
                       <h3 className="text-lg font-semibold">
                         {applicationData.firstName}'s Drawing
                       </h3>
                       {pathStrings.length > 0 ? (
                         <div className="flex justify-center">
-                          <div className="h-64 w-64 overflow-hidden rounded-lg border-2 border-gray-300 bg-white lg:h-72 lg:w-72">
+                          <div className="h-64 w-64 overflow-hidden rounded-lg border-2 border-primary-300 bg-white lg:h-80 lg:w-80">
                             <svg className="h-full w-full">
                               {pathStrings.map((pathString, pathIndex) => (
                                 <path
@@ -453,7 +453,7 @@ const Review = () => {
                         </div>
                       ) : (
                         <div className="flex justify-center">
-                          <p className="text-sm text-gray-500">(no drawing)</p>
+                          <p className="text-sm text-primary-600">(no drawing)</p>
                         </div>
                       )}
                     </div>

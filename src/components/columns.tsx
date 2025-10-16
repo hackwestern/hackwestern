@@ -22,7 +22,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       header: "Edit",
       cell: ({ row }) => {
         const userId: string = row.getValue("applicantUserId");
-        return <Link href={`./review?applicant=${userId}`}>✏️</Link>;
+        return <div className="text-center"><Link href={`./review?applicant=${userId}`}>✏️</Link></div>;
       },
     },
     {
@@ -30,7 +30,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       header: "Name",
       cell: ({ row }) => {
         const application: applicationType = row.getValue("application");
-        return `${application?.firstName} ${application?.lastName}`;
+        return <div className="text-left">{`${application?.firstName} ${application?.lastName}`}</div>;
       },
     },
     {
@@ -49,7 +49,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       cell: ({ row }) => {
         const applicant: applicantType = row.getValue("applicant");
         const email: string = applicant?.email;
-        return email;
+        return <div className="text-left">{email}</div>;
       },
     },
     {
@@ -57,7 +57,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       header: "Completed",
       cell: ({ row }) => {
         const completed: boolean = row.getValue("completed");
-        return completed ? "✅" : "❌";
+        return <div className="text-center">{completed ? "✅" : "❌"}</div>;
       },
     },
     {
@@ -73,6 +73,10 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
+      },
+      cell: ({ row }) => {
+        const rating: number = row.getValue("originalityRating");
+        return <div className="text-center">{rating}</div>;
       },
     },
     {
@@ -104,6 +108,48 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
           </Button>
         );
       },
+      cell: ({ row }) => {
+        const rating: number = row.getValue("originalityRating");
+        return <div className="text-center">{rating}</div>;
+      },
+    },
+    {
+      accessorKey: "technicalityRating",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            className="mx-0 p-0"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Technicality
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const rating: number = row.getValue("technicalityRating");
+        return <div className="text-center">{rating}</div>;
+      },
+    },
+    {
+      accessorKey: "passionRating",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            className="mx-0 p-0"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Passion
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const rating: number = row.getValue("passionRating");
+        return <div className="text-center">{rating}</div>;
+      },
     },
     {
       accessorKey: "total",
@@ -129,7 +175,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
         const originalityRating: number = row.getValue("originalityRating");
         const technicalityRating: number = row.getValue("technicalityRating");
         const passionRating: number = row.getValue("passionRating");
-        return originalityRating + technicalityRating + passionRating;
+        return <div className="text-center">{originalityRating + technicalityRating + passionRating}</div>;
       },
     },
     {
@@ -137,7 +183,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       header: "Comments",
       cell: ({ row }) => {
         const comments: string = row.getValue("comments");
-        return comments;
+        return <div className="text-left">{comments}</div>;
       },
     },
   ];
