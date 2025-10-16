@@ -95,21 +95,21 @@ const Internal = () => {
         {reviewData?.length} applications reviewed!
       </div>
       {nextReviewId ? (
-        <Button asChild className="z-10 mb-3" variant="primary">
+        <Button asChild className="z-10" variant="primary">
           <Link href={`/internal/review?applicant=${nextReviewId}`}>
             Review Next
           </Link>
         </Button>
       ) : (
-        <div className="z-10 mb-3">All reviews completed! 🎉</div>
+        <div className="z-10">All reviews completed! 🎉</div>
       )}
       <Input
-        className="z-10 mb-4 w-96"
+        className="z-10 mb-4 mt-3 w-96"
         placeholder="Search by name or email"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
-      <div className="z-10">
+      <div className="z-10 text-medium font-figtree">
         {reviewData && filteredData ? (
           <DataTable columns={reviewDashboardColumns} data={filteredData} />
         ) : (

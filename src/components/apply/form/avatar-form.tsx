@@ -31,7 +31,7 @@ export const getAccessoryFromId = (
   return {
     id: item.id,
     name: item.alt,
-    src: item.file,
+    src: item.file?.startsWith("/") ? item.file : `/${item.file}`,
     sizing: "sizing" in item ? item.sizing : undefined,
     sizingSm: "sizingSm" in item ? item.sizingSm : undefined,
   };
@@ -53,7 +53,7 @@ export const getAccessoriesForCategory = (category: string) => {
             ({
               id: AvatarEntry.id,
               name: AvatarEntry.alt,
-              src: AvatarEntry.file,
+              src: AvatarEntry.file?.startsWith("/") ? AvatarEntry.file : `/${AvatarEntry.file}`,
             }) as AvatarObject,
         ),
       ];
@@ -66,7 +66,7 @@ export const getAccessoriesForCategory = (category: string) => {
             ({
               id: AvatarEntry.id,
               name: AvatarEntry.alt,
-              src: AvatarEntry.file,
+              src: AvatarEntry.file?.startsWith("/") ? AvatarEntry.file : `/${AvatarEntry.file}`,
             }) as AvatarObject,
         ),
       ];
@@ -79,7 +79,7 @@ export const getAccessoriesForCategory = (category: string) => {
             ({
               id: AvatarEntry.id,
               name: AvatarEntry.alt,
-              src: AvatarEntry.file,
+              src: AvatarEntry.file?.startsWith("/") ? AvatarEntry.file : `/${AvatarEntry.file}`,
             }) as AvatarObject,
         ),
       ];
@@ -91,7 +91,7 @@ export const getAccessoriesForCategory = (category: string) => {
             ({
               id: AvatarEntry.id,
               name: AvatarEntry.alt,
-              src: AvatarEntry.file,
+              src: AvatarEntry.file?.startsWith("/") ? AvatarEntry.file : `/${AvatarEntry.file}`,
               sizing: AvatarEntry?.sizing,
             }) as AvatarObject,
         ),

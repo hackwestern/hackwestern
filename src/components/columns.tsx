@@ -23,7 +23,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       cell: ({ row }) => {
         const userId: string = row.getValue("applicantUserId");
         return (
-          <div className="text-center">
+          <div className="text-center text-medium">
             <Link href={`./review?applicant=${userId}`}>✏️</Link>
           </div>
         );
@@ -35,7 +35,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       cell: ({ row }) => {
         const application: applicationType = row.getValue("application");
         return (
-          <div className="text-left">{`${application?.firstName} ${application?.lastName}`}</div>
+          <div className="text-left text-medium">{`${application?.firstName} ${application?.lastName}`}</div>
         );
       },
     },
@@ -45,6 +45,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
         return (
           <Button
             variant="ghost"
+            className="mx-0 p-0 text-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Email
@@ -72,7 +73,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
         return (
           <Button
             variant="ghost"
-            className="mx-0 p-0"
+            className="mx-0 p-0 text-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Originality
@@ -91,7 +92,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
         return (
           <Button
             variant="ghost"
-            className="mx-0 p-0"
+            className="mx-0 p-0 text-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Technicality
@@ -106,7 +107,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
         return (
           <Button
             variant="ghost"
-            className="mx-0 p-0"
+            className="mx-0 p-0 text-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Passion
@@ -116,44 +117,6 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       },
       cell: ({ row }) => {
         const rating: number = row.getValue("originalityRating");
-        return <div className="text-center">{rating}</div>;
-      },
-    },
-    {
-      accessorKey: "technicalityRating",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            className="mx-0 p-0"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Technicality
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => {
-        const rating: number = row.getValue("technicalityRating");
-        return <div className="text-center">{rating}</div>;
-      },
-    },
-    {
-      accessorKey: "passionRating",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            className="mx-0 p-0"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Passion
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => {
-        const rating: number = row.getValue("passionRating");
         return <div className="text-center">{rating}</div>;
       },
     },
@@ -169,7 +132,7 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
         return (
           <Button
             variant="ghost"
-            className="mx-0 p-0"
+            className="mx-0 p-0 text-medium"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
             Total
