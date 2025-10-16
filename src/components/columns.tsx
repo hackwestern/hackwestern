@@ -22,7 +22,11 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       header: "Edit",
       cell: ({ row }) => {
         const userId: string = row.getValue("applicantUserId");
-        return <div className="text-center"><Link href={`./review?applicant=${userId}`}>✏️</Link></div>;
+        return (
+          <div className="text-center">
+            <Link href={`./review?applicant=${userId}`}>✏️</Link>
+          </div>
+        );
       },
     },
     {
@@ -30,7 +34,9 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       header: "Name",
       cell: ({ row }) => {
         const application: applicationType = row.getValue("application");
-        return <div className="text-left">{`${application?.firstName} ${application?.lastName}`}</div>;
+        return (
+          <div className="text-left">{`${application?.firstName} ${application?.lastName}`}</div>
+        );
       },
     },
     {
@@ -175,7 +181,11 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
         const originalityRating: number = row.getValue("originalityRating");
         const technicalityRating: number = row.getValue("technicalityRating");
         const passionRating: number = row.getValue("passionRating");
-        return <div className="text-center">{originalityRating + technicalityRating + passionRating}</div>;
+        return (
+          <div className="text-center">
+            {originalityRating + technicalityRating + passionRating}
+          </div>
+        );
       },
     },
     {

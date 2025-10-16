@@ -104,7 +104,7 @@ const Internal = () => {
         <div className="z-10 mb-3">All reviews completed! 🎉</div>
       )}
       <Input
-        className="z-10 w-96 mb-4"
+        className="z-10 mb-4 w-96"
         placeholder="Search by name or email"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
