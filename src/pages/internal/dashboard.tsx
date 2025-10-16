@@ -65,8 +65,8 @@ const Internal = () => {
   return (
     <div className="bg-hw-linear-gradient-day flex flex-col items-center justify-center bg-primary-100 py-4">
       <CanvasBackground />
-      <h1 className="z-10 mb-5 text-3xl">Internal Dashboard</h1>
-      <Accordion type="multiple" className="z-10">
+      <h1 className="z-10 mb-4 text-3xl">Internal Dashboard</h1>
+      <Accordion type="multiple" className="z-10 mb-3">
         <AccordionItem key="leaderboard" value="leaderboard">
           <AccordionTrigger className="text-left">Leaderboard</AccordionTrigger>
           <AccordionContent className="text-left">
@@ -91,25 +91,25 @@ const Internal = () => {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-      <div className="z-10 p-2">
+      <div className="z-10 mb-3 text-sm">
         {reviewData?.length} applications reviewed!
       </div>
       {nextReviewId ? (
-        <Button asChild className="z-10 mb-2" variant="primary">
+        <Button asChild className="z-10" variant="primary">
           <Link href={`/internal/review?applicant=${nextReviewId}`}>
             Review Next
           </Link>
         </Button>
       ) : (
-        <div>All reviews completed! 🎉</div>
+        <div className="z-10">All reviews completed! 🎉</div>
       )}
       <Input
-        className="z-10 w-96"
+        className="z-10 mb-4 mt-3 w-96"
         placeholder="Search by name or email"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
-      <div className="z-10 mt-4">
+      <div className="z-10 font-figtree text-medium">
         {reviewData && filteredData ? (
           <DataTable columns={reviewDashboardColumns} data={filteredData} />
         ) : (
