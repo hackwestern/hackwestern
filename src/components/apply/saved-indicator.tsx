@@ -1,5 +1,6 @@
 import { useIsMutating } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
 import { api } from "~/utils/api";
 import { Spinner } from "../loading-spinner";
 
@@ -10,30 +11,85 @@ export function formattedDate(lastSaved: Date | null): string | null {
   return format(lastSaved, "MMM d, h:mm a");
 }
 
+export function formattedLastSavedAt(lastSaved: Date | null): string | null {
+  if (!lastSaved) {
+    return null;
+  }
+
+  const now = new Date();
+  const diffInSeconds = Math.floor(
+    (now.getTime() - lastSaved.getTime()) / 1000,
+  );
+
+  if (diffInSeconds <= 5) {
+    return "just now";
+  } else if (diffInSeconds < 30) {
+    return `a few seconds ago`;
+  } else if (diffInSeconds < 120) {
+    return `a minute ago`;
+  } else if (diffInSeconds < 600) {
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes} minutes ago`;
+  } else {
+    return format(lastSaved, "MMM d, h:mm a");
+  }
+}
+
 export function SavedIndicator() {
-  const { data: application } = api.application.get.useQuery();
+  const { data: application } = api.application.get.useQuery({
+    fields: ["updatedAt"],
+  });
+
   const isSaving = useIsMutating();
 
-  const formattedLastSavedAt = formattedDate(application?.updatedAt ?? null);
+  return (
+    <SavedIndicatorComponent
+      isSaving={isSaving > 0}
+      lastSaved={application?.updatedAt ?? null}
+    />
+  );
+}
+
+export function SavedIndicatorComponent({
+  isSaving,
+  lastSaved,
+}: {
+  isSaving: boolean;
+  lastSaved: Date | null;
+}) {
+  // Keep formatted label in state and recompute periodically when `lastSaved` exists.
+  const [formattedLastSaved, setFormattedLastSaved] = useState<string | null>(
+    formattedLastSavedAt(lastSaved),
+  );
+
+  useEffect(() => {
+    // Update immediately when lastSaved changes
+    setFormattedLastSaved(formattedLastSavedAt(lastSaved));
+
+    // If no lastSaved timestamp, don't start an interval
+    if (!lastSaved) return;
+
+    const id = setInterval(() => {
+      setFormattedLastSaved(formattedLastSavedAt(lastSaved));
+    }, 2000);
+
+    return () => clearInterval(id);
+  }, [lastSaved]);
 
   if (isSaving) {
     return (
-      <div className="flex items-center gap-1 text-xs italic text-slate-400">
-        <Spinner isLoading className="size-3 fill-primary-100 text-slate-400" />
+      <div className="flex items-center gap-1 text-xs italic text-heavy">
+        <Spinner isLoading className="size-3 fill-primary-100 text-heavy" />
         <span>Saving</span>
       </div>
     );
   }
 
-  if (formattedLastSavedAt) {
+  if (formattedLastSaved) {
     return (
-      <div className="text-right text-xs italic text-slate-400">
-        Last Saved:
-        <br />
-        {formattedLastSavedAt}
+      <div className="mx-2 text-center text-xs font-medium italic text-heavy md:mt-2 md:text-sm">
+        Last saved {formattedLastSaved}
       </div>
     );
   }
-
-  return <></>;
 }

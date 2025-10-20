@@ -10,7 +10,7 @@ import {
   FormLabel,
 } from "~/components/ui/form";
 import { api } from "~/utils/api";
-import { useAutoSave } from "~/components/hooks/use-auto-save";
+import { useAutoSave } from "~/hooks/use-auto-save";
 import { infoSaveSchema } from "~/schemas/application";
 import {
   Select,
@@ -25,41 +25,67 @@ import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
 
 export function InfoForm() {
   const utils = api.useUtils();
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: [
+      "status",
+      "school",
+      "levelOfStudy",
+      "major",
+      "attendedBefore",
+      "numOfHackathons",
+    ],
+  });
+
+  const status = data?.status ?? "NOT_STARTED";
+  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
       return utils.application.get.invalidate();
     },
   });
 
-  const defaultValues = useMemo(() => {
-    if (!data) return data;
-    const attendedBefore = data.attendedBefore
-      ? ("yes" as const)
-      : ("no" as const);
+  // Transform the form values for display
+  const formValues = useMemo(() => {
+    if (!data) return undefined;
     return {
-      ...data,
-      attendedBefore,
-    };
+      major: data.major ?? undefined,
+      school:
+        (data.school as (typeof schools)[number] | undefined) ?? undefined,
+      levelOfStudy: data.levelOfStudy ?? undefined,
+      numOfHackathons: data.numOfHackathons ?? undefined,
+      attendedBefore:
+        data.attendedBefore === true
+          ? "yes"
+          : data.attendedBefore === false
+            ? "no"
+            : undefined,
+    } satisfies z.infer<typeof infoSaveSchema>;
   }, [data]);
 
   const form = useForm<z.infer<typeof infoSaveSchema>>({
     resolver: zodResolver(infoSaveSchema),
+    defaultValues: formValues, // Use the complete data object
   });
 
-  useAutoSave(form, onSubmit, defaultValues);
+  useAutoSave(form, onSubmit, formValues);
 
-  function onSubmit(data: z.infer<typeof infoSaveSchema>) {
+  function onSubmit(formData: z.infer<typeof infoSaveSchema>) {
+    if (!data) return;
     mutate({
-      ...defaultValues,
-      ...data,
-      attendedBefore: data.attendedBefore === "yes",
+      ...formData, // Override with new form values
+      attendedBefore:
+        formData.attendedBefore === "yes"
+          ? true
+          : formData.attendedBefore === "no"
+            ? false
+            : undefined,
     });
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
           control={form.control}
           name="school"
@@ -71,6 +97,7 @@ export function InfoForm() {
                   {...field}
                   value={field.value ?? undefined}
                   onValueChange={field.onChange}
+                  disabled={!canEdit}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select school" />
@@ -98,6 +125,7 @@ export function InfoForm() {
                   {...field}
                   value={field.value ?? undefined}
                   onValueChange={field.onChange}
+                  disabled={!canEdit}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select level of study" />
@@ -125,6 +153,7 @@ export function InfoForm() {
                   {...field}
                   value={field.value ?? undefined}
                   onValueChange={field.onChange}
+                  disabled={!canEdit}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select major" />
@@ -148,7 +177,11 @@ export function InfoForm() {
             <FormItem>
               <FormLabel>Have you attended Hack Western before?</FormLabel>
               <FormControl>
-                <RadioButtonGroup {...field} onValueChange={field.onChange}>
+                <RadioButtonGroup
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={!canEdit}
+                >
                   <RadioButtonItem key="yes" label="Yes" value="yes" />
                   <RadioButtonItem key="no" label="No" value="no" />
                 </RadioButtonGroup>
@@ -163,7 +196,11 @@ export function InfoForm() {
             <FormItem>
               <FormLabel>How many hackathons have you attended?</FormLabel>
               <FormControl>
-                <RadioButtonGroup {...field} onValueChange={field.onChange}>
+                <RadioButtonGroup
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={!canEdit}
+                >
                   {numOfHackathons.enumValues.map((option) => (
                     <RadioButtonItem
                       key={option}

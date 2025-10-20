@@ -32,6 +32,14 @@ export const env = createEnv({
     GOOGLE_WALLET_ISSUER_ID: z.string().min(1),
     GOOGLE_APPLICATION_CREDENTIALS: z.string().min(1),
     WALLET_SERVICE_ACCOUNT_EMAIL: z.string().email(), 
+    // Cloudflare R2 / S3-compatible storage
+    R2_ACCESS_KEY_ID: z.string(),
+    R2_SECRET_ACCESS_KEY: z.string(),
+    // Endpoint like https://<accountid>.r2.cloudflarestorage.com
+    R2_ENDPOINT: z.string().url(),
+    R2_BUCKET_NAME: z.string(),
+    // Public base URL where objects are accessible, e.g. https://pub-XXXXXXXX.r2.dev or a custom domain
+    R2_PUBLIC_BASE_URL: z.string().url(),
   },
 
   /**
@@ -66,6 +74,11 @@ export const env = createEnv({
     GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS, // Renamed
     WALLET_SERVICE_ACCOUNT_EMAIL: process.env.WALLET_SERVICE_ACCOUNT_EMAIL, // Added new variable
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
+    R2_ENDPOINT: process.env.R2_ENDPOINT,
+    R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
+    R2_PUBLIC_BASE_URL: process.env.R2_PUBLIC_BASE_URL,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

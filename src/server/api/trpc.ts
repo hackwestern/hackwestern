@@ -12,7 +12,9 @@ import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 import { type Session } from "next-auth";
 import superjson from "superjson";
 import { ZodError } from "zod";
-
+import { db } from "~/server/db";
+import { eq } from "drizzle-orm";
+import { users } from "~/server/db/schema";
 import { getServerAuthSession } from "~/server/auth";
 
 /**
@@ -131,3 +133,26 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
     },
   });
 });
+
+export const protectedOrganizerProcedure = protectedProcedure.use(
+  async ({ ctx, next }) => {
+    const userId = ctx.session.user.id;
+
+    const dbUser = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!dbUser || dbUser.type !== "organizer") {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "User is not an organizer",
+      });
+    }
+
+    return next({
+      ctx: {
+        session: { ...ctx.session, user: ctx.session.user },
+      },
+    });
+  },
+);

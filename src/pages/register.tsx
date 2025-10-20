@@ -1,23 +1,23 @@
 import Head from "next/head";
-import { useRouter } from "next/router";
-import { type FormEvent, useState } from "react";
+import { useState, type FormEvent } from "react";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { useToast } from "~/components/hooks/use-toast";
-
+import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { hackerLoginRedirect } from "~/utils/redirect";
-import CloudBackground from "~/components/cloud-background";
+import CanvasBackground from "~/components/canvas-background";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
+import { useRouter } from "next/router";
 
 export default function Register() {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [pending, setPending] = useState(false);
 
   const router = useRouter();
   const { mutate: register } = api.auth.create.useMutation({
@@ -28,6 +28,7 @@ export default function Register() {
           error.data?.zodError?.fieldErrors?.password?.[0] ?? error.message,
         variant: "destructive",
       });
+      setPending(false);
     },
     onSuccess: () =>
       signIn("credentials", { username: email, password }).then(() => {
@@ -36,12 +37,14 @@ export default function Register() {
           description: "Account created successfully",
           variant: "default",
         });
+        setPending(false);
         void router.push("/dashboard");
       }),
   });
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
+    setPending(true);
     register({ email, password });
   };
 
@@ -55,62 +58,88 @@ export default function Register() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
-        <CloudBackground />
-        <div className="z-10 w-full max-w-2xl rounded-lg bg-violet-50 bg-white p-12 shadow-md">
-          <h2 className="mb-2 text-4xl font-bold">Start Your Journey!</h2>
-          <h2 className="mb-6 text-lg">
-            It&apos;s time to turn your ideas into realities
+
+      <div className="m-auto flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
+        <CanvasBackground />
+        <div className="z-10 mx-4 flex-col items-center rounded-xl bg-background p-8 text-sm shadow-md sm:w-xl sm:p-12 md:w-2xl md:text-base">
+          <h2 className="mb-4 self-start font-dico text-[30px] text-heavy md:text-[34px] ">
+            Create your account
           </h2>
-          <form onSubmit={(e) => handleSubmit(e)}>
-            <h2 className="mb-2 text-sm">Email</h2>
+          <form onSubmit={handleSubmit}>
+            <h2 className="mb-2 font-figtree text-medium">Email</h2>
             <Input
               required
-              type="email"
+              id="email"
+              type="text"
+              name="email"
+              autoComplete="username"
+              className="mb-4 h-[60px] bg-highlight text-medium"
+              placeholder="hello@hackwestern.com"
+              value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mb-4"
-              placeholder="Email"
             />
-            <h2 className="mb-2 text-sm">Password</h2>
+            <h2 className="mb-2 font-figtree text-medium">Password</h2>
             <Input
               required
+              id="password"
               type="password"
+              name="password"
+              autoComplete="new-password"
+              className="mb-8 h-[60px] bg-highlight text-medium"
+              placeholder="enter your password"
+              value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mb-8"
-              placeholder="Password"
             />
-            <Button variant="primary" type="submit" className=" w-full">
-              Create Account
+            <Button
+              variant="primary"
+              type="submit"
+              size="lg"
+              full
+              isPending={pending}
+            >
+              {pending ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
-          <div className="relative flex w-full items-center md:py-5">
-            <div className="flex-grow border-t border-gray-400" />
+
+          <div className="relative flex w-full items-center py-2 md:py-5">
+            <div className="flex-grow border-t border-gray-400 opacity-20" />
             <span className="mx-4 flex-shrink text-gray-400">or</span>
-            <div className="flex-grow border-t border-gray-400" />
+            <div className="flex-grow border-t border-gray-400 opacity-20" />
           </div>
-          <div className="mt-4">
+          <div className="flex flex-col items-stretch gap-3">
             <GoogleAuthButton redirect="/dashboard" register={true} />
-          </div>
-          <div className="mt-4">
             <GithubAuthButton redirect="/dashboard" register={true} />
-          </div>
-          <div className="mt-4">
             <DiscordAuthButton redirect="/dashboard" register={true} />
           </div>
-          <div className="mt-4">
-            Already have an account?{" "}
-            <Link href="/login" className="text-blue-500 hover:text-purple-700">
-              Login
-            </Link>
-          </div>
-          <div>
-            Forget password?{" "}
-            <Link
-              className="text-purple-500 underline hover:text-violet-700"
-              href="/forgot-password"
+          <div className="mt-6 font-figtree text-medium">
+            Already have an account?
+            <Button
+              asChild
+              variant="tertiary"
+              className="ml-2 h-max p-0 text-sm md:text-base"
             >
-              Reset Password
-            </Link>
+              <Link
+                href="/login"
+                className="text-purple-500 hover:text-violet-700"
+              >
+                Login
+              </Link>
+            </Button>
+          </div>
+          <div className="font-figtree text-medium">
+            Forget password?
+            <Button
+              asChild
+              variant="tertiary"
+              className="ml-2 h-max p-0 text-sm md:text-base"
+            >
+              <Link
+                className="text-purple-500 hover:text-violet-700"
+                href="/forgot-password"
+              >
+                Reset Password
+              </Link>
+            </Button>
           </div>
         </div>
       </div>

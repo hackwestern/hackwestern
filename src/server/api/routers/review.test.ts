@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, assert, describe, expect, test } from "vitest";
+import { beforeEach, afterEach, describe, expect, test } from "vitest";
 import { faker } from "@faker-js/faker";
 import { type Session } from "next-auth";
 import { eq } from "drizzle-orm";
@@ -10,6 +10,7 @@ import { users, applications, reviews } from "~/server/db/schema";
 import { ReviewSeeder } from "~/server/db/seed/reviewSeeder";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
+import { createEmptyReview } from "~/server/api/routers/review";
 
 const session = await mockOrganizerSession(db);
 const ctx = createInnerTRPCContext({ session });
@@ -54,6 +55,23 @@ describe("review.save", async () => {
     };
 
     await expect(caller.review.save(updatedReview)).resolves.not.toThrow();
+  });
+
+  test("tries to save empty review, shouldn't save", async () => {
+    const application = createRandomApplication(session);
+    await caller.application.save(application);
+
+    const emptyReview = createEmptyReview(session.user.id, session.user.id);
+
+    await caller.review.save(emptyReview);
+
+    // Verify that nothing was inserted for this user
+    const savedReviews = await db
+      .select()
+      .from(reviews)
+      .where(eq(reviews.reviewerUserId, session.user.id));
+
+    expect(savedReviews.length).toBe(0);
   });
 });
 
@@ -145,7 +163,7 @@ describe("review.getReviewCounts", () => {
 
   test("throws error if user is not an organizer", async () => {
     await expect(hackerCaller.review.getReviewCounts()).rejects.toThrowError(
-      /FORBIDDEN/,
+      "User is not an organizer",
     );
   });
 
@@ -199,6 +217,56 @@ describe("review.getReviewCounts", () => {
     await db
       .delete(applications)
       .where(eq(applications.userId, newHackerSession.user.id));
+  });
+});
+
+describe("review.getByOrganizer", () => {
+  beforeEach(async () => {
+    hackerSession = await mockSession(db);
+    hackerCtx = createInnerTRPCContext({ session: hackerSession });
+    hackerCaller = createCaller(hackerCtx);
+  });
+
+  afterEach(async () => {
+    await db.delete(users).where(eq(users.id, hackerSession.user.id));
+  });
+
+  test("returns error if user is not organizer", async () => {
+    return expect(hackerCaller.review.getByOrganizer()).rejects.toThrowError();
+  });
+
+  test("returns reviews for the organizer if user is organizer", async () => {
+    organizerSession = await mockOrganizerSession(db);
+    organizerCtx = createInnerTRPCContext({ session: organizerSession });
+    organizerCaller = createCaller(organizerCtx);
+
+    application = {
+      ...ReviewSeeder.createRandomWithoutUser(),
+      userId: hackerSession.user.id,
+    };
+
+    review = {
+      ...ReviewSeeder.createRandomWithoutUser(),
+      applicantUserId: hackerSession.user.id,
+      reviewerUserId: organizerSession.user.id,
+      completed: true,
+    };
+
+    await db.insert(applications).values(application);
+    await db.insert(reviews).values(review);
+
+    const result = await organizerCaller.review.getByOrganizer();
+    expect(result).toHaveLength(1);
+    expect(result[0]?.applicant.id).toBe(hackerSession.user.id);
+    expect(result[0]?.reviewerUserId).toBe(organizerSession.user.id);
+
+    await db
+      .delete(reviews)
+      .where(eq(reviews.reviewerUserId, organizerSession.user.id));
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, hackerSession.user.id));
+    await db.delete(users).where(eq(users.id, organizerSession.user.id));
   });
 });
 

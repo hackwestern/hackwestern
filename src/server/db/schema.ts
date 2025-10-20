@@ -4,6 +4,7 @@ import {
   index,
   serial,
   integer,
+  jsonb,
   pgEnum,
   pgTableCreator,
   primaryKey,
@@ -13,6 +14,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
+import type { CanvasPaths } from "~/types/canvas";
 
 /**
  * This is the prefix for tables from this year's hack western!
@@ -44,11 +46,14 @@ export const applicationStatus = pgEnum("application_status", [
   "DECLINED",
 ]);
 
-export const avatar = pgEnum("avatar", [
-  "Wildlife Wanderer",
-  "City Cruiser",
-  "Foodie Fanatic",
-  "Beach Bum",
+export const avatarColour = pgEnum("avatar_colour", [
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "blue",
+  "purple",
+  "pink",
 ]);
 
 /**
@@ -143,6 +148,7 @@ export const sexualOrientation = pgEnum("sexual_orientation", [
 export const countrySelection = pgEnum("country", [
   "Canada",
   "United States",
+  "India",
   "Other",
 ]);
 
@@ -251,8 +257,14 @@ export const applications = createTable(
       .notNull(),
     status: applicationStatus("status").default("IN_PROGRESS").notNull(),
 
+    // Avatar
+    avatarColour: avatarColour("avatar_colour"),
+    avatarFace: integer("avatar_face"),
+    avatarLeftHand: integer("avatar_left_hand"),
+    avatarRightHand: integer("avatar_right_hand"),
+    avatarHat: integer("avatar_hat"),
+
     // About You
-    avatar: avatar("avatar"),
     firstName: varchar("first_name", { length: 255 }),
     lastName: varchar("last_name", { length: 255 }),
     age: integer("age"), // 18+
@@ -263,10 +275,8 @@ export const applications = createTable(
     levelOfStudy: levelOfStudy("level_of_study"),
     major: major("major"),
 
-    attendedBefore: boolean("attended").default(false).notNull(),
-    numOfHackathons: numOfHackathons("num_of_hackathons")
-      .default("0")
-      .notNull(),
+    attendedBefore: boolean("attended"),
+    numOfHackathons: numOfHackathons("num_of_hackathons"),
 
     // Your Story
     question1: text("question1"),
@@ -301,10 +311,18 @@ export const applications = createTable(
     gender: gender("gender"),
     ethnicity: ethnicity("ethnicity"),
     sexualOrientation: sexualOrientation("sexual_orientation"),
+
+    // Canvas - default to an empty but well-typed structure so new rows are valid
+    canvasData: jsonb("canvas_data")
+      .$type<{
+        paths: CanvasPaths;
+        timestamp: number;
+        version: string;
+      }>()
+      .default(sql`'{"paths":[],"timestamp":0,"version":""}'::jsonb`)
+      .notNull(),
   },
-  (application) => ({
-    userIdIdx: index("user_id_idx").on(application.userId),
-  }),
+  (application) => [index("user_id_idx").on(application.userId)],
 );
 
 /**
@@ -328,17 +346,27 @@ export const applicationsRelations = relations(
 
 export const userType = pgEnum("user_type", ["hacker", "organizer", "sponsor"]);
 
-export const users = createTable("user", {
-  id: varchar("id", { length: 255 }).notNull().primaryKey(),
-  name: varchar("name", { length: 255 }),
-  password: varchar("password", { length: 255 }),
-  email: varchar("email", { length: 255 }).notNull(),
-  emailVerified: timestamp("emailVerified", {
-    mode: "date",
-  }).default(sql`CURRENT_TIMESTAMP`),
-  image: varchar("image", { length: 255 }),
-  type: userType("type").default("hacker"),
-});
+export const users = createTable(
+  "user",
+  {
+    id: varchar("id", { length: 255 }).notNull().primaryKey(),
+    name: varchar("name", { length: 255 }),
+    password: varchar("password", { length: 255 }),
+    email: varchar("email", { length: 255 }).notNull(),
+    emailVerified: timestamp("emailVerified", {
+      mode: "date",
+    }).default(sql`CURRENT_TIMESTAMP`),
+    image: varchar("image", { length: 255 }),
+    type: userType("type").default("hacker"),
+
+    scavengerHuntEarned: integer("scavenger_hunt_earned").default(0),
+    scavengerHuntBalance: integer("scavenger_hunt_balance").default(0),
+  },
+  (user) => [
+    index("user_scavenger_hunt_earned_idx").on(user.scavengerHuntEarned),
+    index("user_scavenger_hunt_balance_idx").on(user.scavengerHuntBalance),
+  ],
+);
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   accounts: many(accounts),
@@ -364,12 +392,12 @@ export const accounts = createTable(
     id_token: text("id_token"),
     session_state: varchar("session_state", { length: 255 }),
   },
-  (account) => ({
-    compoundKey: primaryKey({
+  (account) => [
+    primaryKey({
       columns: [account.provider, account.providerAccountId],
     }),
-    userIdIdx: index("account_userId_idx").on(account.userId),
-  }),
+    index("account_userId_idx").on(account.userId),
+  ],
 );
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -397,21 +425,70 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 }));
 
 export const verificationTokens = createTable(
-  "verificationToken",
+  "verification_token",
   {
     identifier: varchar("identifier", { length: 255 }).notNull(),
     token: varchar("token", { length: 255 }).notNull(),
     expires: timestamp("expires", { mode: "date" }).notNull(),
   },
-  (vt) => ({
-    compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
-  }),
+  (vt) => [primaryKey({ columns: [vt.identifier, vt.token] })],
 );
 
-export const resetPasswordTokens = createTable("resetPasswordToken", {
+export const resetPasswordTokens = createTable("reset_password_token", {
   userId: varchar("userId", { length: 255 })
     .references(() => users.id)
     .primaryKey(),
   token: varchar("token", { length: 255 }),
   expires: timestamp("expires", { mode: "date" }).notNull(),
 });
+
+export const scavengerHuntItems = createTable("scavenger_hunt_item", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 12 }).unique().notNull(),
+  points: smallint("points").default(1).notNull(),
+  description: text("description"),
+});
+
+export const scavengerHuntScans = createTable(
+  "scavenger_hunt_scan",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    itemId: integer("item_id")
+      .notNull()
+      .references(() => scavengerHuntItems.id),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.itemId] }),
+    index("scan_user_idx").on(t.userId),
+  ],
+);
+
+export const scavengerHuntRewards = createTable("scavenger_hunt_reward", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  costPoints: smallint("cost_points").notNull(),
+  description: text("description"),
+  quantity: integer("quantity"),
+});
+
+export const scavengerHuntRedemptions = createTable(
+  "scavenger_hunt_redemption",
+  {
+    id: serial("id").primaryKey(),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    rewardId: integer("reward_id")
+      .notNull()
+      .references(() => scavengerHuntRewards.id),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("redemption_user_idx").on(t.userId)],
+);

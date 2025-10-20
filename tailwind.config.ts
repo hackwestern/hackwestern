@@ -1,4 +1,6 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
+import { type PluginAPI } from "tailwindcss/types/config";
 
 const config = {
   darkMode: ["class"],
@@ -19,7 +21,7 @@ const config = {
       md: "768px",
       lg: "1024px",
       xl: "1280px",
-      "2xl": "1536px",
+      "2xl": "1600px",
       "3xl": "2000px",
       "4xl": "3000px",
     },
@@ -31,30 +33,43 @@ const config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         githubbg: "#1b1f23",
+        beige: "var(--beige)",
+        coral: "var(--coral)",
+        lilac: "var(--lilac)",
+        salmon: "var(--salmon)",
+        heavy: "var(--heavy)",
+        emphasis: "var(--emphasis)",
+        tinted: "var(--tinted)",
+        medium: "var(--medium)",
+        light: "var(--light)",
+        "faint-lilac": "var(--faint-lilac)",
+        offwhite: "var(--offwhite)",
+        highlight: "var(--highlight)",
+        "border-light": "hsl(var(--border-light))",
         primary: {
+          "50": "hsl(var(--primary-50))",
+          "100": "hsl(var(--primary-100))",
+          "200": "hsl(var(--primary-200))",
+          "300": "hsl(var(--primary-300))",
+          "400": "hsl(var(--primary-400))",
+          "500": "hsl(var(--primary-500))",
+          "600": "hsl(var(--primary-600))",
+          "700": "hsl(var(--primary-700))",
+          "800": "hsl(var(--primary-800))",
           DEFAULT: "hsl(var(--primary))",
-          50: "hsl(var(--primary-50))",
-          100: "hsl(var(--primary-100))",
-          200: "hsl(var(--primary-200))",
-          300: "hsl(var(--primary-300))",
-          400: "hsl(var(--primary-400))",
-          500: "hsl(var(--primary-500))",
-          600: "hsl(var(--primary-600))",
-          700: "hsl(var(--primary-700))",
-          800: "hsl(var(--primary-800))",
           foreground: "hsl(var(--primary-foreground))",
         },
+        secondary: "hsl(var(--secondary))",
+        "button-secondary": "rgb(244, 242, 247)",
+        "button-secondary-hover": "rgb(248, 247, 249)",
+        "button-secondary-active": "rgb(253, 252, 253)",
         violet: {
-          100: "hsl(var(--violet-100))",
-          200: "hsl(var(--violet-200))",
-          300: "hsl(var(--violet-300))",
-          400: "hsl(var(--violet-400))",
-          500: "hsl(var(--violet-500))",
-          600: "hsl(var(--violet-600))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          "100": "hsl(var(--violet-100))",
+          "200": "hsl(var(--violet-200))",
+          "300": "hsl(var(--violet-300))",
+          "400": "hsl(var(--violet-400))",
+          "500": "hsl(var(--violet-500))",
+          "600": "hsl(var(--violet-600))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -77,110 +92,97 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        sidebar: {
+          DEFAULT: "hsl(var(--sidebar-background))",
+          foreground: "hsl(var(--sidebar-foreground))",
+          primary: "hsl(var(--sidebar-primary))",
+          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
+          accent: "hsl(var(--sidebar-accent))",
+          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
+          border: "hsl(var(--sidebar-border))",
+          ring: "hsl(var(--sidebar-ring))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        "hw-gradient-radius": "3137px",
-      },
-      keyframes: {
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
-        },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
-        },
-        float: {
-          "0%, 100%": { transform: "translatey(0px)" },
-          "50%": { transform: "translatey(-20px)" },
-        },
-        "inv-float": {
-          "0%, 100%": { transform: "translatey(-20px)" },
-          "50%": { transform: "translatey(0px)" },
-        },
-        "small-bounce": {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(2.5%)" },
-        },
-        wiggle: {
-          "0%, 100%": { transform: "rotate(-0.5deg)" },
-          "50%": { transform: "rotate(0.5deg)" },
-        },
-        "suitcase-slide": {
-          "0%": { transform: "translateX(0)" },
-          "100%": { transform: "translateX(-12000px)" },
-        },
-        "suitcase-slide-small": {
-          "0%": { transform: "translateX(0)" },
-          "100%": { transform: "translateX(-6000px)" },
-        },
-        "spin-reverse": {
-          "0%": { transform: "rotate(0deg)" },
-          "100%": { transform: "rotate(-360deg)" },
-        },
-        pulse: {
-          "0%, 100%" : {
-            transform: 'scale(1.05)', opacity: '1'
-          },
-          "50%" : {
-            transform: 'scale(1.)', opacity: '0.7' 
-          }
-        },
-        "inv-pulse": {
-          "0%, 100%" : {
-            transform: 'scale(1)', opacity: '0.7' 
-          },
-          "50%" : {
-            transform: 'scale(1.05)', opacity: '1'
-          }
-        }
-      },
-      animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-        cloud1: "float 5s ease-in-out infinite",
-        cloud2: "inv-float 6s ease-in-out infinite",
-        cloud3: "float 12s ease-in-out infinite",
-        cloud4: "inv-float 14s ease-in-out infinite",
-        plane: "float 10s ease-in-out infinite",
-        "small-bounce": "small-bounce 0.75s ease-in-out infinite",
-        wiggle: "wiggle 1s ease-in-out infinite",
-        "suitcase-slide": "suitcase-slide 120s linear infinite",
-        "suitcase-slide-small": "suitcase-slide-small 60s linear infinite",
-        "spin-reverse": "spin-reverse 2s linear infinite",
-        "organizer-slide": "suitcase-slide 180s linear infinite",
-        "organizer-slide-small": "suitcase-slide-small 60s linear infinite",
-        "star-pulse-1": "pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite",
-        "star-pulse-2": "inv-pulse 3s cubic-bezier(0.4, 0, 0.2, 1) infinite",
-        "star-pulse-3": "pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite",
-        "star-pulse-4": "inv-pulse 4s cubic-bezier(0.4, 0, 0.2, 1) infinite"
-
-
-
+        "hw-gradient-radius": "60vw",
       },
       backgroundImage: {
         "hw-radial-gradient":
-          "radial-gradient(77.76% 72.21% at 42.29% 60.83%, #FFE4D6 0%, #FFB2B7 9%, #E19CDE 18%, #B07ACA 35%, #765EA1 61%, #483CB5 100%);",
-        "hw-linear-gradient-day":
-          "linear-gradient(180deg, #B2C8FF 0%, #FFEAFC 100%);",
-        "hw-hero-text-gradient":
-          "linear-gradient(190deg, #EBA0C6 48.2%, #FFDEE0 84.16%)",
-        "hw-linear-gradient":
-          "linear-gradient(180deg, #8360BE 0%, #370966 57%);",
-        "hw-highlight-radial-gradient":
-          "radial-gradient(50% 50% at 50% 50%, rgba(255, 161, 94, 0.94) 0%, rgba(240, 110, 110, 0.92) 8.5%, rgba(244, 56, 124, 0.47) 52.5%, rgba(121, 35, 207, 0.00) 100%)",
+          "`\n            radial-gradient(\n              circle 150vh at 100vh 150vh,\n              var(--coral) 0%,\n              var(--salmon) 40%,\n              var(--lilac) 65%,\n              var(--beige) 90%\n            )\n          `",
+        "button-primary": "linear-gradient(#D19AEE 0%, #8F57AD 100%)",
+        "button-primary-hover":
+          "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), linear-gradient(#D19AEE 0%, #8F57AD 100%)",
+        "button-primary-active":
+          "linear-gradient(rgba(100, 100, 100, 0.1), rgba(100, 100, 100, 0.1)), linear-gradient(#D19AEE 0%, #8F57AD 100%)",
+        "button-primary-back":
+          "linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(#D19AEE 0%, #8F57AD 100%)",
+        "button-secondary-back":
+          "linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), linear-gradient(#FFFFFF 0%,#A893B0 100%)",
+        noise: '`url("https://grainy-gradients.vercel.app/noise.svg")`',
+      },
+      boxShadow: {
+        "button-primary": "0px 2px 4px rgba(60, 32, 76, 0.2)",
+        "button-secondary": "0px 2px 4px 0px rgba(60, 32, 76, 0.20)",
       },
       fontFamily: {
-        DM_Sans: ["var(--font-dmsans)"],
-        MagicRetro: ["var(--font-magicretro)"],
-        Borel: ["var(--font-salsa)"],
+        figtree: ["var(--font-figtree)"],
+        dico: ["var(--font-dico)"],
+        "jetbrains-mono": ["var(--font-jetbrainsmono)"],
+      },
+      fontSize: {
+        "main-display": "4rem",
+        "md-display": "3rem",
+        "sm-display": "2rem",
+        "lg-sub": "1.5rem",
+        "sm-sub": "1rem",
+        "lg-p": "1.5rem",
+        "md-p": "1rem",
+        "sm-p": ".875rem",
+      },
+      width: {
+        "3xs": "16rem",
+        "2xs": "18rem",
+        xs: "20rem",
+        sm: "24rem",
+        md: "28rem",
+        lg: "32rem",
+        xl: "36rem",
+        "2xl": "42rem",
+        "3xl": "48rem",
+        "4xl": "56rem",
+        "5xl": "64rem",
+        "6xl": "72rem",
+        "7xl": "80rem",
+      },
+      height: {
+        "3xs": "16rem",
+        "2xs": "18rem",
+        xs: "20rem",
+        sm: "24rem",
+        md: "28rem",
+        lg: "32rem",
+        xl: "36rem",
+        "2xl": "42rem",
+        "3xl": "48rem",
+        "4xl": "56rem",
+        "5xl": "64rem",
+        "6xl": "72rem",
+        "7xl": "80rem",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    plugin(function (this: void, api: PluginAPI) {
+      api.addUtilities({
+        ".backface-hidden": { backfaceVisibility: "hidden" },
+        ".preserve-3d": { transformStyle: "preserve-3d" },
+      });
+    }),
+  ],
 } satisfies Config;
 
 export default config;

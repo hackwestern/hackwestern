@@ -38,3 +38,6 @@ If you are not familiar with the different technologies used in this project, pl
 - [Docker](https://docs.docker.com/)
 - [Tailwind CSS](https://tailwindcss.com)
 - [tRPC](https://trpc.io)
+
+Visit our deepwiki to find out more!
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hackwestern/hackwestern)
