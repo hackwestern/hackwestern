@@ -1,8 +1,10 @@
-import React, { useMemo } from "react";
+"use no memo";
+
+import React from "react";
+
 import {
   type ColumnDef,
   type SortingState,
-  type OnChangeFn,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
@@ -20,33 +22,22 @@ import {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  sorting?: SortingState;
-  onSortingChange?: OnChangeFn<SortingState>;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
-  sorting = [],
-  onSortingChange,
 }: DataTableProps<TData, TValue>) {
-  const [internalSorting, setInternalSorting] = React.useState<SortingState>(
-    [],
-  );
-
-  const activeSorting = onSortingChange ? sorting : internalSorting;
-  const handleSortingChange = onSortingChange
-    ? onSortingChange
-    : setInternalSorting;
+  const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    onSortingChange: handleSortingChange,
+    onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     state: {
-      sorting: activeSorting,
+      sorting,
     },
   });
 
@@ -74,8 +65,8 @@ export function DataTable<TData, TValue>({
               ))}
             </TableHeader>
             <TableBody>
-              {table.getSortedRowModel().rows?.length ? (
-                table.getSortedRowModel().rows.map((row) => (
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
