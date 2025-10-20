@@ -61,6 +61,7 @@ const Internal = () => {
       review.application.lastName?.toLowerCase().includes(search.toLowerCase())
     );
   });
+  console.log("Sample data:", JSON.stringify(reviewData?.[0], null, 2));
 
   return (
     <div className="bg-hw-linear-gradient-day flex flex-col items-center justify-center bg-primary-100 py-4">
