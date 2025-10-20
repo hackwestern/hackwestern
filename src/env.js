@@ -31,7 +31,7 @@ export const env = createEnv({
     RESEND_API_KEY: z.string(),
     GOOGLE_WALLET_ISSUER_ID: z.string().min(1),
     GOOGLE_APPLICATION_CREDENTIALS: z.string().min(1),
-    WALLET_SERVICE_ACCOUNT_EMAIL: z.string().email(), 
+    WALLET_SERVICE_ACCOUNT_EMAIL: z.string().email(),
     // Cloudflare R2 / S3-compatible storage
     R2_ACCESS_KEY_ID: z.string(),
     R2_SECRET_ACCESS_KEY: z.string(),

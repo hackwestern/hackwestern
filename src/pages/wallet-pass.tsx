@@ -33,7 +33,7 @@ const WalletPassPage = () => {
         setError(
           data.error ||
             data.message ||
-            "Failed to generate pass. No URL received from API."
+            "Failed to generate pass. No URL received from API.",
         );
         setSaveToWalletUrl(""); // Ensure it's cleared on error
       }
@@ -42,7 +42,7 @@ const WalletPassPage = () => {
       console.error("CLIENT: Error in createPass mutation:", err);
       setError(err.message || "An unexpected error occurred during API call.");
       setSaveToWalletUrl(""); // Ensure it's cleared on error
-    }
+    },
   });
 
   const handleGeneratePass = async () => {
