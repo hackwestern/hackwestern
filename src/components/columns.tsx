@@ -81,10 +81,6 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
           </Button>
         );
       },
-      cell: ({ row }) => {
-        const rating: number = row.getValue("originalityRating");
-        return <div className="text-center">{rating}</div>;
-      },
     },
     {
       accessorKey: "technicalityRating",
@@ -114,10 +110,6 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
         );
-      },
-      cell: ({ row }) => {
-        const rating: number = row.getValue("originalityRating");
-        return <div className="text-center">{rating}</div>;
       },
     },
     {
