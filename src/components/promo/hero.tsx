@@ -6,8 +6,6 @@ import { useState } from "react";
 import { coordinates } from "~/constants/canvas";
 import { Button } from "../ui/button";
 import Link from "next/link";
-import CountdownTimer from "../apply/countdown-timer";
-import { APPLICATION_DEADLINE_ISO } from "~/lib/date";
 
 function Hero() {
   const [hasBeenDragged, setHasBeenDragged] = useState(false);
@@ -71,12 +69,12 @@ function Hero() {
               The world is your canvas.
             </div>
           </div>
-          <Link href="/register">
+          <Link href="/dashboard">
             <Button className="w-48" variant="primary" size="lg">
-              Apply Now!
+              Dashboard
             </Button>
           </Link>
-          <CountdownTimer targetDate={APPLICATION_DEADLINE_ISO} size="sm" />
+          <p className="pt-0.5 text-sm text-medium">applications closed!</p>
         </div>
         <div className="h-[150px] sm:h-[80px]" />
       </div>
