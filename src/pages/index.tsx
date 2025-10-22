@@ -48,14 +48,14 @@ export default function Home() {
         </Canvas>
         <Footer />
         <MLHTrustBadge />
-        <Link href="/register" prefetch={true}>
+        <Link href="/dashboard" prefetch={true}>
           <motion.div
             className="fixed right-24 top-6 z-50 w-fit md:right-28 lg:right-44"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1, transition: growTransition }}
             exit={{ opacity: 0 }}
           >
-            <Button variant="primary">Apply</Button>
+            <Button variant="primary">Dashboard</Button>
           </motion.div>
         </Link>
       </main>
