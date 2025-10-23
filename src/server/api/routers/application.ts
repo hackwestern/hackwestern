@@ -185,10 +185,12 @@ export const applicationRouter = createTRPCRouter({
         })
         .from(applications)
         .innerJoin(users, eq(users.id, applications.userId))
-        .where(or(
-          eq(applications.status, "PENDING_REVIEW"),
-          eq(applications.status, "IN_REVIEW")
-        ));
+        .where(
+          or(
+            eq(applications.status, "PENDING_REVIEW"),
+            eq(applications.status, "IN_REVIEW"),
+          ),
+        );
 
       return applicants.map((ap) => ({
         userId: ap.userId,
@@ -227,10 +229,12 @@ export const applicationRouter = createTRPCRouter({
         })
         .from(applications)
         .innerJoin(users, eq(users.id, applications.userId))
-        .where(or(
-          eq(applications.status, "PENDING_REVIEW"),
-          eq(applications.status, "IN_REVIEW")
-        ));
+        .where(
+          or(
+            eq(applications.status, "PENDING_REVIEW"),
+            eq(applications.status, "IN_REVIEW"),
+          ),
+        );
 
       // Get review scores for each application
       const applicationsWithScores = await Promise.all(
@@ -246,13 +250,24 @@ export const applicationRouter = createTRPCRouter({
 
           // Calculate cumulative scores
           const totalReviews = reviewScores.length;
-          const totalOriginality = reviewScores.reduce((sum, r) => sum + (r.originalityRating ?? 0), 0);
-          const totalTechnicality = reviewScores.reduce((sum, r) => sum + (r.technicalityRating ?? 0), 0);
-          const totalPassion = reviewScores.reduce((sum, r) => sum + (r.passionRating ?? 0), 0);
-          const totalScore = totalOriginality + totalTechnicality + totalPassion;
-          
+          const totalOriginality = reviewScores.reduce(
+            (sum, r) => sum + (r.originalityRating ?? 0),
+            0,
+          );
+          const totalTechnicality = reviewScores.reduce(
+            (sum, r) => sum + (r.technicalityRating ?? 0),
+            0,
+          );
+          const totalPassion = reviewScores.reduce(
+            (sum, r) => sum + (r.passionRating ?? 0),
+            0,
+          );
+          const totalScore =
+            totalOriginality + totalTechnicality + totalPassion;
+
           // Calculate average score per review (sum of all 3 ratings per review, then averaged across reviews)
-          const avgScorePerReview = totalReviews > 0 ? totalScore / totalReviews : 0;
+          const avgScorePerReview =
+            totalReviews > 0 ? totalScore / totalReviews : 0;
 
           return {
             userId: app.userId,
@@ -270,24 +285,40 @@ export const applicationRouter = createTRPCRouter({
             createdAt: app.createdAt,
             // Review scores
             totalReviews,
-            avgOriginality: totalReviews > 0 ? Math.round((totalOriginality / totalReviews) * 10) / 10 : 0,
-            avgTechnicality: totalReviews > 0 ? Math.round((totalTechnicality / totalReviews) * 10) / 10 : 0,
-            avgPassion: totalReviews > 0 ? Math.round((totalPassion / totalReviews) * 10) / 10 : 0,
+            avgOriginality:
+              totalReviews > 0
+                ? Math.round((totalOriginality / totalReviews) * 10) / 10
+                : 0,
+            avgTechnicality:
+              totalReviews > 0
+                ? Math.round((totalTechnicality / totalReviews) * 10) / 10
+                : 0,
+            avgPassion:
+              totalReviews > 0
+                ? Math.round((totalPassion / totalReviews) * 10) / 10
+                : 0,
             totalScore,
-            avgScore: totalReviews > 0 ? Math.round((totalScore / totalReviews) * 10) / 10 : 0,
+            avgScore:
+              totalReviews > 0
+                ? Math.round((totalScore / totalReviews) * 10) / 10
+                : 0,
             avgScorePerReview: Math.round(avgScorePerReview * 10) / 10,
           };
-        })
+        }),
       );
 
       // Sort by average score per review (descending) for ranking
-      return applicationsWithScores.sort((a, b) => b.avgScorePerReview - a.avgScorePerReview);
+      return applicationsWithScores.sort(
+        (a, b) => b.avgScorePerReview - a.avgScorePerReview,
+      );
     } catch (error) {
       throw error instanceof TRPCError
         ? error
         : new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to fetch applications for rankings: " + JSON.stringify(error),
+            message:
+              "Failed to fetch applications for rankings: " +
+              JSON.stringify(error),
           });
     }
   }),

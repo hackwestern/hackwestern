@@ -186,7 +186,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
     cell: ({ row }) => {
       const rank = row.original.originalRank || row.index + 1;
       return (
-        <div className="text-center font-bold text-lg">
+        <div className="text-center text-lg font-bold">
           {rank <= 400 ? (
             <span className="text-green-600">#{rank}</span>
           ) : (
@@ -214,11 +214,11 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
       const name: string = row.getValue("name");
       const userId: string = row.original.userId;
       return (
-        <Link 
+        <Link
           href={`/internal/review?applicant=${userId}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-left font-medium text-black hover:text-purple-600 transition-colors cursor-pointer"
+          className="cursor-pointer text-left font-medium text-black transition-colors hover:text-purple-600"
         >
           {name}
         </Link>
@@ -355,7 +355,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
     },
     cell: ({ row }) => {
       const score: number = row.getValue("totalScore");
-      return <div className="text-center font-bold text-lg">{score}</div>;
+      return <div className="text-center text-lg font-bold">{score}</div>;
     },
   },
   {
@@ -374,7 +374,11 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
     },
     cell: ({ row }) => {
       const score: number = row.getValue("avgScorePerReview");
-      return <div className="text-center font-bold text-lg text-purple-600">{score.toFixed(1)}</div>;
+      return (
+        <div className="text-center text-lg font-bold text-purple-600">
+          {score.toFixed(1)}
+        </div>
+      );
     },
   },
   {
@@ -394,16 +398,20 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
     cell: ({ row }) => {
       const status: string = row.getValue("status");
       const statusColors = {
-        "PENDING_REVIEW": "bg-yellow-100 text-yellow-800",
-        "IN_REVIEW": "bg-blue-100 text-blue-800",
-        "ACCEPTED": "bg-green-100 text-green-800",
-        "REJECTED": "bg-red-100 text-red-800",
-        "WAITLISTED": "bg-orange-100 text-orange-800",
+        PENDING_REVIEW: "bg-yellow-100 text-yellow-800",
+        IN_REVIEW: "bg-blue-100 text-blue-800",
+        ACCEPTED: "bg-green-100 text-green-800",
+        REJECTED: "bg-red-100 text-red-800",
+        WAITLISTED: "bg-orange-100 text-orange-800",
       };
-      const colorClass = statusColors[status as keyof typeof statusColors] || "bg-gray-100 text-gray-800";
-      
+      const colorClass =
+        statusColors[status as keyof typeof statusColors] ||
+        "bg-gray-100 text-gray-800";
+
       return (
-        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${colorClass}`}>
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${colorClass}`}
+        >
           {status.replace("_", " ")}
         </span>
       );
@@ -426,9 +434,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
     cell: ({ row }) => {
       const date: Date = row.getValue("createdAt");
       return (
-        <div className="text-left text-sm">
-          {date.toLocaleDateString()}
-        </div>
+        <div className="text-left text-sm">{date.toLocaleDateString()}</div>
       );
     },
   },

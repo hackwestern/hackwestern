@@ -41,22 +41,30 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 }
 
 const Rankings = () => {
-  const { data: rankingsData, isLoading, refetch } = api.application.getAllForRankings.useQuery(undefined, {
+  const {
+    data: rankingsData,
+    isLoading,
+    refetch,
+  } = api.application.getAllForRankings.useQuery(undefined, {
     enabled: false, // Don't fetch on page load
   });
   const [search, setSearch] = useState("");
 
-  const filteredData = rankingsData?.map((application, index) => ({
-    ...application,
-    originalRank: index + 1
-  }))?.filter((application) => {
-    return (
-      application.email.toLowerCase().includes(search.toLowerCase()) ||
-      application.name.toLowerCase().includes(search.toLowerCase()) ||
-      (application.school?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
-      (application.major?.toLowerCase().includes(search.toLowerCase()) ?? false)
-    );
-  });
+  const filteredData = rankingsData
+    ?.map((application, index) => ({
+      ...application,
+      originalRank: index + 1,
+    }))
+    ?.filter((application) => {
+      return (
+        application.email.toLowerCase().includes(search.toLowerCase()) ||
+        application.name.toLowerCase().includes(search.toLowerCase()) ||
+        (application.school?.toLowerCase().includes(search.toLowerCase()) ??
+          false) ||
+        (application.major?.toLowerCase().includes(search.toLowerCase()) ??
+          false)
+      );
+    });
 
   if (isLoading) {
     return (
@@ -74,12 +82,14 @@ const Rankings = () => {
         <div className="z-10 mb-4 flex w-full max-w-[85vw] items-center justify-between">
           <h1 className="text-3xl">Application Rankings</h1>
           <div className="flex gap-3">
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               onClick={() => refetch()}
               disabled={isLoading}
             >
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+              />
               Load Rankings
             </Button>
             <Link href="/internal/dashboard">
@@ -95,17 +105,19 @@ const Rankings = () => {
   }
 
   return (
-    <div className="bg-hw-linear-gradient-day flex flex-col items-center justify-center bg-primary-100 py-4 px-4">
+    <div className="bg-hw-linear-gradient-day flex flex-col items-center justify-center bg-primary-100 px-4 py-4">
       <CanvasBackground />
       <div className="z-10 mb-4 flex w-full max-w-[85vw] items-center justify-between">
         <h1 className="text-3xl">Application Rankings</h1>
         <div className="flex gap-3">
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={() => refetch()}
             disabled={isLoading}
           >
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
           <Link href="/internal/dashboard">
@@ -113,7 +125,7 @@ const Rankings = () => {
           </Link>
         </div>
       </div>
-      
+
       <div className="z-10 mb-4 w-full max-w-[85vw]">
         <div className="mb-3 flex items-center justify-between">
           <div className="text-sm text-gray-600">
@@ -129,19 +141,16 @@ const Rankings = () => {
             {search && (
               <button
                 onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
               >
                 <X className="h-4 w-4" />
               </button>
             )}
           </div>
         </div>
-        
-        <div className="rounded-lg border bg-white/90 backdrop-blur-sm overflow-x-auto">
-          <DataTable 
-            columns={rankingsColumns} 
-            data={filteredData ?? []} 
-          />
+
+        <div className="overflow-x-auto rounded-lg border bg-white/90 backdrop-blur-sm">
+          <DataTable columns={rankingsColumns} data={filteredData ?? []} />
         </div>
       </div>
     </div>

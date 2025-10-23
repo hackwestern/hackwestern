@@ -105,9 +105,7 @@ const Internal = () => {
           <div>All reviews completed! 🎉</div>
         )}
         <Button asChild variant="primary">
-          <Link href="/internal/rankings">
-            View Rankings
-          </Link>
+          <Link href="/internal/rankings">View Rankings</Link>
         </Button>
       </div>
       <Input
