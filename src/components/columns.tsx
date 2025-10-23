@@ -1,5 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import type { reviews } from "~/server/db/schema";
 import { Button } from "./ui/button";
@@ -152,3 +152,284 @@ export const reviewDashboardColumns: ColumnDef<typeof reviews.$inferSelect>[] =
       },
     },
   ];
+
+// Type for rankings data
+type RankingsApplicationType = {
+  userId: string;
+  name: string;
+  email: string;
+  school: string | null;
+  levelOfStudy: string | null;
+  major: string | null;
+  gender: string | null;
+  resumeLink: string | null;
+  githubLink: string | null;
+  linkedInLink: string | null;
+  otherLink: string | null;
+  status: string;
+  createdAt: Date;
+  // Review scores
+  totalReviews: number;
+  avgOriginality: number;
+  avgTechnicality: number;
+  avgPassion: number;
+  totalScore: number;
+  avgScore: number;
+  avgScorePerReview: number;
+  originalRank?: number;
+};
+
+export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
+  {
+    accessorKey: "rank",
+    header: "Rank",
+    cell: ({ row }) => {
+      const rank = row.original.originalRank || row.index + 1;
+      return (
+        <div className="text-center font-bold text-lg">
+          {rank <= 400 ? (
+            <span className="text-green-600">#{rank}</span>
+          ) : (
+            <span className="text-gray-500">#{rank}</span>
+          )}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "name",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          className="mx-0 p-0 text-medium"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Name
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const name: string = row.getValue("name");
+      const userId: string = row.original.userId;
+      return (
+        <Link 
+          href={`/internal/review?applicant=${userId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-left font-medium text-black hover:text-purple-600 transition-colors cursor-pointer"
+        >
+          {name}
+        </Link>
+      );
+    },
+  },
+  {
+    accessorKey: "email",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          className="mx-0 p-0 text-medium"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Email
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const email: string = row.getValue("email");
+      return <div className="text-left">{email}</div>;
+    },
+  },
+  {
+    accessorKey: "school",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          className="mx-0 p-0 text-medium"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          School
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const school: string | null = row.getValue("school");
+      return <div className="text-left">{school || "—"}</div>;
+    },
+  },
+  {
+    accessorKey: "gender",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          className="mx-0 p-0 text-medium"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Gender
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const gender: string | null = row.getValue("gender");
+      return <div className="text-left">{gender || "—"}</div>;
+    },
+  },
+  {
+    accessorKey: "avgOriginality",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          className="mx-0 p-0 text-medium"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Originality
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const score: number = row.getValue("avgOriginality");
+      return <div className="text-center font-medium">{score.toFixed(1)}</div>;
+    },
+  },
+  {
+    accessorKey: "avgTechnicality",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          className="mx-0 p-0 text-medium"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Technicality
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const score: number = row.getValue("avgTechnicality");
+      return <div className="text-center font-medium">{score.toFixed(1)}</div>;
+    },
+  },
+  {
+    accessorKey: "avgPassion",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          className="mx-0 p-0 text-medium"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Passion
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const score: number = row.getValue("avgPassion");
+      return <div className="text-center font-medium">{score.toFixed(1)}</div>;
+    },
+  },
+  {
+    accessorKey: "totalScore",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          className="mx-0 p-0 text-medium"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Total Score
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const score: number = row.getValue("totalScore");
+      return <div className="text-center font-bold text-lg">{score}</div>;
+    },
+  },
+  {
+    accessorKey: "avgScorePerReview",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          className="mx-0 p-0 text-medium"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Avg Score/Review
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const score: number = row.getValue("avgScorePerReview");
+      return <div className="text-center font-bold text-lg text-purple-600">{score.toFixed(1)}</div>;
+    },
+  },
+  {
+    accessorKey: "status",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          className="mx-0 p-0 text-medium"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Status
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const status: string = row.getValue("status");
+      const statusColors = {
+        "PENDING_REVIEW": "bg-yellow-100 text-yellow-800",
+        "IN_REVIEW": "bg-blue-100 text-blue-800",
+        "ACCEPTED": "bg-green-100 text-green-800",
+        "REJECTED": "bg-red-100 text-red-800",
+        "WAITLISTED": "bg-orange-100 text-orange-800",
+      };
+      const colorClass = statusColors[status as keyof typeof statusColors] || "bg-gray-100 text-gray-800";
+      
+      return (
+        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${colorClass}`}>
+          {status.replace("_", " ")}
+        </span>
+      );
+    },
+  },
+  {
+    accessorKey: "createdAt",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          className="mx-0 p-0 text-medium"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Applied
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const date: Date = row.getValue("createdAt");
+      return (
+        <div className="text-left text-sm">
+          {date.toLocaleDateString()}
+        </div>
+      );
+    },
+  },
+];
