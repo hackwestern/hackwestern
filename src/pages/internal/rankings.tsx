@@ -65,16 +65,17 @@ const Rankings = () => {
     const technicalityWeight = weights.technicality[0] ?? 1.0;
     const passionWeight = weights.passion[0] ?? 1.0;
     const genderWeight = weights.gender[0] ?? 1.0;
-    
+
     // Base weighted score
-    const baseWeightedScore = 
-      (application.avgOriginality * originalityWeight) +
-      (application.avgTechnicality * technicalityWeight) +
-      (application.avgPassion * passionWeight);
-    
+    const baseWeightedScore =
+      application.avgOriginality * originalityWeight +
+      application.avgTechnicality * technicalityWeight +
+      application.avgPassion * passionWeight;
+
     // Apply gender bias (1.0 = no bias, >1.0 = favor men, <1.0 = favor women)
-    const genderMultiplier = application.gender === "Male" ? genderWeight : (2.0 - genderWeight);
-    
+    const genderMultiplier =
+      application.gender === "Male" ? genderWeight : 2.0 - genderWeight;
+
     return baseWeightedScore * genderMultiplier;
   };
 
@@ -89,36 +90,38 @@ const Rankings = () => {
     })
     ?.sort((a, b) => b.weightedScore - a.weightedScore) // Sort by weighted score descending
     ?.map((application, index) => ({
-    ...application,
+      ...application,
       rank: index + 1, // New rank based on weighted score
     }))
     ?.filter((application) => {
-    return (
-      application.email.toLowerCase().includes(search.toLowerCase()) ||
-      application.name.toLowerCase().includes(search.toLowerCase()) ||
+      return (
+        application.email.toLowerCase().includes(search.toLowerCase()) ||
+        application.name.toLowerCase().includes(search.toLowerCase()) ||
         (application.school?.toLowerCase().includes(search.toLowerCase()) ??
           false) ||
         (application.major?.toLowerCase().includes(search.toLowerCase()) ??
           false)
-    );
-  });
+      );
+    });
 
   // Calculate gender distribution for top 400
   const getGenderDistribution = (data: any[], useWeighted = false) => {
-    const top400 = data
-      ?.slice(0, 400)
-      ?.filter(app => app.gender === "Male" || app.gender === "Female") || [];
-    
-    const men = top400.filter(app => app.gender === "Male").length;
-    const women = top400.filter(app => app.gender === "Female").length;
+    const top400 =
+      data
+        ?.slice(0, 400)
+        ?.filter((app) => app.gender === "Male" || app.gender === "Female") ||
+      [];
+
+    const men = top400.filter((app) => app.gender === "Male").length;
+    const women = top400.filter((app) => app.gender === "Female").length;
     const total = men + women;
-    
+
     return {
       men,
       women,
       total,
       menPercent: total > 0 ? ((men / total) * 100).toFixed(1) : "0.0",
-      womenPercent: total > 0 ? ((women / total) * 100).toFixed(1) : "0.0"
+      womenPercent: total > 0 ? ((women / total) * 100).toFixed(1) : "0.0",
     };
   };
 
@@ -127,9 +130,9 @@ const Rankings = () => {
     rankingsData?.map((application, index) => ({
       ...application,
       originalRank: index + 1,
-    })) || []
+    })) || [],
   );
-  
+
   const weightedScoreGenderDist = getGenderDistribution(filteredData || []);
 
   if (isLoading) {
@@ -148,8 +151,8 @@ const Rankings = () => {
         <div className="z-10 mb-4 flex w-full max-w-[85vw] items-center justify-between">
           <h1 className="text-3xl">Application Rankings</h1>
           <div className="flex gap-3">
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               onClick={() => refetch()}
               disabled={isLoading}
             >
@@ -176,8 +179,8 @@ const Rankings = () => {
       <div className="z-10 mb-4 flex w-full max-w-[85vw] items-center justify-between">
         <h1 className="text-3xl">Application Rankings</h1>
         <div className="flex gap-3">
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={() => refetch()}
             disabled={isLoading}
           >
@@ -191,7 +194,7 @@ const Rankings = () => {
           </Link>
         </div>
       </div>
-      
+
       <div className="z-10 mb-4 w-full max-w-[85vw]">
         <div className="mb-3 flex items-center justify-between">
           <div className="text-sm text-gray-600">
@@ -214,14 +217,16 @@ const Rankings = () => {
             )}
           </div>
         </div>
-        
+
         <div className="overflow-x-auto rounded-lg border bg-white/90 backdrop-blur-sm">
           <DataTable columns={rankingsColumns} data={filteredData ?? []} />
         </div>
 
         {/* Weight Adjustment Sliders - Moved to bottom */}
         <div className="mt-6 rounded-lg border bg-white/90 p-4 backdrop-blur-sm">
-          <h3 className="mb-4 text-lg font-semibold">Score Weight Adjustment</h3>
+          <h3 className="mb-4 text-lg font-semibold">
+            Score Weight Adjustment
+          </h3>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {/* Originality Weight */}
             <div className="space-y-2">
@@ -304,7 +309,7 @@ const Rankings = () => {
               </div>
             </div>
           </div>
-          
+
           {/* Weight Summary */}
           <div className="mt-4 rounded-md bg-gray-50 p-3">
             <div className="text-sm text-gray-600">
@@ -316,9 +321,10 @@ const Rankings = () => {
                 const totalWeight = origWeight + techWeight + passionWeight;
                 return (
                   <>
-                    Originality: {((origWeight / totalWeight) * 100).toFixed(1)}% |{" "}
-                    Technicality: {((techWeight / totalWeight) * 100).toFixed(1)}% |{" "}
-                    Passion: {((passionWeight / totalWeight) * 100).toFixed(1)}%
+                    Originality: {((origWeight / totalWeight) * 100).toFixed(1)}
+                    % | Technicality:{" "}
+                    {((techWeight / totalWeight) * 100).toFixed(1)}% | Passion:{" "}
+                    {((passionWeight / totalWeight) * 100).toFixed(1)}%
                   </>
                 );
               })()}
@@ -328,7 +334,9 @@ const Rankings = () => {
 
         {/* Gender Weight Adjustment */}
         <div className="mt-6 rounded-lg border bg-white/90 p-4 backdrop-blur-sm">
-          <h3 className="mb-4 text-lg font-semibold">Gender Weight Adjustment</h3>
+          <h3 className="mb-4 text-lg font-semibold">
+            Gender Weight Adjustment
+          </h3>
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -354,7 +362,7 @@ const Rankings = () => {
                 <span>No Bias</span>
                 <span>Favor Men</span>
               </div>
-              <div className="text-xs text-gray-500 text-center">
+              <div className="text-center text-xs text-gray-500">
                 1.0 = No bias | &gt;1.0 = Favor men | &lt;1.0 = Favor women
               </div>
             </div>
@@ -363,27 +371,32 @@ const Rankings = () => {
 
         {/* Gender Distribution Display */}
         <div className="mt-6 rounded-lg border bg-white/90 p-4 backdrop-blur-sm">
-          <h3 className="mb-4 text-lg font-semibold">Top 400 Gender Distribution</h3>
+          <h3 className="mb-4 text-lg font-semibold">
+            Top 400 Gender Distribution
+          </h3>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {/* Average Score Distribution */}
             <div className="space-y-3">
-              <h4 className="text-md font-medium text-gray-800">Based on Average Score</h4>
+              <h4 className="text-md font-medium text-gray-800">
+                Based on Average Score
+              </h4>
               <div className="space-y-2">
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Men:</span>
                   <span className="text-sm font-bold text-blue-600">
                     {avgScoreGenderDist.men} ({avgScoreGenderDist.menPercent}%)
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Women:</span>
                   <span className="text-sm font-bold text-pink-600">
-                    {avgScoreGenderDist.women} ({avgScoreGenderDist.womenPercent}%)
+                    {avgScoreGenderDist.women} (
+                    {avgScoreGenderDist.womenPercent}%)
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full" 
+                <div className="h-2 w-full rounded-full bg-gray-200">
+                  <div
+                    className="h-2 rounded-full bg-blue-600"
                     style={{ width: `${avgScoreGenderDist.menPercent}%` }}
                   ></div>
                 </div>
@@ -392,23 +405,27 @@ const Rankings = () => {
 
             {/* Weighted Score Distribution */}
             <div className="space-y-3">
-              <h4 className="text-md font-medium text-gray-800">Based on Weighted Score</h4>
+              <h4 className="text-md font-medium text-gray-800">
+                Based on Weighted Score
+              </h4>
               <div className="space-y-2">
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Men:</span>
                   <span className="text-sm font-bold text-blue-600">
-                    {weightedScoreGenderDist.men} ({weightedScoreGenderDist.menPercent}%)
+                    {weightedScoreGenderDist.men} (
+                    {weightedScoreGenderDist.menPercent}%)
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Women:</span>
                   <span className="text-sm font-bold text-pink-600">
-                    {weightedScoreGenderDist.women} ({weightedScoreGenderDist.womenPercent}%)
+                    {weightedScoreGenderDist.women} (
+                    {weightedScoreGenderDist.womenPercent}%)
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full" 
+                <div className="h-2 w-full rounded-full bg-gray-200">
+                  <div
+                    className="h-2 rounded-full bg-blue-600"
                     style={{ width: `${weightedScoreGenderDist.menPercent}%` }}
                   ></div>
                 </div>

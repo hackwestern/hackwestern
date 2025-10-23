@@ -184,7 +184,8 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
     accessorKey: "rank",
     header: "Rank",
     cell: ({ row }) => {
-      const rank = row.original.rank || row.original.originalRank || row.index + 1;
+      const rank =
+        row.original.rank || row.original.originalRank || row.index + 1;
       return (
         <div className="text-center text-lg font-bold">
           {rank <= 400 ? (
