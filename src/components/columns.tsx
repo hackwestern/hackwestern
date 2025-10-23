@@ -184,7 +184,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
     accessorKey: "rank",
     header: "Rank",
     cell: ({ row }) => {
-      const rank = row.original.originalRank || row.index + 1;
+      const rank = row.original.rank || row.original.originalRank || row.index + 1;
       return (
         <div className="text-center text-lg font-bold">
           {rank <= 400 ? (
@@ -198,18 +198,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
   },
   {
     accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          className="mx-0 p-0 text-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Name",
     cell: ({ row }) => {
       const name: string = row.getValue("name");
       const userId: string = row.original.userId;
@@ -227,18 +216,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
   },
   {
     accessorKey: "email",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          className="mx-0 p-0 text-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Email
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Email",
     cell: ({ row }) => {
       const email: string = row.getValue("email");
       return <div className="text-left">{email}</div>;
@@ -246,18 +224,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
   },
   {
     accessorKey: "school",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          className="mx-0 p-0 text-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          School
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "School",
     cell: ({ row }) => {
       const school: string | null = row.getValue("school");
       return <div className="text-left">{school || "—"}</div>;
@@ -265,18 +232,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
   },
   {
     accessorKey: "gender",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          className="mx-0 p-0 text-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Gender
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Gender",
     cell: ({ row }) => {
       const gender: string | null = row.getValue("gender");
       return <div className="text-left">{gender || "—"}</div>;
@@ -284,18 +240,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
   },
   {
     accessorKey: "avgOriginality",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          className="mx-0 p-0 text-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Originality
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Originality",
     cell: ({ row }) => {
       const score: number = row.getValue("avgOriginality");
       return <div className="text-center font-medium">{score.toFixed(1)}</div>;
@@ -303,18 +248,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
   },
   {
     accessorKey: "avgTechnicality",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          className="mx-0 p-0 text-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Technicality
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Technicality",
     cell: ({ row }) => {
       const score: number = row.getValue("avgTechnicality");
       return <div className="text-center font-medium">{score.toFixed(1)}</div>;
@@ -322,18 +256,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
   },
   {
     accessorKey: "avgPassion",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          className="mx-0 p-0 text-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Passion
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Passion",
     cell: ({ row }) => {
       const score: number = row.getValue("avgPassion");
       return <div className="text-center font-medium">{score.toFixed(1)}</div>;
@@ -341,18 +264,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
   },
   {
     accessorKey: "totalScore",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          className="mx-0 p-0 text-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Total Score
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Total Score",
     cell: ({ row }) => {
       const score: number = row.getValue("totalScore");
       return <div className="text-center text-lg font-bold">{score}</div>;
@@ -382,7 +294,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
     },
   },
   {
-    accessorKey: "status",
+    accessorKey: "weightedScore",
     header: ({ column }) => {
       return (
         <Button
@@ -390,11 +302,23 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
           className="mx-0 p-0 text-medium"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Status
+          Weighted Score
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       );
     },
+    cell: ({ row }) => {
+      const score: number = row.getValue("weightedScore");
+      return (
+        <div className="text-center text-lg font-bold text-orange-600">
+          {score.toFixed(1)}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
     cell: ({ row }) => {
       const status: string = row.getValue("status");
       const statusColors = {
@@ -419,18 +343,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
   },
   {
     accessorKey: "createdAt",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          className="mx-0 p-0 text-medium"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Applied
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Applied",
     cell: ({ row }) => {
       const date: Date = row.getValue("createdAt");
       return (
