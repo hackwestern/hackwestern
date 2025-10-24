@@ -177,6 +177,9 @@ type RankingsApplicationType = {
   avgScore: number;
   avgScorePerReview: number;
   originalRank?: number;
+  rank?: number;
+  quotaStatus?: string;
+  weightedScore?: number;
 };
 
 export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
