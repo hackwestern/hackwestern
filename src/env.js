@@ -24,11 +24,14 @@ export const env = createEnv({
     ),
     GITHUB_CLIENT_ID: z.string(),
     GITHUB_CLIENT_SECRET: z.string(),
-    GOOGLE_CLIENT_ID: z.string(),
-    GOOGLE_CLIENT_SECRET: z.string(),
+    GOOGLE_CLIENT_ID: z.string(), // This is for Google Sign-In, not Wallet API auth
+    GOOGLE_CLIENT_SECRET: z.string(), // This is for Google Sign-In, not Wallet API auth
     DISCORD_CLIENT_ID: z.string(),
     DISCORD_CLIENT_SECRET: z.string(),
     RESEND_API_KEY: z.string(),
+    GOOGLE_WALLET_ISSUER_ID: z.string().min(1),
+    GOOGLE_APPLICATION_CREDENTIALS: z.string().min(1),
+    WALLET_SERVICE_ACCOUNT_EMAIL: z.string().email(),
     // Cloudflare R2 / S3-compatible storage
     R2_ACCESS_KEY_ID: z.string(),
     R2_SECRET_ACCESS_KEY: z.string(),
@@ -46,6 +49,8 @@ export const env = createEnv({
    */
   client: {
     // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    // Add your new client-side environment variables
+    NEXT_PUBLIC_APP_URL: z.string().url().min(1),
   },
 
   /**
@@ -64,6 +69,11 @@ export const env = createEnv({
     DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
     DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
+    // Map your new environment variables here
+    GOOGLE_WALLET_ISSUER_ID: process.env.GOOGLE_WALLET_ISSUER_ID,
+    GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS, // Renamed
+    WALLET_SERVICE_ACCOUNT_EMAIL: process.env.WALLET_SERVICE_ACCOUNT_EMAIL, // Added new variable
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
     R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
     R2_ENDPOINT: process.env.R2_ENDPOINT,
