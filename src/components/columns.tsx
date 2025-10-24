@@ -186,9 +186,15 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
     cell: ({ row }) => {
       const rank =
         row.original.rank || row.original.originalRank || row.index + 1;
+      const quotaStatus = row.original.quotaStatus;
+      
       return (
         <div className="text-center text-lg font-bold">
-          {rank <= 400 ? (
+          {quotaStatus === "quota_exceeded" ? (
+            <span className="text-red-500 line-through">#{rank}</span>
+          ) : quotaStatus === "promoted_extra" ? (
+            <span className="text-blue-600">#{rank}</span>
+          ) : rank <= 400 ? (
             <span className="text-green-600">#{rank}</span>
           ) : (
             <span className="text-gray-500">#{rank}</span>
