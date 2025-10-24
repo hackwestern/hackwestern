@@ -18,15 +18,18 @@ export function useLoadingOverlay(): UseLoadingOverlayReturn {
     setIsLoading(false);
   }, []);
 
-  const withLoading = useCallback(async <T>(asyncFn: () => Promise<T>): Promise<T> => {
-    startLoading();
-    try {
-      const result = await asyncFn();
-      return result;
-    } finally {
-      stopLoading();
-    }
-  }, [startLoading, stopLoading]);
+  const withLoading = useCallback(
+    async <T>(asyncFn: () => Promise<T>): Promise<T> => {
+      startLoading();
+      try {
+        const result = await asyncFn();
+        return result;
+      } finally {
+        stopLoading();
+      }
+    },
+    [startLoading, stopLoading],
+  );
 
   return {
     isLoading,

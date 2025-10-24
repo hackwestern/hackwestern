@@ -187,7 +187,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
       const rank =
         row.original.rank || row.original.originalRank || row.index + 1;
       const quotaStatus = row.original.quotaStatus;
-      
+
       return (
         <div className="text-center text-lg font-bold">
           {quotaStatus === "quota_exceeded" ? (

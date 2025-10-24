@@ -268,7 +268,7 @@ export const applicationRouter = createTRPCRouter({
           // Calculate average score per review (sum of all 3 ratings per review, then averaged across reviews)
           const avgScorePerReview =
             totalReviews > 0 ? totalScoreSum / totalReviews : 0;
-          
+
           // Total Score is now the average score per review (unweighted)
           const totalScore = avgScorePerReview;
 
