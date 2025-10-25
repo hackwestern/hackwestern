@@ -196,7 +196,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
           {quotaStatus === "quota_exceeded" ? (
             <span className="text-red-500 line-through">#{rank}</span>
           ) : quotaStatus === "promoted" ? (
-            <span className="text-blue-600 font-bold">#{rank}</span>
+            <span className="font-bold text-blue-600">#{rank}</span>
           ) : quotaStatus === "promoted_extra" ? (
             <span className="text-blue-600">#{rank}</span>
           ) : rank <= 400 ? (
@@ -215,7 +215,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
       const name: string = row.getValue("name");
       const userId: string = row.original.userId;
       const quotaStatus = row.original.quotaStatus;
-      
+
       return (
         <div className="flex items-center gap-2">
           <Link

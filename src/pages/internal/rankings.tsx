@@ -102,7 +102,7 @@ const Rankings = () => {
   });
 
   const [schoolQuotas, setSchoolQuotas] = useState<Record<string, number>>({});
-  
+
   // Accepted students management
   const [acceptedNumber] = useState(370); // Configurable number of accepted students
 
@@ -161,17 +161,19 @@ const Rankings = () => {
   // Export accepted emails to CSV
   const exportAcceptedEmails = () => {
     // Use the final accepted list (includes promoted students)
-    const emails = finalRankings.map(student => student.email).filter(Boolean);
-    
+    const emails = finalRankings
+      .map((student) => student.email)
+      .filter(Boolean);
+
     // Create CSV content
-    const csvContent = emails.join(',\n');
-    
+    const csvContent = emails.join(",\n");
+
     // Create and download file
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.download = `accepted-students-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `accepted-students-${new Date().toISOString().split("T")[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -193,9 +195,9 @@ const Rankings = () => {
 
     // Apply gender bias (1.0 = no bias, >1.0 = favor men, <1.0 = favor women)
     // genderWeight: 0 = favor women, 1.0 = no bias, 2.0 = favor men
-    
+
     let genderMultiplier = 1.0;
-    
+
     if (application.gender === "Male") {
       // For men: use the weight directly
       genderMultiplier = genderWeight;
@@ -204,7 +206,7 @@ const Rankings = () => {
       // This ensures that when genderWeight = 1.0, both get 1.0x (no bias)
       genderMultiplier = 2.0 - genderWeight;
     }
-    
+
     // Apply a more aggressive bias to make the effect more visible
     // This helps overcome the natural bias in the dataset
     const biasStrength = 1.0; // Increase this to make the effect more pronounced
@@ -213,14 +215,16 @@ const Rankings = () => {
     return baseWeightedScore * genderMultiplier;
   };
 
-
   // Create the final accepted list with school quotas applied
   const createAcceptedList = (data: ApplicationData[]) => {
     return createAcceptedListWithQuotas(data, schoolQuotas);
   };
 
   // Create the final accepted list with specific quotas
-  const createAcceptedListWithQuotas = (data: ApplicationData[], quotas: Record<string, number>) => {
+  const createAcceptedListWithQuotas = (
+    data: ApplicationData[],
+    quotas: Record<string, number>,
+  ) => {
     const schoolCounts: Record<string, number> = {};
     const accepted: ApplicationData[] = [];
     const rejected: ApplicationData[] = [];
@@ -231,11 +235,11 @@ const Rankings = () => {
       const school = student.school ?? "Unknown";
       const currentCount = schoolCounts[school] ?? 0;
       const quota = quotas[school] ?? 0; // 0 means unlimited
-      
+
       // Check if we can accept this student
       const canAccept = quota === 0 || currentCount < quota;
       const hasSpace = accepted.length < acceptedNumber;
-      
+
       if (canAccept && hasSpace) {
         // Student is accepted
         accepted.push({
@@ -256,12 +260,14 @@ const Rankings = () => {
     const spaceLeft = acceptedNumber - accepted.length;
     if (spaceLeft > 0 && rejected.length > 0) {
       // Get the best rejected students (those rejected due to quota, not merit)
-      const quotaRejected = rejected.filter(s => s.quotaStatus === "quota_exceeded");
-      const promoted = quotaRejected.slice(0, spaceLeft).map(student => ({
+      const quotaRejected = rejected.filter(
+        (s) => s.quotaStatus === "quota_exceeded",
+      );
+      const promoted = quotaRejected.slice(0, spaceLeft).map((student) => ({
         ...student,
         quotaStatus: "promoted",
       }));
-      
+
       // Add promoted students to accepted list
       accepted.push(...promoted);
     }
@@ -273,7 +279,7 @@ const Rankings = () => {
       rejected: rejected.length,
       spaceLeft: acceptedNumber - accepted.length,
       schoolCounts,
-      promoted: accepted.filter(s => s.quotaStatus === "promoted").length,
+      promoted: accepted.filter((s) => s.quotaStatus === "promoted").length,
     });
 
     return {
@@ -334,13 +340,13 @@ const Rankings = () => {
 
         // Apply gender bias using current localWeights
         let genderMultiplier = 1.0;
-        
+
         if (application.gender === "Male") {
           genderMultiplier = genderWeight;
         } else {
           genderMultiplier = 2.0 - genderWeight;
         }
-        
+
         const biasStrength = 1.0;
         genderMultiplier = 1.0 + (genderMultiplier - 1.0) * biasStrength;
 
@@ -359,18 +365,23 @@ const Rankings = () => {
       }));
 
     // Create the final accepted list with school quotas applied using CURRENT localSchoolQuotas
-    const acceptedListResult = createAcceptedListWithQuotas(processedData, localSchoolQuotas);
-    
+    const acceptedListResult = createAcceptedListWithQuotas(
+      processedData,
+      localSchoolQuotas,
+    );
+
     // Calculate gender distribution with the processed data
     const avgScoreGenderDist = getGenderDistribution(
       rankingsData.map((application, index) => ({
         ...application,
         originalRank: index + 1,
-      }))
+      })),
     );
-    
-    const weightedScoreGenderDist = getGenderDistribution(acceptedListResult.accepted);
-    
+
+    const weightedScoreGenderDist = getGenderDistribution(
+      acceptedListResult.accepted,
+    );
+
     // Store the results
     setProcessedResults({
       finalRankings: acceptedListResult.accepted,
@@ -404,8 +415,7 @@ const Rankings = () => {
       application.name.toLowerCase().includes(search.toLowerCase()) ||
       (application.school?.toLowerCase().includes(search.toLowerCase()) ??
         false) ||
-      (application.major?.toLowerCase().includes(search.toLowerCase()) ??
-        false)
+      (application.major?.toLowerCase().includes(search.toLowerCase()) ?? false)
     );
   });
 
@@ -444,7 +454,8 @@ const Rankings = () => {
     menPercent: string;
     womenPercent: string;
     otherPercent: string;
-  } = processedResults?.genderDistribution?.avgScore ?? getGenderDistribution([]);
+  } =
+    processedResults?.genderDistribution?.avgScore ?? getGenderDistribution([]);
   const weightedScoreGenderDist: {
     men: number;
     women: number;
@@ -453,8 +464,9 @@ const Rankings = () => {
     menPercent: string;
     womenPercent: string;
     otherPercent: string;
-  } = processedResults?.genderDistribution?.weightedScore ?? getGenderDistribution([]);
-
+  } =
+    processedResults?.genderDistribution?.weightedScore ??
+    getGenderDistribution([]);
 
   if (isLoading) {
     return (
@@ -488,7 +500,8 @@ const Rankings = () => {
           </div>
         </div>
         <div className="z-10 text-xl text-gray-600">
-          Click &quot;Load Rankings&quot; to fetch and display application rankings
+          Click &quot;Load Rankings&quot; to fetch and display application
+          rankings
         </div>
       </div>
     );
@@ -520,7 +533,8 @@ const Rankings = () => {
         <div className="z-10 mb-4 w-full max-w-[85vw]">
           <div className="mb-3 flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              {filteredData?.length} accepted students found (showing {finalRankings?.length} total accepted)
+              {filteredData?.length} accepted students found (showing{" "}
+              {finalRankings?.length} total accepted)
             </div>
             <div className="relative">
               <Input
@@ -834,10 +848,9 @@ const Rankings = () => {
                         / {acceptedListResult.schoolCounts[school!] ?? 0} (
                         {(() => {
                           // Count how many students from this school are in the accepted list
-                          const acceptedFromSchool =
-                            finalRankings.filter(
-                              (student) => student.school === school,
-                            ).length;
+                          const acceptedFromSchool = finalRankings.filter(
+                            (student) => student.school === school,
+                          ).length;
                           return acceptedFromSchool;
                         })()}
                         )
@@ -851,20 +864,30 @@ const Rankings = () => {
             {/* Quota Summary */}
             <div className="mt-4 rounded-md bg-gray-50 p-3">
               <div className="text-sm text-gray-600">
-                <strong>Accepted Students:</strong> {finalRankings.length} total ({acceptedNumber} target)
+                <strong>Accepted Students:</strong> {finalRankings.length} total
+                ({acceptedNumber} target)
               </div>
               <div className="mt-1 text-sm text-gray-600">
                 <strong>Breakdown:</strong>{" "}
-                {finalRankings.filter(s => s.quotaStatus === "accepted").length} accepted,{" "}
-                {finalRankings.filter(s => s.quotaStatus === "promoted").length} promoted,{" "}
-                {acceptedListResult.rejected.length} rejected
+                {
+                  finalRankings.filter((s) => s.quotaStatus === "accepted")
+                    .length
+                }{" "}
+                accepted,{" "}
+                {
+                  finalRankings.filter((s) => s.quotaStatus === "promoted")
+                    .length
+                }{" "}
+                promoted, {acceptedListResult.rejected.length} rejected
               </div>
               <div className="mt-1 text-sm text-gray-600">
                 <strong>Status:</strong>{" "}
                 {finalRankings.length === acceptedNumber ? (
-                  <span className="text-green-600 font-medium">✓ Complete ({acceptedNumber} students)</span>
+                  <span className="font-medium text-green-600">
+                    ✓ Complete ({acceptedNumber} students)
+                  </span>
                 ) : (
-                  <span className="text-yellow-600 font-medium">
+                  <span className="font-medium text-yellow-600">
                     ⚠ {acceptedNumber - finalRankings.length} students needed
                   </span>
                 )}
@@ -894,7 +917,11 @@ const Rankings = () => {
             <Button variant="primary" onClick={resetFilters} className="px-8">
               Reset Filters
             </Button>
-            <Button variant="primary" onClick={exportAcceptedEmails} className="px-8">
+            <Button
+              variant="primary"
+              onClick={exportAcceptedEmails}
+              className="px-8"
+            >
               Export to CSV
             </Button>
           </div>
