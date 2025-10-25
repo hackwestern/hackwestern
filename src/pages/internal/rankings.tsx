@@ -200,7 +200,9 @@ const Rankings = () => {
         const gender = student.gender ?? "Not specified";
         // Escape fields that might contain commas
         const escapeField = (field: string) =>
-          field.includes(',') || field.includes('"') ? `"${field.replace(/"/g, '""')}"` : field;
+          field.includes(",") || field.includes('"')
+            ? `"${field.replace(/"/g, '""')}"`
+            : field;
         return `${escapeField(email)},${escapeField(school)},${escapeField(gender)}`;
       })
       .join("\n");
@@ -233,7 +235,10 @@ const Rankings = () => {
     let currentIndex = 0;
 
     // Keep processing students until we have TARGET_ACCEPTANCE_COUNT within quota or run out of students
-    while (withinQuota.length < TARGET_ACCEPTANCE_COUNT && currentIndex < data.length) {
+    while (
+      withinQuota.length < TARGET_ACCEPTANCE_COUNT &&
+      currentIndex < data.length
+    ) {
       const student = data[currentIndex]!;
       const school = student.school ?? "Unknown";
       const currentCount = schoolCounts[school] ?? 0;
@@ -284,18 +289,14 @@ const Rankings = () => {
 
     // Combine: within quota first, then exceeded quota, then remaining students
     // This creates the final re-ordered list
-    const accepted = [
-      ...withinQuota,
-      ...exceededQuota,
-      ...belowCutoff,
-    ];
+    const accepted = [...withinQuota, ...exceededQuota, ...belowCutoff];
 
     // Debug logging
     console.log("Accepted List Debug:", {
       totalProcessed: data.length,
       processedFromTop370,
       withinQuota: withinQuota.length,
-      filledIn: withinQuota.filter(s => s.quotaStatus === "filled_in").length,
+      filledIn: withinQuota.filter((s) => s.quotaStatus === "filled_in").length,
       exceededQuota: exceededQuota.length,
       belowCutoff: belowCutoff.length,
       finalAcceptedLength: accepted.length,
@@ -470,7 +471,10 @@ const Rankings = () => {
   });
 
   // Calculate gender distribution for top N
-  const getGenderDistribution = (data: ApplicationData[], topN = TARGET_ACCEPTANCE_COUNT) => {
+  const getGenderDistribution = (
+    data: ApplicationData[],
+    topN = TARGET_ACCEPTANCE_COUNT,
+  ) => {
     const topStudents = data?.slice(0, topN) ?? [];
 
     const men = topStudents.filter((app) => app.gender === "Male").length;
@@ -496,7 +500,10 @@ const Rankings = () => {
   };
 
   // Calculate school distribution for top N
-  const getSchoolDistribution = (data: ApplicationData[], topN = TARGET_ACCEPTANCE_COUNT) => {
+  const getSchoolDistribution = (
+    data: ApplicationData[],
+    topN = TARGET_ACCEPTANCE_COUNT,
+  ) => {
     const topStudents = data?.slice(0, topN) ?? [];
     const schoolCounts: Record<string, number> = {};
 
@@ -511,7 +518,10 @@ const Rankings = () => {
       .map(([school, count]) => ({
         school,
         count,
-        percent: topStudents.length > 0 ? ((count / topStudents.length) * 100).toFixed(1) : "0.0",
+        percent:
+          topStudents.length > 0
+            ? ((count / topStudents.length) * 100).toFixed(1)
+            : "0.0",
       }));
 
     return {
@@ -530,7 +540,8 @@ const Rankings = () => {
     womenPercent: string;
     otherPercent: string;
   } =
-    processedResults?.genderDistribution?.avgScore ?? getGenderDistribution([], TARGET_ACCEPTANCE_COUNT);
+    processedResults?.genderDistribution?.avgScore ??
+    getGenderDistribution([], TARGET_ACCEPTANCE_COUNT);
   const weightedScoreGenderDist: {
     men: number;
     women: number;
@@ -545,9 +556,11 @@ const Rankings = () => {
 
   // Use school distribution from processed results
   const avgScoreSchoolDist =
-    processedResults?.schoolDistribution?.avgScore ?? getSchoolDistribution([], TARGET_ACCEPTANCE_COUNT);
+    processedResults?.schoolDistribution?.avgScore ??
+    getSchoolDistribution([], TARGET_ACCEPTANCE_COUNT);
   const weightedScoreSchoolDist =
-    processedResults?.schoolDistribution?.weightedScore ?? getSchoolDistribution([], TARGET_ACCEPTANCE_COUNT);
+    processedResults?.schoolDistribution?.weightedScore ??
+    getSchoolDistribution([], TARGET_ACCEPTANCE_COUNT);
 
   if (isLoading) {
     return (
@@ -893,31 +906,46 @@ const Rankings = () => {
                   Based on Average Score ({avgScoreSchoolDist.total} students)
                 </h4>
                 <div className="max-h-96 space-y-2 overflow-y-auto pr-2">
-                  {avgScoreSchoolDist.schools.map(({ school, count, percent }) => (
-                    <div key={school} className="flex items-center justify-between border-b pb-1">
-                      <span className="text-sm text-gray-700 truncate flex-1 mr-2">{school}</span>
-                      <span className="text-sm font-semibold text-blue-600 whitespace-nowrap">
-                        {count} ({percent}%)
-                      </span>
-                    </div>
-                  ))}
+                  {avgScoreSchoolDist.schools.map(
+                    ({ school, count, percent }) => (
+                      <div
+                        key={school}
+                        className="flex items-center justify-between border-b pb-1"
+                      >
+                        <span className="mr-2 flex-1 truncate text-sm text-gray-700">
+                          {school}
+                        </span>
+                        <span className="whitespace-nowrap text-sm font-semibold text-blue-600">
+                          {count} ({percent}%)
+                        </span>
+                      </div>
+                    ),
+                  )}
                 </div>
               </div>
 
               {/* Weighted Score Distribution */}
               <div className="space-y-3">
                 <h4 className="text-md font-medium text-gray-800">
-                  Based on Weighted Score ({weightedScoreSchoolDist.total} students)
+                  Based on Weighted Score ({weightedScoreSchoolDist.total}{" "}
+                  students)
                 </h4>
                 <div className="max-h-96 space-y-2 overflow-y-auto pr-2">
-                  {weightedScoreSchoolDist.schools.map(({ school, count, percent }) => (
-                    <div key={school} className="flex items-center justify-between border-b pb-1">
-                      <span className="text-sm text-gray-700 truncate flex-1 mr-2">{school}</span>
-                      <span className="text-sm font-semibold text-green-600 whitespace-nowrap">
-                        {count} ({percent}%)
-                      </span>
-                    </div>
-                  ))}
+                  {weightedScoreSchoolDist.schools.map(
+                    ({ school, count, percent }) => (
+                      <div
+                        key={school}
+                        className="flex items-center justify-between border-b pb-1"
+                      >
+                        <span className="mr-2 flex-1 truncate text-sm text-gray-700">
+                          {school}
+                        </span>
+                        <span className="whitespace-nowrap text-sm font-semibold text-green-600">
+                          {count} ({percent}%)
+                        </span>
+                      </div>
+                    ),
+                  )}
                 </div>
               </div>
             </div>
@@ -929,9 +957,10 @@ const Rankings = () => {
               School Quota Management (Top {TARGET_ACCEPTANCE_COUNT} Only)
             </h3>
             <div className="mb-4 text-sm text-gray-600">
-              Set maximum students per school for the top {TARGET_ACCEPTANCE_COUNT} (0 = unlimited).
-              Students from the top {TARGET_ACCEPTANCE_COUNT} who exceed their school quota will be moved
-              lower in the list, after all students who are within quota.
+              Set maximum students per school for the top{" "}
+              {TARGET_ACCEPTANCE_COUNT} (0 = unlimited). Students from the top{" "}
+              {TARGET_ACCEPTANCE_COUNT} who exceed their school quota will be
+              moved lower in the list, after all students who are within quota.
             </div>
 
             {/* Get unique schools from the data */}
@@ -993,8 +1022,12 @@ const Rankings = () => {
               <div className="mt-1 text-sm text-gray-600">
                 <strong>Top {TARGET_ACCEPTANCE_COUNT} (within quota):</strong>{" "}
                 {(() => {
-                  const accepted = finalRankings.filter((s) => s.quotaStatus === "accepted").length;
-                  const filledIn = finalRankings.filter((s) => s.quotaStatus === "filled_in").length;
+                  const accepted = finalRankings.filter(
+                    (s) => s.quotaStatus === "accepted",
+                  ).length;
+                  const filledIn = finalRankings.filter(
+                    (s) => s.quotaStatus === "filled_in",
+                  ).length;
                   return `${accepted + filledIn} students (${accepted} from original top ${TARGET_ACCEPTANCE_COUNT}, ${filledIn} filled in)`;
                 })()}
               </div>
@@ -1009,9 +1042,10 @@ const Rankings = () => {
               <div className="mt-1 text-sm text-gray-600">
                 <strong>Below cutoff:</strong>{" "}
                 {
-                  finalRankings.filter((s) =>
-                    s.quotaStatus === "below_cutoff" ||
-                    s.quotaStatus === "below_cutoff_quota_exceeded"
+                  finalRankings.filter(
+                    (s) =>
+                      s.quotaStatus === "below_cutoff" ||
+                      s.quotaStatus === "below_cutoff_quota_exceeded",
                   ).length
                 }{" "}
                 students
@@ -1081,7 +1115,8 @@ const Rankings = () => {
               className="px-8"
               disabled={finalRankings.length === 0}
             >
-              Export Top {Math.min(exportNumber, finalRankings.length)} (Detailed)
+              Export Top {Math.min(exportNumber, finalRankings.length)}{" "}
+              (Detailed)
             </Button>
           </div>
         </div>
