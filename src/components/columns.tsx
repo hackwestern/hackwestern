@@ -188,13 +188,15 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
     header: "Rank",
     cell: ({ row }) => {
       const rank =
-        row.original.rank || row.original.originalRank || row.index + 1;
+        row.original.rank ?? row.original.originalRank ?? row.index + 1;
       const quotaStatus = row.original.quotaStatus;
 
       return (
         <div className="text-center text-lg font-bold">
           {quotaStatus === "quota_exceeded" ? (
             <span className="text-red-500 line-through">#{rank}</span>
+          ) : quotaStatus === "promoted" ? (
+            <span className="text-blue-600 font-bold">#{rank}</span>
           ) : quotaStatus === "promoted_extra" ? (
             <span className="text-blue-600">#{rank}</span>
           ) : rank <= 400 ? (
@@ -212,15 +214,24 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
     cell: ({ row }) => {
       const name: string = row.getValue("name");
       const userId: string = row.original.userId;
+      const quotaStatus = row.original.quotaStatus;
+      
       return (
-        <Link
-          href={`/internal/review?applicant=${userId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="cursor-pointer text-left font-medium text-black transition-colors hover:text-purple-600"
-        >
-          {name}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/internal/review?applicant=${userId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cursor-pointer text-left font-medium text-black transition-colors hover:text-purple-600"
+          >
+            {name}
+          </Link>
+          {quotaStatus === "promoted" && (
+            <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+              Promoted
+            </span>
+          )}
+        </div>
       );
     },
   },
@@ -237,7 +248,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
     header: "School",
     cell: ({ row }) => {
       const school: string | null = row.getValue("school");
-      return <div className="text-left">{school || "—"}</div>;
+      return <div className="text-left">{school ?? "—"}</div>;
     },
   },
   {
@@ -245,7 +256,7 @@ export const rankingsColumns: ColumnDef<RankingsApplicationType>[] = [
     header: "Gender",
     cell: ({ row }) => {
       const gender: string | null = row.getValue("gender");
-      return <div className="text-left">{gender || "—"}</div>;
+      return <div className="text-left">{gender ?? "—"}</div>;
     },
   },
   {

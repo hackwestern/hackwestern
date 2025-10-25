@@ -9,11 +9,39 @@ import { Button } from "~/components/ui/button";
 import Link from "next/link";
 import CanvasBackground from "~/components/canvas-background";
 import { Input } from "~/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RefreshCw, X } from "lucide-react";
 import { Slider } from "~/components/ui/slider";
 import { LoadingOverlay } from "~/components/ui/loading-overlay";
 import { useLoadingOverlay } from "~/hooks/use-loading-overlay";
+
+// Type for application data
+type ApplicationData = {
+  userId: string;
+  name: string;
+  email: string;
+  school: string | null;
+  levelOfStudy: string | null;
+  major: string | null;
+  gender: string | null;
+  resumeLink: string | null;
+  githubLink: string | null;
+  linkedInLink: string | null;
+  otherLink: string | null;
+  status: string;
+  createdAt: Date;
+  totalReviews: number;
+  avgOriginality: number;
+  avgTechnicality: number;
+  avgPassion: number;
+  totalScore: number;
+  avgScore: number;
+  avgScorePerReview: number;
+  originalRank?: number;
+  rank?: number;
+  quotaStatus?: string;
+  weightedScore?: number;
+};
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const session = await getServerSession(context.req, context.res, authOptions);
@@ -58,6 +86,10 @@ const Rankings = () => {
   const handleRefresh = async () => {
     await withLoading(async () => {
       await refetch();
+      // Process data after refresh
+      setTimeout(() => {
+        processData();
+      }, 100);
     });
   };
 
@@ -70,6 +102,9 @@ const Rankings = () => {
   });
 
   const [schoolQuotas, setSchoolQuotas] = useState<Record<string, number>>({});
+  
+  // Accepted students management
+  const [acceptedNumber] = useState(370); // Configurable number of accepted students
 
   // Local state (temporary values before applying)
   const [localWeights, setLocalWeights] = useState({
@@ -102,6 +137,8 @@ const Rankings = () => {
     await withLoading(async () => {
       setWeights(localWeights);
       setSchoolQuotas(localSchoolQuotas);
+      // Process data with new settings
+      processData();
     });
   };
 
@@ -117,10 +154,32 @@ const Rankings = () => {
     setLocalSchoolQuotas({});
     setWeights(defaultWeights);
     setSchoolQuotas({});
+    // Process data with reset settings
+    processData();
+  };
+
+  // Export accepted emails to CSV
+  const exportAcceptedEmails = () => {
+    // Use the final accepted list (includes promoted students)
+    const emails = finalRankings.map(student => student.email).filter(Boolean);
+    
+    // Create CSV content
+    const csvContent = emails.join(',\n');
+    
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `accepted-students-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   };
 
   // Calculate weighted scores using applied weights (for actual data processing)
-  const calculateWeightedScore = (application: any) => {
+  const calculateWeightedScore = (application: ApplicationData) => {
     const originalityWeight = weights.originality[0] ?? 1.0;
     const technicalityWeight = weights.technicality[0] ?? 1.0;
     const passionWeight = weights.passion[0] ?? 1.0;
@@ -133,60 +192,226 @@ const Rankings = () => {
       application.avgPassion * passionWeight;
 
     // Apply gender bias (1.0 = no bias, >1.0 = favor men, <1.0 = favor women)
-    const genderMultiplier =
-      application.gender === "Male" ? genderWeight : 2.0 - genderWeight;
+    // genderWeight: 0 = favor women, 1.0 = no bias, 2.0 = favor men
+    
+    let genderMultiplier = 1.0;
+    
+    if (application.gender === "Male") {
+      // For men: use the weight directly
+      genderMultiplier = genderWeight;
+    } else {
+      // For women: use the inverse weight
+      // This ensures that when genderWeight = 1.0, both get 1.0x (no bias)
+      genderMultiplier = 2.0 - genderWeight;
+    }
+    
+    // Apply a more aggressive bias to make the effect more visible
+    // This helps overcome the natural bias in the dataset
+    const biasStrength = 1.0; // Increase this to make the effect more pronounced
+    genderMultiplier = 1.0 + (genderMultiplier - 1.0) * biasStrength;
 
     return baseWeightedScore * genderMultiplier;
   };
 
-  // Calculate weighted scores using local weights (for preview only - no expensive operations)
-  const calculatePreviewWeightedScore = (application: any) => {
-    const originalityWeight = localWeights.originality[0] ?? 1.0;
-    const technicalityWeight = localWeights.technicality[0] ?? 1.0;
-    const passionWeight = localWeights.passion[0] ?? 1.0;
-    const genderWeight = localWeights.gender[0] ?? 1.0;
 
-    // Base weighted score
-    const baseWeightedScore =
-      application.avgOriginality * originalityWeight +
-      application.avgTechnicality * technicalityWeight +
-      application.avgPassion * passionWeight;
-
-    // Apply gender bias (1.0 = no bias, >1.0 = favor men, <1.0 = favor women)
-    const genderMultiplier =
-      application.gender === "Male" ? genderWeight : 2.0 - genderWeight;
-
-    return baseWeightedScore * genderMultiplier;
+  // Create the final accepted list with school quotas applied
+  const createAcceptedList = (data: ApplicationData[]) => {
+    return createAcceptedListWithQuotas(data, schoolQuotas);
   };
 
-  const filteredData = rankingsData
-    ?.map((application, index) => {
-      const weightedScore = calculateWeightedScore(application);
-      return {
-        ...application,
-        originalRank: index + 1,
-        weightedScore,
-      };
-    })
-    ?.sort((a, b) => b.weightedScore - a.weightedScore) // Sort by weighted score descending
-    ?.map((application, index) => ({
-      ...application,
-      rank: index + 1, // New rank based on weighted score
-    }))
-    ?.filter((application) => {
-      return (
-        application.email.toLowerCase().includes(search.toLowerCase()) ||
-        application.name.toLowerCase().includes(search.toLowerCase()) ||
-        (application.school?.toLowerCase().includes(search.toLowerCase()) ??
-          false) ||
-        (application.major?.toLowerCase().includes(search.toLowerCase()) ??
-          false)
-      );
+  // Create the final accepted list with specific quotas
+  const createAcceptedListWithQuotas = (data: ApplicationData[], quotas: Record<string, number>) => {
+    const schoolCounts: Record<string, number> = {};
+    const accepted: ApplicationData[] = [];
+    const rejected: ApplicationData[] = [];
+
+    // Step 1: Process students in order of their weighted ranking
+    // Accept students until we hit school quotas or reach 400 students
+    for (const student of data) {
+      const school = student.school ?? "Unknown";
+      const currentCount = schoolCounts[school] ?? 0;
+      const quota = quotas[school] ?? 0; // 0 means unlimited
+      
+      // Check if we can accept this student
+      const canAccept = quota === 0 || currentCount < quota;
+      const hasSpace = accepted.length < acceptedNumber;
+      
+      if (canAccept && hasSpace) {
+        // Student is accepted
+        accepted.push({
+          ...student,
+          quotaStatus: "accepted",
+        });
+        schoolCounts[school] = currentCount + 1;
+      } else {
+        // Student is rejected (either quota exceeded or no space)
+        rejected.push({
+          ...student,
+          quotaStatus: quota === 0 ? "no_space" : "quota_exceeded",
+        });
+      }
+    }
+
+    // Step 2: If we have space and rejected students, promote the best ones
+    const spaceLeft = acceptedNumber - accepted.length;
+    if (spaceLeft > 0 && rejected.length > 0) {
+      // Get the best rejected students (those rejected due to quota, not merit)
+      const quotaRejected = rejected.filter(s => s.quotaStatus === "quota_exceeded");
+      const promoted = quotaRejected.slice(0, spaceLeft).map(student => ({
+        ...student,
+        quotaStatus: "promoted",
+      }));
+      
+      // Add promoted students to accepted list
+      accepted.push(...promoted);
+    }
+
+    // Debug logging
+    console.log("Accepted List Debug:", {
+      totalProcessed: data.length,
+      accepted: accepted.length,
+      rejected: rejected.length,
+      spaceLeft: acceptedNumber - accepted.length,
+      schoolCounts,
+      promoted: accepted.filter(s => s.quotaStatus === "promoted").length,
     });
 
+    return {
+      accepted,
+      rejected,
+      schoolCounts,
+    };
+  };
+
+  // State to store the processed results (only updated when Apply Filters is clicked)
+  const [processedResults, setProcessedResults] = useState<{
+    finalRankings: ApplicationData[];
+    acceptedListResult: {
+      accepted: ApplicationData[];
+      rejected: ApplicationData[];
+      schoolCounts: Record<string, number>;
+    };
+    genderDistribution: {
+      avgScore: {
+        men: number;
+        women: number;
+        other: number;
+        total: number;
+        menPercent: string;
+        womenPercent: string;
+        otherPercent: string;
+      };
+      weightedScore: {
+        men: number;
+        women: number;
+        other: number;
+        total: number;
+        menPercent: string;
+        womenPercent: string;
+        otherPercent: string;
+      };
+    };
+  } | null>(null);
+
+  // Function to process data (only called when Apply Filters is clicked)
+  const processData = () => {
+    if (!rankingsData) return;
+
+    // Process and rank all students by weighted score using CURRENT localWeights
+    const processedData = rankingsData
+      .map((application, index) => {
+        // Use localWeights instead of weights for immediate processing
+        const originalityWeight = localWeights.originality[0] ?? 1.0;
+        const technicalityWeight = localWeights.technicality[0] ?? 1.0;
+        const passionWeight = localWeights.passion[0] ?? 1.0;
+        const genderWeight = localWeights.gender[0] ?? 1.0;
+
+        // Base weighted score
+        const baseWeightedScore =
+          application.avgOriginality * originalityWeight +
+          application.avgTechnicality * technicalityWeight +
+          application.avgPassion * passionWeight;
+
+        // Apply gender bias using current localWeights
+        let genderMultiplier = 1.0;
+        
+        if (application.gender === "Male") {
+          genderMultiplier = genderWeight;
+        } else {
+          genderMultiplier = 2.0 - genderWeight;
+        }
+        
+        const biasStrength = 1.0;
+        genderMultiplier = 1.0 + (genderMultiplier - 1.0) * biasStrength;
+
+        const weightedScore = baseWeightedScore * genderMultiplier;
+
+        return {
+          ...application,
+          originalRank: index + 1,
+          weightedScore,
+        };
+      })
+      .sort((a, b) => (b.weightedScore ?? 0) - (a.weightedScore ?? 0)) // Sort by weighted score descending
+      .map((application, index) => ({
+        ...application,
+        rank: index + 1, // New rank based on weighted score
+      }));
+
+    // Create the final accepted list with school quotas applied using CURRENT localSchoolQuotas
+    const acceptedListResult = createAcceptedListWithQuotas(processedData, localSchoolQuotas);
+    
+    // Calculate gender distribution with the processed data
+    const avgScoreGenderDist = getGenderDistribution(
+      rankingsData.map((application, index) => ({
+        ...application,
+        originalRank: index + 1,
+      }))
+    );
+    
+    const weightedScoreGenderDist = getGenderDistribution(acceptedListResult.accepted);
+    
+    // Store the results
+    setProcessedResults({
+      finalRankings: acceptedListResult.accepted,
+      acceptedListResult,
+      genderDistribution: {
+        avgScore: avgScoreGenderDist,
+        weightedScore: weightedScoreGenderDist,
+      },
+    });
+  };
+
+  // Use processed results or fallback to empty array
+  const finalRankings = processedResults?.finalRankings ?? [];
+  const acceptedListResult = processedResults?.acceptedListResult ?? {
+    accepted: [],
+    rejected: [],
+    schoolCounts: {},
+  };
+
+  // Process data when rankingsData is first loaded
+  useEffect(() => {
+    if (rankingsData && rankingsData.length > 0 && !processedResults) {
+      processData();
+    }
+  }, [rankingsData]);
+
+  // Apply search filter to the final rankings
+  const filteredData = finalRankings?.filter((application) => {
+    return (
+      application.email.toLowerCase().includes(search.toLowerCase()) ||
+      application.name.toLowerCase().includes(search.toLowerCase()) ||
+      (application.school?.toLowerCase().includes(search.toLowerCase()) ??
+        false) ||
+      (application.major?.toLowerCase().includes(search.toLowerCase()) ??
+        false)
+    );
+  });
+
   // Calculate gender distribution for top 400
-  const getGenderDistribution = (data: any[], useWeighted = false) => {
-    const top400 = data?.slice(0, 400) || [];
+  const getGenderDistribution = (data: ApplicationData[]) => {
+    const top400 = data?.slice(0, 400) ?? [];
 
     const men = top400.filter((app) => app.gender === "Male").length;
     const women = top400.filter((app) => app.gender === "Female").length;
@@ -195,7 +420,7 @@ const Rankings = () => {
         app.gender === "Prefer not to say" ||
         app.gender === "—" ||
         !app.gender ||
-        app.gender.trim() === "",
+        (app.gender && app.gender.trim() === ""),
     ).length;
     const total = men + women + other;
 
@@ -210,91 +435,26 @@ const Rankings = () => {
     };
   };
 
-  // Get gender distribution for both scoring methods
-  const avgScoreGenderDist = getGenderDistribution(
-    rankingsData?.map((application, index) => ({
-      ...application,
-      originalRank: index + 1,
-    })) || [],
-  );
+  // Use gender distribution from processed results (ensures consistency)
+  const avgScoreGenderDist: {
+    men: number;
+    women: number;
+    other: number;
+    total: number;
+    menPercent: string;
+    womenPercent: string;
+    otherPercent: string;
+  } = processedResults?.genderDistribution?.avgScore ?? getGenderDistribution([]);
+  const weightedScoreGenderDist: {
+    men: number;
+    women: number;
+    other: number;
+    total: number;
+    menPercent: string;
+    womenPercent: string;
+    otherPercent: string;
+  } = processedResults?.genderDistribution?.weightedScore ?? getGenderDistribution([]);
 
-  const weightedScoreGenderDist = getGenderDistribution(filteredData || []);
-
-  // Apply school quotas to rankings
-  const applySchoolQuotas = (data: any[]) => {
-    const schoolCounts: Record<string, number> = {};
-    const quotaExceeded: any[] = [];
-    const accepted: any[] = [];
-
-    // Process each student in order of their weighted ranking
-    data.forEach((student) => {
-      const school = student.school || "Unknown";
-      const currentCount = schoolCounts[school] || 0;
-      const quota = schoolQuotas[school] || 0; // 0 means unlimited
-
-      if (quota === 0 || currentCount < quota) {
-        // Student is accepted
-        accepted.push({
-          ...student,
-          quotaStatus: "accepted",
-        });
-        schoolCounts[school] = currentCount + 1;
-      } else {
-        // Quota exceeded, student is rejected
-        quotaExceeded.push({
-          ...student,
-          quotaStatus: "quota_exceeded",
-        });
-      }
-    });
-
-    // Add extras to maintain exactly 400 students in top 400
-    const extrasNeeded = Math.max(0, 400 - accepted.length);
-
-    // Get the next best students from the original data (after the first 400)
-    const allStudents = data;
-    const studentsAfterTop400 = allStudents.slice(400); // Students ranked 401+
-    const extras = studentsAfterTop400
-      .slice(0, extrasNeeded)
-      .map((student, index) => ({
-        ...student,
-        quotaStatus: "promoted_extra",
-      }));
-
-    // Remaining quota exceeded students
-    const remainingQuotaExceeded = quotaExceeded.slice(extrasNeeded);
-
-    // Debug logging
-    console.log("Quota Debug:", {
-      accepted: accepted.length,
-      quotaExceeded: quotaExceeded.length,
-      extrasNeeded,
-      extras: extras.length,
-      schoolCounts,
-    });
-
-    return {
-      accepted,
-      quotaExceeded: remainingQuotaExceeded,
-      extras,
-      schoolCounts,
-    };
-  };
-
-  // Apply quotas to the weighted rankings
-  const quotaResults = applySchoolQuotas(filteredData || []);
-
-  // Create the top 400 with accepted students + extras
-  const top400 = [...quotaResults.accepted, ...quotaResults.extras];
-
-  // Assign new ranks to the top 400
-  const top400WithRanks = top400.map((student, index) => ({
-    ...student,
-    rank: index + 1,
-  }));
-
-  // Create final rankings: top 400 + remaining quota exceeded
-  const finalRankings = [...top400WithRanks, ...quotaResults.quotaExceeded];
 
   if (isLoading) {
     return (
@@ -328,7 +488,7 @@ const Rankings = () => {
           </div>
         </div>
         <div className="z-10 text-xl text-gray-600">
-          Click "Load Rankings" to fetch and display application rankings
+          Click &quot;Load Rankings&quot; to fetch and display application rankings
         </div>
       </div>
     );
@@ -360,7 +520,7 @@ const Rankings = () => {
         <div className="z-10 mb-4 w-full max-w-[85vw]">
           <div className="mb-3 flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              {filteredData?.length} applications found
+              {filteredData?.length} accepted students found (showing {finalRankings?.length} total accepted)
             </div>
             <div className="relative">
               <Input
@@ -385,7 +545,7 @@ const Rankings = () => {
             loadingText="Refreshing rankings data..."
           >
             <div className="overflow-x-auto rounded-lg border bg-white/90 backdrop-blur-sm">
-              <DataTable columns={rankingsColumns} data={finalRankings ?? []} />
+              <DataTable columns={rankingsColumns} data={filteredData ?? []} />
             </div>
           </LoadingOverlay>
 
@@ -640,7 +800,7 @@ const Rankings = () => {
             {(() => {
               const uniqueSchools = Array.from(
                 new Set(
-                  (rankingsData || [])
+                  (rankingsData ?? [])
                     .map((app) => app.school)
                     .filter((school) => school && school.trim() !== ""),
                 ),
@@ -656,7 +816,7 @@ const Rankings = () => {
                       <Input
                         type="number"
                         min="0"
-                        value={localSchoolQuotas[school!] || ""}
+                        value={localSchoolQuotas[school!] ?? ""}
                         onChange={(e) => {
                           const value =
                             e.target.value === ""
@@ -671,11 +831,11 @@ const Rankings = () => {
                         placeholder="0"
                       />
                       <span className="text-xs text-gray-500">
-                        / {quotaResults.schoolCounts[school!] || 0} (
+                        / {acceptedListResult.schoolCounts[school!] ?? 0} (
                         {(() => {
-                          // Count how many students from this school are in the top 400 (accepted)
+                          // Count how many students from this school are in the accepted list
                           const acceptedFromSchool =
-                            quotaResults.accepted.filter(
+                            finalRankings.filter(
                               (student) => student.school === school,
                             ).length;
                           return acceptedFromSchool;
@@ -691,20 +851,23 @@ const Rankings = () => {
             {/* Quota Summary */}
             <div className="mt-4 rounded-md bg-gray-50 p-3">
               <div className="text-sm text-gray-600">
-                <strong>Quota Summary:</strong> {quotaResults.accepted.length}{" "}
-                accepted, {quotaResults.extras.length} promoted extras,{" "}
-                {quotaResults.quotaExceeded.length} quota exceeded
+                <strong>Accepted Students:</strong> {finalRankings.length} total ({acceptedNumber} target)
               </div>
               <div className="mt-1 text-sm text-gray-600">
-                <strong>Top 400 Status:</strong>{" "}
-                {quotaResults.accepted.length + quotaResults.extras.length}{" "}
-                total in top 400 (400 target)
+                <strong>Breakdown:</strong>{" "}
+                {finalRankings.filter(s => s.quotaStatus === "accepted").length} accepted,{" "}
+                {finalRankings.filter(s => s.quotaStatus === "promoted").length} promoted,{" "}
+                {acceptedListResult.rejected.length} rejected
               </div>
               <div className="mt-1 text-sm text-gray-600">
-                <strong>Debug:</strong> Extras needed:{" "}
-                {Math.max(0, 400 - quotaResults.accepted.length)}, Total quota
-                exceeded:{" "}
-                {quotaResults.extras.length + quotaResults.quotaExceeded.length}
+                <strong>Status:</strong>{" "}
+                {finalRankings.length === acceptedNumber ? (
+                  <span className="text-green-600 font-medium">✓ Complete ({acceptedNumber} students)</span>
+                ) : (
+                  <span className="text-yellow-600 font-medium">
+                    ⚠ {acceptedNumber - finalRankings.length} students needed
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -730,6 +893,9 @@ const Rankings = () => {
             </Button>
             <Button variant="primary" onClick={resetFilters} className="px-8">
               Reset Filters
+            </Button>
+            <Button variant="primary" onClick={exportAcceptedEmails} className="px-8">
+              Export to CSV
             </Button>
           </div>
         </div>
