@@ -275,10 +275,12 @@ export const applicationRouter = createTRPCRouter({
         const totalOriginality = app.totalOriginality ?? 0;
         const totalTechnicality = app.totalTechnicality ?? 0;
         const totalPassion = app.totalPassion ?? 0;
-        const totalScoreSum = totalOriginality + totalTechnicality + totalPassion;
+        const totalScoreSum =
+          totalOriginality + totalTechnicality + totalPassion;
 
         // Calculate average score per review (sum of all 3 ratings per review, then averaged across reviews)
-        const avgScorePerReview = totalReviews > 0 ? totalScoreSum / totalReviews : 0;
+        const avgScorePerReview =
+          totalReviews > 0 ? totalScoreSum / totalReviews : 0;
 
         return {
           userId: app.userId,
