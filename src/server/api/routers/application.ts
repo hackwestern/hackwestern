@@ -12,9 +12,20 @@ import {
   applicationSubmitSchema,
 } from "~/schemas/application";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
-import { eq, count, or, avg, sum } from "drizzle-orm";
+import { eq, count, or, avg, sum, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { type CanvasPaths } from "~/types/canvas";
+
+function toErrorMessage(err: unknown): string {
+  if (err instanceof TRPCError) return err.message;
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return "Unknown error";
+  }
+}
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure
@@ -131,10 +142,10 @@ export const applicationRouter = createTRPCRouter({
           : null;
 
         return modifiedApplication;
-      } catch (error) {
+      } catch (err: unknown) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch application: " + JSON.stringify(error),
+          message: "Failed to fetch application: " + toErrorMessage(err),
         });
       }
     }),
@@ -166,10 +177,10 @@ export const applicationRouter = createTRPCRouter({
         }
 
         return application;
-      } catch (error) {
+      } catch (err: unknown) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch application: " + JSON.stringify(error),
+          message: "Failed to fetch application: " + toErrorMessage(err),
         });
       }
     }),
@@ -197,20 +208,20 @@ export const applicationRouter = createTRPCRouter({
         name: `${ap.firstName ?? ""} ${ap.lastName ?? ""}`,
         email: ap.email,
       }));
-    } catch (error) {
-      throw error instanceof TRPCError
-        ? error
+    } catch (err: unknown) {
+      throw err instanceof TRPCError
+        ? err
         : new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to fetch applicants: " + JSON.stringify(error),
+            message: "Failed to fetch applicants: " + toErrorMessage(err),
           });
     }
   }),
 
   getAllForRankings: protectedOrganizerProcedure.query(async () => {
     try {
-      // First get all applications with basic info
-      const allApplications = await db
+      // Single optimized query with JOINs and aggregations
+      const applicationsWithScores = await db
         .select({
           userId: applications.userId,
           firstName: applications.firstName,
@@ -226,102 +237,98 @@ export const applicationRouter = createTRPCRouter({
           otherLink: applications.otherLink,
           status: applications.status,
           createdAt: applications.createdAt,
+          // Aggregated review scores
+          totalReviews: count(reviews.applicantUserId).mapWith(Number),
+          totalOriginality: sum(reviews.originalityRating).mapWith(Number),
+          totalTechnicality: sum(reviews.technicalityRating).mapWith(Number),
+          totalPassion: sum(reviews.passionRating).mapWith(Number),
         })
         .from(applications)
         .innerJoin(users, eq(users.id, applications.userId))
+        .leftJoin(reviews, eq(reviews.applicantUserId, applications.userId))
         .where(
           or(
             eq(applications.status, "PENDING_REVIEW"),
             eq(applications.status, "IN_REVIEW"),
           ),
+        )
+        .groupBy(
+          applications.userId,
+          applications.firstName,
+          applications.lastName,
+          users.email,
+          applications.school,
+          applications.levelOfStudy,
+          applications.major,
+          applications.gender,
+          applications.resumeLink,
+          applications.githubLink,
+          applications.linkedInLink,
+          applications.otherLink,
+          applications.status,
+          applications.createdAt,
         );
 
-      // Get review scores for each application
-      const applicationsWithScores = await Promise.all(
-        allApplications.map(async (app) => {
-          const reviewScores = await db
-            .select({
-              originalityRating: reviews.originalityRating,
-              technicalityRating: reviews.technicalityRating,
-              passionRating: reviews.passionRating,
-            })
-            .from(reviews)
-            .where(eq(reviews.applicantUserId, app.userId));
+      // Process the results and calculate averages
+      const processedApplications = applicationsWithScores.map((app) => {
+        const totalReviews = app.totalReviews;
+        const totalOriginality = app.totalOriginality ?? 0;
+        const totalTechnicality = app.totalTechnicality ?? 0;
+        const totalPassion = app.totalPassion ?? 0;
+        const totalScoreSum = totalOriginality + totalTechnicality + totalPassion;
 
-          // Calculate cumulative scores
-          const totalReviews = reviewScores.length;
-          const totalOriginality = reviewScores.reduce(
-            (sum, r) => sum + (r.originalityRating ?? 0),
-            0,
-          );
-          const totalTechnicality = reviewScores.reduce(
-            (sum, r) => sum + (r.technicalityRating ?? 0),
-            0,
-          );
-          const totalPassion = reviewScores.reduce(
-            (sum, r) => sum + (r.passionRating ?? 0),
-            0,
-          );
-          const totalScoreSum =
-            totalOriginality + totalTechnicality + totalPassion;
+        // Calculate average score per review (sum of all 3 ratings per review, then averaged across reviews)
+        const avgScorePerReview = totalReviews > 0 ? totalScoreSum / totalReviews : 0;
 
-          // Calculate average score per review (sum of all 3 ratings per review, then averaged across reviews)
-          const avgScorePerReview =
-            totalReviews > 0 ? totalScoreSum / totalReviews : 0;
-
-          // Total Score is now the average score per review (unweighted)
-          const totalScore = avgScorePerReview;
-
-          return {
-            userId: app.userId,
-            name: `${app.firstName ?? ""} ${app.lastName ?? ""}`.trim(),
-            email: app.email,
-            school: app.school,
-            levelOfStudy: app.levelOfStudy,
-            major: app.major,
-            gender: app.gender,
-            resumeLink: app.resumeLink,
-            githubLink: app.githubLink,
-            linkedInLink: app.linkedInLink,
-            otherLink: app.otherLink,
-            status: app.status,
-            createdAt: app.createdAt,
-            // Review scores
-            totalReviews,
-            avgOriginality:
-              totalReviews > 0
-                ? Math.round((totalOriginality / totalReviews) * 10) / 10
-                : 0,
-            avgTechnicality:
-              totalReviews > 0
-                ? Math.round((totalTechnicality / totalReviews) * 10) / 10
-                : 0,
-            avgPassion:
-              totalReviews > 0
-                ? Math.round((totalPassion / totalReviews) * 10) / 10
-                : 0,
-            totalScore,
-            avgScore:
-              totalReviews > 0
-                ? Math.round((totalScore / totalReviews) * 10) / 10
-                : 0,
-            avgScorePerReview: Math.round(avgScorePerReview * 10) / 10,
-          };
-        }),
-      );
+        return {
+          userId: app.userId,
+          name: `${app.firstName ?? ""} ${app.lastName ?? ""}`.trim(),
+          email: app.email,
+          school: app.school,
+          levelOfStudy: app.levelOfStudy,
+          major: app.major,
+          gender: app.gender,
+          resumeLink: app.resumeLink,
+          githubLink: app.githubLink,
+          linkedInLink: app.linkedInLink,
+          otherLink: app.otherLink,
+          status: app.status,
+          createdAt: app.createdAt,
+          // Review scores
+          totalReviews,
+          avgOriginality:
+            totalReviews > 0
+              ? Math.round((totalOriginality / totalReviews) * 10) / 10
+              : 0,
+          avgTechnicality:
+            totalReviews > 0
+              ? Math.round((totalTechnicality / totalReviews) * 10) / 10
+              : 0,
+          avgPassion:
+            totalReviews > 0
+              ? Math.round((totalPassion / totalReviews) * 10) / 10
+              : 0,
+          totalScore: avgScorePerReview,
+          avgScore:
+            totalReviews > 0
+              ? Math.round((avgScorePerReview / totalReviews) * 10) / 10
+              : 0,
+          avgScorePerReview: Math.round(avgScorePerReview * 10) / 10,
+        };
+      });
 
       // Sort by average score per review (descending) for ranking
-      return applicationsWithScores.sort(
+      return processedApplications.sort(
         (a, b) => b.avgScorePerReview - a.avgScorePerReview,
       );
-    } catch (error) {
-      throw error instanceof TRPCError
-        ? error
+    } catch (err: unknown) {
+      throw err instanceof TRPCError
+        ? err
         : new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message:
               "Failed to fetch applications for rankings: " +
-              JSON.stringify(error),
+              toErrorMessage(err),
           });
     }
   }),
@@ -376,10 +383,10 @@ export const applicationRouter = createTRPCRouter({
               updatedAt: new Date(),
             },
           });
-      } catch (error) {
+      } catch (err: unknown) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to save application: " + JSON.stringify(error),
+          message: "Failed to save application: " + toErrorMessage(err),
         });
       }
     }),
@@ -428,12 +435,12 @@ export const applicationRouter = createTRPCRouter({
         .update(applications)
         .set({ status: "PENDING_REVIEW", updatedAt: new Date() })
         .where(eq(applications.userId, userId));
-    } catch (error) {
-      throw error instanceof TRPCError
-        ? error
+    } catch (err: unknown) {
+      throw err instanceof TRPCError
+        ? err
         : new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to submit application: " + JSON.stringify(error),
+            message: "Failed to submit application: " + toErrorMessage(err),
           });
     }
   }),
@@ -449,10 +456,10 @@ export const applicationRouter = createTRPCRouter({
         .groupBy(applications.status);
 
       return applicationStats;
-    } catch (error) {
+    } catch (err: unknown) {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch application stats: " + JSON.stringify(error),
+        message: "Failed to fetch application stats: " + toErrorMessage(err),
       });
     }
   }),
