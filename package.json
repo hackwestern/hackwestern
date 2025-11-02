@@ -55,6 +55,7 @@
     "drizzle-zod": "^0.5.1",
     "framer-motion": "^12.10.5",
     "hackwestern": "file:",
+    "jest": "^29.7.0",
     "lucide-react": "^0.483.0",
     "motion": "^12.10.5",
     "next": "^15.4.5",

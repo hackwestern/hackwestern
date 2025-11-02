@@ -1,4 +1,5 @@
-import { eq, and, sql, SQL } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 import {
   createTRPCRouter,
@@ -6,7 +7,8 @@ import {
   publicProcedure,
   protectedOrganizerProcedure,
 } from "~/server/api/trpc";
-import { db, Transaction } from "~/server/db";
+import { db } from "~/server/db";
+import type { Transaction } from "~/server/db";
 import {
   scavengerHuntItems,
   scavengerHuntScans,
@@ -17,7 +19,7 @@ import {
 import { TRPCError } from "@trpc/server";
 
 // ! Unsafe Functions: Need to check if caller can add points before invoking */
-export const _addPoints = async (
+export const addPoints = async (
   tx: Transaction,
   userId: string,
   points: number,
@@ -31,7 +33,10 @@ export const _addPoints = async (
       updateData.scavengerHuntEarned = sql`scavenger_hunt_earned + ${points}`;
     }
 
-    const [updatedUser] = await tx
+    const [updatedUser]: {
+      scavengerHuntEarned: number | null;
+      scavengerHuntBalance: number | null;
+    }[] = await tx
       .update(users)
       .set(updateData)
       .where(eq(users.id, userId))
@@ -62,10 +67,7 @@ export const _addPoints = async (
 const recordScan = async (userId: string, points: number, itemId: number) => {
   try {
     await db.transaction(async (tx) => {
-      // Add points to user
-      await _addPoints(tx, userId, points);
-
-      // Mark that points have been added to user
+      await addPoints(tx, userId, points);
       await tx.insert(scavengerHuntScans).values({
         userId: userId,
         itemId: itemId,
@@ -96,7 +98,7 @@ const getUserPoints = async (userId: string) => {
 };
 
 // ! Unsafe Functions: Need to check if caller has enough points to redeem item before invoking */
-const redeemItem = async (
+const redeemPrize = async (
   userId: string,
   rewardId: number,
   costPoints: number,
@@ -104,7 +106,7 @@ const redeemItem = async (
   try {
     await db.transaction(async (tx) => {
       // Add points to user
-      await _addPoints(tx, userId, -costPoints);
+      await addPoints(tx, userId, -costPoints);
 
       // Record that we have redeemed an item
       await tx.insert(scavengerHuntRedemptions).values({
@@ -119,6 +121,8 @@ const redeemItem = async (
     });
   }
 };
+
+
 
 export const scavengerHuntRouter = createTRPCRouter({
   // Get Scavenger Hunt Item
@@ -201,4 +205,9 @@ export const scavengerHuntRouter = createTRPCRouter({
       // Get points for requestedUserId
       return await getUserPoints(requestedUserId);
     }),
+
+
+
+
+
 });
