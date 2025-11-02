@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "vitest";
 import { eq, and } from "drizzle-orm";
-import type {SQL} from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { db } from "~/server/db";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -12,7 +12,7 @@ import {
   users,
 } from "~/server/db/schema";
 import { mockSession, mockOrganizerSession } from "~/server/auth";
-import { faker } from '@faker-js/faker';
+import { faker } from "@faker-js/faker";
 
 // ---- helpers ----
 const insertTestItem = async (
@@ -85,8 +85,8 @@ describe("scavengerHuntRouter", () => {
       const scans = await db.query.scavengerHuntScans.findFirst({
         where: and(
           eq(scavengerHuntScans.userId, ctx.session.user.id),
-          eq(scavengerHuntScans.itemId, testItem.id)
-        )
+          eq(scavengerHuntScans.itemId, testItem.id),
+        ),
       });
       expect(scans).not.toBeNull();
       expect(scans).toBeDefined();
@@ -115,4 +115,3 @@ describe("scavengerHuntRouter", () => {
     });
   });
 });
-
