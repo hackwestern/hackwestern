@@ -122,8 +122,6 @@ const redeemPrize = async (
   }
 };
 
-
-
 export const scavengerHuntRouter = createTRPCRouter({
   // Get Scavenger Hunt Item
   getScavengerHuntItem: publicProcedure
@@ -205,9 +203,4 @@ export const scavengerHuntRouter = createTRPCRouter({
       // Get points for requestedUserId
       return await getUserPoints(requestedUserId);
     }),
-
-
-
-
-
 });
