@@ -8,19 +8,27 @@ import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { cn } from "~/lib/utils";
 import { applicationSubmitSchema } from "~/schemas/application";
 import { api } from "~/utils/api";
+import { AvatarDisplay } from "../avatar-display";
+import { colors } from "~/constants/avatar";
+import { type CanvasPaths } from "~/types/canvas";
+import { QUESTION1, QUESTION2, QUESTION3 } from "./application-form";
+import React from "react";
 
 type ReviewSectionProps = {
   step: ApplyStepFull;
   error: z.inferFormattedError<typeof applicationSubmitSchema> | undefined;
+  className?: string;
 };
 
-function ReviewSection({ step, error }: ReviewSectionProps) {
+function ReviewSection({ step, error, className }: ReviewSectionProps) {
   return (
-    <div className="py-4">
+    <div className={cn("py-4", className)}>
       <Separator />
       <div className="flex justify-between pt-4">
-        <h2>{step.label}</h2>
-        <Button asChild variant="apply" className="gap-2">
+        <h2 className="font-jetbrains-mono text-base uppercase text-medium">
+          {step.label}
+        </h2>
+        <Button asChild variant="secondary" className="gap-2">
           <Link href={{ pathname: "/apply", query: { step: step.step } }}>
             <PencilLine className="w-4" />
             Edit
@@ -48,6 +56,10 @@ function ReviewSectionInfo({ step, error }: ReviewSectionProps) {
       return <AgreementsReview step={step} error={error} />;
     case "optional":
       return <OptionalReview step={step} error={error} />;
+    case "character":
+      return <AvatarReview step={step} error={error} />;
+    case "canvas":
+      return <CanvasReview step={step} error={error} />;
     default:
       return <></>;
   }
@@ -62,15 +74,52 @@ type ReviewFieldProps = {
 function ReviewField({ value, label, error }: ReviewFieldProps) {
   const errorMessage = error?.join(", ") ?? null;
   const isEmptyValue = value === "" || value === null || value === undefined;
+
+  let displayValue: React.ReactNode = "";
+  if (typeof value === "boolean") {
+    displayValue = value ? "Yes" : "No";
+  } else if (typeof value === "number") {
+    displayValue = value.toString();
+  } else if (typeof value === "string") {
+    displayValue = value;
+  } else if (isEmptyValue) {
+    displayValue = "(no answer)";
+  }
+
+  if (label === "Resume") {
+    // if value is a url, show only the filename
+    if (typeof value === "string" && value.startsWith("http")) {
+      try {
+        const url = new URL(value);
+        const pathname = url.pathname;
+        const filename = pathname.substring(pathname.lastIndexOf("/") + 1);
+        displayValue = filename ? (
+          <a
+            href={value}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline underline-offset-2 transition-colors hover:text-emphasis"
+          >
+            {filename}
+          </a>
+        ) : (
+          "(no resume uploaded)"
+        );
+      } catch {
+        displayValue = value;
+      }
+    }
+  }
+
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
       <p
-        className={cn("text-sm text-slate-600", {
-          "text-slate-400": isEmptyValue,
+        className={cn("text-sm text-heavy", {
+          "text-medium": isEmptyValue,
         })}
       >
-        {isEmptyValue ? "(no answer)" : value?.toString()}
+        {displayValue}
       </p>
       {errorMessage && (
         <p className="text-sm text-destructive">{errorMessage ?? ""}</p>
@@ -80,7 +129,9 @@ function ReviewField({ value, label, error }: ReviewFieldProps) {
 }
 
 function BasicsReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: ["firstName", "lastName", "phoneNumber", "age"],
+  });
 
   const nameErrors: string[] = [];
   if (!data?.firstName) nameErrors.push("First name is required");
@@ -103,7 +154,15 @@ function BasicsReview({ error }: ReviewSectionProps) {
 }
 
 function InfoReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: [
+      "school",
+      "levelOfStudy",
+      "major",
+      "attendedBefore",
+      "numOfHackathons",
+    ],
+  });
   return (
     <>
       <ReviewField
@@ -136,25 +195,27 @@ function InfoReview({ error }: ReviewSectionProps) {
 }
 
 function ApplicationReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: ["question1", "question2", "question3"],
+  });
   return (
     <>
       <ReviewField
-        label="If you could have any superpower to help you during Hack Western, what would it be and why?"
+        label={QUESTION1}
         value={data?.question1}
         error={error?.question1?._errors.map((e) =>
           e.includes("Response") ? e : "Response is required",
         )}
       />
       <ReviewField
-        label="If you could build your own dream destination what would it look like? Be as detailed and creative as you want!"
+        label={QUESTION2}
         value={data?.question2}
         error={error?.question2?._errors.map((e) =>
           e.includes("Response") ? e : "Response is required",
         )}
       />
       <ReviewField
-        label="What project (anything you have ever worked on not just restricted to tech) of yours are you the most proud of and why? What did you learn throughout the process?"
+        label={QUESTION3}
         value={data?.question3}
         error={error?.question3?._errors.map((e) =>
           e.includes("Response") ? e : "Response is required",
@@ -165,7 +226,9 @@ function ApplicationReview({ error }: ReviewSectionProps) {
 }
 
 function LinksReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: ["githubLink", "linkedInLink", "otherLink", "resumeLink"],
+  });
   return (
     <>
       <ReviewField
@@ -193,7 +256,15 @@ function LinksReview({ error }: ReviewSectionProps) {
 }
 
 function AgreementsReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: [
+      "agreeCodeOfConduct",
+      "agreeShareWithMLH",
+      "agreeShareWithSponsors",
+      "agreeWillBe18",
+      "agreeEmailsFromMLH",
+    ],
+  });
   return (
     <>
       <ReviewField
@@ -212,7 +283,7 @@ function AgreementsReview({ error }: ReviewSectionProps) {
         error={error?.agreeShareWithSponsors?._errors}
       />
       <ReviewField
-        label="I will be at least 18 years old on November 29th, 2024"
+        label="I will be at least 18 years old on November 21st, 2025"
         value={data?.agreeWillBe18}
         error={error?.agreeWillBe18?._errors}
       />
@@ -226,7 +297,9 @@ function AgreementsReview({ error }: ReviewSectionProps) {
 }
 
 function OptionalReview({}: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    fields: ["underrepGroup", "gender", "ethnicity", "sexualOrientation"],
+  });
   return (
     <>
       <ReviewField
@@ -253,18 +326,126 @@ function OptionalReview({}: ReviewSectionProps) {
   );
 }
 
-const reviewSteps = applySteps.slice(1, -1);
+function AvatarReview({}: ReviewSectionProps) {
+  const { data } = api.application.get.useQuery({
+    fields: [
+      "avatarColour",
+      "avatarFace",
+      "avatarLeftHand",
+      "avatarRightHand",
+      "avatarHat",
+    ],
+  });
+
+  const selectedColor = colors.find(
+    (c) => c.name === (data?.avatarColour ?? "green"),
+  );
+
+  return (
+    <div className="space-y-2">
+      <Label>Your Avatar</Label>
+      <div
+        className="mx-auto -mt-4 flex h-80 w-80 scale-90 flex-col justify-center rounded-2xl p-4 pt-8"
+        style={{
+          background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
+        }}
+      >
+        <div className="flex items-center justify-center">
+          <AvatarDisplay
+            avatarColour={data?.avatarColour}
+            avatarFace={data?.avatarFace}
+            avatarLeftHand={data?.avatarLeftHand}
+            avatarRightHand={data?.avatarRightHand}
+            avatarHat={data?.avatarHat}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CanvasReview({}: ReviewSectionProps) {
+  const { data } = api.application.get.useQuery({ fields: ["canvasData"] });
+
+  // reuse shared canvas types
+  type CanvasData = {
+    paths: CanvasPaths;
+    timestamp: number;
+    version: string;
+  };
+
+  const canvasData = data?.canvasData as CanvasData | null | undefined;
+  const pathStrings =
+    canvasData?.paths?.map((path) =>
+      path.reduce((acc, point, index) => {
+        if (index === 0) return `M ${point[0]} ${point[1]}`;
+        return `${acc} L ${point[0]} ${point[1]}`;
+      }, ""),
+    ) ?? [];
+
+  return (
+    <div className="space-y-2">
+      <Label>Your Drawing</Label>
+      {pathStrings.length > 0 ? (
+        <div className="h-64 w-64 overflow-hidden rounded-lg border-2 border-gray-300 bg-white lg:h-72 lg:w-72">
+          <svg className="h-full w-full">
+            {pathStrings.map((pathString, pathIndex) => (
+              <path
+                key={pathIndex}
+                d={pathString}
+                stroke="#a16bc7"
+                strokeWidth="4"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ))}
+          </svg>
+        </div>
+      ) : (
+        <p className="text-sm text-medium">(no drawing)</p>
+      )}
+    </div>
+  );
+}
+
+const reviewSteps = applySteps.slice(0, -1);
 
 export function ReviewForm() {
-  const { data } = api.application.get.useQuery();
+  const { data } = api.application.get.useQuery({
+    // fields required by applicationSubmitSchema
+    fields: [
+      "firstName",
+      "lastName",
+      "phoneNumber",
+      "countryOfResidence",
+      "age",
+      "school",
+      "levelOfStudy",
+      "major",
+      "attendedBefore",
+      "numOfHackathons",
+      "question1",
+      "question2",
+      "question3",
+      "resumeLink",
+      "githubLink",
+      "linkedInLink",
+      "otherLink",
+      "agreeCodeOfConduct",
+      "agreeShareWithMLH",
+      "agreeShareWithSponsors",
+      "agreeWillBe18",
+      "agreeEmailsFromMLH",
+    ],
+  });
   const result = applicationSubmitSchema.safeParse(data);
   const error = result.error?.format();
-  console.log({ error, result });
   return (
-    <>
+    <div className="overflow-auto">
       {reviewSteps.map((step, idx) => (
         <ReviewSection step={step} key={idx} error={error} />
       ))}
-    </>
+    </div>
   );
 }

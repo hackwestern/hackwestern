@@ -14,8 +14,8 @@ function Label({
   isSelected?: boolean;
 }) {
   const baseClass = `
-  flex h-[45px] items-center justify-center rounded-t-md bg-lilac px-[8px] text-xs uppercase tracking-wider absolute -mt-[8px] 
-  hover:-mt-[12px] transition-all 
+  flex h-[45px] items-center justify-center rounded-t-md bg-lilac px-[8px] text-xs uppercase tracking-wider absolute -mt-[8px]
+  hover:-mt-[12px] transition-all
 `;
 
   const labelClass = isSelected
@@ -85,7 +85,9 @@ function Page({
       className="pointer-events-none relative h-[723px] w-[555px] cursor-pointer"
       style={{
         transformStyle: "preserve-3d",
+        WebkitTransformStyle: "preserve-3d",
         transformOrigin: "left center",
+        willChange: isFlipped !== flipDuration > 0 ? "transform" : "auto",
       }}
       initial={false}
       // Animate based on the isFlipped prop
@@ -112,6 +114,7 @@ function Page({
             className="pointer-events-auto absolute inset-0 my-[32px] ml-[4px] mr-[24px] flex cursor-pointer overflow-hidden rounded-lg"
             style={{
               backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
             }}
             onClick={() => {
               if (back) turnPageForward();
@@ -139,6 +142,7 @@ function Page({
             style={{
               transform: "rotateY(180deg)",
               backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
             }}
             onClick={turnPageBackward}
           >

@@ -4,6 +4,7 @@ import SingleButton from "./single-button";
 import { CanvasSection, coordinates } from "~/constants/canvas";
 import { useCanvasContext } from "~/contexts/CanvasContext";
 import useWindowDimensions from "~/hooks/useWindowDimensions";
+import { usePerformanceMode } from "~/hooks/usePerformanceMode";
 import {
   ScreenSizeEnum,
   getScreenSizeEnum,
@@ -30,14 +31,65 @@ export const RESPONSIVE_ZOOM_MAP: Record<ScreenSizeEnum, number> = {
 } as const;
 
 export default function Navbar({ panToOffset, onReset }: NavbarProps) {
-  const { x, y, scale, animationStage } = useCanvasContext();
+  const { x, y, scale, animationStage, setNextTargetSection } =
+    useCanvasContext();
   const [expandedButton, setExpandedButton] = useState<string | null>(null);
   const activePans = useRef(0);
   const panTimeout = useRef<NodeJS.Timeout | null>(null);
 
+  // Debounce state
+  const debounceBlocked = useRef(false);
+  const debounceCooldownTimeout = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
   const { height, width } = useWindowDimensions();
+  const { mode } = usePerformanceMode();
 
   const defaultZoom = RESPONSIVE_ZOOM_MAP[getScreenSizeEnum(width)];
+
+  // Derive debounce duration from performance mode
+  const debounceMs = (() => {
+    switch (mode) {
+      case "high":
+        return 0;
+      case "medium":
+        return 100;
+      case "low":
+        return 400;
+      default:
+        return 0;
+    }
+  })();
+
+  // Leading-edge debounce handler
+  const handleDebouncedClick = useCallback(
+    (callback: () => void) => {
+      if (debounceMs === 0) {
+        callback();
+        return;
+      }
+
+      if (debounceBlocked.current) {
+        // We're in the cooldown window; ignore this click
+        return;
+      }
+
+      // Enter cooldown and perform the click immediately
+      debounceBlocked.current = true;
+      callback();
+
+      if (debounceCooldownTimeout.current) {
+        clearTimeout(debounceCooldownTimeout.current);
+      }
+
+      debounceCooldownTimeout.current = setTimeout(() => {
+        debounceBlocked.current = false;
+        debounceCooldownTimeout.current = null;
+      }, debounceMs);
+    },
+    [debounceMs],
+  );
 
   const updateExpandedButton = () => {
     // reset activePans if no movement has occurred recently
@@ -57,6 +109,10 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
     function handlePan(section: CanvasSection) {
       setExpandedButton(section);
       activePans.current++;
+
+      // Predictive pre-render hint: mark the target section so its CanvasComponent can
+      // render even before it comes fully into view.
+      setNextTargetSection(section);
 
       if (section === CanvasSection.Home) {
         onReset();
@@ -78,15 +134,17 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
         defaultZoom,
       );
     },
-    [panToOffset, onReset, width, height, defaultZoom],
+    [panToOffset, onReset, width, height, defaultZoom, setNextTargetSection],
   );
 
-  // Clean up timer on unmount
+  // Clean up timers on unmount
   useEffect(() => {
     if (animationStage < 2) return;
     handlePan(CanvasSection.Home);
     return () => {
       if (panTimeout.current) clearTimeout(panTimeout.current);
+      if (debounceCooldownTimeout.current)
+        clearTimeout(debounceCooldownTimeout.current);
     };
   }, [handlePan, animationStage]);
 
@@ -113,36 +171,42 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
               icon="Home"
               onClick={() => handlePan(CanvasSection.Home)}
               isPushed={expandedButton === CanvasSection.Home}
+              onDebouncedClick={handleDebouncedClick}
             />
             <SingleButton
               label="About"
               icon="Info"
               onClick={() => handlePan(CanvasSection.About)}
               isPushed={expandedButton === CanvasSection.About}
+              onDebouncedClick={handleDebouncedClick}
             />
             <SingleButton
               label="Projects"
               icon="LayoutDashboard"
               onClick={() => handlePan(CanvasSection.Projects)}
               isPushed={expandedButton === CanvasSection.Projects}
+              onDebouncedClick={handleDebouncedClick}
             />
             <SingleButton
               label="Sponsors"
               icon="Handshake"
               onClick={() => handlePan(CanvasSection.Sponsors)}
               isPushed={expandedButton === CanvasSection.Sponsors}
+              onDebouncedClick={handleDebouncedClick}
             />
             <SingleButton
               label="FAQ"
               icon="HelpCircle"
               onClick={() => handlePan(CanvasSection.FAQ)}
               isPushed={expandedButton === CanvasSection.FAQ}
+              onDebouncedClick={handleDebouncedClick}
             />
             <SingleButton
               label="Team"
               icon="Users"
               onClick={() => handlePan(CanvasSection.Team)}
               isPushed={expandedButton === CanvasSection.Team}
+              onDebouncedClick={handleDebouncedClick}
             />
           </div>
         </motion.div>

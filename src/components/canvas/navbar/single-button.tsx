@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import * as LucideIcons from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useToast } from "../../hooks/use-toast";
+import { useToast } from "../../../hooks/use-toast";
+import { copyText } from "~/lib/copy";
 
 type IconName = keyof typeof LucideIcons;
 
@@ -13,6 +14,7 @@ interface SingleButtonProps {
   isPushed: boolean;
   link?: string;
   emailAddress?: string;
+  onDebouncedClick?: (callback: () => void) => void;
 }
 
 export default function SingleButton({
@@ -23,6 +25,7 @@ export default function SingleButton({
   isPushed,
   link,
   emailAddress,
+  onDebouncedClick,
 }: SingleButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showTag, setShowTag] = useState(false);
@@ -68,27 +71,7 @@ export default function SingleButton({
     }
   }, [copiedEmail]);
 
-  const handleClick = () => {
-    // minimal cross-browser copy helper
-    const copyText = async (text: string): Promise<boolean> => {
-      try {
-        if (navigator.clipboard?.writeText && window.isSecureContext) {
-          await navigator.clipboard.writeText(text);
-          return true;
-        }
-        // fallback: execCommand
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        const ok = document.execCommand("copy");
-        document.body.removeChild(ta);
-        return ok;
-      } catch {
-        return false;
-      }
-    };
-
+  const performClick = () => {
     if (emailAddress) {
       const mailto = `mailto:${emailAddress}`;
 
@@ -98,6 +81,11 @@ export default function SingleButton({
 
         if (copied) {
           setCopiedEmail(true);
+          toast({
+            title: "Email copied!",
+            variant: "cute",
+            duration: 2000,
+          });
         } else {
           window.open(mailto, "_blank");
           toast({
@@ -117,6 +105,14 @@ export default function SingleButton({
     }
 
     onClick?.();
+  };
+
+  const handleClick = () => {
+    if (onDebouncedClick) {
+      onDebouncedClick(performClick);
+    } else {
+      performClick();
+    }
   };
 
   const displayLabel = copiedEmail ? "Email copied!" : label;

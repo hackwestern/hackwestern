@@ -28,10 +28,10 @@ export const coordinates: Record<CanvasSection, SectionCoordinates> = {
     height: 895,
   },
   [CanvasSection.Home]: {
-    x: 2788,
+    x: 2867,
     y: 1200,
-    width: 409,
-    height: 1200,
+    width: 264,
+    height: 800,
   },
   [CanvasSection.Sponsors]: {
     x: 760,
@@ -52,4 +52,28 @@ export const coordinates: Record<CanvasSection, SectionCoordinates> = {
     width: 1080,
     height: 917,
   },
+};
+
+// Reverse lookup using strict reference or value match.
+export const coordinatesToSection = (
+  coords: SectionCoordinates | undefined,
+): CanvasSection | null => {
+  if (!coords) return null;
+  // Try identity first
+  for (const key of Object.keys(coordinates) as CanvasSection[]) {
+    if (coordinates[key] === coords) return key;
+  }
+  // Fallback value match (in case a cloned object is passed)
+  for (const key of Object.keys(coordinates) as CanvasSection[]) {
+    const c = coordinates[key];
+    if (
+      c.x === coords.x &&
+      c.y === coords.y &&
+      c.width === coords.width &&
+      c.height === coords.height
+    ) {
+      return key;
+    }
+  }
+  return null;
 };

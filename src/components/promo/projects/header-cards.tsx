@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { projectsPlaceHolder } from "~/constants/projectsPlaceholder";
+import { usePerformanceMode } from "~/hooks/usePerformanceMode";
 
 const ROTATIONS = [-16, 3.214, 22];
 const Y_OFFSETS = [85, 25, 100];
@@ -22,6 +23,10 @@ function HeaderCards() {
     window.open(url, "_blank");
   };
 
+  const { mode } = usePerformanceMode();
+
+  const notHigh = mode !== "high";
+
   return (
     <div className="flex h-[404px] w-full shrink-0 justify-center">
       {names.map((name, i) => {
@@ -39,6 +44,7 @@ function HeaderCards() {
             variants={{ hover: {} }}
             onClick={() => handleCardClick(name.url)}
             className="group pointer-events-auto absolute relative flex h-[292px] w-[369px] cursor-pointer flex-col items-center rounded-2xl border border-gray-200 bg-white p-[11px] shadow-xl transition-transform hover:scale-105"
+            style={{ willChange: "transform" }}
           >
             <motion.div
               className="relative w-full overflow-hidden rounded"
@@ -48,7 +54,8 @@ function HeaderCards() {
                   transition: { duration: 0.25 },
                 },
               }}
-              animate={{ height: 230 }}
+              style={notHigh ? { height: 230 } : {}}
+              animate={!notHigh ? { height: 230 } : {}}
             >
               <Image
                 src={`/projects/${folders[i]}/${name.image}`}

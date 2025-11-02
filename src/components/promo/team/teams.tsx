@@ -45,11 +45,13 @@ export const PAGES = [
             }}
           />
           <div className="relative h-28 w-28">
-            <img
+            <Image
               src="/horse.svg"
               alt="Frame"
               className="absolute inset-0 h-full w-full translate-x-[160px] translate-y-[287px] rotate-12 object-contain"
               draggable={false}
+              width={112}
+              height={112}
             />
           </div>
         </div>
@@ -97,6 +99,52 @@ export const PAGES = [
           }}
           roundFrame={true}
         />
+        <Image
+          src="/images/promo/book/stickers/headphones.png"
+          alt="headphones"
+          height={82}
+          width={90}
+          style={{
+            position: "absolute",
+            top: 120,
+            left: 275,
+            transform: "rotate(5deg)",
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/palette.png"
+          alt="palette"
+          height={92}
+          width={70}
+          style={{
+            position: "absolute",
+            top: 250,
+            left: 417,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/cello.png"
+          alt="cello"
+          height={50}
+          width={60}
+          style={{
+            position: "absolute",
+            top: 343,
+            left: 20,
+            transform: "rotate(-25deg)",
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/uc-hill.png"
+          alt="uc-hill"
+          height={244}
+          width={238}
+          style={{
+            position: "absolute",
+            top: 464,
+            left: 41,
+          }}
+        />
       </div>
     ),
     back: (
@@ -123,6 +171,17 @@ export const PAGES = [
                 left: 121,
               }}
               roundFrame={true}
+            />
+            <Image
+              src="/images/promo/book/stickers/dancer.png"
+              alt="dancer"
+              height={152}
+              width={150}
+              style={{
+                position: "absolute",
+                top: 491,
+                left: 316,
+              }}
             />
           </div>
         </div>{" "}
@@ -165,6 +224,28 @@ export const PAGES = [
           }}
           rotate={-9}
           roundFrame={true}
+        />
+        <Image
+          src="/images/promo/book/stickers/rainbow.png"
+          alt="rainbow"
+          height={163}
+          width={136}
+          style={{
+            position: "absolute",
+            top: 180,
+            left: 102,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/cat.png"
+          alt="cat"
+          height={154}
+          width={135}
+          style={{
+            position: "absolute",
+            top: 500,
+            left: 281,
+          }}
         />
       </div>
     ),
@@ -228,6 +309,61 @@ export const PAGES = [
               Events Lead
             </span>
           </div>{" "}
+          <Image
+            src="/images/promo/book/stickers/bear.png"
+            alt="bear"
+            height={130}
+            width={81}
+            style={{
+              position: "absolute",
+              top: 511,
+              left: 58,
+            }}
+          />
+          <Image
+            src="/images/promo/book/stickers/butterfly.png"
+            alt="butterfly"
+            height={67}
+            width={101}
+            style={{
+              position: "absolute",
+              top: 144,
+              left: 335,
+            }}
+          />
+          <Image
+            src="/images/promo/book/stickers/star.png"
+            alt="star"
+            height={43}
+            width={25}
+            style={{
+              position: "absolute",
+              top: 162,
+              left: 320,
+            }}
+          />
+          <Image
+            src="/images/promo/book/stickers/star.png"
+            alt="star"
+            height={48}
+            width={32}
+            style={{
+              position: "absolute",
+              top: 120,
+              left: 336,
+            }}
+          />
+          <Image
+            src="/images/promo/book/stickers/star.png"
+            alt="star"
+            height={43}
+            width={30}
+            style={{
+              position: "absolute",
+              top: 197,
+              left: 418,
+            }}
+          />
         </div>
       </div>
     ),
@@ -309,6 +445,40 @@ export const PAGES = [
             Events Organizer
           </span>
         </div>{" "}
+        <Image
+          src="/images/promo/book/stickers/goggles.png"
+          alt="goggles"
+          height={66}
+          width={134}
+          style={{
+            position: "absolute",
+            top: 32,
+            left: 274,
+            transform: "rotate(10deg)",
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/dancer-2.png"
+          alt="dancer"
+          height={90}
+          width={117}
+          style={{
+            position: "absolute",
+            top: 495,
+            left: 315,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/can't-wait.svg"
+          alt="can't wait for HW XII >.<"
+          height={23}
+          width={265}
+          style={{
+            position: "absolute",
+            top: 595,
+            left: 219,
+          }}
+        />
       </div>
     ),
     back: (
@@ -334,6 +504,29 @@ export const PAGES = [
             left: 138,
           }}
           roundFrame={true}
+        />
+        <Image
+          src="/images/promo/book/stickers/keyboard.png"
+          alt="keyboard"
+          height={78}
+          width={149}
+          style={{
+            position: "absolute",
+            top: 530,
+            left: 152,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/mouse.png"
+          alt="mouse"
+          height={99}
+          width={89}
+          style={{
+            position: "absolute",
+            top: 518,
+            left: 290,
+            transform: "scaleX(-1)",
+          }}
         />
       </div>
     ),
@@ -375,6 +568,74 @@ export const PAGES = [
           rotate={9}
           roundFrame={true}
         />
+        <Image
+          src="/images/promo/book/stickers/cat-2.png"
+          alt="cat"
+          height={130}
+          width={117}
+          style={{
+            position: "absolute",
+            top: 522,
+            left: 120,
+            transform: "rotate(5deg)",
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/treble.png"
+          alt="treble clef"
+          height={60}
+          width={52}
+          style={{
+            position: "absolute",
+            top: 571,
+            left: 434,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/rope.png"
+          alt="rope and rock"
+          height={130}
+          width={157}
+          style={{
+            position: "absolute",
+            top: 200,
+            left: 334,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/rock-1.png"
+          alt="rock"
+          height={90}
+          width={80}
+          style={{
+            position: "absolute",
+            top: 141,
+            left: 255,
+            transform: "rotate(-60deg)",
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/rock-2.png"
+          alt="rock"
+          height={74}
+          width={82}
+          style={{
+            position: "absolute",
+            top: 72,
+            left: 313,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/rock-climbing.svg"
+          alt="rock climbing!"
+          height={13}
+          width={125}
+          style={{
+            position: "absolute",
+            top: 154,
+            left: 350,
+          }}
+        />
       </div>
     ),
     back: (
@@ -401,6 +662,39 @@ export const PAGES = [
             left: 146,
           }}
           borderRadius="0px"
+        />
+        <Image
+          src="/images/promo/book/stickers/sparkles.png"
+          alt="sparkles"
+          height={78}
+          width={49}
+          style={{
+            position: "absolute",
+            top: 211,
+            left: 65,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/cat-3.png"
+          alt="cat"
+          height={95}
+          width={118}
+          style={{
+            position: "absolute",
+            top: 516,
+            left: 337,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/moewww.svg"
+          alt="meowww"
+          height={12}
+          width={65}
+          style={{
+            position: "absolute",
+            top: 595,
+            left: 265,
+          }}
         />
       </div>
     ),
@@ -456,6 +750,28 @@ export const PAGES = [
           }}
           borderRadius="0px"
         />
+        <Image
+          src="/images/promo/book/stickers/dog.png"
+          alt="dog"
+          height={115}
+          width={111}
+          style={{
+            position: "absolute",
+            top: 83,
+            left: 286,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/comet.png"
+          alt="comet"
+          height={87}
+          width={126}
+          style={{
+            position: "absolute",
+            top: 440,
+            left: 267,
+          }}
+        />
       </div>
     ),
     back: (
@@ -499,6 +815,62 @@ export const PAGES = [
           roundFrame={true}
           webRoleTop="30%"
         />
+        <Image
+          src="/images/promo/book/stickers/disco-ball.png"
+          alt="disco ball"
+          height={99}
+          width={98}
+          style={{
+            position: "absolute",
+            top: 345,
+            left: 129,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/dancer-3.png"
+          alt="dancer"
+          height={180}
+          width={151}
+          style={{
+            position: "absolute",
+            top: 472,
+            left: 43,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/rock-1.png"
+          alt="rock"
+          height={90}
+          width={80}
+          style={{
+            position: "absolute",
+            top: 141,
+            left: 395,
+            transform: "rotate(-150deg)",
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/rock-2.png"
+          alt="rock"
+          height={74}
+          width={82}
+          style={{
+            position: "absolute",
+            top: 220,
+            left: 313,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/rock-3.png"
+          alt="rock"
+          height={60}
+          width={80}
+          style={{
+            position: "absolute",
+            top: 80,
+            left: 314,
+          }}
+        />
       </div>
     ),
   },
@@ -516,6 +888,50 @@ export const PAGES = [
             position: "absolute",
             top: 47,
             left: 179,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/basket.png"
+          alt="basket"
+          height={90}
+          width={99}
+          style={{
+            position: "absolute",
+            top: 23,
+            left: 339,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/ball.png"
+          alt="ball"
+          height={64}
+          width={90}
+          style={{
+            position: "absolute",
+            top: 87,
+            left: 406,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/mic.png"
+          alt="mic"
+          height={119}
+          width={90}
+          style={{
+            position: "absolute",
+            top: 408,
+            left: 58,
+          }}
+        />
+        <Image
+          src="/images/promo/book/stickers/monkey.png"
+          alt="monkey"
+          height={129}
+          width={108}
+          style={{
+            position: "absolute",
+            top: 527,
+            left: 406,
           }}
         />
       </div>

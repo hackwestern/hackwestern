@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
-import { useState, useEffect, useRef } from "react";
+import { motion, useAnimation } from "framer-motion";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 export default function Envelope() {
   const [envelopeToggled, setEnvelopeToggled] = useState(false);
@@ -7,9 +7,20 @@ export default function Envelope() {
   const [isHovered, setIsHovered] = useState(false);
   const [flapZ, setFlapZ] = useState(20);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const controls = useAnimation();
+  const isHoveredRef = useRef(false);
+  const isOpenRef = useRef(false);
+  const envelopeToggledRef = useRef(false);
+
+  const resetTransforms = useCallback(() => {
+    controls.stop();
+    controls.set({ x: 0, rotate: 8 });
+  }, [controls]);
 
   const handleMouseEnter = () => {
+    // stop any shaking animation immediately and reset transforms
     setIsHovered(true);
+    resetTransforms();
   };
 
   const handleMouseLeave = () => {
@@ -41,13 +52,53 @@ export default function Envelope() {
     };
   }, []);
 
+  // Keep a ref of hover state that interval can read without re-creating
+  // Keep refs for hover/open/toggled so the interval can read fresh values
+  useEffect(() => {
+    isHoveredRef.current = isHovered;
+    isOpenRef.current = isOpen;
+    envelopeToggledRef.current = envelopeToggled;
+    if (isHovered || isOpen || envelopeToggled) {
+      resetTransforms();
+    }
+  }, [isHovered, isOpen, envelopeToggled, resetTransforms]);
+
+  // Periodically trigger a shake every n seconds when not hovered
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (
+        isHoveredRef.current ||
+        isOpenRef.current ||
+        envelopeToggledRef.current
+      ) {
+        resetTransforms();
+        return;
+      }
+
+      // animate a quick shake sequence lasting ~1s
+      void controls.start({
+        rotate: [8, 10, 6, 9, 6, 8],
+        transition: { duration: 1, ease: "easeInOut" },
+      });
+    }, 4000);
+
+    return () => clearInterval(id);
+  }, [controls, resetTransforms]);
+
   return (
-    <div className="flex rotate-[8deg] flex-col items-center justify-center gap-4">
+    <motion.div
+      animate={controls}
+      initial={{ rotate: 8 }}
+      className="flex flex-col items-center justify-center gap-4"
+    >
       <div
-        className="pointer-events-none relative -mt-[150px] h-[375px] w-[450px] cursor-pointer "
+        className="pointer-events-none relative -mt-[150px] h-[375px] w-[450px] cursor-pointer transition-all hover:scale-[1.01]"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onClick={handleClick}
+        style={{
+          willChange: isHovered || envelopeToggled ? "transform" : "auto",
+        }}
       >
         {/* Letter */}
         <motion.div
@@ -59,6 +110,7 @@ export default function Envelope() {
             delay: 0.15,
             ease: [0.25, 0.46, 0.45, 0.94],
           }}
+          style={{ willChange: isOpen || isHovered ? "height" : "auto" }}
         >
           <div className="mb-2 font-figtree  text-medium">
             Dear Hacker,
@@ -170,6 +222,6 @@ export default function Envelope() {
       >
         A message to those new to hacking
       </motion.div>
-    </div>
+    </motion.div>
   );
 }

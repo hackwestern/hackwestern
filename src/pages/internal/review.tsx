@@ -8,7 +8,7 @@ import { authRedirectOrganizer } from "~/utils/redirect";
 import type { z } from "zod";
 import { reviewSaveSchema } from "~/schemas/review";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAutoSave } from "~/components/hooks/use-auto-save";
+import { useAutoSave } from "~/hooks/use-auto-save";
 import {
   Form,
   FormControl,
@@ -23,13 +23,19 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { formattedDate } from "~/components/apply/saved-indicator";
-import { useIsMutating } from "@tanstack/react-query";
-import { Spinner } from "~/components/loading-spinner";
+import { SavedIndicator } from "~/components/apply/saved-indicator";
 import { Textarea } from "~/components/ui/textarea";
-import { useToast } from "~/components/hooks/use-toast";
+import { useToast } from "~/hooks/use-toast";
 import { useSession } from "next-auth/react";
 import CanvasBackground from "~/components/canvas-background";
+import { AvatarDisplay } from "~/components/apply/avatar-display";
+import { colors } from "~/constants/avatar";
+import type { CanvasPaths } from "~/types/canvas";
+import {
+  QUESTION1,
+  QUESTION2,
+  QUESTION3,
+} from "~/components/apply/form/application-form";
 
 const Review = () => {
   const { data: session } = useSession();
@@ -65,7 +71,15 @@ const Review = () => {
         comments: reviewData?.comments ?? "",
       });
     }
-  }, [applicantId, session, form]);
+  }, [
+    applicantId,
+    session,
+    form,
+    reviewData?.comments,
+    reviewData?.originalityRating,
+    reviewData?.passionRating,
+    reviewData?.technicalityRating,
+  ]);
 
   const onSubmit = (data: z.infer<typeof reviewSaveSchema>) => {
     mutate({
@@ -89,8 +103,8 @@ const Review = () => {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex flex-col items-center bg-primary-50 md:h-screen">
-        <div className="relative z-[100] w-full flex-grow items-center md:flex">
+      <main className=" font-figtreen flex flex-col items-center bg-primary-50 font-figtree">
+        <div className="relative z-[100] w-full items-center md:flex">
           <div
             id="left-panel"
             className="flex flex-grow flex-col justify-between space-y-8 overflow-auto bg-primary-100 p-9 pb-[4.1rem] md:h-screen md:w-2/3 2xl:w-1/2"
@@ -125,9 +139,9 @@ const Review = () => {
                   </ul>
                 </div>
                 {reviewCount && (
-                  <div className="mx-auto w-1/4 text-center">
-                    <h1 className="font-semibold">Leaderboard</h1>
-                    <ul>
+                  <div className="mx-auto w-1/3 text-center font-jetbrains-mono">
+                    <h1 className="text-sm font-semibold">Leaderboard</h1>
+                    <ul className="w-full text-left text-sm">
                       <li>
                         🥇 {reviewCount[0]?.reviewerName}{" "}
                         {reviewCount[0]?.reviewCount}
@@ -333,85 +347,186 @@ const Review = () => {
             </div>
             <div className="flex justify-end">
               {nextId && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="primary"
-                      disabled={form.formState.isSubmitting}
-                      onClick={() => {
-                        toast({
-                          title: "starting next review",
-                        });
-                      }}
-                    >
-                      <Link href={`/internal/review?applicant=${nextId}`}>
+                <Link href={`/internal/review?applicant=${nextId}`}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="primary"
+                        disabled={form.formState.isSubmitting}
+                        onClick={() => {
+                          toast({
+                            title: "starting next review",
+                          });
+                        }}
+                      >
                         {reviewData?.completed ? "Next" : "Skip"}
-                      </Link>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{nextId}</TooltipContent>
-                </Tooltip>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{nextId}</TooltipContent>
+                  </Tooltip>
+                </Link>
               )}
             </div>
           </div>
+
           <div
             id="right-panel"
-            className="bg-hw-linear-gradient-day -z-10 flex h-full flex-col items-center justify-center px-4 md:w-full"
+            className="-z-10 flex max-h-[96vh] flex-col items-center justify-center overflow-hidden rounded-xl bg-primary-50 px-4 py-4 md:w-full"
           >
             <div className="-z-10">
               <CanvasBackground />
             </div>
-            <div className="z-10 my-8 flex w-[100%] flex-col items-center justify-center overflow-auto text-sm md:my-auto md:max-h-[96vh]">
-              <div className="z-50 flex w-11/12 flex-col rounded-[10px] border border-primary-300 bg-primary-100 p-8 2xl:w-3/5 3xl:w-2/5 4xl:w-1/3">
-                <Tooltip>
-                  <TooltipTrigger>
-                    <div className="text-base">{`${applicationData?.firstName} ${applicationData?.lastName}`}</div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {`User ID: ${applicationData?.userId}`}
-                  </TooltipContent>
-                </Tooltip>
-                <div className="pt-3 font-semibold">
-                  If you could have any superpower to help you during Hack
-                  Western, what would it be and why?
-                </div>
-                <div>{applicationData?.question1}</div>
-                <div className="pt-3 font-semibold">
-                  If you could build your own dream destination what would it
-                  look like? Be as detailed and creative as you want!
-                </div>
-                <div>{applicationData?.question2}</div>
-                <div className="pt-3 font-semibold">
-                  What project (anything you have ever worked on not just
-                  restricted to tech) of yours are you the most proud of and
-                  why? What did you learn throughout the process?
-                </div>
-                <div>{applicationData?.question3}</div>
-                <div className="pt-3 font-semibold">Links</div>
-                <div className="flex">
-                  {["githubLink", "linkedInLink", "otherLink", "resumeLink"]
-                    .map((link) => link as keyof typeof applicationData)
-                    .map((link) => {
-                      if (applicationData?.[link]) {
-                        return (
-                          <Button
-                            variant="link"
-                            key={link}
-                            className="my-0 pl-0 pt-0 text-primary-600"
+
+            <div className="z-10 my-8 flex h-[90vh] flex-col items-center justify-center overflow-auto overflow-auto rounded-xl border border-primary-300 bg-primary-100 pl-8 text-sm md:my-auto md:max-w-[800px]">
+              {applicationData ? (
+                <div className="custom-scroll z-50 flex h-[90vh] flex-col overflow-auto rounded-[10px] rounded-lg px-2 py-4 font-figtree">
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="mt-4 text-base">{`${applicationData?.firstName} ${applicationData?.lastName}`}</div>
+                    </TooltipTrigger>
+                    <TooltipContent className="font-jetbrains-mono">
+                      {`User ID: ${applicationData?.userId}`}
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <div className="flex flex-col justify-center md:ml-8 md:flex-row">
+                    {/* Avatar Section */}
+                    {applicationData && (
+                      <div className="ml-8 mt-4 space-y-2 md:ml-0">
+                        <div className="flex h-64 w-64 justify-center">
+                          <div
+                            className="flex h-64 w-64 flex-col justify-center rounded-2xl p-4 pt-8"
+                            style={{
+                              background: `linear-gradient(135deg, ${
+                                colors.find(
+                                  (c) =>
+                                    c.name ===
+                                    (applicationData.avatarColour ?? "green"),
+                                )?.bg ?? "#F1FDE0"
+                              } 30%, ${
+                                colors.find(
+                                  (c) =>
+                                    c.name ===
+                                    (applicationData.avatarColour ?? "green"),
+                                )?.gradient ?? "#A7FB73"
+                              } 95%)`,
+                            }}
                           >
-                            <a
-                              href={applicationData[link]}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              {linkName(link)}
-                            </a>
-                          </Button>
+                            <div className="mt-10 flex scale-75 items-center justify-center">
+                              <AvatarDisplay
+                                avatarColour={applicationData.avatarColour}
+                                avatarFace={applicationData.avatarFace}
+                                avatarLeftHand={applicationData.avatarLeftHand}
+                                avatarRightHand={
+                                  applicationData.avatarRightHand
+                                }
+                                avatarHat={applicationData.avatarHat}
+                                size="lg"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Canvas Section */}
+                    {applicationData &&
+                      (() => {
+                        type CanvasData = {
+                          paths: CanvasPaths;
+                          timestamp: number;
+                          version: string;
+                        };
+
+                        const canvasData = applicationData.canvasData as
+                          | CanvasData
+                          | null
+                          | undefined;
+                        const pathStrings =
+                          canvasData?.paths?.map((path) =>
+                            path.reduce((acc, point, index) => {
+                              if (index === 0)
+                                return `M ${point[0]} ${point[1]}`;
+                              return `${acc} L ${point[0]} ${point[1]}`;
+                            }, ""),
+                          ) ?? [];
+
+                        // Get the stroke color based on avatar color (same logic as SimpleCanvas)
+                        const selectedColour = colors.find(
+                          (color) =>
+                            color.name === applicationData.avatarColour,
+                        )?.value;
+                        const strokeColour = selectedColour
+                          ? selectedColour + "dd"
+                          : "#a16bc7";
+
+                        return (
+                          <div className="-ml-4 mt-4 space-y-2 md:ml-0">
+                            {pathStrings.length > 0 ? (
+                              <div className="flex justify-center">
+                                <div className="-mt-8 h-80 w-80 scale-[0.78] overflow-hidden rounded-lg border-2 border-primary-300 bg-white">
+                                  <svg className="h-full w-full">
+                                    {pathStrings.map(
+                                      (pathString, pathIndex) => (
+                                        <path
+                                          key={pathIndex}
+                                          d={pathString}
+                                          stroke={strokeColour}
+                                          strokeWidth="4"
+                                          fill="none"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      ),
+                                    )}
+                                  </svg>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex justify-center">
+                                <p className="text-sm text-primary-600">
+                                  (no drawing)
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         );
-                      }
-                    })}
+                      })()}
+                  </div>
+
+                  <div className="flex justify-center text-center">
+                    {["githubLink", "linkedInLink", "otherLink", "resumeLink"]
+                      .map((link) => link as keyof typeof applicationData)
+                      .map((link) => {
+                        if (applicationData?.[link]) {
+                          return (
+                            <Button
+                              variant="link"
+                              key={link}
+                              className="my-0 pl-0 pt-0 text-primary-600"
+                            >
+                              <a
+                                href={applicationData?.[link] as string}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {linkName(link)}
+                              </a>
+                            </Button>
+                          );
+                        }
+                      })}
+                  </div>
+                  <div className="pt-3 font-semibold">{QUESTION1}</div>
+                  <div>{applicationData?.question1}</div>
+                  <div className="pt-3 font-semibold">{QUESTION2}</div>
+                  <div>{applicationData?.question2}</div>
+                  <div className="pt-3 font-semibold">{QUESTION3}</div>
+                  <div>{applicationData?.question3}</div>
                 </div>
-              </div>
+              ) : (
+                <div className="sm:w-80 md:w-[600px]"></div>
+              )}
             </div>
           </div>
         </div>
@@ -432,36 +547,6 @@ const linkName = (link: string) => {
       return "Resume";
   }
 };
-
-function SavedIndicator() {
-  const searchParams = useSearchParams();
-  const applicantId = searchParams.get("applicant");
-  const { data: review } = api.review.getById.useQuery({ applicantId });
-  const isSaving = useIsMutating();
-
-  const formattedLastSavedAt = formattedDate(review?.updatedAt ?? null);
-
-  if (isSaving) {
-    return (
-      <div className="flex items-center justify-end gap-1 text-xs italic text-slate-400">
-        <Spinner isLoading className="size-3 fill-primary-100 text-slate-400" />
-        <span>Saving</span>
-      </div>
-    );
-  }
-
-  if (formattedLastSavedAt) {
-    return (
-      <div className="text-right text-xs italic text-slate-400">
-        Last Saved:
-        <br />
-        {formattedLastSavedAt}
-      </div>
-    );
-  }
-
-  return <></>;
-}
 
 const postfix = (num: number) => {
   const lastDigit = num % 10;

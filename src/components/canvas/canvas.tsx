@@ -16,6 +16,7 @@ import React, {
   useMemo,
 } from "react";
 import { CanvasProvider } from "~/contexts/CanvasContext";
+import { useToast } from "~/hooks/use-toast";
 import {
   calcInitialBoxWidth,
   canvasHeight,
@@ -33,8 +34,9 @@ import {
 import useWindowDimensions from "~/hooks/useWindowDimensions";
 import Navbar from "./navbar";
 import Toolbar from "./toolbar";
-import { type SectionCoordinates } from "~/constants/canvas";
+import type { CanvasSection, SectionCoordinates } from "~/constants/canvas";
 import { CanvasWrapper } from "./wrapper";
+import { usePerformanceMode } from "~/hooks/usePerformanceMode";
 
 interface Props {
   homeCoordinates: SectionCoordinates;
@@ -58,6 +60,23 @@ const stage2Transition = {
 
 const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+  const { toast } = useToast();
+  const hasToasted = useRef(false);
+
+  useEffect(() => {
+    if (windowWidth < 768 && !hasToasted.current) {
+      setTimeout(() => {
+        toast({
+          title: "Please use desktop for the best experience.",
+          duration: 6700,
+          variant: "cute",
+        });
+        hasToasted.current = true;
+      }, 1200);
+    }
+  }, [windowWidth, toast]);
+
+  const { mode } = usePerformanceMode();
 
   const sceneWidth = canvasWidth;
   const sceneHeight = canvasHeight;
@@ -76,6 +95,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
   const [isResetting, setIsResetting] = useState<boolean>(false);
   const [maxZIndex, setMaxZIndex] = useState<number>(50);
   const [animationStage, setAnimationStage] = useState<number>(0); // 0: initial, 1: finish grow, 2: pan to home
+  const [nextTargetSection, setNextTargetSection] =
+    useState<CanvasSection | null>(null);
   // Track if the intro (stage1 + stage2) is still running, to avoid accidental cancellation
   const isIntroAnimatingRef = useRef(true);
 
@@ -556,6 +577,8 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
         maxZIndex={maxZIndex}
         setMaxZIndex={setMaxZIndex}
         animationStage={animationStage}
+        nextTargetSection={nextTargetSection}
+        setNextTargetSection={setNextTargetSection}
       >
         {animationStage >= 2 && (
           <>
@@ -592,19 +615,29 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
               x,
               y,
               scale,
+              willChange:
+                mode !== "high" && (animationStage < 2 || isPanning)
+                  ? "transform"
+                  : "auto",
             }}
           >
             <Gradient />
-            {animationStage >= 1 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, ease: "easeIn" }}
-              >
-                <Filter />
-                <Dots />
-              </motion.div>
-            )}
+            {animationStage >= 1 &&
+              (mode === "high" ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5, ease: "easeIn" }}
+                >
+                  <Filter />
+                  <Dots />
+                </motion.div>
+              ) : (
+                <>
+                  <Filter />
+                  <Dots />
+                </>
+              ))}
             {children}
           </motion.div>
         </div>
@@ -634,7 +667,7 @@ const Dots = React.memo(function Dots() {
 
 const Filter = React.memo(function Filter() {
   return (
-    <div className="contrast-60 pointer-events-none absolute inset-0 hidden h-full w-full bg-none opacity-60 filter md:inline md:bg-noise" />
+    <div className="contrast-60 md:bg-noise pointer-events-none absolute inset-0 hidden h-full w-full bg-none opacity-60 filter md:inline" />
   );
 });
 
