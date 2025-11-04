@@ -82,13 +82,13 @@ describe("scavengerHuntRouter", () => {
     beforeEach(async () => {
       // Create a fresh item for each test to avoid state pollution
       testItem = await insertTestItem({}, faker.string.alphanumeric(12));
-      
+
       // Reset user's scavenger hunt balance and points
       await db
         .update(users)
         .set({ scavengerHuntBalance: 0, scavengerHuntEarned: 0 })
         .where(eq(users.id, session.user.id));
-      
+
       // Clean up any existing scans for this user
       await db
         .delete(scavengerHuntScans)
@@ -133,7 +133,7 @@ describe("scavengerHuntRouter", () => {
 
         // If we get here, the test should fail because the function should throw an error
         expect(false).toBe(true);
-      } catch (err){
+      } catch (err) {
         expect(err).toBeInstanceOf(TRPCError);
         const trpcErr = err as TRPCError;
         expect(trpcErr.code).toBe("BAD_REQUEST");
@@ -157,7 +157,7 @@ describe("scavengerHuntRouter", () => {
 
         // If we get here, the test should fail because the function should throw an error
         expect(false).toBe(true);
-      } catch (err){
+      } catch (err) {
         expect(err).toBeInstanceOf(TRPCError);
         const trpcErr = err as TRPCError;
         expect(trpcErr.code).toBe("FORBIDDEN");

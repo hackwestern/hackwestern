@@ -148,10 +148,12 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // Scan Item (only accessible to organizers (users can't scan items themselves))
   scan: protectedOrganizerProcedure
-    .input(z.object({ 
-      userId: z.string(),
-      itemCode: z.string() 
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        itemCode: z.string(),
+      }),
+    )
     .mutation(async ({ input }) => {
       try {
         const { userId, itemCode } = input;
