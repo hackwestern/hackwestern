@@ -73,7 +73,7 @@ const redeemPrize = async (
     await db.transaction(async (tx) => {
       // Add points to user
       await addPoints(tx, userId, -costPoints);
-      
+
       // Record that we have redeemed an item
       await tx.insert(scavengerHuntRedemptions).values({
         userId: userId,
@@ -111,11 +111,11 @@ const getUserPoints = async (userId: string) => {
   const user = await db.query.users.findFirst({
     where: eq(users.id, userId),
   });
-  
+
   if (!user) {
     throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
   }
-  
+
   return {
     earned: user.scavengerHuntEarned,
     balance: user.scavengerHuntBalance,
@@ -232,9 +232,11 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // Redeem a Reward (only accessible to users)
   redeem: protectedProcedure
-    .input(z.object({ 
-      rewardId: z.number() 
-    }))
+    .input(
+      z.object({
+        rewardId: z.number(),
+      }),
+    )
     .mutation(async ({ input, ctx }) => {
       try {
         const { rewardId } = input;
@@ -245,7 +247,10 @@ export const scavengerHuntRouter = createTRPCRouter({
           where: eq(scavengerHuntRewards.id, rewardId),
         });
         if (!reward) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Reward not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Reward not found",
+          });
         }
 
         await redeemPrize(userId, rewardId, reward.costPoints);
@@ -266,29 +271,28 @@ export const scavengerHuntRouter = createTRPCRouter({
     }),
 
   // Get all Redemptions (only accessible to users)
-  getRedemptions: protectedProcedure
-    .query(async ({ ctx }) => {
-        const userId = ctx.session.user.id;
+  getRedemptions: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
 
-        // Get redemptions for userId
-        return await getUserRedemptions(userId);      
-    }),
+    // Get redemptions for userId
+    return await getUserRedemptions(userId);
+  }),
 
   // Get a User's Redemptions by UserId (only accessible to organizers)
   getRedemptionByUserId: protectedOrganizerProcedure
     .input(z.object({ requestedUserId: z.string() }))
     .query(async ({ input }) => {
-       const { requestedUserId } = input;
+      const { requestedUserId } = input;
 
-       // Check if requestedUserId exists
-       const user = await db.query.users.findFirst({
+      // Check if requestedUserId exists
+      const user = await db.query.users.findFirst({
         where: eq(users.id, requestedUserId),
-       });
-       if (!user) {
+      });
+      if (!user) {
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-       }
+      }
 
-       // Get redemptions for requestedUserId
-       return await getUserRedemptions(requestedUserId);
+      // Get redemptions for requestedUserId
+      return await getUserRedemptions(requestedUserId);
     }),
 });

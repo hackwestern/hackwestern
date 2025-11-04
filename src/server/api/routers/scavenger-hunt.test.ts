@@ -163,9 +163,8 @@ describe("scavengerHuntRouter basic endpoints", () => {
         expect(trpcErr.message).toBe("User is not an organizer");
       }
     });
-
   });
-  
+
   // getPoints tests
   describe("getPoints", () => {
     test("returns earned and balance for user", async () => {
@@ -200,7 +199,6 @@ describe("scavengerHuntRouter basic endpoints", () => {
     });
   });
 });
-
 
 describe("scavengerHuntRouter redemption endpoints", () => {
   // redeem tests
@@ -239,7 +237,7 @@ describe("scavengerHuntRouter redemption endpoints", () => {
 
     test("successfully redeems reward and deducts points", async () => {
       const initialBalance = 100;
-      
+
       const redeemResult = await caller.scavengerHunt.redeem({
         rewardId: testReward.id,
       });
@@ -370,7 +368,7 @@ describe("scavengerHuntRouter redemption endpoints", () => {
       await db
         .delete(scavengerHuntRedemptions)
         .where(eq(scavengerHuntRedemptions.rewardId, secondReward.id));
-      
+
       // Then clean up second reward
       await db
         .delete(scavengerHuntRewards)
