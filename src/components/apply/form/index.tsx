@@ -9,7 +9,7 @@ import { AgreementsForm } from "./agreements-form";
 import { OptionalForm } from "./optional-form";
 import { CanvasForm } from "./canvas-form";
 import { ReviewForm } from "./review-form";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, type Easing, motion } from "framer-motion";
 import { usePendingNavigation } from "~/hooks/use-pending-navigation";
 import { useIsMobile } from "~/hooks/use-mobile";
 
@@ -23,12 +23,12 @@ const formFade = {
   animate: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.28, ease: [0.37, 0.1, 0.6, 1] },
+    transition: { duration: 0.28, ease: [0.37, 0.1, 0.6, 1] as Easing },
   },
   exit: {
     opacity: 0,
     y: -6,
-    transition: { duration: 0.18, ease: [0.37, 0.1, 0.6, 1] },
+    transition: { duration: 0.18, ease: [0.37, 0.1, 0.6, 1] as Easing },
   },
 };
 
