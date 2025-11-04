@@ -13,7 +13,7 @@ export const growTransition = {
 const blurTransition = {
   duration: 0.85,
   delay: 1.25,
-  ease: "easeIn",
+  ease: "easeIn" as Easing,
 };
 
 interface CanvasWrapperProps {

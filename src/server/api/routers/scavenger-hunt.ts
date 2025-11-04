@@ -1,14 +1,25 @@
-import { eq, sql, type SQL } from "drizzle-orm";
-import { createTRPCRouter } from "~/server/api/trpc";
-import { db, type Transaction } from "~/server/db";
+import { eq, and, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+import { z } from "zod";
 import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+  protectedOrganizerProcedure,
+} from "~/server/api/trpc";
+import { db } from "~/server/db";
+import type { Transaction } from "~/server/db";
+import {
+  scavengerHuntItems,
   scavengerHuntScans,
   users,
+  scavengerHuntRewards,
   scavengerHuntRedemptions,
 } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 
-export const _addPoints = async (
+// ! Unsafe Functions: Need to check if caller can add points before invoking */
+export const addPoints = async (
   tx: Transaction,
   userId: string,
   points: number,
@@ -22,7 +33,10 @@ export const _addPoints = async (
       updateData.scavengerHuntEarned = sql`scavenger_hunt_earned + ${points}`;
     }
 
-    const [updatedUser] = await tx
+    const [updatedUser]: {
+      scavengerHuntEarned: number | null;
+      scavengerHuntBalance: number | null;
+    }[] = await tx
       .update(users)
       .set(updateData)
       .where(eq(users.id, userId))
@@ -53,10 +67,7 @@ export const _addPoints = async (
 const recordScan = async (userId: string, points: number, itemId: number) => {
   try {
     await db.transaction(async (tx) => {
-      // Add points to user
-      await _addPoints(tx, userId, points);
-
-      // Mark that points have been added to user
+      await addPoints(tx, userId, points);
       await tx.insert(scavengerHuntScans).values({
         userId: userId,
         itemId: itemId,
@@ -87,7 +98,7 @@ const getUserPoints = async (userId: string) => {
 };
 
 // ! Unsafe Functions: Need to check if caller has enough points to redeem item before invoking */
-const redeemItem = async (
+const redeemPrize = async (
   userId: string,
   rewardId: number,
   costPoints: number,
@@ -95,7 +106,7 @@ const redeemItem = async (
   try {
     await db.transaction(async (tx) => {
       // Add points to user
-      await _addPoints(tx, userId, -costPoints);
+      await addPoints(tx, userId, -costPoints);
 
       // Record that we have redeemed an item
       await tx.insert(scavengerHuntRedemptions).values({
@@ -111,4 +122,102 @@ const redeemItem = async (
   }
 };
 
-export const scavengerHuntRouter = createTRPCRouter({});
+export const scavengerHuntRouter = createTRPCRouter({
+  // Get Scavenger Hunt Item (not sure if we need this tbh)
+  getScavengerHuntItem: publicProcedure
+    .input(z.object({ code: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const { code } = input;
+        const item = await db.query.scavengerHuntItems.findFirst({
+          where: eq(scavengerHuntItems.code, code),
+        });
+
+        if (!item) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+        }
+
+        return item;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch item: " + JSON.stringify(error),
+        });
+      }
+    }),
+
+  // Scan Item (only accessible to organizers (users can't scan items themselves))
+  scan: protectedOrganizerProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        itemCode: z.string(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const { userId, itemCode } = input;
+
+        // Check if item exists
+        const item = await db.query.scavengerHuntItems.findFirst({
+          where: eq(scavengerHuntItems.code, itemCode),
+        });
+        if (!item) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+        }
+
+        // Check if user exists
+        const user = await db.query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+
+        // Check if user has already scanned this item
+        const scan = await db.query.scavengerHuntScans.findFirst({
+          where: and(
+            eq(scavengerHuntScans.userId, userId),
+            eq(scavengerHuntScans.itemId, item.id),
+          ),
+        });
+        if (scan) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Item already scanned",
+          });
+        }
+
+        // Record the scan
+        await recordScan(userId, item.points, item.id);
+        return {
+          success: true,
+          message: "Item scanned successfully",
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to scan item: " + JSON.stringify(error),
+        });
+      }
+    }),
+
+  // Gets a User's Own Points
+  getPoints: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    return await getUserPoints(userId);
+  }),
+
+  // Gets a User's Points by UserId (only accessible to organizers)
+  getPointsByUserId: protectedOrganizerProcedure
+    .input(z.object({ requestedUserId: z.string() }))
+    .query(async ({ input }) => {
+      const { requestedUserId } = input;
+
+      // Get points for requestedUserId
+      return await getUserPoints(requestedUserId);
+    }),
+});
