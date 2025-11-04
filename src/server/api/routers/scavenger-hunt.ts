@@ -63,6 +63,31 @@ export const addPoints = async (
   }
 };
 
+// ! Unsafe Functions: Need to check if caller has enough points to redeem item before invoking */
+const redeemPrize = async (
+  userId: string,
+  rewardId: number,
+  costPoints: number,
+) => {
+  try {
+    await db.transaction(async (tx) => {
+      // Add points to user
+      await addPoints(tx, userId, -costPoints);
+      
+      // Record that we have redeemed an item
+      await tx.insert(scavengerHuntRedemptions).values({
+        userId: userId,
+        rewardId: rewardId,
+      });
+    });
+  } catch (error) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Failed to redeem item: " + JSON.stringify(error),
+    });
+  }
+};
+
 // ! Unsafe Functions: Need to check if caller already redeemed item already before invoking */
 const recordScan = async (userId: string, points: number, itemId: number) => {
   try {
@@ -86,40 +111,24 @@ const getUserPoints = async (userId: string) => {
   const user = await db.query.users.findFirst({
     where: eq(users.id, userId),
   });
-
+  
   if (!user) {
     throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
   }
-
+  
   return {
     earned: user.scavengerHuntEarned,
     balance: user.scavengerHuntBalance,
   };
 };
 
-// ! Unsafe Functions: Need to check if caller has enough points to redeem item before invoking */
-const redeemPrize = async (
-  userId: string,
-  rewardId: number,
-  costPoints: number,
-) => {
-  try {
-    await db.transaction(async (tx) => {
-      // Add points to user
-      await addPoints(tx, userId, -costPoints);
+// ! Unsafe Functions: Need to check if caller is allowed to get redemptions before invoking */
+const getUserRedemptions = async (userId: string) => {
+  const redemptions = await db.query.scavengerHuntRedemptions.findMany({
+    where: eq(scavengerHuntRedemptions.userId, userId),
+  });
 
-      // Record that we have redeemed an item
-      await tx.insert(scavengerHuntRedemptions).values({
-        userId: userId,
-        rewardId: rewardId,
-      });
-    });
-  } catch (error) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Failed to redeem item: " + JSON.stringify(error),
-    });
-  }
+  return redemptions;
 };
 
 export const scavengerHuntRouter = createTRPCRouter({
@@ -219,5 +228,67 @@ export const scavengerHuntRouter = createTRPCRouter({
 
       // Get points for requestedUserId
       return await getUserPoints(requestedUserId);
+    }),
+
+  // Redeem a Reward (only accessible to users)
+  redeem: protectedProcedure
+    .input(z.object({ 
+      rewardId: z.number() 
+    }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const { rewardId } = input;
+        const userId = ctx.session.user.id;
+
+        // Check if reward exists
+        const reward = await db.query.scavengerHuntRewards.findFirst({
+          where: eq(scavengerHuntRewards.id, rewardId),
+        });
+        if (!reward) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Reward not found" });
+        }
+
+        await redeemPrize(userId, rewardId, reward.costPoints);
+
+        return {
+          success: true,
+          message: "Reward redeemed successfully",
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to redeem reward: " + JSON.stringify(error),
+        });
+      }
+    }),
+
+  // Get all Redemptions (only accessible to users)
+  getRedemptions: protectedProcedure
+    .query(async ({ ctx }) => {
+        const userId = ctx.session.user.id;
+
+        // Get redemptions for userId
+        return await getUserRedemptions(userId);      
+    }),
+
+  // Get a User's Redemptions by UserId (only accessible to organizers)
+  getRedemptionByUserId: protectedOrganizerProcedure
+    .input(z.object({ requestedUserId: z.string() }))
+    .query(async ({ input }) => {
+       const { requestedUserId } = input;
+
+       // Check if requestedUserId exists
+       const user = await db.query.users.findFirst({
+        where: eq(users.id, requestedUserId),
+       });
+       if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+       }
+
+       // Get redemptions for requestedUserId
+       return await getUserRedemptions(requestedUserId);
     }),
 });
