@@ -123,7 +123,7 @@ const redeemPrize = async (
 };
 
 export const scavengerHuntRouter = createTRPCRouter({
-  // Get Scavenger Hunt Item
+  // Get Scavenger Hunt Item (not sure if we need this tbh)
   getScavengerHuntItem: publicProcedure
     .input(z.object({ code: z.string() }))
     .query(async ({ input }) => {
@@ -146,24 +146,36 @@ export const scavengerHuntRouter = createTRPCRouter({
       }
     }),
 
-  // Scan Item
-  scan: protectedProcedure
-    .input(z.object({ code: z.string() }))
-    .mutation(async ({ input, ctx }) => {
+  // Scan Item (only accessible to organizers (users can't scan items themselves))
+  scan: protectedOrganizerProcedure
+    .input(z.object({ 
+      userId: z.string(),
+      itemCode: z.string() 
+    }))
+    .mutation(async ({ input }) => {
       try {
-        const { code } = input;
-        const item = await db.query.scavengerHuntItems.findFirst({
-          where: eq(scavengerHuntItems.code, code),
-        });
+        const { userId, itemCode } = input;
 
+        // Check if item exists
+        const item = await db.query.scavengerHuntItems.findFirst({
+          where: eq(scavengerHuntItems.code, itemCode),
+        });
         if (!item) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+        }
+
+        // Check if user exists
+        const user = await db.query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         }
 
         // Check if user has already scanned this item
         const scan = await db.query.scavengerHuntScans.findFirst({
           where: and(
-            eq(scavengerHuntScans.userId, ctx.session.user.id),
+            eq(scavengerHuntScans.userId, userId),
             eq(scavengerHuntScans.itemId, item.id),
           ),
         });
@@ -174,13 +186,16 @@ export const scavengerHuntRouter = createTRPCRouter({
           });
         }
 
-        await recordScan(ctx.session.user.id, item.points, item.id);
-
+        // Record the scan
+        await recordScan(userId, item.points, item.id);
         return {
           success: true,
           message: "Item scanned successfully",
         };
       } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to scan item: " + JSON.stringify(error),
