@@ -131,7 +131,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
         });
 
         // If we get here, the test should fail because the function should throw an error
-        expect(false).toBe(true);
+        expect.fail("Route should return a TRPCError");
       } catch (err) {
         expect(err).toBeInstanceOf(TRPCError);
         const trpcErr = err as TRPCError;
@@ -155,7 +155,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
         });
 
         // If we get here, the test should fail because the function should throw an error
-        expect(false).toBe(true);
+        expect.fail("Route should return a TRPCError");
       } catch (err) {
         expect(err).toBeInstanceOf(TRPCError);
         const trpcErr = err as TRPCError;
@@ -163,9 +163,8 @@ describe("scavengerHuntRouter basic endpoints", () => {
         expect(trpcErr.message).toBe("User is not an organizer");
       }
     });
-
   });
-  
+
   // getPoints tests
   describe("getPoints", () => {
     test("returns earned and balance for user", async () => {
@@ -190,7 +189,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
         await caller.scavengerHunt.getPointsByUserId({
           requestedUserId: session.user.id,
         });
-        expect(false).toBe(true);
+        expect.fail("Route should return a TRPCError");
       } catch (err) {
         expect(err).toBeInstanceOf(TRPCError);
         const trpcErr = err as TRPCError;
@@ -201,8 +200,10 @@ describe("scavengerHuntRouter basic endpoints", () => {
   });
 });
 
-
 describe("scavengerHuntRouter redemption endpoints", () => {
+  const initialBalance = 100;
+  const initialEarned = 100;
+  
   // redeem tests
   describe("redeem", () => {
     let testReward: Awaited<ReturnType<typeof insertTestReward>>;
@@ -214,7 +215,7 @@ describe("scavengerHuntRouter redemption endpoints", () => {
       // Reset user's scavenger hunt balance and points
       await db
         .update(users)
-        .set({ scavengerHuntBalance: 100, scavengerHuntEarned: 100 })
+        .set({ scavengerHuntBalance: initialBalance, scavengerHuntEarned: initialEarned })
         .where(eq(users.id, session.user.id));
 
       // Clean up any existing redemptions for this user
@@ -238,8 +239,6 @@ describe("scavengerHuntRouter redemption endpoints", () => {
     });
 
     test("successfully redeems reward and deducts points", async () => {
-      const initialBalance = 100;
-      
       const redeemResult = await caller.scavengerHunt.redeem({
         rewardId: testReward.id,
       });
@@ -273,7 +272,7 @@ describe("scavengerHuntRouter redemption endpoints", () => {
 
       try {
         await caller.scavengerHunt.redeem({ rewardId: nonExistentRewardId });
-        expect(false).toBe(true); // Should not reach here
+        expect.fail("Route should return a TRPCError");
       } catch (err) {
         expect(err).toBeInstanceOf(TRPCError);
         const trpcErr = err as TRPCError;
@@ -286,11 +285,17 @@ describe("scavengerHuntRouter redemption endpoints", () => {
       const unauthenticatedCtx = createInnerTRPCContext({ session: null });
       const unauthenticatedCaller = createCaller(unauthenticatedCtx);
 
-      await expect(
-        unauthenticatedCaller.scavengerHunt.redeem({
+      try {
+        await unauthenticatedCaller.scavengerHunt.redeem({
           rewardId: testReward.id,
         }),
-      ).rejects.toThrow();
+        expect.fail("Route should return a TRPCError");
+      } catch (err) {
+        expect(err).toBeInstanceOf(TRPCError);
+        const trpcErr = err as TRPCError;
+        expect(trpcErr.code).toBe("UNAUTHORIZED");
+        expect(trpcErr.message).toBe("UNAUTHORIZED");
+      }
     });
   });
 
@@ -370,7 +375,7 @@ describe("scavengerHuntRouter redemption endpoints", () => {
       await db
         .delete(scavengerHuntRedemptions)
         .where(eq(scavengerHuntRedemptions.rewardId, secondReward.id));
-      
+
       // Then clean up second reward
       await db
         .delete(scavengerHuntRewards)
@@ -461,7 +466,7 @@ describe("scavengerHuntRouter redemption endpoints", () => {
         await organizerCaller.scavengerHunt.getRedemptionByUserId({
           requestedUserId: nonExistentUserId,
         });
-        expect(false).toBe(true); // Should not reach here
+        expect.fail("Route should return a TRPCError");
       } catch (err) {
         expect(err).toBeInstanceOf(TRPCError);
         const trpcErr = err as TRPCError;
@@ -476,7 +481,7 @@ describe("scavengerHuntRouter redemption endpoints", () => {
         await caller.scavengerHunt.getRedemptionByUserId({
           requestedUserId: testUser.user.id,
         });
-        expect(false).toBe(true); // Should not reach here
+        expect.fail("Route should return a TRPCError");
       } catch (err) {
         expect(err).toBeInstanceOf(TRPCError);
         const trpcErr = err as TRPCError;
