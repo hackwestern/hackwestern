@@ -3,6 +3,8 @@
 # secret apple stuff (plz don't leak)
 key.pem
 certificate.pem
+google-wallet-credentials.json
+service-account-key.json
 
 
 # dependencies

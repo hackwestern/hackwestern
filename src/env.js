@@ -30,6 +30,8 @@ export const env = createEnv({
     DISCORD_CLIENT_SECRET: z.string(),
     RESEND_API_KEY: z.string(),
     APPLE_CERT_PASS: z.string(),
+    GOOGLE_APPLICATION_CREDENTIALS: z.string(),
+    GOOGLE_WALLET_ISSUER_ID: z.string(),
   },
 
   /**
@@ -58,6 +60,8 @@ export const env = createEnv({
     DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     APPLE_CERT_PASS: process.env.APPLE_CERT_PASS,
+    GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+    GOOGLE_WALLET_ISSUER_ID: process.env.GOOGLE_WALLET_ISSUER_ID,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
