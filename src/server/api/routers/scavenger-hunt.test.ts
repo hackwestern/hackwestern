@@ -203,7 +203,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
 describe("scavengerHuntRouter redemption endpoints", () => {
   const initialBalance = 100;
   const initialEarned = 100;
-  
+
   // redeem tests
   describe("redeem", () => {
     let testReward: Awaited<ReturnType<typeof insertTestReward>>;
@@ -215,7 +215,10 @@ describe("scavengerHuntRouter redemption endpoints", () => {
       // Reset user's scavenger hunt balance and points
       await db
         .update(users)
-        .set({ scavengerHuntBalance: initialBalance, scavengerHuntEarned: initialEarned })
+        .set({
+          scavengerHuntBalance: initialBalance,
+          scavengerHuntEarned: initialEarned,
+        })
         .where(eq(users.id, session.user.id));
 
       // Clean up any existing redemptions for this user
@@ -286,10 +289,10 @@ describe("scavengerHuntRouter redemption endpoints", () => {
       const unauthenticatedCaller = createCaller(unauthenticatedCtx);
 
       try {
-        await unauthenticatedCaller.scavengerHunt.redeem({
+        (await unauthenticatedCaller.scavengerHunt.redeem({
           rewardId: testReward.id,
         }),
-        expect.fail("Route should return a TRPCError");
+          expect.fail("Route should return a TRPCError"));
       } catch (err) {
         expect(err).toBeInstanceOf(TRPCError);
         const trpcErr = err as TRPCError;
@@ -375,7 +378,7 @@ describe("scavengerHuntRouter redemption endpoints", () => {
       await db
         .delete(scavengerHuntRedemptions)
         .where(eq(scavengerHuntRedemptions.rewardId, secondReward.id));
-      
+
       // Then clean up second reward
       await db
         .delete(scavengerHuntRewards)

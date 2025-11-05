@@ -106,7 +106,10 @@ const redeemPrize = async (
           message: "User not found",
         });
       }
-      if (user.scavengerHuntBalance !== null && user.scavengerHuntBalance < costPoints) {
+      if (
+        user.scavengerHuntBalance !== null &&
+        user.scavengerHuntBalance < costPoints
+      ) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "User does not have enough points to redeem reward",
@@ -126,7 +129,7 @@ const redeemPrize = async (
     if (error instanceof TRPCError) {
       throw error;
     }
-    
+
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
       message: "Failed to redeem item: " + JSON.stringify(error),
