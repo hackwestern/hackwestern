@@ -117,7 +117,10 @@ const redeemPrize = async (
           message: "User not found",
         });
       }
-      if (user.scavengerHuntBalance !== null && user.scavengerHuntBalance < costPoints) {
+      if (
+        user.scavengerHuntBalance !== null &&
+        user.scavengerHuntBalance < costPoints
+      ) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "User does not have enough points to redeem reward",
@@ -335,11 +338,10 @@ export const scavengerHuntRouter = createTRPCRouter({
     }),
 
   // Get Scans (user's get their own scans)
-  getScans: protectedOrganizerProcedure
-    .query(async ({ ctx }) => {
-      // Get scans for itemId
-      return await getUserScans(ctx.session.user.id);
-    }),
+  getScans: protectedOrganizerProcedure.query(async ({ ctx }) => {
+    // Get scans for itemId
+    return await getUserScans(ctx.session.user.id);
+  }),
 
   // Get Scans by UserId (only accessible to organizers)
   getScansByUserId: protectedOrganizerProcedure
@@ -353,13 +355,15 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // Add a Scavenger Hunt Item (only accessible to organizers)
   addScanvengerHuntItem: protectedOrganizerProcedure
-    .input(z.object({
-      item: z.object({
-        code: z.string(),
-        points: z.number(),
-        description: z.string(),
-      })
-    }))
+    .input(
+      z.object({
+        item: z.object({
+          code: z.string(),
+          points: z.number(),
+          description: z.string(),
+        }),
+      }),
+    )
 
     .mutation(async ({ input }) => {
       const { item } = input;
