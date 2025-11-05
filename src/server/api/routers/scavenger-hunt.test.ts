@@ -375,7 +375,7 @@ describe("scavengerHuntRouter redemption endpoints", () => {
       await db
         .delete(scavengerHuntRedemptions)
         .where(eq(scavengerHuntRedemptions.rewardId, secondReward.id));
-
+      
       // Then clean up second reward
       await db
         .delete(scavengerHuntRewards)
