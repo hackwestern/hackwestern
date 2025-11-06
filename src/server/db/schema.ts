@@ -447,6 +447,7 @@ export const scavengerHuntItems = createTable("scavenger_hunt_item", {
   code: varchar("code", { length: 12 }).unique().notNull(),
   points: smallint("points").default(1).notNull(),
   description: text("description"),
+  deletedAt: timestamp("deleted_at", { mode: "date", precision: 3 }),
 });
 
 export const scavengerHuntScans = createTable(
