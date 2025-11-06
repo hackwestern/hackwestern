@@ -43,39 +43,36 @@ export const addPoints = async (
   points: number,
   decrementEarnedBalance = false,
 ) => {
-  return withErrorHandling(
-    async () => {
-      const updateData: Record<string, SQL> = {
-        scavengerHuntBalance: sql`scavenger_hunt_balance + ${points}`,
-      };
+  return withErrorHandling(async () => {
+    const updateData: Record<string, SQL> = {
+      scavengerHuntBalance: sql`scavenger_hunt_balance + ${points}`,
+    };
 
-      if (points > 0 || decrementEarnedBalance) {
-        updateData.scavengerHuntEarned = sql`scavenger_hunt_earned + ${points}`;
-      }
+    if (points > 0 || decrementEarnedBalance) {
+      updateData.scavengerHuntEarned = sql`scavenger_hunt_earned + ${points}`;
+    }
 
-      const [updatedUser]: {
-        scavengerHuntEarned: number | null;
-        scavengerHuntBalance: number | null;
-      }[] = await tx
-        .update(users)
-        .set(updateData)
-        .where(eq(users.id, userId))
-        .returning({
-          scavengerHuntEarned: users.scavengerHuntEarned,
-          scavengerHuntBalance: users.scavengerHuntBalance,
-        });
+    const [updatedUser]: {
+      scavengerHuntEarned: number | null;
+      scavengerHuntBalance: number | null;
+    }[] = await tx
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning({
+        scavengerHuntEarned: users.scavengerHuntEarned,
+        scavengerHuntBalance: users.scavengerHuntBalance,
+      });
 
-      if (!updatedUser) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: `User ${userId} not found when updating points`,
-        });
-      }
+    if (!updatedUser) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: `User ${userId} not found when updating points`,
+      });
+    }
 
-      return updatedUser;
-    },
-    "Failed to add points",
-  );
+    return updatedUser;
+  }, "Failed to add points");
 };
 
 // ! Unsafe Functions: Need to check if caller is allowed to check points on userId before invoking */
@@ -114,18 +111,18 @@ const getUserScans = async (userId: string) => {
   return scans ?? [];
 };
 
-// * Helper Functions * 
+// * Helper Functions *
 // Gets the scavenger hunt item while keeping in mind soft-deletion
 const getScavengerHuntItemByItemCode = async (itemCode: string) => {
   const now = new Date();
-  
+
   const item = await db.query.scavengerHuntItems.findFirst({
     where: and(
       eq(scavengerHuntItems.code, itemCode),
       or(
         isNull(scavengerHuntItems.deletedAt),
-        gt(scavengerHuntItems.deletedAt, now)
-      )
+        gt(scavengerHuntItems.deletedAt, now),
+      ),
     ),
   });
   if (!item) {
@@ -141,71 +138,68 @@ const redeemPrize = async (
   rewardId: number,
   costPoints: number,
 ) => {
-  return withErrorHandling(
-    async () => {
-      await db.transaction(async (tx) => {
-        // Check if user has enough points to redeem reward (using transaction)
-        const user = await tx.query.users.findFirst({
-          where: eq(users.id, userId),
-        });
-        if (!user) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "User not found",
-          });
-        }
-        if (user.scavengerHuntBalance !== null && user.scavengerHuntBalance < costPoints) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "User does not have enough points to redeem reward",
-          });
-        }
-
-        // Deduct points to user
-        await addPoints(tx, userId, -costPoints);
-
-        // Record that we have redeemed an item
-        await tx.insert(scavengerHuntRedemptions).values({
-          userId: userId,
-          rewardId: rewardId,
-        });
+  return withErrorHandling(async () => {
+    await db.transaction(async (tx) => {
+      // Check if user has enough points to redeem reward (using transaction)
+      const user = await tx.query.users.findFirst({
+        where: eq(users.id, userId),
       });
-    },
-    "Failed to redeem item",
-  );
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
+      if (
+        user.scavengerHuntBalance !== null &&
+        user.scavengerHuntBalance < costPoints
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "User does not have enough points to redeem reward",
+        });
+      }
+
+      // Deduct points to user
+      await addPoints(tx, userId, -costPoints);
+
+      // Record that we have redeemed an item
+      await tx.insert(scavengerHuntRedemptions).values({
+        userId: userId,
+        rewardId: rewardId,
+      });
+    });
+  }, "Failed to redeem item");
 };
 
 // * Safe Functions: Check is done within the transaction to avoid race conditions */
 const recordScan = async (userId: string, points: number, itemId: number) => {
-  return withErrorHandling(
-    async () => {
-      await db.transaction(async (tx) => {
-        // Check if user has already scanned this item
-        const scan = await tx.query.scavengerHuntScans.findFirst({
-          where: and(
-            eq(scavengerHuntScans.userId, userId),
-            eq(scavengerHuntScans.itemId, itemId),
-          ),
-        });
-        if (scan) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Item already scanned",
-          });
-        }
-
-        // Add points to user and record the scan
-        await addPoints(tx, userId, points);
-
-        // Record the scan
-        await tx.insert(scavengerHuntScans).values({
-          userId: userId,
-          itemId: itemId,
-        });
+  return withErrorHandling(async () => {
+    await db.transaction(async (tx) => {
+      // Check if user has already scanned this item
+      const scan = await tx.query.scavengerHuntScans.findFirst({
+        where: and(
+          eq(scavengerHuntScans.userId, userId),
+          eq(scavengerHuntScans.itemId, itemId),
+        ),
       });
-    },
-    "Failed to add points",
-  );
+      if (scan) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Item already scanned",
+        });
+      }
+
+      // Add points to user and record the scan
+      await addPoints(tx, userId, points);
+
+      // Record the scan
+      await tx.insert(scavengerHuntScans).values({
+        userId: userId,
+        itemId: itemId,
+      });
+    });
+  }, "Failed to add points");
 };
 
 export const scavengerHuntRouter = createTRPCRouter({
@@ -214,44 +208,40 @@ export const scavengerHuntRouter = createTRPCRouter({
   getScavengerHuntItem: publicProcedure
     .input(z.object({ code: z.string() }))
     .query(async ({ input }) => {
-      return withErrorHandling(
-        async () => {
-          const { code } = input;
-          return await getScavengerHuntItemByItemCode(code);
-        },
-        "Failed to fetch item",
-      );
+      return withErrorHandling(async () => {
+        const { code } = input;
+        return await getScavengerHuntItemByItemCode(code);
+      }, "Failed to fetch item");
     }),
 
   // Add a Scavenger Hunt Item (only accessible to organizers)
   addScanvengerHuntItem: protectedOrganizerProcedure
-    .input(z.object({
-      item: z.object({
-        code: z.string(),
-        points: z.number(),
-        description: z.string(),
-        deletedAt: z.date().optional(), // Optional: schedule deletion at a specific time for specific events with deadlines
-      })
-    }))
+    .input(
+      z.object({
+        item: z.object({
+          code: z.string(),
+          points: z.number(),
+          description: z.string(),
+          deletedAt: z.date().optional(), // Optional: schedule deletion at a specific time for specific events with deadlines
+        }),
+      }),
+    )
     .mutation(async ({ input }) => {
-      return withErrorHandling(
-        async () => {
-          const { item } = input;
-          // Add the item to the database
-          await db.insert(scavengerHuntItems).values({
-            code: item.code,
-            points: item.points,
-            description: item.description,
-            deletedAt: item.deletedAt,
-          });
+      return withErrorHandling(async () => {
+        const { item } = input;
+        // Add the item to the database
+        await db.insert(scavengerHuntItems).values({
+          code: item.code,
+          points: item.points,
+          description: item.description,
+          deletedAt: item.deletedAt,
+        });
 
-          return {
-            success: true,
-            message: "Item added successfully",
-          };
-        },
-        "Failed to add item",
-      );
+        return {
+          success: true,
+          message: "Item added successfully",
+        };
+      }, "Failed to add item");
     }),
 
   // Delete a Scavenger Hunt Item (only accessible to organizers)
@@ -259,15 +249,13 @@ export const scavengerHuntRouter = createTRPCRouter({
   deleteScavengerHuntItem: protectedOrganizerProcedure
     .input(z.object({ itemId: z.number() }))
     .mutation(async ({ input }) => {
-      return withErrorHandling(
-        async () => {
-          const { itemId } = input;
-          await db.update(scavengerHuntItems)
-            .set({ deletedAt: new Date() })
-            .where(eq(scavengerHuntItems.id, itemId));
-        },
-        "Failed to delete item",
-      );
+      return withErrorHandling(async () => {
+        const { itemId } = input;
+        await db
+          .update(scavengerHuntItems)
+          .set({ deletedAt: new Date() })
+          .where(eq(scavengerHuntItems.id, itemId));
+      }, "Failed to delete item");
     }),
 
   // * POINTS ENDPOINTS * //
@@ -295,31 +283,28 @@ export const scavengerHuntRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      return withErrorHandling(
-        async () => {
-          const { rewardId } = input;
-          const userId = ctx.session.user.id;
+      return withErrorHandling(async () => {
+        const { rewardId } = input;
+        const userId = ctx.session.user.id;
 
-          // Check if reward exists
-          const reward = await db.query.scavengerHuntRewards.findFirst({
-            where: eq(scavengerHuntRewards.id, rewardId),
+        // Check if reward exists
+        const reward = await db.query.scavengerHuntRewards.findFirst({
+          where: eq(scavengerHuntRewards.id, rewardId),
+        });
+        if (!reward) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Reward not found",
           });
-          if (!reward) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "Reward not found",
-            });
-          }
+        }
 
-          await redeemPrize(userId, rewardId, reward.costPoints);
+        await redeemPrize(userId, rewardId, reward.costPoints);
 
-          return {
-            success: true,
-            message: "Reward redeemed successfully",
-          };
-        },
-        "Failed to redeem reward",
-      );
+        return {
+          success: true,
+          message: "Reward redeemed successfully",
+        };
+      }, "Failed to redeem reward");
     }),
 
   // Get all Redemptions (only accessible to users)
@@ -357,38 +342,34 @@ export const scavengerHuntRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
-      return withErrorHandling(
-        async () => {
-          const { userId, itemCode } = input;
+      return withErrorHandling(async () => {
+        const { userId, itemCode } = input;
 
-          // Check if item exists and is not soft-deleted (or scheduled for future deletion)
-          const item = await getScavengerHuntItemByItemCode(itemCode);
+        // Check if item exists and is not soft-deleted (or scheduled for future deletion)
+        const item = await getScavengerHuntItemByItemCode(itemCode);
 
-          // Check if user exists
-          const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
-          });
-          if (!user) {
-            throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-          }
+        // Check if user exists
+        const user = await db.query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
 
-          // Record the scan
-          await recordScan(userId, item.points, item.id);
-          return {
-            success: true,
-            message: "Item scanned successfully",
-          };
-        },
-        "Failed to scan item",
-      );
+        // Record the scan
+        await recordScan(userId, item.points, item.id);
+        return {
+          success: true,
+          message: "Item scanned successfully",
+        };
+      }, "Failed to scan item");
     }),
 
   // Get Scans (user's get their own scans)
-  getScans: protectedOrganizerProcedure
-    .query(async ({ ctx }) => {
-      // Get scans for itemId
-      return await getUserScans(ctx.session.user.id);
-    }),
+  getScans: protectedOrganizerProcedure.query(async ({ ctx }) => {
+    // Get scans for itemId
+    return await getUserScans(ctx.session.user.id);
+  }),
 
   // Get Scans by UserId (only accessible to organizers)
   getScansByUserId: protectedOrganizerProcedure
@@ -402,58 +383,63 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // Delete a Scan by UserId and ItemId (only accessible to organizers)
   deleteScanByUserId: protectedOrganizerProcedure
-    .input(z.object({
-      userId: z.string(),
-      itemId: z.number()
-    }))
+    .input(
+      z.object({
+        userId: z.string(),
+        itemId: z.number(),
+      }),
+    )
     .mutation(async ({ input }) => {
-      return withErrorHandling(
-        async () => {
-          const { userId, itemId } = input;
+      return withErrorHandling(async () => {
+        const { userId, itemId } = input;
 
-          await db.transaction(async (tx) => {
-            // Get the item to know how many points to deduct
-            const scavengerHuntItem = await tx.query.scavengerHuntItems.findFirst({
+        await db.transaction(async (tx) => {
+          // Get the item to know how many points to deduct
+          const scavengerHuntItem = await tx.query.scavengerHuntItems.findFirst(
+            {
               where: eq(scavengerHuntItems.id, itemId),
+            },
+          );
+
+          if (!scavengerHuntItem) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Item not found",
             });
+          }
 
-            if (!scavengerHuntItem) {
-              throw new TRPCError({
-                code: "NOT_FOUND",
-                message: "Item not found"
-              });
-            }
-
-            // Check to see if the scan exists and if enough time has passed
-            const scanExists = await tx.query.scavengerHuntScans.findFirst({
-              where: and(
-                eq(scavengerHuntScans.userId, userId),
-                eq(scavengerHuntScans.itemId, itemId)
-              ),
-            });
-            if (!scanExists) {
-              throw new TRPCError({
-                code: "NOT_FOUND",
-                message: "Scan not found for this user and item"
-              });
-            }
-
-            // Delete the scan and check if anything was deleted
-            await tx.delete(scavengerHuntScans).where(and(
+          // Check to see if the scan exists and if enough time has passed
+          const scanExists = await tx.query.scavengerHuntScans.findFirst({
+            where: and(
               eq(scavengerHuntScans.userId, userId),
-              eq(scavengerHuntScans.itemId, itemId)
-            ));
-
-            // Deduct points
-            await addPoints(tx, userId, -scavengerHuntItem.points ?? 0, true);
+              eq(scavengerHuntScans.itemId, itemId),
+            ),
           });
+          if (!scanExists) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Scan not found for this user and item",
+            });
+          }
 
-          return {
-            success: true,
-            message: "Scan deleted successfully",
-          };
-        },
-        "Failed to delete scan",
-      );
+          // Delete the scan and check if anything was deleted
+          await tx
+            .delete(scavengerHuntScans)
+            .where(
+              and(
+                eq(scavengerHuntScans.userId, userId),
+                eq(scavengerHuntScans.itemId, itemId),
+              ),
+            );
+
+          // Deduct points
+          await addPoints(tx, userId, -scavengerHuntItem.points ?? 0, true);
+        });
+
+        return {
+          success: true,
+          message: "Scan deleted successfully",
+        };
+      }, "Failed to delete scan");
     }),
 });
