@@ -62,11 +62,13 @@ describe("scavengerHuntRouter basic endpoints", () => {
     beforeEach(async () => {
       item = await insertTestItem();
     });
-    
+
     afterEach(async () => {
       // Clean up any existing items
-      await db.delete(scavengerHuntItems).where(eq(scavengerHuntItems.id, item.id));
-    })
+      await db
+        .delete(scavengerHuntItems)
+        .where(eq(scavengerHuntItems.id, item.id));
+    });
 
     test("returns inserted item", async () => {
       const result = await caller.scavengerHunt.getScavengerHuntItem({
@@ -90,8 +92,8 @@ describe("scavengerHuntRouter basic endpoints", () => {
 
       // Should throw error when trying to get soft-deleted item
       try {
-        await caller.scavengerHunt.getScavengerHuntItem({ code: item.code }),
-        expect.fail("Route should return a TRPCError");
+        (await caller.scavengerHunt.getScavengerHuntItem({ code: item.code }),
+          expect.fail("Route should return a TRPCError"));
       } catch (err) {
         expect(err).toBeInstanceOf(TRPCError);
         const trpcErr = err as TRPCError;
@@ -265,7 +267,9 @@ describe("scavengerHuntRouter basic endpoints", () => {
       const unauthenticatedCtx = createInnerTRPCContext({ session: null });
       const unauthenticatedCaller = createCaller(unauthenticatedCtx);
 
-      await expect(unauthenticatedCaller.scavengerHunt.getPoints()).rejects.toThrow();
+      await expect(
+        unauthenticatedCaller.scavengerHunt.getPoints(),
+      ).rejects.toThrow();
     });
   });
 
@@ -323,7 +327,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
 describe("scavengerHuntRouter redemption endpoints", () => {
   const initialBalance = 100;
   const initialEarned = 100;
-  
+
   // redeem tests
   describe("redeem", () => {
     let testReward: Awaited<ReturnType<typeof insertTestReward>>;
@@ -335,7 +339,10 @@ describe("scavengerHuntRouter redemption endpoints", () => {
       // Reset user's scavenger hunt balance and points
       await db
         .update(users)
-        .set({ scavengerHuntBalance: initialBalance, scavengerHuntEarned: initialEarned })
+        .set({
+          scavengerHuntBalance: initialBalance,
+          scavengerHuntEarned: initialEarned,
+        })
         .where(eq(users.id, session.user.id));
 
       // Clean up any existing redemptions for this user
@@ -406,10 +413,10 @@ describe("scavengerHuntRouter redemption endpoints", () => {
       const unauthenticatedCaller = createCaller(unauthenticatedCtx);
 
       try {
-        await unauthenticatedCaller.scavengerHunt.redeem({
+        (await unauthenticatedCaller.scavengerHunt.redeem({
           rewardId: testReward.id,
         }),
-        expect.fail("Route should return a TRPCError");
+          expect.fail("Route should return a TRPCError"));
       } catch (err) {
         expect(err).toBeInstanceOf(TRPCError);
         const trpcErr = err as TRPCError;
@@ -422,7 +429,10 @@ describe("scavengerHuntRouter redemption endpoints", () => {
       // Set user balance to less than reward cost
       await db
         .update(users)
-        .set({ scavengerHuntBalance: testReward.costPoints - 1, scavengerHuntEarned: 100 })
+        .set({
+          scavengerHuntBalance: testReward.costPoints - 1,
+          scavengerHuntEarned: 100,
+        })
         .where(eq(users.id, session.user.id));
 
       try {
@@ -432,7 +442,9 @@ describe("scavengerHuntRouter redemption endpoints", () => {
         expect(err).toBeInstanceOf(TRPCError);
         const trpcErr = err as TRPCError;
         expect(trpcErr.code).toBe("BAD_REQUEST");
-        expect(trpcErr.message).toBe("User does not have enough points to redeem reward");
+        expect(trpcErr.message).toBe(
+          "User does not have enough points to redeem reward",
+        );
       }
     });
   });
@@ -513,7 +525,7 @@ describe("scavengerHuntRouter redemption endpoints", () => {
       await db
         .delete(scavengerHuntRedemptions)
         .where(eq(scavengerHuntRedemptions.rewardId, secondReward.id));
-      
+
       // Then clean up second reward
       await db
         .delete(scavengerHuntRewards)
@@ -704,7 +716,9 @@ describe("scavengerHuntRouter scan endpoints", () => {
       expect(scans.length).toBe(2);
       expect(scans.map((s) => s.itemId)).toContain(testItem.id);
       expect(scans.map((s) => s.itemId)).toContain(testItem2.id);
-      expect(scans.every((s) => s.userId === organizerSession.user.id)).toBe(true);
+      expect(scans.every((s) => s.userId === organizerSession.user.id)).toBe(
+        true,
+      );
     });
 
     test("throws error if user is not an organizer", async () => {
@@ -828,7 +842,14 @@ describe("scavengerHuntRouter item management endpoints", () => {
   describe("addScanvengerHuntItem", () => {
     afterEach(async () => {
       // Clean up any test items created (by code)
-      const testCodes = ["TEST-ITEM-1", "TEST-ITEM-2", "TEST-ITEM-3", "SCHED-001", "NORMAL-001", "PAST-DEL"];
+      const testCodes = [
+        "TEST-ITEM-1",
+        "TEST-ITEM-2",
+        "TEST-ITEM-3",
+        "SCHED-001",
+        "NORMAL-001",
+        "PAST-DEL",
+      ];
       for (const code of testCodes) {
         await db
           .delete(scavengerHuntItems)
@@ -873,12 +894,16 @@ describe("scavengerHuntRouter item management endpoints", () => {
         description: "Second test item",
       };
 
-      const result1 = await organizerCaller.scavengerHunt.addScanvengerHuntItem({
-        item: item1,
-      });
-      const result2 = await organizerCaller.scavengerHunt.addScanvengerHuntItem({
-        item: item2,
-      });
+      const result1 = await organizerCaller.scavengerHunt.addScanvengerHuntItem(
+        {
+          item: item1,
+        },
+      );
+      const result2 = await organizerCaller.scavengerHunt.addScanvengerHuntItem(
+        {
+          item: item2,
+        },
+      );
 
       expect(result1.success).toBe(true);
       expect(result2.success).toBe(true);
@@ -926,7 +951,9 @@ describe("scavengerHuntRouter item management endpoints", () => {
       };
 
       await expect(
-        unauthenticatedCaller.scavengerHunt.addScanvengerHuntItem({ item: newItem }),
+        unauthenticatedCaller.scavengerHunt.addScanvengerHuntItem({
+          item: newItem,
+        }),
       ).rejects.toThrow();
     });
 
@@ -1139,7 +1166,7 @@ describe("scavengerHuntRouter item management endpoints", () => {
 
     test("soft-deleted item cannot be scanned", async () => {
       const testUser = await mockSession(db);
-      
+
       // Soft delete the item
       await organizerCaller.scavengerHunt.deleteScavengerHuntItem({
         itemId: testItem.id,
