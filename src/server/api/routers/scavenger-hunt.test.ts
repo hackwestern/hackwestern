@@ -973,7 +973,7 @@ describe("scavengerHuntRouter item management endpoints", () => {
     test("can add item with scheduled deletion time", async () => {
       const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
       const newItem = {
-        code: "SCHED-001", // 9 characters (max 12)
+        code: "SCHED-001",
         points: 50,
         description: "Item scheduled for deletion",
         deletedAt: futureDate,
@@ -1020,7 +1020,7 @@ describe("scavengerHuntRouter item management endpoints", () => {
 
     test("can add item without deletedAt (normal behavior)", async () => {
       const newItem = {
-        code: "NORMAL-001", // 10 characters (max 12)
+        code: "NORMAL-001",
         points: 25,
         description: "Normal item without scheduled deletion",
         // deletedAt not provided
@@ -1050,7 +1050,7 @@ describe("scavengerHuntRouter item management endpoints", () => {
     test("item with past deletedAt is immediately considered deleted", async () => {
       const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
       const newItem = {
-        code: "PAST-DEL", // 8 characters (max 12)
+        code: "PAST-DEL",
         points: 30,
         description: "Item with past deletion time",
         deletedAt: pastDate,
@@ -1308,7 +1308,7 @@ describe("scavengerHuntRouter item management endpoints", () => {
       expect(scansAfter[0]?.itemId).toBe(testItem2.id);
     });
 
-    test("deducts points from balance when deleting scan", async () => {
+    test("deducts points from balance and earned balance when deleting scan", async () => {
       // Scan an item to give the user points
       await organizerCaller.scavengerHunt.scan({
         userId: testUser.user.id,
@@ -1333,8 +1333,7 @@ describe("scavengerHuntRouter item management endpoints", () => {
         where: eq(users.id, testUser.user.id),
       });
       expect(userAfter?.scavengerHuntBalance).toBe(0);
-      // Earned points should remain (they track lifetime earnings)
-      expect(userAfter?.scavengerHuntEarned).toBe(testItem.points);
+      expect(userAfter?.scavengerHuntEarned).toBe(0);
     });
 
     test("deducts correct points when deleting scan with multiple items", async () => {
@@ -1367,6 +1366,7 @@ describe("scavengerHuntRouter item management endpoints", () => {
         where: eq(users.id, testUser.user.id),
       });
       expect(userAfter?.scavengerHuntBalance).toBe(testItem2.points);
+      expect(userAfter?.scavengerHuntEarned).toBe(testItem2.points);
     });
 
     test("throws error when scan does not exist for user", async () => {
