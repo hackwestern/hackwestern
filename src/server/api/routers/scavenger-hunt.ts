@@ -432,9 +432,9 @@ export const scavengerHuntRouter = createTRPCRouter({
               ),
             );
 
-            // Deduct points
-            await addPoints(tx, userId, -scavengerHuntItem.points, true);
-          });
+          // Deduct points
+          await addPoints(tx, userId, -scavengerHuntItem.points, true);
+        });
 
         return {
           success: true,
