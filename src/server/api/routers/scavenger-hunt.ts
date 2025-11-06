@@ -41,6 +41,7 @@ export const addPoints = async (
   tx: Transaction,
   userId: string,
   points: number,
+  decrementEarnedBalance = false,
 ) => {
   return withErrorHandling(
     async () => {
@@ -48,7 +49,7 @@ export const addPoints = async (
         scavengerHuntBalance: sql`scavenger_hunt_balance + ${points}`,
       };
 
-      if (points > 0) {
+      if (points > 0 || decrementEarnedBalance) {
         updateData.scavengerHuntEarned = sql`scavenger_hunt_earned + ${points}`;
       }
 
@@ -444,7 +445,7 @@ export const scavengerHuntRouter = createTRPCRouter({
             ));
 
             // Deduct points
-            await addPoints(tx, userId, -scavengerHuntItem.points ?? 0);
+            await addPoints(tx, userId, -scavengerHuntItem.points, true);
           });
 
           return {
