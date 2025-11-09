@@ -334,57 +334,57 @@ export const applicationRouter = createTRPCRouter({
   }),
 
   bulkUpdateStatusByEmails: protectedOrganizerProcedure
-  .input(
-    z.object({
-      emails: z.array(z.string().email()).min(1),
-      status: z.enum([
-        "IN_PROGRESS",
-        "PENDING_REVIEW",
-        "IN_REVIEW",
-        "ACCEPTED",
-        "REJECTED",
-        "WAITLISTED",
-        "DECLINED",
-      ] as const),
+    .input(
+      z.object({
+        emails: z.array(z.string().email()).min(1),
+        status: z.enum([
+          "IN_PROGRESS",
+          "PENDING_REVIEW",
+          "IN_REVIEW",
+          "ACCEPTED",
+          "REJECTED",
+          "WAITLISTED",
+          "DECLINED",
+        ] as const),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { emails, status } = input;
+      try {
+        const result = await db.transaction(async (tx) => {
+          const userRows = await tx
+            .select({ id: users.id })
+            .from(users)
+            .where(inArray(users.email, emails));
+
+          const userIds = userRows.map((r) => r.id);
+          if (userIds.length === 0) {
+            return { matched: 0, updated: 0 };
+          }
+
+          const updateRes = await tx
+            .update(applications)
+            .set({ status, updatedAt: new Date() })
+            .where(inArray(applications.userId, userIds));
+
+          // drizzle's update may not always expose rowCount across drivers; fall back to matched count
+          let updatedCount = userIds.length;
+          if (
+            updateRes &&
+            typeof updateRes === "object" &&
+            "rowCount" in updateRes &&
+            typeof (updateRes as { rowCount?: unknown }).rowCount === "number"
+          ) {
+            updatedCount = (updateRes as { rowCount: number }).rowCount;
+          }
+          return { matched: userIds.length, updated: updatedCount };
+        });
+        return result;
+      } catch (err: unknown) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to bulk update status: " + String(err),
+        });
+      }
     }),
-  )
-  .mutation(async ({ input }) => {
-    const { emails, status } = input;
-    try {
-      const result = await db.transaction(async (tx) => {
-        const userRows = await tx
-          .select({ id: users.id })
-          .from(users)
-          .where(inArray(users.email, emails));
-
-        const userIds = userRows.map((r) => r.id);
-        if (userIds.length === 0) {
-          return { matched: 0, updated: 0 };
-        }
-
-        const updateRes = await tx
-          .update(applications)
-          .set({ status, updatedAt: new Date() })
-          .where(inArray(applications.userId, userIds));
-
-        // drizzle's update may not always expose rowCount across drivers; fall back to matched count
-        let updatedCount = userIds.length;
-        if (
-          updateRes &&
-          typeof updateRes === "object" &&
-          "rowCount" in updateRes &&
-          typeof (updateRes as { rowCount?: unknown }).rowCount === "number"
-        ) {
-          updatedCount = (updateRes as { rowCount: number }).rowCount;
-        }
-        return { matched: userIds.length, updated: updatedCount };
-      });
-      return result;
-    } catch (err: unknown) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to bulk update status: " + String(err),
-      });
-    }
-  }),
 });

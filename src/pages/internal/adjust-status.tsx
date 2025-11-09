@@ -111,7 +111,11 @@ export default function AdjustStatus() {
       setFileName("");
       setStatus(undefined);
     } catch (err) {
-      toast({ title: "Update failed", description: String(err), variant: "destructive" });
+      toast({
+        title: "Update failed",
+        description: String(err),
+        variant: "destructive",
+      });
     } finally {
       setPending(false);
     }
@@ -127,15 +131,20 @@ export default function AdjustStatus() {
         <div className="z-10 w-full max-w-3xl rounded-lg bg-background/90 p-6 shadow-md backdrop-blur-sm">
           <h1 className="mb-2 font-dico text-3xl text-heavy">Adjust Status</h1>
           <p className="mb-6 text-sm text-medium">
-            Upload a CSV of emails, select a status, and save. All matched applications will be updated in a single transaction.
+            Upload a CSV of emails, select a status, and save. All matched
+            applications will be updated in a single transaction.
           </p>
 
           <div className="mb-6">
-            <h2 className="mb-2 font-figtree text-medium">Upload CSV of Emails</h2>
+            <h2 className="mb-2 font-figtree text-medium">
+              Upload CSV of Emails
+            </h2>
             <Input
               type="file"
               accept=".csv,text/csv,text/plain"
-              onChange={(e) => void handleFileChange(e.target.files?.[0] ?? null)}
+              onChange={(e) =>
+                void handleFileChange(e.target.files?.[0] ?? null)
+              }
             />
             {fileName && (
               <div className="mt-2 text-sm text-gray-600">{fileName}</div>
@@ -169,7 +178,10 @@ export default function AdjustStatus() {
 
           <div className="mb-6">
             <h2 className="mb-2 font-figtree text-medium">Select New Status</h2>
-            <Select value={status} onValueChange={(v) => setStatus(v as Status)}>
+            <Select
+              value={status}
+              onValueChange={(v) => setStatus(v as Status)}
+            >
               <SelectTrigger className="w-64">
                 <SelectValue placeholder="Choose status" />
               </SelectTrigger>
@@ -198,5 +210,3 @@ export default function AdjustStatus() {
     </>
   );
 }
-
-
