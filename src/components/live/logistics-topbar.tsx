@@ -29,7 +29,7 @@ const LogisticsTopbar = () => {
         <DrawerContent>
           <DrawerHeader>
             <div className="flex flex-col gap-4">
-              <h1 className="font-jetbrains-mono text-heavy font-semibold">OVERVIEW</h1>
+              <h1 className="font-jetbrains-mono text-heavy font-semibold">EVENT LOGISTICS OVERVIEW</h1>
               <div className="flex flex-col gap-2">
                 {logisticsData.map((s) => (
                   <LogisticsLink key={s[0]} step={s[0]} name={s[1]}/>

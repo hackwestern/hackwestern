@@ -34,7 +34,7 @@ export const IconlessLink = ({ tab, name }: {tab: string; name: string}) => {
 
     return (
         <>
-        {miscLogisticsTab ? (
+        {(eventLogisticsTab || miscLogisticsTab) ? (
             <Link
             href={`live/?tab=event-logistics&step=${step}`}
             className={`flex gap-3 px-4 py-3 font-figtree ${isActive ? "bg-primary-300 text-heavy" : "text-medium"} rounded-md transition-all hover:bg-primary-300`}
