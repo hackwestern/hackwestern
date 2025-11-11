@@ -2,7 +2,10 @@ import { api } from "~/utils/api";
 import { Button } from "../ui/button";
 import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
+import Construction from "~/components/live/construction";
+
 const Home = () => {
+  /*
   const { data: application } = api.application.get.useQuery({
     fields: ["firstName"],
   });
@@ -84,6 +87,10 @@ const Home = () => {
       </div>
     </div>
   );
+  */
+  return (
+    <Construction />
+  )
 };
 
 const QuickLinks = () => {

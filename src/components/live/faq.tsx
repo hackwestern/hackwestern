@@ -6,10 +6,15 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "../ui/accordion";
+import Construction from "~/components/live/construction";
 
 const FAQ_ITEMS = [...HACKATHON_FAQ];
 
 const FAQ = () => {
+  return (
+    <Construction />
+  )
+  /*
   return (
     <div className="px-10 py-10 md:gap-8">
       <Accordion
@@ -33,6 +38,7 @@ const FAQ = () => {
       </Accordion>
     </div>
   );
+  */
 };
 
 export default FAQ;
