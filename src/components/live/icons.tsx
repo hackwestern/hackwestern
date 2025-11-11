@@ -1,5 +1,5 @@
-const SELECTED = "#6D3EBA";
-const UNSELECTED = "#302344";
+const SELECTED = "#3d214c";
+const UNSELECTED = "#776780";
 
 const HomeIcon = ({ selected }: { selected: boolean }) => {
   return (

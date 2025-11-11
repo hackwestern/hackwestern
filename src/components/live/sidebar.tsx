@@ -17,28 +17,36 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="hidden h-screen w-1/4 flex-col justify-between bg-violet-100 px-4 py-8 md:flex lg:px-8 2xl:w-1/5 2xl:px-10 3xl:w-1/6 3xl:px-16">
+    <div className="hidden h-screen w-1/4 flex-col justify-between bg-highlight px-4 py-8 md:flex lg:px-6 2xl:w-1/5 2xl:px-8 3xl:w-1/6 3xl:px-12">
       <div>
         <Link
-          className="py-auto font-MagicRetro flex gap-4 text-center text-xl lg:text-2xl"
+          className="py-auto font-figtree font-bold text-heavy flex gap-4 text-center text-lg lg:text-xl"
           href="/"
         >
           <Horsey />
-          <div className="flex flex-col justify-center">hack western 11</div>
+          <div className="flex flex-col justify-center">Hack Western 12</div>
         </Link>
+        <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2 pt-8">
           <SectionLink tab="home" name="Home" />
           <SectionLink tab="schedule" name="Schedule" />
           <SectionLink tab="map" name="Map" />
+          <SectionLink tab="food-menu" name="Food Menu" />
           <SectionLink tab="mentors" name="Mentors" />
           <SectionLink tab="sponsors" name="Sponsors" />
-          <SectionLink tab="faq" name="FAQ" />
+        </div>
+        <hr className="border-[#ebdff7]"/>
+        <div className="flex flex-col gap-2">
+          <IconlessLink tab="event-logistics" name="Event Logistics" />
+          <IconlessLink tab="contact-us" name="Contact Us" />
+          <IconlessLink tab="faq" name="FAQ" />
+        </div>
         </div>
       </div>
       <Button
         onClick={logout}
         variant="ghost"
-        className="w-fit border border-primary-400 text-base text-violet-600"
+        className="w-fit border border-light text-base text-medium"
       >
         Logout
       </Button>
@@ -53,7 +61,7 @@ const SectionLink = ({ tab, name }: { tab: string; name: string }) => {
   return (
     <Link
       href={`live/?tab=${tab}`}
-      className={`flex gap-3 px-4 py-2.5 ${isActive && "bg-primary-300 text-primary-600"} rounded-xl transition-all hover:bg-primary-300`}
+      className={`flex gap-3 px-4 py-1.5 font-figtree ${isActive ? "bg-primary-300 text-heavy" : "text-medium"} rounded-md transition-all hover:bg-primary-300`}
     >
       <div className="py-2">
         <SidebarIcon icon={tab} selected={isActive} />
@@ -62,5 +70,19 @@ const SectionLink = ({ tab, name }: { tab: string; name: string }) => {
     </Link>
   );
 };
+
+const IconlessLink = ({ tab, name }: {tab: string; name: string}) => {
+  const searchParams = useSearchParams();
+  const isActive = searchParams.get("tab") === tab;
+
+  return (
+    <Link
+      href={`live/?tab=${tab}`}
+      className={`flex gap-3 px-4 py-3 font-figtree ${isActive ? "bg-primary-300 text-heavy" : "text-medium"} rounded-md transition-all hover:bg-primary-300`}
+    >
+      <div className="flex flex-col justify-center font-medium">{name}</div>
+    </Link>
+  )
+}
 
 export default Sidebar;
