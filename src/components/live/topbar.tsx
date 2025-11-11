@@ -28,24 +28,24 @@ const Topbar = () => {
   };
 
   const sectionLinks: [string, string][] = [
-    ["home", "Home"], 
-    ["schedule", "Schedule"], 
-    ["map", "Map"], 
-    ["food-menu", "Food Menu"], 
-    ["mentors", "Mentors"], 
-    ["sponsors", "Sponsors"]
+    ["home", "Home"],
+    ["schedule", "Schedule"],
+    ["map", "Map"],
+    ["food-menu", "Food Menu"],
+    ["mentors", "Mentors"],
+    ["sponsors", "Sponsors"],
   ];
 
   const logisticsLinks: [string, string][] = [
     ["event-logistics", "Event Logistics"],
     ["contact-us", "Contact Us"],
-    ["faq", "FAQ"]
-  ]
+    ["faq", "FAQ"],
+  ];
 
   return (
     <div className="flex justify-between border border-[#ebdff7] bg-highlight p-3 md:hidden">
       <Horsey />
-      <div className="flex flex-col justify-center text-2xl font-dico text-heavy">
+      <div className="flex flex-col justify-center font-dico text-2xl text-heavy">
         {title}
       </div>
       <Drawer>
@@ -58,21 +58,17 @@ const Topbar = () => {
         </div>
         <DrawerContent>
           <DrawerHeader>
-            {sectionLinks.map(
-              (s) => (
-                <DrawerClose key={s[0]} asChild>
-                  <SectionLink tab={s[0]} name={s[1]} />
-                </DrawerClose>
-              ),
-            )}
-            <hr className="border-[#ebdff7]"/>
-            {logisticsLinks.map(
-              (s) => (
-                <DrawerClose key={s[0]} asChild>
-                  <IconlessLink tab={s[0]} name={s[1]} />
-                </DrawerClose>
-              ),
-            )}
+            {sectionLinks.map((s) => (
+              <DrawerClose key={s[0]} asChild>
+                <SectionLink tab={s[0]} name={s[1]} />
+              </DrawerClose>
+            ))}
+            <hr className="border-[#ebdff7]" />
+            {logisticsLinks.map((s) => (
+              <DrawerClose key={s[0]} asChild>
+                <IconlessLink tab={s[0]} name={s[1]} />
+              </DrawerClose>
+            ))}
             <Button
               onClick={logout}
               variant="ghost"

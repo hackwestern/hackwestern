@@ -37,8 +37,10 @@ const Live = () => {
       <div className="flex h-screen w-screen flex-col md:flex-row">
         <Topbar />
         <Sidebar />
-        <div className="flex max-h-screen min-h-screen w-screen flex-col bg-white p-5 sm:p-10 gap-8 sm:gap-12">
-          <div className="hidden md:flex text-xl xl:text-2xl 2xl:text-3xl text-heavy font-dico">{title}</div>
+        <div className="flex max-h-screen min-h-screen w-screen flex-col gap-8 bg-white p-5 sm:gap-12 sm:p-10">
+          <div className="hidden font-dico text-xl text-heavy md:flex xl:text-2xl 2xl:text-3xl">
+            {title}
+          </div>
           <div className="flex-1 overflow-hidden">
             <TabComponent tab={tab} />
           </div>
@@ -65,7 +67,7 @@ const TabComponent = ({ tab }: { tab: string }) => {
     case "event-logistics":
       return <EventLogistics />;
     case "contact-us":
-      return <ContactUs />
+      return <ContactUs />;
     case "faq":
       return <FAQ />;
     default:

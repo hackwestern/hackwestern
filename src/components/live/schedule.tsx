@@ -3,9 +3,7 @@ import { useState } from "react";
 import Construction from "~/components/live/construction";
 
 const Schedule = () => {
-  return (
-    <Construction />
-  )
+  return <Construction />;
   /*
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
 

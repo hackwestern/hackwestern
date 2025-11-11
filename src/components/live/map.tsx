@@ -2,9 +2,7 @@ import Image from "next/image";
 import Construction from "~/components/live/construction";
 
 const Map = () => {
-  return (
-    <Construction />
-  )
+  return <Construction />;
   /*
   return (
     <div className="w-fill mb-8 flex h-full flex-col gap-3 p-5 sm:p-10">

@@ -1,9 +1,7 @@
 import Construction from "~/components/live/construction";
 
 const ContactUs = () => {
-  return (
-    <Construction />
-  );
+  return <Construction />;
 };
 
 export default ContactUs;
