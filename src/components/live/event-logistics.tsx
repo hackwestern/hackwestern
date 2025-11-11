@@ -40,19 +40,19 @@ const EventLogistics = () => {
   useEffect(() => {
     const saved = localStorage.getItem("packingListChecked");
     if (saved) {
-        try {
-            const parsed = JSON.parse(saved) as Record<string, boolean>;
-            setCheckedItems(parsed);
-        } catch (error) {
-            console.error("Failed to parse packing list data:", error);
-            const initialState: Record<string, boolean> = {};
-            PackingList.forEach((item) => (initialState[item.id] = false));
-            setCheckedItems(initialState);
-        }
-    } else {
+      try {
+        const parsed = JSON.parse(saved) as Record<string, boolean>;
+        setCheckedItems(parsed);
+      } catch (error) {
+        console.error("Failed to parse packing list data:", error);
         const initialState: Record<string, boolean> = {};
         PackingList.forEach((item) => (initialState[item.id] = false));
         setCheckedItems(initialState);
+      }
+    } else {
+      const initialState: Record<string, boolean> = {};
+      PackingList.forEach((item) => (initialState[item.id] = false));
+      setCheckedItems(initialState);
     }
     setLoaded(true);
   }, []);
