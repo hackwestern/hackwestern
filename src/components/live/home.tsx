@@ -88,9 +88,7 @@ const Home = () => {
     </div>
   );
   */
-  return (
-    <Construction />
-  )
+  return <Construction />;
 };
 
 const QuickLinks = () => {

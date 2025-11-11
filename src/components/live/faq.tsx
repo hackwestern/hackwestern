@@ -11,9 +11,7 @@ import Construction from "~/components/live/construction";
 const FAQ_ITEMS = [...HACKATHON_FAQ];
 
 const FAQ = () => {
-  return (
-    <Construction />
-  )
+  return <Construction />;
   /*
   return (
     <div className="px-10 py-10 md:gap-8">
