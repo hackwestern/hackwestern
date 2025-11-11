@@ -20,7 +20,4 @@ Sleeping Rooms:
 Parking will be available for free after 4pm on Friday and all weekend in the Social Science, Springett, and Alumni/Thomson parking lots on a first-come first-serve basis. Parking during other hours incurs a $1.50/30 min fee. Additional free weekend parking is available around campus during the weekend, visit <https://uwo.ca/parking/find/map.html> for more information.
 
 # 🙌 Mentorship  
-To ask for help from mentors, reach out in the #ask-mentors channel on Slack with your request and location in the building!
-
-# 📶 Wifi  
-If you are a Western Student, please use uwosecure-v2. If you are not a Western student, please use “HACKW24”. The password for the network is 4H!a@2cK
+To ask for help from mentors, reach out in the **#ask-mentors** channel on Slack with your request and location in the building!
