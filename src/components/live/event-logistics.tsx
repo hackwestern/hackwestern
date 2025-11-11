@@ -40,13 +40,20 @@ const EventLogistics = () => {
   useEffect(() => {
     const saved = localStorage.getItem("packingListChecked");
     if (saved) {
-      setCheckedItems(JSON.parse(saved));
+        try {
+            const parsed = JSON.parse(saved) as Record<string, boolean>;
+            setCheckedItems(parsed);
+        } catch (error) {
+            console.error("Failed to parse packing list data:", error);
+            const initialState: Record<string, boolean> = {};
+            PackingList.forEach((item) => (initialState[item.id] = false));
+            setCheckedItems(initialState);
+        }
     } else {
-      const initialState: Record<string, boolean> = {};
-      PackingList.forEach((item) => (initialState[item.id] = false));
-      setCheckedItems(initialState);
+        const initialState: Record<string, boolean> = {};
+        PackingList.forEach((item) => (initialState[item.id] = false));
+        setCheckedItems(initialState);
     }
-    localStorage.setItem("step", step.toString());
     setLoaded(true);
   }, []);
 
@@ -183,13 +190,13 @@ const EventLogistics = () => {
                 />
               ),
               b: ({ node, ...props }) => (
-                <p
+                <b
                   className="mb-4 font-figtree font-bold leading-relaxed text-medium"
                   {...props}
                 />
               ),
               i: ({ node, ...props }) => (
-                <p
+                <i
                   className="font-italic mb-4 font-figtree leading-relaxed text-medium"
                   {...props}
                 />
