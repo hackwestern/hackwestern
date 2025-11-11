@@ -96,7 +96,7 @@ const EventLogistics = () => {
                         {step !== 1 &&
                             <Button 
                                 variant="secondary"
-                                className="px-5"
+                                className="px-2 md:px-5"
                                 onClick={() => {
                                     const newStep = step - 1;
                                     router.push(`live/?tab=event-logistics&step=${newStep.toString()}`)
@@ -108,7 +108,7 @@ const EventLogistics = () => {
                         {step !== 6 &&
                             <Button 
                                 variant="secondary"
-                                className="px-5"
+                                className="px-2 md:px-5"
                                 onClick={() => {
                                     const newStep = step + 1;
                                     router.push(`live/?tab=event-logistics&step=${newStep.toString()}`)
@@ -170,11 +170,11 @@ const EventLogistics = () => {
                         {markdownContent}
                     </ReactMarkdown>
                 )}
-                <div className="flex flex-row justify-between mt-8">
+                <div className="flex flex-col items-end gap-4 md:flex-row md:justify-between mt-8">
                 {step !== 1 &&
                     <Button
                         variant="tertiary"
-                        className="text-lg"
+                        className="text-base md:text-lg"
                         onClick={() => {
                             const newStep = step - 1;
                             router.push(`live/?tab=event-logistics&step=${newStep.toString()}`)
@@ -202,7 +202,7 @@ const EventLogistics = () => {
                     </>) :(
                     <Button
                         variant="tertiary"
-                        className="text-lg"
+                        className="text-base md:text-lg"
                         onClick={() => {
                             const newStep = step + 1;
                             router.push(`live/?tab=event-logistics&step=${newStep.toString()}`)
@@ -222,7 +222,7 @@ const EventLogistics = () => {
 
 const LogisticsSidebar = () => {
     return (
-        <div className="flex flex-col gap-4 bg-highlight h-fit w-fit rounded-2xl p-4 mx-12">
+        <div className="hidden md:flex flex-col gap-4 bg-highlight h-fit w-fit rounded-2xl p-4 mx-12">
             <h1 className="font-jetbrains-mono text-heavy font-semibold">OVERVIEW</h1>
             <div className="flex flex-col gap-2">
                 <LogisticsLink step="1" name="Packing List" />

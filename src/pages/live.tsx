@@ -13,10 +13,14 @@ import Sidebar from "~/components/live/sidebar";
 import Topbar from "~/components/live/topbar";
 import { type GetServerSidePropsContext } from "next";
 import { notVerifiedRedirectDashboard } from "~/utils/redirect";
+import { getServerSession } from "next-auth";
+import { authOptions } from "~/server/auth";
+import { db } from "~/server/db";
+import { formatTitle } from "~/utils/format";
 
 const Live = () => {
   const searchParams = useSearchParams();
-  const tab = searchParams.get("tab") ?? "home";
+  const tab = searchParams.get("tab") ?? "event-logistics";
 
   const title = formatTitle(tab);
 
@@ -34,7 +38,7 @@ const Live = () => {
         <Topbar />
         <Sidebar />
         <div className="flex max-h-screen min-h-screen w-screen flex-col bg-white p-5 sm:p-10 gap-8 sm:gap-12">
-          <div className="text-xl xl:text-2xl 2xl:text-3xl text-heavy font-dico">{title}</div>
+          <div className="hidden md:flex text-xl xl:text-2xl 2xl:text-3xl text-heavy font-dico">{title}</div>
           <div className="flex-1 overflow-hidden">
             <TabComponent tab={tab} />
           </div>
@@ -69,26 +73,42 @@ const TabComponent = ({ tab }: { tab: string }) => {
   }
 };
 
-function formatTitle( tab: string ): string {
-  const multipleWords = tab.includes("-");
-
-  if (multipleWords) {
-    const splitWords = tab.split("-");
-    return splitWords.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")
-  }
-  if (tab === "faq") {
-    return tab.toUpperCase();
-  }
-  else {
-    return tab.charAt(0).toUpperCase() + tab.slice(1);
-  }
-}
-
 export default Live;
 
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
+  // run existing verification redirect first
   const verification = await notVerifiedRedirectDashboard(context);
-  return verification;
+  if ("redirect" in verification) return verification;
+
+  try {
+    const session = await getServerSession(
+      context.req,
+      context.res,
+      authOptions,
+    );
+    if (!session) return verification;
+
+    const userId = session.user.id;
+
+    const application = await db.query.applications.findFirst({
+      where: (schema, { eq }) => eq(schema.userId, userId),
+    });
+
+    const status = application?.status ?? "NOT_STARTED";
+
+    if (status !== "ACCEPTED") {
+      return {
+        redirect: {
+          destination: "/dashboard",
+          permanent: false,
+        },
+      };
+    }
+
+    return verification;
+  } catch (err) {
+    return verification;
+  }
 };

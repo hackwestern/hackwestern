@@ -304,8 +304,6 @@ const SidebarIcon = ({
       return <MentorsIcon selected={selected} />;
     case "sponsors":
       return <SponsorsIcon selected={selected} />;
-    case "faq":
-      return <FAQIcon selected={selected} />;
     default:
       return <HomeIcon selected={selected} />;
   }

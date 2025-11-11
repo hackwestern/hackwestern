@@ -183,7 +183,7 @@ export const getServerSideProps = async (
     if (status === "ACCEPTED") {
       return {
         redirect: {
-          destination: "/dashboard",
+          destination: "/live",
           permanent: false,
         },
       };
