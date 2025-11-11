@@ -35,7 +35,7 @@ const Live = () => {
         <Sidebar />
         <div className="flex max-h-screen min-h-screen w-screen flex-col bg-white p-5 sm:p-10 gap-8 sm:gap-12">
           <div className="text-xl xl:text-2xl 2xl:text-3xl text-heavy font-dico">{title}</div>
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-hidden">
             <TabComponent tab={tab} />
           </div>
         </div>

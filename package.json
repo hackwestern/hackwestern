@@ -71,6 +71,7 @@
     "react-day-picker": "^9.6.3",
     "react-dom": "19.0.0",
     "react-hook-form": "^7.51.5",
+    "react-markdown": "^10.1.0",
     "react-scan": "^0.4.3",
     "resend": "^4.3.0",
     "sonner": "^2.0.5",

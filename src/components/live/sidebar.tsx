@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Horsey, SidebarIcon } from "./icons";
-import { useSearchParams } from "next/navigation";
+import { Horsey } from "./icons";
 import { Button } from "../ui/button";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/router";
+import { SectionLink, IconlessLink } from "./navlinks";
 
 const Sidebar = () => {
   const router = useRouter();
@@ -53,36 +53,5 @@ const Sidebar = () => {
     </div>
   );
 };
-
-const SectionLink = ({ tab, name }: { tab: string; name: string }) => {
-  const searchParams = useSearchParams();
-  const isActive = searchParams.get("tab") === tab;
-
-  return (
-    <Link
-      href={`live/?tab=${tab}`}
-      className={`flex gap-3 px-4 py-1.5 font-figtree ${isActive ? "bg-primary-300 text-heavy" : "text-medium"} rounded-md transition-all hover:bg-primary-300`}
-    >
-      <div className="py-2">
-        <SidebarIcon icon={tab} selected={isActive} />
-      </div>
-      <div className="flex flex-col justify-center font-medium">{name}</div>
-    </Link>
-  );
-};
-
-const IconlessLink = ({ tab, name }: {tab: string; name: string}) => {
-  const searchParams = useSearchParams();
-  const isActive = searchParams.get("tab") === tab;
-
-  return (
-    <Link
-      href={`live/?tab=${tab}`}
-      className={`flex gap-3 px-4 py-3 font-figtree ${isActive ? "bg-primary-300 text-heavy" : "text-medium"} rounded-md transition-all hover:bg-primary-300`}
-    >
-      <div className="flex flex-col justify-center font-medium">{name}</div>
-    </Link>
-  )
-}
 
 export default Sidebar;
