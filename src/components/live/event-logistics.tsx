@@ -12,12 +12,12 @@ const EventLogistics = () => {
     const searchParams = useSearchParams();
     const step = searchParams.get("step") ? parseInt(searchParams.get("step")!, 10) : 1;
     
-    const [markdownId, setMarkdownId] = useState('');
     const [markdownContent, setMarkdownContent] = useState('');
     
     const [title, setTitle] = useState('');
     const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
     const [loaded, setLoaded] = useState(false);
+    const allTitles = ["Packing List", "Communications", "Housekeeping", "General & Project Rules", "Contact Us", "Frequently Asked Questions"]
 
     // Handler for checkbox
     const handleToggle = (id: string, checked: boolean) => {
@@ -49,34 +49,35 @@ const EventLogistics = () => {
     }, [checkedItems, loaded]);
 
     useEffect(() => {
+        let id = "";
         switch (step) {
             case 1:
                 setTitle("PACKING LIST");
-                setMarkdownId("packing-list")
+                id = "packing-list";
                 break;
             case 2:
                 setTitle("COMMUNICATIONS");
-                setMarkdownId("communications")
+                id = "communications";
                 break;
             case 3:
                 setTitle("HOUSEKEEPING");
-                setMarkdownId("housekeeping")
+                id = "housekeeping";
                 break;
             case 4:
                 setTitle("GENERAL & PROJECT RULES");
-                setMarkdownId("general-project-rules")
+                id = "general-project-rules";
                 break;
             case 5:
                 setTitle("CONTACT US");
-                setMarkdownId("contact-us")
+                id = "contact-us";
                 break;
             case 6:
                 setTitle("FREQUENTLY ASKED QUESTIONS");
-                setMarkdownId("faq")
+                id = "faq";
                 break;
         }
         if (step !== 1) {
-            fetch(`/live-logistics/${step}.md`) 
+            fetch(`/live-logistics/${id}.md`) 
             .then((response) => response.text())
             .then((text) => setMarkdownContent(text))
             .catch((error) => console.error('Error fetching markdown:', error));
@@ -84,12 +85,12 @@ const EventLogistics = () => {
     }, [step]);
     
     return (
-        <div className="flex flex-row h-screen">
+        <div className="flex flex-row h-full pr-2">
             <div className="overflow-auto flex-1">
                 <div className="flex flex-row items-center justify-between mb-4 mr-2">
                     <div className="flex flex-col gap-2">
                         <p className="font-figtree text-light">Page {step} of 6</p>
-                        <h1 className="font-jetbrains-mono text-medium text-xl">{title}</h1>
+                        <h1 className="font-jetbrains-mono text-medium text-2xl">{title}</h1>
                     </div>
                     <div className="flex flex-row gap-2">
                         {step !== 1 &&
@@ -136,10 +137,83 @@ const EventLogistics = () => {
                     })
                 ) :
                 (
-                    <ReactMarkdown>
+                    <ReactMarkdown
+                        components={{
+                        h1: ({ node, ...props }) => (
+                            <h1 className="text-2xl font-figtree font-medium text-heavy mt-8 mb-4" {...props} />
+                        ),
+                        p: ({ node, ...props }) => (
+                            <p className="font-figtree text-medium leading-relaxed mb-4" {...props} />
+                        ),
+                        a: ({ node, ...props }) => (
+                            <a
+                            className="text-medium underline hover:text-light leading-relaxed transition-colors"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            {...props}
+                            />
+                        ),
+                        b: ({ node, ...props }) => (
+                            <p className="font-bold font-figtree text-medium leading-relaxed mb-4" {...props} />
+                        ),
+                        i: ({ node, ...props }) => (
+                            <p className="font-italic font-figtree text-medium leading-relaxed mb-4" {...props} />
+                        ),
+                        ul: ({ node, ...props }) => (
+                            <ul className="list-disc pl-6 mb-4 space-y-1 font-figtree text-medium" {...props} />
+                        ),
+                        ol: ({ node, ...props }) => (
+                            <ol className="list-decimal pl-6 mb-4 space-y-1 font-figtree text-medium" {...props} />
+                        )
+                        }}
+                    >
                         {markdownContent}
-                    </ReactMarkdown>)
+                    </ReactMarkdown>
+                )}
+                <div className="flex flex-row justify-between mt-8">
+                {step !== 1 &&
+                    <Button
+                        variant="tertiary"
+                        className="text-lg"
+                        onClick={() => {
+                            const newStep = step - 1;
+                            router.push(`live/?tab=event-logistics&step=${newStep.toString()}`)
+                        }}
+                    >
+                        <ArrowLeftIcon width={16}/>
+                        Back: {allTitles[step - 2]}
+                    </Button>
                 }
+                {step !== 6 &&
+                (step === 1 ? (
+                    <>
+                        <div></div>
+                        <Button
+                        variant="tertiary"
+                        className="text-lg"
+                        onClick={() => {
+                            const newStep = step + 1;
+                            router.push(`live/?tab=event-logistics&step=${newStep.toString()}`)
+                        }}
+                        >
+                            <ArrowRightIcon width={16}/>
+                            Next: {allTitles[step]}
+                        </Button>
+                    </>) :(
+                    <Button
+                        variant="tertiary"
+                        className="text-lg"
+                        onClick={() => {
+                            const newStep = step + 1;
+                            router.push(`live/?tab=event-logistics&step=${newStep.toString()}`)
+                        }}
+                    >
+                        <ArrowRightIcon width={16}/>
+                        Next: {allTitles[step]}
+                    </Button>)
+                )
+                }
+                </div>
             </div>
             <LogisticsSidebar />
         </div>
