@@ -1,6 +1,6 @@
 import ReactMarkdown from 'react-markdown';
 import { useState, useEffect } from 'react';
-import { PackingList } from "~/constants/packingList";
+import { PackingList, Item } from "~/constants/packingList";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button"
 import { useSearchParams, useRouter } from "next/navigation";
