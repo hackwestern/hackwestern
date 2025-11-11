@@ -3,9 +3,6 @@ The first time is always intimidating, but with support from mentors, beginner-f
 
 Hack Western is a hackathon where individuals from all disciplines, majors, and backgrounds are encouraged to participate."
 
-# When do hacker applications open?
-We will be announcing hacker applications in early October. Follow our social media and sign up for our mailing list by pre-registering here to be the first to find out.",
-
 # How many people do I need in a team?
 Hackers can be in teams of up to 4 people, which means you could also solo hack if you wish. You do not need to tell us who your team members are, simply add them to your Devpost submission before the deadline."
 
