@@ -9,6 +9,7 @@ import { Input } from "~/components/ui/input";
 import { useState, useMemo } from "react";
 import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
+import { isValidEmail } from "~/lib/utils";
 import {
   Select,
   SelectContent,
@@ -61,7 +62,7 @@ export default function AdjustStatus() {
     for (const e of emails) {
       const trimmed = e.trim().toLowerCase();
       if (!trimmed) continue;
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) continue;
+      if (!isValidEmail(trimmed)) continue;
       if (!seen.has(trimmed)) {
         seen.add(trimmed);
         out.push(trimmed);
