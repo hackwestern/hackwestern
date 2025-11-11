@@ -94,15 +94,20 @@ const Internal = () => {
       <div className="z-10 mb-3 text-sm">
         {reviewData?.length} applications reviewed!
       </div>
-      {nextReviewId ? (
-        <Button asChild className="z-10" variant="primary">
-          <Link href={`/internal/review?applicant=${nextReviewId}`}>
-            Review Next
-          </Link>
+      <div className="z-10 mb-3 flex gap-3">
+        {nextReviewId ? (
+          <Button asChild variant="primary">
+            <Link href={`/internal/review?applicant=${nextReviewId}`}>
+              Review Next
+            </Link>
+          </Button>
+        ) : (
+          <div>All reviews completed! 🎉</div>
+        )}
+        <Button asChild variant="primary">
+          <Link href="/internal/adjust-status">Adjust Status</Link>
         </Button>
-      ) : (
-        <div className="z-10">All reviews completed! 🎉</div>
-      )}
+      </div>
       <Input
         className="z-10 mb-4 mt-3 w-96"
         placeholder="Search by name or email"
