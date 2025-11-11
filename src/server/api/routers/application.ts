@@ -367,7 +367,7 @@ export const applicationRouter = createTRPCRouter({
             .set({ status, updatedAt: new Date() })
             .where(inArray(applications.userId, userIds));
 
-          // drizzle's update may not always expose rowCount across drivers; fall back to matched count
+          // drizzle's update may not always expose rowCount across drivers; fall back to querying actual count
           let updatedCount = userIds.length;
           if (
             updateRes &&
@@ -376,6 +376,13 @@ export const applicationRouter = createTRPCRouter({
             typeof (updateRes as { rowCount?: unknown }).rowCount === "number"
           ) {
             updatedCount = (updateRes as { rowCount: number }).rowCount;
+          } else {
+            // Query the actual count of applications for these users
+            const countResult = await tx
+              .select({ count: count() })
+              .from(applications)
+              .where(inArray(applications.userId, userIds));
+            updatedCount = countResult[0]?.count ?? 0;
           }
           return { matched: userIds.length, updated: updatedCount };
         });
