@@ -1,11 +1,12 @@
 import ReactMarkdown from 'react-markdown';
 import { useState, useEffect } from 'react';
-import { PackingList, Item } from "~/constants/packingList";
+import { PackingList } from "~/constants/packingList";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button"
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
-import { LogisticsLink } from './navlinks';
+import { LogisticsSidebar } from './logistics-sidebar';
+import LogisticsTopbar from './logistics-topbar';
 
 const EventLogistics = () => {
     const router = useRouter();
@@ -88,11 +89,14 @@ const EventLogistics = () => {
         <div className="flex flex-row h-full pr-2">
             <div className="overflow-auto flex-1">
                 <div className="flex flex-row items-center justify-between mb-4 mr-2">
-                    <div className="flex flex-col gap-2">
-                        <p className="font-figtree text-light">Page {step} of 6</p>
+                    <div className="flex flex-col">
+                        <div className="flex flex-row gap-2 items-center">
+                            <LogisticsTopbar />
+                            <p className="font-figtree text-light">Page {step} of 6</p>
+                        </div>
                         <h1 className="font-jetbrains-mono text-medium text-2xl">{title}</h1>
                     </div>
-                    <div className="flex flex-row gap-2">
+                    <div className="flex flex-row gap-2 pl-4">
                         {step !== 1 &&
                             <Button 
                                 variant="secondary"
@@ -119,7 +123,7 @@ const EventLogistics = () => {
                         }
                     </div>
                 </div>
-                <hr className="border-[#ebdff7] mb-8"/>
+                <hr className="h-2 border-[#ebdff7] mb-8"/>
                 {(step === 1) ? (
                     PackingList.map((item: Item) => {
                         return (
@@ -220,19 +224,4 @@ const EventLogistics = () => {
     );
 };
 
-const LogisticsSidebar = () => {
-    return (
-        <div className="hidden md:flex flex-col gap-4 bg-highlight h-fit w-fit rounded-2xl p-4 mx-12">
-            <h1 className="font-jetbrains-mono text-heavy font-semibold">OVERVIEW</h1>
-            <div className="flex flex-col gap-2">
-                <LogisticsLink step="1" name="Packing List" />
-                <LogisticsLink step="2" name="Communications" />
-                <LogisticsLink step="3" name="Housekeeping" />
-                <LogisticsLink step="4" name="Project Rules" />
-                <LogisticsLink step="5" name="Contact Us" />
-                <LogisticsLink step="6" name="FAQ" />
-            </div>
-        </div>
-    )
-}
 export default EventLogistics;

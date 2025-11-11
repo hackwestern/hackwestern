@@ -1,5 +1,5 @@
 import { useRouter, useSearchParams } from "next/navigation";
-import { Horsey, SidebarIcon } from "./icons";
+import { Horsey } from "./icons";
 import {
   Drawer,
   DrawerClose,
@@ -9,13 +9,9 @@ import {
 } from "../ui/drawer";
 import { Button } from "../ui/button";
 import { Menu } from "lucide-react";
-import Link from "next/link";
 import { SectionLink, IconlessLink } from "./navlinks";
 import { signOut } from "next-auth/react";
 import { formatTitle } from "~/utils/format";
-
-const tabName = (tab: string) =>
-  tab != "faq" ? tab.charAt(0).toUpperCase() + tab.slice(1) : tab.toUpperCase();
 
 const Topbar = () => {
   const router = useRouter();
@@ -50,7 +46,7 @@ const Topbar = () => {
     <div className="flex justify-between border border-[#ebdff7] bg-highlight p-3 md:hidden">
       <Horsey />
       <div className="flex flex-col justify-center text-2xl font-dico text-heavy">
-        {tabName(title)}
+        {title}
       </div>
       <Drawer>
         <div className="flex items-center gap-2">
