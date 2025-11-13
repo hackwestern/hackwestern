@@ -82,8 +82,9 @@ export const getServerSideProps = async (
 ) => {
   // run existing verification redirect first
   const verification = await notVerifiedRedirectDashboard(context);
-  if ("redirect" in verification) return verification;
-
+  //if ("redirect" in verification) return verification;
+  return verification;
+  /*
   try {
     const session = await getServerSession(
       context.req,
@@ -112,5 +113,5 @@ export const getServerSideProps = async (
     return verification;
   } catch (err) {
     return verification;
-  }
+  }*/
 };
