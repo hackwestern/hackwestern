@@ -24,9 +24,10 @@ html {
     --medium: #776780;
     --light: #bbb3c0;
     --emphasis: #a16bc7;
+    --active: #f0e9f7;
 
     --offwhite: #fafafb; /* bg-white */
-    --highlight: #f4f2f7;
+    --highlight: #f5f2f6;
     --tinted: #eee2fb;
     --border-light: #fffefe;
 

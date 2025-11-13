@@ -180,6 +180,15 @@ export const getServerSideProps = async (
       };
     }
 
+    if (status === "ACCEPTED") {
+      return {
+        redirect: {
+          destination: "/live",
+          permanent: false,
+        },
+      };
+    }
+
     return verification;
   } catch (err) {
     return verification;

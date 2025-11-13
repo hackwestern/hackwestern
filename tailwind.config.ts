@@ -39,6 +39,7 @@ const config = {
         salmon: "var(--salmon)",
         heavy: "var(--heavy)",
         emphasis: "var(--emphasis)",
+        active: "var(--active)",
         tinted: "var(--tinted)",
         medium: "var(--medium)",
         light: "var(--light)",
