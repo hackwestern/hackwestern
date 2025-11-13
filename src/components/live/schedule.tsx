@@ -1,7 +1,10 @@
 import Image from "next/image";
 import { useState } from "react";
+import Construction from "~/components/live/construction";
 
 const Schedule = () => {
+  return <Construction />;
+  /*
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
 
   return (
@@ -66,6 +69,7 @@ const Schedule = () => {
       <div className="my-3 border-white" />
     </div>
   );
+  */
 };
 
 export default Schedule;

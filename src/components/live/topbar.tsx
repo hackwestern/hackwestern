@@ -1,5 +1,5 @@
 import { useRouter, useSearchParams } from "next/navigation";
-import { Horsey, SidebarIcon } from "./icons";
+import { Horsey } from "./icons";
 import {
   Drawer,
   DrawerClose,
@@ -9,16 +9,15 @@ import {
 } from "../ui/drawer";
 import { Button } from "../ui/button";
 import { Menu } from "lucide-react";
-import Link from "next/link";
+import { SectionLink, IconlessLink } from "./navlinks";
 import { signOut } from "next-auth/react";
-
-const tabName = (tab: string) =>
-  tab != "faq" ? tab.charAt(0).toUpperCase() + tab.slice(1) : tab.toUpperCase();
+import { formatTitle } from "~/utils/format";
 
 const Topbar = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab") ?? "home";
+  const title = formatTitle(tab);
 
   const logout = () => {
     signOut()
@@ -28,11 +27,26 @@ const Topbar = () => {
       .catch((e) => console.log("error logging out:", e));
   };
 
+  const sectionLinks: [string, string][] = [
+    ["home", "Home"],
+    ["schedule", "Schedule"],
+    ["map", "Map"],
+    ["food-menu", "Food Menu"],
+    ["mentors", "Mentors"],
+    ["sponsors", "Sponsors"],
+  ];
+
+  const logisticsLinks: [string, string][] = [
+    ["event-logistics", "Event Logistics"],
+    ["contact-us", "Contact Us"],
+    ["faq", "FAQ"],
+  ];
+
   return (
-    <div className="flex justify-between border border-primary-300 bg-primary-100 p-3 md:hidden">
+    <div className="flex justify-between border border-[#ebdff7] bg-highlight p-3 md:hidden">
       <Horsey />
-      <div className="flex flex-col justify-center text-2xl font-semibold">
-        {tabName(tab)}
+      <div className="flex flex-col justify-center font-dico text-2xl text-heavy">
+        {title}
       </div>
       <Drawer>
         <div className="flex items-center gap-2">
@@ -44,27 +58,21 @@ const Topbar = () => {
         </div>
         <DrawerContent>
           <DrawerHeader>
-            {["home", "schedule", "map", "mentors", "sponsors", "faq"].map(
-              (s) => (
-                <DrawerClose key={s} asChild>
-                  <Link
-                    href={{ pathname: "/live", query: { tab: s } }}
-                    className={`flex gap-3 px-4 py-2.5 ${tab === s && "bg-primary-300 text-primary-600"} rounded-xl transition-all hover:bg-primary-300`}
-                  >
-                    <div className="py-2">
-                      <SidebarIcon icon={s} selected={tab === s} />
-                    </div>
-                    <div className="flex flex-col justify-center font-medium">
-                      {tabName(s)}
-                    </div>
-                  </Link>
-                </DrawerClose>
-              ),
-            )}
+            {sectionLinks.map((s) => (
+              <DrawerClose key={s[0]} asChild>
+                <SectionLink tab={s[0]} name={s[1]} />
+              </DrawerClose>
+            ))}
+            <hr className="border-[#ebdff7]" />
+            {logisticsLinks.map((s) => (
+              <DrawerClose key={s[0]} asChild>
+                <IconlessLink tab={s[0]} name={s[1]} />
+              </DrawerClose>
+            ))}
             <Button
               onClick={logout}
               variant="ghost"
-              className="mt-4 w-full border border-primary-400 text-base text-violet-600"
+              className="mt-4 w-full border border-light text-base text-medium"
             >
               Logout
             </Button>
