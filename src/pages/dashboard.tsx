@@ -156,6 +156,13 @@ export const getServerSideProps = async (
   if ("redirect" in verification) return verification;
 
   try {
+    return {
+      redirect: {
+        destination: "/live",
+        permanent: false,
+      },
+    };
+    /*
     const session = await getServerSession(
       context.req,
       context.res,
@@ -189,7 +196,7 @@ export const getServerSideProps = async (
       };
     }
 
-    return verification;
+    return verification;*/
   } catch (err) {
     return verification;
   }
