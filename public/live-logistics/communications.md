@@ -1,5 +1,5 @@
 # 💬 Slack
-Slack will be our main platform for communication to hackers throughout the weekend. If you have not joined yet, join [here](https://join.slack.com/t/hackwestern12/shared_invite/zt-3hbk6vbmf-NGnaE37cLh58h0spfH3Baw).  
+Slack will be our main platform for communication to hackers throughout the weekend.
 
 Search for and join sponsor channels if you’d like to learn more about a sponsor or a custom prize they are offering as noted on Devpost. Channels will be in the format of **#[company]**!
 
