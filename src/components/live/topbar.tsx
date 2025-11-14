@@ -69,13 +69,13 @@ const Topbar = () => {
                 <IconlessLink tab={s[0]} name={s[1]} />
               </DrawerClose>
             ))}
-            <Button
+            {/*<Button
               onClick={logout}
               variant="ghost"
               className="mt-4 w-full border border-light text-base text-medium"
             >
               Logout
-            </Button>
+            </Button>*/}
           </DrawerHeader>
         </DrawerContent>
       </Drawer>
