@@ -147,6 +147,7 @@ const Dashboard = () => {
   );
 };
 
+/*
 export default Dashboard;
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
@@ -162,7 +163,7 @@ export const getServerSideProps = async (
         permanent: false,
       },
     };
-    /*
+
     const session = await getServerSession(
       context.req,
       context.res,
@@ -196,8 +197,8 @@ export const getServerSideProps = async (
       };
     }
 
-    return verification;*/
+    return verification;
   } catch (err) {
     return verification;
   }
-};
+};*/
