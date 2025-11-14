@@ -159,7 +159,7 @@ export const getServerSideProps = async (
     redirect: {
       destination: "/live",
       permanent: false,
-    }
+    },
   };
 
   /*
