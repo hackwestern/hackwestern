@@ -43,13 +43,13 @@ const Sidebar = () => {
           </div>
         </div>
       </div>
-      <Button
+      {/*<Button
         onClick={logout}
         variant="ghost"
         className="w-fit border border-light text-base text-medium"
       >
         Logout
-      </Button>
+      </Button>*/}
     </div>
   );
 };
