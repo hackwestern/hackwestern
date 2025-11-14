@@ -148,6 +148,8 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+/*
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
@@ -200,5 +202,5 @@ export const getServerSideProps = async (
     return verification;
   } catch (err) {
     return verification;
-  }*/
-};
+  }
+};*/

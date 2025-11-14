@@ -77,6 +77,7 @@ const TabComponent = ({ tab }: { tab: string }) => {
 
 export default Live;
 
+/*
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
@@ -84,7 +85,7 @@ export const getServerSideProps = async (
   const verification = await notVerifiedRedirectDashboard(context);
   //if ("redirect" in verification) return verification;
   return verification;
-  /*
+  
   try {
     const session = await getServerSession(
       context.req,
@@ -113,5 +114,5 @@ export const getServerSideProps = async (
     return verification;
   } catch (err) {
     return verification;
-  }*/
-};
+  }
+};*/
