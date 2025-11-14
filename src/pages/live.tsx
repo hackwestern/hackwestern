@@ -77,6 +77,7 @@ const TabComponent = ({ tab }: { tab: string }) => {
 
 export default Live;
 
+/*
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
@@ -113,5 +114,5 @@ export const getServerSideProps = async (
     return verification;
   } catch (err) {
     return verification;
-  }*/
-};
+  }
+};*/
