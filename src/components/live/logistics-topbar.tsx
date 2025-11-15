@@ -47,10 +47,7 @@ const LogisticsTopbar = () => {
               </h1>
               <div className="flex flex-col gap-2">
                 {logisticsData.map((s) => (
-                  <div
-                    key={s[0]}
-                    onClick={(e) => handleLinkClick(s[0], e)}
-                  >
+                  <div key={s[0]} onClick={(e) => handleLinkClick(s[0], e)}>
                     <LogisticsLink step={s[0]} name={s[1]} />
                   </div>
                 ))}
