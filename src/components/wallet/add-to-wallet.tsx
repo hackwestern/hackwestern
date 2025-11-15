@@ -12,7 +12,8 @@ const AddToWallet = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pkpassSrc, setPkpassSrc] = useState<string | null>(null);
+  // pkpass raw src isn't stored for UI use currently; keep setter only if needed later
+  const [_pkpassSrc, setPkpassSrc] = useState<string | null>(null);
   const [googleWalletUrl, setGoogleWalletUrl] = useState<string | null>(null);
 
   const generatePass = api.qrRouter.generate.useMutation();
@@ -21,28 +22,33 @@ const AddToWallet = ({
     setLoading(true);
     setError(null);
 
-    try {
+      try {
       generatePass.mutate(
         { walletType },
         {
           onSuccess: (data) => {
             console.log("Pass generated:", data);
 
-            if (data.walletType === "APPLE") {
-              setPkpassSrc(data.pkpass!);
-              handleDownloadPkpass(data.pkpass!);
-            } else if (data.walletType === "GOOGLE") {
-              setGoogleWalletUrl(data.googleWalletUrl!);
+            if (data.walletType === "APPLE" && data.pkpass) {
+              // store raw pkpass only if needed later in UI
+              setPkpassSrc(data.pkpass);
+              handleDownloadPkpass(data.pkpass);
+            } else if (data.walletType === "GOOGLE" && data.googleWalletUrl) {
+              setGoogleWalletUrl(data.googleWalletUrl);
               // Redirect to Google Wallet
-              window.open(data.googleWalletUrl!, "_blank");
+              window.open(data.googleWalletUrl, "_blank");
             }
           },
           onError: (err) => {
-            console.error("Failed to generate pass:", err.message);
+            console.error("Failed to generate pass:", err);
+            const errorMessage = 
+              err && typeof err === "object" && "message" in err 
+                ? String(err.message)
+                : String(err);
             setError(
-              err.message === "UNAUTHORIZED"
+              errorMessage === "UNAUTHORIZED"
                 ? "Please verify your email before generating a Wallet Pass."
-                : err.message,
+                : errorMessage,
             );
           },
         },
@@ -84,7 +90,7 @@ const AddToWallet = ({
       <Button
         onClick={handleGeneratePass}
         disabled={loading}
-        className={`flex items-center gap-2 ${className || ""}`}
+        className={`flex items-center gap-2 ${className ?? ""}`}
       >
         {loading ? (
           <span>Generating...</span>
@@ -110,7 +116,7 @@ const AddToWallet = ({
 
       {googleWalletUrl && (
         <p className="mt-2 text-sm text-green-600">
-          Opening Google Wallet... If it didn't open,{" "}
+          Opening Google Wallet... If it didn&apos;t open,{" "}
           <a
             href={googleWalletUrl}
             target="_blank"

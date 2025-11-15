@@ -9,25 +9,27 @@ import { api } from '~/utils/api';
 // Where the Wallet QR Code Goes to 
 export default function Wallet() {
   const router = useRouter();
-  const { id } = router.query;
+  const { id: _id } = router.query;
 
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<string | null>(null);
-  const [userType, setUserType] = useState<string>("hacker");
+  // user state not used in UI currently
+  // const [user, setUser] = useState<string | null>(null);
+  const [userType, _setUserType] = useState<string>("hacker");
   //const { data: application } = api.application.getById.useQuery({ applicantId: id as string });
   const { data: application } = api.application.get.useQuery();
 
   useEffect(() => {
-    const writeUser = async () => {
-      setTimeout(async () => {
+    // Use a non-async callback for setTimeout to avoid returning a Promise
+    const writeUser = () => {
+      setTimeout(() => {
         setLoading(false);
         console.log("BI There ");
         console.log(application);
       }, 1000);
-    }
+    };
 
     writeUser(); // maybe want to record we met this person via url id and stored user id
-  }, []);
+  }, [application]);
 
   // Display Loading Screen
   if (loading) {
