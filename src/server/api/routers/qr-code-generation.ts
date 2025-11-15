@@ -115,12 +115,9 @@ async function generateApplePass(
         {
           key: "type",
           label: "Type",
-          value: user.type ?? "Hacker",
-        },
-        {
-          key: "points",
-          label: "Points",
-          value: "0",
+          value: user.type 
+            ? user.type.charAt(0).toUpperCase() + user.type.slice(1)
+            : "Hacker",
         },
       ],
     },
@@ -255,16 +252,53 @@ async function generateGooglePass(
     });
   }
 
-  const classId = `${issuerId}.hackwestern12_generic`;
+  const classId = `${issuerId}.hackwestern12_generic_v3`;
 
   // Create or update the Generic Class
-  // REMOVED logo field temporarily to avoid image loading errors
   const genericClass = {
     id: classId,
     issuerName: "Hack Western",
     reviewStatus: "UNDER_REVIEW",
     hexBackgroundColor: "#EBDFF7",
-
+    logo: {
+      sourceUri: {
+        uri: "https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg",
+      },
+      contentDescription: {
+        defaultValue: {
+          language: "en-US",
+          value: "Hack Western Logo",
+        },
+      },
+    },
+    classTemplateInfo: {
+      cardTemplateOverride: {
+        cardRowTemplateInfos: [
+          {
+            twoItems: {
+              startItem: {
+                firstValue: {
+                  fields: [
+                    {
+                      fieldPath: "object.textModulesData['email']",
+                    },
+                  ],
+                },
+              },
+              endItem: {
+                firstValue: {
+                  fields: [
+                    {
+                      fieldPath: "object.textModulesData['role']",
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        ],
+      },
+    },
   };
 
   try {
@@ -273,7 +307,14 @@ async function generateGooglePass(
       url: `https://walletobjects.googleapis.com/walletobjects/v1/genericClass/${classId}`,
       method: "GET",
     });
-    console.log("Generic class already exists");
+    console.log("Generic class already exists, updating...");
+    // Update existing class with new logo
+    await httpClient.request({
+      url: `https://walletobjects.googleapis.com/walletobjects/v1/genericClass/${classId}`,
+      method: "PUT",
+      data: genericClass,
+    });
+    console.log("Generic class updated");
   } catch (err: unknown) {
     if ((err as { response?: { status: number } }).response?.status === 404) {
       // Create class if it doesn't exist
@@ -309,25 +350,30 @@ async function generateGooglePass(
         value: user.name ?? "Attendee",
       },
     },
-    subheader: {
-      defaultValue: {
-        language: "en-US",
-        value: user.type ?? "Hacker",
-      },
-    },
+    // Removed subheader to avoid duplicate role display
     barcode: {
       type: "QR_CODE",
       value: personalUrl,
-      alternateText: user.email,
     },
     heroImage: {
       sourceUri: {
-        uri: `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://hackwestern.com"}/images/banner.png`,
+        uri: "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/banner.png",
       },
       contentDescription: {
         defaultValue: {
           language: "en-US",
           value: "Hack Western 12 Banner",
+        },
+      },
+    },
+    logo: {
+      sourceUri: {
+        uri: "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/logo.png",
+      },
+      contentDescription: {
+        defaultValue: {
+          language: "en-US",
+          value: "Hack Western Logo",
         },
       },
     },
@@ -339,13 +385,10 @@ async function generateGooglePass(
       },
       {
         header: "Role",
-        body: user.type ?? "Hacker",
+        body: user.type 
+          ? user.type.charAt(0).toUpperCase() + user.type.slice(1)
+          : "Hacker",
         id: "role",
-      },
-      {
-        header: "Points",
-        body: "0",
-        id: "points",
       },
     ],
     hexBackgroundColor: "#EBDFF7",
