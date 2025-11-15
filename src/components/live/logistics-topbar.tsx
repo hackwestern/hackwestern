@@ -7,8 +7,12 @@ import {
 import { Button } from "../ui/button";
 import { Menu } from "lucide-react";
 import { LogisticsLink } from "./navlinks";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const LogisticsTopbar = () => {
+  const router = useRouter();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const logisticsData: [string, string][] = [
     ["1", "Packing List"],
     ["2", "Communications"],
@@ -18,9 +22,18 @@ const LogisticsTopbar = () => {
     ["6", "FAQ"],
   ];
 
+  const handleLinkClick = (step: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDrawerOpen(false);
+    requestAnimationFrame(() => {
+      void router.push(`live/?tab=event-logistics&step=${step}`);
+    });
+  };
+
   return (
     <div className="md:hidden">
-      <Drawer>
+      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
         <DrawerTrigger asChild>
           <Button className="w-fit rounded-2xl p-0">
             <Menu strokeWidth={2.5} className="size-6 text-slate-800" />
@@ -34,7 +47,12 @@ const LogisticsTopbar = () => {
               </h1>
               <div className="flex flex-col gap-2">
                 {logisticsData.map((s) => (
-                  <LogisticsLink key={s[0]} step={s[0]} name={s[1]} />
+                  <div
+                    key={s[0]}
+                    onClick={(e) => handleLinkClick(s[0], e)}
+                  >
+                    <LogisticsLink step={s[0]} name={s[1]} />
+                  </div>
                 ))}
               </div>
             </div>
