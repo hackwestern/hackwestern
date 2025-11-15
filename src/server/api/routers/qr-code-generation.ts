@@ -9,6 +9,15 @@ import { PKPass } from "passkit-generator";
 import { users } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 import { google } from "googleapis";
+import crypto from "crypto";
+
+type User = {
+  id: string;
+  name: string | null;
+  email: string;
+  emailVerified: Date | null;
+  type: string | null;
+};
 
 export const qrRouter = createTRPCRouter({
   generate: protectedProcedure
@@ -24,7 +33,7 @@ export const qrRouter = createTRPCRouter({
           where: eq(users.id, ctx.session.user.id),
         });
 
-        if (!user || !user.emailVerified) {
+        if (!user?.emailVerified) {
           throw new TRPCError({
             code: "NOT_FOUND",
             message:
@@ -61,7 +70,7 @@ export const qrRouter = createTRPCRouter({
 
 // Apple Wallet Generation
 async function generateApplePass(
-  user: any,
+  user: User,
   personalUrl: string,
   qrBase64: string,
 ) {
@@ -92,7 +101,7 @@ async function generateApplePass(
         {
           key: "attendee",
           label: "Attendee",
-          value: user.name,
+          value: user.name ?? "Attendee",
         },
       ],
       primaryFields: [
@@ -106,7 +115,7 @@ async function generateApplePass(
         {
           key: "type",
           label: "Type",
-          value: user.type,
+          value: user.type ?? "Hacker",
         },
         {
           key: "points",
@@ -203,7 +212,7 @@ async function generateApplePass(
 }
 
 async function generateGooglePass(
-  user: any,
+  user: User,
   personalUrl: string,
   qrBase64: string,
 ) {
@@ -225,7 +234,10 @@ async function generateGooglePass(
     });
   }
 
-  const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
+  const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8")) as {
+    client_email: string;
+    private_key: string;
+  };
 
   // Create JWT client
   const httpClient = new google.auth.JWT({
@@ -251,7 +263,8 @@ async function generateGooglePass(
     id: classId,
     issuerName: "Hack Western",
     reviewStatus: "UNDER_REVIEW",
-    hexBackgroundColor: "#A569BD",
+    hexBackgroundColor: "#EBDFF7",
+
   };
 
   try {
@@ -261,8 +274,8 @@ async function generateGooglePass(
       method: "GET",
     });
     console.log("Generic class already exists");
-  } catch (err: any) {
-    if (err.response?.status === 404) {
+  } catch (err: unknown) {
+    if ((err as { response?: { status: number } }).response?.status === 404) {
       // Create class if it doesn't exist
       await httpClient.request({
         url: "https://walletobjects.googleapis.com/walletobjects/v1/genericClass",
@@ -293,19 +306,30 @@ async function generateGooglePass(
     header: {
       defaultValue: {
         language: "en-US",
-        value: user.name || "Attendee",
+        value: user.name ?? "Attendee",
       },
     },
     subheader: {
       defaultValue: {
         language: "en-US",
-        value: user.type || "Hacker",
+        value: user.type ?? "Hacker",
       },
     },
     barcode: {
       type: "QR_CODE",
       value: personalUrl,
       alternateText: user.email,
+    },
+    heroImage: {
+      sourceUri: {
+        uri: `${process.env.NEXT_PUBLIC_BASE_URL ?? "https://hackwestern.com"}/images/banner.png`,
+      },
+      contentDescription: {
+        defaultValue: {
+          language: "en-US",
+          value: "Hack Western 12 Banner",
+        },
+      },
     },
     textModulesData: [
       {
@@ -315,7 +339,7 @@ async function generateGooglePass(
       },
       {
         header: "Role",
-        body: user.type || "Hacker",
+        body: user.type ?? "Hacker",
         id: "role",
       },
       {
@@ -324,7 +348,7 @@ async function generateGooglePass(
         id: "points",
       },
     ],
-    hexBackgroundColor: "#A569BD",
+    hexBackgroundColor: "#EBDFF7",
   };
 
   try {
@@ -339,8 +363,8 @@ async function generateGooglePass(
       data: genericObject,
     });
     console.log("Generic object updated");
-  } catch (err: any) {
-    if (err.response?.status === 404) {
+  } catch (err: unknown) {
+    if ((err as { response?: { status: number } }).response?.status === 404) {
       await httpClient.request({
         url: "https://walletobjects.googleapis.com/walletobjects/v1/genericObject",
         method: "POST",
@@ -363,14 +387,12 @@ async function generateGooglePass(
     },
   };
 
-  const crypto = require("crypto");
-
   const header = {
     alg: "RS256",
     typ: "JWT",
   };
 
-  const base64UrlEncode = (obj: any) => {
+  const base64UrlEncode = (obj: Record<string, unknown>) => {
     return Buffer.from(JSON.stringify(obj))
       .toString("base64")
       .replace(/\+/g, "-")
