@@ -1,6 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { env } from "~/env";
-import type { DaySchedule, ScheduleEvent, ParsedScheduleEvent } from "~/types/schedule";
+import type {
+  DaySchedule,
+  ScheduleEvent,
+  ParsedScheduleEvent,
+} from "~/types/schedule";
 
 // Google Sheets API v4 configuration
 const SPREADSHEET_ID = "1_dZgkfkhmR-LdqvAplInEOxZJGu7gSsE9FlAiWD64Bk";
@@ -34,14 +38,16 @@ interface GoogleSheetsResponse {
   }>;
 }
 
-function parseEventText(text: string): { title: string; location: string } | null {
+function parseEventText(
+  text: string,
+): { title: string; location: string } | null {
   if (!text || text.trim() === "") return null;
 
   const lines = text.split("\n").map((line) => line.trim());
   const title = lines[0] ?? "";
 
   const locationLine = lines.find((line) =>
-    line.toLowerCase().startsWith("location:")
+    line.toLowerCase().startsWith("location:"),
   );
 
   const location = locationLine
@@ -67,7 +73,7 @@ function parseScheduleEvent(event: ScheduleEvent): ParsedScheduleEvent {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<DaySchedule[] | { error: string }>
+  res: NextApiResponse<DaySchedule[] | { error: string }>,
 ) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -94,11 +100,17 @@ export default async function handler(
     // Create a map of merged cells
     const mergeMap = new Map<string, { value: string; endRow: number }>();
     for (const merge of merges) {
-      const value = rowData[merge.startRowIndex]?.values[merge.startColumnIndex];
-      const cellValue = value?.formattedValue ?? value?.effectiveValue?.stringValue ?? "";
+      const value =
+        rowData[merge.startRowIndex]?.values[merge.startColumnIndex];
+      const cellValue =
+        value?.formattedValue ?? value?.effectiveValue?.stringValue ?? "";
 
       for (let row = merge.startRowIndex; row < merge.endRowIndex; row++) {
-        for (let col = merge.startColumnIndex; col < merge.endColumnIndex; col++) {
+        for (
+          let col = merge.startColumnIndex;
+          col < merge.endColumnIndex;
+          col++
+        ) {
           mergeMap.set(`${row},${col}`, {
             value: cellValue,
             endRow: merge.endRowIndex - 1,
@@ -132,9 +144,9 @@ export default async function handler(
         "Other Workshop": getCellValue(3),
         "Activities #1": getCellValue(4),
         "Activities #2": getCellValue(5),
-        "Food": getCellValue(6),
+        Food: getCellValue(6),
         "Spon Booth": getCellValue(7),
-        "Other": getCellValue(8),
+        Other: getCellValue(8),
       };
 
       events.push(event);

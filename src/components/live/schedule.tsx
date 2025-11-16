@@ -20,7 +20,9 @@ const Schedule = () => {
   if (loading) {
     return (
       <div className="mb-8 flex h-fit w-full flex-col gap-3 p-5 sm:p-10">
-        <div className="text-center text-lg text-gray-600">Loading schedule...</div>
+        <div className="text-center text-lg text-gray-600">
+          Loading schedule...
+        </div>
       </div>
     );
   }
@@ -39,14 +41,17 @@ const Schedule = () => {
   return (
     <div className="mb-8 flex h-fit w-full flex-col p-5 sm:p-10">
       {/* Single scrollable container for both headers and schedule */}
-      <div className="w-full overflow-x-auto overflow-y-auto max-h-[calc(100vh-200px)] pb-20">
+      <div className="max-h-[calc(100vh-200px)] w-full overflow-x-auto overflow-y-auto pb-20">
         <div className="min-w-[1000px]">
           {/* Sticky category headers */}
-          <div className="sticky top-0 z-[60] bg-white/95 backdrop-blur-sm py-3 border-b-2 border-gray-200 mb-6">
+          <div className="sticky top-0 z-[60] mb-6 border-b-2 border-gray-200 bg-white/95 py-3 backdrop-blur-sm">
             <div className="grid grid-cols-[80px_repeat(8,1fr)] gap-2">
               <div className="text-xs font-semibold text-gray-500"></div>
               {categoryLabels.map((label, i) => (
-                <div key={i} className="text-xs font-semibold text-gray-700 text-center whitespace-pre-line leading-tight">
+                <div
+                  key={i}
+                  className="whitespace-pre-line text-center text-xs font-semibold leading-tight text-gray-700"
+                >
                   {label}
                 </div>
               ))}
@@ -56,8 +61,15 @@ const Schedule = () => {
           {/* Schedule views */}
           <div className="space-y-8">
             {scheduleData.map((daySchedule) => (
-              <div key={daySchedule.day} className="animate-in fade-in duration-300">
-                <DayScheduleView day={daySchedule.day} events={daySchedule.events} showHeaders={false} />
+              <div
+                key={daySchedule.day}
+                className="duration-300 animate-in fade-in"
+              >
+                <DayScheduleView
+                  day={daySchedule.day}
+                  events={daySchedule.events}
+                  showHeaders={false}
+                />
               </div>
             ))}
           </div>
@@ -65,7 +77,7 @@ const Schedule = () => {
       </div>
 
       {scheduleData.length === 0 && (
-        <div className="text-center text-gray-600 py-10">
+        <div className="py-10 text-center text-gray-600">
           No schedule data available
         </div>
       )}
