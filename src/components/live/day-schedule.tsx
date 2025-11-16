@@ -40,12 +40,16 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
 
   return (
     <div
-      className={`rounded-lg border-2 p-2 sm:p-3 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 flex flex-col justify-center shadow-sm z-50 hover:shadow-md transition-shadow select-text`}
+      className={`rounded-lg border-2 p-2 sm:p-3 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 z-50 flex select-text flex-col justify-center shadow-sm transition-shadow hover:shadow-md`}
       style={{ height: `${height}px` }}
     >
-      <div className="text-[11px] sm:text-xs font-semibold leading-tight select-text">{event.title}</div>
+      <div className="select-text text-[11px] font-semibold leading-tight sm:text-xs">
+        {event.title}
+      </div>
       {event.location && (
-        <div className="mt-0.5 text-[9px] sm:text-[10px] italic opacity-70 select-text">{event.location}</div>
+        <div className="mt-0.5 select-text text-[9px] italic opacity-70 sm:text-[10px]">
+          {event.location}
+        </div>
       )}
     </div>
   );
@@ -212,7 +216,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                   }}
                 >
                   {/* Time label */}
-                  <div className="flex items-start pt-2 text-xs sm:text-sm font-medium text-gray-600">
+                  <div className="flex items-start pt-2 text-xs font-medium text-gray-600 sm:text-sm">
                     {event.time}
                   </div>
 
