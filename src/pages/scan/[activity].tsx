@@ -12,7 +12,9 @@ const ScanActivityPage = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [status, setStatus] = useState<"scanning" | "success" | "error">("scanning");
+  const [status, setStatus] = useState<"scanning" | "success" | "error">(
+    "scanning",
+  );
   const [scannedName, setScannedName] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
@@ -61,10 +63,10 @@ const ScanActivityPage = () => {
     // Try to decode QR code using jsQR or similar
     // For now, we'll use a simple text decoder approach
     // In production, use a proper QR code library like jsQR or html5-qrcode
-    
+
     // This is a placeholder - you'll need to integrate a QR code library
     // For example: const code = jsQR(imageData.data, imageData.width, imageData.height);
-    
+
     return null;
   };
 
@@ -132,7 +134,7 @@ const ScanActivityPage = () => {
     // QR code should contain userId
     // For now, we'll assume it's a simple userId string
     // You may need to parse JSON if your QR codes are more complex
-    
+
     try {
       // Try to parse as JSON first
       const parsed = JSON.parse(qrData);
@@ -172,7 +174,9 @@ const ScanActivityPage = () => {
 
       // Fetch user info to display their name
       try {
-        const userData = await utils.scavengerHunt.getUserById.fetch({ userId });
+        const userData = await utils.scavengerHunt.getUserById.fetch({
+          userId,
+        });
         setScannedName(userData.name || userData.email || userId);
       } catch (userError) {
         // If we can't get user info, just use userId
@@ -182,30 +186,35 @@ const ScanActivityPage = () => {
 
       // Set success status
       setStatus("success");
-      
+
       // The useEffect will automatically resume scanning when status changes back to "scanning"
     } catch (error: unknown) {
       console.error("Error processing scan:", error);
-      
+
       // Handle different error types
       let errorMsg = "Failed to process scan. Please try again.";
-      
+
       if (error && typeof error === "object" && "message" in error) {
         const message = error.message as string;
         if (message.includes("already scanned")) {
           errorMsg = "This item has already been scanned for this user.";
         } else if (message.includes("not found")) {
           errorMsg = message;
-        } else if (message.includes("UNAUTHORIZED") || message.includes("FORBIDDEN") || message.includes("not an organizer")) {
-          errorMsg = "Authentication required. Please log in as an organizer to scan. (This is normal for testing - you can still use test mode to see how it works!)";
+        } else if (
+          message.includes("UNAUTHORIZED") ||
+          message.includes("FORBIDDEN") ||
+          message.includes("not an organizer")
+        ) {
+          errorMsg =
+            "Authentication required. Please log in as an organizer to scan. (This is normal for testing - you can still use test mode to see how it works!)";
         } else {
           errorMsg = message;
         }
       }
-      
+
       setErrorMessage(errorMsg);
       setStatus("error");
-      
+
       // Reset after error (the useEffect will handle restarting scanning)
       setTimeout(() => {
         setStatus("scanning");
@@ -213,7 +222,6 @@ const ScanActivityPage = () => {
       }, 3000);
     }
   };
-
 
   // Auto-reset after success
   useEffect(() => {
@@ -232,29 +240,32 @@ const ScanActivityPage = () => {
   }, [status, scannedName]); // Removed testMode dependency since it's disabled
 
   return (
-    <div className="min-h-screen w-full flex flex-col" style={{ backgroundColor: "#f5f2f6" }}>
+    <div
+      className="flex min-h-screen w-full flex-col"
+      style={{ backgroundColor: "#f5f2f6" }}
+    >
       {/* Top Bar */}
-      <header className="w-full p-4 space-y-2">
+      <header className="w-full space-y-2 p-4">
         <button
           onClick={() => router.push("/scavenger")}
-          className="font-figtree text-heavy hover:text-emphasis transition-colors"
+          className="font-figtree text-heavy transition-colors hover:text-emphasis"
         >
           Back
         </button>
-        <h1 className="font-dico text-3xl font-medium text-heavy capitalize text-left">
+        <h1 className="text-left font-dico text-3xl font-medium capitalize text-heavy">
           {activityName}
         </h1>
       </header>
 
       {/* Camera View or Test Mode - Takes up rest of screen */}
-      <div className="flex-1 w-full relative bg-gray-300 flex items-center justify-center">
+      <div className="relative flex w-full flex-1 items-center justify-center bg-gray-300">
         {/* Video element for camera - Always show since test mode is disabled */}
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className={`w-full h-full object-cover ${cameraActive ? "opacity-100" : "opacity-0"}`}
+          className={`h-full w-full object-cover ${cameraActive ? "opacity-100" : "opacity-0"}`}
         />
 
         {/* Hidden canvas for QR code detection */}
@@ -262,7 +273,7 @@ const ScanActivityPage = () => {
 
         {/* Scanner frame overlay - Always show since test mode is disabled */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-[88%] md:w-[60%] lg:w-[50%] aspect-square border-2 border-white rounded-lg" />
+          <div className="aspect-square w-[88%] rounded-lg border-2 border-white md:w-[60%] lg:w-[50%]" />
         </div>
 
         {/* Test Mode UI - COMMENTED OUT: Forcing camera mode only */}
@@ -334,19 +345,18 @@ const ScanActivityPage = () => {
             </div>
           </div>
         )} */}
-
       </div>
 
       {/* Success Overlay */}
       {status === "success" && scannedName && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white px-4 py-3 rounded-lg shadow-lg font-figtree text-heavy transition-opacity duration-300 z-50 opacity-100">
+        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-white px-4 py-3 font-figtree text-heavy opacity-100 shadow-lg transition-opacity duration-300">
           {scannedName} scanned successfully
         </div>
       )}
 
       {/* Error Overlay */}
       {status === "error" && errorMessage && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-red-100 px-4 py-3 rounded-lg shadow-lg font-figtree text-red-700 transition-opacity duration-300 z-50 opacity-100">
+        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-red-100 px-4 py-3 font-figtree text-red-700 opacity-100 shadow-lg transition-opacity duration-300">
           {errorMessage}
         </div>
       )}
@@ -355,4 +365,3 @@ const ScanActivityPage = () => {
 };
 
 export default ScanActivityPage;
-

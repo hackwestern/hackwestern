@@ -100,7 +100,11 @@ const ScansPage = () => {
   // Filter by meals/activities
   const filteredByType = allScans.filter((scan) => {
     if (filter === "all") return true;
-    const mealEvents = ["Friday Dinner", "Saturday Breakfast", "Saturday Lunch"];
+    const mealEvents = [
+      "Friday Dinner",
+      "Saturday Breakfast",
+      "Saturday Lunch",
+    ];
     if (filter === "meals") {
       return mealEvents.includes(scan.event);
     }
@@ -122,22 +126,18 @@ const ScansPage = () => {
   });
 
   return (
-    <div
-      className="min-h-screen w-full flex flex-col"
-    >
+    <div className="flex min-h-screen w-full flex-col">
       {/* Header */}
-      <header className="w-full p-6 space-y-4">
-        <h1 className="font-dico text-3xl font-medium text-heavy">
-          All Scans
-        </h1>
+      <header className="w-full space-y-4 p-6">
+        <h1 className="font-dico text-3xl font-medium text-heavy">All Scans</h1>
 
         {/* Tabs and Search Bar */}
-        <div className="flex items-center justify-between gap-4 flex-wrap w-full">
+        <div className="flex w-full flex-wrap items-center justify-between gap-4">
           {/* Tabs */}
-          <div className="flex gap-4 flex-shrink-0">
+          <div className="flex flex-shrink-0 gap-4">
             <button
               onClick={() => setFilter("all")}
-              className={`px-4 py-2 rounded-lg font-figtree transition-colors bg-white text-heavy hover:bg-violet-100 ${
+              className={`rounded-lg bg-white px-4 py-2 font-figtree text-heavy transition-colors hover:bg-violet-100 ${
                 filter === "all" ? "font-bold" : "font-medium"
               }`}
             >
@@ -145,7 +145,7 @@ const ScansPage = () => {
             </button>
             <button
               onClick={() => setFilter("meals")}
-              className={`px-4 py-2 rounded-lg font-figtree transition-colors bg-white text-heavy hover:bg-violet-100 ${
+              className={`rounded-lg bg-white px-4 py-2 font-figtree text-heavy transition-colors hover:bg-violet-100 ${
                 filter === "meals" ? "font-bold" : "font-medium"
               }`}
             >
@@ -153,7 +153,7 @@ const ScansPage = () => {
             </button>
             <button
               onClick={() => setFilter("activities")}
-              className={`px-4 py-2 rounded-lg font-figtree transition-colors bg-white text-heavy hover:bg-violet-100 ${
+              className={`rounded-lg bg-white px-4 py-2 font-figtree text-heavy transition-colors hover:bg-violet-100 ${
                 filter === "activities" ? "font-bold" : "font-medium"
               }`}
             >
@@ -168,10 +168,10 @@ const ScansPage = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name, activity, scanner"
-              className="w-full px-4 py-2 pl-10 rounded-lg border-2 border-white bg-[#f5f2f6] font-figtree text-heavy placeholder:text-medium focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full rounded-lg border-2 border-white bg-[#f5f2f6] px-4 py-2 pl-10 font-figtree text-heavy placeholder:text-medium focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
             <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-medium pointer-events-none"
+              className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-medium"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -188,7 +188,7 @@ const ScansPage = () => {
       </header>
 
       {/* Table */}
-      <main className="flex-1 px-6 pb-6 w-full">
+      <main className="w-full flex-1 px-6 pb-6">
         <ScansTable scans={filteredScans} isLoading={false} />
       </main>
     </div>
@@ -196,4 +196,3 @@ const ScansPage = () => {
 };
 
 export default ScansPage;
-

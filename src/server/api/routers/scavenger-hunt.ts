@@ -361,7 +361,10 @@ export const scavengerHuntRouter = createTRPCRouter({
   getAllScans: protectedOrganizerProcedure
     .input(
       z.object({
-        filter: z.enum(["all", "meals", "activities"]).optional().default("all"),
+        filter: z
+          .enum(["all", "meals", "activities"])
+          .optional()
+          .default("all"),
       }),
     )
     .query(async ({ input }) => {
@@ -390,7 +393,11 @@ export const scavengerHuntRouter = createTRPCRouter({
         // Filter by meals or activities if needed
         // Meals are: friday-dinner, saturday-breakfast, saturday-lunch
         // Everything else is an activity/workshop
-        const mealCodes = ["friday-dinner", "saturday-breakfast", "saturday-lunch"];
+        const mealCodes = [
+          "friday-dinner",
+          "saturday-breakfast",
+          "saturday-lunch",
+        ];
 
         let filteredScans = allScans;
         if (filter === "meals") {

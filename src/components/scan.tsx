@@ -27,7 +27,10 @@ const Scan = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ backgroundColor: "#f5f2f6" }}>
+    <div
+      className="flex min-h-screen flex-col"
+      style={{ backgroundColor: "#f5f2f6" }}
+    >
       {/* Header */}
       <header className="flex items-center justify-end p-4">
         <button
@@ -39,14 +42,16 @@ const Scan = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 space-y-6 p-6 w-full">
+      <main className="w-full flex-1 space-y-6 p-6">
         <h1 className="text-left font-dico text-3xl font-medium text-heavy">
           Select activity to scan
         </h1>
 
         {/* Meals Section */}
         <section className="space-y-4">
-          <h3 className="text-base font-figtree font-medium text-medium">Meals</h3>
+          <h3 className="font-figtree text-base font-medium text-medium">
+            Meals
+          </h3>
           <div className="space-y-2">
             {meals.map((meal) => (
               <button
@@ -62,7 +67,9 @@ const Scan = () => {
 
         {/* Workshops Section */}
         <section className="space-y-4">
-          <h3 className="text-base font-figtree font-medium text-medium">Workshops</h3>
+          <h3 className="font-figtree text-base font-medium text-medium">
+            Workshops
+          </h3>
           <div className="space-y-2">
             {workshops.map((workshop) => (
               <button
@@ -81,4 +88,3 @@ const Scan = () => {
 };
 
 export default Scan;
-

@@ -17,56 +17,81 @@ export const scansColumns: ColumnDef<ScanRow>[] = [
   {
     accessorKey: "hackerName",
     header: () => (
-      <div className="text-xs font-figtree font-medium uppercase tracking-wider" style={{ color: "#dcd8de" }}>
+      <div
+        className="font-figtree text-xs font-medium uppercase tracking-wider"
+        style={{ color: "#dcd8de" }}
+      >
         HACKER NAME
       </div>
     ),
     cell: ({ row }) => (
-      <div className="font-figtree text-sm font-bold text-heavy">{row.getValue("hackerName")}</div>
+      <div className="font-figtree text-sm font-bold text-heavy">
+        {row.getValue("hackerName")}
+      </div>
     ),
   },
   {
     accessorKey: "event",
     header: () => (
-      <div className="text-xs font-figtree font-medium uppercase tracking-wider" style={{ color: "#dcd8de" }}>
+      <div
+        className="font-figtree text-xs font-medium uppercase tracking-wider"
+        style={{ color: "#dcd8de" }}
+      >
         EVENT
       </div>
     ),
     cell: ({ row }) => (
-      <div className="font-figtree text-sm font-bold text-heavy">{row.getValue("event")}</div>
+      <div className="font-figtree text-sm font-bold text-heavy">
+        {row.getValue("event")}
+      </div>
     ),
   },
   {
     accessorKey: "scanner",
     header: () => (
-      <div className="text-xs font-figtree font-medium uppercase tracking-wider" style={{ color: "#dcd8de" }}>
+      <div
+        className="font-figtree text-xs font-medium uppercase tracking-wider"
+        style={{ color: "#dcd8de" }}
+      >
         SCANNER
       </div>
     ),
     cell: ({ row }) => (
-      <div className="font-figtree text-sm text-heavy">{row.getValue("scanner")}</div>
+      <div className="font-figtree text-sm text-heavy">
+        {row.getValue("scanner")}
+      </div>
     ),
   },
   {
     accessorKey: "day",
     header: () => (
-      <div className="text-xs font-figtree font-medium uppercase tracking-wider" style={{ color: "#dcd8de" }}>
+      <div
+        className="font-figtree text-xs font-medium uppercase tracking-wider"
+        style={{ color: "#dcd8de" }}
+      >
         DAY
       </div>
     ),
     cell: ({ row }) => (
-      <div className="font-figtree text-sm text-heavy">{row.getValue("day")}</div>
+      <div className="font-figtree text-sm text-heavy">
+        {row.getValue("day")}
+      </div>
     ),
   },
   {
     accessorKey: "time",
     header: () => (
-      <div className="text-xs font-figtree font-medium uppercase tracking-wider" style={{ color: "#dcd8de" }}>
+      <div
+        className="font-figtree text-xs font-medium uppercase tracking-wider"
+        style={{ color: "#dcd8de" }}
+      >
         TIME
       </div>
     ),
     cell: ({ row }) => (
-      <div className="font-figtree text-sm text-heavy">{row.getValue("time")}</div>
+      <div className="font-figtree text-sm text-heavy">
+        {row.getValue("time")}
+      </div>
     ),
   },
 ];
@@ -79,7 +104,7 @@ interface ScansTableProps {
 export function ScansTable({ scans, isLoading }: ScansTableProps) {
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-8">
+      <div className="rounded-lg bg-white p-8 shadow-md">
         <div className="text-center font-figtree text-medium">
           Loading scans...
         </div>
@@ -89,7 +114,7 @@ export function ScansTable({ scans, isLoading }: ScansTableProps) {
 
   if (scans.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-8">
+      <div className="rounded-lg bg-white p-8 shadow-md">
         <div className="text-center font-figtree text-medium">
           No scans found
         </div>
@@ -98,13 +123,12 @@ export function ScansTable({ scans, isLoading }: ScansTableProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-lg bg-white">
       <div className="overflow-x-auto">
-        <div className="[&_table]:border-0 [&_th]:border-0 [&_td]:border-0 [&_tr]:border-0 [&_thead]:bg-white [&_thead_tr]:border-0 [&_tbody_tr]:border-0 [&_tbody_tr:nth-child(odd)]:bg-[#f5f2f6] [&_table]:cursor-default [&_tr]:cursor-default [&_td]:cursor-default [&_th]:cursor-default [&_table]:outline-none [&_table]:ring-0">
+        <div className="[&_table]:cursor-default [&_table]:border-0 [&_table]:outline-none [&_table]:ring-0 [&_tbody_tr:nth-child(odd)]:bg-[#f5f2f6] [&_tbody_tr]:border-0 [&_td]:cursor-default [&_td]:border-0 [&_th]:cursor-default [&_th]:border-0 [&_thead]:bg-white [&_thead_tr]:border-0 [&_tr]:cursor-default [&_tr]:border-0">
           <DataTable columns={scansColumns} data={scans} />
         </div>
       </div>
     </div>
   );
 }
-
