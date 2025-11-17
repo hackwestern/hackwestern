@@ -1,4 +1,4 @@
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -324,5 +324,111 @@ export const scavengerHuntRouter = createTRPCRouter({
 
       // Get redemptions for requestedUserId
       return await getUserRedemptions(requestedUserId);
+    }),
+
+  // Get User Info by UserId (only accessible to organizers)
+  getUserById: protectedOrganizerProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const { userId } = input;
+
+        const user = await db.query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch user: " + JSON.stringify(error),
+        });
+      }
+    }),
+
+  // Get All Scans (only accessible to organizers)
+  getAllScans: protectedOrganizerProcedure
+    .input(
+      z.object({
+        filter: z.enum(["all", "meals", "activities"]).optional().default("all"),
+      }),
+    )
+    .query(async ({ input }) => {
+      try {
+        const { filter } = input;
+
+        // Get all scans with user and item info using joins
+        const allScans = await db
+          .select({
+            userId: scavengerHuntScans.userId,
+            itemId: scavengerHuntScans.itemId,
+            createdAt: scavengerHuntScans.createdAt,
+            userName: users.name,
+            userEmail: users.email,
+            itemCode: scavengerHuntItems.code,
+            itemDescription: scavengerHuntItems.description,
+          })
+          .from(scavengerHuntScans)
+          .innerJoin(users, eq(scavengerHuntScans.userId, users.id))
+          .innerJoin(
+            scavengerHuntItems,
+            eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+          )
+          .orderBy(desc(scavengerHuntScans.createdAt));
+
+        // Filter by meals or activities if needed
+        // Meals are: friday-dinner, saturday-breakfast, saturday-lunch
+        // Everything else is an activity/workshop
+        const mealCodes = ["friday-dinner", "saturday-breakfast", "saturday-lunch"];
+
+        let filteredScans = allScans;
+        if (filter === "meals") {
+          filteredScans = allScans.filter((scan) =>
+            mealCodes.includes(scan.itemCode ?? ""),
+          );
+        } else if (filter === "activities") {
+          filteredScans = allScans.filter(
+            (scan) => scan.itemCode && !mealCodes.includes(scan.itemCode),
+          );
+        }
+
+        // Format the data for display
+        return filteredScans.map((scan) => ({
+          id: `${scan.userId}-${scan.itemId}`,
+          hackerName: scan.userName || scan.userEmail || scan.userId,
+          event: scan.itemDescription || scan.itemCode || "Unknown",
+          scanner: "Organizer", // You might want to track who scanned this
+          day: scan.createdAt
+            ? new Date(scan.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })
+            : "N/A",
+          time: scan.createdAt
+            ? new Date(scan.createdAt).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "N/A",
+          createdAt: scan.createdAt,
+        }));
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch scans: " + JSON.stringify(error),
+        });
+      }
     }),
 });
