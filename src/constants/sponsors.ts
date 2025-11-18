@@ -140,6 +140,6 @@ export const SPONSORS: readonly SponsorLogoProps[] = [
     x: 610,
     y: 405,
     rotation: 0,
-    href: "https://entrepreneurship.uwo.ca//",
+    href: "https://entrepreneurship.uwo.ca/",
   },
 ];
