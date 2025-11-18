@@ -788,8 +788,8 @@ describe("scavengerHuntRouter scan endpoints", () => {
 });
 
 describe("scavengerHuntRouter item management endpoints", () => {
-  // addScanvengerHuntItem tests
-  describe("addScanvengerHuntItem", () => {
+  // addScavengerHuntItem tests
+  describe("addScavengerHuntItem", () => {
     afterEach(async () => {
       // Clean up any test items created (by code)
       const testCodes = ["TEST-ITEM-1", "TEST-ITEM-2", "TEST-ITEM-3"];
