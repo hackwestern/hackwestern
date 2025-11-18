@@ -45,8 +45,8 @@ const Schedule = () => {
         <div className="min-w-[1000px]">
           {/* Sticky category headers */}
           <div className="sticky top-0 z-[60] mb-6 border-b-2 border-gray-200 bg-white/95 py-3 backdrop-blur-sm">
-            <div className="grid grid-cols-[80px_repeat(8,1fr)] gap-2">
-              <div className="text-xs font-semibold text-gray-500"></div>
+            <div className="grid grid-cols-[80px_repeat(8,1fr)] items-center gap-2">
+              <div className="text-xs font-jetbrains-mono font-semibold text-gray-500"></div>
               {categoryLabels.map((label, i) => (
                 <div
                   key={i}
@@ -77,7 +77,7 @@ const Schedule = () => {
       </div>
 
       {scheduleData.length === 0 && (
-        <div className="py-10 text-center text-gray-600">
+        <div className="py-10 text-center text-medium font-figtree">
           No schedule data available
         </div>
       )}
