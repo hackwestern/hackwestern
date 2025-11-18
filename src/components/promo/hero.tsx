@@ -69,7 +69,7 @@ function Hero() {
               The world is your canvas.
             </div>
           </div>
-          <Link href="/dashboard">
+          <Link href="/live" prefetch={true}>
             <Button className="w-48" variant="primary" size="lg">
               Dashboard
             </Button>
