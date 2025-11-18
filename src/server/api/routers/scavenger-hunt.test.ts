@@ -256,7 +256,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
         expect(trpcErr.message).toBe("User is not an organizer");
       }
     });
- 
+
     test("throws error if requested user not found", async () => {
       const nonExistentUserId = "non-existent-user-id";
       try {

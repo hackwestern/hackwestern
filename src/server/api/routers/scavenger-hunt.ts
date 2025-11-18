@@ -390,4 +390,3 @@ export const scavengerHuntRouter = createTRPCRouter({
       }
     }),
 });
-
