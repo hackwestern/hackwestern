@@ -54,7 +54,7 @@ const Topbar = () => {
 
   const getLogisticsHref = (tab: string): string => {
     if (tab === "contact-us" || tab === "faq") {
-      const step = tab === "contact-us" ? "5" : "6";
+      const step = tab === "contact-us" ? "6" : "7";
       return `live/?tab=event-logistics&step=${step}`;
     }
     if (tab === "event-logistics") {

@@ -21,10 +21,10 @@ export const IconlessLink = ({ tab, name }: { tab: string; name: string }) => {
   const searchParams = useSearchParams();
   const eventLogisticsTab = tab === "event-logistics";
   const miscLogisticsTab = tab === "contact-us" || tab === "faq";
-  const step = tab === "contact-us" ? "5" : tab === "faq" ? "6" : "1";
+  const step = tab === "contact-us" ? "6" : tab === "faq" ? "7" : "1";
 
   const isActive = eventLogisticsTab
-    ? ["1", "2", "3", "4"].includes(searchParams.get("step") ?? "")
+    ? ["1", "2", "3", "4", "5"].includes(searchParams.get("step") ?? "")
     : miscLogisticsTab
       ? searchParams.get("step") === step
       : searchParams.get("tab") === tab;
