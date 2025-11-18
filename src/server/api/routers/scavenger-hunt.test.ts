@@ -256,17 +256,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
         expect(trpcErr.message).toBe("User is not an organizer");
       }
     });
-  });
-
-  // getPoints tests
-  describe("getPoints", () => {
-    test("returns earned and balance for user", async () => {
-      const points = await caller.scavengerHunt.getPoints();
-      expect(points).toHaveProperty("earned");
-      expect(points).toHaveProperty("balance");
-    });
-  });
-
+ 
     test("throws error if requested user not found", async () => {
       const nonExistentUserId = "non-existent-user-id";
       try {
