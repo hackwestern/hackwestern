@@ -112,7 +112,7 @@ const getUserScans = async (userId: string) => {
 };
 
 // * Helper Functions *
-// Gets the scavenger hunt item while keeping in mind soft-deletion
+// (anyone can use this function) Gets the scavenger hunt item while keeping in mind soft-deletion
 const getScavengerHuntItemByItemCode = async (itemCode: string) => {
   const now = new Date();
 
@@ -214,6 +214,13 @@ export const scavengerHuntRouter = createTRPCRouter({
       }, "Failed to fetch item");
     }),
 
+  // Get Scavenge All Scavenger Hunt Items
+  getAllScavengerHuntItems: publicProcedure.query(async () => {
+    return await db.query.scavengerHuntItems.findMany({
+      where: isNull(scavengerHuntItems.deletedAt),
+    });
+  }),
+  
   // Add a Scavenger Hunt Item (only accessible to organizers)
   addScanvengerHuntItem: protectedOrganizerProcedure
     .input(

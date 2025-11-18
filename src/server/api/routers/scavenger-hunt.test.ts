@@ -103,6 +103,107 @@ describe("scavengerHuntRouter basic endpoints", () => {
     });
   });
 
+  // getAllScavengerHuntItems tests
+  describe("getAllScavengerHuntItems", () => {
+    afterEach(async () => {
+      // Clean up test items
+      const testCodes = ["GETALL-001", "GETALL-002", "GETALL-003"];
+      for (const code of testCodes) {
+        await db
+          .delete(scavengerHuntItems)
+          .where(eq(scavengerHuntItems.code, code));
+      }
+    });
+
+    test("returns empty array when no items exist", async () => {
+      const result = await caller.scavengerHunt.getAllScavengerHuntItems();
+      expect(result).toEqual([]);
+    });
+
+    test("returns all non-deleted items", async () => {
+      // Create multiple test items
+      const item1 = await insertTestItem(
+        { code: "GETALL-001", points: 10 },
+        "GETALL-001",
+      );
+      const item2 = await insertTestItem(
+        { code: "GETALL-002", points: 20 },
+        "GETALL-002",
+      );
+      const item3 = await insertTestItem(
+        { code: "GETALL-003", points: 30 },
+        "GETALL-003",
+      );
+
+      const result = await caller.scavengerHunt.getAllScavengerHuntItems();
+
+      expect(result.length).toBeGreaterThanOrEqual(3);
+      const resultCodes = result.map((item) => item.code);
+      expect(resultCodes).toContain(item1.code);
+      expect(resultCodes).toContain(item2.code);
+      expect(resultCodes).toContain(item3.code);
+    });
+
+    test("excludes soft-deleted items", async () => {
+      // Create items
+      const activeItem = await insertTestItem(
+        { code: "GETALL-001", points: 10 },
+        "GETALL-001",
+      );
+      const deletedItem = await insertTestItem(
+        { code: "GETALL-002", points: 20 },
+        "GETALL-002",
+      );
+
+      // Soft delete one item
+      await db
+        .update(scavengerHuntItems)
+        .set({ deletedAt: new Date() })
+        .where(eq(scavengerHuntItems.id, deletedItem.id));
+
+      const result = await caller.scavengerHunt.getAllScavengerHuntItems();
+
+      // Should only return the active item
+      const resultCodes = result.map((item) => item.code);
+      expect(resultCodes).toContain(activeItem.code);
+      expect(resultCodes).not.toContain(deletedItem.code);
+    });
+
+    test("works without authentication (public procedure)", async () => {
+      const item = await insertTestItem(
+        { code: "GETALL-001", points: 10 },
+        "GETALL-001",
+      );
+
+      // Create unauthenticated caller
+      const unauthenticatedCtx = createInnerTRPCContext({ session: null });
+      const unauthenticatedCaller = createCaller(unauthenticatedCtx);
+
+      const result =
+        await unauthenticatedCaller.scavengerHunt.getAllScavengerHuntItems();
+
+      expect(result.length).toBeGreaterThanOrEqual(1);
+      const resultCodes = result.map((i) => i.code);
+      expect(resultCodes).toContain(item.code);
+    });
+
+    test("returns items with correct structure", async () => {
+      const item = await insertTestItem(
+        { code: "GETALL-001", points: 25, description: "Test item" },
+        "GETALL-001",
+      );
+
+      const result = await caller.scavengerHunt.getAllScavengerHuntItems();
+
+      const foundItem = result.find((i) => i.id === item.id);
+      expect(foundItem).toBeDefined();
+      expect(foundItem?.code).toBe(item.code);
+      expect(foundItem?.points).toBe(25);
+      expect(foundItem?.description).toBe("Test item");
+      expect(foundItem?.deletedAt).toBeNull();
+    });
+  });
+
   // scan tests
   let testItem: Awaited<ReturnType<typeof insertTestItem>>; // declare outside so tests can use it
   describe("scan", () => {
@@ -1404,7 +1505,6 @@ describe("scavengerHuntRouter item management endpoints", () => {
         });
         expect.fail("Route should return a TRPCError");
       } catch (err) {
-        console.log("error", err, typeof err);
         expect(err).toBeInstanceOf(TRPCError);
         const trpcErr = err as TRPCError;
         expect(trpcErr.code).toBe("NOT_FOUND");
