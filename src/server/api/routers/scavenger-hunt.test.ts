@@ -57,9 +57,20 @@ const organizerCaller = createCaller(organizerCtx);
 // Tests
 describe("scavengerHuntRouter basic endpoints", () => {
   // getScavengerHuntItem tests
+  let item: Awaited<ReturnType<typeof insertTestItem>>; // declare outside so tests can use it
   describe("getScavengerHuntItem", () => {
+    beforeEach(async () => {
+      item = await insertTestItem();
+    });
+
+    afterEach(async () => {
+      // Clean up any existing items
+      await db
+        .delete(scavengerHuntItems)
+        .where(eq(scavengerHuntItems.id, item.id));
+    });
+
     test("returns inserted item", async () => {
-      const item = await insertTestItem();
       const result = await caller.scavengerHunt.getScavengerHuntItem({
         code: item.code,
       });
@@ -71,6 +82,24 @@ describe("scavengerHuntRouter basic endpoints", () => {
       await expect(
         caller.scavengerHunt.getScavengerHuntItem({ code: "nonexistent" }),
       ).rejects.toThrow();
+    });
+
+    test("does not return soft-deleted item", async () => {
+      await db
+        .update(scavengerHuntItems)
+        .set({ deletedAt: new Date() })
+        .where(eq(scavengerHuntItems.id, item.id));
+
+      // Should throw error when trying to get soft-deleted item
+      try {
+        (await caller.scavengerHunt.getScavengerHuntItem({ code: item.code }),
+          expect.fail("Route should return a TRPCError"));
+      } catch (err) {
+        expect(err).toBeInstanceOf(TRPCError);
+        const trpcErr = err as TRPCError;
+        expect(trpcErr.code).toBe("NOT_FOUND");
+        expect(trpcErr.message).toBe("Item not found");
+      }
     });
   });
 
@@ -168,6 +197,27 @@ describe("scavengerHuntRouter basic endpoints", () => {
         await organizerCaller.scavengerHunt.scan({
           userId: session.user.id,
           itemCode: "nonexistent-code",
+        });
+        expect.fail("Route should return a TRPCError");
+      } catch (err) {
+        expect(err).toBeInstanceOf(TRPCError);
+        const trpcErr = err as TRPCError;
+        expect(trpcErr.code).toBe("NOT_FOUND");
+        expect(trpcErr.message).toBe("Item not found");
+      }
+    });
+
+    test("throws error if trying to scan soft-deleted item", async () => {
+      // Soft delete the test item
+      await db
+        .update(scavengerHuntItems)
+        .set({ deletedAt: new Date() })
+        .where(eq(scavengerHuntItems.id, testItem.id));
+
+      try {
+        await organizerCaller.scavengerHunt.scan({
+          userId: session.user.id,
+          itemCode: testItem.code,
         });
         expect.fail("Route should return a TRPCError");
       } catch (err) {
@@ -792,7 +842,14 @@ describe("scavengerHuntRouter item management endpoints", () => {
   describe("addScavengerHuntItem", () => {
     afterEach(async () => {
       // Clean up any test items created (by code)
-      const testCodes = ["TEST-ITEM-1", "TEST-ITEM-2", "TEST-ITEM-3"];
+      const testCodes = [
+        "TEST-ITEM-1",
+        "TEST-ITEM-2",
+        "TEST-ITEM-3",
+        "SCHED-001",
+        "NORMAL-001",
+        "PAST-DEL",
+      ];
       for (const code of testCodes) {
         await db
           .delete(scavengerHuntItems)
@@ -934,6 +991,463 @@ describe("scavengerHuntRouter item management endpoints", () => {
       });
 
       expect(item?.points).toBe(-10);
+    });
+
+    test("can add item with scheduled deletion time", async () => {
+      const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+      const newItem = {
+        code: "SCHED-001",
+        points: 50,
+        description: "Item scheduled for deletion",
+        deletedAt: futureDate,
+      };
+
+      const result = await organizerCaller.scavengerHunt.addScavengerHuntItem({
+        item: newItem,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe("Item added successfully");
+
+      const item = await db.query.scavengerHuntItems.findFirst({
+        where: eq(scavengerHuntItems.code, newItem.code),
+      });
+
+      expect(item).not.toBeNull();
+      expect(item?.deletedAt).not.toBeNull();
+      expect(item?.deletedAt?.getTime()).toBe(futureDate.getTime());
+
+      // Item should still be accessible since deletion is scheduled for the future
+      const accessibleItem = await caller.scavengerHunt.getScavengerHuntItem({
+        code: newItem.code,
+      });
+      expect(accessibleItem.code).toBe(newItem.code);
+      expect(accessibleItem.points).toBe(newItem.points);
+
+      // Item should be scannable since it's not yet deleted
+      const testUser = await mockSession(db);
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser.user.id,
+        itemCode: newItem.code,
+      });
+
+      // Clean up
+      await db
+        .delete(scavengerHuntScans)
+        .where(eq(scavengerHuntScans.userId, testUser.user.id));
+      await db.delete(users).where(eq(users.id, testUser.user.id));
+      await db
+        .delete(scavengerHuntItems)
+        .where(eq(scavengerHuntItems.code, newItem.code));
+    });
+
+    test("can add item without deletedAt (normal behavior)", async () => {
+      const newItem = {
+        code: "NORMAL-001",
+        points: 25,
+        description: "Normal item without scheduled deletion",
+        // deletedAt not provided
+      };
+
+      const result = await organizerCaller.scavengerHunt.addScavengerHuntItem({
+        item: newItem,
+      });
+
+      expect(result.success).toBe(true);
+
+      const item = await db.query.scavengerHuntItems.findFirst({
+        where: eq(scavengerHuntItems.code, newItem.code),
+      });
+
+      expect(item).not.toBeNull();
+      expect(item?.deletedAt).toBeNull();
+      expect(item?.code).toBe(newItem.code);
+      expect(item?.points).toBe(newItem.points);
+
+      // Clean up
+      await db
+        .delete(scavengerHuntItems)
+        .where(eq(scavengerHuntItems.code, newItem.code));
+    });
+
+    test("item with past deletedAt is immediately considered deleted", async () => {
+      const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
+      const newItem = {
+        code: "PAST-DEL",
+        points: 30,
+        description: "Item with past deletion time",
+        deletedAt: pastDate,
+      };
+
+      const result = await organizerCaller.scavengerHunt.addScavengerHuntItem({
+        item: newItem,
+      });
+
+      expect(result.success).toBe(true);
+
+      const item = await db.query.scavengerHuntItems.findFirst({
+        where: eq(scavengerHuntItems.code, newItem.code),
+      });
+
+      expect(item).not.toBeNull();
+      expect(item?.deletedAt).not.toBeNull();
+
+      // Item should not be accessible since deletion time has passed
+      await expect(
+        caller.scavengerHunt.getScavengerHuntItem({
+          code: newItem.code,
+        }),
+      ).rejects.toThrow();
+
+      // Item should not be scannable
+      const testUser = await mockSession(db);
+      await expect(
+        organizerCaller.scavengerHunt.scan({
+          userId: testUser.user.id,
+          itemCode: newItem.code,
+        }),
+      ).rejects.toThrow();
+
+      // Clean up
+      await db.delete(users).where(eq(users.id, testUser.user.id));
+      await db
+        .delete(scavengerHuntItems)
+        .where(eq(scavengerHuntItems.code, newItem.code));
+    });
+  });
+
+  // deleteScavengerHuntItem tests
+  describe("deleteScavengerHuntItem", () => {
+    let testItem: Awaited<ReturnType<typeof insertTestItem>>;
+
+    beforeEach(async () => {
+      testItem = await insertTestItem({}, faker.string.alphanumeric(12));
+    });
+
+    afterEach(async () => {
+      // Clean up - actually delete the item (hard delete for cleanup)
+      if (testItem) {
+        await db
+          .delete(scavengerHuntItems)
+          .where(eq(scavengerHuntItems.id, testItem.id));
+      }
+    });
+
+    test("soft deletes item by setting deletedAt", async () => {
+      await organizerCaller.scavengerHunt.deleteScavengerHuntItem({
+        itemId: testItem.id,
+      });
+
+      // Verify item still exists in database
+      const deletedItem = await db.query.scavengerHuntItems.findFirst({
+        where: eq(scavengerHuntItems.id, testItem.id),
+      });
+
+      expect(deletedItem).not.toBeNull();
+      expect(deletedItem?.id).toBe(testItem.id);
+      expect(deletedItem?.deletedAt).not.toBeNull();
+      expect(deletedItem?.deletedAt).toBeInstanceOf(Date);
+    });
+
+    test("soft-deleted item cannot be retrieved via getScavengerHuntItem", async () => {
+      await organizerCaller.scavengerHunt.deleteScavengerHuntItem({
+        itemId: testItem.id,
+      });
+
+      // Should throw error when trying to get soft-deleted item
+      await expect(
+        caller.scavengerHunt.getScavengerHuntItem({ code: testItem.code }),
+      ).rejects.toThrow();
+    });
+
+    test("soft-deleted item cannot be scanned", async () => {
+      const testUser = await mockSession(db);
+
+      // Soft delete the item
+      await organizerCaller.scavengerHunt.deleteScavengerHuntItem({
+        itemId: testItem.id,
+      });
+
+      // Should throw error when trying to scan soft-deleted item
+      try {
+        await organizerCaller.scavengerHunt.scan({
+          userId: testUser.user.id,
+          itemCode: testItem.code,
+        });
+        expect.fail("Route should return a TRPCError");
+      } catch (err) {
+        expect(err).toBeInstanceOf(TRPCError);
+        const trpcErr = err as TRPCError;
+        expect(trpcErr.code).toBe("NOT_FOUND");
+        expect(trpcErr.message).toBe("Item not found");
+      }
+
+      // Clean up test user
+      await db.delete(users).where(eq(users.id, testUser.user.id));
+    });
+
+    test("scans remain linked to soft-deleted item", async () => {
+      const testUser = await mockSession(db);
+
+      // Scan the item first
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser.user.id,
+        itemCode: testItem.code,
+      });
+
+      // Verify scan exists
+      const scanBeforeDelete = await db.query.scavengerHuntScans.findFirst({
+        where: and(
+          eq(scavengerHuntScans.userId, testUser.user.id),
+          eq(scavengerHuntScans.itemId, testItem.id),
+        ),
+      });
+      expect(scanBeforeDelete).not.toBeNull();
+
+      // Soft delete the item
+      await organizerCaller.scavengerHunt.deleteScavengerHuntItem({
+        itemId: testItem.id,
+      });
+
+      // Verify scan still exists (referential integrity maintained)
+      const scanAfterDelete = await db.query.scavengerHuntScans.findFirst({
+        where: and(
+          eq(scavengerHuntScans.userId, testUser.user.id),
+          eq(scavengerHuntScans.itemId, testItem.id),
+        ),
+      });
+      expect(scanAfterDelete).not.toBeNull();
+      expect(scanAfterDelete?.itemId).toBe(testItem.id);
+
+      // Clean up
+      await db
+        .delete(scavengerHuntScans)
+        .where(eq(scavengerHuntScans.userId, testUser.user.id));
+      await db.delete(users).where(eq(users.id, testUser.user.id));
+    });
+
+    test("throws error if user is not an organizer", async () => {
+      try {
+        await caller.scavengerHunt.deleteScavengerHuntItem({
+          itemId: testItem.id,
+        });
+        expect.fail("Route should return a TRPCError");
+      } catch (err) {
+        expect(err).toBeInstanceOf(TRPCError);
+        const trpcErr = err as TRPCError;
+        expect(trpcErr.code).toBe("FORBIDDEN");
+        expect(trpcErr.message).toBe("User is not an organizer");
+      }
+    });
+
+    test("throws error if user is not authenticated", async () => {
+      const unauthenticatedCtx = createInnerTRPCContext({ session: null });
+      const unauthenticatedCaller = createCaller(unauthenticatedCtx);
+
+      await expect(
+        unauthenticatedCaller.scavengerHunt.deleteScavengerHuntItem({
+          itemId: testItem.id,
+        }),
+      ).rejects.toThrow();
+    });
+  });
+
+  // deleteScanByUserId tests
+  describe("deleteScanByUserId", () => {
+    let testUser: Awaited<ReturnType<typeof mockSession>>;
+    let testItem: Awaited<ReturnType<typeof insertTestItem>>;
+    let testItem2: Awaited<ReturnType<typeof insertTestItem>>;
+
+    beforeEach(async () => {
+      testUser = await mockSession(db);
+      testItem = await insertTestItem({}, faker.string.alphanumeric(12));
+      testItem2 = await insertTestItem({}, faker.string.alphanumeric(12));
+
+      // Reset test user's scavenger hunt balance
+      await db
+        .update(users)
+        .set({ scavengerHuntBalance: 0, scavengerHuntEarned: 0 })
+        .where(eq(users.id, testUser.user.id));
+
+      // Clean up any existing scans for test user
+      await db
+        .delete(scavengerHuntScans)
+        .where(eq(scavengerHuntScans.userId, testUser.user.id));
+    });
+
+    afterEach(async () => {
+      // Clean up scans
+      await db
+        .delete(scavengerHuntScans)
+        .where(eq(scavengerHuntScans.userId, testUser.user.id));
+
+      // Clean up test user
+      await db.delete(users).where(eq(users.id, testUser.user.id));
+
+      // Clean up test items
+      if (testItem) {
+        await db
+          .delete(scavengerHuntItems)
+          .where(eq(scavengerHuntItems.id, testItem.id));
+      }
+      if (testItem2) {
+        await db
+          .delete(scavengerHuntItems)
+          .where(eq(scavengerHuntItems.id, testItem2.id));
+      }
+    });
+
+    test("deletes specific scan by userId and itemId", async () => {
+      // Scan both items
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser.user.id,
+        itemCode: testItem.code,
+      });
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser.user.id,
+        itemCode: testItem2.code,
+      });
+
+      // Verify both scans exist
+      const scansBefore = await db.query.scavengerHuntScans.findMany({
+        where: eq(scavengerHuntScans.userId, testUser.user.id),
+      });
+      expect(scansBefore.length).toBe(2);
+
+      // Delete specific scan
+      const result = await organizerCaller.scavengerHunt.deleteScanByUserId({
+        userId: testUser.user.id,
+        itemId: testItem.id,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe("Scan deleted successfully");
+
+      // Verify only the specified scan was deleted
+      const scansAfter = await db.query.scavengerHuntScans.findMany({
+        where: eq(scavengerHuntScans.userId, testUser.user.id),
+      });
+      expect(scansAfter.length).toBe(1);
+      expect(scansAfter[0]?.itemId).toBe(testItem2.id);
+    });
+
+    test("deducts points from balance and earned balance when deleting scan", async () => {
+      // Scan an item to give the user points
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser.user.id,
+        itemCode: testItem.code,
+      });
+
+      // Verify user has points
+      const userBefore = await db.query.users.findFirst({
+        where: eq(users.id, testUser.user.id),
+      });
+      expect(userBefore?.scavengerHuntBalance).toBe(testItem.points);
+      expect(userBefore?.scavengerHuntEarned).toBe(testItem.points);
+
+      // Delete the scan
+      await organizerCaller.scavengerHunt.deleteScanByUserId({
+        userId: testUser.user.id,
+        itemId: testItem.id,
+      });
+
+      // Verify points were deducted
+      const userAfter = await db.query.users.findFirst({
+        where: eq(users.id, testUser.user.id),
+      });
+      expect(userAfter?.scavengerHuntBalance).toBe(0);
+      expect(userAfter?.scavengerHuntEarned).toBe(0);
+    });
+
+    test("deducts correct points when deleting scan with multiple items", async () => {
+      // Scan multiple items
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser.user.id,
+        itemCode: testItem.code,
+      });
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser.user.id,
+        itemCode: testItem2.code,
+      });
+
+      const totalPoints = testItem.points + testItem2.points;
+
+      // Verify user has total points
+      const userBefore = await db.query.users.findFirst({
+        where: eq(users.id, testUser.user.id),
+      });
+      expect(userBefore?.scavengerHuntBalance).toBe(totalPoints);
+
+      // Delete one scan
+      await organizerCaller.scavengerHunt.deleteScanByUserId({
+        userId: testUser.user.id,
+        itemId: testItem.id,
+      });
+
+      // Verify only that item's points were deducted
+      const userAfter = await db.query.users.findFirst({
+        where: eq(users.id, testUser.user.id),
+      });
+      expect(userAfter?.scavengerHuntBalance).toBe(testItem2.points);
+      expect(userAfter?.scavengerHuntEarned).toBe(testItem2.points);
+    });
+
+    test("throws error when scan does not exist for user", async () => {
+      try {
+        await organizerCaller.scavengerHunt.deleteScanByUserId({
+          userId: testUser.user.id,
+          itemId: testItem.id,
+        });
+        expect.fail("Route should return a TRPCError");
+      } catch (err) {
+        console.log("error", err, typeof err);
+        expect(err).toBeInstanceOf(TRPCError);
+        const trpcErr = err as TRPCError;
+        expect(trpcErr.code).toBe("NOT_FOUND");
+        expect(trpcErr.message).toBe("Scan not found for this user and item");
+      }
+    });
+
+    test("throws error when item does not exist", async () => {
+      try {
+        await organizerCaller.scavengerHunt.deleteScanByUserId({
+          userId: testUser.user.id,
+          itemId: 99999, // Non-existent item ID
+        });
+        expect.fail("Route should return a TRPCError");
+      } catch (err) {
+        expect(err).toBeInstanceOf(TRPCError);
+        const trpcErr = err as TRPCError;
+        expect(trpcErr.code).toBe("NOT_FOUND");
+        expect(trpcErr.message).toBe("Item not found");
+      }
+    });
+
+    test("throws error if user is not an organizer", async () => {
+      try {
+        await caller.scavengerHunt.deleteScanByUserId({
+          userId: testUser.user.id,
+          itemId: testItem.id,
+        });
+        expect.fail("Route should return a TRPCError");
+      } catch (err) {
+        expect(err).toBeInstanceOf(TRPCError);
+        const trpcErr = err as TRPCError;
+        expect(trpcErr.code).toBe("FORBIDDEN");
+        expect(trpcErr.message).toBe("User is not an organizer");
+      }
+    });
+
+    test("throws error if user is not authenticated", async () => {
+      const unauthenticatedCtx = createInnerTRPCContext({ session: null });
+      const unauthenticatedCaller = createCaller(unauthenticatedCtx);
+
+      await expect(
+        unauthenticatedCaller.scavengerHunt.deleteScanByUserId({
+          userId: testUser.user.id,
+          itemId: testItem.id,
+        }),
+      ).rejects.toThrow();
     });
   });
 });
