@@ -6,6 +6,7 @@ import {
   MentorTagsList,
   type MentorTags,
 } from "~/constants/mentors";
+import Construction from "~/components/live/construction";
 
 const Mentors = () => {
   const [selectedMentorTags, setSelectedMentorTags] = useState<MentorTags[]>(
@@ -13,6 +14,8 @@ const Mentors = () => {
   );
 
   return (
+    <Construction />
+    /*
     <div className="mb-6 px-6">
       <div className="my-8 md:flex">
         <div className="py-1">Filter by:</div>
@@ -48,6 +51,7 @@ const Mentors = () => {
         ))}
       </div>
     </div>
+    */
   );
 };
 

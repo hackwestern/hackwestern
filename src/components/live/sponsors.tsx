@@ -1,4 +1,5 @@
 // import { SponsorCard } from "../promo/sponsors";
+import Construction from "~/components/live/construction";
 
 const SponsorCard = ({
   name,
@@ -17,6 +18,8 @@ const SponsorCard = ({
 };
 
 const Sponsors = () => {
+  return <Construction />;
+  /*
   return (
     <div className="p-12">
       <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
@@ -29,7 +32,7 @@ const Sponsors = () => {
           link="https://www.scotiabank.com/"
         />
       </div>
-      {/* Diamond Sponsors */}
+      {/* Diamond Sponsors */ /*}
       <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
         Diamond Sponsors
       </h1>
@@ -52,7 +55,7 @@ const Sponsors = () => {
           link="https://www.starknet.io/"
         />
       </div>
-      {/* Gold Sponsors */}
+      {/* Gold Sponsors */ /*}
       <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
         Gold Sponsors
       </h1>
@@ -73,7 +76,7 @@ const Sponsors = () => {
           link="https://www.bigbluebubble.com/"
         />
       </div>
-      {/* Bronze Sponsors */}
+      {/* Bronze Sponsors */ /*}
       <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
         Bronze Sponsors
       </h1>
@@ -114,7 +117,7 @@ const Sponsors = () => {
           link="https://www.tempolabs.ai/"
         />
       </div>
-      {/* In-kind Sponsors */}
+      {/* In-kind Sponsors */ /*}
       <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
         In-kind Sponsors
       </h1>
@@ -156,7 +159,7 @@ const Sponsors = () => {
         />
       </div>
     </div>
-  );
+  );*/
 };
 
 export default Sponsors;

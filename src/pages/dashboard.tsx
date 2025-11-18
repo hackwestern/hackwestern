@@ -148,6 +148,8 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+/*
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
@@ -156,6 +158,13 @@ export const getServerSideProps = async (
   if ("redirect" in verification) return verification;
 
   try {
+    return {
+      redirect: {
+        destination: "/live",
+        permanent: false,
+      },
+    };
+
     const session = await getServerSession(
       context.req,
       context.res,
@@ -180,8 +189,17 @@ export const getServerSideProps = async (
       };
     }
 
+    if (status === "ACCEPTED") {
+      return {
+        redirect: {
+          destination: "/live",
+          permanent: false,
+        },
+      };
+    }
+
     return verification;
   } catch (err) {
     return verification;
   }
-};
+};*/
