@@ -220,7 +220,7 @@ export const scavengerHuntRouter = createTRPCRouter({
       where: isNull(scavengerHuntItems.deletedAt),
     });
   }),
-  
+
   // Add a Scavenger Hunt Item (only accessible to organizers)
   addScavengerHuntItem: protectedOrganizerProcedure
     .input(
