@@ -222,7 +222,7 @@ export const scavengerHuntRouter = createTRPCRouter({
   }),
   
   // Add a Scavenger Hunt Item (only accessible to organizers)
-  addScanvengerHuntItem: protectedOrganizerProcedure
+  addScavengerHuntItem: protectedOrganizerProcedure
     .input(
       z.object({
         item: z.object({
@@ -415,7 +415,7 @@ export const scavengerHuntRouter = createTRPCRouter({
             });
           }
 
-          // Check to see if the scan exists and if enough time has passed
+          // Check to see if scan exists
           const scanExists = await tx.query.scavengerHuntScans.findFirst({
             where: and(
               eq(scavengerHuntScans.userId, userId),
