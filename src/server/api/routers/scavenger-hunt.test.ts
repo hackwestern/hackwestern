@@ -894,16 +894,12 @@ describe("scavengerHuntRouter item management endpoints", () => {
         description: "Second test item",
       };
 
-      const result1 = await organizerCaller.scavengerHunt.addScavengerHuntItem(
-        {
-          item: item1,
-        },
-      );
-      const result2 = await organizerCaller.scavengerHunt.addScavengerHuntItem(
-        {
-          item: item2,
-        },
-      );
+      const result1 = await organizerCaller.scavengerHunt.addScavengerHuntItem({
+        item: item1,
+      });
+      const result2 = await organizerCaller.scavengerHunt.addScavengerHuntItem({
+        item: item2,
+      });
 
       expect(result1.success).toBe(true);
       expect(result2.success).toBe(true);
