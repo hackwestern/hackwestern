@@ -202,44 +202,6 @@ const recordScan = async (userId: string, points: number, itemId: number) => {
   }, "Failed to add points");
 };
 
-// * Safe Functions: Check is done within the transaction to avoid race conditions */
-const recordScan = async (userId: string, points: number, itemId: number) => {
-  try {
-    await db.transaction(async (tx) => {
-      // Check if user has already scanned this item
-      const scan = await tx.query.scavengerHuntScans.findFirst({
-        where: and(
-          eq(scavengerHuntScans.userId, userId),
-          eq(scavengerHuntScans.itemId, itemId),
-        ),
-      });
-      if (scan) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Item already scanned",
-        });
-      }
-
-      // Add points to user and record the scan
-      await addPoints(tx, userId, points);
-
-      // Record the scan
-      await tx.insert(scavengerHuntScans).values({
-        userId: userId,
-        itemId: itemId,
-      });
-    });
-  } catch (error) {
-    if (error instanceof TRPCError) {
-      throw error;
-    }
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Failed to add points: " + JSON.stringify(error),
-    });
-  }
-};
-
 export const scavengerHuntRouter = createTRPCRouter({
   // * SCAVENGER HUNT ITEM ENDPOINTS * //
   // Get Scavenger Hunt Item
@@ -479,71 +441,5 @@ export const scavengerHuntRouter = createTRPCRouter({
           message: "Scan deleted successfully",
         };
       }, "Failed to delete scan");
-    }),
-
-  // Redeem a Reward (only accessible to users)
-  redeem: protectedProcedure
-    .input(
-      z.object({
-        rewardId: z.number(),
-      }),
-    )
-    .mutation(async ({ input, ctx }) => {
-      try {
-        const { rewardId } = input;
-        const userId = ctx.session.user.id;
-
-        // Check if reward exists
-        const reward = await db.query.scavengerHuntRewards.findFirst({
-          where: eq(scavengerHuntRewards.id, rewardId),
-        });
-        if (!reward) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Reward not found",
-          });
-        }
-
-        await redeemPrize(userId, rewardId, reward.costPoints);
-
-        return {
-          success: true,
-          message: "Reward redeemed successfully",
-        };
-      } catch (error) {
-        if (error instanceof TRPCError) {
-          throw error;
-        }
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to redeem reward: " + JSON.stringify(error),
-        });
-      }
-    }),
-
-  // Get all Redemptions (only accessible to users)
-  getRedemptions: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
-
-    // Get redemptions for userId
-    return await getUserRedemptions(userId);
-  }),
-
-  // Get a User's Redemptions by UserId (only accessible to organizers)
-  getRedemptionByUserId: protectedOrganizerProcedure
-    .input(z.object({ requestedUserId: z.string() }))
-    .query(async ({ input }) => {
-      const { requestedUserId } = input;
-
-      // Check if requestedUserId exists
-      const user = await db.query.users.findFirst({
-        where: eq(users.id, requestedUserId),
-      });
-      if (!user) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-      }
-
-      // Get redemptions for requestedUserId
-      return await getUserRedemptions(requestedUserId);
     }),
 });
