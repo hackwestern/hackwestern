@@ -807,7 +807,7 @@ describe("scavengerHuntRouter item management endpoints", () => {
         description: "Test item description",
       };
 
-      const result = await organizerCaller.scavengerHunt.addScanvengerHuntItem({
+      const result = await organizerCaller.scavengerHunt.addScavengerHuntItem({
         item: newItem,
       });
 
@@ -837,12 +837,12 @@ describe("scavengerHuntRouter item management endpoints", () => {
         description: "Second test item",
       };
 
-      const result1 = await organizerCaller.scavengerHunt.addScanvengerHuntItem(
+      const result1 = await organizerCaller.scavengerHunt.addScavengerHuntItem(
         {
           item: item1,
         },
       );
-      const result2 = await organizerCaller.scavengerHunt.addScanvengerHuntItem(
+      const result2 = await organizerCaller.scavengerHunt.addScavengerHuntItem(
         {
           item: item2,
         },
@@ -873,7 +873,7 @@ describe("scavengerHuntRouter item management endpoints", () => {
       };
 
       try {
-        await caller.scavengerHunt.addScanvengerHuntItem({ item: newItem });
+        await caller.scavengerHunt.addScavengerHuntItem({ item: newItem });
         expect.fail("Route should return a TRPCError");
       } catch (err) {
         expect(err).toBeInstanceOf(TRPCError);
@@ -894,7 +894,7 @@ describe("scavengerHuntRouter item management endpoints", () => {
       };
 
       await expect(
-        unauthenticatedCaller.scavengerHunt.addScanvengerHuntItem({
+        unauthenticatedCaller.scavengerHunt.addScavengerHuntItem({
           item: newItem,
         }),
       ).rejects.toThrow();
@@ -907,7 +907,7 @@ describe("scavengerHuntRouter item management endpoints", () => {
         description: "Item with zero points",
       };
 
-      const result = await organizerCaller.scavengerHunt.addScanvengerHuntItem({
+      const result = await organizerCaller.scavengerHunt.addScavengerHuntItem({
         item: newItem,
       });
 
@@ -927,7 +927,7 @@ describe("scavengerHuntRouter item management endpoints", () => {
         description: "Item with negative points",
       };
 
-      const result = await organizerCaller.scavengerHunt.addScanvengerHuntItem({
+      const result = await organizerCaller.scavengerHunt.addScavengerHuntItem({
         item: newItem,
       });
 

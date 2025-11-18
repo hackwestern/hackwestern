@@ -354,7 +354,7 @@ export const scavengerHuntRouter = createTRPCRouter({
     }),
 
   // Add a Scavenger Hunt Item (only accessible to organizers)
-  addScanvengerHuntItem: protectedOrganizerProcedure
+  addScavengerHuntItem: protectedOrganizerProcedure
     .input(
       z.object({
         item: z.object({
