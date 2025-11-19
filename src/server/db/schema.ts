@@ -456,6 +456,9 @@ export const scavengerHuntScans = createTable(
     userId: varchar("user_id", { length: 255 })
       .notNull()
       .references(() => users.id),
+    scannerId: varchar("scanner_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
     itemId: integer("item_id")
       .notNull()
       .references(() => scavengerHuntItems.id),
@@ -466,6 +469,7 @@ export const scavengerHuntScans = createTable(
   (t) => [
     primaryKey({ columns: [t.userId, t.itemId] }),
     index("scan_user_idx").on(t.userId),
+    index("scan_scanner_idx").on(t.scannerId),
   ],
 );
 

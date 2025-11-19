@@ -1,0 +1,1 @@
+ALTER TABLE "hw_scavenger_hunt_item" ADD COLUMN "deleted_at" timestamp (3);
