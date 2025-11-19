@@ -205,9 +205,7 @@ export default function AdjustStatus() {
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-2 font-figtree text-medium">
-              Add Single Email
-            </h2>
+            <h2 className="mb-2 font-figtree text-medium">Add Single Email</h2>
             <div className="flex gap-2">
               <Input
                 type="email"
@@ -222,11 +220,7 @@ export default function AdjustStatus() {
                 }}
                 className="flex-1"
               />
-              <Button
-                variant="primary"
-                onClick={handleAddEmail}
-                type="button"
-              >
+              <Button variant="primary" onClick={handleAddEmail} type="button">
                 Add
               </Button>
             </div>
