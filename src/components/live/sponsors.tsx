@@ -28,7 +28,7 @@ const SponsorCard = ({
 
   return (
     <div
-      className={`relative flex flex-col rounded-lg border transition-all duration-[3000ms] ${
+      className={`duration-[3000ms] relative flex flex-col rounded-lg border transition-all ${
         isExpanded
           ? "border-primary-300 bg-white shadow-md"
           : "border-transparent bg-transparent"
@@ -75,7 +75,7 @@ const SponsorCard = ({
       </div>
       {description && (
         <div
-          className={`overflow-hidden transition-[max-height,opacity] duration-[3000ms] ${
+          className={`duration-[3000ms] overflow-hidden transition-[max-height,opacity] ${
             isExpanded
               ? "max-h-[2000px] opacity-100 ease-in"
               : "max-h-0 opacity-0 ease-out"
