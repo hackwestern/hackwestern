@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
-import Image from "next/image";
 import {
   Tabs,
   TabsContent,
@@ -15,7 +14,7 @@ const Map = () => {
   const MAX_ZOOM = 10; 
   const [scale2, setScale2] = useState(1);
   const [scale3, setScale3] = useState(1);
-
+  
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
@@ -35,7 +34,7 @@ const Map = () => {
           <p className="text-medium text-sm font-figtree">* Zoom in and out of the map by scrolling / pinching!</p>
         </div>
         <TabsContent value="Floor 2">
-          <div className="w-fill mb-8 flex h-screen max-h-[calc(100vh-120px)] flex-col gap-3 overflow-hidden p-5 sm:p-10">
+          <div className="w-fit flex h-fit max-h-[calc(100vh-240px)] flex-col gap-3 overflow-hidden p-5 sm:p-10">
             <motion.img
               src="/map/floor_2.jpg"
               alt="Floor 2 Map"
@@ -49,12 +48,12 @@ const Map = () => {
                 });
               }}
               style={{ scale: scale2 }}
-              className="cursor-grab active:cursor-grabbing"
+              className="h-full w-auto mb-8 object-contain cursor-grab active:cursor-grabbing"
             />
           </div>
         </TabsContent>
         <TabsContent value="Floor 3">
-          <div className="w-fill mb-8 flex h-screen max-h-[calc(100vh-120px)] flex-col gap-3 overflow-hidden p-5 sm:p-10">
+          <div className="w-fit flex h-fit max-h-[calc(100vh-240px)] flex-col gap-3 overflow-hidden p-5 sm:p-10">
             <motion.img
               src="/map/floor_3.jpg"
               alt="Floor 3 Map"
@@ -68,7 +67,7 @@ const Map = () => {
                 });
               }}
               style={{ scale: scale3 }}
-              className="cursor-grab active:cursor-grabbing"
+              className="h-full w-auto mb-8 object-contain cursor-grab active:cursor-grabbing"
             />
           </div>
         </TabsContent>
