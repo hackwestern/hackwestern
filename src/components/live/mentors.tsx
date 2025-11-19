@@ -6,14 +6,19 @@ import {
   MentorTagsList,
   type MentorTags,
 } from "~/constants/mentors";
+import Construction from "./construction";
 
 const Mentors = () => {
+  const haveAllMentors = false;
+
   const [selectedMentorTags, setSelectedMentorTags] = useState<MentorTags[]>(
     [],
   );
 
   return (
-    <div className="mb-6 px-6">
+    <>
+    {haveAllMentors ? 
+    (<div className="mb-6 px-6">
       <div className="my-8 md:flex">
         <div className="py-1 font-figtree font-semibold text-heavy">Filter By:</div>
         <div className="flex flex-wrap gap-2">
@@ -47,7 +52,9 @@ const Mentors = () => {
           <MentorCard {...mentor} key={mentor.name} />
         ))}
       </div>
-    </div>
+    </div>) :
+    (<Construction />)}
+    </>
   );
 };
 
