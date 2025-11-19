@@ -28,8 +28,8 @@ function isOpenUntil(deadline: Date) {
 
 const FoodMenu = () => {
   const fridayOpen = isOpenUntil(new Date("November 22, 2025 05:30:00"));
-  const saturdayOpen = isOpenUntil(new Date("November 24, 2025 01:00:00"));
-  const sundayOpen = isOpenUntil(new Date("November 24, 2025 18:00:00"));
+  const saturdayOpen = isOpenUntil(new Date("November 23, 2025 01:00:00"));
+  const sundayOpen = isOpenUntil(new Date("November 23, 2025 18:00:00"));
 
   const [activePopovers, setActivePopovers] = useState<Record<string, boolean>>(
     {},
