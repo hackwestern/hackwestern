@@ -90,7 +90,7 @@ const SponsorCard = ({
       {description && (
         <div
           ref={contentRef}
-          className="transition-[max-height,opacity,padding] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="ease-[cubic-bezier(0.22,1,0.36,1)] transition-[max-height,opacity,padding] duration-700"
           style={{
             maxHeight: maxHeightStyle,
             opacity: isExpanded ? 1 : 0,
@@ -98,9 +98,9 @@ const SponsorCard = ({
             paddingBottom: isExpanded ? "1rem" : "0px",
           }}
         >
-          <div className="border-t border-gray-100 mx-8 h-full">
+          <div className="mx-8 h-full border-t border-gray-100">
             <p
-              className={`whitespace-pre-line my-4 h-full font-figtree ${textSize} leading-relaxed text-medium`}
+              className={`my-4 h-full whitespace-pre-line font-figtree ${textSize} leading-relaxed text-medium`}
             >
               {description}
             </p>

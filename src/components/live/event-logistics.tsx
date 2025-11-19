@@ -113,7 +113,9 @@ const EventLogistics = () => {
           <div className="flex flex-col">
             <div className="flex flex-row items-center gap-2">
               <LogisticsTopbar />
-              <p className="font-figtree text-light">Page {step} of {allTitles.length.toString()}</p>
+              <p className="font-figtree text-light">
+                Page {step} of {allTitles.length.toString()}
+              </p>
             </div>
             <h1 className="font-jetbrains-mono text-2xl text-medium">
               {title}

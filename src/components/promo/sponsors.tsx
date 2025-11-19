@@ -46,9 +46,11 @@ const SponsorLogo = ({
   );
 };
 
-export function MacBook({rotate}: { rotate: string }) {
+export function MacBook({ rotate }: { rotate: string }) {
   return (
-    <div className={`relative z-10 h-[600px] w-[854.14px] origin-top-left -rotate-[${rotate}deg] rounded-3xl bg-gradient-to-b from-gray-200 to-zinc-400 shadow-[0px_3.82px_7.64px_0px_rgba(0,0,0,0.25)] shadow-[inset_0px_-1.91px_11.46px_0px_rgba(0,0,0,0.40)]`}>
+    <div
+      className={`relative z-10 h-[600px] w-[854.14px] origin-top-left -rotate-[${rotate}deg] rounded-3xl bg-gradient-to-b from-gray-200 to-zinc-400 shadow-[0px_3.82px_7.64px_0px_rgba(0,0,0,0.25)] shadow-[inset_0px_-1.91px_11.46px_0px_rgba(0,0,0,0.40)]`}
+    >
       <div className="absolute left-[386.49px] top-[239.58px] h-[144px] w-[96px]">
         <motion.img
           src="/hackwesternmaclogo.svg"
@@ -62,7 +64,7 @@ export function MacBook({rotate}: { rotate: string }) {
         <SponsorLogo key={i} {...sponsor} />
       ))}
     </div>
-  )
+  );
 }
 
 function Sponsors() {
