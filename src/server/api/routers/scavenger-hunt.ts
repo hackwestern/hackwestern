@@ -173,7 +173,12 @@ const redeemPrize = async (
 };
 
 // * Safe Functions: Check is done within the transaction to avoid race conditions */
-const recordScan = async (userId: string, scannerId: string, points: number, itemId: number) => {
+const recordScan = async (
+  userId: string,
+  scannerId: string,
+  points: number,
+  itemId: number,
+) => {
   return withErrorHandling(async () => {
     await db.transaction(async (tx) => {
       // Check if user has already scanned this item
