@@ -19,7 +19,7 @@ const Map = () => {
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <p className="font-figtree text-medium text-base">
-          This year's venue will be at Somerville House & Thames Hall!
+          This year&apos;s venue will be at Somerville House & Thames Hall!
         </p>
         <p className="font-figtree text-medium text-base">
           <b className="text-heavy">Address:</b> 40 Lambton Dr, London, ON N6G 2V4
