@@ -101,11 +101,30 @@ export const SPONSOR_TIERS: SponsorTier[] = [
       },
       {
         name: "Morrissette Institute for Entrepreneurship",
-        // TODO: Add Morrissette logo (if not exists)
         logo: "/sponsors/morrissette.png",
         link: "https://entrepreneurship.uwo.ca/",
         description:
           "Morrissette Institute for Entrepreneurship supports entrepreneurship and innovation at Western University and beyond. They have supported hundreds of entrepreneurs navigate the complexities of starting and growing a business by connecting them with the right resources to succeed. If you're a Western student, check out their programs and resources today! https://entrepreneurship.uwo.ca/for-students/",
+      },
+      {
+        name: "Leuchtturm1917",
+        logo: "/sponsors/leuchtturm.png",
+        link: "https://www.leuchtturm1917.ca/",
+      },
+      {
+        name: "Meta",
+        logo: "/sponsors/meta.png",
+        link: "https://www.meta.com/",
+      },
+      {
+        name: "Western Technology Services",
+        logo: "/sponsors/wts.png",
+        link: "https://wts.uwo.ca/index.html",
+      },
+      {
+        name: "Awake Chocolate",
+        logo: "/sponsors/awake.png",
+        link: "https://awakechocolate.com/",
       },
     ],
   },
