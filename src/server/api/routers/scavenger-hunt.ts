@@ -173,7 +173,12 @@ const redeemPrize = async (
 };
 
 // * Safe Functions: Check is done within the transaction to avoid race conditions */
-const recordScan = async (userId: string, points: number, itemId: number) => {
+const recordScan = async (
+  userId: string,
+  scannerId: string,
+  points: number,
+  itemId: number,
+) => {
   return withErrorHandling(async () => {
     await db.transaction(async (tx) => {
       // Check if user has already scanned this item
@@ -196,6 +201,7 @@ const recordScan = async (userId: string, points: number, itemId: number) => {
       // Record the scan
       await tx.insert(scavengerHuntScans).values({
         userId: userId,
+        scannerId: scannerId,
         itemId: itemId,
       });
     });
@@ -348,9 +354,10 @@ export const scavengerHuntRouter = createTRPCRouter({
         itemCode: z.string(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       return withErrorHandling(async () => {
         const { userId, itemCode } = input;
+        const scannerId = ctx.session.user.id;
 
         // Check if item exists and is not soft-deleted (or scheduled for future deletion)
         const item = await getScavengerHuntItemByItemCode(itemCode);
@@ -364,13 +371,18 @@ export const scavengerHuntRouter = createTRPCRouter({
         }
 
         // Record the scan
-        await recordScan(userId, item.points, item.id);
+        await recordScan(userId, scannerId, item.points, item.id);
         return {
           success: true,
           message: "Item scanned successfully",
         };
       }, "Failed to scan item");
     }),
+
+  // Get All Scans (only accessible to organizers)
+  getAllScans: protectedOrganizerProcedure.query(async () => {
+    return await db.query.scavengerHuntScans.findMany();
+  }),
 
   // Get Scans (user's get their own scans)
   getScans: protectedOrganizerProcedure.query(async ({ ctx }) => {

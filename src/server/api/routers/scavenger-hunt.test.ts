@@ -835,6 +835,190 @@ describe("scavengerHuntRouter scan endpoints", () => {
     });
   });
 
+  // getAllScans tests
+  describe("getAllScans", () => {
+    let testUser1: Awaited<ReturnType<typeof mockSession>>;
+    let testUser2: Awaited<ReturnType<typeof mockSession>>;
+    let testItem1: Awaited<ReturnType<typeof insertTestItem>>;
+    let testItem2: Awaited<ReturnType<typeof insertTestItem>>;
+
+    beforeEach(async () => {
+      // Create test users
+      testUser1 = await mockSession(db);
+      testUser2 = await mockSession(db);
+
+      // Create test items
+      testItem1 = await insertTestItem({}, faker.string.alphanumeric(12));
+      testItem2 = await insertTestItem({}, faker.string.alphanumeric(12));
+
+      // Reset users' scavenger hunt balances
+      await db
+        .update(users)
+        .set({ scavengerHuntBalance: 0, scavengerHuntEarned: 0 })
+        .where(eq(users.id, testUser1.user.id));
+      await db
+        .update(users)
+        .set({ scavengerHuntBalance: 0, scavengerHuntEarned: 0 })
+        .where(eq(users.id, testUser2.user.id));
+
+      // Clean up any existing scans
+      await db
+        .delete(scavengerHuntScans)
+        .where(eq(scavengerHuntScans.userId, testUser1.user.id));
+      await db
+        .delete(scavengerHuntScans)
+        .where(eq(scavengerHuntScans.userId, testUser2.user.id));
+    });
+
+    afterEach(async () => {
+      // Clean up scans
+      await db
+        .delete(scavengerHuntScans)
+        .where(eq(scavengerHuntScans.userId, testUser1.user.id));
+      await db
+        .delete(scavengerHuntScans)
+        .where(eq(scavengerHuntScans.userId, testUser2.user.id));
+
+      // Clean up test users
+      await db.delete(users).where(eq(users.id, testUser1.user.id));
+      await db.delete(users).where(eq(users.id, testUser2.user.id));
+
+      // Clean up test items
+      if (testItem1) {
+        await db
+          .delete(scavengerHuntItems)
+          .where(eq(scavengerHuntItems.id, testItem1.id));
+      }
+      if (testItem2) {
+        await db
+          .delete(scavengerHuntItems)
+          .where(eq(scavengerHuntItems.id, testItem2.id));
+      }
+    });
+
+    test("returns empty array when no scans exist", async () => {
+      const scans = await organizerCaller.scavengerHunt.getAllScans();
+      expect(scans).toEqual([]);
+    });
+
+    test("returns all scans from all users", async () => {
+      // Create scans for different users
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser1.user.id,
+        itemCode: testItem1.code,
+      });
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser1.user.id,
+        itemCode: testItem2.code,
+      });
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser2.user.id,
+        itemCode: testItem1.code,
+      });
+
+      const scans = await organizerCaller.scavengerHunt.getAllScans();
+
+      expect(scans.length).toBeGreaterThanOrEqual(3);
+      const scanUserIds = scans.map((s) => s.userId);
+      const scanItemIds = scans.map((s) => s.itemId);
+
+      // Should contain scans from both users
+      expect(scanUserIds).toContain(testUser1.user.id);
+      expect(scanUserIds).toContain(testUser2.user.id);
+
+      // Should contain scans for both items
+      expect(scanItemIds).toContain(testItem1.id);
+      expect(scanItemIds).toContain(testItem2.id);
+    });
+
+    test("returns scans with correct structure", async () => {
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser1.user.id,
+        itemCode: testItem1.code,
+      });
+
+      const scans = await organizerCaller.scavengerHunt.getAllScans();
+
+      const scan = scans.find(
+        (s) => s.userId === testUser1.user.id && s.itemId === testItem1.id,
+      );
+
+      expect(scan).toBeDefined();
+      expect(scan?.userId).toBe(testUser1.user.id);
+      expect(scan?.itemId).toBe(testItem1.id);
+      expect(scan?.scannerId).toBeDefined();
+      expect(scan?.createdAt).toBeInstanceOf(Date);
+    });
+
+    test("includes scans from multiple users and items", async () => {
+      // Create multiple scans
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser1.user.id,
+        itemCode: testItem1.code,
+      });
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser1.user.id,
+        itemCode: testItem2.code,
+      });
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser2.user.id,
+        itemCode: testItem1.code,
+      });
+      await organizerCaller.scavengerHunt.scan({
+        userId: testUser2.user.id,
+        itemCode: testItem2.code,
+      });
+
+      const scans = await organizerCaller.scavengerHunt.getAllScans();
+
+      expect(scans.length).toBeGreaterThanOrEqual(4);
+
+      // Verify all combinations exist
+      const scanCombinations = scans.map((s) => ({
+        userId: s.userId,
+        itemId: s.itemId,
+      }));
+
+      expect(scanCombinations).toContainEqual({
+        userId: testUser1.user.id,
+        itemId: testItem1.id,
+      });
+      expect(scanCombinations).toContainEqual({
+        userId: testUser1.user.id,
+        itemId: testItem2.id,
+      });
+      expect(scanCombinations).toContainEqual({
+        userId: testUser2.user.id,
+        itemId: testItem1.id,
+      });
+      expect(scanCombinations).toContainEqual({
+        userId: testUser2.user.id,
+        itemId: testItem2.id,
+      });
+    });
+
+    test("throws error if user is not an organizer", async () => {
+      try {
+        await caller.scavengerHunt.getAllScans();
+        expect.fail("Route should return a TRPCError");
+      } catch (err) {
+        expect(err).toBeInstanceOf(TRPCError);
+        const trpcErr = err as TRPCError;
+        expect(trpcErr.code).toBe("FORBIDDEN");
+        expect(trpcErr.message).toBe("User is not an organizer");
+      }
+    });
+
+    test("throws error if user is not authenticated", async () => {
+      const unauthenticatedCtx = createInnerTRPCContext({ session: null });
+      const unauthenticatedCaller = createCaller(unauthenticatedCtx);
+
+      await expect(
+        unauthenticatedCaller.scavengerHunt.getAllScans(),
+      ).rejects.toThrow();
+    });
+  });
+
   // getScansByUserId tests
   describe("getScansByUserId", () => {
     let testUser: Awaited<ReturnType<typeof mockSession>>;
@@ -1501,7 +1685,6 @@ describe("scavengerHuntRouter item management endpoints", () => {
         });
         expect.fail("Route should return a TRPCError");
       } catch (err) {
-        console.log("error", err, typeof err);
         expect(err).toBeInstanceOf(TRPCError);
         const trpcErr = err as TRPCError;
         expect(trpcErr.code).toBe("NOT_FOUND");
