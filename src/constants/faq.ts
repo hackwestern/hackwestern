@@ -40,7 +40,7 @@ export const PROMO_FAQ: readonly [
   {
     question: "When can I start hacking?",
     answer:
-      "Hacking begins at 10pm on Friday, November 21st, 2025 and ends at 10am on Sunday, November 23rd, 2025. All code written for Hack Western must be written within this timeframe, with the exception of code taken from public and open source libraries, APIs, or tutorials. Any projects found to be worked on outside of this time frame will be disqualified from judging.",
+      "Hacking begins at 9pm on Friday, November 21st, 2025 and ends at 9am on Sunday, November 23rd, 2025. All code written for Hack Western must be written within this timeframe, with the exception of code taken from public and open source libraries, APIs, or tutorials. Any projects found to be worked on outside of this time frame will be disqualified from judging.",
   },
   {
     question: "What is a hackathon?",
@@ -111,7 +111,7 @@ export const HACKATHON_FAQ: FaqType[] = [
   },
   {
     question: "When can I start hacking?",
-    answer: "Hacking begins on Friday, November 23th at 10pm.",
+    answer: "Hacking begins on Friday, November 21st at 9pm.",
   },
   {
     question: "What workshops and activities will there be?",
@@ -120,7 +120,7 @@ export const HACKATHON_FAQ: FaqType[] = [
   },
   {
     question: "What is the submission deadline?",
-    answer: "Hacking ends on Sunday, December 1st at 10am.",
+    answer: "Hacking ends on Sunday, November 23rd at 9am.",
   },
   {
     question: "Will judging be in person?",
