@@ -28,7 +28,7 @@ const SponsorCard = ({
 
   return (
     <div
-      className={`relative flex flex-col rounded-lg border ${
+      className={`relative flex flex-col rounded-lg border transition-all duration-[3000ms] ${
         isExpanded
           ? "border-primary-300 bg-white shadow-md"
           : "border-transparent bg-transparent"
@@ -46,7 +46,7 @@ const SponsorCard = ({
           }
         >
           <ChevronDown
-            className={`duration-[5000ms] h-4 w-4 text-medium transition-transform ${
+            className={`duration-[3000ms] h-4 w-4 text-medium transition-transform ${
               isExpanded ? "rotate-180 ease-out" : "rotate-0 ease-in"
             }`}
           />
@@ -75,10 +75,10 @@ const SponsorCard = ({
       </div>
       {description && (
         <div
-          className={`duration-[5000ms] overflow-hidden transition-all ${
+          className={`overflow-hidden transition-[max-height,opacity] duration-[3000ms] ${
             isExpanded
-              ? "max-h-[2000px] opacity-100 ease-out"
-              : "max-h-0 opacity-0 ease-in"
+              ? "max-h-[2000px] opacity-100 ease-in"
+              : "max-h-0 opacity-0 ease-out"
           }`}
         >
           <p
