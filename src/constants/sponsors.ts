@@ -87,7 +87,7 @@ export const SPONSORS: readonly SponsorLogoProps[] = [
     alt: "Awake Caffeinated Chocolate",
     width: 200,
     height: 200,
-    x: 20 ,
+    x: 20,
     y: 240,
     rotation: 0,
     href: "https://www.awakechocolate.com",

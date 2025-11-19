@@ -20,7 +20,7 @@ const Schedule = () => {
   if (loading) {
     return (
       <div className="mb-8 flex h-fit w-full flex-col gap-3 p-5 sm:p-10">
-        <div className="text-center text-lg text-medium font-jetbrains-mono">
+        <div className="text-center font-jetbrains-mono text-lg text-medium">
           LOADING SCHEDULE...
         </div>
       </div>
@@ -46,7 +46,7 @@ const Schedule = () => {
           {/* Sticky category headers */}
           <div className="sticky top-0 z-[60] mb-6 border-b-2 border-gray-200 py-3 backdrop-blur-sm">
             <div className="grid grid-cols-[80px_repeat(8,1fr)] items-center gap-2">
-              <div className="text-xs font-jetbrains-mono font-semibold text-gray-500"></div>
+              <div className="font-jetbrains-mono text-xs font-semibold text-gray-500"></div>
               {categoryLabels.map((label, i) => (
                 <div
                   key={i}
@@ -77,7 +77,7 @@ const Schedule = () => {
       </div>
 
       {scheduleData.length === 0 && (
-        <div className="py-10 text-center text-medium font-figtree">
+        <div className="py-10 text-center font-figtree text-medium">
           No schedule data available
         </div>
       )}

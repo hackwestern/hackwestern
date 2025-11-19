@@ -43,11 +43,11 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
       className={`rounded-lg border-2 p-2 sm:p-3 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 z-50 flex select-text flex-col justify-center shadow-sm transition-shadow hover:shadow-md`}
       style={{ height: `${height}px` }}
     >
-      <div className="select-text text-[11px] font-semibold leading-tight sm:text-xs font-figtree">
+      <div className="select-text font-figtree text-[11px] font-semibold leading-tight sm:text-xs">
         {event.title}
       </div>
       {event.location && (
-        <div className="mt-0.5 select-text text-[9px] italic opacity-70 sm:text-[10px] font-figtree">
+        <div className="mt-0.5 select-text font-figtree text-[9px] italic opacity-70 sm:text-[10px]">
           {event.location}
         </div>
       )}
@@ -114,7 +114,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
     <div className="w-full pb-4">
       <div className="rounded-sm p-6">
         {/* Header with day name */}
-        <div className="sticky left-0 mb-4 mt-2 text-2xl font-bold text-heavy font-figtree">
+        <div className="sticky left-0 mb-4 mt-2 font-figtree text-2xl font-bold text-heavy">
           {day}, November{" "}
           {day === "Friday" ? "21st" : day === "Saturday" ? "22nd" : "23rd"}
         </div>
@@ -216,7 +216,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                   }}
                 >
                   {/* Time label */}
-                  <div className="flex items-start pt-2 text-xs font-base font-figtree text-medium sm:text-sm">
+                  <div className="font-base flex items-start pt-2 font-figtree text-xs text-medium sm:text-sm">
                     {event.time}
                   </div>
 
