@@ -111,7 +111,7 @@ export const HACKATHON_FAQ: FaqType[] = [
   },
   {
     question: "When can I start hacking?",
-    answer: "Hacking begins on Friday, November 23th at 9pm.",
+    answer: "Hacking begins on Friday, November 21st at 9pm.",
   },
   {
     question: "What workshops and activities will there be?",
