@@ -120,7 +120,7 @@ export const HACKATHON_FAQ: FaqType[] = [
   },
   {
     question: "What is the submission deadline?",
-    answer: "Hacking ends on Sunday, December 1st at 9am.",
+    answer: "Hacking ends on Sunday, November 23rd at 9am.",
   },
   {
     question: "Will judging be in person?",
