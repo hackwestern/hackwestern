@@ -112,7 +112,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
 
   return (
     <div className="w-full pb-4">
-      <div className="rounded-sm bg-white p-6">
+      <div className="rounded-sm p-6">
         {/* Header with day name */}
         <div className="sticky left-0 mb-4 mt-2 text-2xl font-bold text-heavy font-figtree">
           {day}, November{" "}
