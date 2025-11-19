@@ -2,7 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { SPONSOR_TIERS, SPONSOR_THANK_YOU_TEXT } from "~/constants/sponsors-live";
+import {
+  SPONSOR_TIERS,
+  SPONSOR_THANK_YOU_TEXT,
+} from "~/constants/sponsors-live";
 
 const SponsorCard = ({
   name,
@@ -20,7 +23,8 @@ const SponsorCard = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const logoSize = 200 * scale;
   const maxHeight = 20 * scale;
-  const textSize = scale > 1.5 ? "text-base" : scale > 1 ? "text-sm" : "text-sm";
+  const textSize =
+    scale > 1.5 ? "text-base" : scale > 1 ? "text-sm" : "text-sm";
 
   return (
     <div
@@ -37,13 +41,13 @@ const SponsorCard = ({
             setIsExpanded(!isExpanded);
           }}
           className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-md bg-white transition-all hover:bg-primary-50"
-          aria-label={isExpanded ? "Collapse description" : "Expand description"}
+          aria-label={
+            isExpanded ? "Collapse description" : "Expand description"
+          }
         >
           <ChevronDown
-            className={`h-4 w-4 text-medium transition-transform duration-[5000ms] ${
-              isExpanded
-                ? "rotate-180 ease-out"
-                : "rotate-0 ease-in"
+            className={`duration-[5000ms] h-4 w-4 text-medium transition-transform ${
+              isExpanded ? "rotate-180 ease-out" : "rotate-0 ease-in"
             }`}
           />
         </button>
@@ -71,7 +75,7 @@ const SponsorCard = ({
       </div>
       {description && (
         <div
-          className={`overflow-hidden transition-all duration-[5000ms] ${
+          className={`duration-[5000ms] overflow-hidden transition-all ${
             isExpanded
               ? "max-h-[2000px] opacity-100 ease-out"
               : "max-h-0 opacity-0 ease-in"

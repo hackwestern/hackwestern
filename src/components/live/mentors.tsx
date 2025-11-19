@@ -51,7 +51,6 @@ const Mentors = () => {
         ))}
       </div>
     </div>
-    
   );
 };
 
