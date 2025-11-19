@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import {
   SPONSOR_TIERS,
@@ -21,6 +21,20 @@ const SponsorCard = ({
   scale?: number;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [maxHeightStyle, setMaxHeightStyle] = useState<string>("0px");
+
+  useEffect(() => {
+    if (!contentRef.current) return;
+    // when expanding set to scrollHeight so transition can animate from 0 -> height
+    if (isExpanded) {
+      setMaxHeightStyle(`${contentRef.current.scrollHeight + 100}px`);
+    } else {
+      // collapse to 0
+      setMaxHeightStyle("0px");
+    }
+  }, [isExpanded, description]);
+
   const logoSize = 200 * scale;
   const maxHeight = 20 * scale;
   const textSize =
@@ -75,17 +89,22 @@ const SponsorCard = ({
       </div>
       {description && (
         <div
-          className={`duration-[5000ms] overflow-hidden transition-all ${
-            isExpanded
-              ? "max-h-[2000px] opacity-100 ease-out"
-              : "max-h-0 opacity-0 ease-in"
-          }`}
+          ref={contentRef}
+          className="transition-[max-height,opacity,padding] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          style={{
+            maxHeight: maxHeightStyle,
+            opacity: isExpanded ? 1 : 0,
+            paddingTop: isExpanded ? "1rem" : "0px",
+            paddingBottom: isExpanded ? "1rem" : "0px",
+          }}
         >
-          <p
-            className={`mt-4 whitespace-pre-line border-t border-gray-100 px-4 pb-4 pt-4 font-figtree ${textSize} leading-relaxed text-medium`}
-          >
-            {description}
-          </p>
+          <div className="border-t border-gray-100 mx-8 h-full">
+            <p
+              className={`whitespace-pre-line my-4 h-full font-figtree ${textSize} leading-relaxed text-medium`}
+            >
+              {description}
+            </p>
+          </div>
         </div>
       )}
     </div>
@@ -97,7 +116,7 @@ const Sponsors = () => {
     <div className="h-full overflow-auto p-8 md:p-12">
       {/* Thank you text */}
       <div className="mb-12 text-center">
-        <p className="font-figtree text-lg font-semibold text-medium md:text-xl">
+        <p className="font-figtree text-medium md:text-lg">
           {SPONSOR_THANK_YOU_TEXT}
         </p>
       </div>
@@ -140,7 +159,7 @@ const Sponsors = () => {
         return (
           <div key={tier.tier} className="mb-12">
             <h2
-              className={`mb-6 text-center font-jetbrains-mono ${config.titleSize} font-semibold text-heavy`}
+              className={`mb-6 text-center font-figtree ${config.titleSize} font-semibold text-heavy`}
             >
               {tier.tier}
             </h2>
