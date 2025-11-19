@@ -54,6 +54,7 @@ export default function AdjustStatus() {
   const [status, setStatus] = useState<Status | undefined>(undefined);
   const [pending, setPending] = useState(false);
   const [showParsed, setShowParsed] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
   const { toast } = useToast();
 
   const uniqueValidEmails = useMemo(() => {
@@ -87,6 +88,32 @@ export default function AdjustStatus() {
     setFileName(file.name);
     const text = await file.text();
     parseCsv(text);
+  }
+
+  function handleAddEmail() {
+    const trimmed = newEmail.trim().toLowerCase();
+    if (!trimmed) {
+      toast({
+        title: "Email required",
+        description: "Please enter an email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!isValidEmail(trimmed)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    setEmails((prev) => [...prev, trimmed]);
+    setNewEmail("");
+    toast({
+      title: "Email added",
+      description: `Added ${trimmed} to the list`,
+    });
   }
 
   async function handleSave() {
@@ -175,6 +202,28 @@ export default function AdjustStatus() {
                 </ul>
               </div>
             )}
+          </div>
+
+          <div className="mb-6">
+            <h2 className="mb-2 font-figtree text-medium">Add Single Email</h2>
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                placeholder="Enter email address"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddEmail();
+                  }
+                }}
+                className="flex-1"
+              />
+              <Button variant="primary" onClick={handleAddEmail} type="button">
+                Add
+              </Button>
+            </div>
           </div>
 
           <div className="mb-6">
