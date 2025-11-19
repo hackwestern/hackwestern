@@ -14,8 +14,8 @@ const Mentors = () => {
   );
 
   return (
-    <Construction />
-    /*
+    // <Construction />
+
     <div className="mb-6 px-6">
       <div className="my-8 md:flex">
         <div className="py-1">Filter by:</div>
@@ -51,7 +51,7 @@ const Mentors = () => {
         ))}
       </div>
     </div>
-    */
+    
   );
 };
 

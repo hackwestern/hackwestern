@@ -1,165 +1,162 @@
-// import { SponsorCard } from "../promo/sponsors";
-import Construction from "~/components/live/construction";
+import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { SPONSOR_TIERS, SPONSOR_THANK_YOU_TEXT } from "~/constants/sponsors-live";
 
 const SponsorCard = ({
   name,
   logo,
   link,
+  description,
+  scale = 1,
 }: {
   name: string;
   logo: string;
   link: string;
+  description?: string;
+  scale?: number;
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const logoSize = 200 * scale;
+  const maxHeight = 20 * scale;
+  const textSize = scale > 1.5 ? "text-base" : scale > 1 ? "text-sm" : "text-sm";
+
   return (
-    <div>
-      {name} {logo} {link}
+    <div
+      className={`relative flex flex-col rounded-lg border ${
+        isExpanded
+          ? "border-primary-300 bg-white shadow-md"
+          : "border-transparent bg-transparent"
+      }`}
+    >
+      {description && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(!isExpanded);
+          }}
+          className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-md bg-white transition-all hover:bg-primary-50"
+          aria-label={isExpanded ? "Collapse description" : "Expand description"}
+        >
+          <ChevronDown
+            className={`h-4 w-4 text-medium transition-transform duration-[5000ms] ${
+              isExpanded
+                ? "rotate-180 ease-out"
+                : "rotate-0 ease-in"
+            }`}
+          />
+        </button>
+      )}
+      <div className="flex items-start gap-2">
+        <Link
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`flex flex-1 items-center justify-center rounded-lg bg-white p-4 ${
+            isExpanded
+              ? "border border-transparent"
+              : "border border-gray-200 hover:border-primary-300 hover:shadow-md"
+          }`}
+        >
+          <Image
+            src={logo}
+            alt={name}
+            width={logoSize}
+            height={logoSize * 0.5}
+            className="h-auto w-auto object-contain"
+            style={{ maxHeight: `${maxHeight * 4}px` }}
+          />
+        </Link>
+      </div>
+      {description && (
+        <div
+          className={`overflow-hidden transition-all duration-[5000ms] ${
+            isExpanded
+              ? "max-h-[2000px] opacity-100 ease-out"
+              : "max-h-0 opacity-0 ease-in"
+          }`}
+        >
+          <p
+            className={`mt-4 whitespace-pre-line border-t border-gray-100 px-4 pb-4 pt-4 font-figtree ${textSize} leading-relaxed text-medium`}
+          >
+            {description}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
 
 const Sponsors = () => {
-  return <Construction />;
-  /*
   return (
-    <div className="p-12">
-      <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
-        Title Sponsor
-      </h1>
-      <div>
-        <SponsorCard
-          name="Scotiabank"
-          logo="/sponsors/Scotiabank.svg"
-          link="https://www.scotiabank.com/"
-        />
+    <div className="h-full overflow-auto p-8 md:p-12">
+      {/* Thank you text */}
+      <div className="mb-12 text-center">
+        <p className="font-figtree text-lg font-semibold text-medium md:text-xl">
+          {SPONSOR_THANK_YOU_TEXT}
+        </p>
       </div>
-      {/* Diamond Sponsors */ /*}
-      <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
-        Diamond Sponsors
-      </h1>
-      <div className="flex flex-col gap-2 lg:gap-8">
-        <div className="grid grid-cols-2 gap-2 lg:gap-8">
-          <SponsorCard
-            name="Canada Life"
-            logo="/sponsors/CanadaLife.svg"
-            link="https://www.canadalife.com/"
-          />
-          <SponsorCard
-            name="Sun Life"
-            logo="/sponsors/Sun Life.svg"
-            link="https://www.sunlife.ca/"
-          />
-        </div>
-        <SponsorCard
-          name="Starknet"
-          logo="/sponsors/Starknet.svg"
-          link="https://www.starknet.io/"
-        />
-      </div>
-      {/* Gold Sponsors */ /*}
-      <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
-        Gold Sponsors
-      </h1>
-      <div className="grid grid-cols-3 gap-2 lg:gap-8">
-        <SponsorCard
-          name="TD invent"
-          logo="/sponsors/TD Invent.svg"
-          link="https://tdinvent.td.com/"
-        />
-        <SponsorCard
-          name="DoraHacks"
-          logo="/sponsors/DoraHacks.svg"
-          link="https://dorahacks.io/"
-        />
-        <SponsorCard
-          name="Big Blue Bubble"
-          logo="/sponsors/Big Blue Bubble.svg"
-          link="https://www.bigbluebubble.com/"
-        />
-      </div>
-      {/* Bronze Sponsors */ /*}
-      <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
-        Bronze Sponsors
-      </h1>
-      <div className="grid grid-cols-3 flex-col gap-2 lg:gap-8">
-        <SponsorCard
-          name="P&G"
-          logo="/sponsors/P&G.svg"
-          link="https://www.pg.ca/"
-        />
-        <SponsorCard
-          name="Accenture"
-          logo="/sponsors/Accenture.svg"
-          link="https://www.accenture.com/"
-        />
-        <SponsorCard
-          name="Morrissette"
-          logo="/sponsors/Morrissette.svg"
-          link="https://entrepreneurship.uwo.ca/"
-        />
-        <SponsorCard
-          name="Digital Extreme"
-          logo="/sponsors/digitalextreme.svg"
-          link="https://www.digitalextremes.com/"
-        />
-        <SponsorCard
-          name="GEOTAB"
-          logo="/sponsors/geotab.svg"
-          link="https://www.geotab.com/"
-        />
-        <SponsorCard
-          name="Notion"
-          logo="/sponsors/notion.png"
-          link="https://notion.com"
-        />
-        <SponsorCard
-          name="Tempo Labs"
-          logo="/sponsors/tempo-logo-white.svg"
-          link="https://www.tempolabs.ai/"
-        />
-      </div>
-      {/* In-kind Sponsors */ /*}
-      <h1 className="font-DM_Sans py-4 text-2xl font-medium text-slate-600">
-        In-kind Sponsors
-      </h1>
-      <div className="grid grid-cols-3 gap-2 lg:gap-8">
-        <SponsorCard
-          name="Canada Learning Code"
-          logo="/sponsors/Canada Learning Code.svg"
-          link="https://www.canadalearningcode.ca/"
-        />
-        <SponsorCard
-          name="Warp"
-          logo="/sponsors/Warp.svg"
-          link="https://www.warp.dev/"
-        />
-        <SponsorCard
-          name="Voiceflow"
-          logo="/sponsors/Voiceflow.svg"
-          link="https://www.voiceflow.com/"
-        />
-        <SponsorCard
-          name="StandOut Stickers"
-          logo="/sponsors/StandOut.svg"
-          link="http://hackp.ac/mlh-StandOutStickers-hackathons"
-        />
-        <SponsorCard
-          name="Western Engineering"
-          logo="/sponsors/WesternEngineering.svg"
-          link="https://www.eng.uwo.ca/outreach/index.html"
-        />
-        <SponsorCard
-          name="Awake Caffeinated Chocolate"
-          logo="/sponsors/Awake Chocolate.svg"
-          link="https://awakechocolate.com/"
-        />
-        <SponsorCard
-          name="Hack the North"
-          logo="/sponsors/HacktheNorthLogo_White.svg"
-          link="https://hackthenorth.com/"
-        />
-      </div>
+
+      {/* Sponsor tiers */}
+      {SPONSOR_TIERS.map((tier) => {
+        // Determine grid and scale based on tier importance
+        const getTierConfig = (tierName: string) => {
+          if (tierName === "Title Sponsor") {
+            return {
+              gridCols: "grid-cols-1 max-w-2xl mx-auto",
+              titleSize: "text-4xl md:text-5xl",
+              scale: 3.0,
+            };
+          }
+          if (tierName === "Diamond Sponsors") {
+            return {
+              gridCols: "grid-cols-1 max-w-2xl mx-auto",
+              titleSize: "text-3xl md:text-4xl",
+              scale: 2.16,
+            };
+          }
+          if (tierName === "Gold Sponsors") {
+            return {
+              gridCols: "grid-cols-1 sm:grid-cols-2",
+              titleSize: "text-2xl md:text-3xl",
+              scale: 1.68,
+            };
+          }
+          // Bronze and In-Kind use default
+          return {
+            gridCols: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+            titleSize: "text-2xl md:text-3xl",
+            scale: 1,
+          };
+        };
+
+        const config = getTierConfig(tier.tier);
+
+        return (
+          <div key={tier.tier} className="mb-12">
+            <h2
+              className={`mb-6 text-center font-jetbrains-mono ${config.titleSize} font-semibold text-heavy`}
+            >
+              {tier.tier}
+            </h2>
+            <div className={`grid ${config.gridCols} gap-6`}>
+              {tier.sponsors.map((sponsor) => (
+                <SponsorCard
+                  key={sponsor.name}
+                  name={sponsor.name}
+                  logo={sponsor.logo}
+                  link={sponsor.link}
+                  description={sponsor.description}
+                  scale={config.scale}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
-  );*/
+  );
 };
 
 export default Sponsors;
