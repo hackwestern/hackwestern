@@ -374,6 +374,11 @@ export const scavengerHuntRouter = createTRPCRouter({
       }, "Failed to scan item");
     }),
 
+  // Get All Scans (only accessible to organizers)
+  getAllScans: protectedOrganizerProcedure.query(async () => {
+    return await db.query.scavengerHuntScans.findMany();
+  }),
+
   // Get Scans (user's get their own scans)
   getScans: protectedOrganizerProcedure.query(async ({ ctx }) => {
     // Get scans for itemId
