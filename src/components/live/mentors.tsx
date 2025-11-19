@@ -6,7 +6,6 @@ import {
   MentorTagsList,
   type MentorTags,
 } from "~/constants/mentors";
-import Construction from "~/components/live/construction";
 
 const Mentors = () => {
   const [selectedMentorTags, setSelectedMentorTags] = useState<MentorTags[]>(
@@ -14,20 +13,18 @@ const Mentors = () => {
   );
 
   return (
-    <Construction />
-    /*
     <div className="mb-6 px-6">
       <div className="my-8 md:flex">
-        <div className="py-1">Filter by:</div>
-        <div className="flex flex-wrap">
+        <div className="py-1 font-figtree font-semibold text-heavy">Filter By:</div>
+        <div className="flex flex-wrap gap-2">
           {MentorTagsList.map((tag) => (
             <span
               key={tag}
-              className={`cursor-pointer rounded-md px-1.5 py-1 ${
+              className={`cursor-pointer rounded-md px-2 py-1 ${
                 selectedMentorTags.includes(tag)
-                  ? "bg-primary-600 text-primary-100"
-                  : "bg-primary-200 text-violet-500"
-              } mx-1.5 transition-all hover:bg-primary-500 hover:text-primary-100`}
+                  ? "bg-primary-300 text-heavy"
+                  : "bg-highlight text-medium"
+              } mx-1.5 transition-all hover:bg-primary-500 hover:text-white font-figtree`}
               onClick={() => {
                 setSelectedMentorTags((prev) =>
                   prev.includes(tag)
@@ -41,7 +38,7 @@ const Mentors = () => {
           ))}
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-6 overflow-auto md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5">
+      <div className="h-screen pb-96 grid grid-cols-1 gap-6 overflow-auto md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5">
         {MentorsList.filter(
           (mentor) =>
             selectedMentorTags.length === 0 ||
@@ -51,7 +48,6 @@ const Mentors = () => {
         ))}
       </div>
     </div>
-    */
   );
 };
 
@@ -69,15 +65,15 @@ const MentorCard = (mentor: Mentor) => {
         )}
       </div>
       <div className="my-2">
-        <h2 className="text-lg font-medium">{mentor.name}</h2>
-        <p className="text-base text-[#64748B]">{mentor.desc}</p>
+        <h2 className="text-lg font-medium font-figtree text-heavy">{mentor.name}</h2>
+        <p className="text-base text-[#64748B] font-figtree text-medium">{mentor.desc}</p>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {mentor.tags.map((tag) => (
           <span
             key={tag}
-            className="rounded-lg bg-primary-200 p-1 px-1.5 text-primary-600 "
+            className="rounded-lg bg-primary-300 p-1 px-2 text-heavy font-figtree"
           >
             {tag}
           </span>
