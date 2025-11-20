@@ -1,5 +1,6 @@
-import { eq, and, sql, desc } from "drizzle-orm";
+
 import { alias } from "drizzle-orm/pg-core";
+import { eq, and, sql, or, isNull, gt } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -19,18 +20,37 @@ import {
 } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 
+// Helper function to handle TRPC errors consistently
+const withErrorHandling = async <T>(
+  fn: () => Promise<T>,
+  errorMessage: string,
+): Promise<T> => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (error instanceof TRPCError) {
+      throw error;
+    }
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: `${errorMessage}: ${error instanceof Error ? error.message : JSON.stringify(error)}`,
+    });
+  }
+};
+
 // ! Unsafe Functions: Need to check if caller can add points before invoking */
 export const addPoints = async (
   tx: Transaction,
   userId: string,
   points: number,
+  decrementEarnedBalance = false,
 ) => {
-  try {
+  return withErrorHandling(async () => {
     const updateData: Record<string, SQL> = {
       scavengerHuntBalance: sql`scavenger_hunt_balance + ${points}`,
     };
 
-    if (points > 0) {
+    if (points > 0 || decrementEarnedBalance) {
       updateData.scavengerHuntEarned = sql`scavenger_hunt_earned + ${points}`;
     }
 
@@ -54,14 +74,7 @@ export const addPoints = async (
     }
 
     return updatedUser;
-  } catch (error) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message:
-        "Failed to add points: " +
-        (error instanceof Error ? error.message : JSON.stringify(error)),
-    });
-  }
+  }, "Failed to add points");
 };
 
 // ! Unsafe Functions: Need to check if caller is allowed to check points on userId before invoking */
@@ -86,7 +99,39 @@ const getUserRedemptions = async (userId: string) => {
     where: eq(scavengerHuntRedemptions.userId, userId),
   });
 
-  return redemptions;
+  // If no redemptions are found, return an empty array instead of crash
+  return redemptions ?? [];
+};
+
+// ! Unsafe Functions: Need to check if caller is allowed to get scans before invoking */
+const getUserScans = async (userId: string) => {
+  const scans = await db.query.scavengerHuntScans.findMany({
+    where: eq(scavengerHuntScans.userId, userId),
+  });
+
+  // If no scans are found, return an empty array instead of crash
+  return scans ?? [];
+};
+
+// * Helper Functions *
+// (anyone can use this function) Gets the scavenger hunt item while keeping in mind soft-deletion
+const getScavengerHuntItemByItemCode = async (itemCode: string) => {
+  const now = new Date();
+
+  const item = await db.query.scavengerHuntItems.findFirst({
+    where: and(
+      eq(scavengerHuntItems.code, itemCode),
+      or(
+        isNull(scavengerHuntItems.deletedAt),
+        gt(scavengerHuntItems.deletedAt, now),
+      ),
+    ),
+  });
+  if (!item) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+  }
+
+  return item;
 };
 
 // * Safe Functions: Check is done within the transaction to avoid race conditions */
@@ -95,7 +140,7 @@ const redeemPrize = async (
   rewardId: number,
   costPoints: number,
 ) => {
-  try {
+  return withErrorHandling(async () => {
     await db.transaction(async (tx) => {
       // Check if user has enough points to redeem reward (using transaction)
       const user = await tx.query.users.findFirst({
@@ -126,21 +171,17 @@ const redeemPrize = async (
         rewardId: rewardId,
       });
     });
-  } catch (error) {
-    if (error instanceof TRPCError) {
-      throw error;
-    }
-
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Failed to redeem item: " + JSON.stringify(error),
-    });
-  }
+  }, "Failed to redeem item");
 };
 
 // * Safe Functions: Check is done within the transaction to avoid race conditions */
-const recordScan = async (userId: string, points: number, itemId: number, scannerId: string) => {
-  try {
+const recordScan = async (
+  userId: string,
+  scannerId: string,
+  points: number,
+  itemId: number,
+) => {
+  return withErrorHandling(async () => {
     await db.transaction(async (tx) => {
       // Check if user has already scanned this item
       const scan = await tx.query.scavengerHuntScans.findFirst({
@@ -162,19 +203,12 @@ const recordScan = async (userId: string, points: number, itemId: number, scanne
       // Record the scan with scanner ID
       await tx.insert(scavengerHuntScans).values({
         userId: userId,
+        scannerId: scannerId,
         itemId: itemId,
         scannerId: scannerId,
       });
     });
-  } catch (error) {
-    if (error instanceof TRPCError) {
-      throw error;
-    }
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Failed to add points: " + JSON.stringify(error),
-    });
-  }
+  }, "Failed to add points");
 };
 
 export const scavengerHuntRouter = createTRPCRouter({
@@ -198,23 +232,10 @@ export const scavengerHuntRouter = createTRPCRouter({
   getScavengerHuntItem: publicProcedure
     .input(z.object({ code: z.string() }))
     .query(async ({ input }) => {
-      try {
+      return withErrorHandling(async () => {
         const { code } = input;
-        const item = await db.query.scavengerHuntItems.findFirst({
-          where: eq(scavengerHuntItems.code, code),
-        });
-
-        if (!item) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
-        }
-
-        return item;
-      } catch (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch item: " + JSON.stringify(error),
-        });
-      }
+        return await getScavengerHuntItemByItemCode(code);
+      }, "Failed to fetch item");
     }),
 
   // Get Scavenger Hunt Item by ID
@@ -287,19 +308,26 @@ export const scavengerHuntRouter = createTRPCRouter({
         await recordScan(userId, item.points, item.id, scannerId);
         return {
           success: true,
-          message: "Item scanned successfully",
+          message: "Item added successfully",
         };
-      } catch (error) {
-        if (error instanceof TRPCError) {
-          throw error;
-        }
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to scan item: " + JSON.stringify(error),
-        });
-      }
+      }, "Failed to add item");
     }),
 
+  // Delete a Scavenger Hunt Item (only accessible to organizers)
+  // Soft delete: sets deletedAt timestamp instead of actually deleting the record
+  deleteScavengerHuntItem: protectedOrganizerProcedure
+    .input(z.object({ itemId: z.number() }))
+    .mutation(async ({ input }) => {
+      return withErrorHandling(async () => {
+        const { itemId } = input;
+        await db
+          .update(scavengerHuntItems)
+          .set({ deletedAt: new Date() })
+          .where(eq(scavengerHuntItems.id, itemId));
+      }, "Failed to delete item");
+    }),
+
+  // * POINTS ENDPOINTS * //
   // Gets a User's Own Points
   getPoints: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
@@ -324,7 +352,7 @@ export const scavengerHuntRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      try {
+      return withErrorHandling(async () => {
         const { rewardId } = input;
         const userId = ctx.session.user.id;
 
@@ -345,15 +373,7 @@ export const scavengerHuntRouter = createTRPCRouter({
           success: true,
           message: "Reward redeemed successfully",
         };
-      } catch (error) {
-        if (error instanceof TRPCError) {
-          throw error;
-        }
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to redeem reward: " + JSON.stringify(error),
-        });
-      }
+      }, "Failed to redeem reward");
     }),
 
   // Get all Redemptions (only accessible to users)

@@ -447,12 +447,16 @@ export const scavengerHuntItems = createTable("scavenger_hunt_item", {
   code: varchar("code", { length: 12 }).unique().notNull(),
   points: smallint("points").default(1).notNull(),
   description: text("description"),
+  deletedAt: timestamp("deleted_at", { mode: "date", precision: 3 }),
 });
 
 export const scavengerHuntScans = createTable(
   "scavenger_hunt_scan",
   {
     userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    scannerId: varchar("scanner_id", { length: 255 })
       .notNull()
       .references(() => users.id),
     itemId: integer("item_id")
@@ -467,6 +471,7 @@ export const scavengerHuntScans = createTable(
   (t) => [
     primaryKey({ columns: [t.userId, t.itemId] }),
     index("scan_user_idx").on(t.userId),
+    index("scan_scanner_idx").on(t.scannerId),
   ],
 );
 
