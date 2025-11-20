@@ -90,7 +90,7 @@ const AddToWallet = ({
       <Button
         onClick={handleGeneratePass}
         disabled={loading}
-        className={`flex items-center gap-2 ${className ?? ""}`}
+        className="h-auto w-[130px] p-0 sm:w-[160px] md:w-[180px]"
       >
         {loading ? (
           <span>Generating...</span>
@@ -106,8 +106,9 @@ const AddToWallet = ({
                 ? "Add to Google Wallet"
                 : "Add to Apple Wallet"
             }
-            width={300}
-            height={200}
+            width={180}
+            height={60}
+            className="h-auto w-full object-contain"
           />
         )}
       </Button>
