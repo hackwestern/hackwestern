@@ -1,4 +1,3 @@
-
 import { alias } from "drizzle-orm/pg-core";
 import { eq, and, sql, or, isNull, gt } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
@@ -446,7 +445,15 @@ export const scavengerHuntRouter = createTRPCRouter({
     .input(
       z.object({
         filter: z
-          .enum(["all", "meals", "workshops", "activities", "attendance", "wins", "bonus"])
+          .enum([
+            "all",
+            "meals",
+            "workshops",
+            "activities",
+            "attendance",
+            "wins",
+            "bonus",
+          ])
           .optional()
           .default("all"),
       }),
@@ -517,7 +524,11 @@ export const scavengerHuntRouter = createTRPCRouter({
           id: `${scan.userId}-${scan.itemId}`,
           hackerName: scan.userName || scan.userEmail || scan.userId,
           event: scan.itemDescription || scan.itemCode || "Unknown",
-          scanner: scan.scannerName || scan.scannerEmail || scan.scannerId || "Organizer", // Use actual scanner name from database
+          scanner:
+            scan.scannerName ||
+            scan.scannerEmail ||
+            scan.scannerId ||
+            "Organizer", // Use actual scanner name from database
           day: scan.createdAt
             ? new Date(scan.createdAt).toLocaleDateString("en-US", {
                 month: "short",

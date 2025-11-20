@@ -17,7 +17,8 @@ interface Category {
 
 const Scan = () => {
   const router = useRouter();
-  const { data: items, isLoading } = api.scavengerHunt.getAllScavengerHuntItems.useQuery();
+  const { data: items, isLoading } =
+    api.scavengerHunt.getAllScavengerHuntItems.useQuery();
 
   // Categorize items by suffix
   const categorizeItems = (items: Activity[] | undefined): Category[] => {

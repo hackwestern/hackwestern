@@ -1,7 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { db } from "~/server/db";
 import type { Transaction } from "~/server/db";
-import { scavengerHuntScans, scavengerHuntItems, users } from "~/server/db/schema";
+import {
+  scavengerHuntScans,
+  scavengerHuntItems,
+  users,
+} from "~/server/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -10,11 +14,7 @@ import { TRPCError } from "@trpc/server";
 const TEST_SCANNER_ID = "37507f9f-5e9b-4daf-bb65-6a6798495b76";
 
 // Add points function (same as in scavenger-hunt router)
-async function addPoints(
-  tx: Transaction,
-  userId: string,
-  points: number,
-) {
+async function addPoints(tx: Transaction, userId: string, points: number) {
   const updateData: Record<string, SQL> = {
     scavengerHuntBalance: sql`scavenger_hunt_balance + ${points}`,
   };
@@ -91,7 +91,9 @@ export default async function handler(
     const { userId, itemId, scannerId } = req.body;
 
     if (!userId || !itemId) {
-      return res.status(400).json({ message: "userId and itemId are required" });
+      return res
+        .status(400)
+        .json({ message: "userId and itemId are required" });
     }
 
     // Use provided scannerId or fallback to test scanner
@@ -132,4 +134,3 @@ export default async function handler(
     });
   }
 }
-
