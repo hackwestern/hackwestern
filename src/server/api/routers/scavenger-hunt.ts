@@ -179,7 +179,7 @@ const redeemPrize = async (
         await tx
         .update(scavengerHuntRewards)
         .set({
-          costPoints: sql`${scavengerHuntRewards.costPoints} - 1`,
+          quantity: sql`${scavengerHuntRewards.quantity} - 1`,
         })
         .where(eq(scavengerHuntRewards.id, rewardId));      
       }
