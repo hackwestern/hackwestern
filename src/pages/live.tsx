@@ -58,7 +58,7 @@ const TabComponent = ({ tab }: { tab: string }) => {
       return <Schedule />;
     case "map":
       return <Map />;
-    case "food-menu":
+    case "menu":
       return <FoodMenu />;
     case "mentors":
       return <Mentors />;

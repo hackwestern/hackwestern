@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { ChevronDown } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { cn } from "~/lib/utils";
 
@@ -49,15 +50,64 @@ AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName;
 const AccordionContent = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <AccordionPrimitive.Content
-    ref={ref}
-    className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden text-sm transition-all"
-    {...props}
-  >
-    <div className={cn("pb-4 pt-0", className)}>{children}</div>
-  </AccordionPrimitive.Content>
-));
+>(({ className, children, ...props }, forwardedRef) => {
+  const innerRef = React.useRef<HTMLDivElement | null>(null);
+
+  const composedRef = (node: HTMLDivElement | null) => {
+    innerRef.current = node;
+    if (typeof forwardedRef === "function") {
+      forwardedRef(node);
+    } else if (forwardedRef) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (forwardedRef as any).current = node;
+    }
+  };
+
+  const [open, setOpen] = React.useState(false);
+
+  React.useLayoutEffect(() => {
+    const node = innerRef.current;
+    if (!node) return;
+
+    const update = () => {
+      const state = node.getAttribute("data-state");
+      setOpen(state === "open");
+    };
+
+    update();
+
+    const observer = new MutationObserver(update);
+    observer.observe(node, {
+      attributes: true,
+      attributeFilter: ["data-state"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <AccordionPrimitive.Content
+      ref={composedRef}
+      className="overflow-hidden text-sm"
+      {...props}
+      forceMount
+    >
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+          >
+            <div className={cn("pb-4 pt-0", className)}>{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </AccordionPrimitive.Content>
+  );
+});
 
 AccordionContent.displayName = AccordionPrimitive.Content.displayName;
 
