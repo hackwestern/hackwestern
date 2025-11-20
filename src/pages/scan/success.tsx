@@ -18,7 +18,7 @@ export default function ScanSuccessPage() {
   }, [router.query]);
 
   const handleBackToActivities = () => {
-    router.push("/scavenger");
+    void router.push("/scavenger");
   };
 
   return (

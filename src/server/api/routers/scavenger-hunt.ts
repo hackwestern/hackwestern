@@ -521,12 +521,12 @@ export const scavengerHuntRouter = createTRPCRouter({
         // Format the data for display
         return filteredScans.map((scan) => ({
           id: `${scan.userId}-${scan.itemId}`,
-          hackerName: scan.userName || scan.userEmail || scan.userId,
-          event: scan.itemDescription || scan.itemCode || "Unknown",
+          hackerName: scan.userName ?? scan.userEmail ?? scan.userId,
+          event: scan.itemDescription ?? scan.itemCode ?? "Unknown",
           scanner:
-            scan.scannerName ||
-            scan.scannerEmail ||
-            scan.scannerId ||
+            scan.scannerName ??
+            scan.scannerEmail ??
+            scan.scannerId ??
             "Organizer", // Use actual scanner name from database
           day: scan.createdAt
             ? new Date(scan.createdAt).toLocaleDateString("en-US", {

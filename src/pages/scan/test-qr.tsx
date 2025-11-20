@@ -64,7 +64,7 @@ const TestQRScanPage = () => {
         inversionAttempts: "dontInvert",
       });
 
-      if (code && code.data) {
+      if (code?.data) {
         return code.data;
       }
     } catch (error) {
@@ -122,7 +122,7 @@ const TestQRScanPage = () => {
 
   // Initialize camera on mount
   useEffect(() => {
-    startCamera();
+    void startCamera();
 
     return () => {
       if (streamRef.current) {
@@ -140,11 +140,13 @@ const TestQRScanPage = () => {
 
     // Only scan when status is "scanning" (not "success" or "error")
     if (cameraActive && status === "scanning" && itemId) {
-      scanIntervalRef.current = setInterval(async () => {
-        const qrCode = await scanQRCode();
-        if (qrCode) {
-          handleQRCodeDetected(qrCode);
-        }
+      scanIntervalRef.current = setInterval(() => {
+        void (async () => {
+          const qrCode = await scanQRCode();
+          if (qrCode) {
+            handleQRCodeDetected(qrCode);
+          }
+        })();
       }, 500);
     }
 
@@ -154,7 +156,8 @@ const TestQRScanPage = () => {
         scanIntervalRef.current = null;
       }
     };
-  }, [cameraActive, status, itemId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraActive, status, itemId]); // handleQRCodeDetected and scanQRCode are stable functions
 
   // Stop camera when scan is successful
   useEffect(() => {
@@ -181,13 +184,13 @@ const TestQRScanPage = () => {
     }
 
     try {
-      const parsed = JSON.parse(qrData);
-      const userId = parsed.userId || parsed.id || qrData;
+      const parsed = JSON.parse(qrData) as { userId?: string; id?: string };
+      const userId = parsed.userId ?? parsed.id ?? qrData;
       setLastScannedUserId(userId);
-      processScan(userId);
+      void processScan(userId);
     } catch {
       setLastScannedUserId(qrData);
-      processScan(qrData);
+      void processScan(qrData);
     }
   };
 
@@ -237,11 +240,11 @@ const TestQRScanPage = () => {
         }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as { message?: string };
 
       // Check for "already scanned" error in the response data first, even if response.ok is true
       // (in case the API returns 200 with an error message)
-      const errorMsg = data.message || "";
+      const errorMsg = data.message ?? "";
       if (
         errorMsg.includes("already scanned") ||
         errorMsg.includes("Item already scanned")
@@ -252,8 +255,11 @@ const TestQRScanPage = () => {
           const userResponse = await fetch(
             `/api/scavenger-hunt/test-get-user?userId=${userId}`,
           );
-          const userData = await userResponse.json();
-          userName = userData?.name || userData?.email || userId;
+          const userData = (await userResponse.json()) as {
+            name?: string;
+            email?: string;
+          };
+          userName = userData?.name ?? userData?.email ?? userId;
         } catch {
           // Use userId if fetch fails
         }
@@ -261,10 +267,10 @@ const TestQRScanPage = () => {
         // Get activity name from selected item
         const selectedItem = items?.find((item) => item.id === itemId);
         const activityName =
-          selectedItem?.description || selectedItem?.code || "Activity";
+          selectedItem?.description ?? selectedItem?.code ?? "Activity";
 
         // Navigate to already-scanned page with activity name and user name
-        router.push({
+        void router.push({
           pathname: "/scan/already-scanned",
           query: {
             activity: activityName,
@@ -288,9 +294,12 @@ const TestQRScanPage = () => {
         const userResponse = await fetch(
           `/api/scavenger-hunt/test-get-user?userId=${userId}`,
         );
-        const userData = await userResponse.json();
-        if (userData && userData.name) {
-          userName = userData.name || userData.email || userId;
+        const userData = (await userResponse.json()) as {
+          name?: string;
+          email?: string;
+        };
+        if (userData?.name) {
+          userName = userData.name ?? userData.email ?? userId;
           setScannedName(userName);
         } else {
           setScannedName(userId);
@@ -304,10 +313,10 @@ const TestQRScanPage = () => {
       // Get activity name from selected item
       const selectedItem = items?.find((item) => item.id === itemId);
       const activityName =
-        selectedItem?.description || selectedItem?.code || "Activity";
+        selectedItem?.description ?? selectedItem?.code ?? "Activity";
 
       // Navigate to success page with activity name and user name
-      router.push({
+      void router.push({
         pathname: "/scan/success",
         query: {
           activity: activityName,
@@ -334,8 +343,11 @@ const TestQRScanPage = () => {
             const userResponse = await fetch(
               `/api/scavenger-hunt/test-get-user?userId=${userId}`,
             );
-            const userData = await userResponse.json();
-            userName = userData?.name || userData?.email || userId;
+            const userData = (await userResponse.json()) as {
+              name?: string;
+              email?: string;
+            };
+            userName = userData?.name ?? userData?.email ?? userId;
           } catch {
             // Use userId if fetch fails
           }
@@ -343,10 +355,10 @@ const TestQRScanPage = () => {
           // Get activity name from selected item
           const selectedItem = items?.find((item) => item.id === itemId);
           const activityName =
-            selectedItem?.description || selectedItem?.code || "Activity";
+            selectedItem?.description ?? selectedItem?.code ?? "Activity";
 
           // Navigate to already-scanned page with activity name and user name
-          router.push({
+          void router.push({
             pathname: "/scan/already-scanned",
             query: {
               activity: activityName,
@@ -424,14 +436,14 @@ const TestQRScanPage = () => {
                 const id = e.target.value ? Number(e.target.value) : null;
                 setItemId(id);
                 const item = items?.find((i) => i.id === id);
-                setItemCode(item?.code || null);
+                setItemCode(item?.code ?? null);
               }}
               className="mt-2 w-full rounded-lg border-2 border-white bg-white px-4 py-2 font-figtree text-heavy"
             >
               <option value="">-- Select an item --</option>
               {items?.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.description || item.code} ({item.points} pts)
+                  {item.description ?? item.code} ({item.points} pts)
                 </option>
               ))}
             </select>

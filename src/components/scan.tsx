@@ -56,7 +56,7 @@ const Scan = () => {
   const categories = categorizeItems(items);
 
   const handleActivityClick = (itemId: number): void => {
-    router.push(`/scan/${itemId}`);
+    void router.push(`/scan/${itemId}`);
   };
 
   return (
@@ -105,7 +105,7 @@ const Scan = () => {
                     onClick={() => handleActivityClick(item.id)}
                     className="w-full rounded-lg bg-white px-4 py-3 text-left font-figtree font-semibold text-heavy shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
                   >
-                    {item.description || item.code}
+                    {item.description ?? item.code}
                   </button>
                 ))}
               </div>

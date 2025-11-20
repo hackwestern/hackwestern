@@ -1,9 +1,33 @@
 "use client";
 
 import { useRouter } from "next/router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { api } from "~/utils/api";
 import jsQR from "jsqr";
+
+// Type for legacy navigator APIs
+interface LegacyNavigator extends Navigator {
+  getUserMedia?: (
+    constraints: MediaStreamConstraints,
+    success: (stream: MediaStream) => void,
+    error: (error: Error) => void,
+  ) => void;
+  webkitGetUserMedia?: (
+    constraints: MediaStreamConstraints,
+    success: (stream: MediaStream) => void,
+    error: (error: Error) => void,
+  ) => void;
+  mozGetUserMedia?: (
+    constraints: MediaStreamConstraints,
+    success: (stream: MediaStream) => void,
+    error: (error: Error) => void,
+  ) => void;
+  msGetUserMedia?: (
+    constraints: MediaStreamConstraints,
+    success: (stream: MediaStream) => void,
+    error: (error: Error) => void,
+  ) => void;
+}
 
 const ScanActivityPage = () => {
   const router = useRouter();
@@ -53,7 +77,7 @@ const ScanActivityPage = () => {
   const itemData = itemDataById || itemDataByCode;
   const itemLoading = loadingById || loadingByCode;
 
-  const activityName = itemData?.description || itemData?.code || "Activity";
+  const activityName = itemData?.description ?? itemData?.code ?? "Activity";
 
   // QR Code scanning using camera stream
   const scanQRCode = async (): Promise<string | null> => {
@@ -85,7 +109,7 @@ const ScanActivityPage = () => {
         inversionAttempts: "dontInvert",
       });
 
-      if (code && code.data) {
+      if (code?.data) {
         return code.data;
       }
     } catch (error) {
@@ -122,46 +146,46 @@ const ScanActivityPage = () => {
         );
       }
       // Fallback for older browsers/iOS Safari - check legacy APIs
-      else if (
-        (navigator as any).getUserMedia &&
-        typeof (navigator as any).getUserMedia === "function"
-      ) {
-        const legacyGetUserMedia = (navigator as any).getUserMedia;
-        getUserMedia = (constraints: MediaStreamConstraints) => {
-          return new Promise<MediaStream>((resolve, reject) => {
-            legacyGetUserMedia.call(navigator, constraints, resolve, reject);
-          });
-        };
-      } else if (
-        (navigator as any).webkitGetUserMedia &&
-        typeof (navigator as any).webkitGetUserMedia === "function"
-      ) {
-        const webkitGetUserMedia = (navigator as any).webkitGetUserMedia;
-        getUserMedia = (constraints: MediaStreamConstraints) => {
-          return new Promise<MediaStream>((resolve, reject) => {
-            webkitGetUserMedia.call(navigator, constraints, resolve, reject);
-          });
-        };
-      } else if (
-        (navigator as any).mozGetUserMedia &&
-        typeof (navigator as any).mozGetUserMedia === "function"
-      ) {
-        const mozGetUserMedia = (navigator as any).mozGetUserMedia;
-        getUserMedia = (constraints: MediaStreamConstraints) => {
-          return new Promise<MediaStream>((resolve, reject) => {
-            mozGetUserMedia.call(navigator, constraints, resolve, reject);
-          });
-        };
-      } else if (
-        (navigator as any).msGetUserMedia &&
-        typeof (navigator as any).msGetUserMedia === "function"
-      ) {
-        const msGetUserMedia = (navigator as any).msGetUserMedia;
-        getUserMedia = (constraints: MediaStreamConstraints) => {
-          return new Promise<MediaStream>((resolve, reject) => {
-            msGetUserMedia.call(navigator, constraints, resolve, reject);
-          });
-        };
+      else {
+        const legacyNav = navigator as LegacyNavigator;
+        if (legacyNav.getUserMedia && typeof legacyNav.getUserMedia === "function") {
+          const legacyGetUserMedia = legacyNav.getUserMedia;
+          getUserMedia = (constraints: MediaStreamConstraints) => {
+            return new Promise<MediaStream>((resolve, reject) => {
+              legacyGetUserMedia.call(navigator, constraints, resolve, reject);
+            });
+          };
+        } else if (
+          legacyNav.webkitGetUserMedia &&
+          typeof legacyNav.webkitGetUserMedia === "function"
+        ) {
+          const webkitGetUserMedia = legacyNav.webkitGetUserMedia;
+          getUserMedia = (constraints: MediaStreamConstraints) => {
+            return new Promise<MediaStream>((resolve, reject) => {
+              webkitGetUserMedia.call(navigator, constraints, resolve, reject);
+            });
+          };
+        } else if (
+          legacyNav.mozGetUserMedia &&
+          typeof legacyNav.mozGetUserMedia === "function"
+        ) {
+          const mozGetUserMedia = legacyNav.mozGetUserMedia;
+          getUserMedia = (constraints: MediaStreamConstraints) => {
+            return new Promise<MediaStream>((resolve, reject) => {
+              mozGetUserMedia.call(navigator, constraints, resolve, reject);
+            });
+          };
+        } else if (
+          legacyNav.msGetUserMedia &&
+          typeof legacyNav.msGetUserMedia === "function"
+        ) {
+          const msGetUserMedia = legacyNav.msGetUserMedia;
+          getUserMedia = (constraints: MediaStreamConstraints) => {
+            return new Promise<MediaStream>((resolve, reject) => {
+              msGetUserMedia.call(navigator, constraints, resolve, reject);
+            });
+          };
+        }
       }
 
       if (!getUserMedia) {
@@ -222,7 +246,7 @@ const ScanActivityPage = () => {
   // Initialize camera on mount (only once)
   useEffect(() => {
     // Try to start camera automatically, but don't fail silently on iOS
-    startCamera();
+    void startCamera();
 
     return () => {
       if (streamRef.current) {
@@ -242,12 +266,14 @@ const ScanActivityPage = () => {
     // Start scanning only if camera is active, status is scanning, and item exists
     // Stop scanning when status is "success" or "error"
     if (cameraActive && status === "scanning" && !itemLoading && itemData) {
-      scanIntervalRef.current = setInterval(async () => {
-        const qrCode = await scanQRCode();
-        if (qrCode) {
-          // QR code detected! Process it
-          handleQRCodeDetected(qrCode);
-        }
+      scanIntervalRef.current = setInterval(() => {
+        void (async () => {
+          const qrCode = await scanQRCode();
+          if (qrCode) {
+            // QR code detected! Process it
+            handleQRCodeDetected(qrCode);
+          }
+        })();
       }, 500); // Check every 500ms
     }
 
@@ -257,7 +283,8 @@ const ScanActivityPage = () => {
         scanIntervalRef.current = null;
       }
     };
-  }, [cameraActive, status, itemLoading, itemData]); // Added itemLoading and itemData dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraActive, status, itemLoading, itemData]); // handleQRCodeDetected and scanQRCode are stable functions
 
   // Stop camera when scan is successful
   useEffect(() => {
@@ -289,12 +316,12 @@ const ScanActivityPage = () => {
 
     try {
       // Try to parse as JSON first
-      const parsed = JSON.parse(qrData);
-      const userId = parsed.userId || parsed.id || qrData;
-      processScan(userId);
+      const parsed = JSON.parse(qrData) as { userId?: string; id?: string };
+      const userId = parsed.userId ?? parsed.id ?? qrData;
+      void processScan(userId);
     } catch {
       // Not JSON, treat as plain userId string
-      processScan(qrData);
+      void processScan(qrData);
     }
   };
 
@@ -411,8 +438,11 @@ const ScanActivityPage = () => {
               `/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`,
             );
             if (userResponse.ok) {
-              const userData = await userResponse.json();
-              userName = userData?.name || userData?.email || userId;
+              const userData = (await userResponse.json()) as {
+                name?: string;
+                email?: string;
+              };
+              userName = userData?.name ?? userData?.email ?? userId;
             }
           } catch (userError) {
             // If we can't get user info, just use userId
@@ -424,8 +454,8 @@ const ScanActivityPage = () => {
 
           // Navigate to already-scanned page with activity name and user name
           const activityName =
-            itemData?.description || activityParam || "Activity";
-          router.push({
+            itemData?.description ?? activityParam ?? "Activity";
+          void router.push({
             pathname: "/scan/already-scanned",
             query: {
               activity: activityName,
@@ -449,8 +479,11 @@ const ScanActivityPage = () => {
           `/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`,
         );
         if (userResponse.ok) {
-          const userData = await userResponse.json();
-          userName = userData?.name || userData?.email || userId;
+          const userData = (await userResponse.json()) as {
+            name?: string;
+            email?: string;
+          };
+          userName = userData?.name ?? userData?.email ?? userId;
         }
         setScannedName(userName);
       } catch (userError) {
@@ -463,8 +496,8 @@ const ScanActivityPage = () => {
       setStatus("success");
 
       // Navigate to success page with activity name and user name
-      const activityName = itemData?.description || activityParam || "Activity";
-      router.push({
+      const activityName = itemData?.description ?? activityParam ?? "Activity";
+      void router.push({
         pathname: "/scan/success",
         query: {
           activity: activityName,
@@ -531,8 +564,11 @@ const ScanActivityPage = () => {
             `/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`,
           );
           if (userResponse.ok) {
-            const userData = await userResponse.json();
-            userName = userData?.name || userData?.email || userId;
+            const userData = (await userResponse.json()) as {
+              name?: string;
+              email?: string;
+            };
+            userName = userData?.name ?? userData?.email ?? userId;
           }
         } catch (userError) {
           // If we can't get user info, just use userId
@@ -544,8 +580,8 @@ const ScanActivityPage = () => {
 
         // Navigate to already-scanned page with activity name and user name
         const activityName =
-          itemData?.description || activityParam || "Activity";
-        router.push({
+          itemData?.description ?? activityParam ?? "Activity";
+        void router.push({
           pathname: "/scan/already-scanned",
           query: {
             activity: activityName,
@@ -606,7 +642,9 @@ const ScanActivityPage = () => {
       {/* Top Bar */}
       <header className="w-full space-y-2 p-4">
         <button
-          onClick={() => router.push("/scavenger")}
+          onClick={() => {
+            void router.push("/scavenger");
+          }}
           className="font-figtree text-heavy transition-colors hover:text-emphasis"
         >
           Back

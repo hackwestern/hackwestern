@@ -25,7 +25,7 @@ const ScansPage = () => {
   });
 
   // Filter by search query (API already handles filter by type)
-  const filteredScans: ScanRow[] = (scans || []).filter((scan) => {
+  const filteredScans: ScanRow[] = (scans ?? []).filter((scan) => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     return (

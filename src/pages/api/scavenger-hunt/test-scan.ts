@@ -88,7 +88,19 @@ export default async function handler(
   }
 
   try {
-    const { userId, itemId, scannerId } = req.body;
+    const body = req.body as {
+      userId?: unknown;
+      itemId?: unknown;
+      scannerId?: unknown;
+    };
+
+    const userId = typeof body.userId === "string" ? body.userId : null;
+    const itemId =
+      typeof body.itemId === "number" || typeof body.itemId === "string"
+        ? Number(body.itemId)
+        : null;
+    const scannerId =
+      typeof body.scannerId === "string" ? body.scannerId : undefined;
 
     if (!userId || !itemId) {
       return res
@@ -97,7 +109,7 @@ export default async function handler(
     }
 
     // Use provided scannerId or fallback to test scanner
-    const finalScannerId = scannerId || TEST_SCANNER_ID;
+    const finalScannerId = scannerId ?? TEST_SCANNER_ID;
 
     // Check if item exists
     const item = await db.query.scavengerHuntItems.findFirst({
