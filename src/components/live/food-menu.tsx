@@ -47,7 +47,7 @@ const FoodMenu = () => {
   const days = Object.keys(allMeals) as (keyof typeof allMeals)[];
 
   return (
-    <div className="h-screen overflow-auto pb-48">
+    <div className="h-screen overflow-auto pb-48 [scrollbar-gutter:stable]">
       <Accordion
         type="multiple"
         className="w-[50%]"

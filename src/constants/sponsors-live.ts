@@ -16,7 +16,7 @@ export const SPONSOR_TIERS: SponsorTier[] = [
     sponsors: [
       {
         name: "Scotiabank",
-        logo: "/sponsors/scotiabank.png",
+        logo: "/sponsors/scotiabank.svg",
         link: "https://www.scotiabank.com/",
         description:
           "Scotiabank's vision is to be our clients' most trusted financial partner, to deliver sustainable, profitable growth and maximize total shareholder return. Guided by our purpose: \"for every future,\" we help our clients, their families and their communities achieve success through a broad range of advice, products and services, including personal and commercial banking, wealth management and private banking, corporate and investment banking, and capital markets. With assets of approximately $1.4 trillion (as at July 31, 2024), Scotiabank trades on the Toronto Stock Exchange (TSX: BNS) and New York Stock Exchange (NYSE: BNS). For more information, please visit www.scotiabank.com and follow us on X @Scotiabank.",

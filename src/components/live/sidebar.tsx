@@ -31,7 +31,7 @@ const Sidebar = () => {
             <SectionLink tab="home" name="Home" />
             <SectionLink tab="schedule" name="Schedule" />
             <SectionLink tab="map" name="Map" />
-            <SectionLink tab="food-menu" name="Food Menu" />
+            <SectionLink tab="menu" name="Menu" />
             <SectionLink tab="mentors" name="Mentors" />
             <SectionLink tab="sponsors" name="Sponsors" />
           </div>

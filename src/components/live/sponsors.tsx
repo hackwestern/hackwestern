@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   SPONSOR_TIERS,
   SPONSOR_THANK_YOU_TEXT,
@@ -21,19 +22,6 @@ const SponsorCard = ({
   scale?: number;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const contentRef = useRef<HTMLDivElement | null>(null);
-  const [maxHeightStyle, setMaxHeightStyle] = useState<string>("0px");
-
-  useEffect(() => {
-    if (!contentRef.current) return;
-    // when expanding set to scrollHeight so transition can animate from 0 -> height
-    if (isExpanded) {
-      setMaxHeightStyle(`${contentRef.current.scrollHeight + 100}px`);
-    } else {
-      // collapse to 0
-      setMaxHeightStyle("0px");
-    }
-  }, [isExpanded, description]);
 
   const logoSize = 200 * scale;
   const maxHeight = 20 * scale;
@@ -42,7 +30,7 @@ const SponsorCard = ({
 
   return (
     <div
-      className={`relative flex flex-col rounded-lg border ${
+      className={`relative flex flex-col rounded-lg border transition-colors duration-300 ${
         isExpanded
           ? "border-primary-300 bg-white shadow-md"
           : "border-transparent bg-transparent"
@@ -59,11 +47,12 @@ const SponsorCard = ({
             isExpanded ? "Collapse description" : "Expand description"
           }
         >
-          <ChevronDown
-            className={`duration-[5000ms] h-4 w-4 text-medium transition-transform ${
-              isExpanded ? "rotate-180 ease-out" : "rotate-0 ease-in"
-            }`}
-          />
+          <motion.div
+            animate={{ rotate: isExpanded ? 180 : 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ChevronDown className="h-4 w-4 text-medium" />
+          </motion.div>
         </button>
       )}
       <div className="flex items-start gap-2">
@@ -71,7 +60,7 @@ const SponsorCard = ({
           href={link}
           target="_blank"
           rel="noopener noreferrer"
-          className={`flex flex-1 items-center justify-center rounded-lg bg-white p-4 ${
+          className={`flex flex-1 items-center justify-center rounded-lg bg-white p-4 transition-all duration-300 ${
             isExpanded
               ? "border border-transparent"
               : "border border-gray-200 hover:border-primary-300 hover:shadow-md"
@@ -87,26 +76,25 @@ const SponsorCard = ({
           />
         </Link>
       </div>
-      {description && (
-        <div
-          ref={contentRef}
-          className="ease-[cubic-bezier(0.22,1,0.36,1)] transition-[max-height,opacity,padding] duration-700"
-          style={{
-            maxHeight: maxHeightStyle,
-            opacity: isExpanded ? 1 : 0,
-            paddingTop: isExpanded ? "1rem" : "0px",
-            paddingBottom: isExpanded ? "1rem" : "0px",
-          }}
-        >
-          <div className="mx-8 h-full border-t border-gray-100">
-            <p
-              className={`my-4 h-full whitespace-pre-line font-figtree ${textSize} leading-relaxed text-medium`}
-            >
-              {description}
-            </p>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {description && isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="mx-8 border-t border-gray-100 py-4">
+              <p
+                className={`whitespace-pre-line font-figtree ${textSize} leading-relaxed text-medium`}
+              >
+                {description}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
