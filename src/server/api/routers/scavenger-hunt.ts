@@ -164,24 +164,24 @@ const redeemPrize = async (
       const reward = await tx.query.scavengerHuntRewards.findFirst({
         where: eq(scavengerHuntRewards.id, rewardId),
       });
-      if(!reward || (reward.quantity && reward.quantity <= 0)){
+      if (!reward || (reward.quantity && reward.quantity <= 0)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "We are out of this prize unfortunately",
-        })
+        });
       }
 
       // Deduct points to user
       await addPoints(tx, userId, -costPoints);
 
       // Deduct quantity for prizes with quantity
-      if(reward.quantity){
+      if (reward.quantity) {
         await tx
-        .update(scavengerHuntRewards)
-        .set({
-          costPoints: sql`${scavengerHuntRewards.costPoints} - 1`,
-        })
-        .where(eq(scavengerHuntRewards.id, rewardId));      
+          .update(scavengerHuntRewards)
+          .set({
+            costPoints: sql`${scavengerHuntRewards.costPoints} - 1`,
+          })
+          .where(eq(scavengerHuntRewards.id, rewardId));
       }
 
       // Record that we have redeemed an item
