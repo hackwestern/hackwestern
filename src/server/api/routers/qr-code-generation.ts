@@ -42,7 +42,7 @@ export const qrRouter = createTRPCRouter({
         }
 
         // #2 Generate QR code directly as base64
-        const PERSONAL_URL = `https://hackwestern.com/wallet/${ctx.session.user.id}`;
+        const PERSONAL_URL = `${ctx.session.user.id}`;
         console.log("Generating QR code...");
         const qrBase64 = await QRCode.toDataURL(PERSONAL_URL, {
           width: 500,

@@ -30,9 +30,9 @@ export const env = createEnv({
     DISCORD_CLIENT_SECRET: z.string(),
     RESEND_API_KEY: z.string(),
     APPLE_CERT_PASS: z.string(),
-    APPLE_WWDR_CERT: z.string(),
-    APPLE_SIGNER_CERT: z.string(),
-    APPLE_SIGNER_KEY: z.string(),
+    APPLE_WWDR_CERT: z.string().optional(),
+    APPLE_SIGNER_CERT: z.string().optional(),
+    APPLE_SIGNER_KEY: z.string().optional(),
     GOOGLE_WALLET_CLIENT_EMAIL: z.string(),
     GOOGLE_WALLET_PRIVATE_KEY: z.string(),
     GOOGLE_WALLET_ISSUER_ID: z.string(),
@@ -45,7 +45,7 @@ export const env = createEnv({
     // Public base URL where objects are accessible, e.g. https://pub-XXXXXXXX.r2.dev or a custom domain
     R2_PUBLIC_BASE_URL: z.string().url(),
     // Google Sheets API key for fetching schedule data
-    GOOGLE_SHEETS_API_KEY: z.string(),
+    GOOGLE_SHEETS_API_KEY: z.string().optional(),
   },
 
   /**
