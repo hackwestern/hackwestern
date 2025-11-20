@@ -106,7 +106,10 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
         : currentMinutes + 30;
       const duration = nextMinutes - currentMinutes;
       const baseSlotHeight = 56; // must match baseSlotHeight in row rendering
-      const slotHeight = Math.max(baseSlotHeight, (duration / 30) * baseSlotHeight);
+      const slotHeight = Math.max(
+        baseSlotHeight,
+        (duration / 30) * baseSlotHeight,
+      );
 
       totalHeight += slotHeight + 6; // 6px gap between rows (approx space-y-1.5)
     }
