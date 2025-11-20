@@ -1,29 +1,61 @@
 "use client";
 
 import { useRouter } from "next/router";
+import { api } from "~/utils/api";
 
 interface Activity {
-  name: string;
-  slug: string;
+  id: number;
+  description: string | null;
+  points: number;
+  code: string;
 }
 
-const meals: Activity[] = [
-  { name: "Friday Dinner", slug: "friday-dinner" },
-  { name: "Saturday Breakfast", slug: "saturday-breakfast" },
-  { name: "Saturday Lunch", slug: "saturday-lunch" },
-];
-
-const workshops: Activity[] = [
-  { name: "Intro to Hacking", slug: "intro-to-hacking" },
-  { name: "Design Thinking", slug: "design-thinking" },
-  { name: "Startup Pitch", slug: "startup-pitch" },
-];
+interface Category {
+  title: string;
+  items: Activity[];
+}
 
 const Scan = () => {
   const router = useRouter();
+  const { data: items, isLoading } = api.scavengerHunt.getAllScavengerHuntItems.useQuery();
 
-  const handleActivityClick = (slug: string): void => {
-    router.push(`/scan/${slug}`);
+  // Categorize items by suffix
+  const categorizeItems = (items: Activity[] | undefined): Category[] => {
+    if (!items) return [];
+
+    const categories: Category[] = [
+      { title: "Meals", items: [] },
+      { title: "Regular Workshops", items: [] },
+      { title: "Non-Winnable Activities", items: [] },
+      { title: "Winnable Activities (Attendance)", items: [] },
+      { title: "Winnable Activities (Win)", items: [] },
+      { title: "Bonus", items: [] },
+    ];
+
+    items.forEach((item) => {
+      if (item.code.endsWith("_meal")) {
+        categories[0]!.items.push(item);
+      } else if (item.code.endsWith("_ws")) {
+        categories[1]!.items.push(item);
+      } else if (item.code.endsWith("_act")) {
+        categories[2]!.items.push(item);
+      } else if (item.code.endsWith("_att")) {
+        categories[3]!.items.push(item);
+      } else if (item.code.endsWith("_win")) {
+        categories[4]!.items.push(item);
+      } else if (item.code.endsWith("_bonus")) {
+        categories[5]!.items.push(item);
+      }
+    });
+
+    // Filter out empty categories
+    return categories.filter((cat) => cat.items.length > 0);
+  };
+
+  const categories = categorizeItems(items);
+
+  const handleActivityClick = (itemId: number): void => {
+    router.push(`/scan/${itemId}`);
   };
 
   return (
@@ -47,41 +79,37 @@ const Scan = () => {
           Select activity to scan
         </h1>
 
-        {/* Meals Section */}
-        <section className="space-y-4">
-          <h3 className="font-figtree text-base font-medium text-medium">
-            Meals
-          </h3>
-          <div className="space-y-2">
-            {meals.map((meal) => (
-              <button
-                key={meal.slug}
-                onClick={() => handleActivityClick(meal.slug)}
-                className="w-full rounded-lg bg-white px-4 py-3 text-left font-figtree font-semibold text-heavy shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
-              >
-                {meal.name}
-              </button>
-            ))}
+        {isLoading && (
+          <div className="text-center font-figtree text-medium">
+            Loading activities...
           </div>
-        </section>
+        )}
 
-        {/* Workshops Section */}
-        <section className="space-y-4">
-          <h3 className="font-figtree text-base font-medium text-medium">
-            Workshops
-          </h3>
-          <div className="space-y-2">
-            {workshops.map((workshop) => (
-              <button
-                key={workshop.slug}
-                onClick={() => handleActivityClick(workshop.slug)}
-                className="w-full rounded-lg bg-white px-4 py-3 text-left font-figtree font-semibold text-heavy shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
-              >
-                {workshop.name}
-              </button>
-            ))}
+        {!isLoading && categories.length === 0 && (
+          <div className="text-center font-figtree text-medium">
+            No activities found
           </div>
-        </section>
+        )}
+
+        {!isLoading &&
+          categories.map((category) => (
+            <section key={category.title} className="space-y-4">
+              <h3 className="font-figtree text-base font-medium text-medium">
+                {category.title}
+              </h3>
+              <div className="space-y-2">
+                {category.items.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleActivityClick(item.id)}
+                    className="w-full rounded-lg bg-white px-4 py-3 text-left font-figtree font-semibold text-heavy shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
+                  >
+                    {item.description || item.code}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
       </main>
     </div>
   );

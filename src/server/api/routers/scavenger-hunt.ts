@@ -1,4 +1,5 @@
 import { eq, and, sql, desc } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -138,7 +139,7 @@ const redeemPrize = async (
 };
 
 // * Safe Functions: Check is done within the transaction to avoid race conditions */
-const recordScan = async (userId: string, points: number, itemId: number) => {
+const recordScan = async (userId: string, points: number, itemId: number, scannerId: string) => {
   try {
     await db.transaction(async (tx) => {
       // Check if user has already scanned this item
@@ -158,10 +159,11 @@ const recordScan = async (userId: string, points: number, itemId: number) => {
       // Add points to user and record the scan
       await addPoints(tx, userId, points);
 
-      // Record the scan
+      // Record the scan with scanner ID
       await tx.insert(scavengerHuntScans).values({
         userId: userId,
         itemId: itemId,
+        scannerId: scannerId,
       });
     });
   } catch (error) {
@@ -176,7 +178,23 @@ const recordScan = async (userId: string, points: number, itemId: number) => {
 };
 
 export const scavengerHuntRouter = createTRPCRouter({
-  // Get Scavenger Hunt Item (not sure if we need this tbh)
+  // Get All Scavenger Hunt Items
+  getAllScavengerHuntItems: publicProcedure.query(async () => {
+    try {
+      const items = await db.query.scavengerHuntItems.findMany({
+        orderBy: (items, { asc }) => [asc(items.code)],
+      });
+
+      return items;
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch items: " + JSON.stringify(error),
+      });
+    }
+  }),
+
+  // Get Scavenger Hunt Item by Code
   getScavengerHuntItem: publicProcedure
     .input(z.object({ code: z.string() }))
     .query(async ({ input }) => {
@@ -199,22 +217,60 @@ export const scavengerHuntRouter = createTRPCRouter({
       }
     }),
 
+  // Get Scavenger Hunt Item by ID
+  getScavengerHuntItemById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      try {
+        const { id } = input;
+        const item = await db.query.scavengerHuntItems.findFirst({
+          where: eq(scavengerHuntItems.id, id),
+        });
+
+        if (!item) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+        }
+
+        return item;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch item: " + JSON.stringify(error),
+        });
+      }
+    }),
+
   // Scan Item (only accessible to organizers (users can't scan items themselves))
   scan: protectedOrganizerProcedure
     .input(
       z.object({
         userId: z.string(),
-        itemCode: z.string(),
+        itemId: z.number().optional(),
+        itemCode: z.string().optional(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       try {
-        const { userId, itemCode } = input;
+        const { userId, itemId, itemCode } = input;
+        const scannerId = ctx.session.user.id; // Get the organizer who is scanning
 
-        // Check if item exists
-        const item = await db.query.scavengerHuntItems.findFirst({
-          where: eq(scavengerHuntItems.code, itemCode),
-        });
+        // Check if item exists - prefer itemId over itemCode
+        let item;
+        if (itemId) {
+          item = await db.query.scavengerHuntItems.findFirst({
+            where: eq(scavengerHuntItems.id, itemId),
+          });
+        } else if (itemCode) {
+          item = await db.query.scavengerHuntItems.findFirst({
+            where: eq(scavengerHuntItems.code, itemCode),
+          });
+        } else {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Either itemId or itemCode must be provided",
+          });
+        }
+
         if (!item) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
         }
@@ -227,8 +283,8 @@ export const scavengerHuntRouter = createTRPCRouter({
           throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         }
 
-        // Record the scan
-        await recordScan(userId, item.points, item.id);
+        // Record the scan with scanner ID
+        await recordScan(userId, item.points, item.id, scannerId);
         return {
           success: true,
           message: "Item scanned successfully",
@@ -362,7 +418,7 @@ export const scavengerHuntRouter = createTRPCRouter({
     .input(
       z.object({
         filter: z
-          .enum(["all", "meals", "activities"])
+          .enum(["all", "meals", "workshops", "activities", "attendance", "wins", "bonus"])
           .optional()
           .default("all"),
       }),
@@ -371,16 +427,22 @@ export const scavengerHuntRouter = createTRPCRouter({
       try {
         const { filter } = input;
 
-        // Get all scans with user and item info using joins
+        // Create alias for scanner user table
+        const scannerUsers = alias(users, "scanner");
+
+        // Get all scans with user, item, and scanner info using joins
         const allScans = await db
           .select({
             userId: scavengerHuntScans.userId,
             itemId: scavengerHuntScans.itemId,
+            scannerId: scavengerHuntScans.scannerId,
             createdAt: scavengerHuntScans.createdAt,
             userName: users.name,
             userEmail: users.email,
             itemCode: scavengerHuntItems.code,
             itemDescription: scavengerHuntItems.description,
+            scannerName: scannerUsers.name,
+            scannerEmail: scannerUsers.email,
           })
           .from(scavengerHuntScans)
           .innerJoin(users, eq(scavengerHuntScans.userId, users.id))
@@ -388,25 +450,37 @@ export const scavengerHuntRouter = createTRPCRouter({
             scavengerHuntItems,
             eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
           )
+          .leftJoin(
+            scannerUsers,
+            eq(scavengerHuntScans.scannerId, scannerUsers.id),
+          )
           .orderBy(desc(scavengerHuntScans.createdAt));
 
-        // Filter by meals or activities if needed
-        // Meals are: friday-dinner, saturday-breakfast, saturday-lunch
-        // Everything else is an activity/workshop
-        const mealCodes = [
-          "friday-dinner",
-          "saturday-breakfast",
-          "saturday-lunch",
-        ];
-
+        // Filter by category based on item code suffix
         let filteredScans = allScans;
         if (filter === "meals") {
           filteredScans = allScans.filter((scan) =>
-            mealCodes.includes(scan.itemCode ?? ""),
+            scan.itemCode?.endsWith("_meal"),
+          );
+        } else if (filter === "workshops") {
+          filteredScans = allScans.filter((scan) =>
+            scan.itemCode?.endsWith("_ws"),
           );
         } else if (filter === "activities") {
-          filteredScans = allScans.filter(
-            (scan) => scan.itemCode && !mealCodes.includes(scan.itemCode),
+          filteredScans = allScans.filter((scan) =>
+            scan.itemCode?.endsWith("_act"),
+          );
+        } else if (filter === "attendance") {
+          filteredScans = allScans.filter((scan) =>
+            scan.itemCode?.endsWith("_att"),
+          );
+        } else if (filter === "wins") {
+          filteredScans = allScans.filter((scan) =>
+            scan.itemCode?.endsWith("_win"),
+          );
+        } else if (filter === "bonus") {
+          filteredScans = allScans.filter((scan) =>
+            scan.itemCode?.endsWith("_bonus"),
           );
         }
 
@@ -415,7 +489,7 @@ export const scavengerHuntRouter = createTRPCRouter({
           id: `${scan.userId}-${scan.itemId}`,
           hackerName: scan.userName || scan.userEmail || scan.userId,
           event: scan.itemDescription || scan.itemCode || "Unknown",
-          scanner: "Organizer", // You might want to track who scanned this
+          scanner: scan.scannerName || scan.scannerEmail || scan.scannerId || "Organizer", // Use actual scanner name from database
           day: scan.createdAt
             ? new Date(scan.createdAt).toLocaleDateString("en-US", {
                 month: "short",
