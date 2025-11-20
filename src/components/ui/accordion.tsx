@@ -58,8 +58,7 @@ const AccordionContent = React.forwardRef<
     if (typeof forwardedRef === "function") {
       forwardedRef(node);
     } else if (forwardedRef) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (forwardedRef as any).current = node;
+      forwardedRef.current = node;
     }
   };
 
