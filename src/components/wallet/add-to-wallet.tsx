@@ -22,7 +22,7 @@ const AddToWallet = ({
     setLoading(true);
     setError(null);
 
-      try {
+    try {
       generatePass.mutate(
         { walletType },
         {
@@ -41,8 +41,8 @@ const AddToWallet = ({
           },
           onError: (err) => {
             console.error("Failed to generate pass:", err);
-            const errorMessage = 
-              err && typeof err === "object" && "message" in err 
+            const errorMessage =
+              err && typeof err === "object" && "message" in err
                 ? String(err.message)
                 : String(err);
             setError(

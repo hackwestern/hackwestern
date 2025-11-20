@@ -115,7 +115,7 @@ async function generateApplePass(
         {
           key: "type",
           label: "Type",
-          value: user.type 
+          value: user.type
             ? user.type.charAt(0).toUpperCase() + user.type.slice(1)
             : "Hacker",
         },
@@ -385,7 +385,7 @@ async function generateGooglePass(
       },
       {
         header: "Role",
-        body: user.type 
+        body: user.type
           ? user.type.charAt(0).toUpperCase() + user.type.slice(1)
           : "Hacker",
         id: "role",
