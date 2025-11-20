@@ -177,11 +177,11 @@ const redeemPrize = async (
       // Deduct quantity for prizes with quantity
       if (reward.quantity) {
         await tx
-        .update(scavengerHuntRewards)
-        .set({
-          quantity: sql`${scavengerHuntRewards.quantity} - 1`,
-        })
-        .where(eq(scavengerHuntRewards.id, rewardId));      
+          .update(scavengerHuntRewards)
+          .set({
+            quantity: sql`${scavengerHuntRewards.quantity} - 1`,
+          })
+          .where(eq(scavengerHuntRewards.id, rewardId));
       }
 
       // Record that we have redeemed an item
