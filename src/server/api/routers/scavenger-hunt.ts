@@ -1,6 +1,6 @@
 
 import { alias } from "drizzle-orm/pg-core";
-import { eq, and, sql, or, isNull, gt } from "drizzle-orm";
+import { eq, and, sql, or, isNull, gt, desc } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -203,7 +203,6 @@ const recordScan = async (
       // Record the scan with scanner ID
       await tx.insert(scavengerHuntScans).values({
         userId: userId,
-        scannerId: scannerId,
         itemId: itemId,
         scannerId: scannerId,
       });
@@ -305,7 +304,7 @@ export const scavengerHuntRouter = createTRPCRouter({
         }
 
         // Record the scan with scanner ID
-        await recordScan(userId, item.points, item.id, scannerId);
+        await recordScan(userId, scannerId, item.points, item.id);
         return {
           success: true,
           message: "Item scanned successfully",
