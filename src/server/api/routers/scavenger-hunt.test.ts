@@ -920,7 +920,15 @@ describe("scavengerHuntRouter scan endpoints", () => {
         itemCode: testItem1.code,
       });
 
+<<<<<<< HEAD
       const scans = await organizerCaller.scavengerHunt.getAllScans({});
+=======
+      const scans =
+        (await organizerCaller.scavengerHunt.getAllScans()) as Array<{
+          userId: string;
+          itemId: number;
+        }>;
+>>>>>>> 3a8935ad991f504ace0568b38aeb0b08e95102be
 
       expect(scans.length).toBeGreaterThanOrEqual(3);
       const scanUserIds = scans.map((s) => s.userId);
@@ -973,12 +981,22 @@ describe("scavengerHuntRouter scan endpoints", () => {
         itemCode: testItem2.code,
       });
 
+<<<<<<< HEAD
       const scans = await organizerCaller.scavengerHunt.getAllScans({});
+=======
+      const scans =
+        (await organizerCaller.scavengerHunt.getAllScans()) as Array<{
+          userId: string;
+          itemId: number;
+        }>;
+>>>>>>> 3a8935ad991f504ace0568b38aeb0b08e95102be
 
       expect(scans.length).toBeGreaterThanOrEqual(4);
 
       // Verify all combinations exist
-      const scanCombinations = (scans as Array<{ userId: string; itemId: number }>).map((s) => ({
+      const scanCombinations = (
+        scans as Array<{ userId: string; itemId: number }>
+      ).map((s) => ({
         userId: s.userId,
         itemId: s.itemId,
       }));
@@ -1183,12 +1201,25 @@ describe("scavengerHuntRouter item management endpoints", () => {
         description: "Second test item",
       };
 
+<<<<<<< HEAD
       const result1 = await organizerCaller.scavengerHunt.addScavengerHuntItem({
         item: item1,
       });
       const result2 = await organizerCaller.scavengerHunt.addScavengerHuntItem({
         item: item2,
       });
+=======
+      const result1 = (await organizerCaller.scavengerHunt.addScavengerHuntItem(
+        {
+          item: item1,
+        },
+      )) as { success: boolean; message: string };
+      const result2 = (await organizerCaller.scavengerHunt.addScavengerHuntItem(
+        {
+          item: item2,
+        },
+      )) as { success: boolean; message: string };
+>>>>>>> 3a8935ad991f504ace0568b38aeb0b08e95102be
 
       expect(result1.success).toBe(true);
       expect(result2.success).toBe(true);
