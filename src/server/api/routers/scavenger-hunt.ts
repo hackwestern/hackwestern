@@ -103,7 +103,7 @@ const getUserRedemptions = async (userId: string) => {
 };
 
 // ! Unsafe Functions: Need to check if caller is allowed to get scans before invoking */
-const getUserScans = async (userId: string) => {
+const _getUserScans = async (userId: string) => {
   const scans = await db.query.scavengerHuntScans.findMany({
     where: eq(scavengerHuntScans.userId, userId),
   });
