@@ -20,19 +20,11 @@ const Topbar = () => {
   const title = formatTitle(tab);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const logout = () => {
-    signOut()
-      .then(() => {
-        void router.push("/");
-      })
-      .catch((e) => console.log("error logging out:", e));
-  };
-
   const sectionLinks: [string, string][] = [
     ["home", "Home"],
     ["schedule", "Schedule"],
     ["map", "Map"],
-    ["food-menu", "Food Menu"],
+    ["menu", "Menu"],
     ["mentors", "Mentors"],
     ["sponsors", "Sponsors"],
   ];
@@ -54,7 +46,7 @@ const Topbar = () => {
 
   const getLogisticsHref = (tab: string): string => {
     if (tab === "contact-us" || tab === "faq") {
-      const step = tab === "contact-us" ? "5" : "6";
+      const step = tab === "contact-us" ? "6" : "7";
       return `live/?tab=event-logistics&step=${step}`;
     }
     if (tab === "event-logistics") {

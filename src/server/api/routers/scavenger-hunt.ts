@@ -161,8 +161,29 @@ const redeemPrize = async (
         });
       }
 
+      // Check if we have any more of the prize
+      const reward = await tx.query.scavengerHuntRewards.findFirst({
+        where: eq(scavengerHuntRewards.id, rewardId),
+      });
+      if (!reward || (reward.quantity && reward.quantity <= 0)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "We are out of this prize unfortunately",
+        });
+      }
+
       // Deduct points to user
       await addPoints(tx, userId, -costPoints);
+
+      // Deduct quantity for prizes with quantity
+      if (reward.quantity) {
+        await tx
+          .update(scavengerHuntRewards)
+          .set({
+            quantity: sql`${scavengerHuntRewards.quantity} - 1`,
+          })
+          .where(eq(scavengerHuntRewards.id, rewardId));
+      }
 
       // Record that we have redeemed an item
       await tx.insert(scavengerHuntRedemptions).values({

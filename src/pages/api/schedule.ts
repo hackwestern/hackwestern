@@ -9,7 +9,7 @@ import type {
 // Google Sheets API v4 configuration
 const SPREADSHEET_ID = "1_dZgkfkhmR-LdqvAplInEOxZJGu7gSsE9FlAiWD64Bk";
 const SHEET_NAME = "Sheet1";
-const RANGE = "A:I";
+const RANGE = "A:J";
 
 interface GoogleSheetsCell {
   formattedValue?: string;
@@ -67,6 +67,7 @@ function parseScheduleEvent(event: ScheduleEvent): ParsedScheduleEvent {
     activities2: parseEventText(event["Activities #2"]) ?? undefined,
     food: parseEventText(event.Food) ?? undefined,
     sponsorBooth: parseEventText(event["Spon Booth"]) ?? undefined,
+    scavengerHunt: parseEventText(event["Scavenger Hunt"]) ?? undefined,
     other: parseEventText(event.Other) ?? undefined,
   };
 }
@@ -146,7 +147,8 @@ export default async function handler(
         "Activities #2": getCellValue(5),
         Food: getCellValue(6),
         "Spon Booth": getCellValue(7),
-        Other: getCellValue(8),
+        "Scavenger Hunt": getCellValue(8),
+        Other: getCellValue(9),
       };
 
       events.push(event);

@@ -8,7 +8,6 @@ import Mentors from "~/components/live/mentors";
 import Sponsors from "~/components/live/sponsors";
 import EventLogistics from "~/components/live/event-logistics";
 import ContactUs from "~/components/live/contact-us";
-import FAQ from "~/components/live/faq";
 import Sidebar from "~/components/live/sidebar";
 import Topbar from "~/components/live/topbar";
 import { type GetServerSidePropsContext } from "next";
@@ -37,7 +36,7 @@ const Live = () => {
       <div className="flex h-screen w-screen flex-col md:flex-row">
         <Topbar />
         <Sidebar />
-        <div className="flex max-h-screen min-h-screen w-screen flex-col gap-8 bg-white p-5 sm:gap-12 sm:p-10">
+        <div className="flex max-h-screen min-h-screen w-screen flex-col gap-4 bg-[#fbfbfb] p-5 sm:gap-8 sm:p-10">
           <div className="hidden font-dico text-xl text-heavy md:flex xl:text-2xl 2xl:text-3xl">
             {title}
           </div>
@@ -58,7 +57,7 @@ const TabComponent = ({ tab }: { tab: string }) => {
       return <Schedule />;
     case "map":
       return <Map />;
-    case "food-menu":
+    case "menu":
       return <FoodMenu />;
     case "mentors":
       return <Mentors />;
@@ -68,8 +67,6 @@ const TabComponent = ({ tab }: { tab: string }) => {
       return <EventLogistics />;
     case "contact-us":
       return <ContactUs />;
-    case "faq":
-      return <FAQ />;
     default:
       return <Home />;
   }
