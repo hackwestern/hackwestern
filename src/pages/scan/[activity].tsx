@@ -445,7 +445,9 @@ const ScanActivityPage = () => {
       let userName = userId;
       try {
         // Fetch user data via API
-        const userResponse = await fetch(`/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`);
+        const userResponse = await fetch(
+          `/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`,
+        );
         if (userResponse.ok) {
           const userData = await userResponse.json();
           userName = userData?.name || userData?.email || userId;
@@ -525,7 +527,9 @@ const ScanActivityPage = () => {
         let userName = userId;
         try {
           // Fetch user data via API
-          const userResponse = await fetch(`/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`);
+          const userResponse = await fetch(
+            `/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`,
+          );
           if (userResponse.ok) {
             const userData = await userResponse.json();
             userName = userData?.name || userData?.email || userId;
