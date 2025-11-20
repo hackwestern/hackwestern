@@ -797,7 +797,10 @@ describe("scavengerHuntRouter scan endpoints", () => {
     });
 
     test("returns empty array when user has no scans", async () => {
-      const scans = await organizerCaller.scavengerHunt.getScans();
+      const scans = (await organizerCaller.scavengerHunt.getScans()) as Array<{
+        itemId: number;
+        userId: string;
+      }>;
       expect(scans).toEqual([]);
     });
 
@@ -812,7 +815,10 @@ describe("scavengerHuntRouter scan endpoints", () => {
         itemCode: testItem2.code,
       });
 
-      const scans = await organizerCaller.scavengerHunt.getScans();
+      const scans = (await organizerCaller.scavengerHunt.getScans()) as Array<{
+        itemId: number;
+        userId: string;
+      }>;
 
       expect(scans.length).toBe(2);
       expect(scans.map((s) => s.itemId)).toContain(testItem.id);
@@ -916,7 +922,10 @@ describe("scavengerHuntRouter scan endpoints", () => {
         itemCode: testItem1.code,
       });
 
-      const scans = await organizerCaller.scavengerHunt.getAllScans();
+      const scans = (await organizerCaller.scavengerHunt.getAllScans()) as Array<{
+        userId: string;
+        itemId: number;
+      }>;
 
       expect(scans.length).toBeGreaterThanOrEqual(3);
       const scanUserIds = scans.map((s) => s.userId);
@@ -969,12 +978,15 @@ describe("scavengerHuntRouter scan endpoints", () => {
         itemCode: testItem2.code,
       });
 
-      const scans = await organizerCaller.scavengerHunt.getAllScans();
+      const scans = (await organizerCaller.scavengerHunt.getAllScans()) as Array<{
+        userId: string;
+        itemId: number;
+      }>;
 
       expect(scans.length).toBeGreaterThanOrEqual(4);
 
       // Verify all combinations exist
-      const scanCombinations = scans.map((s) => ({
+      const scanCombinations = (scans as Array<{ userId: string; itemId: number }>).map((s) => ({
         userId: s.userId,
         itemId: s.itemId,
       }));
@@ -1066,9 +1078,9 @@ describe("scavengerHuntRouter scan endpoints", () => {
     });
 
     test("returns empty array when user has no scans", async () => {
-      const scans = await organizerCaller.scavengerHunt.getScansByUserId({
+      const scans = (await organizerCaller.scavengerHunt.getScansByUserId({
         requestedUserId: testUser.user.id,
-      });
+      })) as Array<{ itemId: number; userId: string }>;
 
       expect(scans).toEqual([]);
     });
@@ -1085,9 +1097,9 @@ describe("scavengerHuntRouter scan endpoints", () => {
       });
 
       // Organizer queries the scans
-      const scans = await organizerCaller.scavengerHunt.getScansByUserId({
+      const scans = (await organizerCaller.scavengerHunt.getScansByUserId({
         requestedUserId: testUser.user.id,
-      });
+      })) as Array<{ itemId: number; userId: string }>;
 
       expect(scans.length).toBe(2);
       expect(scans.map((s) => s.itemId)).toContain(testItem.id);
@@ -1149,9 +1161,9 @@ describe("scavengerHuntRouter item management endpoints", () => {
         description: "Test item description",
       };
 
-      const result = await organizerCaller.scavengerHunt.addScavengerHuntItem({
+      const result = (await organizerCaller.scavengerHunt.addScavengerHuntItem({
         item: newItem,
-      });
+      })) as { success: boolean; message: string };
 
       expect(result.success).toBe(true);
       expect(result.message).toBe("Item added successfully");
@@ -1179,12 +1191,12 @@ describe("scavengerHuntRouter item management endpoints", () => {
         description: "Second test item",
       };
 
-      const result1 = await organizerCaller.scavengerHunt.addScavengerHuntItem({
+      const result1 = (await organizerCaller.scavengerHunt.addScavengerHuntItem({
         item: item1,
-      });
-      const result2 = await organizerCaller.scavengerHunt.addScavengerHuntItem({
+      })) as { success: boolean; message: string };
+      const result2 = (await organizerCaller.scavengerHunt.addScavengerHuntItem({
         item: item2,
-      });
+      })) as { success: boolean; message: string };
 
       expect(result1.success).toBe(true);
       expect(result2.success).toBe(true);
@@ -1245,9 +1257,9 @@ describe("scavengerHuntRouter item management endpoints", () => {
         description: "Item with zero points",
       };
 
-      const result = await organizerCaller.scavengerHunt.addScavengerHuntItem({
+      const result = (await organizerCaller.scavengerHunt.addScavengerHuntItem({
         item: newItem,
-      });
+      })) as { success: boolean; message: string };
 
       expect(result.success).toBe(true);
 
@@ -1287,9 +1299,9 @@ describe("scavengerHuntRouter item management endpoints", () => {
         deletedAt: futureDate,
       };
 
-      const result = await organizerCaller.scavengerHunt.addScavengerHuntItem({
+      const result = (await organizerCaller.scavengerHunt.addScavengerHuntItem({
         item: newItem,
-      });
+      })) as { success: boolean; message: string };
 
       expect(result.success).toBe(true);
       expect(result.message).toBe("Item added successfully");
@@ -1334,9 +1346,9 @@ describe("scavengerHuntRouter item management endpoints", () => {
         // deletedAt not provided
       };
 
-      const result = await organizerCaller.scavengerHunt.addScavengerHuntItem({
+      const result = (await organizerCaller.scavengerHunt.addScavengerHuntItem({
         item: newItem,
-      });
+      })) as { success: boolean; message: string };
 
       expect(result.success).toBe(true);
 
@@ -1364,9 +1376,9 @@ describe("scavengerHuntRouter item management endpoints", () => {
         deletedAt: pastDate,
       };
 
-      const result = await organizerCaller.scavengerHunt.addScavengerHuntItem({
+      const result = (await organizerCaller.scavengerHunt.addScavengerHuntItem({
         item: newItem,
-      });
+      })) as { success: boolean; message: string };
 
       expect(result.success).toBe(true);
 
