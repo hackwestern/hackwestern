@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Construction from "~/components/live/construction";
 import AddToWallet from "~/components/wallet/add-to-wallet";
 import { useState, useEffect } from "react";
 import QRCode from "qrcode";
