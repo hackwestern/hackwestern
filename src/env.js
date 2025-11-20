@@ -29,7 +29,7 @@ export const env = createEnv({
     DISCORD_CLIENT_ID: z.string(),
     DISCORD_CLIENT_SECRET: z.string(),
     RESEND_API_KEY: z.string(),
-    APPLE_CERT_PASS: z.string(),
+    APPLE_CERT_PASS: z.string().optional(),
     APPLE_WWDR_CERT: z.string().optional(),
     APPLE_SIGNER_CERT: z.string().optional(),
     APPLE_SIGNER_KEY: z.string().optional(),
