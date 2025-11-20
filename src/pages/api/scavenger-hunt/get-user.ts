@@ -14,7 +14,16 @@ export default async function handler(
 
   // Check if user is authenticated as organizer
   const session = await getServerAuthSession({ req, res });
-  if (!session || session.user.role !== "ORGANIZER") {
+  if (!session) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  // Fetch user from database to check their type
+  const dbUser = await db.query.users.findFirst({
+    where: eq(users.id, session.user.id),
+  });
+
+  if (!dbUser || dbUser.type !== "organizer") {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
@@ -45,4 +54,5 @@ export default async function handler(
     });
   }
 }
+
 
