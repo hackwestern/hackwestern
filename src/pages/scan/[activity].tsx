@@ -148,7 +148,10 @@ const ScanActivityPage = () => {
       // Fallback for older browsers/iOS Safari - check legacy APIs
       else {
         const legacyNav = navigator as LegacyNavigator;
-        if (legacyNav.getUserMedia && typeof legacyNav.getUserMedia === "function") {
+        if (
+          legacyNav.getUserMedia &&
+          typeof legacyNav.getUserMedia === "function"
+        ) {
           const legacyGetUserMedia = legacyNav.getUserMedia;
           getUserMedia = (constraints: MediaStreamConstraints) => {
             return new Promise<MediaStream>((resolve, reject) => {
