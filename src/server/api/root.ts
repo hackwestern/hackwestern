@@ -3,6 +3,7 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 import { applicationRouter } from "./routers/application";
 import { authRouter } from "./routers/auth";
 import { preregistrationRouter } from "./routers/preregistration";
+import { scavengerHuntRouter } from "./routers/scavenger-hunt";
 import { reviewRouter } from "./routers/review";
 import { qrRouter } from "./routers/qr-code-generation";
 
@@ -18,6 +19,7 @@ export const appRouter = createTRPCRouter({
   preregistration: preregistrationRouter,
   review: reviewRouter,
   qrRouter: qrRouter,
+  scavengerHunt: scavengerHuntRouter,
 });
 
 // export type definition of API

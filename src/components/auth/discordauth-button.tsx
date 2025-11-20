@@ -14,14 +14,16 @@ function DiscordAuthButton({
       onClick={() => {
         void signIn("discord", { callbackUrl: redirect });
       }}
-      className="w-full rounded-md bg-[#E1E3FE] p-1 font-medium outline outline-1 outline-gray-400 hover:bg-white"
+      variant="secondary"
+      size="lg"
+      full
     >
-      <div className="flex flex-row items-center justify-center gap-1">
+      <div className="flex flex-row items-center justify-center gap-2">
         <Image
           src="/images/discordlogo.svg"
           alt="google logo"
-          width={25}
-          height={25}
+          width={20}
+          height={20}
         />
         <span>Sign {register ? "up" : "in"} with Discord</span>
       </div>

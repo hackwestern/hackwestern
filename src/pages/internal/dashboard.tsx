@@ -13,7 +13,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "~/components/ui/accordion";
-import CloudBackground from "~/components/cloud-background";
+import CanvasBackground from "~/components/canvas-background";
 import { Input } from "~/components/ui/input";
 import { useState } from "react";
 
@@ -63,10 +63,10 @@ const Internal = () => {
   });
 
   return (
-    <div className="flex flex-col items-center justify-center bg-primary-100 bg-hw-linear-gradient-day py-4">
-      <CloudBackground />
-      <h1 className="z-10 mb-5 text-3xl">Internal Dashboard</h1>
-      <Accordion type="multiple" className="z-10">
+    <div className="bg-hw-linear-gradient-day flex flex-col items-center justify-center bg-primary-100 py-4">
+      <CanvasBackground />
+      <h1 className="z-10 mb-4 text-3xl">Internal Dashboard</h1>
+      <Accordion type="multiple" className="z-10 mb-3">
         <AccordionItem key="leaderboard" value="leaderboard">
           <AccordionTrigger className="text-left">Leaderboard</AccordionTrigger>
           <AccordionContent className="text-left">
@@ -91,25 +91,30 @@ const Internal = () => {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-      <div className="z-10 p-2">
+      <div className="z-10 mb-3 text-sm">
         {reviewData?.length} applications reviewed!
       </div>
-      {nextReviewId ? (
-        <Button asChild className="z-10 mb-2" variant="primary">
-          <Link href={`/internal/review?applicant=${nextReviewId}`}>
-            Review Next
-          </Link>
+      <div className="z-10 mb-3 flex gap-3">
+        {nextReviewId ? (
+          <Button asChild variant="primary">
+            <Link href={`/internal/review?applicant=${nextReviewId}`}>
+              Review Next
+            </Link>
+          </Button>
+        ) : (
+          <div>All reviews completed! 🎉</div>
+        )}
+        <Button asChild variant="primary">
+          <Link href="/internal/adjust-status">Adjust Status</Link>
         </Button>
-      ) : (
-        <div>All reviews completed! 🎉</div>
-      )}
+      </div>
       <Input
-        className="z-10 w-96"
+        className="z-10 mb-4 mt-3 w-96"
         placeholder="Search by name or email"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
-      <div className="z-10 mt-4">
+      <div className="z-10 font-figtree text-medium">
         {reviewData && filteredData ? (
           <DataTable columns={reviewDashboardColumns} data={filteredData} />
         ) : (

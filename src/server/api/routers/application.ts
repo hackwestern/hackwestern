@@ -1,6 +1,10 @@
 import { TRPCError } from "@trpc/server";
 
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedOrganizerProcedure,
+  protectedProcedure,
+} from "~/server/api/trpc";
 import { applications, users } from "~/server/db/schema";
 import { db } from "~/server/db";
 import {
@@ -8,35 +12,134 @@ import {
   applicationSubmitSchema,
 } from "~/schemas/application";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
-import { eq, count } from "drizzle-orm";
+import { eq, count, inArray } from "drizzle-orm";
 import { z } from "zod";
+import { type CanvasPaths } from "~/types/canvas";
 
 export const applicationRouter = createTRPCRouter({
-  get: protectedProcedure.query(async ({ ctx }) => {
-    try {
-      const userId = ctx.session.user.id;
-      const application = await db.query.applications.findFirst({
-        where: (schema, { eq }) => eq(schema.userId, userId),
-      });
-
-      const modifiedApplication = application
-        ? {
-            ...application,
-            githubLink: application?.githubLink?.substring(19) ?? null,
-            linkedInLink: application?.linkedInLink?.substring(24) ?? null,
+  get: protectedProcedure
+    .input(
+      z
+        .object({
+          // Optional list of application columns to fetch; if omitted, fetch all as before
+          fields: z
+            .array(
+              z.enum([
+                "userId",
+                "createdAt",
+                "updatedAt",
+                "status",
+                // Avatar
+                "avatarColour",
+                "avatarFace",
+                "avatarLeftHand",
+                "avatarRightHand",
+                "avatarHat",
+                // Basics
+                "firstName",
+                "lastName",
+                "age",
+                "phoneNumber",
+                "countryOfResidence",
+                // Info
+                "school",
+                "levelOfStudy",
+                "major",
+                "attendedBefore",
+                "numOfHackathons",
+                // Essays
+                "question1",
+                "question2",
+                "question3",
+                // Links
+                "resumeLink",
+                "githubLink",
+                "linkedInLink",
+                "otherLink",
+                // Agreements
+                "agreeCodeOfConduct",
+                "agreeShareWithSponsors",
+                "agreeShareWithMLH",
+                "agreeEmailsFromMLH",
+                "agreeWillBe18",
+                // Optional demographics
+                "underrepGroup",
+                "gender",
+                "ethnicity",
+                "sexualOrientation",
+                // Canvas
+                "canvasData",
+              ] as const),
+            )
+            .optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        const userId = ctx.session.user.id;
+        const application = await (async () => {
+          // if specific fields were requested, build a Drizzle columns map to select only those
+          const fields = input?.fields;
+          if (fields && fields.length > 0) {
+            const columns = Object.fromEntries(
+              fields.map((f) => [f, true]),
+            ) as Record<string, true>;
+            return db.query.applications.findFirst({
+              columns,
+              where: (schema, { eq }) => eq(schema.userId, userId),
+            }) as Partial<typeof applications.$inferSelect>;
           }
-        : null;
 
-      return modifiedApplication;
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch application: " + JSON.stringify(error),
-      });
-    }
-  }),
+          // default: fetch all columns (existing behavior)
+          return db.query.applications.findFirst({
+            where: (schema, { eq }) => eq(schema.userId, userId),
+          });
+        })();
 
-  getById: protectedProcedure
+        // When selecting a subset of fields, normalize only those link fields if present
+        const modifiedApplication = application
+          ? (() => {
+              // If no specific fields were requested, preserve prior full-shape behavior
+              if (!input?.fields || input.fields.length === 0) {
+                return {
+                  ...application,
+                  githubLink: application?.githubLink?.substring(19) ?? null,
+                  linkedInLink:
+                    application?.linkedInLink?.substring(24) ?? null,
+                } as typeof application;
+              }
+
+              // fields were specified: only transform if those keys exist in the selection
+              const selected = application;
+              if (
+                input.fields.includes("githubLink") &&
+                "githubLink" in selected
+              ) {
+                selected.githubLink =
+                  selected.githubLink?.substring(19) ?? null;
+              }
+              if (
+                input.fields.includes("linkedInLink") &&
+                "linkedInLink" in selected
+              ) {
+                selected.linkedInLink =
+                  selected.linkedInLink?.substring(24) ?? null;
+              }
+              return selected;
+            })()
+          : null;
+
+        return modifiedApplication;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch application: " + JSON.stringify(error),
+        });
+      }
+    }),
+
+  getById: protectedOrganizerProcedure
     .input(
       z.object({
         applicantId: z.string().nullish(),
@@ -70,25 +173,9 @@ export const applicationRouter = createTRPCRouter({
         });
       }
     }),
-  
 
-
-
-    
-    
-  getAllApplicants: protectedProcedure.query(async ({ ctx }) => {
+  getAllApplicants: protectedOrganizerProcedure.query(async () => {
     try {
-      const userId = ctx.session.user.id;
-      const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-      });
-      if (user?.type !== "organizer") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "User is not authorized to get all applicants",
-        });
-      }
-
       const applicants = await db
         .select({
           userId: applications.userId,
@@ -120,35 +207,47 @@ export const applicationRouter = createTRPCRouter({
     .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
-        const applicationData = input;
-        const isCompleteApplication =
-          applicationSubmitSchema.safeParse(applicationData).success;
+        const { canvasData, ...restData } = input;
+
+        const dataToInsert = {
+          ...restData,
+          userId,
+        };
+
+        // Only include these 3 specially formatted fields if they were actually provided
+        if (Object.prototype.hasOwnProperty.call(input, "canvasData")) {
+          (dataToInsert as typeof input).canvasData =
+            canvasData === null
+              ? undefined
+              : (canvasData as
+                  | {
+                      paths: CanvasPaths;
+                      timestamp: number;
+                      version: string;
+                    }
+                  | undefined);
+        }
+
+        if (Object.prototype.hasOwnProperty.call(input, "githubLink")) {
+          dataToInsert.githubLink = restData.githubLink
+            ? `${GITHUB_URL}${restData.githubLink}`
+            : null;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(input, "linkedInLink")) {
+          dataToInsert.linkedInLink = restData.linkedInLink
+            ? `${LINKEDIN_URL}${restData.linkedInLink}`
+            : null;
+        }
 
         await db
           .insert(applications)
-          .values({
-            ...applicationData,
-            githubLink: applicationData.githubLink
-              ? `${GITHUB_URL}${applicationData.githubLink}`
-              : null,
-            linkedInLink: applicationData.linkedInLink
-              ? `${LINKEDIN_URL}${applicationData.linkedInLink}`
-              : null,
-            userId,
-            status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
-          })
+          .values(dataToInsert)
           .onConflictDoUpdate({
             target: applications.userId,
             set: {
-              ...applicationData,
+              ...dataToInsert,
               updatedAt: new Date(),
-              githubLink: applicationData.githubLink
-                ? `${GITHUB_URL}${applicationData.githubLink}`
-                : null,
-              linkedInLink: applicationData.linkedInLink
-                ? `${LINKEDIN_URL}${applicationData.linkedInLink}`
-                : null,
-              status: isCompleteApplication ? "PENDING_REVIEW" : "IN_PROGRESS",
             },
           });
       } catch (error) {
@@ -159,7 +258,61 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
 
-  getAppStats: protectedProcedure.query(async ({}) => {
+  submit: protectedProcedure.mutation(async ({ ctx }) => {
+    try {
+      const userId = ctx.session.user.id;
+
+      // Fetch existing application for the user
+      const application = await db.query.applications.findFirst({
+        where: (schema, { eq }) => eq(schema.userId, userId),
+      });
+
+      if (!application) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No application found to submit",
+        });
+      }
+
+      // Transform stored links to the shape expected by the submit schema
+      const normalized = {
+        ...application,
+        // strip configured prefixes if present so schema preprocessing matches tests
+        githubLink: application.githubLink
+          ? application.githubLink.replace(GITHUB_URL, "")
+          : undefined,
+        linkedInLink: application.linkedInLink
+          ? application.linkedInLink.replace(LINKEDIN_URL, "")
+          : undefined,
+      };
+
+      // Validate the existing application against the submission schema
+      const parseResult = applicationSubmitSchema.safeParse(normalized);
+      if (!parseResult.success) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Application is not complete: " +
+            JSON.stringify(parseResult.error.format()),
+        });
+      }
+
+      // Update status only
+      await db
+        .update(applications)
+        .set({ status: "PENDING_REVIEW", updatedAt: new Date() })
+        .where(eq(applications.userId, userId));
+    } catch (error) {
+      throw error instanceof TRPCError
+        ? error
+        : new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to submit application: " + JSON.stringify(error),
+          });
+    }
+  }),
+
+  getAppStats: protectedOrganizerProcedure.query(async ({}) => {
     try {
       const applicationStats = await db
         .select({
@@ -177,4 +330,66 @@ export const applicationRouter = createTRPCRouter({
       });
     }
   }),
+
+  bulkUpdateStatusByEmails: protectedOrganizerProcedure
+    .input(
+      z.object({
+        emails: z.array(z.string().email()).min(1),
+        status: z.enum([
+          "IN_PROGRESS",
+          "PENDING_REVIEW",
+          "IN_REVIEW",
+          "ACCEPTED",
+          "REJECTED",
+          "WAITLISTED",
+          "DECLINED",
+        ] as const),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { emails, status } = input;
+      try {
+        const result = await db.transaction(async (tx) => {
+          const userRows = await tx
+            .select({ id: users.id })
+            .from(users)
+            .where(inArray(users.email, emails));
+
+          const userIds = userRows.map((r) => r.id);
+          if (userIds.length === 0) {
+            return { matched: 0, updated: 0 };
+          }
+
+          const updateRes = await tx
+            .update(applications)
+            .set({ status, updatedAt: new Date() })
+            .where(inArray(applications.userId, userIds));
+
+          // drizzle's update may not always expose rowCount across drivers; fall back to querying actual count
+          let updatedCount = userIds.length;
+          if (
+            updateRes &&
+            typeof updateRes === "object" &&
+            "rowCount" in updateRes &&
+            typeof (updateRes as { rowCount?: unknown }).rowCount === "number"
+          ) {
+            updatedCount = (updateRes as { rowCount: number }).rowCount;
+          } else {
+            // Query the actual count of applications for these users
+            const countResult = await tx
+              .select({ count: count() })
+              .from(applications)
+              .where(inArray(applications.userId, userIds));
+            updatedCount = countResult[0]?.count ?? 0;
+          }
+          return { matched: userIds.length, updated: updatedCount };
+        });
+        return result;
+      } catch (err: unknown) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to bulk update status: " + String(err),
+        });
+      }
+    }),
 });

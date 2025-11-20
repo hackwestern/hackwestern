@@ -14,14 +14,16 @@ function GithubAuthButton({
       onClick={() => {
         void signIn("github", { callbackUrl: redirect });
       }}
-      className="w-full rounded-md bg-githubbg p-1 font-medium text-white outline outline-1 outline-gray-900 hover:bg-black"
+      variant="secondary"
+      size="lg"
+      full
     >
-      <div className="flex flex-row items-center justify-center gap-1">
+      <div className="flex flex-row items-center justify-center gap-2">
         <Image
           src="/images/githublogo.svg"
           alt="github logo"
-          width={25}
-          height={25}
+          width={20}
+          height={20}
         />
         <span>Sign {register ? "up" : "in"} with Github</span>
       </div>

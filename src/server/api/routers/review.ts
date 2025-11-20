@@ -1,6 +1,9 @@
 import { TRPCError } from "@trpc/server";
 
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedOrganizerProcedure,
+} from "~/server/api/trpc";
 import { applications, reviews, users } from "~/server/db/schema";
 import { db } from "~/server/db";
 import { z } from "zod";
@@ -22,26 +25,56 @@ import {
   desc,
   notInArray,
 } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 
 const REQUIRED_REVIEWS = 2;
 
+export const createEmptyReview = (
+  reviewerUserId: string,
+  applicantUserId: string,
+) => {
+  return {
+    applicantUserId,
+    reviewerUserId,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    originalityRating: 0,
+    technicalityRating: 0,
+    passionRating: 0,
+    comments: null,
+    completed: false,
+    referral: false,
+  } as InferSelectModel<typeof reviews>;
+};
+
 export const reviewRouter = createTRPCRouter({
-  save: protectedProcedure
+  save: protectedOrganizerProcedure
     .input(reviewSaveSchema)
     .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
-        const reviewer = await db.query.users.findFirst({
-          where: eq(users.id, userId),
-        });
-        if (!reviewer || reviewer.type !== "organizer") {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "User is not authorized to submit reviews",
-          });
+        const reviewData = input;
+        const applicantId = reviewData.applicantUserId;
+
+        const isEmpty =
+          reviewData.originalityRating == 0 &&
+          reviewData.technicalityRating == 0 &&
+          reviewData.passionRating == 0 &&
+          (!reviewData.comments || reviewData.comments.trim() == "");
+
+        // We never want to save an empty review, so if a user resets the rating to empty, we need to delete the existing record too
+        if (isEmpty) {
+          await db
+            .delete(reviews)
+            .where(
+              and(
+                eq(reviews.applicantUserId, applicantId),
+                eq(reviews.reviewerUserId, userId),
+              ),
+            );
+          return;
         }
 
-        const reviewData = input;
         const isCompleteReview =
           reviewSubmitSchema.safeParse(reviewData).success;
 
@@ -71,20 +104,11 @@ export const reviewRouter = createTRPCRouter({
       }
     }),
 
-  referApplicant: protectedProcedure
+  referApplicant: protectedOrganizerProcedure
     .input(referApplicantSchema)
     .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
-        const reviewer = await db.query.users.findFirst({
-          where: eq(users.id, userId),
-        });
-        if (!reviewer || reviewer.type !== "organizer") {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "User is not authorized to modify reviews",
-          });
-        }
 
         const applicantData = input;
         await db.insert(reviews).values({
@@ -101,17 +125,8 @@ export const reviewRouter = createTRPCRouter({
       }
     }),
 
-  getByOrganizer: protectedProcedure.query(async ({ ctx }) => {
+  getByOrganizer: protectedOrganizerProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
-    const reviewer = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-    if (!reviewer || reviewer.type !== "organizer") {
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: "User is not authorized to view reviews",
-      });
-    }
 
     return db.query.reviews.findMany({
       with: {
@@ -132,29 +147,15 @@ export const reviewRouter = createTRPCRouter({
     });
   }),
 
-  //TODO: Write unit tests for this router path
-  getNextId: protectedProcedure
+  // TODO: Write unit tests for this router path
+  getNextId: protectedOrganizerProcedure
     .input(
       z.object({
-        skipId: z.string().nullish(),
+        skipId: z.string().nullish(), // used if a reviewer is currently reviewing something (stored as a search param on the client side)
       }),
     )
     .query(async ({ ctx, input }) => {
       try {
-        // Remove expired reviews from the review table
-        // This is a SQL string because drizzle doesn't have USING (drizzle bad)
-        await db.execute(
-          sql`DELETE FROM hw11_review USING hw11_application AS app WHERE applicant_user_id = app.user_id AND NOW() - app.updated_at::timestamp > INTERVAL '24 hours' AND completed != TRUE;`,
-        );
-
-        // Put applications with expired reviews back on the queue
-        await db
-          .update(applications)
-          .set({ status: "PENDING_REVIEW" })
-          .where(
-            sql`${applications.status}='IN_REVIEW' and ${applications.updatedAt}::timestamp < now() - interval '2 hours'`,
-          );
-
         // If reviewer has a review in progress, return that and not skipping current
         if (!input.skipId) {
           const reviewInProgress = (
@@ -175,6 +176,7 @@ export const reviewRouter = createTRPCRouter({
           }
         }
 
+        // all the userIds of the applicants the reviewer already reviewed
         const alreadyReviewedByReviewer = db
           .select({ data: reviews.applicantUserId })
           .from(reviews)
@@ -204,8 +206,10 @@ export const reviewRouter = createTRPCRouter({
           )
           .groupBy(applications.userId)
           .having(({ reviewCount }) => lt(reviewCount, REQUIRED_REVIEWS))
-          // order by random
-          .orderBy(asc(sql`RANDOM()`))
+          .orderBy(
+            asc(count(reviews.applicantUserId).mapWith(Number)),
+            sql`RANDOM()`,
+          )
           .limit(1);
 
         const appAwaitingReview = appAwaitingReviews[0];
@@ -218,14 +222,6 @@ export const reviewRouter = createTRPCRouter({
           });
         }
 
-        // Update the application status to in_review
-        await db
-          .update(applications)
-          .set({ status: "IN_REVIEW" })
-          .where(eq(applications.userId, appAwaitingReview.userId));
-
-        // console.log("updated application status to IN_REVIEW")
-
         return appAwaitingReview?.userId;
       } catch (error) {
         throw new TRPCError({
@@ -235,7 +231,7 @@ export const reviewRouter = createTRPCRouter({
       }
     }),
 
-  getById: protectedProcedure
+  getById: protectedOrganizerProcedure
     .input(
       z.object({
         applicantId: z.string().nullish(),
@@ -251,31 +247,20 @@ export const reviewRouter = createTRPCRouter({
         }
 
         const reviewerId = ctx.session.user.id;
-        const user = await db.query.users.findFirst({
-          where: eq(users.id, reviewerId),
-        });
 
-        if (user?.type !== "organizer") {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "User is not authorized to view reviews",
-          });
-        }
-
-        await db
-          .insert(reviews)
-          .values({
-            reviewerUserId: reviewerId,
-            applicantUserId: input.applicantId,
-          })
-          .onConflictDoNothing();
-
-        return await db.query.reviews.findFirst({
+        const existingReview = await db.query.reviews.findFirst({
           where: and(
             eq(reviews.applicantUserId, input.applicantId),
             eq(reviews.reviewerUserId, reviewerId),
           ),
         });
+
+        // If no review exists, return an empty review that conforms to the schema
+        if (!existingReview) {
+          return createEmptyReview(reviewerId, input.applicantId);
+        }
+
+        return existingReview;
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -284,20 +269,8 @@ export const reviewRouter = createTRPCRouter({
       }
     }),
 
-  getReviewCounts: protectedProcedure.query(async ({ ctx }) => {
+  getReviewCounts: protectedOrganizerProcedure.query(async () => {
     try {
-      const userId = ctx.session.user.id;
-      const reviewer = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-      });
-
-      if (!reviewer || reviewer.type !== "organizer") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "User is not authorized to view reviews",
-        });
-      }
-
       const reviewCounts = await db
         .select({
           reviewerId: reviews.reviewerUserId,

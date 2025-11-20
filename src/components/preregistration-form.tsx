@@ -14,6 +14,9 @@ import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
 import { Spinner } from "~/components/loading-spinner";
+import { Mail } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
 
 const preregistrationFormSchema = z.object({
   email: z.string().email("Please enter a valid email."),
@@ -24,67 +27,162 @@ type PreregistrationFormProps = {
 };
 
 export function PreregistrationForm({ className }: PreregistrationFormProps) {
-  const { mutate, isSuccess, isPending } =
-    api.preregistration.create.useMutation();
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupType, setPopupType] = useState<"success" | "error">("success");
+
+  const { mutate, isPending, reset } = api.preregistration.create.useMutation({
+    onError: (error) => {
+      const errorCode = error.data?.code;
+      let errorMessage = "An unexpected error occurred.";
+
+      if (errorCode === "CONFLICT") {
+        errorMessage = "That email is already registered.";
+      } else if (errorCode === "INTERNAL_SERVER_ERROR") {
+        errorMessage = "Something went wrong. Please try again later.";
+      }
+
+      setPopupMessage(errorMessage);
+      setPopupType("error");
+      setShowPopup(true);
+    },
+    onSuccess: () => {
+      setPopupMessage("Prepare for greatness.");
+      setPopupType("success");
+      setShowPopup(true);
+      preregistrationForm.reset();
+    },
+    onMutate: () => {
+      // Hide any existing popup when starting a new mutation
+      setShowPopup(false);
+    },
+  });
 
   const preregistrationForm = useForm<
     z.infer<typeof preregistrationFormSchema>
   >({
     resolver: zodResolver(preregistrationFormSchema),
+    mode: "onChange",
+    defaultValues: {
+      email: "",
+    },
   });
 
   function onSubmit(data: z.infer<typeof preregistrationFormSchema>) {
+    // Reset mutation state and hide popup before new submission
+    reset();
+    setShowPopup(false);
+
+    // Call the mutation
     mutate(data);
   }
+
+  function onError(errors: Record<string, { message?: string }>) {
+    // Show popup for validation errors
+    if (errors.email) {
+      setPopupMessage(
+        errors.email.message ?? "Please enter a valid email address.",
+      );
+      setPopupType("error");
+      setShowPopup(true);
+    }
+  }
+
+  // Auto-dismiss popup after 5 seconds
+  useEffect(() => {
+    if (showPopup) {
+      const timer = setTimeout(() => {
+        setShowPopup(false);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showPopup]);
 
   return (
     <div
       className={cn(
-        "flex w-full flex-col items-center justify-center px-12 text-primary",
+        "relative flex min-h-[100px] w-full flex-col items-center justify-center space-y-4 px-12 text-primary",
         className,
       )}
     >
-      <h4 className="py-3 text-lg font-medium text-[#F6F2FD]">
-        {isSuccess
-          ? "Thanks! You'll hear from us soon 🛩️"
-          : "Get notified when applications drop:"}
-      </h4>
-      {!isSuccess && (
-        <Form {...preregistrationForm}>
-          <form
-            className="w-full"
-            onSubmit={preregistrationForm.handleSubmit(onSubmit)}
-          >
-            <FormField
-              control={preregistrationForm.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex w-full flex-row gap-2 rounded-lg bg-white p-0.5">
-                    <FormLabel className="sr-only">Email Address</FormLabel>
-                    <FormControl>
+      <Form {...preregistrationForm}>
+        <form
+          className="w-full"
+          onSubmit={preregistrationForm.handleSubmit(onSubmit, onError)}
+        >
+          <AnimatePresence>
+            {showPopup && (
+              <motion.div
+                className={cn(
+                  "absolute left-1/2 top-full z-[-50] flex w-[250px] -translate-x-1/2 transform items-center justify-center rounded-lg border-2 border-heavy px-4 py-3 shadow-lg",
+                  popupType === "success"
+                    ? "bg-white text-heavy"
+                    : "border-red-700 bg-white text-[#b91c1c]",
+                )}
+                initial={{ opacity: 0, y: -70, x: "-50%" }}
+                animate={{ opacity: 1, y: -50, x: "-50%" }}
+                exit={{ opacity: 0, y: -70, x: "-50%" }}
+                transition={{
+                  type: "spring",
+                  damping: 15,
+                  stiffness: 200,
+                }}
+              >
+                <span className="mt-6 font-figtree text-sm font-medium">
+                  {popupMessage}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <FormField
+            control={preregistrationForm.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem className="space-y-4">
+                <div className="flex w-max space-x-2 rounded-xl border border-offwhite bg-white/50 pb-1 pr-1 pt-1 shadow-[0_8px_16px_rgba(0,0,0,0.05)] backdrop-blur-md focus-within:ring-2 focus-within:ring-ring">
+                  <FormLabel className="sr-only">Email Address</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-1 py-0.5">
+                      <Mail className="ml-2 h-6 w-6 text-muted-foreground" />
                       <Input
-                        className="h-8 border-0 px-2.5 py-0 active:border-0"
+                        className="border-none bg-transparent text-heavy"
+                        variant="noRing"
                         {...field}
-                        placeholder="Email Address"
+                        placeholder="Sign up for updates"
                       />
-                    </FormControl>
+                    </div>
+                  </FormControl>
+                  <div className="pt-1">
                     <Button
-                      size="sm"
+                      variant="primary"
+                      className="w-20 gap-2"
                       type="submit"
-                      className="gap-2 bg-gradient-to-r from-[#A87DF1] to-[#5E28B8] py-0 active:border-0 lg:px-10"
+                      disabled={isPending}
+                      isPending={isPending}
                     >
-                      <span>Submit</span>
-                      <Spinner isLoading={isPending} />
+                      <AnimatePresence mode="wait">
+                        <motion.span
+                          key={isPending ? "submitting" : "submit"}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {isPending ? "" : "Submit"}
+                          <Spinner isLoading={isPending} />
+                        </motion.span>
+                      </AnimatePresence>
                     </Button>
                   </div>
-                  <FormMessage className="text-[#5E28B8]" />
-                </FormItem>
-              )}
-            />
-          </form>
-        </Form>
-      )}
+                </div>
+                {/* Keep FormMessage hidden since we're using the popup instead */}
+                <FormMessage className="sr-only" />
+              </FormItem>
+            )}
+          />
+        </form>
+      </Form>
     </div>
   );
 }

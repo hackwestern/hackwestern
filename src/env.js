@@ -36,6 +36,16 @@ export const env = createEnv({
     GOOGLE_WALLET_CLIENT_EMAIL: z.string(),
     GOOGLE_WALLET_PRIVATE_KEY: z.string(),
     GOOGLE_WALLET_ISSUER_ID: z.string(),
+    // Cloudflare R2 / S3-compatible storage
+    R2_ACCESS_KEY_ID: z.string(),
+    R2_SECRET_ACCESS_KEY: z.string(),
+    // Endpoint like https://<accountid>.r2.cloudflarestorage.com
+    R2_ENDPOINT: z.string().url(),
+    R2_BUCKET_NAME: z.string(),
+    // Public base URL where objects are accessible, e.g. https://pub-XXXXXXXX.r2.dev or a custom domain
+    R2_PUBLIC_BASE_URL: z.string().url(),
+    // Google Sheets API key for fetching schedule data
+    GOOGLE_SHEETS_API_KEY: z.string(),
   },
 
   /**
@@ -70,6 +80,12 @@ export const env = createEnv({
     GOOGLE_WALLET_CLIENT_EMAIL: process.env.GOOGLE_WALLET_CLIENT_EMAIL,
     GOOGLE_WALLET_PRIVATE_KEY: process.env.GOOGLE_WALLET_PRIVATE_KEY,
     GOOGLE_WALLET_ISSUER_ID: process.env.GOOGLE_WALLET_ISSUER_ID,
+    R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
+    R2_ENDPOINT: process.env.R2_ENDPOINT,
+    R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
+    R2_PUBLIC_BASE_URL: process.env.R2_PUBLIC_BASE_URL,
+    GOOGLE_SHEETS_API_KEY: process.env.GOOGLE_SHEETS_API_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

@@ -1,0 +1,2 @@
+ALTER TABLE "hw_scavenger_hunt_scan" DROP CONSTRAINT "hw_scavenger_hunt_scan_user_id_item_id_scanner_id_pk";--> statement-breakpoint
+ALTER TABLE "hw_scavenger_hunt_scan" ADD CONSTRAINT "hw_scavenger_hunt_scan_user_id_item_id_pk" PRIMARY KEY("user_id","item_id");
