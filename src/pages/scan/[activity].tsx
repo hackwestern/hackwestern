@@ -357,10 +357,12 @@ const ScanActivityPage = () => {
           // Fetch user info to display their name
           let userName = userId;
           try {
-            const userData = await utils.scavengerHunt.getUserById.fetch({
-              userId,
-            });
-            userName = userData.name || userData.email || userId;
+            // Directly query the database since getUserById might not be available
+            const userResponse = await fetch(`/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`);
+            if (userResponse.ok) {
+              const userData = await userResponse.json();
+              userName = userData?.name || userData?.email || userId;
+            }
           } catch (userError) {
             // If we can't get user info, just use userId
             console.error("Error fetching user info for already scanned:", userError);

@@ -308,9 +308,17 @@ export const scavengerHuntRouter = createTRPCRouter({
         await recordScan(userId, item.points, item.id, scannerId);
         return {
           success: true,
-          message: "Item added successfully",
+          message: "Item scanned successfully",
         };
-      }, "Failed to add item");
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to scan item: " + JSON.stringify(error),
+        });
+      }
     }),
 
   // Delete a Scavenger Hunt Item (only accessible to organizers)
