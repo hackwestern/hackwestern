@@ -115,7 +115,7 @@ const AddToWallet = ({
 
       {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
 
-      {googleWalletUrl && (
+      {/*{googleWalletUrl && (
         <p className="mt-2 text-sm text-green-600">
           Opening Google Wallet... If it didn&apos;t open,{" "}
           <a
@@ -127,7 +127,7 @@ const AddToWallet = ({
             click here
           </a>
         </p>
-      )}
+      )}*/}
     </div>
   );
 };
