@@ -15,7 +15,7 @@ type FilterType =
   | "bonus";
 
 const ScansPage = () => {
-  const router = useRouter();
+  const _router = useRouter();
   const [filter, setFilter] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
 

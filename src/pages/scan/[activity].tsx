@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/router";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { api } from "~/utils/api";
 import jsQR from "jsqr";
 
@@ -54,12 +54,12 @@ const ScanActivityPage = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [testMode, setTestMode] = useState(false);
-  const [testUserId, setTestUserId] = useState("");
+  const [_testMode, _setTestMode] = useState(false);
+  const [_testUserId, _setTestUserId] = useState("");
 
   // tRPC mutations and queries
   const scanMutation = api.scavengerHunt.scan.useMutation();
-  const utils = api.useUtils();
+  const _utils = api.useUtils();
 
   // Fetch item details - try by ID first, then by code
   const { data: itemDataById, isLoading: loadingById } =
@@ -74,8 +74,8 @@ const ScanActivityPage = () => {
       { enabled: !!itemCode && !itemId },
     );
 
-  const itemData = itemDataById || itemDataByCode;
-  const itemLoading = loadingById || loadingByCode;
+  const itemData = itemDataById ?? itemDataByCode;
+  const itemLoading = loadingById ?? loadingByCode;
 
   const activityName = itemData?.description ?? itemData?.code ?? "Activity";
 
@@ -598,7 +598,7 @@ const ScanActivityPage = () => {
       console.error("Error processing scan:", error);
       let errorMsg = "Failed to process scan. Please try again.";
 
-      if (message && message.includes("not found")) {
+      if (message?.includes("not found")) {
         errorMsg = message;
         setErrorMessage(errorMsg);
       } else if (
@@ -673,7 +673,7 @@ const ScanActivityPage = () => {
               </p>
             </div>
           )}
-          {!itemLoading && !itemData && (itemId || itemCode) && (
+          {!itemLoading && !itemData && (itemId ?? itemCode) && (
             <p className="font-figtree text-sm text-red-600">Item not found</p>
           )}
         </div>

@@ -1,6 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import { useState, useEffect } from "react";
-import { PackingList, Item } from "~/constants/packingList";
+import { PackingList, type Item } from "~/constants/packingList";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -169,19 +169,19 @@ const EventLogistics = () => {
         ) : (
           <ReactMarkdown
             components={{
-              h1: ({ node, ...props }) => (
+              h1: ({ node: _node, ...props }) => (
                 <h1
                   className="mb-4 mt-8 font-figtree text-2xl font-medium text-heavy"
                   {...props}
                 />
               ),
-              p: ({ node, ...props }) => (
+              p: ({ node: _node, ...props }) => (
                 <p
                   className="mb-4 font-figtree leading-relaxed text-medium"
                   {...props}
                 />
               ),
-              a: ({ node, ...props }) => (
+              a: ({ node: _node, ...props }) => (
                 <a
                   className="leading-relaxed text-medium underline transition-colors hover:text-light"
                   target="_blank"
@@ -189,25 +189,25 @@ const EventLogistics = () => {
                   {...props}
                 />
               ),
-              b: ({ node, ...props }) => (
+              b: ({ node: _node, ...props }) => (
                 <b
                   className="mb-4 font-figtree font-bold leading-relaxed text-medium"
                   {...props}
                 />
               ),
-              i: ({ node, ...props }) => (
+              i: ({ node: _node, ...props }) => (
                 <i
                   className="font-italic mb-4 font-figtree leading-relaxed text-medium"
                   {...props}
                 />
               ),
-              ul: ({ node, ...props }) => (
+              ul: ({ node: _node, ...props }) => (
                 <ul
                   className="mb-4 list-disc space-y-1 pl-6 font-figtree text-medium"
                   {...props}
                 />
               ),
-              ol: ({ node, ...props }) => (
+              ol: ({ node: _node, ...props }) => (
                 <ol
                   className="mb-4 list-decimal space-y-1 pl-6 font-figtree text-medium"
                   {...props}

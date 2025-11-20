@@ -25,7 +25,7 @@ const TestQRScanPage = () => {
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [itemId, setItemId] = useState<number | null>(null);
-  const [itemCode, setItemCode] = useState<string | null>(null);
+  const [_itemCode, setItemCode] = useState<string | null>(null);
   const [lastScannedUserId, setLastScannedUserId] = useState<string | null>(
     null,
   );
@@ -431,7 +431,7 @@ const TestQRScanPage = () => {
               Select Item to Scan:
             </label>
             <select
-              value={itemId || ""}
+              value={itemId ?? ""}
               onChange={(e) => {
                 const id = e.target.value ? Number(e.target.value) : null;
                 setItemId(id);
@@ -452,7 +452,7 @@ const TestQRScanPage = () => {
           {selectedItem && (
             <div className="mt-2 space-y-1">
               <p className="font-figtree text-sm text-medium">
-                Selected: {selectedItem.description || selectedItem.code}
+                Selected: {selectedItem.description ?? selectedItem.code}
               </p>
               <p className="font-figtree text-sm font-medium text-heavy">
                 Points: {selectedItem.points}
