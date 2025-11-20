@@ -24,6 +24,7 @@ const EventLogistics = () => {
     "Packing List",
     "Communications",
     "Housekeeping",
+    "Scavenger Hunt",
     "General & Project Rules",
     "Contact Us",
     "Frequently Asked Questions",
@@ -81,14 +82,18 @@ const EventLogistics = () => {
         id = "housekeeping";
         break;
       case 4:
+        setTitle("SCAVENGER HUNT");
+        id = "scavenger-hunt";
+        break;
+      case 5:
         setTitle("GENERAL & PROJECT RULES");
         id = "general-project-rules";
         break;
-      case 5:
+      case 6:
         setTitle("CONTACT US");
         id = "contact-us";
         break;
-      case 6:
+      case 7:
         setTitle("FREQUENTLY ASKED QUESTIONS");
         id = "faq";
         break;
@@ -108,7 +113,9 @@ const EventLogistics = () => {
           <div className="flex flex-col">
             <div className="flex flex-row items-center gap-2">
               <LogisticsTopbar />
-              <p className="font-figtree text-light">Page {step} of 6</p>
+              <p className="font-figtree text-light">
+                Page {step} of {allTitles.length.toString()}
+              </p>
             </div>
             <h1 className="font-jetbrains-mono text-2xl text-medium">
               {title}
@@ -129,7 +136,7 @@ const EventLogistics = () => {
                 <ArrowLeftIcon className="text-medium" />
               </Button>
             )}
-            {step !== 6 && (
+            {step !== 7 && (
               <Button
                 variant="secondary"
                 className="px-2 md:px-5"
@@ -234,7 +241,7 @@ const EventLogistics = () => {
               Back: {allTitles[step - 2]}
             </Button>
           )}
-          {step !== 6 &&
+          {step !== 7 &&
             (step === 1 ? (
               <>
                 <div></div>

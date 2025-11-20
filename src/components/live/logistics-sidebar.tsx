@@ -8,9 +8,10 @@ export const LogisticsSidebar = () => {
         <LogisticsLink step="1" name="Packing List" />
         <LogisticsLink step="2" name="Communications" />
         <LogisticsLink step="3" name="Housekeeping" />
-        <LogisticsLink step="4" name="Project Rules" />
-        <LogisticsLink step="5" name="Contact Us" />
-        <LogisticsLink step="6" name="FAQ" />
+        <LogisticsLink step="4" name="Scavenger Hunt" />
+        <LogisticsLink step="5" name="Project Rules" />
+        <LogisticsLink step="6" name="Contact Us" />
+        <LogisticsLink step="7" name="FAQ" />
       </div>
     </div>
   );

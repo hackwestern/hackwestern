@@ -6,52 +6,59 @@ import {
   MentorTagsList,
   type MentorTags,
 } from "~/constants/mentors";
-import Construction from "~/components/live/construction";
+import Construction from "./construction";
 
 const Mentors = () => {
+  const haveAllMentors = false;
+
   const [selectedMentorTags, setSelectedMentorTags] = useState<MentorTags[]>(
     [],
   );
 
   return (
-    <Construction />
-    /*
-    <div className="mb-6 px-6">
-      <div className="my-8 md:flex">
-        <div className="py-1">Filter by:</div>
-        <div className="flex flex-wrap">
-          {MentorTagsList.map((tag) => (
-            <span
-              key={tag}
-              className={`cursor-pointer rounded-md px-1.5 py-1 ${
-                selectedMentorTags.includes(tag)
-                  ? "bg-primary-600 text-primary-100"
-                  : "bg-primary-200 text-violet-500"
-              } mx-1.5 transition-all hover:bg-primary-500 hover:text-primary-100`}
-              onClick={() => {
-                setSelectedMentorTags((prev) =>
-                  prev.includes(tag)
-                    ? prev.filter((prevTag) => prevTag !== tag)
-                    : [...prev, tag],
-                );
-              }}
-            >
-              {tag}
-            </span>
-          ))}
+    <>
+      {haveAllMentors ? (
+        <div className="mb-6 px-6">
+          <div className="my-8 md:flex">
+            <div className="py-1 font-figtree font-semibold text-heavy">
+              Filter By:
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {MentorTagsList.map((tag) => (
+                <span
+                  key={tag}
+                  className={`cursor-pointer rounded-md px-2 py-1 ${
+                    selectedMentorTags.includes(tag)
+                      ? "bg-primary-300 text-heavy"
+                      : "bg-highlight text-medium"
+                  } mx-1.5 font-figtree transition-all hover:bg-primary-500 hover:text-white`}
+                  onClick={() => {
+                    setSelectedMentorTags((prev) =>
+                      prev.includes(tag)
+                        ? prev.filter((prevTag) => prevTag !== tag)
+                        : [...prev, tag],
+                    );
+                  }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="grid h-screen grid-cols-1 gap-6 overflow-auto pb-96 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5">
+            {MentorsList.filter(
+              (mentor) =>
+                selectedMentorTags.length === 0 ||
+                selectedMentorTags.every((tag) => mentor.tags.includes(tag)),
+            ).map((mentor) => (
+              <MentorCard {...mentor} key={mentor.name} />
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="grid grid-cols-1 gap-6 overflow-auto md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5">
-        {MentorsList.filter(
-          (mentor) =>
-            selectedMentorTags.length === 0 ||
-            selectedMentorTags.every((tag) => mentor.tags.includes(tag)),
-        ).map((mentor) => (
-          <MentorCard {...mentor} key={mentor.name} />
-        ))}
-      </div>
-    </div>
-    */
+      ) : (
+        <Construction />
+      )}
+    </>
   );
 };
 
@@ -69,15 +76,19 @@ const MentorCard = (mentor: Mentor) => {
         )}
       </div>
       <div className="my-2">
-        <h2 className="text-lg font-medium">{mentor.name}</h2>
-        <p className="text-base text-[#64748B]">{mentor.desc}</p>
+        <h2 className="font-figtree text-lg font-medium text-heavy">
+          {mentor.name}
+        </h2>
+        <p className="font-figtree text-base text-[#64748B] text-medium">
+          {mentor.desc}
+        </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {mentor.tags.map((tag) => (
           <span
             key={tag}
-            className="rounded-lg bg-primary-200 p-1 px-1.5 text-primary-600 "
+            className="rounded-lg bg-primary-300 p-1 px-2 font-figtree text-heavy"
           >
             {tag}
           </span>

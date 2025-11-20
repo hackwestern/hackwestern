@@ -286,6 +286,25 @@ const HousekeepingIcon = ({ selected }: { selected: boolean }) => {
   );
 };
 
+const ScavengerHuntIcon = ({ selected }: { selected: boolean }) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={selected ? SELECTED : UNSELECTED}
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="m21 21-4.34-4.34" />
+      <circle cx="11" cy="11" r="8" />
+    </svg>
+  );
+};
+
 const GeneralProjectRulesIcon = ({ selected }: { selected: boolean }) => {
   return (
     <svg
@@ -511,10 +530,12 @@ const LogisticsIcon = ({
     case "3":
       return <HousekeepingIcon selected={selected} />;
     case "4":
-      return <GeneralProjectRulesIcon selected={selected} />;
+      return <ScavengerHuntIcon selected={selected} />;
     case "5":
-      return <ContactUsIcon selected={selected} />;
+      return <GeneralProjectRulesIcon selected={selected} />;
     case "6":
+      return <ContactUsIcon selected={selected} />;
+    case "7":
       return <FAQIcon selected={selected} />;
     default:
       return <PackingListIcon selected={selected} />;

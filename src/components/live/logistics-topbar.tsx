@@ -17,9 +17,10 @@ const LogisticsTopbar = () => {
     ["1", "Packing List"],
     ["2", "Communications"],
     ["3", "Housekeeping"],
-    ["4", "Project Rules"],
-    ["5", "Contact Us"],
-    ["6", "FAQ"],
+    ["4", "Scavenger Hunt"],
+    ["5", "Project Rules"],
+    ["6", "Contact Us"],
+    ["7", "FAQ"],
   ];
 
   const handleLinkClick = (step: string, e: React.MouseEvent) => {

@@ -13,6 +13,7 @@ interface EventBlockProps {
     | "activity"
     | "food"
     | "booth"
+    | "scavenger"
     | "other";
   height: number;
 }
@@ -25,6 +26,7 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
     activity: "bg-green-200 border-green-300",
     food: "bg-blue-200 border-blue-300",
     booth: "bg-pink-100 border-pink-200",
+    scavenger: "bg-orange-100 border-orange-200",
     other: "bg-purple-300 border-purple-400",
   };
 
@@ -35,6 +37,7 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
     activity: "text-green-900",
     food: "text-blue-900",
     booth: "text-pink-900",
+    scavenger: "text-orange-900",
     other: "text-purple-900",
   };
 
@@ -43,11 +46,11 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
       className={`rounded-lg border-2 p-2 sm:p-3 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 z-50 flex select-text flex-col justify-center shadow-sm transition-shadow hover:shadow-md`}
       style={{ height: `${height}px` }}
     >
-      <div className="select-text text-[11px] font-semibold leading-tight sm:text-xs">
+      <div className="select-text font-figtree text-[11px] font-semibold leading-tight sm:text-xs">
         {event.title}
       </div>
       {event.location && (
-        <div className="mt-0.5 select-text text-[9px] italic opacity-70 sm:text-[10px]">
+        <div className="mt-0.5 select-text font-figtree text-[9px] italic opacity-70 sm:text-[10px]">
           {event.location}
         </div>
       )}
@@ -112,9 +115,9 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
 
   return (
     <div className="w-full pb-4">
-      <div className="rounded-xl bg-white p-6 shadow-lg">
+      <div className="rounded-sm p-6">
         {/* Header with day name */}
-        <div className="sticky left-0 mb-4 mt-2 text-2xl font-bold text-violet-700">
+        <div className="sticky left-0 mb-4 mt-2 font-figtree text-2xl font-bold text-heavy">
           {day}, November{" "}
           {day === "Friday" ? "21st" : day === "Saturday" ? "22nd" : "23rd"}
         </div>
@@ -143,6 +146,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                 | "activity"
                 | "food"
                 | "booth"
+                | "scavenger"
                 | "other";
             }> = [
               { key: "bigEvent", type: "main" },
@@ -152,6 +156,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
               { key: "activities2", type: "activity" },
               { key: "food", type: "food" },
               { key: "sponsorBooth", type: "booth" },
+              { key: "scavengerHunt", type: "scavenger" },
               { key: "other", type: "other" },
             ];
 
@@ -165,6 +170,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                 | "activity"
                 | "food"
                 | "booth"
+                | "scavenger"
                 | "other";
               span: number;
               startKey: keyof ParsedScheduleEvent;
@@ -212,11 +218,11 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                   className="grid gap-2 border-t border-gray-200 pt-1"
                   style={{
                     minHeight: `${height}px`,
-                    gridTemplateColumns: `80px repeat(8, 1fr)`,
+                    gridTemplateColumns: `70px repeat(9, 1fr)`,
                   }}
                 >
                   {/* Time label */}
-                  <div className="flex items-start pt-2 text-xs font-medium text-gray-600 sm:text-sm">
+                  <div className="font-base flex items-start pt-2 font-figtree text-xs text-medium sm:text-sm">
                     {event.time}
                   </div>
 
@@ -243,7 +249,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                 {isLargeGap && (
                   <div
                     key={`gap-${idx}`}
-                    className="grid grid-cols-[80px_repeat(8,1fr)] gap-2 rounded-md border border-dashed border-gray-300 bg-gray-100"
+                    className="grid grid-cols-[70px_repeat(9,1fr)] gap-2 rounded-md border border-dashed border-gray-300 bg-gray-100"
                     style={{ minHeight: "60px" }}
                   >
                     <div className="flex items-center justify-center text-xs font-medium text-gray-400">
