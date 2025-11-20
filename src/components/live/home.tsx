@@ -5,9 +5,10 @@ import QRCode from "qrcode";
 import { useSession } from "next-auth/react";
 
 const Home = () => {
- 
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState<"all" | "activities" | "meals">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "activities" | "meals">(
+    "all",
+  );
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
 
   useEffect(() => {
@@ -46,7 +47,7 @@ const Home = () => {
           <h2 className="mb-4 font-figtree text-xl font-semibold text-heavy">
             Scan History
           </h2>
-          
+
           {/* Tabs */}
           <div className="mb-4 flex gap-2">
             <button
@@ -93,8 +94,6 @@ const Home = () => {
       {/* Right Column - Your Hacker Pass */}
       <div className="flex w-full flex-col gap-6 pb-4 lg:w-1/2">
         <div className="rounded-2xl bg-primary-100 p-6">
-         
-          
           {/* QR Code Display */}
           <div className="flex justify-center">
             <div className="rounded-2xl bg-white p-6 shadow-md">
@@ -126,7 +125,5 @@ const Home = () => {
     </div>
   );
 };
-
-
 
 export default Home;
