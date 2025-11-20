@@ -9,9 +9,14 @@ const ScanActivityPage = () => {
   const router = useRouter();
   const activityParam = router.query?.activity as string;
   // Try to parse as itemId (number), fallback to code if it's a string
-  const itemId = activityParam ? (isNaN(Number(activityParam)) ? null : Number(activityParam)) : null;
-  const itemCode = activityParam && isNaN(Number(activityParam)) ? activityParam : null;
-  
+  const itemId = activityParam
+    ? isNaN(Number(activityParam))
+      ? null
+      : Number(activityParam)
+    : null;
+  const itemCode =
+    activityParam && isNaN(Number(activityParam)) ? activityParam : null;
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -31,18 +36,20 @@ const ScanActivityPage = () => {
   // tRPC mutations and queries
   const scanMutation = api.scavengerHunt.scan.useMutation();
   const utils = api.useUtils();
-  
+
   // Fetch item details - try by ID first, then by code
-  const { data: itemDataById, isLoading: loadingById } = api.scavengerHunt.getScavengerHuntItemById.useQuery(
-    { id: itemId! },
-    { enabled: !!itemId }
-  );
-  
-  const { data: itemDataByCode, isLoading: loadingByCode } = api.scavengerHunt.getScavengerHuntItem.useQuery(
-    { code: itemCode! },
-    { enabled: !!itemCode && !itemId }
-  );
-  
+  const { data: itemDataById, isLoading: loadingById } =
+    api.scavengerHunt.getScavengerHuntItemById.useQuery(
+      { id: itemId! },
+      { enabled: !!itemId },
+    );
+
+  const { data: itemDataByCode, isLoading: loadingByCode } =
+    api.scavengerHunt.getScavengerHuntItem.useQuery(
+      { code: itemCode! },
+      { enabled: !!itemCode && !itemId },
+    );
+
   const itemData = itemDataById || itemDataByCode;
   const itemLoading = loadingById || loadingByCode;
 
@@ -101,38 +108,54 @@ const ScanActivityPage = () => {
       let stream: MediaStream | null = null;
 
       // Try to get getUserMedia function from various possible locations
-      let getUserMedia: ((constraints: MediaStreamConstraints) => Promise<MediaStream>) | null = null;
+      let getUserMedia:
+        | ((constraints: MediaStreamConstraints) => Promise<MediaStream>)
+        | null = null;
 
       // Try modern API first (most browsers including iOS Safari 11+)
-      if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function") {
-        getUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+      if (
+        navigator.mediaDevices &&
+        typeof navigator.mediaDevices.getUserMedia === "function"
+      ) {
+        getUserMedia = navigator.mediaDevices.getUserMedia.bind(
+          navigator.mediaDevices,
+        );
       }
       // Fallback for older browsers/iOS Safari - check legacy APIs
-      else if ((navigator as any).getUserMedia && typeof (navigator as any).getUserMedia === "function") {
+      else if (
+        (navigator as any).getUserMedia &&
+        typeof (navigator as any).getUserMedia === "function"
+      ) {
         const legacyGetUserMedia = (navigator as any).getUserMedia;
         getUserMedia = (constraints: MediaStreamConstraints) => {
           return new Promise<MediaStream>((resolve, reject) => {
             legacyGetUserMedia.call(navigator, constraints, resolve, reject);
           });
         };
-      }
-      else if ((navigator as any).webkitGetUserMedia && typeof (navigator as any).webkitGetUserMedia === "function") {
+      } else if (
+        (navigator as any).webkitGetUserMedia &&
+        typeof (navigator as any).webkitGetUserMedia === "function"
+      ) {
         const webkitGetUserMedia = (navigator as any).webkitGetUserMedia;
         getUserMedia = (constraints: MediaStreamConstraints) => {
           return new Promise<MediaStream>((resolve, reject) => {
             webkitGetUserMedia.call(navigator, constraints, resolve, reject);
           });
         };
-      }
-      else if ((navigator as any).mozGetUserMedia && typeof (navigator as any).mozGetUserMedia === "function") {
+      } else if (
+        (navigator as any).mozGetUserMedia &&
+        typeof (navigator as any).mozGetUserMedia === "function"
+      ) {
         const mozGetUserMedia = (navigator as any).mozGetUserMedia;
         getUserMedia = (constraints: MediaStreamConstraints) => {
           return new Promise<MediaStream>((resolve, reject) => {
             mozGetUserMedia.call(navigator, constraints, resolve, reject);
           });
         };
-      }
-      else if ((navigator as any).msGetUserMedia && typeof (navigator as any).msGetUserMedia === "function") {
+      } else if (
+        (navigator as any).msGetUserMedia &&
+        typeof (navigator as any).msGetUserMedia === "function"
+      ) {
         const msGetUserMedia = (navigator as any).msGetUserMedia;
         getUserMedia = (constraints: MediaStreamConstraints) => {
           return new Promise<MediaStream>((resolve, reject) => {
@@ -144,30 +167,38 @@ const ScanActivityPage = () => {
       if (!getUserMedia) {
         // Provide helpful error message
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const isHTTPS = window.location.protocol === "https:" || window.location.hostname === "localhost";
-        
+        const isHTTPS =
+          window.location.protocol === "https:" ||
+          window.location.hostname === "localhost";
+
         if (isIOS && !isHTTPS) {
-          throw new Error("Camera requires HTTPS. Please access this page via HTTPS or localhost.");
+          throw new Error(
+            "Camera requires HTTPS. Please access this page via HTTPS or localhost.",
+          );
         } else if (isIOS) {
-          throw new Error("Camera access requires a user gesture. Please tap the 'Start Camera' button.");
+          throw new Error(
+            "Camera access requires a user gesture. Please tap the 'Start Camera' button.",
+          );
         } else {
-          throw new Error("Camera API not available. Please use a modern browser with camera support.");
+          throw new Error(
+            "Camera API not available. Please use a modern browser with camera support.",
+          );
         }
       }
 
       // Request camera access
       stream = await getUserMedia({
-        video: { 
+        video: {
           facingMode: "environment", // Use back camera on mobile
           width: { ideal: 1280 },
-          height: { ideal: 720 }
+          height: { ideal: 720 },
         },
       });
 
       if (!stream) {
         throw new Error("Failed to get camera stream");
       }
-      
+
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -179,9 +210,12 @@ const ScanActivityPage = () => {
     } catch (error) {
       console.error("Error accessing camera:", error);
       setCameraActive(false);
-      const errorMessage = error instanceof Error ? error.message : "Unable to access camera";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unable to access camera";
       setCameraError(errorMessage);
-      setErrorMessage(`Unable to access camera: ${errorMessage}. Please check permissions.`);
+      setErrorMessage(
+        `Unable to access camera: ${errorMessage}. Please check permissions.`,
+      );
     }
   };
 
@@ -207,7 +241,7 @@ const ScanActivityPage = () => {
 
     // Start scanning only if camera is active, status is scanning, and item exists
     // Stop scanning when status is "success" or "error"
-    if (cameraActive && status === "scanning" && (!itemLoading && itemData)) {
+    if (cameraActive && status === "scanning" && !itemLoading && itemData) {
       scanIntervalRef.current = setInterval(async () => {
         const qrCode = await scanQRCode();
         if (qrCode) {
@@ -233,7 +267,7 @@ const ScanActivityPage = () => {
         clearInterval(scanIntervalRef.current);
         scanIntervalRef.current = null;
       }
-      
+
       // Stop camera stream
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
@@ -277,7 +311,7 @@ const ScanActivityPage = () => {
       clearInterval(scanIntervalRef.current);
       scanIntervalRef.current = null;
     }
-    
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -306,7 +340,7 @@ const ScanActivityPage = () => {
         }, 3000);
         return;
       }
-      
+
       // If we're still loading item data, wait a bit
       if (itemLoading) {
         setErrorMessage("Loading item details...");
@@ -329,47 +363,68 @@ const ScanActivityPage = () => {
         // Check if it's an "already scanned" error before re-throwing
         let message = "";
         let errorCode = "";
-        
+
         if (scanError && typeof scanError === "object") {
           if ("message" in scanError) {
             message = String(scanError.message);
-          } else if ("data" in scanError && typeof scanError.data === "object" && scanError.data && "message" in scanError.data) {
+          } else if (
+            "data" in scanError &&
+            typeof scanError.data === "object" &&
+            scanError.data &&
+            "message" in scanError.data
+          ) {
             message = String(scanError.data.message);
-          } else if ("shape" in scanError && typeof scanError.shape === "object" && scanError.shape && "message" in scanError.shape) {
+          } else if (
+            "shape" in scanError &&
+            typeof scanError.shape === "object" &&
+            scanError.shape &&
+            "message" in scanError.shape
+          ) {
             message = String(scanError.shape.message);
           }
-          
+
           if ("code" in scanError) {
             errorCode = String(scanError.code);
-          } else if ("data" in scanError && typeof scanError.data === "object" && scanError.data && "code" in scanError.data) {
+          } else if (
+            "data" in scanError &&
+            typeof scanError.data === "object" &&
+            scanError.data &&
+            "code" in scanError.data
+          ) {
             errorCode = String(scanError.data.code);
           }
         }
-        
-        const isAlreadyScannedError = 
-          message && (
-            message.includes("already scanned") || 
+
+        const isAlreadyScannedError =
+          message &&
+          (message.includes("already scanned") ||
             message.includes("Item already scanned") ||
-            (errorCode === "BAD_REQUEST" && message.toLowerCase().includes("scan"))
-          );
-        
+            (errorCode === "BAD_REQUEST" &&
+              message.toLowerCase().includes("scan")));
+
         if (isAlreadyScannedError) {
           // Fetch user info to display their name
           let userName = userId;
           try {
             // Directly query the database since getUserById might not be available
-            const userResponse = await fetch(`/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`);
+            const userResponse = await fetch(
+              `/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`,
+            );
             if (userResponse.ok) {
               const userData = await userResponse.json();
               userName = userData?.name || userData?.email || userId;
             }
           } catch (userError) {
             // If we can't get user info, just use userId
-            console.error("Error fetching user info for already scanned:", userError);
+            console.error(
+              "Error fetching user info for already scanned:",
+              userError,
+            );
           }
 
           // Navigate to already-scanned page with activity name and user name
-          const activityName = itemData?.description || activityParam || "Activity";
+          const activityName =
+            itemData?.description || activityParam || "Activity";
           router.push({
             pathname: "/scan/already-scanned",
             query: {
@@ -380,7 +435,7 @@ const ScanActivityPage = () => {
           isProcessingRef.current = false; // Reset flag before navigation
           return; // Exit early, don't throw error and don't continue to success
         }
-        
+
         // Re-throw if it's not an "already scanned" error
         throw scanError;
       }
@@ -426,29 +481,44 @@ const ScanActivityPage = () => {
         // Try different possible error message locations
         if ("message" in error) {
           message = String(error.message);
-        } else if ("data" in error && typeof error.data === "object" && error.data && "message" in error.data) {
+        } else if (
+          "data" in error &&
+          typeof error.data === "object" &&
+          error.data &&
+          "message" in error.data
+        ) {
           message = String(error.data.message);
-        } else if ("shape" in error && typeof error.shape === "object" && error.shape && "message" in error.shape) {
+        } else if (
+          "shape" in error &&
+          typeof error.shape === "object" &&
+          error.shape &&
+          "message" in error.shape
+        ) {
           message = String(error.shape.message);
         }
-        
+
         // Also check for error code
         if ("code" in error) {
           errorCode = String(error.code);
-        } else if ("data" in error && typeof error.data === "object" && error.data && "code" in error.data) {
+        } else if (
+          "data" in error &&
+          typeof error.data === "object" &&
+          error.data &&
+          "code" in error.data
+        ) {
           errorCode = String(error.data.code);
         }
       }
 
       // Check if it's an "already scanned" error BEFORE logging
       // The error message should be "Item already scanned" or contain "already scanned"
-      const isAlreadyScannedError = 
-        message && (
-          message.includes("already scanned") || 
+      const isAlreadyScannedError =
+        message &&
+        (message.includes("already scanned") ||
           message.includes("Item already scanned") ||
-          (errorCode === "BAD_REQUEST" && message.toLowerCase().includes("scan"))
-        );
-        
+          (errorCode === "BAD_REQUEST" &&
+            message.toLowerCase().includes("scan")));
+
       if (isAlreadyScannedError) {
         // Don't log "already scanned" errors - just navigate silently
         // Fetch user info to display their name
@@ -462,11 +532,15 @@ const ScanActivityPage = () => {
           }
         } catch (userError) {
           // If we can't get user info, just use userId
-          console.error("Error fetching user info for already scanned:", userError);
+          console.error(
+            "Error fetching user info for already scanned:",
+            userError,
+          );
         }
 
         // Navigate to already-scanned page with activity name and user name
-        const activityName = itemData?.description || activityParam || "Activity";
+        const activityName =
+          itemData?.description || activityParam || "Activity";
         router.push({
           pathname: "/scan/already-scanned",
           query: {
@@ -476,11 +550,11 @@ const ScanActivityPage = () => {
         });
         return; // Exit early, don't set error state
       }
-      
+
       // Handle other errors - only log if not "already scanned"
       console.error("Error processing scan:", error);
       let errorMsg = "Failed to process scan. Please try again.";
-      
+
       if (message && message.includes("not found")) {
         errorMsg = message;
         setErrorMessage(errorMsg);
@@ -538,12 +612,16 @@ const ScanActivityPage = () => {
             {activityName}
           </h1>
           {itemLoading && (
-            <p className="font-figtree text-sm text-medium">Loading item details...</p>
+            <p className="font-figtree text-sm text-medium">
+              Loading item details...
+            </p>
           )}
           {itemData && (
             <div className="space-y-1">
               {itemData.description && (
-                <p className="font-figtree text-sm text-medium">{itemData.description}</p>
+                <p className="font-figtree text-sm text-medium">
+                  {itemData.description}
+                </p>
               )}
               <p className="font-figtree text-sm font-medium text-heavy">
                 Points: {itemData.points}

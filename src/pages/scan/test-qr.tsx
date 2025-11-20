@@ -26,7 +26,9 @@ const TestQRScanPage = () => {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [itemId, setItemId] = useState<number | null>(null);
   const [itemCode, setItemCode] = useState<string | null>(null);
-  const [lastScannedUserId, setLastScannedUserId] = useState<string | null>(null);
+  const [lastScannedUserId, setLastScannedUserId] = useState<string | null>(
+    null,
+  );
 
   // Fetch all items for selection
   const { data: items } = api.scavengerHunt.getAllScavengerHuntItems.useQuery();
@@ -82,12 +84,15 @@ const TestQRScanPage = () => {
 
       let stream: MediaStream | null = null;
 
-      if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function") {
+      if (
+        navigator.mediaDevices &&
+        typeof navigator.mediaDevices.getUserMedia === "function"
+      ) {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { 
+          video: {
             facingMode: "environment",
             width: { ideal: 1280 },
-            height: { ideal: 720 }
+            height: { ideal: 720 },
           },
         });
       } else {
@@ -97,7 +102,7 @@ const TestQRScanPage = () => {
       if (!stream) {
         throw new Error("Failed to get camera stream");
       }
-      
+
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -109,7 +114,8 @@ const TestQRScanPage = () => {
     } catch (error) {
       console.error("Error accessing camera:", error);
       setCameraActive(false);
-      const errorMessage = error instanceof Error ? error.message : "Unable to access camera";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unable to access camera";
       setCameraError(errorMessage);
     }
   };
@@ -158,7 +164,7 @@ const TestQRScanPage = () => {
         clearInterval(scanIntervalRef.current);
         scanIntervalRef.current = null;
       }
-      
+
       // Stop camera stream
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
@@ -198,7 +204,7 @@ const TestQRScanPage = () => {
       clearInterval(scanIntervalRef.current);
       scanIntervalRef.current = null;
     }
-    
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -236,11 +242,16 @@ const TestQRScanPage = () => {
       // Check for "already scanned" error in the response data first, even if response.ok is true
       // (in case the API returns 200 with an error message)
       const errorMsg = data.message || "";
-      if (errorMsg.includes("already scanned") || errorMsg.includes("Item already scanned")) {
+      if (
+        errorMsg.includes("already scanned") ||
+        errorMsg.includes("Item already scanned")
+      ) {
         // Fetch user info to display their name
         let userName = userId;
         try {
-          const userResponse = await fetch(`/api/scavenger-hunt/test-get-user?userId=${userId}`);
+          const userResponse = await fetch(
+            `/api/scavenger-hunt/test-get-user?userId=${userId}`,
+          );
           const userData = await userResponse.json();
           userName = userData?.name || userData?.email || userId;
         } catch {
@@ -249,18 +260,19 @@ const TestQRScanPage = () => {
 
         // Get activity name from selected item
         const selectedItem = items?.find((item) => item.id === itemId);
-        const activityName = selectedItem?.description || selectedItem?.code || "Activity";
+        const activityName =
+          selectedItem?.description || selectedItem?.code || "Activity";
 
-          // Navigate to already-scanned page with activity name and user name
-          router.push({
-            pathname: "/scan/already-scanned",
-            query: {
-              activity: activityName,
-              user: userName,
-            },
-          });
-          isProcessingRef.current = false; // Reset flag before navigation
-          return; // Exit early, don't continue to success flow
+        // Navigate to already-scanned page with activity name and user name
+        router.push({
+          pathname: "/scan/already-scanned",
+          query: {
+            activity: activityName,
+            user: userName,
+          },
+        });
+        isProcessingRef.current = false; // Reset flag before navigation
+        return; // Exit early, don't continue to success flow
       }
 
       if (!response.ok) {
@@ -273,7 +285,9 @@ const TestQRScanPage = () => {
       // Fetch user info to display their name
       let userName = userId;
       try {
-        const userResponse = await fetch(`/api/scavenger-hunt/test-get-user?userId=${userId}`);
+        const userResponse = await fetch(
+          `/api/scavenger-hunt/test-get-user?userId=${userId}`,
+        );
         const userData = await userResponse.json();
         if (userData && userData.name) {
           userName = userData.name || userData.email || userId;
@@ -289,7 +303,8 @@ const TestQRScanPage = () => {
 
       // Get activity name from selected item
       const selectedItem = items?.find((item) => item.id === itemId);
-      const activityName = selectedItem?.description || selectedItem?.code || "Activity";
+      const activityName =
+        selectedItem?.description || selectedItem?.code || "Activity";
 
       // Navigate to success page with activity name and user name
       router.push({
@@ -308,12 +323,17 @@ const TestQRScanPage = () => {
 
       if (error instanceof Error) {
         const message = error.message;
-        if (message.includes("already scanned") || message.includes("Item already scanned")) {
+        if (
+          message.includes("already scanned") ||
+          message.includes("Item already scanned")
+        ) {
           isAlreadyScanned = true;
           // Fetch user info to display their name
           let userName = userId;
           try {
-            const userResponse = await fetch(`/api/scavenger-hunt/test-get-user?userId=${userId}`);
+            const userResponse = await fetch(
+              `/api/scavenger-hunt/test-get-user?userId=${userId}`,
+            );
             const userData = await userResponse.json();
             userName = userData?.name || userData?.email || userId;
           } catch {
@@ -322,7 +342,8 @@ const TestQRScanPage = () => {
 
           // Get activity name from selected item
           const selectedItem = items?.find((item) => item.id === itemId);
-          const activityName = selectedItem?.description || selectedItem?.code || "Activity";
+          const activityName =
+            selectedItem?.description || selectedItem?.code || "Activity";
 
           // Navigate to already-scanned page with activity name and user name
           router.push({
@@ -387,10 +408,11 @@ const TestQRScanPage = () => {
           </p>
           {lastScannedUserId && (
             <p className="font-figtree text-xs text-medium">
-              Last scanned User ID: <span className="font-mono">{lastScannedUserId}</span>
+              Last scanned User ID:{" "}
+              <span className="font-mono">{lastScannedUserId}</span>
             </p>
           )}
-          
+
           {/* Item Selection */}
           <div className="mt-4">
             <label className="font-figtree text-sm font-medium text-heavy">
@@ -487,4 +509,3 @@ const TestQRScanPage = () => {
 };
 
 export default TestQRScanPage;
-

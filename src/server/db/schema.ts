@@ -462,8 +462,9 @@ export const scavengerHuntScans = createTable(
     itemId: integer("item_id")
       .notNull()
       .references(() => scavengerHuntItems.id),
-    scannerId: varchar("scanner_id", { length: 255 })
-      .references(() => users.id),
+    scannerId: varchar("scanner_id", { length: 255 }).references(
+      () => users.id,
+    ),
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
       .notNull(),

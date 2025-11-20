@@ -5,7 +5,14 @@ import { api } from "~/utils/api";
 import { useRouter } from "next/router";
 import { ScansTable, type ScanRow } from "~/components/scans/scans-table";
 
-type FilterType = "all" | "meals" | "workshops" | "activities" | "attendance" | "wins" | "bonus";
+type FilterType =
+  | "all"
+  | "meals"
+  | "workshops"
+  | "activities"
+  | "attendance"
+  | "wins"
+  | "bonus";
 
 const ScansPage = () => {
   const router = useRouter();
@@ -35,7 +42,7 @@ const ScansPage = () => {
         <h1 className="font-dico text-3xl font-medium text-heavy">All Scans</h1>
 
         {/* Search Bar - Full width on mobile, positioned above categories */}
-        <div className="relative w-full md:w-[40%] md:ml-auto">
+        <div className="relative w-full md:ml-auto md:w-[40%]">
           <input
             type="text"
             value={searchQuery}
@@ -99,7 +106,10 @@ const ScansPage = () => {
             }`}
           >
             <span className="text-sm md:text-base">Winnable Activities</span>
-            <span className="text-xs md:text-sm font-normal"> (Attendance)</span>
+            <span className="text-xs font-normal md:text-sm">
+              {" "}
+              (Attendance)
+            </span>
           </button>
           <button
             onClick={() => setFilter("wins")}
@@ -108,7 +118,7 @@ const ScansPage = () => {
             }`}
           >
             <span className="text-sm md:text-base">Winnable Activities</span>
-            <span className="text-xs md:text-sm font-normal"> (Win)</span>
+            <span className="text-xs font-normal md:text-sm"> (Win)</span>
           </button>
           <button
             onClick={() => setFilter("bonus")}
