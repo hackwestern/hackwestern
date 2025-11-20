@@ -7,6 +7,7 @@ export interface ScheduleEvent {
   "Activities #2": string;
   Food: string;
   "Spon Booth": string;
+  "Scavenger Hunt": string;
   Other: string;
 }
 
@@ -19,6 +20,7 @@ export interface ParsedScheduleEvent {
   activities2?: { title: string; location: string };
   food?: { title: string; location: string };
   sponsorBooth?: { title: string; location: string };
+  scavengerHunt?: { title: string; location: string };
   other?: { title: string; location: string };
 }
 

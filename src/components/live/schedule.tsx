@@ -35,6 +35,7 @@ const Schedule = () => {
     "ACTIVITIES",
     "FOOD",
     "SPONSOR\nBOOTH",
+    "SCAVENGER\nHUNT",
     "OTHER",
   ];
 
@@ -45,7 +46,7 @@ const Schedule = () => {
         <div className="min-w-[1000px]">
           {/* Sticky category headers */}
           <div className="sticky top-0 z-[60] mb-6 border-b-2 border-gray-200 py-3 backdrop-blur-sm">
-            <div className="grid grid-cols-[80px_repeat(8,1fr)] items-center gap-2">
+            <div className="grid grid-cols-[70px_repeat(9,1fr)] items-center gap-2">
               <div className="font-jetbrains-mono text-xs font-semibold text-gray-500"></div>
               {categoryLabels.map((label, i) => (
                 <div

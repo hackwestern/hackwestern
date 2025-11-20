@@ -13,6 +13,7 @@ interface EventBlockProps {
     | "activity"
     | "food"
     | "booth"
+    | "scavenger"
     | "other";
   height: number;
 }
@@ -25,6 +26,7 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
     activity: "bg-green-200 border-green-300",
     food: "bg-blue-200 border-blue-300",
     booth: "bg-pink-100 border-pink-200",
+    scavenger: "bg-orange-100 border-orange-200",
     other: "bg-purple-300 border-purple-400",
   };
 
@@ -35,6 +37,7 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
     activity: "text-green-900",
     food: "text-blue-900",
     booth: "text-pink-900",
+    scavenger: "text-orange-900",
     other: "text-purple-900",
   };
 
@@ -143,6 +146,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                 | "activity"
                 | "food"
                 | "booth"
+                | "scavenger"
                 | "other";
             }> = [
               { key: "bigEvent", type: "main" },
@@ -152,6 +156,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
               { key: "activities2", type: "activity" },
               { key: "food", type: "food" },
               { key: "sponsorBooth", type: "booth" },
+              { key: "scavengerHunt", type: "scavenger" },
               { key: "other", type: "other" },
             ];
 
@@ -165,6 +170,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                 | "activity"
                 | "food"
                 | "booth"
+                | "scavenger"
                 | "other";
               span: number;
               startKey: keyof ParsedScheduleEvent;
@@ -212,7 +218,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                   className="grid gap-2 border-t border-gray-200 pt-1"
                   style={{
                     minHeight: `${height}px`,
-                    gridTemplateColumns: `80px repeat(8, 1fr)`,
+                    gridTemplateColumns: `70px repeat(9, 1fr)`,
                   }}
                 >
                   {/* Time label */}
@@ -243,7 +249,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                 {isLargeGap && (
                   <div
                     key={`gap-${idx}`}
-                    className="grid grid-cols-[80px_repeat(8,1fr)] gap-2 rounded-md border border-dashed border-gray-300 bg-gray-100"
+                    className="grid grid-cols-[70px_repeat(9,1fr)] gap-2 rounded-md border border-dashed border-gray-300 bg-gray-100"
                     style={{ minHeight: "60px" }}
                   >
                     <div className="flex items-center justify-center text-xs font-medium text-gray-400">
