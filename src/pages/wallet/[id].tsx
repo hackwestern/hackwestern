@@ -1,12 +1,11 @@
 // page for where wallet qr code goes to
-"use client"
+"use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Spinner } from "../../components/loading-spinner";
-import { api } from '~/utils/api';
+import { api } from "~/utils/api";
 
-
-// Where the Wallet QR Code Goes to 
+// Where the Wallet QR Code Goes to
 export default function Wallet() {
   const router = useRouter();
   const { id: _id } = router.query;
@@ -34,8 +33,11 @@ export default function Wallet() {
   // Display Loading Screen
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen border-2 border-red-500">
-        <Spinner isLoading className="w-12 h-12 mb-4 fill-primary-600 text-gray-200" />
+      <div className="flex min-h-screen flex-col items-center justify-center border-2 border-red-500">
+        <Spinner
+          isLoading
+          className="mb-4 h-12 w-12 fill-primary-600 text-gray-200"
+        />
         <span className="text-lg text-gray-500">Loading your wallet...</span>
       </div>
     );
@@ -43,13 +45,12 @@ export default function Wallet() {
 
   // Display Event Page to Sign User If User is Organizer
   if (userType === "organizer") {
-    // event page for organizer to add people to the event with the person reloaded 
+    // event page for organizer to add people to the event with the person reloaded
     return (
       <div>
         <h1>Event Page for organizer</h1>
-      
       </div>
-    )
+    );
   }
 
   // Display Socials If User is Attendee (Could be Sick for Networking and Sponsors)
@@ -63,7 +64,6 @@ export default function Wallet() {
       {application?.githubLink}
       {application?.linkedInLink}
       {application?.resumeLink}
-
     </div>
-  )
+  );
 }
