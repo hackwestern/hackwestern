@@ -18,7 +18,6 @@ import { PKPass } from "passkit-generator";
 import path from "path";
 import os from "os";
 
-
 type User = {
   id: string;
   name: string | null;
@@ -80,7 +79,7 @@ export const qrRouter = createTRPCRouter({
 async function generateApplePass(
   user: User,
   personalUrl: string,
-  qrBase64: string
+  qrBase64: string,
 ) {
   // --- 1. VALIDATE CERTS ---
   if (!env.APPLE_WWDR_CERT || !env.APPLE_SIGNER_CERT || !env.APPLE_SIGNER_KEY) {
@@ -99,10 +98,7 @@ async function generateApplePass(
   const signerKeyPassphrase = env.APPLE_CERT_PASS;
 
   // --- 2. TEMP DIRECTORY (.pass REQUIRED!) ---
-  const passDir = path.join(
-    os.tmpdir(),
-    `pass_${user.id}_${Date.now()}.pass`
-  );
+  const passDir = path.join(os.tmpdir(), `pass_${user.id}_${Date.now()}.pass`);
   fs.mkdirSync(passDir, { recursive: true });
 
   // --- 3. PASS.JSON TEMPLATE ---
@@ -150,9 +146,7 @@ async function generateApplePass(
         .get(url, (res) => {
           if (res.statusCode !== 200) {
             file.close();
-            reject(
-              new Error(`Failed to download ${url}: ${res.statusCode}`)
-            );
+            reject(new Error(`Failed to download ${url}: ${res.statusCode}`));
             return;
           }
           res.pipe(file);
@@ -184,10 +178,7 @@ async function generateApplePass(
   // Download + duplicate @2x files
   for (const asset of assets) {
     const full = path.join(passDir, asset.name);
-    const full2x = path.join(
-      passDir,
-      asset.name.replace(".png", "@2x.png")
-    );
+    const full2x = path.join(passDir, asset.name.replace(".png", "@2x.png"));
 
     await download(asset.url, full);
     fs.copyFileSync(full, full2x);
@@ -206,7 +197,7 @@ async function generateApplePass(
         }),
       },
     },
-    { serialNumber: user.id }
+    { serialNumber: user.id },
   );
 
   const stream = pkpass.getAsStream();
