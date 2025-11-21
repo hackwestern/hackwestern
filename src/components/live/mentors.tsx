@@ -9,7 +9,7 @@ import {
 import Construction from "./construction";
 
 const Mentors = () => {
-  const haveAllMentors = false;
+  const haveAllMentors = true;
 
   const [selectedMentorTags, setSelectedMentorTags] = useState<MentorTags[]>(
     [],
@@ -19,19 +19,19 @@ const Mentors = () => {
     <>
       {haveAllMentors ? (
         <div className="mb-6 px-6">
-          <div className="my-8 md:flex">
-            <div className="py-1 font-figtree font-semibold text-heavy">
-              Filter By:
+          <div className="my-8 md:flex md:flex-col">
+            <div className="py-1 font-figtree font-medium text-heavy">
+              Filter by:
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {MentorTagsList.map((tag) => (
                 <span
                   key={tag}
-                  className={`cursor-pointer rounded-md px-2 py-1 ${
+                  className={`cursor-pointer rounded-md px-3 py-1.5 ${
                     selectedMentorTags.includes(tag)
-                      ? "bg-primary-300 text-heavy"
-                      : "bg-highlight text-medium"
-                  } mx-1.5 font-figtree transition-all hover:bg-primary-500 hover:text-white`}
+                      ? "bg-heavy text-[#ebdff7] font-medium"
+                      : "bg-[#ebdff7] text-medium font-medium"
+                  } font-figtree transition-all hover:bg-heavy hover:text-[#ebdff7]`}
                   onClick={() => {
                     setSelectedMentorTags((prev) =>
                       prev.includes(tag)
@@ -88,7 +88,7 @@ const MentorCard = (mentor: Mentor) => {
         {mentor.tags.map((tag) => (
           <span
             key={tag}
-            className="rounded-lg bg-primary-300 p-1 px-2 font-figtree text-heavy"
+            className="rounded-lg bg-primary-300 p-1 px-2 font-figtree text-medium font-medium"
           >
             {tag}
           </span>
