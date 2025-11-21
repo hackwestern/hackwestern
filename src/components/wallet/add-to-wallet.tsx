@@ -31,11 +31,16 @@ const AddToWallet = ({
           onSuccess: (data) => {
             console.log("Pass generated:", data);
 
-            if (data.walletType === "APPLE" && data.pkpass) {
+            if (!data) {
+              setError("No data received from server");
+              return;
+            }
+
+            if (data.walletType === "APPLE" && "pkpass" in data && typeof data.pkpass === "string") {
               // store raw pkpass only if needed later in UI
               setPkpassSrc(data.pkpass);
               void handleDownloadPkpass(data.pkpass);
-            } else if (data.walletType === "GOOGLE" && data.googleWalletUrl) {
+            } else if (data.walletType === "GOOGLE" && "googleWalletUrl" in data && typeof data.googleWalletUrl === "string") {
               setGoogleWalletUrl(data.googleWalletUrl);
               // Redirect to Google Wallet
               window.open(data.googleWalletUrl, "_blank");
@@ -88,44 +93,70 @@ const AddToWallet = ({
 
     // Check if it's a URL (starts with http) or base64
     if (pkpassUrlOrBase64.startsWith("http")) {
-      // It's a URL, fetch and download
+      // It's a URL - for Apple Wallet, we need to trigger download
+      // On iOS/macOS, downloading a .pkpass file automatically opens Wallet
       try {
         const response = await fetch(pkpassUrlOrBase64);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const blob = await response.blob();
+
+        // Ensure the blob has the correct MIME type
+        const typedBlob = new Blob([blob], {
+          type: "application/vnd.apple.pkpass",
+        });
+
+        const url = window.URL.createObjectURL(typedBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "hackwestern-badge.pkpass";
+        // Add attributes for better compatibility
+        a.setAttribute("download", "hackwestern-badge.pkpass");
+        document.body.appendChild(a);
+        a.click();
+
+        // Cleanup after a short delay to ensure download starts
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        }, 100);
+      } catch (error) {
+        console.error("Failed to download pass from URL:", error);
+        // Fallback: try opening URL directly (may work on some devices)
+        window.location.href = pkpassUrlOrBase64;
+      }
+    } else {
+      // It's base64, convert to blob
+      try {
+        const byteCharacters = atob(pkpassUrlOrBase64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], {
+          type: "application/vnd.apple.pkpass",
+        });
+
+        // Create download link
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
         a.download = "hackwestern-badge.pkpass";
+        a.setAttribute("download", "hackwestern-badge.pkpass");
         document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      } catch (error) {
-        console.error("Failed to download pass from URL:", error);
-        // Fallback: open URL directly
-        window.open(pkpassUrlOrBase64, "_blank");
-      }
-    } else {
-      // It's base64, convert to blob
-      const byteCharacters = atob(pkpassUrlOrBase64);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], {
-        type: "application/vnd.apple.pkpass",
-      });
 
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "hackwestern-badge.pkpass";
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+        // Cleanup after a short delay
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        }, 100);
+      } catch (error) {
+        console.error("Failed to process base64 pass:", error);
+        setError("Failed to process wallet pass. Please try again.");
+      }
     }
   };
 

@@ -2,18 +2,23 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, protectedOrganizerProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import QRCode from "qrcode";
 import { db } from "~/server/db";
 import { z } from "zod";
-import { users } from "~/server/db/schema";
-import { eq } from "drizzle-orm";
+import { users, applications } from "~/server/db/schema";
+import { eq, or } from "drizzle-orm";
 import { google } from "googleapis";
 import crypto from "crypto";
 import { env } from "~/env";
 import { r2Client, R2_BUCKET, R2_PUBLIC_BASE_URL } from "~/server/storage/r2";
-import { ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { ListObjectsV2Command, PutObjectCommand } from "@aws-sdk/client-s3";
+import { PKPass } from "passkit-generator";
+import path from "path";
+import os from "os";
+import fs from "fs";
+import https from "https";
 
 type User = {
   id: string;
@@ -58,7 +63,7 @@ export const qrRouter = createTRPCRouter({
         if (input.walletType === "GOOGLE") {
           return await generateGooglePass(user, PERSONAL_URL, qrBase64);
         } else {
-          return await generateApplePass(user); // TODO: Implement Apple Pass Generation that is dynamic
+          return await generateApplePass(user);
         }
       } catch (error) {
         console.error("Error generating pass:", error);
@@ -72,7 +77,7 @@ export const qrRouter = createTRPCRouter({
     }),
 });
 
-// Apple Wallet Generation
+// Get Apple Wallets
 async function generateApplePass(
   user: User,
 ) {
@@ -87,14 +92,16 @@ async function generateApplePass(
   const listResponse = await r2Client.send(listCommand);
 
   // Find the most recent pass for this user
-  const userPasses = listResponse.Contents?.filter((obj) =>
-    obj.Key?.endsWith(`-${user.id}.pkpass`)
-  ).sort((a, b) => {
-    // Sort by LastModified descending (most recent first)
-    const timeA = a.LastModified?.getTime() ?? 0;
-    const timeB = b.LastModified?.getTime() ?? 0;
-    return timeB - timeA;
-  });
+  const userPasses = (listResponse.Contents ?? [])
+    .filter((obj): obj is NonNullable<typeof obj> =>
+      obj.Key?.endsWith(`-${user.id}.pkpass`) ?? false
+    )
+    .sort((a, b) => {
+      // Sort by LastModified descending (most recent first)
+      const timeA = a.LastModified?.getTime() ?? 0;
+      const timeB = b.LastModified?.getTime() ?? 0;
+      return timeB - timeA;
+    });
 
   if (!userPasses || userPasses.length === 0 || !userPasses[0]?.Key) {
     throw new TRPCError({
@@ -111,6 +118,7 @@ async function generateApplePass(
   };
 }
 
+// Generate a Google Wallet pass for a single user
 async function generateGooglePass(
   user: User,
   personalUrl: string,
