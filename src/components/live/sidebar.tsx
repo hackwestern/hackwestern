@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { Horsey } from "./icons";
 import { Button } from "../ui/button";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { SectionLink, IconlessLink } from "./navlinks";
 
 const Sidebar = () => {
   const router = useRouter();
+  const { data: session } = useSession();
 
   const logout = () => {
     signOut()
@@ -43,13 +44,15 @@ const Sidebar = () => {
           </div>
         </div>
       </div>
-      {/*<Button
-        onClick={logout}
-        variant="ghost"
-        className="w-fit border border-light text-base text-medium"
-      >
-        Logout
-      </Button>*/}
+      {session && (
+        <Button
+          onClick={logout}
+          variant="ghost"
+          className="w-fit border border-light text-base text-medium"
+        >
+          Logout
+        </Button>
+      )}
     </div>
   );
 };

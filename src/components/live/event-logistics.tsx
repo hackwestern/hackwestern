@@ -176,19 +176,19 @@ const EventLogistics = () => {
         ) : (
           <ReactMarkdown
             components={{
-              h1: ({ ...props }) => (
+              h1: ({ node: _node, ...props }) => (
                 <h1
                   className="mb-4 mt-8 font-figtree text-2xl font-medium text-heavy"
                   {...props}
                 />
               ),
-              p: ({ ...props }) => (
+              p: ({ node: _node, ...props }) => (
                 <p
                   className="mb-4 font-figtree leading-relaxed text-medium"
                   {...props}
                 />
               ),
-              a: ({ ...props }) => (
+              a: ({ node: _node, ...props }) => (
                 <a
                   className="leading-relaxed text-medium underline transition-colors hover:text-light"
                   target="_blank"
@@ -196,25 +196,25 @@ const EventLogistics = () => {
                   {...props}
                 />
               ),
-              b: ({ ...props }) => (
+              b: ({ node: _node, ...props }) => (
                 <b
                   className="mb-4 font-figtree font-bold leading-relaxed text-medium"
                   {...props}
                 />
               ),
-              i: ({ ...props }) => (
+              i: ({ node: _node, ...props }) => (
                 <i
                   className="font-italic mb-4 font-figtree leading-relaxed text-medium"
                   {...props}
                 />
               ),
-              ul: ({ ...props }) => (
+              ul: ({ node: _node, ...props }) => (
                 <ul
                   className="mb-4 list-disc space-y-1 pl-6 font-figtree text-medium"
                   {...props}
                 />
               ),
-              ol: ({ ...props }) => (
+              ol: ({ node: _node, ...props }) => (
                 <ol
                   className="mb-4 list-decimal space-y-1 pl-6 font-figtree text-medium"
                   {...props}
