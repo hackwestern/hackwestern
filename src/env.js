@@ -29,6 +29,13 @@ export const env = createEnv({
     DISCORD_CLIENT_ID: z.string(),
     DISCORD_CLIENT_SECRET: z.string(),
     RESEND_API_KEY: z.string(),
+    APPLE_CERT_PASS: z.string().optional(),
+    APPLE_WWDR_CERT: z.string(),
+    APPLE_SIGNER_CERT: z.string(),
+    APPLE_SIGNER_KEY: z.string(),
+    GOOGLE_WALLET_CLIENT_EMAIL: z.string(),
+    GOOGLE_WALLET_PRIVATE_KEY: z.string(),
+    GOOGLE_WALLET_ISSUER_ID: z.string(),
     // Cloudflare R2 / S3-compatible storage
     R2_ACCESS_KEY_ID: z.string(),
     R2_SECRET_ACCESS_KEY: z.string(),
@@ -38,7 +45,7 @@ export const env = createEnv({
     // Public base URL where objects are accessible, e.g. https://pub-XXXXXXXX.r2.dev or a custom domain
     R2_PUBLIC_BASE_URL: z.string().url(),
     // Google Sheets API key for fetching schedule data
-    GOOGLE_SHEETS_API_KEY: z.string(),
+    GOOGLE_SHEETS_API_KEY: z.string().optional(),
   },
 
   /**
@@ -66,6 +73,13 @@ export const env = createEnv({
     DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
     DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
+    APPLE_CERT_PASS: process.env.APPLE_CERT_PASS,
+    APPLE_WWDR_CERT: process.env.APPLE_WWDR_CERT,
+    APPLE_SIGNER_CERT: process.env.APPLE_SIGNER_CERT,
+    APPLE_SIGNER_KEY: process.env.APPLE_SIGNER_KEY,
+    GOOGLE_WALLET_CLIENT_EMAIL: process.env.GOOGLE_WALLET_CLIENT_EMAIL,
+    GOOGLE_WALLET_PRIVATE_KEY: process.env.GOOGLE_WALLET_PRIVATE_KEY,
+    GOOGLE_WALLET_ISSUER_ID: process.env.GOOGLE_WALLET_ISSUER_ID,
     R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
     R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
     R2_ENDPOINT: process.env.R2_ENDPOINT,
