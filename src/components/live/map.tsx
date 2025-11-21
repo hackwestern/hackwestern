@@ -41,7 +41,7 @@ const Map = () => {
               <img
                 src="/map/floor_2.jpg"
                 alt="Floor 2 Map"
-                className="mb-8 w-full h-auto object-contain"
+                className="mb-8 h-auto w-full object-contain"
               />
             ) : (
               <motion.img
@@ -68,7 +68,7 @@ const Map = () => {
               <img
                 src="/map/floor_3.jpg"
                 alt="Floor 3 Map"
-                className="mb-8 w-full h-auto object-contain"
+                className="mb-8 h-auto w-full object-contain"
               />
             ) : (
               <motion.img
