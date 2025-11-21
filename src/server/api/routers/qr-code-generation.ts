@@ -7,16 +7,17 @@ import { TRPCError } from "@trpc/server";
 import QRCode from "qrcode";
 import { db } from "~/server/db";
 import { z } from "zod";
-import path from "path";
-import fs from "fs";
-import os from "os";
-import { PKPass } from "passkit-generator";
 import { users } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 import { google } from "googleapis";
 import crypto from "crypto";
 import https from "https";
 import { env } from "~/env";
+import fs from "fs";
+import { PKPass } from "passkit-generator";
+import path from "path";
+import os from "os";
+
 
 type User = {
   id: string;
@@ -79,264 +80,151 @@ export const qrRouter = createTRPCRouter({
 async function generateApplePass(
   user: User,
   personalUrl: string,
-  qrBase64: string,
+  qrBase64: string
 ) {
-  // Get certificates from environment variables
+  // --- 1. VALIDATE CERTS ---
   if (!env.APPLE_WWDR_CERT || !env.APPLE_SIGNER_CERT || !env.APPLE_SIGNER_KEY) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
       message:
-        "Apple Wallet certificates not configured. Please set APPLE_WWDR_CERT, APPLE_SIGNER_CERT, and APPLE_SIGNER_KEY environment variables.",
+        "Apple Wallet certificates not configured. Ensure APPLE_WWDR_CERT, APPLE_SIGNER_CERT, APPLE_SIGNER_KEY exist.",
     });
   }
 
-  // Type-safe access after null checks
-  const wwdrCert = env.APPLE_WWDR_CERT;
-  const signerCertStr = env.APPLE_SIGNER_CERT;
-  const signerKeyStr = env.APPLE_SIGNER_KEY;
-  const certPassphrase = env.APPLE_CERT_PASS;
+  const fixPem = (x: string) => Buffer.from(x.replace(/\\n/g, "\n"), "utf8");
 
-  // Convert environment variables to Buffers, handling escaped newlines
-  // Environment variables may contain \n as literal strings, so we need to replace them
-  const formatPem = (pemString: string): Buffer => {
-    // Replace literal \n with actual newlines if needed
-    const formatted = pemString.replace(/\\n/g, "\n");
-    return Buffer.from(formatted, "utf8");
-  };
+  const wwdr = fixPem(env.APPLE_WWDR_CERT);
+  const signerCert = fixPem(env.APPLE_SIGNER_CERT);
+  const signerKey = fixPem(env.APPLE_SIGNER_KEY);
+  const signerKeyPassphrase = env.APPLE_CERT_PASS;
 
-  const { wwdr, signerCert, signerKey } = {
-    wwdr: formatPem(wwdrCert),
-    signerCert: formatPem(signerCertStr),
-    signerKey: formatPem(signerKeyStr),
-  };
+  // --- 2. TEMP DIRECTORY (.pass REQUIRED!) ---
+  const passDir = path.join(
+    os.tmpdir(),
+    `pass_${user.id}_${Date.now()}.pass`
+  );
+  fs.mkdirSync(passDir, { recursive: true });
 
-  const passTemplate = {
+  // --- 3. PASS.JSON TEMPLATE ---
+  const passJson = {
     formatVersion: 1,
     passTypeIdentifier: "pass.com.hackwestern12.card",
     teamIdentifier: "G2TW9ZYVUF",
     organizationName: "Hack Western",
     description: "Hack Western 12 Pass",
-    logoText: `${user.name ?? "[NAME]"}'s Badge`,
-    backgroundColor: "rgb(235, 223, 247)",
     serialNumber: user.id,
+    logoText: `${user.name ?? "[NAME]"}'s Badge`,
+    backgroundColor: "rgb(235,223,247)",
+
     eventTicket: {
       primaryFields: [],
       secondaryFields: [
+        { key: "email", label: "Email", value: user.email },
         {
-          key: "email",
-          label: "Email",
-          value: user.email,
-        },
-        {
-          key: "type",
+          key: "role",
           label: "Role",
           value: user.type
             ? user.type.charAt(0).toUpperCase() + user.type.slice(1)
             : "Hacker",
         },
       ],
-      backFields: [
-        {
-          key: "rawId",
-          label: "Raw ID",
-          value: user.id,
-        },
-      ],
+      backFields: [{ key: "id", label: "Raw ID", value: user.id }],
     },
+
     barcodes: [
       {
-        message: personalUrl,
         format: "PKBarcodeFormatQR",
+        message: personalUrl,
         messageEncoding: "iso-8859-1",
       },
     ],
   };
 
-  // Use /tmp directory for serverless compatibility
-  const tempPassPath = path.join(os.tmpdir(), `pass_${user.id}_${Date.now()}`);
-  if (!fs.existsSync(tempPassPath)) {
-    fs.mkdirSync(tempPassPath, { recursive: true });
-  }
-  fs.writeFileSync(
-    path.join(tempPassPath, "pass.json"),
-    JSON.stringify(passTemplate, null, 2),
-  );
+  fs.writeFileSync(path.join(passDir, "pass.json"), JSON.stringify(passJson));
 
-  // Download images BEFORE copying from original pass
-  const bannerUrl =
-    "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/banner.png";
-  const logoUrl =
-    "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/logo.png";
-
-  const stripPath = path.join(tempPassPath, "strip.png");
-  const strip2xPath = path.join(tempPassPath, "strip@2x.png");
-  const logoPath = path.join(tempPassPath, "logo.png");
-  const logo2xPath = path.join(tempPassPath, "logo@2x.png");
-
-  // Download strip image (banner) - appears at top in Event Ticket passes
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const file = fs.createWriteStream(stripPath);
+  // --- 4. REMOTE IMAGE DOWNLOAD HELPER ---
+  async function download(url: string, filepath: string) {
+    return new Promise<void>((resolve, reject) => {
+      const file = fs.createWriteStream(filepath);
       https
-        .get(bannerUrl, (response) => {
-          if (response.statusCode === 200) {
-            response.pipe(file);
-            file.on("finish", () => {
-              file.close();
-              // Copy to @2x version as well
-              fs.copyFileSync(stripPath, strip2xPath);
-              console.log("Strip image downloaded successfully");
-              resolve();
-            });
-          } else {
+        .get(url, (res) => {
+          if (res.statusCode !== 200) {
             file.close();
-            if (fs.existsSync(stripPath)) {
-              fs.unlinkSync(stripPath);
-            }
             reject(
-              new Error(`Failed to download banner: ${response.statusCode}`),
+              new Error(`Failed to download ${url}: ${res.statusCode}`)
             );
+            return;
           }
-        })
-        .on("error", (err) => {
-          if (fs.existsSync(stripPath)) {
-            fs.unlinkSync(stripPath);
-          }
-          reject(err);
-        });
-    });
-  } catch (error) {
-    console.error("Error downloading strip image:", error);
-    // Continue without strip if download fails
-  }
-
-  // Download logo image
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const file = fs.createWriteStream(logoPath);
-      https
-        .get(logoUrl, (response) => {
-          if (response.statusCode === 200) {
-            response.pipe(file);
-            file.on("finish", () => {
-              file.close();
-              // Copy to @2x version as well
-              fs.copyFileSync(logoPath, logo2xPath);
-              console.log("Logo image downloaded successfully");
-              resolve();
-            });
-          } else {
+          res.pipe(file);
+          file.on("finish", () => {
             file.close();
-            if (fs.existsSync(logoPath)) {
-              fs.unlinkSync(logoPath);
-            }
-            reject(
-              new Error(`Failed to download logo: ${response.statusCode}`),
-            );
-          }
+            resolve();
+          });
         })
-        .on("error", (err) => {
-          if (fs.existsSync(logoPath)) {
-            fs.unlinkSync(logoPath);
-          }
-          reject(err);
-        });
-    });
-  } catch (error) {
-    console.error("Error downloading logo image:", error);
-    // Fall back to original logo if download fails
-  }
-
-  // Download icon from remote URL for serverless compatibility
-  const iconUrl =
-    "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/icon.png";
-  const iconPath = path.join(tempPassPath, "icon.png");
-  const icon2xPath = path.join(tempPassPath, "icon@2x.png");
-
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const file = fs.createWriteStream(iconPath);
-      https
-        .get(iconUrl, (response) => {
-          if (response.statusCode === 200) {
-            response.pipe(file);
-            file.on("finish", () => {
-              file.close();
-              // Copy to @2x version as well
-              fs.copyFileSync(iconPath, icon2xPath);
-              console.log("Icon image downloaded successfully");
-              resolve();
-            });
-          } else {
-            file.close();
-            if (fs.existsSync(iconPath)) {
-              fs.unlinkSync(iconPath);
-            }
-            reject(
-              new Error(`Failed to download icon: ${response.statusCode}`),
-            );
-          }
-        })
-        .on("error", (err) => {
-          if (fs.existsSync(iconPath)) {
-            fs.unlinkSync(iconPath);
-          }
-          reject(err);
-        });
-    });
-  } catch (error) {
-    console.error("Error downloading icon image:", error);
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Failed to download required icon image",
+        .on("error", reject);
     });
   }
 
-  // Verify strip image exists before creating pass
-  if (fs.existsSync(stripPath)) {
-    console.log("Strip image confirmed in pass bundle:", stripPath);
-  } else {
-    console.warn("Strip image not found - it may not appear on the pass");
-  }
-
-  const pass = await PKPass.from(
+  // --- 5. REQUIRED ASSETS ---
+  const assets = [
     {
-      model: tempPassPath,
+      url: "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/icon.png",
+      name: "icon.png",
+    },
+    {
+      url: "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/logo.png",
+      name: "logo.png",
+    },
+    {
+      url: "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/banner.png",
+      name: "strip.png",
+    },
+  ];
+
+  // Download + duplicate @2x files
+  for (const asset of assets) {
+    const full = path.join(passDir, asset.name);
+    const full2x = path.join(
+      passDir,
+      asset.name.replace(".png", "@2x.png")
+    );
+
+    await download(asset.url, full);
+    fs.copyFileSync(full, full2x);
+  }
+
+  // --- 6. BUILD PASS (.pkpass buffer) ---
+  const pkpass = await PKPass.from(
+    {
+      model: passDir,
       certificates: {
         wwdr,
         signerCert,
         signerKey,
-        ...(certPassphrase && { signerKeyPassphrase: certPassphrase }),
+        ...(signerKeyPassphrase && {
+          signerKeyPassphrase,
+        }),
       },
     },
-    {
-      serialNumber: user.id,
-    },
+    { serialNumber: user.id }
   );
 
-  const stream = pass.getAsStream();
+  const stream = pkpass.getAsStream();
   const chunks: Buffer[] = [];
 
   const buffer = await new Promise<Buffer>((resolve, reject) => {
-    stream.on("data", (chunk: Buffer) => chunks.push(chunk));
+    stream.on("data", (c) => chunks.push(c));
     stream.on("end", () => resolve(Buffer.concat(chunks)));
-    stream.on("error", (error) => {
-      console.error("Error generating pass stream:", error);
-      reject(error);
-    });
+    stream.on("error", reject);
   });
 
-  const pkpassBase64 = buffer.toString("base64");
+  // --- 7. CLEANUP ---
+  fs.rmSync(passDir, { recursive: true, force: true });
 
-  try {
-    fs.rmSync(tempPassPath, { recursive: true, force: true });
-  } catch (error) {
-    console.error("Error cleaning up temporary files:", error);
-  }
-
+  // --- 8. RETURN ---
   return {
     qrCode: qrBase64,
-    pkpass: pkpassBase64,
+    pkpass: buffer.toString("base64"),
     walletType: "APPLE" as const,
   };
 }

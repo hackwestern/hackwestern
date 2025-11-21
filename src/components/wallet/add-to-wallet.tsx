@@ -64,19 +64,31 @@ const AddToWallet = ({
     }
   };
 
-  const handleDownloadPkpass = (pkpassBase64: string) => {
-    if (!pkpassBase64) return;
+  const handleDownloadPkpass = async (pkpassData: string) => {
+    if (!pkpassData) return;
 
-    // Convert base64 to blob
-    const byteCharacters = atob(pkpassBase64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    let blob: Blob;
+
+    // Check if it's a URL or base64
+    if (pkpassData.startsWith("http://") || pkpassData.startsWith("https://")) {
+      // It's a URL - fetch it
+      const response = await fetch(pkpassData);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch pass: ${response.statusText}`);
+      }
+      blob = await response.blob();
+    } else {
+      // It's base64 - convert to blob
+      const byteCharacters = atob(pkpassData);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      blob = new Blob([byteArray], {
+        type: "application/vnd.apple.pkpass",
+      });
     }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], {
-      type: "application/vnd.apple.pkpass",
-    });
 
     // Create download link
     const url = window.URL.createObjectURL(blob);
