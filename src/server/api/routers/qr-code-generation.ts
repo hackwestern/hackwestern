@@ -10,6 +10,8 @@ import { users } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 import { google } from "googleapis";
 import crypto from "crypto";
+import https from "https";
+import { env } from "~/env";
 
 type User = {
   id: string;
@@ -33,11 +35,11 @@ export const qrRouter = createTRPCRouter({
           where: eq(users.id, ctx.session.user.id),
         });
 
-        if (!user?.emailVerified) {
+        if (!user) {
           throw new TRPCError({
             code: "NOT_FOUND",
             message:
-              "User not found in database or email hasn't been verified yet. Please verify your email before generating a Wallet Pass.",
+              "User not found in database. Please verify your email before generating a Wallet Pass.",
           });
         }
 
@@ -74,17 +76,28 @@ async function generateApplePass(
   personalUrl: string,
   qrBase64: string,
 ) {
+  // Get certificates from environment variables
+  if (!env.APPLE_WWDR_CERT || !env.APPLE_SIGNER_CERT || !env.APPLE_SIGNER_KEY) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message:
+        "Apple Wallet certificates not configured. Please set APPLE_WWDR_CERT, APPLE_SIGNER_CERT, and APPLE_SIGNER_KEY environment variables.",
+    });
+  }
+
+  // Convert environment variables to Buffers, handling escaped newlines
+  // Environment variables may contain \n as literal strings, so we need to replace them
+  const formatPem = (pemString: string): Buffer => {
+    // Replace literal \n with actual newlines if needed
+    const formatted = pemString.replace(/\\n/g, "\n");
+    return Buffer.from(formatted, "utf8");
+  };
+
   const { wwdr, signerCert, signerKey, signerKeyPassphrase } = {
-    wwdr: fs.readFileSync(
-      path.join(process.cwd(), "src/server/api/certs/AppleWWDR.pem"),
-    ),
-    signerCert: fs.readFileSync(
-      path.join(process.cwd(), "src/server/api/certs/certificate.pem"),
-    ),
-    signerKey: fs.readFileSync(
-      path.join(process.cwd(), "src/server/api/certs/key.pem"),
-    ),
-    signerKeyPassphrase: process.env.APPLE_CERT_PASS,
+    wwdr: formatPem(env.APPLE_WWDR_CERT),
+    signerCert: formatPem(env.APPLE_SIGNER_CERT),
+    signerKey: formatPem(env.APPLE_SIGNER_KEY),
+    signerKeyPassphrase: env.APPLE_CERT_PASS,
   };
 
   const passTemplate = {
@@ -93,31 +106,30 @@ async function generateApplePass(
     teamIdentifier: "G2TW9ZYVUF",
     organizationName: "Hack Western",
     description: "Hack Western 12 Pass",
-    backgroundColor: "rgb(165, 105, 189)",
-    logoText: "Hack Western",
+    logoText: `${user.name ?? "[NAME]"}'s Badge`,
+    backgroundColor: "rgb(235, 223, 247)",
     serialNumber: user.id,
-    generic: {
-      headerFields: [
-        {
-          key: "attendee",
-          label: "Attendee",
-          value: user.name ?? "Attendee",
-        },
-      ],
-      primaryFields: [
+    eventTicket: {
+      primaryFields: [],
+      secondaryFields: [
         {
           key: "email",
           label: "Email",
           value: user.email,
         },
-      ],
-      secondaryFields: [
         {
           key: "type",
-          label: "Type",
+          label: "Role",
           value: user.type
             ? user.type.charAt(0).toUpperCase() + user.type.slice(1)
             : "Hacker",
+        },
+      ],
+      backFields: [
+        {
+          key: "rawId",
+          label: "Raw ID",
+          value: user.id,
         },
       ],
     },
@@ -126,14 +138,8 @@ async function generateApplePass(
         message: personalUrl,
         format: "PKBarcodeFormatQR",
         messageEncoding: "iso-8859-1",
-        altText: user.email,
       },
     ],
-    barcode: {
-      message: personalUrl,
-      format: "PKBarcodeFormatQR",
-      messageEncoding: "iso-8859-1",
-    },
   };
 
   const tempPassPath = path.join(
@@ -148,11 +154,87 @@ async function generateApplePass(
     JSON.stringify(passTemplate, null, 2),
   );
 
+  // Download images BEFORE copying from original pass
+  const bannerUrl = "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/banner.png";
+  const logoUrl = "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/logo.png";
+
+  const stripPath = path.join(tempPassPath, "strip.png");
+  const strip2xPath = path.join(tempPassPath, "strip@2x.png");
+  const logoPath = path.join(tempPassPath, "logo.png");
+  const logo2xPath = path.join(tempPassPath, "logo@2x.png");
+
+  // Download strip image (banner) - appears at top in Event Ticket passes
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const file = fs.createWriteStream(stripPath);
+      https.get(bannerUrl, (response) => {
+        if (response.statusCode === 200) {
+          response.pipe(file);
+          file.on("finish", () => {
+            file.close();
+            // Copy to @2x version as well
+            fs.copyFileSync(stripPath, strip2xPath);
+            console.log("Strip image downloaded successfully");
+            resolve();
+          });
+        } else {
+          file.close();
+          if (fs.existsSync(stripPath)) {
+            fs.unlinkSync(stripPath);
+          }
+          reject(new Error(`Failed to download banner: ${response.statusCode}`));
+        }
+      }).on("error", (err) => {
+        if (fs.existsSync(stripPath)) {
+          fs.unlinkSync(stripPath);
+        }
+        reject(err);
+      });
+    });
+  } catch (error) {
+    console.error("Error downloading strip image:", error);
+    // Continue without strip if download fails
+  }
+
+  // Download logo image
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const file = fs.createWriteStream(logoPath);
+      https.get(logoUrl, (response) => {
+        if (response.statusCode === 200) {
+          response.pipe(file);
+          file.on("finish", () => {
+            file.close();
+            // Copy to @2x version as well
+            fs.copyFileSync(logoPath, logo2xPath);
+            console.log("Logo image downloaded successfully");
+            resolve();
+          });
+        } else {
+          file.close();
+          if (fs.existsSync(logoPath)) {
+            fs.unlinkSync(logoPath);
+          }
+          reject(new Error(`Failed to download logo: ${response.statusCode}`));
+        }
+      }).on("error", (err) => {
+        if (fs.existsSync(logoPath)) {
+          fs.unlinkSync(logoPath);
+        }
+        reject(err);
+      });
+    });
+  } catch (error) {
+    console.error("Error downloading logo image:", error);
+    // Fall back to original logo if download fails
+  }
+
+  // Copy other required images from original pass
   const originalPassPath = path.join(
     process.cwd(),
     "src/server/api/passModel/hackWestern.pass",
   );
-  ["icon.png", "icon@2x.png", "logo.png", "logo@2x.png"].forEach((file) => {
+  ["icon.png", "icon@2x.png"].forEach((file) => {
     if (fs.existsSync(path.join(originalPassPath, file))) {
       fs.copyFileSync(
         path.join(originalPassPath, file),
@@ -160,6 +242,25 @@ async function generateApplePass(
       );
     }
   });
+
+  // Only copy logo if we didn't download it
+  if (!fs.existsSync(logoPath)) {
+    ["logo.png", "logo@2x.png"].forEach((file) => {
+      if (fs.existsSync(path.join(originalPassPath, file))) {
+        fs.copyFileSync(
+          path.join(originalPassPath, file),
+          path.join(tempPassPath, file),
+        );
+      }
+    });
+  }
+
+  // Verify strip image exists before creating pass
+  if (fs.existsSync(stripPath)) {
+    console.log("Strip image confirmed in pass bundle:", stripPath);
+  } else {
+    console.warn("Strip image not found - it may not appear on the pass");
+  }
 
   const pass = await PKPass.from(
     {
@@ -175,11 +276,6 @@ async function generateApplePass(
       serialNumber: user.id,
     },
   );
-
-  pass.localize("en", {
-    event: "Hack Western 12",
-    label: "Event",
-  });
 
   const stream = pass.getAsStream();
   const chunks: Buffer[] = [];

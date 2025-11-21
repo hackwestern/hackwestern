@@ -18,6 +18,8 @@ const AddToWallet = ({
 
   const generatePass = api.qrRouter.generate.useMutation();
 
+  const isLoading = generatePass.isPending || loading;
+
   const handleGeneratePass = async () => {
     setLoading(true);
     setError(null);
@@ -51,11 +53,13 @@ const AddToWallet = ({
                 : errorMessage,
             );
           },
+          onSettled: () => {
+            setLoading(false);
+          },
         },
       );
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
-    } finally {
       setLoading(false);
     }
   };
@@ -89,28 +93,26 @@ const AddToWallet = ({
     <div className="flex flex-col items-center gap-2">
       <Button
         onClick={handleGeneratePass}
-        disabled={loading}
-        className="h-auto w-[130px] p-0 sm:w-[160px] md:w-[180px]"
+        disabled={isLoading}
+        className={`h-auto w-[130px] p-0 sm:w-[160px] md:w-[180px] transition-opacity ${
+          isLoading ? "opacity-40 cursor-not-allowed" : ""
+        }`}
       >
-        {loading ? (
-          <span>Generating...</span>
-        ) : (
-          <Image
-            src={
-              walletType === "GOOGLE"
-                ? "/images/wallet/GoogleWallet.svg"
-                : "/images/wallet/AppleWallet.svg"
-            }
-            alt={
-              walletType === "GOOGLE"
-                ? "Add to Google Wallet"
-                : "Add to Apple Wallet"
-            }
-            width={180}
-            height={60}
-            className="h-auto w-full object-contain"
-          />
-        )}
+        <Image
+          src={
+            walletType === "GOOGLE"
+              ? "/images/wallet/GoogleWallet.svg"
+              : "/images/wallet/AppleWallet.svg"
+          }
+          alt={
+            walletType === "GOOGLE"
+              ? "Add to Google Wallet"
+              : "Add to Apple Wallet"
+          }
+          width={180}
+          height={60}
+          className="h-auto w-full object-contain"
+        />
       </Button>
 
       {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
