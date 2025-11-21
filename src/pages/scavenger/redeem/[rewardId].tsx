@@ -377,8 +377,7 @@ const RedeemScanPage = () => {
         });
 
         // Success - use user info from mutation response (no extra API call needed!)
-        const userName =
-          result.user?.name ?? result.user?.email ?? userId;
+        const userName = result.user?.name ?? result.user?.email ?? userId;
         setScannedName(userName);
         setStatus("success");
 
@@ -515,8 +514,7 @@ const RedeemScanPage = () => {
                 Cost: {rewardData.costPoints} points
               </p>
               <p className="font-figtree text-sm text-medium">
-                Quantity left:{" "}
-                {rewardData.quantity ?? "∞"}
+                Quantity left: {rewardData.quantity ?? "∞"}
               </p>
             </div>
           )}
@@ -580,4 +578,3 @@ const RedeemScanPage = () => {
 
 export default RedeemScanPage;
 export const getServerSideProps = authRedirectOrganizer;
-

@@ -41,18 +41,20 @@ interface Reward {
 
 const RedeemPage = () => {
   const router = useRouter();
-  const { data: rewards, isLoading } =
-    api.scavengerHunt.getAllRewards.useQuery(undefined, {
+  const { data: rewards, isLoading } = api.scavengerHunt.getAllRewards.useQuery(
+    undefined,
+    {
       staleTime: 30000, // Cache for 30 seconds to reduce refetches
       refetchOnWindowFocus: false, // Don't refetch when window regains focus
       refetchOnMount: false, // Don't refetch on mount if data is still fresh
       refetchOnReconnect: false, // Don't refetch on reconnect if data is still fresh
-    });
+    },
+  );
 
   // Stop camera when component mounts (when navigating back to rewards page)
   useEffect(() => {
     stopAllCameraStreams();
-    
+
     // Cleanup on unmount as well
     return () => {
       stopAllCameraStreams();
@@ -98,39 +100,37 @@ const RedeemPage = () => {
           </div>
         )}
 
-        {!isLoading &&
-          rewards &&
-          rewards.length > 0 && (
-            <div className="space-y-3">
-              {rewards.map((reward) => (
-                <button
-                  key={reward.id}
-                  onClick={() => handleRewardClick(reward.id)}
-                  className="flex w-full items-center justify-between rounded-lg bg-white px-4 py-3 text-left font-figtree shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
-                >
-                  <div className="flex-1">
-                    <div className="font-semibold text-heavy">
-                      {formatTitle(reward.name)}
-                    </div>
-                    {reward.description && (
-                      <div className="text-sm text-medium">
-                        {formatTitle(reward.description)}
-                      </div>
-                    )}
-                    <div className="mt-1 text-sm font-medium text-heavy">
-                      {reward.costPoints} points
-                    </div>
+        {!isLoading && rewards && rewards.length > 0 && (
+          <div className="space-y-3">
+            {rewards.map((reward) => (
+              <button
+                key={reward.id}
+                onClick={() => handleRewardClick(reward.id)}
+                className="flex w-full items-center justify-between rounded-lg bg-white px-4 py-3 text-left font-figtree shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
+              >
+                <div className="flex-1">
+                  <div className="font-semibold text-heavy">
+                    {formatTitle(reward.name)}
                   </div>
-                  <div className="ml-4 text-right">
-                    <div className="font-semibold text-heavy">
-                      {reward.quantity ?? "∞"}
+                  {reward.description && (
+                    <div className="text-sm text-medium">
+                      {formatTitle(reward.description)}
                     </div>
-                    <div className="text-xs text-medium">left</div>
+                  )}
+                  <div className="mt-1 text-sm font-medium text-heavy">
+                    {reward.costPoints} points
                   </div>
-                </button>
-              ))}
-            </div>
-          )}
+                </div>
+                <div className="ml-4 text-right">
+                  <div className="font-semibold text-heavy">
+                    {reward.quantity ?? "∞"}
+                  </div>
+                  <div className="text-xs text-medium">left</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
@@ -138,4 +138,3 @@ const RedeemPage = () => {
 
 export default RedeemPage;
 export const getServerSideProps = authRedirectOrganizer;
-

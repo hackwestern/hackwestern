@@ -285,7 +285,10 @@ export const scavengerHuntRouter = createTRPCRouter({
         });
 
         if (!reward) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Reward not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Reward not found",
+          });
         }
 
         return reward;
@@ -574,7 +577,8 @@ export const scavengerHuntRouter = createTRPCRouter({
       type: "redemption" as const,
       rewardId: redemption.rewardId,
       itemCode: null,
-      itemDescription: redemption.rewardName ?? redemption.rewardDescription ?? "Reward",
+      itemDescription:
+        redemption.rewardName ?? redemption.rewardDescription ?? "Reward",
       points: -(redemption.costPoints ?? 0), // Negative points for redemptions
       createdAt: redemption.createdAt,
     }));
@@ -644,7 +648,6 @@ export const scavengerHuntRouter = createTRPCRouter({
         });
       }
     }),
-
 
   // Get All Scans (only accessible to organizers)
   getAllScans: protectedOrganizerProcedure
