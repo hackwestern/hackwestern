@@ -1,8 +1,10 @@
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 import { api } from "~/utils/api";
-import { authRedirectOrganizer } from "~/utils/redirect";
 import type { GetServerSidePropsContext } from "next";
+import { getServerSession } from "next-auth";
+import { authOptions } from "~/server/auth";
+import { db } from "~/server/db";
 
 // Function to stop all camera streams
 const stopAllCameraStreams = () => {
@@ -137,4 +139,34 @@ const RedeemPage = () => {
 };
 
 export default RedeemPage;
-export const getServerSideProps = authRedirectOrganizer;
+
+export const getServerSideProps = async (
+  context: GetServerSidePropsContext,
+) => {
+  const session = await getServerSession(context.req, context.res, authOptions);
+  if (!session) {
+    return {
+      redirect: {
+        destination: "/login",
+        permanent: false,
+      },
+    };
+  }
+
+  const user = await db.query.users.findFirst({
+    where: (users, { eq }) => eq(users.id, session.user.id),
+  });
+
+  if (user?.type !== "organizer") {
+    return {
+      redirect: {
+        destination: "/live",
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: {},
+  };
+};
