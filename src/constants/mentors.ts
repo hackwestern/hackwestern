@@ -21,12 +21,6 @@ export type Mentor = {
 
 export const MentorsList: Mentor[] = [
   {
-    name: "Afenifere Hammed Adewumi",
-    desc: "CEO of Oneremit",
-    image: "/images/mentors/afenifere_hammed_adewumi.webp",
-    tags: ["Product Management"],
-  },
-  {
     name: "Arsalaan Ali",
     desc: "Incoming Software Engineer Intern @ Tesla, Ex - Hack Western, Twilio",
     image: "/images/mentors/arsalaan_ali.webp",
@@ -62,6 +56,12 @@ export const MentorsList: Mentor[] = [
     desc: "SWE Intern @ NRC, Prev. RBC",
     image: "/images/mentors/edwin_ngui.webp",
     tags: ["Front-End", "UI/UX", "Product Management"],
+  },
+  {
+    name: "Hammed Afenifere",
+    desc: "CEO of Oneremit",
+    image: "/images/mentors/afenifere_hammed_adewumi.webp",
+    tags: ["Product Management"],
   },
   {
     name: "Jack Branston",
