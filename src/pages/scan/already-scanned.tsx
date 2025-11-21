@@ -5,17 +5,33 @@ export default function AlreadyScannedPage() {
   const router = useRouter();
   const [activityName, setActivityName] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [activityParam, setActivityParam] = useState<string | null>(null);
 
   useEffect(() => {
     // Get data from query params
-    const { activity, user } = router.query;
+    const {
+      activity,
+      user,
+      activityParam: activityParamFromQuery,
+    } = router.query;
     if (activity && typeof activity === "string") {
       setActivityName(activity);
     }
     if (user && typeof user === "string") {
       setUserName(user);
     }
+    if (activityParamFromQuery && typeof activityParamFromQuery === "string") {
+      setActivityParam(activityParamFromQuery);
+    }
   }, [router.query]);
+
+  const handleBackToScanning = () => {
+    if (activityParam) {
+      void router.push(`/scan/${activityParam}`);
+    } else {
+      void router.push("/scavenger");
+    }
+  };
 
   const handleBackToActivities = () => {
     void router.push("/scavenger");
@@ -70,13 +86,21 @@ export default function AlreadyScannedPage() {
           This item has already been scanned by this user.
         </p>
 
-        {/* Back Button */}
-        <button
-          onClick={handleBackToActivities}
-          className="w-full rounded-lg bg-primary px-6 py-3 font-figtree font-medium text-primary-foreground transition-colors hover:bg-primary-700"
-        >
-          Back to Activities
-        </button>
+        {/* Buttons */}
+        <div className="space-y-3">
+          <button
+            onClick={handleBackToScanning}
+            className="w-full rounded-lg bg-primary px-6 py-3 font-figtree font-medium text-primary-foreground transition-colors hover:bg-primary-700"
+          >
+            Back to Scanning
+          </button>
+          <button
+            onClick={handleBackToActivities}
+            className="mx-auto font-figtree text-sm text-medium underline-offset-4 transition-colors hover:text-heavy hover:underline"
+          >
+            Back to Activities
+          </button>
+        </div>
       </div>
     </div>
   );
