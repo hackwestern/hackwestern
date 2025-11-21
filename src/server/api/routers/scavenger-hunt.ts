@@ -460,6 +460,36 @@ export const scavengerHuntRouter = createTRPCRouter({
       }
     }),
 
+  // Get a User's Own Scans
+  getScans: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+
+    try {
+      const scans = await db
+        .select({
+          id: scavengerHuntScans.itemId,
+          createdAt: scavengerHuntScans.createdAt,
+          itemCode: scavengerHuntItems.code,
+          itemDescription: scavengerHuntItems.description,
+          points: scavengerHuntItems.points,
+        })
+        .from(scavengerHuntScans)
+        .innerJoin(
+          scavengerHuntItems,
+          eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+        )
+        .where(eq(scavengerHuntScans.userId, userId))
+        .orderBy(desc(scavengerHuntScans.createdAt));
+
+      return scans;
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch scans: " + JSON.stringify(error),
+      });
+    }
+  }),
+
   // Get All Scans (only accessible to organizers)
   getAllScans: protectedOrganizerProcedure
     .input(
