@@ -2,7 +2,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
-import { createTRPCRouter, protectedProcedure, protectedOrganizerProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  protectedOrganizerProcedure,
+} from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import QRCode from "qrcode";
 import { db } from "~/server/db";
@@ -74,9 +78,7 @@ export const qrRouter = createTRPCRouter({
 });
 
 // Get Apple Wallets
-async function generateApplePass(
-  user: User,
-) {
+async function generateApplePass(user: User) {
   const WALLET_PASSES_FOLDER = "wallet-passes";
 
   // Find the most recent pass for this user in R2
@@ -89,8 +91,9 @@ async function generateApplePass(
 
   // Find the most recent pass for this user
   const userPasses = (listResponse.Contents ?? [])
-    .filter((obj): obj is NonNullable<typeof obj> =>
-      obj.Key?.endsWith(`-${user.id}.pkpass`) ?? false
+    .filter(
+      (obj): obj is NonNullable<typeof obj> =>
+        obj.Key?.endsWith(`-${user.id}.pkpass`) ?? false,
     )
     .sort((a, b) => {
       // Sort by LastModified descending (most recent first)
