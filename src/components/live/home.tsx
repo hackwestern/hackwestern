@@ -2,10 +2,10 @@ import Image from "next/image";
 import AddToWallet from "~/components/wallet/add-to-wallet";
 import { useState, useEffect } from "react";
 import QRCode from "qrcode";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 
 const Home = () => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState<"all" | "activities" | "meals">(
     "all",
   );
@@ -25,6 +25,35 @@ const Home = () => {
         .catch((err) => console.error("QR code generation error:", err));
     }
   }, [session?.user?.id]);
+
+  // Show loading state while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="flex min-h-[400px] w-full items-center justify-center">
+        <p className="text-lg text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+
+  // Show sign-in prompt if not authenticated
+  if (!session) {
+    return (
+      <div className="flex min-h-[400px] w-full flex-col items-center justify-center gap-4 p-6">
+        <h2 className="font-figtree text-2xl font-semibold text-heavy">
+          Sign In Required
+        </h2>
+        <p className="text-center text-medium">
+          Please sign in to view your hacker pass and scan history.
+        </p>
+        <button
+          onClick={() => signIn(undefined, { callbackUrl: "/live?tab=home" })}
+          className="rounded-lg bg-primary-600 px-6 py-3 font-figtree text-sm font-medium text-white transition-colors hover:bg-primary-700"
+        >
+          Sign In
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-full flex-col gap-6 p-6 lg:flex-row lg:gap-8 lg:p-10">

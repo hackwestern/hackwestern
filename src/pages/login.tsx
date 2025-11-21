@@ -19,6 +19,9 @@ export default function Login() {
   const [pending, setPending] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  
+  // Get the callbackUrl from query params, default to /dashboard
+  const callbackUrl = (router.query.callbackUrl as string) ?? "/dashboard";
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -37,7 +40,7 @@ export default function Login() {
         setPending(false);
         return;
       }
-      void router.push("/dashboard");
+      void router.push(callbackUrl);
     });
   }
 
@@ -100,9 +103,9 @@ export default function Login() {
             <div className="flex-grow border-t border-gray-400 opacity-20" />
           </div>
           <div className="flex flex-col items-stretch gap-4">
-            <GoogleAuthButton redirect="/dashboard" />
-            <GithubAuthButton redirect="/dashboard" />
-            <DiscordAuthButton redirect="/dashboard" />
+            <GoogleAuthButton redirect={callbackUrl} />
+            <GithubAuthButton redirect={callbackUrl} />
+            <DiscordAuthButton redirect={callbackUrl} />
           </div>
           <div className="mt-6 font-figtree text-medium">
             Don&apos;t have an account yet?
