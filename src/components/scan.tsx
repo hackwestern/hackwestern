@@ -65,12 +65,15 @@ const Scan = () => {
       style={{ backgroundColor: "#f5f2f6" }}
     >
       {/* Header */}
-      <header className="flex items-center justify-end p-4">
+      <header className="flex items-center justify-between p-4">
+        <div></div>
         <button
-          className="text-2xl text-heavy hover:text-emphasis"
-          aria-label="Menu"
+          onClick={() => {
+            void router.push("/scavenger/redeem");
+          }}
+          className="rounded-lg bg-white px-4 py-2 font-figtree font-medium text-heavy shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
         >
-          ☰
+          Redeem Points
         </button>
       </header>
 
