@@ -51,7 +51,7 @@ const Home = () => {
   // Show sign-in prompt if not authenticated
   if (!session) {
     return (
-      <div className="flex min-h-[400px] w-full flex-col items-center justify-center gap-4 p-6">
+      <div className="flex min-h-[400px] w-full flex-col items-center justify-center gap-4">
         <h2 className="font-figtree text-2xl font-semibold text-heavy">
           Sign In Required
         </h2>
@@ -69,7 +69,7 @@ const Home = () => {
   }
 
   return (
-    <div className="flex w-full flex-col gap-6 p-6 lg:flex-row lg:gap-8 lg:p-10">
+    <div className="flex w-full flex-col gap-6 lg:flex-row lg:gap-8">
       {/* Left Column */}
       <div className="flex w-full flex-col gap-6 lg:w-1/2">
         {/* Upcoming Section */}
