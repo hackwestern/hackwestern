@@ -5,6 +5,7 @@ import { db } from "~/server/db";
 import { z } from "zod";
 import path from "path";
 import fs from "fs";
+import os from "os";
 import { PKPass } from "passkit-generator";
 import { users } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
@@ -85,6 +86,12 @@ async function generateApplePass(
     });
   }
 
+  // Type-safe access after null checks
+  const wwdrCert = env.APPLE_WWDR_CERT as string;
+  const signerCertStr = env.APPLE_SIGNER_CERT as string;
+  const signerKeyStr = env.APPLE_SIGNER_KEY as string;
+  const certPassphrase = env.APPLE_CERT_PASS as string | undefined;
+
   // Convert environment variables to Buffers, handling escaped newlines
   // Environment variables may contain \n as literal strings, so we need to replace them
   const formatPem = (pemString: string): Buffer => {
@@ -93,11 +100,10 @@ async function generateApplePass(
     return Buffer.from(formatted, "utf8");
   };
 
-  const { wwdr, signerCert, signerKey, signerKeyPassphrase } = {
-    wwdr: formatPem(env.APPLE_WWDR_CERT),
-    signerCert: formatPem(env.APPLE_SIGNER_CERT),
-    signerKey: formatPem(env.APPLE_SIGNER_KEY),
-    signerKeyPassphrase: env.APPLE_CERT_PASS,
+  const { wwdr, signerCert, signerKey } = {
+    wwdr: formatPem(wwdrCert),
+    signerCert: formatPem(signerCertStr),
+    signerKey: formatPem(signerKeyStr),
   };
 
   const passTemplate = {
@@ -142,9 +148,10 @@ async function generateApplePass(
     ],
   };
 
+  // Use /tmp directory for serverless compatibility
   const tempPassPath = path.join(
-    process.cwd(),
-    "src/server/api/passModel/temp.pass",
+    os.tmpdir(),
+    `pass_${user.id}_${Date.now()}`,
   );
   if (!fs.existsSync(tempPassPath)) {
     fs.mkdirSync(tempPassPath, { recursive: true });
@@ -239,29 +246,48 @@ async function generateApplePass(
     // Fall back to original logo if download fails
   }
 
-  // Copy other required images from original pass
-  const originalPassPath = path.join(
-    process.cwd(),
-    "src/server/api/passModel/hackWestern.pass",
-  );
-  ["icon.png", "icon@2x.png"].forEach((file) => {
-    if (fs.existsSync(path.join(originalPassPath, file))) {
-      fs.copyFileSync(
-        path.join(originalPassPath, file),
-        path.join(tempPassPath, file),
-      );
-    }
-  });
+  // Download icon from remote URL for serverless compatibility
+  const iconUrl =
+    "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/icon.png";
+  const iconPath = path.join(tempPassPath, "icon.png");
+  const icon2xPath = path.join(tempPassPath, "icon@2x.png");
 
-  // Only copy logo if we didn't download it
-  if (!fs.existsSync(logoPath)) {
-    ["logo.png", "logo@2x.png"].forEach((file) => {
-      if (fs.existsSync(path.join(originalPassPath, file))) {
-        fs.copyFileSync(
-          path.join(originalPassPath, file),
-          path.join(tempPassPath, file),
-        );
-      }
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const file = fs.createWriteStream(iconPath);
+      https
+        .get(iconUrl, (response) => {
+          if (response.statusCode === 200) {
+            response.pipe(file);
+            file.on("finish", () => {
+              file.close();
+              // Copy to @2x version as well
+              fs.copyFileSync(iconPath, icon2xPath);
+              console.log("Icon image downloaded successfully");
+              resolve();
+            });
+          } else {
+            file.close();
+            if (fs.existsSync(iconPath)) {
+              fs.unlinkSync(iconPath);
+            }
+            reject(
+              new Error(`Failed to download icon: ${response.statusCode}`),
+            );
+          }
+        })
+        .on("error", (err) => {
+          if (fs.existsSync(iconPath)) {
+            fs.unlinkSync(iconPath);
+          }
+          reject(err);
+        });
+    });
+  } catch (error) {
+    console.error("Error downloading icon image:", error);
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Failed to download required icon image",
     });
   }
 
@@ -279,7 +305,7 @@ async function generateApplePass(
         wwdr,
         signerCert,
         signerKey,
-        signerKeyPassphrase,
+        ...(certPassphrase && { signerKeyPassphrase: certPassphrase }),
       },
     },
     {
@@ -323,23 +349,22 @@ async function generateGooglePass(
   console.log("User:", user.email);
   console.log("Personal URL:", personalUrl);
 
-  // Load credentials
-  const credentialsPath = path.join(
-    process.cwd(),
-    "google-wallet-credentials.json",
-  );
-
-  if (!fs.existsSync(credentialsPath)) {
+  // Load credentials from environment variables for serverless compatibility
+  if (!env.GOOGLE_WALLET_CLIENT_EMAIL || !env.GOOGLE_WALLET_PRIVATE_KEY) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
       message:
-        "Google Wallet credentials file not found. Please add google-wallet-credentials.json to project root.",
+        "Google Wallet credentials not configured. Please set GOOGLE_WALLET_CLIENT_EMAIL and GOOGLE_WALLET_PRIVATE_KEY environment variables.",
     });
   }
 
-  const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8")) as {
-    client_email: string;
-    private_key: string;
+  // Type-safe access after null checks
+  const clientEmail = env.GOOGLE_WALLET_CLIENT_EMAIL as string;
+  const privateKey = (env.GOOGLE_WALLET_PRIVATE_KEY as string).replace(/\\n/g, "\n");
+
+  const credentials = {
+    client_email: clientEmail,
+    private_key: privateKey,
   };
 
   // Create JWT client
