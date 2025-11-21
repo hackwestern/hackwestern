@@ -153,10 +153,7 @@ async function generateApplePass(
   };
 
   // Use /tmp directory for serverless compatibility
-  const tempPassPath = path.join(
-    os.tmpdir(),
-    `pass_${user.id}_${Date.now()}`,
-  );
+  const tempPassPath = path.join(os.tmpdir(), `pass_${user.id}_${Date.now()}`);
   if (!fs.existsSync(tempPassPath)) {
     fs.mkdirSync(tempPassPath, { recursive: true });
   }
