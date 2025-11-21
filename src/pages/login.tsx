@@ -19,7 +19,7 @@ export default function Login() {
   const [pending, setPending] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  
+
   // Get the callbackUrl from query params, default to /dashboard
   const callbackUrl = (router.query.callbackUrl as string) ?? "/dashboard";
 
