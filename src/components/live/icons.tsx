@@ -504,7 +504,7 @@ const SidebarIcon = ({
       return <ScheduleIcon selected={selected} />;
     case "map":
       return <MapIcon selected={selected} />;
-    case "food-menu":
+    case "menu":
       return <FoodMenuIcon selected={selected} />;
     case "mentors":
       return <MentorsIcon selected={selected} />;

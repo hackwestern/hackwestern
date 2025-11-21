@@ -74,7 +74,7 @@ function Hero() {
               Dashboard
             </Button>
           </Link>
-          <p className="pt-0.5 text-sm text-medium">applications closed!</p>
+          <p className="pt-0.5 text-sm text-medium">see you soon!</p>
         </div>
         <div className="h-[150px] sm:h-[80px]" />
       </div>

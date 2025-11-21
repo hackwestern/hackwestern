@@ -8,7 +8,6 @@ import Mentors from "~/components/live/mentors";
 import Sponsors from "~/components/live/sponsors";
 import EventLogistics from "~/components/live/event-logistics";
 import ContactUs from "~/components/live/contact-us";
-import FAQ from "~/components/live/faq";
 import Sidebar from "~/components/live/sidebar";
 import Topbar from "~/components/live/topbar";
 import { type GetServerSidePropsContext } from "next";
@@ -66,7 +65,7 @@ const TabComponent = ({ tab }: { tab: string }) => {
       return <Schedule />;
     case "map":
       return <Map />;
-    case "food-menu":
+    case "menu":
       return <FoodMenu />;
     case "mentors":
       return <Mentors />;
@@ -76,8 +75,6 @@ const TabComponent = ({ tab }: { tab: string }) => {
       return <EventLogistics />;
     case "contact-us":
       return <ContactUs />;
-    case "faq":
-      return <FAQ />;
     default:
       return <Home />;
   }

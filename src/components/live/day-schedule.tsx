@@ -43,14 +43,14 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
 
   return (
     <div
-      className={`rounded-lg border-2 p-2 sm:p-3 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 z-50 flex select-text flex-col justify-center shadow-sm transition-shadow hover:shadow-md`}
+      className={`rounded-lg border-2 p-1.5 sm:p-2.5 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 z-50 flex select-text flex-col justify-center shadow-sm transition-shadow hover:shadow-md`}
       style={{ height: `${height}px` }}
     >
-      <div className="select-text font-figtree text-[11px] font-semibold leading-tight sm:text-xs">
+      <div className="select-text font-figtree text-[9px] font-semibold leading-tight sm:text-[11px]">
         {event.title}
       </div>
       {event.location && (
-        <div className="mt-0.5 select-text font-figtree text-[9px] italic opacity-70 sm:text-[10px]">
+        <div className="mt-0.5 select-text font-figtree text-[8px] italic opacity-70 sm:text-[9px]">
           {event.location}
         </div>
       )}
@@ -88,7 +88,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
     const startEvent = timeSlots[startIdx]?.[eventKey] as
       | { title: string; location: string }
       | undefined;
-    if (!startEvent) return 80;
+    if (!startEvent) return 56;
 
     let totalHeight = 0;
     for (let i = startIdx; i < timeSlots.length; i++) {
@@ -105,25 +105,29 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
         ? getTimeInMinutes(nextEvent.time)
         : currentMinutes + 30;
       const duration = nextMinutes - currentMinutes;
-      const slotHeight = Math.max(80, (duration / 30) * 80);
+      const baseSlotHeight = 56; // must match baseSlotHeight in row rendering
+      const slotHeight = Math.max(
+        baseSlotHeight,
+        (duration / 30) * baseSlotHeight,
+      );
 
-      totalHeight += slotHeight + 8; // 8px gap between rows
+      totalHeight += slotHeight + 6; // 6px gap between rows (approx space-y-1.5)
     }
 
-    return totalHeight - 8; // Remove last gap
+    return totalHeight - 6; // Remove last gap
   };
 
   return (
-    <div className="w-full pb-4">
-      <div className="rounded-sm p-6">
+    <div className="w-full pb-3 sm:pb-4">
+      <div className="rounded-sm px-3 py-4 sm:p-6">
         {/* Header with day name */}
-        <div className="sticky left-0 mb-4 mt-2 font-figtree text-2xl font-bold text-heavy">
+        <div className="sticky left-0 mb-3 mt-1 font-figtree text-lg font-bold text-heavy sm:mb-4 sm:mt-2 sm:text-2xl">
           {day}, November{" "}
           {day === "Friday" ? "21st" : day === "Saturday" ? "22nd" : "23rd"}
         </div>
 
         {/* Timeline rows */}
-        <div className="space-y-2 ">
+        <div className="space-y-1.5 sm:space-y-2 ">
           {timeSlots.map((event, idx) => {
             const nextEvent = timeSlots[idx + 1];
             const currentMinutes = getTimeInMinutes(event.time);
@@ -134,7 +138,10 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
 
             // If there's a large gap (> 2 hours), use minimal height and insert a gap indicator row
             const isLargeGap = duration > 120;
-            const height = isLargeGap ? 60 : Math.max(80, (duration / 30) * 80);
+            const baseSlotHeight = 56; // smaller base height for mobile
+            const height = isLargeGap
+              ? 48
+              : Math.max(baseSlotHeight, (duration / 30) * baseSlotHeight);
 
             // Define event columns in order
             const eventColumns: Array<{
@@ -215,14 +222,14 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
               <>
                 <div
                   key={idx}
-                  className="grid gap-2 border-t border-gray-200 pt-1"
+                  className="grid gap-1.5 border-t border-gray-200 pt-1 sm:gap-2"
                   style={{
                     minHeight: `${height}px`,
-                    gridTemplateColumns: `70px repeat(9, 1fr)`,
+                    gridTemplateColumns: `60px repeat(9, 1fr)`,
                   }}
                 >
                   {/* Time label */}
-                  <div className="font-base flex items-start pt-2 font-figtree text-xs text-medium sm:text-sm">
+                  <div className="font-base flex items-start pt-1.5 font-figtree text-[10px] text-medium sm:pt-2 sm:text-xs">
                     {event.time}
                   </div>
 
