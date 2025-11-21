@@ -100,7 +100,9 @@ export default function RedeemErrorPage() {
         {/* Error Details */}
         <div className="space-y-1">
           <p className="font-figtree text-sm text-medium">Error:</p>
-          <p className="font-figtree text-sm text-red-600">{getErrorMessage()}</p>
+          <p className="font-figtree text-sm text-red-600">
+            {getErrorMessage()}
+          </p>
         </div>
 
         {/* Back Button */}
@@ -116,4 +118,3 @@ export default function RedeemErrorPage() {
 }
 
 export const getServerSideProps = authRedirectOrganizer;
-

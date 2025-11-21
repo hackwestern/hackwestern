@@ -233,9 +233,7 @@ const Home = () => {
                     <div className="ml-4 text-right">
                       <p
                         className={`font-figtree text-sm font-semibold ${
-                          scan.points < 0
-                            ? "text-red-600"
-                            : "text-primary-600"
+                          scan.points < 0 ? "text-red-600" : "text-primary-600"
                         }`}
                       >
                         {scan.points > 0 ? "+" : ""}
@@ -280,16 +278,17 @@ const Home = () => {
                     {pointsData?.balance ?? 0}
                   </p>
                 </div>
-                {pointsData?.earned !== null && pointsData?.earned !== undefined && (
-                  <div className="flex items-baseline justify-between border-t border-primary-200 pt-2">
-                    <p className="font-figtree text-xs text-medium">
-                      Total Earned:
-                    </p>
-                    <p className="font-figtree text-sm font-medium text-medium">
-                      {pointsData.earned} pts
-                    </p>
-                  </div>
-                )}
+                {pointsData?.earned !== null &&
+                  pointsData?.earned !== undefined && (
+                    <div className="flex items-baseline justify-between border-t border-primary-200 pt-2">
+                      <p className="font-figtree text-xs text-medium">
+                        Total Earned:
+                      </p>
+                      <p className="font-figtree text-sm font-medium text-medium">
+                        {pointsData.earned} pts
+                      </p>
+                    </div>
+                  )}
               </div>
             )}
           </div>

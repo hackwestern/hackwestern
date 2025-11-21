@@ -90,4 +90,3 @@ export default function RedeemSuccessPage() {
 }
 
 export const getServerSideProps = authRedirectOrganizer;
-

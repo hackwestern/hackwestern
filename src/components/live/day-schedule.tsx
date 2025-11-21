@@ -136,14 +136,15 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
       return null;
     }
 
-    const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+    const currentMinutes =
+      currentTime.getHours() * 60 + currentTime.getMinutes();
     const baseSlotHeight = 56;
     const gapHeight = 6; // gap between rows (space-y-1.5 = 6px)
     const rowTopOffset = 5; // border-top (1px) + pt-1 (4px) = 5px
 
     // Find the position by iterating through time slots
     let cumulativeHeight = rowTopOffset; // Start with first row's top offset
-    
+
     for (let i = 0; i < timeSlots.length; i++) {
       const event = timeSlots[i];
       if (!event) continue;
@@ -171,9 +172,9 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
       const slotHeight = isLargeGap
         ? 48
         : Math.max(baseSlotHeight, (duration / 30) * baseSlotHeight);
-      
+
       cumulativeHeight += slotHeight;
-      
+
       // Add gap for next row (space-y-1.5 doesn't apply to first row)
       if (i < timeSlots.length - 1) {
         cumulativeHeight += gapHeight;
