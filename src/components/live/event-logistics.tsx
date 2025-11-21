@@ -177,7 +177,6 @@ const EventLogistics = () => {
           <ReactMarkdown
             components={{
               h1: ({ node: _node, ...props }) => (
-
                 <h1
                   className="mb-4 mt-8 font-figtree text-2xl font-medium text-heavy"
                   {...props}
