@@ -36,11 +36,19 @@ const AddToWallet = ({
               return;
             }
 
-            if (data.walletType === "APPLE" && "pkpass" in data && typeof data.pkpass === "string") {
+            if (
+              data.walletType === "APPLE" &&
+              "pkpass" in data &&
+              typeof data.pkpass === "string"
+            ) {
               // store raw pkpass only if needed later in UI
               setPkpassSrc(data.pkpass);
               void handleDownloadPkpass(data.pkpass);
-            } else if (data.walletType === "GOOGLE" && "googleWalletUrl" in data && typeof data.googleWalletUrl === "string") {
+            } else if (
+              data.walletType === "GOOGLE" &&
+              "googleWalletUrl" in data &&
+              typeof data.googleWalletUrl === "string"
+            ) {
               setGoogleWalletUrl(data.googleWalletUrl);
               // Redirect to Google Wallet
               window.open(data.googleWalletUrl, "_blank");
