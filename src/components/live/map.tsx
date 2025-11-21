@@ -22,7 +22,7 @@ const Map = () => {
         </p>
       </div>
       <Tabs defaultValue="Floor 2">
-        <div className="flex flex-row items-center gap-4">
+        <div className="flex flex-col items-center gap-4 md:flex-row">
           <TabsList>
             <TabsTrigger value="Floor 2">Floor 2 Map</TabsTrigger>
             <TabsTrigger value="Floor 3">Floor 3 Map</TabsTrigger>
