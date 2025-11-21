@@ -138,9 +138,31 @@ const redeemPrize = async (
   userId: string,
   rewardId: number,
   costPoints: number,
+  checkQuantity = false,
 ) => {
   return withErrorHandling(async () => {
     await db.transaction(async (tx) => {
+      // Get reward to check quantity if needed
+      const reward = await tx.query.scavengerHuntRewards.findFirst({
+        where: eq(scavengerHuntRewards.id, rewardId),
+      });
+      if (!reward) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Reward not found",
+        });
+      }
+
+      // Check if reward is out of stock (if quantity is tracked)
+      if (reward.quantity !== null && reward.quantity <= 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: checkQuantity
+            ? "Reward is out of stock"
+            : "We are out of this prize unfortunately",
+        });
+      }
+
       // Check if user has enough points to redeem reward (using transaction)
       const user = await tx.query.users.findFirst({
         where: eq(users.id, userId),
@@ -161,22 +183,11 @@ const redeemPrize = async (
         });
       }
 
-      // Check if we have any more of the prize
-      const reward = await tx.query.scavengerHuntRewards.findFirst({
-        where: eq(scavengerHuntRewards.id, rewardId),
-      });
-      if (!reward || (reward.quantity && reward.quantity <= 0)) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "We are out of this prize unfortunately",
-        });
-      }
-
       // Deduct points to user
       await addPoints(tx, userId, -costPoints);
 
       // Deduct quantity for prizes with quantity
-      if (reward.quantity) {
+      if (reward.quantity !== null && reward.quantity > 0) {
         await tx
           .update(scavengerHuntRewards)
           .set({
@@ -246,6 +257,48 @@ export const scavengerHuntRouter = createTRPCRouter({
       });
     }
   }),
+
+  // Get All Scavenger Hunt Rewards (only accessible to organizers)
+  getAllRewards: protectedOrganizerProcedure.query(async () => {
+    try {
+      const rewards = await db.query.scavengerHuntRewards.findMany({
+        orderBy: (rewards, { asc }) => [asc(rewards.name)],
+      });
+
+      return rewards;
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch rewards: " + JSON.stringify(error),
+      });
+    }
+  }),
+
+  // Get Reward by ID (only accessible to organizers)
+  getRewardById: protectedOrganizerProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      try {
+        const { id } = input;
+        const reward = await db.query.scavengerHuntRewards.findFirst({
+          where: eq(scavengerHuntRewards.id, id),
+        });
+
+        if (!reward) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Reward not found" });
+        }
+
+        return reward;
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch reward: " + JSON.stringify(error),
+        });
+      }
+    }),
 
   // Get Scavenger Hunt Item by Code
   getScavengerHuntItem: publicProcedure
@@ -403,6 +456,138 @@ export const scavengerHuntRouter = createTRPCRouter({
       }, "Failed to redeem reward");
     }),
 
+  // Redeem a Reward for a User (only accessible to organizers)
+  redeemForUser: protectedOrganizerProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        rewardId: z.number(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      return withErrorHandling(async () => {
+        const { userId, rewardId } = input;
+
+        // Get user info before redemption (for return value and to verify user exists)
+        const user = await db.query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+        if (!user) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "User not found",
+          });
+        }
+
+        // Check if reward exists
+        const reward = await db.query.scavengerHuntRewards.findFirst({
+          where: eq(scavengerHuntRewards.id, rewardId),
+        });
+        if (!reward) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Reward not found",
+          });
+        }
+
+        // Redeem prize with quantity checking
+        await redeemPrize(userId, rewardId, reward.costPoints, true);
+
+        // Fetch updated reward to return current quantity
+        const updatedReward = await db.query.scavengerHuntRewards.findFirst({
+          where: eq(scavengerHuntRewards.id, rewardId),
+        });
+
+        // Return success with user info and updated reward info to avoid extra API calls
+        return {
+          success: true,
+          message: "Reward redeemed successfully",
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+          },
+          reward: updatedReward
+            ? {
+                id: updatedReward.id,
+                name: updatedReward.name,
+                quantity: updatedReward.quantity,
+                costPoints: updatedReward.costPoints,
+              }
+            : undefined,
+        };
+      }, "Failed to redeem reward");
+    }),
+
+  // Get all Scans for the current user (only accessible to users)
+  // Includes both scans (positive points) and redemptions (negative points)
+  getScans: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+
+    // Get scans with item information using join
+    const scans = await db
+      .select({
+        userId: scavengerHuntScans.userId,
+        itemId: scavengerHuntScans.itemId,
+        createdAt: scavengerHuntScans.createdAt,
+        itemCode: scavengerHuntItems.code,
+        itemDescription: scavengerHuntItems.description,
+        itemPoints: scavengerHuntItems.points,
+      })
+      .from(scavengerHuntScans)
+      .innerJoin(
+        scavengerHuntItems,
+        eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+      )
+      .where(eq(scavengerHuntScans.userId, userId));
+
+    // Get redemptions with reward information using join
+    const redemptions = await db
+      .select({
+        userId: scavengerHuntRedemptions.userId,
+        rewardId: scavengerHuntRedemptions.rewardId,
+        createdAt: scavengerHuntRedemptions.createdAt,
+        rewardName: scavengerHuntRewards.name,
+        rewardDescription: scavengerHuntRewards.description,
+        costPoints: scavengerHuntRewards.costPoints,
+      })
+      .from(scavengerHuntRedemptions)
+      .innerJoin(
+        scavengerHuntRewards,
+        eq(scavengerHuntRedemptions.rewardId, scavengerHuntRewards.id),
+      )
+      .where(eq(scavengerHuntRedemptions.userId, userId));
+
+    // Combine scans and redemptions into a unified list
+    const scanEntries = scans.map((scan) => ({
+      id: `scan-${scan.userId}-${scan.itemId}`,
+      type: "scan" as const,
+      itemId: scan.itemId,
+      itemCode: scan.itemCode,
+      itemDescription: scan.itemDescription,
+      points: scan.itemPoints ?? 0,
+      createdAt: scan.createdAt,
+    }));
+
+    const redemptionEntries = redemptions.map((redemption) => ({
+      id: `redemption-${redemption.userId}-${redemption.rewardId}-${redemption.createdAt?.getTime()}`,
+      type: "redemption" as const,
+      rewardId: redemption.rewardId,
+      itemCode: null,
+      itemDescription: redemption.rewardName ?? redemption.rewardDescription ?? "Reward",
+      points: -(redemption.costPoints ?? 0), // Negative points for redemptions
+      createdAt: redemption.createdAt,
+    }));
+
+    // Combine and sort by date (most recent first)
+    const allEntries = [...scanEntries, ...redemptionEntries].sort((a, b) => {
+      if (!a.createdAt || !b.createdAt) return 0;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+
+    return allEntries;
+  }),
+
   // Get all Redemptions (only accessible to users)
   getRedemptions: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
@@ -460,35 +645,6 @@ export const scavengerHuntRouter = createTRPCRouter({
       }
     }),
 
-  // Get a User's Own Scans
-  getScans: protectedProcedure.query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
-
-    try {
-      const scans = await db
-        .select({
-          id: scavengerHuntScans.itemId,
-          createdAt: scavengerHuntScans.createdAt,
-          itemCode: scavengerHuntItems.code,
-          itemDescription: scavengerHuntItems.description,
-          points: scavengerHuntItems.points,
-        })
-        .from(scavengerHuntScans)
-        .innerJoin(
-          scavengerHuntItems,
-          eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
-        )
-        .where(eq(scavengerHuntScans.userId, userId))
-        .orderBy(desc(scavengerHuntScans.createdAt));
-
-      return scans;
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch scans: " + JSON.stringify(error),
-      });
-    }
-  }),
 
   // Get All Scans (only accessible to organizers)
   getAllScans: protectedOrganizerProcedure
