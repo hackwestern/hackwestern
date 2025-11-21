@@ -498,13 +498,14 @@ const ScanActivityPage = () => {
       // Set success status
       setStatus("success");
 
-      // Navigate to success page with activity name and user name
+      // Navigate to success page with activity name, user name, and activity param for redirect
       const activityName = itemData?.description ?? activityParam ?? "Activity";
       void router.push({
         pathname: "/scan/success",
         query: {
           activity: activityName,
           user: userName,
+          activityParam: activityParam ?? "",
         },
       });
       return; // Exit early after successful navigation
@@ -581,7 +582,7 @@ const ScanActivityPage = () => {
           );
         }
 
-        // Navigate to already-scanned page with activity name and user name
+        // Navigate to already-scanned page with activity name, user name, and activity param for redirect
         const activityName =
           itemData?.description ?? activityParam ?? "Activity";
         void router.push({
@@ -589,6 +590,7 @@ const ScanActivityPage = () => {
           query: {
             activity: activityName,
             user: userName,
+            activityParam: activityParam ?? "",
           },
         });
         return; // Exit early, don't set error state

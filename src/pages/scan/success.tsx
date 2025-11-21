@@ -5,17 +5,29 @@ export default function ScanSuccessPage() {
   const router = useRouter();
   const [activityName, setActivityName] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [activityParam, setActivityParam] = useState<string | null>(null);
 
   useEffect(() => {
     // Get data from query params
-    const { activity, user } = router.query;
+    const { activity, user, activityParam: activityParamFromQuery } = router.query;
     if (activity && typeof activity === "string") {
       setActivityName(activity);
     }
     if (user && typeof user === "string") {
       setUserName(user);
     }
+    if (activityParamFromQuery && typeof activityParamFromQuery === "string") {
+      setActivityParam(activityParamFromQuery);
+    }
   }, [router.query]);
+
+  const handleBackToScanning = () => {
+    if (activityParam) {
+      void router.push(`/scan/${activityParam}`);
+    } else {
+      void router.push("/scavenger");
+    }
+  };
 
   const handleBackToActivities = () => {
     void router.push("/scavenger");
@@ -66,13 +78,23 @@ export default function ScanSuccessPage() {
           </div>
         )}
 
-        {/* Back Button */}
-        <button
-          onClick={handleBackToActivities}
-          className="w-full rounded-lg bg-primary px-6 py-3 font-figtree font-medium text-primary-foreground transition-colors hover:bg-primary-700"
-        >
-          Back to Activities
-        </button>
+        {/* Buttons */}
+        <div className="space-y-3">
+          {activityParam && (
+            <button
+              onClick={handleBackToScanning}
+              className="w-full rounded-lg bg-primary px-6 py-3 font-figtree font-medium text-primary-foreground transition-colors hover:bg-primary-700"
+            >
+              Back to Scanning
+            </button>
+          )}
+          <button
+            onClick={handleBackToActivities}
+            className="w-full rounded-lg border border-border bg-background px-6 py-3 font-figtree font-medium text-heavy transition-colors hover:bg-muted"
+          >
+            Back to Activities
+          </button>
+        </div>
       </div>
     </div>
   );
