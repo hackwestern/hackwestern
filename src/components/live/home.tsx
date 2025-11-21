@@ -5,24 +5,34 @@ import * as QRCode from "qrcode";
 import { useSession, signIn } from "next-auth/react";
 import { api } from "~/utils/api";
 
+// Format text: replace underscores with spaces and capitalize each word
+const formatTitle = (text: string | null | undefined): string => {
+  if (!text) return "Unknown";
+  return text
+    .replace(/_/g, " ")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
 const Home = () => {
   const { data: session, status } = useSession();
-  const [activeTab, setActiveTab] = useState<"all" | "activities" | "meals">(
-    "all",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "all" | "activities" | "meals" | "redemptions"
+  >("all");
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
 
-  const { data: scans, isLoading: isLoadingScans } =
+  // Fetch scan history
+  const { data: scans, isLoading: scansLoading } =
     api.scavengerHunt.getScans.useQuery(undefined, {
-      enabled: !!session?.user,
+      enabled: !!session?.user?.id,
     });
 
-  const filteredScans = scans?.filter((scan) => {
-    if (activeTab === "all") return true;
-    if (activeTab === "meals") return scan.itemCode?.endsWith("_meal");
-    if (activeTab === "activities") return !scan.itemCode?.endsWith("_meal");
-    return true;
-  });
+  // Fetch user points
+  const { data: pointsData, isLoading: pointsLoading } =
+    api.scavengerHunt.getPoints.useQuery(undefined, {
+      enabled: !!session?.user?.id,
+    });
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -38,6 +48,31 @@ const Home = () => {
         .catch((err) => console.error("QR code generation error:", err));
     }
   }, [session?.user?.id]);
+
+  // Filter scans based on active tab
+  const filteredScans = scans?.filter((scan) => {
+    if (activeTab === "all") return true;
+    if (activeTab === "redemptions") {
+      return scan.type === "redemption";
+    }
+    // For activities and meals tabs, exclude redemptions
+    if (scan.type === "redemption") {
+      return false;
+    }
+    if (activeTab === "meals") {
+      return scan.itemCode?.endsWith("_meal");
+    }
+    if (activeTab === "activities") {
+      return (
+        scan.itemCode?.endsWith("_act") ||
+        scan.itemCode?.endsWith("_att") ||
+        scan.itemCode?.endsWith("_win") ||
+        scan.itemCode?.endsWith("_ws") ||
+        scan.itemCode?.endsWith("_bonus")
+      );
+    }
+    return true;
+  });
 
   // Show loading state while checking authentication
   if (status === "loading") {
@@ -72,16 +107,51 @@ const Home = () => {
     <div className="flex w-full flex-col gap-6 lg:flex-row lg:gap-8">
       {/* Left Column */}
       <div className="flex w-full flex-col gap-6 lg:w-1/2">
-        {/* Upcoming Section */}
+        {/* Devpost Link Section */}
         <div className="rounded-2xl bg-primary-100 p-6">
           <h2 className="mb-4 font-figtree text-xl font-semibold text-heavy">
-            Upcoming
+            Devpost Link
           </h2>
-          <div className="rounded-xl bg-primary-50 p-4">
-            <p className="font-figtree text-sm italic text-medium">
-              No upcoming events yet, check back during the hackathon!
-            </p>
-          </div>
+          <a
+            href="https://hack-western-12.devpost.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block rounded-xl bg-white p-4 shadow-sm transition-all hover:bg-primary-50 hover:shadow-md"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <svg
+                  className="h-5 w-5 text-primary-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
+                </svg>
+                <span className="font-figtree text-sm font-medium text-heavy">
+                  hack-western-12.devpost.com
+                </span>
+              </div>
+              <svg
+                className="h-4 w-4 text-medium"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
+          </a>
         </div>
 
         {/* Scan History Section */}
@@ -122,51 +192,67 @@ const Home = () => {
             >
               Meals
             </button>
+            <button
+              onClick={() => setActiveTab("redemptions")}
+              className={`rounded-lg px-4 py-2 font-figtree text-sm font-medium transition-colors ${
+                activeTab === "redemptions"
+                  ? "bg-primary-600 text-white"
+                  : "bg-primary-200 text-heavy hover:bg-primary-300"
+              }`}
+            >
+              Redemptions
+            </button>
           </div>
 
           {/* Content */}
-          <div className="min-h-[200px] rounded-xl bg-primary-50 p-4">
-            {isLoadingScans ? (
-              <div className="flex h-full items-center justify-center py-8">
-                <p className="font-figtree text-sm italic text-medium">
-                  Loading history...
-                </p>
-              </div>
-            ) : !filteredScans || filteredScans.length === 0 ? (
-              <div className="flex h-full items-center justify-center py-8">
-                <p className="font-figtree text-sm italic text-medium">
-                  {activeTab === "all"
-                    ? "You haven't scanned anything yet!"
-                    : `No ${activeTab} scans found.`}
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
+          <div className="rounded-xl bg-primary-50 p-4">
+            {scansLoading ? (
+              <p className="font-figtree text-sm text-medium">Loading...</p>
+            ) : filteredScans && filteredScans.length > 0 ? (
+              <div className="space-y-3">
                 {filteredScans.map((scan) => (
                   <div
-                    key={`${scan.id}-${scan.createdAt?.getTime()}`}
-                    className="flex items-center justify-between rounded-lg bg-white p-3 shadow-sm transition-all hover:shadow-md"
+                    key={scan.id}
+                    className="flex items-center justify-between rounded-lg bg-white p-3 shadow-sm"
                   >
-                    <div>
-                      <p className="font-figtree font-medium text-heavy">
-                        {scan.itemDescription ?? scan.itemCode}
+                    <div className="flex-1">
+                      <p className="font-figtree text-sm font-semibold text-heavy">
+                        {formatTitle(scan.itemDescription ?? scan.itemCode)}
                       </p>
                       <p className="font-figtree text-xs text-medium">
-                        {scan.createdAt?.toLocaleDateString()} •{" "}
-                        {scan.createdAt?.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {scan.createdAt
+                          ? new Date(scan.createdAt).toLocaleString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })
+                          : "Unknown time"}
                       </p>
                     </div>
-                    <div className="rounded-full bg-primary-100 px-3 py-1">
-                      <p className="font-figtree text-xs font-semibold text-primary-700">
-                        +{scan.points} pts
+                    <div className="ml-4 text-right">
+                      <p
+                        className={`font-figtree text-sm font-semibold ${
+                          scan.points < 0 ? "text-red-600" : "text-primary-600"
+                        }`}
+                      >
+                        {scan.points > 0 ? "+" : ""}
+                        {scan.points} pts
                       </p>
                     </div>
                   </div>
                 ))}
               </div>
+            ) : (
+              <p className="font-figtree text-sm italic text-medium">
+                {activeTab === "all"
+                  ? "You haven't scanned any activities yet!"
+                  : activeTab === "meals"
+                    ? "You haven't scanned any meals yet!"
+                    : activeTab === "redemptions"
+                      ? "You haven't redeemed any prizes yet!"
+                      : "You haven't scanned any activities yet!"}
+              </p>
             )}
           </div>
         </div>
@@ -174,6 +260,41 @@ const Home = () => {
 
       {/* Right Column - Your Hacker Pass */}
       <div className="flex w-full flex-col gap-6 pb-4 lg:w-1/2">
+        {/* Points Section */}
+        <div className="rounded-2xl bg-primary-100 p-6">
+          <h2 className="mb-4 font-figtree text-xl font-semibold text-heavy">
+            Your Points
+          </h2>
+          <div className="rounded-xl bg-primary-50 p-4">
+            {pointsLoading ? (
+              <p className="font-figtree text-sm text-medium">Loading...</p>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <p className="font-figtree text-sm text-medium">
+                    Current Balance:
+                  </p>
+                  <p className="font-figtree text-2xl font-bold text-primary-600">
+                    {pointsData?.balance ?? 0}
+                  </p>
+                </div>
+                {pointsData?.earned !== null &&
+                  pointsData?.earned !== undefined && (
+                    <div className="flex items-baseline justify-between border-t border-primary-200 pt-2">
+                      <p className="font-figtree text-xs text-medium">
+                        Total Earned:
+                      </p>
+                      <p className="font-figtree text-sm font-medium text-medium">
+                        {pointsData.earned} pts
+                      </p>
+                    </div>
+                  )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* QR Code Section */}
         <div className="rounded-2xl bg-primary-100 p-6">
           {/* QR Code Display */}
           <div className="flex justify-center">

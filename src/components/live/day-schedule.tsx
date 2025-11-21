@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import type { ParsedScheduleEvent } from "~/types/schedule";
 import { getTimeInMinutes } from "~/lib/schedule";
 
@@ -66,6 +67,143 @@ interface DayScheduleProps {
 
 const DayScheduleView = ({ day, events }: DayScheduleProps) => {
   const timeSlots = events.filter((e) => e.time);
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
+
+  // Get current EST time
+  const getCurrentESTTime = (): Date => {
+    const now = new Date();
+    // EST is UTC-5, EDT is UTC-4. Using EST (UTC-5) as specified
+    const estOffset = -5 * 60; // EST offset in minutes
+    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+    const estTime = new Date(utc + estOffset * 60000);
+    return estTime;
+  };
+
+  // Check if this is the current day
+  const isCurrentDay = (): boolean => {
+    if (!currentTime) return false;
+    const currentDate = currentTime.getDate();
+    const currentMonth = currentTime.getMonth(); // 0-indexed, November is 10
+
+    // November 21 = Friday, November 22 = Saturday, November 23 = Sunday
+    if (day === "Friday" && currentDate === 21 && currentMonth === 10) {
+      return true;
+    }
+    if (day === "Saturday" && currentDate === 22 && currentMonth === 10) {
+      return true;
+    }
+    if (day === "Sunday" && currentDate === 23 && currentMonth === 10) {
+      return true;
+    }
+    return false;
+  };
+
+  // Update current time every minute at the beginning of the minute
+  useEffect(() => {
+    // Set initial time
+    setCurrentTime(getCurrentESTTime());
+
+    const updateTime = () => {
+      setCurrentTime(getCurrentESTTime());
+    };
+
+    // Calculate milliseconds until the next minute boundary (when seconds = 0)
+    const now = getCurrentESTTime();
+    const secondsUntilNextMinute = 60 - now.getSeconds();
+    const msUntilNextMinute = secondsUntilNextMinute * 1000;
+
+    let intervalId: NodeJS.Timeout | null = null;
+
+    // Set timeout for first update at the next minute boundary
+    const timeoutId = setTimeout(() => {
+      updateTime();
+      // Then set interval to update every minute (60000 ms) at :00 seconds
+      intervalId = setInterval(updateTime, 60000); // 1 minute = 60000 ms
+    }, msUntilNextMinute);
+
+    // Cleanup function
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, []);
+
+  // Calculate current time position
+  const getCurrentTimePosition = (): number | null => {
+    if (!currentTime || !isCurrentDay() || timeSlots.length === 0) {
+      return null;
+    }
+
+    const currentMinutes =
+      currentTime.getHours() * 60 + currentTime.getMinutes();
+    const baseSlotHeight = 56;
+    const gapHeight = 6; // gap between rows (space-y-1.5 = 6px)
+    const rowTopOffset = 5; // border-top (1px) + pt-1 (4px) = 5px
+
+    // Find the position by iterating through time slots
+    let cumulativeHeight = rowTopOffset; // Start with first row's top offset
+
+    for (let i = 0; i < timeSlots.length; i++) {
+      const event = timeSlots[i];
+      if (!event) continue;
+
+      const slotMinutes = getTimeInMinutes(event.time);
+      const nextEvent = timeSlots[i + 1];
+      const nextMinutes = nextEvent
+        ? getTimeInMinutes(nextEvent.time)
+        : slotMinutes + 30;
+      const duration = nextMinutes - slotMinutes;
+
+      // Check if current time is within this slot
+      if (currentMinutes >= slotMinutes && currentMinutes < nextMinutes) {
+        const timeWithinSlot = currentMinutes - slotMinutes;
+        const isLargeGap = duration > 120;
+        const slotHeight = isLargeGap
+          ? 48
+          : Math.max(baseSlotHeight, (duration / 30) * baseSlotHeight);
+        const positionInSlot = (timeWithinSlot / duration) * slotHeight;
+        return cumulativeHeight + positionInSlot;
+      }
+
+      // Add this slot's height to cumulative
+      const isLargeGap = duration > 120;
+      const slotHeight = isLargeGap
+        ? 48
+        : Math.max(baseSlotHeight, (duration / 30) * baseSlotHeight);
+
+      cumulativeHeight += slotHeight;
+
+      // Add gap for next row (space-y-1.5 doesn't apply to first row)
+      if (i < timeSlots.length - 1) {
+        cumulativeHeight += gapHeight;
+      }
+    }
+
+    // If time is before first slot, return 0
+    const firstSlotMinutes = getTimeInMinutes(timeSlots[0]!.time);
+    if (currentMinutes < firstSlotMinutes) {
+      return rowTopOffset;
+    }
+
+    // If time is after last slot, return null (don't show line)
+    return null;
+  };
+
+  const currentTimePosition = getCurrentTimePosition();
+  const showCurrentTimeLine = isCurrentDay() && currentTimePosition !== null;
+
+  // Format current time for display
+  const formatCurrentTime = (): string => {
+    if (!currentTime) return "";
+    const hours = currentTime.getHours();
+    const minutes = currentTime.getMinutes();
+    const period = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 || 12;
+    const displayMinutes = minutes.toString().padStart(2, "0");
+    return `${displayHours}:${displayMinutes} ${period}`;
+  };
 
   // Helper function to check if an event should continue (skip rendering)
   const shouldSkipEvent = (
@@ -127,7 +265,24 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
         </div>
 
         {/* Timeline rows */}
-        <div className="space-y-1.5 sm:space-y-2 ">
+        <div className="relative space-y-1.5 sm:space-y-2">
+          {/* Current time indicator line */}
+          {showCurrentTimeLine && (
+            <div
+              className="absolute left-0 right-0 z-[70] flex items-center"
+              style={{
+                top: `${currentTimePosition}px`,
+                transform: "translateY(-50%)",
+              }}
+            >
+              <div className="flex w-[70px] items-center justify-end pr-2">
+                <span className="bg-red-500 px-1.5 py-0.5 font-jetbrains-mono text-[8px] font-bold text-white sm:text-[10px]">
+                  {formatCurrentTime()}
+                </span>
+              </div>
+              <div className="h-0.5 flex-1 bg-red-500"></div>
+            </div>
+          )}
           {timeSlots.map((event, idx) => {
             const nextEvent = timeSlots[idx + 1];
             const currentMinutes = getTimeInMinutes(event.time);
