@@ -48,7 +48,7 @@ export const MentorsList: Mentor[] = [
       "UI/UX",
       "Mobile Development",
       "DevOps & Cloud",
-      "Data & AI"
+      "Data & AI",
     ],
   },
   {
@@ -120,7 +120,7 @@ export const MentorsList: Mentor[] = [
       "Back-End",
       "Mobile Development",
       "DevOps & Cloud",
-      "Data & AI"
+      "Data & AI",
     ],
   },
   {

@@ -29,8 +29,8 @@ const Mentors = () => {
                   key={tag}
                   className={`cursor-pointer rounded-md px-3 py-1.5 ${
                     selectedMentorTags.includes(tag)
-                      ? "bg-heavy text-[#ebdff7] font-medium"
-                      : "bg-[#ebdff7] text-medium font-medium"
+                      ? "bg-heavy font-medium text-[#ebdff7]"
+                      : "bg-[#ebdff7] font-medium text-medium"
                   } font-figtree transition-all hover:bg-heavy hover:text-[#ebdff7]`}
                   onClick={() => {
                     setSelectedMentorTags((prev) =>
@@ -88,7 +88,7 @@ const MentorCard = (mentor: Mentor) => {
         {mentor.tags.map((tag) => (
           <span
             key={tag}
-            className="rounded-lg bg-primary-300 p-1 px-2 font-figtree text-medium font-medium"
+            className="rounded-lg bg-primary-300 p-1 px-2 font-figtree font-medium text-medium"
           >
             {tag}
           </span>
