@@ -1,24 +1,35 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { authRedirectOrganizer } from "~/utils/redirect";
+import type { GetServerSidePropsContext } from "next";
 
-export default function ScanSuccessPage() {
+// Format text: replace underscores with spaces and capitalize each word
+const formatTitle = (text: string | null | undefined): string => {
+  if (!text) return "Unknown";
+  return text
+    .replace(/_/g, " ")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
+export default function RedeemSuccessPage() {
   const router = useRouter();
-  const [activityName, setActivityName] = useState<string | null>(null);
+  const [rewardName, setRewardName] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
-    // Get data from query params
-    const { activity, user } = router.query;
-    if (activity && typeof activity === "string") {
-      setActivityName(activity);
+    const { reward, user } = router.query;
+    if (reward && typeof reward === "string") {
+      setRewardName(reward);
     }
     if (user && typeof user === "string") {
       setUserName(user);
     }
   }, [router.query]);
 
-  const handleBackToActivities = () => {
-    void router.push("/scavenger");
+  const handleBackToRewards = () => {
+    void router.push("/scavenger/redeem");
   };
 
   return (
@@ -43,15 +54,15 @@ export default function ScanSuccessPage() {
 
         {/* Success Message */}
         <h1 className="font-dico text-3xl font-medium text-heavy">
-          Scanned Successfully
+          Redemption Successful
         </h1>
 
-        {/* Activity Name */}
-        {activityName && (
+        {/* Reward Name */}
+        {rewardName && (
           <div className="space-y-1">
-            <p className="font-figtree text-sm text-medium">Activity:</p>
+            <p className="font-figtree text-sm text-medium">Reward:</p>
             <p className="font-figtree text-lg font-medium text-heavy">
-              {activityName}
+              {formatTitle(rewardName)}
             </p>
           </div>
         )}
@@ -59,7 +70,7 @@ export default function ScanSuccessPage() {
         {/* User Name */}
         {userName && (
           <div className="space-y-1">
-            <p className="font-figtree text-sm text-medium">User:</p>
+            <p className="font-figtree text-sm text-medium">Redeemed by:</p>
             <p className="font-figtree text-lg font-medium text-heavy">
               {userName}
             </p>
@@ -68,12 +79,15 @@ export default function ScanSuccessPage() {
 
         {/* Back Button */}
         <button
-          onClick={handleBackToActivities}
+          onClick={handleBackToRewards}
           className="w-full rounded-lg bg-primary px-6 py-3 font-figtree font-medium text-primary-foreground transition-colors hover:bg-primary-700"
         >
-          Back to Activities
+          Back to Rewards
         </button>
       </div>
     </div>
   );
 }
+
+export const getServerSideProps = authRedirectOrganizer;
+

@@ -73,7 +73,7 @@ export default function AlreadyScannedPage() {
         {/* Back Button */}
         <button
           onClick={handleBackToActivities}
-          className="w-full rounded-lg bg-primary px-6 py-3 font-figtree font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          className="w-full rounded-lg bg-primary px-6 py-3 font-figtree font-medium text-primary-foreground transition-colors hover:bg-primary-700"
         >
           Back to Activities
         </button>
