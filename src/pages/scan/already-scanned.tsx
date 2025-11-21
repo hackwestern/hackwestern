@@ -84,17 +84,15 @@ export default function AlreadyScannedPage() {
 
         {/* Buttons */}
         <div className="space-y-3">
-          {activityParam && (
-            <button
-              onClick={handleBackToScanning}
-              className="w-full rounded-lg bg-primary px-6 py-3 font-figtree font-medium text-primary-foreground transition-colors hover:bg-primary-700"
-            >
-              Back to Scanning
-            </button>
-          )}
+          <button
+            onClick={handleBackToScanning}
+            className="w-full rounded-lg bg-primary px-6 py-3 font-figtree font-medium text-primary-foreground transition-colors hover:bg-primary-700"
+          >
+            Back to Scanning
+          </button>
           <button
             onClick={handleBackToActivities}
-            className="w-full rounded-lg border border-border bg-background px-6 py-3 font-figtree font-medium text-heavy transition-colors hover:bg-muted"
+            className="mx-auto font-figtree text-sm text-medium underline-offset-4 transition-colors hover:text-heavy hover:underline"
           >
             Back to Activities
           </button>

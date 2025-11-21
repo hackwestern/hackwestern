@@ -90,7 +90,7 @@ export default function ScanSuccessPage() {
           )}
           <button
             onClick={handleBackToActivities}
-            className="w-full rounded-lg border border-border bg-background px-6 py-3 font-figtree font-medium text-heavy transition-colors hover:bg-muted"
+            className="mx-auto font-figtree text-sm text-medium underline-offset-4 transition-colors hover:text-heavy hover:underline"
           >
             Back to Activities
           </button>
