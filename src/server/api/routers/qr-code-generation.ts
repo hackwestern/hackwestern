@@ -19,7 +19,6 @@ import { env } from "~/env";
 import { r2Client, R2_BUCKET, R2_PUBLIC_BASE_URL } from "~/server/storage/r2";
 import { ListObjectsV2Command, PutObjectCommand } from "@aws-sdk/client-s3";
 
-
 type User = {
   id: string;
   name: string | null;
@@ -137,7 +136,9 @@ async function generateGooglePass(
 
   // Type-safe access after null checks
   const clientEmail = env.GOOGLE_WALLET_CLIENT_EMAIL;
-  const privateKey = env.GOOGLE_WALLET_PRIVATE_KEY.split(String.raw`\n`).join('\n');
+  const privateKey = env.GOOGLE_WALLET_PRIVATE_KEY.split(String.raw`\n`).join(
+    "\n",
+  );
 
   const credentials = {
     client_email: clientEmail,
