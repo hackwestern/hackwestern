@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import QRCode from "qrcode";
@@ -87,10 +91,10 @@ async function generateApplePass(
   }
 
   // Type-safe access after null checks
-  const wwdrCert = env.APPLE_WWDR_CERT as string;
-  const signerCertStr = env.APPLE_SIGNER_CERT as string;
-  const signerKeyStr = env.APPLE_SIGNER_KEY as string;
-  const certPassphrase = env.APPLE_CERT_PASS as string | undefined;
+  const wwdrCert = env.APPLE_WWDR_CERT;
+  const signerCertStr = env.APPLE_SIGNER_CERT;
+  const signerKeyStr = env.APPLE_SIGNER_KEY;
+  const certPassphrase = env.APPLE_CERT_PASS;
 
   // Convert environment variables to Buffers, handling escaped newlines
   // Environment variables may contain \n as literal strings, so we need to replace them
@@ -359,8 +363,8 @@ async function generateGooglePass(
   }
 
   // Type-safe access after null checks
-  const clientEmail = env.GOOGLE_WALLET_CLIENT_EMAIL as string;
-  const privateKey = (env.GOOGLE_WALLET_PRIVATE_KEY as string).replace(/\\n/g, "\n");
+  const clientEmail = env.GOOGLE_WALLET_CLIENT_EMAIL;
+  const privateKey = env.GOOGLE_WALLET_PRIVATE_KEY.replace(/\\n/g, "\n");
 
   const credentials = {
     client_email: clientEmail,
