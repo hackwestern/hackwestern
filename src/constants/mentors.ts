@@ -21,12 +21,6 @@ export type Mentor = {
 
 export const MentorsList: Mentor[] = [
   {
-    name: "Afenifere Hammed Adewumi",
-    desc: "CEO of Oneremit",
-    image: "/images/mentors/afenifere_hammed_adewumi.webp",
-    tags: ["Product Management"],
-  },
-  {
     name: "Arsalaan Ali",
     desc: "Incoming Software Engineer Intern @ Tesla, Ex - Hack Western, Twilio",
     image: "/images/mentors/arsalaan_ali.webp",
@@ -64,16 +58,10 @@ export const MentorsList: Mentor[] = [
     tags: ["Front-End", "UI/UX", "Product Management"],
   },
   {
-    name: "Hugo Ngo",
-    desc: "Computer Systems Intern @ Veralto - Trojan Technologies",
-    image: "/images/mentors/hugo_ngo.webp",
-    tags: ["Back-End", "Hardware", "Data & AI"],
-  },
-  {
-    name: "Jacob Ender",
-    desc: "Quantitative Analyst @ Generation",
-    image: "/images/mentors/jacob_ender.webp",
-    tags: ["Back-End", "Data & AI"],
+    name: "Hammed Afenifere",
+    desc: "CEO of Oneremit",
+    image: "/images/mentors/afenifere_hammed_adewumi.webp",
+    tags: ["Product Management"],
   },
   {
     name: "Jack Branston",
@@ -92,12 +80,6 @@ export const MentorsList: Mentor[] = [
     desc: "Hack Western Mentor | Full-Stack & AI/ML",
     image: "/images/mentors/jasleen_bakshi.webp",
     tags: ["Front-End", "Back-End", "UI/UX", "Data & AI"],
-  },
-  {
-    name: "Jimmy Liu",
-    desc: "Software Engineering @ UWaterloo",
-    image: "/images/mentors/jimmy_liu.webp",
-    tags: ["Front-End", "Back-End", "DevOps & Cloud"],
   },
   {
     name: "Lecia Cheng",
