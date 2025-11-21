@@ -9,7 +9,11 @@ export default function AlreadyScannedPage() {
 
   useEffect(() => {
     // Get data from query params
-    const { activity, user, activityParam: activityParamFromQuery } = router.query;
+    const {
+      activity,
+      user,
+      activityParam: activityParamFromQuery,
+    } = router.query;
     if (activity && typeof activity === "string") {
       setActivityName(activity);
     }
