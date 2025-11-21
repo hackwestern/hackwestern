@@ -63,6 +63,7 @@
     "hackwestern": "file:",
     "html-to-image": "^1.10.9",
     "jimp": "^1.6.0",
+    "jsqr": "^1.4.0",
     "lucide-react": "^0.483.0",
     "motion": "^12.10.5",
     "nanoid": "^5.1.6",

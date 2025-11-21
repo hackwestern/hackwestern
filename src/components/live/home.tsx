@@ -1,8 +1,9 @@
 import Image from "next/image";
 import AddToWallet from "~/components/wallet/add-to-wallet";
 import { useState, useEffect } from "react";
-import QRCode from "qrcode";
+import * as QRCode from "qrcode";
 import { useSession, signIn } from "next-auth/react";
+import { api } from "~/utils/api";
 
 const Home = () => {
   const { data: session, status } = useSession();
@@ -10,6 +11,18 @@ const Home = () => {
     "all",
   );
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+
+  const { data: scans, isLoading: isLoadingScans } =
+    api.scavengerHunt.getScans.useQuery(undefined, {
+      enabled: !!session?.user,
+    });
+
+  const filteredScans = scans?.filter((scan) => {
+    if (activeTab === "all") return true;
+    if (activeTab === "meals") return scan.itemCode?.endsWith("_meal");
+    if (activeTab === "activities") return !scan.itemCode?.endsWith("_meal");
+    return true;
+  });
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -112,10 +125,49 @@ const Home = () => {
           </div>
 
           {/* Content */}
-          <div className="rounded-xl bg-primary-50 p-4">
-            <p className="font-figtree text-sm italic text-medium">
-              You&apos;ll see activities you scan into logged here!
-            </p>
+          <div className="min-h-[200px] rounded-xl bg-primary-50 p-4">
+            {isLoadingScans ? (
+              <div className="flex h-full items-center justify-center py-8">
+                <p className="font-figtree text-sm italic text-medium">
+                  Loading history...
+                </p>
+              </div>
+            ) : !filteredScans || filteredScans.length === 0 ? (
+              <div className="flex h-full items-center justify-center py-8">
+                <p className="font-figtree text-sm italic text-medium">
+                  {activeTab === "all"
+                    ? "You haven't scanned anything yet!"
+                    : `No ${activeTab} scans found.`}
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {filteredScans.map((scan) => (
+                  <div
+                    key={`${scan.id}-${scan.createdAt?.getTime()}`}
+                    className="flex items-center justify-between rounded-lg bg-white p-3 shadow-sm transition-all hover:shadow-md"
+                  >
+                    <div>
+                      <p className="font-figtree font-medium text-heavy">
+                        {scan.itemDescription ?? scan.itemCode}
+                      </p>
+                      <p className="font-figtree text-xs text-medium">
+                        {scan.createdAt?.toLocaleDateString()} •{" "}
+                        {scan.createdAt?.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                    <div className="rounded-full bg-primary-100 px-3 py-1">
+                      <p className="font-figtree text-xs font-semibold text-primary-700">
+                        +{scan.points} pts
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

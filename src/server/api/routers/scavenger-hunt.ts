@@ -1,4 +1,5 @@
-import { eq, and, sql, or, isNull, gt } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+import { eq, and, sql, or, isNull, gt, desc } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -102,7 +103,7 @@ const getUserRedemptions = async (userId: string) => {
 };
 
 // ! Unsafe Functions: Need to check if caller is allowed to get scans before invoking */
-const getUserScans = async (userId: string) => {
+const _getUserScans = async (userId: string) => {
   const scans = await db.query.scavengerHuntScans.findMany({
     where: eq(scavengerHuntScans.userId, userId),
   });
@@ -219,19 +220,34 @@ const recordScan = async (
       // Add points to user and record the scan
       await addPoints(tx, userId, points);
 
-      // Record the scan
+      // Record the scan with scanner ID
       await tx.insert(scavengerHuntScans).values({
         userId: userId,
-        scannerId: scannerId,
         itemId: itemId,
+        scannerId: scannerId,
       });
     });
   }, "Failed to add points");
 };
 
 export const scavengerHuntRouter = createTRPCRouter({
-  // * SCAVENGER HUNT ITEM ENDPOINTS * //
-  // Get Scavenger Hunt Item
+  // Get All Scavenger Hunt Items
+  getAllScavengerHuntItems: publicProcedure.query(async () => {
+    try {
+      const items = await db.query.scavengerHuntItems.findMany({
+        orderBy: (items, { asc }) => [asc(items.code)],
+      });
+
+      return items;
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch items: " + JSON.stringify(error),
+      });
+    }
+  }),
+
+  // Get Scavenger Hunt Item by Code
   getScavengerHuntItem: publicProcedure
     .input(z.object({ code: z.string() }))
     .query(async ({ input }) => {
@@ -241,41 +257,87 @@ export const scavengerHuntRouter = createTRPCRouter({
       }, "Failed to fetch item");
     }),
 
-  // Get Scavenge All Scavenger Hunt Items
-  getAllScavengerHuntItems: publicProcedure.query(async () => {
-    return await db.query.scavengerHuntItems.findMany({
-      where: isNull(scavengerHuntItems.deletedAt),
-    });
-  }),
-
-  // Add a Scavenger Hunt Item (only accessible to organizers)
-  addScavengerHuntItem: protectedOrganizerProcedure
-    .input(
-      z.object({
-        item: z.object({
-          code: z.string(),
-          points: z.number(),
-          description: z.string(),
-          deletedAt: z.date().optional(), // Optional: schedule deletion at a specific time for specific events with deadlines
-        }),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      return withErrorHandling(async () => {
-        const { item } = input;
-        // Add the item to the database
-        await db.insert(scavengerHuntItems).values({
-          code: item.code,
-          points: item.points,
-          description: item.description,
-          deletedAt: item.deletedAt,
+  // Get Scavenger Hunt Item by ID
+  getScavengerHuntItemById: publicProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      try {
+        const { id } = input;
+        const item = await db.query.scavengerHuntItems.findFirst({
+          where: eq(scavengerHuntItems.id, id),
         });
 
+        if (!item) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+        }
+
+        return item;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch item: " + JSON.stringify(error),
+        });
+      }
+    }),
+
+  // Scan Item (only accessible to organizers (users can't scan items themselves))
+  scan: protectedOrganizerProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        itemId: z.number().optional(),
+        itemCode: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const { userId, itemId, itemCode } = input;
+        const scannerId = ctx.session.user.id; // Get the organizer who is scanning
+
+        // Check if item exists - prefer itemId over itemCode
+        let item;
+        if (itemId) {
+          item = await db.query.scavengerHuntItems.findFirst({
+            where: eq(scavengerHuntItems.id, itemId),
+          });
+        } else if (itemCode) {
+          item = await db.query.scavengerHuntItems.findFirst({
+            where: eq(scavengerHuntItems.code, itemCode),
+          });
+        } else {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Either itemId or itemCode must be provided",
+          });
+        }
+
+        if (!item) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+        }
+
+        // Check if user exists
+        const user = await db.query.users.findFirst({
+          where: eq(users.id, userId),
+        });
+        if (!user) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+
+        // Record the scan with scanner ID
+        await recordScan(userId, scannerId, item.points, item.id);
         return {
           success: true,
-          message: "Item added successfully",
+          message: "Item scanned successfully",
         };
-      }, "Failed to add item");
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to scan item: " + JSON.stringify(error),
+        });
+      }
     }),
 
   // Delete a Scavenger Hunt Item (only accessible to organizers)
@@ -367,119 +429,176 @@ export const scavengerHuntRouter = createTRPCRouter({
       return await getUserRedemptions(requestedUserId);
     }),
 
-  // Scan Item (only accessible to organizers (users can't scan items themselves))
-  scan: protectedOrganizerProcedure
-    .input(
-      z.object({
-        userId: z.string(),
-        itemCode: z.string(),
-      }),
-    )
-    .mutation(async ({ input, ctx }) => {
-      return withErrorHandling(async () => {
-        const { userId, itemCode } = input;
-        const scannerId = ctx.session.user.id;
+  // Get User Info by UserId (only accessible to organizers)
+  getUserById: protectedOrganizerProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const { userId } = input;
 
-        // Check if item exists and is not soft-deleted (or scheduled for future deletion)
-        const item = await getScavengerHuntItemByItemCode(itemCode);
-
-        // Check if user exists
         const user = await db.query.users.findFirst({
           where: eq(users.id, userId),
         });
+
         if (!user) {
           throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         }
 
-        // Record the scan
-        await recordScan(userId, scannerId, item.points, item.id);
         return {
-          success: true,
-          message: "Item scanned successfully",
+          id: user.id,
+          name: user.name,
+          email: user.email,
         };
-      }, "Failed to scan item");
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch user: " + JSON.stringify(error),
+        });
+      }
     }),
+
+  // Get a User's Own Scans
+  getScans: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+
+    try {
+      const scans = await db
+        .select({
+          id: scavengerHuntScans.itemId,
+          createdAt: scavengerHuntScans.createdAt,
+          itemCode: scavengerHuntItems.code,
+          itemDescription: scavengerHuntItems.description,
+          points: scavengerHuntItems.points,
+        })
+        .from(scavengerHuntScans)
+        .innerJoin(
+          scavengerHuntItems,
+          eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+        )
+        .where(eq(scavengerHuntScans.userId, userId))
+        .orderBy(desc(scavengerHuntScans.createdAt));
+
+      return scans;
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch scans: " + JSON.stringify(error),
+      });
+    }
+  }),
 
   // Get All Scans (only accessible to organizers)
-  getAllScans: protectedOrganizerProcedure.query(async () => {
-    return await db.query.scavengerHuntScans.findMany();
-  }),
-
-  // Get Scans (user's get their own scans)
-  getScans: protectedOrganizerProcedure.query(async ({ ctx }) => {
-    // Get scans for itemId
-    return await getUserScans(ctx.session.user.id);
-  }),
-
-  // Get Scans by UserId (only accessible to organizers)
-  getScansByUserId: protectedOrganizerProcedure
-    .input(z.object({ requestedUserId: z.string() }))
-    .query(async ({ input }) => {
-      const { requestedUserId } = input;
-
-      // Get scans for requestedUserId
-      return await getUserScans(requestedUserId);
-    }),
-
-  // Delete a Scan by UserId and ItemId (only accessible to organizers)
-  deleteScanByUserId: protectedOrganizerProcedure
+  getAllScans: protectedOrganizerProcedure
     .input(
       z.object({
-        userId: z.string(),
-        itemId: z.number(),
+        filter: z
+          .enum([
+            "all",
+            "meals",
+            "workshops",
+            "activities",
+            "attendance",
+            "wins",
+            "bonus",
+          ])
+          .optional()
+          .default("all"),
       }),
     )
-    .mutation(async ({ input }) => {
-      return withErrorHandling(async () => {
-        const { userId, itemId } = input;
+    .query(async ({ input }) => {
+      try {
+        const { filter } = input;
 
-        await db.transaction(async (tx) => {
-          // Get the item to know how many points to deduct
-          const scavengerHuntItem = await tx.query.scavengerHuntItems.findFirst(
-            {
-              where: eq(scavengerHuntItems.id, itemId),
-            },
+        // Create alias for scanner user table
+        const scannerUsers = alias(users, "scanner");
+
+        // Get all scans with user, item, and scanner info using joins
+        const allScans = await db
+          .select({
+            userId: scavengerHuntScans.userId,
+            itemId: scavengerHuntScans.itemId,
+            scannerId: scavengerHuntScans.scannerId,
+            createdAt: scavengerHuntScans.createdAt,
+            userName: users.name,
+            userEmail: users.email,
+            itemCode: scavengerHuntItems.code,
+            itemDescription: scavengerHuntItems.description,
+            scannerName: scannerUsers.name,
+            scannerEmail: scannerUsers.email,
+          })
+          .from(scavengerHuntScans)
+          .innerJoin(users, eq(scavengerHuntScans.userId, users.id))
+          .innerJoin(
+            scavengerHuntItems,
+            eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+          )
+          .leftJoin(
+            scannerUsers,
+            eq(scavengerHuntScans.scannerId, scannerUsers.id),
+          )
+          .orderBy(desc(scavengerHuntScans.createdAt));
+
+        // Filter by category based on item code suffix
+        let filteredScans = allScans;
+        if (filter === "meals") {
+          filteredScans = allScans.filter((scan) =>
+            scan.itemCode?.endsWith("_meal"),
           );
+        } else if (filter === "workshops") {
+          filteredScans = allScans.filter((scan) =>
+            scan.itemCode?.endsWith("_ws"),
+          );
+        } else if (filter === "activities") {
+          filteredScans = allScans.filter((scan) =>
+            scan.itemCode?.endsWith("_act"),
+          );
+        } else if (filter === "attendance") {
+          filteredScans = allScans.filter((scan) =>
+            scan.itemCode?.endsWith("_att"),
+          );
+        } else if (filter === "wins") {
+          filteredScans = allScans.filter((scan) =>
+            scan.itemCode?.endsWith("_win"),
+          );
+        } else if (filter === "bonus") {
+          filteredScans = allScans.filter((scan) =>
+            scan.itemCode?.endsWith("_bonus"),
+          );
+        }
 
-          if (!scavengerHuntItem) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "Item not found",
-            });
-          }
-
-          // Check to see if scan exists
-          const scanExists = await tx.query.scavengerHuntScans.findFirst({
-            where: and(
-              eq(scavengerHuntScans.userId, userId),
-              eq(scavengerHuntScans.itemId, itemId),
-            ),
-          });
-          if (!scanExists) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "Scan not found for this user and item",
-            });
-          }
-
-          // Delete the scan and check if anything was deleted
-          await tx
-            .delete(scavengerHuntScans)
-            .where(
-              and(
-                eq(scavengerHuntScans.userId, userId),
-                eq(scavengerHuntScans.itemId, itemId),
-              ),
-            );
-
-          // Deduct points
-          await addPoints(tx, userId, -scavengerHuntItem.points, true);
+        // Format the data for display
+        return filteredScans.map((scan) => ({
+          id: `${scan.userId}-${scan.itemId}`,
+          hackerName: scan.userName ?? scan.userEmail ?? scan.userId,
+          event: scan.itemDescription ?? scan.itemCode ?? "Unknown",
+          scanner:
+            scan.scannerName ??
+            scan.scannerEmail ??
+            scan.scannerId ??
+            "Organizer", // Use actual scanner name from database
+          day: scan.createdAt
+            ? new Date(scan.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })
+            : "N/A",
+          time: scan.createdAt
+            ? new Date(scan.createdAt).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "N/A",
+          createdAt: scan.createdAt,
+        }));
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch scans: " + JSON.stringify(error),
         });
-
-        return {
-          success: true,
-          message: "Scan deleted successfully",
-        };
-      }, "Failed to delete scan");
+      }
     }),
 });

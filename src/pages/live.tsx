@@ -20,7 +20,7 @@ import { useSession } from "next-auth/react";
 
 const Live = () => {
   const searchParams = useSearchParams();
-  const tab = searchParams.get("tab") ?? "event-logistics";
+  const tab = searchParams.get("tab") ?? "home";
   const { data: session } = useSession();
 
   const getTitle = () => {
