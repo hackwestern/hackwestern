@@ -64,18 +64,6 @@ export const MentorsList: Mentor[] = [
     tags: ["Front-End", "UI/UX", "Product Management"],
   },
   {
-    name: "Hugo Ngo",
-    desc: "Computer Systems Intern @ Veralto - Trojan Technologies",
-    image: "/images/mentors/hugo_ngo.webp",
-    tags: ["Back-End", "Hardware", "Data & AI"],
-  },
-  {
-    name: "Jacob Ender",
-    desc: "Quantitative Analyst @ Generation",
-    image: "/images/mentors/jacob_ender.webp",
-    tags: ["Back-End", "Data & AI"],
-  },
-  {
     name: "Jack Branston",
     desc: "Software Engineering Intern @ Scotiabank",
     image: "/images/mentors/jack_branston.webp",
@@ -92,12 +80,6 @@ export const MentorsList: Mentor[] = [
     desc: "Hack Western Mentor | Full-Stack & AI/ML",
     image: "/images/mentors/jasleen_bakshi.webp",
     tags: ["Front-End", "Back-End", "UI/UX", "Data & AI"],
-  },
-  {
-    name: "Jimmy Liu",
-    desc: "Software Engineering @ UWaterloo",
-    image: "/images/mentors/jimmy_liu.webp",
-    tags: ["Front-End", "Back-End", "DevOps & Cloud"],
   },
   {
     name: "Lecia Cheng",
