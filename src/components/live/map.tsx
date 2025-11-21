@@ -11,7 +11,7 @@ const Map = () => {
   const [scale3, setScale3] = useState(1);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex h-screen flex-col gap-4">
       <div className="flex flex-col gap-2">
         <p className="font-figtree text-base text-medium">
           This year&apos;s venue will be at Somerville House & Thames Hall!
