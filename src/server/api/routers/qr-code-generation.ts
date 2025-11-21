@@ -14,11 +14,7 @@ import crypto from "crypto";
 import { env } from "~/env";
 import { r2Client, R2_BUCKET, R2_PUBLIC_BASE_URL } from "~/server/storage/r2";
 import { ListObjectsV2Command, PutObjectCommand } from "@aws-sdk/client-s3";
-import { PKPass } from "passkit-generator";
-import path from "path";
-import os from "os";
-import fs from "fs";
-import https from "https";
+
 
 type User = {
   id: string;
@@ -118,7 +114,6 @@ async function generateApplePass(
   };
 }
 
-// Generate a Google Wallet pass for a single user
 async function generateGooglePass(
   user: User,
   personalUrl: string,
@@ -139,7 +134,7 @@ async function generateGooglePass(
 
   // Type-safe access after null checks
   const clientEmail = env.GOOGLE_WALLET_CLIENT_EMAIL;
-  const privateKey = env.GOOGLE_WALLET_PRIVATE_KEY.replace(/\\n/g, "\n");
+  const privateKey = env.GOOGLE_WALLET_PRIVATE_KEY.split(String.raw`\n`).join('\n');
 
   const credentials = {
     client_email: clientEmail,
