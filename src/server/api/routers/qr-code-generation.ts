@@ -155,8 +155,10 @@ async function generateApplePass(
   );
 
   // Download images BEFORE copying from original pass
-  const bannerUrl = "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/banner.png";
-  const logoUrl = "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/logo.png";
+  const bannerUrl =
+    "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/banner.png";
+  const logoUrl =
+    "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/logo.png";
 
   const stripPath = path.join(tempPassPath, "strip.png");
   const strip2xPath = path.join(tempPassPath, "strip@2x.png");
@@ -167,29 +169,33 @@ async function generateApplePass(
   try {
     await new Promise<void>((resolve, reject) => {
       const file = fs.createWriteStream(stripPath);
-      https.get(bannerUrl, (response) => {
-        if (response.statusCode === 200) {
-          response.pipe(file);
-          file.on("finish", () => {
+      https
+        .get(bannerUrl, (response) => {
+          if (response.statusCode === 200) {
+            response.pipe(file);
+            file.on("finish", () => {
+              file.close();
+              // Copy to @2x version as well
+              fs.copyFileSync(stripPath, strip2xPath);
+              console.log("Strip image downloaded successfully");
+              resolve();
+            });
+          } else {
             file.close();
-            // Copy to @2x version as well
-            fs.copyFileSync(stripPath, strip2xPath);
-            console.log("Strip image downloaded successfully");
-            resolve();
-          });
-        } else {
-          file.close();
+            if (fs.existsSync(stripPath)) {
+              fs.unlinkSync(stripPath);
+            }
+            reject(
+              new Error(`Failed to download banner: ${response.statusCode}`),
+            );
+          }
+        })
+        .on("error", (err) => {
           if (fs.existsSync(stripPath)) {
             fs.unlinkSync(stripPath);
           }
-          reject(new Error(`Failed to download banner: ${response.statusCode}`));
-        }
-      }).on("error", (err) => {
-        if (fs.existsSync(stripPath)) {
-          fs.unlinkSync(stripPath);
-        }
-        reject(err);
-      });
+          reject(err);
+        });
     });
   } catch (error) {
     console.error("Error downloading strip image:", error);
@@ -200,29 +206,33 @@ async function generateApplePass(
   try {
     await new Promise<void>((resolve, reject) => {
       const file = fs.createWriteStream(logoPath);
-      https.get(logoUrl, (response) => {
-        if (response.statusCode === 200) {
-          response.pipe(file);
-          file.on("finish", () => {
+      https
+        .get(logoUrl, (response) => {
+          if (response.statusCode === 200) {
+            response.pipe(file);
+            file.on("finish", () => {
+              file.close();
+              // Copy to @2x version as well
+              fs.copyFileSync(logoPath, logo2xPath);
+              console.log("Logo image downloaded successfully");
+              resolve();
+            });
+          } else {
             file.close();
-            // Copy to @2x version as well
-            fs.copyFileSync(logoPath, logo2xPath);
-            console.log("Logo image downloaded successfully");
-            resolve();
-          });
-        } else {
-          file.close();
+            if (fs.existsSync(logoPath)) {
+              fs.unlinkSync(logoPath);
+            }
+            reject(
+              new Error(`Failed to download logo: ${response.statusCode}`),
+            );
+          }
+        })
+        .on("error", (err) => {
           if (fs.existsSync(logoPath)) {
             fs.unlinkSync(logoPath);
           }
-          reject(new Error(`Failed to download logo: ${response.statusCode}`));
-        }
-      }).on("error", (err) => {
-        if (fs.existsSync(logoPath)) {
-          fs.unlinkSync(logoPath);
-        }
-        reject(err);
-      });
+          reject(err);
+        });
     });
   } catch (error) {
     console.error("Error downloading logo image:", error);

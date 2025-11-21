@@ -94,8 +94,8 @@ const AddToWallet = ({
       <Button
         onClick={handleGeneratePass}
         disabled={isLoading}
-        className={`h-auto w-[130px] p-0 sm:w-[160px] md:w-[180px] transition-opacity ${
-          isLoading ? "opacity-40 cursor-not-allowed" : ""
+        className={`h-auto w-[130px] p-0 transition-opacity sm:w-[160px] md:w-[180px] ${
+          isLoading ? "cursor-not-allowed opacity-40" : ""
         }`}
       >
         <Image
