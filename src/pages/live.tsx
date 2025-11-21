@@ -16,12 +16,20 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
 import { formatTitle } from "~/utils/format";
+import { useSession } from "next-auth/react";
 
 const Live = () => {
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab") ?? "event-logistics";
+  const { data: session } = useSession();
 
-  const title = formatTitle(tab);
+  const getTitle = () => {
+    if (tab === "home" && session?.user?.name) {
+      const firstName = session.user.name.split(" ")[0];
+      return `Hi ${firstName}!`;
+    }
+    return formatTitle(tab);
+  };
 
   return (
     <>
@@ -38,9 +46,9 @@ const Live = () => {
         <Sidebar />
         <div className="flex max-h-screen min-h-screen w-screen flex-col gap-4 bg-[#fbfbfb] p-5 sm:gap-8 sm:p-10">
           <div className="hidden font-dico text-xl text-heavy md:flex xl:text-2xl 2xl:text-3xl">
-            {title}
+            {getTitle()}
           </div>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden">
             <TabComponent tab={tab} />
           </div>
         </div>
@@ -73,43 +81,3 @@ const TabComponent = ({ tab }: { tab: string }) => {
 };
 
 export default Live;
-
-/*
-export const getServerSideProps = async (
-  context: GetServerSidePropsContext,
-) => {
-  // run existing verification redirect first
-  const verification = await notVerifiedRedirectDashboard(context);
-  //if ("redirect" in verification) return verification;
-  return verification;
-  /*
-  try {
-    const session = await getServerSession(
-      context.req,
-      context.res,
-      authOptions,
-    );
-    if (!session) return verification;
-
-    const userId = session.user.id;
-
-    const application = await db.query.applications.findFirst({
-      where: (schema, { eq }) => eq(schema.userId, userId),
-    });
-
-    const status = application?.status ?? "NOT_STARTED";
-
-    if (status !== "ACCEPTED") {
-      return {
-        redirect: {
-          destination: "/dashboard",
-          permanent: false,
-        },
-      };
-    }
-
-    return verification;
-  } catch (err) {
-    return verification;
-  }
-};*/

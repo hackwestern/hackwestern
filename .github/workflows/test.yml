@@ -29,6 +29,13 @@ jobs:
       R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
       R2_PUBLIC_BASE_URL: ${{ secrets.R2_PUBLIC_BASE_URL }}
       GOOGLE_SHEETS_API_KEY: ${{ secrets.GOOGLE_SHEETS_API_KEY }}
+      GOOGLE_WALLET_CLIENT_EMAIL: ${{ secrets.GOOGLE_WALLET_CLIENT_EMAIL }}
+      GOOGLE_WALLET_PRIVATE_KEY: ${{ secrets.GOOGLE_WALLET_PRIVATE_KEY }}
+      GOOGLE_WALLET_ISSUER_ID: ${{ secrets.GOOGLE_WALLET_ISSUER_ID }}
+      APPLE_WWDR_CERT: ${{ secrets.APPLE_WWDR_CERT }}
+      APPLE_SIGNER_CERT: ${{ secrets.APPLE_SIGNER_CERT }}
+      APPLE_SIGNER_KEY: ${{ secrets.APPLE_SIGNER_KEY }}
+      
     steps:
       - name: Checkout
         uses: actions/checkout@v4
