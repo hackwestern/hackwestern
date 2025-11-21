@@ -44,7 +44,7 @@ const Live = () => {
       <div className="flex h-screen w-screen flex-col md:flex-row">
         <Topbar />
         <Sidebar />
-        <div className="flex max-h-screen min-h-screen w-screen flex-col gap-4 bg-[#fbfbfb] p-5 sm:gap-8 sm:p-10">
+        <div className="flex w-screen flex-col gap-4 bg-[#fbfbfb] p-5 sm:gap-8 sm:p-10">
           <div className="hidden font-dico text-xl text-heavy md:flex xl:text-2xl 2xl:text-3xl">
             {getTitle()}
           </div>
