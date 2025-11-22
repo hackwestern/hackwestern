@@ -406,8 +406,6 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                     </div>
                   ))}
                 </div>
-
-                
               </>
             );
           })}
