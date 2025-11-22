@@ -150,7 +150,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
     const currentMinutes =
       currentTime.getHours() * 60 + currentTime.getMinutes();
     const baseSlotHeight = 56;
-    const gapHeight = isDesktop ? 8 : 6; // space-y-1.5 (6px) mobile, space-y-2 (8px) desktop
+    const gapHeight = isDesktop ? 8.5 : 6; // Adjusted for desktop rendering
     const rowTopOffset = 5; // border-top (1px) + pt-1 (4px) = 5px
 
     // Find the position by iterating through time slots
