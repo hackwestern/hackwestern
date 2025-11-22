@@ -72,12 +72,12 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
 
   // Detect desktop screen size (sm breakpoint is 640px)
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(min-width: 640px)');
+    const mediaQuery = window.matchMedia("(min-width: 640px)");
     setIsDesktop(mediaQuery.matches);
 
     const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
-    mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
+    mediaQuery.addEventListener("change", handler);
+    return () => mediaQuery.removeEventListener("change", handler);
   }, []);
 
   // Get current EST time
