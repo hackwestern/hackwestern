@@ -63,8 +63,21 @@ const Mentors = () => {
 };
 
 const MentorCard = (mentor: Mentor) => {
+  const handleClick = () => {
+    if (mentor.linkedin) {
+      window.open(mentor.linkedin, "_blank", "noopener,noreferrer");
+    }
+  };
+
   return (
-    <div className="flex flex-col rounded-lg border border-[#E2E8F0] bg-white p-4 2xl:p-6 3xl:p-8">
+    <div
+      onClick={handleClick}
+      className={`flex flex-col rounded-lg border border-[#E2E8F0] bg-white p-4 transition-all duration-200 2xl:p-6 3xl:p-8 ${
+        mentor.linkedin
+          ? "cursor-pointer hover:border-heavy hover:shadow-lg hover:shadow-heavy/20"
+          : ""
+      }`}
+    >
       <div className="relative my-4 h-24 w-24 overflow-clip rounded-lg border bg-[#E6E2F0] 2xl:h-32 2xl:w-32 3xl:h-40 3xl:w-40">
         {mentor.image && (
           <Image
