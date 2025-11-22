@@ -74,7 +74,7 @@ const MentorCard = (mentor: Mentor) => {
       onClick={handleClick}
       className={`flex flex-col rounded-lg border border-[#E2E8F0] bg-white p-4 transition-all duration-200 2xl:p-6 3xl:p-8 ${
         mentor.linkedin
-          ? "cursor-pointer hover:border-heavy hover:shadow-lg hover:shadow-heavy/20"
+          ? "hover:shadow-heavy/20 cursor-pointer hover:border-heavy hover:shadow-lg"
           : ""
       }`}
     >
