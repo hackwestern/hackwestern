@@ -68,6 +68,17 @@ interface DayScheduleProps {
 const DayScheduleView = ({ day, events }: DayScheduleProps) => {
   const timeSlots = events.filter((e) => e.time);
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // Detect desktop screen size (sm breakpoint is 640px)
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 640px)");
+    setIsDesktop(mediaQuery.matches);
+
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mediaQuery.addEventListener("change", handler);
+    return () => mediaQuery.removeEventListener("change", handler);
+  }, []);
 
   // Get current EST time
   const getCurrentESTTime = (): Date => {
@@ -139,7 +150,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
     const currentMinutes =
       currentTime.getHours() * 60 + currentTime.getMinutes();
     const baseSlotHeight = 56;
-    const gapHeight = 6; // gap between rows (space-y-1.5 = 6px)
+    const gapHeight = isDesktop ? 8.5 : 6; // Adjusted for desktop rendering
     const rowTopOffset = 5; // border-top (1px) + pt-1 (4px) = 5px
 
     // Find the position by iterating through time slots
@@ -161,7 +172,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
         const timeWithinSlot = currentMinutes - slotMinutes;
         const isLargeGap = duration > 120;
         const slotHeight = isLargeGap
-          ? 48
+          ? 20
           : Math.max(baseSlotHeight, (duration / 30) * baseSlotHeight);
         const positionInSlot = (timeWithinSlot / duration) * slotHeight;
         return cumulativeHeight + positionInSlot;
@@ -170,10 +181,15 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
       // Add this slot's height to cumulative
       const isLargeGap = duration > 120;
       const slotHeight = isLargeGap
-        ? 48
+        ? 20
         : Math.max(baseSlotHeight, (duration / 30) * baseSlotHeight);
 
       cumulativeHeight += slotHeight;
+
+      // Add the gap indicator row height if there's a large gap
+      if (isLargeGap) {
+        cumulativeHeight += 40 + gapHeight; // 40px gap indicator + 6px gap
+      }
 
       // Add gap for next row (space-y-1.5 doesn't apply to first row)
       if (i < timeSlots.length - 1) {
@@ -275,7 +291,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                 transform: "translateY(-50%)",
               }}
             >
-              <div className="flex w-[70px] items-center justify-end pr-2">
+              <div className="flex w-[80px] items-center justify-end pr-2">
                 <span className="bg-red-500 px-1.5 py-0.5 font-jetbrains-mono text-[8px] font-bold text-white sm:text-[10px]">
                   {formatCurrentTime()}
                 </span>
@@ -295,7 +311,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
             const isLargeGap = duration > 120;
             const baseSlotHeight = 56; // smaller base height for mobile
             const height = isLargeGap
-              ? 48
+              ? 20
               : Math.max(baseSlotHeight, (duration / 30) * baseSlotHeight);
 
             // Define event columns in order
@@ -411,20 +427,20 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                 {isLargeGap && (
                   <div
                     key={`gap-${idx}`}
-                    className="grid grid-cols-[70px_repeat(9,1fr)] gap-2 rounded-md border border-dashed border-gray-300 bg-gray-100"
-                    style={{ minHeight: "60px" }}
+                    className="grid grid-cols-[60px_repeat(9,1fr)] gap-1.5 rounded-md border border-dashed border-gray-300 bg-gray-50 sm:gap-2"
+                    style={{ minHeight: "40px" }}
                   >
                     <div className="flex items-center justify-center text-xs font-medium text-gray-400">
                       ⋯
                     </div>
-                    {Array(8)
+                    {Array(9)
                       .fill(null)
                       .map((_, colIdx) => (
                         <div
                           key={colIdx}
                           className="flex items-center justify-center text-gray-300"
                         >
-                          <span className="text-2xl">⋯</span>
+                          <span className="text-xl">⋯</span>
                         </div>
                       ))}
                   </div>
