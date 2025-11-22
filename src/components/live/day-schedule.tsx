@@ -407,28 +407,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                   ))}
                 </div>
 
-                {/* Gap indicator row */}
-                {isLargeGap && (
-                  <div
-                    key={`gap-${idx}`}
-                    className="grid grid-cols-[70px_repeat(9,1fr)] gap-2 rounded-md border border-dashed border-gray-300 bg-gray-100"
-                    style={{ minHeight: "60px" }}
-                  >
-                    <div className="flex items-center justify-center text-xs font-medium text-gray-400">
-                      ⋯
-                    </div>
-                    {Array(8)
-                      .fill(null)
-                      .map((_, colIdx) => (
-                        <div
-                          key={colIdx}
-                          className="flex items-center justify-center text-gray-300"
-                        >
-                          <span className="text-2xl">⋯</span>
-                        </div>
-                      ))}
-                  </div>
-                )}
+                
               </>
             );
           })}
