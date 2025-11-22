@@ -26,12 +26,14 @@ const Home = () => {
   const { data: scans, isLoading: scansLoading } =
     api.scavengerHunt.getScans.useQuery(undefined, {
       enabled: !!session?.user?.id,
+      refetchInterval: 5000,
     });
 
   // Fetch user points
   const { data: pointsData, isLoading: pointsLoading } =
     api.scavengerHunt.getPoints.useQuery(undefined, {
       enabled: !!session?.user?.id,
+      refetchInterval: 5000,
     });
 
   useEffect(() => {

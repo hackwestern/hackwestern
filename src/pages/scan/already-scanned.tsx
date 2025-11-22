@@ -9,7 +9,15 @@ export default function AlreadyScannedPage() {
 
   useEffect(() => {
     // Get data from query params
+<<<<<<< HEAD
     const { activity, user, activityParam: activityParamFromQuery } = router.query;
+=======
+    const {
+      activity,
+      user,
+      activityParam: activityParamFromQuery,
+    } = router.query;
+>>>>>>> bd05359570221fe6b1a2378ac2fcf5e1e45078c4
     if (activity && typeof activity === "string") {
       setActivityName(activity);
     }
@@ -84,6 +92,7 @@ export default function AlreadyScannedPage() {
 
         {/* Buttons */}
         <div className="space-y-3">
+<<<<<<< HEAD
           {activityParam && (
             <button
               onClick={handleBackToScanning}
@@ -95,6 +104,17 @@ export default function AlreadyScannedPage() {
           <button
             onClick={handleBackToActivities}
             className="w-full rounded-lg border border-border bg-background px-6 py-3 font-figtree font-medium text-heavy transition-colors hover:bg-muted"
+=======
+          <button
+            onClick={handleBackToScanning}
+            className="w-full rounded-lg bg-primary px-6 py-3 font-figtree font-medium text-primary-foreground transition-colors hover:bg-primary-700"
+          >
+            Back to Scanning
+          </button>
+          <button
+            onClick={handleBackToActivities}
+            className="mx-auto font-figtree text-sm text-medium underline-offset-4 transition-colors hover:text-heavy hover:underline"
+>>>>>>> bd05359570221fe6b1a2378ac2fcf5e1e45078c4
           >
             Back to Activities
           </button>
