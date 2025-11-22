@@ -658,6 +658,7 @@ export const scavengerHuntRouter = createTRPCRouter({
             "all",
             "meals",
             "workshops",
+            "sponsor_workshops",
             "activities",
             "attendance",
             "wins",
@@ -709,6 +710,10 @@ export const scavengerHuntRouter = createTRPCRouter({
         } else if (filter === "workshops") {
           filteredScans = allScans.filter((scan) =>
             scan.itemCode?.endsWith("_ws"),
+          );
+        } else if (filter === "sponsor_workshops") {
+          filteredScans = allScans.filter((scan) =>
+            scan.itemCode?.endsWith("_sw"),
           );
         } else if (filter === "activities") {
           filteredScans = allScans.filter((scan) =>

@@ -27,6 +27,7 @@ const Scan = () => {
     const categories: Category[] = [
       { title: "Meals", items: [] },
       { title: "Regular Workshops", items: [] },
+      { title: "Sponsor Workshops", items: [] },
       { title: "Non-Winnable Activities", items: [] },
       { title: "Winnable Activities (Attendance)", items: [] },
       { title: "Winnable Activities (Win)", items: [] },
@@ -38,14 +39,16 @@ const Scan = () => {
         categories[0]!.items.push(item);
       } else if (item.code.endsWith("_ws")) {
         categories[1]!.items.push(item);
-      } else if (item.code.endsWith("_act")) {
+      } else if (item.code.endsWith("_sw")) {
         categories[2]!.items.push(item);
-      } else if (item.code.endsWith("_att")) {
+      } else if (item.code.endsWith("_act")) {
         categories[3]!.items.push(item);
-      } else if (item.code.endsWith("_win")) {
+      } else if (item.code.endsWith("_att")) {
         categories[4]!.items.push(item);
-      } else if (item.code.endsWith("_bonus")) {
+      } else if (item.code.endsWith("_win")) {
         categories[5]!.items.push(item);
+      } else if (item.code.endsWith("_bonus")) {
+        categories[6]!.items.push(item);
       }
     });
 

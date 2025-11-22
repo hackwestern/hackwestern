@@ -70,6 +70,7 @@ const Home = () => {
         scan.itemCode?.endsWith("_att") ||
         scan.itemCode?.endsWith("_win") ||
         scan.itemCode?.endsWith("_ws") ||
+        scan.itemCode?.endsWith("_sw") ||
         scan.itemCode?.endsWith("_bonus")
       );
     }
