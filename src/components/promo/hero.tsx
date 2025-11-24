@@ -75,7 +75,7 @@ function Hero() {
             </Button>
           </Link>
           <div>
-            <p className="pt-0.5 text-md text-medium">Thanks for coming!</p>
+            <p className="text-md pt-0.5 text-medium">Thanks for coming!</p>
             <p className=" text-md text-medium">See you next year!</p>
           </div>
         </div>

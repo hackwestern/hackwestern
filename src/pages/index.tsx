@@ -48,7 +48,10 @@ export default function Home() {
         </Canvas>
         <Footer />
         <MLHTrustBadge />
-        <Link href="https://hack-western-12.devpost.com/project-gallery" prefetch={true}>
+        <Link
+          href="https://hack-western-12.devpost.com/project-gallery"
+          prefetch={true}
+        >
           <motion.div
             className="fixed right-24 top-6 z-50 w-fit md:right-28 lg:right-44"
             initial={{ opacity: 0 }}
