@@ -71,10 +71,13 @@ function Hero() {
           </div>
           <Link href="/live" prefetch={true}>
             <Button className="w-48" variant="primary" size="lg">
-              Dashboard
+              See Submissions
             </Button>
           </Link>
-          <p className="pt-0.5 text-sm text-medium">see you soon!</p>
+          <div>
+            <p className="text-md pt-0.5 text-medium">Thanks for coming!</p>
+            <p className=" text-md text-medium">See you next year!</p>
+          </div>
         </div>
         <div className="h-[150px] sm:h-[80px]" />
       </div>
