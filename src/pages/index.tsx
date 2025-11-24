@@ -49,7 +49,7 @@ export default function Home() {
         <Footer />
         <MLHTrustBadge />
         <Link
-          href="https://hack-western-12.devpost.com/project-gallery"
+          href="/live"
           prefetch={true}
         >
           <motion.div

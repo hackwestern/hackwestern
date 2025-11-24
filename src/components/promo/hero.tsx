@@ -69,7 +69,7 @@ function Hero() {
               The world is your canvas.
             </div>
           </div>
-          <Link href="/live" prefetch={true}>
+          <Link href="https://hack-western-12.devpost.com/project-gallery" prefetch={true}>
             <Button className="w-48" variant="primary" size="lg">
               See Submissions
             </Button>
