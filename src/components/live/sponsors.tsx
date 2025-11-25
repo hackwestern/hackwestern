@@ -120,20 +120,14 @@ const Sponsors = () => {
               scale: 3.0,
             };
           }
-          if (tierName === "Diamond Sponsors") {
+          if (tierName === "Diamond Sponsors" || tierName === "Gold Sponsors") {
             return {
               gridCols: "grid-cols-1 max-w-2xl mx-auto",
               titleSize: "text-3xl md:text-4xl",
               scale: 2.16,
             };
           }
-          if (tierName === "Gold Sponsors") {
-            return {
-              gridCols: "grid-cols-1 sm:grid-cols-2",
-              titleSize: "text-2xl md:text-3xl",
-              scale: 1.68,
-            };
-          }
+          
           // Bronze and In-Kind use default
           return {
             gridCols: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
