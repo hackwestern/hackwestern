@@ -45,14 +45,6 @@ export const SPONSOR_TIERS: SponsorTier[] = [
         description:
           "Canada Life is a leading insurance, wealth management and benefits provider focused on improving the financial, physical, and mental well-being of Canadians. For over 175 years, individuals, families and business owners across Canada have trusted us to provide sound guidance and deliver on the promises we've made. We proudly serve more than 14 million customer relationships from coast to coast. Canada Life is a subsidiary of Great-West Lifeco Inc. and a member of the Power Corporation of Canada group of companies. Visit canadalife.com to learn more.",
       },
-      {
-        name: "Sentra",
-        // TODO: Add Sentra logo
-        logo: "/sponsors/sentra.png",
-        link: "https://www.sentra.ai/",
-        description:
-          "Sentra is an AI alignment officer who creates a unified company memory, remembering details everyone forgot and alerting you when your teams are misaligned. It lives in the company like any other teammate - integrating with all communication platforms and workspaces, even sitting in meetings as your team's own notetaker. Sentra helps companies kill scaling pains by making organizational data digestible and flagging misalignments across the company before they grow out of proportion.",
-      },
     ],
   },
   {
