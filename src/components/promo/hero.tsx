@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
-import { PreregistrationForm } from "../preregistration-form";
 import { DraggableImage } from "~/components/canvas/draggable";
 import { CanvasComponent } from "../canvas/component";
 import Image from "next/image";
 import { useState } from "react";
 import { coordinates } from "~/constants/canvas";
+import { Button } from "../ui/button";
+import Link from "next/link";
 
 function Hero() {
   const [hasBeenDragged, setHasBeenDragged] = useState(false);
@@ -50,7 +51,7 @@ function Hero() {
               />
             </motion.div>
           </div>
-          <div className="my-auto flex scale-[0.85] flex-col items-center justify-center space-y-10 pb-6 sm:scale-100 sm:space-y-12">
+          <div className="my-auto flex scale-[0.85] flex-col items-center justify-center space-y-10 pb-4 sm:scale-100 sm:space-y-12">
             <div className="text-md font-jetbrains-mono text-medium">
               NOV 21 - NOV 23, 2025
             </div>
@@ -64,11 +65,19 @@ function Hero() {
                 draggable="false"
               />
             </div>
-            <div className="text-md font-figtree text-medium">
+            <div className="font-figtree text-lg font-medium text-medium">
               The world is your canvas.
             </div>
           </div>
-          <PreregistrationForm />
+          <Link href="https://hack-western-12.devpost.com/project-gallery" prefetch={true}>
+            <Button className="w-48" variant="primary" size="lg">
+              See Submissions
+            </Button>
+          </Link>
+          <div>
+            <p className="text-md pt-0.5 text-medium">Thanks for coming!</p>
+            <p className=" text-md text-medium">See you next year!</p>
+          </div>
         </div>
         <div className="h-[150px] sm:h-[80px]" />
       </div>

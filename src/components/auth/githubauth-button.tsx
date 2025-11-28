@@ -15,15 +15,15 @@ function GithubAuthButton({
         void signIn("github", { callbackUrl: redirect });
       }}
       variant="secondary"
-      size="default"
+      size="lg"
       full
     >
-      <div className="flex flex-row items-center justify-center gap-1">
+      <div className="flex flex-row items-center justify-center gap-2">
         <Image
           src="/images/githublogo.svg"
           alt="github logo"
-          width={25}
-          height={25}
+          width={20}
+          height={20}
         />
         <span>Sign {register ? "up" : "in"} with Github</span>
       </div>

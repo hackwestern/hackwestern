@@ -1,5 +1,6 @@
 import { type GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
+import { getToken } from "next-auth/jwt";
 import { isPastDeadline } from "~/lib/date";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
@@ -50,6 +51,13 @@ export const authRedirectHacker = async (context: GetServerSidePropsContext) =>
 export const hackerLoginRedirect = async (
   context: GetServerSidePropsContext,
 ) => {
+  const token = await getToken({
+    req: context.req,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+
+  if (!token) return { props: {} };
+
   const session = await getServerSession(context.req, context.res, authOptions);
 
   if (session) {

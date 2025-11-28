@@ -1,144 +1,334 @@
-import { api } from "~/utils/api";
-import { Button } from "../ui/button";
-import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
+import AddToWallet from "~/components/wallet/add-to-wallet";
+import { useState, useEffect } from "react";
+import * as QRCode from "qrcode";
+import { useSession, signIn } from "next-auth/react";
+import { api } from "~/utils/api";
+
+// Format text: replace underscores with spaces and capitalize each word
+const formatTitle = (text: string | null | undefined): string => {
+  if (!text) return "Unknown";
+  return text
+    .replace(/_/g, " ")
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
 const Home = () => {
-  const { data: application } = api.application.get.useQuery();
+  const { data: session, status } = useSession();
+  const [activeTab, setActiveTab] = useState<
+    "all" | "activities" | "meals" | "redemptions"
+  >("all");
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
 
-  return (
-    <div className="flex w-full flex-row justify-start p-10 ">
-      <div className="flex w-full flex-col md:w-2/3">
-        <h2 className="font-MagicRetro text-5xl">
-          Hi {application?.firstName ? `${application.firstName}` : "Hacker"},
+  // Fetch scan history
+  const { data: scans, isLoading: scansLoading } =
+    api.scavengerHunt.getScans.useQuery(undefined, {
+      enabled: !!session?.user?.id,
+      refetchInterval: 5000,
+    });
+
+  // Fetch user points
+  const { data: pointsData, isLoading: pointsLoading } =
+    api.scavengerHunt.getPoints.useQuery(undefined, {
+      enabled: !!session?.user?.id,
+      refetchInterval: 5000,
+    });
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      QRCode.toDataURL(session.user.id, {
+        width: 300,
+        errorCorrectionLevel: "H",
+        color: {
+          dark: "#5B2C6F",
+          light: "#FFFFFF",
+        },
+      })
+        .then((url) => setQrCodeUrl(url))
+        .catch((err) => console.error("QR code generation error:", err));
+    }
+  }, [session?.user?.id]);
+
+  // Filter scans based on active tab
+  const filteredScans = scans?.filter((scan) => {
+    if (activeTab === "all") return true;
+    if (activeTab === "redemptions") {
+      return scan.type === "redemption";
+    }
+    // For activities and meals tabs, exclude redemptions
+    if (scan.type === "redemption") {
+      return false;
+    }
+    if (activeTab === "meals") {
+      return scan.itemCode?.endsWith("_meal");
+    }
+    if (activeTab === "activities") {
+      return (
+        scan.itemCode?.endsWith("_act") ||
+        scan.itemCode?.endsWith("_att") ||
+        scan.itemCode?.endsWith("_win") ||
+        scan.itemCode?.endsWith("_ws") ||
+        scan.itemCode?.endsWith("_sw") ||
+        scan.itemCode?.endsWith("_bonus")
+      );
+    }
+    return true;
+  });
+
+  // Show loading state while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="flex min-h-[400px] w-full items-center justify-center">
+        <p className="text-lg text-gray-500">Loading...</p>
+      </div>
+    );
+  }
+
+  // Show sign-in prompt if not authenticated
+  if (!session) {
+    return (
+      <div className="flex min-h-[400px] w-full flex-col items-center justify-center gap-4">
+        <h2 className="font-figtree text-2xl font-semibold text-heavy">
+          Sign In Required
         </h2>
-        <p className="pt-5 text-lg text-slate-600">
-          Welcome to Hack Western 11, where ideas take flight!
+        <p className="text-center text-medium">
+          Please sign in to view your hacker pass and scan history.
         </p>
-        <p className="text-md pt-5  text-slate-600">
-          We are thrilled to have you at Hack Western 11! We hope you build a
-          cool project and kindle some fun memories this weekend 💜
-        </p>
-        <div className="pt-5 md:hidden">
-          <QuickLinks />
+        <button
+          onClick={() => signIn(undefined, { callbackUrl: "/live?tab=home" })}
+          className="rounded-lg bg-primary-600 px-6 py-3 font-figtree text-sm font-medium text-white transition-colors hover:bg-primary-700"
+        >
+          Sign In
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-6 lg:flex-row lg:gap-8">
+      {/* Left Column */}
+      <div className="flex w-full flex-col gap-6 lg:w-1/2">
+        {/* Devpost Link Section */}
+        <div className="rounded-2xl bg-primary-100 p-6">
+          <h2 className="mb-4 font-figtree text-xl font-semibold text-heavy">
+            Devpost Link
+          </h2>
+          <a
+            href="https://hack-western-12.devpost.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block rounded-xl bg-white p-4 shadow-sm transition-all hover:bg-primary-50 hover:shadow-md"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <svg
+                  className="h-5 w-5 text-primary-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
+                </svg>
+                <span className="font-figtree text-sm font-medium text-heavy">
+                  hack-western-12.devpost.com
+                </span>
+              </div>
+              <svg
+                className="h-4 w-4 text-medium"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
+          </a>
         </div>
-        <div className="pt-5">
-          <h3 className="text-md font-bold text-slate-700">GETTING STARTED</h3>
-          <div className="w-full border-t-2 border-primary-300" />
-          <p className="text-md pt-5 font-medium text-slate-600">
-            Resources to help kickstart your hackathon project and learn various
-            skills in design, development, and more.
-          </p>
-          <Button variant="primary" className="mt-5 p-6" asChild>
-            <a
-              href="https://island-denim-3d7.notion.site/Hacker-Starter-Pack-14ce351b228b8073805ad107e878caf9"
-              target="_blank"
-              rel="noopener noreferrer"
+
+        {/* Scan History Section */}
+        <div className="rounded-2xl bg-primary-100 p-6">
+          <h2 className="mb-4 font-figtree text-xl font-semibold text-heavy">
+            Scan History
+          </h2>
+
+          {/* Tabs */}
+          <div className="mb-4 flex gap-2">
+            <button
+              onClick={() => setActiveTab("all")}
+              className={`rounded-lg px-4 py-2 font-figtree text-sm font-medium transition-colors ${
+                activeTab === "all"
+                  ? "bg-primary-600 text-white"
+                  : "bg-primary-200 text-heavy hover:bg-primary-300"
+              }`}
             >
-              Access Starter Pack <ArrowUpRight size={20} />
-            </a>
-          </Button>
-        </div>
-        <div className="pt-5">
-          <h3 className="text-md font-bold text-slate-700">NEED HELP?</h3>
-          <div className="w-full border-t-2 border-primary-300" />
-          <p className="text-md pt-5 font-medium text-slate-600">
-            For urgent matters, send a message in the{" "}
-            <a
-              className="font-bold text-primary-600"
-              href="https://hackwestern11.slack.com/archives/C07V6KJ141M"
-              target="_blank"
-              rel="noreferrer noopener"
+              All
+            </button>
+            <button
+              onClick={() => setActiveTab("activities")}
+              className={`rounded-lg px-4 py-2 font-figtree text-sm font-medium transition-colors ${
+                activeTab === "activities"
+                  ? "bg-primary-600 text-white"
+                  : "bg-primary-200 text-heavy hover:bg-primary-300"
+              }`}
             >
-              #questions
-            </a>{" "}
-            channel on Slack! You can also identify Hack Western organizers and
-            volunteers by their name tags - feel free to ask us for help.
-            Otherwise, feel free to send an email to{" "}
-            <span className="font-bold text-primary-600 underline">
-              <a href="mailto:hello@hackwestern.com">hello@hackwestern.com</a>
-            </span>
-            .
-          </p>
-        </div>
-        <div className="pt-5">
-          <h3 className="text-md font-bold text-slate-700">FOR EMERGENCIES</h3>
-          <div className="w-full border-t-2 border-primary-300" />
-          <p className="text-md pt-5 font-medium text-slate-600">
-            To contact campus police, dial{" "}
-            <span className="font-bold text-primary-600 underline">
-              <a href="tel:519-661-3300">519-661-3300</a>
-            </span>
-            . To request a safe walk outside at night, dial Western Foot Patrol
-            at{" "}
-            <span className="font-bold text-primary-600 underline">
-              <a href="tel:519-661-3650">519-661-3650</a>
-            </span>
-            .
-          </p>
+              Activities
+            </button>
+            <button
+              onClick={() => setActiveTab("meals")}
+              className={`rounded-lg px-4 py-2 font-figtree text-sm font-medium transition-colors ${
+                activeTab === "meals"
+                  ? "bg-primary-600 text-white"
+                  : "bg-primary-200 text-heavy hover:bg-primary-300"
+              }`}
+            >
+              Meals
+            </button>
+            <button
+              onClick={() => setActiveTab("redemptions")}
+              className={`rounded-lg px-4 py-2 font-figtree text-sm font-medium transition-colors ${
+                activeTab === "redemptions"
+                  ? "bg-primary-600 text-white"
+                  : "bg-primary-200 text-heavy hover:bg-primary-300"
+              }`}
+            >
+              Redemptions
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="rounded-xl bg-primary-50 p-4">
+            {scansLoading ? (
+              <p className="font-figtree text-sm text-medium">Loading...</p>
+            ) : filteredScans && filteredScans.length > 0 ? (
+              <div className="space-y-3">
+                {filteredScans.map((scan) => (
+                  <div
+                    key={scan.id}
+                    className="flex items-center justify-between rounded-lg bg-white p-3 shadow-sm"
+                  >
+                    <div className="flex-1">
+                      <p className="font-figtree text-sm font-semibold text-heavy">
+                        {formatTitle(scan.itemDescription ?? scan.itemCode)}
+                      </p>
+                      <p className="font-figtree text-xs text-medium">
+                        {scan.createdAt
+                          ? new Date(scan.createdAt).toLocaleString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })
+                          : "Unknown time"}
+                      </p>
+                    </div>
+                    <div className="ml-4 text-right">
+                      <p
+                        className={`font-figtree text-sm font-semibold ${
+                          scan.points < 0 ? "text-red-600" : "text-primary-600"
+                        }`}
+                      >
+                        {scan.points > 0 ? "+" : ""}
+                        {scan.points} pts
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="font-figtree text-sm italic text-medium">
+                {activeTab === "all"
+                  ? "You haven't scanned any activities yet!"
+                  : activeTab === "meals"
+                    ? "You haven't scanned any meals yet!"
+                    : activeTab === "redemptions"
+                      ? "You haven't redeemed any prizes yet!"
+                      : "You haven't scanned any activities yet!"}
+              </p>
+            )}
+          </div>
         </div>
       </div>
-      <div className="mx-auto hidden px-5 md:block">
-        <QuickLinks />
+
+      {/* Right Column - Your Hacker Pass */}
+      <div className="flex w-full flex-col gap-6 pb-4 lg:w-1/2">
+        {/* Points Section */}
+        <div className="rounded-2xl bg-primary-100 p-6">
+          <h2 className="mb-4 font-figtree text-xl font-semibold text-heavy">
+            Your Points
+          </h2>
+          <div className="rounded-xl bg-primary-50 p-4">
+            {pointsLoading ? (
+              <p className="font-figtree text-sm text-medium">Loading...</p>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <p className="font-figtree text-sm text-medium">
+                    Current Balance:
+                  </p>
+                  <p className="font-figtree text-2xl font-bold text-primary-600">
+                    {pointsData?.balance ?? 0}
+                  </p>
+                </div>
+                {pointsData?.earned !== null &&
+                  pointsData?.earned !== undefined && (
+                    <div className="flex items-baseline justify-between border-t border-primary-200 pt-2">
+                      <p className="font-figtree text-xs text-medium">
+                        Total Earned:
+                      </p>
+                      <p className="font-figtree text-sm font-medium text-medium">
+                        {pointsData.earned} pts
+                      </p>
+                    </div>
+                  )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* QR Code Section */}
+        <div className="rounded-2xl bg-primary-100 p-6">
+          {/* QR Code Display */}
+          <div className="flex justify-center">
+            <div className="rounded-2xl bg-white p-6 shadow-md">
+              {qrCodeUrl ? (
+                <Image
+                  src={qrCodeUrl}
+                  alt="Your Hacker Pass QR Code"
+                  width={300}
+                  height={300}
+                  className="h-auto w-full"
+                />
+              ) : (
+                <div className="flex h-[300px] w-[300px] items-center justify-center bg-gray-100">
+                  <p className="text-sm text-gray-500">Loading QR code...</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Wallet Buttons */}
+        <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-3">
+            <AddToWallet walletType="APPLE" />
+            <AddToWallet walletType="GOOGLE" />
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-const QuickLinks = () => {
-  return (
-    <div className="flex flex-col rounded-xl bg-primary-200 p-5 pr-16">
-      <div className="text-2xl font-bold">Quick Links</div>
-      <div className="text-lg font-medium ">
-        <div className="mt-5 w-full border-t-2 border-primary-400 md:w-[120%]" />
-        <QLink
-          text="Event Guide"
-          link="https://island-denim-3d7.notion.site/Hack-Western-11-Hacker-Package-142e351b228b8030a3deebfa557063ec"
-          image="/images/icons/arrowupright.svg"
-        />
-        <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
-        <QLink
-          text="Join our Slack"
-          link="https://join.slack.com/t/hackwestern11/shared_invite/zt-2unzxw9iq-xS9AYyz71BlYkGW7VdAceg"
-          image="/images/icons/slack.svg"
-        />
-        <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
-        <QLink
-          text="Add Schedule to GCal"
-          link="https://calendar.google.com/calendar/embed?src=c7677dbb10f476721982c9755440429fa1791b6818969805682b81e2eaf2bbb7%40group.calendar.google.com&ctz=America%2FToronto"
-          image="/images/icons/gcal.svg"
-        />
-        <div className="w-full border-t-2 border-primary-400 md:w-[120%]" />
-        <QLink
-          text="Submit your project"
-          link="https://dorahacks.io/hackathon/hackwestern-11/detail"
-          image="/images/icons/dorahacks.png"
-        />
-      </div>
-    </div>
-  );
-};
-
-const QLink = ({
-  text,
-  link,
-  image,
-}: {
-  text: string;
-  link: string;
-  image: string;
-}) => {
-  return (
-    <a
-      href={link}
-      className="flex items-center space-x-3 py-3"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <Image src={image} alt="Link Icon" width={20} height={20} />
-      <span className="transition-all duration-200 ease-in-out hover:text-primary-600">
-        {text}
-      </span>
-    </a>
-  );
-};
 export default Home;

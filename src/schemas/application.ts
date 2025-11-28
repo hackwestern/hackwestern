@@ -8,6 +8,9 @@ import {
   levelOfStudy,
   major,
   numOfHackathons,
+  gender,
+  ethnicity,
+  sexualOrientation,
 } from "~/server/db/schema";
 
 // Save schema
@@ -41,17 +44,28 @@ export const personaSaveSchema = applicationSaveSchema.pick({
   avatarHat: true,
 });
 
-export const infoSaveSchema = applicationSaveSchema
-  .pick({
-    school: true,
-    levelOfStudy: true,
-    major: true,
-    attendedBefore: true,
-    numOfHackathons: true,
-  })
-  .extend({
-    attendedBefore: z.enum(["yes", "no"]),
-  });
+export const infoSaveSchema = z.object({
+  school: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.enum(schools).optional(),
+  ),
+  levelOfStudy: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.enum(levelOfStudy.enumValues).optional(),
+  ),
+  major: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.enum(major.enumValues).optional(),
+  ),
+  attendedBefore: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.enum(["yes", "no"]).optional(),
+  ),
+  numOfHackathons: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.enum(numOfHackathons.enumValues).optional(),
+  ),
+});
 
 export const agreementsSaveSchema = applicationSaveSchema.pick({
   agreeCodeOfConduct: true,
@@ -77,6 +91,21 @@ export const optionalSaveSchema = applicationSaveSchema
   })
   .extend({
     underrepGroup: z.enum(underrepGroupAnswers),
+    // Allow empty string values (which can occur from uncontrolled selects) to
+    // be treated as undefined so validation of optional enum fields doesn't
+    // fail during autosave/navigation.
+    gender: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(gender.enumValues).optional(),
+    ),
+    ethnicity: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(ethnicity.enumValues).optional(),
+    ),
+    sexualOrientation: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(sexualOrientation.enumValues).optional(),
+    ),
   });
 
 function minWordCount(value: string, min: number) {
@@ -95,13 +124,16 @@ export const phoneRegex =
 const MIN_WORDS = 30;
 const MAX_WORDS = 150;
 
+const tooFewWords = `Response must be at least ${MIN_WORDS} words`;
+const tooManyWords = `Response must be fewer than ${MAX_WORDS} words`;
+
 // Submission schema with data validation
 export const applicationSubmitSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   phoneNumber: z.string().min(1).regex(phoneRegex, "Invalid phone number"),
   countryOfResidence: z.enum(countrySelection.enumValues),
-  age: z.number().min(18),
+  age: z.number().min(18).max(99),
   school: z.enum(schools),
   levelOfStudy: z.enum(levelOfStudy.enumValues),
   major: z.enum(major.enumValues),
@@ -110,36 +142,18 @@ export const applicationSubmitSchema = z.object({
   question1: z
     .string()
     .min(1)
-    .refine(
-      (value) => minWordCount(value, MIN_WORDS),
-      `Response must be at least ${MIN_WORDS} words`,
-    )
-    .refine(
-      (value) => maxWordCount(value, MAX_WORDS),
-      `Response must be less than ${MAX_WORDS} words`,
-    ),
+    .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
+    .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
   question2: z
     .string()
     .min(1)
-    .refine(
-      (value) => minWordCount(value, MIN_WORDS),
-      `Response must be at least ${MIN_WORDS} words`,
-    )
-    .refine(
-      (value) => maxWordCount(value, MAX_WORDS),
-      `Response must be less than ${MAX_WORDS} words`,
-    ),
+    .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
+    .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
   question3: z
     .string()
     .min(1)
-    .refine(
-      (value) => minWordCount(value, MIN_WORDS),
-      `Response must be at least ${MIN_WORDS} words`,
-    )
-    .refine(
-      (value) => maxWordCount(value, MAX_WORDS),
-      `Response must be less than ${MAX_WORDS} words`,
-    ),
+    .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
+    .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
   resumeLink: z.preprocess((v) => (!v ? undefined : v), z.string().url()),
   githubLink: z.preprocess((v) => (!v ? undefined : v), z.string().optional()),
   linkedInLink: z.preprocess(
@@ -165,10 +179,14 @@ export const applicationSubmitSchema = z.object({
   }),
   agreeWillBe18: z.literal(true, {
     errorMap: () => ({
-      message: "You must be at least 18 years old as of November 29th, 2024",
+      message: "You must be at least 18 years old as of November 21st, 2025",
     }),
   }),
   agreeEmailsFromMLH: z.boolean().optional(),
+});
+
+export const canvasSaveSchema = applicationSaveSchema.pick({
+  canvasData: true,
 });
 
 export const applicationStepSaveSchema = applicationSaveSchema.pick({

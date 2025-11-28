@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, assert, describe, expect, test } from "vitest";
+import { afterEach, assert, describe, expect, test } from "vitest";
 import { faker } from "@faker-js/faker";
 import { type Session } from "next-auth";
 
@@ -48,6 +48,11 @@ describe("application.get", async () => {
       ...application,
       githubLink: application?.githubLink?.substring(19),
       linkedInLink: application?.linkedInLink?.substring(24),
+      canvasData: {
+        paths: [],
+        timestamp: 0,
+        version: "",
+      },
     };
 
     return expect(got).toEqual(want);
@@ -91,6 +96,11 @@ describe("application.getById", async () => {
       ...application,
       githubLink: application?.githubLink,
       linkedInLink: application?.linkedInLink,
+      canvasData: {
+        paths: [],
+        timestamp: 0,
+        version: "",
+      },
     };
 
     return expect(got).toEqual(want);
@@ -167,7 +177,14 @@ describe.sequential("application.save", async () => {
     await expect(caller.application.get()).resolves.toBeNull();
 
     const application = createRandomApplication(session);
-    const want = application;
+    const want = {
+      ...application,
+      canvasData: {
+        paths: [],
+        timestamp: 0,
+        version: "",
+      },
+    };
 
     await caller.application.save(application);
     const result = await caller.application.get();
@@ -184,7 +201,14 @@ describe.sequential("application.save", async () => {
     await caller.application.save(application);
     const updatedApplication = createRandomApplication(session);
 
-    const want = updatedApplication;
+    const want = {
+      ...updatedApplication,
+      canvasData: {
+        paths: [],
+        timestamp: 0,
+        version: "",
+      },
+    };
 
     await caller.application.save(updatedApplication);
     const result = await caller.application.get();
@@ -202,9 +226,17 @@ describe.sequential("application.save", async () => {
     const want = {
       ...completeApplication,
       status: "PENDING_REVIEW",
+      canvasData: {
+        paths: [],
+        timestamp: 0,
+        version: "",
+      },
     };
 
+    // Save the complete application first, then call submit() which validates the
+    // stored application and flips the status to PENDING_REVIEW.
     await caller.application.save(completeApplication);
+    await caller.application.submit();
     const result = await caller.application.get();
     assert(!!result);
 

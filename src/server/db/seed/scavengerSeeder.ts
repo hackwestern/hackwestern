@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { scavengerHuntItems } from "~/server/db/schema";
-import { Seeder } from "./helpers";
+import { type Seeder } from "./helpers";
 
 const ITEMS = 20;
 export class ScavengerHuntItemSeeder

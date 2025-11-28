@@ -1,13 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
 import * as React from "react";
 import type { major, numOfHackathons } from "~/server/db/schema";
-import type { schools } from "~/constants/schools";
+import { schools } from "~/constants/schools";
 
 type majorType = (typeof major.enumValues)[number];
 type schoolType = (typeof schools)[number];
 type experienceType = (typeof numOfHackathons.enumValues)[number];
 
-const majorMap = (type: majorType): string => {
+const majorMap = (type: majorType | undefined | null): string | undefined => {
   switch (type) {
     case "Computer Science":
       return "/stamps/major/cs.svg";
@@ -39,11 +39,13 @@ const majorMap = (type: majorType): string => {
       return "/stamps/major/perfarts.svg";
     case "Other":
     default:
-      return "";
+      return undefined;
   }
 };
 
-const schoolMap = (school: schoolType): string => {
+const schoolMap = (
+  school: schoolType | undefined | null,
+): string | undefined => {
   switch (school) {
     case "Western University":
       return "/stamps/schools/uwo.svg";
@@ -67,7 +69,9 @@ const schoolMap = (school: schoolType): string => {
   }
 };
 
-const experienceMap = (experience: experienceType): string => {
+const experienceMap = (
+  experience: experienceType | undefined | null,
+): string | undefined => {
   switch (experience) {
     case "0":
       return "/stamps/experience/0.svg";
@@ -77,14 +81,21 @@ const experienceMap = (experience: experienceType): string => {
       return "/stamps/experience/4-6.svg";
     case "7+":
       return "/stamps/experience/7.svg";
+    default:
+      return undefined;
   }
 };
 
-const sharedStampClass = "h-16 sm:h-20 2xl:h-28 3xl:h-32 4xl:h-36";
+const sharedStampClass = "h-24";
 
-export function MajorStamp({ type }: { type: majorType }) {
+export function MajorStamp({
+  type,
+}: {
+  type?: majorType | null;
+}): React.ReactElement | null {
+  if (!type) return null;
   const stampSrc = majorMap(type);
-  if (!stampSrc) return "";
+  if (!stampSrc) return null;
   return (
     <img
       alt="Field of Study Stamp"
@@ -94,7 +105,11 @@ export function MajorStamp({ type }: { type: majorType }) {
   );
 }
 
-export function HWStamp({ returning }: { returning: "newcomer" | "returnee" }) {
+export function HWStamp({
+  returning,
+}: {
+  returning: "newcomer" | "returnee";
+}): React.ReactElement {
   const stampSrc = `/stamps/returning/${returning}.svg`;
   return (
     <img
@@ -105,9 +120,17 @@ export function HWStamp({ returning }: { returning: "newcomer" | "returnee" }) {
   );
 }
 
-export function SchoolStamp({ type }: { type: schoolType }) {
-  const stampSrc = schoolMap(type);
-  if (!stampSrc) return "";
+export function SchoolStamp({
+  type,
+}: {
+  type?: string | null;
+}): React.ReactElement | null {
+  // allowed school literals before using the typed schoolMap helper.
+  if (!type) return null;
+  // runtime-guard: only accept values present in the `schools` list
+  if (!schools.includes(type as schoolType)) return null;
+  const stampSrc = schoolMap(type as schoolType);
+  if (!stampSrc) return null;
   return (
     <img
       alt="School Stamp"
@@ -120,9 +143,11 @@ export function SchoolStamp({ type }: { type: schoolType }) {
 export function HackerStamp({
   numHackathons,
 }: {
-  numHackathons: experienceType;
-}) {
+  numHackathons?: experienceType | null;
+}): React.ReactElement | null {
+  if (!numHackathons) return null;
   const stampSrc = experienceMap(numHackathons);
+  if (!stampSrc) return null;
   return (
     <img
       alt="Hackathon Experience Stamp"
@@ -132,7 +157,7 @@ export function HackerStamp({
   );
 }
 
-export function SubmittedStamp() {
+export function SubmittedStamp(): React.ReactElement {
   return (
     <img
       alt="Submitted Stamp"
@@ -142,12 +167,76 @@ export function SubmittedStamp() {
   );
 }
 
-export function LinksStamp() {
+export function LinksStamp(): React.ReactElement {
   return (
     <img
       alt="Links Added Stamp"
       src="/stamps/completion/linked.svg"
       className={`${sharedStampClass} rotate-[2.13deg]`}
     />
+  );
+}
+
+interface StampContainerProps {
+  step: string | null;
+  data: {
+    major?: majorType;
+    school?: schoolType;
+    numOfHackathons?: experienceType;
+    attendedBefore?: boolean;
+    githubLink?: string | null;
+    linkedInLink?: string | null;
+    otherLink?: string | null;
+    resumeLink?: string | null;
+    status?: string;
+  };
+}
+
+export function StampContainer({ step, data }: StampContainerProps) {
+  const showMajorStamp = data?.major;
+  const showSchoolStamp = data?.school;
+  const showHackerStamp = data?.numOfHackathons;
+  const showHWStamp = data?.attendedBefore !== undefined;
+  const showLinksStamp =
+    data?.githubLink &&
+    data?.linkedInLink &&
+    data?.otherLink &&
+    data?.resumeLink;
+  const showSubmittedStamp =
+    step === "review" && data?.status !== "IN_PROGRESS";
+
+  return (
+    <div className="pointer-events-none pointer-events-none absolute inset-0 z-40 md:flex">
+      {showMajorStamp && (
+        <div className="absolute left-80 top-20">
+          <MajorStamp type={data.major} />
+        </div>
+      )}
+      {showSchoolStamp && (
+        <div className="absolute right-8 top-32">
+          <SchoolStamp type={data.school} />
+        </div>
+      )}
+      {showHackerStamp && (
+        <div className="absolute bottom-40 right-12">
+          <HackerStamp numHackathons={data.numOfHackathons} />
+        </div>
+      )}
+      {showHWStamp && (
+        <div className="absolute bottom-20 left-80">
+          <HWStamp returning={data?.attendedBefore ? "returnee" : "newcomer"} />
+        </div>
+      )}
+      {showLinksStamp && (
+        <div className="transform-translate-y-10 absolute right-16 top-1/4">
+          <LinksStamp />
+        </div>
+      )}
+      {showSubmittedStamp && (
+        <div className="absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 transform">
+          <SubmittedStamp />
+        </div>
+      )}
+    </div>
   );
 }

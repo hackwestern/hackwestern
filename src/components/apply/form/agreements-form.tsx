@@ -1,4 +1,4 @@
-import { useAutoSave } from "~/components/hooks/use-auto-save";
+import { useAutoSave } from "~/hooks/use-auto-save";
 import { api } from "~/utils/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -29,7 +29,20 @@ const StyledLink = ({ url, text }: { url: string; text: string }) => {
 
 export function AgreementsForm() {
   const utils = api.useUtils();
-  const { data: defaultValues } = api.application.get.useQuery();
+  const { data: defaultValues } = api.application.get.useQuery({
+    fields: [
+      "status",
+      "agreeCodeOfConduct",
+      "agreeShareWithMLH",
+      "agreeShareWithSponsors",
+      "agreeWillBe18",
+      "agreeEmailsFromMLH",
+    ],
+  });
+
+  const status = defaultValues?.status ?? "NOT_STARTED";
+  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
       return utils.application.get.invalidate();
@@ -44,7 +57,6 @@ export function AgreementsForm() {
 
   function onSubmit(data: z.infer<typeof agreementsSaveSchema>) {
     mutate({
-      ...defaultValues,
       ...data,
     });
   }
@@ -61,6 +73,7 @@ export function AgreementsForm() {
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={(value) => field.onChange(value)}
+                  disabled={!canEdit}
                 />
               </FormControl>
               <FormLabel className="text-sm text-slate-500">
@@ -82,6 +95,7 @@ export function AgreementsForm() {
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={(value) => field.onChange(value)}
+                  disabled={!canEdit}
                 />
               </FormControl>
               <FormLabel className="text-sm text-slate-500">
@@ -110,6 +124,7 @@ export function AgreementsForm() {
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={(value) => field.onChange(value)}
+                  disabled={!canEdit}
                 />
               </FormControl>
               <FormLabel className="text-sm text-slate-500">
@@ -128,6 +143,7 @@ export function AgreementsForm() {
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={(value) => field.onChange(value)}
+                  disabled={!canEdit}
                 />
               </FormControl>
               <FormLabel className="text-sm text-slate-500">
@@ -145,6 +161,7 @@ export function AgreementsForm() {
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={(value) => field.onChange(value)}
+                  disabled={!canEdit}
                 />
               </FormControl>
               <FormLabel className="text-sm text-slate-500">

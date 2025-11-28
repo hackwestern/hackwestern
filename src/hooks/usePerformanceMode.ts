@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { isIOS, isMobile, prefersReducedMotion } from "~/utils/performance";
+import useWindowDimensions from "./useWindowDimensions";
 
 export type PerformanceMode = "high" | "medium" | "low";
 
@@ -24,6 +25,8 @@ export const usePerformanceMode = (): PerformanceConfig => {
     enableComplexShadows: true,
   });
 
+  const { width } = useWindowDimensions();
+
   useEffect(() => {
     const isIOSDevice = isIOS();
     const isMobileDevice = isMobile();
@@ -32,9 +35,9 @@ export const usePerformanceMode = (): PerformanceConfig => {
     let mode: PerformanceMode = "high";
 
     // Determine performance mode
-    if (isIOSDevice || reducedMotion) {
+    if (isIOSDevice || reducedMotion || width < 768) {
       mode = "low";
-    } else if (isMobileDevice) {
+    } else if (isMobileDevice || width < 1024) {
       mode = "medium";
     }
 
