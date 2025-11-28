@@ -12,7 +12,6 @@ import Image from "next/image";
 import { useMemo } from "react";
 import { DialogTitle } from "@radix-ui/react-dialog";
 import { api } from "~/utils/api";
-import Image from "next/image";
 
 type ApplyMenuProps = {
   step: ApplyStep | null;
