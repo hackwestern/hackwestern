@@ -4,6 +4,7 @@ import {
   index,
   serial,
   integer,
+  jsonb,
   pgEnum,
   pgTableCreator,
   primaryKey,
@@ -13,6 +14,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
+import type { CanvasPaths } from "~/types/canvas";
 
 /**
  * This is the prefix for tables from this year's hack western!
@@ -273,10 +275,8 @@ export const applications = createTable(
     levelOfStudy: levelOfStudy("level_of_study"),
     major: major("major"),
 
-    attendedBefore: boolean("attended").default(false).notNull(),
-    numOfHackathons: numOfHackathons("num_of_hackathons")
-      .default("0")
-      .notNull(),
+    attendedBefore: boolean("attended"),
+    numOfHackathons: numOfHackathons("num_of_hackathons"),
 
     // Your Story
     question1: text("question1"),
@@ -311,6 +311,16 @@ export const applications = createTable(
     gender: gender("gender"),
     ethnicity: ethnicity("ethnicity"),
     sexualOrientation: sexualOrientation("sexual_orientation"),
+
+    // Canvas - default to an empty but well-typed structure so new rows are valid
+    canvasData: jsonb("canvas_data")
+      .$type<{
+        paths: CanvasPaths;
+        timestamp: number;
+        version: string;
+      }>()
+      .default(sql`'{"paths":[],"timestamp":0,"version":""}'::jsonb`)
+      .notNull(),
   },
   (application) => [index("user_id_idx").on(application.userId)],
 );
@@ -437,12 +447,16 @@ export const scavengerHuntItems = createTable("scavenger_hunt_item", {
   code: varchar("code", { length: 12 }).unique().notNull(),
   points: smallint("points").default(1).notNull(),
   description: text("description"),
+  deletedAt: timestamp("deleted_at", { mode: "date", precision: 3 }),
 });
 
 export const scavengerHuntScans = createTable(
   "scavenger_hunt_scan",
   {
     userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    scannerId: varchar("scanner_id", { length: 255 })
       .notNull()
       .references(() => users.id),
     itemId: integer("item_id")
@@ -455,6 +469,7 @@ export const scavengerHuntScans = createTable(
   (t) => [
     primaryKey({ columns: [t.userId, t.itemId] }),
     index("scan_user_idx").on(t.userId),
+    index("scan_scanner_idx").on(t.scannerId),
   ],
 );
 

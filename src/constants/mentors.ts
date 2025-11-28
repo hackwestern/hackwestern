@@ -17,156 +17,125 @@ export type Mentor = {
   desc: string;
   image?: string;
   tags: MentorTags[];
+  linkedin?: string;
 };
 
 export const MentorsList: Mentor[] = [
   {
-    name: "Maaz Siddiqi",
-    desc: "Software Engineering @ RBC",
-    image: "/images/mentors/maaz_siddiqi.webp",
-    tags: ["Front-End"],
+    // 1. Arsalaan Ali
+    name: "Arsalaan Ali",
+    desc: "Incoming Software Engineer Intern @ Tesla, Ex - Hack Western, Twilio",
+    image: "/images/mentors/arsalaan_ali.webp",
+    tags: ["Front-End", "Back-End"],
+    linkedin: "https://www.linkedin.com/in/arsalaanalics/",
   },
   {
-    name: "John Edgar",
-    desc: "Retired Founder - Happy to help!",
-    image: "/images/mentors/john_edgar.webp",
-    tags: ["DevOps & Cloud", "Product Management"],
+    // 2. Bonnie Qiu
+    name: "Bonnie Qiu",
+    desc: "Product Manager, UI/UX Design",
+    image: "/images/mentors/bonnie_qiu.webp",
+    tags: ["UI/UX", "Product Management"],
+    linkedin: "https://www.linkedin.com/in/bonnie-qiu-413931268/",
   },
   {
-    name: "Grace Gong",
-    desc: "PM Intern @ Microsoft",
-    image: "/images/mentors/grace_gong.webp",
-    tags: ["Product Management", "UI/UX", "Front-End"],
+    // 3. Cedric Leung
+    name: "Cedric Leung",
+    desc: "Full stack/ Generalist",
+    image: "/images/mentors/cedric_leung.webp",
+    tags: [
+      "Front-End",
+      "Back-End",
+      "UI/UX",
+      "Mobile Development",
+      "DevOps & Cloud",
+      "Data & AI",
+    ],
+    linkedin: "https://www.linkedin.com/in/cedric-leung-93273a255/",
   },
   {
-    name: "David Tran",
-    desc: "Quantitative Research Engineer @ Citadel",
-    image: "/images/mentors/david_tran.webp",
-    tags: ["Data & AI", "Back-End"],
-  },
-  {
-    name: "Bilal Aamer",
-    desc: "Sr ML Engineer @ BNY, Community Manager @ TensorFlow",
-    image: "/images/mentors/bilal_aamer.webp",
-    tags: ["Data & AI"],
-  },
-  {
-    name: "Vanessa Malott",
-    desc: "Sr. Software Deveoper @ Canada Life",
-    image: "/images/mentors/vanessa_malott.webp",
-    tags: ["Back-End", "Front-End", "DevOps & Cloud"],
-  },
-  {
-    name: "Dave Ticknor",
-    desc: "Senior IT Automation @ Canada Life",
-    image: "/images/mentors/dave_ticknor.webp",
-    tags: ["DevOps & Cloud", "Back-End", "Hardware"],
-  },
-  {
-    name: "Tammi Reaburn",
-    desc: "Director Collaboration & Desktop @ Canada Life",
-    image: "/images/mentors/tammi_reaburn.webp",
-    tags: ["Product Management", "DevOps & Cloud"],
-  },
-  {
-    name: "Owen Karnas",
-    desc: "Software Developer @ Canada Life",
-    image: "/images/mentors/owen_karnas.webp",
-    tags: ["Back-End", "Front-End"],
-  },
-  {
-    name: "Jesse Davidson",
-    desc: "Software Developer @ Canada Life",
-    tags: ["Back-End", "Front-End"],
-  },
-  {
-    name: "Charlotte Lemon",
-    desc: "Product Design Intern @ Intuit",
-    image: "/images/mentors/charlotte_lemon.webp",
-    tags: ["Product Design"],
-  },
-  {
-    name: "Jerry Di",
-    desc: "Creative Director @ Halation, ex-PM @Talent Protocol",
-    image: "/images/mentors/jerry_di.webp",
-    tags: ["Product Design", "UI/UX"],
-  },
-  {
-    name: "Zohaib Adnan",
-    desc: "Entrepreneur @ NEXT 36",
-    image: "/images/mentors/zohaib_adnan.webp",
-    tags: ["Product Management", "UI/UX"],
-  },
-  {
-    name: "Ansel Zeng",
-    desc: "Ex-SWE @ Hack Western",
-    image: "/images/mentors/ansel_zeng.webp",
-    tags: ["Front-End", "UI/UX"],
-  },
-  {
+    // 4. David George
     name: "David George",
     desc: "iOS Software Engineer @ Mark43",
     image: "/images/mentors/david_george.webp",
     tags: ["Mobile Development", "Front-End", "Back-End"],
+    linkedin: "https://www.linkedin.com/in/davidgeorge0/",
   },
   {
-    name: "Isabelle Gan",
-    desc: "Prev. Tech Consulting @ SAP and VC @ Ripple Ventures",
-    image: "/images/mentors/isabelle_gan.webp",
-    tags: ["UI/UX", "Product Management"],
+    // 5. Edwin Ngui
+    name: "Edwin Ngui",
+    desc: "SWE Intern @ NRC, Prev. RBC",
+    image: "/images/mentors/edwin_ngui.webp",
+    tags: ["Front-End", "UI/UX", "Product Management"],
+    linkedin: "https://www.linkedin.com/in/edwin-ngui/",
   },
   {
-    name: "Jarod Schmidt",
-    desc: "Integrations Engineer @ Geotab",
-    image: "/images/mentors/jarod_schmidt.webp",
-    tags: ["Back-End", "DevOps & Cloud"],
+    // 6. Hammed Afenifere
+    name: "Hammed Afenifere",
+    desc: "CEO of Oneremit",
+    image: "/images/mentors/afenifere_hammed_adewumi.webp",
+    tags: ["Product Management"],
+    linkedin: "https://www.linkedin.com/in/hammed-adewumi-afenifere-2169a5116/",
   },
   {
-    name: "Zaeem Ajwad",
-    desc: "Software Engineer Intern @ Unilever",
-    image: "/images/mentors/zaeem_ajwad.webp",
-    tags: ["Data & AI"],
+    // 7. Jack Branston
+    name: "Jack Branston",
+    desc: "Software Engineering Intern @ Scotiabank",
+    image: "/images/mentors/jack_branston.webp",
+    tags: ["Front-End", "Back-End", "DevOps & Cloud", "Data & AI"],
+    linkedin: "https://www.linkedin.com/in/jack-branston/",
   },
   {
-    name: "Abdul Alsherazi",
-    desc: "Embedded Developer @ Geotab",
-    image: "/images/mentors/abdul_alsherazi.webp",
-    tags: ["Hardware"],
+    // 8. Janik
+    name: "Janik",
+    desc: "Software + Hardware Engineer",
+    image: "/images/mentors/janik.webp",
+    tags: ["Hardware", "Data & AI"],
+    linkedin: "https://www.linkedin.com/in/thejanik/",
   },
   {
-    name: "Victor Awogbemi",
-    desc: "Ex Software Engineer Intern @ Stripe",
-    image: "/images/mentors/victor_awogbemi.webp",
+    // 9. Jasleen Bakshi
+    name: "Jasleen Bakshi",
+    desc: "Hack Western Mentor | Full-Stack & AI/ML",
+    image: "/images/mentors/jasleen_bakshi.webp",
+    tags: ["Front-End", "Back-End", "UI/UX", "Data & AI"],
+    linkedin: "https://www.linkedin.com/in/jasleen-bakshi-927a83231/",
+  },
+  {
+    // 10. Lecia Cheng
+    name: "Lecia Cheng",
+    desc: "Solutions Engineer Intern @ AWS",
+    image: "/images/mentors/lecia_cheng.webp",
+    tags: ["Front-End", "UI/UX", "DevOps & Cloud"],
+    linkedin: "https://www.linkedin.com/in/lecia-cheng/",
+  },
+  {
+    // 11. Leon Zhu
+    name: "Leon Zhu",
+    desc: "Software Engineer @ Veris",
+    image: "/images/mentors/leon_zhu.webp",
+    tags: ["Front-End", "UI/UX", "Product Management", "Data & AI"],
+    linkedin: "https://www.linkedin.com/in/leon-zhu/",
+  },
+  {
+    // 12. Nicholas Lam
+    name: "Nicholas Lam",
+    desc: "SWE @ Gather AI",
+    image: "/images/mentors/nicholas_lam.webp",
+    tags: [
+      "Front-End",
+      "Back-End",
+      "Mobile Development",
+      "DevOps & Cloud",
+      "Data & AI",
+    ],
+    linkedin: "https://www.linkedin.com/in/n-a-lam/",
+  },
+  {
+    // 13. Oscar Yu
+    name: "Oscar Yu",
+    desc: "SWE @ Clearpool Group",
+    image: "/images/mentors/oscar_yu.webp",
     tags: ["Front-End", "Back-End"],
-  },
-  {
-    name: "Justin Tsang",
-    desc: "SDE Intern @ Amazon",
-    image: "/images/mentors/justin_tsang_2.webp",
-    tags: ["Front-End", "Back-End"],
-  },
-  {
-    name: "Rena Li",
-    desc: "Software Engineer Intern at Intuit",
-    image: "/images/mentors/rena_li.webp",
-    tags: ["Front-End", "UI/UX"],
-  },
-  {
-    name: "Jason Li",
-    desc: "Software Engineer Intern @ StackAdapt",
-    image: "/images/mentors/jason_li.webp",
-    tags: ["Back-End", "Front-End"],
-  },
-  {
-    name: "Waqas Rana",
-    desc: "Event Coordinator Lead @ GDSC / (Google Developer Student Club)",
-    image: "/images/mentors/waqas_rana.webp",
-    tags: ["Back-End", "DevOps & Cloud"],
-  },
-  {
-    name: "Josh Fernando",
-    desc: "23x Hackathon Winner",
-    image: "/images/mentors/josh_fernando.webp",
-    tags: ["Back-End", "Data & AI", "DevOps & Cloud", "Front-End"],
+    linkedin: "https://www.linkedin.com/in/oscaryyu/",
   },
 ];

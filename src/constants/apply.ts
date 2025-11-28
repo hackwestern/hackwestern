@@ -5,7 +5,7 @@ type Step = {
   subheading: string | null;
 };
 
-export const applySteps = [
+const allSteps = [
   {
     step: "character",
     label: "Character",
@@ -51,10 +51,10 @@ export const applySteps = [
       "The next few questions are completely optional and will not be used in any way during your application review process; it will not affect your candidacy positively or negatively. It will only be accessed as a pool to help focus our future outreach to ensure equal access to opportunities for everyone.",
   },
   {
-    step: "drawing",
-    label: "Drawing",
+    step: "canvas",
+    label: "Canvas",
     heading: "Lastly, draw something!",
-    subheading: "This won't impact your application :)",
+    subheading: "This won't impact your application. Or will it?",
   },
   {
     step: "review",
@@ -63,6 +63,9 @@ export const applySteps = [
     subheading: "You won't be able to change it after it's submitted!",
   },
 ] as const satisfies Step[];
+
+// Desktop includes all steps
+export const applySteps = allSteps;
 
 export type ApplyStepFull = (typeof applySteps)[number];
 export type ApplyStep = (typeof applySteps)[number]["step"];

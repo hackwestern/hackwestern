@@ -4,14 +4,102 @@ import { useSearchParams } from "next/navigation";
 import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
 import { ApplyForm } from "~/components/apply/form";
-import { Passport } from "~/components/apply/passport";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { notVerifiedRedirect } from "~/utils/redirect";
+import { api } from "~/utils/api";
+import ApplicationPrompt from "~/components/dashboard/ApplicationPrompt";
 import CanvasBackground from "~/components/canvas-background";
 import { ApplyNavigation } from "~/components/apply/navigation";
+import ApplyHeading from "~/components/apply/heading";
+import {
+  LeftStampColumn,
+  RightStampColumn,
+} from "~/components/apply/animated-stamps";
+import { motion } from "framer-motion";
+import { MobileStickerDrawer } from "~/components/apply/mobile-sticker-drawer";
+import CharacterIcon from "~/components/dashboard/CharacterIcon";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/router";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
-  return applySteps.find((s) => s.step === stepValue) ?? null;
+  const steps = applySteps;
+  return steps.find((s) => s.step === stepValue) ?? null;
+}
+
+function getNextIncompleteStep(
+  application: Record<string, unknown> | null | undefined,
+) {
+  // application may be null/unset — start at first step
+  if (!application) return applySteps[0].step;
+
+  const isEmpty = (v: unknown) =>
+    v === null || v === undefined || (typeof v === "string" && v.trim() === "");
+
+  for (const step of applySteps) {
+    if (step.step === "review") continue; // review is final
+
+    switch (step.step) {
+      case "character": {
+        if (
+          isEmpty(application.avatarColour) ||
+          isEmpty(application.avatarFace) ||
+          isEmpty(application.avatarLeftHand) ||
+          isEmpty(application.avatarRightHand) ||
+          isEmpty(application.avatarHat)
+        )
+          return step.step;
+        break;
+      }
+      case "basics": {
+        if (
+          isEmpty(application.firstName) ||
+          isEmpty(application.lastName) ||
+          isEmpty(application.phoneNumber) ||
+          isEmpty(application.age) ||
+          isEmpty(application.countryOfResidence)
+        )
+          return step.step;
+        break;
+      }
+      case "info": {
+        if (
+          isEmpty(application.school) ||
+          isEmpty(application.levelOfStudy) ||
+          isEmpty(application.major) ||
+          isEmpty(application.attendedBefore) ||
+          isEmpty(application.numOfHackathons)
+        )
+          return step.step;
+        break;
+      }
+      case "application": {
+        if (
+          isEmpty(application.question1) ||
+          isEmpty(application.question2) ||
+          isEmpty(application.question3)
+        )
+          return step.step;
+        break;
+      }
+      case "links": {
+        if (isEmpty(application.resumeLink)) return step.step;
+        break;
+      }
+      case "agreements": {
+        if (
+          application.agreeCodeOfConduct !== true ||
+          application.agreeShareWithMLH !== true ||
+          application.agreeShareWithSponsors !== true ||
+          application.agreeWillBe18 !== true
+        )
+          return step.step;
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  return "review";
 }
 
 export default function Apply() {
@@ -24,6 +112,34 @@ export default function Apply() {
   const step = applyStep?.step ?? null;
   const heading = applyStep?.heading ?? null;
   const subheading = applyStep?.subheading ?? null;
+  const desktopScrollRef = useRef<HTMLDivElement | null>(null);
+  const [desktopPreviewHeight, setDesktopPreviewHeight] = useState<
+    number | null
+  >(null);
+  const { data: application } = api.application.get.useQuery({
+    fields: ["status"],
+  });
+  const continueStep = getNextIncompleteStep(application);
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+
+  const handleApplyNavigate = (stepKey: string) => {
+    setPending(true);
+    void router.push(`/apply?step=${stepKey}`).then(() => setPending(false));
+  };
+
+  useEffect(() => {
+    const el = desktopScrollRef.current;
+    if (!el) return;
+    const update = () => setDesktopPreviewHeight(el.clientHeight ?? null);
+    // initial
+    update();
+    const ro = new ResizeObserver(() => {
+      update();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [applyStep]);
 
   return (
     <>
@@ -35,61 +151,72 @@ export default function Apply() {
         />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50">
+      <motion.main
+        className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-x-hidden md:overflow-y-hidden"
+        key={"apply-page"}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         {/* Mobile View */}
-        <Tabs
-          defaultValue="application"
-          className="w-screen bg-primary-100 font-figtree md:hidden"
-        >
-          <TabsList className="fixed z-50 w-screen justify-around rounded-none bg-primary-100">
-            <TabsTrigger
-              value="application"
-              className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
-            >
-              Application
-            </TabsTrigger>
-            <TabsTrigger
-              value="passport"
-              className="m-0 w-1/2 rounded-none border-primary-600 px-0 py-5 hover:bg-primary-200 data-[state=active]:border-b data-[state=active]:bg-primary-100 data-[state=active]:text-primary-600 data-[state=active]:shadow-none"
-            >
-              Passport
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="application" className="z-40 w-screen">
-            <div className="fixed flex h-screen w-screen flex-col space-y-8 bg-white px-6 pt-12">
-              <div className="space-y-2 pt-12">
-                <h1 className="font-dico text-2xl font-medium text-heavy">
-                  {heading}
-                </h1>
-                <h2 className="font-figtree text-sm text-medium">
-                  {subheading}
-                </h2>
-              </div>
-              <div className="overflow-y-auto font-figtree">
-                <ApplyForm step={step} />
-              </div>
-              <div className="pb-3">
-                <ApplyNavigation step={step} />
-              </div>
-              <div className="select-none bg-white py-12 text-primary-100">
-                this is a secret
-              </div>
+        <div className="relative z-10 flex h-screen w-screen flex-col md:hidden">
+          {/* Mobile Header */}
+          <div className="fixed z-[99] flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
+            <div className="h-8 w-8"></div>
+            <h1 className="font-figtree text-lg font-semibold text-heavy">
+              {step
+                ? step.charAt(0).toUpperCase() + step.slice(1)
+                : "Application"}
+            </h1>
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+              <ApplyMenu step={step} />
+              <CharacterIcon />
             </div>
-          </TabsContent>
-          <TabsContent
-            value="passport"
-            className="flex flex-col justify-center"
-          >
-            <div className="flex h-[85vh] w-screen flex-col items-center justify-center px-4">
-              <Passport />
+          </div>
+
+          {/* Mobile Content */}
+          <div className="flex-1 bg-white py-24">
+            <div className="mx-6 flex h-full flex-col">
+              <div className="mb-6">
+                <ApplyHeading
+                  heading={heading}
+                  subheading={subheading}
+                  stepKey={step}
+                />
+              </div>
+
+              {step ? (
+                <div className="flex-1 overflow-visible font-figtree">
+                  <ApplyForm step={step} />
+                </div>
+              ) : (
+                <>
+                  <ApplicationPrompt
+                    status={application?.status ?? "NOT_STARTED"}
+                    continueStep={continueStep}
+                    onApplyNavigate={handleApplyNavigate}
+                    pending={pending}
+                  />
+                  <CanvasBackground />
+                </>
+              )}
             </div>
-            <CanvasBackground />
-          </TabsContent>
-        </Tabs>
+          </div>
+
+          {/* Mobile Navigation - Fixed at Bottom */}
+          {step && (
+            <div className="fixed bottom-0 z-[9999] border-t border-gray-200 bg-white py-4">
+              <ApplyNavigation step={step} />
+            </div>
+          )}
+        </div>
         {/* End of Mobile View */}
 
+        <MobileStickerDrawer />
+
         {/* Desktop View */}
-        <div className="relative z-10 hidden h-full w-full flex-grow items-center md:flex">
+        <div className="relative z-10 hidden h-full w-full flex-grow items-center overflow-x-hidden overflow-y-hidden md:flex">
           <div
             id="left-panel"
             className="z-30 flex h-full items-center justify-center"
@@ -101,35 +228,56 @@ export default function Apply() {
             className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
             <CanvasBackground />
-            <div className="z-10 flex flex-col items-center justify-center overflow-auto">
-              <div className="h-full w-full space-y-4">
-                <div className="flex h-lg w-lg flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-xl md:h-[85vh] md:px-12 md:py-12 lg:h-[80vh] lg:w-3xl 2xl:h-[75vh] 2xl:w-4xl 3xl:h-[65vh] 3xl:w-6xl 4xl:w-7xl">
-                  <div className="space-y-4 py-1.5">
-                    <h1 className="font-dico text-2xl font-medium text-heavy">
-                      {heading}
-                    </h1>
-                    {subheading && (
-                      <h2 className="font-figtree text-sm text-medium">
-                        {subheading}
-                      </h2>
-                    )}
-                  </div>
-                  <div className="scrollbar overflow-auto pb-2 pl-1 pr-4">
-                    <div className="font-figtree">
-                      <ApplyForm step={step} />
-                    </div>
-                  </div>
-                </div>
-                <ApplyNavigation step={step} />
-              </div>
+            <div className="absolute right-6 top-6 flex items-center gap-4">
+              <CharacterIcon />
+            </div>
+            <div className="overflow-y-none overflow-x-none z-10 flex flex-col items-center justify-center">
+              {!step ? (
+                <ApplicationPrompt
+                  status={application?.status ?? "NOT_STARTED"}
+                  continueStep={continueStep}
+                  onApplyNavigate={handleApplyNavigate}
+                  pending={pending}
+                />
+              ) : (
+                <div className="flex h-full w-full items-start justify-center gap-8 overflow-hidden 2xl:flex-row">
+                  {/* Left stamps column (up to 3) */}
+                  <LeftStampColumn />
 
-              <div className="z-10 flex w-[100%] flex-col items-center justify-center"></div>
+                  {/* Main card */}
+                  <div>
+                    <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-md md:px-12 md:py-12 lg:w-xl 2xl:h-[65vh] 2xl:w-3xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
+                      <div className="space-y-4 py-1.5">
+                        <ApplyHeading
+                          heading={heading}
+                          subheading={subheading}
+                          stepKey={step}
+                        />
+                      </div>
+                      <div
+                        className="scrollbar min-h-0 flex-1 overflow-auto rounded-md pb-2 pl-1 pr-4 font-figtree"
+                        ref={desktopScrollRef}
+                      >
+                        <ApplyForm
+                          step={step}
+                          previewHeight={(desktopPreviewHeight ?? 300) - 10}
+                        />
+                      </div>
+                    </div>
+                    <ApplyNavigation step={step} />
+                  </div>
+
+                  {/* Right stamps column (up to 3) */}
+                  <RightStampColumn />
+                </div>
+              )}
             </div>
           </div>
         </div>
+
         <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
         {/* End of Desktop View */}
-      </main>
+      </motion.main>
     </>
   );
 }

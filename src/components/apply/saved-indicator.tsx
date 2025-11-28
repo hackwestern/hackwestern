@@ -1,5 +1,6 @@
 import { useIsMutating } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useEffect, useState } from "react";
 import { api } from "~/utils/api";
 import { Spinner } from "../loading-spinner";
 
@@ -35,9 +36,10 @@ export function formattedLastSavedAt(lastSaved: Date | null): string | null {
 }
 
 export function SavedIndicator() {
-  const { data: application } = api.application.get.useQuery(void 0, {
-    refetchInterval: 5000,
+  const { data: application } = api.application.get.useQuery({
+    fields: ["updatedAt"],
   });
+
   const isSaving = useIsMutating();
 
   return (
@@ -55,7 +57,24 @@ export function SavedIndicatorComponent({
   isSaving: boolean;
   lastSaved: Date | null;
 }) {
-  const formattedLastSaved = formattedLastSavedAt(lastSaved);
+  // Keep formatted label in state and recompute periodically when `lastSaved` exists.
+  const [formattedLastSaved, setFormattedLastSaved] = useState<string | null>(
+    formattedLastSavedAt(lastSaved),
+  );
+
+  useEffect(() => {
+    // Update immediately when lastSaved changes
+    setFormattedLastSaved(formattedLastSavedAt(lastSaved));
+
+    // If no lastSaved timestamp, don't start an interval
+    if (!lastSaved) return;
+
+    const id = setInterval(() => {
+      setFormattedLastSaved(formattedLastSavedAt(lastSaved));
+    }, 2000);
+
+    return () => clearInterval(id);
+  }, [lastSaved]);
 
   if (isSaving) {
     return (
@@ -68,7 +87,7 @@ export function SavedIndicatorComponent({
 
   if (formattedLastSaved) {
     return (
-      <div className="mt-2 text-sm font-medium italic text-heavy">
+      <div className="mx-2 text-center text-xs font-medium italic text-heavy md:mt-2 md:text-sm">
         Last saved {formattedLastSaved}
       </div>
     );

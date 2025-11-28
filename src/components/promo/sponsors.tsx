@@ -3,8 +3,91 @@ import { motion } from "framer-motion";
 import { Button } from "../ui/button";
 import { Mail } from "lucide-react";
 import { coordinates } from "~/constants/canvas";
+import Image from "next/image";
+import { SPONSORS, type SponsorLogoProps } from "~/constants/sponsors";
+import { useToast } from "../../hooks/use-toast";
+import { copyText } from "~/lib/copy";
+import { useState } from "react";
+
+const SponsorLogo = ({
+  src,
+  alt,
+  width,
+  height,
+  x,
+  y,
+  rotation,
+  href,
+}: SponsorLogoProps) => {
+  return (
+    <a
+      className="absolute cursor-pointer"
+      style={{
+        transform: `rotate(${rotation}deg)`,
+        left: x,
+        top: y,
+        width,
+        height,
+      }}
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      draggable={false}
+    >
+      <Image
+        src={src}
+        alt={alt}
+        width={width * 4}
+        height={height * 4}
+        draggable="false"
+        className="hover:contrast-105 object-contain transition-all hover:scale-[1.01] hover:brightness-105"
+      />
+    </a>
+  );
+};
+
+export function MacBook({ rotate }: { rotate: string }) {
+  return (
+    <div
+      className={`relative z-10 h-[600px] w-[854.14px] origin-top-left -rotate-[${rotate}deg] rounded-3xl bg-gradient-to-b from-gray-200 to-zinc-400 shadow-[0px_3.82px_7.64px_0px_rgba(0,0,0,0.25)] shadow-[inset_0px_-1.91px_11.46px_0px_rgba(0,0,0,0.40)]`}
+    >
+      <div className="absolute left-[386.49px] top-[239.58px] h-[144px] w-[96px]">
+        <motion.img
+          src="/hackwesternmaclogo.svg"
+          alt="hackwestern"
+          width={95.541}
+          height={144.834}
+          draggable="false"
+        />
+      </div>
+      {SPONSORS.map((sponsor, i) => (
+        <SponsorLogo key={i} {...sponsor} />
+      ))}
+    </div>
+  );
+}
 
 function Sponsors() {
+  const { toast } = useToast();
+  const [isPending, setIsPending] = useState(false);
+
+  // copy email & toast
+  const handleContactClick = () => {
+    void copyText("hello@hackwestern.com");
+    toast({
+      title: "Email copied!",
+      variant: "cute",
+      description: "hello@hackwestern.com copied to clipboard",
+      duration: 3000,
+    });
+
+    // Keep button pressed for 3 seconds
+    setIsPending(true);
+    setTimeout(() => {
+      setIsPending(false);
+    }, 1500);
+  };
+
   return (
     <CanvasComponent
       offset={coordinates.sponsors}
@@ -32,94 +115,7 @@ function Sponsors() {
           <div className="flex scale-150 flex-row">
             <div className="flex origin-center scale-[0.45] flex-row">
               {/* Macbook */}
-              <div className="relative z-10 h-[600px] w-[854.14px] origin-top-left -rotate-[1.771deg] rounded-3xl bg-gradient-to-b from-gray-200 to-zinc-400 shadow-[0px_3.82px_7.64px_0px_rgba(0,0,0,0.25)] shadow-[inset_0px_-1.91px_11.46px_0px_rgba(0,0,0,0.40)]">
-                <div className="absolute left-[386.49px] top-[239.58px] h-[144px] w-[96px]">
-                  <motion.img
-                    src="/hackwesternmaclogo.svg"
-                    alt="hackwestern"
-                    width={95.541}
-                    height={144.834}
-                    draggable="false"
-                  />
-                </div>
-                <div
-                  data-property-1="Default"
-                  className="absolute left-[29.33px] top-[49px] h-[112px] w-[384px] origin-top-left rotate-[1.77deg]"
-                >
-                  <div className="absolute -top-[20px] left-[180px] h-[87px] w-[448px]">
-                    <motion.img
-                      src="/scotiabank.png"
-                      alt="Scotiabank"
-                      width={448}
-                      height={87}
-                      style={{
-                        rotate: "-1.8deg",
-                      }}
-                      draggable="false"
-                    />
-                  </div>
-                  <div className="absolute left-[20px] top-[110px] h-[108px] w-[312px]">
-                    <motion.img
-                      src="/canadalife.png"
-                      alt="Canada Life"
-                      width={312}
-                      height={108}
-                      style={{
-                        rotate: "-2.6deg",
-                      }}
-                      draggable="false"
-                    />
-                  </div>
-                  <div className="absolute left-[525px] top-[95px] h-[86px] w-[270px]">
-                    <motion.img
-                      src="/accenture.png"
-                      alt="Accenture"
-                      width={270}
-                      height={86}
-                      style={{
-                        rotate: "0.2deg",
-                      }}
-                      draggable="false"
-                    />
-                  </div>
-                  <div className="absolute left-[100px] top-[280px] h-[62px] w-[148px]">
-                    <motion.img
-                      src="/pg.png"
-                      alt="P&G"
-                      width={148}
-                      height={62}
-                      style={{
-                        rotate: "-4.6deg",
-                      }}
-                      draggable="false"
-                    />
-                  </div>
-                  <div className="absolute left-[505px] top-[245px] h-[72px] w-[295px]">
-                    <motion.img
-                      src="/sunlife.png"
-                      alt="Sun Life"
-                      width={295}
-                      height={72}
-                      style={{
-                        rotate: "0.5deg",
-                      }}
-                      draggable="false"
-                    />
-                  </div>
-                  <div className="absolute left-[230px] top-[395px] h-[82px] w-[398px]">
-                    <motion.img
-                      src="/manulife.png"
-                      alt="Manulife"
-                      width={398}
-                      height={82}
-                      style={{
-                        rotate: "-1.8deg",
-                      }}
-                      draggable="false"
-                    />
-                  </div>
-                </div>
-              </div>
+              <MacBook rotate={"1.771"} />
 
               {/* Notepad */}
               <div className="mt-10 flex h-[380px] w-[400px] origin-top-left scale-90 flex-col items-center">
@@ -149,6 +145,8 @@ function Sponsors() {
                         variant="primary"
                         className="w-auto gap-2 px-6 py-3"
                         type="submit"
+                        onClick={handleContactClick}
+                        isPending={isPending}
                       >
                         <Mail className="h-5 w-5" />
                         Get in touch

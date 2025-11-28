@@ -1,13 +1,8 @@
 import { useState, useEffect } from "react";
 import * as LucideIcons from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useToast } from "../../hooks/use-toast";
-import { usePerformanceMode } from "~/hooks/usePerformanceMode";
+import { useToast } from "../../../hooks/use-toast";
 import { copyText } from "~/lib/copy";
-
-// Shared global cooldown state so all SingleButton instances share debounce
-let globalBlocked = false;
-let globalCooldownTimeout: ReturnType<typeof setTimeout> | null = null;
 
 type IconName = keyof typeof LucideIcons;
 
@@ -19,6 +14,7 @@ interface SingleButtonProps {
   isPushed: boolean;
   link?: string;
   emailAddress?: string;
+  onDebouncedClick?: (callback: () => void) => void;
 }
 
 export default function SingleButton({
@@ -29,6 +25,7 @@ export default function SingleButton({
   isPushed,
   link,
   emailAddress,
+  onDebouncedClick,
 }: SingleButtonProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showTag, setShowTag] = useState(false);
@@ -37,8 +34,6 @@ export default function SingleButton({
   const CustomIcon = customIcon;
   const TagDelay = 100;
   const { toast } = useToast();
-
-  const { mode } = usePerformanceMode();
 
   // Ensure either icon or customIcon is provided
   if (!Icon && !CustomIcon) {
@@ -76,23 +71,6 @@ export default function SingleButton({
     }
   }, [copiedEmail]);
 
-  // derive debounce duration from performance mode
-  const debounceMs = (() => {
-    switch (mode) {
-      case "high":
-        return 0;
-      case "medium":
-        return 75;
-      case "low":
-        return 150;
-      default:
-        return 0;
-    }
-  })();
-  // leading-edge debounce is implemented using module-level globals shared across instances
-
-  // minimal cross-browser copy helper
-
   const performClick = () => {
     if (emailAddress) {
       const mailto = `mailto:${emailAddress}`;
@@ -103,6 +81,11 @@ export default function SingleButton({
 
         if (copied) {
           setCopiedEmail(true);
+          toast({
+            title: "Email copied!",
+            variant: "cute",
+            duration: 2000,
+          });
         } else {
           window.open(mailto, "_blank");
           toast({
@@ -124,30 +107,12 @@ export default function SingleButton({
     onClick?.();
   };
 
-  // Leading-edge handler: run immediately, then block further runs for debounceMs
   const handleClick = () => {
-    if (debounceMs === 0) {
+    if (onDebouncedClick) {
+      onDebouncedClick(performClick);
+    } else {
       performClick();
-      return;
     }
-
-    if (globalBlocked) {
-      // we're in the cooldown window; ignore this click
-      return;
-    }
-
-    // Enter cooldown and perform the click immediately
-    globalBlocked = true;
-    performClick();
-
-    if (globalCooldownTimeout) {
-      clearTimeout(globalCooldownTimeout);
-    }
-
-    globalCooldownTimeout = setTimeout(() => {
-      globalBlocked = false;
-      globalCooldownTimeout = null;
-    }, debounceMs);
   };
 
   const displayLabel = copiedEmail ? "Email copied!" : label;

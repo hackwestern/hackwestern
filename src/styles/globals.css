@@ -24,9 +24,10 @@ html {
     --medium: #776780;
     --light: #bbb3c0;
     --emphasis: #a16bc7;
+    --active: #f0e9f7;
 
     --offwhite: #fafafb; /* bg-white */
-    --highlight: #f4f2f7;
+    --highlight: #f5f2f6;
     --tinted: #eee2fb;
     --border-light: #fffefe;
 
@@ -125,6 +126,65 @@ html {
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Ensure full viewport coverage on mobile */
+  @media (max-width: 767px) {
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow-x: hidden;
+    }
+
+    /* Allow focus rings to overflow into padding */
+    .form-input-mobile {
+      box-sizing: border-box;
+    }
+  }
+}
+
+@layer utilities {
+  @supports (-moz-appearance: none) {
+    .scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: #d19aee transparent;
+    }
+    .custom-scroll {
+      /* Firefox: best-effort — only thin vs auto available */
+      scrollbar-width: thin;
+      scrollbar-color: #d19aee #d19aee1a;
+    }
+  }
+
+  .scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+    scrollbar-width: none;
+    scrollbar-color: none;
+  }
+
+  .custom-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    scrollbar-width: none;
+    scrollbar-color: none;
+  }
+
+  .scrollbar::-webkit-scrollbar-track {
+    border-radius: 100vh;
+    background: #d19aee1a;
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb {
+    background: #d19aee;
+    border-radius: 100vh;
+  }
+
+  .custom-scroll::-webkit-scrollbar-thumb {
+    background: #d19aee;
+    border-radius: 100vh;
   }
 }
 
