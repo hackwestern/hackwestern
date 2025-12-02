@@ -48,10 +48,7 @@ export default function Home() {
         </Canvas>
         <Footer />
         <MLHTrustBadge />
-        <Link
-          href="/live"
-          prefetch={true}
-        >
+        <Link href="/live" prefetch={true}>
           <motion.div
             className="fixed right-24 top-6 z-50 w-fit md:right-28 lg:right-44"
             initial={{ opacity: 0 }}
