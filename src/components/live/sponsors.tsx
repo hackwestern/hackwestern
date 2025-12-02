@@ -127,7 +127,7 @@ const Sponsors = () => {
               scale: 2.16,
             };
           }
-          
+
           // Bronze and In-Kind use default
           return {
             gridCols: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
