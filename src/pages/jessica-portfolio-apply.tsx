@@ -3,7 +3,6 @@ import Head from "next/head";
 import { useSearchParams } from "next/navigation";
 import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
-import { ApplyForm } from "~/components/apply/form";
 import { notVerifiedRedirect } from "~/utils/redirect";
 import { api } from "~/utils/api";
 import ApplicationPrompt from "~/components/dashboard/ApplicationPrompt";
@@ -189,7 +188,7 @@ export default function Apply() {
 
               {step ? (
                 <div className="flex-1 overflow-visible font-figtree">
-                  <ApplyForm step={step} />
+                  <TempApplyForm step={step} />
                 </div>
               ) : (
                 <>
@@ -259,7 +258,7 @@ export default function Apply() {
                         className="scrollbar min-h-0 flex-1 overflow-auto rounded-md pb-2 pl-1 pr-4 font-figtree"
                         ref={desktopScrollRef}
                       >
-                        <ApplyForm
+                        <TempApplyForm
                           step={step}
                           previewHeight={(desktopPreviewHeight ?? 300) - 10}
                         />
@@ -323,7 +322,7 @@ export function TempApplyNavigation({ step }: ApplyNavigationProps) {
 
   const { data: applicationData } = api.application.get.useQuery();
   const status = applicationData?.status ?? "NOT_STARTED";
-  const canEdit = applicationData?.firstName == "Jessica"
+  const canEdit = true;
 
   const { pending, navigate } = usePendingNavigation();
 
@@ -836,7 +835,7 @@ const formFade = {
   },
 };
 
-export function ApplyForm({ step, previewHeight }: ApplyFormProps) {
+export function TempApplyForm({ step, previewHeight }: ApplyFormProps) {
   const { pending } = usePendingNavigation();
 
   const isMobile = useIsMobile();
