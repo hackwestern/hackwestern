@@ -126,9 +126,7 @@ export default function Apply() {
 
   const handleApplyNavigate = (stepKey: string) => {
     setPending(true);
-    void router
-      .push(`/jessica-portfolio-apply?step=${stepKey}`)
-      .then(() => setPending(false));
+    void router.push(`/jessica-portfolio-apply?step=${stepKey}`).then(() => setPending(false));
   };
 
   useEffect(() => {
@@ -325,7 +323,7 @@ export function TempApplyNavigation({ step }: ApplyNavigationProps) {
 
   const { data: applicationData } = api.application.get.useQuery();
   const status = applicationData?.status ?? "NOT_STARTED";
-  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+  const canEdit = applicationData?.firstName == "Jessica"
 
   const { pending, navigate } = usePendingNavigation();
 
@@ -420,11 +418,7 @@ export function TempApplyNavigation({ step }: ApplyNavigationProps) {
             <Button
               variant="secondary"
               className="h-10 border-gray-300 px-4 text-gray-700 hover:bg-gray-50"
-              onClick={() =>
-                navigate(
-                  `/jessica-portfolio-apply?step=${previousStep ?? step}`,
-                )
-              }
+              onClick={() => navigate(`/jessica-portfolio-apply?step=${previousStep ?? step}`)}
               disabled={pending}
               aria-busy={pending}
             >
@@ -491,9 +485,7 @@ export function TempApplyNavigation({ step }: ApplyNavigationProps) {
               <Button
                 variant="tertiary"
                 className="h-6 w-16 text-base font-medium text-heavy"
-                onClick={() =>
-                  navigate(`/jessica-portfolio-apply?step=${previousStep}`)
-                }
+                onClick={() => navigate(`/jessica-portfolio-apply?step=${previousStep}`)}
                 disabled={pending}
                 aria-busy={pending}
               >
@@ -578,9 +570,7 @@ function MenuItem({ s, currentStep, stepStatuses, className }: MenuItemProps) {
       className={`${className ?? ""} flex items-center justify-between`}
       asChild
     >
-      <Link
-        href={{ pathname: "/jessica-portfolio-apply", query: { step: s.step } }}
-      >
+      <Link href={{ pathname: "/jessica-portfolio-apply", query: { step: s.step } }}>
         <span>{s.label}</span>
         {status === "started" && <CircleDashed className="h-4 w-4" />}
         {status === "completed" && <Check className="h-4 w-4" />}
@@ -738,10 +728,6 @@ export function TempApplyMenu({ step }: ApplyMenuProps) {
   const stepStatuses: Record<ApplyStep, StepStatus> = useMemo(() => {
     return computeStepStatuses(application);
   }, [application]);
-
-  if (status !== "NOT_STARTED" && status !== "IN_PROGRESS") {
-    return null;
-  }
 
   return (
     <>
