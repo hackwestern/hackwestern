@@ -1,5 +1,5 @@
 import { useSearchParams } from "next/navigation";
-import Head from "next/head";
+import SEO from "~/components/seo";
 import { useEffect, useState } from "react";
 import { api } from "~/utils/api";
 import { useToast } from "~/hooks/use-toast";
@@ -87,14 +87,7 @@ const Verify = () => {
 
   return (
     <>
-      <Head>
-        <title>Hack Western</title>
-        <meta
-          name="description"
-          content="Hack Western: One of Canada's largest annual student-run hackathons based out of Western University in London, Ontario."
-        />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+      <SEO title="Verify Email" noindex />
 
       <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />

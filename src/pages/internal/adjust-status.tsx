@@ -2,7 +2,7 @@ import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
-import Head from "next/head";
+import SEO from "~/components/seo";
 import CanvasBackground from "~/components/canvas-background";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -151,9 +151,7 @@ export default function AdjustStatus() {
 
   return (
     <>
-      <Head>
-        <title>Adjust Status | Hack Western</title>
-      </Head>
+      <SEO title="Adjust Status" noindex />
       <div className="m-auto flex min-h-screen flex-col items-center justify-start bg-hw-radial-gradient py-8">
         <CanvasBackground />
         <div className="z-10 w-full max-w-3xl rounded-lg bg-background/90 p-6 shadow-md backdrop-blur-sm">
