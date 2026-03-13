@@ -21,7 +21,9 @@ export default function SEO({
   noindex = false,
 }: SEOProps) {
   const router = useRouter();
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | Canada's Premier Student-Run Hackathon`;
+  const fullTitle = title
+    ? `${title} | ${SITE_NAME}`
+    : `${SITE_NAME} | Canada's Premier Student-Run Hackathon`;
   const canonicalUrl = `${SITE_URL}${router.asPath.split("?")[0]}`;
 
   return (

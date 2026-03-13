@@ -27,9 +27,7 @@ export default function Home() {
 
   return (
     <>
-      <SEO
-        description="Hack Western is one of Canada's largest student-run hackathons, hosted annually at Western University in London, Ontario. Join 500+ students for a weekend of building, learning, and innovation."
-      />
+      <SEO description="Hack Western is one of Canada's largest student-run hackathons, hosted annually at Western University in London, Ontario. Join 500+ students for a weekend of building, learning, and innovation." />
       <Head>
         <script
           type="application/ld+json"
