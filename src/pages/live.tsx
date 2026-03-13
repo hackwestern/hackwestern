@@ -1,4 +1,4 @@
-import Head from "next/head";
+import SEO from "~/components/seo";
 import { useSearchParams } from "next/navigation";
 import Home from "~/components/live/home";
 import Schedule from "~/components/live/schedule";
@@ -33,14 +33,11 @@ const Live = () => {
 
   return (
     <>
-      <Head>
-        <title>Live Portal</title>
-        <meta
-          name="description"
-          content="Hack Western: One of Canada's largest annual student-run hackathons based out of Western University in London, Ontario."
-        />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+      <SEO
+        title="Live Portal"
+        description="Live dashboard for Hack Western participants. Access schedules, maps, mentors, and more during Canada's largest student-run hackathon."
+        noindex
+      />
       <div className="flex h-screen w-screen flex-col md:flex-row">
         <Topbar />
         <Sidebar />

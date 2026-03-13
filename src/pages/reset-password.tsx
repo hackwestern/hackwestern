@@ -1,4 +1,4 @@
-import Head from "next/head";
+import SEO from "~/components/seo";
 import { type FormEvent, useState } from "react";
 import { hackerLoginRedirect } from "~/utils/redirect";
 import { useToast } from "~/hooks/use-toast";
@@ -72,14 +72,7 @@ export default function ResetRequest() {
 
   return (
     <>
-      <Head>
-        <title>Hack Western</title>
-        <meta
-          name="description"
-          content="Hack Western: One of Canada's largest annual student-run hackathons based out of Western University in London, Ontario."
-        />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+      <SEO title="Reset Password" noindex />
 
       <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />
