@@ -1,5 +1,5 @@
 import React from "react";
-import Head from "next/head";
+import SEO from "~/components/seo";
 import { useSearchParams } from "next/navigation";
 import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { ApplyMenu } from "~/components/apply/menu";
@@ -143,14 +143,11 @@ export default function Apply() {
 
   return (
     <>
-      <Head>
-        <title>Hack Western</title>
-        <meta
-          name="description"
-          content="Hack Western: One of Canada's largest annual student-run hackathons based out of Western University in London, Ontario."
-        />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+      <SEO
+        title="Apply"
+        description="Apply to Hack Western, one of Canada's largest student-run hackathons. Build projects, learn new skills, and connect with 500+ students at Western University."
+        noindex
+      />
       <motion.main
         className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-x-hidden md:overflow-y-hidden"
         key={"apply-page"}
