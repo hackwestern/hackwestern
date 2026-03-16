@@ -497,3 +497,91 @@ export const scavengerHuntRedemptions = createTable(
   },
   (t) => [index("redemption_user_idx").on(t.userId)],
 );
+
+/**
+ * A unique visitor identified by a persistent cookie UUID.
+ * Stores aggregate stats that are updated on each visit.
+ */
+export const visitors = createTable(
+  "visitor",
+  {
+    // The cookie UUID is the primary key (hw_visitor cookie value)
+    id: varchar("id", { length: 36 }).notNull().primaryKey(),
+
+    // Aggregate stats — updated on each visit
+    totalVisits: integer("total_visits").default(0).notNull(),
+    lastVisitAt: timestamp("last_visit_at", { mode: "date", precision: 3 }),
+
+    // Static-ish info captured on first visit (or updated if it changes)
+    userId: varchar("user_id", { length: 255 }).references(() => users.id),
+    ipAddress: varchar("ip_address", { length: 45 }),
+    userAgent: text("user_agent"),
+
+    // Location (from first visit, or most recent)
+    city: varchar("city", { length: 255 }),
+    region: varchar("region", { length: 255 }),
+    country: varchar("country", { length: 255 }),
+
+    firstVisitAt: timestamp("first_visit_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("visitor_user_idx").on(t.userId),
+    index("visitor_country_idx").on(t.country),
+  ],
+);
+
+/**
+ * An individual page/PDF view event, linked to a visitor.
+ * Captures per-request details like URL, IP, location, user agent, etc.
+ */
+export const visits = createTable(
+  "visit",
+  {
+    id: serial("id").primaryKey(),
+
+    // FK to the visitor who made this request
+    visitorId: varchar("visitor_id", { length: 36 })
+      .notNull()
+      .references(() => visitors.id, { onDelete: "cascade" }),
+
+    url: varchar("url", { length: 2048 }).notNull(),
+    userId: varchar("user_id", { length: 255 }).references(() => users.id),
+
+    // Request & Browser Info
+    ipAddress: varchar("ip_address", { length: 45 }),
+    userAgent: text("user_agent"),
+    referer: varchar("referer", { length: 2048 }),
+
+    // Location Info
+    city: varchar("city", { length: 255 }),
+    region: varchar("region", { length: 255 }),
+    country: varchar("country", { length: 255 }),
+    latitude: varchar("latitude", { length: 255 }),
+    longitude: varchar("longitude", { length: 255 }),
+
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("visit_url_idx").on(t.url),
+    index("visit_visitor_idx").on(t.visitorId),
+    index("visit_user_idx").on(t.userId),
+  ],
+);
+
+/**
+ * Visitors have a one-to-many relationship with visits.
+ */
+export const visitorsRelations = relations(visitors, ({ many }) => ({
+  visits: many(visits),
+}));
+
+export const visitsRelations = relations(visits, ({ one }) => ({
+  visitor: one(visitors, {
+    fields: [visits.visitorId],
+    references: [visitors.id],
+  }),
+}));

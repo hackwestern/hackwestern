@@ -127,6 +127,34 @@
       "when": 1763525937381,
       "tag": "0017_early_trauma",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1772042997068,
+      "tag": "0018_whole_zemo",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1772046231051,
+      "tag": "0019_married_nomad",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1772047079887,
+      "tag": "0020_short_nicolaos",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1772048997226,
+      "tag": "0021_wealthy_bloodstorm",
+      "breakpoints": true
     }
   ]
 }
