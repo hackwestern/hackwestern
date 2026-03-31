@@ -1,4 +1,3 @@
-import { exampleRouter } from "~/server/api/routers/example";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 import { applicationRouter } from "./routers/application";
 import { authRouter } from "./routers/auth";
@@ -13,7 +12,6 @@ import { qrRouter } from "./routers/qr-code-generation";
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-  example: exampleRouter,
   application: applicationRouter,
   auth: authRouter,
   preregistration: preregistrationRouter,
