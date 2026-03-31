@@ -1,1 +1,0 @@
-ALTER TABLE "hw11_review" RENAME COLUMN "referall" TO "referral";
