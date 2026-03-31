@@ -6,7 +6,7 @@ import {
   integer,
   jsonb,
   pgEnum,
-  pgTableCreator,
+  pgTable,
   primaryKey,
   smallint,
   text,
@@ -16,22 +16,6 @@ import {
 import { type AdapterAccount } from "next-auth/adapters";
 import type { CanvasPaths } from "~/types/canvas";
 
-/**
- * This is the prefix for tables from this year's hack western!
- * Please change it every year so we have separate tables for each year.
- * Make sure to also change the `tableFilter` in drizzle-config.ts.
- *
- * @see https://orm.drizzle.team/kit-docs/config-reference#tablesfilters
- */
-const TABLE_PREFIX = "hw";
-
-/**
- * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
- * database instance for multiple projects.
- *
- * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
- */
-export const createTable = pgTableCreator((name) => `${TABLE_PREFIX}_${name}`);
 
 /**
  * The status of a hacker application, from when it's first started (`IN_PROGRESS`).
@@ -156,7 +140,7 @@ export const countrySelection = pgEnum("country", [
  * The table for storing hacker pre-registration, to be used as an email list
  * for when the actual application starts.
  */
-export const preregistrations = createTable("preregistration", {
+export const preregistrations = pgTable("preregistration", {
   id: serial("id").primaryKey(),
   createdAt: timestamp("created_at", {
     mode: "date",
@@ -171,7 +155,7 @@ export const preregistrations = createTable("preregistration", {
  * The table for storing organizer reviews of an application, to be used for the
  * application review portal.
  */
-export const reviews = createTable(
+export const reviews = pgTable(
   "review",
   {
     reviewerUserId: varchar("reviewer_user_id", { length: 255 })
@@ -200,14 +184,12 @@ export const reviews = createTable(
     completed: boolean("completed").default(false),
     referral: boolean("referral").default(false),
   },
-  (review) => {
-    return {
-      pk: primaryKey({
-        columns: [review.reviewerUserId, review.applicantUserId],
-      }),
-      applicantIdx: index("applicant_user_id_idx").on(review.applicantUserId),
-    };
-  },
+  (review) => [
+    primaryKey({
+      columns: [review.reviewerUserId, review.applicantUserId],
+    }),
+    index("applicant_user_id_idx").on(review.applicantUserId),
+  ],
 );
 
 /**
@@ -236,7 +218,7 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
  * The table for storing hacker applications while the hacker is completing the application,
  * and during the review process.
  */
-export const applications = createTable(
+export const applications = pgTable(
   "application",
   {
     userId: varchar("user_id", { length: 255 })
@@ -346,7 +328,7 @@ export const applicationsRelations = relations(
 
 export const userType = pgEnum("user_type", ["hacker", "organizer", "sponsor"]);
 
-export const users = createTable(
+export const users = pgTable(
   "user",
   {
     id: varchar("id", { length: 255 }).notNull().primaryKey(),
@@ -373,7 +355,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   application: one(applications),
 }));
 
-export const accounts = createTable(
+export const accounts = pgTable(
   "account",
   {
     userId: varchar("userId", { length: 255 })
@@ -404,7 +386,7 @@ export const accountsRelations = relations(accounts, ({ one }) => ({
   user: one(users, { fields: [accounts.userId], references: [users.id] }),
 }));
 
-export const sessions = createTable(
+export const sessions = pgTable(
   "session",
   {
     sessionToken: varchar("sessionToken", { length: 255 })
@@ -415,16 +397,16 @@ export const sessions = createTable(
       .references(() => users.id),
     expires: timestamp("expires", { mode: "date" }).notNull(),
   },
-  (session) => ({
-    userIdIdx: index("session_userId_idx").on(session.userId),
-  }),
+  (session) => ([
+    index("session_userId_idx").on(session.userId),
+  ]),
 );
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));
 
-export const verificationTokens = createTable(
+export const verificationTokens = pgTable(
   "verification_token",
   {
     identifier: varchar("identifier", { length: 255 }).notNull(),
@@ -434,7 +416,7 @@ export const verificationTokens = createTable(
   (vt) => [primaryKey({ columns: [vt.identifier, vt.token] })],
 );
 
-export const resetPasswordTokens = createTable("reset_password_token", {
+export const resetPasswordTokens = pgTable("reset_password_token", {
   userId: varchar("userId", { length: 255 })
     .references(() => users.id)
     .primaryKey(),
@@ -442,7 +424,7 @@ export const resetPasswordTokens = createTable("reset_password_token", {
   expires: timestamp("expires", { mode: "date" }).notNull(),
 });
 
-export const scavengerHuntItems = createTable("scavenger_hunt_item", {
+export const scavengerHuntItems = pgTable("scavenger_hunt_item", {
   id: serial("id").primaryKey(),
   code: varchar("code", { length: 12 }).unique().notNull(),
   points: smallint("points").default(1).notNull(),
@@ -450,7 +432,7 @@ export const scavengerHuntItems = createTable("scavenger_hunt_item", {
   deletedAt: timestamp("deleted_at", { mode: "date", precision: 3 }),
 });
 
-export const scavengerHuntScans = createTable(
+export const scavengerHuntScans = pgTable(
   "scavenger_hunt_scan",
   {
     userId: varchar("user_id", { length: 255 })
@@ -473,7 +455,7 @@ export const scavengerHuntScans = createTable(
   ],
 );
 
-export const scavengerHuntRewards = createTable("scavenger_hunt_reward", {
+export const scavengerHuntRewards = pgTable("scavenger_hunt_reward", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   costPoints: smallint("cost_points").notNull(),
@@ -481,7 +463,7 @@ export const scavengerHuntRewards = createTable("scavenger_hunt_reward", {
   quantity: integer("quantity"),
 });
 
-export const scavengerHuntRedemptions = createTable(
+export const scavengerHuntRedemptions = pgTable(
   "scavenger_hunt_redemption",
   {
     id: serial("id").primaryKey(),
