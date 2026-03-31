@@ -16,7 +16,6 @@ import {
 import { type AdapterAccount } from "next-auth/adapters";
 import type { CanvasPaths } from "~/types/canvas";
 
-
 /**
  * The status of a hacker application, from when it's first started (`IN_PROGRESS`).
  */
@@ -397,9 +396,7 @@ export const sessions = pgTable(
       .references(() => users.id),
     expires: timestamp("expires", { mode: "date" }).notNull(),
   },
-  (session) => ([
-    index("session_userId_idx").on(session.userId),
-  ]),
+  (session) => [index("session_userId_idx").on(session.userId)],
 );
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
