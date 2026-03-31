@@ -14,9 +14,9 @@ export class ScavengerHuntItemSeeder
   createRandom() {
     return {
       code: faker.string.alphanumeric(6).toUpperCase(), // fake scan code
-      name: faker.commerce.productName(), // item name
       points: faker.number.int({ min: 1, max: 50 }), // assign random points
-      createdAt: new Date(),
+      deletedAt: new Date(),
+      description: faker.lorem.text(), // assign random text as description
     };
   }
 }

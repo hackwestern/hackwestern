@@ -4,9 +4,12 @@ import { type PgTable, type PgInsertValue } from "drizzle-orm/pg-core";
 
 import { ApplicationSeeder } from "./applicationSeeder";
 import { PreregistrationSeeder } from "./preregistrationSeeder";
+import { ScavengerHuntItemSeeder } from "./scavengerSeeder";
 import { UserSeeder } from "./userSeeder";
 
 import * as p from "@clack/prompts";
+import { ReviewSeeder } from "./reviewSeeder";
+import { OrganizerSeeder } from "./organizerSeeder";
 
 const MAX_INSERT_PARAMETERS = 2000;
 
@@ -38,8 +41,16 @@ export type UserPartial = {
   name: string | null;
 };
 
-function CreateSeeders(users: UserPartial[]): Seeder<PgTable>[] {
-  return [new PreregistrationSeeder(), new ApplicationSeeder(users)];
+function CreateSeeders(
+  users: UserPartial[],
+  reviewers: UserPartial[],
+): Seeder<PgTable>[] {
+  return [
+    new ScavengerHuntItemSeeder(),
+    new PreregistrationSeeder(),
+    new ApplicationSeeder(users),
+    new ReviewSeeder(reviewers, users),
+  ];
 }
 
 function chunkArray<T>(array: T[], size: number): T[][] {
@@ -95,13 +106,19 @@ async function deleteSeedTables(): Promise<void> {
     const delSpinner = p.spinner();
     delSpinner.start("Starting to delete rows from seeded tables.");
 
-    const seeders = [new UserSeeder(), ...CreateSeeders([])];
-    const seederTableNames = seeders.map((s) => s.tableName);
+    const seeders = [new UserSeeder(), ...CreateSeeders([], [])];
+    // reverse becuase we need to delete reviews before applications but on creation we need to create applications first
+    const seederTableNames = seeders.reverse().map((s) => s.tableName);
 
     delSpinner.message(
       `Deleting rows from tables ${seederTableNames.join(", ")}`,
     );
-    const deletePromises = seeders.map((s) => deleteAll(s, tx));
+
+    // sequential because we need to delete users table last and reviews before applications
+    const deletePromises = seeders.map(async (s) => {
+      return await deleteAll(s, tx);
+    });
+
     const deleteResults = await Promise.allSettled(deletePromises);
     const deleteErrors = deleteResults
       .map((r, i) => ({
@@ -114,7 +131,7 @@ async function deleteSeedTables(): Promise<void> {
       delSpinner.stop("Deleting rows from tables failed.");
       throw new Error(
         "Deleting rows from seeded tables failed.\n" +
-          JSON.stringify(deleteErrors),
+          JSON.stringify(deleteErrors, null, 2),
       );
     }
 
@@ -132,7 +149,10 @@ async function seedTables(): Promise<void> {
       const us = new UserSeeder();
       const insertedUsers = await seedUsers(us, tx);
 
-      const seeders = CreateSeeders(insertedUsers);
+      const orgSeeder = new OrganizerSeeder();
+      const insertedReviewers = await seedUsers(orgSeeder, tx);
+
+      const seeders = CreateSeeders(insertedUsers, insertedReviewers);
       const seederTableNames = seeders.map((s) => s.tableName);
 
       seedSpinner.message(`Seeding tables ${seederTableNames.join(", ")}`);
@@ -151,7 +171,7 @@ async function seedTables(): Promise<void> {
         seedSpinner.stop("Seeding tables failed.");
         throw new Error(
           "Some seeders failed to seed correctly.\n" +
-            JSON.stringify(seedErrors),
+            JSON.stringify(seedErrors, null, 2),
         );
       }
 
