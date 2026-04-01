@@ -15,7 +15,7 @@ export class ScavengerHuntItemSeeder
     return {
       code: faker.string.alphanumeric(6).toUpperCase(), // fake scan code
       points: faker.number.int({ min: 1, max: 50 }), // assign random points
-      deletedAt: new Date(),
+      deletedAt: null,
       description: faker.lorem.text(), // assign random text as description
     };
   }

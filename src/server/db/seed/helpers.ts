@@ -107,16 +107,14 @@ async function deleteSeedTables(): Promise<void> {
     delSpinner.start("Starting to delete rows from seeded tables.");
 
     const seeders = [new UserSeeder(), ...CreateSeeders([], [])];
-    // reverse becuase we need to delete reviews before applications but on creation we need to create applications first
     const seederTableNames = seeders.reverse().map((s) => s.tableName);
 
     delSpinner.message(
       `Deleting rows from tables ${seederTableNames.join(", ")}`,
     );
 
-    // sequential because we need to delete users table last and reviews before applications
-    const deletePromises = seeders.map(async (s) => {
-      return await deleteAll(s, tx);
+    const deletePromises = seeders.map((s) => {
+      return deleteAll(s, tx);
     });
 
     const deleteResults = await Promise.allSettled(deletePromises);
