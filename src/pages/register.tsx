@@ -1,4 +1,4 @@
-import Head from "next/head";
+import SEO from "~/components/seo";
 import { useState, type FormEvent } from "react";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
@@ -50,14 +50,10 @@ export default function Register() {
 
   return (
     <>
-      <Head>
-        <title>Hack Western</title>
-        <meta
-          name="description"
-          content="Hack Western: One of Canada's largest annual student-run hackathons based out of Western University in London, Ontario."
-        />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+      <SEO
+        title="Register"
+        description="Create your Hack Western account to apply. Join Canada's largest student-run hackathon at Western University in London, Ontario."
+      />
 
       <div className="m-auto flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />

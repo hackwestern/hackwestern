@@ -1,4 +1,3 @@
-import Head from "next/head";
 import { Footer } from "~/components/footer";
 import Hero from "~/components/promo/hero";
 import Canvas from "~/components/canvas/canvas";
@@ -15,6 +14,8 @@ import { motion } from "framer-motion";
 import { growTransition } from "~/components/canvas/wrapper";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
+import SEO from "~/components/seo";
+import Head from "next/head";
 
 export default function Home() {
   const router = useRouter();
@@ -26,13 +27,46 @@ export default function Home() {
 
   return (
     <>
+      <SEO description="Hack Western is one of Canada's largest student-run hackathons, hosted annually at Western University in London, Ontario. Join 500+ students for a weekend of building, learning, and innovation." />
       <Head>
-        <title>Hack Western</title>
-        <meta
-          name="description"
-          content="Hack Western: One of Canada's largest annual student-run hackathons based out of Western University in London, Ontario."
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Event",
+              name: "Hack Western",
+              description:
+                "One of Canada's largest student-run hackathons, hosted annually at Western University in London, Ontario.",
+              url: "https://hackwestern.com",
+              eventAttendanceMode:
+                "https://schema.org/OfflineEventAttendanceMode",
+              eventStatus: "https://schema.org/EventScheduled",
+              location: {
+                "@type": "Place",
+                name: "Western University",
+                address: {
+                  "@type": "PostalAddress",
+                  streetAddress: "1151 Richmond St",
+                  addressLocality: "London",
+                  addressRegion: "ON",
+                  postalCode: "N6A 3K7",
+                  addressCountry: "CA",
+                },
+              },
+              organizer: {
+                "@type": "Organization",
+                name: "Hack Western",
+                url: "https://hackwestern.com",
+              },
+              isAccessibleForFree: true,
+              audience: {
+                "@type": "Audience",
+                audienceType: "Students",
+              },
+            }),
+          }}
         />
-        <link rel="icon" href="/favicon.ico" />
       </Head>
       <main
         id="home"

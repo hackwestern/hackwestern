@@ -19,7 +19,7 @@ import DiscordProvider from "next-auth/providers/discord";
 
 import { env } from "~/env";
 import { type Database, db } from "~/server/db";
-import { createTable, users } from "~/server/db/schema";
+import { users } from "~/server/db/schema";
 import { UserSeeder } from "./db/seed/userSeeder";
 import type { PgInsertValue } from "drizzle-orm/pg-core";
 
@@ -78,7 +78,7 @@ export const authOptions: NextAuthOptions = {
     encode,
     decode,
   },
-  adapter: DrizzleAdapter(db, createTable) as Adapter,
+  adapter: DrizzleAdapter(db) as Adapter,
   providers: [
     GithubProvider({
       clientId: env.GITHUB_CLIENT_ID,
