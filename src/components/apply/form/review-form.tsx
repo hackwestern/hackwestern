@@ -158,6 +158,7 @@ function InfoReview({ error }: ReviewSectionProps) {
     fields: [
       "school",
       "levelOfStudy",
+      "yearOfStudy",
       "major",
       "attendedBefore",
       "numOfHackathons",
@@ -171,9 +172,14 @@ function InfoReview({ error }: ReviewSectionProps) {
         error={!data?.school ? ["School is required"] : []}
       />
       <ReviewField
-        label="Which year are you in?"
+        label="What is your level of study?"
         value={data?.levelOfStudy}
-        error={!data?.levelOfStudy ? ["Year is required"] : []}
+        error={!data?.levelOfStudy ? ["Level is required"] : []}
+      />
+      <ReviewField
+        label="Which year are you in?"
+        value={data?.yearOfStudy}
+        error={!data?.yearOfStudy ? ["Year is required"] : []}
       />
       <ReviewField
         label="What is your major?"
@@ -296,7 +302,7 @@ function AgreementsReview({ error }: ReviewSectionProps) {
   );
 }
 
-function OptionalReview({}: ReviewSectionProps) {
+function OptionalReview({ }: ReviewSectionProps) {
   const { data } = api.application.get.useQuery({
     fields: ["underrepGroup", "gender", "ethnicity", "sexualOrientation"],
   });
@@ -326,7 +332,7 @@ function OptionalReview({}: ReviewSectionProps) {
   );
 }
 
-function AvatarReview({}: ReviewSectionProps) {
+function AvatarReview({ }: ReviewSectionProps) {
   const { data } = api.application.get.useQuery({
     fields: [
       "avatarColour",
@@ -364,7 +370,7 @@ function AvatarReview({}: ReviewSectionProps) {
   );
 }
 
-function CanvasReview({}: ReviewSectionProps) {
+function CanvasReview({ }: ReviewSectionProps) {
   const { data } = api.application.get.useQuery({ fields: ["canvasData"] });
 
   // reuse shared canvas types

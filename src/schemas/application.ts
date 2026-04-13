@@ -11,6 +11,7 @@ import {
   gender,
   ethnicity,
   sexualOrientation,
+  yearOfStudy,
 } from "~/server/db/schema";
 
 // Save schema
@@ -52,6 +53,10 @@ export const infoSaveSchema = z.object({
   levelOfStudy: z.preprocess(
     (val) => (val === "" ? undefined : val),
     z.enum(levelOfStudy.enumValues).optional(),
+  ),
+  yearOfStudy: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.enum(yearOfStudy.enumValues).optional(),
   ),
   major: z.preprocess(
     (val) => (val === "" ? undefined : val),
@@ -136,6 +141,7 @@ export const applicationSubmitSchema = z.object({
   age: z.number().min(18).max(99),
   school: z.enum(schools),
   levelOfStudy: z.enum(levelOfStudy.enumValues),
+  yearOfStudy: z.enum(yearOfStudy.enumValues),
   major: z.enum(major.enumValues),
   attendedBefore: z.boolean(),
   numOfHackathons: z.enum(numOfHackathons.enumValues),
