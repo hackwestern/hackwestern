@@ -20,7 +20,12 @@ import {
   SelectItem,
 } from "~/components/ui/select";
 import { schools } from "~/constants/schools";
-import { levelOfStudy, major, numOfHackathons, yearOfStudy } from "~/server/db/schema";
+import {
+  levelOfStudy,
+  major,
+  numOfHackathons,
+  yearOfStudy,
+} from "~/server/db/schema";
 import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
 
 export function InfoForm() {

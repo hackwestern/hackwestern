@@ -302,7 +302,7 @@ function AgreementsReview({ error }: ReviewSectionProps) {
   );
 }
 
-function OptionalReview({ }: ReviewSectionProps) {
+function OptionalReview({}: ReviewSectionProps) {
   const { data } = api.application.get.useQuery({
     fields: ["underrepGroup", "gender", "ethnicity", "sexualOrientation"],
   });
@@ -332,7 +332,7 @@ function OptionalReview({ }: ReviewSectionProps) {
   );
 }
 
-function AvatarReview({ }: ReviewSectionProps) {
+function AvatarReview({}: ReviewSectionProps) {
   const { data } = api.application.get.useQuery({
     fields: [
       "avatarColour",
@@ -370,7 +370,7 @@ function AvatarReview({ }: ReviewSectionProps) {
   );
 }
 
-function CanvasReview({ }: ReviewSectionProps) {
+function CanvasReview({}: ReviewSectionProps) {
   const { data } = api.application.get.useQuery({ fields: ["canvasData"] });
 
   // reuse shared canvas types
