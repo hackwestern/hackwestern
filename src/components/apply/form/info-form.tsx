@@ -20,7 +20,12 @@ import {
   SelectItem,
 } from "~/components/ui/select";
 import { schools } from "~/constants/schools";
-import { levelOfStudy, major, numOfHackathons } from "~/server/db/schema";
+import {
+  levelOfStudy,
+  major,
+  numOfHackathons,
+  yearOfStudy,
+} from "~/server/db/schema";
 import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
 
 export function InfoForm() {
@@ -30,6 +35,7 @@ export function InfoForm() {
       "status",
       "school",
       "levelOfStudy",
+      "yearOfStudy",
       "major",
       "attendedBefore",
       "numOfHackathons",
@@ -53,6 +59,7 @@ export function InfoForm() {
       school:
         (data.school as (typeof schools)[number] | undefined) ?? undefined,
       levelOfStudy: data.levelOfStudy ?? undefined,
+      yearOfStudy: data.yearOfStudy ?? undefined,
       numOfHackathons: data.numOfHackathons ?? undefined,
       attendedBefore:
         data.attendedBefore === true
@@ -132,6 +139,34 @@ export function InfoForm() {
                   </SelectTrigger>
                   <SelectContent>
                     {levelOfStudy.enumValues.map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="yearOfStudy"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>What is your year of study?</FormLabel>
+              <FormControl>
+                <Select
+                  {...field}
+                  value={field.value ?? undefined}
+                  onValueChange={field.onChange}
+                  disabled={!canEdit}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select year of study" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {yearOfStudy.enumValues.map((item) => (
                       <SelectItem key={item} value={item}>
                         {item}
                       </SelectItem>

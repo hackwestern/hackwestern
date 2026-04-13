@@ -8,6 +8,13 @@
       "when": 1774920762186,
       "tag": "0000_outgoing_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776089618243,
+      "tag": "0001_polite_paibok",
+      "breakpoints": true
     }
   ]
 }

@@ -55,6 +55,18 @@ export const levelOfStudy = pgEnum("level_of_study", [
   "Not currently a student",
   "Prefer not to answer",
 ]);
+/**
+ * Year of study for the hacker
+ */
+export const yearOfStudy = pgEnum("year_of_study", [
+  "1st",
+  "2nd",
+  "3rd",
+  "4th",
+  "5th+",
+  "N/A",
+  "Pefer not to answer",
+]);
 
 /**
  * The subject that the applicant is mainly studying in university.
@@ -254,6 +266,7 @@ export const applications = pgTable(
 
     school: varchar("name", { length: 255 }),
     levelOfStudy: levelOfStudy("level_of_study"),
+    yearOfStudy: yearOfStudy("year_of_study"),
     major: major("major"),
 
     attendedBefore: boolean("attended"),

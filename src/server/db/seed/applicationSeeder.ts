@@ -9,6 +9,7 @@ import {
   major,
   numOfHackathons,
   sexualOrientation,
+  yearOfStudy,
 } from "../schema";
 import { USERS } from "./userSeeder";
 import { type UserPartial, type Seeder } from "./helpers";
@@ -65,6 +66,7 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
 
       school: faker.helpers.arrayElement(schools),
       levelOfStudy: faker.helpers.arrayElement(levelOfStudy.enumValues),
+      yearOfStudy: faker.helpers.arrayElement(yearOfStudy.enumValues),
       major: faker.helpers.arrayElement(major.enumValues),
 
       attendedBefore: faker.datatype.boolean(),

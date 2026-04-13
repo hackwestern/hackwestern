@@ -44,6 +44,7 @@ export const applicationRouter = createTRPCRouter({
                 // Info
                 "school",
                 "levelOfStudy",
+                "yearOfStudy",
                 "major",
                 "attendedBefore",
                 "numOfHackathons",
