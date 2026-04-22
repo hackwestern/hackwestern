@@ -5,7 +5,6 @@ import {
   countrySelection,
   ethnicity,
   gender,
-  levelOfStudy,
   major,
   numOfHackathons,
   sexualOrientation,
@@ -65,7 +64,6 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       ),
 
       school: faker.helpers.arrayElement(schools),
-      levelOfStudy: faker.helpers.arrayElement(levelOfStudy.enumValues),
       yearOfStudy: faker.helpers.arrayElement(yearOfStudy.enumValues),
       major: faker.helpers.arrayElement(major.enumValues),
 

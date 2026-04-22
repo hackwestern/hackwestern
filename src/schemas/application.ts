@@ -5,7 +5,6 @@ import { schools } from "~/constants/schools";
 import {
   applications,
   countrySelection,
-  levelOfStudy,
   major,
   numOfHackathons,
   gender,
@@ -49,10 +48,6 @@ export const infoSaveSchema = z.object({
   school: z.preprocess(
     (val) => (val === "" ? undefined : val),
     z.enum(schools).optional(),
-  ),
-  levelOfStudy: z.preprocess(
-    (val) => (val === "" ? undefined : val),
-    z.enum(levelOfStudy.enumValues).optional(),
   ),
   yearOfStudy: z.preprocess(
     (val) => (val === "" ? undefined : val),
@@ -140,7 +135,6 @@ export const applicationSubmitSchema = z.object({
   countryOfResidence: z.enum(countrySelection.enumValues),
   age: z.number().min(18).max(99),
   school: z.enum(schools),
-  levelOfStudy: z.enum(levelOfStudy.enumValues),
   yearOfStudy: z.enum(yearOfStudy.enumValues),
   major: z.enum(major.enumValues),
   attendedBefore: z.boolean(),

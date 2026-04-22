@@ -43,7 +43,6 @@ export const applicationRouter = createTRPCRouter({
                 "countryOfResidence",
                 // Info
                 "school",
-                "levelOfStudy",
                 "yearOfStudy",
                 "major",
                 "attendedBefore",
@@ -101,34 +100,34 @@ export const applicationRouter = createTRPCRouter({
         // When selecting a subset of fields, normalize only those link fields if present
         const modifiedApplication = application
           ? (() => {
-            // If no specific fields were requested, preserve prior full-shape behavior
-            if (!input?.fields || input.fields.length === 0) {
-              return {
-                ...application,
-                githubLink: application?.githubLink?.substring(19) ?? null,
-                linkedInLink:
-                  application?.linkedInLink?.substring(24) ?? null,
-              } as typeof application;
-            }
+              // If no specific fields were requested, preserve prior full-shape behavior
+              if (!input?.fields || input.fields.length === 0) {
+                return {
+                  ...application,
+                  githubLink: application?.githubLink?.substring(19) ?? null,
+                  linkedInLink:
+                    application?.linkedInLink?.substring(24) ?? null,
+                } as typeof application;
+              }
 
-            // fields were specified: only transform if those keys exist in the selection
-            const selected = application;
-            if (
-              input.fields.includes("githubLink") &&
-              "githubLink" in selected
-            ) {
-              selected.githubLink =
-                selected.githubLink?.substring(19) ?? null;
-            }
-            if (
-              input.fields.includes("linkedInLink") &&
-              "linkedInLink" in selected
-            ) {
-              selected.linkedInLink =
-                selected.linkedInLink?.substring(24) ?? null;
-            }
-            return selected;
-          })()
+              // fields were specified: only transform if those keys exist in the selection
+              const selected = application;
+              if (
+                input.fields.includes("githubLink") &&
+                "githubLink" in selected
+              ) {
+                selected.githubLink =
+                  selected.githubLink?.substring(19) ?? null;
+              }
+              if (
+                input.fields.includes("linkedInLink") &&
+                "linkedInLink" in selected
+              ) {
+                selected.linkedInLink =
+                  selected.linkedInLink?.substring(24) ?? null;
+              }
+              return selected;
+            })()
           : null;
 
         return modifiedApplication;
@@ -197,9 +196,9 @@ export const applicationRouter = createTRPCRouter({
       throw error instanceof TRPCError
         ? error
         : new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch applicants: " + JSON.stringify(error),
-        });
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to fetch applicants: " + JSON.stringify(error),
+          });
     }
   }),
 
@@ -221,12 +220,12 @@ export const applicationRouter = createTRPCRouter({
             canvasData === null
               ? undefined
               : (canvasData as
-                | {
-                  paths: CanvasPaths;
-                  timestamp: number;
-                  version: string;
-                }
-                | undefined);
+                  | {
+                      paths: CanvasPaths;
+                      timestamp: number;
+                      version: string;
+                    }
+                  | undefined);
         }
 
         if (Object.prototype.hasOwnProperty.call(input, "githubLink")) {
@@ -307,13 +306,13 @@ export const applicationRouter = createTRPCRouter({
       throw error instanceof TRPCError
         ? error
         : new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to submit application: " + JSON.stringify(error),
-        });
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to submit application: " + JSON.stringify(error),
+          });
     }
   }),
 
-  getAppStats: protectedOrganizerProcedure.query(async ({ }) => {
+  getAppStats: protectedOrganizerProcedure.query(async ({}) => {
     try {
       const applicationStats = await db
         .select({

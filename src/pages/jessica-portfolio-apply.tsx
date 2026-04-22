@@ -1443,7 +1443,7 @@ export function TempBasicsForm() {
 
 import { infoSaveSchema } from "~/schemas/application";
 import { schools } from "~/constants/schools";
-import { levelOfStudy, major, numOfHackathons } from "~/server/db/schema";
+import { major, yearOfStudy, numOfHackathons } from "~/server/db/schema";
 import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
 
 export function TempInfoForm() {
@@ -1452,7 +1452,7 @@ export function TempInfoForm() {
     fields: [
       "status",
       "school",
-      "levelOfStudy",
+      "yearOfStudy",
       "major",
       "attendedBefore",
       "numOfHackathons",
@@ -1475,7 +1475,7 @@ export function TempInfoForm() {
       major: data.major ?? undefined,
       school:
         (data.school as (typeof schools)[number] | undefined) ?? undefined,
-      levelOfStudy: data.levelOfStudy ?? undefined,
+      yearOfStudy: data.yearOfStudy ?? undefined,
       numOfHackathons: data.numOfHackathons ?? undefined,
       attendedBefore:
         data.attendedBefore === true
@@ -1539,10 +1539,10 @@ export function TempInfoForm() {
         />
         <FormField
           control={form.control}
-          name="levelOfStudy"
+          name="yearOfStudy"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>What is your level of study?</FormLabel>
+              <FormLabel>What is your year of study</FormLabel>
               <FormControl>
                 <Select
                   {...field}
@@ -1551,10 +1551,10 @@ export function TempInfoForm() {
                   disabled={!canEdit}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select level of study" />
+                    <SelectValue placeholder="Select year of study" />
                   </SelectTrigger>
                   <SelectContent>
-                    {levelOfStudy.enumValues.map((item) => (
+                    {yearOfStudy.enumValues.map((item) => (
                       <SelectItem key={item} value={item}>
                         {item}
                       </SelectItem>
@@ -2747,7 +2747,7 @@ function InfoReview({ error }: ReviewSectionProps) {
   const { data } = api.application.get.useQuery({
     fields: [
       "school",
-      "levelOfStudy",
+      "yearOfStudy",
       "major",
       "attendedBefore",
       "numOfHackathons",
@@ -2762,8 +2762,8 @@ function InfoReview({ error }: ReviewSectionProps) {
       />
       <ReviewField
         label="Which year are you in?"
-        value={data?.levelOfStudy}
-        error={!data?.levelOfStudy ? ["Year is required"] : []}
+        value={data?.yearOfStudy}
+        error={!data?.yearOfStudy ? ["Year is required"] : []}
       />
       <ReviewField
         label="What is your major?"
@@ -3011,7 +3011,7 @@ export function TempReviewForm() {
       "countryOfResidence",
       "age",
       "school",
-      "levelOfStudy",
+      "yearOfStudy",
       "major",
       "attendedBefore",
       "numOfHackathons",

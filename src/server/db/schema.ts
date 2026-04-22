@@ -40,22 +40,6 @@ export const avatarColour = pgEnum("avatar_colour", [
 ]);
 
 /**
- * The school/university year that the hacker applicant is in.
- */
-export const levelOfStudy = pgEnum("level_of_study", [
-  "Less than Secondary / High School",
-  "Secondary / High School",
-  "Undergraduate University (2 year - community college etc.)",
-  "Undergraduate University (3+ year)",
-  "Graduate University (Masters, Professional, Doctoral, etc)",
-  "Code School / Bootcamp",
-  "Other Vocational / Trade Program or Apprenticeship",
-  "Post Doctorate",
-  "Other",
-  "Not currently a student",
-  "Prefer not to answer",
-]);
-/**
  * Year of study for the hacker
  */
 export const yearOfStudy = pgEnum("year_of_study", [
@@ -265,7 +249,6 @@ export const applications = pgTable(
     countryOfResidence: countrySelection("country_of_residence"),
 
     school: varchar("name", { length: 255 }),
-    levelOfStudy: levelOfStudy("level_of_study"),
     yearOfStudy: yearOfStudy("year_of_study"),
     major: major("major"),
 
