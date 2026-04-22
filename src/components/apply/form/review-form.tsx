@@ -424,6 +424,7 @@ export function ReviewForm() {
       "major",
       "attendedBefore",
       "numOfHackathons",
+      "yearOfStudy",
       "question1",
       "question2",
       "question3",
