@@ -49,7 +49,7 @@ export const yearOfStudy = pgEnum("year_of_study", [
   "4th",
   "5th+",
   "N/A",
-  "Pefer not to answer",
+  "Prefer not to answer",
 ]);
 
 /**
