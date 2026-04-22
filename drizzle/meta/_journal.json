@@ -8,6 +8,20 @@
       "when": 1774920762186,
       "tag": "0000_outgoing_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776089618243,
+      "tag": "0001_polite_paibok",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776868787944,
+      "tag": "0002_light_spiral",
+      "breakpoints": true
     }
   ]
 }

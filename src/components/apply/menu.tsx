@@ -95,7 +95,7 @@ function computeStepStatuses(
     ],
     info: [
       "school",
-      "levelOfStudy",
+      "yearOfStudy",
       "major",
       "attendedBefore",
       "numOfHackathons",
@@ -132,7 +132,7 @@ function computeStepStatuses(
     ],
     info: [
       "school",
-      "levelOfStudy",
+      "yearOfStudy",
       "major",
       "attendedBefore",
       "numOfHackathons",
