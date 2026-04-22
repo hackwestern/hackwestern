@@ -43,7 +43,7 @@ export const applicationRouter = createTRPCRouter({
                 "countryOfResidence",
                 // Info
                 "school",
-                "levelOfStudy",
+                "yearOfStudy",
                 "major",
                 "attendedBefore",
                 "numOfHackathons",
