@@ -11,7 +11,6 @@ import { ReviewSeeder } from "~/server/db/seed/reviewSeeder";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
 import { createEmptyReview } from "~/server/api/routers/review";
-import { ZodNull } from "zod";
 
 const session = await mockOrganizerSession(db);
 const ctx = createInnerTRPCContext({ session });
