@@ -279,14 +279,14 @@ let otherApp: ReturnType<typeof ApplicationSeeder.createRandomWithoutUser> & {
   userId: string;
 };
 
-describe("review.getNextId", () =>{
+describe("review.getNextId", () => {
   beforeEach(async () => {
     hackerSession = await mockSession(db);
 
     newHackerSession = await mockSession(db);
-    
+
     organizerSession = await mockOrganizerSession(db);
-    organizerCtx = createInnerTRPCContext({ session: organizerSession});
+    organizerCtx = createInnerTRPCContext({ session: organizerSession });
     organizerCaller = createCaller(organizerCtx);
 
     app = {
@@ -340,26 +340,26 @@ describe("review.getNextId", () =>{
     await db.insert(applications).values(otherApp);
     await db.insert(reviews).values(review);
     await db.insert(reviews).values(otherReview);
-    
-    const result = await organizerCaller.review.getNextId({skipId: null}); 
+
+    const result = await organizerCaller.review.getNextId({ skipId: null });
 
     expect(result).toBe(newHackerSession.user.id);
-    
   });
 
-  test("Skips the in-progress review when skipId matches it", async () =>{
+  test("Skips the in-progress review when skipId matches it", async () => {
     await db.insert(applications).values(app);
     await db.insert(applications).values(otherApp);
     await db.insert(reviews).values(review);
     await db.insert(reviews).values(otherReview);
 
-    const result = await organizerCaller.review.getNextId({skipId: newHackerSession.user.id});
+    const result = await organizerCaller.review.getNextId({
+      skipId: newHackerSession.user.id,
+    });
 
     expect(result).toBe(hackerSession.user.id);
+  });
 
-  }); 
-  
-  test("Does not return applications the reviewer has already completed (no skipId)", async() => {
+  test("Does not return applications the reviewer has already completed (no skipId)", async () => {
     review.completed = true;
 
     await db.insert(applications).values(app);
@@ -367,12 +367,12 @@ describe("review.getNextId", () =>{
     await db.insert(reviews).values(review);
     await db.insert(reviews).values(otherReview);
 
-    const result = await organizerCaller.review.getNextId({skipId: null});
+    const result = await organizerCaller.review.getNextId({ skipId: null });
 
     expect(result).toBe(newHackerSession.user.id);
   });
 
-  test("Does not return applications the reviewer has already completed (with skipId)", async() => {
+  test("Does not return applications the reviewer has already completed (with skipId)", async () => {
     review.completed = true;
 
     await db.insert(applications).values(app);
@@ -380,12 +380,12 @@ describe("review.getNextId", () =>{
     await db.insert(reviews).values(review);
     await db.insert(reviews).values(otherReview);
 
-    const result = await organizerCaller.review.getNextId({skipId: "null"});
+    const result = await organizerCaller.review.getNextId({ skipId: "null" });
 
     expect(result).toBe(newHackerSession.user.id);
   });
 
-  test("Does not return applications with status other than PENDING_REVIEW", async() => {
+  test("Does not return applications with status other than PENDING_REVIEW", async () => {
     app.status = "IN_PROGRESS";
 
     await db.insert(applications).values(app);
@@ -393,13 +393,12 @@ describe("review.getNextId", () =>{
     await db.insert(reviews).values(review);
     await db.insert(reviews).values(otherReview);
 
-    const result = await organizerCaller.review.getNextId({skipId: "null"});
+    const result = await organizerCaller.review.getNextId({ skipId: "null" });
 
     expect(result).toBe(newHackerSession.user.id);
-    
   });
 
-  test("Does not return referred applications", async() => {
+  test("Does not return referred applications", async () => {
     review.referral = true;
 
     await db.insert(applications).values(app);
@@ -407,11 +406,11 @@ describe("review.getNextId", () =>{
     await db.insert(reviews).values(review);
     await db.insert(reviews).values(otherReview);
 
-    const result = await organizerCaller.review.getNextId({skipId: "null"});
+    const result = await organizerCaller.review.getNextId({ skipId: "null" });
 
     expect(result).toBe(newHackerSession.user.id);
   });
-  test("Does not return applications that already have REQUIRED_REVIEWS reviews", async() =>{
+  test("Does not return applications that already have REQUIRED_REVIEWS reviews", async () => {
     const newOrganizerSession = await mockOrganizerSession(db);
 
     const secondReview = {
@@ -420,15 +419,15 @@ describe("review.getNextId", () =>{
       reviewerUserId: newOrganizerSession.user.id,
       completed: false,
       referral: false,
-    }
-    
+    };
+
     await db.insert(applications).values(app);
     await db.insert(applications).values(otherApp);
     await db.insert(reviews).values(review);
     await db.insert(reviews).values(otherReview);
     await db.insert(reviews).values(secondReview);
 
-    const result = await organizerCaller.review.getNextId({skipId: "null"});
+    const result = await organizerCaller.review.getNextId({ skipId: "null" });
 
     expect(result).toBe(newHackerSession.user.id);
 
@@ -436,15 +435,14 @@ describe("review.getNextId", () =>{
       .delete(reviews)
       .where(eq(reviews.reviewerUserId, newOrganizerSession.user.id));
     await db.delete(users).where(eq(users.id, newOrganizerSession.user.id));
-    
   });
   test("Throws NOT_FOUND when no application matches", async () => {
     await db.insert(applications).values(app);
     await db.insert(reviews).values(review);
 
-    await expect(organizerCaller.review.getNextId({skipId: hackerSession.user.id})).rejects.toThrowError(
-      "NOT_FOUND"
-    );
+    await expect(
+      organizerCaller.review.getNextId({ skipId: hackerSession.user.id }),
+    ).rejects.toThrowError("NOT_FOUND");
   });
 });
 
