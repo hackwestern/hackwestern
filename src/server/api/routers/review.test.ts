@@ -309,13 +309,6 @@ describe("review.getNextId", () => {
       status: "PENDING_REVIEW",
     };
 
-    otherReview = {
-      ...ReviewSeeder.createRandomWithoutUser(),
-      applicantUserId: newHackerSession.user.id,
-      reviewerUserId: organizerSession.user.id,
-      completed: false,
-      referral: false,
-    };
   });
 
   afterEach(async () => {
@@ -334,29 +327,25 @@ describe("review.getNextId", () => {
   });
 
   test("Returns an in-progress review for the reviewer if one exists and no skipId is passed", async () => {
-    review.completed = true;
 
     await db.insert(applications).values(app);
-    await db.insert(applications).values(otherApp);
     await db.insert(reviews).values(review);
-    await db.insert(reviews).values(otherReview);
 
     const result = await organizerCaller.review.getNextId({ skipId: null });
 
-    expect(result).toBe(newHackerSession.user.id);
+    expect(result).toBe(hackerSession.user.id);
   });
 
   test("Skips the in-progress review when skipId matches it", async () => {
     await db.insert(applications).values(app);
     await db.insert(applications).values(otherApp);
     await db.insert(reviews).values(review);
-    await db.insert(reviews).values(otherReview);
 
     const result = await organizerCaller.review.getNextId({
-      skipId: newHackerSession.user.id,
+      skipId: hackerSession.user.id,
     });
 
-    expect(result).toBe(hackerSession.user.id);
+    expect(result).toBe(newHackerSession.user.id);
   });
 
   test("Does not return applications the reviewer has already completed (no skipId)", async () => {
@@ -365,7 +354,6 @@ describe("review.getNextId", () => {
     await db.insert(applications).values(app);
     await db.insert(applications).values(otherApp);
     await db.insert(reviews).values(review);
-    await db.insert(reviews).values(otherReview);
 
     const result = await organizerCaller.review.getNextId({ skipId: null });
 
@@ -378,7 +366,6 @@ describe("review.getNextId", () => {
     await db.insert(applications).values(app);
     await db.insert(applications).values(otherApp);
     await db.insert(reviews).values(review);
-    await db.insert(reviews).values(otherReview);
 
     const result = await organizerCaller.review.getNextId({ skipId: "null" });
 
@@ -391,7 +378,6 @@ describe("review.getNextId", () => {
     await db.insert(applications).values(app);
     await db.insert(applications).values(otherApp);
     await db.insert(reviews).values(review);
-    await db.insert(reviews).values(otherReview);
 
     const result = await organizerCaller.review.getNextId({ skipId: "null" });
 
@@ -404,7 +390,6 @@ describe("review.getNextId", () => {
     await db.insert(applications).values(app);
     await db.insert(applications).values(otherApp);
     await db.insert(reviews).values(review);
-    await db.insert(reviews).values(otherReview);
 
     const result = await organizerCaller.review.getNextId({ skipId: "null" });
 
@@ -424,7 +409,6 @@ describe("review.getNextId", () => {
     await db.insert(applications).values(app);
     await db.insert(applications).values(otherApp);
     await db.insert(reviews).values(review);
-    await db.insert(reviews).values(otherReview);
     await db.insert(reviews).values(secondReview);
 
     const result = await organizerCaller.review.getNextId({ skipId: "null" });
