@@ -308,7 +308,6 @@ describe("review.getNextId", () => {
       userId: newHackerSession.user.id,
       status: "PENDING_REVIEW",
     };
-
   });
 
   afterEach(async () => {
@@ -327,7 +326,6 @@ describe("review.getNextId", () => {
   });
 
   test("Returns an in-progress review for the reviewer if one exists and no skipId is passed", async () => {
-
     await db.insert(applications).values(app);
     await db.insert(reviews).values(review);
 
