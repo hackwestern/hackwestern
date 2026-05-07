@@ -1,17 +1,20 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   serial,
   integer,
   jsonb,
   pgEnum,
   pgTable,
+  pgView,
   primaryKey,
   smallint,
   text,
   timestamp,
   varchar,
+  real,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 import type { CanvasPaths } from "~/types/canvas";
@@ -338,16 +341,27 @@ export const users = pgTable(
 
     scavengerHuntEarned: integer("scavenger_hunt_earned").default(0),
     scavengerHuntBalance: integer("scavenger_hunt_balance").default(0),
+
+    isJudge: boolean("is_judge").default(false),
+    teamId: varchar("team_id", { length: 255 }).references(() => teams.id),
   },
   (user) => [
     index("user_scavenger_hunt_earned_idx").on(user.scavengerHuntEarned),
     index("user_scavenger_hunt_balance_idx").on(user.scavengerHuntBalance),
+    index("user_is_judge_idx").on(user.isJudge),
+    index("user_team_id_idx").on(user.teamId),
+    check("is_judge_check", sql`${user.type} IN ('sponsor', 'hacker') OR ${user.isJudge} = false`),
   ],
 );
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   accounts: many(accounts),
   application: one(applications),
+  team: one(teams, {
+    fields: [users.teamId],
+    references: [teams.id],
+  }),
+  judgingAssignments: many(judgingAssignments),
 }));
 
 export const accounts = pgTable(
@@ -472,3 +486,94 @@ export const scavengerHuntRedemptions = pgTable(
   },
   (t) => [index("redemption_user_idx").on(t.userId)],
 );
+
+// Judging Portal Schema
+export const teams = pgTable("team", {
+  id: varchar("id", { length: 255 }).notNull().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  tracks: varchar("tracks", { length: 255 }).array(),
+  createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+}, (t) => [
+  index("team_created_at_idx").on(t.createdAt),
+]);
+
+export const teamsRelations = relations(teams, ({ many }) => ({
+  members: many(users),
+  judgingAssignments: many(judgingAssignments),
+}));
+
+export const judgingSettings = pgTable("judging_settings", {
+  id: serial("id").primaryKey(),
+  expectedJudgesPerTeam: integer("expected_judges_per_team").default(3).notNull(),
+});
+
+export const judgingAssignmentsStatus = pgEnum("judging_assignment_status", ["PENDING", "SCORED", "SKIPPED"]);
+
+export const judgingAssignments = pgTable(
+  "judging_assignment",
+  {
+    id: serial("id").primaryKey(),
+    judgeId: varchar("judge_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .references(() => teams.id),
+    status: judgingAssignmentsStatus("status").default("PENDING").notNull(),
+
+    // scores
+    score: real("score"),
+    normalizedScore: real("normalized_score"),
+
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("ja_judge_idx").on(t.judgeId),
+    index("ja_team_idx").on(t.teamId),
+    index("ja_judge_status_idx").on(t.judgeId, t.status),
+  ],
+);
+
+export const judgingAssignmentsRelations = relations(
+  judgingAssignments,
+  ({ one }) => ({
+    judge: one(users, {
+      fields: [judgingAssignments.judgeId],
+      references: [users.id],
+    }),
+    team: one(teams, {
+      fields: [judgingAssignments.teamId],
+      references: [teams.id],
+    }),
+  }),
+);
+
+export const teamStats = pgTable("team_stats", {
+  teamId: varchar("team_id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .references(() => teams.id),
+  code: varchar("code", { length: 255 }).unique(),
+  judgeCount: integer("judge_count").default(0).notNull(),
+  totalRawScore: real("total_raw_score").default(0).notNull(),
+  finalNormalizedScore: real("final_normalized_score").default(0).notNull(),
+});
+
+export const judgeStats = pgTable("judge_stats", {
+  judgeId: varchar("judge_id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .references(() => users.id),
+  assignmentsCompleted: integer("assignments_completed").default(0).notNull(),
+  assignmentsPending: integer("assignments_pending").default(0).notNull(),
+  totalScore: real("total_score").default(0).notNull(),
+  averageScore: real("average_score").default(0).notNull(),
+  standardDeviation: real("standard_deviation").default(0).notNull(),
+});
