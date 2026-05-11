@@ -270,6 +270,164 @@ describe("review.getByOrganizer", () => {
   });
 });
 
+let app: ReturnType<typeof ApplicationSeeder.createRandomWithoutUser> & {
+  userId: string;
+};
+let newHackerSession: Session;
+let otherReview: ReturnType<typeof createRandomReview>;
+let otherApp: ReturnType<typeof ApplicationSeeder.createRandomWithoutUser> & {
+  userId: string;
+};
+
+describe("review.getNextId", () => {
+  beforeEach(async () => {
+    hackerSession = await mockSession(db);
+
+    newHackerSession = await mockSession(db);
+
+    organizerSession = await mockOrganizerSession(db);
+    organizerCtx = createInnerTRPCContext({ session: organizerSession });
+    organizerCaller = createCaller(organizerCtx);
+
+    app = {
+      ...ApplicationSeeder.createRandomWithoutUser(),
+      userId: hackerSession.user.id,
+      status: "PENDING_REVIEW",
+    };
+
+    review = {
+      ...ReviewSeeder.createRandomWithoutUser(),
+      applicantUserId: hackerSession.user.id,
+      reviewerUserId: organizerSession.user.id,
+      completed: false,
+      referral: false,
+    };
+
+    otherApp = {
+      ...ApplicationSeeder.createRandomWithoutUser(),
+      userId: newHackerSession.user.id,
+      status: "PENDING_REVIEW",
+    };
+  });
+
+  afterEach(async () => {
+    await db
+      .delete(reviews)
+      .where(eq(reviews.reviewerUserId, organizerSession.user.id));
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, hackerSession.user.id));
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, newHackerSession.user.id));
+    await db.delete(users).where(eq(users.id, organizerSession.user.id));
+    await db.delete(users).where(eq(users.id, hackerSession.user.id));
+    await db.delete(users).where(eq(users.id, newHackerSession.user.id));
+  });
+
+  test("Returns an in-progress review for the reviewer if one exists and no skipId is passed", async () => {
+    await db.insert(applications).values(app);
+    await db.insert(reviews).values(review);
+
+    const result = await organizerCaller.review.getNextId({ skipId: null });
+
+    expect(result).toBe(hackerSession.user.id);
+  });
+
+  test("Skips the in-progress review when skipId matches it", async () => {
+    await db.insert(applications).values(app);
+    await db.insert(applications).values(otherApp);
+    await db.insert(reviews).values(review);
+
+    const result = await organizerCaller.review.getNextId({
+      skipId: hackerSession.user.id,
+    });
+
+    expect(result).toBe(newHackerSession.user.id);
+  });
+
+  test("Does not return applications the reviewer has already completed (no skipId)", async () => {
+    review.completed = true;
+
+    await db.insert(applications).values(app);
+    await db.insert(applications).values(otherApp);
+    await db.insert(reviews).values(review);
+
+    const result = await organizerCaller.review.getNextId({ skipId: null });
+
+    expect(result).toBe(newHackerSession.user.id);
+  });
+
+  test("Does not return applications the reviewer has already completed (with skipId)", async () => {
+    review.completed = true;
+
+    await db.insert(applications).values(app);
+    await db.insert(applications).values(otherApp);
+    await db.insert(reviews).values(review);
+
+    const result = await organizerCaller.review.getNextId({ skipId: "null" });
+
+    expect(result).toBe(newHackerSession.user.id);
+  });
+
+  test("Does not return applications with status other than PENDING_REVIEW", async () => {
+    app.status = "IN_PROGRESS";
+
+    await db.insert(applications).values(app);
+    await db.insert(applications).values(otherApp);
+    await db.insert(reviews).values(review);
+
+    const result = await organizerCaller.review.getNextId({ skipId: "null" });
+
+    expect(result).toBe(newHackerSession.user.id);
+  });
+
+  test("Does not return referred applications", async () => {
+    review.referral = true;
+
+    await db.insert(applications).values(app);
+    await db.insert(applications).values(otherApp);
+    await db.insert(reviews).values(review);
+
+    const result = await organizerCaller.review.getNextId({ skipId: "null" });
+
+    expect(result).toBe(newHackerSession.user.id);
+  });
+  test("Does not return applications that already have REQUIRED_REVIEWS reviews", async () => {
+    const newOrganizerSession = await mockOrganizerSession(db);
+
+    const secondReview = {
+      ...ReviewSeeder.createRandomWithoutUser(),
+      applicantUserId: hackerSession.user.id,
+      reviewerUserId: newOrganizerSession.user.id,
+      completed: false,
+      referral: false,
+    };
+
+    await db.insert(applications).values(app);
+    await db.insert(applications).values(otherApp);
+    await db.insert(reviews).values(review);
+    await db.insert(reviews).values(secondReview);
+
+    const result = await organizerCaller.review.getNextId({ skipId: "null" });
+
+    expect(result).toBe(newHackerSession.user.id);
+
+    await db
+      .delete(reviews)
+      .where(eq(reviews.reviewerUserId, newOrganizerSession.user.id));
+    await db.delete(users).where(eq(users.id, newOrganizerSession.user.id));
+  });
+  test("Throws NOT_FOUND when no application matches", async () => {
+    await db.insert(applications).values(app);
+    await db.insert(reviews).values(review);
+
+    await expect(
+      organizerCaller.review.getNextId({ skipId: hackerSession.user.id }),
+    ).rejects.toThrowError("NOT_FOUND");
+  });
+});
+
 /* HELPER FUNCTIONS */
 // Filter to ensure only reviews created during test run are counted, and not prexisting db
 async function filterBasedOnSession() {
