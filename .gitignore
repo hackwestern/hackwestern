@@ -50,6 +50,7 @@ yarn-error.log*
 
 # local Claude context (not committed — keep your own copy)
 CLAUDE.md
+.claude/
 
 
 google-wallet-credentials.json
