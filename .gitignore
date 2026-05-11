@@ -48,5 +48,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 
+# local Claude context (not committed — keep your own copy)
+CLAUDE.md
+
 
 google-wallet-credentials.json
