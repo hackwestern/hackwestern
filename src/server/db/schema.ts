@@ -265,8 +265,9 @@ export const applications = pgTable(
 
     // Profile Links
     resumeLink: varchar("resume_link", { length: 2048 }),
-    githubLink: varchar("github_link", { length: 2048 }),
-    linkedInLink: varchar("linkedin_link", { length: 2048 }),
+    devpostUsername: varchar("devpost_username", { length: 255 }).notNull(),
+    githubLink: varchar("github_link", { length: 2048 }).notNull(),
+    linkedInLink: varchar("linkedin_link", { length: 2048 }).notNull(),
     otherLink: varchar("other_link", { length: 2048 }),
 
     // Agreements
@@ -324,6 +325,28 @@ export const applicationsRelations = relations(
   }),
 );
 
+export const dayOfRegistrations = pgTable("day_of_registration", {
+  userId: varchar("user_id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  approved: boolean("approved").default(false).notNull(),
+  signedInAt: timestamp("signed_in_at", {
+    mode: "date",
+    precision: 3,
+  }),
+  dateOfBirth: timestamp("date_of_birth", {
+    mode: "date",
+  }),
+});
+
+export const dayOfRegistrationsRelations = relations(dayOfRegistrations, ({ one }) => ({
+  user: one(users, {
+    fields: [dayOfRegistrations.userId],
+    references: [users.id],
+  }),
+}));
+
 export const userType = pgEnum("user_type", ["hacker", "organizer", "sponsor"]);
 
 export const users = pgTable(
@@ -342,15 +365,12 @@ export const users = pgTable(
     scavengerHuntEarned: integer("scavenger_hunt_earned").default(0),
     scavengerHuntBalance: integer("scavenger_hunt_balance").default(0),
 
-    isJudge: boolean("is_judge").default(false),
-    teamId: varchar("team_id", { length: 255 }).references(() => teams.id),
+    teamId: varchar("team_id", { length: 255 }).references(() => teams.id, { onDelete: "set null" }),
   },
   (user) => [
     index("user_scavenger_hunt_earned_idx").on(user.scavengerHuntEarned),
     index("user_scavenger_hunt_balance_idx").on(user.scavengerHuntBalance),
-    index("user_is_judge_idx").on(user.isJudge),
     index("user_team_id_idx").on(user.teamId),
-    check("is_judge_check", sql`${user.type} IN ('sponsor', 'hacker') OR ${user.isJudge} = false`),
   ],
 );
 
@@ -361,7 +381,6 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.teamId],
     references: [teams.id],
   }),
-  judgingAssignments: many(judgingAssignments),
 }));
 
 export const accounts = pgTable(
@@ -487,11 +506,56 @@ export const scavengerHuntRedemptions = pgTable(
   (t) => [index("redemption_user_idx").on(t.userId)],
 );
 
-// Judging Portal Schema
+// Enums
+export const submissionStatusEnum = pgEnum("submission_status", ["draft", "submitted", "late"]);
+export const judgeTypeEnum = pgEnum("judge_type", ["organizer", "sponsored"]);
+export const judgingQueueStatusEnum = pgEnum("judging_queue_status", ["waiting", "assigned"]);
+export const roundTypeEnum = pgEnum("round_type", ["regular", "sponsored"]);
+
+export const trackEnum = pgEnum("track", [
+  "Best Use of Cohere",
+  "Best Use of AntiGravity",
+  "Best Domain",
+  "General"
+]);
+
+// Cheat Checks
+export const cheatCheckIndividualResults = pgTable("cheat_check_individual_result", {
+  userId: varchar("user_id", { length: 255 }).notNull().primaryKey().references(() => users.id),
+  isOfAge: boolean("is_of_age").default(false).notNull(),
+  githubScanner: boolean("github_scanner").default(false).notNull(),
+  linkedinScanner: boolean("linkedin_scanner").default(false).notNull(),
+  finalResult: boolean("final_result").default(false).notNull(),
+  notes: text("notes"),
+  lastRunAt: timestamp("last_run_at", { mode: "date", precision: 3 }).defaultNow().notNull(),
+}, (t) => [
+  index("cheat_check_indiv_final_idx").on(t.finalResult),
+]);
+
+export const cheatCheckTeamResults = pgTable("cheat_check_team_result", {
+  teamId: varchar("team_id", { length: 255 }).notNull().primaryKey().references(() => teams.id, { onDelete: "cascade" }),
+  commitWithinAllottedTime: boolean("commit_within_allotted_time").default(false).notNull(),
+  onlyTeamMemberCommits: boolean("only_team_member_commits").default(false).notNull(),
+  devPostMembersAreRegistered: boolean("devpost_members_are_registered").default(false).notNull(),
+  finalResult: boolean("final_result").default(false).notNull(),
+  notes: text("notes"),
+  lastRunAt: timestamp("last_run_at", { mode: "date", precision: 3 }).defaultNow().notNull(),
+}, (t) => [
+  index("cheat_check_team_final_idx").on(t.finalResult),
+]);
+
+// Teams & Projects
 export const teams = pgTable("team", {
-  id: varchar("id", { length: 255 }).notNull().primaryKey(),
+  id: varchar("id", { length: 6 }).notNull().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
-  tracks: varchar("tracks", { length: 255 }).array(),
+  
+  // Project Submissions
+  devpostUrl: varchar("devpost_url", { length: 2048 }),
+  githubUrl: varchar("github_url", { length: 2048 }),
+  submissionStatus: submissionStatusEnum("submission_status").default("draft").notNull(),
+  submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 }),
+  tracks: trackEnum("tracks").array(),
+
   createdAt: timestamp("created_at", { mode: "date", precision: 3 })
     .defaultNow()
     .notNull(),
@@ -499,81 +563,89 @@ export const teams = pgTable("team", {
   index("team_created_at_idx").on(t.createdAt),
 ]);
 
-export const teamsRelations = relations(teams, ({ many }) => ({
+export const teamsRelations = relations(teams, ({ many, one }) => ({
   members: many(users),
-  judgingAssignments: many(judgingAssignments),
+  marks: many(teamMarks),
+  skips: many(judgingSkips),
+  cheatCheck: one(cheatCheckTeamResults, {
+    fields: [teams.id],
+    references: [cheatCheckTeamResults.teamId],
+  }),
 }));
 
-export const judgingSettings = pgTable("judging_settings", {
-  id: serial("id").primaryKey(),
-  expectedJudgesPerTeam: integer("expected_judges_per_team").default(3).notNull(),
+// Judging Portal Schema
+export const judges = pgTable("judge", {
+  id: varchar("id", { length: 255 }).notNull().primaryKey().references(() => users.id),
+  type: judgeTypeEnum("type").default("organizer").notNull(),
+  track: trackEnum("track").array(), // array of tracks for sponsored judges
+  
+  // Derived Stats
+  marksCount: integer("marks_count").default(0).notNull(),   
+  marksSum: real("marks_sum").default(0).notNull(),
+  marksSquaredSum: real("marks_squared_sum").default(0).notNull(), 
+  /* 
+  * markCount = n, markSum = S, markSquaredSum = S2
+  * alternative formula for std is: σ = √( (S2 / n) − (S / n)² )
+  */
 });
 
-export const judgingAssignmentsStatus = pgEnum("judging_assignment_status", ["PENDING", "SCORED", "SKIPPED"]);
-
-export const judgingAssignments = pgTable(
-  "judging_assignment",
-  {
-    id: serial("id").primaryKey(),
-    judgeId: varchar("judge_id", { length: 255 })
-      .notNull()
-      .references(() => users.id),
-    teamId: varchar("team_id", { length: 255 })
-      .notNull()
-      .references(() => teams.id),
-    status: judgingAssignmentsStatus("status").default("PENDING").notNull(),
-
-    // scores
-    score: real("score"),
-    normalizedScore: real("normalized_score"),
-
-    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
-      .defaultNow()
-      .notNull(),
-  },
-  (t) => [
-    index("ja_judge_idx").on(t.judgeId),
-    index("ja_team_idx").on(t.teamId),
-    index("ja_judge_status_idx").on(t.judgeId, t.status),
-  ],
-);
-
-export const judgingAssignmentsRelations = relations(
-  judgingAssignments,
-  ({ one }) => ({
-    judge: one(users, {
-      fields: [judgingAssignments.judgeId],
-      references: [users.id],
-    }),
-    team: one(teams, {
-      fields: [judgingAssignments.teamId],
-      references: [teams.id],
-    }),
+export const judgesRelations = relations(judges, ({ one, many }) => ({
+  user: one(users, {
+    fields: [judges.id],
+    references: [users.id],
   }),
-);
+  marks: many(teamMarks),
+  skips: many(judgingSkips),
+}));
 
-export const teamStats = pgTable("team_stats", {
-  teamId: varchar("team_id", { length: 255 })
-    .notNull()
-    .primaryKey()
-    .references(() => teams.id),
-  code: varchar("code", { length: 255 }).unique(),
-  judgeCount: integer("judge_count").default(0).notNull(),
-  totalRawScore: real("total_raw_score").default(0).notNull(),
-  finalNormalizedScore: real("final_normalized_score").default(0).notNull(),
-});
+export const judgingQueue = pgTable("judging_queue", {
+  teamId: varchar("team_id", { length: 255 }).notNull().primaryKey().references(() => teams.id, { onDelete: "cascade" }),
+  seenJudges: integer("seen_judges").default(0).notNull(),
+  roundsRemaining: integer("rounds_remaining").default(0).notNull(),
+  enqueuedAt: timestamp("enqueued_at", { mode: "date", precision: 3 }).defaultNow().notNull(),
+  status: judgingQueueStatusEnum("status").default("waiting").notNull(),
+}, (t) => [
+  index("judging_queue_priority_idx").on(t.roundsRemaining.desc(), t.enqueuedAt.asc()),
+]);
 
-export const judgeStats = pgTable("judge_stats", {
-  judgeId: varchar("judge_id", { length: 255 })
-    .notNull()
-    .primaryKey()
-    .references(() => users.id),
-  assignmentsCompleted: integer("assignments_completed").default(0).notNull(),
-  assignmentsPending: integer("assignments_pending").default(0).notNull(),
-  totalScore: real("total_score").default(0).notNull(),
-  averageScore: real("average_score").default(0).notNull(),
-  standardDeviation: real("standard_deviation").default(0).notNull(),
-});
+export const teamMarks = pgTable("team_mark", {
+  id: serial("id").primaryKey(),
+  teamId: varchar("team_id", { length: 255 }).notNull().references(() => teams.id, { onDelete: "cascade" }),
+  judgeId: varchar("judge_id", { length: 255 }).notNull().references(() => judges.id),
+  score: real("score").notNull(),
+  roundType: roundTypeEnum("round_type").default("regular").notNull(),
+  createdAt: timestamp("created_at", { mode: "date", precision: 3 }).defaultNow().notNull(),
+}, (t) => [
+  index("team_mark_team_idx").on(t.teamId),
+  index("team_mark_judge_idx").on(t.judgeId),
+]);
+
+export const teamMarksRelations = relations(teamMarks, ({ one }) => ({
+  team: one(teams, {
+    fields: [teamMarks.teamId],
+    references: [teams.id],
+  }),
+  judge: one(judges, {
+    fields: [teamMarks.judgeId],
+    references: [judges.id],
+  }),
+}));
+
+export const judgingSkips = pgTable("judging_skip", {
+  teamId: varchar("team_id", { length: 255 }).notNull().references(() => teams.id, { onDelete: "cascade" }),
+  judgeId: varchar("judge_id", { length: 255 }).notNull().references(() => judges.id),
+  createdAt: timestamp("created_at", { mode: "date", precision: 3 }).defaultNow().notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.teamId, t.judgeId] }),
+]);
+
+export const judgingSkipsRelations = relations(judgingSkips, ({ one }) => ({
+  team: one(teams, {
+    fields: [judgingSkips.teamId],
+    references: [teams.id],
+  }),
+  judge: one(judges, {
+    fields: [judgingSkips.judgeId],
+    references: [judges.id],
+  }),
+}));
