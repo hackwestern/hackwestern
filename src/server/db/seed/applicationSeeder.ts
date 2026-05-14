@@ -3,11 +3,14 @@ import {
   applications,
   avatarColour,
   countrySelection,
+  dietaryRestrictions,
+  emergencyContactRelationship,
   ethnicity,
   gender,
   major,
   numOfHackathons,
   sexualOrientation,
+  shirtSize,
   yearOfStudy,
 } from "../schema";
 import { USERS } from "./userSeeder";
@@ -67,6 +70,10 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       yearOfStudy: faker.helpers.arrayElement(yearOfStudy.enumValues),
       major: faker.helpers.arrayElement(major.enumValues),
 
+      shirtSize: null,
+      dietaryRestrictions: null,
+      dietaryRestrictionsOther: null,
+
       attendedBefore: faker.datatype.boolean(),
       numOfHackathons: faker.helpers.arrayElement(numOfHackathons.enumValues),
 
@@ -92,6 +99,12 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       sexualOrientation: faker.helpers.arrayElement(
         sexualOrientation.enumValues,
       ),
+
+      emergencyContactName: null,
+      emergencyContactRelationship: null,
+      emergencyContactPhoneNumber: null,
+
+      transportationMethod: null,
     };
 
     const isComplete = applicationSubmitSchema.safeParse(application).success;
