@@ -132,6 +132,37 @@ export const countrySelection = pgEnum("country", [
 ]);
 
 /**
+ * T-Shirt size for the applicant
+ */
+export const shirtSize = pgEnum("shirt_size", ["S", "M", "L", "XL"]);
+
+export const dietaryRestrictions = pgEnum("dietary_restrictions", [
+  "Vegetarian",
+  "Vegan",
+  "Kosher",
+  "Halal",
+  "Other",
+]);
+
+/**
+ * Relationship of the emergency contact to the applicant
+ */
+export const emergencyContactRelationship = pgEnum(
+  "emergency_contact_relationship",
+  ["Parent", "Sibling", "Other family member", "Friend", "Coworker", "Other"],
+);
+
+/**
+ * Status of applicants method of transportation
+ */
+export const transportationMethod = pgEnum("transportation_method", [
+  "Waterloo",
+  "Toronto",
+  "Hamilton",
+  "None",
+]);
+
+/**
  * The table for storing hacker pre-registration, to be used as an email list
  * for when the actual application starts.
  */
@@ -252,6 +283,12 @@ export const applications = pgTable(
     yearOfStudy: yearOfStudy("year_of_study"),
     major: major("major"),
 
+    shirtSize: shirtSize("shirt_size"),
+    dietaryRestrictions: dietaryRestrictions("dietary_restrictions"),
+    dietaryRestrictionsOther: varchar("dietary_restrictions_other", {
+      length: 255,
+    }),
+
     attendedBefore: boolean("attended"),
     numOfHackathons: numOfHackathons("num_of_hackathons"),
 
@@ -298,6 +335,17 @@ export const applications = pgTable(
       }>()
       .default(sql`'{"paths":[],"timestamp":0,"version":""}'::jsonb`)
       .notNull(),
+
+    // Emergency Contact Info
+    emergencyContactName: varchar("emergency_contact_name", { length: 255 }),
+    emergencyContactRelationship: emergencyContactRelationship(
+      "emergency_contact_relationship",
+    ),
+    emergencyContactPhoneNumber: varchar("emergency_contact_phone_number", {
+      length: 42,
+    }),
+
+    transportationMethod: transportationMethod("transportation_method"),
   },
   (application) => [index("user_id_idx").on(application.userId)],
 );
