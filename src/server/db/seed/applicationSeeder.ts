@@ -77,7 +77,7 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       dietaryRestrictions: faker.helpers.arrayElement(
         dietaryRestrictions.enumValues as [string, ...string[]],
       ) as (typeof dietaryRestrictions.enumValues)[number],
-      dietaryRestrictionsOther: undefined,
+      dietaryRestrictionsOther: null,
 
       attendedBefore: faker.datatype.boolean(),
       numOfHackathons: faker.helpers.arrayElement(numOfHackathons.enumValues),
