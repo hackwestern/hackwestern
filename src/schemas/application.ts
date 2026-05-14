@@ -11,6 +11,10 @@ import {
   ethnicity,
   sexualOrientation,
   yearOfStudy,
+  shirtSize,
+  dietaryRestrictions,
+  emergencyContactRelationship,
+  transportationMethod,
 } from "~/server/db/schema";
 
 // Save schema
@@ -183,6 +187,18 @@ export const applicationSubmitSchema = z.object({
     }),
   }),
   agreeEmailsFromMLH: z.boolean().optional(),
+
+  // RSVP fields
+  shirtSize: z.enum(shirtSize.enumValues),
+  dietaryRestrictions: z.enum(dietaryRestrictions.enumValues),
+  dietaryRestrictionsOther: z.string().optional(),
+  emergencyContactName: z.string().min(1),
+  emergencyContactRelationship: z.enum(emergencyContactRelationship.enumValues),
+  emergencyContactPhoneNumber: z
+    .string()
+    .min(1)
+    .regex(phoneRegex, "Invalid phone number"),
+  transportationMethod: z.enum(transportationMethod.enumValues),
 });
 
 export const canvasSaveSchema = applicationSaveSchema.pick({
