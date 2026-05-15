@@ -5,15 +5,19 @@ interface TertiaryButtonProps{
     children: React.ReactNode
     arrow?: boolean
 }
-export default function TertiaryButton({children, arrow = false}:TertiaryButtonProps){
-    if (arrow) return (
+export default function TertiaryButton({
+  children, arrow
+}: 
+  TertiaryButtonProps
+) {
+    if (arrow) return(
         <Button variant="tertiary-arrow" className="h-max p-0">
-            <div>{children}</div> 
-        </Button>
+      <div>{children}</div>
+    </Button>
     )
-    return(
-        <Button variant="tertiary" className="h-max p-0">
-            <div>{children}</div> 
-        </Button>
-    )
+  return (
+    <Button variant="tertiary" className="h-max p-0">
+      <div>{children}</div>
+    </Button>
+  );
 }
