@@ -1,7 +1,16 @@
 import React from "react";
 import { Button } from "~/components/ui/button";
 
-export default function TertiaryButton({children}:{children:React.ReactNode}){
+interface TertiaryButtonProps{
+    children: React.ReactNode
+    arrow?: boolean
+}
+export default function TertiaryButton({children, arrow = false}:TertiaryButtonProps){
+    if (arrow) return (
+        <Button variant="tertiary-arrow" className="h-max p-0">
+            <div>{children}</div> 
+        </Button>
+    )
     return(
         <Button variant="tertiary" className="h-max p-0">
             <div>{children}</div> 
