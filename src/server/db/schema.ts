@@ -27,6 +27,7 @@ export const applicationStatus = pgEnum("application_status", [
   "REJECTED",
   "WAITLISTED",
   "DECLINED",
+  "CONFIRMED",
 ]);
 
 export const avatarColour = pgEnum("avatar_colour", [
