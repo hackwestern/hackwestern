@@ -19,9 +19,14 @@ export const applicationSaveSchema = createInsertSchema(applications).omit({
   updatedAt: true,
   status: true,
   userId: true,
+}).extend({
+  devpostLink: z.string().nullish(),
+  githubLink: z.string().nullish(),
+  linkedInLink: z.string().nullish(),
 });
 
 export const linksSaveSchema = applicationSaveSchema.pick({
+  devpostLink: true,
   githubLink: true,
   linkedInLink: true,
   resumeLink: true,
@@ -155,11 +160,11 @@ export const applicationSubmitSchema = z.object({
     .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
     .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
   resumeLink: z.preprocess((v) => (!v ? undefined : v), z.string().url()),
-  githubLink: z.preprocess((v) => (!v ? undefined : v), z.string().optional()),
-  linkedInLink: z.preprocess(
-    (v) => (!v ? undefined : v),
-    z.string().optional(),
-  ),
+
+  devpostLink: z.string().min(3, "Devpost account is required"),
+  githubLink: z.string().min(3, "GitHub account is required"),
+  linkedInLink: z.string().min(3, "LinkedIn account is required"),
+
   otherLink: z.preprocess(
     (v) => (!v ? undefined : v),
     z.string().url().optional(),

@@ -11,7 +11,7 @@ import {
   applicationSaveSchema,
   applicationSubmitSchema,
 } from "~/schemas/application";
-import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
+import { GITHUB_URL, LINKEDIN_URL, DEVPOST_URL } from "~/utils/urls";
 import { eq, count, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { type CanvasPaths } from "~/types/canvas";
@@ -53,6 +53,7 @@ export const applicationRouter = createTRPCRouter({
                 "question3",
                 // Links
                 "resumeLink",
+                "devpostLink",
                 "githubLink",
                 "linkedInLink",
                 "otherLink",
@@ -74,8 +75,7 @@ export const applicationRouter = createTRPCRouter({
             .optional(),
         })
         .optional(),
-    )
-    .query(async ({ ctx, input }) => {
+    ).query(async ({ ctx, input }) => {
       try {
         const userId = ctx.session.user.id;
         const application = await (async () => {
@@ -100,34 +100,42 @@ export const applicationRouter = createTRPCRouter({
         // When selecting a subset of fields, normalize only those link fields if present
         const modifiedApplication = application
           ? (() => {
-              // If no specific fields were requested, preserve prior full-shape behavior
-              if (!input?.fields || input.fields.length === 0) {
-                return {
-                  ...application,
-                  githubLink: application?.githubLink?.substring(19) ?? null,
-                  linkedInLink:
-                    application?.linkedInLink?.substring(24) ?? null,
-                } as typeof application;
-              }
+            // If no specific fields were requested, preserve prior full-shape behavior
+            if (!input?.fields || input.fields.length === 0) {
+              return {
+                ...application,
+                devpostLink: application?.devpostLink?.substring(DEVPOST_URL.length) ?? null,
+                githubLink: application?.githubLink?.substring(GITHUB_URL.length) ?? null,
+                linkedInLink:
+                  application?.linkedInLink?.substring(LINKEDIN_URL.length) ?? null,
+              } as typeof application;
+            }
 
-              // fields were specified: only transform if those keys exist in the selection
-              const selected = application;
-              if (
-                input.fields.includes("githubLink") &&
-                "githubLink" in selected
-              ) {
-                selected.githubLink =
-                  selected.githubLink?.substring(19) ?? null;
-              }
-              if (
-                input.fields.includes("linkedInLink") &&
-                "linkedInLink" in selected
-              ) {
-                selected.linkedInLink =
-                  selected.linkedInLink?.substring(24) ?? null;
-              }
-              return selected;
-            })()
+            // fields were specified: only transform if those keys exist in the selection
+            const selected = application;
+            if (
+              input.fields.includes("githubLink") &&
+              "githubLink" in selected
+            ) {
+              selected.githubLink =
+                selected.githubLink?.substring(GITHUB_URL.length);
+            }
+            if (
+              input.fields.includes("linkedInLink") &&
+              "linkedInLink" in selected
+            ) {
+              selected.linkedInLink =
+                selected.linkedInLink?.substring(LINKEDIN_URL.length);
+            }
+            if (
+              input.fields.includes("devpostLink") &&
+              "devpostLink" in selected
+            ) {
+              selected.devpostLink =
+                selected.devpostLink?.substring(DEVPOST_URL.length);
+            }
+            return selected;
+          })()
           : null;
 
         return modifiedApplication;
@@ -196,9 +204,9 @@ export const applicationRouter = createTRPCRouter({
       throw error instanceof TRPCError
         ? error
         : new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to fetch applicants: " + JSON.stringify(error),
-          });
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch applicants: " + JSON.stringify(error),
+        });
     }
   }),
 
@@ -209,36 +217,49 @@ export const applicationRouter = createTRPCRouter({
         const userId = ctx.session.user.id;
         const { canvasData, ...restData } = input;
 
+
         const dataToInsert = {
           ...restData,
           userId,
+          // Coerce null → "" to satisfy the NOT NULL DB constraint
+          devpostLink: restData.devpostLink ?? "",
+          githubLink: restData.githubLink ?? "",
+          linkedInLink: restData.linkedInLink ?? "",
         };
 
-        // Only include these 3 specially formatted fields if they were actually provided
+        // Only include canvasData if it was actually provided
         if (Object.prototype.hasOwnProperty.call(input, "canvasData")) {
           (dataToInsert as typeof input).canvasData =
             canvasData === null
               ? undefined
               : (canvasData as
-                  | {
-                      paths: CanvasPaths;
-                      timestamp: number;
-                      version: string;
-                    }
-                  | undefined);
+                | {
+                  paths: CanvasPaths;
+                  timestamp: number;
+                  version: string;
+                }
+                | undefined);
+        }
+
+        if (Object.prototype.hasOwnProperty.call(input, "devpostLink")) {
+          dataToInsert.devpostLink = restData.devpostLink
+            ? `${DEVPOST_URL}${restData.devpostLink}`
+            : '';
         }
 
         if (Object.prototype.hasOwnProperty.call(input, "githubLink")) {
           dataToInsert.githubLink = restData.githubLink
             ? `${GITHUB_URL}${restData.githubLink}`
-            : null;
+            : '';
         }
 
         if (Object.prototype.hasOwnProperty.call(input, "linkedInLink")) {
           dataToInsert.linkedInLink = restData.linkedInLink
             ? `${LINKEDIN_URL}${restData.linkedInLink}`
-            : null;
+            : '';
         }
+
+
 
         await db
           .insert(applications)
@@ -266,7 +287,6 @@ export const applicationRouter = createTRPCRouter({
       const application = await db.query.applications.findFirst({
         where: (schema, { eq }) => eq(schema.userId, userId),
       });
-
       if (!application) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -274,20 +294,30 @@ export const applicationRouter = createTRPCRouter({
         });
       }
 
-      // Transform stored links to the shape expected by the submit schema
+      // These are mandatory fields
+      if (!application.devpostLink || !application.githubLink || !application.linkedInLink) {
+        const missing = [
+          !application.devpostLink && "Devpost link",
+          !application.githubLink && "GitHub link",
+          !application.linkedInLink && "LinkedIn link",
+        ].filter(Boolean);
+
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Missing required fields: ${missing.join(", ")}`,
+        });
+      }
+
       const normalized = {
         ...application,
-        // strip configured prefixes if present so schema preprocessing matches tests
-        githubLink: application.githubLink
-          ? application.githubLink.replace(GITHUB_URL, "")
-          : undefined,
-        linkedInLink: application.linkedInLink
-          ? application.linkedInLink.replace(LINKEDIN_URL, "")
-          : undefined,
+        devpostLink: application.devpostLink.replace(DEVPOST_URL, ""),
+        githubLink: application.githubLink.replace(GITHUB_URL, ""),
+        linkedInLink: application.linkedInLink.replace(LINKEDIN_URL, ""),
       };
 
       // Validate the existing application against the submission schema
       const parseResult = applicationSubmitSchema.safeParse(normalized);
+
       if (!parseResult.success) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -306,13 +336,13 @@ export const applicationRouter = createTRPCRouter({
       throw error instanceof TRPCError
         ? error
         : new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to submit application: " + JSON.stringify(error),
-          });
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to submit application: " + JSON.stringify(error),
+        });
     }
   }),
 
-  getAppStats: protectedOrganizerProcedure.query(async ({}) => {
+  getAppStats: protectedOrganizerProcedure.query(async ({ }) => {
     try {
       const applicationStats = await db
         .select({

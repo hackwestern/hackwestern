@@ -1,5 +1,5 @@
 {
-  "id": "8a0ca441-1edf-4f5c-bc55-73ffe197a15e",
+  "id": "e1e52cc1-8a07-48b0-8a54-d2e801be258e",
   "prevId": "6812506f-fc79-4bfd-b3bf-0eda8061bc67",
   "version": "7",
   "dialect": "postgresql",
@@ -272,23 +272,29 @@
           "primaryKey": false,
           "notNull": false
         },
-        "github_link": {
-          "name": "github_link",
-          "type": "varchar(2048)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "linkedin_link": {
-          "name": "linkedin_link",
-          "type": "varchar(2048)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "other_link": {
           "name": "other_link",
           "type": "varchar(2048)",
           "primaryKey": false,
           "notNull": false
+        },
+        "devpost_link": {
+          "name": "devpost_link",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "github_link": {
+          "name": "github_link",
+          "type": "varchar(2048)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "linkedin_link": {
+          "name": "linkedin_link",
+          "type": "varchar(2048)",
+          "primaryKey": false,
+          "notNull": true
         },
         "agree_code_of_conduct": {
           "name": "agree_code_of_conduct",
@@ -398,57 +404,52 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.judging_assignment": {
-      "name": "judging_assignment",
+    "public.cheat_check_individual_result": {
+      "name": "cheat_check_individual_result",
       "schema": "",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
           "primaryKey": true,
           "notNull": true
         },
-        "judge_id": {
-          "name": "judge_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "team_id": {
-          "name": "team_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "judging_assignment_status",
-          "typeSchema": "public",
+        "is_of_age": {
+          "name": "is_of_age",
+          "type": "boolean",
           "primaryKey": false,
           "notNull": true,
-          "default": "'PENDING'"
+          "default": false
         },
-        "score": {
-          "name": "score",
-          "type": "real",
+        "github_scanner": {
+          "name": "github_scanner",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "linkedin_scanner": {
+          "name": "linkedin_scanner",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "final_result": {
+          "name": "final_result",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "normalized_score": {
-          "name": "normalized_score",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
+        "last_run_at": {
+          "name": "last_run_at",
           "type": "timestamp (3)",
           "primaryKey": false,
           "notNull": true,
@@ -456,26 +457,11 @@
         }
       },
       "indexes": {
-        "ja_judge_idx": {
-          "name": "ja_judge_idx",
+        "cheat_check_indiv_final_idx": {
+          "name": "cheat_check_indiv_final_idx",
           "columns": [
             {
-              "expression": "judge_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "ja_team_idx": {
-          "name": "ja_team_idx",
-          "columns": [
-            {
-              "expression": "team_id",
+              "expression": "final_result",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -488,25 +474,12 @@
         }
       },
       "foreignKeys": {
-        "judging_assignment_judge_id_user_id_fk": {
-          "name": "judging_assignment_judge_id_user_id_fk",
-          "tableFrom": "judging_assignment",
+        "cheat_check_individual_result_user_id_user_id_fk": {
+          "name": "cheat_check_individual_result_user_id_user_id_fk",
+          "tableFrom": "cheat_check_individual_result",
           "tableTo": "user",
           "columnsFrom": [
-            "judge_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "judging_assignment_team_id_team_id_fk": {
-          "name": "judging_assignment_team_id_team_id_fk",
-          "tableFrom": "judging_assignment",
-          "tableTo": "team",
-          "columnsFrom": [
-            "team_id"
+            "user_id"
           ],
           "columnsTo": [
             "id"
@@ -521,27 +494,362 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.judging_settings": {
-      "name": "judging_settings",
+    "public.cheat_check_team_result": {
+      "name": "cheat_check_team_result",
+      "schema": "",
+      "columns": {
+        "team_id": {
+          "name": "team_id",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "commit_within_allotted_time": {
+          "name": "commit_within_allotted_time",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "only_team_member_commits": {
+          "name": "only_team_member_commits",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "devpost_members_are_registered": {
+          "name": "devpost_members_are_registered",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "final_result": {
+          "name": "final_result",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_run_at": {
+          "name": "last_run_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "cheat_check_team_final_idx": {
+          "name": "cheat_check_team_final_idx",
+          "columns": [
+            {
+              "expression": "final_result",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "cheat_check_team_result_team_id_team_id_fk": {
+          "name": "cheat_check_team_result_team_id_team_id_fk",
+          "tableFrom": "cheat_check_team_result",
+          "tableTo": "team",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.day_of_registration": {
+      "name": "day_of_registration",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "approved": {
+          "name": "approved",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "signed_in_at": {
+          "name": "signed_in_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_of_birth": {
+          "name": "date_of_birth",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "day_of_registration_user_id_user_id_fk": {
+          "name": "day_of_registration_user_id_user_id_fk",
+          "tableFrom": "day_of_registration",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.judge": {
+      "name": "judge",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "varchar(255)",
           "primaryKey": true,
           "notNull": true
         },
-        "expected_judges_per_team": {
-          "name": "expected_judges_per_team",
+        "type": {
+          "name": "type",
+          "type": "judge_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'organizer'"
+        },
+        "track": {
+          "name": "track",
+          "type": "track[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "marks_count": {
+          "name": "marks_count",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": 3
+          "default": 0
+        },
+        "marks_sum": {
+          "name": "marks_sum",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "marks_squared_sum": {
+          "name": "marks_squared_sum",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "judge_id_user_id_fk": {
+          "name": "judge_id_user_id_fk",
+          "tableFrom": "judge",
+          "tableTo": "user",
+          "columnsFrom": [
+            "id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.judging_queue": {
+      "name": "judging_queue",
+      "schema": "",
+      "columns": {
+        "team_id": {
+          "name": "team_id",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "seen_judges": {
+          "name": "seen_judges",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "rounds_remaining": {
+          "name": "rounds_remaining",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "enqueued_at": {
+          "name": "enqueued_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "status": {
+          "name": "status",
+          "type": "judging_queue_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'waiting'"
+        }
+      },
+      "indexes": {
+        "judging_queue_priority_idx": {
+          "name": "judging_queue_priority_idx",
+          "columns": [
+            {
+              "expression": "rounds_remaining",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "enqueued_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "judging_queue_team_id_team_id_fk": {
+          "name": "judging_queue_team_id_team_id_fk",
+          "tableFrom": "judging_queue",
+          "tableTo": "team",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.judging_skip": {
+      "name": "judging_skip",
+      "schema": "",
+      "columns": {
+        "team_id": {
+          "name": "team_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "judge_id": {
+          "name": "judge_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "judging_skip_team_id_team_id_fk": {
+          "name": "judging_skip_team_id_team_id_fk",
+          "tableFrom": "judging_skip",
+          "tableTo": "team",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "judging_skip_judge_id_judge_id_fk": {
+          "name": "judging_skip_judge_id_judge_id_fk",
+          "tableFrom": "judging_skip",
+          "tableTo": "judge",
+          "columnsFrom": [
+            "judge_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "judging_skip_team_id_judge_id_pk": {
+          "name": "judging_skip_team_id_judge_id_pk",
+          "columns": [
+            "team_id",
+            "judge_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -1130,13 +1438,123 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.team_mark": {
+      "name": "team_mark",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "judge_id": {
+          "name": "judge_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "score": {
+          "name": "score",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "round_type": {
+          "name": "round_type",
+          "type": "round_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'regular'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "team_mark_team_idx": {
+          "name": "team_mark_team_idx",
+          "columns": [
+            {
+              "expression": "team_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "team_mark_judge_idx": {
+          "name": "team_mark_judge_idx",
+          "columns": [
+            {
+              "expression": "judge_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "team_mark_team_id_team_id_fk": {
+          "name": "team_mark_team_id_team_id_fk",
+          "tableFrom": "team_mark",
+          "tableTo": "team",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "team_mark_judge_id_judge_id_fk": {
+          "name": "team_mark_judge_id_judge_id_fk",
+          "tableFrom": "team_mark",
+          "tableTo": "judge",
+          "columnsFrom": [
+            "judge_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.team": {
       "name": "team",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "varchar(255)",
+          "type": "varchar(6)",
           "primaryKey": true,
           "notNull": true
         },
@@ -1146,9 +1564,35 @@
           "primaryKey": false,
           "notNull": true
         },
+        "devpost_url": {
+          "name": "devpost_url",
+          "type": "varchar(2048)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "github_url": {
+          "name": "github_url",
+          "type": "varchar(2048)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "submission_status": {
+          "name": "submission_status",
+          "type": "submission_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "submitted_at": {
+          "name": "submitted_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "tracks": {
           "name": "tracks",
-          "type": "varchar(255)[]",
+          "type": "track[]",
           "primaryKey": false,
           "notNull": false
         },
@@ -1160,7 +1604,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "team_created_at_idx": {
+          "name": "team_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -1231,13 +1691,6 @@
           "notNull": false,
           "default": 0
         },
-        "is_judge": {
-          "name": "is_judge",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
         "team_id": {
           "name": "team_id",
           "type": "varchar(255)",
@@ -1275,6 +1728,21 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "user_team_id_idx": {
+          "name": "user_team_id_idx",
+          "columns": [
+            {
+              "expression": "team_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1288,7 +1756,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -1399,13 +1867,20 @@
         "Prefer not to answer"
       ]
     },
-    "public.judging_assignment_status": {
-      "name": "judging_assignment_status",
+    "public.judge_type": {
+      "name": "judge_type",
       "schema": "public",
       "values": [
-        "PENDING",
-        "SCORED",
-        "SKIPPED"
+        "organizer",
+        "sponsored"
+      ]
+    },
+    "public.judging_queue_status": {
+      "name": "judging_queue_status",
+      "schema": "public",
+      "values": [
+        "waiting",
+        "assigned"
       ]
     },
     "public.major": {
@@ -1439,6 +1914,14 @@
         "7+"
       ]
     },
+    "public.round_type": {
+      "name": "round_type",
+      "schema": "public",
+      "values": [
+        "regular",
+        "sponsored"
+      ]
+    },
     "public.sexual_orientation": {
       "name": "sexual_orientation",
       "schema": "public",
@@ -1451,6 +1934,25 @@
         "Heterosexual / Straight",
         "Other",
         "Prefer not to answer"
+      ]
+    },
+    "public.submission_status": {
+      "name": "submission_status",
+      "schema": "public",
+      "values": [
+        "draft",
+        "submitted",
+        "late"
+      ]
+    },
+    "public.track": {
+      "name": "track",
+      "schema": "public",
+      "values": [
+        "Best Use of Cohere",
+        "Best Use of AntiGravity",
+        "Best Domain",
+        "General"
       ]
     },
     "public.user_type": {
@@ -1480,56 +1982,7 @@
   "sequences": {},
   "roles": {},
   "policies": {},
-  "views": {
-    "public.judge_stats": {
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "varchar(255)",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "definition": "select \"user\".\"id\", \"user\".\"name\", count(case when \"judging_assignment\".\"status\" = 'SCORED' then 1 end)::int as \"assignments_completed\", count(case when \"judging_assignment\".\"status\" = 'PENDING' then 1 end)::int as \"assignments_pending\", avg(\"judging_assignment\".\"score\") as \"average_score_given\" from \"user\" left join \"judging_assignment\" on \"user\".\"id\" = \"judging_assignment\".\"judge_id\" where \"user\".\"is_judge\" = true group by \"user\".\"id\"",
-      "name": "judge_stats",
-      "schema": "public",
-      "isExisting": false,
-      "materialized": false
-    },
-    "public.team_judging_stats": {
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "varchar(255)",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "tracks": {
-          "name": "tracks",
-          "type": "varchar(255)[]",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "definition": "select \"team\".\"id\", \"team\".\"name\", \"team\".\"tracks\", count(case when \"judging_assignment\".\"status\" = 'SCORED' then 1 end)::int as \"judge_count\", sum(\"judging_assignment\".\"score\") as \"total_raw_score\", sum(\"judging_assignment\".\"normalized_score\") as \"final_score\" from \"team\" left join \"judging_assignment\" on \"team\".\"id\" = \"judging_assignment\".\"team_id\" group by \"team\".\"id\"",
-      "name": "team_judging_stats",
-      "schema": "public",
-      "isExisting": false,
-      "materialized": false
-    }
-  },
+  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},

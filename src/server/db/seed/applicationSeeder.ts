@@ -75,6 +75,7 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       question3: faker.lorem.paragraphs(3),
 
       resumeLink: faker.internet.url(),
+      devpostLink: faker.internet.userName(),
       githubLink: faker.internet.userName(),
       linkedInLink: faker.internet.userName(),
       otherLink: faker.internet.url(),
