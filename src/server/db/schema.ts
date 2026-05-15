@@ -267,7 +267,7 @@ export const applications = pgTable(
     resumeLink: varchar("resume_link", { length: 2048 }),
     otherLink: varchar("other_link", { length: 2048 }),
 
-    // These links need to be mandatory for cheat checks 
+    // These links need to be mandatory for cheat checks
     devpostLink: varchar("devpost_link", { length: 255 }).notNull(),
     githubLink: varchar("github_link", { length: 2048 }).notNull(),
     linkedInLink: varchar("linkedin_link", { length: 2048 }).notNull(),

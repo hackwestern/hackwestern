@@ -14,16 +14,18 @@ import {
 } from "~/server/db/schema";
 
 // Save schema
-export const applicationSaveSchema = createInsertSchema(applications).omit({
-  createdAt: true,
-  updatedAt: true,
-  status: true,
-  userId: true,
-}).extend({
-  devpostLink: z.string().nullish(),
-  githubLink: z.string().nullish(),
-  linkedInLink: z.string().nullish(),
-});
+export const applicationSaveSchema = createInsertSchema(applications)
+  .omit({
+    createdAt: true,
+    updatedAt: true,
+    status: true,
+    userId: true,
+  })
+  .extend({
+    devpostLink: z.string().nullish(),
+    githubLink: z.string().nullish(),
+    linkedInLink: z.string().nullish(),
+  });
 
 export const linksSaveSchema = applicationSaveSchema.pick({
   devpostLink: true,

@@ -1,6 +1,6 @@
 export const GITHUB_URL = "https://github.com/";
 export const LINKEDIN_URL = "https://linkedin.com/in/";
-export const DEVPOST_URL = "https://devpost.com/"
+export const DEVPOST_URL = "https://devpost.com/";
 
 export function getGithubUsername(text: string) {
   try {

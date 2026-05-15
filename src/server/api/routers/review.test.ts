@@ -98,7 +98,9 @@ describe.sequential("review.referApplicant", async () => {
   });
 });
 
-let application: ReturnType<typeof ApplicationSeeder.createRandomWithoutUser> & {
+let application: ReturnType<
+  typeof ApplicationSeeder.createRandomWithoutUser
+> & {
   userId: string;
 };
 

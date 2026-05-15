@@ -26,7 +26,14 @@ import {
 export function LinksForm() {
   const utils = api.useUtils();
   const { data: defaultValues } = api.application.get.useQuery({
-    fields: ["status", "devpostLink", "githubLink", "linkedInLink", "otherLink", "resumeLink"],
+    fields: [
+      "status",
+      "devpostLink",
+      "githubLink",
+      "linkedInLink",
+      "otherLink",
+      "resumeLink",
+    ],
   });
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
