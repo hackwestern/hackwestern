@@ -1,4 +1,4 @@
-export default function RightArrow({ fill }: { fill?: string }){
+export default function RightArrow({ fill }: { fill?: string }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -16,4 +16,4 @@ export default function RightArrow({ fill }: { fill?: string }){
       />
     </svg>
   );
-};
+}
