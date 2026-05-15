@@ -69,6 +69,14 @@ export const applicationRouter = createTRPCRouter({
                 "sexualOrientation",
                 // Canvas
                 "canvasData",
+                // RSVP
+                "shirtSize",
+                "dietaryRestrictions",
+                "dietaryRestrictionsOther",
+                "emergencyContactName",
+                "emergencyContactRelationship",
+                "emergencyContactPhoneNumber",
+                "transportationMethod",
               ] as const),
             )
             .optional(),
