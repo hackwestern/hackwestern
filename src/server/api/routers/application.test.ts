@@ -16,7 +16,7 @@ import { UserSeeder } from "~/server/db/seed/userSeeder";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { seed, seedUsers } from "~/server/db/seed/helpers";
 
-import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
+import { GITHUB_URL, LINKEDIN_URL, DEVPOST_URL } from "~/utils/urls";
 
 const session = await mockSession(db);
 const organizerSession = await mockOrganizerSession(db);
@@ -46,8 +46,9 @@ describe("application.get", async () => {
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
     const want = {
       ...application,
-      githubLink: application?.githubLink?.substring(19),
-      linkedInLink: application?.linkedInLink?.substring(24),
+      devpostLink: application?.devpostLink?.substring(DEVPOST_URL.length),
+      githubLink: application?.githubLink?.substring(GITHUB_URL.length),
+      linkedInLink: application?.linkedInLink?.substring(LINKEDIN_URL.length),
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -176,7 +177,7 @@ describe.sequential("application.save", async () => {
   test("creates a new application when it does not exist", async () => {
     await expect(caller.application.get()).resolves.toBeNull();
 
-    const application = createRandomApplication(session);
+    const application = createRandomSaveInput(session);
     const want = {
       ...application,
       canvasData: {
@@ -196,10 +197,10 @@ describe.sequential("application.save", async () => {
   });
 
   test("updates the application when it does exist", async () => {
-    const application = createRandomApplication(session);
+    const application = createRandomSaveInput(session);
 
     await caller.application.save(application);
-    const updatedApplication = createRandomApplication(session);
+    const updatedApplication = createRandomSaveInput(session);
 
     const want = {
       ...updatedApplication,
@@ -220,7 +221,7 @@ describe.sequential("application.save", async () => {
   });
 
   test("complete application changes status to PENDING_REVIEW", async () => {
-    const completeApplication = createCompleteApplication(session);
+    const completeApplication = createCompleteSaveInput(session);
     applicationSubmitSchema.parse(completeApplication);
 
     const want = {
@@ -238,6 +239,7 @@ describe.sequential("application.save", async () => {
     await caller.application.save(completeApplication);
     await caller.application.submit();
     const result = await caller.application.get();
+
     assert(!!result);
 
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
@@ -246,6 +248,9 @@ describe.sequential("application.save", async () => {
   });
 });
 
+/**
+ * Creates application data with full URLs — for direct DB inserts.
+ */
 function createRandomApplication(session: Session) {
   const names = session.user.name?.split(" ");
   const [userId, firstName, lastName] = [
@@ -261,12 +266,39 @@ function createRandomApplication(session: Session) {
     userId,
     firstName,
     lastName,
+    devpostLink: `${DEVPOST_URL}${application.devpostLink}`,
     githubLink: `${GITHUB_URL}${application.githubLink}`,
     linkedInLink: `${LINKEDIN_URL}${application.linkedInLink}`,
   };
 }
 
-function createCompleteApplication(session: Session) {
+/**
+ * Creates application data with raw usernames (no URL prefix) — for save() calls,
+ * since save() prepends the prefixes itself.
+ */
+function createRandomSaveInput(session: Session) {
+  const names = session.user.name?.split(" ");
+  const [userId, firstName, lastName] = [
+    session.user.id,
+    names?.at(0),
+    names?.at(-1),
+  ];
+
+  const application = ApplicationSeeder.createRandomWithoutUser();
+
+  return {
+    ...application,
+    userId,
+    firstName,
+    lastName,
+    // save() prepends the URL prefixes, so pass raw usernames
+  };
+}
+
+/**
+ * Creates a complete application with raw usernames — for save() + submit() calls.
+ */
+function createCompleteSaveInput(session: Session) {
   const names = session.user.name?.split(" ");
   const [userId, firstName, lastName] = [
     session.user.id,
@@ -281,8 +313,7 @@ function createCompleteApplication(session: Session) {
     userId,
     firstName,
     lastName,
-    githubLink: `${GITHUB_URL}${application.githubLink}`,
-    linkedInLink: `${LINKEDIN_URL}${application.linkedInLink}`,
+    // save() prepends the URL prefixes, so pass raw usernames
     agreeCodeOfConduct: true,
     agreeShareWithSponsors: true,
     agreeShareWithMLH: true,
