@@ -46,6 +46,12 @@ describe("application.get", async () => {
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
     const want = {
       ...application,
+      // because when gotten from the db the dietaryRestrictionsOther is
+      // turned into null if the application has undefined
+      dietaryRestrictionsOther:
+        application.dietaryRestrictions != "Other"
+          ? null
+          : application.dietaryRestrictionsOther,
       devpostLink: application?.devpostLink?.substring(DEVPOST_URL.length),
       githubLink: application?.githubLink?.substring(GITHUB_URL.length),
       linkedInLink: application?.linkedInLink?.substring(LINKEDIN_URL.length),
@@ -97,6 +103,13 @@ describe("application.getById", async () => {
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
     const want = {
       ...application,
+      // because when gotten from the db the dietaryRestrictionsOther is
+      // turned into null if the application has undefined
+      dietaryRestrictionsOther:
+        application.dietaryRestrictions != "Other"
+          ? null
+          : application.dietaryRestrictionsOther,
+
       githubLink: application?.githubLink,
       linkedInLink: application?.linkedInLink,
       canvasData: {
@@ -182,6 +195,13 @@ describe.sequential("application.save", async () => {
     const application = createRandomSaveInput(session);
     const want = {
       ...application,
+      // because when gotten from the db the dietaryRestrictionsOther is
+      // turned into null if the application has undefined
+      dietaryRestrictionsOther:
+        application.dietaryRestrictions != "Other"
+          ? null
+          : application.dietaryRestrictionsOther,
+
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -206,6 +226,13 @@ describe.sequential("application.save", async () => {
 
     const want = {
       ...updatedApplication,
+      // because when gotten from the db the dietaryRestrictionsOther is
+      // turned into null if the application has undefined
+      dietaryRestrictionsOther:
+        updatedApplication.dietaryRestrictions != "Other"
+          ? null
+          : updatedApplication.dietaryRestrictionsOther,
+
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -228,6 +255,13 @@ describe.sequential("application.save", async () => {
 
     const want = {
       ...completeApplication,
+      // because when gotten from the db the dietaryRestrictionsOther is
+      // turned into null if the application has undefined
+      dietaryRestrictionsOther:
+        completeApplication.dietaryRestrictions != "Other"
+          ? null
+          : completeApplication.dietaryRestrictionsOther,
+
       status: "PENDING_REVIEW",
       canvasData: {
         paths: [],
