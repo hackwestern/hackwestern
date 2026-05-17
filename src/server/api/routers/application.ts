@@ -241,6 +241,9 @@ export const applicationRouter = createTRPCRouter({
           devpostLink: restData.devpostLink ?? "",
           githubLink: restData.githubLink ?? "",
           linkedInLink: restData.linkedInLink ?? "",
+
+          // Coerce the dietaryRestrictionsOther from undefined to null so the db actually updates it
+          dietaryRestrictionsOther: restData.dietaryRestrictionsOther ?? null,
         };
 
         // Only include canvasData if it was actually provided

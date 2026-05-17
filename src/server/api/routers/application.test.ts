@@ -48,10 +48,7 @@ describe("application.get", async () => {
       ...application,
       // because when gotten from the db the dietaryRestrictionsOther is
       // turned into null if the application has undefined
-      dietaryRestrictionsOther:
-        application.dietaryRestrictions != "Other"
-          ? null
-          : application.dietaryRestrictionsOther,
+      dietaryRestrictionsOther: application.dietaryRestrictionsOther ?? null,
       devpostLink: application?.devpostLink?.substring(DEVPOST_URL.length),
       githubLink: application?.githubLink?.substring(GITHUB_URL.length),
       linkedInLink: application?.linkedInLink?.substring(LINKEDIN_URL.length),
@@ -105,10 +102,7 @@ describe("application.getById", async () => {
       ...application,
       // because when gotten from the db the dietaryRestrictionsOther is
       // turned into null if the application has undefined
-      dietaryRestrictionsOther:
-        application.dietaryRestrictions != "Other"
-          ? null
-          : application.dietaryRestrictionsOther,
+      dietaryRestrictionsOther: application.dietaryRestrictionsOther ?? null,
 
       githubLink: application?.githubLink,
       linkedInLink: application?.linkedInLink,
@@ -197,10 +191,7 @@ describe.sequential("application.save", async () => {
       ...application,
       // because when gotten from the db the dietaryRestrictionsOther is
       // turned into null if the application has undefined
-      dietaryRestrictionsOther:
-        application.dietaryRestrictions != "Other"
-          ? null
-          : application.dietaryRestrictionsOther,
+      dietaryRestrictionsOther: application.dietaryRestrictionsOther ?? null,
 
       canvasData: {
         paths: [],
@@ -221,17 +212,23 @@ describe.sequential("application.save", async () => {
   test("updates the application when it does exist", async () => {
     const application = createRandomSaveInput(session);
 
+    // forcing the dietary update
+    application.dietaryRestrictions = "Other";
+    application.dietaryRestrictionsOther = "Other Res";
+
     await caller.application.save(application);
     const updatedApplication = createRandomSaveInput(session);
+
+    // forcing the dietary update
+    updatedApplication.dietaryRestrictions = "Kosher";
+    updatedApplication.dietaryRestrictionsOther = undefined;
 
     const want = {
       ...updatedApplication,
       // because when gotten from the db the dietaryRestrictionsOther is
       // turned into null if the application has undefined
       dietaryRestrictionsOther:
-        updatedApplication.dietaryRestrictions != "Other"
-          ? null
-          : updatedApplication.dietaryRestrictionsOther,
+        updatedApplication.dietaryRestrictionsOther ?? null,
 
       canvasData: {
         paths: [],
@@ -258,9 +255,7 @@ describe.sequential("application.save", async () => {
       // because when gotten from the db the dietaryRestrictionsOther is
       // turned into null if the application has undefined
       dietaryRestrictionsOther:
-        completeApplication.dietaryRestrictions != "Other"
-          ? null
-          : completeApplication.dietaryRestrictionsOther,
+        completeApplication.dietaryRestrictionsOther ?? null,
 
       status: "PENDING_REVIEW",
       canvasData: {
