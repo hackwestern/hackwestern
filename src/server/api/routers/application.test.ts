@@ -79,6 +79,7 @@ describe("application.getById", async () => {
     const getByIdSession = await mockSession(db);
     const userId = getByIdSession.user.id;
     const application = createRandomApplication(getByIdSession);
+
     await db.insert(applications).values(application);
 
     const getByIdOrganizerSession = await mockOrganizerSession(db);
@@ -90,6 +91,7 @@ describe("application.getById", async () => {
     const result = await getByIdOrganizerCaller.application.getById({
       applicantId: userId,
     });
+
     assert(!!result);
 
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;

@@ -52,6 +52,10 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
   }
 
   static createRandomWithoutUser() {
+    const dietaryRestrictionsFake = faker.helpers.arrayElement(
+      dietaryRestrictions.enumValues as [string, ...string[]],
+    ) as (typeof dietaryRestrictions.enumValues)[number];
+
     const application = {
       avatarColour: faker.helpers.arrayElement(avatarColour.enumValues),
       avatarFace: faker.number.int({ min: 1, max: 5 }),
@@ -74,10 +78,9 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       shirtSize: faker.helpers.arrayElement(
         shirtSize.enumValues as [string, ...string[]],
       ) as (typeof shirtSize.enumValues)[number],
-      dietaryRestrictions: faker.helpers.arrayElement(
-        dietaryRestrictions.enumValues as [string, ...string[]],
-      ) as (typeof dietaryRestrictions.enumValues)[number],
-      dietaryRestrictionsOther: undefined,
+      dietaryRestrictions: dietaryRestrictionsFake,
+      dietaryRestrictionsOther:
+        dietaryRestrictionsFake == "Other" ? "Other Restriction" : undefined,
 
       attendedBefore: faker.datatype.boolean(),
       numOfHackathons: faker.helpers.arrayElement(numOfHackathons.enumValues),
