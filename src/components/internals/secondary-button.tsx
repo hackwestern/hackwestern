@@ -14,15 +14,19 @@ export default function SecondaryButton({
   arrow = false,
   isSkeleton = false,
 }: SecondaryButtonProps) {
-    if (isSkeleton) return(
-        <Skeleton className="h-10 px-4 py-2 w-max shrink-0 text-transparent">{children}</Skeleton>
-    )
-  else return (
-    <Button
-      variant="secondary"
-      className={arrow ? "flex justify-around px-6 py-4" : "px-8 py-4"}
-    >
-      <div>{children}</div> {arrow && <RightArrow fill="#625679" />}
-    </Button>
-  );
+  if (isSkeleton)
+    return (
+      <Skeleton className="h-10 w-max shrink-0 px-4 py-2 text-transparent">
+        {children}
+      </Skeleton>
+    );
+  else
+    return (
+      <Button
+        variant="secondary"
+        className={arrow ? "flex justify-around px-6 py-4" : "px-8 py-4"}
+      >
+        <div>{children}</div> {arrow && <RightArrow fill="#625679" />}
+      </Button>
+    );
 }

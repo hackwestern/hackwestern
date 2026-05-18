@@ -8,7 +8,7 @@ interface TextFieldProps {
   submit?: boolean;
   secondary?: boolean;
   isSkeleton?: boolean;
-  onSubmit?: (value: string) => Promise<void>
+  onSubmit?: (value: string) => Promise<void>;
 }
 export default function TextField({
   children,
@@ -17,40 +17,53 @@ export default function TextField({
   isSkeleton = false,
   onSubmit,
 }: TextFieldProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [value, setValue] = useState("");
 
-    const [isLoading,setIsLoading] = useState(false);
-    const [value, setValue] = useState("");
-
-    const handleSubmit = async(): Promise<void> => {
-        setIsLoading(true);
-        try{
-            await onSubmit?.(value);
-        } finally{
-            setIsLoading(false);
-        }
+  const handleSubmit = async (): Promise<void> => {
+    setIsLoading(true);
+    try {
+      await onSubmit?.(value);
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    if (isSkeleton) return(
-    <div className="flex items-center">
-        <Skeleton className="h-10 px-10 py-2 w-max text-transparent">{children}</Skeleton>
-        {submit && <Skeleton className="h-10 text-transparent w-max px-2 py-2">Submit</Skeleton>}
-    </div>
-    )
-  else return (
-    <>
+  if (isSkeleton)
+    return (
+      <div className="flex items-center">
+        <Skeleton className="h-10 w-max px-10 py-2 text-transparent">
+          {children}
+        </Skeleton>
+        {submit && (
+          <Skeleton className="h-10 w-max px-2 py-2 text-transparent">
+            Submit
+          </Skeleton>
+        )}
+      </div>
+    );
+  else
+    return (
+      <>
         {submit ? (
           <div
             className={`flex w-max rounded-lg ${secondary ? "border bg-highlight" : "border-2 border-white bg-white/50"}`}
           >
             <Input
-              value = {value}
-              onChange = {(e) => setValue(e.target.value)}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
               placeholder={children}
               className={"border-none bg-transparent"}
               disabled={isLoading}
             />
-            <PrimaryButton textField onClick={handleSubmit} isPending={isLoading} >Submit</PrimaryButton>
-            </div>
+            <PrimaryButton
+              textField
+              onClick={handleSubmit}
+              isPending={isLoading}
+            >
+              Submit
+            </PrimaryButton>
+          </div>
         ) : (
           <Input
             placeholder={children}
