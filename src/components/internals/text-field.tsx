@@ -39,7 +39,9 @@ export default function TextField({
   else return (
     <>
         {submit ? (
-            <div className={`flex w-max rounded-lg ${secondary ? "border bg-highlight" : "border-2 border-white bg-white/50"}`}>
+          <div
+            className={`flex w-max rounded-lg ${secondary ? "border bg-highlight" : "border-2 border-white bg-white/50"}`}
+          >
             <Input
               value = {value}
               onChange = {(e) => setValue(e.target.value)}
@@ -50,11 +52,11 @@ export default function TextField({
             <PrimaryButton textField onClick={handleSubmit} isPending={isLoading} >Submit</PrimaryButton>
             </div>
         ) : (
-            <Input
-              placeholder={children}
-              className={`w-max rounded-lg border px-6 ${secondary ? "bg-highlight":"w-max border-none border-white bg-white/50"}`}            />
-        )
-        }
-    </>
-  );
+          <Input
+            placeholder={children}
+            className={`w-max rounded-lg border px-6 ${secondary ? "bg-highlight" : "w-max border-none border-white bg-white/50"}`}
+          />
+        )}
+      </>
+    );
 }
