@@ -49,7 +49,7 @@ export default function TextField({
               className={"border-none bg-transparent"}
               disabled={isLoading}
             />
-            <PrimaryButton textField onClick={handleSubmit} isPending={isLoading} >Submit</PrimaryButton>
+            <PrimaryButton textField onClick={handleSubmit} disabled={isLoading} >Submit</PrimaryButton>
             </div>
         ) : (
           <Input

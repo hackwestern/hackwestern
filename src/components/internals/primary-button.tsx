@@ -2,13 +2,15 @@ import React from "react";
 import { Button } from "~/components/ui/button";
 import RightArrow from "./right-arrow";
 import { Skeleton } from "../ui/skeleton";
+import { Spinner } from "../loading-spinner";
 
 interface PrimaryButtonProps {
   children: React.ReactNode;
   arrow?: boolean;
   textField?: boolean;
   isSkeleton?: boolean;
-  isPending?: boolean;
+  disabled?: boolean;
+  isLoading?: boolean;
   onClick?: () => void;
 }
 
@@ -17,7 +19,8 @@ export default function PrimaryButton({
   arrow = false,
   textField = false,
   isSkeleton = false,
-  isPending = false,
+  disabled = false,
+  isLoading = false,
   onClick,
 }: PrimaryButtonProps) {
     if (isSkeleton) return(
@@ -37,9 +40,10 @@ export default function PrimaryButton({
             : "px-8 py-4"
           : ""
       }
-      isPending={isPending}
+      isPending={disabled}
       onClick = {onClick}
     >
+      <Spinner isLoading={isLoading}></Spinner> 
       <div>{children}</div> {arrow && <RightArrow />}
     </Button>
   );
