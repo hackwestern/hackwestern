@@ -1,10 +1,5 @@
-import PrimaryButton from "~/components/internals/primary-button";
-import SecondaryButton from "~/components/internals/secondary-button";
-import TertiaryButton from "~/components/internals/tertiary-button";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import TextField from "~/components/internals/text-field";
-import { Textarea } from "~/components/ui/textarea";
 
 const Right = ({ fill }: { fill?: string }) => {
   return (
@@ -31,17 +26,46 @@ function DesignSystem() {
     <div className="flex h-screen w-screen flex-col gap-4 bg-hw-radial-gradient p-12 font-jetbrains-mono">
       <h1 className="font-dico text-6xl">Design System HW12</h1>
       <div>BUTTON</div>
-      <PrimaryButton isSkeleton>Primary Button</PrimaryButton>
-      <PrimaryButton arrow>Primary Button</PrimaryButton>
-      <SecondaryButton isSkeleton>Secondary Button</SecondaryButton>
-      <SecondaryButton arrow isLoading>Secondary Button</SecondaryButton>
-      <TertiaryButton isLoading>Tertiary Button</TertiaryButton>
-      <TertiaryButton isLoading arrow disabled >Tertiary Button</TertiaryButton>
+      <Button variant="primary" className="px-8 py-4">
+        Primary Button
+      </Button>
+      <Button variant="primary" className="flex justify-around px-6 py-4">
+        <div>Primary Button</div> <Right />
+      </Button>
+      <Button variant="secondary" className="px-8 py-4">
+        Secondary Button
+      </Button>
+      <Button variant="secondary" className="flex justify-around px-6 py-4">
+        <div>Secondary Button</div> <Right fill="#625679" />
+      </Button>
+      <Button variant="tertiary" className="h-max p-0">
+        Tertiary Button
+      </Button>
       <div>TEXT FIELD</div>
-      <TextField isSkeleton>placeholder</TextField>
-      <TextField submit>placeholder</TextField>
-      <TextField secondary isSkeleton>placeholder</TextField>
-      <TextField secondary submit>placeholder</TextField>
+      <div className="flex w-max rounded-lg border-2 border-white bg-white/50 ">
+        <Input
+          placeholder="placeholder"
+          className="border-none bg-transparent"
+        />
+        <Button variant="primary">Submit</Button>
+      </div>
+      <Input
+        placeholder="placeholder"
+        className="w-max rounded-lg border border-none border-white bg-white/50 px-6"
+      />
+      <div className="flex w-max flex-col gap-8 rounded-lg bg-white p-8">
+        <div className="flex w-max rounded-lg border bg-highlight">
+          <Input
+            placeholder="placeholder"
+            className="border-none bg-transparent"
+          />
+          <Button variant="primary">Submit</Button>
+        </div>
+        <Input
+          placeholder="placeholder"
+          className="rounded-lg border border bg-highlight px-6"
+        />
+      </div>
     </div>
   );
 }
