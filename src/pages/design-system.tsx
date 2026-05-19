@@ -34,14 +34,22 @@ function DesignSystem() {
       <PrimaryButton isSkeleton>Primary Button</PrimaryButton>
       <PrimaryButton arrow>Primary Button</PrimaryButton>
       <SecondaryButton isSkeleton>Secondary Button</SecondaryButton>
-      <SecondaryButton arrow isLoading>Secondary Button</SecondaryButton>
+      <SecondaryButton arrow isLoading>
+        Secondary Button
+      </SecondaryButton>
       <TertiaryButton isLoading>Tertiary Button</TertiaryButton>
-      <TertiaryButton isLoading arrow disabled >Tertiary Button</TertiaryButton>
+      <TertiaryButton isLoading arrow disabled>
+        Tertiary Button
+      </TertiaryButton>
       <div>TEXT FIELD</div>
       <TextField isSkeleton>placeholder</TextField>
       <TextField submit>placeholder</TextField>
-      <TextField secondary isSkeleton>placeholder</TextField>
-      <TextField secondary submit>placeholder</TextField>
+      <TextField secondary isSkeleton>
+        placeholder
+      </TextField>
+      <TextField secondary submit>
+        placeholder
+      </TextField>
     </div>
   );
 }
