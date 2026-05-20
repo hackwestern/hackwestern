@@ -19,9 +19,9 @@ function DesignSystem() {
   };
 
   return (
-    <div className="flex min-h-screen w-screen flex-col gap-4 bg-hw-radial-gradient p-12 font-jetbrains-mono overflow-y-auto">
+    <div className="flex min-h-screen w-screen flex-col gap-4 overflow-y-auto bg-hw-radial-gradient p-12 font-jetbrains-mono">
       <h1 className="font-dico text-6xl">Design System HW12</h1>
-      
+
       <div className="mb-4 flex gap-4">
         <PrimaryButton onClick={handleClick} isLoading={isLoading}>
           Trigger Global Loading (5s)
@@ -32,8 +32,12 @@ function DesignSystem() {
         <div>
           <div className="mb-2 text-xl font-bold">PRIMARY BUTTON</div>
           <div className="flex flex-wrap items-center gap-4">
-            <PrimaryButton isLoading={isLoading} onClick={handleClick}>Primary</PrimaryButton>
-            <PrimaryButton isLoading={isLoading} onClick={handleClick} arrow>Primary Arrow</PrimaryButton>
+            <PrimaryButton isLoading={isLoading} onClick={handleClick}>
+              Primary
+            </PrimaryButton>
+            <PrimaryButton isLoading={isLoading} onClick={handleClick} arrow>
+              Primary Arrow
+            </PrimaryButton>
             <PrimaryButton isSkeleton>Primary</PrimaryButton>
           </div>
         </div>
@@ -41,8 +45,12 @@ function DesignSystem() {
         <div>
           <div className="mb-2 text-xl font-bold">SECONDARY BUTTON</div>
           <div className="flex flex-wrap items-center gap-4">
-            <SecondaryButton isLoading={isLoading} onClick={handleClick}>Secondary</SecondaryButton>
-            <SecondaryButton isLoading={isLoading} onClick={handleClick} arrow>Secondary Arrow</SecondaryButton>
+            <SecondaryButton isLoading={isLoading} onClick={handleClick}>
+              Secondary
+            </SecondaryButton>
+            <SecondaryButton isLoading={isLoading} onClick={handleClick} arrow>
+              Secondary Arrow
+            </SecondaryButton>
             <SecondaryButton isSkeleton>Secondary</SecondaryButton>
           </div>
         </div>
@@ -50,8 +58,12 @@ function DesignSystem() {
         <div>
           <div className="mb-2 text-xl font-bold">TERTIARY BUTTON</div>
           <div className="flex flex-wrap items-center gap-4">
-            <TertiaryButton isLoading={isLoading} onClick={handleClick}>Tertiary</TertiaryButton>
-            <TertiaryButton isLoading={isLoading} onClick={handleClick} arrow>Tertiary Arrow</TertiaryButton>
+            <TertiaryButton isLoading={isLoading} onClick={handleClick}>
+              Tertiary
+            </TertiaryButton>
+            <TertiaryButton isLoading={isLoading} onClick={handleClick} arrow>
+              Tertiary Arrow
+            </TertiaryButton>
             <TertiaryButton isSkeleton>Tertiary</TertiaryButton>
           </div>
         </div>
@@ -60,18 +72,28 @@ function DesignSystem() {
           <div className="mb-2 text-xl font-bold">TEXT FIELD</div>
           <div className="flex flex-col gap-4">
             <TextField onSubmit={handleTextSubmit}>Normal Input</TextField>
-            <TextField submit onSubmit={handleTextSubmit}>Input with Submit</TextField>
-            
+            <TextField submit onSubmit={handleTextSubmit}>
+              Input with Submit
+            </TextField>
+
             <div className="flex w-max flex-col gap-4 rounded-lg bg-white p-4">
-              <div className="mb-2 text-black font-bold">Secondary / Highlighted</div>
-              <TextField secondary onSubmit={handleTextSubmit}>Secondary Input</TextField>
-              <TextField submit secondary onSubmit={handleTextSubmit}>Secondary Submit</TextField>
+              <div className="mb-2 font-bold text-black">
+                Secondary / Highlighted
+              </div>
+              <TextField secondary onSubmit={handleTextSubmit}>
+                Secondary Input
+              </TextField>
+              <TextField submit secondary onSubmit={handleTextSubmit}>
+                Secondary Submit
+              </TextField>
             </div>
 
-            <div className="flex gap-4 mt-4 flex-col">
+            <div className="mt-4 flex flex-col gap-4">
               <div className="mb-2 font-bold">Skeletons</div>
               <TextField isSkeleton>Skeleton Input</TextField>
-              <TextField submit isSkeleton>Skeleton Submit</TextField>
+              <TextField submit isSkeleton>
+                Skeleton Submit
+              </TextField>
             </div>
           </div>
         </div>
