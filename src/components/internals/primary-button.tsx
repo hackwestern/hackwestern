@@ -40,7 +40,7 @@ export default function PrimaryButton({
               : "px-8 py-4"
             : ""
         }
-        isPending={disabled}
+        isPending={disabled || isLoading}
         onClick={onClick}
       >
         <Spinner isLoading={isLoading}></Spinner>
