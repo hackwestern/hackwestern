@@ -63,7 +63,7 @@ function DesignSystem() {
         </div>
         <Input
           placeholder="placeholder"
-          className="rounded-lg border border bg-highlight px-6"
+          className="rounded-lg border bg-highlight px-6"
         />
       </div>
     </div>

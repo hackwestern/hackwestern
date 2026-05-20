@@ -91,7 +91,7 @@ const Verify = () => {
 
       <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />
-        <div className="z-10 w-full max-w-lg rounded-lg bg-violet-50 bg-white p-5 shadow-md">
+        <div className="z-10 w-full max-w-lg rounded-lg bg-violet-50 p-5 shadow-md">
           {verifySuccess && (
             <div>
               <div className="text-center">Email Verified!</div>
