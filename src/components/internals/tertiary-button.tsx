@@ -33,8 +33,8 @@ export default function TertiaryButton({
       isPending={disabled || isLoading}
       onClick={onClick}
     >
-      <Spinner isLoading={isLoading}></Spinner>
       <div>{children}</div>
+      <Spinner isLoading={isLoading}></Spinner>
     </Button>
   );
 }
