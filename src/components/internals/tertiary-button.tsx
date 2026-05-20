@@ -21,9 +21,7 @@ export default function TertiaryButton({
 }: TertiaryButtonProps) {
   if (isSkeleton)
     return (
-      <Skeleton className="h-max w-max text-transparent">
-        {children}
-      </Skeleton>
+      <Skeleton className="h-max w-max text-transparent">{children}</Skeleton>
     );
 
   return (
