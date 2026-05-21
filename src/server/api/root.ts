@@ -1,6 +1,7 @@
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 import { applicationRouter } from "./routers/application";
 import { authRouter } from "./routers/auth";
+import { judgingRouter } from "./routers/judging";
 import { preregistrationRouter } from "./routers/preregistration";
 import { scavengerHuntRouter } from "./routers/scavenger-hunt";
 import { reviewRouter } from "./routers/review";
@@ -14,6 +15,7 @@ import { qrRouter } from "./routers/qr-code-generation";
 export const appRouter = createTRPCRouter({
   application: applicationRouter,
   auth: authRouter,
+  judging: judgingRouter,
   preregistration: preregistrationRouter,
   review: reviewRouter,
   qrRouter: qrRouter,

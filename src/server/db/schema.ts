@@ -701,12 +701,21 @@ export const judgingQueue = pgTable(
       .defaultNow()
       .notNull(),
     status: judgingQueueStatusEnum("status").default("waiting").notNull(),
+    // The judge currently holding this team (sequential, one judge at a
+    // time). NULL when the team is waiting. `assignedAt` is stamped on
+    // assignment and used to reclaim teams abandoned by a judge who walked
+    // away (see STALE_ASSIGNMENT_MINUTES in the queue helpers).
+    currentJudgeId: varchar("current_judge_id", { length: 255 }).references(
+      () => judges.id,
+    ),
+    assignedAt: timestamp("assigned_at", { mode: "date", precision: 3 }),
   },
   (t) => [
     index("judging_queue_priority_idx").on(
       t.roundsRemaining.desc(),
       t.enqueuedAt.asc(),
     ),
+    index("judging_queue_current_judge_idx").on(t.currentJudgeId),
   ],
 );
 

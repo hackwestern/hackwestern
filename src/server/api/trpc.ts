@@ -14,7 +14,7 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 import { db } from "~/server/db";
 import { eq } from "drizzle-orm";
-import { users } from "~/server/db/schema";
+import { judges, users } from "~/server/db/schema";
 import { getServerAuthSession } from "~/server/auth";
 
 /**
@@ -152,6 +152,34 @@ export const protectedOrganizerProcedure = protectedProcedure.use(
     return next({
       ctx: {
         session: { ...ctx.session, user: ctx.session.user },
+      },
+    });
+  },
+);
+
+/**
+ * Procedure for the centralized judging clients. Requires that the caller
+ * has a corresponding row in the `judges` table (created by an organizer
+ * via `judging.admin.registerJudge`). Attaches the judge record to ctx so
+ * handlers can branch on `type` / `track` without a second DB roundtrip.
+ */
+export const protectedJudgeProcedure = protectedProcedure.use(
+  async ({ ctx, next }) => {
+    const judge = await db.query.judges.findFirst({
+      where: eq(judges.id, ctx.session.user.id),
+    });
+
+    if (!judge) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "User is not registered as a judge",
+      });
+    }
+
+    return next({
+      ctx: {
+        session: { ...ctx.session, user: ctx.session.user },
+        judge,
       },
     });
   },
