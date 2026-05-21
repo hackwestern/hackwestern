@@ -28,6 +28,7 @@ export const applicationStatus = pgEnum("application_status", [
   "REJECTED",
   "WAITLISTED",
   "DECLINED",
+  "CONFIRMED",
 ]);
 
 export const avatarColour = pgEnum("avatar_colour", [
@@ -133,12 +134,56 @@ export const countrySelection = pgEnum("country", [
 ]);
 
 /**
- * Status of a judging assignment for a team.
+ * T-Shirt size for the applicant
  */
-export const judgingAssignmentStatus = pgEnum("judging_assignment_status", [
-  "PENDING",
-  "SCORED",
-  "SKIPPED",
+export const shirtSize = pgEnum("shirt_size", ["S", "M", "L", "XL"]);
+
+export const dietaryRestrictions = pgEnum("dietary_restrictions", [
+  "Vegetarian",
+  "Vegan",
+  "Kosher",
+  "Halal",
+  "Other",
+]);
+
+/**
+ * Relationship of the emergency contact to the applicant
+ */
+export const emergencyContactRelationship = pgEnum(
+  "emergency_contact_relationship",
+  ["Parent", "Sibling", "Other family member", "Friend", "Coworker", "Other"],
+);
+
+/**
+ * Status of applicants method of transportation
+ */
+export const transportationMethod = pgEnum("transportation_method", [
+  "Waterloo",
+  "Toronto",
+  "Hamilton",
+  "None",
+]);
+
+export const submissionStatusEnum = pgEnum("submission_status", [
+  "draft",
+  "submitted",
+  "late",
+]);
+
+export const judgeTypeEnum = pgEnum("judge_type", ["organizer", "sponsored"]);
+
+export const judgingQueueStatusEnum = pgEnum("judging_queue_status", [
+  "waiting",
+  "assigned",
+]);
+
+export const roundTypeEnum = pgEnum("round_type", ["regular", "sponsored"]);
+
+export const trackEnum = pgEnum("track", [
+  "Best Use of Cohere",
+  "Best Use of AntiGravity",
+  "Best Domain",
+  "General",
 ]);
 
 /**
@@ -161,17 +206,39 @@ export const teamCheckType = pgEnum("team_check_type", [
   "LINKEDIN_CROSS_POST",
 ]);
 
+// ---------------------------------------------------------------------------
+// Teams — defined before users so users can FK into it
+// ---------------------------------------------------------------------------
+
 /**
  * The table for storing hacker teams formed during the event.
+ * Also serves as the project submission record (devpostUrl, githubUrl, submissionStatus).
  */
-export const teams = pgTable("team", {
-  id: varchar("id", { length: 255 }).notNull().primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  tracks: text("tracks").array(),
-  createdAt: timestamp("created_at", { mode: "date", precision: 3 })
-    .defaultNow()
-    .notNull(),
-});
+export const teams = pgTable(
+  "team",
+  {
+    id: varchar("id", { length: 6 }).notNull().primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+
+    // Project submission
+    devpostUrl: varchar("devpost_url", { length: 2048 }),
+    githubUrl: varchar("github_url", { length: 2048 }),
+    submissionStatus: submissionStatusEnum("submission_status")
+      .default("draft")
+      .notNull(),
+    submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 }),
+    tracks: trackEnum("tracks").array(),
+
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("team_created_at_idx").on(t.createdAt)],
+);
+
+// ---------------------------------------------------------------------------
+// Core auth / user tables
+// ---------------------------------------------------------------------------
 
 /**
  * The table for storing hacker pre-registration, to be used as an email list
@@ -203,7 +270,6 @@ export const users = pgTable(
     image: varchar("image", { length: 255 }),
     type: userType("type").default("hacker"),
 
-    isJudge: boolean("is_judge").default(false).notNull(),
     teamId: varchar("team_id", { length: 255 }).references(() => teams.id, {
       onDelete: "set null",
     }),
@@ -225,9 +291,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.teamId],
     references: [teams.id],
   }),
-  judgeStats: one(judgeStats),
-  judgingAssignments: many(judgingAssignments),
-  submissionsSubmitted: many(submissions),
+  hackerCheckResults: many(hackerCheckResults),
 }));
 
 export const accounts = pgTable(
@@ -297,6 +361,10 @@ export const resetPasswordTokens = pgTable("reset_password_token", {
   expires: timestamp("expires", { mode: "date" }).notNull(),
 });
 
+// ---------------------------------------------------------------------------
+// Applications & reviews
+// ---------------------------------------------------------------------------
+
 /**
  * The table for storing hacker applications while the hacker is completing the application,
  * and during the review process.
@@ -340,6 +408,12 @@ export const applications = pgTable(
     yearOfStudy: yearOfStudy("year_of_study"),
     major: major("major"),
 
+    shirtSize: shirtSize("shirt_size"),
+    dietaryRestrictions: dietaryRestrictions("dietary_restrictions"),
+    dietaryRestrictionsOther: varchar("dietary_restrictions_other", {
+      length: 255,
+    }),
+
     attendedBefore: boolean("attended"),
     numOfHackathons: numOfHackathons("num_of_hackathons"),
 
@@ -348,10 +422,11 @@ export const applications = pgTable(
     question2: text("question2"),
     question3: text("question3"),
 
-    // Profile Links
+    // Profile Links — mandatory for cheat checks
+    githubLink: varchar("github_link", { length: 2048 }).notNull(),
+    linkedInLink: varchar("linkedin_link", { length: 2048 }).notNull(),
+    devpostLink: varchar("devpost_link", { length: 255 }).notNull(),
     resumeLink: varchar("resume_link", { length: 2048 }),
-    githubLink: varchar("github_link", { length: 2048 }),
-    linkedInLink: varchar("linkedin_link", { length: 2048 }),
     otherLink: varchar("other_link", { length: 2048 }),
 
     // Agreements
@@ -371,17 +446,11 @@ export const applications = pgTable(
       .default(false)
       .notNull(),
 
-    // Optional Questions
+    // Optional demographic questions
     underrepGroup: boolean("underrep_group"),
     gender: gender("gender"),
     ethnicity: ethnicity("ethnicity"),
     sexualOrientation: sexualOrientation("sexual_orientation"),
-
-    // Day-of check-in — set by an organizer after verifying the hacker's ID at the door
-    checkedInAt: timestamp("checked_in_at", { mode: "date", precision: 3 }),
-    checkedInByUserId: varchar("checked_in_by_user_id", { length: 255 }).references(
-      () => users.id,
-    ),
 
     // Canvas - default to an empty but well-typed structure so new rows are valid
     canvasData: jsonb("canvas_data")
@@ -392,6 +461,17 @@ export const applications = pgTable(
       }>()
       .default(sql`'{"paths":[],"timestamp":0,"version":""}'::jsonb`)
       .notNull(),
+
+    // Emergency Contact Info
+    emergencyContactName: varchar("emergency_contact_name", { length: 255 }),
+    emergencyContactRelationship: emergencyContactRelationship(
+      "emergency_contact_relationship",
+    ),
+    emergencyContactPhoneNumber: varchar("emergency_contact_phone_number", {
+      length: 42,
+    }),
+
+    transportationMethod: transportationMethod("transportation_method"),
   },
   (application) => [index("user_id_idx").on(application.userId)],
 );
@@ -412,6 +492,35 @@ export const applicationsRelations = relations(
       references: [users.id],
     }),
     reviews: many(reviews),
+  }),
+);
+
+/**
+ * Day-of check-in record created by an organizer after verifying a hacker's ID at the door.
+ * Separate from the application so check-in state doesn't pollute the pre-event record.
+ */
+export const dayOfRegistrations = pgTable("day_of_registration", {
+  userId: varchar("user_id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  approved: boolean("approved").default(false).notNull(),
+  signedInAt: timestamp("signed_in_at", {
+    mode: "date",
+    precision: 3,
+  }),
+  dateOfBirth: timestamp("date_of_birth", {
+    mode: "date",
+  }),
+});
+
+export const dayOfRegistrationsRelations = relations(
+  dayOfRegistrations,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [dayOfRegistrations.userId],
+      references: [users.id],
+    }),
   }),
 );
 
@@ -478,140 +587,122 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
   }),
 }));
 
-/**
- * Global settings for the judging system (e.g. how many judges should visit each team).
- */
-export const judgingSettings = pgTable("judging_settings", {
-  id: serial("id").primaryKey(),
-  expectedJudgesPerTeam: integer("expected_judges_per_team")
+// ---------------------------------------------------------------------------
+// Judging portal
+// ---------------------------------------------------------------------------
+
+export const judges = pgTable("judge", {
+  id: varchar("id", { length: 255 })
     .notNull()
-    .default(2),
+    .primaryKey()
+    .references(() => users.id),
+  type: judgeTypeEnum("type").default("organizer").notNull(),
+  track: trackEnum("track").array(), // array of tracks for sponsored judges
+
+  // Derived stats used for score normalization
+  // markCount = n, markSum = S, markSquaredSum = S2
+  // σ = √( (S2 / n) − (S / n)² )
+  marksCount: integer("marks_count").default(0).notNull(),
+  marksSum: real("marks_sum").default(0).notNull(),
+  marksSquaredSum: real("marks_squared_sum").default(0).notNull(),
 });
 
-/**
- * Tracks which judge is assigned to which team and the outcome of that assignment.
- */
-export const judgingAssignments = pgTable(
-  "judging_assignment",
+export const judgesRelations = relations(judges, ({ one, many }) => ({
+  user: one(users, {
+    fields: [judges.id],
+    references: [users.id],
+  }),
+  marks: many(teamMarks),
+  skips: many(judgingSkips),
+}));
+
+export const judgingQueue = pgTable(
+  "judging_queue",
   {
-    id: serial("id").primaryKey(),
-    judgeId: varchar("judge_id", { length: 255 })
-      .notNull()
-      .references(() => users.id),
     teamId: varchar("team_id", { length: 255 })
       .notNull()
-      .references(() => teams.id),
-    status: judgingAssignmentStatus("status").default("PENDING").notNull(),
-    score: real("score"),
-    normalizedScore: real("normalized_score"),
-    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .primaryKey()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    seenJudges: integer("seen_judges").default(0).notNull(),
+    roundsRemaining: integer("rounds_remaining").default(0).notNull(),
+    enqueuedAt: timestamp("enqueued_at", { mode: "date", precision: 3 })
       .defaultNow()
       .notNull(),
-    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+    status: judgingQueueStatusEnum("status").default("waiting").notNull(),
+  },
+  (t) => [
+    index("judging_queue_priority_idx").on(
+      t.roundsRemaining.desc(),
+      t.enqueuedAt.asc(),
+    ),
+  ],
+);
+
+export const teamMarks = pgTable(
+  "team_mark",
+  {
+    id: serial("id").primaryKey(),
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    judgeId: varchar("judge_id", { length: 255 })
+      .notNull()
+      .references(() => judges.id),
+    score: real("score").notNull(),
+    roundType: roundTypeEnum("round_type").default("regular").notNull(),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
       .notNull(),
   },
   (t) => [
-    index("judging_assignment_judge_idx").on(t.judgeId),
-    index("judging_assignment_team_idx").on(t.teamId),
+    index("team_mark_team_idx").on(t.teamId),
+    index("team_mark_judge_idx").on(t.judgeId),
   ],
 );
 
-export const judgingAssignmentsRelations = relations(
-  judgingAssignments,
-  ({ one }) => ({
-    judge: one(users, {
-      fields: [judgingAssignments.judgeId],
-      references: [users.id],
-    }),
-    team: one(teams, {
-      fields: [judgingAssignments.teamId],
-      references: [teams.id],
-    }),
-  }),
-);
-
-/**
- * Aggregated scoring stats per team, updated after each judge scores.
- * `code` is the physical table number assigned to the team at the demo fair.
- */
-export const teamStats = pgTable("team_stats", {
-  teamId: varchar("team_id", { length: 255 })
-    .notNull()
-    .primaryKey()
-    .references(() => teams.id, { onDelete: "cascade" }),
-  code: varchar("code", { length: 255 }).unique().notNull(),
-  judgeCount: integer("judge_count").default(0).notNull(),
-  totalRawScore: real("total_raw_score").default(0).notNull(),
-  finalNormalizedScore: real("final_normalized_score").default(0).notNull(),
-});
-
-export const teamStatsRelations = relations(teamStats, ({ one }) => ({
+export const teamMarksRelations = relations(teamMarks, ({ one }) => ({
   team: one(teams, {
-    fields: [teamStats.teamId],
+    fields: [teamMarks.teamId],
     references: [teams.id],
+  }),
+  judge: one(judges, {
+    fields: [teamMarks.judgeId],
+    references: [judges.id],
   }),
 }));
 
-/**
- * Aggregated scoring stats per judge, used for score normalization.
- */
-export const judgeStats = pgTable("judge_stats", {
-  judgeId: varchar("judge_id", { length: 255 })
-    .notNull()
-    .primaryKey()
-    .references(() => users.id, { onDelete: "cascade" }),
-  assignmentsCompleted: integer("assignments_completed").default(0).notNull(),
-  assignmentsPending: integer("assignments_pending").default(0).notNull(),
-  totalScore: real("total_score").default(0).notNull(),
-  averageScore: real("average_score").default(0).notNull(),
-  standardDeviation: real("standard_deviation").default(0).notNull(),
-});
+export const judgingSkips = pgTable(
+  "judging_skip",
+  {
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    judgeId: varchar("judge_id", { length: 255 })
+      .notNull()
+      .references(() => judges.id),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.teamId, t.judgeId] })],
+);
 
-export const judgeStatsRelations = relations(judgeStats, ({ one }) => ({
-  judge: one(users, {
-    fields: [judgeStats.judgeId],
-    references: [users.id],
+export const judgingSkipsRelations = relations(judgingSkips, ({ one }) => ({
+  team: one(teams, {
+    fields: [judgingSkips.teamId],
+    references: [teams.id],
+  }),
+  judge: one(judges, {
+    fields: [judgingSkips.judgeId],
+    references: [judges.id],
   }),
 }));
 
 export const teamsRelations = relations(teams, ({ many, one }) => ({
   members: many(users),
-  judgingAssignments: many(judgingAssignments),
-  stats: one(teamStats),
-  submission: one(submissions),
+  marks: many(teamMarks),
+  skips: many(judgingSkips),
   checkResults: many(teamCheckResults),
-}));
-
-/**
- * One submission per team. Stores the GitHub repo and DevPost project URLs
- * submitted on HackWestern.com, used for cheat checking and judging reference.
- */
-export const submissions = pgTable("submission", {
-  id: serial("id").primaryKey(),
-  teamId: varchar("team_id", { length: 255 })
-    .notNull()
-    .unique()
-    .references(() => teams.id, { onDelete: "cascade" }),
-  devpostUrl: varchar("devpost_url", { length: 2048 }).notNull(),
-  githubUrl: varchar("github_url", { length: 2048 }).notNull(),
-  submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 })
-    .defaultNow()
-    .notNull(),
-  submittedByUserId: varchar("submitted_by_user_id", { length: 255 })
-    .notNull()
-    .references(() => users.id),
-});
-
-export const submissionsRelations = relations(submissions, ({ one }) => ({
-  team: one(teams, {
-    fields: [submissions.teamId],
-    references: [teams.id],
-  }),
-  submittedBy: one(users, {
-    fields: [submissions.submittedByUserId],
-    references: [users.id],
-  }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -647,13 +738,16 @@ export const hackerCheckResults = pgTable(
   ],
 );
 
-export const hackerCheckResultsRelations = relations(hackerCheckResults, ({ one }) => ({
-  user: one(users, { fields: [hackerCheckResults.userId], references: [users.id] }),
-  checkedBy: one(users, {
-    fields: [hackerCheckResults.checkedByUserId],
-    references: [users.id],
+export const hackerCheckResultsRelations = relations(
+  hackerCheckResults,
+  ({ one }) => ({
+    user: one(users, { fields: [hackerCheckResults.userId], references: [users.id] }),
+    checkedBy: one(users, {
+      fields: [hackerCheckResults.checkedByUserId],
+      references: [users.id],
+    }),
   }),
-}));
+);
 
 /**
  * Cached results for per-team cheat checks (commit timing, contributors, DevPost, cross-post).
