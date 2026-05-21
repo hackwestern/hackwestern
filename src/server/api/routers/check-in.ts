@@ -6,45 +6,47 @@ import {
   protectedOrganizerProcedure,
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
-import { applications, users } from "~/server/db/schema";
+import { applications, dayOfRegistrations, users } from "~/server/db/schema";
+
+const hackerLookupInput = z
+  .object({
+    userId: z.string().optional(),
+    email: z.string().email().optional(),
+  })
+  .refine((d) => d.userId ?? d.email, {
+    message: "Provide either userId or email",
+  });
+
+/** Resolves a userId from either a direct id or an email lookup. */
+async function resolveHackerId(input: { userId?: string; email?: string }) {
+  if (input.userId) return input.userId;
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, input.email!),
+    columns: { id: true },
+  });
+
+  if (!user) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "No user found with that email" });
+  }
+
+  return user.id;
+}
 
 export const checkInRouter = createTRPCRouter({
   /**
-   * Marks a hacker as physically checked in at the event.
+   * Marks a hacker as physically signed in at the event.
    * Called by an organizer after verifying the hacker's ID at the door.
-   * Input accepts either a userId or an email so organizers can look up by either.
+   * Creates a dayOfRegistrations record if one doesn't exist yet, then sets signedInAt.
    */
   signInHacker: protectedOrganizerProcedure
-    .input(
-      z.object({
-        userId: z.string().optional(),
-        email: z.string().email().optional(),
-      }).refine((d) => d.userId ?? d.email, {
-        message: "Provide either userId or email",
-      }),
-    )
-    .mutation(async ({ input, ctx }) => {
-      const organizerId = ctx.session.user.id;
-
-      // Resolve the hacker's userId from whichever identifier was provided
-      let hackerId: string;
-
-      if (input.userId) {
-        hackerId = input.userId;
-      } else {
-        const user = await db.query.users.findFirst({
-          where: eq(users.email, input.email!),
-          columns: { id: true },
-        });
-        if (!user) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "No user found with that email" });
-        }
-        hackerId = user.id;
-      }
+    .input(hackerLookupInput)
+    .mutation(async ({ input }) => {
+      const hackerId = await resolveHackerId(input);
 
       const application = await db.query.applications.findFirst({
         where: eq(applications.userId, hackerId),
-        columns: { userId: true, status: true, checkedInAt: true },
+        columns: { userId: true, status: true },
       });
 
       if (!application) {
@@ -54,75 +56,64 @@ export const checkInRouter = createTRPCRouter({
         });
       }
 
-      if (application.status !== "ACCEPTED") {
+      if (application.status !== "ACCEPTED" && application.status !== "CONFIRMED") {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: `Hacker application status is ${application.status} — only ACCEPTED hackers can check in`,
+          message: `Application status is ${application.status} — only ACCEPTED or CONFIRMED hackers can check in`,
         });
       }
 
-      if (application.checkedInAt) {
+      const existing = await db.query.dayOfRegistrations.findFirst({
+        where: eq(dayOfRegistrations.userId, hackerId),
+        columns: { signedInAt: true },
+      });
+
+      if (existing?.signedInAt) {
         throw new TRPCError({
           code: "CONFLICT",
-          message: `Hacker already checked in at ${application.checkedInAt.toISOString()}`,
+          message: `Hacker already signed in at ${existing.signedInAt.toISOString()}`,
         });
       }
 
-      const [updated] = await db
-        .update(applications)
-        .set({
-          checkedInAt: new Date(),
-          checkedInByUserId: organizerId,
-        })
-        .where(eq(applications.userId, hackerId))
-        .returning({
-          userId: applications.userId,
-          checkedInAt: applications.checkedInAt,
-          checkedInByUserId: applications.checkedInByUserId,
-        });
+      const now = new Date();
 
-      return updated;
+      if (existing) {
+        const [updated] = await db
+          .update(dayOfRegistrations)
+          .set({ signedInAt: now, approved: true })
+          .where(eq(dayOfRegistrations.userId, hackerId))
+          .returning();
+        return updated;
+      }
+
+      const [created] = await db
+        .insert(dayOfRegistrations)
+        .values({ userId: hackerId, signedInAt: now, approved: true })
+        .returning();
+
+      return created;
     }),
 
   /**
-   * Returns whether a hacker's application was approved (status = ACCEPTED).
+   * Returns whether a hacker's application was approved (ACCEPTED/CONFIRMED)
+   * and whether they have been signed in on the day.
    * Used by organizers to confirm eligibility before letting someone in.
    */
   checkIsHackerApproved: protectedOrganizerProcedure
-    .input(
-      z.object({
-        userId: z.string().optional(),
-        email: z.string().email().optional(),
-      }).refine((d) => d.userId ?? d.email, {
-        message: "Provide either userId or email",
-      }),
-    )
+    .input(hackerLookupInput)
     .query(async ({ input }) => {
-      let hackerId: string;
+      const hackerId = await resolveHackerId(input);
 
-      if (input.userId) {
-        hackerId = input.userId;
-      } else {
-        const user = await db.query.users.findFirst({
-          where: eq(users.email, input.email!),
-          columns: { id: true },
-        });
-        if (!user) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "No user found with that email" });
-        }
-        hackerId = user.id;
-      }
-
-      const application = await db.query.applications.findFirst({
-        where: eq(applications.userId, hackerId),
-        columns: {
-          userId: true,
-          status: true,
-          firstName: true,
-          lastName: true,
-          checkedInAt: true,
-        },
-      });
+      const [application, dayOf] = await Promise.all([
+        db.query.applications.findFirst({
+          where: eq(applications.userId, hackerId),
+          columns: { userId: true, status: true, firstName: true, lastName: true },
+        }),
+        db.query.dayOfRegistrations.findFirst({
+          where: eq(dayOfRegistrations.userId, hackerId),
+          columns: { approved: true, signedInAt: true },
+        }),
+      ]);
 
       if (!application) {
         throw new TRPCError({
@@ -130,14 +121,18 @@ export const checkInRouter = createTRPCRouter({
           message: "No application found for this user",
         });
       }
+
+      const isAccepted =
+        application.status === "ACCEPTED" || application.status === "CONFIRMED";
 
       return {
         userId: application.userId,
         firstName: application.firstName,
         lastName: application.lastName,
         status: application.status,
-        isApproved: application.status === "ACCEPTED",
-        checkedInAt: application.checkedInAt ?? null,
+        isApproved: isAccepted,
+        signedInAt: dayOf?.signedInAt ?? null,
+        approvedOnDayOf: dayOf?.approved ?? false,
       };
     }),
 });

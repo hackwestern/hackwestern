@@ -7,12 +7,12 @@ import {
   protectedProcedure,
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
-import { submissions, teams, users } from "~/server/db/schema";
+import { teams, users } from "~/server/db/schema";
 
 export const submissionRouter = createTRPCRouter({
   /**
    * Submit a team's GitHub repo and DevPost project URL.
-   * Any team member can call this; it upserts so re-submissions are allowed until close.
+   * Any team member can call this; updating is allowed until the deadline.
    */
   submit: protectedProcedure
     .input(
@@ -46,39 +46,22 @@ export const submissionRouter = createTRPCRouter({
         });
       }
 
-      const existing = await db.query.submissions.findFirst({
-        where: eq(submissions.teamId, user.teamId),
-      });
-
-      if (existing) {
-        const [updated] = await db
-          .update(submissions)
-          .set({
-            devpostUrl: input.devpostUrl,
-            githubUrl: input.githubUrl,
-            submittedAt: new Date(),
-            submittedByUserId: userId,
-          })
-          .where(eq(submissions.teamId, user.teamId))
-          .returning();
-        return updated;
-      }
-
-      const [created] = await db
-        .insert(submissions)
-        .values({
-          teamId: user.teamId,
+      const [updated] = await db
+        .update(teams)
+        .set({
           devpostUrl: input.devpostUrl,
           githubUrl: input.githubUrl,
-          submittedByUserId: userId,
+          submissionStatus: "submitted",
+          submittedAt: new Date(),
         })
+        .where(eq(teams.id, user.teamId))
         .returning();
 
-      return created;
+      return updated;
     }),
 
   /**
-   * Returns the calling user's team submission, or null if none exists yet.
+   * Returns the calling user's team submission fields, or null if not on a team.
    */
   getMySubmission: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
@@ -90,44 +73,68 @@ export const submissionRouter = createTRPCRouter({
 
     if (!user?.teamId) return null;
 
-    return db.query.submissions.findFirst({
-      where: eq(submissions.teamId, user.teamId),
+    const team = await db.query.teams.findFirst({
+      where: eq(teams.id, user.teamId),
+      columns: {
+        id: true,
+        name: true,
+        devpostUrl: true,
+        githubUrl: true,
+        submissionStatus: true,
+        submittedAt: true,
+        tracks: true,
+      },
     });
+
+    return team ?? null;
   }),
 
   /**
-   * Returns all team submissions. Organizer only.
+   * Returns all teams with their submission info. Organizer only.
    */
   getAll: protectedOrganizerProcedure.query(async () => {
-    return db.query.submissions.findMany({
+    return db.query.teams.findMany({
+      columns: {
+        id: true,
+        name: true,
+        devpostUrl: true,
+        githubUrl: true,
+        submissionStatus: true,
+        submittedAt: true,
+        tracks: true,
+      },
       with: {
-        team: { columns: { id: true, name: true } },
-        submittedBy: { columns: { id: true, name: true, email: true } },
+        members: { columns: { id: true, name: true, email: true } },
       },
     });
   }),
 
   /**
-   * Returns the submission for a specific team. Organizer only.
+   * Returns submission info for a specific team. Organizer only.
    */
   getByTeam: protectedOrganizerProcedure
     .input(z.object({ teamId: z.string() }))
     .query(async ({ input }) => {
       const team = await db.query.teams.findFirst({
         where: eq(teams.id, input.teamId),
-        columns: { id: true },
+        columns: {
+          id: true,
+          name: true,
+          devpostUrl: true,
+          githubUrl: true,
+          submissionStatus: true,
+          submittedAt: true,
+          tracks: true,
+        },
+        with: {
+          members: { columns: { id: true, name: true, email: true } },
+        },
       });
 
       if (!team) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
       }
 
-      return db.query.submissions.findFirst({
-        where: eq(submissions.teamId, input.teamId),
-        with: {
-          team: { columns: { id: true, name: true } },
-          submittedBy: { columns: { id: true, name: true, email: true } },
-        },
-      });
+      return team;
     }),
 });

@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import {
   createTRPCRouter,
@@ -8,8 +8,8 @@ import {
 import { db } from "~/server/db";
 import {
   applications,
+  dayOfRegistrations,
   hackerCheckResults,
-  submissions,
   teamCheckResults,
   teams,
   users,
@@ -197,23 +197,30 @@ export const cheatCheckRouter = createTRPCRouter({
         if (cached) return { ...cached, fromCache: true };
       }
 
-      const application = await db.query.applications.findFirst({
-        where: eq(applications.userId, input.userId),
-        columns: { status: true, checkedInAt: true, checkedInByUserId: true },
-      });
+      const [application, dayOf] = await Promise.all([
+        db.query.applications.findFirst({
+          where: eq(applications.userId, input.userId),
+          columns: { status: true },
+        }),
+        db.query.dayOfRegistrations.findFirst({
+          where: eq(dayOfRegistrations.userId, input.userId),
+          columns: { approved: true, signedInAt: true },
+        }),
+      ]);
 
       if (!application) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Application not found" });
       }
 
-      const passed =
-        application.status === "ACCEPTED" && application.checkedInAt !== null;
+      const isAccepted =
+        application.status === "ACCEPTED" || application.status === "CONFIRMED";
+      const passed = isAccepted && dayOf?.approved === true;
 
       const details = {
         status: application.status,
-        isAccepted: application.status === "ACCEPTED",
-        checkedInAt: application.checkedInAt ?? null,
-        checkedInByUserId: application.checkedInByUserId ?? null,
+        isAccepted,
+        signedInAt: dayOf?.signedInAt ?? null,
+        approvedOnDayOf: dayOf?.approved ?? false,
       };
 
       const result = await upsertHackerResult(
@@ -242,16 +249,24 @@ export const cheatCheckRouter = createTRPCRouter({
         if (cached.length === 3) return { results: cached, fromCache: true };
       }
 
-      const application = await db.query.applications.findFirst({
-        where: eq(applications.userId, input.userId),
-        columns: { age: true, status: true, createdAt: true, checkedInAt: true, checkedInByUserId: true },
-      });
+      const [application, dayOf] = await Promise.all([
+        db.query.applications.findFirst({
+          where: eq(applications.userId, input.userId),
+          columns: { age: true, status: true, createdAt: true },
+        }),
+        db.query.dayOfRegistrations.findFirst({
+          where: eq(dayOfRegistrations.userId, input.userId),
+          columns: { approved: true, signedInAt: true },
+        }),
+      ]);
 
       if (!application) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Application not found" });
       }
 
       const AGE_THRESHOLD = 18;
+      const isAccepted =
+        application.status === "ACCEPTED" || application.status === "CONFIRMED";
 
       const [ageResult, registeredResult, approvedResult] = await Promise.all([
         upsertHackerResult(
@@ -271,12 +286,12 @@ export const cheatCheckRouter = createTRPCRouter({
         upsertHackerResult(
           input.userId,
           "IS_APPROVED",
-          application.status === "ACCEPTED" && application.checkedInAt !== null,
+          isAccepted && dayOf?.approved === true,
           {
             status: application.status,
-            isAccepted: application.status === "ACCEPTED",
-            checkedInAt: application.checkedInAt ?? null,
-            checkedInByUserId: application.checkedInByUserId ?? null,
+            isAccepted,
+            signedInAt: dayOf?.signedInAt ?? null,
+            approvedOnDayOf: dayOf?.approved ?? false,
           },
           organizerId,
         ),
@@ -681,7 +696,6 @@ export const cheatCheckRouter = createTRPCRouter({
   getAllCachedTeamResults: protectedOrganizerProcedure.query(async () => {
     const allTeams = await db.query.teams.findMany({
       with: {
-        submission: { columns: { devpostUrl: true, githubUrl: true } },
         checkResults: true,
         members: { columns: { id: true, name: true, email: true } },
       },
@@ -690,7 +704,9 @@ export const cheatCheckRouter = createTRPCRouter({
     return allTeams.map((team) => ({
       teamId: team.id,
       teamName: team.name,
-      submission: team.submission ?? null,
+      submission: team.devpostUrl && team.githubUrl
+        ? { devpostUrl: team.devpostUrl, githubUrl: team.githubUrl, submittedAt: team.submittedAt }
+        : null,
       members: team.members,
       checks: team.checkResults,
     }));
@@ -702,16 +718,21 @@ export const cheatCheckRouter = createTRPCRouter({
 // ---------------------------------------------------------------------------
 
 async function requireSubmission(teamId: string) {
-  const submission = await db.query.submissions.findFirst({
-    where: eq(submissions.teamId, teamId),
+  const team = await db.query.teams.findFirst({
+    where: eq(teams.id, teamId),
+    columns: { id: true, devpostUrl: true, githubUrl: true, submissionStatus: true },
   });
 
-  if (!submission) {
+  if (!team) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
+  }
+
+  if (!team.githubUrl || !team.devpostUrl) {
     throw new TRPCError({
       code: "NOT_FOUND",
       message: "This team has not submitted yet",
     });
   }
 
-  return submission;
+  return { ...team, githubUrl: team.githubUrl, devpostUrl: team.devpostUrl };
 }
