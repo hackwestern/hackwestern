@@ -39,13 +39,13 @@ const Map = () => {
           <div className="flex max-h-[calc(100vh-240px)] w-full flex-col gap-3 overflow-auto p-5 sm:p-10">
             {isMobile ? (
               <img
-                src="/map/floor_2.jpg"
+                src="/live/map/floor_2.jpg"
                 alt="Floor 2 Map"
                 className="mb-8 h-auto w-full object-contain"
               />
             ) : (
               <motion.img
-                src="/map/floor_2.jpg"
+                src="/live/map/floor_2.jpg"
                 alt="Floor 2 Map"
                 drag
                 dragMomentum={false}
@@ -66,13 +66,13 @@ const Map = () => {
           <div className="flex max-h-[calc(100vh-240px)] w-full flex-col gap-3 overflow-auto p-5 sm:p-10">
             {isMobile ? (
               <img
-                src="/map/floor_3.jpg"
+                src="/live/map/floor_3.jpg"
                 alt="Floor 3 Map"
                 className="mb-8 h-auto w-full object-contain"
               />
             ) : (
               <motion.img
-                src="/map/floor_3.jpg"
+                src="/live/map/floor_3.jpg"
                 alt="Floor 3 Map"
                 drag
                 dragMomentum={false}

@@ -20,7 +20,7 @@ function DiscordAuthButton({
     >
       <div className="flex flex-row items-center justify-center gap-2">
         <Image
-          src="/images/discordlogo.svg"
+          src="/shared/auth/discord.svg"
           alt="google logo"
           width={20}
           height={20}

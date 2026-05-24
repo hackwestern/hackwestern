@@ -20,7 +20,7 @@ function GoogleAuthButton({
     >
       <div className="flex flex-row items-center justify-center gap-2">
         <Image
-          src="/images/googlelogo.svg"
+          src="/shared/auth/google.svg"
           alt="google logo"
           width={20}
           height={20}

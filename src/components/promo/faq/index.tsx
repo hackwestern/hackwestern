@@ -7,7 +7,7 @@ function FAQ() {
   return (
     <CanvasComponent
       offset={coordinates.faq}
-      imageFallback="/images/promo/faq.png"
+      imageFallback="/landing/promo/faq.png"
     >
       <div className="flex items-center justify-center pb-8 sm:pb-0 sm:pt-4">
         <div className="mx-auto flex grid grid-flow-col grid-rows-3 gap-x-8 gap-y-4">

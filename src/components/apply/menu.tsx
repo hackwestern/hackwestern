@@ -206,7 +206,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
           <div className="my-8 ml-2 flex flex-col gap-8">
             <Link href="/dashboard" className="cursor-pointer">
               <Image
-                src="/horse.svg"
+                src="/shared/horse.svg"
                 alt="Hack Western Logo"
                 width={40}
                 height={60}
@@ -247,7 +247,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
                 <div className="flex items-center gap-4">
                   <Link href="/dashboard">
                     <Image
-                      src="/horse.svg"
+                      src="/shared/horse.svg"
                       alt="Hack Western Logo"
                       width={32}
                       height={48}

@@ -16,7 +16,7 @@ const Lines = React.memo(function Lines() {
         </div>
       ) : (
         <Image
-          src={"/images/promo/faq/note.png"}
+          src={"/landing/promo/faq/note.png"}
           alt=""
           height={255}
           width={315}
