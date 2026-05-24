@@ -221,7 +221,7 @@ describe.sequential("application.save", async () => {
 
     // forcing the dietary update
     updatedApplication.dietaryRestrictions = "Kosher";
-    updatedApplication.dietaryRestrictionsOther = undefined;
+    updatedApplication.dietaryRestrictionsOther = null;
 
     const want = {
       ...updatedApplication,
