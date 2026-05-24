@@ -70,7 +70,7 @@ export default function Home() {
       </Head>
       <main
         id="home"
-        className="relative min-h-screen cursor-[url('/customcursor.svg'),auto]"
+        className="relative min-h-screen cursor-[url('/shared/customcursor.svg'),auto]"
       >
         <Canvas homeCoordinates={coordinates.home}>
           <Hero />

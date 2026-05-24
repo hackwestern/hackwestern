@@ -13,7 +13,7 @@ export const PAGES = [
         <div className="mt-16 flex justify-center align-middle">
           <div className="absolute h-[271px] w-[351px] translate-y-[67px] -rotate-2 rounded-md bg-white p-2.5 shadow-md">
             <Image
-              src={"/images/promo/book/team.png"}
+              src={"/landing/promo/book/team.png"}
               alt="frame"
               width={351}
               height={271}
@@ -23,7 +23,7 @@ export const PAGES = [
             </div>
           </div>
           <Image
-            src="/images/promo/book/dream-team.svg"
+            src="/landing/promo/book/dream-team.svg"
             alt="dream team"
             height={54}
             width={90}
@@ -34,7 +34,7 @@ export const PAGES = [
             }}
           />
           <Image
-            src="/images/promo/book/front-page-doodle.svg"
+            src="/landing/promo/book/front-page-doodle.svg"
             alt="doodle"
             height={75}
             width={204}
@@ -46,7 +46,7 @@ export const PAGES = [
           />
           <div className="relative h-28 w-28">
             <Image
-              src="/horse.svg"
+              src="/shared/horse.svg"
               alt="Frame"
               className="absolute inset-0 h-full w-full translate-x-[160px] translate-y-[287px] rotate-12 object-contain"
               draggable={false}
@@ -65,7 +65,7 @@ export const PAGES = [
       <div>
         <div className="flex justify-center align-middle">
           <Image
-            src="/images/promo/book/codirector-title.svg"
+            src="/landing/promo/book/codirector-title.svg"
             alt="codirector"
             width={261}
             height={80}
@@ -74,7 +74,7 @@ export const PAGES = [
         <CdCard
           name="Swathi Thushiyandan"
           role="Co-Director"
-          photo="/images/organizers/swathi.JPG"
+          photo="/landing/organizers/swathi.JPG"
           rotate={-8}
           imageWidth={180}
           imageHeight={180}
@@ -88,7 +88,7 @@ export const PAGES = [
         <CdCard
           name="Sarah Huang"
           role="Co-Director"
-          photo="/images/organizers/huang.png"
+          photo="/landing/organizers/huang.png"
           imageWidth={180}
           imageHeight={180}
           rotate={9}
@@ -100,7 +100,7 @@ export const PAGES = [
           roundFrame={true}
         />
         <Image
-          src="/images/promo/book/stickers/headphones.png"
+          src="/landing/promo/book/stickers/headphones.png"
           alt="headphones"
           height={82}
           width={90}
@@ -112,7 +112,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/palette.png"
+          src="/landing/promo/book/stickers/palette.png"
           alt="palette"
           height={92}
           width={70}
@@ -123,7 +123,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/cello.png"
+          src="/landing/promo/book/stickers/cello.png"
           alt="cello"
           height={50}
           width={60}
@@ -135,7 +135,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/uc-hill.png"
+          src="/landing/promo/book/stickers/uc-hill.png"
           alt="uc-hill"
           height={244}
           width={238}
@@ -153,7 +153,7 @@ export const PAGES = [
           <div className="flex flex-col items-center">
             <div className="flex justify-center align-middle">
               <Image
-                src="/images/promo/book/design-book-title.svg"
+                src="/landing/promo/book/design-book-title.svg"
                 alt="design"
                 width={135}
                 height={80}
@@ -162,7 +162,7 @@ export const PAGES = [
             <CdCard
               name="Rachel Chen"
               role="Design Lead"
-              photo="/images/organizers/rachel.jpg"
+              photo="/landing/organizers/rachel.jpg"
               imageWidth={220}
               imageHeight={263}
               style={{
@@ -173,7 +173,7 @@ export const PAGES = [
               roundFrame={true}
             />
             <Image
-              src="/images/promo/book/stickers/dancer.png"
+              src="/landing/promo/book/stickers/dancer.png"
               alt="dancer"
               height={152}
               width={150}
@@ -196,7 +196,7 @@ export const PAGES = [
         <CdCard
           name="Jessica Wang"
           role="Design Organizer"
-          photo="/images/organizers/jessica.jpg"
+          photo="/landing/organizers/jessica.jpg"
           imageWidth={149}
           imageHeight={191}
           frameWidth={190}
@@ -212,7 +212,7 @@ export const PAGES = [
         <CdCard
           name="Anthony Ung"
           role="Design Organizer"
-          photo="/images/organizers/anthony.jpeg"
+          photo="/landing/organizers/anthony.jpeg"
           imageWidth={153}
           imageHeight={186}
           frameWidth={187}
@@ -226,7 +226,7 @@ export const PAGES = [
           roundFrame={true}
         />
         <Image
-          src="/images/promo/book/stickers/rainbow.png"
+          src="/landing/promo/book/stickers/rainbow.png"
           alt="rainbow"
           height={163}
           width={136}
@@ -237,7 +237,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/cat.png"
+          src="/landing/promo/book/stickers/cat.png"
           alt="cat"
           height={154}
           width={135}
@@ -254,7 +254,7 @@ export const PAGES = [
         <div className="flex flex-col items-center">
           <div className="mt-24 flex justify-center align-middle">
             <Image
-              src="/images/promo/book/events-book-title.svg"
+              src="/landing/promo/book/events-book-title.svg"
               alt="events"
               width={120}
               height={80}
@@ -263,7 +263,7 @@ export const PAGES = [
           <CdCard
             name="Marissa Wang"
             role="Events Lead"
-            photo="/images/organizers/marissa.jpeg"
+            photo="/landing/organizers/marissa.jpeg"
             imageWidth={217}
             imageHeight={171}
             frameWidth={246}
@@ -288,7 +288,7 @@ export const PAGES = [
           <CdCard
             name="Jerry Zhang"
             role="Events Lead"
-            photo="/images/organizers/jerry.jpeg"
+            photo="/landing/organizers/jerry.jpeg"
             imageWidth={179}
             imageHeight={224}
             frameWidth={208}
@@ -310,7 +310,7 @@ export const PAGES = [
             </span>
           </div>{" "}
           <Image
-            src="/images/promo/book/stickers/bear.png"
+            src="/landing/promo/book/stickers/bear.png"
             alt="bear"
             height={130}
             width={81}
@@ -321,7 +321,7 @@ export const PAGES = [
             }}
           />
           <Image
-            src="/images/promo/book/stickers/butterfly.png"
+            src="/landing/promo/book/stickers/butterfly.png"
             alt="butterfly"
             height={67}
             width={101}
@@ -332,7 +332,7 @@ export const PAGES = [
             }}
           />
           <Image
-            src="/images/promo/book/stickers/star.png"
+            src="/landing/promo/book/stickers/star.png"
             alt="star"
             height={43}
             width={25}
@@ -343,7 +343,7 @@ export const PAGES = [
             }}
           />
           <Image
-            src="/images/promo/book/stickers/star.png"
+            src="/landing/promo/book/stickers/star.png"
             alt="star"
             height={48}
             width={32}
@@ -354,7 +354,7 @@ export const PAGES = [
             }}
           />
           <Image
-            src="/images/promo/book/stickers/star.png"
+            src="/landing/promo/book/stickers/star.png"
             alt="star"
             height={43}
             width={30}
@@ -376,7 +376,7 @@ export const PAGES = [
         <CdCard
           name="Yash Gandhi"
           role="Events Organizer"
-          photo="/images/organizers/yash.jpg"
+          photo="/landing/organizers/yash.jpg"
           imageWidth={189}
           imageHeight={150}
           frameWidth={220}
@@ -400,7 +400,7 @@ export const PAGES = [
         <CdCard
           name="Sarah Lieng"
           role="Events Organizer"
-          photo="/images/organizers/lieng.jpeg"
+          photo="/landing/organizers/lieng.jpeg"
           imageWidth={207}
           imageHeight={138}
           frameWidth={236}
@@ -424,7 +424,7 @@ export const PAGES = [
         <CdCard
           name="Julian Laxman"
           role="Events Organizer"
-          photo="/images/organizers/julian.JPG"
+          photo="/landing/organizers/julian.JPG"
           imageWidth={183}
           imageHeight={183}
           frameWidth={220}
@@ -446,7 +446,7 @@ export const PAGES = [
           </span>
         </div>{" "}
         <Image
-          src="/images/promo/book/stickers/goggles.png"
+          src="/landing/promo/book/stickers/goggles.png"
           alt="goggles"
           height={66}
           width={134}
@@ -458,7 +458,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/dancer-2.png"
+          src="/landing/promo/book/stickers/dancer-2.png"
           alt="dancer"
           height={90}
           width={117}
@@ -469,7 +469,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/can't-wait.svg"
+          src="/landing/promo/book/stickers/can't-wait.svg"
           alt="can't wait for HW XII >.<"
           height={23}
           width={265}
@@ -485,7 +485,7 @@ export const PAGES = [
       <div>
         <div className="ml-8 mt-8 flex justify-center align-middle">
           <Image
-            src="/images/promo/book/marketing-book-title.svg"
+            src="/landing/promo/book/marketing-book-title.svg"
             alt="marketing"
             width={215}
             height={80}
@@ -495,7 +495,7 @@ export const PAGES = [
         <CdCard
           name="Laurel Dong"
           role="Marketing Lead"
-          photo="/images/organizers/laurel.jpg"
+          photo="/landing/organizers/laurel.jpg"
           imageWidth={202}
           imageHeight={240}
           style={{
@@ -506,7 +506,7 @@ export const PAGES = [
           roundFrame={true}
         />
         <Image
-          src="/images/promo/book/stickers/keyboard.png"
+          src="/landing/promo/book/stickers/keyboard.png"
           alt="keyboard"
           height={78}
           width={149}
@@ -517,7 +517,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/mouse.png"
+          src="/landing/promo/book/stickers/mouse.png"
           alt="mouse"
           height={99}
           width={89}
@@ -539,7 +539,7 @@ export const PAGES = [
         <CdCard
           name="Brittney Chong"
           role="Marketing Organizer"
-          photo="/images/organizers/brittney.jpg"
+          photo="/landing/organizers/brittney.jpg"
           imageWidth={156}
           imageHeight={188}
           frameHeight={256}
@@ -555,7 +555,7 @@ export const PAGES = [
         <CdCard
           name="Allison Ye"
           role="Marketing Organizer"
-          photo="/images/organizers/allison.png"
+          photo="/landing/organizers/allison.png"
           imageWidth={156}
           imageHeight={188}
           frameHeight={256}
@@ -569,7 +569,7 @@ export const PAGES = [
           roundFrame={true}
         />
         <Image
-          src="/images/promo/book/stickers/cat-2.png"
+          src="/landing/promo/book/stickers/cat-2.png"
           alt="cat"
           height={130}
           width={117}
@@ -581,7 +581,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/treble.png"
+          src="/landing/promo/book/stickers/treble.png"
           alt="treble clef"
           height={60}
           width={52}
@@ -592,7 +592,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/rope.png"
+          src="/landing/promo/book/stickers/rope.png"
           alt="rope and rock"
           height={130}
           width={157}
@@ -603,7 +603,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/rock-1.png"
+          src="/landing/promo/book/stickers/rock-1.png"
           alt="rock"
           height={90}
           width={80}
@@ -615,7 +615,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/rock-2.png"
+          src="/landing/promo/book/stickers/rock-2.png"
           alt="rock"
           height={74}
           width={82}
@@ -626,7 +626,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/rock-climbing.svg"
+          src="/landing/promo/book/stickers/rock-climbing.svg"
           alt="rock climbing!"
           height={13}
           width={125}
@@ -642,7 +642,7 @@ export const PAGES = [
       <div>
         <div className="mt-16 flex justify-center align-middle">
           <Image
-            src="/images/promo/book/sponsorship-book-title.svg"
+            src="/landing/promo/book/sponsorship-book-title.svg"
             alt="Sponsorship"
             width={261}
             height={80}
@@ -651,7 +651,7 @@ export const PAGES = [
         <CdCard
           name="Freda Zhao"
           role="Sponsorship Lead"
-          photo="/images/organizers/freda.jpg"
+          photo="/landing/organizers/freda.jpg"
           imageWidth={177}
           imageHeight={199}
           frameWidth={234}
@@ -664,7 +664,7 @@ export const PAGES = [
           borderRadius="0px"
         />
         <Image
-          src="/images/promo/book/stickers/sparkles.png"
+          src="/landing/promo/book/stickers/sparkles.png"
           alt="sparkles"
           height={78}
           width={49}
@@ -675,7 +675,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/cat-3.png"
+          src="/landing/promo/book/stickers/cat-3.png"
           alt="cat"
           height={95}
           width={118}
@@ -686,7 +686,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/moewww.svg"
+          src="/landing/promo/book/stickers/moewww.svg"
           alt="meowww"
           height={12}
           width={65}
@@ -707,7 +707,7 @@ export const PAGES = [
         <CdCard
           name="Sarina Cheng"
           role="Sponsorship Organizer"
-          photo="/images/organizers/sarina.jpg"
+          photo="/landing/organizers/sarina.jpg"
           imageWidth={151}
           imageHeight={139}
           frameWidth={211}
@@ -722,7 +722,7 @@ export const PAGES = [
         <CdCard
           name="Shaun Ahuja"
           role="Sponsorship Organizer"
-          photo="/images/organizers/shaun.jpeg"
+          photo="/landing/organizers/shaun.jpeg"
           imageWidth={147}
           imageHeight={139}
           frameWidth={220}
@@ -738,7 +738,7 @@ export const PAGES = [
           name="Derrick Ha"
           role="Sponsorship Organizer"
           CustomFrame={SponsorshipLeadFrame}
-          photo="/images/organizers/derrick.png"
+          photo="/landing/organizers/derrick.png"
           imageWidth={137}
           imageHeight={161}
           frameWidth={190}
@@ -751,7 +751,7 @@ export const PAGES = [
           borderRadius="0px"
         />
         <Image
-          src="/images/promo/book/stickers/dog.png"
+          src="/landing/promo/book/stickers/dog.png"
           alt="dog"
           height={115}
           width={111}
@@ -762,7 +762,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/comet.png"
+          src="/landing/promo/book/stickers/comet.png"
           alt="comet"
           height={87}
           width={126}
@@ -777,7 +777,7 @@ export const PAGES = [
     back: (
       <div>
         <Image
-          src="/images/promo/book/web_book_title.svg"
+          src="/landing/promo/book/web_book_title.svg"
           alt="web"
           width={96}
           height={96}
@@ -786,7 +786,7 @@ export const PAGES = [
         <CdCard
           name="William Liu"
           role="Web Lead"
-          photo="/images/organizers/william.jpeg"
+          photo="/landing/organizers/william.jpeg"
           imageWidth={191}
           imageHeight={179}
           frameWidth={235}
@@ -801,7 +801,7 @@ export const PAGES = [
         <CdCard
           name="Hunter Chen"
           role="Web Lead"
-          photo="/images/organizers/hunter.jpg"
+          photo="/landing/organizers/hunter.jpg"
           imageWidth={167}
           imageHeight={160}
           frameHeight={210}
@@ -816,7 +816,7 @@ export const PAGES = [
           webRoleTop="30%"
         />
         <Image
-          src="/images/promo/book/stickers/disco-ball.png"
+          src="/landing/promo/book/stickers/disco-ball.png"
           alt="disco ball"
           height={99}
           width={98}
@@ -827,7 +827,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/dancer-3.png"
+          src="/landing/promo/book/stickers/dancer-3.png"
           alt="dancer"
           height={180}
           width={151}
@@ -838,7 +838,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/rock-1.png"
+          src="/landing/promo/book/stickers/rock-1.png"
           alt="rock"
           height={90}
           width={80}
@@ -850,7 +850,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/rock-2.png"
+          src="/landing/promo/book/stickers/rock-2.png"
           alt="rock"
           height={74}
           width={82}
@@ -861,7 +861,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/rock-3.png"
+          src="/landing/promo/book/stickers/rock-3.png"
           alt="rock"
           height={60}
           width={80}
@@ -880,7 +880,7 @@ export const PAGES = [
     front: (
       <div>
         <Image
-          src="/images/promo/book/web_organizers.svg"
+          src="/landing/promo/book/web_organizers.svg"
           alt="web organizers"
           width={169}
           height={557}
@@ -891,7 +891,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/basket.png"
+          src="/landing/promo/book/stickers/basket.png"
           alt="basket"
           height={90}
           width={99}
@@ -902,7 +902,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/ball.png"
+          src="/landing/promo/book/stickers/ball.png"
           alt="ball"
           height={64}
           width={90}
@@ -913,7 +913,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/mic.png"
+          src="/landing/promo/book/stickers/mic.png"
           alt="mic"
           height={119}
           width={90}
@@ -924,7 +924,7 @@ export const PAGES = [
           }}
         />
         <Image
-          src="/images/promo/book/stickers/monkey.png"
+          src="/landing/promo/book/stickers/monkey.png"
           alt="monkey"
           height={129}
           width={108}

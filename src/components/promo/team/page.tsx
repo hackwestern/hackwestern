@@ -127,7 +127,7 @@ function Page({
             <div
               className="h-full w-full bg-beige p-[32px]"
               style={{
-                backgroundImage: "url(images/promo/book/paper.png)",
+                backgroundImage: "url(landing/promo/book/paper.png)",
                 backgroundSize: "cover",
                 backgroundPositionX: `-${11 * offset}px`,
                 backgroundPositionY: `-${21 * offset}px`,
@@ -149,7 +149,7 @@ function Page({
             <div
               className="h-full w-full bg-beige p-[32px]"
               style={{
-                backgroundImage: "url(images/promo/book/paper.png)",
+                backgroundImage: "url(landing/promo/book/paper.png)",
                 backgroundSize: "cover",
                 backgroundPositionX: `-${14 * offset}px`,
                 backgroundPositionY: `-${18 * offset}px`,

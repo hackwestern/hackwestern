@@ -8,7 +8,7 @@ export const Bindings = React.memo(function Bindings() {
       {Array.from({ length: 8 }).map((_, index) => (
         <div key={index} className="w-[60px]">
           <Image
-            src="/images/promo/team/binding.png"
+            src="/landing/promo/team/binding.png"
             alt="Binding"
             width={500}
             height={500}
@@ -55,7 +55,7 @@ const frontPageHoleMask: React.CSSProperties = {
   ...pageHoleMask,
   maskPosition: frontPos,
   WebkitMaskPosition: frontPos,
-  backgroundImage: "url(images/promo/book/paper.png)",
+  backgroundImage: "url(landing/promo/book/paper.png)",
   backgroundSize: "cover",
 };
 
@@ -65,7 +65,7 @@ const backPageHoleMask: React.CSSProperties = {
   ...pageHoleMask,
   maskPosition: backPos,
   WebkitMaskPosition: backPos,
-  backgroundImage: "url(images/promo/book/paper.png)",
+  backgroundImage: "url(landing/promo/book/paper.png)",
   backgroundSize: "cover",
 };
 

@@ -432,7 +432,7 @@ const Canvas: FC<Props> = ({ children, homeCoordinates }) => {
       if (isPanning && activePointersRef.current.size < 1) {
         setIsPanning(false);
         if (viewportRef.current)
-          viewportRef.current.style.cursor = "url('/customcursor.svg'), grab";
+          viewportRef.current.style.cursor = "url('/shared/customcursor.svg'), grab";
       }
 
       if (initialPinchStateRef.current && activePointersRef.current.size < 2) {

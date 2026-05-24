@@ -9,7 +9,7 @@ export interface SponsorLogoProps {
   href: string;
 }
 
-const prefix = "/sponsors/";
+const prefix = "/shared/sponsors/";
 
 export const SPONSORS: readonly SponsorLogoProps[] = [
   {
