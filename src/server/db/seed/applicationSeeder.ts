@@ -80,7 +80,7 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       ) as (typeof shirtSize.enumValues)[number],
       dietaryRestrictions: dietaryRestrictionsFake,
       dietaryRestrictionsOther:
-        dietaryRestrictionsFake == "Other" ? "Other Restriction" : undefined,
+        dietaryRestrictionsFake == "Other" ? "Other Restriction" : null,
 
       attendedBefore: faker.datatype.boolean(),
       numOfHackathons: faker.helpers.arrayElement(numOfHackathons.enumValues),
