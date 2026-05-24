@@ -204,7 +204,7 @@ export const applicationSubmitSchema = z
     // RSVP fields
     shirtSize: z.enum(shirtSize.enumValues),
     dietaryRestrictions: z.enum(dietaryRestrictions.enumValues),
-    dietaryRestrictionsOther: z.string().nullish(),
+    dietaryRestrictionsOther: z.string().nullable(),
     emergencyContactName: z.string().min(1),
     emergencyContactRelationship: z.enum(
       emergencyContactRelationship.enumValues,
