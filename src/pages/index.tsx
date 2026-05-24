@@ -5,7 +5,6 @@ import Sponsors from "~/components/promo/sponsors";
 import About from "~/components/promo/about";
 import Projects from "~/components/promo/projects";
 import FAQ from "~/components/promo/faq";
-import Team from "~/components/promo/team";
 import { coordinates } from "~/constants/canvas";
 import MLHTrustBadge from "~/components/promo/mlh-trust.badge";
 import { Button } from "~/components/ui/button";
@@ -78,7 +77,6 @@ export default function Home() {
           <About />
           <Projects />
           <FAQ />
-          <Team />
         </Canvas>
         <Footer />
         <MLHTrustBadge />
