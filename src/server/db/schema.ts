@@ -192,7 +192,6 @@ export const trackEnum = pgEnum("track", [
 export const hackerCheckType = pgEnum("hacker_check_type", [
   "IS_OF_AGE",
   "IS_REGISTERED",
-  "IS_APPROVED",
 ]);
 
 /**
@@ -201,9 +200,8 @@ export const hackerCheckType = pgEnum("hacker_check_type", [
 export const teamCheckType = pgEnum("team_check_type", [
   "COMMIT_WITHIN_ALLOTTED_TIME",
   "ONLY_TEAM_MEMBER_COMMITS",
+  "LARGE_FIRST_COMMIT",
   "DEVPOST_MEMBERS_REGISTERED",
-  "GITHUB_CROSS_POST",
-  "LINKEDIN_CROSS_POST",
 ]);
 
 // ---------------------------------------------------------------------------
@@ -228,6 +226,8 @@ export const teams = pgTable(
       .notNull(),
     submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 }),
     tracks: trackEnum("tracks").array(),
+    memberGithubUsernames: text("member_github_usernames").array(),
+    memberDevpostUsernames: text("member_devpost_usernames").array(),
 
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()

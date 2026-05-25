@@ -3,16 +3,10 @@ import { env } from "~/env";
 const GITHUB_API_BASE = "https://api.github.com";
 
 /**
- * Hacking begins at 9pm EST on Friday November 21 2025 (= 02:00 UTC November 22).
- * Any commit authored before this timestamp is a pre-event violation.
- */
-export const HACK_START_UTC = new Date("2025-11-22T02:00:00Z");
-
-/**
  * First commit within the event window with more than this many additions is flagged
  * as suspiciously large (pre-written code dropped in at start).
  */
-export const LARGE_COMMIT_THRESHOLD = 500;
+export const LARGE_COMMIT_THRESHOLD = 1000;
 
 function getHeaders(): HeadersInit {
   return {
@@ -75,14 +69,6 @@ export function parseGithubUrl(url: string): { owner: string; repo: string } | n
   const match = url.match(/github\.com\/([^/]+)\/([^/\s.#?]+)/);
   if (!match?.[1] || !match?.[2]) return null;
   return { owner: match[1], repo: match[2] };
-}
-
-/**
- * Extracts a GitHub username from a profile URL like https://github.com/username.
- */
-export function parseGithubUsername(url: string): string | null {
-  const match = url.match(/github\.com\/([^/\s?#]+)\/?$/);
-  return match?.[1] ?? null;
 }
 
 // ---------------------------------------------------------------------------
