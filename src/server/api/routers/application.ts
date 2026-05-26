@@ -14,11 +14,11 @@ import {
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
 import { eq, count, inArray } from "drizzle-orm";
 import { z } from "zod";
+import { z as zv4 } from "zod/v4";
 import { type CanvasPaths } from "~/types/canvas";
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure
-    .meta({ openapi: { method: "GET", path: "/api/application/get" } })
     .input(
       z
         .object({
@@ -101,34 +101,34 @@ export const applicationRouter = createTRPCRouter({
         // When selecting a subset of fields, normalize only those link fields if present
         const modifiedApplication = application
           ? (() => {
-              // If no specific fields were requested, preserve prior full-shape behavior
-              if (!input?.fields || input.fields.length === 0) {
-                return {
-                  ...application,
-                  githubLink: application?.githubLink?.substring(19) ?? null,
-                  linkedInLink:
-                    application?.linkedInLink?.substring(24) ?? null,
-                } as typeof application;
-              }
+            // If no specific fields were requested, preserve prior full-shape behavior
+            if (!input?.fields || input.fields.length === 0) {
+              return {
+                ...application,
+                githubLink: application?.githubLink?.substring(19) ?? null,
+                linkedInLink:
+                  application?.linkedInLink?.substring(24) ?? null,
+              } as typeof application;
+            }
 
-              // fields were specified: only transform if those keys exist in the selection
-              const selected = application;
-              if (
-                input.fields.includes("githubLink") &&
-                "githubLink" in selected
-              ) {
-                selected.githubLink =
-                  selected.githubLink?.substring(19) ?? null;
-              }
-              if (
-                input.fields.includes("linkedInLink") &&
-                "linkedInLink" in selected
-              ) {
-                selected.linkedInLink =
-                  selected.linkedInLink?.substring(24) ?? null;
-              }
-              return selected;
-            })()
+            // fields were specified: only transform if those keys exist in the selection
+            const selected = application;
+            if (
+              input.fields.includes("githubLink") &&
+              "githubLink" in selected
+            ) {
+              selected.githubLink =
+                selected.githubLink?.substring(19) ?? null;
+            }
+            if (
+              input.fields.includes("linkedInLink") &&
+              "linkedInLink" in selected
+            ) {
+              selected.linkedInLink =
+                selected.linkedInLink?.substring(24) ?? null;
+            }
+            return selected;
+          })()
           : null;
 
         return modifiedApplication;
@@ -175,33 +175,45 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
 
-  getAllApplicants: protectedOrganizerProcedure.query(async () => {
-    try {
-      const applicants = await db
-        .select({
-          userId: applications.userId,
-          firstName: applications.firstName,
-          lastName: applications.lastName,
-          email: users.email,
-        })
-        .from(applications)
-        .innerJoin(users, eq(users.id, applications.userId))
-        .where(eq(applications.status, "PENDING_REVIEW"));
+  getAllApplicants: protectedOrganizerProcedure
+    .meta({ openapi: { method: "GET", path: "/api/application/getAllApplicants" } })
+    .input(zv4.object({}))
+    .output(
+      zv4.array(
+        zv4.object({
+          userId: zv4.string(),
+          name: zv4.string(),
+          email: zv4.string(),
+        }),
+      ),
+    )
+    .query(async () => {
+      try {
+        const applicants = await db
+          .select({
+            userId: applications.userId,
+            firstName: applications.firstName,
+            lastName: applications.lastName,
+            email: users.email,
+          })
+          .from(applications)
+          .innerJoin(users, eq(users.id, applications.userId))
+          .where(eq(applications.status, "PENDING_REVIEW"));
 
-      return applicants.map((ap) => ({
-        userId: ap.userId,
-        name: `${ap.firstName ?? ""} ${ap.lastName ?? ""}`,
-        email: ap.email,
-      }));
-    } catch (error) {
-      throw error instanceof TRPCError
-        ? error
-        : new TRPCError({
+        return applicants.map((ap) => ({
+          userId: ap.userId,
+          name: `${ap.firstName ?? ""} ${ap.lastName ?? ""}`,
+          email: ap.email,
+        }));
+      } catch (error) {
+        throw error instanceof TRPCError
+          ? error
+          : new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: "Failed to fetch applicants: " + JSON.stringify(error),
           });
-    }
-  }),
+      }
+    }),
 
   save: protectedProcedure
     .input(applicationSaveSchema)
@@ -221,12 +233,12 @@ export const applicationRouter = createTRPCRouter({
             canvasData === null
               ? undefined
               : (canvasData as
-                  | {
-                      paths: CanvasPaths;
-                      timestamp: number;
-                      version: string;
-                    }
-                  | undefined);
+                | {
+                  paths: CanvasPaths;
+                  timestamp: number;
+                  version: string;
+                }
+                | undefined);
         }
 
         if (Object.prototype.hasOwnProperty.call(input, "githubLink")) {
@@ -307,13 +319,13 @@ export const applicationRouter = createTRPCRouter({
       throw error instanceof TRPCError
         ? error
         : new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to submit application: " + JSON.stringify(error),
-          });
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to submit application: " + JSON.stringify(error),
+        });
     }
   }),
 
-  getAppStats: protectedOrganizerProcedure.query(async ({}) => {
+  getAppStats: protectedOrganizerProcedure.query(async ({ }) => {
     try {
       const applicationStats = await db
         .select({
