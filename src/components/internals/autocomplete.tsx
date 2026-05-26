@@ -86,7 +86,7 @@ const fetchSuggestions = async (query: string): Promise<string[]> => {
                 e.preventDefault()
                 setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1))
             } else if (e.key === 'Enter' && selectedIndex >= 0) {
-                setQuery(suggestions[selectedIndex])
+                setQuery(suggestions[selectedIndex] ?? "")
                 setSuggestions([])
                 setSelectedIndex(-1)
             } else if (e.key === 'Escape') {
