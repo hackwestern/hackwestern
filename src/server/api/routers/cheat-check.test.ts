@@ -308,13 +308,11 @@ describe("cheatCheck.runAllHackerChecks", () => {
     await Promise.all([
       ...sessions.map((s) => insertTestApplication(s.user.id, { age: 20 })),
       ...sessions.map((s) =>
-        db
-          .insert(dayOfRegistrations)
-          .values({
-            userId: s.user.id,
-            approved: true,
-            signedInAt: new Date(),
-          }),
+        db.insert(dayOfRegistrations).values({
+          userId: s.user.id,
+          approved: true,
+          signedInAt: new Date(),
+        }),
       ),
     ]);
 
