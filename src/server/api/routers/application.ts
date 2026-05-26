@@ -18,6 +18,7 @@ import { type CanvasPaths } from "~/types/canvas";
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/api/application/get" } })
     .input(
       z
         .object({
