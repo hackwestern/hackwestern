@@ -81,7 +81,6 @@ const userIdInput = z.object({ userId: z.string() });
 
 // Pass forceRerun to each cheat check to skip the cached result and force re-evaluation.
 export const cheatCheckRouter = createTRPCRouter({
-
   isOfAge: protectedOrganizerProcedure
     .input(userIdInput.extend({ forceRerun: z.boolean().default(false) }))
     .query(async ({ input, ctx }) => {
@@ -101,10 +100,14 @@ export const cheatCheckRouter = createTRPCRouter({
       });
 
       if (!application) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Application not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Application not found",
+        });
       }
 
-      const passed = application.age !== null && application.age >= AGE_THRESHOLD;
+      const passed =
+        application.age !== null && application.age >= AGE_THRESHOLD;
       const details = { age: application.age, threshold: AGE_THRESHOLD };
 
       const result = await upsertHackerResult(
@@ -179,7 +182,10 @@ export const cheatCheckRouter = createTRPCRouter({
       ]);
 
       if (!application) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Application not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Application not found",
+        });
       }
 
       const [ageResult, registeredResult] = await Promise.all([
@@ -214,7 +220,9 @@ export const cheatCheckRouter = createTRPCRouter({
    * the allotted hacking window.
    */
   commitWithinAllottedTime: protectedOrganizerProcedure
-    .input(z.object({ teamId: z.string(), forceRerun: z.boolean().default(false) }))
+    .input(
+      z.object({ teamId: z.string(), forceRerun: z.boolean().default(false) }),
+    )
     .query(async ({ input, ctx }) => {
       if (!input.forceRerun) {
         const cached = await db.query.teamCheckResults.findFirst({
@@ -229,7 +237,10 @@ export const cheatCheckRouter = createTRPCRouter({
       const submission = await requireSubmission(input.teamId);
       const parsed = parseGithubUrl(submission.githubUrl);
       if (!parsed) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Could not parse GitHub URL" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Could not parse GitHub URL",
+        });
       }
 
       const window = requireHackWindow();
@@ -252,10 +263,18 @@ export const cheatCheckRouter = createTRPCRouter({
         hackEnd: window.hackEnd.toISOString(),
         totalCommits: commits.length,
         firstCommit: sorted[0]
-          ? { sha: sorted[0].sha, date: sorted[0].commit.author.date, author: sorted[0].commit.author.name }
+          ? {
+              sha: sorted[0].sha,
+              date: sorted[0].commit.author.date,
+              author: sorted[0].commit.author.name,
+            }
           : null,
         lastCommit: sorted.at(-1)
-          ? { sha: sorted.at(-1)!.sha, date: sorted.at(-1)!.commit.author.date, author: sorted.at(-1)!.commit.author.name }
+          ? {
+              sha: sorted.at(-1)!.sha,
+              date: sorted.at(-1)!.commit.author.date,
+              author: sorted.at(-1)!.commit.author.name,
+            }
           : null,
         violations: violations.map((c) => ({
           sha: c.sha,
@@ -279,7 +298,9 @@ export const cheatCheckRouter = createTRPCRouter({
    * Checks that Github contributors matches the Github usernames submitted by the team.
    */
   onlyTeamMemberCommits: protectedOrganizerProcedure
-    .input(z.object({ teamId: z.string(), forceRerun: z.boolean().default(false) }))
+    .input(
+      z.object({ teamId: z.string(), forceRerun: z.boolean().default(false) }),
+    )
     .query(async ({ input, ctx }) => {
       if (!input.forceRerun) {
         const cached = await db.query.teamCheckResults.findFirst({
@@ -294,7 +315,10 @@ export const cheatCheckRouter = createTRPCRouter({
       const submission = await requireSubmission(input.teamId);
       const parsed = parseGithubUrl(submission.githubUrl);
       if (!parsed) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Could not parse GitHub URL" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Could not parse GitHub URL",
+        });
       }
 
       const team = await db.query.teams.findFirst({
@@ -334,7 +358,9 @@ export const cheatCheckRouter = createTRPCRouter({
    * Flags a suspiciously large first commit within T+6 hours of start of the hack window.
    */
   largeFirstCommit: protectedOrganizerProcedure
-    .input(z.object({ teamId: z.string(), forceRerun: z.boolean().default(false) }))
+    .input(
+      z.object({ teamId: z.string(), forceRerun: z.boolean().default(false) }),
+    )
     .query(async ({ input, ctx }) => {
       if (!input.forceRerun) {
         const cached = await db.query.teamCheckResults.findFirst({
@@ -349,13 +375,18 @@ export const cheatCheckRouter = createTRPCRouter({
       const submission = await requireSubmission(input.teamId);
       const parsed = parseGithubUrl(submission.githubUrl);
       if (!parsed) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Could not parse GitHub URL" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Could not parse GitHub URL",
+        });
       }
 
       const window = requireHackWindow();
       const commits = await fetchAllCommits(parsed.owner, parsed.repo);
 
-      const sixHoursAfterStart = new Date(window.hackStart.getTime() + 6 * 60 * 60 * 1000);
+      const sixHoursAfterStart = new Date(
+        window.hackStart.getTime() + 6 * 60 * 60 * 1000,
+      );
       const commitsWithinWindow = commits
         .filter((c) => {
           const date = new Date(c.commit.author.date);
@@ -367,7 +398,11 @@ export const cheatCheckRouter = createTRPCRouter({
             new Date(b.commit.author.date).getTime(),
         );
 
-      let firstCommitStats: { additions: number; deletions: number; total: number } | null = null;
+      let firstCommitStats: {
+        additions: number;
+        deletions: number;
+        total: number;
+      } | null = null;
       let passed = true;
 
       if (commitsWithinWindow[0]) {
@@ -400,7 +435,9 @@ export const cheatCheckRouter = createTRPCRouter({
    * Checks that the people listed on DevPost match the team registered on HackWestern.
    */
   devPostMembersAreRegistered: protectedOrganizerProcedure
-    .input(z.object({ teamId: z.string(), forceRerun: z.boolean().default(false) }))
+    .input(
+      z.object({ teamId: z.string(), forceRerun: z.boolean().default(false) }),
+    )
     .query(async ({ input, ctx }) => {
       if (!input.forceRerun) {
         const cached = await db.query.teamCheckResults.findFirst({
@@ -423,7 +460,9 @@ export const cheatCheckRouter = createTRPCRouter({
         (team?.memberDevpostUsernames ?? []).map((u) => u.toLowerCase()),
       );
 
-      const devpostCollaborators = await getDevpostCollaboratorUsernames(submission.devpostUrl);
+      const devpostCollaborators = await getDevpostCollaboratorUsernames(
+        submission.devpostUrl,
+      );
 
       const unmatched = devpostCollaborators.filter(
         (u) => !registeredDevpostUsernames.has(u.toLowerCase()),
@@ -487,9 +526,14 @@ export const cheatCheckRouter = createTRPCRouter({
     return allTeams.map((team) => ({
       teamId: team.id,
       teamName: team.name,
-      submission: team.devpostUrl && team.githubUrl
-        ? { devpostUrl: team.devpostUrl, githubUrl: team.githubUrl, submittedAt: team.submittedAt }
-        : null,
+      submission:
+        team.devpostUrl && team.githubUrl
+          ? {
+              devpostUrl: team.devpostUrl,
+              githubUrl: team.githubUrl,
+              submittedAt: team.submittedAt,
+            }
+          : null,
       members: team.members,
       checks: team.checkResults,
     }));
@@ -504,7 +548,8 @@ function requireHackWindow() {
   if (!env.HACK_START || !env.HACK_END) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: "HACK_START and HACK_END environment variables must be set before running commit checks",
+      message:
+        "HACK_START and HACK_END environment variables must be set before running commit checks",
     });
   }
   return {
@@ -516,7 +561,12 @@ function requireHackWindow() {
 async function requireSubmission(teamId: string) {
   const team = await db.query.teams.findFirst({
     where: eq(teams.id, teamId),
-    columns: { id: true, devpostUrl: true, githubUrl: true, submissionStatus: true },
+    columns: {
+      id: true,
+      devpostUrl: true,
+      githubUrl: true,
+      submissionStatus: true,
+    },
   });
 
   if (!team) {
@@ -534,7 +584,9 @@ async function requireSubmission(teamId: string) {
 }
 
 /** Scrapes the DevPost project page and returns the collaborator usernames from href attributes. */
-async function getDevpostCollaboratorUsernames(devpostUrl: string): Promise<string[]> {
+async function getDevpostCollaboratorUsernames(
+  devpostUrl: string,
+): Promise<string[]> {
   const res = await fetch(devpostUrl, {
     headers: {
       "User-Agent":
@@ -551,7 +603,9 @@ async function getDevpostCollaboratorUsernames(devpostUrl: string): Promise<stri
   }
 
   const html = await res.text();
-  const blockMatch = html.match(/<ul[^>]+id="collaborators"[^>]*>([\s\S]*?)<\/ul>/);
+  const blockMatch = html.match(
+    /<ul[^>]+id="collaborators"[^>]*>([\s\S]*?)<\/ul>/,
+  );
   if (!blockMatch?.[1]) return [];
 
   const block = blockMatch[1];

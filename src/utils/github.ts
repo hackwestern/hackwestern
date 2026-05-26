@@ -12,7 +12,9 @@ function getHeaders(): HeadersInit {
   return {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
-    ...(env.GITHUB_TOKEN ? { Authorization: `Bearer ${env.GITHUB_TOKEN}` } : {}),
+    ...(env.GITHUB_TOKEN
+      ? { Authorization: `Bearer ${env.GITHUB_TOKEN}` }
+      : {}),
   };
 }
 
@@ -21,7 +23,9 @@ async function githubFetch(path: string): Promise<unknown> {
     headers: getHeaders(),
   });
   if (!res.ok) {
-    throw new Error(`GitHub API error ${res.status} for ${path}: ${await res.text()}`);
+    throw new Error(
+      `GitHub API error ${res.status} for ${path}: ${await res.text()}`,
+    );
   }
   return res.json();
 }
@@ -65,7 +69,9 @@ export interface GithubContributor {
  * Extracts { owner, repo } from a GitHub URL.
  * Handles https://github.com/owner/repo, .git suffix, and /tree/branch suffixes.
  */
-export function parseGithubUrl(url: string): { owner: string; repo: string } | null {
+export function parseGithubUrl(
+  url: string,
+): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([^/]+)\/([^/\s.#?]+)/);
   if (!match?.[1] || !match?.[2]) return null;
   return { owner: match[1], repo: match[2] };
@@ -78,7 +84,10 @@ export function parseGithubUrl(url: string): { owner: string; repo: string } | n
 /**
  * Fetches all commits for a repo (paginates automatically).
  */
-export async function fetchAllCommits(owner: string, repo: string): Promise<GithubCommit[]> {
+export async function fetchAllCommits(
+  owner: string,
+  repo: string,
+): Promise<GithubCommit[]> {
   const commits: GithubCommit[] = [];
   let page = 1;
   while (true) {
@@ -100,7 +109,9 @@ export async function fetchCommitStats(
   repo: string,
   sha: string,
 ): Promise<GithubCommitDetail["stats"]> {
-  const data = (await githubFetch(`/repos/${owner}/${repo}/commits/${sha}`)) as GithubCommitDetail;
+  const data = (await githubFetch(
+    `/repos/${owner}/${repo}/commits/${sha}`,
+  )) as GithubCommitDetail;
   return data.stats ?? { additions: 0, deletions: 0, total: 0 };
 }
 

@@ -10,7 +10,7 @@ import { applications, dayOfRegistrations } from "~/server/db/schema";
 
 export const checkInRouter = createTRPCRouter({
   /**
-   * For manual check-ins when QR code doesn't work: 
+   * For manual check-ins when QR code doesn't work:
    * Returns all accepted/confirmed applicants whose first or last name matches.
    * If multiple results are returned, the organizer should confirm by checking email.
    */
@@ -87,7 +87,12 @@ export const checkInRouter = createTRPCRouter({
       const [application, dayOf] = await Promise.all([
         db.query.applications.findFirst({
           where: eq(applications.userId, input.userId),
-          columns: { userId: true, status: true, firstName: true, lastName: true },
+          columns: {
+            userId: true,
+            status: true,
+            firstName: true,
+            lastName: true,
+          },
         }),
         db.query.dayOfRegistrations.findFirst({
           where: eq(dayOfRegistrations.userId, input.userId),

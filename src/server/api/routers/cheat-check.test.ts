@@ -5,7 +5,14 @@ import { parseGithubUrl, LARGE_COMMIT_THRESHOLD } from "~/utils/github";
 import { db } from "~/server/db";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
-import { applications, dayOfRegistrations, hackerCheckResults, teamCheckResults, teams, users } from "~/server/db/schema";
+import {
+  applications,
+  dayOfRegistrations,
+  hackerCheckResults,
+  teamCheckResults,
+  teams,
+  users,
+} from "~/server/db/schema";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
 
 // Allow per-test override of the hack window without re-importing the env module
@@ -83,33 +90,45 @@ describe("cheatCheck.isOfAge", () => {
   });
 
   afterEach(async () => {
-    await db.delete(hackerCheckResults).where(eq(hackerCheckResults.userId, hackerSession.user.id));
-    await db.delete(applications).where(eq(applications.userId, hackerSession.user.id));
+    await db
+      .delete(hackerCheckResults)
+      .where(eq(hackerCheckResults.userId, hackerSession.user.id));
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, hackerSession.user.id));
     await db.delete(users).where(eq(users.id, hackerSession.user.id));
   });
 
   test("passes for age >= 18", async () => {
     await insertTestApplication(hackerSession.user.id, { age: 18 });
-    const result = await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
+    const result = await organizerCaller.cheatCheck.isOfAge({
+      userId: hackerSession.user.id,
+    });
     expect(result.passed).toBe(true);
     expect(result.fromCache).toBe(false);
   });
 
   test("fails for age < 18", async () => {
     await insertTestApplication(hackerSession.user.id, { age: 17 });
-    const result = await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
+    const result = await organizerCaller.cheatCheck.isOfAge({
+      userId: hackerSession.user.id,
+    });
     expect(result.passed).toBe(false);
   });
 
   test("fails for null age", async () => {
     await insertTestApplication(hackerSession.user.id, { age: null });
-    const result = await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
+    const result = await organizerCaller.cheatCheck.isOfAge({
+      userId: hackerSession.user.id,
+    });
     expect(result.passed).toBe(false);
   });
 
   test("throws NOT_FOUND when no application exists", async () => {
     try {
-      await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
+      await organizerCaller.cheatCheck.isOfAge({
+        userId: hackerSession.user.id,
+      });
       expect.fail("Should have thrown");
     } catch (err) {
       expect(err).toBeInstanceOf(TRPCError);
@@ -119,9 +138,13 @@ describe("cheatCheck.isOfAge", () => {
 
   test("returns cached result on second call", async () => {
     await insertTestApplication(hackerSession.user.id, { age: 20 });
-    const first = await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
+    const first = await organizerCaller.cheatCheck.isOfAge({
+      userId: hackerSession.user.id,
+    });
     expect(first.fromCache).toBe(false);
-    const second = await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
+    const second = await organizerCaller.cheatCheck.isOfAge({
+      userId: hackerSession.user.id,
+    });
     expect(second.fromCache).toBe(true);
     expect(second.passed).toBe(true);
   });
@@ -129,7 +152,10 @@ describe("cheatCheck.isOfAge", () => {
   test("forceRerun bypasses cache", async () => {
     await insertTestApplication(hackerSession.user.id, { age: 20 });
     await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
-    const result = await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id, forceRerun: true });
+    const result = await organizerCaller.cheatCheck.isOfAge({
+      userId: hackerSession.user.id,
+      forceRerun: true,
+    });
     expect(result.fromCache).toBe(false);
   });
 
@@ -159,8 +185,12 @@ describe("cheatCheck.isRegistered", () => {
   });
 
   afterEach(async () => {
-    await db.delete(hackerCheckResults).where(eq(hackerCheckResults.userId, hackerSession.user.id));
-    await db.delete(dayOfRegistrations).where(eq(dayOfRegistrations.userId, hackerSession.user.id));
+    await db
+      .delete(hackerCheckResults)
+      .where(eq(hackerCheckResults.userId, hackerSession.user.id));
+    await db
+      .delete(dayOfRegistrations)
+      .where(eq(dayOfRegistrations.userId, hackerSession.user.id));
     await db.delete(users).where(eq(users.id, hackerSession.user.id));
   });
 
@@ -170,19 +200,27 @@ describe("cheatCheck.isRegistered", () => {
       approved: true,
       signedInAt: new Date(),
     });
-    const result = await organizerCaller.cheatCheck.isRegistered({ userId: hackerSession.user.id });
+    const result = await organizerCaller.cheatCheck.isRegistered({
+      userId: hackerSession.user.id,
+    });
     expect(result.passed).toBe(true);
     expect(result.fromCache).toBe(false);
   });
 
   test("fails when no dayOfRegistration record exists", async () => {
-    const result = await organizerCaller.cheatCheck.isRegistered({ userId: hackerSession.user.id });
+    const result = await organizerCaller.cheatCheck.isRegistered({
+      userId: hackerSession.user.id,
+    });
     expect(result.passed).toBe(false);
   });
 
   test("fails when dayOfRegistration exists but signedInAt is null", async () => {
-    await db.insert(dayOfRegistrations).values({ userId: hackerSession.user.id, approved: false });
-    const result = await organizerCaller.cheatCheck.isRegistered({ userId: hackerSession.user.id });
+    await db
+      .insert(dayOfRegistrations)
+      .values({ userId: hackerSession.user.id, approved: false });
+    const result = await organizerCaller.cheatCheck.isRegistered({
+      userId: hackerSession.user.id,
+    });
     expect(result.passed).toBe(false);
   });
 
@@ -190,7 +228,9 @@ describe("cheatCheck.isRegistered", () => {
     const userCtx = createInnerTRPCContext({ session: hackerSession });
     const userCaller = createCaller(userCtx);
     try {
-      await userCaller.cheatCheck.isRegistered({ userId: hackerSession.user.id });
+      await userCaller.cheatCheck.isRegistered({
+        userId: hackerSession.user.id,
+      });
       expect.fail("Should have thrown");
     } catch (err) {
       expect(err).toBeInstanceOf(TRPCError);
@@ -211,9 +251,15 @@ describe("cheatCheck.runAllHackerChecks", () => {
   });
 
   afterEach(async () => {
-    await db.delete(hackerCheckResults).where(eq(hackerCheckResults.userId, hackerSession.user.id));
-    await db.delete(dayOfRegistrations).where(eq(dayOfRegistrations.userId, hackerSession.user.id));
-    await db.delete(applications).where(eq(applications.userId, hackerSession.user.id));
+    await db
+      .delete(hackerCheckResults)
+      .where(eq(hackerCheckResults.userId, hackerSession.user.id));
+    await db
+      .delete(dayOfRegistrations)
+      .where(eq(dayOfRegistrations.userId, hackerSession.user.id));
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, hackerSession.user.id));
     await db.delete(users).where(eq(users.id, hackerSession.user.id));
   });
 
@@ -225,9 +271,10 @@ describe("cheatCheck.runAllHackerChecks", () => {
       signedInAt: new Date(),
     });
 
-    const { results, fromCache } = await organizerCaller.cheatCheck.runAllHackerChecks({
-      userId: hackerSession.user.id,
-    });
+    const { results, fromCache } =
+      await organizerCaller.cheatCheck.runAllHackerChecks({
+        userId: hackerSession.user.id,
+      });
 
     expect(fromCache).toBe(false);
     expect(results).toHaveLength(2);
@@ -235,12 +282,16 @@ describe("cheatCheck.runAllHackerChecks", () => {
     expect(types).toContain("IS_OF_AGE");
     expect(types).toContain("IS_REGISTERED");
     expect(results.find((r) => r.checkType === "IS_OF_AGE")?.passed).toBe(true);
-    expect(results.find((r) => r.checkType === "IS_REGISTERED")?.passed).toBe(true);
+    expect(results.find((r) => r.checkType === "IS_REGISTERED")?.passed).toBe(
+      true,
+    );
   });
 
   test("throws NOT_FOUND when no application exists", async () => {
     try {
-      await organizerCaller.cheatCheck.runAllHackerChecks({ userId: hackerSession.user.id });
+      await organizerCaller.cheatCheck.runAllHackerChecks({
+        userId: hackerSession.user.id,
+      });
       expect.fail("Should have thrown");
     } catch (err) {
       expect(err).toBeInstanceOf(TRPCError);
@@ -257,12 +308,20 @@ describe("cheatCheck.runAllHackerChecks", () => {
     await Promise.all([
       ...sessions.map((s) => insertTestApplication(s.user.id, { age: 20 })),
       ...sessions.map((s) =>
-        db.insert(dayOfRegistrations).values({ userId: s.user.id, approved: true, signedInAt: new Date() }),
+        db
+          .insert(dayOfRegistrations)
+          .values({
+            userId: s.user.id,
+            approved: true,
+            signedInAt: new Date(),
+          }),
       ),
     ]);
 
     const results = await Promise.all(
-      sessions.map((s) => organizerCaller.cheatCheck.runAllHackerChecks({ userId: s.user.id })),
+      sessions.map((s) =>
+        organizerCaller.cheatCheck.runAllHackerChecks({ userId: s.user.id }),
+      ),
     );
 
     expect(results).toHaveLength(TEAM_SIZE);
@@ -271,8 +330,12 @@ describe("cheatCheck.runAllHackerChecks", () => {
 
     await Promise.all(
       sessions.map(async (s) => {
-        await db.delete(hackerCheckResults).where(eq(hackerCheckResults.userId, s.user.id));
-        await db.delete(dayOfRegistrations).where(eq(dayOfRegistrations.userId, s.user.id));
+        await db
+          .delete(hackerCheckResults)
+          .where(eq(hackerCheckResults.userId, s.user.id));
+        await db
+          .delete(dayOfRegistrations)
+          .where(eq(dayOfRegistrations.userId, s.user.id));
         await db.delete(applications).where(eq(applications.userId, s.user.id));
         await db.delete(users).where(eq(users.id, s.user.id));
       }),
@@ -284,7 +347,9 @@ describe("cheatCheck.runAllHackerChecks", () => {
     const userCtx = createInnerTRPCContext({ session: hackerSession });
     const userCaller = createCaller(userCtx);
     try {
-      await userCaller.cheatCheck.runAllHackerChecks({ userId: hackerSession.user.id });
+      await userCaller.cheatCheck.runAllHackerChecks({
+        userId: hackerSession.user.id,
+      });
       expect.fail("Should have thrown");
     } catch (err) {
       expect(err).toBeInstanceOf(TRPCError);
@@ -318,48 +383,52 @@ describe("cheatCheck GitHub network tests", () => {
   afterEach(async () => {
     _testHackStart = undefined;
     _testHackEnd = undefined;
-    await db.delete(teamCheckResults).where(eq(teamCheckResults.teamId, TEST_TEAM_ID));
+    await db
+      .delete(teamCheckResults)
+      .where(eq(teamCheckResults.teamId, TEST_TEAM_ID));
     await db.delete(teams).where(eq(teams.id, TEST_TEAM_ID));
   });
 
-  test(
-    "onlyTeamMemberCommits: returns false because repo contributors are not in the team's registered GitHub usernames",
-    async () => {
-      const result = await organizerCaller.cheatCheck.onlyTeamMemberCommits({ teamId: TEST_TEAM_ID });
-      expect(result.fromCache).toBe(false);
-      expect(result.passed).toBe(false);
-      const details = result.details as { unregisteredContributors: { login: string }[] };
-      expect(details.unregisteredContributors.length).toBeGreaterThan(0);
-    },
-    30_000,
-  );
+  test("onlyTeamMemberCommits: returns false because repo contributors are not in the team's registered GitHub usernames", async () => {
+    const result = await organizerCaller.cheatCheck.onlyTeamMemberCommits({
+      teamId: TEST_TEAM_ID,
+    });
+    expect(result.fromCache).toBe(false);
+    expect(result.passed).toBe(false);
+    const details = result.details as {
+      unregisteredContributors: { login: string }[];
+    };
+    expect(details.unregisteredContributors.length).toBeGreaterThan(0);
+  }, 30_000);
 
   test.skipIf(!hasHackWindow)(
     "commitWithinAllottedTime: returns false for the env-configured hack window",
     async () => {
-      const result = await organizerCaller.cheatCheck.commitWithinAllottedTime({ teamId: TEST_TEAM_ID });
+      const result = await organizerCaller.cheatCheck.commitWithinAllottedTime({
+        teamId: TEST_TEAM_ID,
+      });
       expect(result.fromCache).toBe(false);
       expect(result.passed).toBe(false);
     },
     30_000,
   );
 
-  test(
-    "commitWithinAllottedTime: returns true for a large 2010–2050 hack window",
-    async () => {
-      _testHackStart = "2010-01-01T00:00:00Z";
-      _testHackEnd = "2050-12-31T23:59:59Z";
-      const result = await organizerCaller.cheatCheck.commitWithinAllottedTime({ teamId: TEST_TEAM_ID });
-      expect(result.fromCache).toBe(false);
-      expect(result.passed).toBe(true);
-    },
-    30_000,
-  );
+  test("commitWithinAllottedTime: returns true for a large 2010–2050 hack window", async () => {
+    _testHackStart = "2010-01-01T00:00:00Z";
+    _testHackEnd = "2050-12-31T23:59:59Z";
+    const result = await organizerCaller.cheatCheck.commitWithinAllottedTime({
+      teamId: TEST_TEAM_ID,
+    });
+    expect(result.fromCache).toBe(false);
+    expect(result.passed).toBe(true);
+  }, 30_000);
 
   test("commitWithinAllottedTime: throws PRECONDITION_FAILED when hack window not configured", async () => {
     if (hasHackWindow) return; // skip if env vars happen to be set
     try {
-      await organizerCaller.cheatCheck.commitWithinAllottedTime({ teamId: TEST_TEAM_ID });
+      await organizerCaller.cheatCheck.commitWithinAllottedTime({
+        teamId: TEST_TEAM_ID,
+      });
       expect.fail("Should have thrown");
     } catch (err) {
       expect(err).toBeInstanceOf(TRPCError);

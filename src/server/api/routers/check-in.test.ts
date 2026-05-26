@@ -28,17 +28,23 @@ describe("checkIn.searchByName", () => {
   });
 
   afterEach(async () => {
-    await db.delete(applications).where(eq(applications.userId, hackerSession.user.id));
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, hackerSession.user.id));
     await db.delete(users).where(eq(users.id, hackerSession.user.id));
   });
 
   test("does not return partial first/last name match", async () => {
-    const results = await organizerCaller.checkIn.searchByName({ name: "Alice Jones" });
+    const results = await organizerCaller.checkIn.searchByName({
+      name: "Alice Jones",
+    });
     expect(results).toHaveLength(0);
   });
 
   test("is case-insensitive", async () => {
-    const results = await organizerCaller.checkIn.searchByName({ name: "alice smith" });
+    const results = await organizerCaller.checkIn.searchByName({
+      name: "alice smith",
+    });
     expect(results).toHaveLength(1);
   });
 
@@ -50,17 +56,23 @@ describe("checkIn.searchByName", () => {
       status: "ACCEPTED",
     });
 
-    const results = await organizerCaller.checkIn.searchByName({ name: "Alice Smith" });
+    const results = await organizerCaller.checkIn.searchByName({
+      name: "Alice Smith",
+    });
     expect(results).toHaveLength(2);
     expect(results.every((r) => !!r.email)).toBe(true);
     expect(results.every((r) => !!r.userId)).toBe(true);
 
-    await db.delete(applications).where(eq(applications.userId, secondSession.user.id));
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, secondSession.user.id));
     await db.delete(users).where(eq(users.id, secondSession.user.id));
   });
 
   test("returns empty for single-word query", async () => {
-    const results = await organizerCaller.checkIn.searchByName({ name: "Alice" });
+    const results = await organizerCaller.checkIn.searchByName({
+      name: "Alice",
+    });
     expect(results).toHaveLength(0);
   });
 
@@ -114,9 +126,13 @@ describe("checkIn.signInHacker", () => {
   });
 
   test("throws CONFLICT if hacker is already signed in", async () => {
-    await organizerCaller.checkIn.signInHacker({ userId: hackerSession.user.id });
+    await organizerCaller.checkIn.signInHacker({
+      userId: hackerSession.user.id,
+    });
     try {
-      await organizerCaller.checkIn.signInHacker({ userId: hackerSession.user.id });
+      await organizerCaller.checkIn.signInHacker({
+        userId: hackerSession.user.id,
+      });
       expect.fail("Should have thrown");
     } catch (err) {
       expect(err).toBeInstanceOf(TRPCError);
@@ -187,7 +203,9 @@ describe("checkIn.checkIsHackerApproved", () => {
   });
 
   test("returns isApproved=false for PENDING_REVIEW status", async () => {
-    await insertTestApplication(hackerSession.user.id, { status: "PENDING_REVIEW" });
+    await insertTestApplication(hackerSession.user.id, {
+      status: "PENDING_REVIEW",
+    });
     const result = await organizerCaller.checkIn.checkIsHackerApproved({
       userId: hackerSession.user.id,
     });

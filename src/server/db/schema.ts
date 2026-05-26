@@ -741,7 +741,10 @@ export const hackerCheckResults = pgTable(
 export const hackerCheckResultsRelations = relations(
   hackerCheckResults,
   ({ one }) => ({
-    user: one(users, { fields: [hackerCheckResults.userId], references: [users.id] }),
+    user: one(users, {
+      fields: [hackerCheckResults.userId],
+      references: [users.id],
+    }),
     checkedBy: one(users, {
       fields: [hackerCheckResults.checkedByUserId],
       references: [users.id],
@@ -776,13 +779,19 @@ export const teamCheckResults = pgTable(
   ],
 );
 
-export const teamCheckResultsRelations = relations(teamCheckResults, ({ one }) => ({
-  team: one(teams, { fields: [teamCheckResults.teamId], references: [teams.id] }),
-  checkedBy: one(users, {
-    fields: [teamCheckResults.checkedByUserId],
-    references: [users.id],
+export const teamCheckResultsRelations = relations(
+  teamCheckResults,
+  ({ one }) => ({
+    team: one(teams, {
+      fields: [teamCheckResults.teamId],
+      references: [teams.id],
+    }),
+    checkedBy: one(users, {
+      fields: [teamCheckResults.checkedByUserId],
+      references: [users.id],
+    }),
   }),
-}));
+);
 
 // ---------------------------------------------------------------------------
 // Scavenger hunt
