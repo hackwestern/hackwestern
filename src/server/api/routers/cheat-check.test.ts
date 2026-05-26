@@ -1,6 +1,34 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { parseCollaborators, parseProjectTitle } from "~/server/api/lib/devpost";
-import { parseGithubUrl, parseGithubUsername, HACK_START_UTC, LARGE_COMMIT_THRESHOLD } from "~/server/api/lib/github";
+import { afterEach, beforeEach, describe, expect, it, test, vi } from "vitest";
+import { eq } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import { parseGithubUrl, LARGE_COMMIT_THRESHOLD } from "~/utils/github";
+import { db } from "~/server/db";
+import { createCaller } from "~/server/api/root";
+import { createInnerTRPCContext } from "~/server/api/trpc";
+import { applications, dayOfRegistrations, hackerCheckResults, teamCheckResults, teams, users } from "~/server/db/schema";
+import { mockOrganizerSession, mockSession } from "~/server/auth";
+
+// Allow per-test override of the hack window without re-importing the env module
+let _testHackStart: string | undefined;
+let _testHackEnd: string | undefined;
+
+vi.mock("~/env", async (importOriginal) => {
+  const original = await importOriginal<typeof import("~/env")>();
+  const env = original.env as Record<string | symbol, unknown>;
+  return {
+    env: new Proxy(env, {
+      get(target, prop) {
+        if (prop === "HACK_START") return _testHackStart ?? target[prop];
+        if (prop === "HACK_END") return _testHackEnd ?? target[prop];
+        return target[prop];
+      },
+    }),
+  };
+});
+
+const organizerSession = await mockOrganizerSession(db);
+const organizerCtx = createInnerTRPCContext({ session: organizerSession });
+const organizerCaller = createCaller(organizerCtx);
 
 // ---------------------------------------------------------------------------
 // github.ts helpers
@@ -37,183 +65,327 @@ describe("parseGithubUrl", () => {
   });
 });
 
-describe("parseGithubUsername", () => {
-  it("extracts username from profile URL", () => {
-    expect(parseGithubUsername("https://github.com/johndoe")).toBe("johndoe");
-  });
-
-  it("handles trailing slash", () => {
-    expect(parseGithubUsername("https://github.com/johndoe/")).toBe("johndoe");
-  });
-
-  it("returns null for a repo URL (has path beyond username)", () => {
-    // repo URLs have /owner/repo so they won't match the username-only pattern
-    expect(parseGithubUsername("https://github.com/owner/repo")).toBeNull();
-  });
-
-  it("returns null for non-GitHub URLs", () => {
-    expect(parseGithubUsername("https://gitlab.com/johndoe")).toBeNull();
-  });
-});
-
-describe("HACK_START_UTC", () => {
-  it("is set to Nov 22 2025 02:00 UTC (= Nov 21 9pm EST)", () => {
-    expect(HACK_START_UTC.toISOString()).toBe("2025-11-22T02:00:00.000Z");
-  });
-
-  it("a commit from before the event is flagged as pre-event", () => {
-    const preEvent = new Date("2025-11-21T01:00:00Z"); // before 02:00 UTC
-    expect(preEvent < HACK_START_UTC).toBe(true);
-  });
-
-  it("a commit after event start passes", () => {
-    const inEvent = new Date("2025-11-22T03:00:00Z");
-    expect(inEvent >= HACK_START_UTC).toBe(true);
-  });
-});
-
 describe("LARGE_COMMIT_THRESHOLD", () => {
-  it("is 500 lines", () => {
-    expect(LARGE_COMMIT_THRESHOLD).toBe(500);
+  it("is 1000 lines", () => {
+    expect(LARGE_COMMIT_THRESHOLD).toBe(1000);
   });
 });
 
 // ---------------------------------------------------------------------------
-// devpost.ts helpers
+// cheatCheck.isOfAge
 // ---------------------------------------------------------------------------
 
-describe("parseCollaborators", () => {
-  it("extracts names from a typical DevPost collaborators block", () => {
-    const html = `
-      <ul id="collaborators" class="large-2 columns">
-        <li>
-          <div class="software-team-member">
-            <a href="/alice" class="user-profile-link">Alice Smith</a>
-          </div>
-        </li>
-        <li>
-          <div class="software-team-member">
-            <a href="/bob" class="user-profile-link">Bob Jones</a>
-          </div>
-        </li>
-      </ul>
-    `;
-    expect(parseCollaborators(html)).toEqual(["Alice Smith", "Bob Jones"]);
+describe("cheatCheck.isOfAge", () => {
+  let hackerSession: Awaited<ReturnType<typeof mockSession>>;
+
+  beforeEach(async () => {
+    hackerSession = await mockSession(db);
   });
 
-  it("returns empty array when collaborators block is absent", () => {
-    expect(parseCollaborators("<html><body>no list here</body></html>")).toEqual([]);
+  afterEach(async () => {
+    await db.delete(hackerCheckResults).where(eq(hackerCheckResults.userId, hackerSession.user.id));
+    await db.delete(applications).where(eq(applications.userId, hackerSession.user.id));
+    await db.delete(users).where(eq(users.id, hackerSession.user.id));
   });
 
-  it("strips inner HTML tags from names", () => {
-    const html = `
-      <ul id="collaborators">
-        <li><a href="/user"><img src="avatar.png"> Jane Doe</a></li>
-      </ul>
-    `;
-    const result = parseCollaborators(html);
-    expect(result[0]).toContain("Jane Doe");
+  test("passes for age >= 18", async () => {
+    await insertTestApplication(hackerSession.user.id, { age: 18 });
+    const result = await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
+    expect(result.passed).toBe(true);
+    expect(result.fromCache).toBe(false);
   });
 
-  it("handles an empty collaborators list", () => {
-    const html = `<ul id="collaborators"></ul>`;
-    expect(parseCollaborators(html)).toEqual([]);
+  test("fails for age < 18", async () => {
+    await insertTestApplication(hackerSession.user.id, { age: 17 });
+    const result = await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
+    expect(result.passed).toBe(false);
   });
 
-  it("does not return whitespace-only entries", () => {
-    const html = `
-      <ul id="collaborators">
-        <li><a href="/user">   </a></li>
-        <li><a href="/user2">Real Name</a></li>
-      </ul>
-    `;
-    const result = parseCollaborators(html);
-    expect(result).not.toContain("");
-    expect(result).toContain("Real Name");
-  });
-});
-
-describe("parseProjectTitle", () => {
-  it("extracts the title from an app-title h1", () => {
-    const html = `<h1 id="app-title" class="large-header">My Cool Project</h1>`;
-    expect(parseProjectTitle(html)).toBe("My Cool Project");
+  test("fails for null age", async () => {
+    await insertTestApplication(hackerSession.user.id, { age: null });
+    const result = await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
+    expect(result.passed).toBe(false);
   });
 
-  it("trims surrounding whitespace", () => {
-    const html = `<h1 id="app-title">  Trimmed Title  </h1>`;
-    expect(parseProjectTitle(html)).toBe("Trimmed Title");
+  test("throws NOT_FOUND when no application exists", async () => {
+    try {
+      await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
+      expect.fail("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TRPCError);
+      expect((err as TRPCError).code).toBe("NOT_FOUND");
+    }
   });
 
-  it("returns null when title element is missing", () => {
-    expect(parseProjectTitle("<html><body>nothing</body></html>")).toBeNull();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Commit violation logic (pure functions, no DB/network)
-// ---------------------------------------------------------------------------
-
-describe("commit violation detection logic", () => {
-  const HACK_END_UTC = new Date("2025-11-23T14:00:00Z");
-
-  function isViolation(dateStr: string) {
-    const date = new Date(dateStr);
-    return date < HACK_START_UTC || date > HACK_END_UTC;
-  }
-
-  it("flags a commit before event start", () => {
-    expect(isViolation("2025-11-21T00:00:00Z")).toBe(true);
+  test("returns cached result on second call", async () => {
+    await insertTestApplication(hackerSession.user.id, { age: 20 });
+    const first = await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
+    expect(first.fromCache).toBe(false);
+    const second = await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
+    expect(second.fromCache).toBe(true);
+    expect(second.passed).toBe(true);
   });
 
-  it("flags a commit after event end", () => {
-    expect(isViolation("2025-11-24T00:00:00Z")).toBe(true);
+  test("forceRerun bypasses cache", async () => {
+    await insertTestApplication(hackerSession.user.id, { age: 20 });
+    await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
+    const result = await organizerCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id, forceRerun: true });
+    expect(result.fromCache).toBe(false);
   });
 
-  it("passes a commit exactly at event start", () => {
-    expect(isViolation("2025-11-22T02:00:00Z")).toBe(false);
-  });
-
-  it("passes a commit during the event", () => {
-    expect(isViolation("2025-11-22T12:00:00Z")).toBe(false);
-  });
-
-  it("passes a commit exactly at event end", () => {
-    expect(isViolation("2025-11-23T14:00:00Z")).toBe(false);
+  test("throws FORBIDDEN for non-organizer", async () => {
+    await insertTestApplication(hackerSession.user.id, { age: 20 });
+    const userCtx = createInnerTRPCContext({ session: hackerSession });
+    const userCaller = createCaller(userCtx);
+    try {
+      await userCaller.cheatCheck.isOfAge({ userId: hackerSession.user.id });
+      expect.fail("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TRPCError);
+      expect((err as TRPCError).code).toBe("FORBIDDEN");
+    }
   });
 });
 
 // ---------------------------------------------------------------------------
-// Unregistered contributor detection logic
+// cheatCheck.isRegistered
 // ---------------------------------------------------------------------------
 
-describe("unregistered contributor detection", () => {
-  function findUnregistered(
-    contributors: { login: string }[],
-    registeredLogins: string[],
-  ) {
-    const registered = new Set(registeredLogins.map((l) => l.toLowerCase()));
-    return contributors.filter((c) => !registered.has(c.login.toLowerCase()));
-  }
+describe("cheatCheck.isRegistered", () => {
+  let hackerSession: Awaited<ReturnType<typeof mockSession>>;
 
-  it("returns empty when all contributors are registered", () => {
-    const contributors = [{ login: "alice" }, { login: "bob" }];
-    expect(findUnregistered(contributors, ["Alice", "Bob"])).toHaveLength(0);
+  beforeEach(async () => {
+    hackerSession = await mockSession(db);
   });
 
-  it("flags a contributor not in the registered set", () => {
-    const contributors = [{ login: "alice" }, { login: "outsider" }];
-    const result = findUnregistered(contributors, ["alice"]);
-    expect(result).toHaveLength(1);
-    expect(result[0]?.login).toBe("outsider");
+  afterEach(async () => {
+    await db.delete(hackerCheckResults).where(eq(hackerCheckResults.userId, hackerSession.user.id));
+    await db.delete(dayOfRegistrations).where(eq(dayOfRegistrations.userId, hackerSession.user.id));
+    await db.delete(users).where(eq(users.id, hackerSession.user.id));
   });
 
-  it("is case-insensitive", () => {
-    const contributors = [{ login: "Alice" }];
-    expect(findUnregistered(contributors, ["alice"])).toHaveLength(0);
+  test("passes when hacker has signed in", async () => {
+    await db.insert(dayOfRegistrations).values({
+      userId: hackerSession.user.id,
+      approved: true,
+      signedInAt: new Date(),
+    });
+    const result = await organizerCaller.cheatCheck.isRegistered({ userId: hackerSession.user.id });
+    expect(result.passed).toBe(true);
+    expect(result.fromCache).toBe(false);
   });
 
-  it("flags all contributors when registered list is empty", () => {
-    const contributors = [{ login: "alice" }, { login: "bob" }];
-    expect(findUnregistered(contributors, [])).toHaveLength(2);
+  test("fails when no dayOfRegistration record exists", async () => {
+    const result = await organizerCaller.cheatCheck.isRegistered({ userId: hackerSession.user.id });
+    expect(result.passed).toBe(false);
+  });
+
+  test("fails when dayOfRegistration exists but signedInAt is null", async () => {
+    await db.insert(dayOfRegistrations).values({ userId: hackerSession.user.id, approved: false });
+    const result = await organizerCaller.cheatCheck.isRegistered({ userId: hackerSession.user.id });
+    expect(result.passed).toBe(false);
+  });
+
+  test("throws FORBIDDEN for non-organizer", async () => {
+    const userCtx = createInnerTRPCContext({ session: hackerSession });
+    const userCaller = createCaller(userCtx);
+    try {
+      await userCaller.cheatCheck.isRegistered({ userId: hackerSession.user.id });
+      expect.fail("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TRPCError);
+      expect((err as TRPCError).code).toBe("FORBIDDEN");
+    }
   });
 });
+
+// ---------------------------------------------------------------------------
+// cheatCheck.runAllHackerChecks
+// ---------------------------------------------------------------------------
+
+describe("cheatCheck.runAllHackerChecks", () => {
+  let hackerSession: Awaited<ReturnType<typeof mockSession>>;
+
+  beforeEach(async () => {
+    hackerSession = await mockSession(db);
+  });
+
+  afterEach(async () => {
+    await db.delete(hackerCheckResults).where(eq(hackerCheckResults.userId, hackerSession.user.id));
+    await db.delete(dayOfRegistrations).where(eq(dayOfRegistrations.userId, hackerSession.user.id));
+    await db.delete(applications).where(eq(applications.userId, hackerSession.user.id));
+    await db.delete(users).where(eq(users.id, hackerSession.user.id));
+  });
+
+  test("returns IS_OF_AGE and IS_REGISTERED results", async () => {
+    await insertTestApplication(hackerSession.user.id, { age: 20 });
+    await db.insert(dayOfRegistrations).values({
+      userId: hackerSession.user.id,
+      approved: true,
+      signedInAt: new Date(),
+    });
+
+    const { results, fromCache } = await organizerCaller.cheatCheck.runAllHackerChecks({
+      userId: hackerSession.user.id,
+    });
+
+    expect(fromCache).toBe(false);
+    expect(results).toHaveLength(2);
+    const types = results.map((r) => r.checkType);
+    expect(types).toContain("IS_OF_AGE");
+    expect(types).toContain("IS_REGISTERED");
+    expect(results.find((r) => r.checkType === "IS_OF_AGE")?.passed).toBe(true);
+    expect(results.find((r) => r.checkType === "IS_REGISTERED")?.passed).toBe(true);
+  });
+
+  test("throws NOT_FOUND when no application exists", async () => {
+    try {
+      await organizerCaller.cheatCheck.runAllHackerChecks({ userId: hackerSession.user.id });
+      expect.fail("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TRPCError);
+      expect((err as TRPCError).code).toBe("NOT_FOUND");
+    }
+  });
+
+  test("handles concurrent checks for all team members simultaneously", async () => {
+    const TEAM_SIZE = 5;
+    const sessions = await Promise.all(
+      Array.from({ length: TEAM_SIZE }, () => mockSession(db)),
+    );
+
+    await Promise.all([
+      ...sessions.map((s) => insertTestApplication(s.user.id, { age: 20 })),
+      ...sessions.map((s) =>
+        db.insert(dayOfRegistrations).values({ userId: s.user.id, approved: true, signedInAt: new Date() }),
+      ),
+    ]);
+
+    const results = await Promise.all(
+      sessions.map((s) => organizerCaller.cheatCheck.runAllHackerChecks({ userId: s.user.id })),
+    );
+
+    expect(results).toHaveLength(TEAM_SIZE);
+    expect(results.every((r) => r.results.length === 2)).toBe(true);
+    expect(results.every((r) => r.results.every((c) => c.passed))).toBe(true);
+
+    await Promise.all(
+      sessions.map(async (s) => {
+        await db.delete(hackerCheckResults).where(eq(hackerCheckResults.userId, s.user.id));
+        await db.delete(dayOfRegistrations).where(eq(dayOfRegistrations.userId, s.user.id));
+        await db.delete(applications).where(eq(applications.userId, s.user.id));
+        await db.delete(users).where(eq(users.id, s.user.id));
+      }),
+    );
+  });
+
+  test("throws FORBIDDEN for non-organizer", async () => {
+    await insertTestApplication(hackerSession.user.id, { age: 20 });
+    const userCtx = createInnerTRPCContext({ session: hackerSession });
+    const userCaller = createCaller(userCtx);
+    try {
+      await userCaller.cheatCheck.runAllHackerChecks({ userId: hackerSession.user.id });
+      expect.fail("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TRPCError);
+      expect((err as TRPCError).code).toBe("FORBIDDEN");
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Network tests — real GitHub API calls against hackwestern/hackwestern
+// ---------------------------------------------------------------------------
+
+const HACKWESTERN_GITHUB_URL = "https://github.com/hackwestern/hackwestern";
+const TEST_TEAM_ID = "tst001";
+const hasHackWindow = !!process.env.HACK_START && !!process.env.HACK_END;
+
+describe("cheatCheck GitHub network tests", () => {
+  beforeEach(async () => {
+    _testHackStart = undefined;
+    _testHackEnd = undefined;
+    await db.insert(teams).values({
+      id: TEST_TEAM_ID,
+      // One registered member: John Doe with GitHub username john_doe
+      name: "Test Team — John Doe",
+      githubUrl: HACKWESTERN_GITHUB_URL,
+      devpostUrl: "https://devpost.com/software/placeholder",
+      memberGithubUsernames: ["john_doe"],
+    });
+  });
+
+  afterEach(async () => {
+    _testHackStart = undefined;
+    _testHackEnd = undefined;
+    await db.delete(teamCheckResults).where(eq(teamCheckResults.teamId, TEST_TEAM_ID));
+    await db.delete(teams).where(eq(teams.id, TEST_TEAM_ID));
+  });
+
+  test(
+    "onlyTeamMemberCommits: returns false because repo contributors are not in the team's registered GitHub usernames",
+    async () => {
+      const result = await organizerCaller.cheatCheck.onlyTeamMemberCommits({ teamId: TEST_TEAM_ID });
+      expect(result.fromCache).toBe(false);
+      expect(result.passed).toBe(false);
+      const details = result.details as { unregisteredContributors: { login: string }[] };
+      expect(details.unregisteredContributors.length).toBeGreaterThan(0);
+    },
+    30_000,
+  );
+
+  test.skipIf(!hasHackWindow)(
+    "commitWithinAllottedTime: returns false for the env-configured hack window",
+    async () => {
+      const result = await organizerCaller.cheatCheck.commitWithinAllottedTime({ teamId: TEST_TEAM_ID });
+      expect(result.fromCache).toBe(false);
+      expect(result.passed).toBe(false);
+    },
+    30_000,
+  );
+
+  test(
+    "commitWithinAllottedTime: returns true for a large 2010–2050 hack window",
+    async () => {
+      _testHackStart = "2010-01-01T00:00:00Z";
+      _testHackEnd = "2050-12-31T23:59:59Z";
+      const result = await organizerCaller.cheatCheck.commitWithinAllottedTime({ teamId: TEST_TEAM_ID });
+      expect(result.fromCache).toBe(false);
+      expect(result.passed).toBe(true);
+    },
+    30_000,
+  );
+
+  test("commitWithinAllottedTime: throws PRECONDITION_FAILED when hack window not configured", async () => {
+    if (hasHackWindow) return; // skip if env vars happen to be set
+    try {
+      await organizerCaller.cheatCheck.commitWithinAllottedTime({ teamId: TEST_TEAM_ID });
+      expect.fail("Should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(TRPCError);
+      expect((err as TRPCError).code).toBe("PRECONDITION_FAILED");
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+async function insertTestApplication(
+  userId: string,
+  overrides: Partial<typeof applications.$inferInsert> = {},
+) {
+  const [app] = await db
+    .insert(applications)
+    .values({
+      userId,
+      githubLink: "https://github.com/testuser",
+      linkedInLink: "https://linkedin.com/in/testuser",
+      devpostLink: "https://devpost.com/testuser",
+      ...overrides,
+    })
+    .returning();
+  if (!app) throw new Error("Failed to insert test application");
+  return app;
+}
