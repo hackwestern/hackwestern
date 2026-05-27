@@ -62,7 +62,7 @@ const fetchSuggestions = async (query: string): Promise<string[]> => {
             }, [])
         useEffect(() => {
             if (debouncedQuery && isFocused) {
-                fetchSuggestionsCallback(debouncedQuery)
+                void fetchSuggestionsCallback(debouncedQuery)
                 } else {
                     setSuggestions([])
                     }
@@ -119,7 +119,7 @@ const fetchSuggestions = async (query: string): Promise<string[]> => {
                 <div className="relative">
                     <Input
                         type="text"          
-                        placeholder="Search...\"
+                        placeholder="Search..."
                         value={query}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
@@ -134,7 +134,7 @@ const fetchSuggestions = async (query: string): Promise<string[]> => {
                     <Button
                         size="icon"
                         variant="ghost"          
-                        className="absolute right-0 top-0 h-full\"      
+                        className="absolute right-0 top-0 h-full"      
                         aria-label="Search"
                     >          
                     <Search className="h-4 w-4" />
