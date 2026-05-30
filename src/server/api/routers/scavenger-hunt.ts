@@ -243,7 +243,12 @@ const recordScan = async (
 
 export const scavengerHuntRouter = createTRPCRouter({
   // Get All Scavenger Hunt Items
-  getAllScavengerHuntItems: publicProcedure.query(async () => {
+  getAllScavengerHuntItems: publicProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/scavengerHunt/getAllItems" },
+    })
+    .output(z.array(z.any()))
+    .query(async () => {
     try {
       const items = await db.query.scavengerHuntItems.findMany({
         orderBy: (items, { asc }) => [asc(items.code)],
@@ -259,7 +264,12 @@ export const scavengerHuntRouter = createTRPCRouter({
   }),
 
   // Get All Scavenger Hunt Rewards (only accessible to organizers)
-  getAllRewards: protectedOrganizerProcedure.query(async () => {
+  getAllRewards: protectedOrganizerProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/scavengerHunt/getAllRewards" },
+    })
+    .output(z.array(z.any()))
+    .query(async () => {
     try {
       const rewards = await db.query.scavengerHuntRewards.findMany({
         orderBy: (rewards, { asc }) => [asc(rewards.name)],
@@ -276,7 +286,11 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // Get Reward by ID (only accessible to organizers)
   getRewardById: protectedOrganizerProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/scavengerHunt/getRewardById" },
+    })
     .input(z.object({ id: z.number() }))
+    .output(z.any())
     .query(async ({ input }) => {
       try {
         const { id } = input;
@@ -305,7 +319,11 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // Get Scavenger Hunt Item by Code
   getScavengerHuntItem: publicProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/scavengerHunt/getItem" },
+    })
     .input(z.object({ code: z.string() }))
+    .output(z.any())
     .query(async ({ input }) => {
       return withErrorHandling(async () => {
         const { code } = input;
@@ -315,7 +333,11 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // Get Scavenger Hunt Item by ID
   getScavengerHuntItemById: publicProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/scavengerHunt/getItemById" },
+    })
     .input(z.object({ id: z.number() }))
+    .output(z.any())
     .query(async ({ input }) => {
       try {
         const { id } = input;
@@ -338,6 +360,9 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // Scan Item (only accessible to organizers (users can't scan items themselves))
   scan: protectedOrganizerProcedure
+    .meta({
+      openapi: { method: "POST", path: "/api/scavengerHunt/scan" },
+    })
     .input(
       z.object({
         userId: z.string(),
@@ -345,6 +370,7 @@ export const scavengerHuntRouter = createTRPCRouter({
         itemCode: z.string().optional(),
       }),
     )
+    .output(z.object({ success: z.boolean(), message: z.string() }))
     .mutation(async ({ input, ctx }) => {
       try {
         const { userId, itemId, itemCode } = input;
@@ -399,7 +425,11 @@ export const scavengerHuntRouter = createTRPCRouter({
   // Delete a Scavenger Hunt Item (only accessible to organizers)
   // Soft delete: sets deletedAt timestamp instead of actually deleting the record
   deleteScavengerHuntItem: protectedOrganizerProcedure
+    .meta({
+      openapi: { method: "POST", path: "/api/scavengerHunt/deleteItem" },
+    })
     .input(z.object({ itemId: z.number() }))
+    .output(z.void())
     .mutation(async ({ input }) => {
       return withErrorHandling(async () => {
         const { itemId } = input;
@@ -412,14 +442,23 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // * POINTS ENDPOINTS * //
   // Gets a User's Own Points
-  getPoints: protectedProcedure.query(async ({ ctx }) => {
+  getPoints: protectedProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/scavengerHunt/getPoints" },
+    })
+    .output(z.object({ earned: z.number().nullable(), balance: z.number().nullable() }))
+    .query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
     return await getUserPoints(userId);
   }),
 
   // Gets a User's Points by UserId (only accessible to organizers)
   getPointsByUserId: protectedOrganizerProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/scavengerHunt/getPointsByUserId" },
+    })
     .input(z.object({ requestedUserId: z.string() }))
+    .output(z.object({ earned: z.number().nullable(), balance: z.number().nullable() }))
     .query(async ({ input }) => {
       const { requestedUserId } = input;
 
@@ -429,11 +468,15 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // Redeem a Reward (only accessible to users)
   redeem: protectedProcedure
+    .meta({
+      openapi: { method: "POST", path: "/api/scavengerHunt/redeem" },
+    })
     .input(
       z.object({
         rewardId: z.number(),
       }),
     )
+    .output(z.object({ success: z.boolean(), message: z.string() }))
     .mutation(async ({ input, ctx }) => {
       return withErrorHandling(async () => {
         const { rewardId } = input;
@@ -461,10 +504,28 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // Redeem a Reward for a User (only accessible to organizers)
   redeemForUser: protectedOrganizerProcedure
+    .meta({
+      openapi: { method: "POST", path: "/api/scavengerHunt/redeemForUser" },
+    })
     .input(
       z.object({
         userId: z.string(),
         rewardId: z.number(),
+      }),
+    )
+    .output(
+      z.object({
+        success: z.boolean(),
+        message: z.string(),
+        user: z.object({ id: z.string(), name: z.string().nullable(), email: z.string() }),
+        reward: z
+          .object({
+            id: z.number(),
+            name: z.string(),
+            quantity: z.number().nullable(),
+            costPoints: z.number(),
+          })
+          .optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -524,7 +585,12 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // Get all Scans for the current user (only accessible to users)
   // Includes both scans (positive points) and redemptions (negative points)
-  getScans: protectedProcedure.query(async ({ ctx }) => {
+  getScans: protectedProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/scavengerHunt/getScans" },
+    })
+    .output(z.array(z.any()))
+    .query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
 
     // Get scans with item information using join
@@ -593,7 +659,12 @@ export const scavengerHuntRouter = createTRPCRouter({
   }),
 
   // Get all Redemptions (only accessible to users)
-  getRedemptions: protectedProcedure.query(async ({ ctx }) => {
+  getRedemptions: protectedProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/scavengerHunt/getRedemptions" },
+    })
+    .output(z.array(z.any()))
+    .query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
 
     // Get redemptions for userId
@@ -602,7 +673,11 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // Get a User's Redemptions by UserId (only accessible to organizers)
   getRedemptionByUserId: protectedOrganizerProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/scavengerHunt/getRedemptionByUserId" },
+    })
     .input(z.object({ requestedUserId: z.string() }))
+    .output(z.array(z.any()))
     .query(async ({ input }) => {
       const { requestedUserId } = input;
 
@@ -620,7 +695,11 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // Get User Info by UserId (only accessible to organizers)
   getUserById: protectedOrganizerProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/scavengerHunt/getUserById" },
+    })
     .input(z.object({ userId: z.string() }))
+    .output(z.object({ id: z.string(), name: z.string().nullable(), email: z.string() }))
     .query(async ({ input }) => {
       try {
         const { userId } = input;
@@ -651,6 +730,9 @@ export const scavengerHuntRouter = createTRPCRouter({
 
   // Get All Scans (only accessible to organizers)
   getAllScans: protectedOrganizerProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/scavengerHunt/getAllScans" },
+    })
     .input(
       z.object({
         filter: z
@@ -667,6 +749,19 @@ export const scavengerHuntRouter = createTRPCRouter({
           .optional()
           .default("all"),
       }),
+    )
+    .output(
+      z.array(
+        z.object({
+          id: z.string(),
+          hackerName: z.string(),
+          event: z.string(),
+          scanner: z.string(),
+          day: z.string(),
+          time: z.string(),
+          createdAt: z.date().nullable(),
+        }),
+      ),
     )
     .query(async ({ input }) => {
       try {

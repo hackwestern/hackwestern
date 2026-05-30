@@ -19,7 +19,9 @@ import { type CanvasPaths } from "~/types/canvas";
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure
-    .meta({ openapi: { method: "GET", path: "/api/application/get" } })
+    .meta({
+      openapi: { method: "GET", path: "/api/application/get" },
+    })
     .input(
       z
         .object({
@@ -77,6 +79,48 @@ export const applicationRouter = createTRPCRouter({
         })
         .optional(),
     )
+    .output(
+      z
+        .object({
+          userId: z.string().optional(),
+          createdAt: z.date().optional(),
+          updatedAt: z.date().optional(),
+          status: z.string().optional(),
+          avatarColour: z.string().optional(),
+          avatarFace: z.number().optional(),
+          avatarLeftHand: z.number().optional(),
+          avatarRightHand: z.number().optional(),
+          avatarHat: z.number().optional(),
+          firstName: z.string().optional(),
+          lastName: z.string().optional(),
+          age: z.number().optional(),
+          phoneNumber: z.string().optional(),
+          countryOfResidence: z.string().optional(),
+          school: z.string().optional(),
+          levelOfStudy: z.string().optional(),
+          major: z.string().optional(),
+          attendedBefore: z.boolean().optional(),
+          numOfHackathons: z.string().optional(),
+          question1: z.string().optional(),
+          question2: z.string().optional(),
+          question3: z.string().optional(),
+          resumeLink: z.string().optional(),
+          githubLink: z.string().optional(),
+          linkedInLink: z.string().optional(),
+          otherLink: z.string().optional(),
+          agreeCodeOfConduct: z.boolean().optional(),
+          agreeShareWithSponsors: z.boolean().optional(),
+          agreeShareWithMLH: z.boolean().optional(),
+          agreeEmailsFromMLH: z.boolean().optional(),
+          agreeWillBe18: z.boolean().optional(),
+          underrepGroup: z.string().optional(),
+          gender: z.string().optional(),
+          ethnicity: z.string().optional(),
+          sexualOrientation: z.string().optional(),
+          canvasData: z.any().optional(),
+        })
+        .nullable(),
+    )
     .query(async ({ ctx, input }) => {
       try {
         const userId = ctx.session.user.id;
@@ -102,34 +146,34 @@ export const applicationRouter = createTRPCRouter({
         // When selecting a subset of fields, normalize only those link fields if present
         const modifiedApplication = application
           ? (() => {
-            // If no specific fields were requested, preserve prior full-shape behavior
-            if (!input?.fields || input.fields.length === 0) {
-              return {
-                ...application,
-                githubLink: application?.githubLink?.substring(19) ?? null,
-                linkedInLink:
-                  application?.linkedInLink?.substring(24) ?? null,
-              } as typeof application;
-            }
+              // If no specific fields were requested, preserve prior full-shape behavior
+              if (!input?.fields || input.fields.length === 0) {
+                return {
+                  ...application,
+                  githubLink: application?.githubLink?.substring(19) ?? null,
+                  linkedInLink:
+                    application?.linkedInLink?.substring(24) ?? null,
+                } as typeof application;
+              }
 
-            // fields were specified: only transform if those keys exist in the selection
-            const selected = application;
-            if (
-              input.fields.includes("githubLink") &&
-              "githubLink" in selected
-            ) {
-              selected.githubLink =
-                selected.githubLink?.substring(19) ?? null;
-            }
-            if (
-              input.fields.includes("linkedInLink") &&
-              "linkedInLink" in selected
-            ) {
-              selected.linkedInLink =
-                selected.linkedInLink?.substring(24) ?? null;
-            }
-            return selected;
-          })()
+              // fields were specified: only transform if those keys exist in the selection
+              const selected = application;
+              if (
+                input.fields.includes("githubLink") &&
+                "githubLink" in selected
+              ) {
+                selected.githubLink =
+                  selected.githubLink?.substring(19) ?? null;
+              }
+              if (
+                input.fields.includes("linkedInLink") &&
+                "linkedInLink" in selected
+              ) {
+                selected.linkedInLink =
+                  selected.linkedInLink?.substring(24) ?? null;
+              }
+              return selected;
+            })()
           : null;
 
         return modifiedApplication;
@@ -142,9 +186,52 @@ export const applicationRouter = createTRPCRouter({
     }),
 
   getById: protectedOrganizerProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/application/getById" },
+    })
     .input(
       z.object({
         applicantId: z.string().nullish(),
+      }),
+    )
+    .output(
+      z.object({
+        userId: z.string(),
+        createdAt: z.date(),
+        updatedAt: z.date(),
+        status: z.string(),
+        avatarColour: z.string().nullable(),
+        avatarFace: z.number().nullable(),
+        avatarLeftHand: z.number().nullable(),
+        avatarRightHand: z.number().nullable(),
+        avatarHat: z.number().nullable(),
+        firstName: z.string().nullable(),
+        lastName: z.string().nullable(),
+        age: z.number().nullable(),
+        phoneNumber: z.string().nullable(),
+        countryOfResidence: z.string().nullable(),
+        school: z.string().nullable(),
+        levelOfStudy: z.string().nullable(),
+        major: z.string().nullable(),
+        attendedBefore: z.boolean().nullable(),
+        numOfHackathons: z.string().nullable(),
+        question1: z.string().nullable(),
+        question2: z.string().nullable(),
+        question3: z.string().nullable(),
+        resumeLink: z.string().nullable(),
+        githubLink: z.string().nullable(),
+        linkedInLink: z.string().nullable(),
+        otherLink: z.string().nullable(),
+        agreeCodeOfConduct: z.boolean().nullable(),
+        agreeShareWithSponsors: z.boolean().nullable(),
+        agreeShareWithMLH: z.boolean().nullable(),
+        agreeEmailsFromMLH: z.boolean().nullable(),
+        agreeWillBe18: z.boolean().nullable(),
+        underrepGroup: z.string().nullable(),
+        gender: z.string().nullable(),
+        ethnicity: z.string().nullable(),
+        sexualOrientation: z.string().nullable(),
+        canvasData: z.any().nullable(),
       }),
     )
     .query(async ({ input }) => {
@@ -177,7 +264,9 @@ export const applicationRouter = createTRPCRouter({
     }),
 
   getAllApplicants: protectedOrganizerProcedure
-    .meta({ openapi: { method: "GET", path: "/api/application/getAllApplicants" } })
+    .meta({
+      openapi: { method: "GET", path: "/api/application/getAllApplicants" },
+    })
     .input(zv4.object({}))
     .output(
       zv4.array(
@@ -210,14 +299,18 @@ export const applicationRouter = createTRPCRouter({
         throw error instanceof TRPCError
           ? error
           : new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to fetch applicants: " + JSON.stringify(error),
-          });
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Failed to fetch applicants: " + JSON.stringify(error),
+            });
       }
     }),
 
   save: protectedProcedure
+    .meta({
+      openapi: { method: "POST", path: "/api/application/save" },
+    })
     .input(applicationSaveSchema)
+    .output(z.void())
     .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
@@ -234,12 +327,12 @@ export const applicationRouter = createTRPCRouter({
             canvasData === null
               ? undefined
               : (canvasData as
-                | {
-                  paths: CanvasPaths;
-                  timestamp: number;
-                  version: string;
-                }
-                | undefined);
+                  | {
+                      paths: CanvasPaths;
+                      timestamp: number;
+                      version: string;
+                    }
+                  | undefined);
         }
 
         if (Object.prototype.hasOwnProperty.call(input, "githubLink")) {
@@ -272,7 +365,12 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
 
-  submit: protectedProcedure.mutation(async ({ ctx }) => {
+  submit: protectedProcedure
+    .meta({
+      openapi: { method: "POST", path: "/api/application/submit" },
+    })
+    .output(z.void())
+    .mutation(async ({ ctx }) => {
     try {
       const userId = ctx.session.user.id;
 
@@ -320,13 +418,25 @@ export const applicationRouter = createTRPCRouter({
       throw error instanceof TRPCError
         ? error
         : new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to submit application: " + JSON.stringify(error),
-        });
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to submit application: " + JSON.stringify(error),
+          });
     }
   }),
 
-  getAppStats: protectedOrganizerProcedure.query(async ({ }) => {
+  getAppStats: protectedOrganizerProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/application/getAppStats" },
+    })
+    .output(
+      z.array(
+        z.object({
+          status: z.string(),
+          count: z.number(),
+        }),
+      ),
+    )
+    .query(async ({}) => {
     try {
       const applicationStats = await db
         .select({
@@ -346,6 +456,9 @@ export const applicationRouter = createTRPCRouter({
   }),
 
   bulkUpdateStatusByEmails: protectedOrganizerProcedure
+    .meta({
+      openapi: { method: "POST", path: "/api/application/bulkUpdateStatus" },
+    })
     .input(
       z.object({
         emails: z.array(z.string().email()).min(1),
@@ -358,6 +471,12 @@ export const applicationRouter = createTRPCRouter({
           "WAITLISTED",
           "DECLINED",
         ] as const),
+      }),
+    )
+    .output(
+      z.object({
+        matched: z.number(),
+        updated: z.number(),
       }),
     )
     .mutation(async ({ input }) => {
