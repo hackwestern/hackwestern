@@ -83,7 +83,7 @@
     "trpc-to-openapi": "^3.3.0",
     "use-deep-compare-effect": "^1.8.1",
     "vaul": "^1.0.0",
-    "zod": "^3.23.8"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@clack/prompts": "^0.7.0",
@@ -109,10 +109,12 @@
     "postcss": "^8.4.34",
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.11",
+    "randexp": "^0.5.3",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
-    "vitest": "^3.0.9"
+    "vitest": "^3.0.9",
+    "zod-schema-faker": "^2.1.1"
   },
   "ct3aMetadata": {
     "initVersion": "7.30.1"
