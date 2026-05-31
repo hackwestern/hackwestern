@@ -15,7 +15,7 @@ export interface OpenAPISchema {
         parameters: OpenAPIParam[];
       };
       post?: {
-        requestBody: {
+        requestBody?: {
           required: boolean;
           content: {
             "application/json": {
@@ -74,17 +74,16 @@ export class TRPCFaker {
       }
     } else if (path.post != undefined) {
       const rawSchema =
-        path.post.requestBody.content["application/json"].schema;
+        path.post.requestBody?.content["application/json"].schema;
       if (rawSchema == undefined) {
-        throw new Error(
-          `Unable the get the body schema from the path ${route}`,
-        );
-      }
-      const schema = z.fromJSONSchema(rawSchema);
-      const schemaStrict =
-        schema instanceof z.ZodObject ? schema.strict() : schema;
+        this.input = { method: "MUTATE", schema: z.void() };
+      } else {
+        const schema = z.fromJSONSchema(rawSchema);
+        const schemaStrict =
+          schema instanceof z.ZodObject ? schema.strict() : schema;
 
-      this.input = { method: "MUTATE", schema: schemaStrict };
+        this.input = { method: "MUTATE", schema: schemaStrict };
+      }
     } else {
       throw new Error("Unknown method");
     }
@@ -117,12 +116,7 @@ export class TRPCFaker {
             }
           }),
         );
-
-        return {
-          in: this.getMethod().toLowerCase(),
-          path: this.path,
-          input: payload,
-        };
+        return payload;
 
       case "MUTATE":
         try {

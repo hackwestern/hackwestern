@@ -13,7 +13,7 @@ if (route == "") {
 const url: string = __ENV.TRPC_URL ?? "http://localhost:3000/api/trpc/";
 
 export const options = {
-  vus: 1,
+  vus: 20,
   duration: "30s",
 };
 
@@ -41,21 +41,46 @@ export default function (data: EntryPointData) {
   const url = createUrl(normalizedRoute);
   const faker = new TRPCFaker(data.schema, route);
 
-  const payload = faker.generate();
-  console.log(payload);
+  faker.addOverride("token", () => "token");
+  const method = faker.getMethod();
 
-  sendRequest(payload, url);
+  const payload = faker.generate();
+  console.log("REQUEST ", payload);
+
+  switch (method) {
+    case "QUERY":
+      getRequest(payload, url);
+      break;
+    case "MUTATE":
+      postRequest(payload, url);
+      break;
+  }
 }
 
-function sendRequest(payload: unknown, url: string) {
-  const json = JSON.stringify([payload]);
+function getRequest(payload: unknown, url: string) {
+  const json = JSON.stringify({ json: payload });
+  const res = http.get(url + `?input=${encodeURIComponent(json)}`);
 
-  const res = http.post(url + "?batch=1", json, {
+  if (res.body) {
+    console.log("RESPONSE ", res.body);
+  }
+  check(res, {
+    "status is 200": (r) => r.status === 200,
+  });
+}
+
+function postRequest(payload: unknown, url: string) {
+  const json = JSON.stringify({ json: payload });
+
+  const res = http.post(url, json, {
     headers: {
       "Content-Type": "application/json",
     },
   });
 
+  if (res.body) {
+    console.log("RESPONSE ", res.body);
+  }
   check(res, {
     "status is 200": (r) => r.status === 200,
   });
