@@ -16,7 +16,9 @@
     "dev:prod": "dotenv -e .env.prod next dev --turbopack",
     "lint": "next lint",
     "scan": "next dev --turbopack && npx react-scan@latest localhost:3000",
-    "start": "next start"
+    "start": "next start",
+    "build:k6": "node src/utils/load_testing/buildk6.mjs",
+    "test:k6": "npm run build:k6 && k6 run -e ROUTE=$ROUTE src/utils/load_testing/load-test-compiled.js"
   },
   "dependencies": {
     "@auth/core": "^0.34.2",
@@ -90,6 +92,7 @@
     "@faker-js/faker": "^8.4.1",
     "@types/eslint": "^8.56.2",
     "@types/formidable": "^3.4.5",
+    "@types/k6": "^2.0.0",
     "@types/node": "^20.11.20",
     "@types/qrcode": "^1.5.5",
     "@types/react": "19.0.12",
@@ -101,6 +104,7 @@
     "dotenv": "^16.4.5",
     "dotenv-cli": "^7.4.2",
     "drizzle-kit": "^0.30.5",
+    "esbuild": "^0.28.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "15.2.3",
     "eslint-plugin-drizzle": "^0.2.3",
