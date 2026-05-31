@@ -46,8 +46,6 @@ describe("application.get", async () => {
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
     const want = {
       ...application,
-      // because when gotten from the db the dietaryRestrictionsOther is
-      // turned into null if the application has undefined
       dietaryRestrictionsOther: application.dietaryRestrictionsOther ?? null,
       devpostLink: application?.devpostLink?.substring(DEVPOST_URL.length),
       githubLink: application?.githubLink?.substring(GITHUB_URL.length),
@@ -100,8 +98,6 @@ describe("application.getById", async () => {
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
     const want = {
       ...application,
-      // because when gotten from the db the dietaryRestrictionsOther is
-      // turned into null if the application has undefined
       dietaryRestrictionsOther: application.dietaryRestrictionsOther ?? null,
 
       githubLink: application?.githubLink,
@@ -189,8 +185,6 @@ describe.sequential("application.save", async () => {
     const application = createRandomSaveInput(session);
     const want = {
       ...application,
-      // because when gotten from the db the dietaryRestrictionsOther is
-      // turned into null if the application has undefined
       dietaryRestrictionsOther: application.dietaryRestrictionsOther ?? null,
 
       canvasData: {
@@ -225,8 +219,6 @@ describe.sequential("application.save", async () => {
 
     const want = {
       ...updatedApplication,
-      // because when gotten from the db the dietaryRestrictionsOther is
-      // turned into null if the application has undefined
       dietaryRestrictionsOther:
         updatedApplication.dietaryRestrictionsOther ?? null,
 
@@ -252,8 +244,6 @@ describe.sequential("application.save", async () => {
 
     const want = {
       ...completeApplication,
-      // because when gotten from the db the dietaryRestrictionsOther is
-      // turned into null if the application has undefined
       dietaryRestrictionsOther:
         completeApplication.dietaryRestrictionsOther ?? null,
 
