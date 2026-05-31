@@ -23,7 +23,7 @@ if (path == undefined) {
   exit(1);
 }
 
-const fakeTRPC = new TRPCFaker(schema, path);
+const fakeTRPC = TRPCFaker.defualtTRPCFaker(schema, path);
 
 const fakeParams = fakeTRPC.generate();
 console.log("Faked ", fakeParams);

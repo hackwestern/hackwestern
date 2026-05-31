@@ -36,8 +36,7 @@ export class TRPCFaker {
       }
     | { method: "MUTATE"; schema: ZodType };
 
-  private overriddenParams: Record<string, () => unknown>;
-  private path: string;
+  private overriddenFields: Record<string, () => unknown>;
 
   static {
     setFaker(faker);
@@ -45,9 +44,6 @@ export class TRPCFaker {
 
   constructor(schema: OpenAPISchema, route: string) {
     const path = schema.paths[route];
-
-    const cleanedRoute = route.replace("/api/", "").replaceAll("/", ".");
-    this.path = cleanedRoute;
 
     if (path == undefined) {
       throw new Error(
@@ -88,7 +84,7 @@ export class TRPCFaker {
       throw new Error("Unknown method");
     }
 
-    this.overriddenParams = {};
+    this.overriddenFields = {};
   }
 
   /*
@@ -99,14 +95,14 @@ export class TRPCFaker {
       case "QUERY":
         const payload = Object.fromEntries(
           Object.entries(this.input.schema).map(([key, value]) => {
-            const override = this.overriddenParams[key];
+            const override = this.overriddenFields[key];
             if (override != undefined) {
               const overrideValue = override();
 
               return [key, overrideValue];
             }
             try {
-              return [key, fake(value)];
+              return [key, customFaker(value, this.overriddenFields)];
             } catch (error) {
               console.log(error);
 
@@ -120,7 +116,7 @@ export class TRPCFaker {
 
       case "MUTATE":
         try {
-          return fake(this.input.schema);
+          return customFaker(this.input.schema, this.overriddenFields);
         } catch (error) {
           console.log(error);
 
@@ -141,11 +137,62 @@ export class TRPCFaker {
    *
    * ISSUE: we should try and support this for the body too
    */
-  public addOverride(field: string, callback: () => unknown) {
-    this.overriddenParams[field] = callback;
+  public addOverrideField(field: string, callback: () => unknown) {
+    this.overriddenFields[field] = callback;
   }
 
   public getMethod() {
     return this.input.method;
+  }
+
+  public static defaultTRPCFaker(
+    schema: OpenAPISchema,
+    route: string,
+  ): TRPCFaker {
+    const trpc = new TRPCFaker(schema, route);
+
+    trpc.addOverrideField("email", () => faker.internet.email());
+
+    trpc.addOverrideField("password", () => {
+      var password = faker.internet.password();
+      const number = /[0-9]/;
+      const symbol = /[_+=-@#%$]/;
+      if (!number.test(password)) {
+        password = password + String(faker.number.int(10));
+      }
+      if (!symbol.test(password)) {
+        password = password + "_";
+      }
+      return password;
+    });
+
+    return trpc;
+  }
+}
+
+function customFaker(
+  schema: ZodType,
+  replacers: Record<string, () => unknown>,
+): unknown {
+  if (schema instanceof z.ZodObject) {
+    const obj: Record<string, unknown> = {};
+    Object.entries(schema.shape).forEach(([key, value]) => {
+      if (replacers[key] != undefined) {
+        obj[key] = replacers[key]();
+      } else {
+        try {
+          obj[key] = fake(value);
+        } catch {
+          throw new Error(`Field ${key} could not be faked`);
+        }
+      }
+    });
+    return obj;
+  } else {
+    try {
+      return fake(schema);
+    } catch {
+      throw new Error(`Schema ${schema.type} could not be faked`);
+    }
   }
 }

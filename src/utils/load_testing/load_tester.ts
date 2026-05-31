@@ -39,9 +39,8 @@ export default function (data: EntryPointData) {
   const normalizedRoute = normalizeRoute(route);
 
   const url = createUrl(normalizedRoute);
-  const faker = new TRPCFaker(data.schema, route);
+  const faker = TRPCFaker.defaultTRPCFaker(data.schema, route);
 
-  faker.addOverride("token", () => "token");
   const method = faker.getMethod();
 
   const payload = faker.generate();
