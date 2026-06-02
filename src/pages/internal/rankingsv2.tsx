@@ -14,7 +14,10 @@ import { ExportPanel } from "~/features/rankings/components/export-panel";
 import { ImpactSummary } from "~/features/rankings/components/impact-summary";
 import { RankingsTable } from "~/features/rankings/components/rankings-table";
 import { ScenarioControls } from "~/features/rankings/components/scenario-controls";
-import { getUniqueSchools, rankApplicants } from "~/features/rankings/ranking-engine";
+import {
+  getUniqueSchools,
+  rankApplicants,
+} from "~/features/rankings/ranking-engine";
 import type {
   RankingApplicant,
   RankingResult,
@@ -44,7 +47,10 @@ function normalizeScenario(scenario: RankingScenario): RankingScenario {
   };
 }
 
-function searchApplicants(applicants: RankingResult["rankedApplicants"], search: string) {
+function searchApplicants(
+  applicants: RankingResult["rankedApplicants"],
+  search: string,
+) {
   const query = search.trim().toLowerCase();
   if (!query) return applicants;
 
@@ -60,7 +66,10 @@ function searchApplicants(applicants: RankingResult["rankedApplicants"], search:
 }
 
 function scenariosEqual(a: RankingScenario, b: RankingScenario) {
-  return JSON.stringify(normalizeScenario(a)) === JSON.stringify(normalizeScenario(b));
+  return (
+    JSON.stringify(normalizeScenario(a)) ===
+    JSON.stringify(normalizeScenario(b))
+  );
 }
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
@@ -107,7 +116,9 @@ export default function RankingsV2() {
   const [appliedScenario, setAppliedScenario] = useState<RankingScenario>(() =>
     cloneDefaultScenario(),
   );
-  const [appliedResult, setAppliedResult] = useState<RankingResult | null>(null);
+  const [appliedResult, setAppliedResult] = useState<RankingResult | null>(
+    null,
+  );
   const [search, setSearch] = useState("");
   const [isApplying, setIsApplying] = useState(false);
 
@@ -115,7 +126,10 @@ export default function RankingsV2() {
     () => (rankingsData ?? []) as RankingApplicant[],
     [rankingsData],
   );
-  const uniqueSchools = useMemo(() => getUniqueSchools(applicants), [applicants]);
+  const uniqueSchools = useMemo(
+    () => getUniqueSchools(applicants),
+    [applicants],
+  );
   const visibleApplicants = useMemo(
     () => searchApplicants(appliedResult?.rankedApplicants ?? [], search),
     [appliedResult, search],
@@ -225,7 +239,9 @@ export default function RankingsV2() {
 
             <LoadingOverlay
               isLoading={isFetching || isApplying}
-              loadingText={isFetching ? "Loading rankings..." : "Applying filters..."}
+              loadingText={
+                isFetching ? "Loading rankings..." : "Applying filters..."
+              }
             >
               <RankingsTable applicants={visibleApplicants} />
             </LoadingOverlay>

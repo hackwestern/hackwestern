@@ -50,7 +50,9 @@ export function getDemographicDistribution(
   limit: number,
 ): DemographicDistribution {
   const selected = applicants.slice(0, limit);
-  const men = selected.filter((applicant) => applicant.gender === "Male").length;
+  const men = selected.filter(
+    (applicant) => applicant.gender === "Male",
+  ).length;
   const women = selected.filter(
     (applicant) => applicant.gender === "Female",
   ).length;
@@ -88,7 +90,9 @@ export function getSchoolDistribution(
       school,
       count,
       percent:
-        selected.length > 0 ? ((count / selected.length) * 100).toFixed(1) : "0.0",
+        selected.length > 0
+          ? ((count / selected.length) * 100).toFixed(1)
+          : "0.0",
     }))
     .sort((a, b) => b.count - a.count || a.school.localeCompare(b.school));
 

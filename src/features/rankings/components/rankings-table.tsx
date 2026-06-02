@@ -58,64 +58,71 @@ export function RankingsTable({ applicants }: RankingsTableProps) {
                       pre-quota #{applicant.weightedRank}
                     </div>
                   </td>
-                <td className="px-4 py-3">
-                  <Link
-                    href={`/internal/review?applicant=${applicant.userId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-[#3b294f] hover:text-purple-700"
-                  >
-                    {applicant.name || "Unnamed applicant"}
-                  </Link>
-                  <div className="text-xs text-gray-500">{applicant.email}</div>
-                </td>
-                <td className="max-w-56 px-4 py-3">
-                  <div className="truncate">{applicant.school ?? "Unknown"}</div>
-                  <div className="truncate text-xs text-gray-500">
-                    {applicant.major ?? "Major not specified"}
-                  </div>
-                </td>
-                <td className="px-4 py-3">{applicant.gender ?? "Not set"}</td>
-                <td className="px-4 py-3 text-right font-semibold text-orange-600">
-                  {applicant.weightedScore.toFixed(1)}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <span
-                    className={
-                      applicant.rankDelta > 0
-                        ? "text-green-700"
-                        : applicant.rankDelta < 0
-                          ? "text-red-700"
-                          : "text-gray-500"
-                    }
-                  >
-                    {applicant.rankDelta > 0 ? "+" : ""}
-                    {applicant.rankDelta}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`rounded-full px-2 py-1 text-xs font-semibold ${quotaClasses[applicant.quotaStatus]}`}
-                  >
-                    {quotaLabels[applicant.quotaStatus]}
-                  </span>
-                  <div className="mt-1 text-xs text-gray-500">
-                    {applicant.schoolQuota
-                      ? `${applicant.schoolQuotaUsage}/${applicant.schoolQuota}`
-                      : "Unlimited"}
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700">
-                    {applicant.status.replace("_", " ")}
-                  </span>
-                </td>
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/internal/review?applicant=${applicant.userId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-[#3b294f] hover:text-purple-700"
+                    >
+                      {applicant.name || "Unnamed applicant"}
+                    </Link>
+                    <div className="text-xs text-gray-500">
+                      {applicant.email}
+                    </div>
+                  </td>
+                  <td className="max-w-56 px-4 py-3">
+                    <div className="truncate">
+                      {applicant.school ?? "Unknown"}
+                    </div>
+                    <div className="truncate text-xs text-gray-500">
+                      {applicant.major ?? "Major not specified"}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">{applicant.gender ?? "Not set"}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-orange-600">
+                    {applicant.weightedScore.toFixed(1)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span
+                      className={
+                        applicant.rankDelta > 0
+                          ? "text-green-700"
+                          : applicant.rankDelta < 0
+                            ? "text-red-700"
+                            : "text-gray-500"
+                      }
+                    >
+                      {applicant.rankDelta > 0 ? "+" : ""}
+                      {applicant.rankDelta}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs font-semibold ${quotaClasses[applicant.quotaStatus]}`}
+                    >
+                      {quotaLabels[applicant.quotaStatus]}
+                    </span>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {applicant.schoolQuota
+                        ? `${applicant.schoolQuotaUsage}/${applicant.schoolQuota}`
+                        : "Unlimited"}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-700">
+                      {applicant.status.replace("_", " ")}
+                    </span>
+                  </td>
                 </tr>
               );
             })}
             {applicants.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-gray-500">
+                <td
+                  colSpan={8}
+                  className="px-4 py-10 text-center text-gray-500"
+                >
                   No applicants match the current search.
                 </td>
               </tr>
