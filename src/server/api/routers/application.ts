@@ -11,7 +11,7 @@ import {
   applicationSaveSchema,
   applicationSubmitSchema,
 } from "~/schemas/application";
-import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
+import { GITHUB_URL, LINKEDIN_URL, DEVPOST_URL } from "~/utils/urls";
 import { eq, count, or, avg, sum, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { type CanvasPaths } from "~/types/canvas";
