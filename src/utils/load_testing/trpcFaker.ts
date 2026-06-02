@@ -43,11 +43,12 @@ export class TRPCFaker {
   }
 
   constructor(schema: OpenAPISchema, route: string) {
-    const path = schema.paths[route];
+    const transformedRoute = "/api/" + route.replaceAll(".", "/");
+    const path = schema.paths[transformedRoute];
 
     if (path == undefined) {
       throw new Error(
-        `The specified route does not exist on this TRPC Schema, Route: ${route}`,
+        `The specified route does not exist on this TRPC Schema, Route: ${transformedRoute}`,
       );
     }
 

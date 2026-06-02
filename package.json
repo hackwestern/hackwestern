@@ -18,7 +18,7 @@
     "scan": "next dev --turbopack && npx react-scan@latest localhost:3000",
     "start": "next start",
     "build:k6": "node src/utils/load_testing/buildk6.mjs",
-    "test:k6": "npm run build:k6 && k6 run -e ROUTE=$ROUTE src/utils/load_testing/load-test-compiled.js"
+    "test:k6": "bash ./load-test.sh"
   },
   "dependencies": {
     "@auth/core": "^0.34.2",

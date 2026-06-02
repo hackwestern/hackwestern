@@ -3,7 +3,7 @@
 # more user friendly
 #
 # Usage:
-#   sh load-test.sh <ROUTE> <K6 ARGS>
+#   sh load-test.sh <ROUTE> <Auth [n(no),y(yes),o(organizer)]> <K6 ARGS>
 
 # ensures that k6 is installed on your system
 if ! command -v k6 >/dev/null 2>&1; then
@@ -20,11 +20,43 @@ if [ -z "$trpc_route" ]; then
   exit 1
 fi
 
+auth=$1
+shift 1
+if [[ "$auth" != "n" && "$auth" != "y" && "$auth" != "o" ]]; then
+  echo "No auth is specified, please specify [n(no),y(yes),o(organizer)]"
+  exit 1;
+fi 
+
 # first compile the ts files into a single js for k6
 npm run build:k6
 
+if [[ "$auth" != "n" ]]; then 
+  echo "Adding test users..."
+  # seed the db with test users
+  users=$(tsx --env-file=.env -e 'import("./src/utils/load_testing/authPrep.ts").then((mod) => mod.SeedDBForLoadTesting())')
+  if [ $? -ne 0 ]; then 
+    echo "Error when adding the test users to the db"
+    exit 1
+  fi 
+  # set the trap after the users were added
+  trap cleanup EXIT
+
+  echo "Test users have been added"
+fi 
+
 # run the k6 load testing
 echo "Load testing on route $trpc_route"
-k6 run -e ROUTE=$trpc_route $@ ./src/utils/load_testing/load-test-compiled.js
+k6 run -e ROUTE=$trpc_route -e USERS=$users $@ ./src/utils/load_testing/load-test-compiled.js
 
+
+
+cleanup() {
+  if [[ "$auth" != "n" ]]; then 
+    echo "Removing test users... (this can take some time, please dont cancel this)"
+    USERS="$users" tsx --env-file=.env -e "import('./src/utils/load_testing/authPrep.ts').then((mod) => mod.RemoveSeededUsers())"
+    echo "Test users removed"
+  fi
+
+  exit 130
+}
 
