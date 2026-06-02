@@ -22,7 +22,9 @@ export function downloadTextFile(
 }
 
 export function buildEmailCsv(applicants: RankedApplicant[]) {
-  return ["Email", ...applicants.map((applicant) => applicant.email)].join("\n");
+  return ["Email", ...applicants.map((applicant) => applicant.email)].join(
+    "\n",
+  );
 }
 
 export function buildDetailedCsv(applicants: RankedApplicant[]) {

@@ -166,12 +166,12 @@ export function ScenarioControls({
             (draftScenario.weights.originality / weightTotalForDisplay) *
             100
           ).toFixed(1)}
-          %, Tech: {" "}
+          %, Tech:{" "}
           {(
             (draftScenario.weights.technicality / weightTotalForDisplay) *
             100
           ).toFixed(1)}
-          %, Pasn: {" "}
+          %, Pasn:{" "}
           {(
             (draftScenario.weights.passion / weightTotalForDisplay) *
             100
@@ -232,7 +232,9 @@ export function ScenarioControls({
             </div>
           ))}
           {uniqueSchools.length === 0 && (
-            <p className="text-sm text-gray-500">Load rankings to see schools.</p>
+            <p className="text-sm text-gray-500">
+              Load rankings to see schools.
+            </p>
           )}
         </div>
       </section>
@@ -259,8 +261,8 @@ export function ScenarioControls({
       </div>
 
       <p className="text-xs text-gray-500">
-        Weighted target: {appliedScenario.targetAcceptanceCount}. Exports use the
-        weighted snapshot, not draft controls.
+        Weighted target: {appliedScenario.targetAcceptanceCount}. Exports use
+        the weighted snapshot, not draft controls.
       </p>
     </aside>
   );
