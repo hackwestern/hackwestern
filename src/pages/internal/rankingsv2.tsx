@@ -60,7 +60,7 @@ function searchApplicants(
       applicant.email.toLowerCase().includes(query) ||
       (applicant.school?.toLowerCase().includes(query) ?? false) ||
       (applicant.major?.toLowerCase().includes(query) ?? false) ||
-      (applicant.levelOfStudy?.toLowerCase().includes(query) ?? false)
+      (applicant.yearOfStudy?.toLowerCase().includes(query) ?? false)
     );
   });
 }
