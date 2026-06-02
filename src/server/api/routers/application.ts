@@ -12,7 +12,7 @@ import {
   applicationSubmitSchema,
 } from "~/schemas/application";
 import { GITHUB_URL, LINKEDIN_URL, DEVPOST_URL } from "~/utils/urls";
-import { eq, count, or, avg, sum, inArray } from "drizzle-orm";
+import { eq, count, or, sum, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { type CanvasPaths } from "~/types/canvas";
 
@@ -253,7 +253,7 @@ export const applicationRouter = createTRPCRouter({
           lastName: applications.lastName,
           email: users.email,
           school: applications.school,
-          levelOfStudy: applications.levelOfStudy,
+          yearOfStudy: applications.yearOfStudy,
           major: applications.major,
           gender: applications.gender,
           resumeLink: applications.resumeLink,
@@ -283,7 +283,7 @@ export const applicationRouter = createTRPCRouter({
           applications.lastName,
           users.email,
           applications.school,
-          applications.levelOfStudy,
+          applications.yearOfStudy,
           applications.major,
           applications.gender,
           applications.resumeLink,
@@ -312,7 +312,7 @@ export const applicationRouter = createTRPCRouter({
           name: `${app.firstName ?? ""} ${app.lastName ?? ""}`.trim(),
           email: app.email,
           school: app.school,
-          levelOfStudy: app.levelOfStudy,
+          yearOfStudy: app.yearOfStudy,
           major: app.major,
           gender: app.gender,
           resumeLink: app.resumeLink,

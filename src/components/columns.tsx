@@ -159,7 +159,7 @@ type RankingsApplicationType = {
   name: string;
   email: string;
   school: string | null;
-  levelOfStudy: string | null;
+  yearOfStudy: string | null;
   major: string | null;
   gender: string | null;
   resumeLink: string | null;
