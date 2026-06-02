@@ -19,7 +19,7 @@ import DiscordProvider from "next-auth/providers/discord";
 
 import { env } from "~/env";
 import { type Database, db } from "~/server/db";
-import { createTable, users } from "~/server/db/schema";
+import { users } from "~/server/db/schema";
 import { UserSeeder } from "./db/seed/userSeeder";
 import type { PgInsertValue } from "drizzle-orm/pg-core";
 
@@ -63,6 +63,13 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
+    redirect: async ({ url, baseUrl }) => {
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
+    },
   },
   session: {
     strategy: "jwt",
@@ -71,7 +78,7 @@ export const authOptions: NextAuthOptions = {
     encode,
     decode,
   },
-  adapter: DrizzleAdapter(db, createTable) as Adapter,
+  adapter: DrizzleAdapter(db) as Adapter,
   providers: [
     GithubProvider({
       clientId: env.GITHUB_CLIENT_ID,

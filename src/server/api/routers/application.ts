@@ -54,7 +54,7 @@ export const applicationRouter = createTRPCRouter({
                 "countryOfResidence",
                 // Info
                 "school",
-                "levelOfStudy",
+                "yearOfStudy",
                 "major",
                 "attendedBefore",
                 "numOfHackathons",
@@ -64,6 +64,7 @@ export const applicationRouter = createTRPCRouter({
                 "question3",
                 // Links
                 "resumeLink",
+                "devpostLink",
                 "githubLink",
                 "linkedInLink",
                 "otherLink",
@@ -80,6 +81,14 @@ export const applicationRouter = createTRPCRouter({
                 "sexualOrientation",
                 // Canvas
                 "canvasData",
+                // RSVP
+                "shirtSize",
+                "dietaryRestrictions",
+                "dietaryRestrictionsOther",
+                "emergencyContactName",
+                "emergencyContactRelationship",
+                "emergencyContactPhoneNumber",
+                "transportationMethod",
               ] as const),
             )
             .optional(),
@@ -115,9 +124,15 @@ export const applicationRouter = createTRPCRouter({
               if (!input?.fields || input.fields.length === 0) {
                 return {
                   ...application,
-                  githubLink: application?.githubLink?.substring(19) ?? null,
+                  devpostLink:
+                    application?.devpostLink?.substring(DEVPOST_URL.length) ??
+                    null,
+                  githubLink:
+                    application?.githubLink?.substring(GITHUB_URL.length) ??
+                    null,
                   linkedInLink:
-                    application?.linkedInLink?.substring(24) ?? null,
+                    application?.linkedInLink?.substring(LINKEDIN_URL.length) ??
+                    null,
                 } as typeof application;
               }
 
@@ -127,15 +142,25 @@ export const applicationRouter = createTRPCRouter({
                 input.fields.includes("githubLink") &&
                 "githubLink" in selected
               ) {
-                selected.githubLink =
-                  selected.githubLink?.substring(19) ?? null;
+                selected.githubLink = selected.githubLink?.substring(
+                  GITHUB_URL.length,
+                );
               }
               if (
                 input.fields.includes("linkedInLink") &&
                 "linkedInLink" in selected
               ) {
-                selected.linkedInLink =
-                  selected.linkedInLink?.substring(24) ?? null;
+                selected.linkedInLink = selected.linkedInLink?.substring(
+                  LINKEDIN_URL.length,
+                );
+              }
+              if (
+                input.fields.includes("devpostLink") &&
+                "devpostLink" in selected
+              ) {
+                selected.devpostLink = selected.devpostLink?.substring(
+                  DEVPOST_URL.length,
+                );
               }
               return selected;
             })()
@@ -345,9 +370,13 @@ export const applicationRouter = createTRPCRouter({
         const dataToInsert = {
           ...restData,
           userId,
+          // Coerce null → "" to satisfy the NOT NULL DB constraint
+          devpostLink: restData.devpostLink ?? "",
+          githubLink: restData.githubLink ?? "",
+          linkedInLink: restData.linkedInLink ?? "",
         };
 
-        // Only include these 3 specially formatted fields if they were actually provided
+        // Only include canvasData if it was actually provided
         if (Object.prototype.hasOwnProperty.call(input, "canvasData")) {
           (dataToInsert as typeof input).canvasData =
             canvasData === null
@@ -361,19 +390,23 @@ export const applicationRouter = createTRPCRouter({
                   | undefined);
         }
 
+        if (Object.prototype.hasOwnProperty.call(input, "devpostLink")) {
+          dataToInsert.devpostLink = restData.devpostLink
+            ? `${DEVPOST_URL}${restData.devpostLink}`
+            : "";
+        }
+
         if (Object.prototype.hasOwnProperty.call(input, "githubLink")) {
           dataToInsert.githubLink = restData.githubLink
             ? `${GITHUB_URL}${restData.githubLink}`
-            : null;
+            : "";
         }
 
         if (Object.prototype.hasOwnProperty.call(input, "linkedInLink")) {
           dataToInsert.linkedInLink = restData.linkedInLink
             ? `${LINKEDIN_URL}${restData.linkedInLink}`
-            : null;
+            : "";
         }
-
-        console.log("data inserting", dataToInsert);
 
         await db
           .insert(applications)
@@ -401,7 +434,6 @@ export const applicationRouter = createTRPCRouter({
       const application = await db.query.applications.findFirst({
         where: (schema, { eq }) => eq(schema.userId, userId),
       });
-
       if (!application) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -409,20 +441,34 @@ export const applicationRouter = createTRPCRouter({
         });
       }
 
-      // Transform stored links to the shape expected by the submit schema
+      // These are mandatory fields
+      if (
+        !application.devpostLink ||
+        !application.githubLink ||
+        !application.linkedInLink
+      ) {
+        const missing = [
+          !application.devpostLink && "Devpost link",
+          !application.githubLink && "GitHub link",
+          !application.linkedInLink && "LinkedIn link",
+        ].filter(Boolean);
+
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Missing required fields: ${missing.join(", ")}`,
+        });
+      }
+
       const normalized = {
         ...application,
-        // strip configured prefixes if present so schema preprocessing matches tests
-        githubLink: application.githubLink
-          ? application.githubLink.replace(GITHUB_URL, "")
-          : undefined,
-        linkedInLink: application.linkedInLink
-          ? application.linkedInLink.replace(LINKEDIN_URL, "")
-          : undefined,
+        devpostLink: application.devpostLink.replace(DEVPOST_URL, ""),
+        githubLink: application.githubLink.replace(GITHUB_URL, ""),
+        linkedInLink: application.linkedInLink.replace(LINKEDIN_URL, ""),
       };
 
       // Validate the existing application against the submission schema
       const parseResult = applicationSubmitSchema.safeParse(normalized);
+
       if (!parseResult.success) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -465,4 +511,66 @@ export const applicationRouter = createTRPCRouter({
       });
     }
   }),
+
+  bulkUpdateStatusByEmails: protectedOrganizerProcedure
+    .input(
+      z.object({
+        emails: z.array(z.string().email()).min(1),
+        status: z.enum([
+          "IN_PROGRESS",
+          "PENDING_REVIEW",
+          "IN_REVIEW",
+          "ACCEPTED",
+          "REJECTED",
+          "WAITLISTED",
+          "DECLINED",
+        ] as const),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { emails, status } = input;
+      try {
+        const result = await db.transaction(async (tx) => {
+          const userRows = await tx
+            .select({ id: users.id })
+            .from(users)
+            .where(inArray(users.email, emails));
+
+          const userIds = userRows.map((r) => r.id);
+          if (userIds.length === 0) {
+            return { matched: 0, updated: 0 };
+          }
+
+          const updateRes = await tx
+            .update(applications)
+            .set({ status, updatedAt: new Date() })
+            .where(inArray(applications.userId, userIds));
+
+          // drizzle's update may not always expose rowCount across drivers; fall back to querying actual count
+          let updatedCount = userIds.length;
+          if (
+            updateRes &&
+            typeof updateRes === "object" &&
+            "rowCount" in updateRes &&
+            typeof (updateRes as { rowCount?: unknown }).rowCount === "number"
+          ) {
+            updatedCount = (updateRes as { rowCount: number }).rowCount;
+          } else {
+            // Query the actual count of applications for these users
+            const countResult = await tx
+              .select({ count: count() })
+              .from(applications)
+              .where(inArray(applications.userId, userIds));
+            updatedCount = countResult[0]?.count ?? 0;
+          }
+          return { matched: userIds.length, updated: updatedCount };
+        });
+        return result;
+      } catch (err: unknown) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to bulk update status: " + String(err),
+        });
+      }
+    }),
 });

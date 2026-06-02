@@ -1,4 +1,4 @@
-import Head from "next/head";
+import SEO from "~/components/seo";
 import { authOptions } from "~/server/auth";
 import { getServerSession } from "next-auth";
 import type { GetServerSidePropsContext } from "next";
@@ -9,14 +9,7 @@ import GithubAuthButton from "~/components/auth/githubauth-button";
 export default function Login() {
   return (
     <>
-      <Head>
-        <title>Hack Western</title>
-        <meta
-          name="description"
-          content="Hack Western: One of Canada's largest annual student-run hackathons based out of Western University in London, Ontario."
-        />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+      <SEO title="Organizer Login" noindex />
       <main className="flex min-h-screen flex-col items-center justify-center bg-[#160524]">
         <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 ">
           <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-[5rem]">

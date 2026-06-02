@@ -12,7 +12,7 @@ function About() {
   return (
     <CanvasComponent
       offset={coordinates.about}
-      imageFallback="/images/promo/about.png"
+      imageFallback="/landing/promo/about.png"
     >
       <div className="mt-8 flex flex-col items-center justify-center space-y-4 pb-12 sm:-mt-12">
         <div className="flex origin-center flex-col items-center justify-center transition-transform duration-300 ease-in-out">
@@ -27,7 +27,7 @@ function About() {
               <DraggableImage
                 className="absolute -bottom-[200px] -left-[600px] w-36"
                 key="pencils"
-                src="/pencils.png"
+                src="/landing/about/pencils.png"
                 alt="Pencils"
                 animate={{
                   rotate: [2, -2],
@@ -42,7 +42,7 @@ function About() {
               <DraggableImage
                 className="absolute -right-[300px] bottom-[190px] w-24"
                 key="lightbulb"
-                src="/lightbulb.png"
+                src="/landing/about/lightbulb.png"
                 alt="Lightbulb"
                 animate={{
                   rotate: [2, -2],
@@ -57,7 +57,7 @@ function About() {
               <DraggableImage
                 className="absolute -bottom-[400px] -right-[650px] w-24"
                 key="paintbrush"
-                src="/paintbrush.png"
+                src="/landing/about/paintbrush.png"
                 alt="Paintbrush"
                 animate={{
                   rotate: [2, -2],
@@ -75,7 +75,7 @@ function About() {
             <div className="flex items-center justify-center gap-16 ">
               <div className="shrink-0">
                 <motion.img
-                  src="/photo.png"
+                  src="/landing/about/photo.png"
                   alt="hackwestern"
                   width={375}
                   height={250}
@@ -91,7 +91,7 @@ function About() {
               </div>
               <div className="relative flex w-fit max-w-xs rotate-[8deg] items-center justify-center text-center">
                 <Image
-                  src="/speech.svg"
+                  src="/landing/about/speech.svg"
                   alt=""
                   width={400}
                   height={200}
@@ -109,7 +109,7 @@ function About() {
                 <div className="flex max-w-96 flex-col items-center justify-center gap-x-8 gap-y-2 p-8 pt-2.5">
                   <div>
                     <Image
-                      src="/about/people.png"
+                      src="/landing/about/people.png"
                       alt="hackwestern"
                       width={300}
                       height={130}

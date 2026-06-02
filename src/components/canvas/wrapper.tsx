@@ -13,7 +13,7 @@ export const growTransition = {
 const blurTransition = {
   duration: 0.85,
   delay: 1.25,
-  ease: "easeIn",
+  ease: "easeIn" as Easing,
 };
 
 interface CanvasWrapperProps {
@@ -94,7 +94,7 @@ export const CanvasWrapper = ({
       {stage1NotFinished && (
         <div className="absolute left-1/2 top-64 z-0 grid -translate-x-1/2 -translate-y-[200px] place-items-center text-center">
           <Image
-            src="/horse.svg"
+            src="/shared/horse.svg"
             alt="Hack Western Logo"
             width={64}
             height={64}

@@ -85,7 +85,7 @@ export const CardStack = ({
             <div className="overflow-hidden rounded-lg border-4 border-gray-100 bg-white shadow-lg">
               <a href={name.link} target="_blank" rel="noopener noreferrer">
                 <Image
-                  src={`/projects/${folder}/${name.image}`}
+                  src={`/landing/projects/${folder}/${name.image}`}
                   alt={`Card image ${i}`}
                   width={100}
                   height={76}

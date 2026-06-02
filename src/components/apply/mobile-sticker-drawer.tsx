@@ -30,7 +30,7 @@ export function MobileStickerDrawer() {
             style={{ display: "inline-block", cursor: "pointer" }}
           >
             <Image
-              src="/mobile-sticker.png"
+              src="/apply/mobile-sticker.png"
               alt="Sticker Drawer"
               width={64}
               height={64}
