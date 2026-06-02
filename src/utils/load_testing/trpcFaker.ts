@@ -60,7 +60,7 @@ export class TRPCFaker {
           method: "QUERY",
           schema: Object.fromEntries(
             path.get.parameters.map((value) => {
-              const schema = z.fromJSONSchema(value.schema);
+              const schema = fromJSONSchema(value.schema);
               const schemaStrict =
                 schema instanceof z.ZodObject ? schema.strict() : schema;
 
@@ -75,7 +75,7 @@ export class TRPCFaker {
       if (rawSchema == undefined) {
         this.input = { method: "MUTATE", schema: z.void() };
       } else {
-        const schema = z.fromJSONSchema(rawSchema);
+        const schema = fromJSONSchema(rawSchema);
         const schemaStrict =
           schema instanceof z.ZodObject ? schema.strict() : schema;
 
@@ -195,5 +195,13 @@ function customFaker(
     } catch {
       throw new Error(`Schema ${schema.type} could not be faked`);
     }
+  }
+}
+function fromJSONSchema(schema: unknown): ZodType {
+  try {
+    return z.fromJSONSchema(schema);
+  } catch (error) {
+    console.log(error);
+    throw new Error("Unable to parse JSON schema into zod type");
   }
 }
