@@ -5,23 +5,34 @@ import { schools } from "~/constants/schools";
 import {
   applications,
   countrySelection,
-  levelOfStudy,
   major,
   numOfHackathons,
   gender,
   ethnicity,
   sexualOrientation,
+  yearOfStudy,
+  shirtSize,
+  dietaryRestrictions,
+  emergencyContactRelationship,
+  transportationMethod,
 } from "~/server/db/schema";
 
 // Save schema
-export const applicationSaveSchema = createInsertSchema(applications).omit({
-  createdAt: true,
-  updatedAt: true,
-  status: true,
-  userId: true,
-});
+export const applicationSaveSchema = createInsertSchema(applications)
+  .omit({
+    createdAt: true,
+    updatedAt: true,
+    status: true,
+    userId: true,
+  })
+  .extend({
+    devpostLink: z.string().nullish(),
+    githubLink: z.string().nullish(),
+    linkedInLink: z.string().nullish(),
+  });
 
 export const linksSaveSchema = applicationSaveSchema.pick({
+  devpostLink: true,
   githubLink: true,
   linkedInLink: true,
   resumeLink: true,
@@ -49,9 +60,9 @@ export const infoSaveSchema = z.object({
     (val) => (val === "" ? undefined : val),
     z.enum(schools).optional(),
   ),
-  levelOfStudy: z.preprocess(
+  yearOfStudy: z.preprocess(
     (val) => (val === "" ? undefined : val),
-    z.enum(levelOfStudy.enumValues).optional(),
+    z.enum(yearOfStudy.enumValues).optional(),
   ),
   major: z.preprocess(
     (val) => (val === "" ? undefined : val),
@@ -135,7 +146,7 @@ export const applicationSubmitSchema = z.object({
   countryOfResidence: z.enum(countrySelection.enumValues),
   age: z.number().min(18).max(99),
   school: z.enum(schools),
-  levelOfStudy: z.enum(levelOfStudy.enumValues),
+  yearOfStudy: z.enum(yearOfStudy.enumValues),
   major: z.enum(major.enumValues),
   attendedBefore: z.boolean(),
   numOfHackathons: z.enum(numOfHackathons.enumValues),
@@ -155,11 +166,11 @@ export const applicationSubmitSchema = z.object({
     .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
     .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
   resumeLink: z.preprocess((v) => (!v ? undefined : v), z.string().url()),
-  githubLink: z.preprocess((v) => (!v ? undefined : v), z.string().optional()),
-  linkedInLink: z.preprocess(
-    (v) => (!v ? undefined : v),
-    z.string().optional(),
-  ),
+
+  devpostLink: z.string().min(3, "Devpost account is required"),
+  githubLink: z.string().min(3, "GitHub account is required"),
+  linkedInLink: z.string().min(3, "LinkedIn account is required"),
+
   otherLink: z.preprocess(
     (v) => (!v ? undefined : v),
     z.string().url().optional(),
@@ -183,6 +194,18 @@ export const applicationSubmitSchema = z.object({
     }),
   }),
   agreeEmailsFromMLH: z.boolean().optional(),
+
+  // RSVP fields
+  shirtSize: z.enum(shirtSize.enumValues),
+  dietaryRestrictions: z.enum(dietaryRestrictions.enumValues),
+  dietaryRestrictionsOther: z.string().nullish(),
+  emergencyContactName: z.string().min(1),
+  emergencyContactRelationship: z.enum(emergencyContactRelationship.enumValues),
+  emergencyContactPhoneNumber: z
+    .string()
+    .min(1)
+    .regex(phoneRegex, "Invalid phone number"),
+  transportationMethod: z.enum(transportationMethod.enumValues),
 });
 
 export const canvasSaveSchema = applicationSaveSchema.pick({

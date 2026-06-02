@@ -1,5 +1,5 @@
 import { signIn } from "next-auth/react";
-import Head from "next/head";
+import SEO from "~/components/seo";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { useState } from "react";
@@ -20,6 +20,9 @@ export default function Login() {
   const router = useRouter();
   const { toast } = useToast();
 
+  // Get the callbackUrl from query params, default to /dashboard
+  const callbackUrl = (router.query.callbackUrl as string) ?? "/dashboard";
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setPending(true);
@@ -37,20 +40,16 @@ export default function Login() {
         setPending(false);
         return;
       }
-      void router.push("/dashboard");
+      void router.push(callbackUrl);
     });
   }
 
   return (
     <>
-      <Head>
-        <title>Hack Western</title>
-        <meta
-          name="description"
-          content="Hack Western: One of Canada's largest annual student-run hackathons based out of Western University in London, Ontario."
-        />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+      <SEO
+        title="Sign In"
+        description="Sign in to your Hack Western account. Hack Western is one of Canada's largest student-run hackathons at Western University."
+      />
 
       <div className="m-auto flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />
@@ -100,9 +99,9 @@ export default function Login() {
             <div className="flex-grow border-t border-gray-400 opacity-20" />
           </div>
           <div className="flex flex-col items-stretch gap-4">
-            <GoogleAuthButton redirect="/dashboard" />
-            <GithubAuthButton redirect="/dashboard" />
-            <DiscordAuthButton redirect="/dashboard" />
+            <GoogleAuthButton redirect={callbackUrl} />
+            <GithubAuthButton redirect={callbackUrl} />
+            <DiscordAuthButton redirect={callbackUrl} />
           </div>
           <div className="mt-6 font-figtree text-medium">
             Don&apos;t have an account yet?

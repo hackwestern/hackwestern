@@ -46,6 +46,27 @@ const SponsorLogo = ({
   );
 };
 
+export function MacBook({ rotate }: { rotate: string }) {
+  return (
+    <div
+      className={`relative z-10 h-[600px] w-[854.14px] origin-top-left -rotate-[${rotate}deg] rounded-3xl bg-gradient-to-b from-gray-200 to-zinc-400 shadow-[0px_3.82px_7.64px_0px_rgba(0,0,0,0.25)] shadow-[inset_0px_-1.91px_11.46px_0px_rgba(0,0,0,0.40)]`}
+    >
+      <div className="absolute left-[386.49px] top-[239.58px] h-[144px] w-[96px]">
+        <motion.img
+          src="/landing/hackwesternmaclogo.svg"
+          alt="hackwestern"
+          width={95.541}
+          height={144.834}
+          draggable="false"
+        />
+      </div>
+      {SPONSORS.map((sponsor, i) => (
+        <SponsorLogo key={i} {...sponsor} />
+      ))}
+    </div>
+  );
+}
+
 function Sponsors() {
   const { toast } = useToast();
   const [isPending, setIsPending] = useState(false);
@@ -70,7 +91,7 @@ function Sponsors() {
   return (
     <CanvasComponent
       offset={coordinates.sponsors}
-      imageFallback="/images/promo/sponsors.png"
+      imageFallback="/landing/promo/sponsors.png"
     >
       <div className="mt-16 flex flex-col items-center justify-center space-y-4">
         <div className="flex origin-center scale-150 flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out">
@@ -94,26 +115,13 @@ function Sponsors() {
           <div className="flex scale-150 flex-row">
             <div className="flex origin-center scale-[0.45] flex-row">
               {/* Macbook */}
-              <div className="relative z-10 h-[600px] w-[854.14px] origin-top-left -rotate-[1.771deg] rounded-3xl bg-gradient-to-b from-gray-200 to-zinc-400 shadow-[0px_3.82px_7.64px_0px_rgba(0,0,0,0.25)] shadow-[inset_0px_-1.91px_11.46px_0px_rgba(0,0,0,0.40)]">
-                <div className="absolute left-[386.49px] top-[239.58px] h-[144px] w-[96px]">
-                  <motion.img
-                    src="/hackwesternmaclogo.svg"
-                    alt="hackwestern"
-                    width={95.541}
-                    height={144.834}
-                    draggable="false"
-                  />
-                </div>
-                {SPONSORS.map((sponsor, i) => (
-                  <SponsorLogo key={i} {...sponsor} />
-                ))}
-              </div>
+              <MacBook rotate={"1.771"} />
 
               {/* Notepad */}
               <div className="mt-10 flex h-[380px] w-[400px] origin-top-left scale-90 flex-col items-center">
                 <div className="relative h-[418px] w-[440px] scale-[1.1]">
                   <motion.img
-                    src="/notepad.svg"
+                    src="/landing/notepad.svg"
                     alt="notepad"
                     width={440}
                     height={418}

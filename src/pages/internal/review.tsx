@@ -1,4 +1,4 @@
-import Head from "next/head";
+import SEO from "~/components/seo";
 import { useSearchParams } from "next/navigation";
 import { Button } from "~/components/ui/button";
 import { Slider } from "~/components/ui/slider";
@@ -95,14 +95,7 @@ const Review = () => {
 
   return (
     <>
-      <Head>
-        <title>Hack Western</title>
-        <meta
-          name="description"
-          content="Hack Western: One of Canada's largest annual student-run hackathons based out of Western University in London, Ontario."
-        />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+      <SEO title="Application Review" noindex />
       <main className=" font-figtreen flex flex-col items-center bg-primary-50 font-figtree">
         <div className="relative z-[100] w-full items-center md:flex">
           <div

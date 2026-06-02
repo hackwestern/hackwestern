@@ -16,7 +16,7 @@ function Hero() {
         <div className="flex origin-center scale-75 flex-col items-center justify-center space-y-4 transition-transform duration-300 ease-in-out md:scale-100">
           <div className="my-16 flex flex-row">
             <Image
-              src="/dragme.svg"
+              src="/landing/dragme.svg"
               alt="Drag Me!"
               className=" pointer-events-none opacity-0"
               width={80}
@@ -34,7 +34,7 @@ function Hero() {
                   ease: "easeInOut",
                 },
               }}
-              src="/horse.svg"
+              src="/shared/horse.svg"
               alt="Hack Western Logo"
               className="m-4 mt-8 w-20"
             />
@@ -43,7 +43,7 @@ function Hero() {
               transition={{ duration: 0.5, ease: "easeInOut" }}
             >
               <Image
-                src="/dragme.svg"
+                src="/landing/dragme.svg"
                 alt="Drag Me!"
                 className="pointer-events-none -ml-2 pt-14"
                 width={80}
@@ -57,7 +57,7 @@ function Hero() {
             </div>
             <div className="flex flex-col items-center justify-center">
               <motion.img
-                src="/hackwesterntitle.svg"
+                src="/landing/hackwesterntitle.svg"
                 alt="Hack Western XII"
                 width={500}
                 height={100}
@@ -69,12 +69,18 @@ function Hero() {
               The world is your canvas.
             </div>
           </div>
-          <Link href="/dashboard">
+          <Link
+            href="https://hack-western-12.devpost.com/project-gallery"
+            prefetch={true}
+          >
             <Button className="w-48" variant="primary" size="lg">
-              Dashboard
+              See Submissions
             </Button>
           </Link>
-          <p className="pt-0.5 text-sm text-medium">applications closed!</p>
+          <div>
+            <p className="text-md pt-0.5 text-medium">Thanks for coming!</p>
+            <p className=" text-md text-medium">See you next year!</p>
+          </div>
         </div>
         <div className="h-[150px] sm:h-[80px]" />
       </div>

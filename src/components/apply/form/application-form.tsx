@@ -12,6 +12,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { applicationStepSaveSchema } from "~/schemas/application";
+import { text } from "stream/consumers";
 
 export const QUESTION1 = `If your laptop suddenly gained consciousness, what do you think it would say about your working style and why? (30 to 150 words)`;
 export const QUESTION2 = `What’s one piece of feedback you’ve received that stuck with you and why? (30 to 150 words)`;

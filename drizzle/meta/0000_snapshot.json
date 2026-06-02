@@ -1,9 +1,11 @@
 {
+  "id": "4a5005ba-30bf-4ac8-b882-46af5bef3ea9",
+  "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.hw11_account": {
-      "name": "hw11_account",
+    "public.account": {
+      "name": "account",
       "schema": "",
       "columns": {
         "userId": {
@@ -75,6 +77,7 @@
       },
       "indexes": {
         "account_userId_idx": {
+          "name": "account_userId_idx",
           "columns": [
             {
               "expression": "userId",
@@ -83,31 +86,30 @@
               "nulls": "last"
             }
           ],
-          "with": {},
-          "name": "account_userId_idx",
           "isUnique": false,
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
-        "hw11_account_userId_hw11_user_id_fk": {
-          "name": "hw11_account_userId_hw11_user_id_fk",
-          "tableFrom": "hw11_account",
+        "account_userId_user_id_fk": {
+          "name": "account_userId_user_id_fk",
+          "tableFrom": "account",
+          "tableTo": "user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "hw11_user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
-        "hw11_account_provider_providerAccountId_pk": {
-          "name": "hw11_account_provider_providerAccountId_pk",
+        "account_provider_providerAccountId_pk": {
+          "name": "account_provider_providerAccountId_pk",
           "columns": [
             "provider",
             "providerAccountId"
@@ -116,11 +118,11 @@
       },
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.hw11_application": {
-      "name": "hw11_application",
+    "public.application": {
+      "name": "application",
       "schema": "",
       "columns": {
         "user_id": {
@@ -151,6 +153,37 @@
           "notNull": true,
           "default": "'IN_PROGRESS'"
         },
+        "avatar_colour": {
+          "name": "avatar_colour",
+          "type": "avatar_colour",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avatar_face": {
+          "name": "avatar_face",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avatar_left_hand": {
+          "name": "avatar_left_hand",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avatar_right_hand": {
+          "name": "avatar_right_hand",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avatar_hat": {
+          "name": "avatar_hat",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "first_name": {
           "name": "first_name",
           "type": "varchar(255)",
@@ -163,12 +196,11 @@
           "primaryKey": false,
           "notNull": false
         },
-        "date_of_birth": {
-          "name": "date_of_birth",
-          "type": "timestamp",
+        "age": {
+          "name": "age",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
+          "notNull": false
         },
         "phone_number": {
           "name": "phone_number",
@@ -178,7 +210,8 @@
         },
         "country_of_residence": {
           "name": "country_of_residence",
-          "type": "smallint",
+          "type": "country",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
         },
@@ -206,31 +239,29 @@
           "name": "attended",
           "type": "boolean",
           "primaryKey": false,
-          "notNull": true,
-          "default": false
+          "notNull": false
         },
         "num_of_hackathons": {
           "name": "num_of_hackathons",
           "type": "num_of_hackathons",
           "typeSchema": "public",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'0'"
+          "notNull": false
         },
-        "idea_to_life": {
-          "name": "idea_to_life",
+        "question1": {
+          "name": "question1",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "interest_and_passions": {
-          "name": "interest_and_passions",
+        "question2": {
+          "name": "question2",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "technology_inspires": {
-          "name": "technology_inspires",
+        "question3": {
+          "name": "question3",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -320,10 +351,18 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
+        },
+        "canvas_data": {
+          "name": "canvas_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\"paths\":[],\"timestamp\":0,\"version\":\"\"}'::jsonb"
         }
       },
       "indexes": {
         "user_id_idx": {
+          "name": "user_id_idx",
           "columns": [
             {
               "expression": "user_id",
@@ -332,36 +371,35 @@
               "nulls": "last"
             }
           ],
-          "with": {},
-          "name": "user_id_idx",
           "isUnique": false,
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
-        "hw11_application_user_id_hw11_user_id_fk": {
-          "name": "hw11_application_user_id_hw11_user_id_fk",
-          "tableFrom": "hw11_application",
+        "application_user_id_user_id_fk": {
+          "name": "application_user_id_user_id_fk",
+          "tableFrom": "application",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
-          "tableTo": "hw11_user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.hw11_preregistration": {
-      "name": "hw11_preregistration",
+    "public.preregistration": {
+      "name": "preregistration",
       "schema": "",
       "columns": {
         "id": {
@@ -377,12 +415,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "email": {
           "name": "email",
           "type": "varchar(320)",
@@ -394,20 +426,20 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "hw11_preregistration_email_unique": {
-          "name": "hw11_preregistration_email_unique",
+        "preregistration_email_unique": {
+          "name": "preregistration_email_unique",
+          "nullsNotDistinct": false,
           "columns": [
             "email"
-          ],
-          "nullsNotDistinct": false
+          ]
         }
       },
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.hw11_resetPasswordToken": {
-      "name": "hw11_resetPasswordToken",
+    "public.reset_password_token": {
+      "name": "reset_password_token",
       "schema": "",
       "columns": {
         "userId": {
@@ -431,28 +463,465 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "hw11_resetPasswordToken_userId_hw11_user_id_fk": {
-          "name": "hw11_resetPasswordToken_userId_hw11_user_id_fk",
-          "tableFrom": "hw11_resetPasswordToken",
+        "reset_password_token_userId_user_id_fk": {
+          "name": "reset_password_token_userId_user_id_fk",
+          "tableFrom": "reset_password_token",
+          "tableTo": "user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "hw11_user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.hw11_session": {
-      "name": "hw11_session",
+    "public.review": {
+      "name": "review",
+      "schema": "",
+      "columns": {
+        "reviewer_user_id": {
+          "name": "reviewer_user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "applicant_user_id": {
+          "name": "applicant_user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "originality_rating": {
+          "name": "originality_rating",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "technicality_rating": {
+          "name": "technicality_rating",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "passion_rating": {
+          "name": "passion_rating",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "comments": {
+          "name": "comments",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed": {
+          "name": "completed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "referral": {
+          "name": "referral",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        }
+      },
+      "indexes": {
+        "applicant_user_id_idx": {
+          "name": "applicant_user_id_idx",
+          "columns": [
+            {
+              "expression": "applicant_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "review_reviewer_user_id_user_id_fk": {
+          "name": "review_reviewer_user_id_user_id_fk",
+          "tableFrom": "review",
+          "tableTo": "user",
+          "columnsFrom": [
+            "reviewer_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "review_applicant_user_id_application_user_id_fk": {
+          "name": "review_applicant_user_id_application_user_id_fk",
+          "tableFrom": "review",
+          "tableTo": "application",
+          "columnsFrom": [
+            "applicant_user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "review_applicant_user_id_user_id_fk": {
+          "name": "review_applicant_user_id_user_id_fk",
+          "tableFrom": "review",
+          "tableTo": "user",
+          "columnsFrom": [
+            "applicant_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "review_reviewer_user_id_applicant_user_id_pk": {
+          "name": "review_reviewer_user_id_applicant_user_id_pk",
+          "columns": [
+            "reviewer_user_id",
+            "applicant_user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scavenger_hunt_item": {
+      "name": "scavenger_hunt_item",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "varchar(12)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "points": {
+          "name": "points",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "scavenger_hunt_item_code_unique": {
+          "name": "scavenger_hunt_item_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scavenger_hunt_redemption": {
+      "name": "scavenger_hunt_redemption",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reward_id": {
+          "name": "reward_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "redemption_user_idx": {
+          "name": "redemption_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scavenger_hunt_redemption_user_id_user_id_fk": {
+          "name": "scavenger_hunt_redemption_user_id_user_id_fk",
+          "tableFrom": "scavenger_hunt_redemption",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "scavenger_hunt_redemption_reward_id_scavenger_hunt_reward_id_fk": {
+          "name": "scavenger_hunt_redemption_reward_id_scavenger_hunt_reward_id_fk",
+          "tableFrom": "scavenger_hunt_redemption",
+          "tableTo": "scavenger_hunt_reward",
+          "columnsFrom": [
+            "reward_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scavenger_hunt_reward": {
+      "name": "scavenger_hunt_reward",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cost_points": {
+          "name": "cost_points",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scavenger_hunt_scan": {
+      "name": "scavenger_hunt_scan",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scanner_id": {
+          "name": "scanner_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "scan_user_idx": {
+          "name": "scan_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "scan_scanner_idx": {
+          "name": "scan_scanner_idx",
+          "columns": [
+            {
+              "expression": "scanner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "scavenger_hunt_scan_user_id_user_id_fk": {
+          "name": "scavenger_hunt_scan_user_id_user_id_fk",
+          "tableFrom": "scavenger_hunt_scan",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "scavenger_hunt_scan_scanner_id_user_id_fk": {
+          "name": "scavenger_hunt_scan_scanner_id_user_id_fk",
+          "tableFrom": "scavenger_hunt_scan",
+          "tableTo": "user",
+          "columnsFrom": [
+            "scanner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "scavenger_hunt_scan_item_id_scavenger_hunt_item_id_fk": {
+          "name": "scavenger_hunt_scan_item_id_scavenger_hunt_item_id_fk",
+          "tableFrom": "scavenger_hunt_scan",
+          "tableTo": "scavenger_hunt_item",
+          "columnsFrom": [
+            "item_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "scavenger_hunt_scan_user_id_item_id_pk": {
+          "name": "scavenger_hunt_scan_user_id_item_id_pk",
+          "columns": [
+            "user_id",
+            "item_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.session": {
+      "name": "session",
       "schema": "",
       "columns": {
         "sessionToken": {
@@ -476,6 +945,7 @@
       },
       "indexes": {
         "session_userId_idx": {
+          "name": "session_userId_idx",
           "columns": [
             {
               "expression": "userId",
@@ -484,36 +954,35 @@
               "nulls": "last"
             }
           ],
-          "with": {},
-          "name": "session_userId_idx",
           "isUnique": false,
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
-        "hw11_session_userId_hw11_user_id_fk": {
-          "name": "hw11_session_userId_hw11_user_id_fk",
-          "tableFrom": "hw11_session",
+        "session_userId_user_id_fk": {
+          "name": "session_userId_user_id_fk",
+          "tableFrom": "session",
+          "tableTo": "user",
           "columnsFrom": [
             "userId"
           ],
-          "tableTo": "hw11_user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.hw11_user": {
-      "name": "hw11_user",
+    "public.user": {
+      "name": "user",
       "schema": "",
       "columns": {
         "id": {
@@ -524,6 +993,12 @@
         },
         "name": {
           "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password": {
+          "name": "password",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
@@ -554,18 +1029,63 @@
           "primaryKey": false,
           "notNull": false,
           "default": "'hacker'"
+        },
+        "scavenger_hunt_earned": {
+          "name": "scavenger_hunt_earned",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "scavenger_hunt_balance": {
+          "name": "scavenger_hunt_balance",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
         }
       },
-      "indexes": {},
+      "indexes": {
+        "user_scavenger_hunt_earned_idx": {
+          "name": "user_scavenger_hunt_earned_idx",
+          "columns": [
+            {
+              "expression": "scavenger_hunt_earned",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "user_scavenger_hunt_balance_idx": {
+          "name": "user_scavenger_hunt_balance_idx",
+          "columns": [
+            {
+              "expression": "scavenger_hunt_balance",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.hw11_verificationToken": {
-      "name": "hw11_verificationToken",
+    "public.verification_token": {
+      "name": "verification_token",
       "schema": "",
       "columns": {
         "identifier": {
@@ -590,8 +1110,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
-        "hw11_verificationToken_identifier_token_pk": {
-          "name": "hw11_verificationToken_identifier_token_pk",
+        "verification_token_identifier_token_pk": {
+          "name": "verification_token_identifier_token_pk",
           "columns": [
             "identifier",
             "token"
@@ -600,8 +1120,8 @@
       },
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {
@@ -618,6 +1138,29 @@
         "DECLINED"
       ]
     },
+    "public.avatar_colour": {
+      "name": "avatar_colour",
+      "schema": "public",
+      "values": [
+        "red",
+        "orange",
+        "yellow",
+        "green",
+        "blue",
+        "purple",
+        "pink"
+      ]
+    },
+    "public.country": {
+      "name": "country",
+      "schema": "public",
+      "values": [
+        "Canada",
+        "United States",
+        "India",
+        "Other"
+      ]
+    },
     "public.race/ethnicity": {
       "name": "race/ethnicity",
       "schema": "public",
@@ -627,7 +1170,8 @@
         "Black or African American",
         "Hispanic",
         "White / Caucasian",
-        "Multiple ethnicity / Other"
+        "Multiple ethnicity / Other",
+        "Prefer not to answer"
       ]
     },
     "public.gender": {
@@ -637,7 +1181,8 @@
         "Female",
         "Male",
         "Non-Binary",
-        "Other"
+        "Other",
+        "Prefer not to answer"
       ]
     },
     "public.level_of_study": {
@@ -698,7 +1243,8 @@
         "Queer",
         "Gay / Lesbian",
         "Heterosexual / Straight",
-        "Other"
+        "Other",
+        "Prefer not to answer"
       ]
     },
     "public.user_type": {
@@ -712,15 +1258,13 @@
     }
   },
   "schemas": {},
-  "_meta": {
-    "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "id": "9d68b394-5673-495e-b3ff-99e8a3640e1c",
-  "prevId": "00000000-0000-0000-0000-000000000000",
   "sequences": {},
+  "roles": {},
   "policies": {},
   "views": {},
-  "roles": {}
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
 }

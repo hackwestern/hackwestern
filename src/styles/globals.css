@@ -24,9 +24,10 @@ html {
     --medium: #776780;
     --light: #bbb3c0;
     --emphasis: #a16bc7;
+    --active: #f0e9f7;
 
     --offwhite: #fafafb; /* bg-white */
-    --highlight: #f4f2f7;
+    --highlight: #f5f2f6;
     --tinted: #eee2fb;
     --border-light: #fffefe;
 
@@ -182,6 +183,32 @@ html {
   }
 
   .custom-scroll::-webkit-scrollbar-thumb {
+    background: #d19aee;
+    border-radius: 100vh;
+  }
+}
+
+@layer utilities {
+  @supports (-moz-appearance: none) {
+    .scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: #d19aee transparent;
+    }
+  }
+
+  .scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+    scrollbar-width: none;
+    scrollbar-color: none;
+  }
+
+  .scrollbar::-webkit-scrollbar-track {
+    border-radius: 100vh;
+    background: transparent;
+  }
+
+  .scrollbar::-webkit-scrollbar-thumb {
     background: #d19aee;
     border-radius: 100vh;
   }

@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /internal/
+Disallow: /scan/
+Disallow: /scavenger/
+Disallow: /dashboard
+Disallow: /verify
+Disallow: /not-verified
+Disallow: /logout
+
+Sitemap: https://hackwestern.com/sitemap.xml

@@ -29,7 +29,7 @@ export const avatarManifest: AvatarManifest = {
   face: [
     {
       id: 1,
-      file: "avatar/face/001.webp",
+      file: "apply/avatar/face/001.webp",
       original: "big_mouth.webp",
       label: "Big Mouth",
       slug: "big-mouth",
@@ -37,7 +37,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 2,
-      file: "avatar/face/002.webp",
+      file: "apply/avatar/face/002.webp",
       original: "bored_mouth.webp",
       label: "Bored Mouth",
       slug: "bored-mouth",
@@ -45,7 +45,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 3,
-      file: "avatar/face/003.webp",
+      file: "apply/avatar/face/003.webp",
       original: "duck_mouth.webp",
       label: "Duck Mouth",
       slug: "duck-mouth",
@@ -53,7 +53,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 4,
-      file: "avatar/face/004.webp",
+      file: "apply/avatar/face/004.webp",
       original: "grinch.webp",
       label: "Grinch",
       slug: "grinch",
@@ -61,7 +61,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 5,
-      file: "avatar/face/005.webp",
+      file: "apply/avatar/face/005.webp",
       original: "happy_mouth.webp",
       label: "Happy Mouth",
       slug: "happy-mouth",
@@ -69,7 +69,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 6,
-      file: "avatar/face/006.webp",
+      file: "apply/avatar/face/006.webp",
       original: "nasty_naughty.webp",
       label: "Nasty Naughty",
       slug: "nasty-naughty",
@@ -77,7 +77,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 7,
-      file: "avatar/face/007.webp",
+      file: "apply/avatar/face/007.webp",
       original: "oh_mouth.webp",
       label: "Oh Mouth",
       slug: "oh-mouth",
@@ -85,7 +85,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 8,
-      file: "avatar/face/008.webp",
+      file: "apply/avatar/face/008.webp",
       original: "sly_mouth.webp",
       label: "Sly Mouth",
       slug: "sly-mouth",
@@ -93,7 +93,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 9,
-      file: "avatar/face/009.webp",
+      file: "apply/avatar/face/009.webp",
       original: "smug.webp",
       label: "Smug",
       slug: "smug",
@@ -101,7 +101,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 10,
-      file: "avatar/face/010.webp",
+      file: "apply/avatar/face/010.webp",
       original: "squiggle.webp",
       label: "Squiggle",
       slug: "squiggle",
@@ -109,7 +109,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 11,
-      file: "avatar/face/011.webp",
+      file: "apply/avatar/face/011.webp",
       original: "supa_angy_face.webp",
       label: "Supa Angy Face",
       slug: "supa-angy-face",
@@ -117,7 +117,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 12,
-      file: "avatar/face/012.webp",
+      file: "apply/avatar/face/012.webp",
       original: "weird_mouth.webp",
       label: "Weird Mouth",
       slug: "weird-mouth",
@@ -125,7 +125,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 13,
-      file: "avatar/face/013.webp",
+      file: "apply/avatar/face/013.webp",
       original: "wink.webp",
       label: "Wink",
       slug: "wink",
@@ -133,7 +133,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 14,
-      file: "avatar/face/014.webp",
+      file: "apply/avatar/face/014.webp",
       original: "yelling_face.webp",
       label: "Yelling Face",
       slug: "yelling-face",
@@ -143,7 +143,7 @@ export const avatarManifest: AvatarManifest = {
   left: [
     {
       id: 1,
-      file: "avatar/left/001.webp",
+      file: "apply/avatar/left/001.webp",
       original: "baguette.webp",
       label: "Baguette",
       slug: "baguette",
@@ -151,7 +151,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 2,
-      file: "avatar/left/002.webp",
+      file: "apply/avatar/left/002.webp",
       original: "bubble_tea.webp",
       label: "Bubble Tea",
       slug: "bubble-tea",
@@ -159,7 +159,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 3,
-      file: "avatar/left/003.webp",
+      file: "apply/avatar/left/003.webp",
       original: "carrot.webp",
       label: "Carrot",
       slug: "carrot",
@@ -167,7 +167,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 4,
-      file: "avatar/left/004.webp",
+      file: "apply/avatar/left/004.webp",
       original: "deodorant.webp",
       label: "Deodorant",
       slug: "deodorant",
@@ -175,7 +175,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 5,
-      file: "avatar/left/005.webp",
+      file: "apply/avatar/left/005.webp",
       original: "fish.webp",
       label: "Fish",
       slug: "fish",
@@ -183,7 +183,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 6,
-      file: "avatar/left/006.webp",
+      file: "apply/avatar/left/006.webp",
       original: "matcha.webp",
       label: "Matcha",
       slug: "matcha",
@@ -191,7 +191,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 7,
-      file: "avatar/left/007.webp",
+      file: "apply/avatar/left/007.webp",
       original: "moon_wand.webp",
       label: "Moon Wand",
       slug: "moon-wand",
@@ -199,7 +199,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 8,
-      file: "avatar/left/008.webp",
+      file: "apply/avatar/left/008.webp",
       original: "red_bull_can.webp",
       label: "Red Bull Can",
       slug: "red-bull-can",
@@ -207,7 +207,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 9,
-      file: "avatar/left/009.webp",
+      file: "apply/avatar/left/009.webp",
       original: "star_wand.webp",
       label: "Star Wand",
       slug: "star-wand",
@@ -215,7 +215,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 10,
-      file: "avatar/left/010.webp",
+      file: "apply/avatar/left/010.webp",
       original: "sword.webp",
       label: "Sword",
       slug: "sword",
@@ -223,7 +223,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 11,
-      file: "avatar/left/011.webp",
+      file: "apply/avatar/left/011.webp",
       original: "tote.webp",
       label: "Tote",
       slug: "tote",
@@ -233,7 +233,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 12,
-      file: "avatar/left/012.webp",
+      file: "apply/avatar/left/012.webp",
       original: "trophie.webp",
       label: "Trophie",
       slug: "trophie",
@@ -243,7 +243,7 @@ export const avatarManifest: AvatarManifest = {
   right: [
     {
       id: 1,
-      file: "avatar/right/001.webp",
+      file: "apply/avatar/right/001.webp",
       original: "baguette.webp",
       label: "Baguette",
       slug: "baguette",
@@ -251,7 +251,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 2,
-      file: "avatar/right/002.webp",
+      file: "apply/avatar/right/002.webp",
       original: "bubble_tea.webp",
       label: "Bubble Tea",
       slug: "bubble-tea",
@@ -259,7 +259,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 3,
-      file: "avatar/right/003.webp",
+      file: "apply/avatar/right/003.webp",
       original: "carrot.webp",
       label: "Carrot",
       slug: "carrot",
@@ -267,7 +267,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 4,
-      file: "avatar/right/004.webp",
+      file: "apply/avatar/right/004.webp",
       original: "deodorant.webp",
       label: "Deodorant",
       slug: "deodorant",
@@ -275,7 +275,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 5,
-      file: "avatar/right/005.webp",
+      file: "apply/avatar/right/005.webp",
       original: "fish.webp",
       label: "Fish",
       slug: "fish",
@@ -283,7 +283,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 6,
-      file: "avatar/right/006.webp",
+      file: "apply/avatar/right/006.webp",
       original: "matcha.webp",
       label: "Matcha",
       slug: "matcha",
@@ -291,7 +291,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 7,
-      file: "avatar/right/007.webp",
+      file: "apply/avatar/right/007.webp",
       original: "moon_wand.webp",
       label: "Moon Wand",
       slug: "moon-wand",
@@ -299,7 +299,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 8,
-      file: "avatar/right/008.webp",
+      file: "apply/avatar/right/008.webp",
       original: "red_bull_can.webp",
       label: "Red Bull Can",
       slug: "red-bull-can",
@@ -307,7 +307,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 9,
-      file: "avatar/right/009.webp",
+      file: "apply/avatar/right/009.webp",
       original: "star_wand.webp",
       label: "Star Wand",
       slug: "star-wand",
@@ -315,7 +315,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 10,
-      file: "avatar/right/010.webp",
+      file: "apply/avatar/right/010.webp",
       original: "sword.webp",
       label: "Sword",
       slug: "sword",
@@ -323,7 +323,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 11,
-      file: "avatar/right/011.webp",
+      file: "apply/avatar/right/011.webp",
       original: "tote.webp",
       label: "Tote",
       slug: "tote",
@@ -333,7 +333,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 12,
-      file: "avatar/right/012.webp",
+      file: "apply/avatar/right/012.webp",
       original: "trophie.webp",
       label: "Trophie",
       slug: "trophie",
@@ -343,7 +343,7 @@ export const avatarManifest: AvatarManifest = {
   body: [
     {
       id: 1,
-      file: "avatar/body/001.webp",
+      file: "apply/avatar/body/001.webp",
       original: "blue.webp",
       label: "Blue",
       slug: "blue",
@@ -351,7 +351,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 2,
-      file: "avatar/body/002.webp",
+      file: "apply/avatar/body/002.webp",
       original: "green.webp",
       label: "Green",
       slug: "green",
@@ -359,7 +359,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 3,
-      file: "avatar/body/003.webp",
+      file: "apply/avatar/body/003.webp",
       original: "orange.webp",
       label: "Orange",
       slug: "orange",
@@ -367,7 +367,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 4,
-      file: "avatar/body/004.webp",
+      file: "apply/avatar/body/004.webp",
       original: "pink.webp",
       label: "Pink",
       slug: "pink",
@@ -375,7 +375,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 5,
-      file: "avatar/body/005.webp",
+      file: "apply/avatar/body/005.webp",
       original: "purple.webp",
       label: "Purple",
       slug: "purple",
@@ -383,7 +383,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 6,
-      file: "avatar/body/006.webp",
+      file: "apply/avatar/body/006.webp",
       original: "red.webp",
       label: "Red",
       slug: "red",
@@ -391,7 +391,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 7,
-      file: "avatar/body/007.webp",
+      file: "apply/avatar/body/007.webp",
       original: "yellow.webp",
       label: "Yellow",
       slug: "yellow",
@@ -401,7 +401,7 @@ export const avatarManifest: AvatarManifest = {
   hat: [
     {
       id: 1,
-      file: "avatar/hat/001.webp",
+      file: "apply/avatar/hat/001.webp",
       original: "barrette.webp",
       label: "Barrette",
       slug: "barrette",
@@ -411,7 +411,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 2,
-      file: "avatar/hat/002.webp",
+      file: "apply/avatar/hat/002.webp",
       original: "bear_hat.webp",
       label: "Bear Hat",
       slug: "bear-hat",
@@ -421,7 +421,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 3,
-      file: "avatar/hat/003.webp",
+      file: "apply/avatar/hat/003.webp",
       original: "bow_tie.webp",
       label: "Bow Tie",
       slug: "bow-tie",
@@ -431,7 +431,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 4,
-      file: "avatar/hat/004.webp",
+      file: "apply/avatar/hat/004.webp",
       original: "cowboy_hat.webp",
       label: "Cowboy Hat",
       slug: "cowboy-hat",
@@ -441,7 +441,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 5,
-      file: "avatar/hat/005.webp",
+      file: "apply/avatar/hat/005.webp",
       original: "crown.webp",
       label: "Crown",
       slug: "crown",
@@ -451,7 +451,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 6,
-      file: "avatar/hat/006.webp",
+      file: "apply/avatar/hat/006.webp",
       original: "duck.webp",
       label: "Duck",
       slug: "duck",
@@ -461,7 +461,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 7,
-      file: "avatar/hat/007.webp",
+      file: "apply/avatar/hat/007.webp",
       original: "efficiency_hat.webp",
       label: "Efficiency Hat",
       slug: "efficiency-hat",
@@ -471,7 +471,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 8,
-      file: "avatar/hat/008.webp",
+      file: "apply/avatar/hat/008.webp",
       original: "flower.webp",
       label: "Flower",
       slug: "flower",
@@ -481,7 +481,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 9,
-      file: "avatar/hat/009.webp",
+      file: "apply/avatar/hat/009.webp",
       original: "frog_hat.webp",
       label: "Frog Hat",
       slug: "frog-hat",
@@ -491,7 +491,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 10,
-      file: "avatar/hat/010.webp",
+      file: "apply/avatar/hat/010.webp",
       original: "grad_cap.webp",
       label: "Grad Cap",
       slug: "grad-cap",
@@ -501,7 +501,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 11,
-      file: "avatar/hat/011.webp",
+      file: "apply/avatar/hat/011.webp",
       original: "hw_cap.webp",
       label: "Hw Cap",
       slug: "hw-cap",
@@ -511,7 +511,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 12,
-      file: "avatar/hat/012.webp",
+      file: "apply/avatar/hat/012.webp",
       original: "kitten_headset.webp",
       label: "Kitten Headset",
       slug: "kitten-headset",
@@ -521,7 +521,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 13,
-      file: "avatar/hat/013.webp",
+      file: "apply/avatar/hat/013.webp",
       original: "leaf.webp",
       label: "Leaf",
       slug: "leaf",
@@ -531,7 +531,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 14,
-      file: "avatar/hat/014.webp",
+      file: "apply/avatar/hat/014.webp",
       original: "luffy_straw_hat.webp",
       label: "Luffy Straw Hat",
       slug: "luffy-straw-hat",
@@ -541,7 +541,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 15,
-      file: "avatar/hat/015.webp",
+      file: "apply/avatar/hat/015.webp",
       original: "party_hat_1.webp",
       label: "Party Hat 1",
       slug: "party-hat-1",
@@ -551,7 +551,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 16,
-      file: "avatar/hat/016.webp",
+      file: "apply/avatar/hat/016.webp",
       original: "party_hat_2.webp",
       label: "Party Hat 2",
       slug: "party-hat-2",
@@ -561,7 +561,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 17,
-      file: "avatar/hat/017.webp",
+      file: "apply/avatar/hat/017.webp",
       original: "pirate.webp",
       label: "Pirate",
       slug: "pirate",
@@ -571,7 +571,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 18,
-      file: "avatar/hat/018.webp",
+      file: "apply/avatar/hat/018.webp",
       original: "pylon.webp",
       label: "Pylon",
       slug: "pylon",
@@ -581,7 +581,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 19,
-      file: "avatar/hat/019.webp",
+      file: "apply/avatar/hat/019.webp",
       original: "stinky.webp",
       label: "Stinky",
       slug: "stinky",
@@ -591,7 +591,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 20,
-      file: "avatar/hat/020.webp",
+      file: "apply/avatar/hat/020.webp",
       original: "tiara.webp",
       label: "Tiara",
       slug: "tiara",
@@ -601,7 +601,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 21,
-      file: "avatar/hat/021.webp",
+      file: "apply/avatar/hat/021.webp",
       original: "top_hat.webp",
       label: "Top Hat",
       slug: "top-hat",
@@ -611,7 +611,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 22,
-      file: "avatar/hat/022.webp",
+      file: "apply/avatar/hat/022.webp",
       original: "viking.webp",
       label: "Viking",
       slug: "viking",
@@ -621,7 +621,7 @@ export const avatarManifest: AvatarManifest = {
     },
     {
       id: 23,
-      file: "avatar/hat/023.webp",
+      file: "apply/avatar/hat/023.webp",
       original: "witch_hat.webp",
       label: "Witch Hat",
       slug: "witch-hat",
@@ -691,8 +691,8 @@ export const colors = [
 ];
 
 export const categories = [
-  { id: "face", src: "/smile.png" },
-  { id: "left", src: "/lefthand.png" },
-  { id: "right", src: "/righthand.png" },
-  { id: "hat", src: "/hat.png" },
+  { id: "face", src: "/apply/avatar/smile.png" },
+  { id: "left", src: "/apply/avatar/lefthand.png" },
+  { id: "right", src: "/apply/avatar/righthand.png" },
+  { id: "hat", src: "/apply/avatar/hat.png" },
 ];
