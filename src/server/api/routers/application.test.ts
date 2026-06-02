@@ -312,6 +312,8 @@ function createRandomSaveInput(session: Session) {
     userId,
     firstName,
     lastName,
+    // save() strips status from input and DB defaults it to IN_PROGRESS
+    status: "IN_PROGRESS" as const,
     // save() prepends the URL prefixes, so pass raw usernames
   };
 }

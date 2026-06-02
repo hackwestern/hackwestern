@@ -4,7 +4,6 @@ export enum CanvasSection {
   Home = "home",
   FAQ = "faq",
   Sponsors = "sponsors",
-  Team = "team",
 }
 
 export interface SectionCoordinates {
@@ -43,13 +42,6 @@ export const coordinates: Record<CanvasSection, SectionCoordinates> = {
     x: 2070,
     y: 2600,
     width: 1768,
-    height: 917,
-  },
-
-  [CanvasSection.Team]: {
-    x: 4050,
-    y: 1660,
-    width: 1080,
     height: 917,
   },
 };
