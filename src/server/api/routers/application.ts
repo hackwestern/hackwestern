@@ -241,6 +241,8 @@ export const applicationRouter = createTRPCRouter({
           devpostLink: restData.devpostLink ?? "",
           githubLink: restData.githubLink ?? "",
           linkedInLink: restData.linkedInLink ?? "",
+
+          dietaryRestrictionsOther: restData.dietaryRestrictionsOther ?? null,
         };
 
         // Only include canvasData if it was actually provided
