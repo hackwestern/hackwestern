@@ -730,6 +730,8 @@ export const hackerCheckResults = pgTable(
     checkedByUserId: varchar("checked_by_user_id", { length: 255 })
       .notNull()
       .references(() => users.id),
+    manualOverride: boolean("manual_override"),
+    notes: text("notes"),
   },
   (t) => [
     index("hacker_check_user_idx").on(t.userId),
@@ -772,6 +774,8 @@ export const teamCheckResults = pgTable(
     checkedByUserId: varchar("checked_by_user_id", { length: 255 })
       .notNull()
       .references(() => users.id),
+    manualOverride: boolean("manual_override"),
+    notes: text("notes"),
   },
   (t) => [
     index("team_check_team_idx").on(t.teamId),

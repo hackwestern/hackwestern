@@ -10,10 +10,10 @@ import {
   applications,
   dayOfRegistrations,
   hackerCheckResults,
+  hackerCheckType,
   teamCheckResults,
+  teamCheckType,
   teams,
-  type hackerCheckType,
-  type teamCheckType,
 } from "~/server/db/schema";
 import { env } from "~/env";
 import {
@@ -28,7 +28,6 @@ const AGE_THRESHOLD = 18;
 
 type HackerCheckType = (typeof hackerCheckType.enumValues)[number];
 type TeamCheckType = (typeof teamCheckType.enumValues)[number];
-
 async function upsertHackerResult(
   userId: string,
   checkType: HackerCheckType,
@@ -509,6 +508,75 @@ export const cheatCheckRouter = createTRPCRouter({
       return db.query.hackerCheckResults.findMany({
         where: eq(hackerCheckResults.userId, input.userId),
       });
+    }),
+
+  /**
+   * Manually override the result of a hacker check and/or add a note.
+   * Set manualOverride to null to clear a previous override.
+   */
+  overrideHackerCheck: protectedOrganizerProcedure
+    .input(
+      userIdInput.extend({
+        checkType: z.enum(hackerCheckType.enumValues),
+        manualOverride: z.boolean().nullable(),
+        notes: z.string().nullable(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const [result] = await db
+        .update(hackerCheckResults)
+        .set({ manualOverride: input.manualOverride, notes: input.notes })
+        .where(
+          and(
+            eq(hackerCheckResults.userId, input.userId),
+            eq(hackerCheckResults.checkType, input.checkType),
+          ),
+        )
+        .returning();
+
+      if (!result) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No check result found for this user and check type",
+        });
+      }
+
+      return result;
+    }),
+
+  /**
+   * Manually override the result of a team check and/or add a note.
+   * Set manualOverride to null to clear a previous override.
+   */
+  overrideTeamCheck: protectedOrganizerProcedure
+    .input(
+      z.object({
+        teamId: z.string(),
+        checkType: z.enum(teamCheckType.enumValues),
+        manualOverride: z.boolean().nullable(),
+        notes: z.string().nullable(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const [result] = await db
+        .update(teamCheckResults)
+        .set({ manualOverride: input.manualOverride, notes: input.notes })
+        .where(
+          and(
+            eq(teamCheckResults.teamId, input.teamId),
+            eq(teamCheckResults.checkType, input.checkType),
+          ),
+        )
+        .returning();
+
+      if (!result) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No check result found for this team and check type",
+        });
+      }
+
+      return result;
     }),
 
   /**
