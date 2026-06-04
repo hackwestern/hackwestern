@@ -20,7 +20,7 @@ import {
   SelectItem,
 } from "~/components/ui/select";
 import { schools } from "~/constants/schools";
-import { levelOfStudy, major, numOfHackathons } from "~/server/db/schema";
+import { major, numOfHackathons, yearOfStudy } from "~/server/db/schema";
 import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
 
 export function InfoForm() {
@@ -29,7 +29,7 @@ export function InfoForm() {
     fields: [
       "status",
       "school",
-      "levelOfStudy",
+      "yearOfStudy",
       "major",
       "attendedBefore",
       "numOfHackathons",
@@ -52,7 +52,7 @@ export function InfoForm() {
       major: data.major ?? undefined,
       school:
         (data.school as (typeof schools)[number] | undefined) ?? undefined,
-      levelOfStudy: data.levelOfStudy ?? undefined,
+      yearOfStudy: data.yearOfStudy ?? undefined,
       numOfHackathons: data.numOfHackathons ?? undefined,
       attendedBefore:
         data.attendedBefore === true
@@ -116,10 +116,10 @@ export function InfoForm() {
         />
         <FormField
           control={form.control}
-          name="levelOfStudy"
+          name="yearOfStudy"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>What is your level of study?</FormLabel>
+              <FormLabel>What is your year of study?</FormLabel>
               <FormControl>
                 <Select
                   {...field}
@@ -128,10 +128,10 @@ export function InfoForm() {
                   disabled={!canEdit}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select level of study" />
+                    <SelectValue placeholder="Select year of study" />
                   </SelectTrigger>
                   <SelectContent>
-                    {levelOfStudy.enumValues.map((item) => (
+                    {yearOfStudy.enumValues.map((item) => (
                       <SelectItem key={item} value={item}>
                         {item}
                       </SelectItem>

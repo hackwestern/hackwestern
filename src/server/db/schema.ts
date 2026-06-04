@@ -1,17 +1,20 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   serial,
   integer,
   jsonb,
   pgEnum,
   pgTable,
+  pgView,
   primaryKey,
   smallint,
   text,
   timestamp,
   varchar,
+  real,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 import type { CanvasPaths } from "~/types/canvas";
@@ -27,6 +30,7 @@ export const applicationStatus = pgEnum("application_status", [
   "REJECTED",
   "WAITLISTED",
   "DECLINED",
+  "CONFIRMED",
 ]);
 
 export const avatarColour = pgEnum("avatar_colour", [
@@ -40,19 +44,15 @@ export const avatarColour = pgEnum("avatar_colour", [
 ]);
 
 /**
- * The school/university year that the hacker applicant is in.
+ * Year of study for the hacker
  */
-export const levelOfStudy = pgEnum("level_of_study", [
-  "Less than Secondary / High School",
-  "Secondary / High School",
-  "Undergraduate University (2 year - community college etc.)",
-  "Undergraduate University (3+ year)",
-  "Graduate University (Masters, Professional, Doctoral, etc)",
-  "Code School / Bootcamp",
-  "Other Vocational / Trade Program or Apprenticeship",
-  "Post Doctorate",
-  "Other",
-  "Not currently a student",
+export const yearOfStudy = pgEnum("year_of_study", [
+  "1st",
+  "2nd",
+  "3rd",
+  "4th",
+  "5th+",
+  "N/A",
   "Prefer not to answer",
 ]);
 
@@ -133,6 +133,37 @@ export const countrySelection = pgEnum("country", [
   "United States",
   "India",
   "Other",
+]);
+
+/**
+ * T-Shirt size for the applicant
+ */
+export const shirtSize = pgEnum("shirt_size", ["S", "M", "L", "XL"]);
+
+export const dietaryRestrictions = pgEnum("dietary_restrictions", [
+  "Vegetarian",
+  "Vegan",
+  "Kosher",
+  "Halal",
+  "Other",
+]);
+
+/**
+ * Relationship of the emergency contact to the applicant
+ */
+export const emergencyContactRelationship = pgEnum(
+  "emergency_contact_relationship",
+  ["Parent", "Sibling", "Other family member", "Friend", "Coworker", "Other"],
+);
+
+/**
+ * Status of applicants method of transportation
+ */
+export const transportationMethod = pgEnum("transportation_method", [
+  "Waterloo",
+  "Toronto",
+  "Hamilton",
+  "None",
 ]);
 
 /**
@@ -253,8 +284,14 @@ export const applications = pgTable(
     countryOfResidence: countrySelection("country_of_residence"),
 
     school: varchar("name", { length: 255 }),
-    levelOfStudy: levelOfStudy("level_of_study"),
+    yearOfStudy: yearOfStudy("year_of_study"),
     major: major("major"),
+
+    shirtSize: shirtSize("shirt_size"),
+    dietaryRestrictions: dietaryRestrictions("dietary_restrictions"),
+    dietaryRestrictionsOther: varchar("dietary_restrictions_other", {
+      length: 255,
+    }),
 
     attendedBefore: boolean("attended"),
     numOfHackathons: numOfHackathons("num_of_hackathons"),
@@ -266,9 +303,12 @@ export const applications = pgTable(
 
     // Profile Links
     resumeLink: varchar("resume_link", { length: 2048 }),
-    githubLink: varchar("github_link", { length: 2048 }),
-    linkedInLink: varchar("linkedin_link", { length: 2048 }),
     otherLink: varchar("other_link", { length: 2048 }),
+
+    // These links need to be mandatory for cheat checks
+    devpostLink: varchar("devpost_link", { length: 255 }).notNull(),
+    githubLink: varchar("github_link", { length: 2048 }).notNull(),
+    linkedInLink: varchar("linkedin_link", { length: 2048 }).notNull(),
 
     // Agreements
     agreeCodeOfConduct: boolean("agree_code_of_conduct") // Need
@@ -302,6 +342,17 @@ export const applications = pgTable(
       }>()
       .default(sql`'{"paths":[],"timestamp":0,"version":""}'::jsonb`)
       .notNull(),
+
+    // Emergency Contact Info
+    emergencyContactName: varchar("emergency_contact_name", { length: 255 }),
+    emergencyContactRelationship: emergencyContactRelationship(
+      "emergency_contact_relationship",
+    ),
+    emergencyContactPhoneNumber: varchar("emergency_contact_phone_number", {
+      length: 42,
+    }),
+
+    transportationMethod: transportationMethod("transportation_method"),
   },
   (application) => [index("user_id_idx").on(application.userId)],
 );
@@ -325,6 +376,31 @@ export const applicationsRelations = relations(
   }),
 );
 
+export const dayOfRegistrations = pgTable("day_of_registration", {
+  userId: varchar("user_id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  approved: boolean("approved").default(false).notNull(),
+  signedInAt: timestamp("signed_in_at", {
+    mode: "date",
+    precision: 3,
+  }),
+  dateOfBirth: timestamp("date_of_birth", {
+    mode: "date",
+  }),
+});
+
+export const dayOfRegistrationsRelations = relations(
+  dayOfRegistrations,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [dayOfRegistrations.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
 export const userType = pgEnum("user_type", ["hacker", "organizer", "sponsor"]);
 
 export const users = pgTable(
@@ -342,16 +418,25 @@ export const users = pgTable(
 
     scavengerHuntEarned: integer("scavenger_hunt_earned").default(0),
     scavengerHuntBalance: integer("scavenger_hunt_balance").default(0),
+
+    teamId: varchar("team_id", { length: 255 }).references(() => teams.id, {
+      onDelete: "set null",
+    }),
   },
   (user) => [
     index("user_scavenger_hunt_earned_idx").on(user.scavengerHuntEarned),
     index("user_scavenger_hunt_balance_idx").on(user.scavengerHuntBalance),
+    index("user_team_id_idx").on(user.teamId),
   ],
 );
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   accounts: many(accounts),
   application: one(applications),
+  team: one(teams, {
+    fields: [users.teamId],
+    references: [teams.id],
+  }),
 }));
 
 export const accounts = pgTable(
@@ -476,3 +561,211 @@ export const scavengerHuntRedemptions = pgTable(
   },
   (t) => [index("redemption_user_idx").on(t.userId)],
 );
+
+// Enums
+export const submissionStatusEnum = pgEnum("submission_status", [
+  "draft",
+  "submitted",
+  "late",
+]);
+export const judgeTypeEnum = pgEnum("judge_type", ["organizer", "sponsored"]);
+export const judgingQueueStatusEnum = pgEnum("judging_queue_status", [
+  "waiting",
+  "assigned",
+]);
+export const roundTypeEnum = pgEnum("round_type", ["regular", "sponsored"]);
+
+export const trackEnum = pgEnum("track", [
+  "Best Use of Cohere",
+  "Best Use of AntiGravity",
+  "Best Domain",
+  "General",
+]);
+
+// Cheat Checks
+export const cheatCheckIndividualResults = pgTable(
+  "cheat_check_individual_result",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .primaryKey()
+      .references(() => users.id),
+    isOfAge: boolean("is_of_age").default(false).notNull(),
+    githubScanner: boolean("github_scanner").default(false).notNull(),
+    linkedinScanner: boolean("linkedin_scanner").default(false).notNull(),
+    finalResult: boolean("final_result").default(false).notNull(),
+    notes: text("notes"),
+    lastRunAt: timestamp("last_run_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("cheat_check_indiv_final_idx").on(t.finalResult)],
+);
+
+export const cheatCheckTeamResults = pgTable(
+  "cheat_check_team_result",
+  {
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .primaryKey()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    commitWithinAllottedTime: boolean("commit_within_allotted_time")
+      .default(false)
+      .notNull(),
+    onlyTeamMemberCommits: boolean("only_team_member_commits")
+      .default(false)
+      .notNull(),
+    devPostMembersAreRegistered: boolean("devpost_members_are_registered")
+      .default(false)
+      .notNull(),
+    finalResult: boolean("final_result").default(false).notNull(),
+    notes: text("notes"),
+    lastRunAt: timestamp("last_run_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("cheat_check_team_final_idx").on(t.finalResult)],
+);
+
+// Teams & Projects
+export const teams = pgTable(
+  "team",
+  {
+    id: varchar("id", { length: 6 }).notNull().primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+
+    // Project Submissions
+    devpostUrl: varchar("devpost_url", { length: 2048 }),
+    githubUrl: varchar("github_url", { length: 2048 }),
+    submissionStatus: submissionStatusEnum("submission_status")
+      .default("draft")
+      .notNull(),
+    submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 }),
+    tracks: trackEnum("tracks").array(),
+
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("team_created_at_idx").on(t.createdAt)],
+);
+
+export const teamsRelations = relations(teams, ({ many, one }) => ({
+  members: many(users),
+  marks: many(teamMarks),
+  skips: many(judgingSkips),
+  cheatCheck: one(cheatCheckTeamResults, {
+    fields: [teams.id],
+    references: [cheatCheckTeamResults.teamId],
+  }),
+}));
+
+// Judging Portal Schema
+export const judges = pgTable("judge", {
+  id: varchar("id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .references(() => users.id),
+  type: judgeTypeEnum("type").default("organizer").notNull(),
+  track: trackEnum("track").array(), // array of tracks for sponsored judges
+
+  // Derived Stats
+  marksCount: integer("marks_count").default(0).notNull(),
+  marksSum: real("marks_sum").default(0).notNull(),
+  marksSquaredSum: real("marks_squared_sum").default(0).notNull(),
+  /*
+   * markCount = n, markSum = S, markSquaredSum = S2
+   * alternative formula for std is: σ = √( (S2 / n) − (S / n)² )
+   */
+});
+
+export const judgesRelations = relations(judges, ({ one, many }) => ({
+  user: one(users, {
+    fields: [judges.id],
+    references: [users.id],
+  }),
+  marks: many(teamMarks),
+  skips: many(judgingSkips),
+}));
+
+export const judgingQueue = pgTable(
+  "judging_queue",
+  {
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .primaryKey()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    seenJudges: integer("seen_judges").default(0).notNull(),
+    roundsRemaining: integer("rounds_remaining").default(0).notNull(),
+    enqueuedAt: timestamp("enqueued_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    status: judgingQueueStatusEnum("status").default("waiting").notNull(),
+  },
+  (t) => [
+    index("judging_queue_priority_idx").on(
+      t.roundsRemaining.desc(),
+      t.enqueuedAt.asc(),
+    ),
+  ],
+);
+
+export const teamMarks = pgTable(
+  "team_mark",
+  {
+    id: serial("id").primaryKey(),
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    judgeId: varchar("judge_id", { length: 255 })
+      .notNull()
+      .references(() => judges.id),
+    score: real("score").notNull(),
+    roundType: roundTypeEnum("round_type").default("regular").notNull(),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("team_mark_team_idx").on(t.teamId),
+    index("team_mark_judge_idx").on(t.judgeId),
+  ],
+);
+
+export const teamMarksRelations = relations(teamMarks, ({ one }) => ({
+  team: one(teams, {
+    fields: [teamMarks.teamId],
+    references: [teams.id],
+  }),
+  judge: one(judges, {
+    fields: [teamMarks.judgeId],
+    references: [judges.id],
+  }),
+}));
+
+export const judgingSkips = pgTable(
+  "judging_skip",
+  {
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    judgeId: varchar("judge_id", { length: 255 })
+      .notNull()
+      .references(() => judges.id),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.teamId, t.judgeId] })],
+);
+
+export const judgingSkipsRelations = relations(judgingSkips, ({ one }) => ({
+  team: one(teams, {
+    fields: [judgingSkips.teamId],
+    references: [teams.id],
+  }),
+  judge: one(judges, {
+    fields: [judgingSkips.judgeId],
+    references: [judges.id],
+  }),
+}));
