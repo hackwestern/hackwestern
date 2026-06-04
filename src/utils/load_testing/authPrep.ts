@@ -5,6 +5,8 @@ import { users } from "~/server/db/schema";
 import { UserSeeder } from "~/server/db/seed/userSeeder";
 import bcrypt from "bcrypt";
 
+const AUTH_TYPE: "n" | "y" | "o" = process.env.AUTH_TYPE ?? "n";
+
 export interface LoadTestingUser {
   email: string;
   password: string;
@@ -21,6 +23,8 @@ export async function SeedDBForLoadTesting() {
 
       const salt: string = await bcrypt.genSalt(10);
       const hashedPassword: string = await bcrypt.hash(password, salt);
+      const user_type: "organizer" | "hacker" =
+        AUTH_TYPE == "o" ? "organizer" : "hacker";
 
       return {
         internalUser: {
@@ -28,7 +32,11 @@ export async function SeedDBForLoadTesting() {
           password: password,
           id: u.id,
         },
-        dbUser: { password: hashedPassword, ...u },
+        dbUser: {
+          password: hashedPassword,
+          type: user_type,
+          ...u,
+        },
       };
     },
   );

@@ -27,13 +27,14 @@ if [[ "$auth" != "n" && "$auth" != "y" && "$auth" != "o" ]]; then
   exit 1;
 fi 
 
+
 # first compile the ts files into a single js for k6
 npm run build:k6
 
 if [[ "$auth" != "n" ]]; then 
   echo "Adding test users..."
   # seed the db with test users
-  users=$(tsx --env-file=.env -e 'import("./src/utils/load_testing/authPrep.ts").then((mod) => mod.SeedDBForLoadTesting())')
+  users=$(AUTH_TYPE="$auth" tsx --env-file=.env -e 'import("./src/utils/load_testing/authPrep.ts").then((mod) => mod.SeedDBForLoadTesting())')
   if [ $? -ne 0 ]; then 
     echo "Error when adding the test users to the db"
     exit 1
