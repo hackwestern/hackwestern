@@ -26,6 +26,19 @@ Welcome to Hack Western :)
 
 When making changes to the schema, first run `npm run db:generate` to generate the migration SQL scripts, then run `npm run db:migrate` to apply them. DO NOT use `npx drizzle-kit push` anymore.
 
+## Database migrations
+
+Schema changes flow from your local machine to the production database via CI. The workflow for contributors is:
+
+1. Edit the schema files under `src/server/db/`.
+2. Run `npx drizzle-kit generate` locally to produce a new SQL migration file in `./drizzle`.
+3. Commit the schema change AND the generated SQL file together in the same PR.
+4. Once the PR is merged to `main`, the `Apply schema migrations` GitHub Actions workflow (see `.github/workflows/migrate.yml`) runs `npx drizzle-kit migrate` against the production database to apply any pending migrations.
+
+A separate `Schema drift check` workflow (`.github/workflows/schema-drift.yml`) runs on every PR. If you change the schema but forget step 2, the check fails with a message telling you to run `npm run db:generate` and commit the new file — so this mistake gets caught before merge instead of silently leaving prod out of sync.
+
+Never apply migrations to prod manually — always go through the CI workflow so the migration history stays in sync with `main`.
+
 ## Technologies
 
 If you are not familiar with the different technologies used in this project, please refer to their respective docs.

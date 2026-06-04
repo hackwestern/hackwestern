@@ -8,6 +8,41 @@
       "when": 1774920762186,
       "tag": "0000_outgoing_overlord",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776089618243,
+      "tag": "0001_polite_paibok",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776868787944,
+      "tag": "0002_light_spiral",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778719885056,
+      "tag": "0003_sparkling_alex_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778849249645,
+      "tag": "0004_damp_mach_iv",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778872777366,
+      "tag": "0005_aberrant_kat_farrell",
+      "breakpoints": true
     }
   ]
 }

@@ -58,7 +58,7 @@ function HeaderCards() {
               animate={!notHigh ? { height: 230 } : {}}
             >
               <Image
-                src={`/projects/${folders[i]}/${name.image}`}
+                src={`/landing/projects/${folders[i]}/${name.image}`}
                 alt={cleanName ?? "project image"}
                 fill
                 style={{ objectFit: "cover" }}
