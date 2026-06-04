@@ -162,26 +162,26 @@ export const reviewRouter = createTRPCRouter({
       ),
     )
     .query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
+      const userId = ctx.session.user.id;
 
-    return db.query.reviews.findMany({
-      with: {
-        applicant: {
-          columns: {
-            id: true,
-            email: true,
+      return db.query.reviews.findMany({
+        with: {
+          applicant: {
+            columns: {
+              id: true,
+              email: true,
+            },
+          },
+          application: {
+            columns: {
+              firstName: true,
+              lastName: true,
+            },
           },
         },
-        application: {
-          columns: {
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-      where: eq(reviews.reviewerUserId, userId),
-    });
-  }),
+        where: eq(reviews.reviewerUserId, userId),
+      });
+    }),
 
   // TODO: Write unit tests for this router path
   getNextId: protectedOrganizerProcedure
@@ -340,30 +340,30 @@ export const reviewRouter = createTRPCRouter({
       ),
     )
     .query(async () => {
-    try {
-      const reviewCounts = await db
-        .select({
-          reviewerId: reviews.reviewerUserId,
-          reviewerName: users.name,
-          reviewCount: count(reviews.reviewerUserId).mapWith(Number),
-        })
-        .from(reviews)
-        .innerJoin(
-          users,
-          and(
-            eq(reviews.reviewerUserId, users.id),
-            eq(reviews.completed, true),
-          ),
-        )
-        .groupBy(reviews.reviewerUserId, users.name)
-        .orderBy(desc(count(reviews.reviewerUserId)));
+      try {
+        const reviewCounts = await db
+          .select({
+            reviewerId: reviews.reviewerUserId,
+            reviewerName: users.name,
+            reviewCount: count(reviews.reviewerUserId).mapWith(Number),
+          })
+          .from(reviews)
+          .innerJoin(
+            users,
+            and(
+              eq(reviews.reviewerUserId, users.id),
+              eq(reviews.completed, true),
+            ),
+          )
+          .groupBy(reviews.reviewerUserId, users.name)
+          .orderBy(desc(count(reviews.reviewerUserId)));
 
-      return reviewCounts;
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch review counts: " + JSON.stringify(error),
-      });
-    }
-  }),
+        return reviewCounts;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch review counts: " + JSON.stringify(error),
+        });
+      }
+    }),
 });

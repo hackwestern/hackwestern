@@ -194,28 +194,28 @@ export const authRouter = createTRPCRouter({
     })
     .output(z.object({ verified: z.date().nullable() }))
     .query(async ({ ctx }) => {
-    if (!ctx?.session?.user) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Not logged in",
+      if (!ctx?.session?.user) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Not logged in",
+        });
+      }
+
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, ctx.session.user.id),
       });
-    }
 
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, ctx.session.user.id),
-    });
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
 
-    if (!user) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "User not found",
-      });
-    }
-
-    return {
-      verified: user.emailVerified,
-    };
-  }),
+      return {
+        verified: user.emailVerified,
+      };
+    }),
 
   resendEmail: publicProcedure
     .meta({
@@ -223,40 +223,40 @@ export const authRouter = createTRPCRouter({
     })
     .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx }) => {
-    if (!ctx?.session?.user) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Not logged in",
+      if (!ctx?.session?.user) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Not logged in",
+        });
+      }
+
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, ctx.session.user.id),
       });
-    }
 
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, ctx.session.user.id),
-    });
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
 
-    if (!user) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "User not found",
-      });
-    }
+      const res = await requestVerifyEmail(user);
 
-    const res = await requestVerifyEmail(user);
+      if (res.error) {
+        console.error("Error sending verification email:", res.error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to send verification email",
+        });
+      }
 
-    if (res.error) {
-      console.error("Error sending verification email:", res.error);
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to send verification email",
-      });
-    }
+      console.log("Verification email resent:", res);
 
-    console.log("Verification email resent:", res);
-
-    return {
-      success: true,
-    };
-  }),
+      return {
+        success: true,
+      };
+    }),
 
   verify: publicProcedure
     .meta({

@@ -249,19 +249,19 @@ export const scavengerHuntRouter = createTRPCRouter({
     })
     .output(z.array(z.any()))
     .query(async () => {
-    try {
-      const items = await db.query.scavengerHuntItems.findMany({
-        orderBy: (items, { asc }) => [asc(items.code)],
-      });
+      try {
+        const items = await db.query.scavengerHuntItems.findMany({
+          orderBy: (items, { asc }) => [asc(items.code)],
+        });
 
-      return items;
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch items: " + JSON.stringify(error),
-      });
-    }
-  }),
+        return items;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch items: " + JSON.stringify(error),
+        });
+      }
+    }),
 
   // Get All Scavenger Hunt Rewards (only accessible to organizers)
   getAllRewards: protectedOrganizerProcedure
@@ -270,19 +270,19 @@ export const scavengerHuntRouter = createTRPCRouter({
     })
     .output(z.array(z.any()))
     .query(async () => {
-    try {
-      const rewards = await db.query.scavengerHuntRewards.findMany({
-        orderBy: (rewards, { asc }) => [asc(rewards.name)],
-      });
+      try {
+        const rewards = await db.query.scavengerHuntRewards.findMany({
+          orderBy: (rewards, { asc }) => [asc(rewards.name)],
+        });
 
-      return rewards;
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch rewards: " + JSON.stringify(error),
-      });
-    }
-  }),
+        return rewards;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch rewards: " + JSON.stringify(error),
+        });
+      }
+    }),
 
   // Get Reward by ID (only accessible to organizers)
   getRewardById: protectedOrganizerProcedure
@@ -446,11 +446,16 @@ export const scavengerHuntRouter = createTRPCRouter({
     .meta({
       openapi: { method: "GET", path: "/api/scavengerHunt/getPoints" },
     })
-    .output(z.object({ earned: z.number().nullable(), balance: z.number().nullable() }))
+    .output(
+      z.object({
+        earned: z.number().nullable(),
+        balance: z.number().nullable(),
+      }),
+    )
     .query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
-    return await getUserPoints(userId);
-  }),
+      const userId = ctx.session.user.id;
+      return await getUserPoints(userId);
+    }),
 
   // Gets a User's Points by UserId (only accessible to organizers)
   getPointsByUserId: protectedOrganizerProcedure
@@ -458,7 +463,12 @@ export const scavengerHuntRouter = createTRPCRouter({
       openapi: { method: "GET", path: "/api/scavengerHunt/getPointsByUserId" },
     })
     .input(z.object({ requestedUserId: z.string() }))
-    .output(z.object({ earned: z.number().nullable(), balance: z.number().nullable() }))
+    .output(
+      z.object({
+        earned: z.number().nullable(),
+        balance: z.number().nullable(),
+      }),
+    )
     .query(async ({ input }) => {
       const { requestedUserId } = input;
 
@@ -517,7 +527,11 @@ export const scavengerHuntRouter = createTRPCRouter({
       z.object({
         success: z.boolean(),
         message: z.string(),
-        user: z.object({ id: z.string(), name: z.string().nullable(), email: z.string() }),
+        user: z.object({
+          id: z.string(),
+          name: z.string().nullable(),
+          email: z.string(),
+        }),
         reward: z
           .object({
             id: z.number(),
@@ -591,72 +605,72 @@ export const scavengerHuntRouter = createTRPCRouter({
     })
     .output(z.array(z.any()))
     .query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
+      const userId = ctx.session.user.id;
 
-    // Get scans with item information using join
-    const scans = await db
-      .select({
-        userId: scavengerHuntScans.userId,
-        itemId: scavengerHuntScans.itemId,
-        createdAt: scavengerHuntScans.createdAt,
-        itemCode: scavengerHuntItems.code,
-        itemDescription: scavengerHuntItems.description,
-        itemPoints: scavengerHuntItems.points,
-      })
-      .from(scavengerHuntScans)
-      .innerJoin(
-        scavengerHuntItems,
-        eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
-      )
-      .where(eq(scavengerHuntScans.userId, userId));
+      // Get scans with item information using join
+      const scans = await db
+        .select({
+          userId: scavengerHuntScans.userId,
+          itemId: scavengerHuntScans.itemId,
+          createdAt: scavengerHuntScans.createdAt,
+          itemCode: scavengerHuntItems.code,
+          itemDescription: scavengerHuntItems.description,
+          itemPoints: scavengerHuntItems.points,
+        })
+        .from(scavengerHuntScans)
+        .innerJoin(
+          scavengerHuntItems,
+          eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+        )
+        .where(eq(scavengerHuntScans.userId, userId));
 
-    // Get redemptions with reward information using join
-    const redemptions = await db
-      .select({
-        userId: scavengerHuntRedemptions.userId,
-        rewardId: scavengerHuntRedemptions.rewardId,
-        createdAt: scavengerHuntRedemptions.createdAt,
-        rewardName: scavengerHuntRewards.name,
-        rewardDescription: scavengerHuntRewards.description,
-        costPoints: scavengerHuntRewards.costPoints,
-      })
-      .from(scavengerHuntRedemptions)
-      .innerJoin(
-        scavengerHuntRewards,
-        eq(scavengerHuntRedemptions.rewardId, scavengerHuntRewards.id),
-      )
-      .where(eq(scavengerHuntRedemptions.userId, userId));
+      // Get redemptions with reward information using join
+      const redemptions = await db
+        .select({
+          userId: scavengerHuntRedemptions.userId,
+          rewardId: scavengerHuntRedemptions.rewardId,
+          createdAt: scavengerHuntRedemptions.createdAt,
+          rewardName: scavengerHuntRewards.name,
+          rewardDescription: scavengerHuntRewards.description,
+          costPoints: scavengerHuntRewards.costPoints,
+        })
+        .from(scavengerHuntRedemptions)
+        .innerJoin(
+          scavengerHuntRewards,
+          eq(scavengerHuntRedemptions.rewardId, scavengerHuntRewards.id),
+        )
+        .where(eq(scavengerHuntRedemptions.userId, userId));
 
-    // Combine scans and redemptions into a unified list
-    const scanEntries = scans.map((scan) => ({
-      id: `scan-${scan.userId}-${scan.itemId}`,
-      type: "scan" as const,
-      itemId: scan.itemId,
-      itemCode: scan.itemCode,
-      itemDescription: scan.itemDescription,
-      points: scan.itemPoints ?? 0,
-      createdAt: scan.createdAt,
-    }));
+      // Combine scans and redemptions into a unified list
+      const scanEntries = scans.map((scan) => ({
+        id: `scan-${scan.userId}-${scan.itemId}`,
+        type: "scan" as const,
+        itemId: scan.itemId,
+        itemCode: scan.itemCode,
+        itemDescription: scan.itemDescription,
+        points: scan.itemPoints ?? 0,
+        createdAt: scan.createdAt,
+      }));
 
-    const redemptionEntries = redemptions.map((redemption) => ({
-      id: `redemption-${redemption.userId}-${redemption.rewardId}-${redemption.createdAt?.getTime()}`,
-      type: "redemption" as const,
-      rewardId: redemption.rewardId,
-      itemCode: null,
-      itemDescription:
-        redemption.rewardName ?? redemption.rewardDescription ?? "Reward",
-      points: -(redemption.costPoints ?? 0), // Negative points for redemptions
-      createdAt: redemption.createdAt,
-    }));
+      const redemptionEntries = redemptions.map((redemption) => ({
+        id: `redemption-${redemption.userId}-${redemption.rewardId}-${redemption.createdAt?.getTime()}`,
+        type: "redemption" as const,
+        rewardId: redemption.rewardId,
+        itemCode: null,
+        itemDescription:
+          redemption.rewardName ?? redemption.rewardDescription ?? "Reward",
+        points: -(redemption.costPoints ?? 0), // Negative points for redemptions
+        createdAt: redemption.createdAt,
+      }));
 
-    // Combine and sort by date (most recent first)
-    const allEntries = [...scanEntries, ...redemptionEntries].sort((a, b) => {
-      if (!a.createdAt || !b.createdAt) return 0;
-      return b.createdAt.getTime() - a.createdAt.getTime();
-    });
+      // Combine and sort by date (most recent first)
+      const allEntries = [...scanEntries, ...redemptionEntries].sort((a, b) => {
+        if (!a.createdAt || !b.createdAt) return 0;
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
 
-    return allEntries;
-  }),
+      return allEntries;
+    }),
 
   // Get all Redemptions (only accessible to users)
   getRedemptions: protectedProcedure
@@ -665,16 +679,19 @@ export const scavengerHuntRouter = createTRPCRouter({
     })
     .output(z.array(z.any()))
     .query(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
+      const userId = ctx.session.user.id;
 
-    // Get redemptions for userId
-    return await getUserRedemptions(userId);
-  }),
+      // Get redemptions for userId
+      return await getUserRedemptions(userId);
+    }),
 
   // Get a User's Redemptions by UserId (only accessible to organizers)
   getRedemptionByUserId: protectedOrganizerProcedure
     .meta({
-      openapi: { method: "GET", path: "/api/scavengerHunt/getRedemptionByUserId" },
+      openapi: {
+        method: "GET",
+        path: "/api/scavengerHunt/getRedemptionByUserId",
+      },
     })
     .input(z.object({ requestedUserId: z.string() }))
     .output(z.array(z.any()))
@@ -699,7 +716,13 @@ export const scavengerHuntRouter = createTRPCRouter({
       openapi: { method: "GET", path: "/api/scavengerHunt/getUserById" },
     })
     .input(z.object({ userId: z.string() }))
-    .output(z.object({ id: z.string(), name: z.string().nullable(), email: z.string() }))
+    .output(
+      z.object({
+        id: z.string(),
+        name: z.string().nullable(),
+        email: z.string(),
+      }),
+    )
     .query(async ({ input }) => {
       try {
         const { userId } = input;
