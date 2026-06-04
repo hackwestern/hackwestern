@@ -408,71 +408,71 @@ export const applicationRouter = createTRPCRouter({
     })
     .output(z.void())
     .mutation(async ({ ctx }) => {
-    try {
-      const userId = ctx.session.user.id;
+      try {
+        const userId = ctx.session.user.id;
 
-      // Fetch existing application for the user
-      const application = await db.query.applications.findFirst({
-        where: (schema, { eq }) => eq(schema.userId, userId),
-      });
-      if (!application) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No application found to submit",
+        // Fetch existing application for the user
+        const application = await db.query.applications.findFirst({
+          where: (schema, { eq }) => eq(schema.userId, userId),
         });
-      }
-
-      // These are mandatory fields
-      if (
-        !application.devpostLink ||
-        !application.githubLink ||
-        !application.linkedInLink
-      ) {
-        const missing = [
-          !application.devpostLink && "Devpost link",
-          !application.githubLink && "GitHub link",
-          !application.linkedInLink && "LinkedIn link",
-        ].filter(Boolean);
-
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `Missing required fields: ${missing.join(", ")}`,
-        });
-      }
-
-      const normalized = {
-        ...application,
-        devpostLink: application.devpostLink.replace(DEVPOST_URL, ""),
-        githubLink: application.githubLink.replace(GITHUB_URL, ""),
-        linkedInLink: application.linkedInLink.replace(LINKEDIN_URL, ""),
-      };
-
-      // Validate the existing application against the submission schema
-      const parseResult = applicationSubmitSchema.safeParse(normalized);
-
-      if (!parseResult.success) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message:
-            "Application is not complete: " +
-            JSON.stringify(parseResult.error.format()),
-        });
-      }
-
-      // Update status only
-      await db
-        .update(applications)
-        .set({ status: "PENDING_REVIEW", updatedAt: new Date() })
-        .where(eq(applications.userId, userId));
-    } catch (error) {
-      throw error instanceof TRPCError
-        ? error
-        : new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to submit application: " + JSON.stringify(error),
+        if (!application) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "No application found to submit",
           });
-    }
-  }),
+        }
+
+        // These are mandatory fields
+        if (
+          !application.devpostLink ||
+          !application.githubLink ||
+          !application.linkedInLink
+        ) {
+          const missing = [
+            !application.devpostLink && "Devpost link",
+            !application.githubLink && "GitHub link",
+            !application.linkedInLink && "LinkedIn link",
+          ].filter(Boolean);
+
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Missing required fields: ${missing.join(", ")}`,
+          });
+        }
+
+        const normalized = {
+          ...application,
+          devpostLink: application.devpostLink.replace(DEVPOST_URL, ""),
+          githubLink: application.githubLink.replace(GITHUB_URL, ""),
+          linkedInLink: application.linkedInLink.replace(LINKEDIN_URL, ""),
+        };
+
+        // Validate the existing application against the submission schema
+        const parseResult = applicationSubmitSchema.safeParse(normalized);
+
+        if (!parseResult.success) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "Application is not complete: " +
+              JSON.stringify(parseResult.error.format()),
+          });
+        }
+
+        // Update status only
+        await db
+          .update(applications)
+          .set({ status: "PENDING_REVIEW", updatedAt: new Date() })
+          .where(eq(applications.userId, userId));
+      } catch (error) {
+        throw error instanceof TRPCError
+          ? error
+          : new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Failed to submit application: " + JSON.stringify(error),
+            });
+      }
+    }),
 
   getAppStats: protectedOrganizerProcedure
     .meta({
@@ -487,23 +487,24 @@ export const applicationRouter = createTRPCRouter({
       ),
     )
     .query(async ({}) => {
-    try {
-      const applicationStats = await db
-        .select({
-          status: applications.status,
-          count: count(applications.userId),
-        })
-        .from(applications)
-        .groupBy(applications.status);
+      try {
+        const applicationStats = await db
+          .select({
+            status: applications.status,
+            count: count(applications.userId),
+          })
+          .from(applications)
+          .groupBy(applications.status);
 
-      return applicationStats;
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch application stats: " + JSON.stringify(error),
-      });
-    }
-  }),
+        return applicationStats;
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            "Failed to fetch application stats: " + JSON.stringify(error),
+        });
+      }
+    }),
 
   bulkUpdateStatusByEmails: protectedOrganizerProcedure
     .meta({
