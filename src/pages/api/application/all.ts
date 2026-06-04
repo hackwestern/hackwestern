@@ -65,7 +65,7 @@ function getMlhApplications() {
       age: true,
       phoneNumber: true,
       school: true,
-      levelOfStudy: true,
+      yearOfStudy: true,
       countryOfResidence: true,
       agreeCodeOfConduct: true,
       agreeShareWithMLH: true,
