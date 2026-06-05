@@ -101,7 +101,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
   };
 }
 
-export default function RankingsV2() {
+export default function Rankings() {
   const {
     data: rankingsData,
     isFetching,
@@ -172,7 +172,7 @@ export default function RankingsV2() {
               Internal Tool
             </div>
             <h1 className="mt-1 text-3xl font-bold text-[#3b294f]">
-              Application Rankings v2
+              Application Rankings
             </h1>
             <p className="mt-2 max-w-3xl text-sm text-gray-600">
               Build a stable weighted ranking snapshot, apply school quotas, and
