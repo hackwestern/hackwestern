@@ -30,7 +30,9 @@ export function calculateWeightedScore(
   const genderMultiplier =
     applicant.gender === "Male"
       ? scenario.weights.gender
-      : 2 - scenario.weights.gender;
+      : applicant.gender == null || applicant.gender === "Prefer not to answer"
+        ? 1
+        : 2 - scenario.weights.gender;
 
   return baseWeightedScore * genderMultiplier;
 }
