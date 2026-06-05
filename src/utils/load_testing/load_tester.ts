@@ -1,9 +1,10 @@
 import { SharedArray } from "k6/data";
 import http from "k6/http";
-import { OpenAPISchema, TRPCFaker } from "./trpcFaker";
+import { TRPCFaker } from "./trpcFaker";
 import { check } from "k6";
 import type { LoadTestingUser } from "./authPrep";
 import exec from "k6/execution";
+import { RouterSchema } from "~/pages/api/openapi";
 
 const testUsersENV: string | undefined = __ENV.USERS;
 const requiresAuth = testUsersENV != undefined && testUsersENV != "";
@@ -36,20 +37,25 @@ export const options = {
 };
 
 interface EntryPointData {
-  schema: OpenAPISchema;
+  schema: RouterSchema;
   url: string;
 }
-const schemaData: OpenAPISchema[] = new SharedArray("schema", function () {
-  return [JSON.parse(open("../../../api.json"))];
+
+const schema_ENV: string | undefined = __ENV.SCHEMA;
+if (schema_ENV == undefined) {
+  throw new Error("Schema is not defined, the ENV var SCHEMA must be defined");
+}
+
+const schemaData: RouterSchema[] = new SharedArray("schema", function () {
+  const parsed = JSON.parse(schema_ENV);
+  return [parsed];
 });
 
 const schema = schemaData[0];
 
 export function setup(): EntryPointData {
   if (schema == undefined) {
-    throw new Error(
-      "Unable to read the api.json file, this file should contain the OpenAPISpec of the repo and it should be located at the root",
-    );
+    throw new Error("Unable to fetch the SCHEMA info");
   }
 
   const url = createUrl(route);
@@ -77,10 +83,10 @@ export default function (data: EntryPointData) {
   const payload = faker.generate();
 
   switch (method) {
-    case "QUERY":
+    case "query":
       getRequest(payload, data.url);
       break;
-    case "MUTATE":
+    case "mutation":
       postRequest(payload, data.url);
       break;
   }

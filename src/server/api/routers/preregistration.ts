@@ -3,7 +3,6 @@ import { createInsertSchema } from "drizzle-zod";
 import { preregistrations } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { db } from "~/server/db";
-import { z } from "zod";
 
 const preregistrationCreateSchema = createInsertSchema(preregistrations).omit({
   createdAt: true,
@@ -12,17 +11,7 @@ const preregistrationCreateSchema = createInsertSchema(preregistrations).omit({
 
 export const preregistrationRouter = createTRPCRouter({
   create: publicProcedure
-    .meta({
-      openapi: { method: "POST", path: "/api/preregistration/create" },
-    })
     .input(preregistrationCreateSchema)
-    .output(
-      z.object({
-        id: z.number(),
-        email: z.string(),
-        createdAt: z.date(),
-      }),
-    )
     .mutation(async ({ input }) => {
       try {
         const startTime = Date.now();
