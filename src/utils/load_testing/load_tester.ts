@@ -4,7 +4,7 @@ import { TRPCFaker } from "./trpcFaker";
 import { check } from "k6";
 import type { LoadTestingUser } from "./authPrep";
 import exec from "k6/execution";
-import { RouterSchema } from "~/pages/api/openapi";
+import type { RouterSchema } from "./routeSchema.ts";
 
 const testUsersENV: string | undefined = __ENV.USERS;
 const requiresAuth = testUsersENV != undefined && testUsersENV != "";
@@ -140,6 +140,7 @@ function login(user: LoadTestingUser) {
 
   const csrfRes = http.get(csrfURL);
 
+  // @ts-expect-error
   const responseBody: { csrfToken: string } = JSON.parse(csrfRes.body);
 
   if (responseBody.csrfToken == undefined) {
@@ -179,6 +180,7 @@ function login(user: LoadTestingUser) {
   vuCookies["next-auth.csrf-token"];
 }
 
+// @ts-expect-error
 function urlEncodeObject(obj) {
   return Object.keys(obj)
     .map((key) => encodeURIComponent(key) + "=" + encodeURIComponent(obj[key]))

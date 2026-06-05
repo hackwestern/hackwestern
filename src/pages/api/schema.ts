@@ -2,19 +2,13 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { appRouter } from "~/server/api/root";
 import { AnyRouter } from "@trpc/server";
 import z, { ZodType } from "zod";
+import { RouterSchema } from "~/utils/load_testing/routeSchema";
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const procs = walkRouter(appRouter);
 
   return res.status(200).json(procs);
 }
-
-export type RouterSchema = Record<string, ProcedureInfo>;
-export type ProcedureInfo = {
-  path: string;
-  input: string;
-  type: "query" | "mutation" | "subscription";
-};
 
 export function walkRouter(router: AnyRouter, prefix = ""): RouterSchema {
   var results: RouterSchema = {};
