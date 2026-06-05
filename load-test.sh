@@ -27,7 +27,7 @@ if [[ "$auth" != "n" && "$auth" != "y" && "$auth" != "o" ]]; then
   exit 1;
 fi 
 
-schema=$(curl -s "http://localhost:3000/api/openapi")
+schema=$(curl -s "http://localhost:3000/api/schema")
 if [ $? -ne 0 ]; then 
   echo "Unable to fetch the schema from the server, exit code $?"
   exit 1
