@@ -42,7 +42,7 @@ export function ExportPanel({
             onClick={() =>
               downloadTextFile(
                 buildEmailCsv(exportApplicants),
-                datedFilename(`rankingsv2-emails-top${exportCount}`, "csv"),
+                datedFilename(`rankings-emails-top${exportCount}`, "csv"),
                 "text/csv",
               )
             }
@@ -56,7 +56,7 @@ export function ExportPanel({
             onClick={() =>
               downloadTextFile(
                 buildDetailedCsv(exportApplicants),
-                datedFilename(`rankingsv2-detailed-top${exportCount}`, "csv"),
+                datedFilename(`rankings-detailed-top${exportCount}`, "csv"),
                 "text/csv",
               )
             }
@@ -69,7 +69,7 @@ export function ExportPanel({
             onClick={() =>
               downloadTextFile(
                 buildScenarioJson(appliedScenario),
-                datedFilename("rankingsv2-scenario", "json"),
+                datedFilename("rankings-scenario", "json"),
                 "application/json",
               )
             }
