@@ -14,14 +14,10 @@ import {
 import { GITHUB_URL, LINKEDIN_URL, DEVPOST_URL } from "~/utils/urls";
 import { eq, count, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { z as zv4 } from "zod/v4";
 import { type CanvasPaths } from "~/types/canvas";
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure
-    .meta({
-      openapi: { method: "GET", path: "/api/application/get" },
-    })
     .input(
       z
         .object({
@@ -87,48 +83,6 @@ export const applicationRouter = createTRPCRouter({
             .optional(),
         })
         .optional(),
-    )
-    .output(
-      z
-        .object({
-          userId: z.string().optional(),
-          createdAt: z.date().optional(),
-          updatedAt: z.date().optional(),
-          status: z.string().optional(),
-          avatarColour: z.string().optional(),
-          avatarFace: z.number().optional(),
-          avatarLeftHand: z.number().optional(),
-          avatarRightHand: z.number().optional(),
-          avatarHat: z.number().optional(),
-          firstName: z.string().optional(),
-          lastName: z.string().optional(),
-          age: z.number().optional(),
-          phoneNumber: z.string().optional(),
-          countryOfResidence: z.string().optional(),
-          school: z.string().optional(),
-          levelOfStudy: z.string().optional(),
-          major: z.string().optional(),
-          attendedBefore: z.boolean().optional(),
-          numOfHackathons: z.string().optional(),
-          question1: z.string().optional(),
-          question2: z.string().optional(),
-          question3: z.string().optional(),
-          resumeLink: z.string().optional(),
-          githubLink: z.string().optional(),
-          linkedInLink: z.string().optional(),
-          otherLink: z.string().optional(),
-          agreeCodeOfConduct: z.boolean().optional(),
-          agreeShareWithSponsors: z.boolean().optional(),
-          agreeShareWithMLH: z.boolean().optional(),
-          agreeEmailsFromMLH: z.boolean().optional(),
-          agreeWillBe18: z.boolean().optional(),
-          underrepGroup: z.string().optional(),
-          gender: z.string().optional(),
-          ethnicity: z.string().optional(),
-          sexualOrientation: z.string().optional(),
-          canvasData: z.any().optional(),
-        })
-        .nullable(),
     )
     .query(async ({ ctx, input }) => {
       try {
@@ -211,52 +165,9 @@ export const applicationRouter = createTRPCRouter({
     }),
 
   getById: protectedOrganizerProcedure
-    .meta({
-      openapi: { method: "GET", path: "/api/application/getById" },
-    })
     .input(
       z.object({
         applicantId: z.string().nullish(),
-      }),
-    )
-    .output(
-      z.object({
-        userId: z.string(),
-        createdAt: z.date(),
-        updatedAt: z.date(),
-        status: z.string(),
-        avatarColour: z.string().nullable(),
-        avatarFace: z.number().nullable(),
-        avatarLeftHand: z.number().nullable(),
-        avatarRightHand: z.number().nullable(),
-        avatarHat: z.number().nullable(),
-        firstName: z.string().nullable(),
-        lastName: z.string().nullable(),
-        age: z.number().nullable(),
-        phoneNumber: z.string().nullable(),
-        countryOfResidence: z.string().nullable(),
-        school: z.string().nullable(),
-        levelOfStudy: z.string().nullable(),
-        major: z.string().nullable(),
-        attendedBefore: z.boolean().nullable(),
-        numOfHackathons: z.string().nullable(),
-        question1: z.string().nullable(),
-        question2: z.string().nullable(),
-        question3: z.string().nullable(),
-        resumeLink: z.string().nullable(),
-        githubLink: z.string().nullable(),
-        linkedInLink: z.string().nullable(),
-        otherLink: z.string().nullable(),
-        agreeCodeOfConduct: z.boolean().nullable(),
-        agreeShareWithSponsors: z.boolean().nullable(),
-        agreeShareWithMLH: z.boolean().nullable(),
-        agreeEmailsFromMLH: z.boolean().nullable(),
-        agreeWillBe18: z.boolean().nullable(),
-        underrepGroup: z.string().nullable(),
-        gender: z.string().nullable(),
-        ethnicity: z.string().nullable(),
-        sexualOrientation: z.string().nullable(),
-        canvasData: z.any().nullable(),
       }),
     )
     .query(async ({ input }) => {
@@ -288,54 +199,36 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
 
-  getAllApplicants: protectedOrganizerProcedure
-    .meta({
-      openapi: { method: "GET", path: "/api/application/getAllApplicants" },
-    })
-    .input(zv4.object({}))
-    .output(
-      zv4.array(
-        zv4.object({
-          userId: zv4.string(),
-          name: zv4.string(),
-          email: zv4.string(),
-        }),
-      ),
-    )
-    .query(async () => {
-      try {
-        const applicants = await db
-          .select({
-            userId: applications.userId,
-            firstName: applications.firstName,
-            lastName: applications.lastName,
-            email: users.email,
-          })
-          .from(applications)
-          .innerJoin(users, eq(users.id, applications.userId))
-          .where(eq(applications.status, "PENDING_REVIEW"));
+  getAllApplicants: protectedOrganizerProcedure.query(async () => {
+    try {
+      const applicants = await db
+        .select({
+          userId: applications.userId,
+          firstName: applications.firstName,
+          lastName: applications.lastName,
+          email: users.email,
+        })
+        .from(applications)
+        .innerJoin(users, eq(users.id, applications.userId))
+        .where(eq(applications.status, "PENDING_REVIEW"));
 
-        return applicants.map((ap) => ({
-          userId: ap.userId,
-          name: `${ap.firstName ?? ""} ${ap.lastName ?? ""}`,
-          email: ap.email,
-        }));
-      } catch (error) {
-        throw error instanceof TRPCError
-          ? error
-          : new TRPCError({
-              code: "INTERNAL_SERVER_ERROR",
-              message: "Failed to fetch applicants: " + JSON.stringify(error),
-            });
-      }
-    }),
+      return applicants.map((ap) => ({
+        userId: ap.userId,
+        name: `${ap.firstName ?? ""} ${ap.lastName ?? ""}`,
+        email: ap.email,
+      }));
+    } catch (error) {
+      throw error instanceof TRPCError
+        ? error
+        : new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to fetch applicants: " + JSON.stringify(error),
+          });
+    }
+  }),
 
   save: protectedProcedure
-    .meta({
-      openapi: { method: "POST", path: "/api/application/save" },
-    })
     .input(applicationSaveSchema)
-    .output(z.void())
     .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
@@ -402,114 +295,93 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
 
-  submit: protectedProcedure
-    .meta({
-      openapi: { method: "POST", path: "/api/application/submit" },
-    })
-    .output(z.void())
-    .mutation(async ({ ctx }) => {
-      try {
-        const userId = ctx.session.user.id;
+  submit: protectedProcedure.mutation(async ({ ctx }) => {
+    try {
+      const userId = ctx.session.user.id;
 
-        // Fetch existing application for the user
-        const application = await db.query.applications.findFirst({
-          where: (schema, { eq }) => eq(schema.userId, userId),
-        });
-        if (!application) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "No application found to submit",
-          });
-        }
-
-        // These are mandatory fields
-        if (
-          !application.devpostLink ||
-          !application.githubLink ||
-          !application.linkedInLink
-        ) {
-          const missing = [
-            !application.devpostLink && "Devpost link",
-            !application.githubLink && "GitHub link",
-            !application.linkedInLink && "LinkedIn link",
-          ].filter(Boolean);
-
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Missing required fields: ${missing.join(", ")}`,
-          });
-        }
-
-        const normalized = {
-          ...application,
-          devpostLink: application.devpostLink.replace(DEVPOST_URL, ""),
-          githubLink: application.githubLink.replace(GITHUB_URL, ""),
-          linkedInLink: application.linkedInLink.replace(LINKEDIN_URL, ""),
-        };
-
-        // Validate the existing application against the submission schema
-        const parseResult = applicationSubmitSchema.safeParse(normalized);
-
-        if (!parseResult.success) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message:
-              "Application is not complete: " +
-              JSON.stringify(parseResult.error.format()),
-          });
-        }
-
-        // Update status only
-        await db
-          .update(applications)
-          .set({ status: "PENDING_REVIEW", updatedAt: new Date() })
-          .where(eq(applications.userId, userId));
-      } catch (error) {
-        throw error instanceof TRPCError
-          ? error
-          : new TRPCError({
-              code: "INTERNAL_SERVER_ERROR",
-              message: "Failed to submit application: " + JSON.stringify(error),
-            });
-      }
-    }),
-
-  getAppStats: protectedOrganizerProcedure
-    .meta({
-      openapi: { method: "GET", path: "/api/application/getAppStats" },
-    })
-    .output(
-      z.array(
-        z.object({
-          status: z.string(),
-          count: z.number(),
-        }),
-      ),
-    )
-    .query(async ({}) => {
-      try {
-        const applicationStats = await db
-          .select({
-            status: applications.status,
-            count: count(applications.userId),
-          })
-          .from(applications)
-          .groupBy(applications.status);
-
-        return applicationStats;
-      } catch (error) {
+      // Fetch existing application for the user
+      const application = await db.query.applications.findFirst({
+        where: (schema, { eq }) => eq(schema.userId, userId),
+      });
+      if (!application) {
         throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            "Failed to fetch application stats: " + JSON.stringify(error),
+          code: "BAD_REQUEST",
+          message: "No application found to submit",
         });
       }
-    }),
+
+      // These are mandatory fields
+      if (
+        !application.devpostLink ||
+        !application.githubLink ||
+        !application.linkedInLink
+      ) {
+        const missing = [
+          !application.devpostLink && "Devpost link",
+          !application.githubLink && "GitHub link",
+          !application.linkedInLink && "LinkedIn link",
+        ].filter(Boolean);
+
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Missing required fields: ${missing.join(", ")}`,
+        });
+      }
+
+      const normalized = {
+        ...application,
+        devpostLink: application.devpostLink.replace(DEVPOST_URL, ""),
+        githubLink: application.githubLink.replace(GITHUB_URL, ""),
+        linkedInLink: application.linkedInLink.replace(LINKEDIN_URL, ""),
+      };
+
+      // Validate the existing application against the submission schema
+      const parseResult = applicationSubmitSchema.safeParse(normalized);
+
+      if (!parseResult.success) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Application is not complete: " +
+            JSON.stringify(parseResult.error.format()),
+        });
+      }
+
+      // Update status only
+      await db
+        .update(applications)
+        .set({ status: "PENDING_REVIEW", updatedAt: new Date() })
+        .where(eq(applications.userId, userId));
+    } catch (error) {
+      throw error instanceof TRPCError
+        ? error
+        : new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to submit application: " + JSON.stringify(error),
+          });
+    }
+  }),
+
+  getAppStats: protectedOrganizerProcedure.query(async ({}) => {
+    try {
+      const applicationStats = await db
+        .select({
+          status: applications.status,
+          count: count(applications.userId),
+        })
+        .from(applications)
+        .groupBy(applications.status);
+
+      return applicationStats;
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch application stats: " + JSON.stringify(error),
+      });
+    }
+  }),
 
   bulkUpdateStatusByEmails: protectedOrganizerProcedure
-    .meta({
-      openapi: { method: "POST", path: "/api/application/bulkUpdateStatus" },
-    })
     .input(
       z.object({
         emails: z.array(z.string().email()).min(1),
@@ -524,12 +396,7 @@ export const applicationRouter = createTRPCRouter({
         ] as const),
       }),
     )
-    .output(
-      z.object({
-        matched: z.number(),
-        updated: z.number(),
-      }),
-    )
+
     .mutation(async ({ input }) => {
       const { emails, status } = input;
       try {

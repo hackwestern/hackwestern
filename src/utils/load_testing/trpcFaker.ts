@@ -1,40 +1,10 @@
 import { faker } from "@faker-js/faker";
 import z, { type ZodType } from "zod";
 import { fake, setFaker } from "zod-schema-faker/v4";
-
-interface OpenAPIParam {
-  in: string;
-  name: string;
-  schema: unknown;
-}
-export interface OpenAPISchema {
-  paths: Record<
-    string,
-    {
-      get?: {
-        parameters: OpenAPIParam[];
-      };
-      post?: {
-        requestBody?: {
-          required: boolean;
-          content: {
-            "application/json": {
-              schema: unknown;
-            };
-          };
-        };
-      };
-    }
-  >;
-}
+import { RouterSchema } from "~/pages/api/openapi";
 
 export class TRPCFaker {
-  private input:
-    | {
-        method: "QUERY";
-        schema: Record<string, ZodType>;
-      }
-    | { method: "MUTATE"; schema: ZodType };
+  private input: { input: ZodType; method: "query" | "mutation" };
 
   private overriddenFields: Record<string, () => unknown>;
 
@@ -42,48 +12,21 @@ export class TRPCFaker {
     setFaker(faker);
   }
 
-  constructor(schema: OpenAPISchema, route: string) {
-    const transformedRoute = "/api/" + route.replaceAll(".", "/");
-    const path = schema.paths[transformedRoute];
+  constructor(schema: RouterSchema, route: string) {
+    const path = schema[route];
 
     if (path == undefined) {
       throw new Error(
-        `The specified route does not exist on this TRPC Schema, Route: ${transformedRoute}`,
+        `The specified route does not exist on this TRPC Schema, Route: ${route}`,
       );
     }
-
-    if (path.get != undefined) {
-      if (path.get.parameters == undefined) {
-        this.input = { method: "QUERY", schema: {} };
-      } else {
-        this.input = {
-          method: "QUERY",
-          schema: Object.fromEntries(
-            path.get.parameters.map((value) => {
-              const schema = fromJSONSchema(value.schema);
-              const schemaStrict =
-                schema instanceof z.ZodObject ? schema.strict() : schema;
-
-              return [value.name, schemaStrict];
-            }),
-          ),
-        };
-      }
-    } else if (path.post != undefined) {
-      const rawSchema =
-        path.post.requestBody?.content["application/json"].schema;
-      if (rawSchema == undefined) {
-        this.input = { method: "MUTATE", schema: z.void() };
-      } else {
-        const schema = fromJSONSchema(rawSchema);
-        const schemaStrict =
-          schema instanceof z.ZodObject ? schema.strict() : schema;
-
-        this.input = { method: "MUTATE", schema: schemaStrict };
-      }
-    } else {
-      throw new Error("Unknown method");
+    if (path.type == "subscription") {
+      throw new Error("This does not support SUBSCRIPTION yet sorry");
     }
+    this.input = {
+      input: fromJSONSchema(path.input),
+      method: path.type,
+    };
 
     this.overriddenFields = {};
   }
@@ -92,40 +35,41 @@ export class TRPCFaker {
    * Generates fake data for the schema that is attached to this TRPC Faker
    */
   public generate(): unknown {
-    switch (this.input.method) {
-      case "QUERY":
-        const payload = Object.fromEntries(
-          Object.entries(this.input.schema).map(([key, value]) => {
-            const override = this.overriddenFields[key];
-            if (override != undefined) {
-              const overrideValue = override();
-
-              return [key, overrideValue];
-            }
-            try {
-              return [key, customFaker(value, this.overriddenFields)];
-            } catch (error) {
-              console.log(error);
-
-              throw new Error(
-                "Unable to fake this value, this is likely due to the value containing a zod type that cannot be faked",
-              );
-            }
-          }),
-        );
-        return payload;
-
-      case "MUTATE":
-        try {
-          return customFaker(this.input.schema, this.overriddenFields);
-        } catch (error) {
-          console.log(error);
-
-          throw new Error(
-            "Unable to fake this value, this is likely due to the value containing a zod type that cannot be faked",
-          );
-        }
-    }
+    return customFaker(this.input.input, this.overriddenFields);
+    // switch (this.input.method) {
+    //   case "QUERY":
+    //     const payload = Object.fromEntries(
+    //       Object.entries(this.input.schema).map(([key, value]) => {
+    //         const override = this.overriddenFields[key];
+    //         if (override != undefined) {
+    //           const overrideValue = override();
+    //
+    //           return [key, overrideValue];
+    //         }
+    //         try {
+    //           return [key, customFaker(value, this.overriddenFields)];
+    //         } catch (error) {
+    //           console.log(error);
+    //
+    //           throw new Error(
+    //             "Unable to fake this value, this is likely due to the value containing a zod type that cannot be faked",
+    //           );
+    //         }
+    //       }),
+    //     );
+    //     return payload;
+    //
+    //   case "MUTATE":
+    //     try {
+    //       return customFaker(this.input.schema, this.overriddenFields);
+    //     } catch (error) {
+    //       console.log(error);
+    //
+    //       throw new Error(
+    //         "Unable to fake this value, this is likely due to the value containing a zod type that cannot be faked",
+    //       );
+    //     }
+    // }
   }
   /*
    * Adds an override faker for the specified field
@@ -147,7 +91,7 @@ export class TRPCFaker {
   }
 
   public static defaultTRPCFaker(
-    schema: OpenAPISchema,
+    schema: RouterSchema,
     route: string,
   ): TRPCFaker {
     const trpc = new TRPCFaker(schema, route);
@@ -199,6 +143,7 @@ function customFaker(
 }
 function fromJSONSchema(schema: unknown): ZodType {
   try {
+    // @ts-expect-error
     return z.fromJSONSchema(schema);
   } catch (error) {
     console.log(error);

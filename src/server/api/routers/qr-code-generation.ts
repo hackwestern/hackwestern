@@ -29,26 +29,10 @@ type User = {
 
 export const qrRouter = createTRPCRouter({
   generate: protectedProcedure
-    .meta({
-      openapi: { method: "POST", path: "/api/qr/generate" },
-    })
     .input(
       z.object({
         walletType: z.enum(["APPLE", "GOOGLE"]),
       }),
-    )
-    .output(
-      z.union([
-        z.object({
-          pkpass: z.string(),
-          walletType: z.literal("APPLE"),
-        }),
-        z.object({
-          qrCode: z.string(),
-          googleWalletUrl: z.string(),
-          walletType: z.literal("GOOGLE"),
-        }),
-      ]),
     )
     .mutation(async ({ input, ctx }) => {
       try {

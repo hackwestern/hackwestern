@@ -49,11 +49,7 @@ export const createEmptyReview = (
 
 export const reviewRouter = createTRPCRouter({
   save: protectedOrganizerProcedure
-    .meta({
-      openapi: { method: "POST", path: "/api/review/save" },
-    })
     .input(reviewSaveSchema)
-    .output(z.void())
     .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
@@ -109,11 +105,7 @@ export const reviewRouter = createTRPCRouter({
     }),
 
   referApplicant: protectedOrganizerProcedure
-    .meta({
-      openapi: { method: "POST", path: "/api/review/referApplicant" },
-    })
     .input(referApplicantSchema)
-    .output(z.void())
     .mutation(async ({ input, ctx }) => {
       try {
         const userId = ctx.session.user.id;
@@ -133,67 +125,35 @@ export const reviewRouter = createTRPCRouter({
       }
     }),
 
-  getByOrganizer: protectedOrganizerProcedure
-    .meta({
-      openapi: { method: "GET", path: "/api/review/getByOrganizer" },
-    })
-    .output(
-      z.array(
-        z.object({
-          applicantUserId: z.string(),
-          reviewerUserId: z.string(),
-          createdAt: z.date(),
-          updatedAt: z.date(),
-          originalityRating: z.number(),
-          technicalityRating: z.number(),
-          passionRating: z.number(),
-          comments: z.string().nullable(),
-          completed: z.boolean(),
-          referral: z.boolean(),
-          applicant: z.object({
-            id: z.string(),
-            email: z.string(),
-          }),
-          application: z.object({
-            firstName: z.string().nullable(),
-            lastName: z.string().nullable(),
-          }),
-        }),
-      ),
-    )
-    .query(async ({ ctx }) => {
-      const userId = ctx.session.user.id;
+  getByOrganizer: protectedOrganizerProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
 
-      return db.query.reviews.findMany({
-        with: {
-          applicant: {
-            columns: {
-              id: true,
-              email: true,
-            },
-          },
-          application: {
-            columns: {
-              firstName: true,
-              lastName: true,
-            },
+    return db.query.reviews.findMany({
+      with: {
+        applicant: {
+          columns: {
+            id: true,
+            email: true,
           },
         },
-        where: eq(reviews.reviewerUserId, userId),
-      });
-    }),
+        application: {
+          columns: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+      where: eq(reviews.reviewerUserId, userId),
+    });
+  }),
 
   // TODO: Write unit tests for this router path
   getNextId: protectedOrganizerProcedure
-    .meta({
-      openapi: { method: "GET", path: "/api/review/getNextId" },
-    })
     .input(
       z.object({
         skipId: z.string().nullish(), // used if a reviewer is currently reviewing something (stored as a search param on the client side)
       }),
     )
-    .output(z.string())
     .query(async ({ ctx, input }) => {
       try {
         // If reviewer has a review in progress, return that and not skipping current
@@ -272,26 +232,9 @@ export const reviewRouter = createTRPCRouter({
     }),
 
   getById: protectedOrganizerProcedure
-    .meta({
-      openapi: { method: "GET", path: "/api/review/getById" },
-    })
     .input(
       z.object({
         applicantId: z.string().nullish(),
-      }),
-    )
-    .output(
-      z.object({
-        applicantUserId: z.string(),
-        reviewerUserId: z.string(),
-        createdAt: z.date(),
-        updatedAt: z.date(),
-        originalityRating: z.number(),
-        technicalityRating: z.number(),
-        passionRating: z.number(),
-        comments: z.string().nullable(),
-        completed: z.boolean(),
-        referral: z.boolean(),
       }),
     )
     .query(async ({ input, ctx }) => {
@@ -326,44 +269,31 @@ export const reviewRouter = createTRPCRouter({
       }
     }),
 
-  getReviewCounts: protectedOrganizerProcedure
-    .meta({
-      openapi: { method: "GET", path: "/api/review/getReviewCounts" },
-    })
-    .output(
-      z.array(
-        z.object({
-          reviewerId: z.string(),
-          reviewerName: z.string().nullable(),
-          reviewCount: z.number(),
-        }),
-      ),
-    )
-    .query(async () => {
-      try {
-        const reviewCounts = await db
-          .select({
-            reviewerId: reviews.reviewerUserId,
-            reviewerName: users.name,
-            reviewCount: count(reviews.reviewerUserId).mapWith(Number),
-          })
-          .from(reviews)
-          .innerJoin(
-            users,
-            and(
-              eq(reviews.reviewerUserId, users.id),
-              eq(reviews.completed, true),
-            ),
-          )
-          .groupBy(reviews.reviewerUserId, users.name)
-          .orderBy(desc(count(reviews.reviewerUserId)));
+  getReviewCounts: protectedOrganizerProcedure.query(async () => {
+    try {
+      const reviewCounts = await db
+        .select({
+          reviewerId: reviews.reviewerUserId,
+          reviewerName: users.name,
+          reviewCount: count(reviews.reviewerUserId).mapWith(Number),
+        })
+        .from(reviews)
+        .innerJoin(
+          users,
+          and(
+            eq(reviews.reviewerUserId, users.id),
+            eq(reviews.completed, true),
+          ),
+        )
+        .groupBy(reviews.reviewerUserId, users.name)
+        .orderBy(desc(count(reviews.reviewerUserId)));
 
-        return reviewCounts;
-      } catch (error) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch review counts: " + JSON.stringify(error),
-        });
-      }
-    }),
+      return reviewCounts;
+    } catch (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch review counts: " + JSON.stringify(error),
+      });
+    }
+  }),
 });

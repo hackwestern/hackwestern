@@ -27,6 +27,12 @@ if [[ "$auth" != "n" && "$auth" != "y" && "$auth" != "o" ]]; then
   exit 1;
 fi 
 
+schema=$(curl -s "http://localhost:3000/api/openapi")
+if [ $? -ne 0 ]; then 
+  echo "Unable to fetch the schema from the server, exit code $?"
+  exit 1
+fi
+
 
 # first compile the ts files into a single js for k6
 npm run build:k6
@@ -47,7 +53,7 @@ fi
 
 # run the k6 load testing
 echo "Load testing on route $trpc_route"
-k6 run -e ROUTE=$trpc_route -e USERS=$users $@ ./src/utils/load_testing/load-test-compiled.js
+k6 run -e ROUTE="$trpc_route" -e USERS="$users" -e SCHEMA="$schema" $@ ./src/utils/load_testing/load-test-compiled.js
 
 
 
