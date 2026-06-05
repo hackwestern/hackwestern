@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import z, { type ZodType } from "zod";
 import { fake, setFaker } from "zod-schema-faker/v4";
-import { RouterSchema } from "~/pages/api/openapi";
+import { RouterSchema } from "~/pages/api/schema";
 
 export class TRPCFaker {
   private input: { input: ZodType; method: "query" | "mutation" };
@@ -36,40 +36,6 @@ export class TRPCFaker {
    */
   public generate(): unknown {
     return customFaker(this.input.input, this.overriddenFields);
-    // switch (this.input.method) {
-    //   case "QUERY":
-    //     const payload = Object.fromEntries(
-    //       Object.entries(this.input.schema).map(([key, value]) => {
-    //         const override = this.overriddenFields[key];
-    //         if (override != undefined) {
-    //           const overrideValue = override();
-    //
-    //           return [key, overrideValue];
-    //         }
-    //         try {
-    //           return [key, customFaker(value, this.overriddenFields)];
-    //         } catch (error) {
-    //           console.log(error);
-    //
-    //           throw new Error(
-    //             "Unable to fake this value, this is likely due to the value containing a zod type that cannot be faked",
-    //           );
-    //         }
-    //       }),
-    //     );
-    //     return payload;
-    //
-    //   case "MUTATE":
-    //     try {
-    //       return customFaker(this.input.schema, this.overriddenFields);
-    //     } catch (error) {
-    //       console.log(error);
-    //
-    //       throw new Error(
-    //         "Unable to fake this value, this is likely due to the value containing a zod type that cannot be faked",
-    //       );
-    //     }
-    // }
   }
   /*
    * Adds an override faker for the specified field
