@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import z, { type ZodType } from "zod";
 import { fake, setFaker } from "zod-schema-faker/v4";
-import { RouterSchema } from "~/pages/api/schema";
+import { type RouterSchema } from "~/pages/api/schema";
 
 export class TRPCFaker {
   private input: { input: ZodType; method: "query" | "mutation" };

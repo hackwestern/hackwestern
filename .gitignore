@@ -54,3 +54,6 @@ CLAUDE.md
 
 
 google-wallet-credentials.json
+
+# load testing compiled script
+/src/utils/load_testing/load-test-compiled.js
