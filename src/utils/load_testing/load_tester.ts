@@ -13,7 +13,8 @@ const testUsers: LoadTestingUser[] = new SharedArray("users", () => {
   if (testUsersENV == undefined || testUsersENV == "") {
     return [];
   } else {
-    return JSON.parse(testUsersENV);
+    const parsed: LoadTestingUser[] = JSON.parse(testUsersENV);
+    return parsed;
   }
 });
 
@@ -41,13 +42,15 @@ interface EntryPointData {
   url: string;
 }
 
-const schema_ENV: string | undefined = __ENV.SCHEMA;
-if (schema_ENV == undefined) {
-  throw new Error("Schema is not defined, the ENV var SCHEMA must be defined");
-}
+const schemaData: RouterSchema[] = new SharedArray("schema", () => {
+  const schema_ENV: string | undefined = __ENV.SCHEMA;
+  if (schema_ENV == undefined) {
+    throw new Error(
+      "Schema is not defined, the ENV var SCHEMA must be defined",
+    );
+  }
 
-const schemaData: RouterSchema[] = new SharedArray("schema", function () {
-  const parsed = JSON.parse(schema_ENV);
+  const parsed: RouterSchema = JSON.parse(schema_ENV);
   return [parsed];
 });
 
@@ -63,7 +66,7 @@ export function setup(): EntryPointData {
   return { schema: schema, url: url };
 }
 
-export default function (data: EntryPointData) {
+export default function main(data: EntryPointData) {
   const vuId = exec.vu.idInInstance - 1;
   const iteration = exec.vu.iterationInInstance;
 
@@ -140,7 +143,7 @@ function login(user: LoadTestingUser) {
 
   const csrfRes = http.get(csrfURL);
 
-  // @ts-expect-error
+  // @ts-expect-error This should work always
   const responseBody: { csrfToken: string } = JSON.parse(csrfRes.body);
 
   if (responseBody.csrfToken == undefined) {
@@ -180,7 +183,7 @@ function login(user: LoadTestingUser) {
   vuCookies["next-auth.csrf-token"];
 }
 
-// @ts-expect-error
+// @ts-expect-error does not need typing any object works
 function urlEncodeObject(obj) {
   return Object.keys(obj)
     .map((key) => encodeURIComponent(key) + "=" + encodeURIComponent(obj[key]))

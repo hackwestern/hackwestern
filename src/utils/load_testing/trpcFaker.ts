@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import z, { type ZodType } from "zod";
 import { fake, setFaker } from "zod-schema-faker/v4";
-import { type RouterSchema } from "~/pages/api/schema";
+import { type RouterSchema } from "./routeSchema";
 
 export class TRPCFaker {
   private input: { input: ZodType; method: "query" | "mutation" };
@@ -109,7 +109,7 @@ function customFaker(
 }
 function fromJSONSchema(schema: unknown): ZodType {
   try {
-    // @ts-expect-error
+    // @ts-expect-error This works if crashes error is caught
     return z.fromJSONSchema(schema);
   } catch (error) {
     console.log(error);
