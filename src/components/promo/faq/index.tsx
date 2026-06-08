@@ -50,7 +50,7 @@ function FAQ() {
             <div className="font-jetbrainsmono -mt-4 mb-6 text-lg text-medium">
               FAQ
             </div>
-            <h2 className="mb-4 text-center font-dico text-2xl font-medium ">
+            <h2 className="font-dico mb-4 text-center text-2xl font-medium ">
               Frequently Asked Questions
             </h2>
             <div className="w-1/2 text-center font-figtree text-sm text-medium">

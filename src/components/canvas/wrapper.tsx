@@ -159,7 +159,7 @@ export const CanvasWrapper = ({
         </>
       )}
       {stage1NotFinished && (
-        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 text-center font-jetbrains-mono font-semibold text-[#543C5AB2]">
+        <div className="font-jetbrains-mono absolute bottom-32 left-1/2 -translate-x-1/2 text-center font-semibold text-[#543C5AB2]">
           LOADING CANVAS{dots}
         </div>
       )}

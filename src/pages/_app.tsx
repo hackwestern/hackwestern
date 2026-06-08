@@ -1,7 +1,7 @@
 import { type Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 import { type AppType } from "next/app";
-import {Figtree} from "next/font/google";
+import { Figtree } from "next/font/google";
 import localFont from "next/font/local";
 import { api } from "~/utils/api";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -13,18 +13,24 @@ import { TooltipProvider } from "~/components/ui/tooltip";
 
 const cossetteTexte = localFont({
   src: [
-    {path: "../../public/shared/fonts/cossetteTexte/CossetteTexte-Bold.ttf", weight: "700"},
-    {path: "../../public/shared/fonts/cossetteTexte/CossetteTexte-Regular.ttf", weight: "400"}
+    {
+      path: "../../public/shared/fonts/cossetteTexte/CossetteTexte-Bold.ttf",
+      weight: "700",
+    },
+    {
+      path: "../../public/shared/fonts/cossetteTexte/CossetteTexte-Regular.ttf",
+      weight: "400",
+    },
   ],
   variable: "--font-cossetteTexte",
   display: "swap",
-})
+});
 
 const pix32 = localFont({
   src: "../../public/shared/fonts/pix32/Pix32.ttf",
   variable: "--font-pix32",
   display: "swap",
-})
+});
 
 const figtree = Figtree({
   subsets: ["latin"],
