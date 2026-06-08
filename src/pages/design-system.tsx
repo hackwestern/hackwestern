@@ -3,7 +3,8 @@ import PrimaryButton from "~/components/internals/primary-button";
 import SecondaryButton from "~/components/internals/secondary-button";
 import TertiaryButton from "~/components/internals/tertiary-button";
 import TextField from "~/components/internals/text-field";
-
+import * as tokens from "~/lib/tokens"
+import { ColorSwatch } from "~/components/ui/color-swatch";
 function DesignSystem() {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -20,6 +21,55 @@ function DesignSystem() {
 
   return (
     <div className="flex min-h-screen w-screen flex-col gap-4 overflow-y-auto bg-hw-radial-gradient p-12 font-jetbrains-mono">
+
+      <h1 style={{... tokens.typography.h1}}>Design System HW13</h1>
+
+        <div style={{... tokens.typography.h3}}>typography: </div>
+        <div style={{... tokens.typography.h1}}>heading 1</div>
+        <div style={{... tokens.typography.h2}}>heading 2</div>
+        <div style={{... tokens.typography.h3}}>heading 3</div>
+        <div style={{... tokens.typography.subtitle1}}>subtitle 1</div>
+        <div style={{... tokens.typography.subtitle2}}>subtitle 2</div>
+        <div style={{... tokens.typography.p1}}>large paragrpah</div>
+        <div style={{... tokens.typography.p2}}>paragraph</div>
+        <div style={{... tokens.typography.p3}}>small paragraph</div>
+
+      <div style={{... tokens.typography.h3}}>colors: </div>
+        <div className="flex items-center gap-4" style={{... tokens.typography.p3}}>
+          <ColorSwatch value={tokens.colors.text.heavy} name="text / heavy"/>
+          <ColorSwatch value={tokens.colors.text.medium} name="text / medium"/>
+          <ColorSwatch value={tokens.colors.text.light} name="text / light"/>
+        </div>
+        <div className="flex items-center gap-4" style={{... tokens.typography.p3}}>
+          <ColorSwatch value={tokens.colors.bg.light} name="bg / light"/>
+          <ColorSwatch value={tokens.colors.bg.highlight} name="bg / highlight"/>
+        </div>
+        <div className="flex items-center gap-4" style={{... tokens.typography.p3}}>
+          <ColorSwatch name="white-0" value={tokens.colors.grays['white-0']} />
+          <ColorSwatch name="gray-1" value={tokens.colors.grays['gray-1']} />
+          <ColorSwatch name="gray-2" value={tokens.colors.grays['gray-2']} />
+          <ColorSwatch name="gray-3" value={tokens.colors.grays['gray-3']} />
+          <ColorSwatch name="gray-4" value={tokens.colors.grays['gray-4']} />
+          <ColorSwatch name="gray-5" value={tokens.colors.grays['gray-5']} />
+          <ColorSwatch name="gray-6" value={tokens.colors.grays['gray-6']} />
+          <ColorSwatch name="gray-7" value={tokens.colors.grays['gray-7']} />
+          <ColorSwatch name="gray-8" value={tokens.colors.grays['gray-8']} />
+          <ColorSwatch name="black-9" value={tokens.colors.grays['black-9']} />
+        </div>
+        <div className="flex items-center gap-4" style={{... tokens.typography.p3}}>
+          <ColorSwatch name="blue-1" value={tokens.colors.blues['blue-1']} />
+          <ColorSwatch name="blue-2" value={tokens.colors.blues['blue-2']} />
+          <ColorSwatch name="blue-3" value={tokens.colors.blues['blue-3']} />
+          <ColorSwatch name="blue-4" value={tokens.colors.blues['blue-4']} />
+          <ColorSwatch name="blue-5" value={tokens.colors.blues['blue-5']} />
+          <ColorSwatch name="blue-6" value={tokens.colors.blues['blue-6']} />
+          <ColorSwatch name="blue-7" value={tokens.colors.blues['blue-7']} />
+          <ColorSwatch name="blue-8" value={tokens.colors.blues['blue-8']} />
+          <ColorSwatch name="blue-9" value={tokens.colors.blues['blue-9']} />
+        </div>
+        
+       
+
       <h1 className="font-dico text-6xl">Design System HW12</h1>
 
       <div className="mb-4 flex gap-4">
