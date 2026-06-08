@@ -16,7 +16,7 @@ const cossetteTexte = localFont({
     {path: "../../public/shared/fonts/cossetteTexte/CossetteTexte-Bold.ttf", weight: "700"},
     {path: "../../public/shared/fonts/cossetteTexte/CossetteTexte-Regular.ttf", weight: "400"}
   ],
-  variable: "--font-cossette",
+  variable: "--font-cossetteTexte",
   display: "swap",
 })
 

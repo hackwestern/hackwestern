@@ -62,6 +62,7 @@ export const typography = {
     fontSize:     '64px',
     lineHeight:   '120%',
     letterSpacing: '0%',
+    color: colors.text.heavy,
     textTransform: 'none' as const,
   },
   h2: {
@@ -70,6 +71,7 @@ export const typography = {
     fontSize:     '48px',
     lineHeight:   '120%',
     letterSpacing: '0%',
+    color: colors.text.heavy,
     textTransform: 'none' as const,
   },
   h3: {
@@ -78,6 +80,7 @@ export const typography = {
     fontSize:     '32px',
     lineHeight:   '120%',
     letterSpacing: '0%',
+    color: colors.text.heavy,
     textTransform: 'none' as const,
   },
   p1: {
