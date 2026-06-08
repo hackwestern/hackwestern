@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
 import { type PluginAPI } from "tailwindcss/types/config";
+import * as tokens from "./src/lib/tokens"
 
 const config = {
   darkMode: ["class"],
@@ -130,8 +131,8 @@ const config = {
       },
       fontFamily: {
         figtree: ["var(--font-figtree)"],
-        dico: ["var(--font-dico)"],
-        "jetbrains-mono": ["var(--font-jetbrainsmono)"],
+        cossetteTexte: [tokens.fonts.cossetteTexte],
+        pix32: [tokens.fonts.pix32]
       },
       fontSize: {
         "main-display": "4rem",
