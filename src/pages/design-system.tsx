@@ -89,44 +89,45 @@ function DesignSystem() {
 
       <div className="flex flex-col gap-8">
         <div>
-          <div className="mb-2 text-xl font-bold">PRIMARY BUTTON</div>
+          <div style={{ ...tokens.typography.h3}}>Buttons:</div>
+          <div style={{ ...tokens.typography.p1}}>Primary Button: </div>
           <div className="flex flex-wrap items-center gap-4">
-            <PrimaryButton isLoading={isLoading} onClick={handleClick}>
-              Primary
+            <PrimaryButton isLoading={isLoading} onClick={handleClick} size="lg">
+              Large Button
             </PrimaryButton>
-            <PrimaryButton isLoading={isLoading} onClick={handleClick} arrow>
-              Primary Arrow
+            <PrimaryButton isLoading={isLoading} onClick={handleClick} size="sm">
+              Small Button
             </PrimaryButton>
-            <PrimaryButton isSkeleton>Primary</PrimaryButton>
+            {/* <PrimaryButton isSkeleton>Primary</PrimaryButton> */}
           </div>
         </div>
 
         <div>
-          <div className="mb-2 text-xl font-bold">SECONDARY BUTTON</div>
+          <div style={{ ...tokens.typography.p1}}>Secondary Buttons: </div>
           <div className="flex flex-wrap items-center gap-4">
-            <SecondaryButton isLoading={isLoading} onClick={handleClick}>
-              Secondary
+            <SecondaryButton isLoading={isLoading} onClick={handleClick} size="lg">
+              Large Button
             </SecondaryButton>
-            <SecondaryButton isLoading={isLoading} onClick={handleClick} arrow>
-              Secondary Arrow
+            <SecondaryButton isLoading={isLoading} onClick={handleClick} size="sm">
+              Small Button
             </SecondaryButton>
             <SecondaryButton isSkeleton>Secondary</SecondaryButton>
           </div>
         </div>
-
+        
         <div>
-          <div className="mb-2 text-xl font-bold">TERTIARY BUTTON</div>
+          <div style={{ ...tokens.typography.p1}}>Tertiary Buttons: </div>
           <div className="flex flex-wrap items-center gap-4">
             <TertiaryButton isLoading={isLoading} onClick={handleClick}>
               Tertiary
             </TertiaryButton>
-            <TertiaryButton isLoading={isLoading} onClick={handleClick} arrow>
+            {/* <TertiaryButton isLoading={isLoading} onClick={handleClick} arrow>
               Tertiary Arrow
-            </TertiaryButton>
-            <TertiaryButton isSkeleton>Tertiary</TertiaryButton>
+            </TertiaryButton> */}
+            {/* <TertiaryButton isSkeleton>Tertiary</TertiaryButton> */}
           </div>
         </div>
-
+        {/* 
         <div>
           <div className="mb-2 text-xl font-bold">TEXT FIELD</div>
           <div className="flex flex-col gap-4">
@@ -152,12 +153,12 @@ function DesignSystem() {
               <TextField isSkeleton>Skeleton Input</TextField>
               <TextField submit isSkeleton>
                 Skeleton Submit
-              </TextField>
+              </TextField> */}
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+        // </div>
+      // </div>
+    // </div>
   );
 }
 

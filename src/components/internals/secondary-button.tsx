@@ -11,6 +11,8 @@ interface SecondaryButtonProps {
   disabled?: boolean;
   isLoading?: boolean;
   onClick?: () => void;
+  size?: "sm" |"lg";
+
 }
 
 export default function SecondaryButton({
@@ -19,6 +21,7 @@ export default function SecondaryButton({
   isSkeleton = false,
   disabled = false,
   isLoading = false,
+  size,
   onClick,
 }: SecondaryButtonProps) {
   if (isSkeleton)
@@ -34,6 +37,7 @@ export default function SecondaryButton({
         className={arrow ? "flex justify-around px-6 py-4" : "px-8 py-4"}
         isPending={disabled || isLoading}
         onClick={onClick}
+        size={size}
       >
         <Spinner isLoading={isLoading}></Spinner>
         <div>{children}</div> {arrow && <RightArrow fill="#625679" />}

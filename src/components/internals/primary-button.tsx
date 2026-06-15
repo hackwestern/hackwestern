@@ -12,6 +12,7 @@ interface PrimaryButtonProps {
   disabled?: boolean;
   isLoading?: boolean;
   onClick?: () => void;
+  size?: "sm" |"lg";
 }
 
 export default function PrimaryButton({
@@ -21,6 +22,7 @@ export default function PrimaryButton({
   isSkeleton = false,
   disabled = false,
   isLoading = false,
+  size,
   onClick,
 }: PrimaryButtonProps) {
   if (isSkeleton)
@@ -33,17 +35,11 @@ export default function PrimaryButton({
     return (
       <Button
         variant="primary"
-        className={
-          !textField
-            ? arrow
-              ? "flex justify-around px-6 py-4"
-              : "px-8 py-4"
-            : ""
-        }
         isPending={disabled || isLoading}
         onClick={onClick}
+        size={size}
       >
-        <Spinner isLoading={isLoading}></Spinner>
+        {/* <Spinner isLoading={isLoading}></Spinner> */}
         <div>{children}</div> {arrow && <RightArrow />}
       </Button>
     );

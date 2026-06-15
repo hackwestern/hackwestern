@@ -26,7 +26,7 @@ export default function TertiaryButton({
 
   return (
     <Button
-      variant={arrow ? "tertiary-arrow" : "tertiary"}
+      variant="tertiary"
       className="h-max p-0"
       isPending={disabled || isLoading}
       onClick={onClick}
