@@ -1,8 +1,8 @@
 import React from "react";
 import { Button } from "~/components/ui/button";
-import RightArrow from "./right-arrow";
 import { Skeleton } from "../ui/skeleton";
 import { Spinner } from "../loading-spinner";
+import Arrow from "./arrow";
 
 interface SecondaryButtonProps {
   children: React.ReactNode;
@@ -12,6 +12,7 @@ interface SecondaryButtonProps {
   isLoading?: boolean;
   onClick?: () => void;
   size?: "sm" |"lg";
+  direction?: "left" | "right";
 
 }
 
@@ -22,6 +23,7 @@ export default function SecondaryButton({
   disabled = false,
   isLoading = false,
   size,
+  direction,
   onClick,
 }: SecondaryButtonProps) {
   if (isSkeleton)
@@ -34,13 +36,32 @@ export default function SecondaryButton({
     return (
       <Button
         variant="secondary"
-        className={arrow ? "flex justify-around px-6 py-4" : "px-8 py-4"}
+        className={size=="sm" ? "py-[7px] px-[12px]":"py-[12px] px-[18px]"}
         isPending={disabled || isLoading}
         onClick={onClick}
         size={size}
       >
-        <Spinner isLoading={isLoading}></Spinner>
-        <div>{children}</div> {arrow && <RightArrow fill="#625679" />}
+        {/* <Spinner isLoading={isLoading}></Spinner> */}
+
+        {direction == "left" && 
+          <Arrow 
+            margin={
+              size=="sm" ? "mr-[10px]":"mr-3"}
+            size={size}
+            direction={direction}
+          />
+        }
+
+        <div>{children}</div> 
+
+        {direction == "right" && 
+          <Arrow 
+            margin={
+              size=="sm" ? "ml-[10px]":"ml-3"}
+            size={size}
+            direction={direction}
+          />
+        }
       </Button>
     );
 }

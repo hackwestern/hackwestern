@@ -32,14 +32,14 @@ export const buttonVariants = cva(buttonBase, {
     variant: {
       // default: "",
       primary: cn(
-        "bg-gray-2 shadow-button-primary hover:bg-[#CBCBCB] active:bg-gray-2 active:shadow-button-primary-active",
+        "bg-gray-2 shadow-button-primary hover:bg-[#CBCBCB] active:bg-gray-2 active:shadow-button-primary-active items-end",
         lift,
       ),
       secondary: cn(
         "rounded-full bg-offwhite border border-bg-highlight shadow-button-secondary hover:bg-blue-1 hover:border-blue-1 active:bg-light active:border-light text-medium",
         lift,
       ),
-      tertiary: "bg-transparent text-medium px-4 active:text-heavy hover:text-blue-4 ",
+      tertiary: "bg-transparent text-medium px-4 active:text-heavy hover:text-blue-4",
 
       // destructive:
       //   "bg-destructive text-destructive-foreground hover:bg-destructive-dark",
@@ -52,8 +52,8 @@ export const buttonVariants = cva(buttonBase, {
     },
     size: {
       // default: "h-10 px-4 py-2",
-      sm: "h-8 px-3",
-      lg: "h-11 px-8",
+      sm: "px-[12px] py-[7px]",
+      lg: "px-[18px] py-[12px]",
       // icon: "h-10 w-10",
     },
   },
@@ -117,7 +117,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         <Comp
           ref={ref}
           {...props}
-          className={cn("flex flex-row gap-2", btnClasses)}
+          className={cn("flex items-end",btnClasses)}
           disabled={disabled ?? isPending}
           style={typography[variant as TypographyVariant][size as TypographySize]}
         >

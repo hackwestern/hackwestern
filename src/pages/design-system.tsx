@@ -91,39 +91,76 @@ function DesignSystem() {
         <div>
           <div style={{ ...tokens.typography.h3}}>Buttons:</div>
           <div style={{ ...tokens.typography.p1}}>Primary Button: </div>
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="w-fit grid grid-cols-2 items-center gap-4">
             <PrimaryButton isLoading={isLoading} onClick={handleClick} size="lg">
-              Large Button
+              Large
             </PrimaryButton>
             <PrimaryButton isLoading={isLoading} onClick={handleClick} size="sm">
-              Small Button
+              Small
             </PrimaryButton>
-            {/* <PrimaryButton isSkeleton>Primary</PrimaryButton> */}
+
+            <PrimaryButton isLoading={isLoading} onClick={handleClick} size="lg" direction="left">
+              Left
+            </PrimaryButton>
+            <PrimaryButton isLoading={isLoading} onClick={handleClick} size="sm" direction="left">
+              Left
+            </PrimaryButton>
+
+            <PrimaryButton isLoading={isLoading} onClick={handleClick} size="lg" direction="right">
+              Right
+            </PrimaryButton>
+            <PrimaryButton isLoading={isLoading} onClick={handleClick} size="sm" direction="right">
+              Right
+            </PrimaryButton>
+
+            
           </div>
+          
         </div>
 
         <div>
-          <div style={{ ...tokens.typography.p1}}>Secondary Buttons: </div>
-          <div className="flex flex-wrap items-center gap-4">
+          <div style={{ ...tokens.typography.p1}}>Secondary Button: </div>
+          <div className="w-fit grid grid-cols-2 items-center gap-4">
             <SecondaryButton isLoading={isLoading} onClick={handleClick} size="lg">
-              Large Button
+              Large
             </SecondaryButton>
             <SecondaryButton isLoading={isLoading} onClick={handleClick} size="sm">
-              Small Button
+              Small
             </SecondaryButton>
-            <SecondaryButton isSkeleton>Secondary</SecondaryButton>
+
+            <SecondaryButton isLoading={isLoading} onClick={handleClick} size="lg" direction="left">
+              Left
+            </SecondaryButton>
+            <SecondaryButton isLoading={isLoading} onClick={handleClick} size="sm" direction="left">
+              Left
+            </SecondaryButton>
+
+            <SecondaryButton isLoading={isLoading} onClick={handleClick} size="lg" direction="right">
+              Right
+            </SecondaryButton>
+            <SecondaryButton isLoading={isLoading} onClick={handleClick} size="sm" direction="right">
+              Right
+            </SecondaryButton>
+
+            
           </div>
         </div>
         
         <div>
-          <div style={{ ...tokens.typography.p1}}>Tertiary Buttons: </div>
-          <div className="flex flex-wrap items-center gap-4">
+          <div style={{ ...tokens.typography.p1}}>Tertiary Button: </div>
+          <div className="w-fit grid grid-cols-1 items-center gap-4">
             <TertiaryButton isLoading={isLoading} onClick={handleClick}>
-              Tertiary
+              Button
             </TertiaryButton>
-            {/* <TertiaryButton isLoading={isLoading} onClick={handleClick} arrow>
-              Tertiary Arrow
-            </TertiaryButton> */}
+
+            <TertiaryButton isLoading={isLoading} onClick={handleClick} direction="left">
+              Left
+            </TertiaryButton>
+
+            <TertiaryButton isLoading={isLoading} onClick={handleClick} direction="right">
+              Right
+            </TertiaryButton>
+            
             {/* <TertiaryButton isSkeleton>Tertiary</TertiaryButton> */}
           </div>
         </div>
