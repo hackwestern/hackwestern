@@ -164,38 +164,26 @@ function DesignSystem() {
             {/* <TertiaryButton isSkeleton>Tertiary</TertiaryButton> */}
           </div>
         </div>
-        {/* 
+        
         <div>
-          <div className="mb-2 text-xl font-bold">TEXT FIELD</div>
+          <div style={{...tokens.typography.h3}}>Text field</div>
           <div className="flex flex-col gap-4">
             <TextField onSubmit={handleTextSubmit}>Normal Input</TextField>
             <TextField submit onSubmit={handleTextSubmit}>
               Input with Submit
             </TextField>
 
-            <div className="flex w-max flex-col gap-4 rounded-lg bg-white p-4">
-              <div className="mb-2 font-bold text-black">
-                Secondary / Highlighted
-              </div>
-              <TextField secondary onSubmit={handleTextSubmit}>
-                Secondary Input
-              </TextField>
-              <TextField submit secondary onSubmit={handleTextSubmit}>
-                Secondary Submit
-              </TextField>
-            </div>
-
-            <div className="mt-4 flex flex-col gap-4">
+            {/* <div className="mt-4 flex flex-col gap-4">
               <div className="mb-2 font-bold">Skeletons</div>
               <TextField isSkeleton>Skeleton Input</TextField>
               <TextField submit isSkeleton>
                 Skeleton Submit
-              </TextField> */}
-            </div>
+              </TextField> 
+            </div> */}
           </div>
-        // </div>
-      // </div>
-    // </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

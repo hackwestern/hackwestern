@@ -3,7 +3,7 @@ import { Button } from "~/components/ui/button";
 import Arrow from "./arrow";
 import { Skeleton } from "../ui/skeleton";
 import { Spinner } from "../loading-spinner";
-import Image from "next/image";
+
 interface PrimaryButtonProps {
   children: React.ReactNode;
   arrow?: boolean;
@@ -42,9 +42,8 @@ export default function PrimaryButton({
         size={size}
         className={size=="sm" ? "pt-[7px] pb-[10px] px-[16px]":"pt-[12px] pb-[15px] px-[18px]"}
       >
-        {/* <Spinner isLoading={isLoading}></Spinner> */}
-        
-        
+        {(!direction || direction == "right") && <Spinner isLoading={isLoading}></Spinner>}
+
         {direction == "left" && 
           <Arrow 
             fill = "#111111"
