@@ -145,6 +145,38 @@ html {
   }
 }
 
+@layer components {
+  .h1{
+    @apply text-main-display font-cossetteTexte font-bold tracking-default leading-default text-heavy
+  }
+  .h2{
+    @apply text-md-display font-cossetteTexte font-bold tracking-default leading-default text-heavy
+  }
+  .h3{
+    @apply text-sm-display font-cossetteTexte font-bold tracking-default leading-default text-heavy
+  }
+  .p1{
+    @apply text-lg-p font-figtree font-medium tracking-default text-black leading-normal
+  }
+  .p2{
+    @apply text-md-p font-figtree font-medium tracking-default text-black leading-normal
+  }
+  .p3{
+    @apply text-sm-p font-figtree font-medium tracking-default text-black leading-normal
+  }
+  .subtitle-lg{
+    @apply text-lg-sub font-cossetteTexte font-normal leading-normal tracking-subtitle text-black uppercase
+  }
+  .subtitle-sm{
+    @apply text-sm-sub font-cossetteTexte font-normal leading-normal tracking-subtitle text-black uppercase
+  }
+  .button-lg{
+    @apply text-lg-b font-pix32 font-normal leading-default tracking-default text-black 
+  }
+  .button-sm{
+    @apply text-sm-b font-pix32 font-normal leading-none tracking-default text-black
+  }
+}
 @layer utilities {
   @supports (-moz-appearance: none) {
     .scrollbar {

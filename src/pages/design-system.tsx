@@ -21,37 +21,34 @@ function DesignSystem() {
 
   return (
     <div className="font-jetbrains-mono flex min-h-screen w-screen flex-col gap-4 overflow-y-auto bg-hw-radial-gradient p-12">
-      <h1 style={{ ...tokens.typography.h1 }}>Design System HW13</h1>
+      <h1 className="h1">Design System HW13</h1>
 
-      <div style={{ ...tokens.typography.h3 }}>typography: </div>
-      <div style={{ ...tokens.typography.h1 }}>heading 1</div>
-      <div style={{ ...tokens.typography.h2 }}>heading 2</div>
-      <div style={{ ...tokens.typography.h3 }}>heading 3</div>
-      <div style={{ ...tokens.typography.subtitle1 }}>subtitle 1</div>
-      <div style={{ ...tokens.typography.subtitle2 }}>subtitle 2</div>
-      <div style={{ ...tokens.typography.p1 }}>large paragrpah</div>
-      <div style={{ ...tokens.typography.p2 }}>paragraph</div>
-      <div style={{ ...tokens.typography.p3 }}>small paragraph</div>
+      <div className="h3">typography: </div>
+      <div className="h1">heading 1</div>
+      <div className="h2">heading 2</div>
+      <div className="h3">heading 3</div>
+      <div className="subtitle-lg">subtitle 1</div>
+      <div className="subtitle-sm">subtitle 2</div>
+      <div className="p1">large paragraph</div>
+      <div className="p2">paragraph</div>
+      <div className="p3">small paragraph</div>
 
-      <div style={{ ...tokens.typography.h3 }}>colors: </div>
+      <div className="h3">colors: </div>
       <div
-        className="flex items-center gap-4"
-        style={{ ...tokens.typography.p3 }}
+        className="p3 flex items-center gap-4"
       >
         <ColorSwatch value={tokens.colors.text.heavy} name="text / heavy" />
         <ColorSwatch value={tokens.colors.text.medium} name="text / medium" />
         <ColorSwatch value={tokens.colors.text.light} name="text / light" />
       </div>
       <div
-        className="flex items-center gap-4"
-        style={{ ...tokens.typography.p3 }}
+        className="p3 flex items-center gap-4"
       >
         <ColorSwatch value={tokens.colors.bg.light} name="bg / light" />
         <ColorSwatch value={tokens.colors.bg.highlight} name="bg / highlight" />
       </div>
       <div
-        className="flex items-center gap-4"
-        style={{ ...tokens.typography.p3 }}
+        className="p3 flex items-center gap-4"
       >
         <ColorSwatch name="white-0" value={tokens.colors.grays["white-0"]} />
         <ColorSwatch name="gray-1" value={tokens.colors.grays["gray-1"]} />
@@ -65,8 +62,7 @@ function DesignSystem() {
         <ColorSwatch name="black-9" value={tokens.colors.grays["black-9"]} />
       </div>
       <div
-        className="flex items-center gap-4"
-        style={{ ...tokens.typography.p3 }}
+        className="p3 flex items-center gap-4"
       >
         <ColorSwatch name="blue-1" value={tokens.colors.blues["blue-1"]} />
         <ColorSwatch name="blue-2" value={tokens.colors.blues["blue-2"]} />

@@ -141,14 +141,23 @@ const config = {
         pix32: [tokens.fonts.pix32]
       },
       fontSize: {
-        "main-display": "4rem",
-        "md-display": "3rem",
-        "sm-display": "2rem",
-        "lg-sub": "1.5rem",
-        "sm-sub": "1rem",
-        "lg-p": "1.5rem",
-        "md-p": "1rem",
-        "sm-p": ".875rem",
+        "main-display": "4rem", //h1
+        "md-display": "3rem", //h2
+        "sm-display": "2rem", //h3
+        "lg-sub": "1.5rem", //sub-lg
+        "sm-sub": "1.125rem", //sub-sm
+        "lg-p": "1.5rem", //p1
+        "md-p": "1rem", //p2
+        "sm-p": ".875rem", //p3
+        "lg-b": "1rem", //button-lg
+        "sm-b": "0.875rem", //button-sm
+      },
+      lineHeight: {
+        default: "1.2" 
+      },
+      letterSpacing: {
+        default: "0em",
+        subtitle: "-0.02em" 
       },
       width: {
         "3xs": "16rem",

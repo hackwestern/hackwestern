@@ -87,9 +87,9 @@ export const typography = {
     textTransform: "none" as const,
   },
   p1: {
-    fontFamily: fonts.figtree,
+    fontFamily: fonts.figtree,//
     fontWeight: "500", // Medium
-    fontSize: "24px",
+    fontSize: "24px", //
     lineHeight: "auto",
     letterSpacing: "0%",
     textTransform: "none" as const,
