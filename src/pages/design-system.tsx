@@ -34,22 +34,16 @@ function DesignSystem() {
       <div className="p3">small paragraph</div>
 
       <div className="h3">colors: </div>
-      <div
-        className="p3 flex items-center gap-4"
-      >
+      <div className="p3 flex items-center gap-4">
         <ColorSwatch value={tokens.colors.text.heavy} name="text / heavy" />
         <ColorSwatch value={tokens.colors.text.medium} name="text / medium" />
         <ColorSwatch value={tokens.colors.text.light} name="text / light" />
       </div>
-      <div
-        className="p3 flex items-center gap-4"
-      >
+      <div className="p3 flex items-center gap-4">
         <ColorSwatch value={tokens.colors.bg.light} name="bg / light" />
         <ColorSwatch value={tokens.colors.bg.highlight} name="bg / highlight" />
       </div>
-      <div
-        className="p3 flex items-center gap-4"
-      >
+      <div className="p3 flex items-center gap-4">
         <ColorSwatch name="white-0" value={tokens.colors.grays["white-0"]} />
         <ColorSwatch name="gray-1" value={tokens.colors.grays["gray-1"]} />
         <ColorSwatch name="gray-2" value={tokens.colors.grays["gray-2"]} />
@@ -61,9 +55,7 @@ function DesignSystem() {
         <ColorSwatch name="gray-8" value={tokens.colors.grays["gray-8"]} />
         <ColorSwatch name="black-9" value={tokens.colors.grays["black-9"]} />
       </div>
-      <div
-        className="p3 flex items-center gap-4"
-      >
+      <div className="p3 flex items-center gap-4">
         <ColorSwatch name="blue-1" value={tokens.colors.blues["blue-1"]} />
         <ColorSwatch name="blue-2" value={tokens.colors.blues["blue-2"]} />
         <ColorSwatch name="blue-3" value={tokens.colors.blues["blue-3"]} />
