@@ -3,8 +3,6 @@ import * as React from "react";
 
 import { cn } from "~/lib/utils";
 
-import { colors, fonts } from "~/lib/tokens";
-
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement>,
     VariantProps<typeof inputVariants> {}

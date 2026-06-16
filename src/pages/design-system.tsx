@@ -75,7 +75,7 @@ function DesignSystem() {
         <ColorSwatch name="blue-9" value={tokens.colors.blues["blue-9"]} />
       </div>
 
-      <h1 style={{... tokens.typography.h2}}>Components</h1>
+      <h1 className="h2">Components</h1>
 
       <div className="mb-4 flex gap-4">
         <PrimaryButton onClick={handleClick} isLoading={isLoading}>
@@ -85,8 +85,8 @@ function DesignSystem() {
 
       <div className="flex flex-col gap-8">
         <div>
-          <div style={{ ...tokens.typography.h3}}>Buttons:</div>
-          <div style={{ ...tokens.typography.p1}}>Primary Button: </div>
+          <div className="h3">Buttons:</div>
+          <div className="p1">Primary Button: </div>
           <div className="w-fit grid grid-cols-2 items-center gap-4">
             <PrimaryButton isLoading={isLoading} onClick={handleClick} size="lg">
               Large
@@ -115,7 +115,7 @@ function DesignSystem() {
         </div>
 
         <div>
-          <div style={{ ...tokens.typography.p1}}>Secondary Button: </div>
+          <div className="p1">Secondary Button: </div>
           <div className="w-fit grid grid-cols-2 items-center gap-4">
             <SecondaryButton isLoading={isLoading} onClick={handleClick} size="lg">
               Large
@@ -143,7 +143,7 @@ function DesignSystem() {
         </div>
         
         <div>
-          <div style={{ ...tokens.typography.p1}}>Tertiary Button: </div>
+          <div className="p1">Tertiary Button: </div>
           <div className="w-fit grid grid-cols-1 items-center gap-4">
             <TertiaryButton isLoading={isLoading} onClick={handleClick}>
               Button
@@ -162,7 +162,7 @@ function DesignSystem() {
         </div>
         
         <div>
-          <div style={{...tokens.typography.h3}}>Text field</div>
+          <div className="p3">Text field</div>
           <div className="flex flex-col gap-4">
             <TextField onSubmit={handleTextSubmit}>Normal Input</TextField>
             <TextField submit onSubmit={handleTextSubmit}>

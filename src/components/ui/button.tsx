@@ -15,16 +15,16 @@ const buttonBase =
 const lift =
   "-translate-y-[3px] group-hover:-translate-y-[4px] group-active:-translate-y-[1px] transition-all duration-100";
 
-const typography:Record<TypographyVariant,Record<TypographySize,React.CSSProperties>> = {
+const typography:Record<TypographyVariant,Record<TypographySize,string>> = {
   primary: {
-    "sm": tokens.typography.button2,
-    "lg": tokens.typography.button1},
+    "sm": "button-sm",
+    "lg": "button-lg"},
   secondary: {
-    "sm": tokens.typography.p3,
-    "lg": tokens.typography.p2},
+    "sm": "p3",
+    "lg": "p2"},
   tertiary: {
-    "sm": tokens.typography.p2,
-    "lg": tokens.typography.p2}
+    "sm": "p2",
+    "lg":  "p2"}
 } as const
 
 export const buttonVariants = cva(buttonBase, {
@@ -117,9 +117,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         <Comp
           ref={ref}
           {...props}
-          className={cn("flex items-end",btnClasses)}
+          className={cn("flex items-end",typography[variant as TypographyVariant][size as TypographySize], btnClasses)}
           disabled={disabled ?? isPending}
-          style={typography[variant as TypographyVariant][size as TypographySize]}
         >
           {children}
         </Comp>
