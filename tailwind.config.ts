@@ -38,18 +38,6 @@ const config = {
         coral: "var(--coral)",
         lilac: "var(--lilac)",
         salmon: "var(--salmon)",
-<<<<<<< HEAD
-        heavy: tokens.colors.text.heavy,
-        emphasis: "var(--emphasis)",
-        active: "var(--active)",
-        tinted: "var(--tinted)",
-        medium: tokens.colors.text.medium,
-        light: tokens.colors.text.light,
-        "faint-lilac": "var(--faint-lilac)",
-        offwhite: tokens.colors.bg.light,
-        highlight: "var(--highlight)",
-        "border-light": "hsl(var(--border-light))",
-=======
         "faint-lilac": "var(--faint-lilac)",
         "border-light": "hsl(var(--border-light))",
 
@@ -66,7 +54,6 @@ const config = {
 
         green: tokens.colors.greens["green-primary"],
         
->>>>>>> 712-ds-01-design-tokens-file
         primary: {
           "50": "hsl(var(--primary-50))",
           "100": "hsl(var(--primary-100))",
