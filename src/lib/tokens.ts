@@ -40,8 +40,8 @@ export const colors = {
     "blue-9": "#05141f",
   },
   greens: {
-    "green-primary": "#539933"
-  }
+    "green-primary": "#539933",
+  },
 } as const;
 
 // ------------------------------------------------------------
