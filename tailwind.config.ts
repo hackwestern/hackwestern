@@ -38,16 +38,22 @@ const config = {
         coral: "var(--coral)",
         lilac: "var(--lilac)",
         salmon: "var(--salmon)",
-        heavy: "var(--heavy)",
+        "faint-lilac": "var(--faint-lilac)",
+        "border-light": "hsl(var(--border-light))",
+
         emphasis: "var(--emphasis)",
         active: "var(--active)",
         tinted: "var(--tinted)",
-        medium: "var(--medium)",
-        light: "var(--light)",
-        "faint-lilac": "var(--faint-lilac)",
-        offwhite: "var(--offwhite)",
-        highlight: "var(--highlight)",
-        "border-light": "hsl(var(--border-light))",
+
+        heavy: tokens.colors.text.heavy,
+        medium: tokens.colors.text.medium,
+        light: tokens.colors.text.light,
+
+        offwhite: tokens.colors.bg.light,
+        highlight: tokens.colors.bg.highlight,
+
+        green: tokens.colors.greens["green-primary"],
+        
         primary: {
           "50": "hsl(var(--primary-50))",
           "100": "hsl(var(--primary-100))",
