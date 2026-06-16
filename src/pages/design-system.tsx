@@ -79,7 +79,7 @@ function DesignSystem() {
         <ColorSwatch name="blue-9" value={tokens.colors.blues["blue-9"]} />
       </div>
 
-      <h1 className="font-dico text-6xl">Design System HW12</h1>
+      <h1 style={{... tokens.typography.h2}}>Components</h1>
 
       <div className="mb-4 flex gap-4">
         <PrimaryButton onClick={handleClick} isLoading={isLoading}>

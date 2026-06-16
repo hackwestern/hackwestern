@@ -42,7 +42,7 @@ export default function PrimaryButton({
         size={size}
         className={size=="sm" ? "pt-[7px] pb-[10px] px-[16px]":"pt-[12px] pb-[15px] px-[18px]"}
       >
-        {(!direction || direction == "right") && <Spinner isLoading={isLoading}></Spinner>}
+        {/* {(!direction || direction == "right") && <Spinner isLoading={isLoading}></Spinner>} */}
 
         {direction == "left" && 
           <Arrow 

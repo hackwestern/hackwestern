@@ -48,7 +48,7 @@ export default function TextField({
       <>
         {submit ? (
           <div
-            className={`flex w-max rounded-lg ${secondary ? "border bg-highlight" : "border-2 border-white bg-white/50"}`}
+            className={`flex w-max`}
           >
             <Input
               variant="default"
