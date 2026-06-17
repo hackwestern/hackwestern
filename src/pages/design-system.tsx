@@ -20,7 +20,7 @@ function DesignSystem() {
   };
 
   return (
-    <div className="font-jetbrains-mono flex min-h-screen w-screen flex-col gap-4 overflow-y-auto bg-hw-radial-gradient p-12">
+    <div className="font-jetbrains-mono flex min-h-screen w-screen flex-col gap-4 overflow-y-auto bg-hw-radial-gradient p-12 cursor-pixel-default">
       <h1 className="h1">Design System HW13</h1>
 
       <div className="h3">typography: </div>

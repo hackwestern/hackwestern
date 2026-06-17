@@ -198,6 +198,10 @@ const config = {
         "6xl": "72rem",
         "7xl": "80rem",
       },
+      cursor:{
+        "pixel-default": "url('/cursors/cursor-default.png'),auto",
+        "pixel-hover": "url('../../public/cursors/hover-hand.png'),pointer"
+      },
     },
   },
   plugins: [

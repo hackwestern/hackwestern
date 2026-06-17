@@ -10,7 +10,7 @@ type TypographySize = "sm" | "lg";
 //figure out padding, arrows, hovering cursor hand
 
 const buttonBase =
-  "inline-flex items-center justify-center whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer";
+  "inline-flex items-center justify-center whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer ";
 
 const lift =
   "-translate-y-[3px] group-hover:-translate-y-[4px] group-active:-translate-y-[1px] transition-all duration-100";
@@ -32,7 +32,7 @@ export const buttonVariants = cva(buttonBase, {
     variant: {
       // default: "",
       primary: cn(
-        "bg-gray-2 shadow-button-primary hover:bg-[#CBCBCB] active:bg-gray-2 active:shadow-button-primary-active items-end",
+        "bg-gray-2 shadow-button-primary hover:bg-[#CBCBCB] active:bg-gray-2 active:shadow-button-primary-active items-end hover:cursor-pixel-hover",
         lift,
       ),
       secondary: cn(
