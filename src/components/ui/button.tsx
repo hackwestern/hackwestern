@@ -55,10 +55,10 @@ export const buttonVariants = cva(buttonBase, {
       apply: "text-medium hover:bg-[#ebdff7] hover:text-heavy",
     },
     size: {
-      // default: "h-10 px-4 py-2",
+      default: "h-10 px-4 py-2",
       sm: "px-[12px] py-[7px]",
       lg: "px-[18px] py-[12px]",
-      // icon: "h-10 w-10",
+      icon: "h-10 w-10",
     },
   },
   defaultVariants: { variant: "primary", size: "lg" },
@@ -121,7 +121,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           {...props}
           className={cn(
             "flex items-end",
-            typography[variant as TypographyVariant][size as TypographySize],
+            (variant === "primary" || variant === "secondary" || variant === "tertiary") && (size === "sm" || size === "lg") && typography[variant as TypographyVariant][size as TypographySize],
             btnClasses,
           )}
           disabled={disabled ?? isPending}
