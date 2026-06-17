@@ -121,7 +121,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           {...props}
           className={cn(
             "flex items-end",
-            (variant === "primary" || variant === "secondary" || variant === "tertiary") && (size === "sm" || size === "lg") && typography[variant as TypographyVariant][size as TypographySize],
+            (variant === "primary" ||
+              variant === "secondary" ||
+              variant === "tertiary") &&
+              (size === "sm" || size === "lg") &&
+              typography[variant as TypographyVariant][size as TypographySize],
             btnClasses,
           )}
           disabled={disabled ?? isPending}
