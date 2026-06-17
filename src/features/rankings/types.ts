@@ -25,7 +25,14 @@ export type RankingWeights = {
   originality: number;
   technicality: number;
   passion: number;
-  gender: number;
+};
+
+// A config-driven score adjustment: for the named applicant field, multiply the
+// score by the factor mapped to the applicant's value. Which fields and factors
+// are used is supplied at runtime from private server config, never hardcoded.
+export type ScoreAdjustment = {
+  field: string;
+  multipliers: Record<string, number>;
 };
 
 export type SchoolQuotas = Record<string, number>;
@@ -34,6 +41,7 @@ export type RankingScenario = {
   name: string;
   targetAcceptanceCount: number;
   weights: RankingWeights;
+  adjustments: ScoreAdjustment[];
   schoolQuotas: SchoolQuotas;
   exportCount: number;
 };

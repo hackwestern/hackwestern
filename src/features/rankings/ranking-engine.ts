@@ -4,6 +4,7 @@ import type {
   RankingApplicant,
   RankingResult,
   RankingScenario,
+  ScoreAdjustment,
   SchoolDistribution,
 } from "./types";
 
@@ -18,6 +19,22 @@ function roundScore(score: number) {
   return Math.round(score * 10) / 10;
 }
 
+// Applies a set of config-driven multipliers to an applicant's score. Each
+// adjustment looks up the applicant's value for a field and multiplies by the
+// configured factor for that value; unlisted values (and null) are neutral.
+// The fields and factors live in private server config, not in this source.
+export function applyAdjustments(
+  applicant: RankingApplicant,
+  adjustments: ScoreAdjustment[],
+) {
+  const fields = applicant as unknown as Record<string, unknown>;
+  return adjustments.reduce((multiplier, adjustment) => {
+    const value = fields[adjustment.field];
+    const key = value == null ? "" : String(value);
+    return multiplier * (adjustment.multipliers[key] ?? 1);
+  }, 1);
+}
+
 export function calculateWeightedScore(
   applicant: RankingApplicant,
   scenario: RankingScenario,
@@ -27,14 +44,7 @@ export function calculateWeightedScore(
     applicant.avgTechnicality * scenario.weights.technicality +
     applicant.avgPassion * scenario.weights.passion;
 
-  const genderMultiplier =
-    applicant.gender === "Male"
-      ? scenario.weights.gender
-      : applicant.gender == null || applicant.gender === "Prefer not to answer"
-        ? 1
-        : 2 - scenario.weights.gender;
-
-  return baseWeightedScore * genderMultiplier;
+  return baseWeightedScore * applyAdjustments(applicant, scenario.adjustments);
 }
 
 export function getUniqueSchools(applicants: RankingApplicant[]) {

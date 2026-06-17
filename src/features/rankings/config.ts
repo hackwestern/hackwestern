@@ -9,8 +9,8 @@ export const defaultRankingScenario = {
     originality: 1,
     technicality: 1,
     passion: 1,
-    gender: 1,
   },
+  adjustments: [],
   schoolQuotas: {},
   exportCount: DEFAULT_TARGET_ACCEPTANCE_COUNT,
 } satisfies RankingScenario;
