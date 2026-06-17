@@ -659,7 +659,7 @@ const ScanActivityPage = () => {
           Back
         </button>
         <div className="space-y-1">
-          <h1 className="text-left font-dico text-3xl font-medium capitalize text-heavy">
+          <h1 className="font-dico text-left text-3xl font-medium capitalize text-heavy">
             {activityName}
           </h1>
           {itemLoading && (

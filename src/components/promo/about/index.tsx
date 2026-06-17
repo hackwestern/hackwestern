@@ -18,10 +18,10 @@ function About() {
         <div className="flex origin-center flex-col items-center justify-center transition-transform duration-300 ease-in-out">
           <div className="relative">
             <div className="flex w-full max-w-full flex-col items-center justify-start gap-4 px-4 pb-0 pt-24">
-              <div className="h-5 text-center font-jetbrains-mono text-base font-medium uppercase text-zinc-500">
+              <div className="font-jetbrains-mono h-5 text-center text-base font-medium uppercase text-zinc-500">
                 About
               </div>
-              <div className="mb-8 text-center font-dico text-2xl font-medium text-indigo-950">
+              <div className="font-dico mb-8 text-center text-2xl font-medium text-indigo-950">
                 Create. Collaborate. Innovate.
               </div>
               <DraggableImage

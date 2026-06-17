@@ -64,7 +64,7 @@ export default function ResetRequest() {
           <Input
             type="email"
             onChange={(e) => setEmail(e.target.value)}
-            className="mb-8 h-[60px] bg-highlight font-jetbrains-mono text-medium"
+            className="font-jetbrains-mono mb-8 h-[60px] bg-highlight text-medium"
             placeholder="hello@hackwestern.com"
           />
           <Button variant="primary" onClick={handleSubmit} size="default" full>

@@ -35,7 +35,7 @@ export const ProjectPreview = ({
           folder={folder.toLowerCase()}
         />
       </div>
-      <span className="absolute bottom-4 left-1/2 block -translate-x-1/2 whitespace-nowrap text-center font-jetbrains-mono text-[15px] font-light">
+      <span className="font-jetbrains-mono absolute bottom-4 left-1/2 block -translate-x-1/2 whitespace-nowrap text-center text-[15px] font-light">
         {label}
       </span>
     </div>

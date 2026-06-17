@@ -34,7 +34,7 @@ export default function ApplyHeading({
         variants={slideX}
         className="mb-2"
       >
-        <h1 className="mb-2 font-dico text-2xl font-medium text-heavy">
+        <h1 className="font-dico mb-2 text-2xl font-medium text-heavy">
           {heading}
         </h1>
         {subheading && (

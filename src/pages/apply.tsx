@@ -166,7 +166,7 @@ export default function Apply() {
                 ? step.charAt(0).toUpperCase() + step.slice(1)
                 : "Application"}
             </h1>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+            <div className="bg-green-100 flex h-8 w-8 items-center justify-center rounded-full">
               <ApplyMenu step={step} />
               <CharacterIcon />
             </div>
