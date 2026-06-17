@@ -5,13 +5,12 @@ import { Spinner } from "../loading-spinner";
 import Arrow from "./arrow";
 import { ButtonProps } from "./buttonProps";
 
-
 export default function SecondaryButton({
   children,
   isSkeleton = false,
   disabled = false,
   isLoading = false,
-  size="lg",
+  size = "lg",
   direction,
   onClick,
   className,
@@ -26,32 +25,30 @@ export default function SecondaryButton({
     return (
       <Button
         variant="secondary"
-        className={`${size=="sm" ? "py-[7px] px-[12px]":"py-[12px] px-[18px]"}${className}`}
+        className={`${size == "sm" ? "px-[12px] py-[7px]" : "px-[18px] py-[12px]"}${className}`}
         isPending={disabled || isLoading}
         onClick={onClick}
         size={size}
       >
         {/* <Spinner isLoading={isLoading}></Spinner> */}
 
-        {direction == "left" && 
-          <Arrow 
-            margin={
-              size=="sm" ? "mr-[10px]":"mr-3"}
+        {direction == "left" && (
+          <Arrow
+            margin={size == "sm" ? "mr-[10px]" : "mr-3"}
             size={size}
             direction={direction}
           />
-        }
+        )}
 
-        <div>{children}</div> 
+        <div>{children}</div>
 
-        {direction == "right" && 
-          <Arrow 
-            margin={
-              size=="sm" ? "ml-[10px]":"ml-3"}
+        {direction == "right" && (
+          <Arrow
+            margin={size == "sm" ? "ml-[10px]" : "ml-3"}
             size={size}
             direction={direction}
           />
-        }
+        )}
       </Button>
     );
 }

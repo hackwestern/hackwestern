@@ -47,9 +47,7 @@ export default function TextField({
     return (
       <>
         {submit ? (
-          <div
-            className={`flex w-max`}
-          >
+          <div className={`flex w-max`}>
             <Input
               variant="default"
               value={value}
@@ -67,11 +65,7 @@ export default function TextField({
             </PrimaryButton>
           </div>
         ) : (
-          <Input
-            variant="default"
-            placeholder={children}
-            className="w-max"
-          />
+          <Input variant="default" placeholder={children} className="w-max" />
         )}
       </>
     );

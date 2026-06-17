@@ -4,7 +4,7 @@ export interface ButtonProps {
   disabled?: boolean;
   isLoading?: boolean;
   onClick?: () => void;
-  size?: "sm" |"lg";
+  size?: "sm" | "lg";
   direction?: "left" | "right";
   className?: string;
 }

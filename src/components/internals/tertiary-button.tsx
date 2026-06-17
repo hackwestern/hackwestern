@@ -22,24 +22,18 @@ export default function TertiaryButton({
   return (
     <Button
       variant="tertiary"
-      className={`py-1 px-0 ${className}`}
+      className={`px-0 py-1 ${className}`}
       isPending={disabled || isLoading}
       onClick={onClick}
     >
-      {direction == "left" && 
-        <Arrow 
-          margin="mr-[10px]"
-          direction={direction}
-        />
-      }
+      {direction == "left" && (
+        <Arrow margin="mr-[10px]" direction={direction} />
+      )}
       <div>{children}</div>
 
-      {direction == "right" && 
-        <Arrow 
-          margin="ml-[10px]"
-          direction={direction}
-        />
-      }
+      {direction == "right" && (
+        <Arrow margin="ml-[10px]" direction={direction} />
+      )}
       {/* <Spinner isLoading={isLoading}></Spinner> */}
     </Button>
   );
