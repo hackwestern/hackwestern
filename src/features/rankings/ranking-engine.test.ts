@@ -79,8 +79,14 @@ describe("applyAdjustments", () => {
 describe("calculateWeightedScore", () => {
   test("weights the base dimensions when there are no adjustments", () => {
     const score = calculateWeightedScore(
-      makeApplicant({ avgOriginality: 10, avgTechnicality: 20, avgPassion: 30 }),
-      makeScenario({ weights: { originality: 1, technicality: 2, passion: 1 } }),
+      makeApplicant({
+        avgOriginality: 10,
+        avgTechnicality: 20,
+        avgPassion: 30,
+      }),
+      makeScenario({
+        weights: { originality: 1, technicality: 2, passion: 1 },
+      }),
     );
     // 10*1 + 20*2 + 30*1 = 80
     expect(score).toBe(80);
