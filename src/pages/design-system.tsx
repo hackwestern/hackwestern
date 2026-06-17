@@ -162,7 +162,7 @@ function DesignSystem() {
         </div>
         
         <div>
-          <div className="p3">Text field</div>
+          <div className="p1">Text field</div>
           <div className="flex flex-col gap-4">
             <TextField onSubmit={handleTextSubmit}>Normal Input</TextField>
             <TextField submit onSubmit={handleTextSubmit}>

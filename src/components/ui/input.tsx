@@ -24,6 +24,7 @@ const inputVariants = cva(
           `hover:shadow-[inset_1px_1px_0px_0px_rgba(5,6,8,0.4),inset_-1px_-1px_0px_0px_rgba(255,255,255,0.2),inset_2px_2px_0px_0px_rgba(137,139,143,0.4),inset_-2px_-2px_0px_0px_rgba(222,223,225,0.4)]`,
           `hover:placeholder:text-gray-2`,
           `focus:shadow-[inset_1px_1px_0px_0px_rgba(5,6,8,1),inset_-1px_-1px_0px_0px_rgba(0,0,0,1),inset_2px_2px_0px_0px_rgba(137,139,143,0.5),inset_-2px_-2px_0px_0px_rgba(222,223,225,0.5)]`,
+          `focus:placeholder:opacity-0`,
         ),
         // primary: "rounded-md bg-faint-lilac px-3 py-2 text-heavy border-muted",
         // noRing:
