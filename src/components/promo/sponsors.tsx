@@ -98,11 +98,11 @@ function Sponsors() {
           <div className="-mb-24 inline-flex w-[794px] flex-col items-center justify-start gap-4 px-4">
             {/* Our Sponsors Text Section */}
             <div className="inline-flex w-[794px] max-w-[794px] scale-[0.7] flex-col items-center justify-start gap-4 px-4 pb-0">
-              <div className="h-5 justify-start self-stretch text-center font-jetbrains-mono text-base font-medium uppercase text-medium">
+              <div className="font-jetbrains-mono h-5 justify-start self-stretch text-center text-base font-medium uppercase text-medium">
                 Our sponsors
               </div>
               <div className="flex flex-col items-start justify-start gap-3 self-stretch">
-                <div className="justify-start self-stretch text-center font-dico text-[24px] font-medium text-heavy">
+                <div className="font-dico justify-start self-stretch text-center text-[24px] font-medium text-heavy">
                   Our sponsors make Hack Western possible.
                 </div>
                 <div className="justify-start self-stretch text-center font-figtree text-[16px] font-medium text-medium">
@@ -129,7 +129,7 @@ function Sponsors() {
                   />
                   <div className="absolute inset-0 left-1/2 top-1/2 flex h-[418px] w-[450px] -translate-x-1/2 -translate-y-1/2 rotate-[7.647deg] flex-col items-center justify-center gap-[29px] px-10">
                     <div className="space-y-2">
-                      <div className="w-[350px] text-center font-jetbrains-mono text-xl font-medium uppercase tracking-tighter text-[#3C204C]">
+                      <div className="font-jetbrains-mono w-[350px] text-center text-xl font-medium uppercase tracking-tighter text-[#3C204C]">
                         <span className="inline-block break-words">
                           SPONSOR A WEEKEND OF
                           <br />
