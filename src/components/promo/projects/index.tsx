@@ -17,10 +17,10 @@ function Projects() {
         <HeaderCards />
         <div className="mb-[100px] flex h-[111px] w-full shrink-0 items-center justify-center">
           <div className="inline-flex w-full shrink-0 flex-col items-center justify-center">
-            <div className="mb-[24px] justify-start self-stretch text-center font-jetbrains-mono text-base font-medium uppercase text-zinc-500">
+            <div className="font-jetbrains-mono mb-[24px] justify-start self-stretch text-center text-base font-medium uppercase text-zinc-500">
               past projects
             </div>
-            <div className="justify-start self-stretch text-center font-dico text-3xl font-medium text-indigo-950">
+            <div className="font-dico justify-start self-stretch text-center text-3xl font-medium text-indigo-950">
               The world is waiting for your creation.
             </div>
             <div className="justify-start self-stretch text-center font-figtree text-base font-medium text-zinc-500">

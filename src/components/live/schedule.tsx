@@ -20,7 +20,7 @@ const Schedule = () => {
   if (loading) {
     return (
       <div className="mb-4 flex h-fit w-full flex-col gap-2 px-3 py-4 sm:mb-8 sm:p-10">
-        <div className="text-center font-jetbrains-mono text-sm text-medium sm:text-lg">
+        <div className="font-jetbrains-mono text-center text-sm text-medium sm:text-lg">
           LOADING SCHEDULE...
         </div>
       </div>

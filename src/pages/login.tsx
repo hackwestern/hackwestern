@@ -54,7 +54,7 @@ export default function Login() {
       <div className="m-auto flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
         <CanvasBackground />
         <div className="z-10 mx-4 flex-col items-center rounded-lg bg-background p-8 text-sm shadow-md sm:w-xl sm:p-12 md:w-2xl md:text-base">
-          <h2 className="mb-4 self-start font-dico text-[30px] text-heavy md:text-[34px]">
+          <h2 className="font-dico mb-4 self-start text-[30px] text-heavy md:text-[34px]">
             Sign into your account
           </h2>
           <form onSubmit={handleSubmit}>

@@ -132,7 +132,7 @@ const Review = () => {
                   </ul>
                 </div>
                 {reviewCount && (
-                  <div className="mx-auto w-1/3 text-center font-jetbrains-mono">
+                  <div className="font-jetbrains-mono mx-auto w-1/3 text-center">
                     <h1 className="text-sm font-semibold">Leaderboard</h1>
                     <ul className="w-full text-left text-sm">
                       <li>
