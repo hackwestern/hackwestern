@@ -41,14 +41,14 @@ export const buttonVariants = cva(buttonBase, {
       ),
       tertiary: "bg-transparent text-medium px-4 active:text-heavy hover:text-blue-4",
 
-      // destructive:
-      //   "bg-destructive text-destructive-foreground hover:bg-destructive-dark",
-      // outline: "bg-violet-100 hover:bg-muted border border-[1px] border-muted",
-      // ghost: "hover:bg-accent hover:text-accent-foreground",
-      // link: "text-primary underline-offset-4 hover:underline",
-      // "apply-ghost":
-      //   "bg-[#ebdff7] bg-opacity-50 text-heavy font-semibold hover:bg-[#e6cdff] w-full justify-start",
-      // apply: "text-medium hover:bg-[#ebdff7] hover:text-heavy",
+      destructive:
+        "bg-destructive text-destructive-foreground hover:bg-destructive-dark",
+      outline: "bg-violet-100 hover:bg-muted border border-[1px] border-muted",
+      ghost: "hover:bg-accent hover:text-accent-foreground",
+      link: "text-primary underline-offset-4 hover:underline",
+      "apply-ghost":
+        "bg-[#ebdff7] bg-opacity-50 text-heavy font-semibold hover:bg-[#e6cdff] w-full justify-start",
+      apply: "text-medium hover:bg-[#ebdff7] hover:text-heavy",
     },
     size: {
       // default: "h-10 px-4 py-2",
