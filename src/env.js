@@ -46,6 +46,9 @@ export const env = createEnv({
     R2_PUBLIC_BASE_URL: z.string().url(),
     // Google Sheets API key for fetching schedule data
     GOOGLE_SHEETS_API_KEY: z.string().optional(),
+    // Private ranking score adjustments (JSON). Kept out of source so the
+    // weighted fields/values are never committed. Absent = neutral.
+    RANKING_ADJUSTMENTS: z.string().optional(),
   },
 
   /**
@@ -86,6 +89,7 @@ export const env = createEnv({
     R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
     R2_PUBLIC_BASE_URL: process.env.R2_PUBLIC_BASE_URL,
     GOOGLE_SHEETS_API_KEY: process.env.GOOGLE_SHEETS_API_KEY,
+    RANKING_ADJUSTMENTS: process.env.RANKING_ADJUSTMENTS,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
