@@ -39,7 +39,7 @@ const inputVariants = cva(
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, variant, type, ...props }, ref) => {
     return (
-       <div className="drop-shadow-[2px_2px_2px_rgba(0,0,0,0.12)]">
+      <div className="drop-shadow-[2px_2px_2px_rgba(0,0,0,0.12)]">
         <input
           type={type}
           className={cn(inputVariants({ variant, className }))}
@@ -51,9 +51,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   },
 );
 
-
 Input.displayName = "Input";
 
 export { Input };
-
-

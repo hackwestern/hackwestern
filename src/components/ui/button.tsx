@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "~/lib/utils";
-import * as tokens from "~/lib/tokens"
+import * as tokens from "~/lib/tokens";
 
 type TypographyVariant = "primary" | "secondary" | "tertiary";
 type TypographySize = "sm" | "lg";
@@ -15,17 +15,20 @@ const buttonBase =
 const lift =
   "-translate-y-[3px] group-hover:-translate-y-[4px] group-active:-translate-y-[1px] transition-all duration-100";
 
-const typography:Record<TypographyVariant,Record<TypographySize,string>> = {
+const typography: Record<TypographyVariant, Record<TypographySize, string>> = {
   primary: {
-    "sm": "button-sm",
-    "lg": "button-lg"},
+    sm: "button-sm",
+    lg: "button-lg",
+  },
   secondary: {
-    "sm": "p3",
-    "lg": "p2"},
+    sm: "p3",
+    lg: "p2",
+  },
   tertiary: {
-    "sm": "p2",
-    "lg":  "p2"}
-} as const
+    sm: "p2",
+    lg: "p2",
+  },
+} as const;
 
 export const buttonVariants = cva(buttonBase, {
   variants: {
@@ -39,7 +42,8 @@ export const buttonVariants = cva(buttonBase, {
         "rounded-full bg-offwhite border border-bg-highlight shadow-button-secondary hover:bg-blue-1 hover:border-blue-1 active:bg-light active:border-light text-medium",
         lift,
       ),
-      tertiary: "bg-transparent text-medium px-4 active:text-heavy hover:text-blue-4",
+      tertiary:
+        "bg-transparent text-medium px-4 active:text-heavy hover:text-blue-4",
 
       // destructive:
       //   "bg-destructive text-destructive-foreground hover:bg-destructive-dark",
@@ -70,8 +74,7 @@ export interface ButtonProps
 }
 
 const pressedByVariant: Record<"primary" | "secondary", string> = {
-  primary:
-    "!-translate-y-[1px] shadow-button-primary-active",
+  primary: "!-translate-y-[1px] shadow-button-primary-active",
   secondary:
     "!-translate-y-[1px] shadow-button-secondary bg-button-secondary-active hover:!bg-button-secondary-active",
 };
@@ -113,11 +116,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     return (
       <div className={wrapperClasses}>
-
         <Comp
           ref={ref}
           {...props}
-          className={cn("flex items-end",typography[variant as TypographyVariant][size as TypographySize], btnClasses)}
+          className={cn(
+            "flex items-end",
+            typography[variant as TypographyVariant][size as TypographySize],
+            btnClasses,
+          )}
           disabled={disabled ?? isPending}
         >
           {children}
