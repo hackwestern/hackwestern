@@ -12,6 +12,7 @@ export default function TertiaryButton({
   isLoading = false,
   onClick,
   direction,
+  className,
 }: ButtonProps) {
   if (isSkeleton)
     return (
@@ -21,7 +22,7 @@ export default function TertiaryButton({
   return (
     <Button
       variant="tertiary"
-      className="py-1 px-0"
+      className={`py-1 px-0 ${className}`}
       isPending={disabled || isLoading}
       onClick={onClick}
     >

@@ -6,4 +6,5 @@ export interface ButtonProps {
   onClick?: () => void;
   size?: "sm" |"lg";
   direction?: "left" | "right";
+  className?: string;
 }

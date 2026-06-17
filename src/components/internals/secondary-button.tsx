@@ -14,6 +14,7 @@ export default function SecondaryButton({
   size="lg",
   direction,
   onClick,
+  className,
 }: ButtonProps) {
   if (isSkeleton)
     return (
@@ -25,7 +26,7 @@ export default function SecondaryButton({
     return (
       <Button
         variant="secondary"
-        className={size=="sm" ? "py-[7px] px-[12px]":"py-[12px] px-[18px]"}
+        className={`${size=="sm" ? "py-[7px] px-[12px]":"py-[12px] px-[18px]"}${className}`}
         isPending={disabled || isLoading}
         onClick={onClick}
         size={size}
