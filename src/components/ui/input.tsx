@@ -26,11 +26,11 @@ const inputVariants = cva(
           `focus:shadow-[inset_1px_1px_0px_0px_rgba(5,6,8,1),inset_-1px_-1px_0px_0px_rgba(0,0,0,1),inset_2px_2px_0px_0px_rgba(137,139,143,0.5),inset_-2px_-2px_0px_0px_rgba(222,223,225,0.5)]`,
           `focus:placeholder:opacity-0`,
         ),
-        // primary: "rounded-md bg-faint-lilac px-3 py-2 text-heavy border-muted",
-        // noRing:
-        //   "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
-        // invalid:
-        //   "rounded-md bg-[#f6f3f9] px-3 py-2 text-heavy outline outline-1 outline-[#f76b7c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f76b7c] focus-visible:ring-offset-2",
+        primary: "rounded-md bg-faint-lilac px-3 py-2 text-heavy border-muted",
+        noRing:
+          "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
+        invalid:
+          "rounded-md bg-[#f6f3f9] px-3 py-2 text-heavy outline outline-1 outline-[#f76b7c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f76b7c] focus-visible:ring-offset-2",
       },
     },
   },
