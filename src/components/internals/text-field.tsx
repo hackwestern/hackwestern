@@ -59,7 +59,6 @@ export default function TextField({
               disabled={isLoading}
             />
             <PrimaryButton
-              textField
               onClick={handleSubmit}
               disabled={isLoading}
               isLoading={isLoading}

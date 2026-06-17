@@ -78,7 +78,7 @@ function DesignSystem() {
       <h1 className="h2">Components</h1>
 
       <div className="mb-4 flex gap-4">
-        <PrimaryButton onClick={handleClick} isLoading={isLoading}>
+        <PrimaryButton onClick={handleClick} isLoading={isLoading} size="lg">
           Trigger Global Loading (5s)
         </PrimaryButton>
       </div>

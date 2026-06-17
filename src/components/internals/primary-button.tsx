@@ -3,30 +3,18 @@ import { Button } from "~/components/ui/button";
 import Arrow from "./arrow";
 import { Skeleton } from "../ui/skeleton";
 import { Spinner } from "../loading-spinner";
+import { ButtonProps } from "./buttonProps";
 
-interface PrimaryButtonProps {
-  children: React.ReactNode;
-  arrow?: boolean;
-  textField?: boolean;
-  isSkeleton?: boolean;
-  disabled?: boolean;
-  isLoading?: boolean;
-  onClick?: () => void;
-  size?: "sm" |"lg";
-  direction?: "left" | "right";
-}
 
 export default function PrimaryButton({
   children,
-  arrow = false,
-  textField = false,
   isSkeleton = false,
   disabled = false,
   isLoading = false,
-  size,
+  size="lg",
   direction,
   onClick,
-}: PrimaryButtonProps) {
+}: ButtonProps) {
   if (isSkeleton)
     return (
       <Skeleton className="h-10 w-max shrink-0 px-4 py-2 text-transparent">
