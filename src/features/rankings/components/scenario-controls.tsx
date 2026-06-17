@@ -181,30 +181,6 @@ export function ScenarioControls({
       </section>
 
       <section className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm backdrop-blur">
-        <h3 className="font-semibold text-[#3b294f]">Gender Multiplier</h3>
-        <div className="mt-4 space-y-2">
-          <div className="flex items-center justify-between text-sm text-gray-700">
-            <span>Bias control</span>
-            <span className="font-bold text-pink-600">
-              {draftScenario.weights.gender.toFixed(2)}x
-            </span>
-          </div>
-          <Slider
-            value={[draftScenario.weights.gender]}
-            onValueChange={(value) => setWeight("gender", value)}
-            min={0}
-            max={2}
-            step={0.01}
-          />
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>Favor Women</span>
-            <span>No Bias</span>
-            <span>Favor Men</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm backdrop-blur">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-[#3b294f]">School Quotas</h3>
           <span className="text-xs text-gray-500">0 = unlimited</span>
