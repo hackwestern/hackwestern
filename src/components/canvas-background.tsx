@@ -13,7 +13,7 @@ const CanvasBackground = () => {
 function Gradient() {
   return (
     <div
-      className="absolute inset-0 h-full min-h-screen w-full bg-hw-radial-gradient opacity-100 md:h-full"
+      className="bg-hw-radial-gradient absolute inset-0 h-full min-h-screen w-full opacity-100 md:h-full"
       style={{
         backgroundImage: gradientBgImage,
       }}
