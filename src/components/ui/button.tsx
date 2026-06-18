@@ -36,15 +36,16 @@ export const buttonVariants = cva(buttonBase, {
       // default: "",
       primary: cn(
         "bg-gray-2 shadow-button-primary hover:bg-[#CBCBCB] active:bg-gray-2 active:shadow-button-primary-active items-end hover:cursor-pixel-hover",
-        lift,
       ),
       secondary: cn(
         "rounded-full bg-offwhite border border-highlight shadow-button-secondary hover:bg-blue-1 hover:border-blue-1 active:bg-light active:border-light text-medium",
-        lift,
       ),
       tertiary:
         "bg-transparent text-medium px-4 active:text-heavy hover:text-blue-4",
 
+      icon: cn(
+        "bg-gray-2 shadow-button-icon hover:bg-[#CBCBCB]"
+      ),
       destructive:
         "bg-destructive text-destructive-foreground hover:bg-destructive-dark",
       outline: "bg-violet-100 hover:bg-muted border border-[1px] border-muted",
@@ -58,7 +59,7 @@ export const buttonVariants = cva(buttonBase, {
       default: "h-10 px-4 py-2",
       sm: "px-[12px] py-[7px]",
       lg: "px-[18px] py-[12px]",
-      icon: "h-10 w-10",
+      icon: "h-[14px] w-[16px]",
     },
   },
   defaultVariants: { variant: "primary", size: "lg" },
@@ -74,9 +75,9 @@ export interface ButtonProps
 }
 
 const pressedByVariant: Record<"primary" | "secondary", string> = {
-  primary: "!-translate-y-[1px] shadow-button-primary-active",
+  primary: "shadow-button-primary-active",
   secondary:
-    "!-translate-y-[1px] shadow-button-secondary bg-button-secondary-active hover:!bg-button-secondary-active",
+    "shadow-button-secondary bg-button-secondary-active hover:!bg-button-secondary-active",
 };
 
 const noLift =
