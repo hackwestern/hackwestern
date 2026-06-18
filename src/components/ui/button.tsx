@@ -39,7 +39,7 @@ export const buttonVariants = cva(buttonBase, {
         lift,
       ),
       secondary: cn(
-        "rounded-full bg-offwhite border border-bg-highlight shadow-button-secondary hover:bg-blue-1 hover:border-blue-1 active:bg-light active:border-light text-medium",
+        "rounded-full bg-offwhite border border-highlight shadow-button-secondary hover:bg-blue-1 hover:border-blue-1 active:bg-light active:border-light text-medium",
         lift,
       ),
       tertiary:

@@ -25,7 +25,7 @@ export default function SecondaryButton({
     return (
       <Button
         variant="secondary"
-        className={`${size == "sm" ? "px-[12px] py-[7px]" : "px-[18px] py-[12px]"}${className}`}
+        className={`${size == "sm" ? "px-[12px] py-[7px]" : "px-[18px] py-[12px]"} ${className}`}
         isPending={disabled || isLoading}
         onClick={onClick}
         size={size}
