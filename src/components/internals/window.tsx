@@ -59,7 +59,7 @@ export function Window({
   return (
     <div
       className={cn(
-        "relative overflow-clip shadow-[1px_1px_2px_0px_rgba(0,0,0,0.24),4px_4px_10px_0px_rgba(0,0,0,0.12)] transition-[height] duration-150",
+        "relative overflow-clip shadow-[1px_1px_2px_0px_rgba(0,0,0,0.24),4px_4px_10px_0px_rgba(0,0,0,0.12)] transition-[height] duration-150 bg-gray-2",
         className,
       )}
       style={{ width, height: minimized ? TITLE_BAR_HEIGHT : height }}
