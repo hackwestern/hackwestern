@@ -58,7 +58,7 @@ function HeaderCards() {
               animate={!notHigh ? { height: 230 } : {}}
             >
               <Image
-                src={`/projects/${folders[i]}/${name.image}`}
+                src={`/landing/projects/${folders[i]}/${name.image}`}
                 alt={cleanName ?? "project image"}
                 fill
                 style={{ objectFit: "cover" }}
@@ -67,7 +67,7 @@ function HeaderCards() {
               />
             </motion.div>
             <motion.span
-              className="mt-[10px] w-full text-center font-jetbrains-mono text-[16px] font-medium uppercase text-[color:var(--text-medium,#776780)]"
+              className="font-jetbrains-mono mt-[10px] w-full text-center text-[16px] font-medium uppercase text-[color:var(--text-medium,#776780)]"
               variants={{
                 hover: {
                   y: -5,

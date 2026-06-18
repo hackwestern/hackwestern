@@ -60,6 +60,7 @@ export default function TextField({
               textField
               onClick={handleSubmit}
               disabled={isLoading}
+              isLoading={isLoading}
             >
               Submit
             </PrimaryButton>
@@ -67,7 +68,7 @@ export default function TextField({
         ) : (
           <Input
             placeholder={children}
-            className={`w-max rounded-lg border px-6 ${secondary ? "bg-highlight" : "w-max border-none border-white bg-white/50"}`}
+            className={`w-max rounded-lg border px-6 ${secondary ? "bg-highlight" : "border-none border-white bg-white/50"}`}
           />
         )}
       </>

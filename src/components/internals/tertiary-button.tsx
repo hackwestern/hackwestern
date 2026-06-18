@@ -21,20 +21,18 @@ export default function TertiaryButton({
 }: TertiaryButtonProps) {
   if (isSkeleton)
     return (
-      <Skeleton className="h-30 w-max text-transparent">
-        Tertiary Button
-      </Skeleton>
+      <Skeleton className="h-max w-max text-transparent">{children}</Skeleton>
     );
 
   return (
     <Button
       variant={arrow ? "tertiary-arrow" : "tertiary"}
       className="h-max p-0"
-      isPending={disabled}
+      isPending={disabled || isLoading}
       onClick={onClick}
     >
-      <Spinner isLoading={isLoading}></Spinner>
       <div>{children}</div>
+      <Spinner isLoading={isLoading}></Spinner>
     </Button>
   );
 }

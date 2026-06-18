@@ -87,7 +87,7 @@ export default function ResetRequest() {
                   type="password"
                   autoComplete="new-password"
                   placeholder="enter your new password"
-                  className="mb-4 h-[60px] bg-highlight font-jetbrains-mono text-medium"
+                  className="font-jetbrains-mono mb-4 h-[60px] bg-highlight text-medium"
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <h2 className=" mb-1 mt-4 text-sm">Confirm Password</h2>
@@ -95,7 +95,7 @@ export default function ResetRequest() {
                   type="password"
                   autoComplete="new-password"
                   placeholder="confirm your new password"
-                  className="mb-4 h-[60px] bg-highlight font-jetbrains-mono text-medium"
+                  className="font-jetbrains-mono mb-4 h-[60px] bg-highlight text-medium"
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
                 <Button variant="primary" className="w-full" type="submit" full>

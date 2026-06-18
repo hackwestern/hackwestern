@@ -94,7 +94,7 @@ export const CanvasWrapper = ({
       {stage1NotFinished && (
         <div className="absolute left-1/2 top-64 z-0 grid -translate-x-1/2 -translate-y-[200px] place-items-center text-center">
           <Image
-            src="/horse.svg"
+            src="/shared/horse.svg"
             alt="Hack Western Logo"
             width={64}
             height={64}
@@ -159,7 +159,7 @@ export const CanvasWrapper = ({
         </>
       )}
       {stage1NotFinished && (
-        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 text-center font-jetbrains-mono font-semibold text-[#543C5AB2]">
+        <div className="font-jetbrains-mono absolute bottom-32 left-1/2 -translate-x-1/2 text-center font-semibold text-[#543C5AB2]">
           LOADING CANVAS{dots}
         </div>
       )}

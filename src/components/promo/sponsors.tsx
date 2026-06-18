@@ -53,7 +53,7 @@ export function MacBook({ rotate }: { rotate: string }) {
     >
       <div className="absolute left-[386.49px] top-[239.58px] h-[144px] w-[96px]">
         <motion.img
-          src="/hackwesternmaclogo.svg"
+          src="/landing/hackwesternmaclogo.svg"
           alt="hackwestern"
           width={95.541}
           height={144.834}
@@ -91,18 +91,18 @@ function Sponsors() {
   return (
     <CanvasComponent
       offset={coordinates.sponsors}
-      imageFallback="/images/promo/sponsors.png"
+      imageFallback="/landing/promo/sponsors.png"
     >
       <div className="mt-16 flex flex-col items-center justify-center space-y-4">
         <div className="flex origin-center scale-150 flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out">
           <div className="-mb-24 inline-flex w-[794px] flex-col items-center justify-start gap-4 px-4">
             {/* Our Sponsors Text Section */}
             <div className="inline-flex w-[794px] max-w-[794px] scale-[0.7] flex-col items-center justify-start gap-4 px-4 pb-0">
-              <div className="h-5 justify-start self-stretch text-center font-jetbrains-mono text-base font-medium uppercase text-medium">
+              <div className="font-jetbrains-mono h-5 justify-start self-stretch text-center text-base font-medium uppercase text-medium">
                 Our sponsors
               </div>
               <div className="flex flex-col items-start justify-start gap-3 self-stretch">
-                <div className="justify-start self-stretch text-center font-dico text-[24px] font-medium text-heavy">
+                <div className="font-dico justify-start self-stretch text-center text-[24px] font-medium text-heavy">
                   Our sponsors make Hack Western possible.
                 </div>
                 <div className="justify-start self-stretch text-center font-figtree text-[16px] font-medium text-medium">
@@ -121,7 +121,7 @@ function Sponsors() {
               <div className="mt-10 flex h-[380px] w-[400px] origin-top-left scale-90 flex-col items-center">
                 <div className="relative h-[418px] w-[440px] scale-[1.1]">
                   <motion.img
-                    src="/notepad.svg"
+                    src="/landing/notepad.svg"
                     alt="notepad"
                     width={440}
                     height={418}
@@ -129,7 +129,7 @@ function Sponsors() {
                   />
                   <div className="absolute inset-0 left-1/2 top-1/2 flex h-[418px] w-[450px] -translate-x-1/2 -translate-y-1/2 rotate-[7.647deg] flex-col items-center justify-center gap-[29px] px-10">
                     <div className="space-y-2">
-                      <div className="w-[350px] text-center font-jetbrains-mono text-xl font-medium uppercase tracking-tighter text-[#3C204C]">
+                      <div className="font-jetbrains-mono w-[350px] text-center text-xl font-medium uppercase tracking-tighter text-[#3C204C]">
                         <span className="inline-block break-words">
                           SPONSOR A WEEKEND OF
                           <br />

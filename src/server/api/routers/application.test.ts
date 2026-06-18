@@ -46,6 +46,7 @@ describe("application.get", async () => {
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
     const want = {
       ...application,
+      dietaryRestrictionsOther: application.dietaryRestrictionsOther ?? null,
       devpostLink: application?.devpostLink?.substring(DEVPOST_URL.length),
       githubLink: application?.githubLink?.substring(GITHUB_URL.length),
       linkedInLink: application?.linkedInLink?.substring(LINKEDIN_URL.length),
@@ -79,6 +80,7 @@ describe("application.getById", async () => {
     const getByIdSession = await mockSession(db);
     const userId = getByIdSession.user.id;
     const application = createRandomApplication(getByIdSession);
+
     await db.insert(applications).values(application);
 
     const getByIdOrganizerSession = await mockOrganizerSession(db);
@@ -90,11 +92,14 @@ describe("application.getById", async () => {
     const result = await getByIdOrganizerCaller.application.getById({
       applicantId: userId,
     });
+
     assert(!!result);
 
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
     const want = {
       ...application,
+      dietaryRestrictionsOther: application.dietaryRestrictionsOther ?? null,
+
       githubLink: application?.githubLink,
       linkedInLink: application?.linkedInLink,
       canvasData: {
@@ -180,6 +185,8 @@ describe.sequential("application.save", async () => {
     const application = createRandomSaveInput(session);
     const want = {
       ...application,
+      dietaryRestrictionsOther: application.dietaryRestrictionsOther ?? null,
+
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -199,11 +206,22 @@ describe.sequential("application.save", async () => {
   test("updates the application when it does exist", async () => {
     const application = createRandomSaveInput(session);
 
+    // forcing the dietary update
+    application.dietaryRestrictions = "Other";
+    application.dietaryRestrictionsOther = "Other Res";
+
     await caller.application.save(application);
     const updatedApplication = createRandomSaveInput(session);
 
+    // forcing the dietary update
+    updatedApplication.dietaryRestrictions = "Kosher";
+    updatedApplication.dietaryRestrictionsOther = null;
+
     const want = {
       ...updatedApplication,
+      dietaryRestrictionsOther:
+        updatedApplication.dietaryRestrictionsOther ?? null,
+
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -226,6 +244,9 @@ describe.sequential("application.save", async () => {
 
     const want = {
       ...completeApplication,
+      dietaryRestrictionsOther:
+        completeApplication.dietaryRestrictionsOther ?? null,
+
       status: "PENDING_REVIEW",
       canvasData: {
         paths: [],
@@ -291,6 +312,8 @@ function createRandomSaveInput(session: Session) {
     userId,
     firstName,
     lastName,
+    // save() strips status from input and DB defaults it to IN_PROGRESS
+    status: "IN_PROGRESS" as const,
     // save() prepends the URL prefixes, so pass raw usernames
   };
 }

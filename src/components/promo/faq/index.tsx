@@ -7,7 +7,7 @@ function FAQ() {
   return (
     <CanvasComponent
       offset={coordinates.faq}
-      imageFallback="/images/promo/faq.png"
+      imageFallback="/landing/promo/faq.png"
     >
       <div className="flex items-center justify-center pb-8 sm:pb-0 sm:pt-4">
         <div className="mx-auto flex grid grid-flow-col grid-rows-3 gap-x-8 gap-y-4">
@@ -50,7 +50,7 @@ function FAQ() {
             <div className="font-jetbrainsmono -mt-4 mb-6 text-lg text-medium">
               FAQ
             </div>
-            <h2 className="mb-4 text-center font-dico text-2xl font-medium ">
+            <h2 className="font-dico mb-4 text-center text-2xl font-medium ">
               Frequently Asked Questions
             </h2>
             <div className="w-1/2 text-center font-figtree text-sm text-medium">

@@ -32,7 +32,7 @@ export default function SecondaryButton({
       <Button
         variant="secondary"
         className={arrow ? "flex justify-around px-6 py-4" : "px-8 py-4"}
-        isPending={disabled}
+        isPending={disabled || isLoading}
         onClick={onClick}
       >
         <Spinner isLoading={isLoading}></Spinner>

@@ -27,14 +27,14 @@ export default function CharacterIcon() {
     <Popover>
       <PopoverTrigger asChild>
         <button
-          className="hover:ring-heavy/70 relative h-8 w-8 overflow-hidden rounded-full p-2 transition-all hover:ring-2 lg:h-10 lg:w-10"
+          className="relative h-8 w-8 overflow-hidden rounded-full p-2 transition-all hover:ring-2 hover:ring-heavy/70 lg:h-10 lg:w-10"
           style={{
             background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
           }}
         >
           {applicationData?.avatarColour ? (
             <Image
-              src={`/avatar/body/${bodyColor}.webp`}
+              src={`/apply/avatar/body/${bodyColor}.webp`}
               alt="Character"
               width={32}
               height={32}
