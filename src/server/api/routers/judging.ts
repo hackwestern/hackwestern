@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import {
   createTRPCRouter,
@@ -26,6 +26,29 @@ import {
 const STALE_ASSIGNMENT_MINUTES = 15;
 
 type QueueRow = typeof judgingQueue.$inferSelect;
+
+/**
+ * Wrap a procedure body so any unexpected error becomes a clean
+ * INTERNAL_SERVER_ERROR, while business-rule `TRPCError`s thrown by the
+ * helpers (CONFLICT, NOT_FOUND, ...) pass through with their original code.
+ * Mirrors the helper in `scavenger-hunt.ts`.
+ */
+const withErrorHandling = async <T>(
+  fn: () => Promise<T>,
+  errorMessage: string,
+): Promise<T> => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (error instanceof TRPCError) {
+      throw error;
+    }
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: `${errorMessage}: ${error instanceof Error ? error.message : JSON.stringify(error)}`,
+    });
+  }
+};
 
 function extractRows<T>(result: unknown): T[] {
   return Array.isArray(result)
@@ -139,7 +162,10 @@ async function submitMark(
       where: eq(judgingQueue.teamId, teamId),
     });
     if (!row || row.currentJudgeId !== judgeId) {
-      throw new Error("You are not currently assigned to this team.");
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "You are not currently assigned to this team.",
+      });
     }
     await tx.insert(teamMarks).values({ teamId, judgeId, score, roundType });
   });
@@ -156,7 +182,10 @@ async function editMark(
     .where(and(eq(teamMarks.id, teamMarkId), eq(teamMarks.judgeId, judgeId)))
     .returning({ id: teamMarks.id });
   if (updated.length === 0) {
-    throw new Error("Mark not found or not yours to edit.");
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Mark not found or not yours to edit.",
+    });
   }
 }
 
@@ -167,7 +196,7 @@ async function deleteMark(teamMarkId: number): Promise<void> {
     .where(eq(teamMarks.id, teamMarkId))
     .returning({ id: teamMarks.id });
   if (deleted.length === 0) {
-    throw new Error("Mark not found.");
+    throw new TRPCError({ code: "NOT_FOUND", message: "Mark not found." });
   }
 }
 
@@ -183,7 +212,10 @@ async function skipCurrent(judgeId: string): Promise<string> {
       where: eq(judgingQueue.currentJudgeId, judgeId),
     });
     if (!held) {
-      throw new Error("You have no team assigned to skip.");
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "You have no team assigned to skip.",
+      });
     }
     await tx
       .insert(judgingSkips)
@@ -208,16 +240,22 @@ async function forceAssign(judgeId: string, teamId: string): Promise<void> {
     const judge = await tx.query.judges.findFirst({
       where: eq(judges.id, judgeId),
     });
-    if (!judge) throw new Error(`Judge ${judgeId} not found.`);
+    if (!judge) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: `Judge ${judgeId} not found.`,
+      });
+    }
 
     // Lock the target queue row; refuse if the team isn't queued.
     const lock = await tx.execute(
       sql`SELECT team_id FROM judging_queue WHERE team_id = ${teamId} FOR UPDATE`,
     );
     if (extractRows(lock).length === 0) {
-      throw new Error(
-        `Team ${teamId} is not in the judging queue — load it first.`,
-      );
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: `Team ${teamId} is not in the judging queue — load it first.`,
+      });
     }
 
     // Release this judge's previous hold, if any.
@@ -239,23 +277,31 @@ async function forceAssign(judgeId: string, teamId: string): Promise<void> {
 }
 
 /**
- * === TRANSACTION ===
  * Load every submitted team into the queue with `roundsPerTeam` required
- * rounds. Skips teams already queued. Returns the number of teams added.
+ * rounds. Skips teams already queued (ON CONFLICT DO NOTHING). Returns the
+ * number of teams actually added.
  */
 async function loadQueue(roundsPerTeam: number): Promise<number> {
-  return db.transaction(async (tx) => {
-    const result = await tx.execute(sql`
-      INSERT INTO judging_queue (team_id, rounds_remaining, status)
-      SELECT t.id, ${roundsPerTeam}, 'waiting'
-      FROM team t
-      WHERE t.submission_status IN ('submitted', 'late')
-      ON CONFLICT (team_id) DO NOTHING
-    `);
-    // postgres-js exposes `.count`; PGlite exposes `.affectedRows`.
-    const r = result as { count?: number; affectedRows?: number };
-    return r.count ?? r.affectedRows ?? 0;
-  });
+  const eligible = await db
+    .select({ id: teams.id })
+    .from(teams)
+    .where(inArray(teams.submissionStatus, ["submitted", "late"]));
+  if (eligible.length === 0) return 0;
+
+  // `seenJudges`, `enqueuedAt`, `status`, `currentJudgeId` and `assignedAt`
+  // all fall back to their column defaults. Already-queued teams are skipped
+  // by ON CONFLICT, and `.returning()` yields only the rows actually inserted.
+  const inserted = await db
+    .insert(judgingQueue)
+    .values(
+      eligible.map((t) => ({
+        teamId: t.id,
+        roundsRemaining: roundsPerTeam,
+      })),
+    )
+    .onConflictDoNothing()
+    .returning({ teamId: judgingQueue.teamId });
+  return inserted.length;
 }
 
 /** Clear the entire queue (in-progress holds included). Leaves team_mark
@@ -266,7 +312,9 @@ async function purgeQueue(): Promise<void> {
 
 /**
  * Normalized ranking (regular round only, sponsored judges excluded). For
- * each team: average of (each judge's score − that judge's own mean). Read-only.
+ * each team: the average z-score of its marks — each mark recentered by its
+ * judge's mean and divided by that judge's standard deviation, so a harsh
+ * judge and a generous judge contribute on the same scale. Read-only.
  */
 async function getRanking() {
   const result = await db.execute<{
@@ -275,8 +323,11 @@ async function getRanking() {
     normalized_score: number;
     num_marks: number;
   }>(sql`
-    WITH judge_means AS (
-      SELECT m.judge_id, AVG(m.score) AS mu
+    WITH judge_stats AS (
+      SELECT
+        m.judge_id,
+        AVG(m.score) AS mu,
+        STDDEV_POP(m.score) AS sigma
       FROM team_mark m
       JOIN "judge" j ON j.id = m.judge_id
       WHERE m.round_type = 'regular' AND j.type = 'organizer'
@@ -285,14 +336,14 @@ async function getRanking() {
     SELECT
       m.team_id,
       t.name AS team_name,
-      AVG(m.score - jm.mu) AS normalized_score,
+      AVG((m.score - js.mu) / NULLIF(js.sigma, 0)) AS normalized_score,
       COUNT(*) AS num_marks
     FROM team_mark m
-    JOIN judge_means jm ON jm.judge_id = m.judge_id
+    JOIN judge_stats js ON js.judge_id = m.judge_id
     JOIN team t ON t.id = m.team_id
     WHERE m.round_type = 'regular'
     GROUP BY m.team_id, t.name
-    ORDER BY normalized_score DESC
+    ORDER BY normalized_score DESC NULLS LAST
   `);
   return extractRows<{
     team_id: string;
@@ -348,68 +399,66 @@ export const judgingRouter = createTRPCRouter({
   me: createTRPCRouter({
     /** Assign (or re-return) the next team for this judge. */
     getNextTeam: protectedJudgeProcedure.mutation(async ({ ctx }) => {
-      const team = await pickNextTeam(
-        ctx.session.user.id,
-        ctx.judge.type === "sponsored",
-        ctx.judge.track,
-      );
-      return { team: team ?? null };
+      return withErrorHandling(async () => {
+        const team = await pickNextTeam(
+          ctx.session.user.id,
+          ctx.judge.type === "sponsored",
+          ctx.judge.track,
+        );
+        if (!team) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "No teams are currently available to judge.",
+          });
+        }
+        return { team };
+      }, "Failed to get next team");
     }),
 
     /** This judge's current hold, if any (snapshot read). */
     getCurrentAssignment: protectedJudgeProcedure.query(async ({ ctx }) => {
-      const hold = await getCurrentHold(ctx.session.user.id);
-      return { currentTeamId: hold?.teamId ?? null };
+      return withErrorHandling(async () => {
+        const hold = await getCurrentHold(ctx.session.user.id);
+        return { currentTeamId: hold?.teamId ?? null };
+      }, "Failed to get current assignment");
     }),
 
     submitTeamMark: protectedJudgeProcedure
       .input(submitTeamMarkSchema)
       .mutation(async ({ ctx, input }) => {
-        // Organizer judges score the regular round; sponsored judges score
-        // the sponsored round (excluded from regular-round ranking).
-        const roundType =
-          ctx.judge.type === "sponsored" ? "sponsored" : "regular";
-        try {
+        return withErrorHandling(async () => {
+          // Organizer judges score the regular round; sponsored judges score
+          // the sponsored round (excluded from regular-round ranking).
+          const roundType =
+            ctx.judge.type === "sponsored" ? "sponsored" : "regular";
           await submitMark(
             ctx.session.user.id,
             input.teamId,
             input.score,
             roundType,
           );
-        } catch (error) {
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: (error as Error).message,
-          });
-        }
+        }, "Failed to submit team mark");
       }),
 
     editTeamMark: protectedJudgeProcedure
       .input(editTeamMarkSchema)
       .mutation(async ({ ctx, input }) => {
-        try {
+        return withErrorHandling(async () => {
           await editMark(ctx.session.user.id, input.teamMarkId, input.score);
-        } catch (error) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: (error as Error).message,
-          });
-        }
+        }, "Failed to edit team mark");
       }),
 
     getSubmittedTeamMarks: protectedJudgeProcedure.query(async ({ ctx }) => {
-      return getSubmittedMarks(ctx.session.user.id);
+      return withErrorHandling(
+        () => getSubmittedMarks(ctx.session.user.id),
+        "Failed to get submitted team marks",
+      );
     }),
 
     skipAssignment: protectedJudgeProcedure.mutation(async ({ ctx }) => {
-      try {
+      return withErrorHandling(async () => {
         await skipCurrent(ctx.session.user.id);
-      } catch (error) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: (error as Error).message,
-        });
-      }
+      }, "Failed to skip assignment");
     }),
   }),
 
@@ -417,46 +466,40 @@ export const judgingRouter = createTRPCRouter({
     loadQueue: protectedOrganizerProcedure
       .input(loadQueueSchema)
       .mutation(async ({ input }) => {
-        const added = await loadQueue(input.roundsPerTeam);
-        return { added };
+        return withErrorHandling(async () => {
+          const added = await loadQueue(input.roundsPerTeam);
+          return { added };
+        }, "Failed to load queue");
       }),
 
     purgeQueue: protectedOrganizerProcedure.mutation(async () => {
-      await purgeQueue();
+      return withErrorHandling(async () => {
+        await purgeQueue();
+      }, "Failed to purge queue");
     }),
 
     assignJudgeForTeam: protectedOrganizerProcedure
       .input(assignJudgeForTeamSchema)
       .mutation(async ({ input }) => {
-        try {
+        return withErrorHandling(async () => {
           await forceAssign(input.judgeId, input.teamId);
-        } catch (error) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: (error as Error).message,
-          });
-        }
+        }, "Failed to assign judge for team");
       }),
 
     getLatestRanking: protectedOrganizerProcedure.query(async () => {
-      return getRanking();
+      return withErrorHandling(() => getRanking(), "Failed to get ranking");
     }),
 
     getAllJudges: protectedOrganizerProcedure.query(async () => {
-      return getAllJudges();
+      return withErrorHandling(() => getAllJudges(), "Failed to get judges");
     }),
 
     deleteTeamMark: protectedOrganizerProcedure
       .input(deleteTeamMarkSchema)
       .mutation(async ({ input }) => {
-        try {
+        return withErrorHandling(async () => {
           await deleteMark(input.teamMarkId);
-        } catch (error) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: (error as Error).message,
-          });
-        }
+        }, "Failed to delete team mark");
       }),
   }),
 });
