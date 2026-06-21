@@ -14,10 +14,12 @@ export const editTeamMarkSchema = z.object({
   score: z.number().min(SCORE_MIN).max(SCORE_MAX),
 });
 
-// organizer inputs 
-export const loadQueueSchema = z.object({
-  roundsPerTeam: z.number().int().min(1).max(20).default(3),
-}).default({ roundsPerTeam: 3 });
+// organizer inputs
+export const loadQueueSchema = z
+  .object({
+    roundsPerTeam: z.number().int().min(1).max(20).default(3),
+  })
+  .default({ roundsPerTeam: 3 });
 
 export const assignJudgeForTeamSchema = z.object({
   judgeId: z.string().min(1),
