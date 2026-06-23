@@ -70,11 +70,15 @@ describe("checkIn.searchByName", () => {
   });
 
   test("returns results for single-word query matching first or last name", async () => {
-    const byFirst = await organizerCaller.checkIn.searchByName({ name: "Alice" });
+    const byFirst = await organizerCaller.checkIn.searchByName({
+      name: "Alice",
+    });
     expect(byFirst).toHaveLength(1);
     expect(byFirst[0]?.firstName).toBe("Alice");
 
-    const byLast = await organizerCaller.checkIn.searchByName({ name: "Smith" });
+    const byLast = await organizerCaller.checkIn.searchByName({
+      name: "Smith",
+    });
     expect(byLast).toHaveLength(1);
     expect(byLast[0]?.lastName).toBe("Smith");
   });
@@ -86,9 +90,13 @@ describe("checkIn.searchByName", () => {
       lastName: "Smith",
       status: "ACCEPTED",
     });
-    const results = await organizerCaller.checkIn.searchByName({ name: "Alice Smith" });
+    const results = await organizerCaller.checkIn.searchByName({
+      name: "Alice Smith",
+    });
     expect(results).toHaveLength(1); // only the CONFIRMED one
-    await db.delete(applications).where(eq(applications.userId, session.user.id));
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, session.user.id));
     await db.delete(users).where(eq(users.id, session.user.id));
   });
 

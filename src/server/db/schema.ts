@@ -291,7 +291,9 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.teamId],
     references: [teams.id],
   }),
-  hackerCheckResults: many(hackerCheckResults, { relationName: "hacker_check_hacker" }),
+  hackerCheckResults: many(hackerCheckResults, {
+    relationName: "hacker_check_hacker",
+  }),
 }));
 
 export const accounts = pgTable(

@@ -365,76 +365,80 @@ const HACKWESTERN_GITHUB_URL = "https://github.com/hackwestern/hackwestern";
 const TEST_TEAM_ID = "tst001";
 const hasHackWindow = !!process.env.HACK_START && !!process.env.HACK_END;
 
-describe.skipIf(!process.env.GITHUB_TOKEN)("cheatCheck GitHub network tests", () => {
-  beforeEach(async () => {
-    _testHackStart = undefined;
-    _testHackEnd = undefined;
-    await db.insert(teams).values({
-      id: TEST_TEAM_ID,
-      // One registered member: John Doe with GitHub username john_doe
-      name: "Test Team — John Doe",
-      githubUrl: HACKWESTERN_GITHUB_URL,
-      devpostUrl: "https://devpost.com/software/placeholder",
-      memberGithubUsernames: ["john_doe"],
+describe.skipIf(!process.env.GITHUB_TOKEN)(
+  "cheatCheck GitHub network tests",
+  () => {
+    beforeEach(async () => {
+      _testHackStart = undefined;
+      _testHackEnd = undefined;
+      await db.insert(teams).values({
+        id: TEST_TEAM_ID,
+        // One registered member: John Doe with GitHub username john_doe
+        name: "Test Team — John Doe",
+        githubUrl: HACKWESTERN_GITHUB_URL,
+        devpostUrl: "https://devpost.com/software/placeholder",
+        memberGithubUsernames: ["john_doe"],
+      });
     });
-  });
 
-  afterEach(async () => {
-    _testHackStart = undefined;
-    _testHackEnd = undefined;
-    await db
-      .delete(teamCheckResults)
-      .where(eq(teamCheckResults.teamId, TEST_TEAM_ID));
-    await db.delete(teams).where(eq(teams.id, TEST_TEAM_ID));
-  });
-
-  test("onlyTeamMemberCommits: returns false because repo contributors are not in the team's registered GitHub usernames", async () => {
-    const result = await organizerCaller.cheatCheck.onlyTeamMemberCommits({
-      teamId: TEST_TEAM_ID,
+    afterEach(async () => {
+      _testHackStart = undefined;
+      _testHackEnd = undefined;
+      await db
+        .delete(teamCheckResults)
+        .where(eq(teamCheckResults.teamId, TEST_TEAM_ID));
+      await db.delete(teams).where(eq(teams.id, TEST_TEAM_ID));
     });
-    expect(result.fromCache).toBe(false);
-    expect(result.passed).toBe(false);
-    const details = result.details as {
-      unregisteredContributors: { login: string }[];
-    };
-    expect(details.unregisteredContributors.length).toBeGreaterThan(0);
-  }, 30_000);
 
-  test.skipIf(!hasHackWindow)(
-    "commitWithinAllottedTime: returns false for the env-configured hack window",
-    async () => {
-      const result = await organizerCaller.cheatCheck.commitWithinAllottedTime({
+    test("onlyTeamMemberCommits: returns false because repo contributors are not in the team's registered GitHub usernames", async () => {
+      const result = await organizerCaller.cheatCheck.onlyTeamMemberCommits({
         teamId: TEST_TEAM_ID,
       });
       expect(result.fromCache).toBe(false);
       expect(result.passed).toBe(false);
-    },
-    30_000,
-  );
+      const details = result.details as {
+        unregisteredContributors: { login: string }[];
+      };
+      expect(details.unregisteredContributors.length).toBeGreaterThan(0);
+    }, 30_000);
 
-  test("commitWithinAllottedTime: returns true for a large 2010–2050 hack window", async () => {
-    _testHackStart = "2010-01-01T00:00:00Z";
-    _testHackEnd = "2050-12-31T23:59:59Z";
-    const result = await organizerCaller.cheatCheck.commitWithinAllottedTime({
-      teamId: TEST_TEAM_ID,
-    });
-    expect(result.fromCache).toBe(false);
-    expect(result.passed).toBe(true);
-  }, 30_000);
+    test.skipIf(!hasHackWindow)(
+      "commitWithinAllottedTime: returns false for the env-configured hack window",
+      async () => {
+        const result =
+          await organizerCaller.cheatCheck.commitWithinAllottedTime({
+            teamId: TEST_TEAM_ID,
+          });
+        expect(result.fromCache).toBe(false);
+        expect(result.passed).toBe(false);
+      },
+      30_000,
+    );
 
-  test("commitWithinAllottedTime: throws PRECONDITION_FAILED when hack window not configured", async () => {
-    if (hasHackWindow) return; // skip if env vars happen to be set
-    try {
-      await organizerCaller.cheatCheck.commitWithinAllottedTime({
+    test("commitWithinAllottedTime: returns true for a large 2010–2050 hack window", async () => {
+      _testHackStart = "2010-01-01T00:00:00Z";
+      _testHackEnd = "2050-12-31T23:59:59Z";
+      const result = await organizerCaller.cheatCheck.commitWithinAllottedTime({
         teamId: TEST_TEAM_ID,
       });
-      expect.fail("Should have thrown");
-    } catch (err) {
-      expect(err).toBeInstanceOf(TRPCError);
-      expect((err as TRPCError).code).toBe("PRECONDITION_FAILED");
-    }
-  });
-});
+      expect(result.fromCache).toBe(false);
+      expect(result.passed).toBe(true);
+    }, 30_000);
+
+    test("commitWithinAllottedTime: throws PRECONDITION_FAILED when hack window not configured", async () => {
+      if (hasHackWindow) return; // skip if env vars happen to be set
+      try {
+        await organizerCaller.cheatCheck.commitWithinAllottedTime({
+          teamId: TEST_TEAM_ID,
+        });
+        expect.fail("Should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(TRPCError);
+        expect((err as TRPCError).code).toBe("PRECONDITION_FAILED");
+      }
+    });
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Helpers
