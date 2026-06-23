@@ -60,7 +60,7 @@ export function parseGithubUrl(
 ): { owner: string; repo: string } | null {
   const match = url.match(/github\.com\/([^/]+)\/([^/\s#?]+)/);
   if (!match?.[1] || !match?.[2]) return null;
-  const repo = match[2]!.replace(/\.git$/, "");
+  const repo = match[2].replace(/\.git$/, "");
   return { owner: match[1], repo };
 }
 
