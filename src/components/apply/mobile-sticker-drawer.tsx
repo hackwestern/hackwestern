@@ -39,8 +39,7 @@ export function MobileStickerDrawer() {
         <DrawerContent className="h-fit overflow-hidden overscroll-contain">
           <DialogTitle className="sr-only">Your Stickers</DialogTitle>
           <div className="z-[100] mx-auto h-2 w-[100px] rounded-full bg-muted" />
-          <div className="absolute inset-0 overflow-hidden rounded-t-xl">
-          </div>
+          <div className="absolute inset-0 overflow-hidden rounded-t-xl"></div>
           <div className="relative h-full w-full overscroll-contain">
             <MobileStampGroup />
           </div>
