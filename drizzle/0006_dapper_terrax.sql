@@ -1,5 +1,5 @@
 CREATE TYPE "public"."hacker_check_type" AS ENUM('IS_OF_AGE', 'IS_REGISTERED');--> statement-breakpoint
-CREATE TYPE "public"."team_check_type" AS ENUM('COMMIT_WITHIN_ALLOTTED_TIME', 'ONLY_TEAM_MEMBER_COMMITS', 'LARGE_FIRST_COMMIT', 'DEVPOST_MEMBERS_REGISTERED');--> statement-breakpoint
+CREATE TYPE "public"."team_check_type" AS ENUM('COMMIT_WITHIN_ALLOTTED_TIME', 'ONLY_TEAM_MEMBER_COMMITS', 'DEVPOST_MEMBERS_REGISTERED');--> statement-breakpoint
 CREATE TABLE "hacker_check_result" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" varchar(255) NOT NULL,

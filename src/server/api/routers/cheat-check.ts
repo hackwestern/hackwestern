@@ -17,9 +17,7 @@ import {
 } from "~/server/db/schema";
 import { env } from "~/env";
 import {
-  LARGE_COMMIT_THRESHOLD,
   fetchAllCommits,
-  fetchCommitStats,
   fetchContributors,
   parseGithubUrl,
 } from "~/utils/github";
@@ -35,18 +33,13 @@ async function upsertHackerResult(
   details: Record<string, unknown>,
   checkedByUserId: string,
 ) {
-  await db
-    .delete(hackerCheckResults)
-    .where(
-      and(
-        eq(hackerCheckResults.userId, userId),
-        eq(hackerCheckResults.checkType, checkType),
-      ),
-    );
-
   const [result] = await db
     .insert(hackerCheckResults)
     .values({ userId, checkType, passed, details, checkedByUserId })
+    .onConflictDoUpdate({
+      target: [hackerCheckResults.userId, hackerCheckResults.checkType],
+      set: { passed, details, checkedByUserId, checkedAt: new Date() },
+    })
     .returning();
 
   return result!;
@@ -59,18 +52,13 @@ async function upsertTeamResult(
   details: Record<string, unknown>,
   checkedByUserId: string,
 ) {
-  await db
-    .delete(teamCheckResults)
-    .where(
-      and(
-        eq(teamCheckResults.teamId, teamId),
-        eq(teamCheckResults.checkType, checkType),
-      ),
-    );
-
   const [result] = await db
     .insert(teamCheckResults)
     .values({ teamId, checkType, passed, details, checkedByUserId })
+    .onConflictDoUpdate({
+      target: [teamCheckResults.teamId, teamCheckResults.checkType],
+      set: { passed, details, checkedByUserId, checkedAt: new Date() },
+    })
     .returning();
 
   return result!;
@@ -347,83 +335,6 @@ export const cheatCheckRouter = createTRPCRouter({
         input.teamId,
         "ONLY_TEAM_MEMBER_COMMITS",
         unregistered.length === 0,
-        details,
-        ctx.session.user.id,
-      );
-      return { ...result, fromCache: false };
-    }),
-
-  /**
-   * Flags a suspiciously large first commit within T+6 hours of start of the hack window.
-   */
-  largeFirstCommit: protectedOrganizerProcedure
-    .input(
-      z.object({ teamId: z.string(), forceRerun: z.boolean().default(false) }),
-    )
-    .query(async ({ input, ctx }) => {
-      if (!input.forceRerun) {
-        const cached = await db.query.teamCheckResults.findFirst({
-          where: and(
-            eq(teamCheckResults.teamId, input.teamId),
-            eq(teamCheckResults.checkType, "LARGE_FIRST_COMMIT"),
-          ),
-        });
-        if (cached) return { ...cached, fromCache: true };
-      }
-
-      const submission = await requireSubmission(input.teamId);
-      const parsed = parseGithubUrl(submission.githubUrl);
-      if (!parsed) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Could not parse GitHub URL",
-        });
-      }
-
-      const window = requireHackWindow();
-      const commits = await fetchAllCommits(parsed.owner, parsed.repo);
-
-      const sixHoursAfterStart = new Date(
-        window.hackStart.getTime() + 6 * 60 * 60 * 1000,
-      );
-      const commitsWithinWindow = commits
-        .filter((c) => {
-          const date = new Date(c.commit.author.date);
-          return date >= window.hackStart && date <= sixHoursAfterStart;
-        })
-        .sort(
-          (a, b) =>
-            new Date(a.commit.author.date).getTime() -
-            new Date(b.commit.author.date).getTime(),
-        );
-
-      let firstCommitStats: {
-        additions: number;
-        deletions: number;
-        total: number;
-      } | null = null;
-      let passed = true;
-
-      if (commitsWithinWindow[0]) {
-        firstCommitStats = await fetchCommitStats(
-          parsed.owner,
-          parsed.repo,
-          commitsWithinWindow[0].sha,
-        );
-        passed = firstCommitStats.additions <= LARGE_COMMIT_THRESHOLD;
-      }
-
-      const details = {
-        firstCommitSha: commitsWithinWindow[0]?.sha ?? null,
-        firstCommitDate: commitsWithinWindow[0]?.commit.author.date ?? null,
-        firstCommitStats,
-        largeCommitThreshold: LARGE_COMMIT_THRESHOLD,
-      };
-
-      const result = await upsertTeamResult(
-        input.teamId,
-        "LARGE_FIRST_COMMIT",
-        passed,
         details,
         ctx.session.user.id,
       );

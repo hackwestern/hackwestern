@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   index,
+  uniqueIndex,
   serial,
   integer,
   jsonb,
@@ -200,7 +201,6 @@ export const hackerCheckType = pgEnum("hacker_check_type", [
 export const teamCheckType = pgEnum("team_check_type", [
   "COMMIT_WITHIN_ALLOTTED_TIME",
   "ONLY_TEAM_MEMBER_COMMITS",
-  "LARGE_FIRST_COMMIT",
   "DEVPOST_MEMBERS_REGISTERED",
 ]);
 
@@ -291,7 +291,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.teamId],
     references: [teams.id],
   }),
-  hackerCheckResults: many(hackerCheckResults),
+  hackerCheckResults: many(hackerCheckResults, { relationName: "hacker_check_hacker" }),
 }));
 
 export const accounts = pgTable(
@@ -735,8 +735,7 @@ export const hackerCheckResults = pgTable(
   },
   (t) => [
     index("hacker_check_user_idx").on(t.userId),
-    // Enforce one result per (user, checkType) so upserts work cleanly
-    index("hacker_check_unique_idx").on(t.userId, t.checkType),
+    uniqueIndex("hacker_check_unique_idx").on(t.userId, t.checkType),
   ],
 );
 
@@ -744,10 +743,12 @@ export const hackerCheckResultsRelations = relations(
   hackerCheckResults,
   ({ one }) => ({
     user: one(users, {
+      relationName: "hacker_check_hacker",
       fields: [hackerCheckResults.userId],
       references: [users.id],
     }),
     checkedBy: one(users, {
+      relationName: "hacker_check_reviewer",
       fields: [hackerCheckResults.checkedByUserId],
       references: [users.id],
     }),
@@ -779,7 +780,7 @@ export const teamCheckResults = pgTable(
   },
   (t) => [
     index("team_check_team_idx").on(t.teamId),
-    index("team_check_unique_idx").on(t.teamId, t.checkType),
+    uniqueIndex("team_check_unique_idx").on(t.teamId, t.checkType),
   ],
 );
 

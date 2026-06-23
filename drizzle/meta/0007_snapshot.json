@@ -1,6 +1,6 @@
 {
-  "id": "34ce6041-1813-4b9c-8d98-8330eb38793d",
-  "prevId": "f80f1fec-b4e1-4777-9d74-08348a5eb926",
+  "id": "16600c0b-525a-4b06-9bad-fce9abb9c84e",
+  "prevId": "34ce6041-1813-4b9c-8d98-8330eb38793d",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -595,7 +595,7 @@
               "nulls": "last"
             }
           ],
-          "isUnique": false,
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -1530,7 +1530,7 @@
               "nulls": "last"
             }
           ],
-          "isUnique": false,
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}

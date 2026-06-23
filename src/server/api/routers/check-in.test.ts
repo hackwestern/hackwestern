@@ -23,7 +23,7 @@ describe("checkIn.searchByName", () => {
     await insertTestApplication(hackerSession.user.id, {
       firstName: "Alice",
       lastName: "Smith",
-      status: "ACCEPTED",
+      status: "CONFIRMED",
     });
   });
 
@@ -53,7 +53,7 @@ describe("checkIn.searchByName", () => {
     await insertTestApplication(secondSession.user.id, {
       firstName: "Alice",
       lastName: "Smith",
-      status: "ACCEPTED",
+      status: "CONFIRMED",
     });
 
     const results = await organizerCaller.checkIn.searchByName({
@@ -69,11 +69,27 @@ describe("checkIn.searchByName", () => {
     await db.delete(users).where(eq(users.id, secondSession.user.id));
   });
 
-  test("returns empty for single-word query", async () => {
-    const results = await organizerCaller.checkIn.searchByName({
-      name: "Alice",
+  test("returns results for single-word query matching first or last name", async () => {
+    const byFirst = await organizerCaller.checkIn.searchByName({ name: "Alice" });
+    expect(byFirst).toHaveLength(1);
+    expect(byFirst[0]?.firstName).toBe("Alice");
+
+    const byLast = await organizerCaller.checkIn.searchByName({ name: "Smith" });
+    expect(byLast).toHaveLength(1);
+    expect(byLast[0]?.lastName).toBe("Smith");
+  });
+
+  test("does not return unconfirmed applicants", async () => {
+    const session = await mockSession(db);
+    await insertTestApplication(session.user.id, {
+      firstName: "Alice",
+      lastName: "Smith",
+      status: "ACCEPTED",
     });
-    expect(results).toHaveLength(0);
+    const results = await organizerCaller.checkIn.searchByName({ name: "Alice Smith" });
+    expect(results).toHaveLength(1); // only the CONFIRMED one
+    await db.delete(applications).where(eq(applications.userId, session.user.id));
+    await db.delete(users).where(eq(users.id, session.user.id));
   });
 
   test("throws BAD_REQUEST for empty query", async () => {

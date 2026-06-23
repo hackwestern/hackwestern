@@ -2,12 +2,6 @@ import { env } from "~/env";
 
 const GITHUB_API_BASE = "https://api.github.com";
 
-/**
- * First commit within the event window with more than this many additions is flagged
- * as suspiciously large (pre-written code dropped in at start).
- */
-export const LARGE_COMMIT_THRESHOLD = 1000;
-
 function getHeaders(): HeadersInit {
   return {
     Accept: "application/vnd.github+json",
@@ -47,14 +41,6 @@ export interface GithubCommit {
   author: { login: string } | null; // null for unlinked accounts
 }
 
-export interface GithubCommitDetail extends GithubCommit {
-  stats: {
-    additions: number;
-    deletions: number;
-    total: number;
-  };
-}
-
 export interface GithubContributor {
   login: string;
   id: number;
@@ -72,9 +58,10 @@ export interface GithubContributor {
 export function parseGithubUrl(
   url: string,
 ): { owner: string; repo: string } | null {
-  const match = url.match(/github\.com\/([^/]+)\/([^/\s.#?]+)/);
+  const match = url.match(/github\.com\/([^/]+)\/([^/\s#?]+)/);
   if (!match?.[1] || !match?.[2]) return null;
-  return { owner: match[1], repo: match[2] };
+  const repo = match[2]!.replace(/\.git$/, "");
+  return { owner: match[1], repo };
 }
 
 // ---------------------------------------------------------------------------
@@ -99,20 +86,6 @@ export async function fetchAllCommits(
     page++;
   }
   return commits;
-}
-
-/**
- * Fetches detailed stats (additions/deletions) for a single commit SHA.
- */
-export async function fetchCommitStats(
-  owner: string,
-  repo: string,
-  sha: string,
-): Promise<GithubCommitDetail["stats"]> {
-  const data = (await githubFetch(
-    `/repos/${owner}/${repo}/commits/${sha}`,
-  )) as GithubCommitDetail;
-  return data.stats ?? { additions: 0, deletions: 0, total: 0 };
 }
 
 /**

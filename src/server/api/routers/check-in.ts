@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   createTRPCRouter,
@@ -7,6 +7,8 @@ import {
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { applications, dayOfRegistrations } from "~/server/db/schema";
+
+const ACCEPTED_STATUSES = ["CONFIRMED"] as const;
 
 export const checkInRouter = createTRPCRouter({
   /**
@@ -22,8 +24,13 @@ export const checkInRouter = createTRPCRouter({
       const firstName = parts[0]!;
       const lastName = parts.slice(1).join(" ");
 
+      const nameCondition =
+        lastName.length > 0
+          ? sql`lower(${applications.firstName}) = lower(${firstName}) AND lower(${applications.lastName}) = lower(${lastName})`
+          : sql`lower(${applications.firstName}) = lower(${firstName}) OR lower(${applications.lastName}) = lower(${firstName})`;
+
       const matches = await db.query.applications.findMany({
-        where: sql`lower(${applications.firstName}) = lower(${firstName}) AND lower(${applications.lastName}) = lower(${lastName})`,
+        where: sql`(${nameCondition}) AND ${inArray(applications.status, [...ACCEPTED_STATUSES])}`,
         columns: {
           userId: true,
           firstName: true,

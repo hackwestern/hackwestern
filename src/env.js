@@ -47,9 +47,9 @@ export const env = createEnv({
     // Google Sheets API key for fetching schedule data
     GOOGLE_SHEETS_API_KEY: z.string().optional(),
     GITHUB_TOKEN: z.string().optional(),
-    // ISO 8601 strings for the hacking window used in commit-timing cheat checks
-    HACK_START: z.string().optional(),
-    HACK_END: z.string().optional(),
+    // ISO 8601 datetime strings for the hacking window used in commit-timing cheat checks
+    HACK_START: z.string().datetime().optional(),
+    HACK_END: z.string().datetime().optional(),
   },
 
   /**

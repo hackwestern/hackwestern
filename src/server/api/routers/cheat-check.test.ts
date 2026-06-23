@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, test, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { parseGithubUrl, LARGE_COMMIT_THRESHOLD } from "~/utils/github";
+import { parseGithubUrl } from "~/utils/github";
 import { db } from "~/server/db";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -63,18 +63,19 @@ describe("parseGithubUrl", () => {
     });
   });
 
+  it("handles dotted repo names", () => {
+    expect(parseGithubUrl("https://github.com/owner/my.cool.app")).toEqual({
+      owner: "owner",
+      repo: "my.cool.app",
+    });
+  });
+
   it("returns null for non-GitHub URLs", () => {
     expect(parseGithubUrl("https://gitlab.com/owner/repo")).toBeNull();
   });
 
   it("returns null for malformed input", () => {
     expect(parseGithubUrl("not-a-url")).toBeNull();
-  });
-});
-
-describe("LARGE_COMMIT_THRESHOLD", () => {
-  it("is 1000 lines", () => {
-    expect(LARGE_COMMIT_THRESHOLD).toBe(1000);
   });
 });
 
@@ -364,7 +365,7 @@ const HACKWESTERN_GITHUB_URL = "https://github.com/hackwestern/hackwestern";
 const TEST_TEAM_ID = "tst001";
 const hasHackWindow = !!process.env.HACK_START && !!process.env.HACK_END;
 
-describe("cheatCheck GitHub network tests", () => {
+describe.skipIf(!process.env.GITHUB_TOKEN)("cheatCheck GitHub network tests", () => {
   beforeEach(async () => {
     _testHackStart = undefined;
     _testHackEnd = undefined;
