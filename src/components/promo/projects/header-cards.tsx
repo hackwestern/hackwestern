@@ -67,7 +67,7 @@ function HeaderCards() {
               />
             </motion.div>
             <motion.span
-              className="mt-[10px] w-full text-center font-jetbrains-mono text-[16px] font-medium uppercase text-[color:var(--text-medium,#776780)]"
+              className="font-jetbrains-mono mt-[10px] w-full text-center text-[16px] font-medium uppercase text-[color:var(--text-medium,#776780)]"
               variants={{
                 hover: {
                   y: -5,
