@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
 import SEO from "~/components/seo";
-import CanvasBackground from "~/components/canvas-background";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { useState, useMemo } from "react";
@@ -153,7 +152,6 @@ export default function AdjustStatus() {
     <>
       <SEO title="Adjust Status" noindex />
       <div className="bg-hw-radial-gradient m-auto flex min-h-screen flex-col items-center justify-start py-8">
-        <CanvasBackground />
         <div className="z-10 w-full max-w-3xl rounded-lg bg-background/90 p-6 shadow-md backdrop-blur-sm">
           <h1 className="font-dico mb-2 text-3xl text-heavy">Adjust Status</h1>
           <p className="mb-6 text-sm text-medium">

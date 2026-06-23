@@ -9,7 +9,6 @@ import { api } from "~/utils/api";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { hackerLoginRedirect } from "~/utils/redirect";
-import CanvasBackground from "~/components/canvas-background";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
 import { useRouter } from "next/router";
 
@@ -56,7 +55,6 @@ export default function Register() {
       />
 
       <div className="bg-hw-radial-gradient m-auto flex h-screen flex-col items-center justify-center">
-        <CanvasBackground />
         <div className="z-10 mx-4 flex-col items-center rounded-xl bg-background p-8 text-sm shadow-md sm:w-xl sm:p-12 md:w-2xl md:text-base">
           <h2 className="font-dico mb-4 self-start text-[30px] text-heavy md:text-[34px] ">
             Create your account
