@@ -55,7 +55,7 @@ export default function Register() {
         description="Create your Hack Western account to apply. Join Canada's largest student-run hackathon at Western University in London, Ontario."
       />
 
-      <div className="m-auto flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
+      <div className="bg-hw-radial-gradient m-auto flex h-screen flex-col items-center justify-center">
         <CanvasBackground />
         <div className="z-10 mx-4 flex-col items-center rounded-xl bg-background p-8 text-sm shadow-md sm:w-xl sm:p-12 md:w-2xl md:text-base">
           <h2 className="font-dico mb-4 self-start text-[30px] text-heavy md:text-[34px] ">

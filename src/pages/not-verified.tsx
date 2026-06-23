@@ -46,7 +46,7 @@ const NotVerified = () => {
     <>
       <SEO title="Verify Email" noindex />
 
-      <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
+      <div className="bg-hw-radial-gradient flex h-screen flex-col items-center justify-center">
         <CanvasBackground />
         <div className="z-10 flex w-full max-w-2xl flex-col justify-center gap-6 rounded-lg bg-violet-50 bg-white p-8 font-figtree shadow-md">
           <p className="text-lg">

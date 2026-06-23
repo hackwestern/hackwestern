@@ -2,23 +2,18 @@ import React from "react";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "../ui/skeleton";
 import { Spinner } from "../loading-spinner";
+import Arrow from "./arrow";
+import { ButtonProps } from "./buttonProps";
 
-interface TertiaryButtonProps {
-  children: React.ReactNode;
-  arrow?: boolean;
-  isSkeleton?: boolean;
-  disabled?: boolean;
-  isLoading?: boolean;
-  onClick?: () => void;
-}
 export default function TertiaryButton({
   children,
-  arrow,
   isSkeleton,
   disabled = false,
   isLoading = false,
   onClick,
-}: TertiaryButtonProps) {
+  direction,
+  className,
+}: ButtonProps) {
   if (isSkeleton)
     return (
       <Skeleton className="h-max w-max text-transparent">{children}</Skeleton>
@@ -26,13 +21,20 @@ export default function TertiaryButton({
 
   return (
     <Button
-      variant={arrow ? "tertiary-arrow" : "tertiary"}
-      className="h-max p-0"
+      variant="tertiary"
+      className={`px-0 py-1 ${className}`}
       isPending={disabled || isLoading}
       onClick={onClick}
     >
+      {direction == "left" && (
+        <Arrow margin="mr-[10px]" direction={direction} />
+      )}
       <div>{children}</div>
-      <Spinner isLoading={isLoading}></Spinner>
+
+      {direction == "right" && (
+        <Arrow margin="ml-[10px]" direction={direction} />
+      )}
+      {/* <Spinner isLoading={isLoading}></Spinner> */}
     </Button>
   );
 }

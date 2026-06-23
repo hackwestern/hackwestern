@@ -152,7 +152,7 @@ export default function AdjustStatus() {
   return (
     <>
       <SEO title="Adjust Status" noindex />
-      <div className="m-auto flex min-h-screen flex-col items-center justify-start bg-hw-radial-gradient py-8">
+      <div className="bg-hw-radial-gradient m-auto flex min-h-screen flex-col items-center justify-start py-8">
         <CanvasBackground />
         <div className="z-10 w-full max-w-3xl rounded-lg bg-background/90 p-6 shadow-md backdrop-blur-sm">
           <h1 className="font-dico mb-2 text-3xl text-heavy">Adjust Status</h1>
