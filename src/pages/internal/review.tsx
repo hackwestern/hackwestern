@@ -27,7 +27,6 @@ import { SavedIndicator } from "~/components/apply/saved-indicator";
 import { Textarea } from "~/components/ui/textarea";
 import { useToast } from "~/hooks/use-toast";
 import { useSession } from "next-auth/react";
-import CanvasBackground from "~/components/canvas-background";
 import { AvatarDisplay } from "~/components/apply/avatar-display";
 import { colors } from "~/constants/avatar";
 import type { CanvasPaths } from "~/types/canvas";
@@ -366,10 +365,6 @@ const Review = () => {
             id="right-panel"
             className="-z-10 flex max-h-[96vh] flex-col items-center justify-center overflow-hidden rounded-xl bg-primary-50 px-4 py-4 md:w-full"
           >
-            <div className="-z-10">
-              <CanvasBackground />
-            </div>
-
             <div className="z-10 my-8 flex h-[90vh] flex-col items-center justify-center overflow-auto overflow-auto rounded-xl border border-primary-300 bg-primary-100 pl-8 text-sm md:my-auto md:max-w-[800px]">
               {applicationData ? (
                 <div className="custom-scroll z-50 flex h-[90vh] flex-col overflow-auto rounded-[10px] rounded-lg px-2 py-4 font-figtree">
