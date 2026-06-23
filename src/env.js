@@ -46,6 +46,10 @@ export const env = createEnv({
     R2_PUBLIC_BASE_URL: z.string().url(),
     // Google Sheets API key for fetching schedule data
     GOOGLE_SHEETS_API_KEY: z.string().optional(),
+    GITHUB_TOKEN: z.string().optional(),
+    // ISO 8601 datetime strings for the hacking window used in commit-timing cheat checks
+    HACK_START: z.string().datetime().optional(),
+    HACK_END: z.string().datetime().optional(),
   },
 
   /**
@@ -86,6 +90,9 @@ export const env = createEnv({
     R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
     R2_PUBLIC_BASE_URL: process.env.R2_PUBLIC_BASE_URL,
     GOOGLE_SHEETS_API_KEY: process.env.GOOGLE_SHEETS_API_KEY,
+    GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+    HACK_START: process.env.HACK_START,
+    HACK_END: process.env.HACK_END,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
