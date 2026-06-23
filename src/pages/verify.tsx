@@ -89,7 +89,7 @@ const Verify = () => {
     <>
       <SEO title="Verify Email" noindex />
 
-      <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
+      <div className="bg-hw-radial-gradient flex h-screen flex-col items-center justify-center">
         <CanvasBackground />
         <div className="z-10 w-full max-w-lg rounded-lg bg-violet-50 bg-white p-5 shadow-md">
           {verifySuccess && (

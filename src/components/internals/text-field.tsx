@@ -10,6 +10,7 @@ interface TextFieldProps {
   isSkeleton?: boolean;
   onSubmit?: (value: string) => Promise<void>;
 }
+
 export default function TextField({
   children,
   submit = false,
@@ -46,18 +47,16 @@ export default function TextField({
     return (
       <>
         {submit ? (
-          <div
-            className={`flex w-max rounded-lg ${secondary ? "border bg-highlight" : "border-2 border-white bg-white/50"}`}
-          >
+          <div className={`flex w-max`}>
             <Input
+              variant="default"
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder={children}
-              className={"border-none bg-transparent"}
+              className=""
               disabled={isLoading}
             />
             <PrimaryButton
-              textField
               onClick={handleSubmit}
               disabled={isLoading}
               isLoading={isLoading}
@@ -66,10 +65,7 @@ export default function TextField({
             </PrimaryButton>
           </div>
         ) : (
-          <Input
-            placeholder={children}
-            className={`w-max rounded-lg border px-6 ${secondary ? "bg-highlight" : "border-none border-white bg-white/50"}`}
-          />
+          <Input variant="default" placeholder={children} className="w-max" />
         )}
       </>
     );
