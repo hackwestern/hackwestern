@@ -13,7 +13,6 @@ import type { GetServerSidePropsContext } from "next";
 //   AccordionItem,
 //   AccordionTrigger,
 // } from "~/components/ui/accordion";
-// import CanvasBackground from "~/components/canvas-background";
 // import { Input } from "~/components/ui/input";
 // import { useState } from "react";
 
@@ -64,7 +63,6 @@ import type { GetServerSidePropsContext } from "next";
 
 //   return (
 //     <div className="bg-hw-linear-gradient-day flex flex-col items-center justify-center bg-primary-100 py-4">
-//       <CanvasBackground />
 //       <h1 className="z-10 mb-4 text-3xl">Internal Dashboard</h1>
 //       <Accordion type="multiple" className="z-10 mb-3">
 //         <AccordionItem key="leaderboard" value="leaderboard">

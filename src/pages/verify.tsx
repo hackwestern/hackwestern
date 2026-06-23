@@ -6,7 +6,6 @@ import { useToast } from "~/hooks/use-toast";
 import { useRouter } from "next/router";
 import { Button } from "~/components/ui/button";
 import { isVerifiedRedirect } from "~/utils/redirect";
-import CanvasBackground from "~/components/canvas-background";
 
 const Verify = () => {
   const router = useRouter();
@@ -90,7 +89,6 @@ const Verify = () => {
       <SEO title="Verify Email" noindex />
 
       <div className="bg-hw-radial-gradient flex h-screen flex-col items-center justify-center">
-        <CanvasBackground />
         <div className="z-10 w-full max-w-lg rounded-lg bg-violet-50 bg-white p-5 shadow-md">
           {verifySuccess && (
             <div>

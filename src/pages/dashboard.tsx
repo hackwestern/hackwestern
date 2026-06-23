@@ -7,10 +7,8 @@
 // import { colors } from "~/constants/avatar";
 // import { api } from "~/utils/api";
 // import { notVerifiedRedirectDashboard } from "~/utils/redirect";
-// import CanvasBackground from "~/components/canvas-background";
 // import CharacterIcon from "~/components/dashboard/CharacterIcon";
 // import SubmittedDisplay from "~/components/dashboard/SubmittedDisplay";
-// import { type CanvasPaths } from "~/types/canvas";
 import { type GetServerSidePropsContext } from "next";
 // import { getServerSession } from "next-auth";
 // import { authOptions } from "~/server/auth";
@@ -114,7 +112,6 @@ import { type GetServerSidePropsContext } from "next";
 //           {/* Mobile Content */}
 //           <div className="flex h-svh flex-col">
 //             <div className="bg-hw-linear-gradient-day relative flex flex-grow items-center justify-center">
-//               <CanvasBackground />
 //               <SubmittedDisplay
 //                 application={application}
 //                 pathStrings={pathStrings}
@@ -132,7 +129,6 @@ import { type GetServerSidePropsContext } from "next";
 //               <div className="absolute right-6 top-6 z-[100] flex items-center gap-4">
 //                 <CharacterIcon />
 //               </div>
-//               <CanvasBackground />
 //               <SubmittedDisplay
 //                 application={application}
 //                 pathStrings={pathStrings}

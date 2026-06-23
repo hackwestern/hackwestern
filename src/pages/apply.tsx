@@ -7,7 +7,6 @@ import { ApplyForm } from "~/components/apply/form";
 import { notVerifiedRedirect } from "~/utils/redirect";
 import { api } from "~/utils/api";
 import ApplicationPrompt from "~/components/dashboard/ApplicationPrompt";
-import CanvasBackground from "~/components/canvas-background";
 import { ApplyNavigation } from "~/components/apply/navigation";
 import ApplyHeading from "~/components/apply/heading";
 import {
@@ -195,7 +194,6 @@ export default function Apply() {
                     onApplyNavigate={handleApplyNavigate}
                     pending={pending}
                   />
-                  <CanvasBackground />
                 </>
               )}
             </div>
@@ -224,7 +222,6 @@ export default function Apply() {
             id="right-panel"
             className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
           >
-            <CanvasBackground />
             <div className="absolute right-6 top-6 flex items-center gap-4">
               <CharacterIcon />
             </div>
