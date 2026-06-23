@@ -55,7 +55,7 @@ export default function ResetRequest() {
     <>
       <SEO title="Forgot Password" noindex />
 
-      <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
+      <div className="bg-hw-radial-gradient flex h-screen flex-col items-center justify-center">
         <CanvasBackground />
         <div className="z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:w-xl sm:rounded-[48px] sm:p-12 md:w-2xl">
           <h2 className="mb-2 text-3xl font-bold">Reset Password</h2>

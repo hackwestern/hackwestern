@@ -188,4 +188,14 @@ export const shadows = {
     "inset 6px 6px 0px 0px rgba(222,223,225,0.70)", // inner highlight top-left
     "inset -6px -6px 0px 0px rgba(137,139,143,0.60)", // inner shadow bottom-right
   ].join(", "),
+  activeButton: [
+    "2px 2px 4px 0px rgba(0,0,0,0.12)", // drop shadow sm
+    "inset 2px 2px 0px 0px rgba(5,6,8,0.50)", // inner dark top-left
+    "inset -2px -2px 0px 0px rgba(225,225,225,0.30)", // inner highlight bottom-right
+    "inset 5px 5px 0px 0px rgba(137,139,143,0.50)", // inner shadow top-left
+    "inset -4px -4px 0px 0px rgba(222,223,225,0.50)", // inner highlight bottom-right
+  ].join(", "),
+  secondary: [
+    "0px 2px 8px 0px rgba(0,0,0,0.12)", // drop shadow sm
+  ].join(", "),
 } as const;

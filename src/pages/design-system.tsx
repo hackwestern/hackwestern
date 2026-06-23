@@ -20,7 +20,7 @@ function DesignSystem() {
   };
 
   return (
-    <div className="font-jetbrains-mono flex min-h-screen w-screen flex-col gap-4 overflow-y-auto bg-hw-radial-gradient p-12">
+    <div className="font-jetbrains-mono bg-hw-radial-gradient flex min-h-screen w-screen cursor-pixel-default flex-col gap-4 overflow-y-auto p-12">
       <h1 className="h1">Design System HW13</h1>
 
       <div className="h3">typography: </div>
@@ -67,81 +67,166 @@ function DesignSystem() {
         <ColorSwatch name="blue-9" value={tokens.colors.blues["blue-9"]} />
       </div>
 
-      <h1 className="font-dico text-6xl">Design System HW12</h1>
+      <h1 className="h2">Components</h1>
 
       <div className="mb-4 flex gap-4">
-        <PrimaryButton onClick={handleClick} isLoading={isLoading}>
+        <PrimaryButton onClick={handleClick} isLoading={isLoading} size="lg">
           Trigger Global Loading (5s)
         </PrimaryButton>
       </div>
 
       <div className="flex flex-col gap-8">
         <div>
-          <div className="mb-2 text-xl font-bold">PRIMARY BUTTON</div>
-          <div className="flex flex-wrap items-center gap-4">
-            <PrimaryButton isLoading={isLoading} onClick={handleClick}>
-              Primary
+          <div className="h3">Buttons:</div>
+          <div className="p1">Primary Button: </div>
+          <div className="grid w-fit grid-cols-2 items-center gap-4">
+            <PrimaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="lg"
+            >
+              Large
             </PrimaryButton>
-            <PrimaryButton isLoading={isLoading} onClick={handleClick} arrow>
-              Primary Arrow
+            <PrimaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="sm"
+            >
+              Small
             </PrimaryButton>
-            <PrimaryButton isSkeleton>Primary</PrimaryButton>
+
+            <PrimaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="lg"
+              direction="left"
+            >
+              Left
+            </PrimaryButton>
+            <PrimaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="sm"
+              direction="left"
+            >
+              Left
+            </PrimaryButton>
+
+            <PrimaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="lg"
+              direction="right"
+            >
+              Right
+            </PrimaryButton>
+            <PrimaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="sm"
+              direction="right"
+            >
+              Right
+            </PrimaryButton>
           </div>
         </div>
 
         <div>
-          <div className="mb-2 text-xl font-bold">SECONDARY BUTTON</div>
-          <div className="flex flex-wrap items-center gap-4">
-            <SecondaryButton isLoading={isLoading} onClick={handleClick}>
-              Secondary
+          <div className="p1">Secondary Button: </div>
+          <div className="grid w-fit grid-cols-2 items-center gap-4">
+            <SecondaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="lg"
+            >
+              Large
             </SecondaryButton>
-            <SecondaryButton isLoading={isLoading} onClick={handleClick} arrow>
-              Secondary Arrow
+            <SecondaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="sm"
+            >
+              Small
             </SecondaryButton>
-            <SecondaryButton isSkeleton>Secondary</SecondaryButton>
+
+            <SecondaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="lg"
+              direction="left"
+            >
+              Left
+            </SecondaryButton>
+            <SecondaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="sm"
+              direction="left"
+            >
+              Left
+            </SecondaryButton>
+
+            <SecondaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="lg"
+              direction="right"
+            >
+              Right
+            </SecondaryButton>
+            <SecondaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="sm"
+              direction="right"
+            >
+              Right
+            </SecondaryButton>
           </div>
         </div>
 
         <div>
-          <div className="mb-2 text-xl font-bold">TERTIARY BUTTON</div>
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="p1">Tertiary Button: </div>
+          <div className="grid w-fit grid-cols-1 items-center gap-4">
             <TertiaryButton isLoading={isLoading} onClick={handleClick}>
-              Tertiary
+              Button
             </TertiaryButton>
-            <TertiaryButton isLoading={isLoading} onClick={handleClick} arrow>
-              Tertiary Arrow
+
+            <TertiaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              direction="left"
+            >
+              Left
             </TertiaryButton>
-            <TertiaryButton isSkeleton>Tertiary</TertiaryButton>
+
+            <TertiaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              direction="right"
+            >
+              Right
+            </TertiaryButton>
+
+            {/* <TertiaryButton isSkeleton>Tertiary</TertiaryButton> */}
           </div>
         </div>
 
         <div>
-          <div className="mb-2 text-xl font-bold">TEXT FIELD</div>
+          <div className="p1">Text field</div>
           <div className="flex flex-col gap-4">
             <TextField onSubmit={handleTextSubmit}>Normal Input</TextField>
             <TextField submit onSubmit={handleTextSubmit}>
               Input with Submit
             </TextField>
 
-            <div className="flex w-max flex-col gap-4 rounded-lg bg-white p-4">
-              <div className="mb-2 font-bold text-black">
-                Secondary / Highlighted
-              </div>
-              <TextField secondary onSubmit={handleTextSubmit}>
-                Secondary Input
-              </TextField>
-              <TextField submit secondary onSubmit={handleTextSubmit}>
-                Secondary Submit
-              </TextField>
-            </div>
-
-            <div className="mt-4 flex flex-col gap-4">
+            {/* <div className="mt-4 flex flex-col gap-4">
               <div className="mb-2 font-bold">Skeletons</div>
               <TextField isSkeleton>Skeleton Input</TextField>
               <TextField submit isSkeleton>
                 Skeleton Submit
-              </TextField>
-            </div>
+              </TextField> 
+            </div> */}
           </div>
         </div>
       </div>
