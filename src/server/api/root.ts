@@ -2,6 +2,8 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 import { applicationRouter } from "./routers/application";
 import { authRouter } from "./routers/auth";
 import { judgingRouter } from "./routers/judging";
+import { checkInRouter } from "./routers/check-in";
+import { cheatCheckRouter } from "./routers/cheat-check";
 import { preregistrationRouter } from "./routers/preregistration";
 import { scavengerHuntRouter } from "./routers/scavenger-hunt";
 import { reviewRouter } from "./routers/review";
@@ -16,6 +18,8 @@ export const appRouter = createTRPCRouter({
   application: applicationRouter,
   auth: authRouter,
   judging: judgingRouter,
+  checkIn: checkInRouter,
+  cheatCheck: cheatCheckRouter,
   preregistration: preregistrationRouter,
   review: reviewRouter,
   qrRouter: qrRouter,

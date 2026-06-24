@@ -1,5 +1,9 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Superpowers AI planning docs (local only)
+docs/superpowers/
+.superpowers/
+
 # secret apple stuff (plz don't leak)
 key.pem
 certificate.pem

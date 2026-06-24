@@ -67,6 +67,28 @@ const config = {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
         },
+        gray: {
+          "1": tokens.colors.grays["gray-1"],
+          "2": tokens.colors.grays["gray-2"],
+          "3": tokens.colors.grays["gray-3"],
+          "4": tokens.colors.grays["gray-4"],
+          "5": tokens.colors.grays["gray-5"],
+          "6": tokens.colors.grays["gray-6"],
+          "7": tokens.colors.grays["gray-7"],
+          "8": tokens.colors.grays["gray-8"],
+        },
+        blue: {
+          "1": tokens.colors.blues["blue-1"],
+          "2": tokens.colors.blues["blue-2"],
+          "3": tokens.colors.blues["blue-3"],
+          "4": tokens.colors.blues["blue-4"],
+          "5": tokens.colors.blues["blue-5"],
+          "6": tokens.colors.blues["blue-6"],
+          "7": tokens.colors.blues["blue-7"],
+          "8": tokens.colors.blues["blue-8"],
+          "9": tokens.colors.blues["blue-9"],
+        },
+
         secondary: "hsl(var(--secondary))",
         "button-secondary": "rgb(244, 242, 247)",
         "button-secondary-hover": "rgb(248, 247, 249)",
@@ -117,23 +139,10 @@ const config = {
         sm: "calc(var(--radius) - 4px)",
         "hw-gradient-radius": "60vw",
       },
-      backgroundImage: {
-        "hw-radial-gradient":
-          "`\n            radial-gradient(\n              circle 150vh at 100vh 150vh,\n              var(--coral) 0%,\n              var(--salmon) 40%,\n              var(--lilac) 65%,\n              var(--beige) 90%\n            )\n          `",
-        "button-primary": "linear-gradient(#D19AEE 0%, #8F57AD 100%)",
-        "button-primary-hover":
-          "linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1)), linear-gradient(#D19AEE 0%, #8F57AD 100%)",
-        "button-primary-active":
-          "linear-gradient(rgba(100, 100, 100, 0.1), rgba(100, 100, 100, 0.1)), linear-gradient(#D19AEE 0%, #8F57AD 100%)",
-        "button-primary-back":
-          "linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), linear-gradient(#D19AEE 0%, #8F57AD 100%)",
-        "button-secondary-back":
-          "linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), linear-gradient(#FFFFFF 0%,#A893B0 100%)",
-        noise: '`url("https://grainy-gradients.vercel.app/noise.svg")`',
-      },
       boxShadow: {
-        "button-primary": "0px 2px 4px rgba(60, 32, 76, 0.2)",
-        "button-secondary": "0px 2px 4px 0px rgba(60, 32, 76, 0.20)",
+        "button-primary": tokens.shadows.button,
+        "button-primary-active": tokens.shadows.activeButton,
+        "button-secondary": tokens.shadows.secondary,
       },
       fontFamily: {
         figtree: ["var(--font-figtree)"],
@@ -188,6 +197,10 @@ const config = {
         "5xl": "64rem",
         "6xl": "72rem",
         "7xl": "80rem",
+      },
+      cursor:{
+        "pixel-default": "url('/cursors/cursor-default.png'),auto",
+        "pixel-hover": "url('../../public/cursors/hover-hand.png'),pointer"
       },
     },
   },
