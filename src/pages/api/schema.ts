@@ -1,10 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { appRouter } from "~/server/api/root";
 import { AnyRouter } from "@trpc/server";
-import z, { ZodType } from "zod";
+import z from "zod";
 import { RouterSchema } from "~/utils/load_testing/routeSchema";
+import zodToJsonSchema from "zod-to-json-schema";
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default function handler(_req: NextApiRequest, res: NextApiResponse) {
   const procs = walkRouter(appRouter);
 
   return res.status(200).json(procs);
@@ -23,7 +24,10 @@ export function walkRouter(router: AnyRouter, prefix = ""): RouterSchema {
       // @ts-expect-error
       const input = proc._def.inputs?.[0];
       const safeInput = input == undefined ? z.object({}) : input;
-      const jsonSchema = safeInput.toJSONSchema();
+      const jsonSchema: unknown = zodToJsonSchema(safeInput, {
+        target: "jsonSchema7",
+        definitions: {},
+      });
 
       results[fullPath] = {
         path: fullPath,

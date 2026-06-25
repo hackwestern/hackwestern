@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "build": "next build",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc --noEmit --strict",
     "test": "vitest",
     "db:start": "bash ./start-database.sh",
     "db:studio": "drizzle-kit studio",
@@ -63,6 +63,7 @@
     "googleapis": "^164.1.0",
     "hackwestern": "file:",
     "html-to-image": "^1.10.9",
+    "json-schema-to-zod": "^2.8.1",
     "jsqr": "^1.4.0",
     "lucide-react": "^0.483.0",
     "nanoid": "^5.1.6",
@@ -85,7 +86,8 @@
     "tailwindcss-animate": "^1.0.7",
     "use-deep-compare-effect": "^1.8.1",
     "vaul": "^1.0.0",
-    "zod": "^3.23.0"
+    "zod": "^3.23.0",
+    "zod-to-json-schema": "^3.25.2"
   },
   "devDependencies": {
     "@clack/prompts": "^0.7.0",

@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import z, { type ZodType } from "zod";
 import { type RouterSchema } from "./routeSchema";
+import jsonSchemaToZod from "json-schema-to-zod";
 
 export class TRPCFaker {
   private input: { input: ZodType; method: "query" | "mutation" };
@@ -96,15 +97,23 @@ function customFaker(
   } else {
     try {
       return fakeFromZod(schema);
-    } catch {
-      throw new Error(`Schema ${schema.constructor.name} could not be faked`);
+    } catch (err) {
+      throw new Error(
+        `Schema could not be faked (${err}) Schema: ${JSON.stringify(schema, null, 2)}`,
+      );
     }
   }
 }
 function fromJSONSchema(schema: unknown): ZodType {
   try {
     // @ts-expect-error This works if crashes error is caught
-    return z.fromJSONSchema(schema as JSON);
+    const str_zod = jsonSchemaToZod(schema, { zodVersion: 3 });
+
+    // This is literally cancer but idk what else to do on zod v3
+    const translator = new Function("z", `return ${str_zod};`);
+
+    const t: ZodType = translator(z);
+    return t;
   } catch (error) {
     console.log(error);
     throw new Error("Unable to parse JSON schema into zod type");
@@ -112,6 +121,10 @@ function fromJSONSchema(schema: unknown): ZodType {
 }
 
 export function fakeFromZod(schema: ZodType): unknown {
+  if (schema instanceof z.ZodAny) {
+    return faker.lorem.word();
+  }
+
   if (schema instanceof z.ZodString) {
     return faker.lorem.word();
   }
