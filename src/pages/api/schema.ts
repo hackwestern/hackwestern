@@ -23,7 +23,7 @@ export function walkRouter(router: AnyRouter, prefix = ""): RouterSchema {
       // @ts-expect-error
       const input = proc._def.inputs?.[0];
       const safeInput = input == undefined ? z.object({}) : input;
-      const jsonSchema = (safeInput as ZodType).toJSONSchema();
+      const jsonSchema = safeInput.toJSONSchema();
 
       results[fullPath] = {
         path: fullPath,

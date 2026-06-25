@@ -5,6 +5,7 @@ import { users } from "~/server/db/schema";
 import { UserSeeder } from "~/server/db/seed/userSeeder";
 import bcrypt from "bcrypt";
 
+//@ts-expect-error This is totally valid just dont pass anything weird
 const AUTH_TYPE: "n" | "y" | "o" = process.env.AUTH_TYPE ?? "n";
 
 export interface LoadTestingUser {

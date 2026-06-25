@@ -1,17 +1,11 @@
 import { faker } from "@faker-js/faker";
 import z, { type ZodType } from "zod";
-import { fake, setFaker } from "zod-schema-faker/v4";
 import { type RouterSchema } from "./routeSchema";
 
 export class TRPCFaker {
   private input: { input: ZodType; method: "query" | "mutation" };
 
   private overriddenFields: Record<string, () => unknown>;
-
-  static {
-    setFaker(faker);
-  }
-
   constructor(schema: RouterSchema, route: string) {
     const path = schema[route];
 
@@ -92,7 +86,7 @@ function customFaker(
         obj[key] = replacers[key]();
       } else {
         try {
-          obj[key] = fake(value);
+          obj[key] = fakeFromZod(value as ZodType);
         } catch {
           throw new Error(`Field ${key} could not be faked`);
         }
@@ -101,18 +95,58 @@ function customFaker(
     return obj;
   } else {
     try {
-      return fake(schema);
+      return fakeFromZod(schema);
     } catch {
-      throw new Error(`Schema ${schema.type} could not be faked`);
+      throw new Error(`Schema ${schema.constructor.name} could not be faked`);
     }
   }
 }
 function fromJSONSchema(schema: unknown): ZodType {
   try {
     // @ts-expect-error This works if crashes error is caught
-    return z.fromJSONSchema(schema);
+    return z.fromJSONSchema(schema as JSON);
   } catch (error) {
     console.log(error);
     throw new Error("Unable to parse JSON schema into zod type");
   }
+}
+
+export function fakeFromZod(schema: ZodType): unknown {
+  if (schema instanceof z.ZodString) {
+    return faker.lorem.word();
+  }
+
+  if (schema instanceof z.ZodNumber) {
+    return faker.number.int();
+  }
+
+  if (schema instanceof z.ZodBoolean) {
+    return faker.datatype.boolean();
+  }
+
+  if (schema instanceof z.ZodDate) {
+    return faker.date.recent();
+  }
+
+  if (schema instanceof z.ZodEnum) {
+    return faker.helpers.arrayElement(schema.options);
+  }
+
+  if (schema instanceof z.ZodLiteral) {
+    return schema.value;
+  }
+
+  if (schema instanceof z.ZodArray) {
+    return [];
+  }
+
+  if (schema instanceof z.ZodOptional) {
+    return fakeFromZod(schema.unwrap() as ZodType);
+  }
+
+  if (schema instanceof z.ZodNullable) {
+    return fakeFromZod(schema.unwrap() as ZodType);
+  }
+
+  throw new Error(`Unsupported schema: ${schema.constructor.name}`);
 }
