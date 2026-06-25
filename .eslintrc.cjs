@@ -1,5 +1,6 @@
 /** @type {import("eslint").Linter.Config} */
 const config = {
+  ignorePatterns: ["src/utils/load_testing/**"],
   parser: "@typescript-eslint/parser",
   parserOptions: {
     project: true,
@@ -52,4 +53,3 @@ const config = {
   },
 };
 module.exports = config;
-

@@ -27,7 +27,7 @@ if (route == "") {
   );
 }
 
-var url: string = __ENV.TRPC_URL ?? "http://localhost:3000/api/trpc/";
+let url: string = __ENV.TRPC_URL ?? "http://localhost:3000/api/trpc/";
 if (!url.endsWith("/")) {
   url = url + "/";
 }
@@ -101,10 +101,6 @@ function getRequest(payload: unknown, url: string) {
     cookies: vuCookies,
   });
 
-  // console.log("REQUEST ", payload);
-  // if (res.body) {
-  //   console.log("RESPONSE ", res.body);
-  // }
   check(res, {
     "status is 200": (r) => r.status === 200,
   });
@@ -120,10 +116,6 @@ function postRequest(payload: unknown, url: string) {
     cookies: vuCookies,
   });
 
-  // console.log("REQUEST ", payload);
-  // if (res.body) {
-  //   console.log("RESPONSE ", res.body);
-  // }
   check(res, {
     "status is 200": (r) => r.status === 200,
   });
@@ -143,7 +135,7 @@ function login(user: LoadTestingUser) {
 
   const csrfRes = http.get(csrfURL);
 
-  // @ts-expect-error This should work always
+  // @ts-expect-error This should be valid
   const responseBody: { csrfToken: string } = JSON.parse(csrfRes.body);
 
   if (responseBody.csrfToken == undefined) {
@@ -183,7 +175,7 @@ function login(user: LoadTestingUser) {
   vuCookies["next-auth.csrf-token"];
 }
 
-// @ts-expect-error does not need typing any object works
+// @ts-expect-error This does not need typing
 function urlEncodeObject(obj) {
   return Object.keys(obj)
     .map((key) => encodeURIComponent(key) + "=" + encodeURIComponent(obj[key]))

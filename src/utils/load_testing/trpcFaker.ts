@@ -60,7 +60,7 @@ export class TRPCFaker {
     trpc.addOverrideField("email", () => faker.internet.email());
 
     trpc.addOverrideField("password", () => {
-      var password = faker.internet.password();
+      let password = faker.internet.password();
       const number = /[0-9]/;
       const symbol = /[_+=-@#%$]/;
       if (!number.test(password)) {
@@ -82,31 +82,33 @@ function customFaker(
 ): unknown {
   if (schema instanceof z.ZodObject) {
     const obj: Record<string, unknown> = {};
-    Object.entries(schema.shape).forEach(([key, value]) => {
-      if (replacers[key] != undefined) {
-        obj[key] = replacers[key]();
-      } else {
-        try {
-          obj[key] = fakeFromZod(value as ZodType);
-        } catch {
-          throw new Error(`Field ${key} could not be faked`);
+    Object.entries(schema.shape as [string, unknown]).forEach(
+      ([key, value]) => {
+        if (replacers[key] != undefined) {
+          obj[key] = replacers[key]();
+        } else {
+          try {
+            obj[key] = fakeFromZod(value as ZodType);
+          } catch {
+            throw new Error(`Field ${key} could not be faked`);
+          }
         }
-      }
-    });
+      },
+    );
     return obj;
   } else {
     try {
       return fakeFromZod(schema);
-    } catch (err) {
+    } catch {
       throw new Error(
-        `Schema could not be faked (${err}) Schema: ${JSON.stringify(schema, null, 2)}`,
+        `Schema could not be faked, Schema: ${JSON.stringify(schema, null, 2)}`,
       );
     }
   }
 }
 function fromJSONSchema(schema: unknown): ZodType {
   try {
-    // @ts-expect-error This works if crashes error is caught
+    // @ts-expect-error This works
     const str_zod = jsonSchemaToZod(schema, { zodVersion: 3 });
 
     // This is literally cancer but idk what else to do on zod v3
@@ -142,7 +144,8 @@ export function fakeFromZod(schema: ZodType): unknown {
   }
 
   if (schema instanceof z.ZodEnum) {
-    return faker.helpers.arrayElement(schema.options);
+    const options = schema.options;
+    return faker.helpers.arrayElement(options);
   }
 
   if (schema instanceof z.ZodLiteral) {
