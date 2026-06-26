@@ -5,7 +5,6 @@ import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import CanvasBackground from "~/components/canvas-background";
 
 export default function ResetRequest() {
   const [email, setEmail] = useState("");
@@ -55,8 +54,7 @@ export default function ResetRequest() {
     <>
       <SEO title="Forgot Password" noindex />
 
-      <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
-        <CanvasBackground />
+      <div className="bg-hw-radial-gradient flex h-screen flex-col items-center justify-center">
         <div className="z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:w-xl sm:rounded-[48px] sm:p-12 md:w-2xl">
           <h2 className="mb-2 text-3xl font-bold">Reset Password</h2>
           <h2>We&apos;ll send you a link to reset your password.</h2>
@@ -64,7 +62,7 @@ export default function ResetRequest() {
           <Input
             type="email"
             onChange={(e) => setEmail(e.target.value)}
-            className="mb-8 h-[60px] bg-highlight font-jetbrains-mono text-medium"
+            className="font-jetbrains-mono mb-8 h-[60px] bg-highlight text-medium"
             placeholder="hello@hackwestern.com"
           />
           <Button variant="primary" onClick={handleSubmit} size="default" full>

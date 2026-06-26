@@ -1,20 +1,19 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
-  check,
   index,
+  uniqueIndex,
   serial,
   integer,
   jsonb,
   pgEnum,
   pgTable,
-  pgView,
   primaryKey,
+  real,
   smallint,
   text,
   timestamp,
   varchar,
-  real,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 import type { CanvasPaths } from "~/types/canvas";
@@ -166,6 +165,81 @@ export const transportationMethod = pgEnum("transportation_method", [
   "None",
 ]);
 
+export const submissionStatusEnum = pgEnum("submission_status", [
+  "draft",
+  "submitted",
+  "late",
+]);
+
+export const judgeTypeEnum = pgEnum("judge_type", ["organizer", "sponsored"]);
+
+export const judgingQueueStatusEnum = pgEnum("judging_queue_status", [
+  "waiting",
+  "assigned",
+]);
+
+export const roundTypeEnum = pgEnum("round_type", ["regular", "sponsored"]);
+
+export const trackEnum = pgEnum("track", [
+  "Best Use of Cohere",
+  "Best Use of AntiGravity",
+  "Best Domain",
+  "General",
+]);
+
+/**
+ * The type of cheat check run against an individual hacker.
+ */
+export const hackerCheckType = pgEnum("hacker_check_type", [
+  "IS_OF_AGE",
+  "IS_REGISTERED",
+]);
+
+/**
+ * The type of cheat check run against a team submission.
+ */
+export const teamCheckType = pgEnum("team_check_type", [
+  "COMMIT_WITHIN_ALLOTTED_TIME",
+  "ONLY_TEAM_MEMBER_COMMITS",
+  "DEVPOST_MEMBERS_REGISTERED",
+]);
+
+// ---------------------------------------------------------------------------
+// Teams — defined before users so users can FK into it
+// ---------------------------------------------------------------------------
+
+/**
+ * The table for storing hacker teams formed during the event.
+ * Also serves as the project submission record (devpostUrl, githubUrl, submissionStatus).
+ */
+export const teams = pgTable(
+  "team",
+  {
+    id: varchar("id", { length: 6 }).notNull().primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+
+    // Project submission
+    devpostUrl: varchar("devpost_url", { length: 2048 }),
+    githubUrl: varchar("github_url", { length: 2048 }),
+    submissionStatus: submissionStatusEnum("submission_status")
+      .default("draft")
+      .notNull(),
+    submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 }),
+    tracks: trackEnum("tracks").array(),
+    memberGithubUsernames: text("member_github_usernames").array(),
+    memberDevpostUsernames: text("member_devpost_usernames").array(),
+
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("team_created_at_idx").on(t.createdAt)],
+);
+
+// ---------------------------------------------------------------------------
+// Core auth / user tables
+// ---------------------------------------------------------------------------
+
 /**
  * The table for storing hacker pre-registration, to be used as an email list
  * for when the actual application starts.
@@ -180,226 +254,6 @@ export const preregistrations = pgTable("preregistration", {
     .notNull(),
   email: varchar("email", { length: 320 }).unique().notNull(),
 });
-
-/**
- * The table for storing organizer reviews of an application, to be used for the
- * application review portal.
- */
-export const reviews = pgTable(
-  "review",
-  {
-    reviewerUserId: varchar("reviewer_user_id", { length: 255 })
-      .notNull()
-      .references(() => users.id),
-    applicantUserId: varchar("applicant_user_id", { length: 255 })
-      .notNull()
-      .references(() => applications.userId)
-      .references(() => users.id),
-    createdAt: timestamp("created_at", {
-      mode: "date",
-      precision: 3,
-    })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp("updated_at", {
-      mode: "date",
-      precision: 3,
-    })
-      .defaultNow()
-      .notNull(),
-    originalityRating: smallint("originality_rating").default(0),
-    technicalityRating: smallint("technicality_rating").default(0),
-    passionRating: smallint("passion_rating").default(0),
-    comments: text("comments"),
-    completed: boolean("completed").default(false),
-    referral: boolean("referral").default(false),
-  },
-  (review) => [
-    primaryKey({
-      columns: [review.reviewerUserId, review.applicantUserId],
-    }),
-    index("applicant_user_id_idx").on(review.applicantUserId),
-  ],
-);
-
-/**
- * Reviews have a many-to-one relationship with users for reviewer and applicant.
- * ie. a review only has one reviewer and one applicant user.
- *
- * Reviews have a many-to-one relationship with applications.
- * ie. a review is for one application, but an application can have many reveiws.
- */
-export const reviewsRelations = relations(reviews, ({ one }) => ({
-  reviewer: one(users, {
-    fields: [reviews.reviewerUserId],
-    references: [users.id],
-  }),
-  applicant: one(users, {
-    fields: [reviews.applicantUserId],
-    references: [users.id],
-  }),
-  application: one(applications, {
-    fields: [reviews.applicantUserId],
-    references: [applications.userId],
-  }),
-}));
-
-/**
- * The table for storing hacker applications while the hacker is completing the application,
- * and during the review process.
- */
-export const applications = pgTable(
-  "application",
-  {
-    userId: varchar("user_id", { length: 255 })
-      .notNull()
-      .primaryKey()
-      .references(() => users.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at", {
-      mode: "date",
-      precision: 3,
-    })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp("updated_at", {
-      mode: "date",
-      precision: 3,
-    })
-      .defaultNow()
-      .notNull(),
-    status: applicationStatus("status").default("IN_PROGRESS").notNull(),
-
-    // Avatar
-    avatarColour: avatarColour("avatar_colour"),
-    avatarFace: integer("avatar_face"),
-    avatarLeftHand: integer("avatar_left_hand"),
-    avatarRightHand: integer("avatar_right_hand"),
-    avatarHat: integer("avatar_hat"),
-
-    // About You
-    firstName: varchar("first_name", { length: 255 }),
-    lastName: varchar("last_name", { length: 255 }),
-    age: integer("age"), // 18+
-    phoneNumber: varchar("phone_number", { length: 42 }), // Frontend validation
-    countryOfResidence: countrySelection("country_of_residence"),
-
-    school: varchar("name", { length: 255 }),
-    yearOfStudy: yearOfStudy("year_of_study"),
-    major: major("major"),
-
-    shirtSize: shirtSize("shirt_size"),
-    dietaryRestrictions: dietaryRestrictions("dietary_restrictions"),
-    dietaryRestrictionsOther: varchar("dietary_restrictions_other", {
-      length: 255,
-    }),
-
-    attendedBefore: boolean("attended"),
-    numOfHackathons: numOfHackathons("num_of_hackathons"),
-
-    // Your Story
-    question1: text("question1"),
-    question2: text("question2"),
-    question3: text("question3"),
-
-    // Profile Links
-    resumeLink: varchar("resume_link", { length: 2048 }),
-    otherLink: varchar("other_link", { length: 2048 }),
-
-    // These links need to be mandatory for cheat checks
-    devpostLink: varchar("devpost_link", { length: 255 }).notNull(),
-    githubLink: varchar("github_link", { length: 2048 }).notNull(),
-    linkedInLink: varchar("linkedin_link", { length: 2048 }).notNull(),
-
-    // Agreements
-    agreeCodeOfConduct: boolean("agree_code_of_conduct") // Need
-      .default(false)
-      .notNull(),
-    agreeShareWithSponsors: boolean("agree_share_with_sponsors") // Optional
-      .default(false)
-      .notNull(),
-    agreeShareWithMLH: boolean("agree_share_with_mlh") // Need
-      .default(false)
-      .notNull(),
-    agreeEmailsFromMLH: boolean("agree_emails_from_mlh") // Optional
-      .default(false)
-      .notNull(),
-    agreeWillBe18: boolean("agree_will_be_18") // Need
-      .default(false)
-      .notNull(),
-
-    // Optional Questions
-    underrepGroup: boolean("underrep_group"),
-    gender: gender("gender"),
-    ethnicity: ethnicity("ethnicity"),
-    sexualOrientation: sexualOrientation("sexual_orientation"),
-
-    // Canvas - default to an empty but well-typed structure so new rows are valid
-    canvasData: jsonb("canvas_data")
-      .$type<{
-        paths: CanvasPaths;
-        timestamp: number;
-        version: string;
-      }>()
-      .default(sql`'{"paths":[],"timestamp":0,"version":""}'::jsonb`)
-      .notNull(),
-
-    // Emergency Contact Info
-    emergencyContactName: varchar("emergency_contact_name", { length: 255 }),
-    emergencyContactRelationship: emergencyContactRelationship(
-      "emergency_contact_relationship",
-    ),
-    emergencyContactPhoneNumber: varchar("emergency_contact_phone_number", {
-      length: 42,
-    }),
-
-    transportationMethod: transportationMethod("transportation_method"),
-  },
-  (application) => [index("user_id_idx").on(application.userId)],
-);
-
-/**
- * Applications have a one-to-one relationship with Users,
- * ie. A user can only make one application, and an application can only be associated
- * with one user.
- *
- * Applications have a one-to-many relationship with Reviews,
- * ie. An application can have many reviews, but a review is only for one application.
- */
-export const applicationsRelations = relations(
-  applications,
-  ({ one, many }) => ({
-    user: one(users, {
-      fields: [applications.userId],
-      references: [users.id],
-    }),
-    reviews: many(reviews),
-  }),
-);
-
-export const dayOfRegistrations = pgTable("day_of_registration", {
-  userId: varchar("user_id", { length: 255 })
-    .notNull()
-    .primaryKey()
-    .references(() => users.id, { onDelete: "cascade" }),
-  approved: boolean("approved").default(false).notNull(),
-  signedInAt: timestamp("signed_in_at", {
-    mode: "date",
-    precision: 3,
-  }),
-  dateOfBirth: timestamp("date_of_birth", {
-    mode: "date",
-  }),
-});
-
-export const dayOfRegistrationsRelations = relations(
-  dayOfRegistrations,
-  ({ one }) => ({
-    user: one(users, {
-      fields: [dayOfRegistrations.userId],
-      references: [users.id],
-    }),
-  }),
-);
 
 export const userType = pgEnum("user_type", ["hacker", "organizer", "sponsor"]);
 
@@ -416,12 +270,12 @@ export const users = pgTable(
     image: varchar("image", { length: 255 }),
     type: userType("type").default("hacker"),
 
-    scavengerHuntEarned: integer("scavenger_hunt_earned").default(0),
-    scavengerHuntBalance: integer("scavenger_hunt_balance").default(0),
-
     teamId: varchar("team_id", { length: 255 }).references(() => teams.id, {
       onDelete: "set null",
     }),
+
+    scavengerHuntEarned: integer("scavenger_hunt_earned").default(0),
+    scavengerHuntBalance: integer("scavenger_hunt_balance").default(0),
   },
   (user) => [
     index("user_scavenger_hunt_earned_idx").on(user.scavengerHuntEarned),
@@ -436,6 +290,9 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   team: one(teams, {
     fields: [users.teamId],
     references: [teams.id],
+  }),
+  hackerCheckResults: many(hackerCheckResults, {
+    relationName: "hacker_check_hacker",
   }),
 }));
 
@@ -506,161 +363,236 @@ export const resetPasswordTokens = pgTable("reset_password_token", {
   expires: timestamp("expires", { mode: "date" }).notNull(),
 });
 
-export const scavengerHuntItems = pgTable("scavenger_hunt_item", {
-  id: serial("id").primaryKey(),
-  code: varchar("code", { length: 12 }).unique().notNull(),
-  points: smallint("points").default(1).notNull(),
-  description: text("description"),
-  deletedAt: timestamp("deleted_at", { mode: "date", precision: 3 }),
-});
+// ---------------------------------------------------------------------------
+// Applications & reviews
+// ---------------------------------------------------------------------------
 
-export const scavengerHuntScans = pgTable(
-  "scavenger_hunt_scan",
+/**
+ * The table for storing hacker applications while the hacker is completing the application,
+ * and during the review process.
+ */
+export const applications = pgTable(
+  "application",
   {
     userId: varchar("user_id", { length: 255 })
       .notNull()
-      .references(() => users.id),
-    scannerId: varchar("scanner_id", { length: 255 })
-      .notNull()
-      .references(() => users.id),
-    itemId: integer("item_id")
-      .notNull()
-      .references(() => scavengerHuntItems.id),
-    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", {
+      mode: "date",
+      precision: 3,
+    })
       .defaultNow()
       .notNull(),
+    updatedAt: timestamp("updated_at", {
+      mode: "date",
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    status: applicationStatus("status").default("IN_PROGRESS").notNull(),
+
+    // Avatar
+    avatarColour: avatarColour("avatar_colour"),
+    avatarFace: integer("avatar_face"),
+    avatarLeftHand: integer("avatar_left_hand"),
+    avatarRightHand: integer("avatar_right_hand"),
+    avatarHat: integer("avatar_hat"),
+
+    // About You
+    firstName: varchar("first_name", { length: 255 }),
+    lastName: varchar("last_name", { length: 255 }),
+    age: integer("age"), // 18+
+    phoneNumber: varchar("phone_number", { length: 42 }), // Frontend validation
+    countryOfResidence: countrySelection("country_of_residence"),
+
+    school: varchar("name", { length: 255 }),
+    yearOfStudy: yearOfStudy("year_of_study"),
+    major: major("major"),
+
+    shirtSize: shirtSize("shirt_size"),
+    dietaryRestrictions: dietaryRestrictions("dietary_restrictions"),
+    dietaryRestrictionsOther: varchar("dietary_restrictions_other", {
+      length: 255,
+    }),
+
+    attendedBefore: boolean("attended"),
+    numOfHackathons: numOfHackathons("num_of_hackathons"),
+
+    // Your Story
+    question1: text("question1"),
+    question2: text("question2"),
+    question3: text("question3"),
+
+    // Profile Links — mandatory for cheat checks
+    githubLink: varchar("github_link", { length: 2048 }).notNull(),
+    linkedInLink: varchar("linkedin_link", { length: 2048 }).notNull(),
+    devpostLink: varchar("devpost_link", { length: 255 }).notNull(),
+    resumeLink: varchar("resume_link", { length: 2048 }),
+    otherLink: varchar("other_link", { length: 2048 }),
+
+    // Agreements
+    agreeCodeOfConduct: boolean("agree_code_of_conduct") // Need
+      .default(false)
+      .notNull(),
+    agreeShareWithSponsors: boolean("agree_share_with_sponsors") // Optional
+      .default(false)
+      .notNull(),
+    agreeShareWithMLH: boolean("agree_share_with_mlh") // Need
+      .default(false)
+      .notNull(),
+    agreeEmailsFromMLH: boolean("agree_emails_from_mlh") // Optional
+      .default(false)
+      .notNull(),
+    agreeWillBe18: boolean("agree_will_be_18") // Need
+      .default(false)
+      .notNull(),
+
+    // Optional demographic questions
+    underrepGroup: boolean("underrep_group"),
+    gender: gender("gender"),
+    ethnicity: ethnicity("ethnicity"),
+    sexualOrientation: sexualOrientation("sexual_orientation"),
+
+    // Canvas - default to an empty but well-typed structure so new rows are valid
+    canvasData: jsonb("canvas_data")
+      .$type<{
+        paths: CanvasPaths;
+        timestamp: number;
+        version: string;
+      }>()
+      .default(sql`'{"paths":[],"timestamp":0,"version":""}'::jsonb`)
+      .notNull(),
+
+    // Emergency Contact Info
+    emergencyContactName: varchar("emergency_contact_name", { length: 255 }),
+    emergencyContactRelationship: emergencyContactRelationship(
+      "emergency_contact_relationship",
+    ),
+    emergencyContactPhoneNumber: varchar("emergency_contact_phone_number", {
+      length: 42,
+    }),
+
+    transportationMethod: transportationMethod("transportation_method"),
   },
-  (t) => [
-    primaryKey({ columns: [t.userId, t.itemId] }),
-    index("scan_user_idx").on(t.userId),
-    index("scan_scanner_idx").on(t.scannerId),
+  (application) => [index("user_id_idx").on(application.userId)],
+);
+
+/**
+ * Applications have a one-to-one relationship with Users,
+ * ie. A user can only make one application, and an application can only be associated
+ * with one user.
+ *
+ * Applications have a one-to-many relationship with Reviews,
+ * ie. An application can have many reviews, but a review is only for one application.
+ */
+export const applicationsRelations = relations(
+  applications,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [applications.userId],
+      references: [users.id],
+    }),
+    reviews: many(reviews),
+  }),
+);
+
+/**
+ * Day-of check-in record created by an organizer after verifying a hacker's ID at the door.
+ * Separate from the application so check-in state doesn't pollute the pre-event record.
+ */
+export const dayOfRegistrations = pgTable("day_of_registration", {
+  userId: varchar("user_id", { length: 255 })
+    .notNull()
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  approved: boolean("approved").default(false).notNull(),
+  signedInAt: timestamp("signed_in_at", {
+    mode: "date",
+    precision: 3,
+  }),
+  dateOfBirth: timestamp("date_of_birth", {
+    mode: "date",
+  }),
+});
+
+export const dayOfRegistrationsRelations = relations(
+  dayOfRegistrations,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [dayOfRegistrations.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+/**
+ * The table for storing organizer reviews of an application, to be used for the
+ * application review portal.
+ */
+export const reviews = pgTable(
+  "review",
+  {
+    reviewerUserId: varchar("reviewer_user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    applicantUserId: varchar("applicant_user_id", { length: 255 })
+      .notNull()
+      .references(() => applications.userId)
+      .references(() => users.id),
+    createdAt: timestamp("created_at", {
+      mode: "date",
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", {
+      mode: "date",
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    originalityRating: smallint("originality_rating").default(0),
+    technicalityRating: smallint("technicality_rating").default(0),
+    passionRating: smallint("passion_rating").default(0),
+    comments: text("comments"),
+    completed: boolean("completed").default(false),
+    referral: boolean("referral").default(false),
+  },
+  (review) => [
+    primaryKey({
+      columns: [review.reviewerUserId, review.applicantUserId],
+    }),
+    index("applicant_user_id_idx").on(review.applicantUserId),
   ],
 );
 
-export const scavengerHuntRewards = pgTable("scavenger_hunt_reward", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  costPoints: smallint("cost_points").notNull(),
-  description: text("description"),
-  quantity: integer("quantity"),
-});
-
-export const scavengerHuntRedemptions = pgTable(
-  "scavenger_hunt_redemption",
-  {
-    id: serial("id").primaryKey(),
-    userId: varchar("user_id", { length: 255 })
-      .notNull()
-      .references(() => users.id),
-    rewardId: integer("reward_id")
-      .notNull()
-      .references(() => scavengerHuntRewards.id),
-    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
-      .defaultNow()
-      .notNull(),
-  },
-  (t) => [index("redemption_user_idx").on(t.userId)],
-);
-
-// Enums
-export const submissionStatusEnum = pgEnum("submission_status", [
-  "draft",
-  "submitted",
-  "late",
-]);
-export const judgeTypeEnum = pgEnum("judge_type", ["organizer", "sponsored"]);
-export const judgingQueueStatusEnum = pgEnum("judging_queue_status", [
-  "waiting",
-  "assigned",
-]);
-export const roundTypeEnum = pgEnum("round_type", ["regular", "sponsored"]);
-
-export const trackEnum = pgEnum("track", [
-  "Best Use of Cohere",
-  "Best Use of AntiGravity",
-  "Best Domain",
-  "General",
-]);
-
-// Cheat Checks
-export const cheatCheckIndividualResults = pgTable(
-  "cheat_check_individual_result",
-  {
-    userId: varchar("user_id", { length: 255 })
-      .notNull()
-      .primaryKey()
-      .references(() => users.id),
-    isOfAge: boolean("is_of_age").default(false).notNull(),
-    githubScanner: boolean("github_scanner").default(false).notNull(),
-    linkedinScanner: boolean("linkedin_scanner").default(false).notNull(),
-    finalResult: boolean("final_result").default(false).notNull(),
-    notes: text("notes"),
-    lastRunAt: timestamp("last_run_at", { mode: "date", precision: 3 })
-      .defaultNow()
-      .notNull(),
-  },
-  (t) => [index("cheat_check_indiv_final_idx").on(t.finalResult)],
-);
-
-export const cheatCheckTeamResults = pgTable(
-  "cheat_check_team_result",
-  {
-    teamId: varchar("team_id", { length: 255 })
-      .notNull()
-      .primaryKey()
-      .references(() => teams.id, { onDelete: "cascade" }),
-    commitWithinAllottedTime: boolean("commit_within_allotted_time")
-      .default(false)
-      .notNull(),
-    onlyTeamMemberCommits: boolean("only_team_member_commits")
-      .default(false)
-      .notNull(),
-    devPostMembersAreRegistered: boolean("devpost_members_are_registered")
-      .default(false)
-      .notNull(),
-    finalResult: boolean("final_result").default(false).notNull(),
-    notes: text("notes"),
-    lastRunAt: timestamp("last_run_at", { mode: "date", precision: 3 })
-      .defaultNow()
-      .notNull(),
-  },
-  (t) => [index("cheat_check_team_final_idx").on(t.finalResult)],
-);
-
-// Teams & Projects
-export const teams = pgTable(
-  "team",
-  {
-    id: varchar("id", { length: 6 }).notNull().primaryKey(),
-    name: varchar("name", { length: 255 }).notNull(),
-
-    // Project Submissions
-    devpostUrl: varchar("devpost_url", { length: 2048 }),
-    githubUrl: varchar("github_url", { length: 2048 }),
-    submissionStatus: submissionStatusEnum("submission_status")
-      .default("draft")
-      .notNull(),
-    submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 }),
-    tracks: trackEnum("tracks").array(),
-
-    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
-      .defaultNow()
-      .notNull(),
-  },
-  (t) => [index("team_created_at_idx").on(t.createdAt)],
-);
-
-export const teamsRelations = relations(teams, ({ many, one }) => ({
-  members: many(users),
-  marks: many(teamMarks),
-  skips: many(judgingSkips),
-  cheatCheck: one(cheatCheckTeamResults, {
-    fields: [teams.id],
-    references: [cheatCheckTeamResults.teamId],
+/**
+ * Reviews have a many-to-one relationship with users for reviewer and applicant.
+ * ie. a review only has one reviewer and one applicant user.
+ *
+ * Reviews have a many-to-one relationship with applications.
+ * ie. a review is for one application, but an application can have many reveiws.
+ */
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  reviewer: one(users, {
+    fields: [reviews.reviewerUserId],
+    references: [users.id],
+  }),
+  applicant: one(users, {
+    fields: [reviews.applicantUserId],
+    references: [users.id],
+  }),
+  application: one(applications, {
+    fields: [reviews.applicantUserId],
+    references: [applications.userId],
   }),
 }));
 
-// Judging Portal Schema
+// ---------------------------------------------------------------------------
+// Judging portal
+// ---------------------------------------------------------------------------
+
 export const judges = pgTable("judge", {
   id: varchar("id", { length: 255 })
     .notNull()
@@ -669,14 +601,12 @@ export const judges = pgTable("judge", {
   type: judgeTypeEnum("type").default("organizer").notNull(),
   track: trackEnum("track").array(), // array of tracks for sponsored judges
 
-  // Derived Stats
+  // Derived stats used for score normalization
+  // markCount = n, markSum = S, markSquaredSum = S2
+  // σ = √( (S2 / n) − (S / n)² )
   marksCount: integer("marks_count").default(0).notNull(),
   marksSum: real("marks_sum").default(0).notNull(),
   marksSquaredSum: real("marks_squared_sum").default(0).notNull(),
-  /*
-   * markCount = n, markSum = S, markSquaredSum = S2
-   * alternative formula for std is: σ = √( (S2 / n) − (S / n)² )
-   */
 });
 
 export const judgesRelations = relations(judges, ({ one, many }) => ({
@@ -769,3 +699,163 @@ export const judgingSkipsRelations = relations(judgingSkips, ({ one }) => ({
     references: [judges.id],
   }),
 }));
+
+export const teamsRelations = relations(teams, ({ many, one }) => ({
+  members: many(users),
+  marks: many(teamMarks),
+  skips: many(judgingSkips),
+  checkResults: many(teamCheckResults),
+}));
+
+// ---------------------------------------------------------------------------
+// Cheat check results
+// ---------------------------------------------------------------------------
+
+/**
+ * Cached results for per-hacker cheat checks (isOfAge, isRegistered, isApproved).
+ * Upserted on (userId, checkType) — re-running a check overwrites the previous result.
+ * `details` is a typed JSONB blob specific to each check type.
+ */
+export const hackerCheckResults = pgTable(
+  "hacker_check_result",
+  {
+    id: serial("id").primaryKey(),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    checkType: hackerCheckType("check_type").notNull(),
+    passed: boolean("passed").notNull(),
+    details: jsonb("details").$type<Record<string, unknown>>().notNull(),
+    checkedAt: timestamp("checked_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    checkedByUserId: varchar("checked_by_user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    manualOverride: boolean("manual_override"),
+    notes: text("notes"),
+  },
+  (t) => [
+    index("hacker_check_user_idx").on(t.userId),
+    uniqueIndex("hacker_check_unique_idx").on(t.userId, t.checkType),
+  ],
+);
+
+export const hackerCheckResultsRelations = relations(
+  hackerCheckResults,
+  ({ one }) => ({
+    user: one(users, {
+      relationName: "hacker_check_hacker",
+      fields: [hackerCheckResults.userId],
+      references: [users.id],
+    }),
+    checkedBy: one(users, {
+      relationName: "hacker_check_reviewer",
+      fields: [hackerCheckResults.checkedByUserId],
+      references: [users.id],
+    }),
+  }),
+);
+
+/**
+ * Cached results for per-team cheat checks (commit timing, contributors, DevPost, cross-post).
+ * Upserted on (teamId, checkType).
+ */
+export const teamCheckResults = pgTable(
+  "team_check_result",
+  {
+    id: serial("id").primaryKey(),
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    checkType: teamCheckType("check_type").notNull(),
+    passed: boolean("passed").notNull(),
+    details: jsonb("details").$type<Record<string, unknown>>().notNull(),
+    checkedAt: timestamp("checked_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    checkedByUserId: varchar("checked_by_user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    manualOverride: boolean("manual_override"),
+    notes: text("notes"),
+  },
+  (t) => [
+    index("team_check_team_idx").on(t.teamId),
+    uniqueIndex("team_check_unique_idx").on(t.teamId, t.checkType),
+  ],
+);
+
+export const teamCheckResultsRelations = relations(
+  teamCheckResults,
+  ({ one }) => ({
+    team: one(teams, {
+      fields: [teamCheckResults.teamId],
+      references: [teams.id],
+    }),
+    checkedBy: one(users, {
+      fields: [teamCheckResults.checkedByUserId],
+      references: [users.id],
+    }),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Scavenger hunt
+// ---------------------------------------------------------------------------
+
+export const scavengerHuntItems = pgTable("scavenger_hunt_item", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 12 }).unique().notNull(),
+  points: smallint("points").default(1).notNull(),
+  description: text("description"),
+  deletedAt: timestamp("deleted_at", { mode: "date", precision: 3 }),
+});
+
+export const scavengerHuntScans = pgTable(
+  "scavenger_hunt_scan",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    scannerId: varchar("scanner_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    itemId: integer("item_id")
+      .notNull()
+      .references(() => scavengerHuntItems.id),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.itemId] }),
+    index("scan_user_idx").on(t.userId),
+    index("scan_scanner_idx").on(t.scannerId),
+  ],
+);
+
+export const scavengerHuntRewards = pgTable("scavenger_hunt_reward", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  costPoints: smallint("cost_points").notNull(),
+  description: text("description"),
+  quantity: integer("quantity"),
+});
+
+export const scavengerHuntRedemptions = pgTable(
+  "scavenger_hunt_redemption",
+  {
+    id: serial("id").primaryKey(),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id),
+    rewardId: integer("reward_id")
+      .notNull()
+      .references(() => scavengerHuntRewards.id),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("redemption_user_idx").on(t.userId)],
+);
