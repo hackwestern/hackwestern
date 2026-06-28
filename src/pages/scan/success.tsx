@@ -41,9 +41,9 @@ export default function ScanSuccessPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6 rounded-lg border border-border bg-card p-8 text-center">
         {/* Success Icon */}
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+        <div className="bg-green-100 mx-auto flex h-16 w-16 items-center justify-center rounded-full">
           <svg
-            className="h-8 w-8 text-green-600"
+            className="text-green-600 h-8 w-8"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
