@@ -125,7 +125,7 @@ html {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply cursor-pixel-default bg-background text-foreground;
   }
 
   /* Ensure full viewport coverage on mobile */

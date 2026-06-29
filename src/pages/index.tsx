@@ -4,7 +4,7 @@ import { Input } from "~/components/ui/input";
 
 export default function Home() {
   return (
-    <main className="relative h-screen overflow-hidden bg-[url('/landing/home/background.svg')] bg-cover bg-center bg-no-repeat">
+    <main className="relative h-screen cursor-pixel-default overflow-hidden bg-[url('/landing/home/background.svg')] bg-cover bg-center bg-no-repeat">
       <img
         src="/landing/home/cloud1.svg"
         alt=""
@@ -42,7 +42,7 @@ export default function Home() {
         <div className="info-text mt-[28px] flex flex-col gap-2 text-[20px] font-medium leading-[150%] text-[#2E547A]">
           <div className="flex items-center gap-4">
             <img src="/landing/home/icons/retro-globe.svg" alt="globe icon" />
-            <p>In-Person event</p>
+            <p>In-Person Event</p>
           </div>
           <div className="flex items-center gap-4">
             <img src="/landing/home/icons/retro-cal.svg" alt="calendar icon" />
