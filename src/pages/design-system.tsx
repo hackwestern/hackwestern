@@ -26,7 +26,9 @@ function DesignSystem() {
       <h1 className="h1">Design System HW13</h1>
 
       <div className="h3">Window Asset: </div>
-      <Window title="Placeholder"></Window>
+      <Window title="Placeholder">
+        <div className="font-pix32 text-9xl pb-10">0:00</div>
+      </Window>
 
       <div className="h3">typography: </div>
       <div className="h1">heading 1</div>
