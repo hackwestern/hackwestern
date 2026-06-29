@@ -5,18 +5,28 @@ import { Input } from "~/components/ui/input";
 export default function Home() {
   return (
     <main className="relative h-screen cursor-pixel-default overflow-hidden bg-[url('/landing/home/background.svg')] bg-cover bg-center bg-no-repeat">
-      <img
-        src="/landing/home/cloud1.svg"
-        alt=""
+      <div
+        className="cloud-scroll-right pointer-events-none absolute left-[-12vw] top-[10vh] w-[55vw]"
         aria-hidden="true"
-        className="pointer-events-none absolute -left-[9vw] top-[12vh] w-[48vw] max-w-[704px]"
-      />
-      <img
-        src="/landing/home/cloud2.svg"
-        alt=""
+      >
+        <img src="/landing/home/cloud1.webp" alt="" className="w-full" />
+        <img
+          src="/landing/home/cloud1.webp"
+          alt=""
+          className="absolute right-[100vw] top-0 w-full"
+        />
+      </div>
+      <div
+        className="cloud-scroll-left pointer-events-none absolute bottom-[23vh] right-[calc(-8vw)] w-[63vw]"
         aria-hidden="true"
-        className="pointer-events-none absolute -right-[4vw] bottom-[31vh] w-[55vw] max-w-[877px]"
-      />
+      >
+        <img src="/landing/home/cloud2.webp" alt="" className="w-full" />
+        <img
+          src="/landing/home/cloud2.webp"
+          alt=""
+          className="absolute left-[100vw] top-0 w-full"
+        />
+      </div>
       <img
         src="/landing/home/tiny-horse.png"
         alt=""
