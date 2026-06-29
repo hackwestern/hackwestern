@@ -40,9 +40,7 @@ export const buttonVariants = cva(buttonBase, {
       tertiary:
         "bg-transparent text-medium px-4 active:text-heavy hover:text-blue-4",
 
-      icon: cn(
-        "bg-gray-2 shadow-button-icon hover:bg-[#CBCBCB]"
-      ),
+      icon: cn("bg-gray-2 shadow-button-icon hover:bg-[#CBCBCB]"),
       destructive:
         "bg-destructive text-destructive-foreground hover:bg-destructive-dark",
       outline: "bg-violet-100 hover:bg-muted border border-[1px] border-muted",

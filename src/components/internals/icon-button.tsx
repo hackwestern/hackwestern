@@ -11,17 +11,15 @@ export default function IconButton({
   onClick,
   className,
 }: ButtonProps) {
-    return (
-      <Button
-        variant="icon"
-        onClick={onClick}
-        size="icon"
-        className={className}
-        disabled={disabled}
-      >
-
-        <div>{children}</div>
-
-      </Button>
-    );
+  return (
+    <Button
+      variant="icon"
+      onClick={onClick}
+      size="icon"
+      className={className}
+      disabled={disabled}
+    >
+      <div>{children}</div>
+    </Button>
+  );
 }

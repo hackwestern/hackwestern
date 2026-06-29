@@ -27,7 +27,7 @@ function DesignSystem() {
 
       <div className="h3">Window Asset: </div>
       <Window title="Placeholder">
-        <div className="font-pix32 text-9xl pb-10">0:00</div>
+        <div className="pb-10 font-pix32 text-9xl">0:00</div>
       </Window>
 
       <div className="h3">typography: </div>
