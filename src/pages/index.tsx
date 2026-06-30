@@ -1,10 +1,9 @@
 import PrimaryButton from "~/components/internals/primary-button";
-import TertiaryButton from "~/components/internals/tertiary-button";
 import { Input } from "~/components/ui/input";
 
 export default function Home() {
   return (
-    <main className="relative h-screen cursor-pixel-default overflow-hidden bg-[url('/landing/home/background.svg')] bg-cover bg-center bg-no-repeat">
+    <main className="relative h-screen cursor-pixel-default overflow-hidden bg-[url('/landing/home/background.webp')] bg-cover bg-center bg-no-repeat">
       <div
         className="cloud-scroll-right pointer-events-none absolute left-[-12vw] top-[10vh] w-[55vw]"
         aria-hidden="true"
@@ -17,14 +16,14 @@ export default function Home() {
         />
       </div>
       <div
-        className="cloud-scroll-left pointer-events-none absolute bottom-[23vh] right-[calc(-8vw)] w-[63vw]"
+        className="cloud-scroll-right-slow pointer-events-none absolute bottom-[23vh] right-[calc(-8vw)] w-[63vw]"
         aria-hidden="true"
       >
         <img src="/landing/home/cloud2.webp" alt="" className="w-full" />
         <img
           src="/landing/home/cloud2.webp"
           alt=""
-          className="absolute left-[100vw] top-0 w-full"
+          className="absolute right-[100vw] top-0 w-full"
         />
       </div>
       <img
@@ -34,7 +33,7 @@ export default function Home() {
         className="pointer-events-none absolute bottom-[14vh] left-[20vw] w-[22px]"
       />
       <div className="absolute left-1/2 top-[38%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
-        <div className="hero-text flex flex-col gap-3.5 font-cossetteTexte">
+        <div className="hero-text flex flex-col gap-3.5 font-cossetteTexte text-black">
           <div className="title-text flex items-baseline">
             <p className="text-[86.67px] font-bold leading-[26px] tracking-[-0.04em]">
               Hack Western&nbsp;
@@ -70,9 +69,12 @@ export default function Home() {
               Submit
             </PrimaryButton>
           </div>
-          <TertiaryButton className="text-[16px] font-medium">
+          <a
+            href="mailto:hello@hackwestern.me"
+            className="cursor-pixel-hover text-[16px] font-medium text-[#2E547A]"
+          >
             Interested in sponsoring?
-          </TertiaryButton>
+          </a>
         </div>
       </div>
     </main>

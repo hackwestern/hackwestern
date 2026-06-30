@@ -204,6 +204,10 @@ html {
     .cloud-scroll-right {
       animation: cloud-scroll-right 70s linear 5s infinite;
     }
+
+    .cloud-scroll-right-slow {
+      animation: cloud-scroll-right 95s linear 5s infinite;
+    }
   }
 
   @supports (-moz-appearance: none) {
