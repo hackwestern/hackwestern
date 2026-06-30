@@ -58,7 +58,6 @@ export function Window({
         className="relative overflow-hidden bg-gray-2 shadow-[1px_1px_2px_0px_rgba(0,0,0,0.24),4px_4px_10px_0px_rgba(0,0,0,0.12)] transition-all duration-1000"
         style={{ width, height: minimized ? TITLE_BAR_HEIGHT : height }}
       >
-
         {/* Title bar wrapper (carries outer bevel) */}
         <div
           className={cn(
@@ -66,11 +65,8 @@ export function Window({
             win95BevelInverted,
           )}
         >
-
           {/* Gradient: blue-8 (#042239) -> blue-4 (#3B94EC), left to right */}
-          <div
-            className= "relative flex w-full items-center justify-between bg-gradient-to-r from-blue-8 to-blue-4 pb-[6px] pl-[10px] pr-[2px] pt-[10px]"
-          >
+          <div className="relative flex w-full items-center justify-between bg-gradient-to-r from-blue-8 to-blue-4 pb-[6px] pl-[10px] pr-[2px] pt-[10px]">
             <p className="subtitle-sm whitespace-nowrap tracking-[-0.36px] text-white">
               {title}
             </p>
