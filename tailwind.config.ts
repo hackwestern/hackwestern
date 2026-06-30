@@ -143,6 +143,7 @@ const config = {
         "button-primary": tokens.shadows.button,
         "button-primary-active": tokens.shadows.activeButton,
         "button-secondary": tokens.shadows.secondary,
+        "button-icon": tokens.shadows.icon,
       },
       fontFamily: {
         figtree: ["var(--font-figtree)"],
