@@ -88,7 +88,7 @@ export function Window({
               {/* Minimize: collapses content into the title bar */}
               <IconButton
                 onClick={() => setMinimized(true)}
-                className="pb-[3px] pl-[4px] pr-[6px] pt-[9px]"
+                className="h-[14px] w-[16px] pb-[3px] pl-[4px] pr-[6px] pt-[9px]"
                 disabled={minDisabled}
               >
                 <svg
@@ -103,7 +103,7 @@ export function Window({
               </IconButton>
               <IconButton
                 onClick={() => setMinimized(false)}
-                className="pb-[3px] pl-[3px] pr-[4px] pt-[2px]"
+                className="h-[14px] w-[16px] pb-[3px] pl-[3px] pr-[4px] pt-[2px]"
                 disabled={maxDisabled}
               >
                 <svg

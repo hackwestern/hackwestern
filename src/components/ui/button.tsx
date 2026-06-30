@@ -54,7 +54,7 @@ export const buttonVariants = cva(buttonBase, {
       default: "h-10 px-4 py-2",
       sm: "px-[12px] py-[7px]",
       lg: "px-[18px] py-[12px]",
-      icon: "h-[14px] w-[16px]",
+      icon: "h-10 w-10",
     },
   },
   defaultVariants: { variant: "primary", size: "lg" },
