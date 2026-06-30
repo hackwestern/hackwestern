@@ -127,25 +127,25 @@ export function Window({
 
         {/* Dotted texture */}
         {showDots && (
-            <svg
-                aria-hidden
-                className="pointer-events-none absolute inset-x-[4px] bottom-0 top-[53px] w-full h-full block"
-            >
-                <defs>
-                <pattern
-                    id={patternId}
-                    x={((width - 8) % (DOT_GAP + 1)) / 2}
-                    y={((height - 53) % (DOT_GAP + 1)) / 2}
-                    width={DOT_GAP + 1}
-                    height={DOT_GAP + 1}
-                    patternUnits="userSpaceOnUse"
-                >
-                    <rect width="1" height="1" className="fill-gray-4" />
-                </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill={`url(#${patternId})`} />
-            </svg>
-            )}
+          <svg
+            aria-hidden
+            className="pointer-events-none absolute inset-x-[4px] bottom-0 top-[53px] block h-full w-full"
+          >
+            <defs>
+              <pattern
+                id={patternId}
+                x={((width - 8) % (DOT_GAP + 1)) / 2}
+                y={((height - 53) % (DOT_GAP + 1)) / 2}
+                width={DOT_GAP + 1}
+                height={DOT_GAP + 1}
+                patternUnits="userSpaceOnUse"
+              >
+                <rect width="1" height="1" className="fill-gray-4" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill={`url(#${patternId})`} />
+          </svg>
+        )}
         {/* Outer frame bevel */}
         <div
           aria-hidden
