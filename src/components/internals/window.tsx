@@ -51,12 +51,7 @@ export function Window({
   const minDisabled = minimized;
   const maxDisabled = !minimized;
 
-  // Dot grid: derive cols/rows from the full window area (dots are centered via place-content-center)
-  const cols = Math.floor((width + DOT_GAP) / (1 + DOT_GAP));
-  const rows = Math.floor(
-    (height - TITLE_BAR_HEIGHT + DOT_GAP) / (1 + DOT_GAP),
-  );
-  const dotCount = cols * rows;
+  const patternId = React.useId();
 
   return (
     <div className={cn("relative", className)} style={{ width, height }}>
@@ -132,20 +127,25 @@ export function Window({
 
         {/* Dotted texture */}
         {showDots && (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-[4px] bottom-[0px] top-[53px] grid place-content-center overflow-hidden"
-            style={{
-              gridTemplateColumns: `repeat(${cols}, 1px)`,
-              gap: DOT_GAP,
-            }}
-          >
-            {Array.from({ length: dotCount }).map((_, i) => (
-              <div key={i} className="size-px bg-gray-4" />
-            ))}
-          </div>
-        )}
-
+            <svg
+                aria-hidden
+                className="pointer-events-none absolute inset-x-[4px] bottom-0 top-[53px] w-full h-full block"
+            >
+                <defs>
+                <pattern
+                    id={patternId}
+                    x={((width - 8) % (DOT_GAP + 1)) / 2}
+                    y={((height - 53) % (DOT_GAP + 1)) / 2}
+                    width={DOT_GAP + 1}
+                    height={DOT_GAP + 1}
+                    patternUnits="userSpaceOnUse"
+                >
+                    <rect width="1" height="1" className="fill-gray-4" />
+                </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill={`url(#${patternId})`} />
+            </svg>
+            )}
         {/* Outer frame bevel */}
         <div
           aria-hidden
