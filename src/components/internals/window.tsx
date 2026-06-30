@@ -1,7 +1,6 @@
 import * as React from "react";
 import { cn } from "~/lib/utils";
 import IconButton from "./icon-button";
-//remove CN from single classes
 
 const win95Bevel =
   "shadow-[inset_-1px_-1px_0px_0px_#0a0a0a,inset_1px_1px_0px_0px_#ffffff,inset_-2px_-2px_0px_0px_#808080,inset_2px_2px_0px_0px_#dfdfdf]";
@@ -56,14 +55,9 @@ export function Window({
   return (
     <div className={cn("relative", className)} style={{ width, height }}>
       <div
-        className={cn(
-          "relative overflow-hidden bg-gray-2 shadow-[1px_1px_2px_0px_rgba(0,0,0,0.24),4px_4px_10px_0px_rgba(0,0,0,0.12)] transition-all duration-1000",
-          className,
-        )}
+        className="relative overflow-hidden bg-gray-2 shadow-[1px_1px_2px_0px_rgba(0,0,0,0.24),4px_4px_10px_0px_rgba(0,0,0,0.12)] transition-all duration-1000"
         style={{ width, height: minimized ? TITLE_BAR_HEIGHT : height }}
       >
-        {/* Body background */}
-        <div aria-hidden className="pointer-events-none absolute inset-0" />
 
         {/* Title bar wrapper (carries outer bevel) */}
         <div
@@ -72,13 +66,10 @@ export function Window({
             win95BevelInverted,
           )}
         >
-          <div aria-hidden className="pointer-events-none absolute inset-0" />
 
           {/* Gradient: blue-8 (#042239) -> blue-4 (#3B94EC), left to right */}
           <div
-            className={cn(
-              "relative flex w-full items-center justify-between bg-gradient-to-r from-blue-8 to-blue-4 pb-[6px] pl-[10px] pr-[2px] pt-[10px]",
-            )}
+            className= "relative flex w-full items-center justify-between bg-gradient-to-r from-blue-8 to-blue-4 pb-[6px] pl-[10px] pr-[2px] pt-[10px]"
           >
             <p className="subtitle-sm whitespace-nowrap tracking-[-0.36px] text-white">
               {title}
