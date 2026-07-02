@@ -375,6 +375,66 @@ describe("editTeamMark / deleteTeamMark", () => {
     const remaining = await db.query.teamMarks.findMany({});
     expect(remaining).toHaveLength(0);
   });
+
+  test("deleteTeamMark re-enqueues a fully-judged team to restore quota", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    // roundsPerTeam 1: after one mark the team is fully judged and removed.
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 1 });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 60 });
+
+    // Trigger removed it from the queue (quota met).
+    let row = await db.query.judgingQueue.findFirst({
+      where: eq(judgingQueue.teamId, teamId),
+    });
+    expect(row).toBeUndefined();
+
+    const marks = await j.caller.judging.me.getSubmittedTeamMarks();
+    const mark = marks[0];
+    assertDefined(mark, "expected a submitted mark to delete");
+    await org.caller.judging.admin.deleteTeamMark({ teamMarkId: mark.id });
+
+    // Re-enqueued so one more judge sees it.
+    row = await db.query.judgingQueue.findFirst({
+      where: eq(judgingQueue.teamId, teamId),
+    });
+    expect(row?.roundsRemaining).toBe(1);
+    expect(row?.seenJudges).toBe(0);
+    expect(row?.status).toBe("waiting");
+    expect(row?.currentJudgeId).toBeNull();
+  });
+
+  test("deleteTeamMark bumps rounds on a team still in the queue", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 3 });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 60 });
+
+    // Still queued: seen 1, rounds 2.
+    let row = await db.query.judgingQueue.findFirst({
+      where: eq(judgingQueue.teamId, teamId),
+    });
+    expect(row?.roundsRemaining).toBe(2);
+    expect(row?.seenJudges).toBe(1);
+
+    const marks = await j.caller.judging.me.getSubmittedTeamMarks();
+    const mark = marks[0];
+    assertDefined(mark, "expected a submitted mark to delete");
+    await org.caller.judging.admin.deleteTeamMark({ teamMarkId: mark.id });
+
+    // Round handed back, seen recomputed from the (now zero) remaining marks.
+    row = await db.query.judgingQueue.findFirst({
+      where: eq(judgingQueue.teamId, teamId),
+    });
+    expect(row?.roundsRemaining).toBe(3);
+    expect(row?.seenJudges).toBe(0);
+  });
 });
 
 /* ---------- assignJudgeForTeam ---------- */
@@ -410,6 +470,109 @@ describe("assignJudgeForTeam", () => {
         teamId,
       }),
     ).rejects.toThrow(/not in the judging queue/i);
+  });
+});
+
+/* ---------- addJudges ---------- */
+
+describe("addJudges", () => {
+  test("promotes a user to an organizer judge (default type)", async () => {
+    const org = await makeOrganizer();
+    const user = await mockSession(db);
+
+    const added = await org.caller.judging.admin.addJudges([
+      { id: user.user.id },
+    ]);
+    expect(added).toHaveLength(1);
+    expect(added[0]?.id).toBe(user.user.id);
+    expect(added[0]?.type).toBe("organizer");
+
+    const row = await db.query.judges.findFirst({
+      where: eq(judges.id, user.user.id),
+    });
+    expect(row?.type).toBe("organizer");
+  });
+
+  test("adds multiple judges at once (organizer + sponsored)", async () => {
+    const org = await makeOrganizer();
+    const u1 = await mockSession(db);
+    const u2 = await mockSession(db);
+
+    const added = await org.caller.judging.admin.addJudges([
+      { id: u1.user.id },
+      { id: u2.user.id, type: "sponsored", track: ["Best Domain"] },
+    ]);
+    expect(added).toHaveLength(2);
+
+    const rows = await db.query.judges.findMany({});
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    expect(byId.get(u1.user.id)?.type).toBe("organizer");
+    expect(byId.get(u2.user.id)?.type).toBe("sponsored");
+    expect(byId.get(u2.user.id)?.track).toEqual(["Best Domain"]);
+  });
+
+  test("rejects a sponsored judge with no tracks", async () => {
+    const org = await makeOrganizer();
+    const user = await mockSession(db);
+
+    await expect(
+      org.caller.judging.admin.addJudges([
+        { id: user.user.id, type: "sponsored" },
+      ]),
+    ).rejects.toThrow();
+  });
+
+  test("rejects an empty user id at input validation", async () => {
+    const org = await makeOrganizer();
+
+    await expect(
+      org.caller.judging.admin.addJudges([{ id: "" }]),
+    ).rejects.toThrow();
+  });
+
+  test("is all-or-nothing: one unknown user rolls back the whole batch", async () => {
+    const org = await makeOrganizer();
+    const valid = await mockSession(db);
+
+    await expect(
+      org.caller.judging.admin.addJudges([
+        { id: valid.user.id },
+        { id: "does-not-exist" },
+      ]),
+    ).rejects.toThrow(/not found/i);
+
+    // The valid user must NOT have been inserted.
+    const row = await db.query.judges.findFirst({
+      where: eq(judges.id, valid.user.id),
+    });
+    expect(row).toBeUndefined();
+  });
+
+  test("upserts: re-adding updates type and tracks without duplicating", async () => {
+    const org = await makeOrganizer();
+    const user = await mockSession(db);
+
+    await org.caller.judging.admin.addJudges([{ id: user.user.id }]);
+    const [updated] = await org.caller.judging.admin.addJudges([
+      { id: user.user.id, type: "sponsored", track: ["Best Use of Cohere"] },
+    ]);
+    expect(updated?.type).toBe("sponsored");
+    expect(updated?.track).toEqual(["Best Use of Cohere"]);
+
+    const rows = await db.query.judges.findMany({
+      where: eq(judges.id, user.user.id),
+    });
+    expect(rows).toHaveLength(1);
+  });
+
+  test("rejects non-organizer callers", async () => {
+    const session = await mockSession(db);
+    const caller = createCaller(createInnerTRPCContext({ session }));
+    const target = await mockSession(db);
+
+    await expect(
+      caller.judging.admin.addJudges([{ id: target.user.id }]),
+    ).rejects.toThrow();
   });
 });
 

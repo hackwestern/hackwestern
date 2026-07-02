@@ -16,6 +16,8 @@ import {
   users,
 } from "~/server/db/schema";
 import {
+  type AddJudgeInput,
+  addJudgesSchema,
   assignJudgeForTeamSchema,
   deleteTeamMarkSchema,
   editTeamMarkSchema,
@@ -189,15 +191,48 @@ async function editMark(
   }
 }
 
-// Does NOT re-add the team to the queue.
+/**
+ * === TRANSACTION ===
+ * Delete a mark and re-queue its team so it still meets its judging quota —
+ * otherwise the team ends up with fewer scores than its peers and the
+ * normalized ranking is skewed. The `trg_team_mark_stats` trigger reverses
+ * the judge's aggregates on delete; here we reverse the `autoqueue` side by
+ * handing the team one more round (bumping it if still queued, re-enqueuing
+ * it if it had already been fully judged and removed). `seenJudges` is
+ * recomputed from the marks that remain so the queue stays consistent.
+ */
 async function deleteMark(teamMarkId: number): Promise<void> {
-  const deleted = await db
-    .delete(teamMarks)
-    .where(eq(teamMarks.id, teamMarkId))
-    .returning({ id: teamMarks.id });
-  if (deleted.length === 0) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "Mark not found." });
-  }
+  return db.transaction(async (tx) => {
+    const [deleted] = await tx
+      .delete(teamMarks)
+      .where(eq(teamMarks.id, teamMarkId))
+      .returning({ teamId: teamMarks.teamId });
+    if (!deleted) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Mark not found." });
+    }
+
+    const [remaining] = await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(teamMarks)
+      .where(eq(teamMarks.teamId, deleted.teamId));
+    const seenJudges = remaining?.count ?? 0;
+
+    await tx
+      .insert(judgingQueue)
+      .values({
+        teamId: deleted.teamId,
+        seenJudges,
+        roundsRemaining: 1,
+        status: "waiting",
+      })
+      .onConflictDoUpdate({
+        target: judgingQueue.teamId,
+        set: {
+          seenJudges,
+          roundsRemaining: sql`${judgingQueue.roundsRemaining} + 1`,
+        },
+      });
+  });
 }
 
 /**
@@ -353,6 +388,48 @@ async function getRanking() {
   }>(result);
 }
 
+/**
+ * === TRANSACTION ===
+ * Promote one or more existing users to judges (or update their type/tracks
+ * if they already are). The PK is the user id, so this upserts on conflict.
+ * Sponsored judges carry the tracks they cover; organizer judges have none.
+ * All-or-nothing: if any user id is unknown, nothing is written.
+ */
+async function addJudges(
+  inputs: AddJudgeInput[],
+): Promise<(typeof judges.$inferSelect)[]> {
+  return db.transaction(async (tx) => {
+    const ids = inputs.map((i) => i.id);
+    const found = await tx.query.users.findMany({
+      where: inArray(users.id, ids),
+      columns: { id: true },
+    });
+    const existing = new Set(found.map((u) => u.id));
+    const missing = [...new Set(ids.filter((id) => !existing.has(id)))];
+    if (missing.length > 0) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: `User(s) not found: ${missing.join(", ")}`,
+      });
+    }
+
+    const rows: (typeof judges.$inferSelect)[] = [];
+    for (const input of inputs) {
+      const track = input.track ?? null;
+      const [row] = await tx
+        .insert(judges)
+        .values({ id: input.id, type: input.type, track })
+        .onConflictDoUpdate({
+          target: judges.id,
+          set: { type: input.type, track },
+        })
+        .returning();
+      rows.push(row!);
+    }
+    return rows;
+  });
+}
+
 /** All judges with their user info and the team they're currently holding. */
 async function getAllJudges() {
   const [judgeRows, holds] = await Promise.all([
@@ -493,6 +570,15 @@ export const judgingRouter = createTRPCRouter({
     getAllJudges: protectedOrganizerProcedure.query(async () => {
       return withErrorHandling(() => getAllJudges(), "Failed to get judges");
     }),
+
+    addJudges: protectedOrganizerProcedure
+      .input(addJudgesSchema)
+      .mutation(async ({ input }) => {
+        return withErrorHandling(
+          () => addJudges(input),
+          "Failed to add judges",
+        );
+      }),
 
     deleteTeamMark: protectedOrganizerProcedure
       .input(deleteTeamMarkSchema)
