@@ -16,7 +16,7 @@ export default function Home() {
         />
       </div>
       <div
-        className="cloud-scroll-right-slow pointer-events-none absolute bottom-[23vh] right-[calc(-8vw)] w-[63vw]"
+        className="cloud-scroll-right-slow pointer-events-none absolute bottom-[34vh] right-[calc(-8vw)] w-[63vw] md:bottom-[23vh]"
         aria-hidden="true"
       >
         <img src="/landing/home/cloud2.webp" alt="" className="w-full" />
@@ -30,25 +30,25 @@ export default function Home() {
         src="/landing/home/tiny-horse.png"
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-[14vh] left-[20vw] w-[22px]"
+        className="pointer-events-none absolute bottom-[16vh] left-[20vw] w-[22px] md:bottom-[14vh]"
       />
       <div className="absolute left-1/2 top-[38%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
-        <div className="hero-text flex flex-col gap-3.5 font-cossetteTexte text-black">
-          <div className="title-text flex items-baseline">
-            <p className="text-[86.67px] font-bold leading-[26px] tracking-[-0.04em]">
+        <div className="hero-text flex flex-col gap-1 font-cossetteTexte text-black sm:gap-1.5 md:gap-2 lg:gap-3 xl:gap-3.5">
+          <div className="title-text">
+            <span className="text-[64px] font-bold leading-[58px] tracking-[-0.03em] xl:text-[86.67px] xl:leading-[26px] xl:tracking-[-0.04em]">
               Hack Western&nbsp;
-            </p>
-            <p className="text-[43.33px] font-normal leading-[26px] tracking-[-0.05em]">
+            </span>
+            <span className="text-[43.33px] font-normal leading-[26px] tracking-[-0.05em]">
               13
-            </p>
+            </span>
           </div>
           <div className="subtitle-text text-right">
-            <p className="text-[43.33px] font-bold leading-[26px] tracking-[-0.05em]">
+            <p className="text-[43.33px] font-bold leading-[40px] tracking-[-0.05em] xl:leading-[26px]">
               Discover the unknown
             </p>
           </div>
         </div>
-        <div className="info-text mt-[28px] flex flex-col gap-2 text-[20px] font-medium leading-[150%] text-[#2E547A]">
+        <div className="info-text mt-[36px] flex flex-col gap-2 text-[20px] font-medium leading-[150%] text-[#2E547A] md:mt-[28px]">
           <div className="flex items-center gap-4">
             <img src="/landing/home/icons/retro-globe.svg" alt="globe icon" />
             <p>In-Person Event</p>
@@ -58,7 +58,7 @@ export default function Home() {
             <p>November 20-22, 2026</p>
           </div>
         </div>
-        <div className="mt-[48px] flex flex-col items-start gap-[11px]">
+        <div className="mt-[64px] flex flex-col items-start gap-[11px] md:mt-[48px]">
           <div className="email-field flex items-center justify-center gap-[14px]">
             <Input
               className="h-[35px] w-[223px]"
