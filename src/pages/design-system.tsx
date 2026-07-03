@@ -31,8 +31,8 @@ function DesignSystem() {
         title="Small Card"
         content={
           <p>
-            The card component supports a size prop that can be set to &quot;sm&quot; for
-            a more compact appearance.
+            The card component supports a size prop that can be set to
+            &quot;sm&quot; for a more compact appearance.
           </p>
         }
         description="This card uses the small size variant."
