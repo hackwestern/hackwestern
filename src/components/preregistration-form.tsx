@@ -11,12 +11,12 @@ import {
   FormMessage,
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
-import { Button } from "~/components/ui/button";
+import PrimaryButton from "~/components/internals/primary-button";
+import { Window } from "~/components/internals/window";
 import { cn } from "~/lib/utils";
-import { Spinner } from "~/components/loading-spinner";
-import { Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 const preregistrationFormSchema = z.object({
   email: z.string().email("Please enter a valid email."),
@@ -47,7 +47,7 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
       setShowPopup(true);
     },
     onSuccess: () => {
-      setPopupMessage("Prepare for greatness.");
+      setPopupMessage("See you soon!");
       setPopupType("success");
       setShowPopup(true);
       preregistrationForm.reset();
@@ -101,88 +101,73 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
 
   return (
     <div
-      className={cn(
-        "relative flex min-h-[100px] w-full flex-col items-center justify-center space-y-4 px-12 text-primary",
-        className,
-      )}
+      className={cn("relative flex flex-col items-start gap-[11px]", className)}
     >
       <Form {...preregistrationForm}>
-        <form
-          className="w-full"
-          onSubmit={preregistrationForm.handleSubmit(onSubmit, onError)}
-        >
-          <AnimatePresence>
-            {showPopup && (
-              <motion.div
-                className={cn(
-                  "absolute left-1/2 top-full z-[-50] flex w-[250px] -translate-x-1/2 transform items-center justify-center rounded-lg border-2 border-heavy px-4 py-3 shadow-lg",
-                  popupType === "success"
-                    ? "bg-white text-heavy"
-                    : "border-red-700 bg-white text-[#b91c1c]",
-                )}
-                initial={{ opacity: 0, y: -70, x: "-50%" }}
-                animate={{ opacity: 1, y: -50, x: "-50%" }}
-                exit={{ opacity: 0, y: -70, x: "-50%" }}
-                transition={{
-                  type: "spring",
-                  damping: 15,
-                  stiffness: 200,
-                }}
-              >
-                <span className="mt-6 font-figtree text-sm font-medium">
-                  {popupMessage}
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <form onSubmit={preregistrationForm.handleSubmit(onSubmit, onError)}>
           <FormField
             control={preregistrationForm.control}
             name="email"
             render={({ field }) => (
-              <FormItem className="space-y-4">
-                <div className="flex w-max space-x-2 rounded-xl border border-offwhite bg-white/50 pb-1 pr-1 pt-1 shadow-[0_8px_16px_rgba(0,0,0,0.05)] backdrop-blur-md focus-within:ring-2 focus-within:ring-ring">
-                  <FormLabel className="sr-only">Email Address</FormLabel>
-                  <FormControl>
-                    <div className="flex items-center gap-1 py-0.5">
-                      <Mail className="ml-2 h-6 w-6 text-muted-foreground" />
-                      <Input
-                        className="border-none bg-transparent text-heavy"
-                        variant="noRing"
-                        {...field}
-                        placeholder="Sign up for updates"
-                      />
-                    </div>
-                  </FormControl>
-                  <div className="pt-1">
-                    <Button
-                      variant="primary"
-                      className="w-20 gap-2"
-                      type="submit"
-                      disabled={isPending}
-                      isPending={isPending}
+              <FormItem>
+                <FormLabel className="sr-only">Email Address</FormLabel>
+                <FormControl>
+                  <div className="flex items-center gap-[14px]">
+                    <Input
+                      className="h-[35px] w-[223px]"
+                      variant="default"
+                      placeholder="Sign up for updates"
+                      type="email"
+                      {...field}
+                    />
+                    <PrimaryButton
+                      size="sm"
+                      direction="right"
+                      isLoading={isPending}
+                      className="h-[35px]"
                     >
-                      <AnimatePresence mode="wait">
-                        <motion.span
-                          key={isPending ? "submitting" : "submit"}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          {isPending ? "" : "Submit"}
-                          <Spinner isLoading={isPending} />
-                        </motion.span>
-                      </AnimatePresence>
-                    </Button>
+                      Submit
+                    </PrimaryButton>
                   </div>
-                </div>
-                {/* Keep FormMessage hidden since we're using the popup instead */}
+                </FormControl>
                 <FormMessage className="sr-only" />
               </FormItem>
             )}
           />
         </form>
       </Form>
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {showPopup && (
+              <motion.div
+                className="fixed left-1/2 top-6 z-50"
+                style={{ x: "-50%" }}
+                initial={{ opacity: 0, y: "-100%" }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: "-100%" }}
+                transition={{ type: "spring", damping: 22, stiffness: 320 }}
+              >
+                <Window
+                  title={
+                    popupType === "success" ? "hackwestern.exe" : "error.exe"
+                  }
+                  width={300}
+                  autoHeight
+                  disableExpand
+                  onMinimizedChange={(min) => {
+                    if (min) setShowPopup(false);
+                  }}
+                >
+                  <p className="px-4 text-center font-figtree text-sm font-medium text-heavy">
+                    {popupMessage}
+                  </p>
+                </Window>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body,
+        )}
     </div>
   );
 }
