@@ -26,6 +26,15 @@ function DesignSystem() {
     <div className="font-jetbrains-mono bg-hw-radial-gradient flex min-h-screen w-screen cursor-pixel-default flex-col gap-4 overflow-y-auto p-12">
       <h1 className="h1">Design System HW13</h1>
 
+      <div className="h3">Small Card: </div>
+      <SmallCard
+        title="Small Card"
+        content={<p>The card component supports a size prop that can be set to "sm" for a more compact appearance.</p>}
+        description="This card uses the small size variant."
+        footer={<PrimaryButton size="sm" className="w-full">
+          Action
+        </PrimaryButton>}
+        />
       <div className="h3">Window Asset: </div>
       <Window title="Placeholder">
         <div className="pb-10 font-pix32 text-9xl">0:00</div>
