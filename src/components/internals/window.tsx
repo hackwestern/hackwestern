@@ -70,7 +70,13 @@ export function Window({
             className="h-[14px] w-[16px] pb-[3px] pl-[4px] pr-[6px] pt-[9px]"
             disabled={minDisabled}
           >
-            <svg width="6" height="2" viewBox="0 0 6 2" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg
+              width="6"
+              height="2"
+              viewBox="0 0 6 2"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
               <path d="M0 0H6V2H0V0Z" fill="black" />
             </svg>
           </IconButton>
@@ -79,7 +85,13 @@ export function Window({
             className="h-[14px] w-[16px] pb-[3px] pl-[3px] pr-[4px] pt-[2px]"
             disabled={maxDisabled}
           >
-            <svg width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg
+              width="9"
+              height="9"
+              viewBox="0 0 9 9"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
               <path
                 fillRule="evenodd"
                 clipRule="evenodd"
@@ -120,7 +132,11 @@ export function Window({
                       <rect width="1" height="1" className="fill-gray-4" />
                     </pattern>
                   </defs>
-                  <rect width="100%" height="100%" fill={`url(#${patternId})`} />
+                  <rect
+                    width="100%"
+                    height="100%"
+                    fill={`url(#${patternId})`}
+                  />
                 </svg>
               )}
               <div className="relative z-10">{children}</div>
@@ -128,7 +144,10 @@ export function Window({
           )}
           <div
             aria-hidden
-            className={cn("pointer-events-none absolute inset-0 rounded-[inherit]", win95Bevel)}
+            className={cn(
+              "pointer-events-none absolute inset-0 rounded-[inherit]",
+              win95Bevel,
+            )}
           />
         </div>
       </div>
@@ -142,9 +161,7 @@ export function Window({
         style={{ width, height: minimized ? TITLE_BAR_HEIGHT : height }}
       >
         {/* Title bar wrapper (carries outer bevel) */}
-        <div className="absolute left-0 right-0 top-0">
-          {titleBar}
-        </div>
+        <div className="absolute left-0 right-0 top-0">{titleBar}</div>
 
         {/* Dotted texture */}
         {showDots && (
