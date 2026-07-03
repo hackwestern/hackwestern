@@ -144,7 +144,7 @@ function CardContent({
     <div
       data-slot="card-content"
       ref={contentRef}
-      className={cn("relative p2 px-4 py-4 text-heavy", className)}
+      className={cn("p2 relative px-4 py-4 text-heavy", className)}
       {...props}
     >
       {showDots && (
