@@ -1,5 +1,4 @@
-import PrimaryButton from "~/components/internals/primary-button";
-import { Input } from "~/components/ui/input";
+import { PreregistrationForm } from "~/components/preregistration-form";
 
 export default function Home() {
   return (
@@ -32,7 +31,7 @@ export default function Home() {
         aria-hidden="true"
         className="pointer-events-none absolute bottom-[16vh] left-[20vw] w-[22px] md:bottom-[14vh]"
       />
-      <div className="absolute left-1/2 top-[38%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+      <div className="absolute left-1/2 top-[50%] md:top-[38%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
         <div className="hero-text flex flex-col gap-1 font-cossetteTexte text-black sm:gap-1.5 md:gap-2 lg:gap-3 xl:gap-3.5">
           <div className="title-text">
             <span className="text-[64px] font-bold leading-[58px] tracking-[-0.03em] xl:text-[86.67px] xl:leading-[26px] xl:tracking-[-0.04em]">
@@ -59,16 +58,7 @@ export default function Home() {
           </div>
         </div>
         <div className="mt-[64px] flex flex-col items-start gap-[11px] md:mt-[48px]">
-          <div className="email-field flex items-center justify-center gap-[14px]">
-            <Input
-              className="h-[35px] w-[223px]"
-              placeholder="Sign up for updates"
-              variant="default"
-            />
-            <PrimaryButton className="h-[35px]" size="sm" direction="right">
-              Submit
-            </PrimaryButton>
-          </div>
+          <PreregistrationForm />
           <a
             href="mailto:hello@hackwestern.me"
             className="cursor-pixel-hover text-[16px] font-medium text-[#2E547A]"
