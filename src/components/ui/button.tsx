@@ -12,9 +12,6 @@ type TypographySize = "sm" | "lg";
 const buttonBase =
   "inline-flex cursor-pixel-hover items-center justify-center whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ";
 
-const lift =
-  "group-hover:-translate-y-[4px] group-active:-translate-y-[1px] transition-all duration-100";
-
 const typography: Record<TypographyVariant, Record<TypographySize, string>> = {
   primary: {
     sm: "button-sm",
@@ -36,15 +33,14 @@ export const buttonVariants = cva(buttonBase, {
       // default: "",
       primary: cn(
         "bg-gray-2 shadow-button-primary hover:bg-[#CBCBCB] active:bg-gray-2 active:shadow-button-primary-active items-end hover:cursor-pixel-hover",
-        lift,
       ),
       secondary: cn(
         "rounded-full bg-offwhite border border-highlight shadow-button-secondary hover:bg-blue-1 hover:border-blue-1 active:bg-light active:border-light text-medium",
-        lift,
       ),
       tertiary:
         "bg-transparent text-medium px-4 active:text-heavy hover:text-blue-4",
 
+      icon: cn("bg-gray-2 shadow-button-icon hover:bg-[#CBCBCB]"),
       destructive:
         "bg-destructive text-destructive-foreground hover:bg-destructive-dark",
       outline: "bg-violet-100 hover:bg-muted border border-[1px] border-muted",
@@ -74,9 +70,9 @@ export interface ButtonProps
 }
 
 const pressedByVariant: Record<"primary" | "secondary", string> = {
-  primary: "!-translate-y-[1px] shadow-button-primary-active",
+  primary: "shadow-button-primary-active",
   secondary:
-    "!-translate-y-[1px] shadow-button-secondary bg-button-secondary-active hover:!bg-button-secondary-active",
+    "shadow-button-secondary bg-button-secondary-active hover:!bg-button-secondary-active",
 };
 
 const noLift =
