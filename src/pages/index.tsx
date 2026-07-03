@@ -1,35 +1,66 @@
+import Image from "next/image";
 import { PreregistrationForm } from "~/components/preregistration-form";
 
 export default function Home() {
   return (
-    <main className="relative h-[100dvh] cursor-pixel-default overflow-hidden bg-[url('/landing/home/background.webp')] bg-cover bg-center bg-no-repeat">
+    <main className="relative h-[100dvh] cursor-pixel-default overflow-hidden">
+      <Image
+        src="/landing/home/background.webp"
+        alt=""
+        fill
+        priority
+        className="object-cover object-center"
+        sizes="100vw"
+      />
       <div
         className="cloud-scroll-right pointer-events-none absolute left-[-12vw] top-[10vh] w-[55vw]"
         aria-hidden="true"
       >
-        <img src="/landing/home/cloud1.webp" alt="" className="w-full" />
-        <img
+        <Image
           src="/landing/home/cloud1.webp"
           alt=""
-          className="absolute right-[100vw] top-0 w-full"
+          width={4096}
+          height={1576}
+          className="w-full h-auto"
+          sizes="55vw"
+        />
+        <Image
+          src="/landing/home/cloud1.webp"
+          alt=""
+          width={4096}
+          height={1576}
+          className="absolute right-[100vw] top-0 w-full h-auto"
+          sizes="55vw"
         />
       </div>
       <div
         className="cloud-scroll-right-slow pointer-events-none absolute bottom-[34vh] right-[calc(-8vw)] w-[63vw] md:bottom-[23vh]"
         aria-hidden="true"
       >
-        <img src="/landing/home/cloud2.webp" alt="" className="w-full" />
-        <img
+        <Image
           src="/landing/home/cloud2.webp"
           alt=""
-          className="absolute right-[100vw] top-0 w-full"
+          width={1724}
+          height={570}
+          className="w-full h-auto"
+          sizes="63vw"
+        />
+        <Image
+          src="/landing/home/cloud2.webp"
+          alt=""
+          width={1724}
+          height={570}
+          className="absolute right-[100vw] top-0 w-full h-auto"
+          sizes="63vw"
         />
       </div>
-      <img
+      <Image
         src="/landing/home/tiny-horse.png"
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-[16vh] left-[20vw] w-[22px] md:bottom-[14vh]"
+        width={45}
+        height={34}
+        className="pointer-events-none absolute bottom-[16vh] left-[20vw] w-[22px]"
       />
       <div className="absolute left-1/2 top-[44%] md:top-[38%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
         <div className="hero-text flex flex-col gap-1 font-cossetteTexte text-black sm:gap-1.5 md:gap-2 lg:gap-3 xl:gap-3.5">
