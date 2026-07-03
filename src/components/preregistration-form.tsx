@@ -100,11 +100,11 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
   }, [showPopup]);
 
   return (
-    <div className={cn("relative flex flex-col items-start gap-[11px]", className)}>
+    <div
+      className={cn("relative flex flex-col items-start gap-[11px]", className)}
+    >
       <Form {...preregistrationForm}>
-        <form
-          onSubmit={preregistrationForm.handleSubmit(onSubmit, onError)}
-        >
+        <form onSubmit={preregistrationForm.handleSubmit(onSubmit, onError)}>
           <FormField
             control={preregistrationForm.control}
             name="email"
@@ -136,33 +136,38 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
           />
         </form>
       </Form>
-      {typeof document !== "undefined" && createPortal(
-        <AnimatePresence>
-          {showPopup && (
-            <motion.div
-              className="fixed left-1/2 top-6 z-50"
-              style={{ x: "-50%" }}
-              initial={{ opacity: 0, y: "-100%" }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: "-100%" }}
-              transition={{ type: "spring", damping: 22, stiffness: 320 }}
-            >
-              <Window
-                title={popupType === "success" ? "hackwestern.exe" : "error.exe"}
-                width={300}
-                autoHeight
-                disableExpand
-                onMinimizedChange={(min) => { if (min) setShowPopup(false); }}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {showPopup && (
+              <motion.div
+                className="fixed left-1/2 top-6 z-50"
+                style={{ x: "-50%" }}
+                initial={{ opacity: 0, y: "-100%" }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: "-100%" }}
+                transition={{ type: "spring", damping: 22, stiffness: 320 }}
               >
-                <p className="px-4 text-center font-figtree text-sm font-medium text-heavy">
-                  {popupMessage}
-                </p>
-              </Window>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body
-      )}
+                <Window
+                  title={
+                    popupType === "success" ? "hackwestern.exe" : "error.exe"
+                  }
+                  width={300}
+                  autoHeight
+                  disableExpand
+                  onMinimizedChange={(min) => {
+                    if (min) setShowPopup(false);
+                  }}
+                >
+                  <p className="px-4 text-center font-figtree text-sm font-medium text-heavy">
+                    {popupMessage}
+                  </p>
+                </Window>
+              </motion.div>
+            )}
+          </AnimatePresence>,
+          document.body,
+        )}
     </div>
   );
 }
