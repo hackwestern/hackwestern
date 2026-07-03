@@ -1,37 +1,36 @@
 import Image from "next/image";
-import Head from "next/head";
 import { PreregistrationForm } from "~/components/preregistration-form";
 
 export default function Home() {
   return (
     <main className="relative h-[100dvh] cursor-pixel-default overflow-hidden">
-      <Head>
-        {/* Preload the LCP background so it paints fast even though it's a
-            CSS background (next/image can't be used on the root element). */}
-        <link
-          rel="preload"
-          as="image"
-          href="/landing/home/background.webp"
-          fetchPriority="high"
-        />
-      </Head>
-      {/* Paint the background on the ROOT element. Only the root element's
-          background propagates to the canvas, which is what fills the mobile
-          browser-chrome / safe-area strips — a background on an inner <div> or
-          <main> stops at its box and lets the white body show through at the
-          top/bottom edges. body is made transparent so the html image shows in
-          the visible area; html is sized to the large viewport so `cover`
-          fills the whole screen including behind the chrome. */}
+      {/* Sky-blue root background as a no-white fallback: the root element's
+          background is the only one that propagates into the mobile
+          browser-chrome / safe-area strips, so a solid colour here guarantees
+          those strips never fall back to white. body is transparent so it
+          doesn't paint over it. The actual image is the fixed layer below,
+          sized top-0 + 100lvh (with viewport-fit=cover) so it covers the whole
+          physical screen, safe areas included. */}
       <style jsx global>{`
         html {
-          min-height: 100lvh;
-          background: #8fc0ee url("/landing/home/background.webp") center
-            center / cover no-repeat;
+          background: #8fc0ee;
         }
         body {
           background: transparent;
         }
       `}</style>
+      {/* Full-screen background image, glued to the viewport and sized to the
+          large viewport so it bleeds under the chrome edge to edge. */}
+      <div className="pointer-events-none fixed left-0 top-0 h-[100lvh] w-full overflow-hidden">
+        <Image
+          src="/landing/home/background.webp"
+          alt=""
+          fill
+          priority
+          className="object-cover object-center"
+          sizes="100vw"
+        />
+      </div>
       {/* Clouds + horse overlay, glued to the viewport. */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div
