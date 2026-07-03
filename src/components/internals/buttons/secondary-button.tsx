@@ -1,16 +1,17 @@
 import React from "react";
 import { Button } from "~/components/ui/button";
+import { Skeleton } from "../../ui/skeleton";
+import { Spinner } from "../../loading-spinner";
 import Arrow from "./arrow";
-import { Skeleton } from "../ui/skeleton";
-import { Spinner } from "../loading-spinner";
 import { ButtonProps } from "./buttonProps";
 
-export default function PrimaryButton({
+export default function SecondaryButton({
   children,
   isSkeleton = false,
   disabled = false,
   isLoading = false,
   size = "lg",
+  full = false,
   direction,
   onClick,
   className,
@@ -24,18 +25,18 @@ export default function PrimaryButton({
   else
     return (
       <Button
-        variant="primary"
+        variant="secondary"
+        className={`${size == "sm" ? "px-[12px] py-[7px]" : "px-[18px] py-[12px]"} ${className}`}
         isPending={disabled || isLoading}
         onClick={onClick}
+        full = {full}
         size={size}
-        className={`${size == "sm" ? "px-[16px] pb-[10px] pt-[7px]" : "px-[18px] pb-[15px] pt-[12px]"} ${className}`}
       >
-        {/* {(!direction || direction == "right") && <Spinner isLoading={isLoading}></Spinner>} */}
+        {/* <Spinner isLoading={isLoading}></Spinner> */}
 
         {direction == "left" && (
           <Arrow
-            fill="#111111"
-            margin={size == "sm" ? "mr-2" : "mr-4"}
+            margin={size == "sm" ? "mr-[10px]" : "mr-3"}
             size={size}
             direction={direction}
           />
@@ -45,8 +46,7 @@ export default function PrimaryButton({
 
         {direction == "right" && (
           <Arrow
-            fill="#111111"
-            margin={size == "sm" ? "ml-2" : "ml-4"}
+            margin={size == "sm" ? "ml-[10px]" : "ml-3"}
             size={size}
             direction={direction}
           />

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { cn } from "~/lib/utils";
-import IconButton from "./icon-button";
+import IconButton from "./buttons/icon-button";
 
 const win95Bevel =
   "shadow-[inset_-1px_-1px_0px_0px_#0a0a0a,inset_1px_1px_0px_0px_#ffffff,inset_-2px_-2px_0px_0px_#808080,inset_2px_2px_0px_0px_#dfdfdf]";

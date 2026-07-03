@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "~/components/ui/button";
-import { Skeleton } from "../ui/skeleton";
-import { Spinner } from "../loading-spinner";
+import { Skeleton } from "../../ui/skeleton";
+import { Spinner } from "../../loading-spinner";
 import Arrow from "./arrow";
 import { ButtonProps } from "./buttonProps";
 
@@ -10,6 +10,7 @@ export default function TertiaryButton({
   isSkeleton,
   disabled = false,
   isLoading = false,
+  full = false,
   onClick,
   direction,
   className,
@@ -24,6 +25,7 @@ export default function TertiaryButton({
       variant="tertiary"
       className={`px-0 py-1 ${className}`}
       isPending={disabled || isLoading}
+      full = {full}
       onClick={onClick}
     >
       {direction == "left" && (

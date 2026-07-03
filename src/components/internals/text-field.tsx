@@ -1,13 +1,14 @@
 import { Input } from "~/components/ui/input";
-import PrimaryButton from "./primary-button";
+import PrimaryButton from "./buttons/primary-button";
 import { Skeleton } from "../ui/skeleton";
 import { useState } from "react";
 
 interface TextFieldProps {
-  children: string;
+  children?: string;
   submit?: boolean;
   secondary?: boolean;
   isSkeleton?: boolean;
+  className?: string;
   onSubmit?: (value: string) => Promise<void>;
 }
 
@@ -16,6 +17,7 @@ export default function TextField({
   submit = false,
   secondary = false,
   isSkeleton = false,
+  className,
   onSubmit,
 }: TextFieldProps) {
   const [isLoading, setIsLoading] = useState(false);
@@ -53,7 +55,7 @@ export default function TextField({
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder={children}
-              className=""
+              className={className}
               disabled={isLoading}
             />
             <PrimaryButton
@@ -65,7 +67,7 @@ export default function TextField({
             </PrimaryButton>
           </div>
         ) : (
-          <Input variant="default" placeholder={children} className="w-max" />
+          <Input variant="default" placeholder={children} className={`w-max ${className}`} />
         )}
       </>
     );
