@@ -21,6 +21,7 @@ export default function Home() {
           alt=""
           width={4096}
           height={1576}
+          quality={65}
           className="h-auto w-full"
           sizes="55vw"
         />
@@ -29,6 +30,7 @@ export default function Home() {
           alt=""
           width={4096}
           height={1576}
+          quality={65}
           className="absolute right-[100vw] top-0 h-auto w-full"
           sizes="55vw"
         />
@@ -42,6 +44,7 @@ export default function Home() {
           alt=""
           width={1724}
           height={570}
+          quality={65}
           className="h-auto w-full"
           sizes="63vw"
         />
@@ -50,6 +53,7 @@ export default function Home() {
           alt=""
           width={1724}
           height={570}
+          quality={65}
           className="absolute right-[100vw] top-0 h-auto w-full"
           sizes="63vw"
         />
