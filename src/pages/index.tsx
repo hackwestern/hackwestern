@@ -3,7 +3,7 @@ import { PreregistrationForm } from "~/components/preregistration-form";
 
 export default function Home() {
   return (
-    <main className="relative h-[100dvh] cursor-pixel-default overflow-hidden">
+    <main className="relative h-[100lvh] cursor-pixel-default overflow-hidden">
       <Image
         src="/landing/home/background.webp"
         alt=""
