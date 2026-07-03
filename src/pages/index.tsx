@@ -4,11 +4,13 @@ import { PreregistrationForm } from "~/components/preregistration-form";
 export default function Home() {
   return (
     <main className="relative h-[100dvh] cursor-pixel-default overflow-hidden">
-      {/* Sky-blue root background as a no-white fallback: the root element's
-          background is the only one that propagates into the mobile
-          browser-chrome / safe-area strips, so a solid colour here guarantees
-          those strips never fall back to white. body is transparent so it
-          doesn't paint over it. */}
+      {/* Full-screen background, modelled on Hack the North (which covers the
+          whole screen on mobile Safari): NO viewport-fit=cover, transparent
+          body so nothing paints white, and a sky-blue root colour as the final
+          fallback. The image sits on a fixed layer sized to 100vh — on iOS
+          Safari `vh` is the LARGE viewport, so it extends behind the top/bottom
+          chrome. Without viewport-fit=cover no safe-area insets are carved out,
+          so there are no strips to fight. */}
       <style jsx global>{`
         html {
           background: #8fc0ee;
@@ -16,21 +18,8 @@ export default function Home() {
         body {
           background: transparent;
         }
-        /* Background layer stretched *past* every screen edge using negative
-           safe-area insets. viewport-fit=cover exposes the insets; anchoring a
-           fixed element to 0 stops at the safe area, leaving blue strips behind
-           the notch / home-indicator / toolbar, so we pull each edge out by its
-           inset to cover the whole physical screen. */
-        .landing-bg-fill {
-          position: fixed;
-          top: calc(-1 * env(safe-area-inset-top, 0px));
-          right: calc(-1 * env(safe-area-inset-right, 0px));
-          bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
-          left: calc(-1 * env(safe-area-inset-left, 0px));
-        }
       `}</style>
-      {/* Full-screen background image, bled past every safe-area edge. */}
-      <div className="landing-bg-fill pointer-events-none overflow-hidden">
+      <div className="pointer-events-none fixed left-0 top-0 h-screen w-full overflow-hidden">
         <Image
           src="/landing/home/background.webp"
           alt=""

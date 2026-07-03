@@ -1,7 +1,6 @@
 import { type Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 import { type AppType } from "next/app";
-import Head from "next/head";
 import { Figtree } from "next/font/google";
 import localFont from "next/font/local";
 import { api } from "~/utils/api";
@@ -45,15 +44,6 @@ const MyApp: AppType<{ session: Session | null }> = ({
 }) => {
   return (
     <SessionProvider session={session}>
-      <Head>
-        {/* viewport-fit=cover lets content bleed into the safe areas / under
-            the mobile browser chrome. Without it, Safari (esp. iOS 26) draws a
-            solid white bar in the gap between the content and the toolbar. */}
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1, viewport-fit=cover"
-        />
-      </Head>
       <SpeedInsights />
       <main
         className={`${figtree.variable} font-figtree ${cossetteTexte.variable} font-cossetteTexte ${pix32.variable} font-pix32`}
