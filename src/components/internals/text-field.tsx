@@ -67,7 +67,11 @@ export default function TextField({
             </PrimaryButton>
           </div>
         ) : (
-          <Input variant="default" placeholder={children} className={`w-max ${className}`} />
+          <Input
+            variant="default"
+            placeholder={children}
+            className={`w-max ${className}`}
+          />
         )}
       </>
     );

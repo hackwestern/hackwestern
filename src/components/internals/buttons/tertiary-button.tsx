@@ -25,7 +25,7 @@ export default function TertiaryButton({
       variant="tertiary"
       className={`px-0 py-1 ${className}`}
       isPending={disabled || isLoading}
-      full = {full}
+      full={full}
       onClick={onClick}
     >
       {direction == "left" && (
