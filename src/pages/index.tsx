@@ -1,23 +1,39 @@
 import Image from "next/image";
+import Head from "next/head";
 import { PreregistrationForm } from "~/components/preregistration-form";
 
 export default function Home() {
   return (
     <main className="relative h-[100dvh] cursor-pixel-default overflow-hidden">
-      {/* Full-bleed background layer. `fixed` glues it to the viewport so it
-          always fills the whole screen (bleeding under the mobile browser
-          chrome) without adding scrollable overflow — an in-flow 100lvh
-          element is taller than the visible viewport on iOS Safari and lets
-          the white body show through at the top/bottom edges. */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <Image
-          src="/landing/home/background.webp"
-          alt=""
-          fill
-          priority
-          className="object-cover object-center"
-          sizes="100vw"
+      <Head>
+        {/* Preload the LCP background so it paints fast even though it's a
+            CSS background (next/image can't be used on the root element). */}
+        <link
+          rel="preload"
+          as="image"
+          href="/landing/home/background.webp"
+          fetchPriority="high"
         />
+      </Head>
+      {/* Paint the background on the ROOT element. Only the root element's
+          background propagates to the canvas, which is what fills the mobile
+          browser-chrome / safe-area strips — a background on an inner <div> or
+          <main> stops at its box and lets the white body show through at the
+          top/bottom edges. body is made transparent so the html image shows in
+          the visible area; html is sized to the large viewport so `cover`
+          fills the whole screen including behind the chrome. */}
+      <style jsx global>{`
+        html {
+          min-height: 100lvh;
+          background: #8fc0ee url("/landing/home/background.webp") center center /
+            cover no-repeat;
+        }
+        body {
+          background: transparent;
+        }
+      `}</style>
+      {/* Clouds + horse overlay, glued to the viewport. */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div
           className="cloud-scroll-right absolute left-[-12vw] top-[10vh] w-[55vw]"
           aria-hidden="true"
