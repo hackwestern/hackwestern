@@ -8,9 +8,7 @@ export default function Home() {
           background is the only one that propagates into the mobile
           browser-chrome / safe-area strips, so a solid colour here guarantees
           those strips never fall back to white. body is transparent so it
-          doesn't paint over it. The actual image is the fixed layer below,
-          sized top-0 + 100lvh (with viewport-fit=cover) so it covers the whole
-          physical screen, safe areas included. */}
+          doesn't paint over it. */}
       <style jsx global>{`
         html {
           background: #8fc0ee;
@@ -18,10 +16,21 @@ export default function Home() {
         body {
           background: transparent;
         }
+        /* Background layer stretched *past* every screen edge using negative
+           safe-area insets. viewport-fit=cover exposes the insets; anchoring a
+           fixed element to 0 stops at the safe area, leaving blue strips behind
+           the notch / home-indicator / toolbar, so we pull each edge out by its
+           inset to cover the whole physical screen. */
+        .landing-bg-fill {
+          position: fixed;
+          top: calc(-1 * env(safe-area-inset-top, 0px));
+          right: calc(-1 * env(safe-area-inset-right, 0px));
+          bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+          left: calc(-1 * env(safe-area-inset-left, 0px));
+        }
       `}</style>
-      {/* Full-screen background image, glued to the viewport and sized to the
-          large viewport so it bleeds under the chrome edge to edge. */}
-      <div className="pointer-events-none fixed left-0 top-0 h-[100lvh] w-full overflow-hidden">
+      {/* Full-screen background image, bled past every safe-area edge. */}
+      <div className="landing-bg-fill pointer-events-none overflow-hidden">
         <Image
           src="/landing/home/background.webp"
           alt=""
