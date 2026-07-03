@@ -25,8 +25,8 @@ export default function Home() {
       <style jsx global>{`
         html {
           min-height: 100lvh;
-          background: #8fc0ee url("/landing/home/background.webp") center center /
-            cover no-repeat;
+          background: #8fc0ee url("/landing/home/background.webp") center
+            center / cover no-repeat;
         }
         body {
           background: transparent;
