@@ -11,7 +11,7 @@ import {
   FormMessage,
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
-import PrimaryButton from "~/components/internals/primary-button";
+import PrimaryButton from "~/components/internals/buttons/primary-button";
 import { Window } from "~/components/internals/window";
 import { cn } from "~/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
