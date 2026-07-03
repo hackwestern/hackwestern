@@ -21,7 +21,7 @@ export default function Home() {
           alt=""
           width={4096}
           height={1576}
-          className="w-full h-auto"
+          className="h-auto w-full"
           sizes="55vw"
         />
         <Image
@@ -29,7 +29,7 @@ export default function Home() {
           alt=""
           width={4096}
           height={1576}
-          className="absolute right-[100vw] top-0 w-full h-auto"
+          className="absolute right-[100vw] top-0 h-auto w-full"
           sizes="55vw"
         />
       </div>
@@ -42,7 +42,7 @@ export default function Home() {
           alt=""
           width={1724}
           height={570}
-          className="w-full h-auto"
+          className="h-auto w-full"
           sizes="63vw"
         />
         <Image
@@ -50,7 +50,7 @@ export default function Home() {
           alt=""
           width={1724}
           height={570}
-          className="absolute right-[100vw] top-0 w-full h-auto"
+          className="absolute right-[100vw] top-0 h-auto w-full"
           sizes="63vw"
         />
       </div>
