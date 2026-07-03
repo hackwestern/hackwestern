@@ -26,6 +26,10 @@ export interface WindowProps {
   /** Controlled minimized state. If omitted, the component manages its own state. */
   minimized?: boolean;
   onMinimizedChange?: (minimized: boolean) => void;
+  /** Keep the expand/maximize button permanently disabled */
+  disableExpand?: boolean;
+  /** Let content drive the height instead of a fixed pixel value. Dots are hidden in this mode. */
+  autoHeight?: boolean;
 }
 
 export function Window({
@@ -37,6 +41,8 @@ export function Window({
   showDots = true,
   minimized: minimizedProp,
   onMinimizedChange,
+  disableExpand = false,
+  autoHeight = false,
 }: WindowProps) {
   const [internalMinimized, setInternalMinimized] = React.useState(false);
   const isControlled = minimizedProp !== undefined;
@@ -48,9 +54,105 @@ export function Window({
   };
 
   const minDisabled = minimized;
-  const maxDisabled = !minimized;
+  const maxDisabled = !minimized || disableExpand;
 
   const patternId = React.useId();
+
+  const titleBar = (
+    <div className={cn("p-[3px]", win95BevelInverted)}>
+      <div className="relative flex w-full items-center justify-between bg-gradient-to-r from-blue-8 to-blue-4 pb-[6px] pl-[10px] pr-[2px] pt-[10px]">
+        <p className="subtitle-sm whitespace-nowrap tracking-[-0.36px] text-white">
+          {title}
+        </p>
+        <div className="flex items-center">
+          <IconButton
+            onClick={() => setMinimized(true)}
+            className="h-[14px] w-[16px] pb-[3px] pl-[4px] pr-[6px] pt-[9px]"
+            disabled={minDisabled}
+          >
+            <svg
+              width="6"
+              height="2"
+              viewBox="0 0 6 2"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M0 0H6V2H0V0Z" fill="black" />
+            </svg>
+          </IconButton>
+          <IconButton
+            onClick={() => setMinimized(false)}
+            className="h-[14px] w-[16px] pb-[3px] pl-[3px] pr-[4px] pt-[2px]"
+            disabled={maxDisabled}
+          >
+            <svg
+              width="9"
+              height="9"
+              viewBox="0 0 9 9"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M9 0H0V9H9V0ZM8 2H1V8H8V2Z"
+                fill="black"
+              />
+            </svg>
+          </IconButton>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (autoHeight) {
+    return (
+      <div className={cn("relative", className)} style={{ width }}>
+        <div
+          className="relative bg-gray-2 shadow-[1px_1px_2px_0px_rgba(0,0,0,0.24),4px_4px_10px_0px_rgba(0,0,0,0.12)]"
+          style={{ width }}
+        >
+          {titleBar}
+          {children && (
+            <div className="relative grid place-items-center px-4 py-3">
+              {showDots && (
+                <svg
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 h-full w-full"
+                >
+                  <defs>
+                    <pattern
+                      id={patternId}
+                      x={((width - 8) % (DOT_GAP + 1)) / 2}
+                      y={0}
+                      width={DOT_GAP + 1}
+                      height={DOT_GAP + 1}
+                      patternUnits="userSpaceOnUse"
+                    >
+                      <rect width="1" height="1" className="fill-gray-4" />
+                    </pattern>
+                  </defs>
+                  <rect
+                    width="100%"
+                    height="100%"
+                    fill={`url(#${patternId})`}
+                  />
+                </svg>
+              )}
+              <div className="relative z-10">{children}</div>
+            </div>
+          )}
+          <div
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute inset-0 rounded-[inherit]",
+              win95Bevel,
+            )}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("relative", className)} style={{ width, height }}>
@@ -59,58 +161,7 @@ export function Window({
         style={{ width, height: minimized ? TITLE_BAR_HEIGHT : height }}
       >
         {/* Title bar wrapper (carries outer bevel) */}
-        <div
-          className={cn(
-            "absolute left-0 right-0 top-0 p-[3px]",
-            win95BevelInverted,
-          )}
-        >
-          {/* Gradient: blue-8 (#042239) -> blue-4 (#3B94EC), left to right */}
-          <div className="relative flex w-full items-center justify-between bg-gradient-to-r from-blue-8 to-blue-4 pb-[6px] pl-[10px] pr-[2px] pt-[10px]">
-            <p className="subtitle-sm whitespace-nowrap tracking-[-0.36px] text-white">
-              {title}
-            </p>
-
-            <div className="flex items-center">
-              {/* Minimize: collapses content into the title bar */}
-              <IconButton
-                onClick={() => setMinimized(true)}
-                className="h-[14px] w-[16px] pb-[3px] pl-[4px] pr-[6px] pt-[9px]"
-                disabled={minDisabled}
-              >
-                <svg
-                  width="6"
-                  height="2"
-                  viewBox="0 0 6 2"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M0 0H6V2H0V0Z" fill="black" />
-                </svg>
-              </IconButton>
-              <IconButton
-                onClick={() => setMinimized(false)}
-                className="h-[14px] w-[16px] pb-[3px] pl-[3px] pr-[4px] pt-[2px]"
-                disabled={maxDisabled}
-              >
-                <svg
-                  width="9"
-                  height="9"
-                  viewBox="0 0 9 9"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    clip-rule="evenodd"
-                    d="M9 0H0V9H9V0ZM8 2H1V8H8V2Z"
-                    fill="black"
-                  />
-                </svg>
-              </IconButton>
-            </div>
-          </div>
-        </div>
+        <div className="absolute left-0 right-0 top-0">{titleBar}</div>
 
         {/* Dotted texture */}
         {showDots && (

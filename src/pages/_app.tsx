@@ -14,11 +14,11 @@ import { TooltipProvider } from "~/components/ui/tooltip";
 const cossetteTexte = localFont({
   src: [
     {
-      path: "../../public/shared/fonts/cossetteTexte/CossetteTexte-Bold.ttf",
+      path: "../../public/shared/fonts/cossetteTexte/CossetteTexte-Bold.woff2",
       weight: "700",
     },
     {
-      path: "../../public/shared/fonts/cossetteTexte/CossetteTexte-Regular.ttf",
+      path: "../../public/shared/fonts/cossetteTexte/CossetteTexte-Regular.woff2",
       weight: "400",
     },
   ],
@@ -27,7 +27,7 @@ const cossetteTexte = localFont({
 });
 
 const pix32 = localFont({
-  src: "../../public/shared/fonts/pix32/Pix32.ttf",
+  src: "../../public/shared/fonts/pix32/Pix32.woff2",
   variable: "--font-pix32",
   display: "swap",
 });
