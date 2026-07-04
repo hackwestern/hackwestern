@@ -13,6 +13,7 @@ export default function PrimaryButton({
   size = "lg",
   direction,
   onClick,
+  onMouseDown,
   className,
 }: ButtonProps) {
   if (isSkeleton)
@@ -27,6 +28,7 @@ export default function PrimaryButton({
         variant="primary"
         isPending={disabled || isLoading}
         onClick={onClick}
+        onMouseDown={onMouseDown}
         size={size}
         className={`${size == "sm" ? "px-[16px] pb-[10px] pt-[7px]" : "px-[18px] pb-[15px] pt-[12px]"} ${className}`}
       >

@@ -32,7 +32,7 @@ export const buttonVariants = cva(buttonBase, {
     variant: {
       // default: "",
       primary: cn(
-        "bg-gray-2 shadow-button-primary hover:bg-[#CBCBCB] active:bg-gray-2 active:shadow-button-primary-active items-end hover:cursor-pixel-hover",
+        "bg-gray-2 shadow-button-primary hover:bg-[#CBCBCB] active:bg-gray-2 active:shadow-button-primary-active items-end hover:cursor-pixel-hover transition-[background-color,box-shadow] duration-200",
       ),
       secondary: cn(
         "rounded-full bg-offwhite border border-highlight shadow-button-secondary hover:bg-blue-1 hover:border-blue-1 active:bg-light active:border-light text-medium",
@@ -98,9 +98,37 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const lockPressed =
       isPending && (variant === "primary" || variant === "secondary");
 
+    // Keep the button visually sunken for a beat after release, like an XP
+    // button holding its depressed state before springing back.
+    const canHoldPress = variant === "primary" || variant === "secondary";
+    const [held, setHeld] = React.useState(false);
+    const releaseTimer = React.useRef<ReturnType<typeof setTimeout> | null>(
+      null,
+    );
+    React.useEffect(
+      () => () => {
+        if (releaseTimer.current) clearTimeout(releaseTimer.current);
+      },
+      [],
+    );
+    const holdDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+      if (canHoldPress) {
+        if (releaseTimer.current) clearTimeout(releaseTimer.current);
+        setHeld(true);
+      }
+      props.onPointerDown?.(e);
+    };
+    const releaseSoon = () => {
+      if (!canHoldPress) return;
+      if (releaseTimer.current) clearTimeout(releaseTimer.current);
+      releaseTimer.current = setTimeout(() => setHeld(false), 160);
+    };
+    const showPressed = held && canHoldPress && !lockPressed;
+
     const btnClasses = cn(
       buttonVariants({ variant, size, className }),
       lockPressed && [pressedByVariant[variant], noLift],
+      showPressed && pressedByVariant[variant],
       full && "w-full",
     );
 
@@ -115,6 +143,15 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         <Comp
           ref={ref}
           {...props}
+          onPointerDown={holdDown}
+          onPointerUp={(e: React.PointerEvent<HTMLButtonElement>) => {
+            releaseSoon();
+            props.onPointerUp?.(e);
+          }}
+          onPointerLeave={(e: React.PointerEvent<HTMLButtonElement>) => {
+            releaseSoon();
+            props.onPointerLeave?.(e);
+          }}
           className={cn(
             "flex items-end",
             (variant === "primary" ||
