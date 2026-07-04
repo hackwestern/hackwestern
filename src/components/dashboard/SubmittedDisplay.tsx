@@ -81,7 +81,7 @@ export default function SubmittedDisplay({
   return (
     <div className="relative m-5 mr-2 flex flex-col items-center gap-6 rounded-lg p-10 xl:flex-row">
       <div className="ml-8 flex flex-col gap-6">
-        <h2 className="max-w-xl font-dico text-4xl font-semibold text-heavy">
+        <h2 className="font-dico max-w-xl text-4xl font-semibold text-heavy">
           Your application has been submitted!
         </h2>
         <h4 className="font-figtree text-heavy">
@@ -128,10 +128,10 @@ export default function SubmittedDisplay({
               </svg>
             )}
             <div className="absolute right-4 top-1/2 z-[1000] flex -translate-y-1/2 flex-col items-end gap-4">
-              <div className="-right-2 rounded-full border border-heavy px-2 py-1 font-jetbrains-mono text-xs">
+              <div className="font-jetbrains-mono -right-2 rounded-full border border-heavy px-2 py-1 text-xs">
                 HACK WESTERN XII
               </div>
-              <h1 className="z-[1000] overflow-ellipsis text-right font-dico text-3xl text-heavy">
+              <h1 className="font-dico z-[1000] overflow-ellipsis text-right text-3xl text-heavy">
                 {`${application?.firstName ?? "Hacker"} ${application?.lastName ?? ""}`}
               </h1>
             </div>

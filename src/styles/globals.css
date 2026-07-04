@@ -125,7 +125,7 @@ html {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply cursor-pixel-default bg-background text-foreground;
   }
 
   /* Ensure full viewport coverage on mobile */
@@ -145,7 +145,71 @@ html {
   }
 }
 
+@layer components {
+  .h1 {
+    @apply font-cossetteTexte text-main-display font-bold leading-default tracking-default text-heavy;
+  }
+  .h2 {
+    @apply font-cossetteTexte text-md-display font-bold leading-default tracking-default text-heavy;
+  }
+  .h3 {
+    @apply font-cossetteTexte text-sm-display font-bold leading-default tracking-default text-heavy;
+  }
+  .p1 {
+    @apply font-figtree text-lg-p font-medium leading-normal tracking-default text-black;
+  }
+  .p2 {
+    @apply font-figtree text-md-p font-medium leading-normal tracking-default text-black;
+  }
+  .p3 {
+    @apply font-figtree text-sm-p font-medium leading-normal tracking-default text-black;
+  }
+  .subtitle-lg {
+    @apply font-cossetteTexte text-lg-sub font-normal uppercase leading-normal tracking-subtitle text-black;
+  }
+  .subtitle-sm {
+    @apply font-cossetteTexte text-sm-sub font-normal uppercase leading-normal tracking-subtitle text-black;
+  }
+  .button-lg {
+    @apply font-pix32 text-lg-b font-normal leading-default tracking-default text-black;
+  }
+  .button-sm {
+    @apply font-pix32 text-sm-b font-normal leading-none tracking-default text-black;
+  }
+}
 @layer utilities {
+  @keyframes cloud-scroll-left {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-100vw);
+    }
+  }
+
+  @keyframes cloud-scroll-right {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(100vw);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cloud-scroll-left {
+      animation: cloud-scroll-left 95s linear 5s infinite;
+    }
+
+    .cloud-scroll-right {
+      animation: cloud-scroll-right 70s linear 5s infinite;
+    }
+
+    .cloud-scroll-right-slow {
+      animation: cloud-scroll-right 95s linear 5s infinite;
+    }
+  }
+
   @supports (-moz-appearance: none) {
     .scrollbar {
       scrollbar-width: thin;

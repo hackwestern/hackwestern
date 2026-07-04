@@ -58,7 +58,7 @@ const Topbar = () => {
   return (
     <div className="flex justify-between border border-[#ebdff7] bg-highlight p-3 md:hidden">
       <Horsey />
-      <div className="flex flex-col justify-center font-dico text-2xl text-heavy">
+      <div className="font-dico flex flex-col justify-center text-2xl text-heavy">
         {title}
       </div>
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>

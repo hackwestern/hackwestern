@@ -3,11 +3,15 @@ import {
   applications,
   avatarColour,
   countrySelection,
+  dietaryRestrictions,
+  emergencyContactRelationship,
   ethnicity,
   gender,
   major,
   numOfHackathons,
   sexualOrientation,
+  shirtSize,
+  transportationMethod,
   yearOfStudy,
 } from "../schema";
 import { USERS } from "./userSeeder";
@@ -48,6 +52,10 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
   }
 
   static createRandomWithoutUser() {
+    const dietaryRestrictionsFake = faker.helpers.arrayElement(
+      dietaryRestrictions.enumValues as [string, ...string[]],
+    ) as (typeof dietaryRestrictions.enumValues)[number];
+
     const application = {
       avatarColour: faker.helpers.arrayElement(avatarColour.enumValues),
       avatarFace: faker.number.int({ min: 1, max: 5 }),
@@ -67,6 +75,13 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       yearOfStudy: faker.helpers.arrayElement(yearOfStudy.enumValues),
       major: faker.helpers.arrayElement(major.enumValues),
 
+      shirtSize: faker.helpers.arrayElement(
+        shirtSize.enumValues as [string, ...string[]],
+      ) as (typeof shirtSize.enumValues)[number],
+      dietaryRestrictions: dietaryRestrictionsFake,
+      dietaryRestrictionsOther:
+        dietaryRestrictionsFake == "Other" ? "Other Restriction" : null,
+
       attendedBefore: faker.datatype.boolean(),
       numOfHackathons: faker.helpers.arrayElement(numOfHackathons.enumValues),
 
@@ -75,6 +90,7 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       question3: faker.lorem.paragraphs(3),
 
       resumeLink: faker.internet.url(),
+      devpostLink: faker.internet.userName(),
       githubLink: faker.internet.userName(),
       linkedInLink: faker.internet.userName(),
       otherLink: faker.internet.url(),
@@ -92,6 +108,16 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       sexualOrientation: faker.helpers.arrayElement(
         sexualOrientation.enumValues,
       ),
+
+      emergencyContactName: faker.person.fullName(),
+      emergencyContactRelationship: faker.helpers.arrayElement(
+        emergencyContactRelationship.enumValues as [string, ...string[]],
+      ) as (typeof emergencyContactRelationship.enumValues)[number],
+      emergencyContactPhoneNumber: "519-936-5950",
+
+      transportationMethod: faker.helpers.arrayElement(
+        transportationMethod.enumValues as [string, ...string[]],
+      ) as (typeof transportationMethod.enumValues)[number],
     };
 
     const isComplete = applicationSubmitSchema.safeParse(application).success;

@@ -8,7 +8,6 @@ import { Button } from "~/components/ui/button";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import CanvasBackground from "~/components/canvas-background";
 
 export default function ResetRequest() {
   const { toast } = useToast();
@@ -74,8 +73,7 @@ export default function ResetRequest() {
     <>
       <SEO title="Reset Password" noindex />
 
-      <div className="flex h-screen flex-col items-center justify-center bg-hw-radial-gradient">
-        <CanvasBackground />
+      <div className="bg-hw-radial-gradient flex h-screen flex-col items-center justify-center">
         <div className="z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:w-xl sm:rounded-[48px] sm:p-12 md:w-2xl">
           {isValidToken ? (
             <>
@@ -87,7 +85,7 @@ export default function ResetRequest() {
                   type="password"
                   autoComplete="new-password"
                   placeholder="enter your new password"
-                  className="mb-4 h-[60px] bg-highlight font-jetbrains-mono text-medium"
+                  className="font-jetbrains-mono mb-4 h-[60px] bg-highlight text-medium"
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <h2 className=" mb-1 mt-4 text-sm">Confirm Password</h2>
@@ -95,7 +93,7 @@ export default function ResetRequest() {
                   type="password"
                   autoComplete="new-password"
                   placeholder="confirm your new password"
-                  className="mb-4 h-[60px] bg-highlight font-jetbrains-mono text-medium"
+                  className="font-jetbrains-mono mb-4 h-[60px] bg-highlight text-medium"
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
                 <Button variant="primary" className="w-full" type="submit" full>

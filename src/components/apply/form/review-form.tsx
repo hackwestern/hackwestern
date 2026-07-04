@@ -437,6 +437,13 @@ export function ReviewForm() {
       "agreeShareWithSponsors",
       "agreeWillBe18",
       "agreeEmailsFromMLH",
+      "shirtSize",
+      "dietaryRestrictions",
+      "dietaryRestrictionsOther",
+      "emergencyContactName",
+      "emergencyContactRelationship",
+      "emergencyContactPhoneNumber",
+      "transportationMethod",
     ],
   });
   const result = applicationSubmitSchema.safeParse(data);

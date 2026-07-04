@@ -330,7 +330,7 @@ export function AvatarForm({
                       </div>
                     ) : (
                       <img
-                        src={`/ellipse.png`}
+                        src={`/apply/ellipse.png`}
                         alt="No selection"
                         className="h-8 w-8"
                       />
