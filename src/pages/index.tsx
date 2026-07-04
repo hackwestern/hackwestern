@@ -4,13 +4,12 @@ import { PreregistrationForm } from "~/components/preregistration-form";
 export default function Home() {
   return (
     <main className="relative h-[100dvh] cursor-pixel-default overflow-hidden">
-      {/* Full-screen background. With viewport-fit=cover (set in _app) the
-          initial containing block spans the whole physical screen, so a fixed
-          inset-0 layer covers the safe areas too. Sky-blue root colour +
-          transparent body as a no-white fallback. */}
+      {/* White root colour so the iOS Safari chrome strips (which only inherit
+          the root's solid background, never a fixed image) read white. The
+          radial white fades below blend the scene edges into those strips. */}
       <style jsx global>{`
         html {
-          background: #8fc0ee;
+          background: #fff;
         }
         body {
           background: transparent;
@@ -22,10 +21,28 @@ export default function Home() {
           alt=""
           fill
           priority
-          className="object-cover object-center"
+          className="object-cover object-[center_68%]"
           sizes="100vw"
         />
       </div>
+      {/* White radial fades that dissolve the top and bottom scene edges into
+          the white chrome strips on iOS Safari. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-x-0 top-0 z-[5] h-[150px]"
+        style={{
+          background:
+            "radial-gradient(140% 120% at 50% 0%, #fff 0%, transparent 72%)",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-[5] h-[150px]"
+        style={{
+          background:
+            "radial-gradient(140% 120% at 50% 100%, #fff 0%, transparent 72%)",
+        }}
+      />
       {/* Clouds + horse overlay, glued to the viewport. */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div
