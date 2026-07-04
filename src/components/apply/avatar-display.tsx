@@ -55,7 +55,7 @@ export function AvatarDisplay({
       {/* Character Base */}
       {selectedColor && (
         <img
-          src={`/avatar/body/${selectedColor.body}.webp`}
+          src={`/apply/avatar/body/${selectedColor.body}.webp`}
           alt="Character body"
           className="h-full w-full object-contain"
         />

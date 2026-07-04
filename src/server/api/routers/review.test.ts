@@ -98,7 +98,9 @@ describe.sequential("review.referApplicant", async () => {
   });
 });
 
-let application: ReturnType<typeof ReviewSeeder.createRandomWithoutUser> & {
+let application: ReturnType<
+  typeof ApplicationSeeder.createRandomWithoutUser
+> & {
   userId: string;
 };
 
@@ -128,7 +130,7 @@ describe("review.getReviewCounts", () => {
     organizerCaller = createCaller(organizerCtx);
 
     application = {
-      ...ReviewSeeder.createRandomWithoutUser(),
+      ...ApplicationSeeder.createRandomWithoutUser(),
       userId: hackerSession.user.id,
     };
 
@@ -188,7 +190,7 @@ describe("review.getReviewCounts", () => {
 
     // Incomplete Reviewed Application
     const incompleteApplication = {
-      ...ReviewSeeder.createRandomWithoutUser(),
+      ...ApplicationSeeder.createRandomWithoutUser(),
       userId: newHackerSession.user.id,
     };
 
@@ -241,7 +243,7 @@ describe("review.getByOrganizer", () => {
     organizerCaller = createCaller(organizerCtx);
 
     application = {
-      ...ReviewSeeder.createRandomWithoutUser(),
+      ...ApplicationSeeder.createRandomWithoutUser(),
       userId: hackerSession.user.id,
     };
 

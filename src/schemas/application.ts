@@ -11,17 +11,28 @@ import {
   ethnicity,
   sexualOrientation,
   yearOfStudy,
+  shirtSize,
+  dietaryRestrictions,
+  emergencyContactRelationship,
+  transportationMethod,
 } from "~/server/db/schema";
 
 // Save schema
-export const applicationSaveSchema = createInsertSchema(applications).omit({
-  createdAt: true,
-  updatedAt: true,
-  status: true,
-  userId: true,
-});
+export const applicationSaveSchema = createInsertSchema(applications)
+  .omit({
+    createdAt: true,
+    updatedAt: true,
+    status: true,
+    userId: true,
+  })
+  .extend({
+    devpostLink: z.string().nullish(),
+    githubLink: z.string().nullish(),
+    linkedInLink: z.string().nullish(),
+  });
 
 export const linksSaveSchema = applicationSaveSchema.pick({
+  devpostLink: true,
   githubLink: true,
   linkedInLink: true,
   resumeLink: true,
@@ -128,62 +139,91 @@ const tooFewWords = `Response must be at least ${MIN_WORDS} words`;
 const tooManyWords = `Response must be fewer than ${MAX_WORDS} words`;
 
 // Submission schema with data validation
-export const applicationSubmitSchema = z.object({
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  phoneNumber: z.string().min(1).regex(phoneRegex, "Invalid phone number"),
-  countryOfResidence: z.enum(countrySelection.enumValues),
-  age: z.number().min(18).max(99),
-  school: z.enum(schools),
-  yearOfStudy: z.enum(yearOfStudy.enumValues),
-  major: z.enum(major.enumValues),
-  attendedBefore: z.boolean(),
-  numOfHackathons: z.enum(numOfHackathons.enumValues),
-  question1: z
-    .string()
-    .min(1)
-    .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
-    .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
-  question2: z
-    .string()
-    .min(1)
-    .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
-    .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
-  question3: z
-    .string()
-    .min(1)
-    .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
-    .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
-  resumeLink: z.preprocess((v) => (!v ? undefined : v), z.string().url()),
-  githubLink: z.preprocess((v) => (!v ? undefined : v), z.string().optional()),
-  linkedInLink: z.preprocess(
-    (v) => (!v ? undefined : v),
-    z.string().optional(),
-  ),
-  otherLink: z.preprocess(
-    (v) => (!v ? undefined : v),
-    z.string().url().optional(),
-  ),
-  agreeCodeOfConduct: z.literal(true, {
-    errorMap: () => ({ message: "You must agree to the MLH Code of Conduct" }),
-  }),
-  agreeShareWithMLH: z.literal(true, {
-    errorMap: () => ({
-      message: "You must agree to share application information with MLH",
+export const applicationSubmitSchema = z
+  .object({
+    firstName: z.string().min(1),
+    lastName: z.string().min(1),
+    phoneNumber: z.string().min(1).regex(phoneRegex, "Invalid phone number"),
+    countryOfResidence: z.enum(countrySelection.enumValues),
+    age: z.number().min(18).max(99),
+    school: z.enum(schools),
+    yearOfStudy: z.enum(yearOfStudy.enumValues),
+    major: z.enum(major.enumValues),
+    attendedBefore: z.boolean(),
+    numOfHackathons: z.enum(numOfHackathons.enumValues),
+    question1: z
+      .string()
+      .min(1)
+      .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
+      .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
+    question2: z
+      .string()
+      .min(1)
+      .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
+      .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
+    question3: z
+      .string()
+      .min(1)
+      .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
+      .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
+    resumeLink: z.preprocess((v) => (!v ? undefined : v), z.string().url()),
+    githubLink: z.preprocess(
+      (v) => (!v ? undefined : v),
+      z.string().optional(),
+    ),
+    linkedInLink: z.preprocess(
+      (v) => (!v ? undefined : v),
+      z.string().optional(),
+    ),
+    otherLink: z.preprocess(
+      (v) => (!v ? undefined : v),
+      z.string().url().optional(),
+    ),
+    agreeCodeOfConduct: z.literal(true, {
+      errorMap: () => ({
+        message: "You must agree to the MLH Code of Conduct",
+      }),
     }),
-  }),
-  agreeShareWithSponsors: z.literal(true, {
-    errorMap: () => ({
-      message: "You must agree to share information with sponsors",
+    agreeShareWithMLH: z.literal(true, {
+      errorMap: () => ({
+        message: "You must agree to share application information with MLH",
+      }),
     }),
-  }),
-  agreeWillBe18: z.literal(true, {
-    errorMap: () => ({
-      message: "You must be at least 18 years old as of November 21st, 2025",
+    agreeShareWithSponsors: z.literal(true, {
+      errorMap: () => ({
+        message: "You must agree to share information with sponsors",
+      }),
     }),
-  }),
-  agreeEmailsFromMLH: z.boolean().optional(),
-});
+    agreeWillBe18: z.literal(true, {
+      errorMap: () => ({
+        message: "You must be at least 18 years old as of November 20th, 2026",
+      }),
+    }),
+    agreeEmailsFromMLH: z.boolean().optional(),
+
+    // RSVP fields
+    shirtSize: z.enum(shirtSize.enumValues),
+    dietaryRestrictions: z.enum(dietaryRestrictions.enumValues),
+    dietaryRestrictionsOther: z.string().nullable(),
+    emergencyContactName: z.string().min(1),
+    emergencyContactRelationship: z.enum(
+      emergencyContactRelationship.enumValues,
+    ),
+    emergencyContactPhoneNumber: z
+      .string()
+      .min(1)
+      .regex(phoneRegex, "Invalid phone number"),
+    transportationMethod: z.enum(transportationMethod.enumValues),
+  })
+  .superRefine((data, ctx) => {
+    if (data.dietaryRestrictions == "Other" && !data.dietaryRestrictionsOther) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please specify your dietary restriction",
+        path: ["dietaryRestrictionsOther"],
+      });
+    }
+  });
 
 export const canvasSaveSchema = applicationSaveSchema.pick({
   canvasData: true,
