@@ -5,7 +5,10 @@ const SITE_URL = "https://hackwestern.com";
 const SITE_NAME = "Hack Western";
 const DEFAULT_DESCRIPTION =
   "Hack Western is one of Canada's largest student-run hackathons, hosted annually at Western University in London, Ontario. Join 500+ students for a weekend of building, learning, and innovation.";
-const DEFAULT_OG_IMAGE = `${SITE_URL}/meta/og-image.png`;
+// Point at the canonical www host directly: the apex (SITE_URL) 308-redirects
+// to www, and social scrapers fetch og:image poorly through redirects. Using
+// the www URL also acts as a cache-bust so scrapers re-fetch the new image.
+const DEFAULT_OG_IMAGE = "https://www.hackwestern.com/meta/og-image.png";
 
 interface SEOProps {
   title?: string;
