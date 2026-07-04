@@ -124,6 +124,7 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
                       size="sm"
                       direction="right"
                       isLoading={isPending}
+                      onMouseDown={(e) => e.preventDefault()}
                       className="h-[35px]"
                     >
                       Submit
@@ -141,12 +142,12 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
           <AnimatePresence>
             {showPopup && (
               <motion.div
-                className="fixed left-1/2 top-6 z-50"
+                className="absolute left-1/2 top-6 z-50"
                 style={{ x: "-50%" }}
                 initial={{ opacity: 0, y: "-100%" }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: "-100%" }}
-                transition={{ type: "spring", damping: 22, stiffness: 320 }}
+                transition={{ type: "tween", duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
               >
                 <Window
                   title={
