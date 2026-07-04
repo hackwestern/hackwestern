@@ -4,13 +4,10 @@ import { PreregistrationForm } from "~/components/preregistration-form";
 export default function Home() {
   return (
     <main className="relative h-[100dvh] cursor-pixel-default overflow-hidden">
-      {/* Full-screen background, modelled on Hack the North (which covers the
-          whole screen on mobile Safari): NO viewport-fit=cover, transparent
-          body so nothing paints white, and a sky-blue root colour as the final
-          fallback. The image sits on a fixed layer sized to 100vh — on iOS
-          Safari `vh` is the LARGE viewport, so it extends behind the top/bottom
-          chrome. Without viewport-fit=cover no safe-area insets are carved out,
-          so there are no strips to fight. */}
+      {/* Full-screen background. With viewport-fit=cover (set in _app) the
+          initial containing block spans the whole physical screen, so a fixed
+          inset-0 layer covers the safe areas too. Sky-blue root colour +
+          transparent body as a no-white fallback. */}
       <style jsx global>{`
         html {
           background: #8fc0ee;
@@ -19,7 +16,7 @@ export default function Home() {
           background: transparent;
         }
       `}</style>
-      <div className="pointer-events-none fixed left-0 top-0 h-screen w-full overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <Image
           src="/landing/home/background.webp"
           alt=""
