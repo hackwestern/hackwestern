@@ -128,7 +128,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const btnClasses = cn(
       buttonVariants({ variant, size, className }),
       lockPressed && [pressedByVariant[variant], noLift],
-      showPressed && pressedByVariant[variant as "primary" | "secondary"],
+      showPressed && pressedByVariant[variant],
       full && "w-full",
     );
 
