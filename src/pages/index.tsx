@@ -64,7 +64,7 @@ export default function Home() {
         aria-hidden="true"
         width={45}
         height={34}
-        className="pointer-events-none absolute bottom-[16vh] left-[20vw] w-[22px]"
+        className="absolute bottom-[16vh] left-[20vw] w-[22px] hover:cursor-telescope"
       />
       <div className="absolute left-1/2 top-[44%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center md:top-[38%]">
         <div className="hero-text flex flex-col gap-1 font-cossetteTexte text-black sm:gap-1.5 md:gap-2 lg:gap-3 xl:gap-3.5">

@@ -202,6 +202,7 @@ const config = {
       cursor: {
         "pixel-default": "url('/cursors/cursor-default.png'),auto",
         "pixel-hover": "url('/cursors/hover-hand.png'),pointer",
+        "telescope":"url('/cursors/telescope.png'),pointer",
       },
     },
   },
