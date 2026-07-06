@@ -62,13 +62,13 @@ export default function Home() {
         />
       </div>
       <div className="group">
-        {/* add blur and make horse better */}
+        {/* fix the positioning of the horses (so it works on any aspect) */}
          <Image
         src="/landing/home/tiny-horse.png"
         alt=""
         aria-hidden="true"
-        width={45}
-        height={34}
+        width={75}
+        height={155}
         className="absolute bottom-[16vh] left-[20vw] hover:cursor-telescope object-cover transition-opacity group-hover:opacity-0"
       />
       <Image
@@ -77,7 +77,7 @@ export default function Home() {
         aria-hidden="true"
         width={75}
         height={55}
-        className="absolute bottom-[111px] left-[288px] hover:cursor-telescope object-cover opacity-0 transition-opacity group-hover:opacity-100"
+        className="absolute bottom-[16vh] left-[20vw] hover:cursor-telescope object-cover opacity-0 transition-opacity group-hover:opacity-100"
         onClick={() => setHorseVisible(true)}
       />
       {horseVisible && <Image
@@ -86,7 +86,7 @@ export default function Home() {
         aria-hidden="true"
         width={250}
         height={500}
-        className="absolute bottom-[155px] left-[320px] hover:cursor-telescope"
+        className="absolute bottom-[175px] left-[320px] hover:cursor-telescope"
       />}
       </div>
      
