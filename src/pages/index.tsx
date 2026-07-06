@@ -58,14 +58,25 @@ export default function Home() {
           sizes="63vw"
         />
       </div>
-      <Image
+      <div className="group">
+         <Image
         src="/landing/home/tiny-horse.png"
         alt=""
         aria-hidden="true"
         width={45}
         height={34}
-        className="absolute bottom-[16vh] left-[20vw] w-[22px] hover:cursor-telescope"
+        className="absolute bottom-[16vh] left-[20vw] w-[22px] hover:cursor-telescope object-cover transition-opacity group-hover:opacity-0"
       />
+      <Image
+        src="/landing/home/purple-horse.png"
+        alt=""
+        aria-hidden="true"
+        width={45}
+        height={34}
+        className="absolute bottom-[16vh] left-[20vw] w-[22px] hover:cursor-telescope object-cover opacity-0 transition-opacity group-hover:opacity-100"
+      />
+      </div>
+     
       <div className="absolute left-1/2 top-[44%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center md:top-[38%]">
         <div className="hero-text flex flex-col gap-1 font-cossetteTexte text-black sm:gap-1.5 md:gap-2 lg:gap-3 xl:gap-3.5">
           <div className="title-text">
