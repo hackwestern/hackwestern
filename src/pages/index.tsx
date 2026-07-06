@@ -71,35 +71,35 @@ export default function Home() {
           sizes="63vw"
         />
       </div>
-      <div className="group">
-        {/* fix the positioning of the horses (so it works on any aspect) */}
+      
+      <div className="group absolute bottom-[11vh] left-[20vw] ">
          <Image
         src="/landing/home/tiny-horse.png"
         alt=""
         aria-hidden="true"
         width={75}
         height={155}
-        className="absolute bottom-[11vh] left-[20vw] hover:cursor-telescope object-cover transition-opacity group-hover:opacity-0 z-10"
+        className="relative hover:cursor-telescope object-cover transition-opacity group-hover:opacity-0 z-10"
       />
-      <Image
-        src="/landing/home/purple-horse.png"
-        alt=""
-        aria-hidden="true"
-        width={75}
-        height={55}
-        className="absolute bottom-[11vh] left-[20vw] hover:cursor-telescope object-cover opacity-0 transition-opacity group-hover:opacity-100 z-10"
-        onClick={() => setHorseVisible(true)}
-      />
-      <Image
-        src="/landing/home/horse.png"
-        alt=""
-        aria-hidden="true"
-        width={250}
-        height={500}
-        className={`absolute bottom-[130px] left-[320px] transition-opacity ease-in-out duration-500 ${
-    horseVisible ? "opacity-100" : "opacity-0 pointer-events-none"
-  }`}
-      />
+        <Image
+          src="/landing/home/purple-horse.png"
+          alt=""
+          aria-hidden="true"
+          width={75}
+          height={155}
+          className="absolute inset-0 hover:cursor-telescope object-cover opacity-0 transition-opacity group-hover:opacity-100 z-10"
+          onClick={() => setHorseVisible(true)}
+        />
+        <Image
+          src="/landing/home/horse.png"
+          alt=""
+          aria-hidden="true"
+          width={250}
+          height={500}
+          className={`absolute bottom-[35px] left-[20px] max-w-[250px] transition-opacity ease-in-out duration-500 ${
+          horseVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        />
       </div>
      
       <div className="absolute left-1/2 top-[44%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center md:top-[38%]">
