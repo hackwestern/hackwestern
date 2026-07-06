@@ -1,7 +1,10 @@
 import Image from "next/image";
+import React from "react";
 import { PreregistrationForm } from "~/components/preregistration-form";
 
 export default function Home() {
+  const [horseVisible, setHorseVisible] = React.useState(false);
+
   return (
     <main className="relative h-[100lvh] cursor-pixel-default overflow-hidden">
       <Image
@@ -59,22 +62,32 @@ export default function Home() {
         />
       </div>
       <div className="group">
+        {/* add blur and make horse better */}
          <Image
         src="/landing/home/tiny-horse.png"
         alt=""
         aria-hidden="true"
         width={45}
         height={34}
-        className="absolute bottom-[16vh] left-[20vw] w-[22px] hover:cursor-telescope object-cover transition-opacity group-hover:opacity-0"
+        className="absolute bottom-[16vh] left-[20vw] hover:cursor-telescope object-cover transition-opacity group-hover:opacity-0"
       />
       <Image
         src="/landing/home/purple-horse.png"
         alt=""
         aria-hidden="true"
-        width={45}
-        height={34}
-        className="absolute bottom-[16vh] left-[20vw] w-[22px] hover:cursor-telescope object-cover opacity-0 transition-opacity group-hover:opacity-100"
+        width={75}
+        height={55}
+        className="absolute bottom-[111px] left-[288px] hover:cursor-telescope object-cover opacity-0 transition-opacity group-hover:opacity-100"
+        onClick={() => setHorseVisible(true)}
       />
+      {horseVisible && <Image
+        src="/landing/home/horse.png"
+        alt=""
+        aria-hidden="true"
+        width={250}
+        height={500}
+        className="absolute bottom-[155px] left-[320px] hover:cursor-telescope"
+      />}
       </div>
      
       <div className="absolute left-1/2 top-[44%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center md:top-[38%]">
