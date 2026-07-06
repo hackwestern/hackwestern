@@ -5,6 +5,16 @@ import { PreregistrationForm } from "~/components/preregistration-form";
 export default function Home() {
   const [horseVisible, setHorseVisible] = React.useState(false);
 
+  React.useEffect(() => {
+  if (!horseVisible) return;
+
+  const timer = setTimeout(() => {
+    setHorseVisible(false);
+  }, 3000);
+
+  return () => clearTimeout(timer);
+}, [horseVisible]);
+
   return (
     <main className="relative h-[100lvh] cursor-pixel-default overflow-hidden">
       <Image
@@ -69,7 +79,7 @@ export default function Home() {
         aria-hidden="true"
         width={75}
         height={155}
-        className="absolute bottom-[16vh] left-[20vw] hover:cursor-telescope object-cover transition-opacity group-hover:opacity-0"
+        className="absolute bottom-[11vh] left-[20vw] hover:cursor-telescope object-cover transition-opacity group-hover:opacity-0 z-10"
       />
       <Image
         src="/landing/home/purple-horse.png"
@@ -77,17 +87,19 @@ export default function Home() {
         aria-hidden="true"
         width={75}
         height={55}
-        className="absolute bottom-[16vh] left-[20vw] hover:cursor-telescope object-cover opacity-0 transition-opacity group-hover:opacity-100"
+        className="absolute bottom-[11vh] left-[20vw] hover:cursor-telescope object-cover opacity-0 transition-opacity group-hover:opacity-100 z-10"
         onClick={() => setHorseVisible(true)}
       />
-      {horseVisible && <Image
+      <Image
         src="/landing/home/horse.png"
         alt=""
         aria-hidden="true"
         width={250}
         height={500}
-        className="absolute bottom-[175px] left-[320px] hover:cursor-telescope"
-      />}
+        className={`absolute bottom-[130px] left-[320px] transition-opacity ease-in-out duration-500 ${
+    horseVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+  }`}
+      />
       </div>
      
       <div className="absolute left-1/2 top-[44%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center md:top-[38%]">
