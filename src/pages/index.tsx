@@ -6,14 +6,14 @@ export default function Home() {
   const [horseVisible, setHorseVisible] = React.useState(false);
 
   React.useEffect(() => {
-  if (!horseVisible) return;
+    if (!horseVisible) return;
 
-  const timer = setTimeout(() => {
-    setHorseVisible(false);
-  }, 3000);
+    const timer = setTimeout(() => {
+      setHorseVisible(false);
+    }, 3000);
 
-  return () => clearTimeout(timer);
-}, [horseVisible]);
+    return () => clearTimeout(timer);
+  }, [horseVisible]);
 
   return (
     <main className="relative h-[100lvh] cursor-pixel-default overflow-hidden">
@@ -71,23 +71,23 @@ export default function Home() {
           sizes="63vw"
         />
       </div>
-      
+
       <div className="absolute bottom-[11vh] left-[20vw] ">
-         <Image
-        src="/landing/home/tiny-horse.webp"
-        alt=""
-        aria-hidden="true"
-        width={75}
-        height={155}
-        className="relative hover:cursor-telescope object-cover transition-opacity hover:opacity-0 z-10"
-      />
+        <Image
+          src="/landing/home/tiny-horse.png"
+          alt=""
+          aria-hidden="true"
+          width={75}
+          height={155}
+          className="relative z-10 object-cover transition-opacity hover:cursor-telescope hover:opacity-0"
+        />
         <Image
           src="/landing/home/purple-horse.webp"
           alt=""
           aria-hidden="true"
           width={75}
           height={155}
-          className="absolute inset-0 hover:cursor-telescope object-cover opacity-0 transition-opacity hover:opacity-100 z-10"
+          className="absolute inset-0 z-10 object-cover opacity-0 transition-opacity hover:cursor-telescope hover:opacity-100"
           onClick={() => setHorseVisible(true)}
         />
         <Image
@@ -96,12 +96,12 @@ export default function Home() {
           aria-hidden="true"
           width={250}
           height={500}
-          className={`absolute bottom-[35px] left-[20px] max-w-[250px] transition-opacity ease-in-out duration-500 ${
-          horseVisible ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
+          className={`absolute bottom-[35px] left-[20px] max-w-[250px] transition-opacity duration-500 ease-in-out ${
+            horseVisible ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
         />
       </div>
-     
+
       <div className="absolute left-1/2 top-[44%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center md:top-[38%]">
         <div className="hero-text flex flex-col gap-1 font-cossetteTexte text-black sm:gap-1.5 md:gap-2 lg:gap-3 xl:gap-3.5">
           <div className="title-text">
