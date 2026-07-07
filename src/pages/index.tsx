@@ -72,14 +72,14 @@ export default function Home() {
         />
       </div>
       
-      <div className="group absolute bottom-[11vh] left-[20vw] ">
+      <div className="absolute bottom-[11vh] left-[20vw] ">
          <Image
         src="/landing/home/tiny-horse.png"
         alt=""
         aria-hidden="true"
         width={75}
         height={155}
-        className="relative hover:cursor-telescope object-cover transition-opacity group-hover:opacity-0 z-10"
+        className="relative hover:cursor-telescope object-cover transition-opacity hover:opacity-0 z-10"
       />
         <Image
           src="/landing/home/purple-horse.png"
@@ -87,7 +87,7 @@ export default function Home() {
           aria-hidden="true"
           width={75}
           height={155}
-          className="absolute inset-0 hover:cursor-telescope object-cover opacity-0 transition-opacity group-hover:opacity-100 z-10"
+          className="absolute inset-0 hover:cursor-telescope object-cover opacity-0 transition-opacity hover:opacity-100 z-10"
           onClick={() => setHorseVisible(true)}
         />
         <Image
