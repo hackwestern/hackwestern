@@ -74,7 +74,7 @@ export default function Home() {
       
       <div className="absolute bottom-[11vh] left-[20vw] ">
          <Image
-        src="/landing/home/tiny-horse.png"
+        src="/landing/home/tiny-horse.webp"
         alt=""
         aria-hidden="true"
         width={75}
@@ -82,7 +82,7 @@ export default function Home() {
         className="relative hover:cursor-telescope object-cover transition-opacity hover:opacity-0 z-10"
       />
         <Image
-          src="/landing/home/purple-horse.png"
+          src="/landing/home/purple-horse.webp"
           alt=""
           aria-hidden="true"
           width={75}
@@ -91,7 +91,7 @@ export default function Home() {
           onClick={() => setHorseVisible(true)}
         />
         <Image
-          src="/landing/home/horse.png"
+          src="/landing/home/horse.webp"
           alt=""
           aria-hidden="true"
           width={250}
