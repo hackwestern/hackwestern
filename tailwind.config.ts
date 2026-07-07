@@ -200,9 +200,9 @@ const config = {
         "7xl": "80rem",
       },
       cursor: {
-        "pixel-default": "url('/cursors/cursor-default.png'),auto",
-        "pixel-hover": "url('/cursors/hover-hand.png'),pointer",
-        "telescope":"url('/cursors/telescope.png'),pointer",
+        "pixel-default": "url('/cursors/cursor-default.webp'),auto",
+        "pixel-hover": "url('/cursors/hover-hand.webp'),pointer",
+        "telescope":"url('/cursors/telescope.webp'),pointer",
       },
     },
   },
