@@ -38,8 +38,14 @@ describe("computeNormalizedTeamScores", () => {
 
     // Each team's two normalized marks agree despite the judges' different
     // scales, so the leniency offset is gone.
-    expect(byTeam.get("T1")!.normalizedScore).toBeCloseTo(70 - Math.sqrt(500), 4);
-    expect(byTeam.get("T2")!.normalizedScore).toBeCloseTo(70 + Math.sqrt(500), 4);
+    expect(byTeam.get("T1")!.normalizedScore).toBeCloseTo(
+      70 - Math.sqrt(500),
+      4,
+    );
+    expect(byTeam.get("T2")!.normalizedScore).toBeCloseTo(
+      70 + Math.sqrt(500),
+      4,
+    );
 
     // Raw averages still carry the offset (kept for reference only).
     expect(byTeam.get("T1")!.rawScore).toBe(60);
