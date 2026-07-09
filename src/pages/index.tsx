@@ -17,10 +17,13 @@ export default function Home() {
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [horseVisible]);  
+  }, [horseVisible]);
 
   React.useEffect(() => {
-    const interval = setInterval(() => setIsBouncing(true), BOUNCE_GAP_SECONDS * 1000);
+    const interval = setInterval(
+      () => setIsBouncing(true),
+      BOUNCE_GAP_SECONDS * 1000,
+    );
     return () => clearInterval(interval);
   }, []);
 
@@ -83,13 +86,15 @@ export default function Home() {
 
       <div className="absolute bottom-[11vh] left-[20vw] ">
         <div
-            className={`group relative ${
-              !horseVisible && isBouncing && !isHovering ? "animate-bounce-jump" : ""
-            } group-hover:[animation-play-state:paused]`}
-            onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => setIsHovering(false)}
-            onAnimationEnd={() => setIsBouncing(false)}
-          >
+          className={`group relative ${
+            !horseVisible && isBouncing && !isHovering
+              ? "animate-bounce-jump"
+              : ""
+          } group-hover:[animation-play-state:paused]`}
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
+          onAnimationEnd={() => setIsBouncing(false)}
+        >
           <Image
             src="/landing/home/tiny-horse.webp"
             alt=""
