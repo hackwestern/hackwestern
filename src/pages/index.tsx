@@ -3,17 +3,26 @@ import React from "react";
 import { PreregistrationForm } from "~/components/preregistration-form";
 
 export default function Home() {
+  const BOUNCE_GAP_SECONDS = 8;
+
   const [horseVisible, setHorseVisible] = React.useState(false);
+  const [isBouncing, setIsBouncing] = React.useState(false);
+  const [isHovering, setIsHovering] = React.useState(false);
 
   React.useEffect(() => {
     if (!horseVisible) return;
 
     const timer = setTimeout(() => {
       setHorseVisible(false);
-    }, 3000);
+    }, 5000);
 
     return () => clearTimeout(timer);
-  }, [horseVisible]);
+  }, [horseVisible]);  
+
+  React.useEffect(() => {
+    const interval = setInterval(() => setIsBouncing(true), BOUNCE_GAP_SECONDS * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <main className="relative h-[100lvh] cursor-pixel-default overflow-hidden">
@@ -73,23 +82,32 @@ export default function Home() {
       </div>
 
       <div className="absolute bottom-[11vh] left-[20vw] ">
-        <Image
-          src="/landing/home/tiny-horse.png"
-          alt=""
-          aria-hidden="true"
-          width={75}
-          height={155}
-          className="relative z-10 object-cover transition-opacity hover:cursor-telescope hover:opacity-0"
-        />
-        <Image
-          src="/landing/home/purple-horse.webp"
-          alt=""
-          aria-hidden="true"
-          width={75}
-          height={155}
-          className="absolute inset-0 z-10 object-cover opacity-0 transition-opacity hover:cursor-telescope hover:opacity-100"
-          onClick={() => setHorseVisible(true)}
-        />
+        <div
+            className={`group relative ${
+              !horseVisible && isBouncing && !isHovering ? "animate-bounce-jump" : ""
+            } group-hover:[animation-play-state:paused]`}
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+            onAnimationEnd={() => setIsBouncing(false)}
+          >
+          <Image
+            src="/landing/home/tiny-horse.webp"
+            alt=""
+            aria-hidden="true"
+            width={75}
+            height={155}
+            className="relative z-10 object-cover transition-opacity hover:cursor-telescope hover:opacity-0"
+          />
+          <Image
+            src="/landing/home/purple-horse.webp"
+            alt=""
+            aria-hidden="true"
+            width={75}
+            height={155}
+            className="absolute inset-0 z-10 object-cover opacity-0 transition-opacity hover:cursor-telescope hover:opacity-100"
+            onClick={() => setHorseVisible(true)}
+          />
+        </div>
         <Image
           src="/landing/home/horse.webp"
           alt=""
