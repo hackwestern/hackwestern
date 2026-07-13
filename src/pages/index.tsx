@@ -10,7 +10,6 @@ export default function Home() {
   const [isBouncing, setIsBouncing] = React.useState(false);
   const [isHovering, setIsHovering] = React.useState(false);
 
-
   //click outside horse
   React.useEffect(() => {
     if (!horseVisible) return;
@@ -27,23 +26,22 @@ export default function Home() {
 
   //timer for big horse
   React.useEffect(() => {
-  if (!horseVisible) return;
+    if (!horseVisible) return;
 
-  setIsBouncing(false);
+    setIsBouncing(false);
 
-  const timer = setTimeout(() => {
-    setHorseVisible(false);
-  }, 5000);
+    const timer = setTimeout(() => {
+      setHorseVisible(false);
+    }, 5000);
 
-  return () => clearTimeout(timer);
-}, [horseVisible]);
+    return () => clearTimeout(timer);
+  }, [horseVisible]);
 
   //horse bouncing
   React.useEffect(() => {
     if (horseVisible) return;
 
     const interval = setInterval(
-      
       () => setIsBouncing(true),
       BOUNCE_GAP_SECONDS * 1000,
     );
@@ -52,57 +50,58 @@ export default function Home() {
 
   return (
     <main className="relative h-[100lvh] cursor-pixel-default overflow-hidden">
-      <div    
-      className="absolute bottom-0 h-auto min-h-full w-auto min-w-full "    
-      style={{ aspectRatio: "4096 / 2560" }}  >
-      <Image
-        src="/landing/home/background.webp"
-        alt=""
-        fill
-        priority
-        className="object-cover object-center"
-        sizes="100vw"
-      />
-       <div ref={horseRef} className="absolute bottom-[15.5%] left-[20%] z-20">
-        <div
-          className={`group relative ${
-            !horseVisible && isBouncing && !isHovering
-              ? "animate-bounce-jump"
-              : ""
-          } group-hover:[animation-play-state:paused]`}
-          onMouseEnter={() => setIsHovering(true)}
-          onMouseLeave={() => setIsHovering(false)}
-          onAnimationEnd={() => setIsBouncing(false)}
-        >
+      <div
+        className="absolute bottom-0 h-auto min-h-full w-auto min-w-full "
+        style={{ aspectRatio: "4096 / 2560" }}
+      >
+        <Image
+          src="/landing/home/background.webp"
+          alt=""
+          fill
+          priority
+          className="object-cover object-center"
+          sizes="100vw"
+        />
+        <div ref={horseRef} className="absolute bottom-[15.5%] left-[20%] z-20">
+          <div
+            className={`group relative ${
+              !horseVisible && isBouncing && !isHovering
+                ? "animate-bounce-jump"
+                : ""
+            } group-hover:[animation-play-state:paused]`}
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+            onAnimationEnd={() => setIsBouncing(false)}
+          >
+            <Image
+              src="/landing/home/tiny-horse.webp"
+              alt=""
+              aria-hidden="true"
+              width={75}
+              height={155}
+              className="relative z-10 object-cover transition-opacity hover:cursor-telescope hover:opacity-0"
+            />
+            <Image
+              src="/landing/home/purple-horse.webp"
+              alt=""
+              aria-hidden="true"
+              width={75}
+              height={155}
+              className="absolute inset-0 z-10 object-cover opacity-0 transition-opacity hover:cursor-telescope hover:opacity-100"
+              onClick={() => setHorseVisible(true)}
+            />
+          </div>
           <Image
-            src="/landing/home/tiny-horse.webp"
+            src="/landing/home/horse.webp"
             alt=""
             aria-hidden="true"
-            width={75}
-            height={155}
-            className="relative z-10 object-cover transition-opacity hover:cursor-telescope hover:opacity-0"
-          />
-          <Image
-            src="/landing/home/purple-horse.webp"
-            alt=""
-            aria-hidden="true"
-            width={75}
-            height={155}
-            className="absolute z-10 inset-0 object-cover opacity-0 transition-opacity hover:cursor-telescope hover:opacity-100"
-            onClick={() => setHorseVisible(true)}
+            width={250}
+            height={500}
+            className={`absolute bottom-[35px] left-[20px] max-w-[250px] transition-opacity duration-500 ease-in-out ${
+              horseVisible ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
           />
         </div>
-        <Image
-          src="/landing/home/horse.webp"
-          alt=""
-          aria-hidden="true"
-          width={250}
-          height={500}
-          className={`absolute bottom-[35px] left-[20px] max-w-[250px] transition-opacity duration-500 ease-in-out ${
-            horseVisible ? "opacity-100" : "pointer-events-none opacity-0"
-          }`}
-        />
-      </div>
       </div>
       <div
         className="cloud-scroll-right pointer-events-none absolute left-[-12vw] top-[10vh] w-[55vw]"
