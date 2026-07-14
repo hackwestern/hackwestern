@@ -62,7 +62,16 @@ export default function Home() {
           className="object-cover object-center"
           sizes="100vw"
         />
-        <div ref={horseRef} className="absolute bottom-[15.5%] left-[20%] z-20">
+        {/* Pin the horse to the grass crest across aspect ratios. The bg is
+            object-cover (4096x2560, horizon at ~79.7% down), so its crop flips
+            between height- and width-driven; a fixed vh floated the horse into
+            the sky on short/landscape windows. This tracks the visible grass
+            band instead. See derivation: bottom = 0.54 * (visible grass band). */}
+        <div
+          ref={horseRef}
+          className="absolute left-[20vw] z-20"
+          style={{ bottom: "max(2vh, 27vh - 0.16 * max(62.5vw, 100vh))" }}
+        >
           <div
             className={`group relative ${
               !horseVisible && isBouncing && !isHovering
