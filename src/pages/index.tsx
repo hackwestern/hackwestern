@@ -106,7 +106,7 @@ export default function Home() {
             aria-hidden="true"
             width={250}
             height={500}
-            className={`absolute bottom-[35px] left-[20px] max-w-[250px] transition-opacity duration-500 ease-in-out ${
+            className={`absolute bottom-[35px] left-[40px] max-w-[70px] transition-opacity duration-500 ease-in-out md:left-[20px] md:max-w-[250px] ${
               horseVisible ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
           />
