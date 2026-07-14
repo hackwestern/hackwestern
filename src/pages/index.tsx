@@ -1,17 +1,117 @@
 import Image from "next/image";
+import React from "react";
 import { PreregistrationForm } from "~/components/preregistration-form";
 
 export default function Home() {
+  const BOUNCE_GAP_SECONDS = 8;
+  const horseRef = React.useRef<HTMLDivElement>(null);
+
+  const [horseVisible, setHorseVisible] = React.useState(false);
+  const [isBouncing, setIsBouncing] = React.useState(false);
+  const [isHovering, setIsHovering] = React.useState(false);
+
+  //click outside horse
+  React.useEffect(() => {
+    if (!horseVisible) return;
+
+    function handleClickOutside(e: MouseEvent) {
+      if (horseRef.current && !horseRef.current.contains(e.target as Node)) {
+        setHorseVisible(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [horseVisible]);
+
+  //timer for big horse
+  React.useEffect(() => {
+    if (!horseVisible) return;
+
+    setIsBouncing(false);
+
+    const timer = setTimeout(() => {
+      setHorseVisible(false);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [horseVisible]);
+
+  //horse bouncing
+  React.useEffect(() => {
+    if (horseVisible) return;
+
+    const interval = setInterval(
+      () => setIsBouncing(true),
+      BOUNCE_GAP_SECONDS * 1000,
+    );
+    return () => clearInterval(interval);
+  }, [horseVisible]);
+
   return (
     <main className="relative h-[100lvh] cursor-pixel-default overflow-hidden">
-      <Image
-        src="/landing/home/background.webp"
-        alt=""
-        fill
-        priority
-        className="object-cover object-center"
-        sizes="100vw"
-      />
+      <div
+        className="absolute bottom-0 h-auto min-h-full w-auto min-w-full "
+        style={{ aspectRatio: "4096 / 2560" }}
+      >
+        <Image
+          src="/landing/home/background.webp"
+          alt=""
+          fill
+          priority
+          className="object-cover object-center"
+          sizes="100vw"
+        />
+        {/* Pin the horse to the grass crest across aspect ratios. The bg is
+            object-cover (4096x2560, horizon at ~79.7% down), so its crop flips
+            between height- and width-driven; a fixed vh floated the horse into
+            the sky on short/landscape windows. This tracks the visible grass
+            band instead. See derivation: bottom = 0.54 * (visible grass band). */}
+        <div
+          ref={horseRef}
+          className="absolute left-[20vw] z-20"
+          style={{ bottom: "max(2vh, 27vh - 0.16 * max(62.5vw, 100vh))" }}
+        >
+          <div
+            className={`group relative ${
+              !horseVisible && isBouncing && !isHovering
+                ? "animate-bounce-jump"
+                : ""
+            } group-hover:[animation-play-state:paused]`}
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+            onAnimationEnd={() => setIsBouncing(false)}
+          >
+            <Image
+              src="/landing/home/tiny-horse.webp"
+              alt=""
+              aria-hidden="true"
+              width={75}
+              height={155}
+              className="relative z-10 object-cover transition-opacity hover:cursor-telescope hover:opacity-0"
+            />
+            <Image
+              src="/landing/home/purple-horse.webp"
+              alt=""
+              aria-hidden="true"
+              width={75}
+              height={155}
+              className="absolute inset-0 z-10 object-cover opacity-0 transition-opacity hover:cursor-telescope hover:opacity-100"
+              onClick={() => setHorseVisible(true)}
+            />
+          </div>
+          <Image
+            src="/landing/home/horse.webp"
+            alt=""
+            aria-hidden="true"
+            width={250}
+            height={500}
+            className={`absolute bottom-[35px] left-[20px] max-w-[250px] transition-opacity duration-500 ease-in-out ${
+              horseVisible ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
+          />
+        </div>
+      </div>
       <div
         className="cloud-scroll-right pointer-events-none absolute left-[-12vw] top-[10vh] w-[55vw]"
         aria-hidden="true"
@@ -58,14 +158,7 @@ export default function Home() {
           sizes="63vw"
         />
       </div>
-      <Image
-        src="/landing/home/tiny-horse.png"
-        alt=""
-        aria-hidden="true"
-        width={45}
-        height={34}
-        className="pointer-events-none absolute bottom-[16vh] left-[20vw] w-[22px]"
-      />
+
       <div className="absolute left-1/2 top-[44%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center md:top-[38%]">
         <div className="hero-text flex flex-col gap-1 font-cossetteTexte text-black sm:gap-1.5 md:gap-2 lg:gap-3 xl:gap-3.5">
           <div className="title-text">
