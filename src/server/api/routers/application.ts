@@ -396,6 +396,7 @@ export const applicationRouter = createTRPCRouter({
         ] as const),
       }),
     )
+
     .mutation(async ({ input }) => {
       const { emails, status } = input;
       try {
