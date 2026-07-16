@@ -9,7 +9,7 @@
 // import { notVerifiedRedirectDashboard } from "~/utils/redirect";
 // import CharacterIcon from "~/components/dashboard/CharacterIcon";
 // import SubmittedDisplay from "~/components/dashboard/SubmittedDisplay";
-import { type GetServerSidePropsContext } from "next";
+import { disabledRedirect } from "~/utils/redirect";
 // import { getServerSession } from "next-auth";
 // import { authOptions } from "~/server/auth";
 // import { db } from "~/server/db";
@@ -149,13 +149,4 @@ import { type GetServerSidePropsContext } from "next";
 const Dashboard = () => null;
 export default Dashboard;
 
-export const getServerSideProps = async (
-  context: GetServerSidePropsContext,
-) => {
-  return {
-    redirect: {
-      destination: "/live",
-      permanent: false,
-    },
-  };
-};
+export const getServerSideProps = disabledRedirect;
