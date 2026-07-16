@@ -10,6 +10,12 @@ import "~/styles/globals.css";
 import { Toaster } from "sonner";
 import { Toaster as CustomToaster } from "~/components/ui/toaster";
 import { TooltipProvider } from "~/components/ui/tooltip";
+import {
+  SocialMeta,
+  DEFAULT_OG_IMAGE,
+  DEFAULT_TITLE,
+  DEFAULT_DESCRIPTION,
+} from "~/components/seo";
 
 const cossetteTexte = localFont({
   src: [
@@ -44,6 +50,14 @@ const MyApp: AppType<{ session: Session | null }> = ({
 }) => {
   return (
     <SessionProvider session={session}>
+      {/* Site-wide default social tags. Pages that render <SEO/> override
+          these via matching `key`s; pages without it (e.g. the home page)
+          fall back to these, so every route has a link preview. */}
+      <SocialMeta
+        title={DEFAULT_TITLE}
+        description={DEFAULT_DESCRIPTION}
+        image={DEFAULT_OG_IMAGE}
+      />
       <SpeedInsights />
       <main
         className={`${figtree.variable} font-figtree ${cossetteTexte.variable} font-cossetteTexte ${pix32.variable} font-pix32`}
