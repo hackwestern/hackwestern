@@ -292,7 +292,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
               }}
             >
               <div className="flex w-[80px] items-center justify-end pr-2">
-                <span className="bg-red-500 px-1.5 py-0.5 font-jetbrains-mono text-[8px] font-bold text-white sm:text-[10px]">
+                <span className="font-jetbrains-mono bg-red-500 px-1.5 py-0.5 text-[8px] font-bold text-white sm:text-[10px]">
                   {formatCurrentTime()}
                 </span>
               </div>

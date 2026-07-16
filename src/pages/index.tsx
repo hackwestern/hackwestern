@@ -1,96 +1,107 @@
-import { Footer } from "~/components/footer";
-import Hero from "~/components/promo/hero";
-import Canvas from "~/components/canvas/canvas";
-import Sponsors from "~/components/promo/sponsors";
-import About from "~/components/promo/about";
-import Projects from "~/components/promo/projects";
-import FAQ from "~/components/promo/faq";
-import { coordinates } from "~/constants/canvas";
-import MLHTrustBadge from "~/components/promo/mlh-trust.badge";
-import { Button } from "~/components/ui/button";
-import Link from "next/link";
-import { motion } from "framer-motion";
-import { growTransition } from "~/components/canvas/wrapper";
-import { useEffect } from "react";
-import { useRouter } from "next/router";
-import SEO from "~/components/seo";
-import Head from "next/head";
+import Image from "next/image";
+import { PreregistrationForm } from "~/components/preregistration-form";
 
 export default function Home() {
-  const router = useRouter();
-  // prefetch register and login
-  useEffect(() => {
-    void router.prefetch("/register");
-    void router.prefetch("/login");
-  }, [router]);
-
   return (
-    <>
-      <SEO description="Hack Western is one of Canada's largest student-run hackathons, hosted annually at Western University in London, Ontario. Join 500+ students for a weekend of building, learning, and innovation." />
-      <Head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Event",
-              name: "Hack Western",
-              description:
-                "One of Canada's largest student-run hackathons, hosted annually at Western University in London, Ontario.",
-              url: "https://hackwestern.com",
-              eventAttendanceMode:
-                "https://schema.org/OfflineEventAttendanceMode",
-              eventStatus: "https://schema.org/EventScheduled",
-              location: {
-                "@type": "Place",
-                name: "Western University",
-                address: {
-                  "@type": "PostalAddress",
-                  streetAddress: "1151 Richmond St",
-                  addressLocality: "London",
-                  addressRegion: "ON",
-                  postalCode: "N6A 3K7",
-                  addressCountry: "CA",
-                },
-              },
-              organizer: {
-                "@type": "Organization",
-                name: "Hack Western",
-                url: "https://hackwestern.com",
-              },
-              isAccessibleForFree: true,
-              audience: {
-                "@type": "Audience",
-                audienceType: "Students",
-              },
-            }),
-          }}
-        />
-      </Head>
-      <main
-        id="home"
-        className="relative min-h-screen cursor-[url('/shared/customcursor.svg'),auto]"
+    <main className="relative h-[100lvh] cursor-pixel-default overflow-hidden">
+      <Image
+        src="/landing/home/background.webp"
+        alt=""
+        fill
+        priority
+        className="object-cover object-center"
+        sizes="100vw"
+      />
+      <div
+        className="cloud-scroll-right pointer-events-none absolute left-[-12vw] top-[10vh] w-[55vw]"
+        aria-hidden="true"
       >
-        <Canvas homeCoordinates={coordinates.home}>
-          <Hero />
-          <Sponsors />
-          <About />
-          <Projects />
-          <FAQ />
-        </Canvas>
-        <Footer />
-        <MLHTrustBadge />
-        <Link href="/live" prefetch={true}>
-          <motion.div
-            className="fixed right-24 top-6 z-50 w-fit md:right-28 lg:right-44"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1, transition: growTransition }}
-            exit={{ opacity: 0 }}
+        <Image
+          src="/landing/home/cloud1.webp"
+          alt=""
+          width={4096}
+          height={1576}
+          quality={65}
+          className="h-auto w-full"
+          sizes="55vw"
+        />
+        <Image
+          src="/landing/home/cloud1.webp"
+          alt=""
+          width={4096}
+          height={1576}
+          quality={65}
+          className="absolute right-[100vw] top-0 h-auto w-full"
+          sizes="55vw"
+        />
+      </div>
+      <div
+        className="cloud-scroll-right-slow pointer-events-none absolute bottom-[34vh] right-[calc(-8vw)] w-[63vw] md:bottom-[23vh]"
+        aria-hidden="true"
+      >
+        <Image
+          src="/landing/home/cloud2.webp"
+          alt=""
+          width={1724}
+          height={570}
+          quality={65}
+          className="h-auto w-full"
+          sizes="63vw"
+        />
+        <Image
+          src="/landing/home/cloud2.webp"
+          alt=""
+          width={1724}
+          height={570}
+          quality={65}
+          className="absolute right-[100vw] top-0 h-auto w-full"
+          sizes="63vw"
+        />
+      </div>
+      <Image
+        src="/landing/home/tiny-horse.png"
+        alt=""
+        aria-hidden="true"
+        width={45}
+        height={34}
+        className="pointer-events-none absolute bottom-[16vh] left-[20vw] w-[22px]"
+      />
+      <div className="absolute left-1/2 top-[44%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center md:top-[38%]">
+        <div className="hero-text flex flex-col gap-1 font-cossetteTexte text-black sm:gap-1.5 md:gap-2 lg:gap-3 xl:gap-3.5">
+          <div className="title-text">
+            <span className="text-[64px] font-bold leading-[58px] tracking-[-0.03em] xl:text-[86.67px] xl:leading-[26px] xl:tracking-[-0.04em]">
+              Hack Western&nbsp;
+            </span>
+            <span className="text-[43.33px] font-normal leading-[26px] tracking-[-0.05em]">
+              13
+            </span>
+          </div>
+          <div className="subtitle-text text-right">
+            <p className="text-[43.33px] font-bold leading-[40px] tracking-[-0.05em] xl:leading-[26px]">
+              Discover the unknown
+            </p>
+          </div>
+        </div>
+        <div className="info-text mt-[36px] flex flex-col gap-2 text-[20px] font-medium leading-[150%] text-[#2E547A] md:mt-[28px]">
+          <div className="flex items-center gap-4">
+            <img src="/landing/home/icons/retro-globe.svg" alt="globe icon" />
+            <p>In-Person Event</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <img src="/landing/home/icons/retro-cal.svg" alt="calendar icon" />
+            <p>November 20-22, 2026</p>
+          </div>
+        </div>
+        <div className="mt-[28px] flex flex-col items-start gap-[11px] md:mt-[48px]">
+          <PreregistrationForm />
+          <a
+            href="mailto:hello@hackwestern.me"
+            className="cursor-pixel-hover text-[16px] font-medium text-[#2E547A]"
           >
-            <Button variant="primary">Dashboard</Button>
-          </motion.div>
-        </Link>
-      </main>
-    </>
+            Interested in sponsoring?
+          </a>
+        </div>
+      </div>
+    </main>
   );
 }
