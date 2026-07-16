@@ -1,5 +1,5 @@
 import { Input } from "~/components/ui/input";
-import PrimaryButton from "./buttons/primary-button";
+import PrimaryButton from "./primary-button";
 import { Skeleton } from "../ui/skeleton";
 import { useState } from "react";
 

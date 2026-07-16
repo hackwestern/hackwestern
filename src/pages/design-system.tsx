@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { disabledRedirect } from "~/utils/redirect";
-import PrimaryButton from "~/components/internals/buttons/primary-button";
-import SecondaryButton from "~/components/internals/buttons/secondary-button";
-import TertiaryButton from "~/components/internals/buttons/tertiary-button";
+import PrimaryButton from "~/components/internals/primary-button";
+import SecondaryButton from "~/components/internals/secondary-button";
+import TertiaryButton from "~/components/internals/tertiary-button";
 import TextField from "~/components/internals/text-field";
 import * as tokens from "~/lib/tokens";
 import { ColorSwatch } from "~/components/ui/color-swatch";
