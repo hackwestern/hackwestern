@@ -7,5 +7,6 @@ export interface ButtonProps {
   onMouseDown?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   size?: "sm" | "lg";
   direction?: "left" | "right";
+  full?: boolean;
   className?: string;
 }

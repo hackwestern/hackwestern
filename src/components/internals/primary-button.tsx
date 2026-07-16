@@ -10,6 +10,7 @@ export default function PrimaryButton({
   isSkeleton = false,
   disabled = false,
   isLoading = false,
+  full = false,
   size = "lg",
   direction,
   onClick,
@@ -31,6 +32,7 @@ export default function PrimaryButton({
         onMouseDown={onMouseDown}
         size={size}
         className={`${size == "sm" ? "px-[16px] pb-[10px] pt-[7px]" : "px-[18px] pb-[15px] pt-[12px]"} ${className}`}
+        full={full}
       >
         {/* {(!direction || direction == "right") && <Spinner isLoading={isLoading}></Spinner>} */}
 
