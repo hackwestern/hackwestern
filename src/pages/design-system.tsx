@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { disabledRedirect } from "~/utils/redirect";
 import PrimaryButton from "~/components/internals/buttons/primary-button";
 import SecondaryButton from "~/components/internals/buttons/secondary-button";
 import TertiaryButton from "~/components/internals/buttons/tertiary-button";
@@ -7,6 +8,7 @@ import * as tokens from "~/lib/tokens";
 import { ColorSwatch } from "~/components/ui/color-swatch";
 import { Window } from "~/components/internals/window";
 import { SmallCard } from "~/components/internals/smallCard";
+import { SearchBar } from "~/components/internals/search-bar";
 
 function DesignSystem() {
   const [isLoading, setIsLoading] = useState(false);
@@ -42,6 +44,9 @@ function DesignSystem() {
           </PrimaryButton>
         }
       />
+
+      <div className="h3">Search Bar: </div>
+      <SearchBar></SearchBar>
       <div className="h3">Window Asset: </div>
       <Window title="Placeholder">
         <div className="pb-10 font-pix32 text-9xl">0:00</div>
@@ -259,3 +264,5 @@ function DesignSystem() {
 }
 
 export default DesignSystem;
+
+export const getServerSideProps = disabledRedirect;

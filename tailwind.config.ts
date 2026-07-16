@@ -200,8 +200,21 @@ const config = {
         "7xl": "80rem",
       },
       cursor: {
-        "pixel-default": "url('/cursors/cursor-default.png'),auto",
-        "pixel-hover": "url('/cursors/hover-hand.png'),pointer",
+        "pixel-default": "url('/cursors/cursor-default.webp'),auto",
+        "pixel-hover": "url('/cursors/hover-hand.webp'),pointer",
+        "telescope":"url('/cursors/telescope.webp'),pointer",
+      },
+      keyframes: {
+        "bounce-jump": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "30%": { transform: "translateY(-60px)" },
+          "60%": { transform: "translateY(0)" },
+          "80%": { transform: "translateY(-10px)" },
+          "100%": { transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        "bounce-jump": "bounce-jump 0.6s ease-in-out",
       },
     },
   },

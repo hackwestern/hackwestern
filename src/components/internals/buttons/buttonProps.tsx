@@ -4,6 +4,7 @@ export interface ButtonProps {
   disabled?: boolean;
   isLoading?: boolean;
   onClick?: () => void;
+  onMouseDown?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   size?: "sm" | "lg";
   direction?: "left" | "right";
   full?: boolean;

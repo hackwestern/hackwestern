@@ -25,6 +25,17 @@ const config = {
     locales: ["en"],
     defaultLocale: "en",
   },
+
+  async redirects() {
+    return [
+      // sponsors.pdf moved to public/shared/sponsors in #628; old link is in circulation
+      {
+        source: "/sponsors/sponsors.pdf",
+        destination: "/shared/sponsors/sponsors.pdf",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default config;
