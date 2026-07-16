@@ -6,7 +6,7 @@ import TextField from "~/components/internals/text-field";
 import * as tokens from "~/lib/tokens";
 import { ColorSwatch } from "~/components/ui/color-swatch";
 import { Window } from "~/components/internals/window";
-import { SearchBar } from "~/components/internals/searchBar";
+import { SearchBar } from "~/components/internals/search-bar";
 
 function DesignSystem() {
   const [isLoading, setIsLoading] = useState(false);
