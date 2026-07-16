@@ -191,6 +191,12 @@ export const isVerifiedRedirect = async (
 };
 
 export const disabledRedirect = async () => {
+  // Only lock these pages on production (hackwestern.com). On preview/local
+  // deployments they render normally so the team can keep building them.
+  if (process.env.VERCEL_ENV !== "production") {
+    return { props: {} };
+  }
+
   return {
     redirect: {
       destination: "/",

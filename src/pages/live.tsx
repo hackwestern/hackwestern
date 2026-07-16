@@ -1,3 +1,4 @@
+import { disabledRedirect } from "~/utils/redirect";
 // import SEO from "~/components/seo";
 // import { useSearchParams } from "next/navigation";
 // import Home from "~/components/live/home";
@@ -79,3 +80,5 @@ const Live = () => {
 // };
 
 export default Live;
+
+export const getServerSideProps = disabledRedirect;

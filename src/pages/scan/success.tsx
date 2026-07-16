@@ -1,4 +1,5 @@
 import { useRouter } from "next/router";
+import { disabledRedirect } from "~/utils/redirect";
 import { useEffect, useState } from "react";
 
 export default function ScanSuccessPage() {
@@ -103,3 +104,5 @@ export default function ScanSuccessPage() {
     </div>
   );
 }
+
+export const getServerSideProps = disabledRedirect;

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "~/utils/api";
 import { useRouter } from "next/router";
 import { ScansTable, type ScanRow } from "~/components/scans/scans-table";
+import { disabledRedirect } from "~/utils/redirect";
 
 type FilterType =
   | "all"
@@ -140,3 +141,5 @@ const ScansPage = () => {
 };
 
 export default ScansPage;
+
+export const getServerSideProps = disabledRedirect;

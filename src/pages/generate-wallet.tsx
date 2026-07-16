@@ -1,5 +1,6 @@
 "use client";
 import AddToWallet from "~/components/wallet/add-to-wallet";
+import { disabledRedirect } from "~/utils/redirect";
 
 export default function GenerateQR() {
   return (
@@ -18,3 +19,5 @@ export default function GenerateQR() {
     </div>
   );
 }
+
+export const getServerSideProps = disabledRedirect;

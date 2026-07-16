@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { disabledRedirect } from "~/utils/redirect";
 import PrimaryButton from "~/components/internals/primary-button";
 import SecondaryButton from "~/components/internals/secondary-button";
 import TertiaryButton from "~/components/internals/tertiary-button";
@@ -242,3 +243,5 @@ function DesignSystem() {
 }
 
 export default DesignSystem;
+
+export const getServerSideProps = disabledRedirect;

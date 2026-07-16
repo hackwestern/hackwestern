@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Spinner } from "../../components/loading-spinner";
 import { api } from "~/utils/api";
+import { disabledRedirect } from "~/utils/redirect";
 
 // Where the Wallet QR Code Goes to
 export default function Wallet() {
@@ -67,3 +68,5 @@ export default function Wallet() {
     </div>
   );
 }
+
+export const getServerSideProps = disabledRedirect;
