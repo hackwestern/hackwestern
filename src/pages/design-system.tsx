@@ -28,7 +28,7 @@ function DesignSystem() {
 
       <div className="h3">Search Bar: </div>
       <SearchBar></SearchBar>
-      
+
       <div className="h3">Window Asset: </div>
       <Window title="Placeholder">
         <div className="pb-10 font-pix32 text-9xl">0:00</div>

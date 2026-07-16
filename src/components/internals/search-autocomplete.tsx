@@ -6,7 +6,6 @@ import { useDebounce } from "use-debounce";
 import { Input } from "~/components/ui/input";
 import { cn } from "~/lib/utils";
 
-
 export interface AutocompleteOption {
   id: string;
   label: string;
@@ -40,7 +39,7 @@ function highlightMatch(label: string, query: string) {
   return (
     <>
       {before}
-      <span className="text-heavy font-semibold">{match}</span>
+      <span className="font-semibold text-heavy">{match}</span>
       {after}
     </>
   );
@@ -104,7 +103,8 @@ const SearchAutocomplete = React.forwardRef<
         }
       }
       document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     function commitSelection(option: AutocompleteOption) {
@@ -129,11 +129,15 @@ const SearchAutocomplete = React.forwardRef<
       switch (event.key) {
         case "ArrowDown":
           event.preventDefault();
-          setActiveIndex((prev) => (prev + 1 >= filtered.length ? 0 : prev + 1));
+          setActiveIndex((prev) =>
+            prev + 1 >= filtered.length ? 0 : prev + 1,
+          );
           break;
         case "ArrowUp":
           event.preventDefault();
-          setActiveIndex((prev) => (prev - 1 < 0 ? filtered.length - 1 : prev - 1));
+          setActiveIndex((prev) =>
+            prev - 1 < 0 ? filtered.length - 1 : prev - 1,
+          );
           break;
         case "Enter":
           if (activeIndex >= 0 && filtered[activeIndex]) {
