@@ -34,11 +34,6 @@ const config = {
         destination: "/shared/sponsors/sponsors.pdf",
         permanent: true,
       },
-      {
-        source: "/login",
-        destination: "/",
-        permanent: false,
-      }
     ];
   },
 };
