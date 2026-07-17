@@ -96,9 +96,7 @@ describe("teams basic endpoints", () => {
     beforeAll(async () => {
       teamId = await insertTeam();
     });
-    afterAll(async () => {
-      removeTeam(teamId);
-    });
+
     test("leaveTeam success", async () => {
       await db
         .update(users)
@@ -106,7 +104,11 @@ describe("teams basic endpoints", () => {
         .where(eq(users.id, ctx.session!.user.id));
       const res = caller.teams.leaveTeam();
 
-      return expect(res).resolves.toEqual({ success: true });
+      await expect(res).resolves.toEqual({ success: true });
+      const deletedTeam = await db.query.teams.findFirst({
+        where: eq(teams.id, teamId),
+      });
+      expect(deletedTeam).toBeUndefined();
     });
     test("leaveTeam fail", async () => {
       const res = caller.teams.leaveTeam();

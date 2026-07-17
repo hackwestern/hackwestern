@@ -119,6 +119,14 @@ export const teamsRouter = createTRPCRouter({
       .set({ teamId: null })
       .where(eq(users.id, ctx.session.user.id));
 
+    const [teamSize] = await db
+      .select({ value: count() })
+      .from(users)
+      .where(eq(users.teamId, currentTeam.teamId));
+    if (teamSize?.value == 0) {
+      await db.delete(teams).where(eq(teams.id, currentTeam.teamId));
+    }
+
     return { success: true };
   }),
   deleteTeam: protectedProcedure.query(async ({ ctx }) => {
