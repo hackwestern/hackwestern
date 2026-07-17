@@ -122,7 +122,7 @@ describe("teams basic endpoints", () => {
       teamId = await insertTeam();
     });
     afterAll(async () => {
-      removeTeam(teamId);
+      await removeTeam(teamId);
     });
 
     test("deleteTeam success", async () => {
