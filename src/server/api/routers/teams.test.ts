@@ -50,7 +50,7 @@ describe("teams basic endpoints", () => {
       teamId = await insertTeam();
     });
     afterAll(async () => {
-      removeTeam(teamId);
+      await removeTeam(teamId);
     });
     test("joinTeam success", async () => {
       const res = caller.teams.joinTeam({ teamId: teamId });
