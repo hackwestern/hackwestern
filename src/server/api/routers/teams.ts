@@ -9,7 +9,7 @@ import { randomBytes } from "crypto";
 export const teamsRouter = createTRPCRouter({
   createTeam: protectedProcedure
     .input(z.object({ name: z.string() }))
-    .query(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       const team = await db.query.users.findFirst({
         columns: { teamId: true },
         where: eq(users.id, ctx.session.user.id),
