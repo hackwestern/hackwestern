@@ -36,14 +36,16 @@ export const teamsRouter = createTRPCRouter({
 
       const id = randomBytes(3).toString("hex");
 
-      await db.insert(teams).values({
-        id: id,
-        name: input.name,
+      await db.transaction(async (tx) => {
+        await tx.insert(teams).values({
+          id: id,
+          name: input.name,
+        });
+        await tx
+          .update(users)
+          .set({ teamId: id })
+          .where(eq(users.id, ctx.session.user.id));
       });
-      await db
-        .update(users)
-        .set({ teamId: id })
-        .where(eq(users.id, ctx.session.user.id));
 
       return {
         teamId: id,
@@ -120,18 +122,20 @@ export const teamsRouter = createTRPCRouter({
         message: "Cannot leave team because user is not in a team",
       });
     }
-    await db
-      .update(users)
-      .set({ teamId: null })
-      .where(eq(users.id, ctx.session.user.id));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({ teamId: null })
+        .where(eq(users.id, ctx.session.user.id));
 
-    const [teamSize] = await db
-      .select({ value: count() })
-      .from(users)
-      .where(eq(users.teamId, currentTeam.teamId));
-    if (teamSize?.value == 0) {
-      await db.delete(teams).where(eq(teams.id, currentTeam.teamId));
-    }
+      const [teamSize] = await tx
+        .select({ value: count() })
+        .from(users)
+        .where(eq(users.teamId, currentTeam.teamId));
+      if (teamSize?.value == 0) {
+        await tx.delete(teams).where(eq(teams.id, currentTeam.teamId));
+      }
+    });
 
     return { success: true };
   }),
@@ -152,12 +156,14 @@ export const teamsRouter = createTRPCRouter({
         message: "Cannot delete team because user is not in a team",
       });
     }
-    await db
-      .update(users)
-      .set({ teamId: null })
-      .where(eq(users.teamId, currentTeam.teamId));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({ teamId: null })
+        .where(eq(users.teamId, currentTeam.teamId));
 
-    await db.delete(teams).where(eq(teams.id, currentTeam.teamId));
+      await tx.delete(teams).where(eq(teams.id, currentTeam.teamId));
+    });
 
     return {
       success: true,
