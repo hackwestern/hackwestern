@@ -57,6 +57,13 @@
       "when": 1782227542782,
       "tag": "0007_unique_tyger_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782342279804,
+      "tag": "0008_striped_stature",
+      "breakpoints": true
     }
   ]
 }
