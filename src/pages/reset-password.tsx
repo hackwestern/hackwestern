@@ -1,6 +1,6 @@
 import SEO from "~/components/seo";
 import { type FormEvent, useState } from "react";
-import { hackerLoginRedirect } from "~/utils/redirect";
+import { disabledRedirect } from "~/utils/redirect";
 import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
 import { Input } from "~/components/ui/input";
@@ -140,4 +140,4 @@ export default function ResetRequest() {
   );
 }
 
-export const getServerSideProps = hackerLoginRedirect;
+export const getServerSideProps = disabledRedirect;
