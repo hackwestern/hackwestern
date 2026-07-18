@@ -30,7 +30,7 @@ describe("teams basic endpoints", () => {
         where: eq(users.id, ctx.session!.user.id),
       });
 
-      expect(user).toSatisfy((s) => {
+      expect(user).toSatisfy((s: { teamId: string | null }) => {
         return s.teamId != null;
       });
     });
