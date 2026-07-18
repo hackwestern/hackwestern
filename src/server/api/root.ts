@@ -7,6 +7,7 @@ import { preregistrationRouter } from "./routers/preregistration";
 import { scavengerHuntRouter } from "./routers/scavenger-hunt";
 import { reviewRouter } from "./routers/review";
 import { qrRouter } from "./routers/qr-code-generation";
+import { teamsRouter } from "./routers/teams";
 
 /**
  * This is the primary router for your server.
@@ -22,6 +23,7 @@ export const appRouter = createTRPCRouter({
   review: reviewRouter,
   qrRouter: qrRouter,
   scavengerHunt: scavengerHuntRouter,
+  teams: teamsRouter,
 });
 
 // export type definition of API
