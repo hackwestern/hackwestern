@@ -10,15 +10,21 @@ import "~/styles/globals.css";
 import { Toaster } from "sonner";
 import { Toaster as CustomToaster } from "~/components/ui/toaster";
 import { TooltipProvider } from "~/components/ui/tooltip";
+import {
+  SocialMeta,
+  DEFAULT_OG_IMAGE,
+  DEFAULT_TITLE,
+  DEFAULT_DESCRIPTION,
+} from "~/components/seo";
 
 const cossetteTexte = localFont({
   src: [
     {
-      path: "../../public/shared/fonts/cossetteTexte/CossetteTexte-Bold.ttf",
+      path: "../../public/shared/fonts/cossetteTexte/CossetteTexte-Bold.woff2",
       weight: "700",
     },
     {
-      path: "../../public/shared/fonts/cossetteTexte/CossetteTexte-Regular.ttf",
+      path: "../../public/shared/fonts/cossetteTexte/CossetteTexte-Regular.woff2",
       weight: "400",
     },
   ],
@@ -27,7 +33,7 @@ const cossetteTexte = localFont({
 });
 
 const pix32 = localFont({
-  src: "../../public/shared/fonts/pix32/Pix32.ttf",
+  src: "../../public/shared/fonts/pix32/Pix32.woff2",
   variable: "--font-pix32",
   display: "swap",
 });
@@ -44,6 +50,14 @@ const MyApp: AppType<{ session: Session | null }> = ({
 }) => {
   return (
     <SessionProvider session={session}>
+      {/* Site-wide default social tags. Pages that render <SEO/> override
+          these via matching `key`s; pages without it (e.g. the home page)
+          fall back to these, so every route has a link preview. */}
+      <SocialMeta
+        title={DEFAULT_TITLE}
+        description={DEFAULT_DESCRIPTION}
+        image={DEFAULT_OG_IMAGE}
+      />
       <SpeedInsights />
       <main
         className={`${figtree.variable} font-figtree ${cossetteTexte.variable} font-cossetteTexte ${pix32.variable} font-pix32`}

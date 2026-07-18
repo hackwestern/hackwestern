@@ -11,6 +11,11 @@ const config = {
     reactCompiler: true,
   },
 
+  images: {
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 31536000,
+  },
+
   /**
    * If you are using `appDir` then you must comment the below `i18n` config out.
    *
@@ -19,6 +24,17 @@ const config = {
   i18n: {
     locales: ["en"],
     defaultLocale: "en",
+  },
+
+  async redirects() {
+    return [
+      // sponsors.pdf moved to public/shared/sponsors in #628; old link is in circulation
+      {
+        source: "/sponsors/sponsors.pdf",
+        destination: "/shared/sponsors/sponsors.pdf",
+        permanent: true,
+      },
+    ];
   },
 };
 

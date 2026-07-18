@@ -10,9 +10,11 @@ export default function PrimaryButton({
   isSkeleton = false,
   disabled = false,
   isLoading = false,
+  full = false,
   size = "lg",
   direction,
   onClick,
+  onMouseDown,
   className,
 }: ButtonProps) {
   if (isSkeleton)
@@ -27,8 +29,10 @@ export default function PrimaryButton({
         variant="primary"
         isPending={disabled || isLoading}
         onClick={onClick}
+        onMouseDown={onMouseDown}
         size={size}
         className={`${size == "sm" ? "px-[16px] pb-[10px] pt-[7px]" : "px-[18px] pb-[15px] pt-[12px]"} ${className}`}
+        full={full}
       >
         {/* {(!direction || direction == "right") && <Spinner isLoading={isLoading}></Spinner>} */}
 

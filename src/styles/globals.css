@@ -125,7 +125,7 @@ html {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply cursor-pixel-default bg-background text-foreground;
   }
 
   /* Ensure full viewport coverage on mobile */
@@ -178,6 +178,38 @@ html {
   }
 }
 @layer utilities {
+  @keyframes cloud-scroll-left {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-100vw);
+    }
+  }
+
+  @keyframes cloud-scroll-right {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(100vw);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cloud-scroll-left {
+      animation: cloud-scroll-left 95s linear 5s infinite;
+    }
+
+    .cloud-scroll-right {
+      animation: cloud-scroll-right 70s linear 5s infinite;
+    }
+
+    .cloud-scroll-right-slow {
+      animation: cloud-scroll-right 95s linear 5s infinite;
+    }
+  }
+
   @supports (-moz-appearance: none) {
     .scrollbar {
       scrollbar-width: thin;

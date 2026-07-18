@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
 import { type PluginAPI } from "tailwindcss/types/config";
-import * as tokens from "./src/lib/tokens"
+import * as tokens from "./src/lib/tokens";
 
 const config = {
   darkMode: ["class"],
@@ -39,7 +39,7 @@ const config = {
         lilac: "var(--lilac)",
         salmon: "var(--salmon)",
         "faint-lilac": "var(--faint-lilac)",
-        "border-light": "hsl(var(--border-light))",
+        "border-light": "var(--border-light)",
 
         emphasis: "var(--emphasis)",
         active: "var(--active)",
@@ -53,7 +53,7 @@ const config = {
         highlight: tokens.colors.bg.highlight,
 
         green: tokens.colors.greens["green-primary"],
-        
+
         primary: {
           "50": "hsl(var(--primary-50))",
           "100": "hsl(var(--primary-100))",
@@ -148,7 +148,7 @@ const config = {
       fontFamily: {
         figtree: ["var(--font-figtree)"],
         cossetteTexte: [tokens.fonts.cossetteTexte],
-        pix32: [tokens.fonts.pix32]
+        pix32: [tokens.fonts.pix32],
       },
       fontSize: {
         "main-display": "4rem", //h1
@@ -163,11 +163,11 @@ const config = {
         "sm-b": "0.875rem", //button-sm
       },
       lineHeight: {
-        default: "1.2" 
+        default: "1.2",
       },
       letterSpacing: {
         default: "0em",
-        subtitle: "-0.02em" 
+        subtitle: "-0.02em",
       },
       width: {
         "3xs": "16rem",
@@ -199,9 +199,22 @@ const config = {
         "6xl": "72rem",
         "7xl": "80rem",
       },
-      cursor:{
-        "pixel-default": "url('/cursors/cursor-default.png'),auto",
-        "pixel-hover": "url('../../public/cursors/hover-hand.png'),pointer"
+      cursor: {
+        "pixel-default": "url('/cursors/cursor-default.webp'),auto",
+        "pixel-hover": "url('/cursors/hover-hand.webp'),pointer",
+        "telescope":"url('/cursors/telescope.webp'),pointer",
+      },
+      keyframes: {
+        "bounce-jump": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "30%": { transform: "translateY(-60px)" },
+          "60%": { transform: "translateY(0)" },
+          "80%": { transform: "translateY(-10px)" },
+          "100%": { transform: "translateY(0)" },
+        },
+      },
+      animation: {
+        "bounce-jump": "bounce-jump 0.6s ease-in-out",
       },
     },
   },
