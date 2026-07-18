@@ -51,7 +51,7 @@ export const teamsRouter = createTRPCRouter({
     }),
   joinTeam: protectedProcedure
     .input(z.object({ teamId: z.string() }))
-    .query(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       const currentTeam = await db.query.users.findFirst({
         columns: { teamId: true },
         where: eq(users.id, ctx.session.user.id),
@@ -103,7 +103,7 @@ export const teamsRouter = createTRPCRouter({
 
       return { success: true };
     }),
-  leaveTeam: protectedProcedure.query(async ({ ctx }) => {
+  leaveTeam: protectedProcedure.mutation(async ({ ctx }) => {
     const currentTeam = await db.query.users.findFirst({
       columns: { teamId: true },
       where: eq(users.id, ctx.session.user.id),
@@ -135,7 +135,7 @@ export const teamsRouter = createTRPCRouter({
 
     return { success: true };
   }),
-  deleteTeam: protectedProcedure.query(async ({ ctx }) => {
+  deleteTeam: protectedProcedure.mutation(async ({ ctx }) => {
     const currentTeam = await db.query.users.findFirst({
       columns: { teamId: true },
       where: eq(users.id, ctx.session.user.id),
