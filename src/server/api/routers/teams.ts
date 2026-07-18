@@ -122,6 +122,7 @@ export const teamsRouter = createTRPCRouter({
         message: "Cannot leave team because user is not in a team",
       });
     }
+    const teamId = currentTeam.teamId;
     await db.transaction(async (tx) => {
       await tx
         .update(users)
@@ -131,9 +132,9 @@ export const teamsRouter = createTRPCRouter({
       const [teamSize] = await tx
         .select({ value: count() })
         .from(users)
-        .where(eq(users.teamId, currentTeam.teamId));
+        .where(eq(users.teamId, teamId));
       if (teamSize?.value == 0) {
-        await tx.delete(teams).where(eq(teams.id, currentTeam.teamId));
+        await tx.delete(teams).where(eq(teams.id, teamId));
       }
     });
 
@@ -156,13 +157,14 @@ export const teamsRouter = createTRPCRouter({
         message: "Cannot delete team because user is not in a team",
       });
     }
+    const teamId = currentTeam.teamId;
     await db.transaction(async (tx) => {
       await tx
         .update(users)
         .set({ teamId: null })
-        .where(eq(users.teamId, currentTeam.teamId));
+        .where(eq(users.teamId, teamId));
 
-      await tx.delete(teams).where(eq(teams.id, currentTeam.teamId));
+      await tx.delete(teams).where(eq(teams.id, teamId));
     });
 
     return {
