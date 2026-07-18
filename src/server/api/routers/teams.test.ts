@@ -23,9 +23,16 @@ const removeTeam = async (id: string) => {
 
 describe("teams basic endpoints", () => {
   describe("createTeam Tests", () => {
-    test("createTeam success", () => {
-      const res = caller.teams.createTeam({ name: "Best Team" });
-      return expect(res).resolves.toEqual({ success: true });
+    test("createTeam success", async () => {
+      await caller.teams.createTeam({ name: "Best Team" });
+
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, ctx.session!.user.id),
+      });
+
+      expect(user).toSatisfy((s) => {
+        return s.teamId != null;
+      });
     });
     test("createTeam already in team", async () => {
       const teamId = await insertTeam();
@@ -133,6 +140,10 @@ describe("teams basic endpoints", () => {
 
       const res = caller.teams.deleteTeam();
       await expect(res).resolves.toEqual({ success: true });
+
+      expect(
+        await db.query.teams.findFirst({ where: eq(teams.id, teamId) }),
+      ).toBeUndefined();
     });
     test("deleteTeam fail", async () => {
       const res = caller.teams.deleteTeam();

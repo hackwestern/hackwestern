@@ -40,8 +40,13 @@ export const teamsRouter = createTRPCRouter({
         id: id,
         name: input.name,
       });
+      await db
+        .update(users)
+        .set({ teamId: id })
+        .where(eq(users.id, ctx.session.user.id));
+
       return {
-        success: true,
+        teamId: id,
       };
     }),
   joinTeam: protectedProcedure
@@ -95,6 +100,7 @@ export const teamsRouter = createTRPCRouter({
         .update(users)
         .set({ teamId: input.teamId })
         .where(eq(users.id, ctx.session.user.id));
+
       return { success: true };
     }),
   leaveTeam: protectedProcedure.query(async ({ ctx }) => {
@@ -150,6 +156,9 @@ export const teamsRouter = createTRPCRouter({
       .update(users)
       .set({ teamId: null })
       .where(eq(users.teamId, currentTeam.teamId));
+
+    await db.delete(teams).where(eq(teams.id, currentTeam.teamId));
+
     return {
       success: true,
     };
