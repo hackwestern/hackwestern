@@ -18,6 +18,7 @@ import {
   scavengerHuntRedemptions,
 } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
+import { isUserApprovedForEvent } from "~/server/api/utils/approval";
 
 // Helper function to handle TRPC errors consistently
 const withErrorHandling = async <T>(
@@ -377,6 +378,18 @@ export const scavengerHuntRouter = createTRPCRouter({
         });
         if (!user) {
           throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+
+        // Only approved hackers (or organizers/sponsors) can be scanned.
+        // This prevents unapproved applicants from earning points, meals, or
+        // other rewards with a self-generated QR code.
+        const isApproved = await isUserApprovedForEvent(userId);
+        if (!isApproved) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "This hacker has not been approved to attend and cannot be scanned.",
+          });
         }
 
         // Record the scan with scanner ID
