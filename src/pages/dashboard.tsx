@@ -10,9 +10,10 @@
 // import CharacterIcon from "~/components/dashboard/CharacterIcon";
 // import SubmittedDisplay from "~/components/dashboard/SubmittedDisplay";
 import { disabledRedirect } from "~/utils/redirect";
-// import { getServerSession } from "next-auth";
-// import { authOptions } from "~/server/auth";
-// import { db } from "~/server/db";
+import type { GetServerSidePropsContext } from "next";
+import { getServerSession } from "next-auth";
+import { authOptions } from "~/server/auth";
+import { db } from "~/server/db";
 
 // function getApplyStep(stepValue: string | null): ApplyStepFull | null {
 //   return applySteps.find((s) => s.step === stepValue) ?? null;
@@ -149,4 +150,23 @@ import { disabledRedirect } from "~/utils/redirect";
 const Dashboard = () => null;
 export default Dashboard;
 
-export const getServerSideProps = disabledRedirect;
+export const getServerSideProps = async (
+  context: GetServerSidePropsContext,
+) => {
+  // Organizers land here via login's default callbackUrl; send them to the
+  // application review instead of the (disabled) hacker dashboard.
+  const session = await getServerSession(context.req, context.res, authOptions);
+  if (session) {
+    const user = await db.query.users.findFirst({
+      where: (users, { eq }) => eq(users.id, session.user.id),
+    });
+    if (user?.type === "organizer") {
+      return {
+        redirect: { destination: "/internal/review", permanent: false },
+      };
+    }
+  }
+
+  // Everyone else keeps the existing disabled-page behavior.
+  return disabledRedirect();
+};
