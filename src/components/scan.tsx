@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/router";
 import { api } from "~/utils/api";
+import SecondaryButton from "~/components/internals/secondary-button";
 
 interface Activity {
   id: number;
@@ -63,21 +64,18 @@ const Scan = () => {
   };
 
   return (
-    <div
-      className="flex min-h-screen flex-col"
-      style={{ backgroundColor: "#f5f2f6" }}
-    >
+    <div className="flex min-h-screen flex-col bg-highlight">
       {/* Header */}
       <header className="flex items-center justify-between p-4">
         <div></div>
-        <button
+        <SecondaryButton
+          size="sm"
           onClick={() => {
             void router.push("/scavenger/redeem");
           }}
-          className="rounded-lg bg-white px-4 py-2 font-figtree font-medium text-heavy shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
         >
           Redeem Points
-        </button>
+        </SecondaryButton>
       </header>
 
       {/* Main Content */}
@@ -109,7 +107,7 @@ const Scan = () => {
                   <button
                     key={item.id}
                     onClick={() => handleActivityClick(item.id)}
-                    className="w-full rounded-lg bg-white px-4 py-3 text-left font-figtree font-semibold text-heavy shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
+                    className="w-full rounded-lg bg-offwhite px-4 py-3 text-left font-figtree font-semibold text-heavy shadow-md transition-colors hover:bg-blue-1 active:bg-blue-2"
                   >
                     {item.description ?? item.code}
                   </button>
