@@ -492,7 +492,7 @@ const RedeemScanPage = () => {
           onClick={() => {
             void router.push("/scavenger/redeem");
           }}
-          className="font-figtree text-heavy transition-colors hover:text-emphasis"
+          className="font-secondary text-heavy transition-colors hover:text-emphasis"
         >
           Back
         </button>
@@ -501,27 +501,27 @@ const RedeemScanPage = () => {
             {rewardName}
           </h1>
           {rewardLoading && (
-            <p className="font-figtree text-sm text-medium">
+            <p className="font-secondary text-sm text-medium">
               Loading reward details...
             </p>
           )}
           {rewardData && (
             <div className="space-y-1">
               {rewardData.description && (
-                <p className="font-figtree text-sm text-medium">
+                <p className="font-secondary text-sm text-medium">
                   {formatTitle(rewardData.description)}
                 </p>
               )}
-              <p className="font-figtree text-sm font-medium text-heavy">
+              <p className="font-secondary text-sm font-medium text-heavy">
                 Cost: {rewardData.costPoints} points
               </p>
-              <p className="font-figtree text-sm text-medium">
+              <p className="font-secondary text-sm text-medium">
                 Quantity left: {rewardData.quantity ?? "∞"}
               </p>
             </div>
           )}
           {!rewardLoading && !rewardData && rewardId && (
-            <p className="font-figtree text-sm text-red-600">
+            <p className="font-secondary text-sm text-red-600">
               Reward not found
             </p>
           )}
@@ -548,12 +548,12 @@ const RedeemScanPage = () => {
         {/* Camera Error / Start Camera Button */}
         {!cameraActive && cameraError && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-300 p-6">
-            <p className="mb-4 text-center font-figtree text-heavy">
+            <p className="mb-4 text-center font-secondary text-heavy">
               {cameraError}
             </p>
             <button
               onClick={startCamera}
-              className="rounded-lg bg-white px-6 py-3 font-figtree font-medium text-heavy shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
+              className="rounded-lg bg-white px-6 py-3 font-secondary font-medium text-heavy shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
             >
               Start Camera
             </button>
@@ -563,14 +563,14 @@ const RedeemScanPage = () => {
 
       {/* Success Overlay */}
       {status === "success" && scannedName && (
-        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-white px-4 py-3 font-figtree text-heavy opacity-100 shadow-lg transition-opacity duration-300">
+        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-white px-4 py-3 font-secondary text-heavy opacity-100 shadow-lg transition-opacity duration-300">
           {scannedName} redeemed successfully
         </div>
       )}
 
       {/* Error Overlay */}
       {status === "error" && errorMessage && (
-        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-red-100 px-4 py-3 font-figtree text-red-700 opacity-100 shadow-lg transition-opacity duration-300">
+        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-red-100 px-4 py-3 font-secondary text-red-700 opacity-100 shadow-lg transition-opacity duration-300">
           {errorMessage}
         </div>
       )}

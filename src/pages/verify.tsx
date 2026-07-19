@@ -98,7 +98,7 @@ const Verify = () => {
           )}
           {verifyFailed && (
             <div className="flex flex-col justify-center">
-              <div className="mb-6 text-left font-figtree">
+              <div className="mb-6 text-left font-secondary">
                 Invalid or Expired Verification Token.
               </div>
               {verifyToken && (

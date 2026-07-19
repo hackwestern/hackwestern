@@ -160,7 +160,7 @@ export default function Apply() {
           {/* Mobile Header */}
           <div className="fixed z-[99] flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
             <div className="h-8 w-8"></div>
-            <h1 className="font-figtree text-lg font-semibold text-heavy">
+            <h1 className="font-secondary text-lg font-semibold text-heavy">
               {step
                 ? step.charAt(0).toUpperCase() + step.slice(1)
                 : "Application"}
@@ -183,7 +183,7 @@ export default function Apply() {
               </div>
 
               {step ? (
-                <div className="flex-1 overflow-visible font-figtree">
+                <div className="flex-1 overflow-visible font-secondary">
                   <ApplyForm step={step} />
                 </div>
               ) : (
@@ -249,7 +249,7 @@ export default function Apply() {
                         />
                       </div>
                       <div
-                        className="scrollbar min-h-0 flex-1 overflow-auto rounded-md pb-2 pl-1 pr-4 font-figtree"
+                        className="scrollbar min-h-0 flex-1 overflow-auto rounded-md pb-2 pl-1 pr-4 font-secondary"
                         ref={desktopScrollRef}
                       >
                         <ApplyForm

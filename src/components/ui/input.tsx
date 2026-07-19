@@ -10,7 +10,7 @@ export interface InputProps
 const inputVariants = cva(
   cn(
     "flex w-full relative bg-white px-[8px] py-[8px] outline-none",
-    `font-figtree font-medium text-[16px] leading-normal`,
+    `font-secondary font-medium text-[16px] leading-normal`,
     `text-gray-6`,
     `placeholder:text-gray-3`,
     "disabled:cursor-not-allowed disabled:opacity-50",

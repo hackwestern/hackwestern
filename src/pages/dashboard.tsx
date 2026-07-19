@@ -10,9 +10,10 @@
 // import CharacterIcon from "~/components/dashboard/CharacterIcon";
 // import SubmittedDisplay from "~/components/dashboard/SubmittedDisplay";
 import { disabledRedirect } from "~/utils/redirect";
-// import { getServerSession } from "next-auth";
-// import { authOptions } from "~/server/auth";
-// import { db } from "~/server/db";
+import type { GetServerSidePropsContext } from "next";
+import { getServerSession } from "next-auth";
+import { authOptions } from "~/server/auth";
+import { db } from "~/server/db";
 
 // function getApplyStep(stepValue: string | null): ApplyStepFull | null {
 //   return applySteps.find((s) => s.step === stepValue) ?? null;
@@ -100,7 +101,7 @@ import { disabledRedirect } from "~/utils/redirect";
 //           {/* Mobile Header */}
 //           <div className="fixed z-[99] flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
 //             <div className="h-8 w-8" />
-//             <h1 className="font-figtree text-sm font-semibold text-heavy">
+//             <h1 className="font-secondary text-sm font-semibold text-heavy">
 //               Home
 //             </h1>
 //             <div className="flex h-8 w-8 items-center justify-center">
@@ -149,4 +150,30 @@ import { disabledRedirect } from "~/utils/redirect";
 const Dashboard = () => null;
 export default Dashboard;
 
-export const getServerSideProps = disabledRedirect;
+export const getServerSideProps = async (
+  context: GetServerSidePropsContext,
+) => {
+  // On prod everything's blocked (disabledRedirect -> /). On dev/preview,
+  // organizers land here via login's default callbackUrl; send them to the
+  // internal dashboard instead of the (disabled) hacker dashboard.
+  if (process.env.VERCEL_ENV !== "production") {
+    const session = await getServerSession(
+      context.req,
+      context.res,
+      authOptions,
+    );
+    if (session) {
+      const user = await db.query.users.findFirst({
+        where: (users, { eq }) => eq(users.id, session.user.id),
+      });
+      if (user?.type === "organizer") {
+        return {
+          redirect: { destination: "/internal/dashboard", permanent: false },
+        };
+      }
+    }
+  }
+
+  // Everyone else keeps the existing disabled-page behavior.
+  return disabledRedirect();
+};

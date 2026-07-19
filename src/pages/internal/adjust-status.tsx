@@ -1,7 +1,4 @@
-import type { GetServerSidePropsContext } from "next";
-import { getServerSession } from "next-auth";
-import { authOptions } from "~/server/auth";
-import { db } from "~/server/db";
+import { disabledRedirect } from "~/utils/redirect";
 import SEO from "~/components/seo";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -17,23 +14,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 
-export async function getServerSideProps(context: GetServerSidePropsContext) {
-  const session = await getServerSession(context.req, context.res, authOptions);
-  if (!session) {
-    return {
-      redirect: { destination: "/login", permanent: false },
-    };
-  }
-  const user = await db.query.users.findFirst({
-    where: (users, { eq }) => eq(users.id, session.user.id),
-  });
-  if (user?.type !== "organizer") {
-    return {
-      redirect: { destination: "/dashboard", permanent: false },
-    };
-  }
-  return { props: {} };
-}
+export const getServerSideProps = disabledRedirect;
 
 const ALL_STATUSES = [
   "IN_PROGRESS",
@@ -160,7 +141,7 @@ export default function AdjustStatus() {
           </p>
 
           <div className="mb-6">
-            <h2 className="mb-2 font-figtree text-medium">
+            <h2 className="mb-2 font-secondary text-medium">
               Upload CSV of Emails
             </h2>
             <Input
@@ -201,7 +182,9 @@ export default function AdjustStatus() {
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-2 font-figtree text-medium">Add Single Email</h2>
+            <h2 className="mb-2 font-secondary text-medium">
+              Add Single Email
+            </h2>
             <div className="flex gap-2">
               <Input
                 type="email"
@@ -223,7 +206,9 @@ export default function AdjustStatus() {
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-2 font-figtree text-medium">Select New Status</h2>
+            <h2 className="mb-2 font-secondary text-medium">
+              Select New Status
+            </h2>
             <Select
               value={status}
               onValueChange={(v) => setStatus(v as Status)}

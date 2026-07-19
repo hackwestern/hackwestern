@@ -156,13 +156,13 @@ html {
     @apply font-cossetteTexte text-sm-display font-bold leading-default tracking-default text-heavy;
   }
   .p1 {
-    @apply font-figtree text-lg-p font-medium leading-normal tracking-default text-black;
+    @apply font-secondary text-lg-p font-medium leading-normal tracking-default text-black;
   }
   .p2 {
-    @apply font-figtree text-md-p font-medium leading-normal tracking-default text-black;
+    @apply font-secondary text-md-p font-medium leading-normal tracking-default text-black;
   }
   .p3 {
-    @apply font-figtree text-sm-p font-medium leading-normal tracking-default text-black;
+    @apply font-secondary text-sm-p font-medium leading-normal tracking-default text-black;
   }
   .subtitle-lg {
     @apply font-cossetteTexte text-lg-sub font-normal uppercase leading-normal tracking-subtitle text-black;

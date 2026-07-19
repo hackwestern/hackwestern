@@ -49,7 +49,7 @@ const ScansPage = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name, activity, scanner"
-            className="w-full rounded-lg border-2 border-white bg-[#f5f2f6] px-4 py-2 pl-10 font-figtree text-heavy placeholder:text-medium focus:outline-none focus:ring-2 focus:ring-violet-500"
+            className="w-full rounded-lg border-2 border-white bg-[#f5f2f6] px-4 py-2 pl-10 font-secondary text-heavy placeholder:text-medium focus:outline-none focus:ring-2 focus:ring-violet-500"
           />
           <svg
             className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-medium"
@@ -70,7 +70,7 @@ const ScansPage = () => {
         <div className="grid w-full grid-cols-2 gap-2 md:grid-cols-4 md:gap-4">
           <button
             onClick={() => setFilter("all")}
-            className={`rounded-lg bg-white px-4 py-2 font-figtree text-heavy transition-colors hover:bg-violet-100 ${
+            className={`rounded-lg bg-white px-4 py-2 font-secondary text-heavy transition-colors hover:bg-violet-100 ${
               filter === "all" ? "font-bold" : "font-medium"
             }`}
           >
@@ -78,7 +78,7 @@ const ScansPage = () => {
           </button>
           <button
             onClick={() => setFilter("meals")}
-            className={`rounded-lg bg-white px-4 py-2 font-figtree text-heavy transition-colors hover:bg-violet-100 ${
+            className={`rounded-lg bg-white px-4 py-2 font-secondary text-heavy transition-colors hover:bg-violet-100 ${
               filter === "meals" ? "font-bold" : "font-medium"
             }`}
           >
@@ -86,7 +86,7 @@ const ScansPage = () => {
           </button>
           <button
             onClick={() => setFilter("workshops")}
-            className={`rounded-lg bg-white px-4 py-2 font-figtree text-heavy transition-colors hover:bg-violet-100 ${
+            className={`rounded-lg bg-white px-4 py-2 font-secondary text-heavy transition-colors hover:bg-violet-100 ${
               filter === "workshops" ? "font-bold" : "font-medium"
             }`}
           >
@@ -94,7 +94,7 @@ const ScansPage = () => {
           </button>
           <button
             onClick={() => setFilter("activities")}
-            className={`rounded-lg bg-white px-4 py-2 font-figtree text-heavy transition-colors hover:bg-violet-100 ${
+            className={`rounded-lg bg-white px-4 py-2 font-secondary text-heavy transition-colors hover:bg-violet-100 ${
               filter === "activities" ? "font-bold" : "font-medium"
             }`}
           >
@@ -102,7 +102,7 @@ const ScansPage = () => {
           </button>
           <button
             onClick={() => setFilter("attendance")}
-            className={`rounded-lg bg-white px-3 py-2 font-figtree text-heavy transition-colors hover:bg-violet-100 md:px-4 ${
+            className={`rounded-lg bg-white px-3 py-2 font-secondary text-heavy transition-colors hover:bg-violet-100 md:px-4 ${
               filter === "attendance" ? "font-bold" : "font-medium"
             }`}
           >
@@ -114,7 +114,7 @@ const ScansPage = () => {
           </button>
           <button
             onClick={() => setFilter("wins")}
-            className={`rounded-lg bg-white px-3 py-2 font-figtree text-heavy transition-colors hover:bg-violet-100 md:px-4 ${
+            className={`rounded-lg bg-white px-3 py-2 font-secondary text-heavy transition-colors hover:bg-violet-100 md:px-4 ${
               filter === "wins" ? "font-bold" : "font-medium"
             }`}
           >
@@ -123,7 +123,7 @@ const ScansPage = () => {
           </button>
           <button
             onClick={() => setFilter("bonus")}
-            className={`rounded-lg bg-white px-4 py-2 font-figtree text-heavy transition-colors hover:bg-violet-100 ${
+            className={`rounded-lg bg-white px-4 py-2 font-secondary text-heavy transition-colors hover:bg-violet-100 ${
               filter === "bonus" ? "font-bold" : "font-medium"
             }`}
           >

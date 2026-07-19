@@ -60,7 +60,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
       />
       <SpeedInsights />
       <main
-        className={`${figtree.variable} font-figtree ${cossetteTexte.variable} font-cossetteTexte ${pix32.variable} font-pix32`}
+        className={`${figtree.variable} font-secondary ${cossetteTexte.variable} font-cossetteTexte ${pix32.variable} font-pix32`}
       >
         <TooltipProvider>
           <Component {...pageProps} />

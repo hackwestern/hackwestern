@@ -87,7 +87,7 @@ const SponsorCard = ({
           >
             <div className="mx-8 border-t border-gray-100 py-4">
               <p
-                className={`whitespace-pre-line font-figtree ${textSize} leading-relaxed text-medium`}
+                className={`whitespace-pre-line font-secondary ${textSize} leading-relaxed text-medium`}
               >
                 {description}
               </p>
@@ -104,7 +104,7 @@ const Sponsors = () => {
     <div className="h-full overflow-auto p-8 md:p-12">
       {/* Thank you text */}
       <div className="mb-12 text-center">
-        <p className="font-figtree text-medium md:text-lg">
+        <p className="font-secondary text-medium md:text-lg">
           {SPONSOR_THANK_YOU_TEXT}
         </p>
       </div>
@@ -141,7 +141,7 @@ const Sponsors = () => {
         return (
           <div key={tier.tier} className="mb-12">
             <h2
-              className={`mb-6 text-center font-figtree ${config.titleSize} font-semibold text-heavy`}
+              className={`mb-6 text-center font-secondary ${config.titleSize} font-semibold text-heavy`}
             >
               {tier.tier}
             </h2>

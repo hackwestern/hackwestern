@@ -60,8 +60,8 @@ export default function RedeemSuccessPage() {
         {/* Reward Name */}
         {rewardName && (
           <div className="space-y-1">
-            <p className="font-figtree text-sm text-medium">Reward:</p>
-            <p className="font-figtree text-lg font-medium text-heavy">
+            <p className="font-secondary text-sm text-medium">Reward:</p>
+            <p className="font-secondary text-lg font-medium text-heavy">
               {formatTitle(rewardName)}
             </p>
           </div>
@@ -70,8 +70,8 @@ export default function RedeemSuccessPage() {
         {/* User Name */}
         {userName && (
           <div className="space-y-1">
-            <p className="font-figtree text-sm text-medium">Redeemed by:</p>
-            <p className="font-figtree text-lg font-medium text-heavy">
+            <p className="font-secondary text-sm text-medium">Redeemed by:</p>
+            <p className="font-secondary text-lg font-medium text-heavy">
               {userName}
             </p>
           </div>
@@ -80,7 +80,7 @@ export default function RedeemSuccessPage() {
         {/* Back Button */}
         <button
           onClick={handleBackToRewards}
-          className="w-full rounded-lg bg-primary px-6 py-3 font-figtree font-medium text-primary-foreground transition-colors hover:bg-primary-700"
+          className="w-full rounded-lg bg-primary px-6 py-3 font-secondary font-medium text-primary-foreground transition-colors hover:bg-primary-700"
         >
           Back to Rewards
         </button>
