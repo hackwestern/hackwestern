@@ -134,7 +134,7 @@ export const getServerSideProps = async (
 ) => {
   return {
     redirect: {
-      destination: "/scavenger",
+      destination: "/internal/review",
       permanent: false,
     },
   };
