@@ -52,6 +52,10 @@ export const fonts = {
   cossetteTexte: "var(--font-cossetteTexte)",
   figtree: "var(--font-figtree)",
   pix32: "var(--font-pix32)",
+  // Semantic aliases — repoint these two when the yearly theme fonts change,
+  // and everything using font-main / font-secondary carries over automatically.
+  main: "var(--font-cossetteTexte)",
+  secondary: "var(--font-figtree)",
 } as const;
 
 // ------------------------------------------------------------
