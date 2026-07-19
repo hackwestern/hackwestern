@@ -101,7 +101,7 @@ import { db } from "~/server/db";
 //           {/* Mobile Header */}
 //           <div className="fixed z-[99] flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
 //             <div className="h-8 w-8" />
-//             <h1 className="font-figtree text-sm font-semibold text-heavy">
+//             <h1 className="font-secondary text-sm font-semibold text-heavy">
 //               Home
 //             </h1>
 //             <div className="flex h-8 w-8 items-center justify-center">

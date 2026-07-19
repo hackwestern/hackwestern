@@ -95,7 +95,7 @@ const Review = () => {
   return (
     <>
       <SEO title="Application Review" noindex />
-      <main className=" font-figtreen flex flex-col items-center bg-primary-50 font-figtree">
+      <main className=" font-secondaryn flex flex-col items-center bg-primary-50 font-secondary">
         <div className="relative z-[100] w-full items-center md:flex">
           <div
             id="left-panel"
@@ -367,7 +367,7 @@ const Review = () => {
           >
             <div className="z-10 my-8 flex h-[90vh] flex-col items-center justify-center overflow-auto overflow-auto rounded-xl border border-primary-300 bg-primary-100 pl-8 text-sm md:my-auto md:max-w-[800px]">
               {applicationData ? (
-                <div className="custom-scroll z-50 flex h-[90vh] flex-col overflow-auto rounded-[10px] rounded-lg px-2 py-4 font-figtree">
+                <div className="custom-scroll z-50 flex h-[90vh] flex-col overflow-auto rounded-[10px] rounded-lg px-2 py-4 font-secondary">
                   <Tooltip>
                     <TooltipTrigger>
                       <div className="mt-4 text-base">{`${applicationData?.firstName} ${applicationData?.lastName}`}</div>

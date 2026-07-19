@@ -146,7 +146,7 @@ const config = {
         "button-icon": tokens.shadows.icon,
       },
       fontFamily: {
-        main: [tokens.fonts.main],
+        primary: [tokens.fonts.primary],
         secondary: [tokens.fonts.secondary],
         figtree: ["var(--font-figtree)"],
         cossetteTexte: [tokens.fonts.cossetteTexte],

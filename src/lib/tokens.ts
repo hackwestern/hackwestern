@@ -53,10 +53,10 @@ export const fonts = {
   figtree: "var(--font-figtree)",
   pix32: "var(--font-pix32)",
   // Semantic aliases — repoint these two when the yearly theme fonts change,
-  // and everything using font-main / font-secondary carries over automatically.
-  // This year: main = CossetteTexte (display), secondary = Pix32 (body/UI).
+  // and everything using font-primary / font-secondary carries over automatically.
+  // This year: primary = CossetteTexte (display), secondary = Pix32 (body/UI).
   // figtree is deprecated (last year's font) and being migrated out — see #794.
-  main: "var(--font-cossetteTexte)",
+  primary: "var(--font-cossetteTexte)",
   secondary: "var(--font-pix32)",
 } as const;
 
@@ -93,7 +93,7 @@ export const typography = {
     textTransform: "none" as const,
   },
   p1: {
-    fontFamily: fonts.figtree, //
+    fontFamily: fonts.pix32, //
     fontWeight: "500", // Medium
     fontSize: "24px", //
     lineHeight: "auto",
@@ -101,7 +101,7 @@ export const typography = {
     textTransform: "none" as const,
   },
   p2: {
-    fontFamily: fonts.figtree,
+    fontFamily: fonts.pix32,
     fontWeight: "500",
     fontSize: "16px",
     lineHeight: "auto",
@@ -109,7 +109,7 @@ export const typography = {
     textTransform: "none" as const,
   },
   p3: {
-    fontFamily: fonts.figtree,
+    fontFamily: fonts.pix32,
     fontWeight: "500",
     fontSize: "14px",
     lineHeight: "auto",
