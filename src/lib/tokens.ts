@@ -54,8 +54,10 @@ export const fonts = {
   pix32: "var(--font-pix32)",
   // Semantic aliases — repoint these two when the yearly theme fonts change,
   // and everything using font-main / font-secondary carries over automatically.
+  // This year: main = CossetteTexte (display), secondary = Pix32 (body/UI).
+  // figtree is deprecated (last year's font) and being migrated out — see #794.
   main: "var(--font-cossetteTexte)",
-  secondary: "var(--font-figtree)",
+  secondary: "var(--font-pix32)",
 } as const;
 
 // ------------------------------------------------------------
