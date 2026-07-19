@@ -80,7 +80,7 @@ const Scan = () => {
 
       {/* Main Content */}
       <main className="w-full flex-1 space-y-6 p-6">
-        <h1 className="text-left font-main text-3xl font-medium text-heavy">
+        <h1 className="text-left font-primary text-3xl font-medium text-heavy">
           Select activity to scan
         </h1>
 

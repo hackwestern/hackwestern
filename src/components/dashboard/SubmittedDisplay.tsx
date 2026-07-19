@@ -84,11 +84,11 @@ export default function SubmittedDisplay({
         <h2 className="font-dico max-w-xl text-4xl font-semibold text-heavy">
           Your application has been submitted!
         </h2>
-        <h4 className="font-figtree text-heavy">
+        <h4 className="font-secondary text-heavy">
           Thanks for applying to <b>Hack Western XII</b>,{" "}
           {application?.firstName}!
         </h4>
-        <p className="font-figtree text-heavy">
+        <p className="font-secondary text-heavy">
           You&apos;ll hear back from us about your status in a few weeks!
         </p>
         <div>

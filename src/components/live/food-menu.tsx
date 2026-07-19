@@ -91,10 +91,10 @@ const FoodMenu = () => {
                               >
                                 <div className="flex flex-row items-start justify-between">
                                   <div className="flex flex-col justify-center">
-                                    <h2 className="font-figtree font-medium text-heavy">
+                                    <h2 className="font-secondary font-medium text-heavy">
                                       {option.name}
                                     </h2>
-                                    <h3 className="font-italic font-figtree text-medium">
+                                    <h3 className="font-italic font-secondary text-medium">
                                       {option.vendor}
                                     </h3>
                                   </div>
@@ -104,7 +104,7 @@ const FoodMenu = () => {
                                       onClick={() =>
                                         toggleAllergens(allergenKey)
                                       }
-                                      className={`flex flex-row items-center gap-2 rounded-md px-2 py-1 font-figtree text-sm font-medium transition-colors ${
+                                      className={`flex flex-row items-center gap-2 rounded-md px-2 py-1 font-secondary text-sm font-medium transition-colors ${
                                         isExpanded
                                           ? "bg-primary-300 text-heavy"
                                           : "bg-highlight text-medium"
@@ -120,7 +120,7 @@ const FoodMenu = () => {
                                     <div className="overflow-x-auto">
                                       <Table>
                                         <TableHeader>
-                                          <TableRow className="font-figtree text-heavy">
+                                          <TableRow className="font-secondary text-heavy">
                                             {(
                                               Object.keys(
                                                 option.allergens,

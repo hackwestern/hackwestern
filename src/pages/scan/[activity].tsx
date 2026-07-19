@@ -654,7 +654,7 @@ const ScanActivityPage = () => {
           onClick={() => {
             void router.push("/scavenger");
           }}
-          className="font-figtree text-heavy transition-colors hover:text-emphasis"
+          className="font-secondary text-heavy transition-colors hover:text-emphasis"
         >
           Back
         </button>
@@ -663,24 +663,26 @@ const ScanActivityPage = () => {
             {activityName}
           </h1>
           {itemLoading && (
-            <p className="font-figtree text-sm text-medium">
+            <p className="font-secondary text-sm text-medium">
               Loading item details...
             </p>
           )}
           {itemData && (
             <div className="space-y-1">
               {itemData.description && (
-                <p className="font-figtree text-sm text-medium">
+                <p className="font-secondary text-sm text-medium">
                   {itemData.description}
                 </p>
               )}
-              <p className="font-figtree text-sm font-medium text-heavy">
+              <p className="font-secondary text-sm font-medium text-heavy">
                 Points: {itemData.points}
               </p>
             </div>
           )}
           {!itemLoading && !itemData && (itemId ?? itemCode) && (
-            <p className="font-figtree text-sm text-red-600">Item not found</p>
+            <p className="font-secondary text-sm text-red-600">
+              Item not found
+            </p>
           )}
         </div>
       </header>
@@ -707,12 +709,12 @@ const ScanActivityPage = () => {
         {/* Camera Error / Start Camera Button */}
         {!cameraActive && cameraError && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-300 p-6">
-            <p className="mb-4 text-center font-figtree text-heavy">
+            <p className="mb-4 text-center font-secondary text-heavy">
               {cameraError}
             </p>
             <button
               onClick={startCamera}
-              className="rounded-lg bg-white px-6 py-3 font-figtree font-medium text-heavy shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
+              className="rounded-lg bg-white px-6 py-3 font-secondary font-medium text-heavy shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
             >
               Start Camera
             </button>
@@ -723,10 +725,10 @@ const ScanActivityPage = () => {
         {/* {testMode && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 space-y-6">
             <div className="text-center space-y-2">
-              <p className="font-figtree text-lg text-heavy font-medium">
+              <p className="font-secondary text-lg text-heavy font-medium">
                 Test Mode - No Camera Required
               </p>
-              <p className="font-figtree text-sm text-medium">
+              <p className="font-secondary text-sm text-medium">
                 Enter a user ID or QR code data to simulate scanning
               </p>
             </div>
@@ -737,7 +739,7 @@ const ScanActivityPage = () => {
                 value={testUserId}
                 onChange={(e) => setTestUserId(e.target.value)}
                 placeholder="Enter user ID (e.g., user123 or a QR code)"
-                className="w-full px-4 py-3 rounded-lg border-2 border-white bg-white font-figtree text-heavy placeholder:text-medium focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full px-4 py-3 rounded-lg border-2 border-white bg-white font-secondary text-heavy placeholder:text-medium focus:outline-none focus:ring-2 focus:ring-violet-500"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && testUserId.trim()) {
                     handleQRCodeDetected(testUserId.trim());
@@ -751,7 +753,7 @@ const ScanActivityPage = () => {
                   }
                 }}
                 disabled={!testUserId.trim() || status !== "scanning"}
-                className="w-full px-4 py-3 rounded-lg bg-white hover:bg-violet-100 active:bg-violet-200 font-figtree font-medium text-heavy shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 rounded-lg bg-white hover:bg-violet-100 active:bg-violet-200 font-secondary font-medium text-heavy shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Simulate Scan
               </button>
@@ -781,7 +783,7 @@ const ScanActivityPage = () => {
                     startCamera();
                   }
                 }}
-                className="w-full px-4 py-2 rounded-lg bg-violet-200 hover:bg-violet-300 font-figtree font-medium text-heavy transition-colors text-sm"
+                className="w-full px-4 py-2 rounded-lg bg-violet-200 hover:bg-violet-300 font-secondary font-medium text-heavy transition-colors text-sm"
               >
                 Try Camera Again
               </button>
@@ -792,14 +794,14 @@ const ScanActivityPage = () => {
 
       {/* Success Overlay */}
       {status === "success" && scannedName && (
-        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-white px-4 py-3 font-figtree text-heavy opacity-100 shadow-lg transition-opacity duration-300">
+        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-white px-4 py-3 font-secondary text-heavy opacity-100 shadow-lg transition-opacity duration-300">
           {scannedName} scanned successfully
         </div>
       )}
 
       {/* Error Overlay - only show for non-"already scanned" errors */}
       {status === "error" && errorMessage && (
-        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-red-100 px-4 py-3 font-figtree text-red-700 opacity-100 shadow-lg transition-opacity duration-300">
+        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-red-100 px-4 py-3 font-secondary text-red-700 opacity-100 shadow-lg transition-opacity duration-300">
           {errorMessage}
         </div>
       )}

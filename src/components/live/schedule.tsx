@@ -78,7 +78,7 @@ const Schedule = () => {
       </div>
 
       {scheduleData.length === 0 && (
-        <div className="py-10 text-center font-figtree text-medium">
+        <div className="py-10 text-center font-secondary text-medium">
           No schedule data available
         </div>
       )}

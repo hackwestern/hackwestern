@@ -45,20 +45,20 @@ export default function CharacterIcon() {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="mr-4 mt-2 w-48 bg-offwhite p-4 font-figtree">
+      <PopoverContent className="mr-4 mt-2 w-48 bg-offwhite p-4 font-secondary">
         <div className="rounded-md">
           <h3 className="mb-3 text-sm font-medium text-medium">
             {name == "Username" ? "Hello, hacker" : `Hi, ${name}`}!
           </h3>
           <div className="mb-4 h-px w-full bg-violet-200" />
 
-          <div className="mb-3 font-figtree text-heavy">
+          <div className="mb-3 font-secondary text-heavy">
             <Link href="/dashboard">Home</Link>
           </div>
 
           <div>
             <button
-              className="font-figtree text-sm text-heavy underline"
+              className="font-secondary text-sm text-heavy underline"
               onClick={() => void signOut()}
             >
               Sign Out

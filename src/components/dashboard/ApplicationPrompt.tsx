@@ -40,7 +40,7 @@ export default function ApplicationPrompt({
         <div>
           <Button
             variant="primary"
-            className="w-full p-6 font-figtree text-base font-medium"
+            className="w-full p-6 font-secondary text-base font-medium"
             onClick={() => void onApplyNavigate(continueStep)}
             disabled={pending}
             aria-busy={pending}

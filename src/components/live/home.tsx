@@ -101,7 +101,7 @@ const Home = () => {
   if (!session) {
     return (
       <div className="flex min-h-[400px] w-full flex-col items-center justify-center gap-4">
-        <h2 className="font-figtree text-2xl font-semibold text-heavy">
+        <h2 className="font-secondary text-2xl font-semibold text-heavy">
           Sign In Required
         </h2>
         <p className="text-center text-medium">
@@ -109,7 +109,7 @@ const Home = () => {
         </p>
         <button
           onClick={() => signIn(undefined, { callbackUrl: "/live?tab=home" })}
-          className="rounded-lg bg-primary-600 px-6 py-3 font-figtree text-sm font-medium text-white transition-colors hover:bg-primary-700"
+          className="rounded-lg bg-primary-600 px-6 py-3 font-secondary text-sm font-medium text-white transition-colors hover:bg-primary-700"
         >
           Sign In
         </button>
@@ -123,7 +123,7 @@ const Home = () => {
       <div className="flex w-full flex-col gap-6 lg:w-1/2">
         {/* Devpost Link Section */}
         <div className="rounded-2xl bg-primary-100 p-6">
-          <h2 className="mb-4 font-figtree text-xl font-semibold text-heavy">
+          <h2 className="mb-4 font-secondary text-xl font-semibold text-heavy">
             Devpost Link
           </h2>
           <a
@@ -147,7 +147,7 @@ const Home = () => {
                     d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
                   />
                 </svg>
-                <span className="font-figtree text-sm font-medium text-heavy">
+                <span className="font-secondary text-sm font-medium text-heavy">
                   hack-western-12.devpost.com
                 </span>
               </div>
@@ -170,7 +170,7 @@ const Home = () => {
 
         {/* Scan History Section */}
         <div className="rounded-2xl bg-primary-100 p-6">
-          <h2 className="mb-4 font-figtree text-xl font-semibold text-heavy">
+          <h2 className="mb-4 font-secondary text-xl font-semibold text-heavy">
             Scan History
           </h2>
 
@@ -178,7 +178,7 @@ const Home = () => {
           <div className="mb-4 flex gap-2">
             <button
               onClick={() => setActiveTab("all")}
-              className={`rounded-lg px-4 py-2 font-figtree text-sm font-medium transition-colors ${
+              className={`rounded-lg px-4 py-2 font-secondary text-sm font-medium transition-colors ${
                 activeTab === "all"
                   ? "bg-primary-600 text-white"
                   : "bg-primary-200 text-heavy hover:bg-primary-300"
@@ -188,7 +188,7 @@ const Home = () => {
             </button>
             <button
               onClick={() => setActiveTab("activities")}
-              className={`rounded-lg px-4 py-2 font-figtree text-sm font-medium transition-colors ${
+              className={`rounded-lg px-4 py-2 font-secondary text-sm font-medium transition-colors ${
                 activeTab === "activities"
                   ? "bg-primary-600 text-white"
                   : "bg-primary-200 text-heavy hover:bg-primary-300"
@@ -198,7 +198,7 @@ const Home = () => {
             </button>
             <button
               onClick={() => setActiveTab("meals")}
-              className={`rounded-lg px-4 py-2 font-figtree text-sm font-medium transition-colors ${
+              className={`rounded-lg px-4 py-2 font-secondary text-sm font-medium transition-colors ${
                 activeTab === "meals"
                   ? "bg-primary-600 text-white"
                   : "bg-primary-200 text-heavy hover:bg-primary-300"
@@ -208,7 +208,7 @@ const Home = () => {
             </button>
             <button
               onClick={() => setActiveTab("redemptions")}
-              className={`rounded-lg px-4 py-2 font-figtree text-sm font-medium transition-colors ${
+              className={`rounded-lg px-4 py-2 font-secondary text-sm font-medium transition-colors ${
                 activeTab === "redemptions"
                   ? "bg-primary-600 text-white"
                   : "bg-primary-200 text-heavy hover:bg-primary-300"
@@ -221,7 +221,7 @@ const Home = () => {
           {/* Content */}
           <div className="rounded-xl bg-primary-50 p-4">
             {scansLoading ? (
-              <p className="font-figtree text-sm text-medium">Loading...</p>
+              <p className="font-secondary text-sm text-medium">Loading...</p>
             ) : filteredScans && filteredScans.length > 0 ? (
               <div className="space-y-3">
                 {filteredScans.map((scan) => (
@@ -230,10 +230,10 @@ const Home = () => {
                     className="flex items-center justify-between rounded-lg bg-white p-3 shadow-sm"
                   >
                     <div className="flex-1">
-                      <p className="font-figtree text-sm font-semibold text-heavy">
+                      <p className="font-secondary text-sm font-semibold text-heavy">
                         {formatTitle(scan.itemDescription ?? scan.itemCode)}
                       </p>
-                      <p className="font-figtree text-xs text-medium">
+                      <p className="font-secondary text-xs text-medium">
                         {scan.createdAt
                           ? new Date(scan.createdAt).toLocaleString("en-US", {
                               month: "short",
@@ -246,7 +246,7 @@ const Home = () => {
                     </div>
                     <div className="ml-4 text-right">
                       <p
-                        className={`font-figtree text-sm font-semibold ${
+                        className={`font-secondary text-sm font-semibold ${
                           scan.points < 0 ? "text-red-600" : "text-primary-600"
                         }`}
                       >
@@ -258,7 +258,7 @@ const Home = () => {
                 ))}
               </div>
             ) : (
-              <p className="font-figtree text-sm italic text-medium">
+              <p className="font-secondary text-sm italic text-medium">
                 {activeTab === "all"
                   ? "You haven't scanned any activities yet!"
                   : activeTab === "meals"
@@ -276,29 +276,29 @@ const Home = () => {
       <div className="flex w-full flex-col gap-6 pb-4 lg:w-1/2">
         {/* Points Section */}
         <div className="rounded-2xl bg-primary-100 p-6">
-          <h2 className="mb-4 font-figtree text-xl font-semibold text-heavy">
+          <h2 className="mb-4 font-secondary text-xl font-semibold text-heavy">
             Your Points
           </h2>
           <div className="rounded-xl bg-primary-50 p-4">
             {pointsLoading ? (
-              <p className="font-figtree text-sm text-medium">Loading...</p>
+              <p className="font-secondary text-sm text-medium">Loading...</p>
             ) : (
               <div className="space-y-2">
                 <div className="flex items-baseline justify-between">
-                  <p className="font-figtree text-sm text-medium">
+                  <p className="font-secondary text-sm text-medium">
                     Current Balance:
                   </p>
-                  <p className="font-figtree text-2xl font-bold text-primary-600">
+                  <p className="font-secondary text-2xl font-bold text-primary-600">
                     {pointsData?.balance ?? 0}
                   </p>
                 </div>
                 {pointsData?.earned !== null &&
                   pointsData?.earned !== undefined && (
                     <div className="flex items-baseline justify-between border-t border-primary-200 pt-2">
-                      <p className="font-figtree text-xs text-medium">
+                      <p className="font-secondary text-xs text-medium">
                         Total Earned:
                       </p>
-                      <p className="font-figtree text-sm font-medium text-medium">
+                      <p className="font-secondary text-sm font-medium text-medium">
                         {pointsData.earned} pts
                       </p>
                     </div>
@@ -319,10 +319,10 @@ const Home = () => {
                 </div>
               ) : !isApproved ? (
                 <div className="flex h-[300px] w-[300px] flex-col items-center justify-center gap-2 bg-gray-100 p-6 text-center">
-                  <p className="font-figtree text-sm font-semibold text-heavy">
+                  <p className="font-secondary text-sm font-semibold text-heavy">
                     Hacker pass unavailable
                   </p>
-                  <p className="font-figtree text-xs text-medium">
+                  <p className="font-secondary text-xs text-medium">
                     Your hacker pass will appear here once your application has
                     been accepted.
                   </p>

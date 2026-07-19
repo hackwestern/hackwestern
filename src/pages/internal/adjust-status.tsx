@@ -141,7 +141,7 @@ export default function AdjustStatus() {
           </p>
 
           <div className="mb-6">
-            <h2 className="mb-2 font-figtree text-medium">
+            <h2 className="mb-2 font-secondary text-medium">
               Upload CSV of Emails
             </h2>
             <Input
@@ -182,7 +182,9 @@ export default function AdjustStatus() {
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-2 font-figtree text-medium">Add Single Email</h2>
+            <h2 className="mb-2 font-secondary text-medium">
+              Add Single Email
+            </h2>
             <div className="flex gap-2">
               <Input
                 type="email"
@@ -204,7 +206,9 @@ export default function AdjustStatus() {
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-2 font-figtree text-medium">Select New Status</h2>
+            <h2 className="mb-2 font-secondary text-medium">
+              Select New Status
+            </h2>
             <Select
               value={status}
               onValueChange={(v) => setStatus(v as Status)}

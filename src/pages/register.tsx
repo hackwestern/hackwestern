@@ -60,7 +60,7 @@ export default function Register() {
             Create your account
           </h2>
           <form onSubmit={handleSubmit}>
-            <h2 className="mb-2 font-figtree text-medium">Email</h2>
+            <h2 className="mb-2 font-secondary text-medium">Email</h2>
             <Input
               required
               id="email"
@@ -72,7 +72,7 @@ export default function Register() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            <h2 className="mb-2 font-figtree text-medium">Password</h2>
+            <h2 className="mb-2 font-secondary text-medium">Password</h2>
             <Input
               required
               id="password"
@@ -105,7 +105,7 @@ export default function Register() {
             <GithubAuthButton redirect="/dashboard" register={true} />
             <DiscordAuthButton redirect="/dashboard" register={true} />
           </div>
-          <div className="mt-6 font-figtree text-medium">
+          <div className="mt-6 font-secondary text-medium">
             Already have an account?
             <Button
               asChild
@@ -120,7 +120,7 @@ export default function Register() {
               </Link>
             </Button>
           </div>
-          <div className="font-figtree text-medium">
+          <div className="font-secondary text-medium">
             Forget password?
             <Button
               asChild

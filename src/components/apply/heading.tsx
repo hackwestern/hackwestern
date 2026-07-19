@@ -38,7 +38,7 @@ export default function ApplyHeading({
           {heading}
         </h1>
         {subheading && (
-          <h2 className="font-figtree text-sm text-medium">{subheading}</h2>
+          <h2 className="font-secondary text-sm text-medium">{subheading}</h2>
         )}
       </motion.div>
     </AnimatePresence>

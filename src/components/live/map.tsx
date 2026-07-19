@@ -15,10 +15,10 @@ const Map = () => {
   return (
     <div className="flex h-screen flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <p className="font-figtree text-base text-medium">
+        <p className="font-secondary text-base text-medium">
           This year&apos;s venue will be at Somerville House & Thames Hall!
         </p>
-        <p className="font-figtree text-base text-medium">
+        <p className="font-secondary text-base text-medium">
           <b className="text-heavy">Address:</b> 40 Lambton Dr, London, ON N6G
           2V4
         </p>
@@ -29,7 +29,7 @@ const Map = () => {
             <TabsTrigger value="Floor 2">Floor 2 Map</TabsTrigger>
             <TabsTrigger value="Floor 3">Floor 3 Map</TabsTrigger>
           </TabsList>
-          <p className="font-figtree text-sm text-medium">
+          <p className="font-secondary text-sm text-medium">
             {isMobile
               ? "* View the map below"
               : "* Zoom in and out of the map by scrolling!"}
