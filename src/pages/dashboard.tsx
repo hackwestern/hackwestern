@@ -153,17 +153,24 @@ export default Dashboard;
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
-  // Organizers land here via login's default callbackUrl; send them to the
+  // On prod everything's blocked (disabledRedirect -> /). On dev/preview,
+  // organizers land here via login's default callbackUrl; send them to the
   // application review instead of the (disabled) hacker dashboard.
-  const session = await getServerSession(context.req, context.res, authOptions);
-  if (session) {
-    const user = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.id, session.user.id),
-    });
-    if (user?.type === "organizer") {
-      return {
-        redirect: { destination: "/internal/review", permanent: false },
-      };
+  if (process.env.VERCEL_ENV !== "production") {
+    const session = await getServerSession(
+      context.req,
+      context.res,
+      authOptions,
+    );
+    if (session) {
+      const user = await db.query.users.findFirst({
+        where: (users, { eq }) => eq(users.id, session.user.id),
+      });
+      if (user?.type === "organizer") {
+        return {
+          redirect: { destination: "/internal/review", permanent: false },
+        };
+      }
     }
   }
 

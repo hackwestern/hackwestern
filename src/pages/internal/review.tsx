@@ -4,7 +4,7 @@ import { Button } from "~/components/ui/button";
 import { Slider } from "~/components/ui/slider";
 import { api } from "~/utils/api";
 import Link from "next/link";
-import { authRedirectOrganizer } from "~/utils/redirect";
+import { disabledRedirect } from "~/utils/redirect";
 import type { z } from "zod";
 import { reviewSaveSchema } from "~/schemas/review";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -557,4 +557,4 @@ const postfix = (num: number) => {
 };
 
 export default Review;
-export const getServerSideProps = authRedirectOrganizer;
+export const getServerSideProps = disabledRedirect;
