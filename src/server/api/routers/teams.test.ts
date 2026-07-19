@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeAll, afterAll } from "vitest";
+import { describe, expect, test, beforeAll, afterAll, assert } from "vitest";
 import { mockSession } from "~/server/auth";
 import { db } from "~/server/db";
 import { createInnerTRPCContext } from "../trpc";
@@ -148,6 +148,79 @@ describe("teams basic endpoints", () => {
     test("deleteTeam fail", async () => {
       const res = caller.teams.deleteTeam();
       await expect(res).rejects.toThrow();
+    });
+  });
+  describe.sequential("submitProject Tests", () => {
+    test("submitProject fail", async () => {
+      const teamId = await insertTeam();
+      const join = caller.teams.joinTeam({ teamId: teamId });
+      await expect(join).resolves.toEqual({ success: true });
+
+      const res = caller.teams.submitProject();
+      await expect(res).rejects.toThrow();
+      await removeTeam(teamId);
+    });
+    test("submitProject success", async () => {
+      const teamId = await insertTeam();
+      const join = caller.teams.joinTeam({ teamId: teamId });
+      await expect(join).resolves.toEqual({ success: true });
+
+      const save = caller.teams.saveProject({
+        devpostUrl: "this is a url",
+        githubUrl: "this is a url",
+      });
+
+      const submit1 = caller.teams.submitProject();
+      await expect(submit1).rejects.toThrow();
+
+      await expect(save).resolves.toEqual({ success: true });
+      const save2 = caller.teams.saveProject({
+        memberGithubUsernames: ["url 1"],
+        memberDevpostUsernames: ["url 2"],
+      });
+      await expect(save2).resolves.toEqual({ success: true });
+
+      const submit = caller.teams.submitProject();
+      await expect(submit).resolves.toEqual({ success: true });
+      await removeTeam(teamId);
+    });
+    test("submitProject fail", async () => {
+      const teamId = await insertTeam();
+      const join = caller.teams.joinTeam({ teamId: teamId });
+      await expect(join).resolves.toEqual({ success: true });
+
+      const save = caller.teams.saveProject({
+        devpostUrl: "this is a url",
+        githubUrl: "this is a url",
+      });
+
+      await expect(save).resolves.toEqual({ success: true });
+
+      const submit = caller.teams.submitProject();
+      await expect(submit).rejects.toThrow();
+      await removeTeam(teamId);
+    });
+  });
+  describe("saveProject Tests", () => {
+    test("saveProject", async () => {
+      const teamId = await insertTeam();
+      const join = caller.teams.joinTeam({ teamId: teamId });
+      await expect(join).resolves.toEqual({ success: true });
+
+      const res = caller.teams.saveProject({ devpostUrl: "Url" });
+      await expect(res).resolves.toEqual({ success: true });
+
+      const res1 = caller.teams.saveProject({ tracks: ["General"] });
+      await expect(res1).resolves.toEqual({ success: true });
+
+      const team = await db.query.teams.findFirst({
+        where: eq(teams.id, teamId),
+      });
+
+      const tracks = (team?.tracks ?? [""])[0];
+
+      assert(team?.devpostUrl == "Url");
+      assert(tracks == "General");
     });
   });
 });
