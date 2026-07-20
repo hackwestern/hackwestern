@@ -227,8 +227,11 @@ export const teamsRouter = createTRPCRouter({
     }),
   submitProject: protectedProcedure.mutation(async ({ ctx }) => {
     const teamId = await assertValidTeam(ctx);
+
+    // This is the hard coded date
     const finalSubmitDate = new Date();
     finalSubmitDate.setDate(finalSubmitDate.getDate() + 1);
+
     const time = new Date();
 
     const submitStatus = time > finalSubmitDate ? "late" : "submitted";
