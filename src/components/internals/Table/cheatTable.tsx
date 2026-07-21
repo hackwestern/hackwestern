@@ -17,8 +17,8 @@ interface CheatTableProps{
 export default function CheatTable( {ind_data, team_data}:CheatTableProps ){
  
     const grouped = ind_data.reduce((acc, row) => {
-        const exisiting = acc.find(g => g.teamId == row.teamId);
-        if (exisiting) exisiting.members.push(row);
+        const existing = acc.find(g => g.teamId == row.teamId);
+        if (existing) existing.members.push(row);
         else acc.push({teamId: row.teamId, members:[row]})
         return acc
     }, [] as {teamId: string, members:Ind_CheatResult[]}[])
@@ -28,7 +28,6 @@ export default function CheatTable( {ind_data, team_data}:CheatTableProps ){
         if (teamRow) group.members.push(teamRow)
     })
     
-        //check if the cheat checks have more for the team results (i.e. of age summary, linkedin/github scnaner summary...)
 
 //SET TABLE VISIBILITIES?
     return(
