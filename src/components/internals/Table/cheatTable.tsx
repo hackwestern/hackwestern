@@ -74,7 +74,7 @@ export default function CheatTable( {final_data}:CheatTableProps ){
                         {expandedTeams.has(team.teamId) && (
                             <>
                         {team.members.map((member) => (
-                            <TableRow key = {member.id}>
+                            <TableRow key = {member.id} className=" bg-blue-2 hover:bg-blue-2">
                                 {columns.map((col) => (
                                     <TableCell key={col.header} className={col.className}>{col.memberCell(member)}</TableCell>
                                 ))}

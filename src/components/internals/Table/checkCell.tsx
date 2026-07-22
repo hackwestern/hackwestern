@@ -13,7 +13,7 @@ export default function CheckCell ({check} : CheckCellProps){
     return(
     <Tooltip delayDuration={0}>
       <TooltipTrigger asChild>
-        <button className="font-bold">
+        <button>
           {check.manualOverride ?? check.passed ? "✓" : "✗"}
         </button>
       </TooltipTrigger>

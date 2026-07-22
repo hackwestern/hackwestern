@@ -82,7 +82,7 @@ export const columns : ColumnType[] = [
     className: "text-center",
   },
   {
-    header: "Commit Within Time",
+    header: "Commit in Time?",
     memberCell: () => "",
     teamCell: (team) => <CheckCell 
       check={team.checks.COMMIT_WITHIN_ALLOTTED_TIME}
