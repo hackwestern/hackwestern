@@ -28,6 +28,8 @@ export type HackerProfile = {
 
 export type TeamProfile = {
     name: string | null;
+    devPost: string | null;
+    github: string | null;
 
 }
 
@@ -38,6 +40,8 @@ export type GroupedTeams = GroupedCheckResult<TeamCheckType, TeamProfile>
 export type DisplayTeam = {
     teamId: string;
     name: string | null;
+    devPost: string | null;
+    github: string | null;
     members: GroupedHackers[];
     checks: Partial<Record<TeamDisplayCheckType,CheckDetail>>;
     finalResult: boolean;

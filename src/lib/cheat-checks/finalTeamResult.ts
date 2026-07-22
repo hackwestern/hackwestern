@@ -32,9 +32,12 @@ export function TeamResults(
 
     const teamChecks = new Map(teams.map((t) => [t.id, t] as const));
     const allTeamIds = new Set([...allTeams.keys(), ...teamChecks.keys()]);
+
     return Array.from(allTeamIds).map((teamId) => {
         const members = allTeams.get(teamId) ?? [];
         const teamEntry = teamChecks.get(teamId);
+        const devPost = teamEntry?.devPost ?? "";
+        const github = teamEntry?.github ?? "";
 
         const summary = {
             IS_OF_AGE: CalculateResult(members,"IS_OF_AGE"),
@@ -50,6 +53,8 @@ export function TeamResults(
 
         return {
             teamId: teamId,
+            devPost: devPost,
+            github: github,
             name: teamEntry?.name ?? null,
             members: members,
             checks: checks,

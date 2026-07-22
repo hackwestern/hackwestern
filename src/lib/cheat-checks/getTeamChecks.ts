@@ -14,6 +14,8 @@ export async function getTeamCheckRows(){
             notes: teamCheckResults.notes,
 
             name: teams.name,
+            devPost: teams.devpostUrl,
+            github: teams.githubUrl,
         })
         .from(teamCheckResults)
         .leftJoin(users, eq(teamCheckResults.checkedByUserId, users.id))
