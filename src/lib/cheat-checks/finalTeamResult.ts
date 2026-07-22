@@ -49,7 +49,7 @@ export function TeamResults(
             ...teamEntry?.checks ?? {}
         };
 
-        const finalResult = TEAM_DISPLAY_CHECK_TYPES.every((type) => checks[type]?.passed ?? false)
+        const finalResult = TEAM_DISPLAY_CHECK_TYPES.every((type) => checks[type]?.manualOverride ?? checks[type]?.passed ?? false)
 
         return {
             teamId: teamId,

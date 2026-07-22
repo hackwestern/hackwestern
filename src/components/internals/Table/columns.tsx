@@ -68,7 +68,7 @@ export const columns : ColumnType[] = [
     memberCell: (member) => <CheckCell 
       check={member.checks.IS_OF_AGE}
     />,
-    teamCell: (team) => team.checks.IS_OF_AGE?.passed ? "✓" : "✗",
+    teamCell: (team) => (team.checks.IS_OF_AGE?.manualOverride ?? team.checks.IS_OF_AGE?.passed ?? false) ? "✓" : "✗",
     width: "w-[70px]",
     className: "text-center",
   },
@@ -77,7 +77,7 @@ export const columns : ColumnType[] = [
     memberCell: (member) => <CheckCell 
       check={member.checks.IS_REGISTERED}
     />,
-    teamCell: (team) => team.checks.IS_REGISTERED?.passed ? "✓" : "✗",
+    teamCell: (team) => (team.checks.IS_REGISTERED?.manualOverride ?? team.checks.IS_REGISTERED?.passed ?? false) ? "✓" : "✗",
     width: "w-[100px]",
     className: "text-center",
   },
@@ -110,8 +110,16 @@ export const columns : ColumnType[] = [
   },
   {
     header: "Final Verdict",
-    memberCell: (member) => member.finalResult ? "PASSED" : "FAILED",
-    teamCell: (team) => team.finalResult ? "PASSED" : "FAILED",
+    memberCell: (member) => <div className={
+        member.finalResult
+          ? "text-green"
+          : "text-red-600"
+      }> {member.finalResult ? "PASSED" : "FAILED"}</div>, 
+    teamCell: (team) => <div className={
+        team.finalResult
+          ? "text-green font-bold"
+          : "text-red-600 font-bold"
+      }> {team.finalResult ? "PASSED" : "FAILED"}</div>, 
     width: "w-[100px]",
     className: "text-center",
   },

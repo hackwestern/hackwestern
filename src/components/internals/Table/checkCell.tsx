@@ -14,7 +14,7 @@ export default function CheckCell ({check} : CheckCellProps){
     <Tooltip delayDuration={0}>
       <TooltipTrigger asChild>
         <button className="font-bold">
-          {check.passed ? "✓" : "✗"}
+          {check.manualOverride ?? check.passed ? "✓" : "✗"}
         </button>
       </TooltipTrigger>
 
@@ -24,6 +24,12 @@ export default function CheckCell ({check} : CheckCellProps){
             <strong>Result:</strong>{" "}
             {check.passed ? "Passed" : "Failed"}
           </p>
+          {check.manualOverride !== null && (
+            <p>
+              <strong>Override:</strong>{" "}
+              {check.manualOverride ? "Pass" : "Fail"}
+            </p>
+          )}
 
           <p>
             <strong>Checked at:</strong>{" "}
@@ -36,14 +42,7 @@ export default function CheckCell ({check} : CheckCellProps){
           <p>
             <strong>Checked by:</strong>{" "}
             {check.checkedbyName}
-          </p>
-
-          {check.manualOverride !== null && (
-            <p>
-              <strong>Override:</strong>{" "}
-              {check.manualOverride ? "Yes" : "No"}
-            </p>
-          )}
+          </p>          
 
           {check.notes && (
             <p>
