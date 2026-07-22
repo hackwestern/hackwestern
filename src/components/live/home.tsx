@@ -36,8 +36,19 @@ const Home = () => {
       refetchInterval: 5000,
     });
 
+  // Fetch the hacker's application status so we only show a working pass to
+  // accepted hackers. The authoritative check lives server-side (the pass and
+  // scan endpoints reject unapproved users); this is defense-in-depth / UX.
+  const { data: application, isLoading: applicationLoading } =
+    api.application.get.useQuery(
+      { fields: ["status"] },
+      { enabled: !!session?.user?.id },
+    );
+  const isApproved =
+    application?.status === "ACCEPTED" || application?.status === "CONFIRMED";
+
   useEffect(() => {
-    if (session?.user?.id) {
+    if (session?.user?.id && isApproved) {
       QRCode.toDataURL(session.user.id, {
         width: 300,
         errorCorrectionLevel: "H",
@@ -49,7 +60,7 @@ const Home = () => {
         .then((url) => setQrCodeUrl(url))
         .catch((err) => console.error("QR code generation error:", err));
     }
-  }, [session?.user?.id]);
+  }, [session?.user?.id, isApproved]);
 
   // Filter scans based on active tab
   const filteredScans = scans?.filter((scan) => {
@@ -302,7 +313,21 @@ const Home = () => {
           {/* QR Code Display */}
           <div className="flex justify-center">
             <div className="rounded-2xl bg-white p-6 shadow-md">
-              {qrCodeUrl ? (
+              {applicationLoading ? (
+                <div className="flex h-[300px] w-[300px] items-center justify-center bg-gray-100">
+                  <p className="text-sm text-gray-500">Loading QR code...</p>
+                </div>
+              ) : !isApproved ? (
+                <div className="flex h-[300px] w-[300px] flex-col items-center justify-center gap-2 bg-gray-100 p-6 text-center">
+                  <p className="font-figtree text-sm font-semibold text-heavy">
+                    Hacker pass unavailable
+                  </p>
+                  <p className="font-figtree text-xs text-medium">
+                    Your hacker pass will appear here once your application has
+                    been accepted.
+                  </p>
+                </div>
+              ) : qrCodeUrl ? (
                 <Image
                   src={qrCodeUrl}
                   alt="Your Hacker Pass QR Code"
@@ -320,12 +345,14 @@ const Home = () => {
         </div>
 
         {/* Wallet Buttons */}
-        <div className="flex justify-center">
-          <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-3">
-            <AddToWallet walletType="APPLE" />
-            <AddToWallet walletType="GOOGLE" />
+        {isApproved && (
+          <div className="flex justify-center">
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-3">
+              <AddToWallet walletType="APPLE" />
+              <AddToWallet walletType="GOOGLE" />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
