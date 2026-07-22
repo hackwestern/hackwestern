@@ -1,90 +1,57 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
+import React from "react";
+import { DisplayTeam, GroupedHackers } from "~/lib/cheat-checks/types";
 
-export type Ind_CheatResult = {
-//   kind: 'individual'
-  userId: string
-  teamId: string
-  team: string
-  name: string
-
-  isOfAge: boolean
-  linkedin: string
-  github: string
-  githubScanner: boolean
-  linkedinScanner: boolean
-
-  finalResult: boolean
-  notes: string | null
-  lastRunAt: string
+type ColumnType = {
+  header: string;
+  memberCell: (member : GroupedHackers) => React.ReactNode;
+  teamCell: (team : DisplayTeam) => React.ReactNode;
 }
 
-export type Team_CheatResult = Ind_CheatResult & {
-//   kind: 'team'
-  commitTime: boolean
-  commitMembers: boolean
-  team_registered: boolean
-}
-
-export const columns = [
-{
-    accessorKey: "team",
-    header: "Team",
-  },
+export const columns : ColumnType[] = [
   {
-    accessorKey: "name",
     header: "Name",
+    memberCell: (member) => member.name,
+    teamCell: () => "Team Summary",
   },
   {
-    accessorKey: "isOfAge",
-    header: "Age",
-    format: (v: boolean) => v ? "TRUE" : "FALSE"
+    header: "AgeCheck",
+    memberCell: (member) => member.checks.IS_OF_AGE?.passed ? "TRUE" : "FALSE",
+    teamCell: (team) => team.checks.IS_OF_AGE?.passed ? "TRUE" : "FALSE",
   },
   {
-    accessorKey: "linkedin",
-    header: "LinkedIn",
+    header: "isRegistered",
+    memberCell: (member) => member.checks.IS_REGISTERED?.passed ? "TRUE" : "FALSE",
+    teamCell: (team) => team.checks.IS_REGISTERED?.passed ? "TRUE" : "FALSE",
   },
   {
-    accessorKey: "github",
-    header: "Github",
+    header: "commit-within-time",
+    memberCell: () => "",
+    teamCell: (team) => team.checks.COMMIT_WITHIN_ALLOTTED_TIME?.passed ? "TRUE" : "FALSE",
   },
   {
-    accessorKey: "linkedinScanner",
-    header: "LinkedIn Scanner",
-    format: (v: boolean) => v ? "TRUE" : "FALSE"
+    header: "DevpostRegistered",
+    memberCell: () => "",
+    teamCell: (team) => team.checks.DEVPOST_MEMBERS_REGISTERED?.passed ? "TRUE" : "FALSE",
   },
   {
-    accessorKey: "githubScanner",
-    header: "Github Scanner",
-    format: (v: boolean) => v ? "TRUE" : "FALSE"
+    header: "team-commits-only",
+    memberCell: () => "",
+    teamCell: (team) => team.checks.ONLY_TEAM_MEMBER_COMMITS?.passed ? "TRUE" : "FALSE",
   },
+  // {
+  //   header: "Last Run At",
+  //   cell: 
+  // },
   {
-    accessorKey: "commitTime",
-    header: "Commit Time",
-    format: (v: boolean) => v ? "TRUE" : "FALSE"
-  },
-  {
-    accessorKey: "commitMembers",
-    header: "Commit Members",
-    format: (v: boolean) => v ? "TRUE" : "FALSE"
-  },
-  {
-    accessorKey: "registered",
-    header: "Team Registered",
-    format: (v: boolean) => v ? "TRUE" : "FALSE"
-  },
-  {
-    accessorKey: "lastRunAt",
-    header: "Last Run At",
-  },
-  {
-    accessorKey: "finalResult",
     header: "Final Verdict",
-    format: (v: boolean) => v ? "TRUE" : "FALSE"
+    memberCell: (member) => member.finalResult ? "TRUE" : "FALSE",
+    teamCell: (team) => team.finalResult ? "TRUE" : "FALSE",
   },
-  {
-    accessorKey: "notes",
-    header: "Notes",
-  },
+  // {
+  //   header: "Notes",
+  //   cell: (_member, team) => team.
+  // },
 ]

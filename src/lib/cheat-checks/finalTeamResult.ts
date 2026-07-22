@@ -1,5 +1,4 @@
 import { TEAM_DISPLAY_CHECK_TYPES } from "./constants";
-import { GroupResults } from "./groupResults";
 import { GroupedHackers, GroupedTeams, HackerCheckType, TeamCheckType, DisplayTeam } from "./types";
 
 function CalculateResult(
@@ -24,18 +23,17 @@ export function TeamResults(
     groupedHackers: GroupedHackers[],
     teams: GroupedTeams[],
 ): DisplayTeam[] {
-    const team = new Map<string, GroupedHackers[]>();
+    const allTeams = new Map<string, GroupedHackers[]>();
     for (const hacker of groupedHackers){
         const teamId = hacker.teamId ?? "no-team";
-        if (!team.has(teamId)) team.set(teamId, []);
-        team.get(teamId)!.push(hacker);
+        if (!allTeams.has(teamId)) allTeams.set(teamId, []);
+        allTeams.get(teamId)!.push(hacker);
     }
 
     const teamChecks = new Map(teams.map((t) => [t.id, t] as const));
-    const allTeamIds = new Set(...team.keys(), ...teamChecks.keys());
-
+    const allTeamIds = new Set([...allTeams.keys(), ...teamChecks.keys()]);
     return Array.from(allTeamIds).map((teamId) => {
-        const members = team.get(teamId) ?? [];
+        const members = allTeams.get(teamId) ?? [];
         const teamEntry = teamChecks.get(teamId);
 
         const summary = {
@@ -53,9 +51,9 @@ export function TeamResults(
         return {
             teamId: teamId,
             name: teamEntry?.name ?? null,
-            members,
-            checks,
-            finalResult,
+            members: members,
+            checks: checks,
+            finalResult: finalResult,
         }
 
     })

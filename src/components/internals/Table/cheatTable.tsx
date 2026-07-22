@@ -8,27 +8,16 @@ import {
   TableRow,
 } from "~/components/ui/table"
 
-import { Ind_CheatResult, Team_CheatResult, columns } from "./columns"
+import { columns } from "./columns"
+import { DisplayTeam, GroupedHackers, HackerCheckType, TeamDisplayCheckType } from "~/lib/cheat-checks/types";
+import { Fragment } from "react";
 
-interface CheatTableProps{
-    ind_data: Ind_CheatResult[];
-    team_data: Team_CheatResult[];
-}
-export default function CheatTable( {ind_data, team_data}:CheatTableProps ){
- 
-    const grouped = ind_data.reduce((acc, row) => {
-        const existing = acc.find(g => g.teamId == row.teamId);
-        if (existing) existing.members.push(row);
-        else acc.push({teamId: row.teamId, members:[row]})
-        return acc
-    }, [] as {teamId: string, members:Ind_CheatResult[]}[])
+type CheatTableProps = {
+  final_data: DisplayTeam[];
+};
 
-    grouped.forEach(group => {
-        const teamRow = team_data.find(t => t.teamId == group.teamId)
-        if (teamRow) group.members.push(teamRow)
-    })
-    
-
+export default function CheatTable( {final_data}:CheatTableProps ){
+    console.log(final_data[0]?.members)
 //SET TABLE VISIBILITIES?
     return(
         <>
@@ -36,6 +25,7 @@ export default function CheatTable( {ind_data, team_data}:CheatTableProps ){
             <TableCaption>Cheat Check Summary</TableCaption>
             <TableHeader>
                 <TableRow>
+                    <TableHead> Team </TableHead>
                     {columns
                     .map((col) => (
                         <TableHead>{col.header}</TableHead>
@@ -44,32 +34,28 @@ export default function CheatTable( {ind_data, team_data}:CheatTableProps ){
             </TableHeader>
             <TableBody>
                     
-                    {grouped.map((group) => (
-                        <>
-                        {group.members.map((member, index) => (
-                            <TableRow key = {member.userId}>
-                                {index === 0 && (
-                                    <TableCell rowSpan={group.members.length}>
-                                        {member.team}
-                                    </TableCell>
-                                )}
-                                {columns
-                                .filter(col => col.accessorKey !== 'team')
-                                
-                                .map(col => {
-                                    //add checks for ind vs team cheat result type?
-                                    const value = member[col.accessorKey as keyof Ind_CheatResult]
-                                    return (
-                                    <TableCell key = {col.accessorKey}>
-                                        {value !== undefined ?
-                                        (col.format ? col.format(value as boolean) : value)
-                                        : ""}
-                                    </TableCell>
-                                    )
-                                })}
+                    {final_data.map((team) => (
+                        <Fragment key={team.teamId}>
+                            <TableRow key={team.teamId}>
+                                <TableCell rowSpan={team.members.length + 1}>
+                                        {team.name}
+                                </TableCell>
+                            {columns.map((col) => (
+                                <TableCell key={col.header}>
+                                    {col.teamCell(team)}
+                                </TableCell>
+                            ))}
                             </TableRow>
-                       ))}        
-                        </>
+
+                        {team.members.map((member) => (
+                            <TableRow key = {member.id}>
+                                {columns.map((col) => (
+                                    <TableCell key={col.header}>{col.memberCell(member)}</TableCell>
+                                ))}
+                            </TableRow>
+                       ))}
+                                
+                        </Fragment>
                     )
                     )}
             </TableBody>

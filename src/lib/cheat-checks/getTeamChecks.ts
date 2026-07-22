@@ -5,7 +5,7 @@ import { teamCheckResults, teams, users } from "~/server/db/schema";
 export async function getTeamCheckRows(){
     return db
         .select({
-            id: teamCheckResults.id,
+            id: teamCheckResults.teamId,
             passed: teamCheckResults.passed,
             checkType: teamCheckResults.checkType,
             checkedAt: teamCheckResults.checkedAt,

@@ -7,7 +7,7 @@ type Row<TCheckType extends string> = CheckDetail & {
 
 export function GroupResults<TCheckType extends string, TProfile extends object>(
     rows: Array<Row<TCheckType> & TProfile>,
-    allCheckTypes: TCheckType[]
+    allCheckTypes: readonly TCheckType[]
 ): Array<GroupedCheckResult<TCheckType, TProfile>> {
     const grouped = new Map<string, GroupedCheckResult<TCheckType, TProfile>>();
 
