@@ -7,7 +7,7 @@ import type { FormEvent } from "react";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import Link from "next/link";
-import { hackerLoginRedirect } from "~/utils/redirect";
+import { disabledRedirect } from "~/utils/redirect";
 import { useRouter } from "next/router";
 import { useToast } from "~/hooks/use-toast";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
@@ -137,4 +137,4 @@ export default function Login() {
   );
 }
 
-export const getServerSideProps = hackerLoginRedirect;
+export const getServerSideProps = disabledRedirect;

@@ -18,6 +18,7 @@ import crypto from "crypto";
 import { env } from "~/env";
 import { r2Client, R2_BUCKET, R2_PUBLIC_BASE_URL } from "~/server/storage/r2";
 import { ListObjectsV2Command, PutObjectCommand } from "@aws-sdk/client-s3";
+import { isUserApprovedForEvent } from "~/server/api/utils/approval";
 
 type User = {
   id: string;
@@ -49,6 +50,18 @@ export const qrRouter = createTRPCRouter({
           });
         }
 
+        // #1.5 Only approved hackers (or organizers/sponsors) may generate a
+        // pass. This prevents unapproved applicants from minting a working QR
+        // code that could be scanned for points, meals, check-in, etc.
+        const isApproved = await isUserApprovedForEvent(user.id);
+        if (!isApproved) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "Only accepted hackers can generate a hacker pass. Your application has not been accepted.",
+          });
+        }
+
         // #2 Generate QR code directly as base64
         const PERSONAL_URL = `${ctx.session.user.id}`;
         console.log("Generating QR code...");
@@ -66,6 +79,11 @@ export const qrRouter = createTRPCRouter({
         }
       } catch (error) {
         console.error("Error generating pass:", error);
+        // Preserve intentional errors (e.g. NOT_FOUND, FORBIDDEN) instead of
+        // masking them as a generic 500.
+        if (error instanceof TRPCError) {
+          throw error;
+        }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message:
