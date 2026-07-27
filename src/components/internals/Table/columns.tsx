@@ -1,8 +1,7 @@
 "use client"
 
-import { ColumnDef } from "@tanstack/react-table"
 import React from "react";
-import { DisplayTeam, GroupedHackers } from "~/lib/cheat-checks/types";
+import type { DisplayTeam, GroupedHackers } from "~/lib/cheat-checks/types";
 import CheckCell from "./checkCell";
 
 type ColumnType = {

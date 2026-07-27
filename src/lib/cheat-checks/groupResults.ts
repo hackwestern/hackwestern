@@ -1,4 +1,4 @@
-import { CheckDetail, GroupedCheckResult } from "./types";
+import type { CheckDetail, GroupedCheckResult } from "./types";
 
 type Row<TCheckType extends string> = CheckDetail & {
     id: string;

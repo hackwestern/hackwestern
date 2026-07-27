@@ -11,7 +11,7 @@ import {
 //make expanding animation smoother
 
 import { columns } from "./columns"
-import { DisplayTeam, GroupedHackers, HackerCheckType, TeamDisplayCheckType } from "~/lib/cheat-checks/types";
+import type { DisplayTeam} from "~/lib/cheat-checks/types";
 import { Fragment, useState } from "react";
 
 type CheatTableProps = {
@@ -45,7 +45,7 @@ export default function CheatTable( {final_data}:CheatTableProps ){
                     <TableHead> Team </TableHead>
                     {columns
                     .map((col) => (
-                        <TableHead className={col.width}>{col.header}</TableHead>
+                        <TableHead key={col.header} className={col.width}>{col.header}</TableHead>
                     ))}
                 </TableRow>
             </TableHeader>

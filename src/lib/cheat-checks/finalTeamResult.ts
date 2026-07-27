@@ -1,5 +1,5 @@
 import { TEAM_DISPLAY_CHECK_TYPES } from "./constants";
-import { GroupedHackers, GroupedTeams, HackerCheckType, TeamCheckType, DisplayTeam } from "./types";
+import type { GroupedHackers, GroupedTeams, HackerCheckType, DisplayTeam } from "./types";
 
 function CalculateResult(
     members: GroupedHackers[],

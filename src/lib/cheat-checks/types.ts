@@ -1,4 +1,4 @@
-import { HACKER_CHECK_TYPES, TEAM_CHECK_TYPES, TEAM_DISPLAY_CHECK_TYPES } from "./constants";
+import type { HACKER_CHECK_TYPES, TEAM_CHECK_TYPES, TEAM_DISPLAY_CHECK_TYPES } from "./constants";
 
 export type CheckDetail = {
     passed: boolean;

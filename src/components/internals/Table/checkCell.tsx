@@ -1,5 +1,5 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "~/components/ui/tooltip";
-import { CheckDetail } from "~/lib/cheat-checks/types";
+import type { CheckDetail } from "~/lib/cheat-checks/types";
 
 type CheckCellProps = {
     check?: CheckDetail
