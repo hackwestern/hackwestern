@@ -8,7 +8,6 @@ import {
   TableRow,
 } from "~/components/ui/table"
 
-//make expanding animation smoother
 
 import { columns } from "./columns"
 import type { DisplayTeam} from "~/lib/cheat-checks/types";
@@ -35,7 +34,6 @@ export default function CheatTable( {final_data}:CheatTableProps ){
             return next
         })
     }
-//SET TABLE VISIBILITIES?
     return(
         <>
         <Table className="table-fixed [&_tr]:border-blue-8">
