@@ -14,6 +14,7 @@ import {
   teamMarks,
   teams,
   type trackEnum,
+  users,
 } from "~/server/db/schema";
 import { applyTriggers } from "~/server/db/triggers";
 
@@ -73,6 +74,13 @@ async function makeTeam(opts?: {
     submissionStatus: opts?.submissionStatus ?? "submitted",
   });
   return id;
+}
+
+/** A hacker whose `users.teamId` points at `teamId`. */
+async function makeHackerOnTeam(teamId: string) {
+  const session = await mockSession(db);
+  await db.update(users).set({ teamId }).where(eq(users.id, session.user.id));
+  return { session, caller: createCaller(createInnerTRPCContext({ session })) };
 }
 
 async function resetAll() {
@@ -684,5 +692,147 @@ describe("getLatestRanking", () => {
     const top = ranking[0];
     assertDefined(top, "expected at least one ranking row");
     expect(top.team_id).toBe(t1);
+  });
+});
+
+/* ---------- team.getRemainingJudges ---------- */
+
+describe("getRemainingJudges", () => {
+  test("anon rejected", async () => {
+    const anon = createCaller(createInnerTRPCContext({ session: null }));
+    await expect(anon.judging.team.getRemainingJudges()).rejects.toThrow();
+  });
+
+  test("rejects a signed-in user who isn't on a team", async () => {
+    const session = await mockSession(db);
+    const caller = createCaller(createInnerTRPCContext({ session }));
+    await expect(caller.judging.team.getRemainingJudges()).rejects.toThrow(
+      /not on a team/i,
+    );
+  });
+
+  test("not_queued before the queue is loaded", async () => {
+    const teamId = await makeTeam();
+    const h = await makeHackerOnTeam(teamId);
+
+    await expect(h.caller.judging.team.getRemainingJudges()).resolves.toEqual({
+      status: "not_queued",
+      judgesSeen: 0,
+      judgesRemaining: 0,
+      totalJudges: 0,
+    });
+  });
+
+  test("waiting once queued, owing the full round count", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    const h = await makeHackerOnTeam(teamId);
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 3 });
+
+    await expect(h.caller.judging.team.getRemainingJudges()).resolves.toEqual({
+      status: "waiting",
+      judgesSeen: 0,
+      judgesRemaining: 3,
+      totalJudges: 3,
+    });
+  });
+
+  test("in_progress while a judge holds the team", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    const h = await makeHackerOnTeam(teamId);
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 3 });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+
+    const res = await h.caller.judging.team.getRemainingJudges();
+    expect(res.status).toBe("in_progress");
+    expect(res.judgesRemaining).toBe(3);
+  });
+
+  test("a stale hold reads as waiting, not in_progress", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    const h = await makeHackerOnTeam(teamId);
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 3 });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+
+    // Age the hold past the reclaim window. pickNextTeam would now hand this
+    // team to someone else, so telling the hacker a judge is with them would
+    // be a lie.
+    await db
+      .update(judgingQueue)
+      .set({ assignedAt: new Date(Date.now() - 60 * 60_000) })
+      .where(eq(judgingQueue.teamId, teamId));
+
+    const res = await h.caller.judging.team.getRemainingJudges();
+    expect(res.status).toBe("waiting");
+  });
+
+  test("counts marks as they land", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    const h = await makeHackerOnTeam(teamId);
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 3 });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 70 });
+
+    await expect(h.caller.judging.team.getRemainingJudges()).resolves.toEqual({
+      status: "waiting",
+      judgesSeen: 1,
+      judgesRemaining: 2,
+      totalJudges: 3,
+    });
+  });
+
+  test("complete after the last round, with the seen count surviving", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    const h = await makeHackerOnTeam(teamId);
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 2 });
+
+    for (const score of [70, 80]) {
+      const j = await makeJudge();
+      await j.caller.judging.me.getNextTeam();
+      await j.caller.judging.me.submitTeamMark({ teamId, score });
+    }
+
+    // The autoqueue trigger has deleted the row, taking `seen_judges` with it.
+    // This still reports 2 because it counts team_mark instead.
+    expect(await db.query.judgingQueue.findMany({})).toHaveLength(0);
+    await expect(h.caller.judging.team.getRemainingJudges()).resolves.toEqual({
+      status: "complete",
+      judgesSeen: 2,
+      judgesRemaining: 0,
+      totalJudges: 2,
+    });
+  });
+
+  test("reports only the caller's own team", async () => {
+    const org = await makeOrganizer();
+    const mine = await makeTeam();
+    const other = await makeTeam();
+    const h = await makeHackerOnTeam(mine);
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 3 });
+
+    // Pin the judge to the *other* team so the mark can't land on ours.
+    const j = await makeJudge();
+    await org.caller.judging.admin.assignJudgeForTeam({
+      judgeId: j.session.user.id,
+      teamId: other,
+    });
+    await j.caller.judging.me.submitTeamMark({ teamId: other, score: 90 });
+
+    await expect(h.caller.judging.team.getRemainingJudges()).resolves.toEqual({
+      status: "waiting",
+      judgesSeen: 0,
+      judgesRemaining: 3,
+      totalJudges: 3,
+    });
   });
 });

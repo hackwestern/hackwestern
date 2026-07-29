@@ -5,6 +5,7 @@ import {
   createTRPCRouter,
   protectedJudgeProcedure,
   protectedOrganizerProcedure,
+  protectedProcedure,
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import {
@@ -492,6 +493,128 @@ async function getSubmittedMarks(judgeId: string) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Hacker-facing read model
+// ---------------------------------------------------------------------------
+
+/**
+ * Where a team sits in the judging lifecycle.
+ *
+ * `not_queued` and `complete` both mean "no queue row" — see `getTeamProgress`
+ * for why only the mark count can tell them apart. To the judging engine they
+ * are the same state (nothing gets assigned either way); the split exists so
+ * the UI can say something useful.
+ */
+export type TeamJudgingStatus =
+  | "not_queued"
+  | "waiting"
+  | "in_progress"
+  | "complete";
+
+export type TeamJudgingProgress = {
+  status: TeamJudgingStatus;
+  /** Judges who have already scored this team. */
+  judgesSeen: number;
+  /** Judges the team is still owed. 0 once judging is done. */
+  judgesRemaining: number;
+  totalJudges: number;
+};
+
+/**
+ * Resolve the caller's own team. The team id is never taken from input — that
+ * is what stops one hacker reading another team's progress.
+ */
+async function requireCallerTeamId(userId: string): Promise<string> {
+  const row = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { teamId: true },
+  });
+  if (!row) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
+  }
+  if (!row.teamId) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "You are not on a team yet.",
+    });
+  }
+  return row.teamId;
+}
+
+/**
+ * Snapshot of one team's judging progress.
+ *
+ * `judgesSeen` is counted from `team_mark` rather than read from
+ * `judging_queue.seen_judges`, because the autoqueue trigger DELETEs the queue
+ * row the moment `rounds_remaining` hits 0 — that column would report 0 for a
+ * fully judged team, which is exactly when a hacker checks the page. The
+ * vanishing row is also the only reason `status` needs the mark count: it is
+ * what distinguishes "never loaded" from "finished".
+ *
+ * A hold whose `assignedAt` has gone stale reads as `waiting`, not
+ * `in_progress`, matching the reclaim window in `pickNextTeam` — that team is
+ * back up for grabs, so claiming a judge is with them would be a lie.
+ */
+async function getTeamProgress(teamId: string): Promise<TeamJudgingProgress> {
+  const [queueRow, markCount] = await Promise.all([
+    db.query.judgingQueue.findFirst({
+      where: eq(judgingQueue.teamId, teamId),
+    }),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(teamMarks)
+      .where(eq(teamMarks.teamId, teamId)),
+  ]);
+
+  const judgesSeen = markCount[0]?.count ?? 0;
+
+  // The `rounds_remaining > 0` guard is defensive: the trigger normally
+  // deletes such rows, and `pickNextTeam` would never serve one, so a row
+  // sitting at 0 is not meaningfully queued.
+  if (queueRow == null || queueRow.roundsRemaining <= 0) {
+    return {
+      status: judgesSeen > 0 ? "complete" : "not_queued",
+      judgesSeen,
+      judgesRemaining: 0,
+      totalJudges: judgesSeen,
+    };
+  }
+
+  const staleBefore = Date.now() - STALE_ASSIGNMENT_MINUTES * 60_000;
+  const isStale =
+    queueRow.assignedAt != null && queueRow.assignedAt.getTime() < staleBefore;
+  const inProgress = queueRow.currentJudgeId != null && !isStale;
+
+  return {
+    status: inProgress ? "in_progress" : "waiting",
+    judgesSeen,
+    judgesRemaining: queueRow.roundsRemaining,
+    totalJudges: judgesSeen + queueRow.roundsRemaining,
+  };
+}
+
+/**
+ * SEAM for `getTimeEstimate` (JUDGE-07), left unimplemented while the LIVE-01
+ * pub/sub hub does not exist. When it lands, the estimate is additive rather
+ * than a rewrite:
+ *
+ *   1. Add `getQueuePosition(teamId)` and `getThroughput()` here as plain
+ *      reads. Position has to rank by `rounds_remaining DESC, enqueued_at ASC`
+ *      to match `pickNextTeam` and the `judging_queue_priority_idx` ordering.
+ *      It is necessarily an approximation: real eligibility is per-judge
+ *      (skips, prior marks, sponsored track matching), so no exact global
+ *      position exists.
+ *   2. Compose them with `getTeamProgress` above — reuse it rather than
+ *      re-deriving status, or the two routes can contradict each other on the
+ *      same screen.
+ *   3. Wrap the result in the hub's long-poll and add `stateVersion` to the
+ *      payload. Include an `estimatedAt` so the client can count down locally
+ *      between updates instead of showing a frozen number.
+ *
+ * Everything above is a plain async read, so step 3 is a transport change
+ * only — none of the estimate math has to move.
+ */
+
 export const judgingRouter = createTRPCRouter({
   me: createTRPCRouter({
     /** Assign (or re-return) the next team for this judge. */
@@ -556,6 +679,23 @@ export const judgingRouter = createTRPCRouter({
       return withErrorHandling(async () => {
         await skipCurrent(ctx.session.user.id);
       }, "Failed to skip assignment");
+    }),
+  }),
+
+  /**
+   * Hacker-facing reads, scoped to the caller's own team.
+   *
+   * Gated on `protectedProcedure` rather than a role procedure because team
+   * membership *is* the authorization here: `requireCallerTeamId` rejects
+   * anyone without a team, and the team id comes from the session and never
+   * from input, so a caller can only ever read their own team's progress.
+   */
+  team: createTRPCRouter({
+    getRemainingJudges: protectedProcedure.query(async ({ ctx }) => {
+      return withErrorHandling(async () => {
+        const teamId = await requireCallerTeamId(ctx.session.user.id);
+        return getTeamProgress(teamId);
+      }, "Failed to get remaining judges");
     }),
   }),
 
