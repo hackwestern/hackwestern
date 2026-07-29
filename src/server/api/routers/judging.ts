@@ -312,28 +312,48 @@ async function forceAssign(judgeId: string, teamId: string): Promise<void> {
 }
 
 /**
- * Load every submitted team into the queue with `roundsPerTeam` required
- * rounds. Skips teams already queued (ON CONFLICT DO NOTHING). Returns the
- * number of teams actually added.
+ * Load every submitted team into the queue so that it ends up judged
+ * `roundsPerTeam` times in total. Skips teams already queued (ON CONFLICT DO
+ * NOTHING). Returns the number of teams actually added.
+ *
+ * Rounds are counted net of marks already recorded, and that is what makes
+ * this safe to re-run. The autoqueue trigger DELETEs a team's queue row once
+ * its rounds hit 0, so to ON CONFLICT a finished team is indistinguishable
+ * from a never-loaded one — counting `team_mark` is the only way to tell them
+ * apart. A fully judged team nets 0 rounds and is filtered out instead of
+ * being re-enqueued for another full pass; a team that lost its row with
+ * rounds still outstanding (an organizer purge, say) comes back with only the
+ * rounds it still owes.
+ *
+ * Raising the round count for teams that are *still queued* is deliberately
+ * not handled — ON CONFLICT DO NOTHING leaves them at their current target.
  */
 async function loadQueue(roundsPerTeam: number): Promise<number> {
   const eligible = await db
-    .select({ id: teams.id })
+    .select({
+      id: teams.id,
+      markCount: sql<number>`count(${teamMarks.id})::int`,
+    })
     .from(teams)
-    .where(inArray(teams.submissionStatus, ["submitted", "late"]));
-  if (eligible.length === 0) return 0;
+    .leftJoin(teamMarks, eq(teamMarks.teamId, teams.id))
+    .where(inArray(teams.submissionStatus, ["submitted", "late"]))
+    .groupBy(teams.id);
 
-  // `seenJudges`, `enqueuedAt`, `status`, `currentJudgeId` and `assignedAt`
-  // all fall back to their column defaults. Already-queued teams are skipped
-  // by ON CONFLICT, and `.returning()` yields only the rows actually inserted.
+  const rows = eligible
+    .map((t) => ({
+      teamId: t.id,
+      seenJudges: t.markCount,
+      roundsRemaining: roundsPerTeam - t.markCount,
+    }))
+    .filter((r) => r.roundsRemaining > 0);
+  if (rows.length === 0) return 0;
+
+  // `enqueuedAt`, `status`, `currentJudgeId` and `assignedAt` all fall back to
+  // their column defaults. Already-queued teams are skipped by ON CONFLICT,
+  // and `.returning()` yields only the rows actually inserted.
   const inserted = await db
     .insert(judgingQueue)
-    .values(
-      eligible.map((t) => ({
-        teamId: t.id,
-        roundsRemaining: roundsPerTeam,
-      })),
-    )
+    .values(rows)
     .onConflictDoNothing()
     .returning({ teamId: judgingQueue.teamId });
   return inserted.length;

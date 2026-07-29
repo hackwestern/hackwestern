@@ -141,6 +141,64 @@ describe("loadQueue / purgeQueue", () => {
     expect(rows.every((r) => r.roundsRemaining === 3)).toBe(true);
   });
 
+  test("re-running loadQueue does not re-enqueue a fully judged team", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 1 });
+
+    // One mark exhausts the single round, so the autoqueue trigger drops the
+    // row — leaving nothing for ON CONFLICT to collide with on the re-run.
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 80 });
+    expect(await db.query.judgingQueue.findMany({})).toHaveLength(0);
+
+    const { added } = await org.caller.judging.admin.loadQueue({
+      roundsPerTeam: 1,
+    });
+    expect(added).toBe(0);
+    expect(await db.query.judgingQueue.findMany({})).toHaveLength(0);
+  });
+
+  test("loadQueue restores a de-queued team with only its outstanding rounds", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 3 });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 80 });
+
+    await org.caller.judging.admin.purgeQueue();
+
+    const { added } = await org.caller.judging.admin.loadQueue({
+      roundsPerTeam: 3,
+    });
+    expect(added).toBe(1);
+
+    const row = await db.query.judgingQueue.findFirst({
+      where: eq(judgingQueue.teamId, teamId),
+    });
+    assertDefined(row, "expected the team to be back in the queue");
+    expect(row.roundsRemaining).toBe(2);
+    expect(row.seenJudges).toBe(1);
+  });
+
+  test("re-running loadQueue leaves an already-queued team untouched", async () => {
+    const org = await makeOrganizer();
+    await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 3 });
+
+    const { added } = await org.caller.judging.admin.loadQueue({
+      roundsPerTeam: 5,
+    });
+    expect(added).toBe(0);
+
+    const rows = await db.query.judgingQueue.findMany({});
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.roundsRemaining).toBe(3);
+  });
+
   test("purgeQueue clears the queue but leaves marks", async () => {
     const org = await makeOrganizer();
     const teamId = await makeTeam();
