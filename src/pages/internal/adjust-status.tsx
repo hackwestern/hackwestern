@@ -1,7 +1,3 @@
-import type { GetServerSidePropsContext } from "next";
-import { getServerSession } from "next-auth";
-import { authOptions } from "~/server/auth";
-import { db } from "~/server/db";
 import SEO from "~/components/seo";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -17,22 +13,12 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 
-export async function getServerSideProps(context: GetServerSidePropsContext) {
-  const session = await getServerSession(context.req, context.res, authOptions);
-  if (!session) {
-    return {
-      redirect: { destination: "/login", permanent: false },
-    };
-  }
-  const user = await db.query.users.findFirst({
-    where: (users, { eq }) => eq(users.id, session.user.id),
-  });
-  if (user?.type !== "organizer") {
-    return {
-      redirect: { destination: "/dashboard", permanent: false },
-    };
-  }
-  return { props: {} };
+// Dangerous bulk status-mutation tool. Hard-disabled on all environments
+// (prod, preview, local) until it is re-enabled behind proper safeguards.
+export function getServerSideProps() {
+  return {
+    redirect: { destination: "/", permanent: false },
+  };
 }
 
 const ALL_STATUSES = [
