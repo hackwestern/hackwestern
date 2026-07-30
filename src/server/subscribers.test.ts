@@ -1,9 +1,13 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, beforeEach, afterEach } from "vitest";
+import { like } from "drizzle-orm";
+import { db } from "~/server/db";
+import { emailSubscribers } from "~/server/db/schema";
 import {
   normalizeEmail,
   isSchoolEmail,
   generateUnsubscribeToken,
   editionFromSource,
+  unsubscribeByToken,
 } from "./subscribers";
 
 describe("normalizeEmail", () => {
@@ -47,4 +51,42 @@ describe("editionFromSource", () => {
     ["hw11", "11"],
     ["hw12", "12"],
   ])("%s -> %s", (s, e) => expect(editionFromSource(s)).toBe(e));
+});
+
+describe("unsubscribeByToken (DB integration)", () => {
+  const PREFIX = "zz-unsubtest-";
+  const cleanup = () =>
+    db.delete(emailSubscribers).where(like(emailSubscribers.email, `${PREFIX}%`));
+
+  beforeEach(cleanup);
+  afterEach(cleanup);
+
+  test("sets unsubscribed_at, is idempotent, and returns false for unknown token", async () => {
+    const token = generateUnsubscribeToken();
+    await db.insert(emailSubscribers).values({
+      email: `${PREFIX}a@gmail.com`,
+      source: "hw12",
+      unsubscribeToken: token,
+    });
+
+    // unknown token → false
+    expect(await unsubscribeByToken("nope-" + token)).toBe(false);
+
+    // first unsubscribe → true, flag now set
+    expect(await unsubscribeByToken(token)).toBe(true);
+    const row = await db.query.emailSubscribers.findFirst({
+      where: (t, { eq }) => eq(t.unsubscribeToken, token),
+      columns: { unsubscribedAt: true },
+    });
+    expect(row?.unsubscribedAt).toBeInstanceOf(Date);
+
+    // idempotent: still true, timestamp unchanged (UPDATE only fires when NULL)
+    const firstTs = row?.unsubscribedAt?.getTime();
+    expect(await unsubscribeByToken(token)).toBe(true);
+    const again = await db.query.emailSubscribers.findFirst({
+      where: (t, { eq }) => eq(t.unsubscribeToken, token),
+      columns: { unsubscribedAt: true },
+    });
+    expect(again?.unsubscribedAt?.getTime()).toBe(firstTs);
+  });
 });
