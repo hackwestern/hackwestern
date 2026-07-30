@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { eq, and, isNull } from "drizzle-orm";
 import { db } from "~/server/db";
-import { emailSubscribers } from "~/server/db/schema";
+import { emailSubscribers, preregistrations } from "~/server/db/schema";
 
 const SCHOOL_DOMAINS = new Set([
   "uwo.ca",
@@ -47,7 +47,10 @@ export function editionFromSource(source: string): string {
 }
 
 export async function unsubscribeByToken(token: string): Promise<boolean> {
-  const rows = await db
+  // The token belongs to exactly one list (email_subscriber or preregistration
+  // — kept disjoint by email). Try the campaign list first, then the updates
+  // signup list. Already-unsubscribed tokens still return true (idempotent).
+  const subRows = await db
     .update(emailSubscribers)
     .set({ unsubscribedAt: new Date() })
     .where(
@@ -57,11 +60,27 @@ export async function unsubscribeByToken(token: string): Promise<boolean> {
       ),
     )
     .returning({ id: emailSubscribers.id });
-  if (rows.length > 0) return true;
-  // token exists but already unsubscribed => still a success (idempotent)
-  const existing = await db.query.emailSubscribers.findFirst({
+  if (subRows.length > 0) return true;
+  const subExisting = await db.query.emailSubscribers.findFirst({
     where: eq(emailSubscribers.unsubscribeToken, token),
     columns: { id: true },
   });
-  return !!existing;
+  if (subExisting) return true;
+
+  const preRows = await db
+    .update(preregistrations)
+    .set({ unsubscribedAt: new Date() })
+    .where(
+      and(
+        eq(preregistrations.unsubscribeToken, token),
+        isNull(preregistrations.unsubscribedAt),
+      ),
+    )
+    .returning({ id: preregistrations.id });
+  if (preRows.length > 0) return true;
+  const preExisting = await db.query.preregistrations.findFirst({
+    where: eq(preregistrations.unsubscribeToken, token),
+    columns: { id: true },
+  });
+  return !!preExisting;
 }

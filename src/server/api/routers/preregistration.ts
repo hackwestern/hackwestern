@@ -4,12 +4,18 @@ import { preregistrations } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { db } from "~/server/db";
 import { sendEmail } from "~/server/mail";
-import { normalizeEmail } from "~/server/subscribers";
+import { normalizeEmail, generateUnsubscribeToken } from "~/server/subscribers";
 import { signupTemplate } from "./email-templates";
+import { env } from "~/env";
+
+const BASE =
+  env.NEXTAUTH_URL?.replace(/\/$/, "") ?? "https://www.hackwestern.com";
 
 const preregistrationCreateSchema = createInsertSchema(preregistrations).omit({
   createdAt: true,
   id: true,
+  unsubscribeToken: true,
+  unsubscribedAt: true,
 });
 
 export const preregistrationRouter = createTRPCRouter({
@@ -36,9 +42,10 @@ export const preregistrationRouter = createTRPCRouter({
           });
         }
 
+        const unsubscribeToken = generateUnsubscribeToken();
         const createdPreregistration = await db
           .insert(preregistrations)
-          .values(input)
+          .values({ ...input, unsubscribeToken })
           .returning();
 
         // Send confirmation email. Don't fail the signup if the email bounces —
@@ -47,7 +54,14 @@ export const preregistrationRouter = createTRPCRouter({
           from: "Hack Western Team <hello@hackwestern.com>",
           to: input.email,
           subject: "You're signed up for Hack Western 13 updates!",
-          html: signupTemplate(),
+          html: signupTemplate(
+            input.email,
+            `${BASE}/unsubscribe?token=${unsubscribeToken}`,
+          ),
+          headers: {
+            "List-Unsubscribe": `<${BASE}/api/unsubscribe?token=${unsubscribeToken}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          },
         });
 
         if (error) {
