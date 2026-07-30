@@ -6,10 +6,11 @@ import { db } from "~/server/db";
 import { sendEmail } from "~/server/mail";
 import { normalizeEmail, generateUnsubscribeToken } from "~/server/subscribers";
 import { signupTemplate } from "./email-templates";
-import { env } from "~/env";
 
-const BASE =
-  env.NEXTAUTH_URL?.replace(/\/$/, "") ?? "https://www.hackwestern.com";
+// Email links must be canonical + permanent — never a per-deployment preview
+// URL (which may be scheme-less or expire) — so hardcode the public domain
+// rather than trusting the deployment's NEXTAUTH_URL.
+const BASE = "https://www.hackwestern.com";
 
 const preregistrationCreateSchema = createInsertSchema(preregistrations).omit({
   createdAt: true,

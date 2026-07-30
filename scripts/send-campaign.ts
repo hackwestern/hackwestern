@@ -4,9 +4,10 @@ import { emailSubscribers } from "~/server/db/schema";
 import { sendEmail } from "~/server/mail";
 import { campaignTemplate } from "~/server/api/routers/email-templates";
 import { editionFromSource } from "~/server/subscribers";
-import { env } from "~/env";
 
-const BASE = env.NEXTAUTH_URL?.replace(/\/$/, "") ?? "https://www.hackwestern.com";
+// Email links must be canonical + permanent — never a per-deployment preview
+// URL — so hardcode the public domain rather than the deployment's env.
+const BASE = "https://www.hackwestern.com";
 const SUBJECT = "Hack Western 13 is coming!";
 const DELAY_MS = 500;
 
