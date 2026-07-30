@@ -55,7 +55,7 @@ New table, created via one Drizzle migration. `preregistration` is unchanged.
 email_subscribers
   id                serial primary key
   email             varchar(320) unique not null   -- stored lowercased
-  source            varchar  not null              -- 'hw11' | 'hw12'
+  source            varchar  not null              -- 'hw11' | 'hw12' → edition # in footer
   unsubscribe_token varchar  unique not null       -- random, URL-safe
   unsubscribed_at   timestamp null                 -- null = subscribed
   bounced_at        timestamp null                 -- set on permanent bounce
@@ -120,17 +120,18 @@ narrows it further.
 
 ## Email template changes
 
-New `campaignTemplate(email, year, unsubscribeUrl)` in `email-templates.ts`
-(reuses the shared MJML skeleton: banner → white card → footer). Footer adds:
+New `campaignTemplate(email, edition, unsubscribeUrl)` in `email-templates.ts`
+(reuses the shared MJML skeleton: banner → white card → footer). `edition` is the
+number derived from `source` (`hw11`→`11`, `hw12`→`12`). Footer adds:
 
 ```
-You're receiving this at {email} because you subscribed to Hack Western {year}.
+You're receiving this at {email} because you subscribed to Hack Western {edition}.
 Unsubscribe · hackwestern.com
 ```
 
-Rendered in the existing small grey footer style. The `{email}` and
-`{unsubscribeUrl}` are per-recipient, so the send loop renders the template per
-row (not once).
+e.g. "…because you subscribed to Hack Western 12." Rendered in the existing small
+grey footer style. The `{email}`, `{edition}`, and `{unsubscribeUrl}` are
+per-recipient, so the send loop renders the template per row (not once).
 
 ## Send pipeline (batched, resumable, bounce-aware)
 
