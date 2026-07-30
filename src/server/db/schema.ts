@@ -255,6 +255,21 @@ export const preregistrations = pgTable("preregistration", {
   email: varchar("email", { length: 320 }).unique().notNull(),
 });
 
+export const emailSubscribers = pgTable("email_subscriber", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 320 }).unique().notNull(),
+  source: varchar("source", { length: 16 }).notNull(), // 'hw11' | 'hw12'
+  unsubscribeToken: varchar("unsubscribe_token", { length: 64 })
+    .unique()
+    .notNull(),
+  unsubscribedAt: timestamp("unsubscribed_at", { mode: "date", precision: 3 }),
+  bouncedAt: timestamp("bounced_at", { mode: "date", precision: 3 }),
+  lastSentAt: timestamp("last_sent_at", { mode: "date", precision: 3 }),
+  createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
+
 export const userType = pgEnum("user_type", ["hacker", "organizer", "sponsor"]);
 
 export const users = pgTable(
