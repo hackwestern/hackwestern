@@ -11,7 +11,7 @@ import {
   verificationTokens,
 } from "~/server/db/schema";
 import { randomBytes } from "crypto";
-import { resend } from "~/server/mail";
+import * as mailModule from "~/server/mail";
 
 const session = await mockSession(db);
 
@@ -285,8 +285,8 @@ describe("auth.resendEmail", () => {
       })
       .onConflictDoNothing?.();
 
-    const sendEmailSpy = vi.spyOn(resend.emails, "send").mockResolvedValue({
-      data: { id: "mock-email-id" },
+    const sendEmailSpy = vi.spyOn(mailModule, "sendEmail").mockResolvedValue({
+      data: { delivered: ["mock@example.com"], queued: [], bounced: [] },
       error: null,
     });
 
