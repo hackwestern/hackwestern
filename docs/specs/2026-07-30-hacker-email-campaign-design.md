@@ -103,6 +103,30 @@ Validation already run (MX + syntax + typo-correction on the combined dumps):
 other**. **Send target ≈ 4,045** (freemail + other), before the hacker-row filter
 narrows it further.
 
+## Deduplication & single-send guarantee
+
+Requirement: **no address ever receives more than one campaign email.** Enforced
+at four layers:
+
+1. **Normalization on import.** Every email is trimmed + lowercased before
+   storage, so `A@X.com` and `a@x.com` collapse to one. (Optional, gmail-only:
+   canonicalize `johndoe`/`john.doe`/`johndoe+tag@gmail.com` to one inbox — dots
+   and `+tags` are ignored by gmail. Applied to `@gmail.com`/`@googlemail.com`
+   only, since dot/plus semantics are provider-specific.)
+2. **Unique constraint.** `email_subscribers.email` is `UNIQUE` — the DB rejects
+   a second row for the same normalized address, across both editions and all
+   three dumps. hw12 wins on overlap (insert order + `ON CONFLICT DO NOTHING`).
+3. **Send-cursor exclusion.** The batch query excludes any row with
+   `last_sent_at >= :campaignStart`, so a row already emailed in this campaign is
+   never re-selected on a later daily run.
+4. **Crash safety.** `last_sent_at` is written immediately after each successful
+   send (sequential, one at a time). Worst case on a mid-send crash is a single
+   address re-sent once; the unique row + cursor prevent any wider duplication.
+
+Note: the ~49 `preregistration` (HW13 site) signups live in a separate table and
+are not part of this campaign, so no cross-table double-send occurs here. If a
+future send unions both sources, dedup by normalized email across tables first.
+
 ## Unsubscribe flow (instant, one-click)
 
 - **Route:** `GET /unsubscribe?token=…` (Next.js page or API route). Looks up
