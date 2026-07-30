@@ -11,10 +11,11 @@ import {
   test,
   vi,
 } from "vitest";
-import { preregistrations } from "~/server/db/schema";
+import { emailSubscribers, preregistrations } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 import { PreregistrationSeeder } from "~/server/db/seed/preregistrationSeeder";
 import * as mailModule from "~/server/mail";
+import { generateUnsubscribeToken, normalizeEmail } from "~/server/subscribers";
 
 const session = await mockSession(db);
 
@@ -78,5 +79,28 @@ describe("preregistration.create", async () => {
       caller.preregistration.create(testPreregistration),
     ).rejects.toThrowError();
     expect(sendEmailSpy).not.toHaveBeenCalled();
+  });
+
+  test("rejects signup when the email already exists in email_subscribers", async () => {
+    // subscribers are stored normalized, so seed the normalized form
+    const normalized = normalizeEmail(testPreregistration.email);
+    await db
+      .delete(emailSubscribers)
+      .where(eq(emailSubscribers.email, normalized));
+    await db.insert(emailSubscribers).values({
+      email: normalized,
+      source: "hw12",
+      unsubscribeToken: generateUnsubscribeToken(),
+    });
+
+    await expect(
+      caller.preregistration.create(testPreregistration),
+    ).rejects.toThrowError();
+    expect(sendEmailSpy).not.toHaveBeenCalled();
+
+    // cleanup
+    await db
+      .delete(emailSubscribers)
+      .where(eq(emailSubscribers.email, normalized));
   });
 });
