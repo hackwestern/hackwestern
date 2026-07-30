@@ -1,6 +1,6 @@
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { createInsertSchema } from "drizzle-zod";
-import { emailSubscribers, preregistrations } from "~/server/db/schema";
+import { preregistrations } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { db } from "~/server/db";
 import { sendEmail } from "~/server/mail";
@@ -29,7 +29,7 @@ export const preregistrationRouter = createTRPCRouter({
           ],
         );
 
-        if (existingPreregistration || existingSubscriber) {
+        if (Boolean(existingPreregistration) || Boolean(existingSubscriber)) {
           throw new TRPCError({
             code: "CONFLICT",
             message: "Pre-registration with that email already exists.",

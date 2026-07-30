@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { getServerSideProps } from "./unsubscribe";
+import { getServerSideProps } from "~/pages/unsubscribe";
 import * as subs from "~/server/subscribers";
 
 const ctx = (token?: string) =>

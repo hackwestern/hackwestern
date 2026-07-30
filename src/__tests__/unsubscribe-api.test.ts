@@ -1,6 +1,6 @@
 import { describe, expect, test, vi, beforeEach } from "vitest";
 import type { NextApiRequest, NextApiResponse } from "next";
-import handler from "./unsubscribe";
+import handler from "~/pages/api/unsubscribe";
 import * as subs from "~/server/subscribers";
 
 function mockRes() {
