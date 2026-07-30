@@ -39,7 +39,7 @@ const config = {
         lilac: "var(--lilac)",
         salmon: "var(--salmon)",
         "faint-lilac": "var(--faint-lilac)",
-        "border-light": "hsl(var(--border-light))",
+        "border-light": "var(--border-light)",
 
         emphasis: "var(--emphasis)",
         active: "var(--active)",

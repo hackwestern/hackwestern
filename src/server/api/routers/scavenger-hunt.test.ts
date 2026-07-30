@@ -12,9 +12,11 @@ import {
   scavengerHuntRewards,
   scavengerHuntScans,
   scavengerHuntRedemptions,
+  applications,
   users,
 } from "~/server/db/schema";
 import { mockSession, mockOrganizerSession } from "~/server/auth";
+import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { faker } from "@faker-js/faker";
 import { TRPCError } from "@trpc/server";
 
@@ -57,6 +59,13 @@ const caller = createCaller(ctx);
 const organizerSession = await mockOrganizerSession(db);
 const organizerCtx = createInnerTRPCContext({ session: organizerSession });
 const organizerCaller = createCaller(organizerCtx);
+
+// The scanned hacker must be approved (ACCEPTED/CONFIRMED) to be scanned.
+await db.insert(applications).values({
+  ...ApplicationSeeder.createRandomWithoutUser(),
+  userId: session.user.id,
+  status: "ACCEPTED" as const,
+});
 
 // Tests
 describe("scavengerHuntRouter basic endpoints", () => {
@@ -921,6 +930,11 @@ describe("scavengerHuntRouter scan endpoints", () => {
 
     test("scans remain linked to soft-deleted item", async () => {
       const testUser = await mockSession(db);
+      await db.insert(applications).values({
+        ...ApplicationSeeder.createRandomWithoutUser(),
+        userId: testUser.user.id,
+        status: "ACCEPTED" as const,
+      });
 
       // Scan the item first
       await organizerCaller.scavengerHunt.scan({
@@ -956,6 +970,9 @@ describe("scavengerHuntRouter scan endpoints", () => {
       await db
         .delete(scavengerHuntScans)
         .where(eq(scavengerHuntScans.userId, testUser.user.id));
+      await db
+        .delete(applications)
+        .where(eq(applications.userId, testUser.user.id));
       await db.delete(users).where(eq(users.id, testUser.user.id));
     });
 

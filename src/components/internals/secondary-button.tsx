@@ -11,6 +11,7 @@ export default function SecondaryButton({
   disabled = false,
   isLoading = false,
   size = "lg",
+  full = false,
   direction,
   onClick,
   className,
@@ -28,6 +29,7 @@ export default function SecondaryButton({
         className={`${size == "sm" ? "px-[12px] py-[7px]" : "px-[18px] py-[12px]"} ${className}`}
         isPending={disabled || isLoading}
         onClick={onClick}
+        full={full}
         size={size}
       >
         {/* <Spinner isLoading={isLoading}></Spinner> */}
