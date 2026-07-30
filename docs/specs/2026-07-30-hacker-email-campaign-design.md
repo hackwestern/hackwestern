@@ -157,24 +157,36 @@ e.g. "…because you subscribed to Hack Western 12." Rendered in the existing sm
 grey footer style. The `{email}`, `{edition}`, and `{unsubscribeUrl}` are
 per-recipient, so the send loop renders the template per row (not once).
 
-## Send pipeline (batched, resumable, bounce-aware)
+## Send pipeline (chunked, paced, resumable, bounce-aware)
 
-One-off script (`scripts/send-campaign.ts`), same run pattern as the backfill.
+One-off script (`scripts/send-campaign.ts`). Rather than one big daily blast, it
+sends **small chunks spread across the day** — gentler on receiving providers
+(sudden spikes from a low-reputation domain get throttled / spam-foldered) and it
+warms the sending domain gradually. The 1000/day Cloudflare cap is a ceiling, not
+the target rate.
 
-- **Query:** `email_subscribers WHERE unsubscribed_at IS NULL AND bounced_at IS
-  NULL AND (last_sent_at IS NULL OR last_sent_at < :campaignStart)` ordered by
-  id, `LIMIT :limit` (default 900, under the 1000/day cap).
-- **Send:** sequential, ~500ms gap, per-recipient template render, per-row
-  ok/FAIL log.
+- **Query per chunk:** `email_subscribers WHERE unsubscribed_at IS NULL AND
+  bounced_at IS NULL AND (last_sent_at IS NULL OR last_sent_at < :campaignStart)`
+  ordered by id, `LIMIT :chunkSize`.
+- **Chunk send:** sequential, ~500ms gap between messages, per-recipient template
+  render, per-row ok/FAIL log. Default `chunkSize ≈ 75`.
+- **Pacing:** self-paced runner sleeps ~45 min between chunks, only within a
+  daytime window (e.g. 9am–7pm local — better deliverability + open rates, looks
+  human). Long-running/background, or relaunched by a scheduler; either way
+  resumable via `last_sent_at`, so restarts never double-send.
+- **Warmup ramp:** ease volume up over days instead of a flat rate — e.g. day 1
+  ~200, day 2 ~400, then ~600–800/day, always < the 1000/day cap. A cold domain
+  sending 900 on day 1 is exactly the spike we're avoiding.
 - **On success:** set `last_sent_at = now()`.
 - **On bounce:** Cloudflare returns `permanent_bounces`; set `bounced_at` on
-  those rows so they're skipped next run and never retried.
-- **Cadence:** ~4,045 target ÷ 900/day ≈ 5 days. Re-run daily until the query
-  drains. `--send` to fire
-  (dry-run default), `--limit` to override the daily cap.
-- **Quota awareness:** `sendEmail` can return HTTP 200 with `success:false` on
-  quota exhaustion; the loop checks `error` on every result and stops early if it
-  starts seeing quota failures, logging where it stopped.
+  those rows so they're skipped and never retried.
+- **Quota / throttle awareness:** `sendEmail` can return HTTP 200 with
+  `success:false` (quota exhaustion), or bounce/failure rate can climb; the loop
+  checks `error` on every result and, if failures spike, pauses/stops early and
+  logs where it stopped so the next run resumes cleanly.
+- **Cadence:** ~4,045 target over roughly **6–8 days** at the ramped, paced rate.
+  Tunable via `--chunk`, `--interval`, `--daily-cap`, `--window`. Dry-run
+  default; `--send` to fire.
 
 ## Testing
 
