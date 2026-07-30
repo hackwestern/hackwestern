@@ -67,7 +67,6 @@ export function renderFor(sub: Sub) {
     headers: {
       "List-Unsubscribe": `<${postUrl}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-      "Reply-To": "hello@hackwestern.com",
     } as Record<string, string>,
   };
 }
@@ -126,8 +125,9 @@ async function main() {
     const res = await sendEmail({
       // Bulk campaign sends from an isolated subdomain so a spam/bounce hit
       // can't poison transactional (password-reset/verify) deliverability on
-      // the root domain. Replies still route to the monitored inbox (Reply-To).
+      // the root domain. Replies still route to the monitored inbox (reply_to).
       from: "Hack Western <updates@mail.hackwestern.com>",
+      replyTo: "hello@hackwestern.com",
       to: r.email, subject, html, headers,
     });
     const outcome = classifyResult(res);
