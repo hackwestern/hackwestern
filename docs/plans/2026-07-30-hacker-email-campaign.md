@@ -17,6 +17,7 @@
 - **Consent scope:** HW11 + HW12 only. No older editions.
 - **Exclude `.edu` / school domains** entirely (`.edu`, `.ac.*`, and known CA university domains: `uwo.ca`, `uwaterloo.ca`, `mcmaster.ca`, `utoronto.ca`/`mail.utoronto.ca`, `yorku.ca`, `queensu.ca`, `ualberta.ca`, `ubc.ca`, `mcgill.ca`, `carleton.ca`, `uottawa.ca`, `torontomu.ca`, `sheridancollege.ca`).
 - **Emails stored lowercased + trimmed.** `email` column is `UNIQUE`. One send per address, ever (dedup + `last_sent_at` cursor).
+- **Disjoint tables invariant:** an email must never exist in both `preregistration` and `email_subscribers`. Enforced on both write paths: the import (Task 5) skips any email already in `preregistration`; `preregistration.create` (Task 7) treats an email already in *either* table as a duplicate (existing conflict path). This lets a future send union both tables with no dedup.
 - **Footer copy (verbatim):** `You're receiving this at {email} because you subscribed to Hack Western {edition}.` where `{edition}` is `11` or `12` derived from `source`. Plus an `Unsubscribe` link and `hackwestern.com`. **No postal address.**
 - **Sender:** `Hack Western Team <hello@hackwestern.com>` (matches existing).
 - **Cloudflare cap:** never exceed 1000 sends/day; target rate is well under it (ramp: ~200 → ~400 → ~600–800/day).
@@ -94,7 +95,7 @@ git add src/server/db/schema.ts drizzle/
 git commit -m "feat: add email_subscribers table + migration"
 ```
 
-> Migration is applied to prod later, in the runbook (Task 8), not here.
+> Migration is applied to prod later, in the runbook (Task 9), not here.
 
 ---
 
@@ -539,8 +540,8 @@ git commit -m "feat: on-brand unsubscribe page + one-click API route"
 - Create: `scripts/import-subscribers.test.ts`
 
 **Interfaces:**
-- Consumes: `normalizeEmail`, `isSchoolEmail`, `generateUnsubscribeToken` (Task 2); `emailSubscribers`, `db`.
-- Produces: `buildSubscriberRows(sources: { emails: string[]; source: string }[]): { email: string; source: string }[]` — pure: normalize, drop school + junk, apply typo fixes, dedup (hw12 wins on overlap). The DB insert + dump extraction are I/O wrappers around it.
+- Consumes: `normalizeEmail`, `isSchoolEmail`, `generateUnsubscribeToken` (Task 2); `emailSubscribers`, `preregistrations`, `db`.
+- Produces: `buildSubscriberRows(sources: { emails: string[]; source: string }[], exclude?: Set<string>): { email: string; source: string }[]` — pure: normalize, drop school + junk, apply typo fixes, drop any email in `exclude` (the `preregistration` emails — disjoint-tables invariant), dedup (hw12 wins on overlap). `exclude` values must already be normalized (lowercased). The DB insert + dump extraction are I/O wrappers around it.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -574,6 +575,14 @@ describe("buildSubscriberRows", () => {
     ]);
     expect(rows[0]?.email).toBe("typo@gmail.com");
   });
+
+  test("drops emails in the exclude set (preregistration overlap)", () => {
+    const rows = buildSubscriberRows(
+      [{ emails: ["already@gmail.com", "fresh@gmail.com"], source: "hw12" }],
+      new Set(["already@gmail.com"]),
+    );
+    expect(rows.map((r) => r.email)).toEqual(["fresh@gmail.com"]);
+  });
 });
 ```
 
@@ -587,7 +596,7 @@ Expected: FAIL — module not found.
 ```ts
 import { normalizeEmail, isSchoolEmail, generateUnsubscribeToken } from "~/server/subscribers";
 import { db } from "~/server/db";
-import { emailSubscribers } from "~/server/db/schema";
+import { emailSubscribers, preregistrations } from "~/server/db/schema";
 
 export const DOMAIN_FIXES: Record<string, string> = {
   "gmaill.com": "gmail.com", "outlook.con": "outlook.com", "uwo.com": "uwo.ca",
@@ -607,6 +616,7 @@ function fixDomain(email: string): string {
 
 export function buildSubscriberRows(
   sources: { emails: string[]; source: string }[],
+  exclude: Set<string> = new Set(),
 ): { email: string; source: string }[] {
   // hw12 should win on overlap: process hw11 first, then hw12 overwrites.
   const order = [...sources].sort((a, b) => a.source.localeCompare(b.source));
@@ -618,6 +628,7 @@ export function buildSubscriberRows(
       if (!email.includes("@") || JUNK.has(domain)) continue;
       if (!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(email)) continue;
       if (isSchoolEmail(email)) continue;
+      if (exclude.has(email)) continue; // already in preregistration → keep tables disjoint
       map.set(email, source);
     }
   }
@@ -628,15 +639,24 @@ export function buildSubscriberRows(
 async function main() {
   const COMMIT = process.argv.includes("--commit");
   // Emails are extracted upstream from the restored dumps into these files,
-  // one email per line (see runbook Task 8, step "extract emails").
+  // one email per line (see runbook Task 9, step "extract emails").
   const fs = await import("fs");
   const read = (p: string) =>
     fs.existsSync(p) ? fs.readFileSync(p, "utf8").split("\n").map((s) => s.trim()).filter(Boolean) : [];
-  const rows = buildSubscriberRows([
-    { emails: read("/tmp/hw11-emails.txt"), source: "hw11" },
-    { emails: read("/tmp/hw12-emails.txt"), source: "hw12" },
-  ]);
-  console.log(`Prepared ${rows.length} subscriber rows.`);
+
+  // Disjoint-tables invariant: never import an email that's already a
+  // preregistration. normalizeEmail so the compare matches stored form.
+  const prereg = await db.query.preregistrations.findMany({ columns: { email: true } });
+  const exclude = new Set(prereg.map((p) => normalizeEmail(p.email)));
+
+  const rows = buildSubscriberRows(
+    [
+      { emails: read("/tmp/hw11-emails.txt"), source: "hw11" },
+      { emails: read("/tmp/hw12-emails.txt"), source: "hw12" },
+    ],
+    exclude,
+  );
+  console.log(`Prepared ${rows.length} subscriber rows (excluded ${exclude.size} preregistration emails).`);
   if (!COMMIT) {
     console.log("Dry run. Re-run with --commit to insert.");
     return;
@@ -661,7 +681,7 @@ if (process.argv[1]?.includes("import-subscribers")) {
 - [ ] **Step 4: Run to verify pass**
 
 Run: `npx vitest run scripts/import-subscribers.test.ts`
-Expected: PASS (3 tests).
+Expected: PASS (4 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -834,7 +854,97 @@ git commit -m "feat: chunked paced campaign send script"
 
 ---
 
-## Task 7: Full suite green + PR
+## Task 7: Preregistration cross-table dedup guard
+
+Enforce the disjoint-tables invariant on the signup path: `preregistration.create` must reject an email that already exists in **either** `preregistration` or `email_subscribers`, using the existing conflict behavior (no insert, no confirmation email).
+
+**Files:**
+- Modify: `src/server/api/routers/preregistration.ts`
+- Modify: `src/server/api/routers/preregistration.test.ts`
+
+**Interfaces:**
+- Consumes: `emailSubscribers` (Task 1), `normalizeEmail` (Task 2), `sendEmail`, `preregistrations`, `db`.
+
+- [ ] **Step 1: Write the failing test**
+
+Add to the existing `describe("preregistration.create", …)` block in `preregistration.test.ts` (the `sendEmailSpy` + `beforeEach` cleanup already exist from the merged signup work). Import `emailSubscribers` and `generateUnsubscribeToken` at the top.
+
+```ts
+test("rejects signup when the email already exists in email_subscribers", async () => {
+  // seed a subscriber with the same email (normalized form)
+  await db
+    .delete(emailSubscribers)
+    .where(eq(emailSubscribers.email, testPreregistration.email));
+  await db.insert(emailSubscribers).values({
+    email: testPreregistration.email,
+    source: "hw12",
+    unsubscribeToken: generateUnsubscribeToken(),
+  });
+
+  await expect(
+    caller.preregistration.create(testPreregistration),
+  ).rejects.toThrowError();
+  expect(sendEmailSpy).not.toHaveBeenCalled();
+
+  // cleanup
+  await db
+    .delete(emailSubscribers)
+    .where(eq(emailSubscribers.email, testPreregistration.email));
+});
+```
+
+- [ ] **Step 2: Run to verify failure**
+
+Run: `npx vitest run src/server/api/routers/preregistration.test.ts`
+Expected: FAIL — currently `create` ignores `email_subscribers`, so it inserts + sends (the `sendEmailSpy` assertion fails).
+
+- [ ] **Step 3: Implement the guard**
+
+In `preregistration.ts`, add imports:
+
+```ts
+import { emailSubscribers } from "~/server/db/schema";
+import { normalizeEmail } from "~/server/subscribers";
+```
+
+Replace the existing single-table existence check with a both-tables check (keep the same `TRPCError` conflict as today):
+
+```ts
+const normalized = normalizeEmail(input.email);
+const [existingPreregistration, existingSubscriber] = await Promise.all([
+  db.query.preregistrations.findFirst({
+    where: ({ email }, { eq }) => eq(email, input.email),
+  }),
+  db.query.emailSubscribers.findFirst({
+    where: ({ email }, { eq }) => eq(email, normalized),
+  }),
+]);
+
+if (existingPreregistration || existingSubscriber) {
+  throw new TRPCError({
+    code: "CONFLICT",
+    message: "Pre-registration with that email already exists.",
+  });
+}
+```
+
+(The rest of `create` — insert + `sendEmail` confirmation — is unchanged.)
+
+- [ ] **Step 4: Run to verify pass**
+
+Run: `npx vitest run src/server/api/routers/preregistration.test.ts`
+Expected: PASS — the new test plus the pre-existing create tests (new email still inserts + sends; duplicate in either table rejects without sending).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/server/api/routers/preregistration.ts src/server/api/routers/preregistration.test.ts
+git commit -m "feat: reject preregistration for emails already in subscribers (disjoint tables)"
+```
+
+---
+
+## Task 8: Full suite green + PR
 
 **Files:** none (verification).
 
@@ -857,7 +967,7 @@ PR body: link the spec, list the table/route/scripts, note migration + cloud-rou
 
 ---
 
-## Task 8: Operator runbook + cloud routine (rollout, run by owner)
+## Task 9: Operator runbook + cloud routine (rollout, run by owner)
 
 **Files:**
 - Create: `docs/runbooks/hacker-email-campaign.md`
@@ -893,7 +1003,8 @@ git commit -m "docs: rollout runbook for hacker email campaign"
 
 ## Self-Review Notes
 
-- **Spec coverage:** data model → T1; normalization/dedup/single-send + token + `.edu` exclusion → T2/T5; instant one-click unsubscribe + `List-Unsubscribe` headers → T2/T4/T6; template footer (edition #, no address) → T3; chunked/paced/bounce-aware send → T6; cloud-routine execution + secrets → T8; import from dumps (typo-fix) → T5/T8; test-to-self before batches → T8.
+- **Spec coverage:** data model → T1; normalization/dedup/single-send + token + `.edu` exclusion → T2/T5; instant one-click unsubscribe + `List-Unsubscribe` headers → T2/T4/T6; template footer (edition #, no address) → T3; chunked/paced/bounce-aware send → T6; disjoint-tables invariant → T5 (import excludes preregistration) + T7 (signup rejects existing subscriber); cloud-routine execution + secrets → T9; import from dumps (typo-fix) → T5/T9; test-to-self before batches → T9.
 - **Single-send guarantee:** unique `email` (T1) + `onConflictDoNothing` (T5) + cursor query excluding `lastSentAt >= start`, `unsubscribedAt`, `bouncedAt` (T6).
+- **Disjoint-tables invariant:** import skips preregistration emails (T5 `exclude` set) + `preregistration.create` rejects emails in either table (T7). Both `email` columns are `UNIQUE` → the cross-table lookups are index-backed.
 - **Types:** `buildSubscriberRows`/`DOMAIN_FIXES` (T5), `renderFor`/`unsubscribeUrl` (T6), `unsubscribeByToken`/`normalizeEmail`/`isSchoolEmail`/`editionFromSource`/`generateUnsubscribeToken` (T2), `campaignTemplate(email, edition, unsubscribeUrl)` (T3) — names consistent across consumers.
 - **Deferred to runbook (needs prod/secrets, not build-agent work):** migration apply, dump extraction, import commit, cloud-routine scheduling.
