@@ -253,6 +253,10 @@ export const preregistrations = pgTable("preregistration", {
     .defaultNow()
     .notNull(),
   email: varchar("email", { length: 320 }).unique().notNull(),
+  // Nullable: pre-existing rows have no token (their confirmation already sent);
+  // new signups generate one so the updates email can carry an unsubscribe link.
+  unsubscribeToken: varchar("unsubscribe_token", { length: 64 }).unique(),
+  unsubscribedAt: timestamp("unsubscribed_at", { mode: "date", precision: 3 }),
 });
 
 export const emailSubscribers = pgTable("email_subscriber", {
