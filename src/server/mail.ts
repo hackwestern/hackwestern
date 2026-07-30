@@ -6,10 +6,38 @@ export interface SendEmailOptions {
   html: string;
   text?: string;
   from?: string;
+  headers?: Record<string, string>;
+}
+
+/**
+ * Cloudflare's REST `from` accepts either a bare email string or a
+ * `{ address, name }` object. Callers may pass an RFC 5322 display-name form
+ * ("Name <email>"); split it into the object form so the sender name is
+ * preserved, falling back to a bare string when there's no display name.
+ */
+const parseFrom = (
+  from: string,
+): string | { address: string; name: string } => {
+  const match = /^\s*(.+?)\s*<([^>]+)>\s*$/.exec(from);
+  if (match?.[1] && match[2]) {
+    return { name: match[1].replace(/^"|"$/g, ""), address: match[2].trim() };
+  }
+  return from.trim();
+};
+
+/** Shape of the Cloudflare Email Sending REST response. */
+interface CloudflareSendResponse {
+  success?: boolean;
+  errors?: { code?: number; message?: string }[];
+  result?: {
+    delivered?: string[];
+    permanent_bounces?: string[];
+    queued?: string[];
+  } | null;
 }
 
 export interface SendEmailResult {
-  data: { id?: string; success?: boolean } | null;
+  data: { delivered: string[]; queued: string[]; bounced: string[] } | null;
   error: { message: string } | null;
 }
 
@@ -20,11 +48,9 @@ export interface SendEmailResult {
 export const sendEmail = async (
   options: SendEmailOptions,
 ): Promise<SendEmailResult> => {
-  const recipients = Array.isArray(options.to)
-    ? options.to.map((email) => ({ email }))
-    : [{ email: options.to }];
-
-  const fromEmail = options.from ?? "Hack Western Team <hello@hackwestern.com>";
+  const from = parseFrom(
+    options.from ?? "Hack Western Team <hello@hackwestern.com>",
+  );
 
   try {
     const response = await fetch(
@@ -36,11 +62,12 @@ export const sendEmail = async (
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          to: recipients,
-          from: { email: fromEmail },
+          to: options.to,
+          from,
           subject: options.subject,
           html: options.html,
           text: options.text ?? options.html.replace(/<[^>]*>?/gm, ""),
+          ...(options.headers ? { headers: options.headers } : {}),
         }),
       },
     );
@@ -50,15 +77,36 @@ export const sendEmail = async (
       console.error("Cloudflare Email API Error:", response.status, errorBody);
       return {
         data: null,
-        error: { message: `Cloudflare Email API error ${response.status}: ${errorBody}` },
+        error: {
+          message: `Cloudflare Email API error ${response.status}: ${errorBody}`,
+        },
       };
     }
 
-    const resData = (await response.json()) as { success?: boolean; result?: { id?: string } };
-    return {
-      data: { id: resData.result?.id ?? "cf-email-ok", success: resData.success },
-      error: null,
-    };
+    const resData = (await response.json()) as CloudflareSendResponse;
+
+    // Cloudflare can return HTTP 200 with success:false (e.g. unverified sender).
+    if (resData.success === false) {
+      const message =
+        resData.errors?.[0]?.message ??
+        "Cloudflare Email API returned success:false";
+      console.error("Cloudflare Email API rejected send:", resData.errors);
+      return { data: null, error: { message } };
+    }
+
+    const delivered = resData.result?.delivered ?? [];
+    const queued = resData.result?.queued ?? [];
+    const bounced = resData.result?.permanent_bounces ?? [];
+
+    // Nothing delivered or queued, only bounces => the message reached no one.
+    if (delivered.length === 0 && queued.length === 0 && bounced.length > 0) {
+      return {
+        data: null,
+        error: { message: `Email permanently bounced: ${bounced.join(", ")}` },
+      };
+    }
+
+    return { data: { delivered, queued, bounced }, error: null };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("Cloudflare Email Fetch Error:", message);

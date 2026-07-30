@@ -38,7 +38,7 @@ vi.mock('~/server/db', async (importOriginal) => {
 
 vi.mock("~/server/mail", () => ({
   sendEmail: vi.fn().mockResolvedValue({
-    data: { id: "mocked-email-id", success: true },
+    data: { delivered: ["mocked@example.com"], queued: [], bounced: [] },
     error: null,
   }),
 }));

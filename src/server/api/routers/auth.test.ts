@@ -286,7 +286,7 @@ describe("auth.resendEmail", () => {
       .onConflictDoNothing?.();
 
     const sendEmailSpy = vi.spyOn(mailModule, "sendEmail").mockResolvedValue({
-      data: { id: "mock-email-id", success: true },
+      data: { delivered: ["mock@example.com"], queued: [], bounced: [] },
       error: null,
     });
 

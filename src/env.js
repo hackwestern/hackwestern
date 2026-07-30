@@ -77,8 +77,12 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
     DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
-    CLOUDFLARE_EMAIL_API_TOKEN: process.env.CLOUDFLARE_EMAIL_API_TOKEN ?? "mock-cf-api-token",
-    CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID ?? "mock-cf-account-id",
+    CLOUDFLARE_EMAIL_API_TOKEN:
+      process.env.CLOUDFLARE_EMAIL_API_TOKEN ??
+      (process.env.NODE_ENV === "test" ? "mock-cf-api-token" : undefined),
+    CLOUDFLARE_ACCOUNT_ID:
+      process.env.CLOUDFLARE_ACCOUNT_ID ??
+      (process.env.NODE_ENV === "test" ? "mock-cf-account-id" : undefined),
     APPLE_CERT_PASS: process.env.APPLE_CERT_PASS,
     APPLE_WWDR_CERT: process.env.APPLE_WWDR_CERT,
     APPLE_SIGNER_CERT: process.env.APPLE_SIGNER_CERT,
