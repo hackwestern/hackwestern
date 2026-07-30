@@ -17,7 +17,7 @@
 - **Consent scope:** HW11 + HW12 only. No older editions.
 - **Exclude `.edu` / school domains** entirely (`.edu`, `.ac.*`, and known CA university domains: `uwo.ca`, `uwaterloo.ca`, `mcmaster.ca`, `utoronto.ca`/`mail.utoronto.ca`, `yorku.ca`, `queensu.ca`, `ualberta.ca`, `ubc.ca`, `mcgill.ca`, `carleton.ca`, `uottawa.ca`, `torontomu.ca`, `sheridancollege.ca`).
 - **Emails stored lowercased + trimmed.** `email` column is `UNIQUE`. One send per address, ever (dedup + `last_sent_at` cursor).
-- **Disjoint tables invariant:** an email must never exist in both `preregistration` and `email_subscribers`. Enforced on both write paths: the import (Task 5) skips any email already in `preregistration`; `preregistration.create` (Task 7) treats an email already in *either* table as a duplicate (existing conflict path). This lets a future send union both tables with no dedup.
+- **Disjoint tables invariant:** an email must never exist in both `preregistration` and `email_subscribers`. Enforced on both write paths: the import (Task 5) skips any email already in `preregistration`; `preregistration.create` (Task 8) treats an email already in *either* table as a duplicate (existing conflict path). This lets a future send union both tables with no dedup.
 - **Footer copy (verbatim):** `You're receiving this at {email} because you subscribed to Hack Western {edition}.` where `{edition}` is `11` or `12` derived from `source`. Plus an `Unsubscribe` link and `hackwestern.com`. **No postal address.**
 - **Sender:** `Hack Western Team <hello@hackwestern.com>` (matches existing).
 - **Cloudflare cap:** never exceed 1000 sends/day; target rate is well under it (ramp: ~200 → ~400 → ~600–800/day).
@@ -95,7 +95,7 @@ git add src/server/db/schema.ts drizzle/
 git commit -m "feat: add email_subscribers table + migration"
 ```
 
-> Migration is applied to prod later, in the runbook (Task 9), not here.
+> Migration is applied to prod later, in the runbook (Task 10), not here.
 
 ---
 
@@ -704,14 +704,18 @@ git commit -m "feat: subscriber import script (dumps -> email_subscribers)"
   - `unsubscribeUrl(token: string): string` — `${BASE}/unsubscribe?token=${token}` (the on-brand page; used as the visible footer link).
   - `unsubscribePostUrl(token: string): string` — `${BASE}/api/unsubscribe?token=${token}` (the one-click POST endpoint; used in the `List-Unsubscribe` header).
   - `renderFor(sub): { subject, html, headers }` — builds the per-recipient email: `html` links the footer to `unsubscribeUrl`; `List-Unsubscribe` header wraps `unsubscribePostUrl` with `List-Unsubscribe-Post`.
-  - `selectChunkQuery(chunkSize, campaignStart)` — the Drizzle query (unsubscribed/bounced/already-sent excluded). The main loop sends one chunk and updates `lastSentAt`/`bouncedAt`.
+  - `selectEligible(chunkSize: number, campaignStart: Date): Promise<SubRow[]>` — the exported selection query: excludes `unsubscribedAt`/`bouncedAt` rows and rows already sent this campaign (`lastSentAt >= campaignStart`), ordered by id, limited to `chunkSize`. `main()` calls it, sends one chunk, and updates `lastSentAt`/`bouncedAt`. (`SubRow = Sub & { id: number }`.)
 
 - [ ] **Step 1: Write the failing test**
 
 ```ts
 // scripts/send-campaign.test.ts
-import { describe, expect, test } from "vitest";
-import { unsubscribeUrl, renderFor } from "./send-campaign";
+import { describe, expect, test, beforeEach, afterEach } from "vitest";
+import { like } from "drizzle-orm";
+import { db } from "~/server/db";
+import { emailSubscribers } from "~/server/db/schema";
+import { generateUnsubscribeToken } from "~/server/subscribers";
+import { unsubscribeUrl, renderFor, selectEligible } from "./send-campaign";
 
 describe("send-campaign helpers", () => {
   test("unsubscribeUrl builds the /unsubscribe page link", () => {
@@ -732,6 +736,44 @@ describe("send-campaign helpers", () => {
     expect(r.headers["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
   });
 });
+
+// Gap-2: the selection query is the single-send + suppression guarantee.
+// Seed rows in every state and assert only the eligible ones are picked.
+describe("selectEligible (DB integration)", () => {
+  const PREFIX = "zz-seltest-";
+  const START = new Date("2026-08-01T00:00:00Z");
+  const cleanup = () =>
+    db.delete(emailSubscribers).where(like(emailSubscribers.email, `${PREFIX}%`));
+
+  beforeEach(cleanup);
+  afterEach(cleanup);
+
+  test("excludes unsubscribed, bounced, and already-sent-this-campaign", async () => {
+    const mk = (tag: string, extra: Record<string, unknown>) => ({
+      email: `${PREFIX}${tag}@gmail.com`,
+      source: "hw12",
+      unsubscribeToken: generateUnsubscribeToken(),
+      ...extra,
+    });
+    await db.insert(emailSubscribers).values([
+      mk("fresh", {}),
+      mk("unsub", { unsubscribedAt: new Date() }),
+      mk("bounced", { bouncedAt: new Date() }),
+      mk("sent", { lastSentAt: new Date("2026-08-02T00:00:00Z") }), // >= START
+      mk("prior", { lastSentAt: new Date("2026-07-01T00:00:00Z") }), // < START → eligible
+    ]);
+
+    const picked = (await selectEligible(100, START))
+      .map((r) => r.email)
+      .filter((e) => e.startsWith(PREFIX));
+
+    expect(picked).toContain(`${PREFIX}fresh@gmail.com`);
+    expect(picked).toContain(`${PREFIX}prior@gmail.com`);
+    expect(picked).not.toContain(`${PREFIX}unsub@gmail.com`);
+    expect(picked).not.toContain(`${PREFIX}bounced@gmail.com`);
+    expect(picked).not.toContain(`${PREFIX}sent@gmail.com`);
+  });
+});
 ```
 
 - [ ] **Step 2: Run to verify failure**
@@ -742,11 +784,11 @@ Expected: FAIL — module not found.
 - [ ] **Step 3: Implement `scripts/send-campaign.ts`**
 
 ```ts
-import { and, isNull, or, lt, asc } from "drizzle-orm";
+import { and, isNull, or, lt, asc, eq } from "drizzle-orm";
 import { db } from "~/server/db";
 import { emailSubscribers } from "~/server/db/schema";
 import { sendEmail } from "~/server/mail";
-import { campaignTemplate, } from "~/server/api/routers/email-templates";
+import { campaignTemplate } from "~/server/api/routers/email-templates";
 import { editionFromSource } from "~/server/subscribers";
 import { env } from "~/env";
 
@@ -755,6 +797,34 @@ const SUBJECT = "Hack Western 13 is coming!";
 const DELAY_MS = 500;
 
 type Sub = { email: string; source: string; unsubscribeToken: string };
+type SubRow = Sub & { id: number };
+
+/** The eligible-recipients query: the single-send + suppression guarantee. */
+export async function selectEligible(
+  chunkSize: number,
+  campaignStart: Date,
+): Promise<SubRow[]> {
+  return (await db
+    .select({
+      email: emailSubscribers.email,
+      source: emailSubscribers.source,
+      unsubscribeToken: emailSubscribers.unsubscribeToken,
+      id: emailSubscribers.id,
+    })
+    .from(emailSubscribers)
+    .where(
+      and(
+        isNull(emailSubscribers.unsubscribedAt),
+        isNull(emailSubscribers.bouncedAt),
+        or(
+          isNull(emailSubscribers.lastSentAt),
+          lt(emailSubscribers.lastSentAt, campaignStart),
+        ),
+      ),
+    )
+    .orderBy(asc(emailSubscribers.id))
+    .limit(chunkSize)) as SubRow[];
+}
 
 export function unsubscribeUrl(token: string): string {
   return `${BASE}/unsubscribe?token=${token}`;
@@ -786,23 +856,7 @@ async function main() {
     process.argv.find((a) => a.startsWith("--start="))?.split("=")[1] ?? "2026-08-01T00:00:00Z",
   );
 
-  const rows = (await db
-    .select({
-      email: emailSubscribers.email,
-      source: emailSubscribers.source,
-      unsubscribeToken: emailSubscribers.unsubscribeToken,
-      id: emailSubscribers.id,
-    })
-    .from(emailSubscribers)
-    .where(
-      and(
-        isNull(emailSubscribers.unsubscribedAt),
-        isNull(emailSubscribers.bouncedAt),
-        or(isNull(emailSubscribers.lastSentAt), lt(emailSubscribers.lastSentAt, campaignStart)),
-      ),
-    )
-    .orderBy(asc(emailSubscribers.id))
-    .limit(chunk)) as (Sub & { id: number })[];
+  const rows = await selectEligible(chunk, campaignStart);
 
   console.log(`Chunk: ${rows.length} recipient(s). Mode: ${SEND ? "SEND" : "DRY RUN"}.`);
   if (!SEND) { rows.forEach((r, i) => console.log(`${i + 1}. ${r.email}`)); return; }
@@ -832,9 +886,6 @@ async function main() {
   console.log(`Done. sent ${sent}, bounced ${bounced}, failed ${failed}.`);
 }
 
-// eq is needed in main(); import it alongside the others:
-import { eq } from "drizzle-orm";
-
 if (process.argv[1]?.includes("send-campaign")) {
   main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });
 }
@@ -843,7 +894,7 @@ if (process.argv[1]?.includes("send-campaign")) {
 - [ ] **Step 4: Run to verify pass**
 
 Run: `npx vitest run scripts/send-campaign.test.ts`
-Expected: PASS (2 tests). Then `npx tsc --noEmit -p tsconfig.json 2>&1 | grep send-campaign` → no output.
+Expected: PASS (3 tests — 2 helper + 1 `selectEligible` DB integration). Then `npx tsc --noEmit -p tsconfig.json 2>&1 | grep send-campaign` → no output.
 
 - [ ] **Step 5: Commit**
 
@@ -854,7 +905,83 @@ git commit -m "feat: chunked paced campaign send script"
 
 ---
 
-## Task 7: Preregistration cross-table dedup guard
+## Task 7: `unsubscribeByToken` DB integration test
+
+Close the one gap where the actual opt-out DB write is only ever mocked (T4). Verify against a real row that `unsubscribeByToken` sets `unsubscribed_at`, is idempotent, and returns `false` for an unknown token. Compliance-critical: if this silently no-ops, we keep emailing people who opted out.
+
+**Files:**
+- Modify: `src/server/subscribers.test.ts` (append a DB-integration `describe`)
+
+**Interfaces:**
+- Consumes: `unsubscribeByToken`, `generateUnsubscribeToken` (Task 2), `emailSubscribers`, `db`.
+
+Note: the implementation already exists (Task 2) and is correct, so this test is expected to pass on first run — it's closing a coverage gap on existing behavior, not driving new code.
+
+- [ ] **Step 1: Add the integration test**
+
+Append to `src/server/subscribers.test.ts`. Add `beforeEach, afterEach` to the existing `vitest` import, and add the new imports shown:
+
+```ts
+import { beforeEach, afterEach } from "vitest";
+import { like } from "drizzle-orm";
+import { db } from "~/server/db";
+import { emailSubscribers } from "~/server/db/schema";
+import { unsubscribeByToken, generateUnsubscribeToken } from "./subscribers";
+
+describe("unsubscribeByToken (DB integration)", () => {
+  const PREFIX = "zz-unsubtest-";
+  const cleanup = () =>
+    db.delete(emailSubscribers).where(like(emailSubscribers.email, `${PREFIX}%`));
+
+  beforeEach(cleanup);
+  afterEach(cleanup);
+
+  test("sets unsubscribed_at, is idempotent, and returns false for unknown token", async () => {
+    const token = generateUnsubscribeToken();
+    await db.insert(emailSubscribers).values({
+      email: `${PREFIX}a@gmail.com`,
+      source: "hw12",
+      unsubscribeToken: token,
+    });
+
+    // unknown token → false
+    expect(await unsubscribeByToken("nope-" + token)).toBe(false);
+
+    // first unsubscribe → true, flag now set
+    expect(await unsubscribeByToken(token)).toBe(true);
+    const row = await db.query.emailSubscribers.findFirst({
+      where: (t, { eq }) => eq(t.unsubscribeToken, token),
+      columns: { unsubscribedAt: true },
+    });
+    expect(row?.unsubscribedAt).toBeInstanceOf(Date);
+
+    // idempotent: still true, timestamp unchanged (UPDATE only fires when NULL)
+    const firstTs = row?.unsubscribedAt?.getTime();
+    expect(await unsubscribeByToken(token)).toBe(true);
+    const again = await db.query.emailSubscribers.findFirst({
+      where: (t, { eq }) => eq(t.unsubscribeToken, token),
+      columns: { unsubscribedAt: true },
+    });
+    expect(again?.unsubscribedAt?.getTime()).toBe(firstTs);
+  });
+});
+```
+
+- [ ] **Step 2: Run the test**
+
+Run: `npx vitest run src/server/subscribers.test.ts`
+Expected: PASS (existing pure-function tests + this new integration test). If it fails, the finding is in `unsubscribeByToken` (Task 2) — report it; do not weaken the test to make it pass.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/server/subscribers.test.ts
+git commit -m "test: unsubscribeByToken DB integration (sets flag, idempotent, unknown-token)"
+```
+
+---
+
+## Task 8: Preregistration cross-table dedup guard
 
 Enforce the disjoint-tables invariant on the signup path: `preregistration.create` must reject an email that already exists in **either** `preregistration` or `email_subscribers`, using the existing conflict behavior (no insert, no confirmation email).
 
@@ -944,7 +1071,7 @@ git commit -m "feat: reject preregistration for emails already in subscribers (d
 
 ---
 
-## Task 8: Full suite green + PR
+## Task 9: Full suite green + PR
 
 **Files:** none (verification).
 
@@ -967,7 +1094,7 @@ PR body: link the spec, list the table/route/scripts, note migration + cloud-rou
 
 ---
 
-## Task 9: Operator runbook + cloud routine (rollout, run by owner)
+## Task 10: Operator runbook + cloud routine (rollout, run by owner)
 
 **Files:**
 - Create: `docs/runbooks/hacker-email-campaign.md`
@@ -1003,8 +1130,8 @@ git commit -m "docs: rollout runbook for hacker email campaign"
 
 ## Self-Review Notes
 
-- **Spec coverage:** data model → T1; normalization/dedup/single-send + token + `.edu` exclusion → T2/T5; instant one-click unsubscribe + `List-Unsubscribe` headers → T2/T4/T6; template footer (edition #, no address) → T3; chunked/paced/bounce-aware send → T6; disjoint-tables invariant → T5 (import excludes preregistration) + T7 (signup rejects existing subscriber); cloud-routine execution + secrets → T9; import from dumps (typo-fix) → T5/T9; test-to-self before batches → T9.
+- **Spec coverage:** data model → T1; normalization/dedup/single-send + token + `.edu` exclusion → T2/T5; instant one-click unsubscribe + `List-Unsubscribe` headers → T2/T4/T6; template footer (edition #, no address) → T3; chunked/paced/bounce-aware send → T6; disjoint-tables invariant → T5 (import excludes preregistration) + T8 (signup rejects existing subscriber); unsubscribeByToken DB integration → T7; send-selection DB integration → T6; cloud-routine execution + secrets → T10; import from dumps (typo-fix) → T5/T10; test-to-self before batches → T10.
 - **Single-send guarantee:** unique `email` (T1) + `onConflictDoNothing` (T5) + cursor query excluding `lastSentAt >= start`, `unsubscribedAt`, `bouncedAt` (T6).
-- **Disjoint-tables invariant:** import skips preregistration emails (T5 `exclude` set) + `preregistration.create` rejects emails in either table (T7). Both `email` columns are `UNIQUE` → the cross-table lookups are index-backed.
+- **Disjoint-tables invariant:** import skips preregistration emails (T5 `exclude` set) + `preregistration.create` rejects emails in either table (T8). Both `email` columns are `UNIQUE` → the cross-table lookups are index-backed.
 - **Types:** `buildSubscriberRows`/`DOMAIN_FIXES` (T5), `renderFor`/`unsubscribeUrl` (T6), `unsubscribeByToken`/`normalizeEmail`/`isSchoolEmail`/`editionFromSource`/`generateUnsubscribeToken` (T2), `campaignTemplate(email, edition, unsubscribeUrl)` (T3) — names consistent across consumers.
 - **Deferred to runbook (needs prod/secrets, not build-agent work):** migration apply, dump extraction, import commit, cloud-routine scheduling.
