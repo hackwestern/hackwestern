@@ -15,7 +15,7 @@ export default function Unsubscribe({ status }: Props) {
   const ok = status === "ok";
   return (
     <>
-      <SEO title="Unsubscribe | Hack Western" />
+      <SEO title="Unsubscribe" />
       <main className="flex min-h-screen flex-col items-center justify-center bg-offwhite px-6 text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

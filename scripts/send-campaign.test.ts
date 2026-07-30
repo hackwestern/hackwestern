@@ -3,7 +3,12 @@ import { like } from "drizzle-orm";
 import { db } from "~/server/db";
 import { emailSubscribers } from "~/server/db/schema";
 import { generateUnsubscribeToken } from "~/server/subscribers";
-import { unsubscribeUrl, renderFor, selectEligible } from "./send-campaign";
+import {
+  unsubscribeUrl,
+  renderFor,
+  selectEligible,
+  classifyResult,
+} from "./send-campaign";
 
 describe("send-campaign helpers", () => {
   test("unsubscribeUrl builds the /unsubscribe page link", () => {
@@ -60,5 +65,49 @@ describe("selectEligible (DB integration)", () => {
     expect(picked).not.toContain(`${PREFIX}unsub@gmail.com`);
     expect(picked).not.toContain(`${PREFIX}bounced@gmail.com`);
     expect(picked).not.toContain(`${PREFIX}sent@gmail.com`);
+  });
+});
+
+// Regression: a single-recipient permanent bounce surfaces as an *error*
+// ("permanently bounced ..."), not as data.bounced — so it must classify as a
+// bounce (→ bouncedAt suppression), never as a generic "fail" that gets retried.
+describe("classifyResult", () => {
+  test("permanent-bounce error → bounce", () => {
+    expect(
+      classifyResult({
+        data: null,
+        error: { message: "Email permanently bounced: nope@nowhere.test" },
+      }),
+    ).toBe("bounce");
+  });
+
+  test("quota/rate/429 error → quota", () => {
+    expect(
+      classifyResult({ data: null, error: { message: "429 rate limit" } }),
+    ).toBe("quota");
+    expect(
+      classifyResult({ data: null, error: { message: "daily quota exceeded" } }),
+    ).toBe("quota");
+  });
+
+  test("other error → fail", () => {
+    expect(
+      classifyResult({
+        data: null,
+        error: { message: "Cloudflare Email API error 500: boom" },
+      }),
+    ).toBe("fail");
+  });
+
+  test("success with empty bounced → ok", () => {
+    expect(
+      classifyResult({ data: { bounced: [] }, error: null }),
+    ).toBe("ok");
+  });
+
+  test("success with non-empty bounced → bounce", () => {
+    expect(
+      classifyResult({ data: { bounced: ["x@y.test"] }, error: null }),
+    ).toBe("bounce");
   });
 });

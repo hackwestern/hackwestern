@@ -63,6 +63,27 @@ export function renderFor(sub: Sub) {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+export type SendOutcome = "ok" | "bounce" | "quota" | "fail";
+
+/**
+ * Classify a `sendEmail` result. A single-recipient permanent bounce surfaces
+ * as an error whose message contains "permanently bounced" (see mail.ts), so it
+ * must be treated as a bounce — not a generic failure — or the address is never
+ * suppressed and gets retried forever.
+ */
+export function classifyResult(res: {
+  data: { bounced: string[] } | null;
+  error: { message: string } | null;
+}): SendOutcome {
+  if (res.error) {
+    if (/permanently bounced/i.test(res.error.message)) return "bounce";
+    if (/quota|rate|429/i.test(res.error.message)) return "quota";
+    return "fail";
+  }
+  if (res.data && res.data.bounced.length > 0) return "bounce";
+  return "ok";
+}
+
 async function main() {
   const SEND = process.argv.includes("--send");
   const chunk = Number(process.argv.find((a) => a.startsWith("--chunk="))?.split("=")[1] ?? 75);
@@ -78,15 +99,19 @@ async function main() {
   let sent = 0, bounced = 0, failed = 0;
   for (const r of rows) {
     const { subject, html, headers } = renderFor(r);
-    const { data, error } = await sendEmail({
+    const res = await sendEmail({
       from: "Hack Western Team <hello@hackwestern.com>",
       to: r.email, subject, html, headers,
     });
-    if (error) {
+    const outcome = classifyResult(res);
+    if (outcome === "quota") {
+      console.log(`FAIL ${r.email} — ${res.error?.message}`);
+      console.log("Quota/rate hit — stopping early.");
+      break;
+    } else if (outcome === "fail") {
       failed++;
-      console.log(`FAIL ${r.email} — ${error.message}`);
-      if (/quota|rate|429/i.test(error.message)) { console.log("Quota/rate hit — stopping early."); break; }
-    } else if (data && data.bounced.length) {
+      console.log(`FAIL ${r.email} — ${res.error?.message}`);
+    } else if (outcome === "bounce") {
       bounced++;
       await db.update(emailSubscribers).set({ bouncedAt: new Date() }).where(eq(emailSubscribers.id, r.id));
       console.log(`BOUNCE ${r.email}`);
