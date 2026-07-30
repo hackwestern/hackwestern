@@ -25,7 +25,7 @@ const Sidebar = () => {
           href="/"
         >
           <Horsey />
-          <div className="flex flex-col justify-center">Hack Western 12</div>
+          <div className="flex flex-col justify-center">Hack Western 13</div>
         </Link>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2 pt-8">
