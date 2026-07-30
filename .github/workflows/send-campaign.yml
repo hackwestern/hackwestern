@@ -1,0 +1,82 @@
+name: Hacker Email Campaign Drip
+
+# Sends the HW11/12 → HW13 campaign in small hourly batches so volume stays
+# low and reputation-safe. Idempotent + resumable via email_subscriber.last_sent_at.
+#
+# SAFETY / ARMING:
+#   - Scheduled runs DRY-RUN until the repo variable CAMPAIGN_LIVE == 'true'.
+#     Arm it when ready:  gh variable set CAMPAIGN_LIVE --body true
+#     Pause anytime:      gh variable set CAMPAIGN_LIVE --body false
+#   - Manual run: Actions tab → this workflow → Run workflow → tick "send".
+#
+# SELF-TERMINATION:
+#   - When a send run finds 0 eligible recipients (list drained), it disables
+#     this workflow (gh workflow disable) so the cron stops firing. Re-enable
+#     from the Actions tab if ever needed.
+
+on:
+  schedule:
+    - cron: "0 13-23 * * *" # hourly, ~9am–7pm ET (13:00–23:00 UTC)
+  workflow_dispatch:
+    inputs:
+      send:
+        description: "Actually send (unticked = dry run)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: email-campaign-drip
+  cancel-in-progress: false
+
+permissions:
+  actions: write # needed to self-disable when the list is drained
+
+jobs:
+  drip:
+    runs-on: ubuntu-latest
+    environment: Production
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      CLOUDFLARE_EMAIL_API_TOKEN: ${{ secrets.CLOUDFLARE_EMAIL_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SKIP_ENV_VALIDATION: "1"
+      CHUNK: "40" # ~40/run × ~11 runs/day ≈ 440/day → ~9–10 days for 4,070
+      START: "2026-07-30T00:00:00Z" # campaign kickoff; gates re-sends (must precede first send)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+
+      - name: Decide send vs dry-run
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_SEND: ${{ inputs.send }}
+          VAR_LIVE: ${{ vars.CAMPAIGN_LIVE }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then ARMED="$INPUT_SEND"; else ARMED="$VAR_LIVE"; fi
+          if [ "$ARMED" = "true" ]; then echo "flag=--send" >> "$GITHUB_OUTPUT"; else echo "flag=" >> "$GITHUB_OUTPUT"; fi
+          echo "Send mode: ${ARMED:-false}"
+
+      - name: Run drip batch
+        env:
+          FLAG: ${{ steps.mode.outputs.flag }}
+        run: |
+          set -o pipefail
+          npx tsx scripts/send-campaign.ts $FLAG --chunk="$CHUNK" --start="$START" | tee out.log
+
+      - name: Self-disable when list is drained
+        if: ${{ steps.mode.outputs.flag == '--send' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WF_NAME: ${{ github.workflow }}
+        run: |
+          if grep -q "Chunk: 0 recipient(s)" out.log; then
+            echo "✅ Campaign complete — 0 recipients left. Disabling this workflow."
+            gh workflow disable "$WF_NAME"
+          else
+            echo "Recipients remain — will run again next tick."
+          fi
