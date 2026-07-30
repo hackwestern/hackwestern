@@ -26,14 +26,14 @@ export default function Unsubscribe({ status }: Props) {
         <h1 className="font-cossetteTexte text-2xl font-bold text-heavy">
           {ok ? "You've been unsubscribed" : "Invalid link"}
         </h1>
-        <p className="font-figtree mt-3 max-w-md text-medium">
+        <p className="mt-3 max-w-md font-figtree text-medium">
           {ok
             ? "You won't receive further Hack Western update emails at this address."
             : "This unsubscribe link is missing or invalid."}
         </p>
         <a
           href="https://www.hackwestern.com"
-          className="font-figtree mt-6 rounded-lg bg-primary px-5 py-2 text-primary-foreground"
+          className="mt-6 rounded-lg bg-primary px-5 py-2 font-figtree text-primary-foreground"
         >
           Back to hackwestern.com
         </a>

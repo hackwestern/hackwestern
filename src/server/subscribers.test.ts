@@ -16,7 +16,9 @@ describe("normalizeEmail", () => {
   });
   test("canonicalizes gmail dots and +tags", () => {
     expect(normalizeEmail("john.doe+hw@gmail.com")).toBe("johndoe@gmail.com");
-    expect(normalizeEmail("JohnDoe@googlemail.com")).toBe("johndoe@googlemail.com");
+    expect(normalizeEmail("JohnDoe@googlemail.com")).toBe(
+      "johndoe@googlemail.com",
+    );
   });
   test("leaves non-gmail local part intact", () => {
     expect(normalizeEmail("john.doe@outlook.com")).toBe("john.doe@outlook.com");
@@ -56,7 +58,9 @@ describe("editionFromSource", () => {
 describe("unsubscribeByToken (DB integration)", () => {
   const PREFIX = "zz-unsubtest-";
   const cleanup = () =>
-    db.delete(emailSubscribers).where(like(emailSubscribers.email, `${PREFIX}%`));
+    db
+      .delete(emailSubscribers)
+      .where(like(emailSubscribers.email, `${PREFIX}%`));
 
   beforeEach(cleanup);
   afterEach(cleanup);

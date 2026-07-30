@@ -3,7 +3,9 @@ import { getServerSideProps } from "./unsubscribe";
 import * as subs from "~/server/subscribers";
 
 const ctx = (token?: string) =>
-  ({ query: token ? { token } : {} }) as unknown as Parameters<typeof getServerSideProps>[0];
+  ({ query: token ? { token } : {} }) as unknown as Parameters<
+    typeof getServerSideProps
+  >[0];
 
 describe("unsubscribe getServerSideProps", () => {
   test("valid token → status ok", async () => {

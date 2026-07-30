@@ -4,9 +4,20 @@ import { db } from "~/server/db";
 import { emailSubscribers } from "~/server/db/schema";
 
 const SCHOOL_DOMAINS = new Set([
-  "uwo.ca", "uwaterloo.ca", "mcmaster.ca", "utoronto.ca", "mail.utoronto.ca",
-  "yorku.ca", "queensu.ca", "ualberta.ca", "ubc.ca", "mcgill.ca",
-  "carleton.ca", "uottawa.ca", "torontomu.ca", "sheridancollege.ca",
+  "uwo.ca",
+  "uwaterloo.ca",
+  "mcmaster.ca",
+  "utoronto.ca",
+  "mail.utoronto.ca",
+  "yorku.ca",
+  "queensu.ca",
+  "ualberta.ca",
+  "ubc.ca",
+  "mcgill.ca",
+  "carleton.ca",
+  "uottawa.ca",
+  "torontomu.ca",
+  "sheridancollege.ca",
 ]);
 
 export function normalizeEmail(raw: string): string {
