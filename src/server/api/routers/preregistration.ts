@@ -3,6 +3,8 @@ import { createInsertSchema } from "drizzle-zod";
 import { preregistrations } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { db } from "~/server/db";
+import { sendEmail } from "~/server/mail";
+import { signupTemplate } from "./email-templates";
 
 const preregistrationCreateSchema = createInsertSchema(preregistrations).omit({
   createdAt: true,
@@ -30,6 +32,19 @@ export const preregistrationRouter = createTRPCRouter({
           .insert(preregistrations)
           .values(input)
           .returning();
+
+        // Send confirmation email. Don't fail the signup if the email bounces —
+        // the preregistration is already saved.
+        const { error } = await sendEmail({
+          from: "Hack Western Team <hello@hackwestern.com>",
+          to: input.email,
+          subject: "You're signed up for Hack Western 13 updates!",
+          html: signupTemplate(),
+        });
+
+        if (error) {
+          console.error("Error sending preregistration email:", error);
+        }
 
         return createdPreregistration[0];
       } catch (error) {
