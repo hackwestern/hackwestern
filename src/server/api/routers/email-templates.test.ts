@@ -9,7 +9,7 @@ describe("campaignTemplate", () => {
   );
   test("includes per-recipient footer with email + edition", () => {
     expect(html).toContain("person@gmail.com");
-    expect(html).toContain("because you subscribed to Hack Western 12");
+    expect(html).toContain("because you signed up for Hack Western 12");
   });
   test("includes the unsubscribe link", () => {
     expect(html).toContain("https://hackwestern.com/api/unsubscribe?token=abc");
