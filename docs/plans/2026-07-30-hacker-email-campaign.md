@@ -34,7 +34,9 @@
 - `src/server/subscribers.test.ts` — unit tests for normalization/classifier/token (create).
 - `src/server/api/routers/email-templates.ts` — add `campaignTemplate` (modify).
 - `src/server/api/routers/email-templates.test.ts` — test `campaignTemplate` footer (create).
-- `src/pages/api/unsubscribe.ts` — GET (confirm + unsubscribe) / POST (one-click) route (create).
+- `src/pages/unsubscribe.tsx` — on-brand confirmation page; unsubscribe runs in `getServerSideProps` (create).
+- `src/pages/unsubscribe.test.ts` — `getServerSideProps` tests (create).
+- `src/pages/api/unsubscribe.ts` — POST one-click (RFC 8058) + GET → redirect to the page (create).
 - `src/pages/api/unsubscribe.test.ts` — route handler tests (create).
 - `scripts/import-subscribers.ts` — dumps → `email_subscribers` (create).
 - `scripts/import-subscribers.test.ts` — pure-transform tests (create).
@@ -316,17 +318,121 @@ git commit -m "feat: campaign email template with compliant footer + unsubscribe
 
 ---
 
-## Task 4: `/api/unsubscribe` route (GET confirm + POST one-click)
+## Task 4: On-brand unsubscribe page + one-click API route
+
+Two files: a styled Next.js page that performs the unsubscribe server-side and confirms it using Hack Western's design tokens, and an API route that serves the RFC 8058 one-click POST (for the `List-Unsubscribe` header) and redirects GETs to the page.
 
 **Files:**
+- Create: `src/pages/unsubscribe.tsx`
+- Create: `src/pages/unsubscribe.test.ts`
 - Create: `src/pages/api/unsubscribe.ts`
 - Create: `src/pages/api/unsubscribe.test.ts`
 
 **Interfaces:**
-- Consumes: `unsubscribeByToken` (Task 2).
-- Produces: Next.js API handler. `GET /api/unsubscribe?token=…` → performs unsubscribe, returns `200` HTML confirmation (or `400` HTML for missing/invalid token). `POST` (RFC 8058 one-click) with token in query or body → performs unsubscribe, returns `200` empty.
+- Consumes: `unsubscribeByToken` (Task 2); `SEO` from `~/components/seo`.
+- Produces:
+  - Page at `/unsubscribe?token=…` — `getServerSideProps` calls `unsubscribeByToken(token)` and returns `{ status: "ok" | "invalid" }`; the component renders an on-brand confirmation (or invalid-link) screen. This is the URL used in the visible email footer link.
+  - API `POST /api/unsubscribe?token=…` — one-click unsubscribe → `200`/`404`. `GET` → `307` redirect to `/unsubscribe?token=…`. This URL is used in the `List-Unsubscribe` header.
+
+**Design tokens to use (verbatim Tailwind classes that exist in this repo):** `bg-offwhite` (page bg), `text-heavy` / `text-medium` (text), `bg-primary` + `text-primary-foreground` (button), `font-cossetteTexte` (heading), `font-figtree` (body), `rounded-lg` (0.5rem radius). Banner image served at `/shared/emailbanner.png`.
+
+### 4a — the page
 
 - [ ] **Step 1: Write the failing test**
+
+```ts
+// src/pages/unsubscribe.test.ts
+import { describe, expect, test, vi } from "vitest";
+import { getServerSideProps } from "./unsubscribe";
+import * as subs from "~/server/subscribers";
+
+const ctx = (token?: string) =>
+  ({ query: token ? { token } : {} }) as unknown as Parameters<typeof getServerSideProps>[0];
+
+describe("unsubscribe getServerSideProps", () => {
+  test("valid token → status ok", async () => {
+    vi.spyOn(subs, "unsubscribeByToken").mockResolvedValue(true);
+    const res = await getServerSideProps(ctx("abc"));
+    expect(res).toEqual({ props: { status: "ok" } });
+  });
+
+  test("missing token → invalid, no DB call", async () => {
+    const spy = vi.spyOn(subs, "unsubscribeByToken").mockResolvedValue(true);
+    const res = await getServerSideProps(ctx());
+    expect(res).toEqual({ props: { status: "invalid" } });
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  test("unknown token → invalid", async () => {
+    vi.spyOn(subs, "unsubscribeByToken").mockResolvedValue(false);
+    const res = await getServerSideProps(ctx("nope"));
+    expect(res).toEqual({ props: { status: "invalid" } });
+  });
+});
+```
+
+- [ ] **Step 2: Run to verify failure**
+
+Run: `npx vitest run src/pages/unsubscribe.test.ts`
+Expected: FAIL — `./unsubscribe` not found.
+
+- [ ] **Step 3: Implement the page**
+
+```tsx
+// src/pages/unsubscribe.tsx
+import type { GetServerSideProps } from "next";
+import SEO from "~/components/seo";
+import { unsubscribeByToken } from "~/server/subscribers";
+
+type Props = { status: "ok" | "invalid" };
+
+export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
+  const token = typeof ctx.query.token === "string" ? ctx.query.token : "";
+  if (!token) return { props: { status: "invalid" } };
+  const matched = await unsubscribeByToken(token);
+  return { props: { status: matched ? "ok" : "invalid" } };
+};
+
+export default function Unsubscribe({ status }: Props) {
+  const ok = status === "ok";
+  return (
+    <>
+      <SEO title="Unsubscribe | Hack Western" />
+      <main className="flex min-h-screen flex-col items-center justify-center bg-offwhite px-6 text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/shared/emailbanner.png"
+          alt="Hack Western"
+          className="mb-8 w-full max-w-md rounded-lg"
+        />
+        <h1 className="font-cossetteTexte text-2xl font-bold text-heavy">
+          {ok ? "You've been unsubscribed" : "Invalid link"}
+        </h1>
+        <p className="font-figtree mt-3 max-w-md text-medium">
+          {ok
+            ? "You won't receive further Hack Western update emails at this address."
+            : "This unsubscribe link is missing or invalid."}
+        </p>
+        <a
+          href="https://www.hackwestern.com"
+          className="font-figtree mt-6 rounded-lg bg-primary px-5 py-2 text-primary-foreground"
+        >
+          Back to hackwestern.com
+        </a>
+      </main>
+    </>
+  );
+}
+```
+
+- [ ] **Step 4: Run to verify pass**
+
+Run: `npx vitest run src/pages/unsubscribe.test.ts`
+Expected: PASS (3 tests). Then `npx tsc --noEmit -p tsconfig.json 2>&1 | grep unsubscribe` → no output. If any Tailwind class above doesn't exist in `tailwind.config.ts`, STOP and report — do not invent classes.
+
+### 4b — the one-click API route
+
+- [ ] **Step 5: Write the failing test**
 
 ```ts
 // src/pages/api/unsubscribe.test.ts
@@ -337,12 +443,12 @@ import * as subs from "~/server/subscribers";
 
 function mockRes() {
   const res = {} as NextApiResponse & {
-    _status?: number; _body?: unknown; _headers: Record<string, string>;
+    _status?: number; _redirect?: string; _headers: Record<string, string>;
   };
   res._headers = {};
   res.status = vi.fn(function (this: typeof res, c: number) { this._status = c; return this; }) as never;
   res.setHeader = vi.fn(function (this: typeof res, k: string, v: string) { this._headers[k] = v; return this; }) as never;
-  res.send = vi.fn(function (this: typeof res, b: unknown) { this._body = b; return this; }) as never;
+  res.redirect = vi.fn(function (this: typeof res, code: number, url: string) { this._status = code; this._redirect = url; return this; }) as never;
   res.end = vi.fn(function (this: typeof res) { return this; }) as never;
   return res;
 }
@@ -350,24 +456,7 @@ function mockRes() {
 describe("/api/unsubscribe", () => {
   beforeEach(() => vi.restoreAllMocks());
 
-  test("GET with valid token unsubscribes + returns 200 HTML", async () => {
-    const spy = vi.spyOn(subs, "unsubscribeByToken").mockResolvedValue(true);
-    const req = { method: "GET", query: { token: "abc" } } as unknown as NextApiRequest;
-    const res = mockRes();
-    await handler(req, res);
-    expect(spy).toHaveBeenCalledWith("abc");
-    expect(res._status).toBe(200);
-    expect(String(res._body)).toContain("unsubscribed");
-  });
-
-  test("GET with missing token returns 400", async () => {
-    const req = { method: "GET", query: {} } as unknown as NextApiRequest;
-    const res = mockRes();
-    await handler(req, res);
-    expect(res._status).toBe(400);
-  });
-
-  test("POST one-click unsubscribes + returns 200", async () => {
+  test("POST with valid token unsubscribes + returns 200", async () => {
     const spy = vi.spyOn(subs, "unsubscribeByToken").mockResolvedValue(true);
     const req = { method: "POST", query: { token: "xyz" }, body: {} } as unknown as NextApiRequest;
     const res = mockRes();
@@ -375,24 +464,35 @@ describe("/api/unsubscribe", () => {
     expect(spy).toHaveBeenCalledWith("xyz");
     expect(res._status).toBe(200);
   });
+
+  test("POST with missing token returns 400", async () => {
+    const req = { method: "POST", query: {}, body: {} } as unknown as NextApiRequest;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res._status).toBe(400);
+  });
+
+  test("GET redirects (307) to the /unsubscribe page with the token", async () => {
+    const req = { method: "GET", query: { token: "abc" } } as unknown as NextApiRequest;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res._status).toBe(307);
+    expect(res._redirect).toBe("/unsubscribe?token=abc");
+  });
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [ ] **Step 6: Run to verify failure**
 
 Run: `npx vitest run src/pages/api/unsubscribe.test.ts`
 Expected: FAIL — `./unsubscribe` not found.
 
-- [ ] **Step 3: Implement the route**
+- [ ] **Step 7: Implement the route**
 
 ```ts
 // src/pages/api/unsubscribe.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { unsubscribeByToken } from "~/server/subscribers";
-
-function page(title: string, body: string) {
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head><body style="font-family:system-ui,Arial,sans-serif;max-width:520px;margin:15vh auto;padding:0 24px;text-align:center;color:#111"><h1 style="font-size:20px">${title}</h1><p style="color:#555">${body}</p><p><a href="https://www.hackwestern.com" style="color:#6C3EBB">hackwestern.com</a></p></body></html>`;
-}
 
 export default async function handler(
   req: NextApiRequest,
@@ -404,49 +504,30 @@ export default async function handler(
       ? ((req.body as Record<string, unknown>).token as string | undefined)
       : undefined);
 
-  if (!token) {
-    if (req.method === "POST") return res.status(400).end();
-    return res
-      .status(400)
-      .setHeader("Content-Type", "text/html")
-      .send(page("Invalid link", "This unsubscribe link is missing its token."));
-  }
-
-  const matched = await unsubscribeByToken(token);
-
+  // RFC 8058 one-click unsubscribe (used by the List-Unsubscribe header).
   if (req.method === "POST") {
-    // RFC 8058 one-click: 200 on success regardless of prior state.
+    if (!token) return res.status(400).end();
+    const matched = await unsubscribeByToken(token);
     return res.status(matched ? 200 : 404).end();
   }
 
-  if (!matched) {
-    return res
-      .status(400)
-      .setHeader("Content-Type", "text/html")
-      .send(page("Invalid link", "We couldn't find that subscription."));
-  }
-  return res
-    .status(200)
-    .setHeader("Content-Type", "text/html")
-    .send(
-      page(
-        "You've been unsubscribed",
-        "You won't receive further Hack Western update emails at this address.",
-      ),
-    );
+  // GET (someone opened the header URL in a browser) → the on-brand page,
+  // which performs + confirms the unsubscribe.
+  const q = token ? `?token=${encodeURIComponent(token)}` : "";
+  return res.redirect(307, `/unsubscribe${q}`);
 }
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [ ] **Step 8: Run to verify pass**
 
 Run: `npx vitest run src/pages/api/unsubscribe.test.ts`
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add src/pages/api/unsubscribe.ts src/pages/api/unsubscribe.test.ts
-git commit -m "feat: /api/unsubscribe route (GET confirm + POST one-click)"
+git add src/pages/unsubscribe.tsx src/pages/unsubscribe.test.ts src/pages/api/unsubscribe.ts src/pages/api/unsubscribe.test.ts
+git commit -m "feat: on-brand unsubscribe page + one-click API route"
 ```
 
 ---
@@ -600,8 +681,9 @@ git commit -m "feat: subscriber import script (dumps -> email_subscribers)"
 **Interfaces:**
 - Consumes: `editionFromSource` (Task 2), `campaignTemplate` (Task 3), `sendEmail` (`~/server/mail`), `emailSubscribers`, `db`, `env` for the base URL.
 - Produces:
-  - `unsubscribeUrl(token: string): string` — `${BASE}/api/unsubscribe?token=${token}`.
-  - `renderFor(sub): { subject, html, headers }` — builds the per-recipient email incl. `List-Unsubscribe` + `List-Unsubscribe-Post` headers.
+  - `unsubscribeUrl(token: string): string` — `${BASE}/unsubscribe?token=${token}` (the on-brand page; used as the visible footer link).
+  - `unsubscribePostUrl(token: string): string` — `${BASE}/api/unsubscribe?token=${token}` (the one-click POST endpoint; used in the `List-Unsubscribe` header).
+  - `renderFor(sub): { subject, html, headers }` — builds the per-recipient email: `html` links the footer to `unsubscribeUrl`; `List-Unsubscribe` header wraps `unsubscribePostUrl` with `List-Unsubscribe-Post`.
   - `selectChunkQuery(chunkSize, campaignStart)` — the Drizzle query (unsubscribed/bounced/already-sent excluded). The main loop sends one chunk and updates `lastSentAt`/`bouncedAt`.
 
 - [ ] **Step 1: Write the failing test**
@@ -612,8 +694,9 @@ import { describe, expect, test } from "vitest";
 import { unsubscribeUrl, renderFor } from "./send-campaign";
 
 describe("send-campaign helpers", () => {
-  test("unsubscribeUrl builds the /api/unsubscribe link", () => {
-    expect(unsubscribeUrl("tok123")).toContain("/api/unsubscribe?token=tok123");
+  test("unsubscribeUrl builds the /unsubscribe page link", () => {
+    expect(unsubscribeUrl("tok123")).toContain("/unsubscribe?token=tok123");
+    expect(unsubscribeUrl("tok123")).not.toContain("/api/unsubscribe");
   });
 
   test("renderFor sets subject, per-recipient footer, and one-click headers", () => {
@@ -654,16 +737,21 @@ const DELAY_MS = 500;
 type Sub = { email: string; source: string; unsubscribeToken: string };
 
 export function unsubscribeUrl(token: string): string {
+  return `${BASE}/unsubscribe?token=${token}`;
+}
+
+export function unsubscribePostUrl(token: string): string {
   return `${BASE}/api/unsubscribe?token=${token}`;
 }
 
 export function renderFor(sub: Sub) {
-  const url = unsubscribeUrl(sub.unsubscribeToken);
+  const pageUrl = unsubscribeUrl(sub.unsubscribeToken); // visible footer link
+  const postUrl = unsubscribePostUrl(sub.unsubscribeToken); // one-click header
   return {
     subject: SUBJECT,
-    html: campaignTemplate(sub.email, editionFromSource(sub.source), url),
+    html: campaignTemplate(sub.email, editionFromSource(sub.source), pageUrl),
     headers: {
-      "List-Unsubscribe": `<${url}>`,
+      "List-Unsubscribe": `<${postUrl}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     } as Record<string, string>,
   };
@@ -779,7 +867,7 @@ This task documents the manual rollout — it is executed by the owner with prod
 - [ ] **Step 1: Write the runbook** covering, in order:
 
 1. **Apply migration to prod:** `DATABASE_URL=<prod> npm run db:migrate` (or the project's prod migration path). Confirm `email_subscriber` exists.
-2. **Deploy** the branch so `/api/unsubscribe` is live **before any send**. Verify by hitting `/api/unsubscribe?token=deadbeef` → "Invalid link" page.
+2. **Deploy** the branch so `/unsubscribe` (page) and `/api/unsubscribe` (one-click) are live **before any send**. Verify by opening `/unsubscribe?token=deadbeef` → on-brand "Invalid link" page.
 3. **Extract emails from dumps** into `/tmp/hw11-emails.txt` and `/tmp/hw12-emails.txt` (one per line):
    - `pg_restore -f /tmp/hw11.sql "hw_11_db (1).dump"`; `pg_restore -f /tmp/hw12.sql hw12_dump.dump`; keep the plain `hw12.dump` as-is.
    - Extract from the hacker-bearing tables' email columns (`user`, `application`) — inspect the restored SQL to confirm column names; grep the email regex from those `COPY` blocks. (Domain-level validation already done: `~/repos/db-dumps` → 5,113 unique, 0 dead domains; ~4,045 after `.edu` drop.)
