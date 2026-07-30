@@ -31,6 +31,8 @@ marketing recipients beyond the ~49 HW13 homepage preregistrations.
 - Retrofitting unsubscribe onto the transactional emails (reset/verify/signup
   confirmation). Tracked as a follow-up, out of scope here.
 - Editions older than HW11 (CASL implied-consent window has likely expired).
+- School/`.edu` recipients (graduation bounce risk, unverifiable by MX) — see
+  Import step 4.
 
 ## Consent / legal basis
 
@@ -78,20 +80,28 @@ DB via an inline `DATABASE_URL` (never committed).
    (HW11), `hw12_dump.dump` + `hw12.dump` (HW12). Restore custom-format dumps to
    text with `pg_restore` (no DB needed to extract).
 2. **Filter to hackers:** pull emails from hacker-bearing rows only
-   (users/applications), excluding organizer/sponsor/mentor records. This shrinks
-   the raw ~5.1k address matches to the real hacker set.
-3. **Clean:** lowercase, dedup, drop the 12 known dead/junk domains, and
+   (users/applications), excluding organizer/sponsor/mentor records.
+3. **Clean:** lowercase, dedup, drop the known dead/junk domains, and
    auto-correct the salvageable typos (`gmaill.com`→`gmail.com`,
    `outlook.con`→`outlook.com`, `uwo.com`→`uwo.ca`,
    `uwaterloo.caq`→`uwaterloo.ca`, `sheidancollege`→`sheridancollege`,
    `mail.utoronto.com`→`mail.utoronto.ca`).
-4. **Assign** `source` (hw12 wins on overlap) + generate `unsubscribe_token`.
-5. **Insert** idempotently (skip emails already present). Dry-run default;
+4. **Exclude school/.edu addresses.** Any `.edu`, `.ac.*`, or known
+   Canadian university domain (uwo.ca, uwaterloo.ca, mcmaster.ca, utoronto.ca,
+   etc.) is dropped — graduated hackers lose these mailboxes and MX cannot detect
+   it, so they are a bounce risk we avoid entirely. A hacker who also provided a
+   personal (freemail/other) address is still reached via that one, since we
+   dedup per person across editions; only people whose *only* address is a `.edu`
+   are dropped.
+5. **Assign** `source` (hw12 wins on overlap) + generate `unsubscribe_token`.
+6. **Insert** idempotently (skip emails already present). Dry-run default;
    `--commit` to write.
 
-Validation already run (MX + syntax on the combined dumps): 5,122 unique
-addresses, 0 syntax-invalid, 12 undeliverable domains → ~5,110 domain-deliverable
-before the hacker-row filter narrows it further.
+Validation already run (MX + syntax + typo-correction on the combined dumps):
+5,113 unique deliverable addresses, 0 dead domains. Bucketed: **3,822 freemail**
+(gmail/outlook/etc — safe), **1,068 school/.edu** (excluded per step 4), **223
+other**. **Send target ≈ 4,045** (freemail + other), before the hacker-row filter
+narrows it further.
 
 ## Unsubscribe flow (instant, one-click)
 
@@ -134,7 +144,8 @@ One-off script (`scripts/send-campaign.ts`), same run pattern as the backfill.
 - **On success:** set `last_sent_at = now()`.
 - **On bounce:** Cloudflare returns `permanent_bounces`; set `bounced_at` on
   those rows so they're skipped next run and never retried.
-- **Cadence:** re-run daily for ~6 days until the query drains. `--send` to fire
+- **Cadence:** ~4,045 target ÷ 900/day ≈ 5 days. Re-run daily until the query
+  drains. `--send` to fire
   (dry-run default), `--limit` to override the daily cap.
 - **Quota awareness:** `sendEmail` can return HTTP 200 with `success:false` on
   quota exhaustion; the loop checks `error` on every result and stops early if it
