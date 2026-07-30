@@ -48,10 +48,12 @@ describe("preregistration.create", async () => {
     const result = await caller.preregistration.create(want);
 
     assert(!!result);
-    const { id, createdAt, ...got } = result;
-    (void id, createdAt);
+    const { id, createdAt, unsubscribeToken, unsubscribedAt, ...got } = result;
+    (void id, createdAt, unsubscribedAt);
 
     expect(got).toEqual(want);
+    // a unique unsubscribe token is generated for the updates email
+    expect(unsubscribeToken).toMatch(/^[a-f0-9]{40}$/);
   });
 
   test("throws an error if the preregistration already exists", async () => {

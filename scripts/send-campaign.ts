@@ -60,6 +60,7 @@ export function renderFor(sub: Sub) {
     headers: {
       "List-Unsubscribe": `<${postUrl}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      "Reply-To": "hello@hackwestern.com",
     } as Record<string, string>,
   };
 }
@@ -110,7 +111,10 @@ async function main() {
   for (const r of rows) {
     const { subject, html, headers } = renderFor(r);
     const res = await sendEmail({
-      from: "Hack Western Team <hello@hackwestern.com>",
+      // Bulk campaign sends from an isolated subdomain so a spam/bounce hit
+      // can't poison transactional (password-reset/verify) deliverability on
+      // the root domain. Replies still route to the monitored inbox (Reply-To).
+      from: "Hack Western <updates@mail.hackwestern.com>",
       to: r.email, subject, html, headers,
     });
     const outcome = classifyResult(res);
