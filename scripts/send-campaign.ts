@@ -17,6 +17,7 @@ type SubRow = Sub & { id: number };
 export async function selectEligible(
   chunkSize: number,
   campaignStart: Date,
+  source?: string,
 ): Promise<SubRow[]> {
   return (await db
     .select({
@@ -34,6 +35,8 @@ export async function selectEligible(
           isNull(emailSubscribers.lastSentAt),
           lt(emailSubscribers.lastSentAt, campaignStart),
         ),
+        // Optional cohort filter; omit to send to both hw11 + hw12.
+        source ? eq(emailSubscribers.source, source) : undefined,
       ),
     )
     .orderBy(asc(emailSubscribers.id))
@@ -90,10 +93,17 @@ async function main() {
   const campaignStart = new Date(
     process.argv.find((a) => a.startsWith("--start="))?.split("=")[1] ?? "2026-08-01T00:00:00Z",
   );
+  const source = process.argv.find((a) => a.startsWith("--source="))?.split("=")[1];
+  if (source && source !== "hw11" && source !== "hw12") {
+    console.error(`Invalid --source "${source}" — use hw11 or hw12 (or omit for both).`);
+    process.exit(1);
+  }
 
-  const rows = await selectEligible(chunk, campaignStart);
+  const rows = await selectEligible(chunk, campaignStart, source);
 
-  console.log(`Chunk: ${rows.length} recipient(s). Mode: ${SEND ? "SEND" : "DRY RUN"}.`);
+  console.log(
+    `Chunk: ${rows.length} recipient(s)${source ? ` [source=${source}]` : " [all sources]"}. Mode: ${SEND ? "SEND" : "DRY RUN"}.`,
+  );
   if (!SEND) { rows.forEach((r, i) => console.log(`${i + 1}. ${r.email}`)); return; }
 
   let sent = 0, bounced = 0, failed = 0;
