@@ -6,6 +6,7 @@ export interface SendEmailOptions {
   html: string;
   text?: string;
   from?: string;
+  replyTo?: string;
   headers?: Record<string, string>;
 }
 
@@ -67,6 +68,8 @@ export const sendEmail = async (
           subject: options.subject,
           html: options.html,
           text: options.text ?? options.html.replace(/<[^>]*>?/gm, ""),
+          // Cloudflare's `reply_to` is a first-class field, NOT a custom header.
+          ...(options.replyTo ? { reply_to: options.replyTo } : {}),
           ...(options.headers ? { headers: options.headers } : {}),
         }),
       },
