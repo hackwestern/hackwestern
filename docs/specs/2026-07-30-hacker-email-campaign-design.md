@@ -170,10 +170,24 @@ the target rate.
   ordered by id, `LIMIT :chunkSize`.
 - **Chunk send:** sequential, ~500ms gap between messages, per-recipient template
   render, per-row ok/FAIL log. Default `chunkSize ≈ 75`.
-- **Pacing:** self-paced runner sleeps ~45 min between chunks, only within a
-  daytime window (e.g. 9am–7pm local — better deliverability + open rates, looks
-  human). Long-running/background, or relaunched by a scheduler; either way
-  resumable via `last_sent_at`, so restarts never double-send.
+- **Pacing:** one chunk per scheduled run, spaced ~45 min apart within a daytime
+  window (e.g. 9am–7pm — better deliverability + open rates, looks human).
+- **Execution — scheduled Claude Code cloud agent (routine), laptop-free:** a
+  cloud routine fires on cron (~every 45 min in the window), runs in Anthropic's
+  cloud (not the owner's machine), and does exactly one thing per fire: execute
+  `scripts/send-campaign.ts --send --chunk=<n>` against prod, then exit. The model
+  makes no send decisions — the script is the deterministic source of truth; the
+  agent is just a reliable scheduler/runner that relays the chunk log. Because
+  state lives in the DB (`last_sent_at`), a missed or retried fire never
+  double-sends.
+  - **Setup requirement:** the routine's environment must hold the prod
+    `DATABASE_URL` + Cloudflare creds and have the repo available — provisioned in
+    the routine config, never committed. This is the main one-time setup step.
+  - **Guardrails:** tightly-scoped agent prompt (run the fixed command, report,
+    stop); daily cap + send window enforced inside the script so a misfire can't
+    over-send.
+  - **Fallback:** the same script runs locally (`dotenv -- tsx …`) for the
+    owner's test-send and if the routine needs manual nudging.
 - **Warmup ramp:** ease volume up over days instead of a flat rate — e.g. day 1
   ~200, day 2 ~400, then ~600–800/day, always < the 1000/day cap. A cold domain
   sending 900 on day 1 is exactly the spike we're avoiding.
