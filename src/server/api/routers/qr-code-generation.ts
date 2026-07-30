@@ -268,7 +268,7 @@ async function generateGooglePass(
     cardTitle: {
       defaultValue: {
         language: "en-US",
-        value: "Hack Western 12",
+        value: "Hack Western 13",
       },
     },
     header: {
@@ -289,7 +289,7 @@ async function generateGooglePass(
       contentDescription: {
         defaultValue: {
           language: "en-US",
-          value: "Hack Western 12 Banner",
+          value: "Hack Western 13 Banner",
         },
       },
     },
