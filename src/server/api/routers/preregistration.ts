@@ -1,9 +1,10 @@
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { createInsertSchema } from "drizzle-zod";
-import { preregistrations } from "~/server/db/schema";
+import { emailSubscribers, preregistrations } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { db } from "~/server/db";
 import { sendEmail } from "~/server/mail";
+import { normalizeEmail } from "~/server/subscribers";
 import { signupTemplate } from "./email-templates";
 
 const preregistrationCreateSchema = createInsertSchema(preregistrations).omit({
@@ -16,12 +17,19 @@ export const preregistrationRouter = createTRPCRouter({
     .input(preregistrationCreateSchema)
     .mutation(async ({ input }) => {
       try {
-        const existingPreregistration =
-          await db.query.preregistrations.findFirst({
-            where: ({ email }, { eq }) => eq(email, input.email),
-          });
+        const normalized = normalizeEmail(input.email);
+        const [existingPreregistration, existingSubscriber] = await Promise.all(
+          [
+            db.query.preregistrations.findFirst({
+              where: ({ email }, { eq }) => eq(email, input.email),
+            }),
+            db.query.emailSubscribers.findFirst({
+              where: ({ email }, { eq }) => eq(email, normalized),
+            }),
+          ],
+        );
 
-        if (!!existingPreregistration) {
+        if (existingPreregistration || existingSubscriber) {
           throw new TRPCError({
             code: "CONFLICT",
             message: "Pre-registration with that email already exists.",
