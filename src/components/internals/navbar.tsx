@@ -11,18 +11,17 @@ export function InternalNavbar() {
           <HWLogo />
         </Link>
       </Button>
-      <div className="flex gap-3 font-figtree items-center">
+      <div className="flex items-center gap-3 font-figtree">
         <Button className="text-primary-600" variant={"link"} asChild>
-          <Link href="/dashboard" >My Dashboard</Link>
+          <Link href="/dashboard">My Dashboard</Link>
         </Button>
-        <Button className="text-primary-600" variant={"link"} asChild >
+        <Button className="text-primary-600" variant={"link"} asChild>
           <Link href="/review">Applicant Review</Link>
         </Button>
         <Button className="text-primary-600" variant={"link"} asChild>
           <Link href="/adjust-status">Status Adjustment</Link>
         </Button>
 
-        
         {/* <Button variant="link" asChild>
           <Link href="/dashboard">
             <Profile />
