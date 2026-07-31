@@ -1,0 +1,40 @@
+name: Prettify
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+jobs:
+  prettier:
+    runs-on: ubuntu-latest
+    environment: prettify
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT }}
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      - name: Install packages
+        run: npm ci
+      - name: Run prettier
+        run: npx prettier --write ./src
+      - name: Commit changes
+        run: |
+          git config --global user.email 'prettify-hackwestern[bot]@users.noreply.github.com'
+          git config --global user.name 'prettify-hackwestern[bot]'
+          git add src
+          git commit -m "Prettify code" || echo "No changes to commit"
+      - name: Push changes
+        run: git push https://x-access-token:${{ secrets.PAT }}@github.com/${{ github.repository }} HEAD:${{ github.head_ref }}

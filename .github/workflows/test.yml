@@ -1,0 +1,64 @@
+name: Test
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - dev
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: test-${{ github.head_ref || github.ref }}
+      cancel-in-progress: true
+    environment: test
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+      NEXTAUTH_URL: "http://localhost:3000"
+      GITHUB_CLIENT_ID: ${{ secrets.NEXTAUTH_GITHUB_CLIENT_ID }}
+      GITHUB_CLIENT_SECRET: ${{ secrets.NEXTAUTH_GITHUB_CLIENT_SECRET }}
+      DISCORD_CLIENT_ID: ${{ secrets.NEXTAUTH_DISCORD_CLIENT_ID }}
+      DISCORD_CLIENT_SECRET: ${{ secrets.NEXTAUTH_DISCORD_CLIENT_SECRET }}
+      GOOGLE_CLIENT_ID: ${{ secrets.NEXTAUTH_GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.NEXTAUTH_GOOGLE_CLIENT_SECRET }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+      R2_PUBLIC_BASE_URL: ${{ secrets.R2_PUBLIC_BASE_URL }}
+      GOOGLE_SHEETS_API_KEY: ${{ secrets.GOOGLE_SHEETS_API_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GOOGLE_WALLET_CLIENT_EMAIL: ${{ secrets.GOOGLE_WALLET_CLIENT_EMAIL }}
+      GOOGLE_WALLET_PRIVATE_KEY: ${{ secrets.GOOGLE_WALLET_PRIVATE_KEY }}
+      GOOGLE_WALLET_ISSUER_ID: ${{ secrets.GOOGLE_WALLET_ISSUER_ID }}
+      APPLE_WWDR_CERT: ${{ secrets.APPLE_WWDR_CERT }}
+      APPLE_SIGNER_CERT: ${{ secrets.APPLE_SIGNER_CERT }}
+      APPLE_SIGNER_KEY: ${{ secrets.APPLE_SIGNER_KEY }}
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Build
+        run: npm run build
+
+      - name: Run tests
+        run: npx vitest
