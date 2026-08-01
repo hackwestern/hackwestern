@@ -3,7 +3,7 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
 import { db } from "~/server/db";
-import { resend } from "~/server/mail";
+import { sendEmail } from "~/server/mail";
 import {
   resetPasswordTokens,
   users,
@@ -44,10 +44,10 @@ const requestVerifyEmail = async (user: AdapterUser) => {
     expires: new Date(Date.now() + TOKEN_EXPIRY),
   });
 
-  return await resend.emails.send({
+  return await sendEmail({
     from: HACK_WESTERN_EMAIL,
     to: user.email,
-    subject: "Hack Western 12 Account Verification",
+    subject: "Hack Western 13 Account Verification",
     html: verifyTemplate(verifyLink),
   });
 };
@@ -92,10 +92,10 @@ export const authRouter = createTRPCRouter({
 
       const resetLink = `https://hackwestern.com/reset-password?token=${resetToken}`;
 
-      const { data: emailReq, error } = await resend.emails.send({
+      const { data: emailReq, error } = await sendEmail({
         from: HACK_WESTERN_EMAIL,
         to: input.email,
-        subject: "Hack Western 12 Password Reset",
+        subject: "Hack Western 13 Password Reset",
         html: resetTemplate(resetLink, user.name ?? "there"),
       });
 

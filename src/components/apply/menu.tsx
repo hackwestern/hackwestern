@@ -217,7 +217,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
                 Application Portal
               </h1>
               <h2 className="font-figtree font-semibold text-medium">
-                Hack Western 12
+                Hack Western 13
               </h2>
             </div>
           </div>
@@ -258,7 +258,7 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
                       Application Portal
                     </h1>
                     <h2 className="font-figtree text-sm font-semibold text-medium">
-                      Hack Western 12
+                      Hack Western 13
                     </h2>
                   </div>
                 </div>
