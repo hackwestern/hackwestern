@@ -64,6 +64,13 @@
       "when": 1782342279804,
       "tag": "0008_striped_stature",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785504635186,
+      "tag": "0009_rapid_jigsaw",
+      "breakpoints": true
     }
   ]
 }
