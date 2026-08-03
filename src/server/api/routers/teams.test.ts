@@ -151,7 +151,7 @@ describe("teams basic endpoints", () => {
     });
   });
   describe.sequential("submitProject Tests", () => {
-    test("submitProject fail", async () => {
+    test("submitProject fails with no project saved", async () => {
       const teamId = await insertTeam();
       const join = caller.teams.joinTeam({ teamId: teamId });
       await expect(join).resolves.toEqual({ success: true });
@@ -184,7 +184,7 @@ describe("teams basic endpoints", () => {
       await expect(submit).resolves.toEqual({ success: true });
       await removeTeam(teamId);
     });
-    test("submitProject fail", async () => {
+    test("submitProject fails when member usernames missing", async () => {
       const teamId = await insertTeam();
       const join = caller.teams.joinTeam({ teamId: teamId });
       await expect(join).resolves.toEqual({ success: true });
