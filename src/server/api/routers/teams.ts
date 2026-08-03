@@ -2,10 +2,52 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import z from "zod";
 import { db } from "~/server/db";
-import { teams, users } from "~/server/db/schema";
+import { teams, trackEnum, users } from "~/server/db/schema";
 import { count, eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
+import { createInsertSchema } from "drizzle-zod";
+import { env } from "~/env";
 
+const teamsSaveSchema = createInsertSchema(teams, {
+  name: z.string().optional(),
+  memberDevpostUsernames: z.array(z.string()),
+  memberGithubUsernames: z.array(z.string()),
+  tracks: z.array(z.enum(trackEnum.enumValues)),
+}).omit({
+  id: true,
+  submissionStatus: true,
+  submittedAt: true,
+  createdAt: true,
+});
+
+const teamsSubmitSchema = z.object({
+  name: z.string(),
+  devpostUrl: z.string(),
+  githubUrl: z.string(),
+  tracks: z.array(z.enum(trackEnum.enumValues)).nullable(),
+  memberGithubUsernames: z.array(z.string()),
+  memberDevpostUsernames: z.array(z.string()),
+});
+
+const assertValidTeam = async (ctx: { session: { user: { id: string } } }) => {
+  const currentTeam = await db.query.users.findFirst({
+    columns: { teamId: true },
+    where: eq(users.id, ctx.session.user.id),
+  });
+  if (!currentTeam) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "User not found",
+    });
+  }
+  if (!currentTeam.teamId) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Cannot process request because user is not in a team",
+    });
+  }
+  return currentTeam.teamId;
+};
 export const teamsRouter = createTRPCRouter({
   createTeam: protectedProcedure
     .input(z.object({ name: z.string() }))
@@ -170,5 +212,66 @@ export const teamsRouter = createTRPCRouter({
     return {
       success: true,
     };
+  }),
+  saveProject: protectedProcedure
+    .input(teamsSaveSchema)
+    .mutation(async ({ ctx, input }) => {
+      const teamId = await assertValidTeam(ctx);
+
+      await db
+        .update(teams)
+        .set({ ...input })
+        .where(eq(teams.id, teamId));
+      return {
+        success: true,
+      };
+    }),
+  submitProject: protectedProcedure.mutation(async ({ ctx }) => {
+    const teamId = await assertValidTeam(ctx);
+
+    const time = new Date();
+
+    // Deadline comes from PROJECT_SUBMISSION_DEADLINE (ISO 8601). Unset = no
+    // deadline, so nothing is ever late.
+    const finalSubmitDate = env.PROJECT_SUBMISSION_DEADLINE
+      ? new Date(env.PROJECT_SUBMISSION_DEADLINE)
+      : null;
+
+    const submitStatus =
+      finalSubmitDate && time > finalSubmitDate ? "late" : "submitted";
+
+    const team = await db.query.teams.findFirst({
+      where: eq(teams.id, teamId),
+    });
+
+    const parseRes = teamsSubmitSchema.safeParse(team);
+    if (!parseRes.success) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message:
+          "Missing required fields: " + JSON.stringify(parseRes.error.format()),
+      });
+    }
+    const [teamSize] = await db
+      .select({ value: count() })
+      .from(users)
+      .where(eq(users.teamId, teamId));
+    const size = teamSize?.value ?? 100;
+
+    if (
+      team?.memberDevpostUsernames?.length != size ||
+      team?.memberGithubUsernames?.length != size
+    ) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message:
+          "Devpost Usernames or Github Username not complete, must be present for every team member",
+      });
+    }
+    await db
+      .update(teams)
+      .set({ submittedAt: time, submissionStatus: submitStatus })
+      .where(eq(teams.id, teamId));
+    return { success: true };
   }),
 });
