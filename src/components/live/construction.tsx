@@ -5,7 +5,7 @@ const Construction = () => {
         <p className="font-jetbrains-mono text-lg text-heavy">
           THIS PAGE IS UNDER CONSTRUCTION!
         </p>
-        <p className="font-figtree text-lg text-medium">
+        <p className="font-secondary text-lg text-medium">
           Please check again soon! :&#41;
         </p>
       </div>
