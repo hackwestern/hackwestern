@@ -165,15 +165,15 @@ describe("teams basic endpoints", () => {
       const join = caller.teams.joinTeam({ teamId: teamId });
       await expect(join).resolves.toEqual({ success: true });
 
-      const save = caller.teams.saveProject({
+      const save = await caller.teams.saveProject({
         devpostUrl: "this is a url",
         githubUrl: "this is a url",
       });
+      expect(save).toEqual({ success: true });
 
       const submit1 = caller.teams.submitProject();
       await expect(submit1).rejects.toThrow();
 
-      await expect(save).resolves.toEqual({ success: true });
       const save2 = caller.teams.saveProject({
         memberGithubUsernames: ["url 1"],
         memberDevpostUsernames: ["url 2"],
