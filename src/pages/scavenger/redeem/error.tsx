@@ -80,8 +80,8 @@ export default function RedeemErrorPage() {
         {/* Reward Name */}
         {rewardName && (
           <div className="space-y-1">
-            <p className="font-figtree text-sm text-medium">Reward:</p>
-            <p className="font-figtree text-lg font-medium text-heavy">
+            <p className="font-secondary text-sm text-medium">Reward:</p>
+            <p className="font-secondary text-lg font-medium text-heavy">
               {formatTitle(rewardName)}
             </p>
           </div>
@@ -90,8 +90,8 @@ export default function RedeemErrorPage() {
         {/* User Name */}
         {userName && (
           <div className="space-y-1">
-            <p className="font-figtree text-sm text-medium">User:</p>
-            <p className="font-figtree text-lg font-medium text-heavy">
+            <p className="font-secondary text-sm text-medium">User:</p>
+            <p className="font-secondary text-lg font-medium text-heavy">
               {userName}
             </p>
           </div>
@@ -99,8 +99,8 @@ export default function RedeemErrorPage() {
 
         {/* Error Details */}
         <div className="space-y-1">
-          <p className="font-figtree text-sm text-medium">Error:</p>
-          <p className="font-figtree text-sm text-red-600">
+          <p className="font-secondary text-sm text-medium">Error:</p>
+          <p className="font-secondary text-sm text-red-600">
             {getErrorMessage()}
           </p>
         </div>
@@ -108,7 +108,7 @@ export default function RedeemErrorPage() {
         {/* Back Button */}
         <button
           onClick={handleBackToRewards}
-          className="w-full rounded-lg bg-primary px-6 py-3 font-figtree font-medium text-primary-foreground transition-colors hover:bg-primary-700"
+          className="w-full rounded-lg bg-primary px-6 py-3 font-secondary font-medium text-primary-foreground transition-colors hover:bg-primary-700"
         >
           Back to Rewards
         </button>

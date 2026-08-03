@@ -213,11 +213,11 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
               />
             </Link>
             <div className="gap-2">
-              <h1 className="font-figtree font-bold text-heavy">
+              <h1 className="font-secondary font-bold text-heavy">
                 Application Portal
               </h1>
-              <h2 className="font-figtree font-semibold text-medium">
-                Hack Western 12
+              <h2 className="font-secondary font-semibold text-medium">
+                Hack Western 13
               </h2>
             </div>
           </div>
@@ -254,11 +254,11 @@ export function ApplyMenu({ step }: ApplyMenuProps) {
                     />
                   </Link>
                   <div>
-                    <h1 className="font-figtree text-lg font-bold text-heavy">
+                    <h1 className="font-secondary text-lg font-bold text-heavy">
                       Application Portal
                     </h1>
-                    <h2 className="font-figtree text-sm font-semibold text-medium">
-                      Hack Western 12
+                    <h2 className="font-secondary text-sm font-semibold text-medium">
+                      Hack Western 13
                     </h2>
                   </div>
                 </div>

@@ -2,10 +2,20 @@ import { mockSession } from "~/server/auth";
 import { db } from "~/server/db";
 import { createInnerTRPCContext } from "../trpc";
 import { createCaller } from "../root";
-import { assert, beforeEach, describe, expect, test } from "vitest";
-import { preregistrations } from "~/server/db/schema";
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest";
+import { emailSubscribers, preregistrations } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 import { PreregistrationSeeder } from "~/server/db/seed/preregistrationSeeder";
+import * as mailModule from "~/server/mail";
+import { generateUnsubscribeToken, normalizeEmail } from "~/server/subscribers";
 
 const session = await mockSession(db);
 
@@ -14,11 +24,23 @@ const caller = createCaller(ctx);
 
 const testPreregistration = new PreregistrationSeeder().createRandom();
 
+// Mock the confirmation email so tests don't hit the real Cloudflare API.
+const sendEmailSpy = vi.spyOn(mailModule, "sendEmail").mockResolvedValue({
+  data: { delivered: [testPreregistration.email], queued: [], bounced: [] },
+  error: null,
+});
+
 describe("preregistration.create", async () => {
   beforeEach(async () => {
+    sendEmailSpy.mockClear();
+
     await db
       .delete(preregistrations)
       .where(eq(preregistrations.email, testPreregistration.email));
+  });
+
+  afterEach(() => {
+    sendEmailSpy.mockClear();
   });
 
   test("creates a new preregistration when it does not exist", async () => {
@@ -26,10 +48,12 @@ describe("preregistration.create", async () => {
     const result = await caller.preregistration.create(want);
 
     assert(!!result);
-    const { id, createdAt, ...got } = result;
-    (void id, createdAt);
+    const { id, createdAt, unsubscribeToken, unsubscribedAt, ...got } = result;
+    (void id, createdAt, unsubscribedAt);
 
     expect(got).toEqual(want);
+    // a unique unsubscribe token is generated for the updates email
+    expect(unsubscribeToken).toMatch(/^[a-f0-9]{40}$/);
   });
 
   test("throws an error if the preregistration already exists", async () => {
@@ -37,5 +61,48 @@ describe("preregistration.create", async () => {
     await expect(
       caller.preregistration.create(testPreregistration),
     ).rejects.toThrowError();
+  });
+
+  test("sends a confirmation email to the new signup", async () => {
+    await caller.preregistration.create(testPreregistration);
+
+    expect(sendEmailSpy).toHaveBeenCalledTimes(1);
+    const arg = sendEmailSpy.mock.calls[0]?.[0];
+    expect(arg?.to).toBe(testPreregistration.email);
+    expect(arg?.subject).toContain("signed up");
+    expect(arg?.html).toBeTruthy();
+  });
+
+  test("does not send a confirmation email when the signup already exists", async () => {
+    await caller.preregistration.create(testPreregistration);
+    sendEmailSpy.mockClear();
+
+    await expect(
+      caller.preregistration.create(testPreregistration),
+    ).rejects.toThrowError();
+    expect(sendEmailSpy).not.toHaveBeenCalled();
+  });
+
+  test("rejects signup when the email already exists in email_subscribers", async () => {
+    // subscribers are stored normalized, so seed the normalized form
+    const normalized = normalizeEmail(testPreregistration.email);
+    await db
+      .delete(emailSubscribers)
+      .where(eq(emailSubscribers.email, normalized));
+    await db.insert(emailSubscribers).values({
+      email: normalized,
+      source: "hw12",
+      unsubscribeToken: generateUnsubscribeToken(),
+    });
+
+    await expect(
+      caller.preregistration.create(testPreregistration),
+    ).rejects.toThrowError();
+    expect(sendEmailSpy).not.toHaveBeenCalled();
+
+    // cleanup
+    await db
+      .delete(emailSubscribers)
+      .where(eq(emailSubscribers.email, normalized));
   });
 });

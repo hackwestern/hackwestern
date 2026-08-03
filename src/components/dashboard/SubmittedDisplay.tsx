@@ -64,7 +64,7 @@ export default function SubmittedDisplay({
       });
 
       const link = document.createElement("a");
-      link.download = `${application?.firstName ?? "hacker"}_hw12.png`;
+      link.download = `${application?.firstName ?? "hacker"}_hw13.png`;
       link.href = dataUrl;
       document.body.appendChild(link);
       link.click();
@@ -84,11 +84,11 @@ export default function SubmittedDisplay({
         <h2 className="font-dico max-w-xl text-4xl font-semibold text-heavy">
           Your application has been submitted!
         </h2>
-        <h4 className="font-figtree text-heavy">
-          Thanks for applying to <b>Hack Western XII</b>,{" "}
+        <h4 className="font-secondary text-heavy">
+          Thanks for applying to <b>Hack Western XIII</b>,{" "}
           {application?.firstName}!
         </h4>
-        <p className="font-figtree text-heavy">
+        <p className="font-secondary text-heavy">
           You&apos;ll hear back from us about your status in a few weeks!
         </p>
         <div>
@@ -129,7 +129,7 @@ export default function SubmittedDisplay({
             )}
             <div className="absolute right-4 top-1/2 z-[1000] flex -translate-y-1/2 flex-col items-end gap-4">
               <div className="font-jetbrains-mono -right-2 rounded-full border border-heavy px-2 py-1 text-xs">
-                HACK WESTERN XII
+                HACK WESTERN XIII
               </div>
               <h1 className="font-dico z-[1000] overflow-ellipsis text-right text-3xl text-heavy">
                 {`${application?.firstName ?? "Hacker"} ${application?.lastName ?? ""}`}

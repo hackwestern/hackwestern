@@ -21,11 +21,11 @@ const Sidebar = () => {
     <div className="hidden h-screen w-1/4 flex-col justify-between bg-highlight px-4 py-8 md:flex lg:px-6 2xl:w-1/5 2xl:px-8 3xl:w-1/6 3xl:px-12">
       <div>
         <Link
-          className="py-auto flex gap-4 text-center font-figtree text-lg font-bold text-heavy lg:text-xl"
+          className="py-auto flex gap-4 text-center font-secondary text-lg font-bold text-heavy lg:text-xl"
           href="/"
         >
           <Horsey />
-          <div className="flex flex-col justify-center">Hack Western 12</div>
+          <div className="flex flex-col justify-center">Hack Western 13</div>
         </Link>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2 pt-8">
