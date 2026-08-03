@@ -1,17 +1,11 @@
--- Judging triggers.
+-- Mirrors src/server/db/triggers.sql, which remains the source of truth
+-- (see src/server/db/triggers.ts). Drizzle's schema DSL can't express
+-- triggers, so this custom migration carries the same DDL into production.
 --
--- Drizzle's schema DSL can't express triggers, so they live here. This file
--- is the source of truth: it is applied by the production migration
--- (drizzle/0010_apply_judging_triggers.sql) AND by the Vitest harness (see
--- src/server/db/triggers.ts -> applyTriggers), so the tests exercise the real
--- triggers rather than a mock.
---
--- If you change anything below, add a new custom migration carrying the same
--- DDL (`npx drizzle-kit generate --custom`) — editing this file alone only
--- updates the tests.
---
--- All statements are idempotent (CREATE OR REPLACE / DROP IF EXISTS) so the
--- file can be re-applied safely.
+-- All statements are idempotent (CREATE OR REPLACE / DROP IF EXISTS), so
+-- re-applying this file is safe. Statements are separated by
+-- `--> statement-breakpoint` because the migrator sends each one on its own
+-- and a naive split on `;` would cut the plpgsql bodies in half.
 
 -- 1. Stat maintenance: keep each judge's running aggregates correct as marks
 --    are inserted, edited, or deleted. This is what lets editTeamMark and
@@ -42,12 +36,13 @@ BEGIN
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
-
+--> statement-breakpoint
 DROP TRIGGER IF EXISTS trg_team_mark_stats ON "team_mark";
+--> statement-breakpoint
 CREATE TRIGGER trg_team_mark_stats
 AFTER INSERT OR UPDATE OR DELETE ON "team_mark"
 FOR EACH ROW EXECUTE FUNCTION judging_sync_judge_stats();
-
+--> statement-breakpoint
 -- 2. Auto-queue: when a mark lands, advance the team's queue accounting and
 --    remove it from the queue once it has been seen by enough judges. This is
 --    the "auto queue" functional requirement, enforced in the database.
@@ -66,8 +61,9 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-
+--> statement-breakpoint
 DROP TRIGGER IF EXISTS trg_team_mark_autoqueue ON "team_mark";
+--> statement-breakpoint
 CREATE TRIGGER trg_team_mark_autoqueue
 AFTER INSERT ON "team_mark"
 FOR EACH ROW EXECUTE FUNCTION judging_autoqueue_on_mark();
