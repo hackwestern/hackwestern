@@ -23,6 +23,12 @@ import {
   runIsRegistered,
   runOnlyTeamMemberCommits,
 } from "~/server/api/utils/cheat-checks";
+import {
+  createSweep,
+  getSweepStatus,
+  kickWorker,
+  resumeSweep,
+} from "~/server/api/utils/cheat-check-sweep";
 
 const userIdInput = z.object({ userId: z.string() });
 const teamIdInput = z.object({ teamId: z.string() });
@@ -300,4 +306,50 @@ export const cheatCheckRouter = createTRPCRouter({
       checks: team.checkResults,
     }));
   }),
+
+  // -------------------------------------------------------------------------
+  // Automated sweeps
+  // -------------------------------------------------------------------------
+
+  /**
+   * Progress of the running sweep, or of the most recent one if none is running.
+   * `stalled` means the worker has gone quiet and the sweep needs resuming.
+   */
+  getSweepStatus: protectedOrganizerProcedure.query(async () => {
+    return getSweepStatus();
+  }),
+
+  /**
+   * Re-kick a stalled or rate-limited sweep: clears the rate-limit stamp, puts
+   * items abandoned by a dead worker back in the queue, and starts a new worker.
+   */
+  resumeSweep: protectedOrganizerProcedure.mutation(async () => {
+    return resumeSweep();
+  }),
+
+  /**
+   * Start a full sweep by hand, without waiting for the judging queue to drain.
+   * Pass forceRerun to re-check teams that already have cached results.
+   */
+  startSweep: protectedOrganizerProcedure
+    .input(
+      z.object({ forceRerun: z.boolean().default(false) }).default({
+        forceRerun: false,
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const sweep = await createSweep("manual", {
+        forceRerun: input.forceRerun,
+      });
+
+      if (!sweep) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "A cheat check sweep is already running",
+        });
+      }
+
+      if (sweep.status === "running") await kickWorker();
+      return sweep;
+    }),
 });
