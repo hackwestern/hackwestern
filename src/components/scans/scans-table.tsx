@@ -18,14 +18,14 @@ export const scansColumns: ColumnDef<ScanRow>[] = [
     accessorKey: "hackerName",
     header: () => (
       <div
-        className="font-figtree text-xs font-medium uppercase tracking-wider"
+        className="font-secondary text-xs font-medium uppercase tracking-wider"
         style={{ color: "#dcd8de" }}
       >
         HACKER NAME
       </div>
     ),
     cell: ({ row }) => (
-      <div className="font-figtree text-sm font-bold text-heavy">
+      <div className="font-secondary text-sm font-bold text-heavy">
         {row.getValue("hackerName")}
       </div>
     ),
@@ -34,14 +34,14 @@ export const scansColumns: ColumnDef<ScanRow>[] = [
     accessorKey: "event",
     header: () => (
       <div
-        className="font-figtree text-xs font-medium uppercase tracking-wider"
+        className="font-secondary text-xs font-medium uppercase tracking-wider"
         style={{ color: "#dcd8de" }}
       >
         EVENT
       </div>
     ),
     cell: ({ row }) => (
-      <div className="font-figtree text-sm font-bold text-heavy">
+      <div className="font-secondary text-sm font-bold text-heavy">
         {row.getValue("event")}
       </div>
     ),
@@ -50,14 +50,14 @@ export const scansColumns: ColumnDef<ScanRow>[] = [
     accessorKey: "scanner",
     header: () => (
       <div
-        className="font-figtree text-xs font-medium uppercase tracking-wider"
+        className="font-secondary text-xs font-medium uppercase tracking-wider"
         style={{ color: "#dcd8de" }}
       >
         SCANNER
       </div>
     ),
     cell: ({ row }) => (
-      <div className="font-figtree text-sm text-heavy">
+      <div className="font-secondary text-sm text-heavy">
         {row.getValue("scanner")}
       </div>
     ),
@@ -66,14 +66,14 @@ export const scansColumns: ColumnDef<ScanRow>[] = [
     accessorKey: "day",
     header: () => (
       <div
-        className="font-figtree text-xs font-medium uppercase tracking-wider"
+        className="font-secondary text-xs font-medium uppercase tracking-wider"
         style={{ color: "#dcd8de" }}
       >
         DAY
       </div>
     ),
     cell: ({ row }) => (
-      <div className="font-figtree text-sm text-heavy">
+      <div className="font-secondary text-sm text-heavy">
         {row.getValue("day")}
       </div>
     ),
@@ -82,14 +82,14 @@ export const scansColumns: ColumnDef<ScanRow>[] = [
     accessorKey: "time",
     header: () => (
       <div
-        className="font-figtree text-xs font-medium uppercase tracking-wider"
+        className="font-secondary text-xs font-medium uppercase tracking-wider"
         style={{ color: "#dcd8de" }}
       >
         TIME
       </div>
     ),
     cell: ({ row }) => (
-      <div className="font-figtree text-sm text-heavy">
+      <div className="font-secondary text-sm text-heavy">
         {row.getValue("time")}
       </div>
     ),
@@ -105,7 +105,7 @@ export function ScansTable({ scans, isLoading }: ScansTableProps) {
   if (isLoading) {
     return (
       <div className="rounded-lg bg-white p-8 shadow-md">
-        <div className="text-center font-figtree text-medium">
+        <div className="text-center font-secondary text-medium">
           Loading scans...
         </div>
       </div>
@@ -115,7 +115,7 @@ export function ScansTable({ scans, isLoading }: ScansTableProps) {
   if (scans.length === 0) {
     return (
       <div className="rounded-lg bg-white p-8 shadow-md">
-        <div className="text-center font-figtree text-medium">
+        <div className="text-center font-secondary text-medium">
           No scans found
         </div>
       </div>

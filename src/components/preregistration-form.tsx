@@ -164,7 +164,7 @@ export function PreregistrationForm({ className }: PreregistrationFormProps) {
                     if (min) setShowPopup(false);
                   }}
                 >
-                  <p className="px-4 text-center font-figtree text-sm font-medium text-heavy">
+                  <p className="px-4 text-center font-secondary text-sm font-medium text-heavy">
                     {popupMessage}
                   </p>
                 </Window>
