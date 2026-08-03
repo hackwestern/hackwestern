@@ -50,6 +50,9 @@ export const env = createEnv({
     // ISO 8601 datetime strings for the hacking window used in commit-timing cheat checks
     HACK_START: z.string().datetime().optional(),
     HACK_END: z.string().datetime().optional(),
+    // Bearer token for /api/cheat-check/sweep, which the sweep worker also uses
+    // to re-invoke itself. Leave unset to disable automated sweeps entirely.
+    CHEAT_SWEEP_SECRET: z.string().optional(),
   },
 
   /**
@@ -93,6 +96,7 @@ export const env = createEnv({
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     HACK_START: process.env.HACK_START,
     HACK_END: process.env.HACK_END,
+    CHEAT_SWEEP_SECRET: process.env.CHEAT_SWEEP_SECRET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

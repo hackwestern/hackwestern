@@ -7,6 +7,7 @@ import {
   protectedOrganizerProcedure,
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
+import { extractRows } from "~/server/db/rows";
 import {
   judges,
   judgingQueue,
@@ -15,6 +16,7 @@ import {
   teams,
   users,
 } from "~/server/db/schema";
+import { maybeTriggerSweepOnDrain } from "~/server/api/utils/cheat-check-sweep";
 import {
   type AddJudgeInput,
   addJudgesSchema,
@@ -51,12 +53,6 @@ const withErrorHandling = async <T>(
     });
   }
 };
-
-function extractRows<T>(result: unknown): T[] {
-  return Array.isArray(result)
-    ? (result as T[])
-    : ((result as { rows?: T[] }).rows ?? []);
-}
 
 async function getCurrentHold(judgeId: string): Promise<QueueRow | undefined> {
   return db.query.judgingQueue.findFirst({
@@ -514,6 +510,12 @@ export const judgingRouter = createTRPCRouter({
             input.score,
             roundType,
           );
+
+          // `submitMark` has committed, so `trg_team_mark_autoqueue` has
+          // already removed the team from the queue if it was fully judged —
+          // only now is the queue count meaningful. Deliberately not awaited:
+          // the cheat-check sweep must never delay or fail a judge's mark.
+          void maybeTriggerSweepOnDrain();
         }, "Failed to submit team mark");
       }),
 
