@@ -6,6 +6,7 @@ import { teams, trackEnum, users } from "~/server/db/schema";
 import { count, eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { createInsertSchema } from "drizzle-zod";
+import { env } from "~/env";
 
 const teamsSaveSchema = createInsertSchema(teams, {
   name: z.string().optional(),
@@ -228,13 +229,16 @@ export const teamsRouter = createTRPCRouter({
   submitProject: protectedProcedure.mutation(async ({ ctx }) => {
     const teamId = await assertValidTeam(ctx);
 
-    // This is the hard coded date
-    const finalSubmitDate = new Date();
-    finalSubmitDate.setDate(finalSubmitDate.getDate() + 1);
-
     const time = new Date();
 
-    const submitStatus = time > finalSubmitDate ? "late" : "submitted";
+    // Deadline comes from PROJECT_SUBMISSION_DEADLINE (ISO 8601). Unset = no
+    // deadline, so nothing is ever late.
+    const finalSubmitDate = env.PROJECT_SUBMISSION_DEADLINE
+      ? new Date(env.PROJECT_SUBMISSION_DEADLINE)
+      : null;
+
+    const submitStatus =
+      finalSubmitDate && time > finalSubmitDate ? "late" : "submitted";
 
     const team = await db.query.teams.findFirst({
       where: eq(teams.id, teamId),
