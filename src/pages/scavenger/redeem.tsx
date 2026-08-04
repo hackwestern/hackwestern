@@ -78,7 +78,7 @@ const RedeemPage = () => {
           onClick={() => {
             void router.push("/scavenger");
           }}
-          className="font-figtree text-heavy transition-colors hover:text-emphasis"
+          className="font-secondary text-heavy transition-colors hover:text-emphasis"
         >
           Back
         </button>
@@ -91,13 +91,13 @@ const RedeemPage = () => {
         </h1>
 
         {isLoading && (
-          <div className="text-center font-figtree text-medium">
+          <div className="text-center font-secondary text-medium">
             Loading prizes...
           </div>
         )}
 
         {!isLoading && (!rewards || rewards.length === 0) && (
-          <div className="text-center font-figtree text-medium">
+          <div className="text-center font-secondary text-medium">
             No prizes available
           </div>
         )}
@@ -108,7 +108,7 @@ const RedeemPage = () => {
               <button
                 key={reward.id}
                 onClick={() => handleRewardClick(reward.id)}
-                className="flex w-full items-center justify-between rounded-lg bg-white px-4 py-3 text-left font-figtree shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
+                className="flex w-full items-center justify-between rounded-lg bg-white px-4 py-3 text-left font-secondary shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
               >
                 <div className="flex-1">
                   <div className="font-semibold text-heavy">

@@ -51,6 +51,9 @@ export const env = createEnv({
     // ISO 8601 datetime strings for the hacking window used in commit-timing cheat checks
     HACK_START: z.string().datetime().optional(),
     HACK_END: z.string().datetime().optional(),
+    // ISO 8601 datetime for the project submission deadline. Submissions after
+    // this are marked "late". Unset = no deadline, everything counts as on-time.
+    PROJECT_SUBMISSION_DEADLINE: z.string().datetime().optional(),
   },
 
   /**
@@ -99,6 +102,7 @@ export const env = createEnv({
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     HACK_START: process.env.HACK_START,
     HACK_END: process.env.HACK_END,
+    PROJECT_SUBMISSION_DEADLINE: process.env.PROJECT_SUBMISSION_DEADLINE,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

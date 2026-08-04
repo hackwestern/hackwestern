@@ -146,6 +146,8 @@ const config = {
         "button-icon": tokens.shadows.icon,
       },
       fontFamily: {
+        primary: [tokens.fonts.primary],
+        secondary: [tokens.fonts.secondary],
         figtree: ["var(--font-figtree)"],
         cossetteTexte: [tokens.fonts.cossetteTexte],
         pix32: [tokens.fonts.pix32],
@@ -202,7 +204,7 @@ const config = {
       cursor: {
         "pixel-default": "url('/cursors/cursor-default.webp'),auto",
         "pixel-hover": "url('/cursors/hover-hand.webp'),pointer",
-        "telescope":"url('/cursors/telescope.webp'),pointer",
+        telescope: "url('/cursors/telescope.webp'),pointer",
       },
       keyframes: {
         "bounce-jump": {

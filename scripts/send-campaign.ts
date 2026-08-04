@@ -19,6 +19,7 @@ export async function selectEligible(
   chunkSize: number,
   campaignStart: Date,
   source?: string,
+  only?: string,
 ): Promise<SubRow[]> {
   return (await db
     .select({
@@ -32,12 +33,17 @@ export async function selectEligible(
       and(
         isNull(emailSubscribers.unsubscribedAt),
         isNull(emailSubscribers.bouncedAt),
-        or(
-          isNull(emailSubscribers.lastSentAt),
-          lt(emailSubscribers.lastSentAt, campaignStart),
-        ),
-        // Optional cohort filter; omit to send to both hw11 + hw12.
-        source ? eq(emailSubscribers.source, source) : undefined,
+        // --only: target one address (test mode) — ignores the last-sent gate
+        // so it's re-runnable. Otherwise: normal single-send eligibility + cohort.
+        only
+          ? eq(emailSubscribers.email, only)
+          : and(
+              or(
+                isNull(emailSubscribers.lastSentAt),
+                lt(emailSubscribers.lastSentAt, campaignStart),
+              ),
+              source ? eq(emailSubscribers.source, source) : undefined,
+            ),
       ),
     )
     .orderBy(asc(emailSubscribers.id))
@@ -61,7 +67,6 @@ export function renderFor(sub: Sub) {
     headers: {
       "List-Unsubscribe": `<${postUrl}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-      "Reply-To": "hello@hackwestern.com",
     } as Record<string, string>,
   };
 }
@@ -100,11 +105,17 @@ async function main() {
     console.error(`Invalid --source "${source}" — use hw11 or hw12 (or omit for both).`);
     process.exit(1);
   }
+  const only = process.argv.find((a) => a.startsWith("--only="))?.split("=")[1];
 
-  const rows = await selectEligible(chunk, campaignStart, source);
+  const rows = await selectEligible(chunk, campaignStart, source, only);
 
+  const scope = only
+    ? ` [only=${only}]`
+    : source
+      ? ` [source=${source}]`
+      : " [all sources]";
   console.log(
-    `Chunk: ${rows.length} recipient(s)${source ? ` [source=${source}]` : " [all sources]"}. Mode: ${SEND ? "SEND" : "DRY RUN"}.`,
+    `Chunk: ${rows.length} recipient(s)${scope}. Mode: ${SEND ? "SEND" : "DRY RUN"}.`,
   );
   if (!SEND) { rows.forEach((r, i) => console.log(`${i + 1}. ${r.email}`)); return; }
 
@@ -114,8 +125,9 @@ async function main() {
     const res = await sendEmail({
       // Bulk campaign sends from an isolated subdomain so a spam/bounce hit
       // can't poison transactional (password-reset/verify) deliverability on
-      // the root domain. Replies still route to the monitored inbox (Reply-To).
+      // the root domain. Replies still route to the monitored inbox (reply_to).
       from: "Hack Western <updates@mail.hackwestern.com>",
+      replyTo: "hello@hackwestern.com",
       to: r.email, subject, html, headers,
     });
     const outcome = classifyResult(res);
