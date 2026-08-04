@@ -19,7 +19,7 @@ const Logout = () => {
       .catch((e) => console.error(e));
   };
   return (
-    <div className="font-figtree font-semibold text-heavy">
+    <div className="font-secondary font-semibold text-heavy">
       Hi there{name ? `, ${name}` : ""}! |{" "}
       <button className="hover:underline" onClick={() => logout()}>
         Sign Out
