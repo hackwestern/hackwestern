@@ -7,19 +7,19 @@ export function InternalNavbar() {
   return (
     <nav className="z-100 flex w-screen justify-between border-[1px] border-slate-200 px-1 py-3">
       <Button variant="link" asChild>
-        <Link href="/dashboard">
+        <Link href="/internal/dashboard">
           <HWLogo />
         </Link>
       </Button>
       <div className="flex items-center gap-3 font-figtree">
         <Button className="text-primary-600" variant={"link"} asChild>
-          <Link href="/dashboard">My Dashboard</Link>
+          <Link href="/internal/dashboard">My Dashboard</Link>
         </Button>
         <Button className="text-primary-600" variant={"link"} asChild>
-          <Link href="/review">Applicant Review</Link>
+          <Link href="/internal/review">Applicant Review</Link>
         </Button>
         <Button className="text-primary-600" variant={"link"} asChild>
-          <Link href="/adjust-status">Status Adjustment</Link>
+          <Link href="/internal/adjust-status">Status Adjustment</Link>
         </Button>
 
         {/* <Button variant="link" asChild>
