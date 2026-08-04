@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import React from "react";
 import { PreregistrationForm } from "~/components/preregistration-form";
 
@@ -193,6 +194,12 @@ export default function Home() {
           >
             Interested in sponsoring?
           </a>
+          <Link
+            href="/privacy"
+            className="cursor-pixel-hover text-[16px] font-medium text-[#2E547A]"
+          >
+            Privacy Policy
+          </Link>
         </div>
       </div>
     </main>
