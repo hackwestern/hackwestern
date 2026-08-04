@@ -66,8 +66,8 @@ export default function ScanSuccessPage() {
         {/* Activity Name */}
         {activityName && (
           <div className="space-y-1">
-            <p className="font-figtree text-sm text-medium">Activity:</p>
-            <p className="font-figtree text-lg font-medium text-heavy">
+            <p className="font-secondary text-sm text-medium">Activity:</p>
+            <p className="font-secondary text-lg font-medium text-heavy">
               {activityName}
             </p>
           </div>
@@ -76,8 +76,8 @@ export default function ScanSuccessPage() {
         {/* User Name */}
         {userName && (
           <div className="space-y-1">
-            <p className="font-figtree text-sm text-medium">User:</p>
-            <p className="font-figtree text-lg font-medium text-heavy">
+            <p className="font-secondary text-sm text-medium">User:</p>
+            <p className="font-secondary text-lg font-medium text-heavy">
               {userName}
             </p>
           </div>
@@ -88,14 +88,14 @@ export default function ScanSuccessPage() {
           {activityParam && (
             <button
               onClick={handleBackToScanning}
-              className="w-full rounded-lg bg-primary px-6 py-3 font-figtree font-medium text-primary-foreground transition-colors hover:bg-primary-700"
+              className="w-full rounded-lg bg-primary px-6 py-3 font-secondary font-medium text-primary-foreground transition-colors hover:bg-primary-700"
             >
               Back to Scanning
             </button>
           )}
           <button
             onClick={handleBackToActivities}
-            className="mx-auto font-figtree text-sm text-medium underline-offset-4 transition-colors hover:text-heavy hover:underline"
+            className="mx-auto font-secondary text-sm text-medium underline-offset-4 transition-colors hover:text-heavy hover:underline"
           >
             Back to Activities
           </button>

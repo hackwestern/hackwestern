@@ -362,25 +362,6 @@ export const applicationRouter = createTRPCRouter({
     }
   }),
 
-  getAppStats: protectedOrganizerProcedure.query(async ({}) => {
-    try {
-      const applicationStats = await db
-        .select({
-          status: applications.status,
-          count: count(applications.userId),
-        })
-        .from(applications)
-        .groupBy(applications.status);
-
-      return applicationStats;
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch application stats: " + JSON.stringify(error),
-      });
-    }
-  }),
-
   bulkUpdateStatusByEmails: protectedOrganizerProcedure
     .input(
       z.object({

@@ -113,7 +113,7 @@ const EventLogistics = () => {
           <div className="flex flex-col">
             <div className="flex flex-row items-center gap-2">
               <LogisticsTopbar />
-              <p className="font-figtree text-light">
+              <p className="font-secondary text-light">
                 Page {step} of {allTitles.length.toString()}
               </p>
             </div>
@@ -165,11 +165,11 @@ const EventLogistics = () => {
                       handleToggle(item.id, checked)
                     }
                   />
-                  <h1 className="-mt-1 font-figtree text-lg text-heavy">
+                  <h1 className="-mt-1 font-secondary text-lg text-heavy">
                     {item.heading}
                   </h1>
                 </div>
-                <p className="pl-7 font-figtree text-medium">{item.desc}</p>
+                <p className="pl-7 font-secondary text-medium">{item.desc}</p>
               </div>
             );
           })
@@ -178,13 +178,13 @@ const EventLogistics = () => {
             components={{
               h1: ({ node: _node, ...props }) => (
                 <h1
-                  className="mb-4 mt-8 font-figtree text-2xl font-medium text-heavy"
+                  className="mb-4 mt-8 font-secondary text-2xl font-medium text-heavy"
                   {...props}
                 />
               ),
               p: ({ node: _node, ...props }) => (
                 <p
-                  className="mb-4 font-figtree leading-relaxed text-medium"
+                  className="mb-4 font-secondary leading-relaxed text-medium"
                   {...props}
                 />
               ),
@@ -198,25 +198,25 @@ const EventLogistics = () => {
               ),
               b: ({ node: _node, ...props }) => (
                 <b
-                  className="mb-4 font-figtree font-bold leading-relaxed text-medium"
+                  className="mb-4 font-secondary font-bold leading-relaxed text-medium"
                   {...props}
                 />
               ),
               i: ({ node: _node, ...props }) => (
                 <i
-                  className="font-italic mb-4 font-figtree leading-relaxed text-medium"
+                  className="font-italic mb-4 font-secondary leading-relaxed text-medium"
                   {...props}
                 />
               ),
               ul: ({ node: _node, ...props }) => (
                 <ul
-                  className="mb-4 list-disc space-y-1 pl-6 font-figtree text-medium"
+                  className="mb-4 list-disc space-y-1 pl-6 font-secondary text-medium"
                   {...props}
                 />
               ),
               ol: ({ node: _node, ...props }) => (
                 <ol
-                  className="mb-4 list-decimal space-y-1 pl-6 font-figtree text-medium"
+                  className="mb-4 list-decimal space-y-1 pl-6 font-secondary text-medium"
                   {...props}
                 />
               ),
