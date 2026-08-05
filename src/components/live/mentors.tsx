@@ -20,7 +20,7 @@ const Mentors = () => {
       {haveAllMentors ? (
         <div className="mb-6 px-6">
           <div className="my-8 md:flex md:flex-col">
-            <div className="py-1 font-figtree font-medium text-heavy">
+            <div className="py-1 font-secondary font-medium text-heavy">
               Filter by:
             </div>
             <div className="flex flex-wrap gap-3">
@@ -31,7 +31,7 @@ const Mentors = () => {
                     selectedMentorTags.includes(tag)
                       ? "bg-heavy font-medium text-[#ebdff7]"
                       : "bg-[#ebdff7] font-medium text-medium"
-                  } font-figtree transition-all hover:bg-heavy hover:text-[#ebdff7]`}
+                  } font-secondary transition-all hover:bg-heavy hover:text-[#ebdff7]`}
                   onClick={() => {
                     setSelectedMentorTags((prev) =>
                       prev.includes(tag)
@@ -89,10 +89,10 @@ const MentorCard = (mentor: Mentor) => {
         )}
       </div>
       <div className="my-2">
-        <h2 className="font-figtree text-lg font-medium text-heavy">
+        <h2 className="font-secondary text-lg font-medium text-heavy">
           {mentor.name}
         </h2>
-        <p className="font-figtree text-base text-[#64748B] text-medium">
+        <p className="font-secondary text-base text-[#64748B] text-medium">
           {mentor.desc}
         </p>
       </div>
@@ -101,7 +101,7 @@ const MentorCard = (mentor: Mentor) => {
         {mentor.tags.map((tag) => (
           <span
             key={tag}
-            className="rounded-lg bg-primary-300 p-1 px-2 font-figtree font-medium text-medium"
+            className="rounded-lg bg-primary-300 p-1 px-2 font-secondary font-medium text-medium"
           >
             {tag}
           </span>

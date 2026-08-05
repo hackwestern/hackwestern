@@ -56,7 +56,7 @@ export default function Login() {
             Sign into your account
           </h2>
           <form onSubmit={handleSubmit}>
-            <h2 className="mb-1 font-figtree text-medium">Email</h2>
+            <h2 className="mb-1 font-secondary text-medium">Email</h2>
             <Input
               id="email"
               name="email"
@@ -68,7 +68,7 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            <h2 className="mb-1 font-figtree text-medium">Password</h2>
+            <h2 className="mb-1 font-secondary text-medium">Password</h2>
             <Input
               id="password"
               name="password"
@@ -101,7 +101,7 @@ export default function Login() {
             <GithubAuthButton redirect={callbackUrl} />
             <DiscordAuthButton redirect={callbackUrl} />
           </div>
-          <div className="mt-6 font-figtree text-medium">
+          <div className="mt-6 font-secondary text-medium">
             Don&apos;t have an account yet?
             <Button
               asChild
@@ -116,7 +116,7 @@ export default function Login() {
               </Link>
             </Button>
           </div>
-          <div className="font-figtree text-medium">
+          <div className="font-secondary text-medium">
             Forget password?
             <Button
               asChild
