@@ -232,7 +232,7 @@ export const teams = pgTable(
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
       .notNull(),
-    joinCode: varchar("joinCode", { length: 6 }).notNull(),
+    joinCode: varchar("joinCode", { length: 6 }).notNull().unique(),
   },
   (t) => [index("team_created_at_idx").on(t.createdAt)],
 );
