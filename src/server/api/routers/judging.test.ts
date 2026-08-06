@@ -63,7 +63,8 @@ async function makeTeam(opts?: {
   tracks?: Track[];
   submissionStatus?: SubmissionStatus;
 }) {
-  const id = faker.string.alphanumeric(6);
+  const code = faker.string.alphanumeric(6);
+  const id = faker.string.alphanumeric(12);
   await db.insert(teams).values({
     id,
     name: `team-${id}`,
@@ -71,6 +72,7 @@ async function makeTeam(opts?: {
     githubUrl: `https://github.com/${id}`,
     tracks: opts?.tracks,
     submissionStatus: opts?.submissionStatus ?? "submitted",
+    joinCode: code,
   });
   return id;
 }
