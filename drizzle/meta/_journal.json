@@ -85,6 +85,13 @@
       "when": 1787159787435,
       "tag": "0011_wealthy_terrax",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1785978244949,
+      "tag": "0012_puzzling_exiles",
+      "breakpoints": true
     }
   ]
 }

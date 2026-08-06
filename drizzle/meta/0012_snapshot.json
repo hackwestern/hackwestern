@@ -1,6 +1,6 @@
 {
-  "id": "51a9a9a0-9d02-4baf-b9f6-228ff0fda53b",
-  "prevId": "4c7a286e-7c8d-436f-8480-63568f1d99e6",
+  "id": "6b9aaa51-321d-4909-80cd-c59a69d6a644",
+  "prevId": "51a9a9a0-9d02-4baf-b9f6-228ff0fda53b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1005,12 +1005,6 @@
           "type": "timestamp (3)",
           "primaryKey": false,
           "notNull": false
-        },
-        "bounced_at": {
-          "name": "bounced_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {},
@@ -1828,7 +1822,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "varchar(6)",
+          "type": "varchar(12)",
           "primaryKey": true,
           "notNull": true
         },
@@ -1888,6 +1882,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "joinCode": {
+          "name": "joinCode",
+          "type": "varchar(6)",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {
