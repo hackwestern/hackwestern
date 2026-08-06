@@ -1,6 +1,6 @@
 {
-  "id": "6b9aaa51-321d-4909-80cd-c59a69d6a644",
-  "prevId": "51a9a9a0-9d02-4baf-b9f6-228ff0fda53b",
+  "id": "1ea5b5e2-1a06-4623-a359-33235bc1c36b",
+  "prevId": "6b9aaa51-321d-4909-80cd-c59a69d6a644",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1909,7 +1909,15 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "team_joinCode_unique": {
+          "name": "team_joinCode_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "joinCode"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
