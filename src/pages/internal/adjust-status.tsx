@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { InternalNavbar } from "~/components/internals/navbar";
 
 // Dangerous bulk status-mutation tool. Hard-disabled on all environments
 // (prod, preview, local) until it is re-enabled behind proper safeguards.
@@ -137,6 +138,7 @@ export default function AdjustStatus() {
   return (
     <>
       <SEO title="Adjust Status" noindex />
+      <InternalNavbar></InternalNavbar>
       <div className="bg-hw-radial-gradient m-auto flex min-h-screen flex-col items-center justify-start py-8">
         <div className="z-10 w-full max-w-3xl rounded-lg bg-background/90 p-6 shadow-md backdrop-blur-sm">
           <h1 className="font-dico mb-2 text-3xl text-heavy">Adjust Status</h1>
