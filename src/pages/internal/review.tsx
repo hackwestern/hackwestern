@@ -35,6 +35,7 @@ import {
   QUESTION2,
   QUESTION3,
 } from "~/components/apply/form/application-form";
+import { InternalNavbar } from "~/components/internals/navbar";
 
 const Review = () => {
   const { data: session } = useSession();
@@ -95,7 +96,8 @@ const Review = () => {
   return (
     <>
       <SEO title="Application Review" noindex />
-      <main className=" font-secondaryn flex flex-col items-center bg-primary-50 font-secondary">
+      <InternalNavbar></InternalNavbar>
+      <main className=" font-figtreen flex flex-col items-center bg-primary-50 font-secondary">
         <div className="relative z-[100] w-full items-center md:flex">
           <div
             id="left-panel"
