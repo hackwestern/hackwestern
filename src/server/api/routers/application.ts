@@ -7,6 +7,8 @@ import {
 } from "~/server/api/trpc";
 import { applications, users } from "~/server/db/schema";
 import { db } from "~/server/db";
+import { sendEmail } from "~/server/mail";
+import { applicationSubmittedTemplate } from "./email-templates";
 import {
   applicationSaveSchema,
   applicationSubmitSchema,
@@ -352,6 +354,27 @@ export const applicationRouter = createTRPCRouter({
         .update(applications)
         .set({ status: "PENDING_REVIEW", updatedAt: new Date() })
         .where(eq(applications.userId, userId));
+
+      // Send an application-received confirmation. Don't fail the submission if
+      // the email bounces — the application is already saved as PENDING_REVIEW.
+      const applicant = await db.query.users.findFirst({
+        where: (u, { eq }) => eq(u.id, userId),
+        columns: { email: true, name: true },
+      });
+      if (applicant?.email) {
+        const { error: emailError } = await sendEmail({
+          from: "Hack Western Team <hello@hackwestern.com>",
+          to: applicant.email,
+          subject: "We've received your Hack Western 13 application!",
+          html: applicationSubmittedTemplate(applicant.name ?? undefined),
+        });
+        if (emailError) {
+          console.error(
+            "Error sending application confirmation email:",
+            emailError,
+          );
+        }
+      }
     } catch (error) {
       throw error instanceof TRPCError
         ? error
