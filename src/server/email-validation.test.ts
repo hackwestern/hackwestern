@@ -35,19 +35,20 @@ describe("validateSignupEmail", () => {
   });
 
   test("rejects disposable domains", async () => {
-    expect(await validateSignupEmail("throwaway@mailinator.com")).toEqual({
-      ok: false,
-      reason: expect.stringContaining("disposable"),
-    });
+    const result = await validateSignupEmail("throwaway@mailinator.com");
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toContain("disposable");
   });
 
   test("rejects a domain that does not resolve (ENOTFOUND)", async () => {
     vi.mocked(resolveMx).mockRejectedValueOnce(
       Object.assign(new Error("not found"), { code: "ENOTFOUND" }),
     );
-    expect(
-      await validateSignupEmail("user@totallyfakedomain12345.com"),
-    ).toEqual({ ok: false, reason: expect.stringContaining("doesn't exist") });
+    const result = await validateSignupEmail(
+      "user@totallyfakedomain12345.com",
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toContain("doesn't exist");
   });
 
   test("fails open when the domain exists but has no MX (ENODATA)", async () => {
