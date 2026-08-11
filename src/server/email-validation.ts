@@ -43,6 +43,7 @@ export function domainOf(email: string): string {
 
 export async function validateSignupEmail(
   email: string,
+  kickboxApiKey?: string,
 ): Promise<EmailValidation> {
   const trimmed = email.trim();
   if (!EMAIL_RE.test(trimmed)) {
@@ -67,5 +68,36 @@ export async function validateSignupEmail(
     }
   }
 
+  // Optional paid layer: Kickbox real-time verification. Only runs when a key is
+  // configured, and only rejects a definitive "undeliverable" verdict. Fails
+  // open on any API error so an outage never blocks a legitimate signup.
+  if (kickboxApiKey) {
+    const verdict = await verifyWithKickbox(trimmed, kickboxApiKey);
+    if (verdict && !verdict.ok) return verdict;
+  }
+
   return { ok: true };
+}
+
+async function verifyWithKickbox(
+  email: string,
+  apiKey: string,
+): Promise<EmailValidation | null> {
+  try {
+    const url = new URL("https://api.kickbox.com/v2/verify");
+    url.searchParams.set("email", email);
+    url.searchParams.set("apikey", apiKey);
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { result?: string };
+    if (data.result === "undeliverable") {
+      return {
+        ok: false,
+        reason: "That email address doesn't appear to exist.",
+      };
+    }
+    return { ok: true };
+  } catch {
+    return null; // timeout / network error -> fail open
+  }
 }

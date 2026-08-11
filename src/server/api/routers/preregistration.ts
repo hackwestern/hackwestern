@@ -6,6 +6,7 @@ import { db } from "~/server/db";
 import { sendEmail } from "~/server/mail";
 import { normalizeEmail, generateUnsubscribeToken } from "~/server/subscribers";
 import { validateSignupEmail } from "~/server/email-validation";
+import { env } from "~/env";
 import { signupTemplate } from "./email-templates";
 
 // Email links must be canonical + permanent — never a per-deployment preview
@@ -27,7 +28,10 @@ export const preregistrationRouter = createTRPCRouter({
       try {
         // Reject junk addresses before we send (and record) a confirmation, so
         // a bad signup never generates a bounce that hurts our sender reputation.
-        const validation = await validateSignupEmail(input.email);
+        const validation = await validateSignupEmail(
+          input.email,
+          env.KICKBOX_API_KEY,
+        );
         if (!validation.ok) {
           throw new TRPCError({
             code: "BAD_REQUEST",

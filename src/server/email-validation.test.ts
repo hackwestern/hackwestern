@@ -1,4 +1,4 @@
-import { describe, expect, test, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { resolveMx } from "dns/promises";
 import { validateSignupEmail, domainOf } from "~/server/email-validation";
 
@@ -65,5 +65,46 @@ describe("validateSignupEmail", () => {
     expect(await validateSignupEmail("student@university.edu")).toEqual({
       ok: true,
     });
+  });
+});
+
+describe("validateSignupEmail with Kickbox", () => {
+  const KEY = "test_key";
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function stubKickbox(body: { result?: string }, ok = true) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok, json: () => Promise.resolve(body) }),
+    );
+  }
+
+  test("rejects an 'undeliverable' verdict", async () => {
+    stubKickbox({ result: "undeliverable" });
+    const result = await validateSignupEmail("ghost@gmail.com", KEY);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toContain("exist");
+  });
+
+  test("accepts a 'deliverable' verdict", async () => {
+    stubKickbox({ result: "deliverable" });
+    expect(await validateSignupEmail("real@gmail.com", KEY)).toEqual({
+      ok: true,
+    });
+  });
+
+  test("fails open on a Kickbox API error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
+    expect(await validateSignupEmail("x@gmail.com", KEY)).toEqual({ ok: true });
+  });
+
+  test("skips Kickbox when no key is configured", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    expect(await validateSignupEmail("x@gmail.com")).toEqual({ ok: true });
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
