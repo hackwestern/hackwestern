@@ -44,9 +44,7 @@ describe("validateSignupEmail", () => {
     vi.mocked(resolveMx).mockRejectedValueOnce(
       Object.assign(new Error("not found"), { code: "ENOTFOUND" }),
     );
-    const result = await validateSignupEmail(
-      "user@totallyfakedomain12345.com",
-    );
+    const result = await validateSignupEmail("user@totallyfakedomain12345.com");
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toContain("doesn't exist");
   });
