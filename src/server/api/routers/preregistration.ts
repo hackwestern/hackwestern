@@ -54,7 +54,8 @@ export const preregistrationRouter = createTRPCRouter({
         if (Boolean(existingPreregistration) || Boolean(existingSubscriber)) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: "Pre-registration with that email already exists.",
+            message:
+              "You're already signed up for Hack Western updates. No need to register again.",
           });
         }
 
