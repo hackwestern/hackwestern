@@ -1,0 +1,110 @@
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { resolveMx } from "dns/promises";
+import { validateSignupEmail, domainOf } from "~/server/email-validation";
+
+describe("domainOf", () => {
+  test("extracts the lowercased domain", () => {
+    expect(domainOf("Someone@Example.COM")).toBe("example.com");
+  });
+});
+
+describe("validateSignupEmail", () => {
+  beforeEach(() => {
+    // Default: domain resolves fine (has MX).
+    vi.mocked(resolveMx).mockResolvedValue([
+      { exchange: "mx.test", priority: 10 },
+    ]);
+  });
+
+  test("accepts a well-formed address at a resolvable domain", async () => {
+    expect(await validateSignupEmail("student@gmail.com")).toEqual({
+      ok: true,
+    });
+  });
+
+  test("rejects malformed addresses", async () => {
+    for (const bad of [
+      "notanemail",
+      "no@domain",
+      "@nolocal.com",
+      "spaces in@example.com",
+      "trailing@example.",
+    ]) {
+      expect((await validateSignupEmail(bad)).ok).toBe(false);
+    }
+  });
+
+  test("rejects disposable domains", async () => {
+    const result = await validateSignupEmail("throwaway@mailinator.com");
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toContain("disposable");
+  });
+
+  test("rejects a domain that does not resolve (ENOTFOUND)", async () => {
+    vi.mocked(resolveMx).mockRejectedValueOnce(
+      Object.assign(new Error("not found"), { code: "ENOTFOUND" }),
+    );
+    const result = await validateSignupEmail("user@totallyfakedomain12345.com");
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toContain("doesn't exist");
+  });
+
+  test("fails open when the domain exists but has no MX (ENODATA)", async () => {
+    vi.mocked(resolveMx).mockRejectedValueOnce(
+      Object.assign(new Error("no data"), { code: "ENODATA" }),
+    );
+    expect(await validateSignupEmail("user@a-record-only.com")).toEqual({
+      ok: true,
+    });
+  });
+
+  test("fails open on a transient DNS error", async () => {
+    vi.mocked(resolveMx).mockRejectedValueOnce(
+      Object.assign(new Error("timeout"), { code: "ETIMEOUT" }),
+    );
+    expect(await validateSignupEmail("student@university.edu")).toEqual({
+      ok: true,
+    });
+  });
+});
+
+describe("validateSignupEmail with Kickbox", () => {
+  const KEY = "test_key";
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function stubKickbox(body: { result?: string }, ok = true) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok, json: () => Promise.resolve(body) }),
+    );
+  }
+
+  test("rejects an 'undeliverable' verdict", async () => {
+    stubKickbox({ result: "undeliverable" });
+    const result = await validateSignupEmail("ghost@gmail.com", KEY);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toContain("exist");
+  });
+
+  test("accepts a 'deliverable' verdict", async () => {
+    stubKickbox({ result: "deliverable" });
+    expect(await validateSignupEmail("real@gmail.com", KEY)).toEqual({
+      ok: true,
+    });
+  });
+
+  test("fails open on a Kickbox API error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
+    expect(await validateSignupEmail("x@gmail.com", KEY)).toEqual({ ok: true });
+  });
+
+  test("skips Kickbox when no key is configured", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    expect(await validateSignupEmail("x@gmail.com")).toEqual({ ok: true });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});

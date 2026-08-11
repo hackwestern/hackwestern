@@ -30,6 +30,9 @@ export const env = createEnv({
     DISCORD_CLIENT_SECRET: z.string(),
     CLOUDFLARE_EMAIL_API_TOKEN: z.string(),
     CLOUDFLARE_ACCOUNT_ID: z.string(),
+    // Kickbox email-verification API key (optional). When set, signup emails are
+    // verified against Kickbox as the final validation layer; unset = skipped.
+    KICKBOX_API_KEY: z.string().optional(),
     APPLE_CERT_PASS: z.string().optional(),
     APPLE_WWDR_CERT: z.string(),
     APPLE_SIGNER_CERT: z.string(),
@@ -86,6 +89,7 @@ export const env = createEnv({
     CLOUDFLARE_ACCOUNT_ID:
       process.env.CLOUDFLARE_ACCOUNT_ID ??
       (process.env.NODE_ENV === "test" ? "mock-cf-account-id" : undefined),
+    KICKBOX_API_KEY: process.env.KICKBOX_API_KEY,
     APPLE_CERT_PASS: process.env.APPLE_CERT_PASS,
     APPLE_WWDR_CERT: process.env.APPLE_WWDR_CERT,
     APPLE_SIGNER_CERT: process.env.APPLE_SIGNER_CERT,
