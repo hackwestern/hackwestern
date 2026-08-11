@@ -17,7 +17,9 @@ describe("validateSignupEmail", () => {
   });
 
   test("accepts a well-formed address at a resolvable domain", async () => {
-    expect(await validateSignupEmail("student@gmail.com")).toEqual({ ok: true });
+    expect(await validateSignupEmail("student@gmail.com")).toEqual({
+      ok: true,
+    });
   });
 
   test("rejects malformed addresses", async () => {

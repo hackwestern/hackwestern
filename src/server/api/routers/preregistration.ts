@@ -29,7 +29,10 @@ export const preregistrationRouter = createTRPCRouter({
         // a bad signup never generates a bounce that hurts our sender reputation.
         const validation = await validateSignupEmail(input.email);
         if (!validation.ok) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: validation.reason });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: validation.reason,
+          });
         }
 
         const normalized = normalizeEmail(input.email);
