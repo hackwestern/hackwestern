@@ -2,7 +2,10 @@ import { and, isNull, or, lt, asc, eq } from "drizzle-orm";
 import { db } from "~/server/db";
 import { emailSubscribers } from "~/server/db/schema";
 import { sendEmail } from "~/server/mail";
-import { campaignTemplate } from "~/server/api/routers/email-templates";
+import {
+  campaignTemplate,
+  campaignText,
+} from "~/server/api/routers/email-templates";
 import { editionFromSource } from "~/server/subscribers";
 
 // Email links must be canonical + permanent — never a per-deployment preview
@@ -61,9 +64,12 @@ export function unsubscribePostUrl(token: string): string {
 export function renderFor(sub: Sub) {
   const pageUrl = unsubscribeUrl(sub.unsubscribeToken); // visible footer link
   const postUrl = unsubscribePostUrl(sub.unsubscribeToken); // one-click header
+  const edition = editionFromSource(sub.source);
   return {
     subject: SUBJECT,
-    html: campaignTemplate(sub.email, editionFromSource(sub.source), pageUrl),
+    html: campaignTemplate(sub.email, edition, pageUrl),
+    // Purpose-built plain-text part (not an HTML strip) so filters see real text.
+    text: campaignText(sub.email, edition, pageUrl),
     headers: {
       "List-Unsubscribe": `<${postUrl}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
@@ -96,13 +102,20 @@ export function classifyResult(res: {
 
 async function main() {
   const SEND = process.argv.includes("--send");
-  const chunk = Number(process.argv.find((a) => a.startsWith("--chunk="))?.split("=")[1] ?? 75);
-  const campaignStart = new Date(
-    process.argv.find((a) => a.startsWith("--start="))?.split("=")[1] ?? "2026-08-01T00:00:00Z",
+  const chunk = Number(
+    process.argv.find((a) => a.startsWith("--chunk="))?.split("=")[1] ?? 75,
   );
-  const source = process.argv.find((a) => a.startsWith("--source="))?.split("=")[1];
+  const campaignStart = new Date(
+    process.argv.find((a) => a.startsWith("--start="))?.split("=")[1] ??
+      "2026-08-01T00:00:00Z",
+  );
+  const source = process.argv
+    .find((a) => a.startsWith("--source="))
+    ?.split("=")[1];
   if (source && source !== "hw11" && source !== "hw12") {
-    console.error(`Invalid --source "${source}" — use hw11 or hw12 (or omit for both).`);
+    console.error(
+      `Invalid --source "${source}" — use hw11 or hw12 (or omit for both).`,
+    );
     process.exit(1);
   }
   const only = process.argv.find((a) => a.startsWith("--only="))?.split("=")[1];
@@ -117,18 +130,27 @@ async function main() {
   console.log(
     `Chunk: ${rows.length} recipient(s)${scope}. Mode: ${SEND ? "SEND" : "DRY RUN"}.`,
   );
-  if (!SEND) { rows.forEach((r, i) => console.log(`${i + 1}. ${r.email}`)); return; }
+  if (!SEND) {
+    rows.forEach((r, i) => console.log(`${i + 1}. ${r.email}`));
+    return;
+  }
 
-  let sent = 0, bounced = 0, failed = 0;
+  let sent = 0,
+    bounced = 0,
+    failed = 0;
   for (const r of rows) {
-    const { subject, html, headers } = renderFor(r);
+    const { subject, html, text, headers } = renderFor(r);
     const res = await sendEmail({
       // Bulk campaign sends from an isolated subdomain so a spam/bounce hit
       // can't poison transactional (password-reset/verify) deliverability on
       // the root domain. Replies still route to the monitored inbox (reply_to).
       from: "Hack Western <updates@mail.hackwestern.com>",
       replyTo: "hello@hackwestern.com",
-      to: r.email, subject, html, headers,
+      to: r.email,
+      subject,
+      html,
+      text,
+      headers,
     });
     const outcome = classifyResult(res);
     if (outcome === "quota") {
@@ -140,11 +162,17 @@ async function main() {
       console.log(`FAIL ${r.email} — ${res.error?.message}`);
     } else if (outcome === "bounce") {
       bounced++;
-      await db.update(emailSubscribers).set({ bouncedAt: new Date() }).where(eq(emailSubscribers.id, r.id));
+      await db
+        .update(emailSubscribers)
+        .set({ bouncedAt: new Date() })
+        .where(eq(emailSubscribers.id, r.id));
       console.log(`BOUNCE ${r.email}`);
     } else {
       sent++;
-      await db.update(emailSubscribers).set({ lastSentAt: new Date() }).where(eq(emailSubscribers.id, r.id));
+      await db
+        .update(emailSubscribers)
+        .set({ lastSentAt: new Date() })
+        .where(eq(emailSubscribers.id, r.id));
       console.log(`ok ${r.email}`);
     }
     await sleep(DELAY_MS);
@@ -153,5 +181,10 @@ async function main() {
 }
 
 if (process.argv[1]?.includes("send-campaign")) {
-  main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });
+  main()
+    .then(() => process.exit(0))
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });
 }
