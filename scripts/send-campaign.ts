@@ -2,7 +2,7 @@ import { and, isNull, or, lt, asc, eq } from "drizzle-orm";
 import { db } from "~/server/db";
 import { emailSubscribers } from "~/server/db/schema";
 import { sendEmail } from "~/server/mail";
-import { campaignTemplate } from "~/server/api/routers/email-templates";
+import { campaignTemplate, campaignText } from "~/server/api/routers/email-templates";
 import { editionFromSource } from "~/server/subscribers";
 
 // Email links must be canonical + permanent — never a per-deployment preview
@@ -61,9 +61,12 @@ export function unsubscribePostUrl(token: string): string {
 export function renderFor(sub: Sub) {
   const pageUrl = unsubscribeUrl(sub.unsubscribeToken); // visible footer link
   const postUrl = unsubscribePostUrl(sub.unsubscribeToken); // one-click header
+  const edition = editionFromSource(sub.source);
   return {
     subject: SUBJECT,
-    html: campaignTemplate(sub.email, editionFromSource(sub.source), pageUrl),
+    html: campaignTemplate(sub.email, edition, pageUrl),
+    // Purpose-built plain-text part (not an HTML strip) so filters see real text.
+    text: campaignText(sub.email, edition, pageUrl),
     headers: {
       "List-Unsubscribe": `<${postUrl}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
@@ -121,14 +124,14 @@ async function main() {
 
   let sent = 0, bounced = 0, failed = 0;
   for (const r of rows) {
-    const { subject, html, headers } = renderFor(r);
+    const { subject, html, text, headers } = renderFor(r);
     const res = await sendEmail({
       // Bulk campaign sends from an isolated subdomain so a spam/bounce hit
       // can't poison transactional (password-reset/verify) deliverability on
       // the root domain. Replies still route to the monitored inbox (reply_to).
       from: "Hack Western <updates@mail.hackwestern.com>",
       replyTo: "hello@hackwestern.com",
-      to: r.email, subject, html, headers,
+      to: r.email, subject, html, text, headers,
     });
     const outcome = classifyResult(res);
     if (outcome === "quota") {
