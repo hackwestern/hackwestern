@@ -113,7 +113,7 @@ export default function Home() {
         </div>
       </div>
       <div
-        className="cloud-scroll-right pointer-events-none absolute left-[-12vw] top-[10vh] w-[55vw]"
+        className="cloud-scroll-right cloud-scroll-right-from-left pointer-events-none absolute left-[-12vw] top-[10vh] w-[55vw]"
         aria-hidden="true"
       >
         <Image
@@ -131,7 +131,7 @@ export default function Home() {
           width={4096}
           height={1576}
           quality={65}
-          className="absolute right-[100vw] top-0 h-auto w-full"
+          className="cloud-scroll-right-from-left-copy absolute top-0 h-auto w-full"
           sizes="55vw"
         />
       </div>
