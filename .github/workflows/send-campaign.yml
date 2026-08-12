@@ -55,8 +55,8 @@ jobs:
     environment: Production
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      # Drip sends via Mailjet (scripts/send-campaign.ts). Transactional email
-      # stays on Cloudflare, so this workflow needs only the Mailjet creds.
+      # Email transport is Mailjet (src/server/mail.ts). Set these secrets before
+      # merging the Mailjet cutover; until then the drip logs a send error.
       MAILJET_API_KEY: ${{ secrets.MAILJET_API_KEY }}
       MAILJET_SECRET_KEY: ${{ secrets.MAILJET_SECRET_KEY }}
       SKIP_ENV_VALIDATION: "1"

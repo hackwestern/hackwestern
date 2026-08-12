@@ -28,19 +28,16 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string(),
     DISCORD_CLIENT_ID: z.string(),
     DISCORD_CLIENT_SECRET: z.string(),
-    // Mailjet (Send API v3.1) — the only email transport now. Drip
-    // (scripts/send-campaign.ts) sends from mail.hackwestern.com; transactional
-    // (signup/verify/reset/application confirmations, src/server/mail-mailjet.ts)
-    // sends from the apex hackwestern.com. Different sending domains keep the
-    // drip's reputation isolated from password-reset/verify even on one account.
-    MAILJET_API_KEY: z.string(),
-    MAILJET_SECRET_KEY: z.string(),
-    // Mailjet Event API webhook (src/pages/api/mailjet-webhook.ts). Mailjet
-    // doesn't sign its payloads, so these credentials are embedded in the
-    // registered webhook URL and verified as HTTP Basic auth on every inbound
-    // event POST — they are the only thing keeping the endpoint private.
-    MAILJET_WEBHOOK_USER: z.string(),
-    MAILJET_WEBHOOK_PASSWORD: z.string(),
+    // Mailjet (Send API v3.1) — the email transport (src/server/mail.ts).
+    // Optional at build time so this branch compiles before the Mailjet account
+    // exists; required at runtime to actually send (sendEmail guards on them).
+    MAILJET_API_KEY: z.string().optional(),
+    MAILJET_SECRET_KEY: z.string().optional(),
+    // Cloudflare Email Service — retained for scripts/sync-cf-suppression.ts
+    // only; the send transport has moved to Mailjet. Retire once suppression
+    // sync is ported (see docs/email-mailjet-migration.md).
+    CLOUDFLARE_EMAIL_API_TOKEN: z.string(),
+    CLOUDFLARE_ACCOUNT_ID: z.string(),
     // Kickbox email-verification API key (optional). When set, signup emails are
     // verified against Kickbox as the final validation layer; unset = skipped.
     KICKBOX_API_KEY: z.string().optional(),
@@ -94,22 +91,14 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
     DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
-    MAILJET_API_KEY:
-      process.env.MAILJET_API_KEY ??
-      (process.env.NODE_ENV === "test" ? "mock-mailjet-api-key" : undefined),
-    MAILJET_SECRET_KEY:
-      process.env.MAILJET_SECRET_KEY ??
-      (process.env.NODE_ENV === "test" ? "mock-mailjet-secret-key" : undefined),
-    MAILJET_WEBHOOK_USER:
-      process.env.MAILJET_WEBHOOK_USER ??
-      (process.env.NODE_ENV === "test"
-        ? "mock-mailjet-webhook-user"
-        : undefined),
-    MAILJET_WEBHOOK_PASSWORD:
-      process.env.MAILJET_WEBHOOK_PASSWORD ??
-      (process.env.NODE_ENV === "test"
-        ? "mock-mailjet-webhook-password"
-        : undefined),
+    MAILJET_API_KEY: process.env.MAILJET_API_KEY,
+    MAILJET_SECRET_KEY: process.env.MAILJET_SECRET_KEY,
+    CLOUDFLARE_EMAIL_API_TOKEN:
+      process.env.CLOUDFLARE_EMAIL_API_TOKEN ??
+      (process.env.NODE_ENV === "test" ? "mock-cf-api-token" : undefined),
+    CLOUDFLARE_ACCOUNT_ID:
+      process.env.CLOUDFLARE_ACCOUNT_ID ??
+      (process.env.NODE_ENV === "test" ? "mock-cf-account-id" : undefined),
     KICKBOX_API_KEY: process.env.KICKBOX_API_KEY,
     APPLE_CERT_PASS: process.env.APPLE_CERT_PASS,
     APPLE_WWDR_CERT: process.env.APPLE_WWDR_CERT,

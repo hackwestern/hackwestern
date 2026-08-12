@@ -1,17 +1,4 @@
-export interface SendEmailOptions {
-  to: string | string[];
-  subject: string;
-  html: string;
-  text?: string;
-  from?: string;
-  replyTo?: string;
-  headers?: Record<string, string>;
-}
-
-export interface SendEmailResult {
-  data: { delivered: string[]; queued: string[]; bounced: string[] } | null;
-  error: { message: string } | null;
-}
+import type { SendEmailOptions, SendEmailResult } from "./mail";
 
 /** Mailjet API key + secret for the sending (sub)account. */
 export interface MailjetCreds {
