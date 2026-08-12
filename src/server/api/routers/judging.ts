@@ -6,7 +6,7 @@ import {
   protectedJudgeProcedure,
   protectedOrganizerProcedure,
 } from "~/server/api/trpc";
-import { db } from "~/server/db";
+import { db, extractRows } from "~/server/db";
 import {
   judges,
   judgingQueue,
@@ -51,12 +51,6 @@ const withErrorHandling = async <T>(
     });
   }
 };
-
-function extractRows<T>(result: unknown): T[] {
-  return Array.isArray(result)
-    ? (result as T[])
-    : ((result as { rows?: T[] }).rows ?? []);
-}
 
 async function getCurrentHold(judgeId: string): Promise<QueueRow | undefined> {
   return db.query.judgingQueue.findFirst({

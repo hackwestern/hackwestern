@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, test, vi } from "vitest";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { parseGithubUrl } from "~/utils/github";
 import { db } from "~/server/db";
@@ -286,6 +286,58 @@ describe("cheatCheck.runAllHackerChecks", () => {
     expect(results.find((r) => r.checkType === "IS_REGISTERED")?.passed).toBe(
       true,
     );
+  });
+
+  test("serves both results from cache on the second call", async () => {
+    await insertTestApplication(hackerSession.user.id, { age: 20 });
+    await db.insert(dayOfRegistrations).values({
+      userId: hackerSession.user.id,
+      approved: true,
+      signedInAt: new Date(),
+    });
+
+    await organizerCaller.cheatCheck.runAllHackerChecks({
+      userId: hackerSession.user.id,
+    });
+    const second = await organizerCaller.cheatCheck.runAllHackerChecks({
+      userId: hackerSession.user.id,
+    });
+
+    expect(second.fromCache).toBe(true);
+    expect(second.results).toHaveLength(2);
+    expect(second.results.map((r) => r.checkType).sort()).toEqual([
+      "IS_OF_AGE",
+      "IS_REGISTERED",
+    ]);
+  });
+
+  test("a partially cached user re-runs rather than returning half the checks", async () => {
+    await insertTestApplication(hackerSession.user.id, { age: 20 });
+    await db.insert(dayOfRegistrations).values({
+      userId: hackerSession.user.id,
+      approved: true,
+      signedInAt: new Date(),
+    });
+
+    await organizerCaller.cheatCheck.runAllHackerChecks({
+      userId: hackerSession.user.id,
+    });
+    // Drop one check type so the cache no longer covers every enum value.
+    await db
+      .delete(hackerCheckResults)
+      .where(
+        and(
+          eq(hackerCheckResults.userId, hackerSession.user.id),
+          eq(hackerCheckResults.checkType, "IS_REGISTERED"),
+        ),
+      );
+
+    const result = await organizerCaller.cheatCheck.runAllHackerChecks({
+      userId: hackerSession.user.id,
+    });
+
+    expect(result.fromCache).toBe(false);
+    expect(result.results).toHaveLength(2);
   });
 
   test("throws NOT_FOUND when no application exists", async () => {
