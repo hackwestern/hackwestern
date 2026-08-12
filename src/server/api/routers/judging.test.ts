@@ -7,6 +7,8 @@ import { createInnerTRPCContext } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
 import {
+  cheatCheckSweepItems,
+  cheatCheckSweeps,
   judges,
   judgingQueue,
   judgingSkips,
@@ -82,7 +84,33 @@ async function resetAll() {
   await db.delete(judgingSkips).where(sql`true`);
   await db.delete(judgingQueue).where(sql`true`);
   await db.delete(judges).where(sql`true`);
+  // Sweep rows outlive their teams (no FK from sweep -> team), so a leftover
+  // `running` sweep or a recent `finishedAt` would suppress the next drain.
+  await db.delete(cheatCheckSweepItems).where(sql`true`);
+  await db.delete(cheatCheckSweeps).where(sql`true`);
   await db.delete(teams).where(sql`true`);
+}
+
+/**
+ * `maybeTriggerSweepOnDrain` is fired without being awaited so it can't delay a
+ * judge's mark, so the sweep row lands a tick or two after the mutation
+ * resolves. Poll for it rather than racing it.
+ */
+async function waitFor<T>(
+  read: () => Promise<T | undefined>,
+  message: string,
+): Promise<T> {
+  for (let i = 0; i < 50; i++) {
+    const value = await read();
+    if (value !== undefined) return value;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error(message);
+}
+
+/** Give the un-awaited drain hook a chance to run before asserting it didn't. */
+async function settleDrainHook() {
+  await new Promise((resolve) => setTimeout(resolve, 100));
 }
 
 // The triggers can't be expressed in Drizzle's schema DSL, so pushSchema
@@ -325,6 +353,160 @@ describe("submitTeamMark", () => {
     expect(row?.seenJudges).toBe(1);
     expect(row?.status).toBe("waiting");
     expect(row?.currentJudgeId).toBeNull();
+  });
+});
+
+/* ---------- cheat-check sweep on queue drain ---------- */
+
+describe("cheat check sweep trigger", () => {
+  /** A team that is submitted but has no repo/DevPost links to scrape. */
+  async function makeUnsubmittableTeam() {
+    const id = faker.string.alphanumeric(6);
+    await db.insert(teams).values({
+      id,
+      name: `team-${id}`,
+      devpostUrl: null,
+      githubUrl: null,
+      submissionStatus: "submitted",
+    });
+    return id;
+  }
+
+  test("draining the queue starts exactly one sweep with an item per eligible team", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    const otherTeamId = await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 1 });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 70 });
+
+    // Queue still has the second team, so no sweep yet.
+    await settleDrainHook();
+    expect(await db.query.cheatCheckSweeps.findMany({})).toHaveLength(0);
+
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({
+      teamId: otherTeamId,
+      score: 90,
+    });
+
+    const sweep = await waitFor(
+      async () => (await db.query.cheatCheckSweeps.findMany({}))[0],
+      "expected a sweep after the queue drained",
+    );
+    expect(sweep.status).toBe("running");
+    expect(sweep.triggeredBy).toBe("queue_drain");
+    expect(sweep.totalTeams).toBe(2);
+
+    const items = await db.query.cheatCheckSweepItems.findMany({});
+    expect(items).toHaveLength(2);
+    expect(items.map((i) => i.teamId).sort()).toEqual(
+      [teamId, otherTeamId].sort(),
+    );
+    expect(items.every((i) => i.status === "pending")).toBe(true);
+  });
+
+  test("teams without a repo or DevPost link get no sweep item", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    const linkless = await makeUnsubmittableTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 1 });
+
+    const j = await makeJudge();
+    // Both teams are queued (loadQueue only looks at submission status), so
+    // both must be marked before the queue drains.
+    for (let i = 0; i < 2; i++) {
+      const { team } = await j.caller.judging.me.getNextTeam();
+      await j.caller.judging.me.submitTeamMark({ teamId: team.id, score: 70 });
+    }
+
+    const sweep = await waitFor(
+      async () => (await db.query.cheatCheckSweeps.findMany({}))[0],
+      "expected a sweep after the queue drained",
+    );
+    expect(sweep.totalTeams).toBe(1);
+
+    const items = await db.query.cheatCheckSweepItems.findMany({});
+    expect(items.map((i) => i.teamId)).toEqual([teamId]);
+    expect(items.map((i) => i.teamId)).not.toContain(linkless);
+  });
+
+  test("a sweep that finished recently suppresses the next drain", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 1 });
+
+    // A sweep that completed a minute ago, well inside the 30 minute cooldown.
+    await db.insert(cheatCheckSweeps).values({
+      triggeredBy: "manual",
+      status: "completed",
+      finishedAt: new Date(Date.now() - 60_000),
+    });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 70 });
+
+    await settleDrainHook();
+    const sweeps = await db.query.cheatCheckSweeps.findMany({});
+    expect(sweeps).toHaveLength(1);
+    expect(sweeps[0]?.triggeredBy).toBe("manual");
+    expect(await db.query.cheatCheckSweepItems.findMany({})).toHaveLength(0);
+  });
+
+  test("an already-running sweep is not duplicated by a drain", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 1 });
+
+    await db
+      .insert(cheatCheckSweeps)
+      .values({ triggeredBy: "manual", status: "running" });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 70 });
+
+    await settleDrainHook();
+    expect(await db.query.cheatCheckSweeps.findMany({})).toHaveLength(1);
+  });
+
+  test("the partial unique index permits only one running sweep", async () => {
+    await db
+      .insert(cheatCheckSweeps)
+      .values({ triggeredBy: "manual", status: "running" });
+
+    await expect(
+      db
+        .insert(cheatCheckSweeps)
+        .values({ triggeredBy: "queue_drain", status: "running" }),
+    ).rejects.toThrow();
+
+    // A finished sweep alongside a running one is fine — the index is partial.
+    await expect(
+      db
+        .insert(cheatCheckSweeps)
+        .values({ triggeredBy: "manual", status: "completed" }),
+    ).resolves.toBeDefined();
+  });
+
+  test("a drain with no eligible teams completes the sweep immediately", async () => {
+    const org = await makeOrganizer();
+    const linkless = await makeUnsubmittableTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 1 });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId: linkless, score: 70 });
+
+    const sweep = await waitFor(
+      async () => (await db.query.cheatCheckSweeps.findMany({}))[0],
+      "expected a sweep after the queue drained",
+    );
+    expect(sweep.status).toBe("completed");
+    expect(sweep.totalTeams).toBe(0);
   });
 });
 
