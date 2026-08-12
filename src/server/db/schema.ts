@@ -180,6 +180,34 @@ export const judgingQueueStatusEnum = pgEnum("judging_queue_status", [
 
 export const roundTypeEnum = pgEnum("round_type", ["regular", "sponsored"]);
 
+/**
+ * The lifecycle of an automated cheat-check sweep across every eligible team.
+ */
+export const cheatSweepStatusEnum = pgEnum("cheat_sweep_status", [
+  "running",
+  "completed",
+  "failed",
+]);
+
+/**
+ * What caused a sweep to start — the judging queue draining, or an organizer
+ * kicking one off by hand.
+ */
+export const cheatSweepTriggerEnum = pgEnum("cheat_sweep_trigger", [
+  "queue_drain",
+  "manual",
+]);
+
+/**
+ * The state of a single team's slot in a sweep's work list.
+ */
+export const cheatSweepItemStatusEnum = pgEnum("cheat_sweep_item_status", [
+  "pending",
+  "running",
+  "done",
+  "failed",
+]);
+
 export const trackEnum = pgEnum("track", [
   "Best Use of Cohere",
   "Best Use of AntiGravity",
@@ -829,6 +857,106 @@ export const teamCheckResultsRelations = relations(
     checkedBy: one(users, {
       fields: [teamCheckResults.checkedByUserId],
       references: [users.id],
+    }),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Cheat check sweeps
+// ---------------------------------------------------------------------------
+
+/**
+ * One row per automated cheat-check sweep. A sweep is started when the judging
+ * queue drains (or manually by an organizer) and is worked off in slices by
+ * `/api/cheat-check/sweep`, which re-invokes itself until every item is done.
+ *
+ * `lastHeartbeatAt` is bumped after every batch so a sweep whose worker died
+ * mid-flight can be spotted and resumed.
+ */
+export const cheatCheckSweeps = pgTable(
+  "cheat_check_sweep",
+  {
+    id: serial("id").primaryKey(),
+    status: cheatSweepStatusEnum("status").default("running").notNull(),
+    triggeredBy: cheatSweepTriggerEnum("triggered_by").notNull(),
+    startedAt: timestamp("started_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    lastHeartbeatAt: timestamp("last_heartbeat_at", {
+      mode: "date",
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    finishedAt: timestamp("finished_at", { mode: "date", precision: 3 }),
+    totalTeams: integer("total_teams").default(0).notNull(),
+    // The two hacker checks are pure DB reads, so they run once per sweep in
+    // bulk rather than per team.
+    hackerChecksDone: boolean("hacker_checks_done").default(false).notNull(),
+    // When false (the default) the sweep skips check types that already have a
+    // cached result.
+    forceRerun: boolean("force_rerun").default(false).notNull(),
+    rateLimitedUntil: timestamp("rate_limited_until", {
+      mode: "date",
+      precision: 3,
+    }),
+    error: text("error"),
+  },
+  (t) => [
+    // Partial unique index: at most one sweep may be `running` at a time. This
+    // is what makes double-triggering impossible (two judges submitting their
+    // final marks near-simultaneously) without application-level locking.
+    uniqueIndex("cheat_check_sweep_active_idx")
+      .on(t.status)
+      .where(sql`status = 'running'`),
+    index("cheat_check_sweep_finished_at_idx").on(t.finishedAt),
+  ],
+);
+
+/**
+ * One row per team in a sweep — the durable work list. It makes a sweep
+ * resumable after a function timeout, caps retries so a permanently broken
+ * repo can't loop forever, and gives per-team error visibility.
+ */
+export const cheatCheckSweepItems = pgTable(
+  "cheat_check_sweep_item",
+  {
+    sweepId: integer("sweep_id")
+      .notNull()
+      .references(() => cheatCheckSweeps.id, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    status: cheatSweepItemStatusEnum("status").default("pending").notNull(),
+    attempts: integer("attempts").default(0).notNull(),
+    error: text("error"),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sweepId, t.teamId] }),
+    index("cheat_check_sweep_item_claim_idx").on(t.sweepId, t.status),
+  ],
+);
+
+export const cheatCheckSweepsRelations = relations(
+  cheatCheckSweeps,
+  ({ many }) => ({
+    items: many(cheatCheckSweepItems),
+  }),
+);
+
+export const cheatCheckSweepItemsRelations = relations(
+  cheatCheckSweepItems,
+  ({ one }) => ({
+    sweep: one(cheatCheckSweeps, {
+      fields: [cheatCheckSweepItems.sweepId],
+      references: [cheatCheckSweeps.id],
+    }),
+    team: one(teams, {
+      fields: [cheatCheckSweepItems.teamId],
+      references: [teams.id],
     }),
   }),
 );
