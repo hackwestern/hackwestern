@@ -7,7 +7,7 @@ import { count, eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { env } from "~/env";
-import { faker } from "@faker-js/faker";
+import { customAlphabet } from "nanoid";
 
 const teamsSaveSchema = createInsertSchema(teams, {
   name: z.string().optional(),
@@ -117,13 +117,15 @@ export const teamsRouter = createTRPCRouter({
         });
       }
 
-      const id = randomBytes(6).toString("hex");
+      const genCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 4);
 
-      const joinCode = faker.string.alphanumeric({ length: 4 });
-
+      let id = randomBytes(6).toString("hex");
       await db.transaction(async (tx) => {
         let rows = [];
         while (rows.length == 0) {
+          id = randomBytes(6).toString("hex");
+
+          const joinCode = genCode();
           rows = await tx
             .insert(teams)
             .values({
@@ -167,35 +169,41 @@ export const teamsRouter = createTRPCRouter({
       if (!input.joinCode) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "No specified teamId",
+          message: "No specified joinCode",
         });
       }
-      const team = await db.query.teams.findFirst({
-        columns: { id: true },
-        where: eq(teams.joinCode, input.joinCode),
-      });
-      if (!team) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Team does not exist",
-        });
-      }
-      const [teamSize] = await db
-        .select({ value: count() })
-        .from(users)
-        .where(eq(users.teamId, team.id));
-      const size = teamSize?.value ?? 100;
+      await db.transaction(async (tx) => {
+        const [team] = await tx
+          .select({ id: teams.id })
+          .from(teams)
+          .where(eq(teams.joinCode, input.joinCode))
+          .for("update");
 
-      if (size >= 4) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Team is full (max 4)",
-        });
-      }
-      await db
-        .update(users)
-        .set({ teamId: team.id })
-        .where(eq(users.id, ctx.session.user.id));
+        if (!team) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Team does not exist",
+          });
+        }
+        const teamId = team.id;
+
+        const [teamSize] = await tx
+          .select({ value: count() })
+          .from(users)
+          .where(eq(users.teamId, teamId));
+        const size = teamSize?.value ?? 100;
+
+        if (size >= 4) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Team is full (max 4)",
+          });
+        }
+        await tx
+          .update(users)
+          .set({ teamId: teamId })
+          .where(eq(users.id, ctx.session.user.id));
+      });
 
       return { success: true };
     }),
