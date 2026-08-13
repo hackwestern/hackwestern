@@ -1,0 +1,1 @@
+ALTER TABLE "team" ALTER COLUMN "joinCode" SET DATA TYPE varchar(4);

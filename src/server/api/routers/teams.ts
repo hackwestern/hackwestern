@@ -7,6 +7,7 @@ import { count, eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { env } from "~/env";
+import { faker } from "@faker-js/faker";
 
 const teamsSaveSchema = createInsertSchema(teams, {
   name: z.string().optional(),
@@ -23,7 +24,6 @@ const teamsSaveSchema = createInsertSchema(teams, {
 
 const teamsSelectSchema = createSelectSchema(teams).omit({
   id: true,
-  joinCode: true,
   submissionStatus: true,
   submittedAt: true,
   createdAt: true,
@@ -119,14 +119,21 @@ export const teamsRouter = createTRPCRouter({
 
       const id = randomBytes(6).toString("hex");
 
-      const joinCode = randomBytes(3).toString("hex");
+      const joinCode = faker.string.alphanumeric({ length: 4 });
 
       await db.transaction(async (tx) => {
-        await tx.insert(teams).values({
-          id: id,
-          name: input.name,
-          joinCode: joinCode,
-        });
+        let rows = [];
+        while (rows.length == 0) {
+          rows = await tx
+            .insert(teams)
+            .values({
+              id: id,
+              name: input.name,
+              joinCode: joinCode,
+            })
+            .onConflictDoNothing()
+            .returning();
+        }
         await tx
           .update(users)
           .set({ teamId: id })
@@ -164,6 +171,7 @@ export const teamsRouter = createTRPCRouter({
         });
       }
       const team = await db.query.teams.findFirst({
+        columns: { id: true },
         where: eq(teams.joinCode, input.joinCode),
       });
       if (!team) {
@@ -175,7 +183,7 @@ export const teamsRouter = createTRPCRouter({
       const [teamSize] = await db
         .select({ value: count() })
         .from(users)
-        .where(eq(users.teamId, input.joinCode));
+        .where(eq(users.teamId, team.id));
       const size = teamSize?.value ?? 100;
 
       if (size >= 4) {
