@@ -42,3 +42,9 @@ vi.mock("~/server/mail", () => ({
     error: null,
   }),
 }));
+
+// Signup email validation does a live MX lookup; stub it so tests never hit DNS.
+// Individual tests can override resolveMx (e.g. to simulate a nonexistent domain).
+vi.mock("dns/promises", () => ({
+  resolveMx: vi.fn().mockResolvedValue([{ exchange: "mx.test", priority: 10 }]),
+}));
