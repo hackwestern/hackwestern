@@ -234,17 +234,32 @@ describe("teams basic endpoints", () => {
 
       assert(team?.devpostUrl == "Url");
       assert(tracks == "General");
+
+      return removeTeam(teamId.id);
     });
   });
   describe.sequential("getTeam Tests", () => {
     test("getTeam success", async () => {
+      const teamId = await insertTeam();
+
+      const join = caller.teams.joinTeam({ joinCode: teamId.code });
+
+      await expect(join).resolves.toEqual({ success: true });
+
       const get = caller.teams.getTeam();
-      expect(get).resolves;
+
+      await expect(get).resolves.toEqual({
+        name: "Team 1",
+        devpostUrl: null,
+        githubUrl: null,
+        tracks: null,
+        memberGithubUsernames: null,
+        memberDevpostUsernames: null,
+        joinCode: teamId.code,
+      });
+      return removeTeam(teamId.id);
     });
     test("getTeam fail because not in team", async () => {
-      const leave = caller.teams.leaveTeam();
-
-      await expect(leave).resolves.toEqual({ success: true });
       const get = caller.teams.getTeam();
 
       await expect(get).rejects.toThrow();
