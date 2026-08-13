@@ -1,6 +1,6 @@
 {
-  "id": "1ea5b5e2-1a06-4623-a359-33235bc1c36b",
-  "prevId": "6b9aaa51-321d-4909-80cd-c59a69d6a644",
+  "id": "eab49f31-06e2-47e4-bcfe-81a1592bfb04",
+  "prevId": "1ea5b5e2-1a06-4623-a359-33235bc1c36b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1885,7 +1885,7 @@
         },
         "joinCode": {
           "name": "joinCode",
-          "type": "varchar(6)",
+          "type": "varchar(4)",
           "primaryKey": false,
           "notNull": true
         }

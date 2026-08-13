@@ -63,7 +63,7 @@ async function makeTeam(opts?: {
   tracks?: Track[];
   submissionStatus?: SubmissionStatus;
 }) {
-  const code = faker.string.alphanumeric(6);
+  const code = faker.string.alphanumeric(4);
   const id = faker.string.alphanumeric(12);
   await db.insert(teams).values({
     id,

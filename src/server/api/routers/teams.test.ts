@@ -1,4 +1,13 @@
-import { describe, expect, test, beforeAll, afterAll, assert } from "vitest";
+import {
+  describe,
+  expect,
+  test,
+  beforeAll,
+  afterAll,
+  assert,
+  beforeEach,
+  afterEach,
+} from "vitest";
 import { mockSession } from "~/server/auth";
 import { db } from "~/server/db";
 import { createInnerTRPCContext } from "../trpc";
@@ -13,7 +22,7 @@ const ctx = createInnerTRPCContext({ session });
 const caller = createCaller(ctx);
 
 const insertTeam = async () => {
-  const joinCode = faker.string.sample(6);
+  const joinCode = faker.string.sample(4);
   const id = faker.string.sample(12);
   await db.insert(teams).values({ name: "Team 1", id: id, joinCode: joinCode });
   return { code: joinCode, id: id };
@@ -54,10 +63,10 @@ describe("teams basic endpoints", () => {
   });
   describe.sequential("joinTeam Tests", () => {
     let teamId: { code: string; id: string };
-    beforeAll(async () => {
+    beforeEach(async () => {
       teamId = await insertTeam();
     });
-    afterAll(async () => {
+    afterEach(async () => {
       await removeTeam(teamId.id);
     });
     test("joinTeam success", async () => {
@@ -66,6 +75,9 @@ describe("teams basic endpoints", () => {
       return expect(res).resolves.toEqual({ success: true });
     });
     test("joinTeam fail because already in team", async () => {
+      const res_suc = caller.teams.joinTeam({ joinCode: teamId.code });
+      await expect(res_suc).resolves.toEqual({ success: true });
+
       const res = caller.teams.joinTeam({ joinCode: teamId.code });
 
       return expect(res).rejects.toThrow();
