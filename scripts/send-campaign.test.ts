@@ -23,7 +23,7 @@ describe("send-campaign helpers", () => {
       unsubscribeToken: "tok123",
     });
     expect(r.subject).toMatch(/Hack Western 13/i);
-    expect(r.html).toContain("because you signed up for Hack Western 12");
+    expect(r.html).toContain("because you expressed interest in Hack Western 12");
     expect(r.html).toContain("p@gmail.com");
     expect(r.headers["List-Unsubscribe"]).toContain("/api/unsubscribe?token=tok123");
     expect(r.headers["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
