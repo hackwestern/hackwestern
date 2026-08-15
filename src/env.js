@@ -28,6 +28,16 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string(),
     DISCORD_CLIENT_ID: z.string(),
     DISCORD_CLIENT_SECRET: z.string(),
+    // Mailjet (Send API v3.1) — used ONLY by the re-engagement drip
+    // (scripts/send-campaign.ts). Transactional email still sends via
+    // Cloudflare below; keeping the drip on its own transport isolates the
+    // marketing sending reputation from password-reset/verify. Optional at
+    // build time so this compiles before the Mailjet account exists; the drip
+    // guards on them at runtime.
+    MAILJET_API_KEY: z.string().optional(),
+    MAILJET_SECRET_KEY: z.string().optional(),
+    // Cloudflare Email Service — the transactional transport
+    // (signup/verify/reset/application confirmations) via src/server/mail.ts.
     CLOUDFLARE_EMAIL_API_TOKEN: z.string(),
     CLOUDFLARE_ACCOUNT_ID: z.string(),
     // Kickbox email-verification API key (optional). When set, signup emails are
@@ -83,6 +93,8 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
     DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
+    MAILJET_API_KEY: process.env.MAILJET_API_KEY,
+    MAILJET_SECRET_KEY: process.env.MAILJET_SECRET_KEY,
     CLOUDFLARE_EMAIL_API_TOKEN:
       process.env.CLOUDFLARE_EMAIL_API_TOKEN ??
       (process.env.NODE_ENV === "test" ? "mock-cf-api-token" : undefined),
