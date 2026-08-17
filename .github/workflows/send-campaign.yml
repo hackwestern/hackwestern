@@ -10,6 +10,10 @@ name: Hacker Email Campaign Drip
 #   - Manual run: Actions → this workflow → Run workflow → tick "send".
 #   - Scoped test: Run workflow → tick "send" + set "only" to one email to send
 #     the whole pipeline to just that address (ignores the last-sent gate).
+#   - One-shot drain: Run workflow → tick "send" + set "chunk" to a number
+#     larger than the remaining list and "source" to the cohort ("all" for
+#     both). Sends the rest of the list in a single run; the next scheduled
+#     run then finds 0 recipients and self-disables the workflow.
 #
 # SELF-TERMINATION:
 #   - When a send run finds 0 eligible recipients (list drained), it disables
@@ -27,6 +31,15 @@ on:
       only:
         description: "Scope to a single email (test). Blank = normal batch."
         type: string
+        default: ""
+      chunk:
+        description: "Recipients this run. Blank = the CHUNK env (the drip rate). Big value = one-shot drain."
+        type: string
+        default: ""
+      source:
+        description: "Cohort: hw12, hw11, or 'all'. Blank = the SOURCE env."
+        type: choice
+        options: ["", "hw12", "hw11", "all"]
         default: ""
 
 concurrency:
@@ -47,8 +60,8 @@ jobs:
       MAILJET_API_KEY: ${{ secrets.MAILJET_API_KEY }}
       MAILJET_SECRET_KEY: ${{ secrets.MAILJET_SECRET_KEY }}
       SKIP_ENV_VALIDATION: "1"
-      CHUNK: "4" # ~44/day (4 × 11 runs). Authoritative — the run step no longer overrides it. Under the Mailjet free 200/day cap, which the drip now owns alone (transactional is on Cloudflare).
-      SOURCE: "hw12" # cohort filter — start with hw12 (fresher/engaged); switch to "hw11" once reputation holds, or "" for all sources
+      CHUNK: "4" # ~44/day (4 × 11 runs) — the steady drip rate for scheduled runs. A manual dispatch can override it via the `chunk` input.
+      SOURCE: "hw12" # cohort filter — hw12 (fresher/engaged) by default; "" = all sources. A manual dispatch can override it via the `source` input.
       START: "2026-07-30T00:00:00Z" # campaign kickoff; gates re-sends (must precede first send)
     steps:
       - uses: actions/checkout@v4
@@ -73,21 +86,36 @@ jobs:
         env:
           FLAG: ${{ steps.mode.outputs.flag }}
           ONLY: ${{ inputs.only }}
+          IN_CHUNK: ${{ inputs.chunk }}
+          IN_SOURCE: ${{ inputs.source }}
         run: |
           set -o pipefail
-          # Flat ~44/day (CHUNK=4 × 11 runs/day), set 2026-08-17. Doubles the
-          # previous 22/day. The old escalating warm-up bands are gone: while on
-          # the Mailjet FREE tier the binding limit is the 1000-CONTACT cap, not
-          # the 200/day send cap. The Send API creates a contact per recipient
-          # and exceeding 1000 triggers an account-wide SEND HOLD, so higher
-          # rates just reach that wall sooner. ~426 contacts of headroom remained
-          # on 2026-08-17, which at 44/day lasts ~10 days (hold ~2026-08-27).
-          # Domain warm-up still matters (mail.hackwestern.com has no sending
-          # history through Mailjet — Cloudflare reputation does not transfer,
-          # different IPs), and 44/day is a gentle enough step to keep building it.
-          # AFTER the Essential upgrade the contact cap disappears and this needs
-          # a fresh ramp — raise CHUNK only while bounces stay <2% and the Google
-          # Postmaster user-reported spam rate stays <0.3%.
+          # CHUNK=4 (~44/day over 11 runs) is the steady-state drip rate.
+          #
+          # ONE-SHOT DRAIN: Mailjet is on Essential as of 2026-08-17, so the free
+          # tier's 1000-contact cap and 200/day send cap are both gone. The
+          # remaining ceilings are the plan's monthly volume (15,000 on the base
+          # Essential tier) and the per-API-key Daily Send Limit (paid default =
+          # 5x the monthly allowance, so ~75,000/day — not binding here). To send
+          # the rest of the list in one go, dispatch manually with a large
+          # `chunk` and `source: all` instead of editing this file.
+          #
+          # Throughput: send-campaign.ts is sequential with a 500ms sleep per
+          # recipient (DELAY_MS), so a drain runs at ~100 emails/min — roughly
+          # 45-60 min of job time for ~4,400 recipients. Well inside the 6h
+          # job limit, and the concurrency group makes any scheduled run queue
+          # behind it rather than double-sending.
+          #
+          # A drain is a reputation event: mail.hackwestern.com has only ~460
+          # emails of history through Mailjet, so this is ~10x its lifetime
+          # volume at once. Watch bounces (<2%) and the Google Postmaster
+          # user-reported spam rate (<0.3%) afterwards.
+          # Manual dispatch may override the drip rate and cohort for a one-shot
+          # drain (see the "one-shot drain" note above). Scheduled runs never set
+          # these inputs, so the cron keeps using the CHUNK/SOURCE env values.
+          [ -n "$IN_CHUNK" ] && CHUNK="$IN_CHUNK"
+          if [ "$IN_SOURCE" = "all" ]; then SOURCE=""            # both cohorts
+          elif [ -n "$IN_SOURCE" ]; then SOURCE="$IN_SOURCE"; fi
           args=(--chunk="$CHUNK" --start="$START")
           [ -n "$SOURCE" ] && args+=(--source="$SOURCE")
           [ -n "$FLAG" ] && args+=("$FLAG")
