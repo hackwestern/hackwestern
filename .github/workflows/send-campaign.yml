@@ -47,7 +47,7 @@ jobs:
       MAILJET_API_KEY: ${{ secrets.MAILJET_API_KEY }}
       MAILJET_SECRET_KEY: ${{ secrets.MAILJET_SECRET_KEY }}
       SKIP_ENV_VALIDATION: "1"
-      CHUNK: "14" # steady-state ~154/day (14 × 11 runs); the run step overrides this with a warm-up curve until the domain is warmed. Under the Mailjet free 200/day cap, which the drip now owns alone (transactional is on Cloudflare).
+      CHUNK: "4" # ~44/day (4 × 11 runs). Authoritative — the run step no longer overrides it. Under the Mailjet free 200/day cap, which the drip now owns alone (transactional is on Cloudflare).
       SOURCE: "hw12" # cohort filter — start with hw12 (fresher/engaged); switch to "hw11" once reputation holds, or "" for all sources
       START: "2026-07-30T00:00:00Z" # campaign kickoff; gates re-sends (must precede first send)
     steps:
@@ -75,22 +75,19 @@ jobs:
           ONLY: ${{ inputs.only }}
         run: |
           set -o pipefail
-          # New-sending-path warm-up curve. Per Mailjet docs, the shared IP is
-          # already pre-warmed by Mailjet — no IP warm-up needed on this tier.
-          # What IS new is the DOMAIN path: mail.hackwestern.com has zero history
-          # sending *through Mailjet* (Cloudflare reputation does not transfer,
-          # different IPs). So ramp volume gently to build domain reputation
-          # instead of tripping spam filters with a cold blast. Bands reset to
-          # start on the Mailjet cutover (2026-08-15, day 1 = 0 sent). Send daily
-          # for consistency; step up only while bounces/complaints stay clean.
-          # Dates are UTC; ISO dates compare correctly as strings. Reverts to the
-          # CHUNK env (~154/day, under the 200/day cap) once past the last band.
-          TODAY="$(date -u +%F)"
-          if   [[ "$TODAY" < "2026-08-18" ]]; then CHUNK=2   # days 1-3   ~22/day
-          elif [[ "$TODAY" < "2026-08-22" ]]; then CHUNK=4   # days 4-7   ~44/day
-          elif [[ "$TODAY" < "2026-08-29" ]]; then CHUNK=7   # week 2     ~77/day
-          elif [[ "$TODAY" < "2026-09-05" ]]; then CHUNK=11  # week 3    ~121/day
-          fi                                                 # week 4+   ~154/day (CHUNK env)
+          # Flat ~44/day (CHUNK=4 × 11 runs/day), set 2026-08-17. Doubles the
+          # previous 22/day. The old escalating warm-up bands are gone: while on
+          # the Mailjet FREE tier the binding limit is the 1000-CONTACT cap, not
+          # the 200/day send cap. The Send API creates a contact per recipient
+          # and exceeding 1000 triggers an account-wide SEND HOLD, so higher
+          # rates just reach that wall sooner. ~426 contacts of headroom remained
+          # on 2026-08-17, which at 44/day lasts ~10 days (hold ~2026-08-27).
+          # Domain warm-up still matters (mail.hackwestern.com has no sending
+          # history through Mailjet — Cloudflare reputation does not transfer,
+          # different IPs), and 44/day is a gentle enough step to keep building it.
+          # AFTER the Essential upgrade the contact cap disappears and this needs
+          # a fresh ramp — raise CHUNK only while bounces stay <2% and the Google
+          # Postmaster user-reported spam rate stays <0.3%.
           args=(--chunk="$CHUNK" --start="$START")
           [ -n "$SOURCE" ] && args+=(--source="$SOURCE")
           [ -n "$FLAG" ] && args+=("$FLAG")
