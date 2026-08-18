@@ -67,6 +67,9 @@ export const env = createEnv({
     // ISO 8601 datetime for the project submission deadline. Submissions after
     // this are marked "late". Unset = no deadline, everything counts as on-time.
     PROJECT_SUBMISSION_DEADLINE: z.string().datetime().optional(),
+    // Bearer token for /api/cheat-check/sweep, which the sweep worker also uses
+    // to re-invoke itself. Leave unset to disable automated sweeps entirely.
+    CHEAT_SWEEP_SECRET: z.string().optional(),
   },
 
   /**
@@ -119,6 +122,7 @@ export const env = createEnv({
     HACK_START: process.env.HACK_START,
     HACK_END: process.env.HACK_END,
     PROJECT_SUBMISSION_DEADLINE: process.env.PROJECT_SUBMISSION_DEADLINE,
+    CHEAT_SWEEP_SECRET: process.env.CHEAT_SWEEP_SECRET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

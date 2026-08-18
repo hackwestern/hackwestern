@@ -85,6 +85,13 @@
       "when": 1786576472066,
       "tag": "0011_apply_judging_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1786581540130,
+      "tag": "0012_faulty_cable",
+      "breakpoints": true
     }
   ]
 }
