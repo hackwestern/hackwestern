@@ -39,11 +39,18 @@ export const preregistrationRouter = createTRPCRouter({
           });
         }
 
+        // Normalize once and use it for BOTH lookups and the insert. An earlier
+        // version checked preregistrations against the raw input while storing the
+        // raw input too, so "Arjun.gr97@gmail.com" and "arjun.gr97@gmail.com" were
+        // different rows: the lookup missed, and the unique index is byte-exact so it
+        // did not fire either. The same person signed up twice and got two of every
+        // email. Gmail dot-stripping widens that further — "a.rjun.gr97@" is the same
+        // mailbox again.
         const normalized = normalizeEmail(input.email);
         const [existingPreregistration, existingSubscriber] = await Promise.all(
           [
             db.query.preregistrations.findFirst({
-              where: ({ email }, { eq }) => eq(email, input.email),
+              where: ({ email }, { eq }) => eq(email, normalized),
             }),
             db.query.emailSubscribers.findFirst({
               where: ({ email }, { eq }) => eq(email, normalized),
@@ -62,7 +69,8 @@ export const preregistrationRouter = createTRPCRouter({
         const unsubscribeToken = generateUnsubscribeToken();
         const createdPreregistration = await db
           .insert(preregistrations)
-          .values({ ...input, unsubscribeToken })
+          // Stored normalized, so the lookups above can ever match it.
+          .values({ ...input, email: normalized, unsubscribeToken })
           .returning();
 
         // Send confirmation email. Don't fail the signup if the email bounces —
