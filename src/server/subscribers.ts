@@ -46,6 +46,29 @@ export function editionFromSource(source: string): string {
   return source.replace(/^hw/, "");
 }
 
+/** Read-only lookup for the unsubscribe confirmation page.
+ *
+ *  Exists so that page can render without writing. It used to call
+ *  unsubscribeByToken() from getServerSideProps, which turned every GET — including
+ *  the ones link scanners issue — into an unsubscribe. Nothing in here mutates. */
+export async function tokenExists(
+  token: string,
+): Promise<"ready" | "already" | "invalid"> {
+  const sub = await db.query.emailSubscribers.findFirst({
+    where: eq(emailSubscribers.unsubscribeToken, token),
+    columns: { id: true, unsubscribedAt: true },
+  });
+  if (sub) return sub.unsubscribedAt ? "already" : "ready";
+
+  const pre = await db.query.preregistrations.findFirst({
+    where: eq(preregistrations.unsubscribeToken, token),
+    columns: { id: true, unsubscribedAt: true },
+  });
+  if (pre) return pre.unsubscribedAt ? "already" : "ready";
+
+  return "invalid";
+}
+
 export async function unsubscribeByToken(token: string): Promise<boolean> {
   // The token belongs to exactly one list (email_subscriber or preregistration
   // — kept disjoint by email). Try the campaign list first, then the updates
