@@ -78,6 +78,13 @@
       "when": 1785438778394,
       "tag": "0010_preregistration_unsubscribe",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786576472066,
+      "tag": "0011_apply_judging_triggers",
+      "breakpoints": true
     }
   ]
 }
