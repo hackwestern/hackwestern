@@ -37,10 +37,14 @@ export default function Unsubscribe({ status }: Props) {
     setBusy(true);
     setFailed(false);
     try {
-      const token = new URLSearchParams(window.location.search).get("token") ?? "";
-      const res = await fetch(`/api/unsubscribe?token=${encodeURIComponent(token)}`, {
-        method: "POST",
-      });
+      const token =
+        new URLSearchParams(window.location.search).get("token") ?? "";
+      const res = await fetch(
+        `/api/unsubscribe?token=${encodeURIComponent(token)}`,
+        {
+          method: "POST",
+        },
+      );
       if (!res.ok) throw new Error(String(res.status));
       setDone(true);
     } catch {
@@ -91,8 +95,8 @@ export default function Unsubscribe({ status }: Props) {
 
         {failed && (
           <p className="mt-3 max-w-md font-figtree text-sm text-red-600">
-            That didn&apos;t go through. Try again, or reply to any of our emails and
-            we&apos;ll take you off the list.
+            That didn&apos;t go through. Try again, or reply to any of our
+            emails and we&apos;ll take you off the list.
           </p>
         )}
 
