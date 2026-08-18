@@ -34,9 +34,14 @@ describe("preregistration.create", async () => {
   beforeEach(async () => {
     sendEmailSpy.mockClear();
 
+    // Delete by the NORMALIZED address, because that is what create() stores.
+    // Deleting by the raw seed address left the row behind, and every later test
+    // then failed on its own first create with a spurious CONFLICT.
     await db
       .delete(preregistrations)
-      .where(eq(preregistrations.email, testPreregistration.email));
+      .where(
+        eq(preregistrations.email, normalizeEmail(testPreregistration.email)),
+      );
   });
 
   afterEach(() => {
@@ -51,7 +56,11 @@ describe("preregistration.create", async () => {
     const { id, createdAt, unsubscribeToken, unsubscribedAt, ...got } = result;
     (void id, createdAt, unsubscribedAt);
 
-    expect(got).toEqual(want);
+    // The stored email is normalized, not the raw input. This assertion used to
+    // expect the raw form, which is exactly the bug it was hiding: storing
+    // "Ari_Maggio@gmail.com" while the duplicate check looked up the normalized
+    // form meant the same person could sign up twice and get every email twice.
+    expect(got).toEqual({ ...want, email: normalizeEmail(want.email) });
     // a unique unsubscribe token is generated for the updates email
     expect(unsubscribeToken).toMatch(/^[a-f0-9]{40}$/);
   });
