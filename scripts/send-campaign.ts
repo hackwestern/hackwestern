@@ -1,7 +1,11 @@
 import { and, isNull, or, lt, asc, eq } from "drizzle-orm";
+import { env } from "~/env";
 import { db } from "~/server/db";
 import { emailSubscribers } from "~/server/db/schema";
-import { sendEmail } from "~/server/mail";
+// Drip sends via Mailjet directly (NOT the shared ~/server/mail, which is the
+// Cloudflare transactional transport). Keeping the marketing stream on its own
+// provider isolates its sending reputation from password-reset/verify email.
+import { sendViaMailjet } from "~/server/mail-mailjet";
 import {
   campaignTemplate,
   campaignText,
@@ -135,23 +139,39 @@ async function main() {
     return;
   }
 
+  // Live send needs the Mailjet marketing creds. Fail loud rather than looping
+  // through recipients returning a config error for every one.
+  if (!env.MAILJET_API_KEY || !env.MAILJET_SECRET_KEY) {
+    console.error(
+      "MAILJET_API_KEY / MAILJET_SECRET_KEY not set — cannot send the drip.",
+    );
+    process.exit(1);
+  }
+  const mjCreds = {
+    apiKey: env.MAILJET_API_KEY,
+    secretKey: env.MAILJET_SECRET_KEY,
+  };
+
   let sent = 0,
     bounced = 0,
     failed = 0;
   for (const r of rows) {
     const { subject, html, text, headers } = renderFor(r);
-    const res = await sendEmail({
-      // Bulk campaign sends from an isolated subdomain so a spam/bounce hit
-      // can't poison transactional (password-reset/verify) deliverability on
-      // the root domain. Replies still route to the monitored inbox (reply_to).
-      from: "Hack Western <updates@mail.hackwestern.com>",
-      replyTo: "hello@hackwestern.com",
-      to: r.email,
-      subject,
-      html,
-      text,
-      headers,
-    });
+    const res = await sendViaMailjet(
+      {
+        // Bulk campaign sends from an isolated subdomain so a spam/bounce hit
+        // can't poison transactional (password-reset/verify) deliverability on
+        // the root domain. Replies still route to the monitored inbox (reply_to).
+        from: "Hack Western <updates@mail.hackwestern.com>",
+        replyTo: "hello@hackwestern.com",
+        to: r.email,
+        subject,
+        html,
+        text,
+        headers,
+      },
+      mjCreds,
+    );
     const outcome = classifyResult(res);
     if (outcome === "quota") {
       console.log(`FAIL ${r.email} — ${res.error?.message}`);
