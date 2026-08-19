@@ -11,7 +11,7 @@ import {
   verificationTokens,
 } from "~/server/db/schema";
 import { randomBytes } from "crypto";
-import * as mailModule from "~/server/mail";
+import * as mailModule from "~/server/mail-mailjet";
 
 const session = await mockSession(db);
 
@@ -29,6 +29,13 @@ describe.sequential("auth.reset", async () => {
   });
 
   test("Sends a reset email if the user exists", async () => {
+    const sendEmailSpy = vi
+      .spyOn(mailModule, "sendViaMailjet")
+      .mockResolvedValue({
+        data: { delivered: [fakeEmail], queued: [], bounced: [] },
+        error: null,
+      });
+
     // insert fake user
     await db
       .insert(users)
@@ -42,16 +49,20 @@ describe.sequential("auth.reset", async () => {
       .returning()
       .then((res) => res[0]);
 
-    const result = await caller.auth.reset({ email: fakeEmail });
+    try {
+      const result = await caller.auth.reset({ email: fakeEmail });
 
-    // non-null result
-    assert(!!result);
+      // non-null result
+      assert(!!result);
+    } finally {
+      sendEmailSpy.mockRestore();
 
-    // clean up inserted user and associated pw reset token
-    await db
-      .delete(resetPasswordTokens)
-      .where(eq(resetPasswordTokens.userId, fakeUserId));
-    await db.delete(users).where(eq(users.email, fakeEmail));
+      // clean up inserted user and associated pw reset token
+      await db
+        .delete(resetPasswordTokens)
+        .where(eq(resetPasswordTokens.userId, fakeUserId));
+      await db.delete(users).where(eq(users.email, fakeEmail));
+    }
   });
 });
 
@@ -65,15 +76,26 @@ describe.sequential("auth.create", () => {
   const caller = createCaller(ctx);
 
   test("creates a new user successfully", async () => {
-    const createdUser = await caller.auth.create(fakeUser);
+    const sendEmailSpy = vi
+      .spyOn(mailModule, "sendViaMailjet")
+      .mockResolvedValue({
+        data: { delivered: [fakeUser.email], queued: [], bounced: [] },
+        error: null,
+      });
 
-    expect(createdUser.success).toBe(true);
+    try {
+      const createdUser = await caller.auth.create(fakeUser);
 
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.email, fakeUser.email),
-    });
+      expect(createdUser.success).toBe(true);
 
-    expect(dbUser?.email).toBe(fakeUser.email);
+      const dbUser = await db.query.users.findFirst({
+        where: eq(users.email, fakeUser.email),
+      });
+
+      expect(dbUser?.email).toBe(fakeUser.email);
+    } finally {
+      sendEmailSpy.mockRestore();
+    }
   });
 
   test("throws an error when creating a duplicate user", async () => {
@@ -285,10 +307,12 @@ describe("auth.resendEmail", () => {
       })
       .onConflictDoNothing?.();
 
-    const sendEmailSpy = vi.spyOn(mailModule, "sendEmail").mockResolvedValue({
-      data: { delivered: ["mock@example.com"], queued: [], bounced: [] },
-      error: null,
-    });
+    const sendEmailSpy = vi
+      .spyOn(mailModule, "sendViaMailjet")
+      .mockResolvedValue({
+        data: { delivered: ["mock@example.com"], queued: [], bounced: [] },
+        error: null,
+      });
 
     try {
       const result = await caller.auth.resendEmail();
