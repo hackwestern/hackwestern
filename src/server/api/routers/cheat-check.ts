@@ -16,6 +16,15 @@ import {
   teams,
 } from "~/server/db/schema";
 import { env } from "~/env";
+import { getHackerCheckRows } from "~/lib/cheat-checks/getHackerChecks";
+import { getTeamCheckRows } from "~/lib/cheat-checks/getTeamChecks";
+import { GroupResults } from "~/lib/cheat-checks/groupResults";
+import { TeamResults } from "~/lib/cheat-checks/finalTeamResult";
+import {
+  HACKER_CHECK_TYPES,
+  TEAM_CHECK_TYPES,
+} from "~/lib/cheat-checks/constants";
+import type { HackerProfile, TeamProfile } from "~/lib/cheat-checks/types";
 import {
   fetchAllCommits,
   fetchContributors,
@@ -516,6 +525,30 @@ export const cheatCheckRouter = createTRPCRouter({
       members: team.members,
       checks: team.checkResults,
     }));
+  }),
+
+  /**
+   * Composes the full cheat-check overview for every team, shaped for the
+   * <CheatTable /> component: team-level summary checks plus the per-member
+   * checks that expand underneath each team row. Reads the cached hacker and
+   * team check results and groups them into display-ready rows.
+   */
+  getDisplayTeams: protectedOrganizerProcedure.query(async () => {
+    const [hackerRows, teamRows] = await Promise.all([
+      getHackerCheckRows(),
+      getTeamCheckRows(),
+    ]);
+
+    const groupedHackers = GroupResults<HackerCheckType, HackerProfile>(
+      hackerRows,
+      HACKER_CHECK_TYPES,
+    );
+    const groupedTeams = GroupResults<TeamCheckType, TeamProfile>(
+      teamRows,
+      TEAM_CHECK_TYPES,
+    );
+
+    return TeamResults(groupedHackers, groupedTeams);
   }),
 });
 
