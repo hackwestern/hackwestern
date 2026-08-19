@@ -53,8 +53,9 @@ describe("preregistration.create", async () => {
     const result = await caller.preregistration.create(want);
 
     assert(!!result);
-    const { id, createdAt, unsubscribeToken, unsubscribedAt, ...got } = result;
-    (void id, createdAt, unsubscribedAt);
+    const { id, createdAt, unsubscribeToken, unsubscribedAt, bouncedAt, ...got } =
+      result;
+    (void id, createdAt, unsubscribedAt, bouncedAt);
 
     // The stored email is normalized, not the raw input. This assertion used to
     // expect the raw form, which is exactly the bug it was hiding: storing

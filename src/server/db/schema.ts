@@ -257,6 +257,7 @@ export const preregistrations = pgTable("preregistration", {
   // new signups generate one so the updates email can carry an unsubscribe link.
   unsubscribeToken: varchar("unsubscribe_token", { length: 64 }).unique(),
   unsubscribedAt: timestamp("unsubscribed_at", { mode: "date", precision: 3 }),
+  bouncedAt: timestamp("bounced_at", { mode: "date", precision: 3 }),
 });
 
 export const emailSubscribers = pgTable("email_subscriber", {
