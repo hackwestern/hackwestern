@@ -62,7 +62,7 @@ export function Window({
           aria-label="Close window"
           onClick={onClose}
           disabled={!onClose}
-          className="relative size-[13px] rounded-full border border-[#c93a2b] bg-[radial-gradient(circle_at_50%_30%,#ff8a80,#ec4c3c_70%)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.25),0_1px_1px_rgba(0,0,0,0.18)] transition-[transform,filter] duration-100 before:pointer-events-none before:absolute before:left-[3px] before:right-[3px] before:top-px before:h-[5px] before:rounded-full before:bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.15))] before:content-[''] hover:scale-110 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#43484f]/50 active:scale-95 disabled:cursor-default"
+          className="window-traffic-light window-traffic-light-red"
         />
         <button
           type="button"
@@ -70,7 +70,7 @@ export function Window({
           onClick={() => setMinimized(true)}
           disabled={minimized}
           title="Minimize window"
-          className="relative size-[13px] rounded-full border border-[#cf9325] bg-[radial-gradient(circle_at_50%_30%,#ffe082,#f5b731_70%)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.25),0_1px_1px_rgba(0,0,0,0.18)] transition-[transform,filter] duration-100 before:pointer-events-none before:absolute before:left-[3px] before:right-[3px] before:top-px before:h-[5px] before:rounded-full before:bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.15))] before:content-[''] hover:scale-110 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#43484f]/50 active:scale-95 disabled:opacity-50"
+          className="window-traffic-light window-traffic-light-yellow"
         />
         <button
           type="button"
@@ -78,7 +78,7 @@ export function Window({
           onClick={() => setMinimized(false)}
           disabled={!minimized || disableExpand}
           title="Maximize window"
-          className="relative size-[13px] rounded-full border border-[#43a12f] bg-[radial-gradient(circle_at_50%_30%,#b9f6a5,#56c93f_70%)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.25),0_1px_1px_rgba(0,0,0,0.18)] transition-[transform,filter] duration-100 before:pointer-events-none before:absolute before:left-[3px] before:right-[3px] before:top-px before:h-[5px] before:rounded-full before:bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.15))] before:content-[''] hover:scale-110 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#43484f]/50 active:scale-95 disabled:opacity-50"
+          className="window-traffic-light window-traffic-light-green"
         />
       </div>
       <p className="pointer-events-none absolute inset-x-0 text-center font-cossetteTexte text-[10.8px] font-normal leading-normal text-[#626262]">
