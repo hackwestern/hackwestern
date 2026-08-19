@@ -1,0 +1,1 @@
+ALTER TABLE "preregistration" ADD COLUMN "bounced_at" timestamp (3);

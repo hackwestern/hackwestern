@@ -56,5 +56,8 @@ yarn-error.log*
 CLAUDE.md
 .claude/
 
+# local process notes (not committed — keep your own copy)
+PERSON_CONSOLIDATION_NOTES.md
+
 
 google-wallet-credentials.json

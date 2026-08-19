@@ -2,7 +2,7 @@ import { describe, expect, test, vi, beforeEach, afterEach } from "vitest";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { like } from "drizzle-orm";
 import { db } from "~/server/db";
-import { emailSubscribers } from "~/server/db/schema";
+import { emailSubscribers, preregistrations } from "~/server/db/schema";
 import { generateUnsubscribeToken } from "~/server/subscribers";
 import { env } from "~/env";
 import handler from "~/pages/api/mailjet-webhook";
@@ -53,10 +53,14 @@ const event = (extra: Record<string, unknown>) => ({
 
 describe("/api/mailjet-webhook", () => {
   const PREFIX = "zz-mjtest-";
-  const cleanup = () =>
-    db
+  const cleanup = async () => {
+    await db
       .delete(emailSubscribers)
       .where(like(emailSubscribers.email, `${PREFIX}%`));
+    await db
+      .delete(preregistrations)
+      .where(like(preregistrations.email, `${PREFIX}%`));
+  };
 
   beforeEach(async () => {
     vi.restoreAllMocks();
@@ -71,8 +75,21 @@ describe("/api/mailjet-webhook", () => {
       unsubscribeToken: generateUnsubscribeToken(),
     });
 
+  const seedPrereg = (email: string) =>
+    db
+      .insert(preregistrations)
+      .values({ email, unsubscribeToken: generateUnsubscribeToken() });
+
   const bouncedAt = async (email: string) => {
     const row = await db.query.emailSubscribers.findFirst({
+      where: (t, { eq }) => eq(t.email, email),
+      columns: { bouncedAt: true },
+    });
+    return row?.bouncedAt ?? null;
+  };
+
+  const preregBouncedAt = async (email: string) => {
+    const row = await db.query.preregistrations.findFirst({
       where: (t, { eq }) => eq(t.email, email),
       columns: { bouncedAt: true },
     });
@@ -206,6 +223,57 @@ describe("/api/mailjet-webhook", () => {
 
     expect(res._json).toEqual({ processed: 1, marked: 1 });
     expect(await bouncedAt(email)).toBeInstanceOf(Date);
+  });
+
+  test("hard bounce on a preregistration-only address marks preregistration, not email_subscriber", async () => {
+    const email = `${PREFIX}prereg-bounce@outlook.com`;
+    await seedPrereg(email);
+
+    const res = mockRes();
+    await handler(
+      post([
+        event({
+          event: "bounce",
+          email,
+          blocked: false,
+          hard_bounce: true,
+          error_related_to: "recipient",
+          error: "user unknown",
+        }),
+      ]),
+      res,
+    );
+
+    expect(res._json).toEqual({ processed: 1, marked: 1 });
+    expect(await preregBouncedAt(email)).toBeInstanceOf(Date);
+    // No email_subscriber row exists for this address — confirms the other
+    // UPDATE genuinely no-op'd rather than erroring or matching something else.
+    expect(await bouncedAt(email)).toBeNull();
+  });
+
+  test("a batch spanning both tables marks each address in its own table", async () => {
+    const subEmail = `${PREFIX}batch-sub@outlook.com`;
+    const preregEmail = `${PREFIX}batch-prereg@outlook.com`;
+    await seed(subEmail);
+    await seedPrereg(preregEmail);
+
+    const res = mockRes();
+    await handler(
+      post([
+        event({ event: "spam", email: subEmail, source: "JMRPP" }),
+        event({
+          event: "blocked",
+          email: preregEmail,
+          error_related_to: "recipient",
+          error: "preblocked",
+        }),
+      ]),
+      res,
+    );
+
+    expect(res._json).toEqual({ processed: 2, marked: 2 });
+    expect(await bouncedAt(subEmail)).toBeInstanceOf(Date);
+    expect(await preregBouncedAt(preregEmail)).toBeInstanceOf(Date);
   });
 
   test("ignores event types it doesn't act on, without erroring", async () => {

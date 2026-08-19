@@ -3,7 +3,7 @@ import { timingSafeEqual } from "crypto";
 import { and, inArray, isNull } from "drizzle-orm";
 import { env } from "~/env";
 import { db } from "~/server/db";
-import { emailSubscribers } from "~/server/db/schema";
+import { emailSubscribers, preregistrations } from "~/server/db/schema";
 import { normalizeEmail } from "~/server/subscribers";
 
 /**
@@ -12,8 +12,13 @@ import { normalizeEmail } from "~/server/subscribers";
  *
  * Mailjet's Send API never reports a bounce synchronously (see the note on
  * sendViaMailjet), so these asynchronous notifications are the only way we
- * learn an address is bad. Marking email_subscriber.bounced_at is what keeps
- * the drip's selectEligible query from ever re-sending to a known-bad address.
+ * learn an address is bad. Marks bounced_at on whichever of email_subscriber /
+ * preregistration actually holds the row — an email lives in at most one of
+ * the two (the disjoint-tables invariant), so the other update is just a
+ * no-op. email_subscriber's bounced_at is what keeps the drip's
+ * selectEligible query from re-sending to a known-bad address;
+ * preregistration's is not read by anything yet — it exists so the signal
+ * isn't lost before the eventual person-consolidation carries it forward.
  *
  * Registered by scripts/register-mailjet-webhook.ts; nothing calls this at
  * runtime except Mailjet. Mailjet retries every 30s for up to 24h on any
@@ -107,10 +112,11 @@ export default async function handler(
   const emails = suppressedEmails(events);
   let marked = 0;
   if (emails.length > 0) {
+    const now = new Date();
     try {
-      const rows = await db
+      const subscriberRows = await db
         .update(emailSubscribers)
-        .set({ bouncedAt: new Date() })
+        .set({ bouncedAt: now })
         .where(
           and(
             inArray(emailSubscribers.email, emails),
@@ -118,7 +124,17 @@ export default async function handler(
           ),
         )
         .returning({ id: emailSubscribers.id });
-      marked = rows.length;
+      const preregRows = await db
+        .update(preregistrations)
+        .set({ bouncedAt: now })
+        .where(
+          and(
+            inArray(preregistrations.email, emails),
+            isNull(preregistrations.bouncedAt),
+          ),
+        )
+        .returning({ id: preregistrations.id });
+      marked = subscriberRows.length + preregRows.length;
     } catch (err) {
       console.error("Mailjet webhook: failed to mark bounced", emails, err);
     }
