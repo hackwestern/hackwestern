@@ -25,12 +25,10 @@ const caller = createCaller(ctx);
 const testPreregistration = new PreregistrationSeeder().createRandom();
 
 // Mock the confirmation email so tests don't hit the real Mailjet API.
-const sendEmailSpy = vi
-  .spyOn(mailModule, "sendViaMailjet")
-  .mockResolvedValue({
-    data: { delivered: [testPreregistration.email], queued: [], bounced: [] },
-    error: null,
-  });
+const sendEmailSpy = vi.spyOn(mailModule, "sendViaMailjet").mockResolvedValue({
+  data: { delivered: [testPreregistration.email], queued: [], bounced: [] },
+  error: null,
+});
 
 describe("preregistration.create", async () => {
   beforeEach(async () => {
