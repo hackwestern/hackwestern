@@ -14,7 +14,7 @@ import {
 import { emailSubscribers, preregistrations } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 import { PreregistrationSeeder } from "~/server/db/seed/preregistrationSeeder";
-import * as mailModule from "~/server/mail";
+import * as mailModule from "~/server/mail-mailjet";
 import { generateUnsubscribeToken, normalizeEmail } from "~/server/subscribers";
 
 const session = await mockSession(db);
@@ -24,8 +24,8 @@ const caller = createCaller(ctx);
 
 const testPreregistration = new PreregistrationSeeder().createRandom();
 
-// Mock the confirmation email so tests don't hit the real Cloudflare API.
-const sendEmailSpy = vi.spyOn(mailModule, "sendEmail").mockResolvedValue({
+// Mock the confirmation email so tests don't hit the real Mailjet API.
+const sendEmailSpy = vi.spyOn(mailModule, "sendViaMailjet").mockResolvedValue({
   data: { delivered: [testPreregistration.email], queued: [], bounced: [] },
   error: null,
 });
