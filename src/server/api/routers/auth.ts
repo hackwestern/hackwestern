@@ -3,7 +3,8 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
 import { db } from "~/server/db";
-import { sendEmail } from "~/server/mail";
+import { sendViaMailjet } from "~/server/mail-mailjet";
+import { env } from "~/env";
 import {
   resetPasswordTokens,
   users,
@@ -23,6 +24,10 @@ const passwordSchema = z
   .regex(/[0-9]/, "Password must contain at least one number")
   .regex(/[^a-zA-Z0-9]/, "Password must contain at least one symbol");
 const HACK_WESTERN_EMAIL = "Hack Western Team <hello@hackwestern.com>";
+const mailjetCreds = {
+  apiKey: env.MAILJET_API_KEY,
+  secretKey: env.MAILJET_SECRET_KEY,
+};
 
 const createInputSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -44,12 +49,15 @@ const requestVerifyEmail = async (user: AdapterUser) => {
     expires: new Date(Date.now() + TOKEN_EXPIRY),
   });
 
-  return await sendEmail({
-    from: HACK_WESTERN_EMAIL,
-    to: user.email,
-    subject: "Hack Western 13 Account Verification",
-    html: verifyTemplate(verifyLink),
-  });
+  return await sendViaMailjet(
+    {
+      from: HACK_WESTERN_EMAIL,
+      to: user.email,
+      subject: "Hack Western 13 Account Verification",
+      html: verifyTemplate(verifyLink),
+    },
+    mailjetCreds,
+  );
 };
 
 export const authRouter = createTRPCRouter({
@@ -92,12 +100,15 @@ export const authRouter = createTRPCRouter({
 
       const resetLink = `https://hackwestern.com/reset-password?token=${resetToken}`;
 
-      const { data: emailReq, error } = await sendEmail({
-        from: HACK_WESTERN_EMAIL,
-        to: input.email,
-        subject: "Hack Western 13 Password Reset",
-        html: resetTemplate(resetLink, user.name ?? "there"),
-      });
+      const { data: emailReq, error } = await sendViaMailjet(
+        {
+          from: HACK_WESTERN_EMAIL,
+          to: input.email,
+          subject: "Hack Western 13 Password Reset",
+          html: resetTemplate(resetLink, user.name ?? "there"),
+        },
+        mailjetCreds,
+      );
 
       if (error) {
         console.error("Error sending reset email:", error);

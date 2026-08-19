@@ -7,7 +7,8 @@ import {
 } from "~/server/api/trpc";
 import { applications, users } from "~/server/db/schema";
 import { db } from "~/server/db";
-import { sendEmail } from "~/server/mail";
+import { sendViaMailjet } from "~/server/mail-mailjet";
+import { env } from "~/env";
 import { applicationSubmittedTemplate } from "./email-templates";
 import {
   applicationSaveSchema,
@@ -362,12 +363,15 @@ export const applicationRouter = createTRPCRouter({
         columns: { email: true, name: true },
       });
       if (applicant?.email) {
-        const { error: emailError } = await sendEmail({
-          from: "Hack Western Team <hello@hackwestern.com>",
-          to: applicant.email,
-          subject: "We've received your Hack Western 13 application!",
-          html: applicationSubmittedTemplate(applicant.name ?? undefined),
-        });
+        const { error: emailError } = await sendViaMailjet(
+          {
+            from: "Hack Western Team <hello@hackwestern.com>",
+            to: applicant.email,
+            subject: "We've received your Hack Western 13 application!",
+            html: applicationSubmittedTemplate(applicant.name ?? undefined),
+          },
+          { apiKey: env.MAILJET_API_KEY, secretKey: env.MAILJET_SECRET_KEY },
+        );
         if (emailError) {
           console.error(
             "Error sending application confirmation email:",

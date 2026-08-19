@@ -3,7 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { preregistrations } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { db } from "~/server/db";
-import { sendEmail } from "~/server/mail";
+import { sendViaMailjet } from "~/server/mail-mailjet";
 import { normalizeEmail, generateUnsubscribeToken } from "~/server/subscribers";
 import { validateSignupEmail } from "~/server/email-validation";
 import { env } from "~/env";
@@ -75,19 +75,22 @@ export const preregistrationRouter = createTRPCRouter({
 
         // Send confirmation email. Don't fail the signup if the email bounces —
         // the preregistration is already saved.
-        const { error } = await sendEmail({
-          from: "Hack Western Team <hello@hackwestern.com>",
-          to: input.email,
-          subject: "You're signed up for Hack Western 13 updates!",
-          html: signupTemplate(
-            input.email,
-            `${BASE}/unsubscribe?token=${unsubscribeToken}`,
-          ),
-          headers: {
-            "List-Unsubscribe": `<${BASE}/api/unsubscribe?token=${unsubscribeToken}>`,
-            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        const { error } = await sendViaMailjet(
+          {
+            from: "Hack Western Team <hello@hackwestern.com>",
+            to: input.email,
+            subject: "You're signed up for Hack Western 13 updates!",
+            html: signupTemplate(
+              input.email,
+              `${BASE}/unsubscribe?token=${unsubscribeToken}`,
+            ),
+            headers: {
+              "List-Unsubscribe": `<${BASE}/api/unsubscribe?token=${unsubscribeToken}>`,
+              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            },
           },
-        });
+          { apiKey: env.MAILJET_API_KEY, secretKey: env.MAILJET_SECRET_KEY },
+        );
 
         if (error) {
           console.error("Error sending preregistration email:", error);
