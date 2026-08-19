@@ -1,34 +1,22 @@
 import * as React from "react";
+import { motion, useDragControls } from "framer-motion";
 import { cn } from "~/lib/utils";
-import IconButton from "./icon-button";
 
-const win95Bevel =
-  "shadow-[inset_-1px_-1px_0px_0px_#0a0a0a,inset_1px_1px_0px_0px_#ffffff,inset_-2px_-2px_0px_0px_#808080,inset_2px_2px_0px_0px_#dfdfdf]";
-
-const win95BevelInverted =
-  "shadow-[inset_-1px_-1px_0px_0px_#0a0a0a,inset_1px_1px_0px_0px_#dfdfdf,inset_-2px_-2px_0px_0px_#808080,inset_2px_2px_0px_0px_#ffffff]";
-
-// Title bar height (padding + content) — used to collapse the window when minimized
-const TITLE_BAR_HEIGHT = 49;
-
-//Dot configurations
-const DOT_GAP = 16;
+const TITLE_BAR_HEIGHT = 34;
+const DOT_SPACING = 12;
 
 export interface WindowProps {
   title: string;
   children?: React.ReactNode;
   className?: string;
-  /** Width/height of the dotted texture body — defaults match Figma (374x208) */
   width?: number;
   height?: number;
-  /** Render the dotted background texture */
   showDots?: boolean;
-  /** Controlled minimized state. If omitted, the component manages its own state. */
   minimized?: boolean;
   onMinimizedChange?: (minimized: boolean) => void;
-  /** Keep the expand/maximize button permanently disabled */
+  onClose?: () => void;
+  draggable?: boolean;
   disableExpand?: boolean;
-  /** Let content drive the height instead of a fixed pixel value. Dots are hidden in this mode. */
   autoHeight?: boolean;
 }
 
@@ -41,6 +29,8 @@ export function Window({
   showDots = true,
   minimized: minimizedProp,
   onMinimizedChange,
+  onClose,
+  draggable = true,
   disableExpand = false,
   autoHeight = false,
 }: WindowProps) {
@@ -53,159 +43,131 @@ export function Window({
     onMinimizedChange?.(value);
   };
 
-  const minDisabled = minimized;
-  const maxDisabled = !minimized || disableExpand;
-
   const patternId = React.useId();
+  const dragControls = useDragControls();
 
   const titleBar = (
-    <div className={cn("p-[3px]", win95BevelInverted)}>
-      <div className="relative flex w-full items-center justify-between bg-gradient-to-r from-blue-8 to-blue-4 pb-[6px] pl-[10px] pr-[2px] pt-[10px]">
-        <p className="subtitle-sm whitespace-nowrap tracking-[-0.36px] text-white">
-          {title}
-        </p>
-        <div className="flex items-center">
-          <IconButton
-            onClick={() => setMinimized(true)}
-            className="h-[14px] w-[16px] pb-[3px] pl-[4px] pr-[6px] pt-[9px]"
-            disabled={minDisabled}
-          >
-            <svg
-              width="6"
-              height="2"
-              viewBox="0 0 6 2"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M0 0H6V2H0V0Z" fill="black" />
-            </svg>
-          </IconButton>
-          <IconButton
-            onClick={() => setMinimized(false)}
-            className="h-[14px] w-[16px] pb-[3px] pl-[3px] pr-[4px] pt-[2px]"
-            disabled={maxDisabled}
-          >
-            <svg
-              width="9"
-              height="9"
-              viewBox="0 0 9 9"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M9 0H0V9H9V0ZM8 2H1V8H8V2Z"
-                fill="black"
-              />
-            </svg>
-          </IconButton>
-        </div>
+    <div
+      className="relative flex h-[34px] cursor-move items-center rounded-t-[10px] border-b-[0.9px] border-b-white bg-[repeating-linear-gradient(180deg,rgba(255,255,255,0.2)_0px,rgba(255,255,255,0.2)_1px,rgba(0,0,0,0.035)_1px,rgba(0,0,0,0.035)_2px),linear-gradient(180deg,#eceeef_0%,#c8cbcf_100%)] px-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(40,45,55,0.25)] active:cursor-grabbing"
+      onPointerDown={(event) => {
+        if (draggable && !(event.target as HTMLElement).closest("button")) {
+          event.preventDefault();
+          dragControls.start(event);
+        }
+      }}
+    >
+      <div className="z-10 flex items-center gap-2">
+        <button
+          type="button"
+          aria-label="Close window"
+          onClick={onClose}
+          disabled={!onClose}
+          className="relative size-[13px] rounded-full border border-[#c93a2b] bg-[radial-gradient(circle_at_50%_30%,#ff8a80,#ec4c3c_70%)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.25),0_1px_1px_rgba(0,0,0,0.18)] transition-[transform,filter] duration-100 before:pointer-events-none before:absolute before:left-[3px] before:right-[3px] before:top-px before:h-[5px] before:rounded-full before:bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.15))] before:content-[''] hover:scale-110 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#43484f]/50 active:scale-95 disabled:cursor-default"
+        />
+        <button
+          type="button"
+          aria-label="Minimize window"
+          onClick={() => setMinimized(true)}
+          disabled={minimized}
+          title="Minimize window"
+          className="relative size-[13px] rounded-full border border-[#cf9325] bg-[radial-gradient(circle_at_50%_30%,#ffe082,#f5b731_70%)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.25),0_1px_1px_rgba(0,0,0,0.18)] transition-[transform,filter] duration-100 before:pointer-events-none before:absolute before:left-[3px] before:right-[3px] before:top-px before:h-[5px] before:rounded-full before:bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.15))] before:content-[''] hover:scale-110 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#43484f]/50 active:scale-95 disabled:opacity-50"
+        />
+        <button
+          type="button"
+          aria-label="Maximize window"
+          onClick={() => setMinimized(false)}
+          disabled={!minimized || disableExpand}
+          title="Maximize window"
+          className="relative size-[13px] rounded-full border border-[#43a12f] bg-[radial-gradient(circle_at_50%_30%,#b9f6a5,#56c93f_70%)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.25),0_1px_1px_rgba(0,0,0,0.18)] transition-[transform,filter] duration-100 before:pointer-events-none before:absolute before:left-[3px] before:right-[3px] before:top-px before:h-[5px] before:rounded-full before:bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(255,255,255,0.15))] before:content-[''] hover:scale-110 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#43484f]/50 active:scale-95 disabled:opacity-50"
+        />
       </div>
+      <p className="pointer-events-none absolute inset-x-0 text-center font-cossetteTexte text-[10.8px] font-normal leading-normal text-[#626262]">
+        {title}
+      </p>
     </div>
   );
 
   if (autoHeight) {
     return (
-      <div className={cn("relative", className)} style={{ width }}>
+      <motion.div
+        className={cn("relative select-none", className)}
+        style={{ width }}
+        drag={draggable}
+        dragControls={dragControls}
+        dragListener={false}
+        dragMomentum={false}
+      >
         <div
-          className="relative bg-gray-2 shadow-[1px_1px_2px_0px_rgba(0,0,0,0.24),4px_4px_10px_0px_rgba(0,0,0,0.12)]"
+          className="relative overflow-hidden rounded-[10px] border-[0.9px] border-[#9F9F9F] bg-[#f4f5f8] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_40px_rgba(30,40,60,0.3),0_4px_10px_rgba(30,40,60,0.2)]"
           style={{ width }}
         >
           {titleBar}
           {children && (
-            <div className="relative grid place-items-center px-4 py-3">
-              {showDots && (
-                <svg
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 h-full w-full"
-                >
-                  <defs>
-                    <pattern
-                      id={patternId}
-                      x={((width - 8) % (DOT_GAP + 1)) / 2}
-                      y={0}
-                      width={DOT_GAP + 1}
-                      height={DOT_GAP + 1}
-                      patternUnits="userSpaceOnUse"
-                    >
-                      <rect width="1" height="1" className="fill-gray-4" />
-                    </pattern>
-                  </defs>
-                  <rect
-                    width="100%"
-                    height="100%"
-                    fill={`url(#${patternId})`}
-                  />
-                </svg>
+            <div
+              className={cn(
+                "grid transition-[grid-template-rows] duration-200",
+                minimized ? "grid-rows-[0fr]" : "grid-rows-[1fr]",
               )}
-              <div className="relative z-10">{children}</div>
+            >
+              <div className="relative min-h-0 overflow-hidden bg-[#f4f5f8] font-cossetteTexte text-[10.8px] font-normal leading-normal text-black">
+                <div className="relative grid place-items-center px-4 py-3">
+                  <div className="relative z-10">{children}</div>
+                </div>
+              </div>
             </div>
           )}
-          <div
-            aria-hidden
-            className={cn(
-              "pointer-events-none absolute inset-0 rounded-[inherit]",
-              win95Bevel,
-            )}
-          />
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className={cn("relative", className)} style={{ width, height }}>
+    <motion.div
+      className={cn("relative select-none", className)}
+      style={{ width, height }}
+      drag={draggable}
+      dragControls={dragControls}
+      dragListener={false}
+      dragMomentum={false}
+    >
       <div
-        className="relative overflow-hidden bg-gray-2 shadow-[1px_1px_2px_0px_rgba(0,0,0,0.24),4px_4px_10px_0px_rgba(0,0,0,0.12)] transition-all duration-1000"
+        className="relative overflow-hidden rounded-[10px] border-[0.9px] border-[#9F9F9F] bg-[#f4f5f8] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_40px_rgba(30,40,60,0.3),0_4px_10px_rgba(30,40,60,0.2)] transition-[height] duration-200"
         style={{ width, height: minimized ? TITLE_BAR_HEIGHT : height }}
       >
-        {/* Title bar wrapper (carries outer bevel) */}
-        <div className="absolute left-0 right-0 top-0">{titleBar}</div>
+        <div className="absolute left-0 right-0 top-0 z-20">{titleBar}</div>
 
-        {/* Dotted texture */}
         {showDots && (
           <svg
             aria-hidden
-            className="pointer-events-none absolute inset-x-[4px] bottom-0 top-[53px] block h-full w-full"
+            className="pointer-events-none absolute inset-x-0 bottom-0 top-[34px] z-0 block h-full w-full"
           >
             <defs>
               <pattern
                 id={patternId}
-                x={((width - 8) % (DOT_GAP + 1)) / 2}
-                y={((height - 53) % (DOT_GAP + 1)) / 2}
-                width={DOT_GAP + 1}
-                height={DOT_GAP + 1}
+                x={((width - 8) % DOT_SPACING) / 2}
+                y={((height - TITLE_BAR_HEIGHT) % DOT_SPACING) / 2}
+                width={DOT_SPACING}
+                height={DOT_SPACING}
                 patternUnits="userSpaceOnUse"
               >
-                <rect width="1" height="1" className="fill-gray-4" />
+                <rect width="1" height="1" className="fill-[#C8C8C8]" />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill={`url(#${patternId})`} />
           </svg>
         )}
-        {/* Outer frame bevel */}
-        <div
-          aria-hidden
-          className={cn(
-            "pointer-events-none absolute inset-0 rounded-[inherit]",
-            win95Bevel,
-          )}
-        />
       </div>
 
       {children && (
         <div
-          className="pointer-events-none absolute left-0 right-0 top-0 overflow-hidden transition-all duration-1000"
+          className="pointer-events-none absolute left-0 right-0 top-0 overflow-hidden transition-[height] duration-200"
           style={{ height: minimized ? TITLE_BAR_HEIGHT : height }}
         >
           <div
             className={cn(
-              "pointer-events-auto absolute inset-x-0 bottom-0 top-[49px] grid place-items-center",
-              "transition-opacity duration-300 ease-in-out",
-              minimized
-                ? "pointer-events-none opacity-0"
-                : "opacity-100 [transition-delay:300ms]",
+              "pointer-events-auto absolute inset-x-0 bottom-0 top-[34px] z-10 grid place-items-center font-cossetteTexte text-[10.8px] font-normal leading-normal text-black",
+              "transition-opacity duration-150 ease-in-out",
+              minimized ? "pointer-events-none opacity-0" : "opacity-100",
             )}
             style={{ height: height - TITLE_BAR_HEIGHT }}
           >
@@ -213,6 +175,6 @@ export function Window({
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
