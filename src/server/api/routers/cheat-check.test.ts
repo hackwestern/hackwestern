@@ -378,6 +378,7 @@ describe.skipIf(!process.env.GITHUB_TOKEN)(
         githubUrl: HACKWESTERN_GITHUB_URL,
         devpostUrl: "https://devpost.com/software/placeholder",
         memberGithubUsernames: ["john_doe"],
+        joinCode: "0000",
       });
     });
 

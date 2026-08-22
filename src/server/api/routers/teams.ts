@@ -5,8 +5,9 @@ import { db } from "~/server/db";
 import { teams, trackEnum, users } from "~/server/db/schema";
 import { count, eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
-import { createInsertSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { env } from "~/env";
+import { customAlphabet } from "nanoid";
 
 const teamsSaveSchema = createInsertSchema(teams, {
   name: z.string().optional(),
@@ -14,6 +15,14 @@ const teamsSaveSchema = createInsertSchema(teams, {
   memberGithubUsernames: z.array(z.string()),
   tracks: z.array(z.enum(trackEnum.enumValues)),
 }).omit({
+  joinCode: true,
+  id: true,
+  submissionStatus: true,
+  submittedAt: true,
+  createdAt: true,
+});
+
+const teamsSelectSchema = createSelectSchema(teams).omit({
   id: true,
   submissionStatus: true,
   submittedAt: true,
@@ -49,6 +58,38 @@ const assertValidTeam = async (ctx: { session: { user: { id: string } } }) => {
   return currentTeam.teamId;
 };
 export const teamsRouter = createTRPCRouter({
+  getTeam: protectedProcedure.query(async ({ ctx }) => {
+    const teamId = await db.query.users.findFirst({
+      columns: { teamId: true },
+      where: eq(users.id, ctx.session.user.id),
+    });
+    if (!teamId) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "User not found",
+      });
+    }
+    if (teamId.teamId == null) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "This user is not part of a team",
+      });
+    }
+
+    const team = await db.query.teams.findFirst({
+      where: eq(teams.id, teamId.teamId),
+    });
+    if (!team) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Team does not exist",
+      });
+    }
+
+    const zodSchema = teamsSelectSchema.parse(team);
+
+    return { ...zodSchema };
+  }),
   createTeam: protectedProcedure
     .input(z.object({ name: z.string() }))
     .mutation(async ({ ctx, input }) => {
@@ -76,13 +117,25 @@ export const teamsRouter = createTRPCRouter({
         });
       }
 
-      const id = randomBytes(3).toString("hex");
+      const genCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 4);
 
+      let id = randomBytes(6).toString("hex");
       await db.transaction(async (tx) => {
-        await tx.insert(teams).values({
-          id: id,
-          name: input.name,
-        });
+        let rows = [];
+        while (rows.length == 0) {
+          id = randomBytes(6).toString("hex");
+
+          const joinCode = genCode();
+          rows = await tx
+            .insert(teams)
+            .values({
+              id: id,
+              name: input.name,
+              joinCode: joinCode,
+            })
+            .onConflictDoNothing()
+            .returning();
+        }
         await tx
           .update(users)
           .set({ teamId: id })
@@ -94,7 +147,7 @@ export const teamsRouter = createTRPCRouter({
       };
     }),
   joinTeam: protectedProcedure
-    .input(z.object({ teamId: z.string() }))
+    .input(z.object({ joinCode: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const currentTeam = await db.query.users.findFirst({
         columns: { teamId: true },
@@ -113,37 +166,44 @@ export const teamsRouter = createTRPCRouter({
             "This user it already a part of a team, leave their current team to join a new one",
         });
       }
-      if (!input.teamId) {
+      if (!input.joinCode) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "No specified teamId",
+          message: "No specified joinCode",
         });
       }
-      const team = await db.query.teams.findFirst({
-        where: eq(teams.id, input.teamId),
-      });
-      if (!team) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Team does not exist",
-        });
-      }
-      const [teamSize] = await db
-        .select({ value: count() })
-        .from(users)
-        .where(eq(users.teamId, input.teamId));
-      const size = teamSize?.value ?? 100;
+      await db.transaction(async (tx) => {
+        const [team] = await tx
+          .select({ id: teams.id })
+          .from(teams)
+          .where(eq(teams.joinCode, input.joinCode))
+          .for("update");
 
-      if (size >= 4) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Team is full (max 4)",
-        });
-      }
-      await db
-        .update(users)
-        .set({ teamId: input.teamId })
-        .where(eq(users.id, ctx.session.user.id));
+        if (!team) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Team does not exist",
+          });
+        }
+        const teamId = team.id;
+
+        const [teamSize] = await tx
+          .select({ value: count() })
+          .from(users)
+          .where(eq(users.teamId, teamId));
+        const size = teamSize?.value ?? 100;
+
+        if (size >= 4) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Team is full (max 4)",
+          });
+        }
+        await tx
+          .update(users)
+          .set({ teamId: teamId })
+          .where(eq(users.id, ctx.session.user.id));
+      });
 
       return { success: true };
     }),

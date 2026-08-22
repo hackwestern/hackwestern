@@ -1,6 +1,6 @@
 {
-  "id": "51a9a9a0-9d02-4baf-b9f6-228ff0fda53b",
-  "prevId": "4c7a286e-7c8d-436f-8480-63568f1d99e6",
+  "id": "eab49f31-06e2-47e4-bcfe-81a1592bfb04",
+  "prevId": "1ea5b5e2-1a06-4623-a359-33235bc1c36b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1005,12 +1005,6 @@
           "type": "timestamp (3)",
           "primaryKey": false,
           "notNull": false
-        },
-        "bounced_at": {
-          "name": "bounced_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {},
@@ -1828,7 +1822,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "varchar(6)",
+          "type": "varchar(12)",
           "primaryKey": true,
           "notNull": true
         },
@@ -1888,6 +1882,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "joinCode": {
+          "name": "joinCode",
+          "type": "varchar(4)",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {
@@ -1909,7 +1909,15 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "team_joinCode_unique": {
+          "name": "team_joinCode_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "joinCode"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

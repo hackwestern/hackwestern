@@ -215,7 +215,7 @@ export const teamCheckType = pgEnum("team_check_type", [
 export const teams = pgTable(
   "team",
   {
-    id: varchar("id", { length: 6 }).notNull().primaryKey(),
+    id: varchar("id", { length: 12 }).notNull().primaryKey(),
     name: varchar("name", { length: 255 }).notNull(),
 
     // Project submission
@@ -232,6 +232,7 @@ export const teams = pgTable(
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
       .notNull(),
+    joinCode: varchar("joinCode", { length: 4 }).notNull().unique(),
   },
   (t) => [index("team_created_at_idx").on(t.createdAt)],
 );
