@@ -16,6 +16,7 @@ export default function PrimaryButton({
   onClick,
   onMouseDown,
   className,
+  variant = "primary-1",
 }: ButtonProps) {
   if (isSkeleton)
     return (
@@ -24,6 +25,38 @@ export default function PrimaryButton({
       </Skeleton>
     );
   else
+    if (variant == "primary-2")
+      return (
+        <Button
+          variant="primary-2"
+          isPending={disabled || isLoading}
+          onClick={onClick}
+          onMouseDown={onMouseDown}
+          size={size}
+          className={`${size == "sm" ? "px-[16px] pb-[10px] pt-[7px]" : "px-[18px] pb-[15px] pt-[12px]"} ${className}`}
+          full={full}
+        >
+          {/* {(!direction || direction == "right") && <Spinner isLoading={isLoading}></Spinner>} */}
+
+          {direction == "left" && (
+            <Arrow
+              margin={size == "sm" ? "mr-[10px]" : "mr-3"}
+              size={size}
+              direction={direction}
+            />
+          )}
+
+          <div>{children}</div>
+
+          {direction == "right" && (
+            <Arrow
+              margin={size == "sm" ? "ml-[10px]" : "ml-3"}
+              size={size}
+              direction={direction}
+            />
+          )}
+        </Button>
+      );
     return (
       <Button
         variant="primary"
@@ -38,8 +71,7 @@ export default function PrimaryButton({
 
         {direction == "left" && (
           <Arrow
-            fill="#111111"
-            margin={size == "sm" ? "mr-2" : "mr-4"}
+            margin={size == "sm" ? "mr-[10px]" : "mr-3"}
             size={size}
             direction={direction}
           />
@@ -49,8 +81,7 @@ export default function PrimaryButton({
 
         {direction == "right" && (
           <Arrow
-            fill="#111111"
-            margin={size == "sm" ? "ml-2" : "ml-4"}
+            margin={size == "sm" ? "ml-[10px]" : "ml-3"}
             size={size}
             direction={direction}
           />

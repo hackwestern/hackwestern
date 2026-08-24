@@ -49,7 +49,7 @@ function DesignSystem() {
       <SearchBar></SearchBar>
       <div className="h3">Window Asset: </div>
       <Window title="Placeholder">
-        <div className="pb-10 font-pix32 text-9xl">0:00</div>
+        <div className="pb-10 font-figtree text-9xl">0:00</div>
       </Window>
 
       <div className="h3">typography: </div>
@@ -150,6 +150,66 @@ function DesignSystem() {
               Right
             </PrimaryButton>
             <PrimaryButton
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="sm"
+              direction="right"
+            >
+              Right
+            </PrimaryButton>
+          </div>
+        </div>
+
+        <div>
+          <div className="p1">Primary Button 2.0: </div>
+          <div className="grid w-fit grid-cols-2 items-center gap-4">
+            <PrimaryButton
+              variant="primary-2"
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="lg"
+            >
+              Large
+            </PrimaryButton>
+            <PrimaryButton
+              variant="primary-2"
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="sm"
+            >
+              Small
+            </PrimaryButton>
+
+            <PrimaryButton
+              variant="primary-2"
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="lg"
+              direction="left"
+            >
+              Left
+            </PrimaryButton>
+            <PrimaryButton
+              variant="primary-2"
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="sm"
+              direction="left"
+            >
+              Left
+            </PrimaryButton>
+
+            <PrimaryButton
+              variant="primary-2"
+              isLoading={isLoading}
+              onClick={handleClick}
+              size="lg"
+              direction="right"
+            >
+              Right
+            </PrimaryButton>
+            <PrimaryButton
+              variant="primary-2"
               isLoading={isLoading}
               onClick={handleClick}
               size="sm"

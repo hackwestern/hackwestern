@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "~/lib/utils";
 import * as tokens from "~/lib/tokens";
 
-type TypographyVariant = "primary" | "secondary" | "tertiary";
+type TypographyVariant = "primary" | "primary-2" | "secondary" | "tertiary";
 type TypographySize = "sm" | "lg";
 //figure out padding, arrows, hovering cursor hand
 
@@ -14,6 +14,10 @@ const buttonBase =
 
 const typography: Record<TypographyVariant, Record<TypographySize, string>> = {
   primary: {
+    sm: "button-sm",
+    lg: "button-lg",
+  },
+  "primary-2":{
     sm: "button-sm",
     lg: "button-lg",
   },
@@ -32,15 +36,26 @@ export const buttonVariants = cva(buttonBase, {
     variant: {
       // default: "",
       primary: cn(
-        "bg-gray-2 shadow-button-primary hover:bg-[#CBCBCB] active:bg-gray-2 active:shadow-button-primary-active items-end hover:cursor-pixel-hover transition-[background-color,box-shadow] duration-200",
+        "relative overflow-hidden items-center gap-[10px] rounded-full border",
+        "border-button-primary-border bg-button-primary text-gray-7 shadow-primary-btn",
+        "hover:border-button-primary-hover-border hover:bg-button-primary-hover hover:text-gray-4 hover:shadow-primary-btn-hover hover:cursor-pixel-hover",
+        "active:border-button-primary-active-border active:bg-button-primary-active active:text-gray-7 active:shadow-primary-btn-active",
+        "transition-[background-color,box-shadow,border-color,color] duration-200",
+      ),
+      "primary-2": cn(
+        "relative overflow-hidden items-center gap-[10px] rounded-full border",
+        "border-blue-5 bg-blue-4 text-offwhite shadow-primary-btn-2",
+        "hover:border-blue-3 hover:bg-blue-2 hover:text-blue-1 hover:cursor-pixel-hover",
+        "active:border-blue-8 active:bg-blue-5 active:text-blue-8",
+        "transition-[background-color,box-shadow,border-color,color] duration-200",
       ),
       secondary: cn(
-        "rounded-full bg-offwhite border border-highlight shadow-button-secondary hover:bg-blue-1 hover:border-blue-1 active:bg-light active:border-light text-medium",
+        "rounded-full bg-offwhite border border-highlight shadow-secondary-btn hover:bg-blue-1 hover:border-blue-1 active:bg-light active:border-light text-medium",
       ),
       tertiary:
         "bg-transparent text-medium px-4 active:text-heavy hover:text-blue-4",
 
-      icon: cn("bg-gray-2 shadow-button-icon hover:bg-[#CBCBCB]"),
+      icon: cn("bg-gray-2 shadow-icon-btn hover:bg-[#CBCBCB]"),
       destructive:
         "bg-destructive text-destructive-foreground hover:bg-destructive-dark",
       outline: "bg-violet-100 hover:bg-muted border border-[1px] border-muted",
@@ -52,8 +67,8 @@ export const buttonVariants = cva(buttonBase, {
     },
     size: {
       default: "h-10 px-4 py-2",
-      sm: "px-[12px] py-[7px]",
-      lg: "px-[18px] py-[12px]",
+      sm: "px-[12px] py-[7px] h-[33px]",
+      lg: "px-[18px] py-[12px] h-[43px]",
       icon: "h-10 w-10",
     },
   },
@@ -69,10 +84,12 @@ export interface ButtonProps
   secondClass?: string;
 }
 
-const pressedByVariant: Record<"primary" | "secondary", string> = {
-  primary: "shadow-button-primary-active",
+const pressedByVariant: Record<"primary" | "primary-2" | "secondary", string> = {
+  primary:
+    "shadow-primary-btn-active bg-button-primary-active border-button-primary-active-border text-gray-7",
+  "primary-2": "bg-blue-5 border-blue-8 text-blue-8",
   secondary:
-    "shadow-button-secondary bg-button-secondary-active hover:!bg-button-secondary-active",
+    "shadow-secondary-btn bg-button-secondary-active",
 };
 
 const noLift =
@@ -96,7 +113,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const Comp = asChild ? Slot : "button";
     const lockPressed =
-      isPending && (variant === "primary" || variant === "secondary");
+      isPending && (variant === "primary" || variant == "primary-2" || variant === "secondary");
 
     // Keep the button visually sunken for a beat after release, like an XP
     // button holding its depressed state before springing back.
@@ -155,6 +172,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           className={cn(
             "flex items-end",
             (variant === "primary" ||
+              variant === "primary-2" ||
               variant === "secondary" ||
               variant === "tertiary") &&
               (size === "sm" || size === "lg") &&
@@ -163,7 +181,22 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           )}
           disabled={disabled ?? isPending}
         >
-          {children}
+          {(variant === "primary" || variant === "primary-2") && (
+            <span
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute -top-px inset-x-[9.67px] h-[17.8px] rounded-full bg-gradient-to-b from-gray-0/80 to-gray-0/0",
+                variant === "primary" && "group-active:from-gray-0/[64%]",
+              )}
+            />
+          )}
+          {variant === "primary" || variant === "primary-2" ? (
+            <span className="relative z-10 inline-flex items-center">
+              {children}
+            </span>
+          ) : (
+            children
+          )}
         </Comp>
       </div>
     );

@@ -42,6 +42,17 @@ export const colors = {
   greens: {
     "green-primary": "#539933",
   },
+  buttonPrimary: {
+    bg: "#a7a7a7",
+    border: "#999999",
+    bgHover: "#bdbdbd", // = grays.gray-2
+    borderHover: "#bdbdbd", // = grays.gray-2
+    bgActive: "#a7a7a7",
+    borderActive: "#75777a", // = grays.gray-4
+    textDefault: "#262626", // = grays.gray-7
+    textHover: "#75777a", // = grays.gray-4
+    textActive: "#262626", // = grays.gray-7
+  },
 } as const;
 
 // ------------------------------------------------------------
@@ -93,7 +104,7 @@ export const typography = {
     textTransform: "none" as const,
   },
   p1: {
-    fontFamily: fonts.pix32, //
+    fontFamily: fonts.figtree, //
     fontWeight: "500", // Medium
     fontSize: "24px", //
     lineHeight: "auto",
@@ -101,7 +112,7 @@ export const typography = {
     textTransform: "none" as const,
   },
   p2: {
-    fontFamily: fonts.pix32,
+    fontFamily: fonts.figtree,
     fontWeight: "500",
     fontSize: "16px",
     lineHeight: "auto",
@@ -109,7 +120,7 @@ export const typography = {
     textTransform: "none" as const,
   },
   p3: {
-    fontFamily: fonts.pix32,
+    fontFamily: fonts.figtree,
     fontWeight: "500",
     fontSize: "14px",
     lineHeight: "auto",
@@ -133,15 +144,15 @@ export const typography = {
     textTransform: "uppercase" as const,
   },
   button1: {
-    fontFamily: fonts.pix32,
-    fontWeight: "400", // Pix32PixelFont maps to 400
+    fontFamily: fonts.figtree,
+    fontWeight: "400", 
     fontSize: "16px",
     lineHeight: "120%",
     letterSpacing: "0%",
     textTransform: "none" as const,
   },
   button2: {
-    fontFamily: fonts.pix32,
+    fontFamily: fonts.figtree,
     fontWeight: "400",
     fontSize: "14px",
     lineHeight: "100%",
@@ -182,24 +193,28 @@ export const radius = {
 } as const;
 
 // ------------------------------------------------------------
-// Button shadow (neumorphic style from Figma)
+// Button shadow (chrome pill style from Figma)
 // ------------------------------------------------------------
 
 export const shadows = {
+  // Default state: outer drop shadow + tall inner bottom glow
   button: [
-    "1px 1px 2px 0px rgba(0,0,0,0.24)", // drop shadow sm
-    "4px 4px 10px 0px rgba(0,0,0,0.12)", // drop shadow lg
-    "inset 3px 3px 0px 0px rgba(255,255,255,0.80)", // inner light top-left
-    "inset -3px -3px 0px 0px rgba(5,6,8,0.60)", // inner dark bottom-right
-    "inset 6px 6px 0px 0px rgba(222,223,225,0.70)", // inner highlight top-left
-    "inset -6px -6px 0px 0px rgba(137,139,143,0.60)", // inner shadow bottom-right
+    "0px 8px 12px 0px rgba(31,48,73,0.24)", // outer drop shadow
+    "inset 0px -16px 10px 0px rgba(255,255,255,0.6)", // inner bottom glow
   ].join(", "),
+  // Hover state: same shadow shape as default, only border/bg/text change
+  buttonHover: [
+    "0px 8px 12px 0px rgba(31,48,73,0.24)", // outer drop shadow
+    "inset 0px -16px 10px 0px rgba(255,255,255,0.6)", // inner bottom glow
+  ].join(", "),
+  // Active/pressed state: same outer shadow, shallower inner glow = pressed-in look
   activeButton: [
-    "2px 2px 4px 0px rgba(0,0,0,0.12)", // drop shadow sm
-    "inset 2px 2px 0px 0px rgba(5,6,8,0.50)", // inner dark top-left
-    "inset -2px -2px 0px 0px rgba(225,225,225,0.30)", // inner highlight bottom-right
-    "inset 5px 5px 0px 0px rgba(137,139,143,0.50)", // inner shadow top-left
-    "inset -4px -4px 0px 0px rgba(222,223,225,0.50)", // inner highlight bottom-right
+    "0px 8px 12px 0px rgba(31,48,73,0.24)", // outer drop shadow
+    "inset 0px -6px 10px 0px rgba(255,255,255,0.6)", // shallower inner glow
+  ].join(", "),
+  primary2: [
+    "0px 8px 12px 0px rgba(31,48,73,0.24)", // outer drop shadow
+    "inset 0px -12px 10px 0px rgba(255,255,255,0.4)", // inner glow
   ].join(", "),
   secondary: [
     "0px 2px 8px 0px rgba(0,0,0,0.12)", // drop shadow sm
