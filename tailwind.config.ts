@@ -214,7 +214,7 @@ const config = {
       cursor: {
         "pixel-default": "url('/cursors/cursor-default.webp'),auto",
         "pixel-hover": "url('/cursors/hover-hand.webp'),pointer",
-        "telescope":"url('/cursors/telescope.webp'),pointer",
+        telescope:"url('/cursors/telescope.webp'),pointer",
       },
       keyframes: {
         "bounce-jump": {
