@@ -17,7 +17,7 @@ const typography: Record<TypographyVariant, Record<TypographySize, string>> = {
     sm: "button-sm",
     lg: "button-lg",
   },
-  "primary-2":{
+  "primary-2": {
     sm: "button-sm",
     lg: "button-lg",
   },
@@ -84,13 +84,13 @@ export interface ButtonProps
   secondClass?: string;
 }
 
-const pressedByVariant: Record<"primary" | "primary-2" | "secondary", string> = {
-  primary:
-    "shadow-primary-btn-active bg-button-primary-active border-button-primary-active-border text-gray-7",
-  "primary-2": "bg-blue-5 border-blue-8 text-blue-8",
-  secondary:
-    "shadow-secondary-btn bg-button-secondary-active",
-};
+const pressedByVariant: Record<"primary" | "primary-2" | "secondary", string> =
+  {
+    primary:
+      "shadow-primary-btn-active bg-button-primary-active border-button-primary-active-border text-gray-7",
+    "primary-2": "bg-blue-5 border-blue-8 text-blue-8",
+    secondary: "shadow-secondary-btn bg-button-secondary-active",
+  };
 
 const noLift =
   "group-hover:!translate-y-[1px] group-active:!translate-y-[1px] transition-none";
@@ -113,7 +113,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const Comp = asChild ? Slot : "button";
     const lockPressed =
-      isPending && (variant === "primary" || variant == "primary-2" || variant === "secondary");
+      isPending &&
+      (variant === "primary" ||
+        variant == "primary-2" ||
+        variant === "secondary");
 
     // Keep the button visually sunken for a beat after release, like an XP
     // button holding its depressed state before springing back.
@@ -185,7 +188,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             <span
               aria-hidden
               className={cn(
-                "pointer-events-none absolute -top-px inset-x-[9.67px] h-[17.8px] rounded-full bg-gradient-to-b from-gray-0/80 to-gray-0/0",
+                "pointer-events-none absolute inset-x-[9.67px] -top-px h-[17.8px] rounded-full bg-gradient-to-b from-gray-0/80 to-gray-0/0",
                 variant === "primary" && "group-active:from-gray-0/[64%]",
               )}
             />

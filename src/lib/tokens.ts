@@ -145,7 +145,7 @@ export const typography = {
   },
   button1: {
     fontFamily: fonts.figtree,
-    fontWeight: "400", 
+    fontWeight: "400",
     fontSize: "16px",
     lineHeight: "120%",
     letterSpacing: "0%",
