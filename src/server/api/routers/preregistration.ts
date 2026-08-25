@@ -76,13 +76,20 @@ export const preregistrationRouter = createTRPCRouter({
 
         // Send confirmation email. Don't fail the signup if the email bounces —
         // the preregistration is already saved.
+        //
+        // Send to `normalized`, NOT `input.email`. Mailjet's Send API creates a
+        // contact from whatever address it delivered to, so sending to the raw
+        // input filed "Foo.Bar@gmail.com" while the list write below files
+        // "foobar@gmail.com" — two Mailjet contacts for one mailbox, billed and
+        // mailed separately. A prod audit on 2026-08-25 found 2,552 contacts
+        // collapsing to 2,481 unique addresses; this was the cause.
         const { error } = await sendViaMailjet(
           {
             from: "Hack Western Team <hello@hackwestern.com>",
-            to: input.email,
+            to: normalized,
             subject: "You're signed up for Hack Western 13 updates!",
             html: signupTemplate(
-              input.email,
+              normalized,
               `${BASE}/unsubscribe?token=${unsubscribeToken}`,
             ),
             headers: {
