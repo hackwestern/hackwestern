@@ -4,6 +4,7 @@ import { preregistrations } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { db } from "~/server/db";
 import { sendViaMailjet } from "~/server/mail-mailjet";
+import { manageContact } from "~/server/mailjet-contacts";
 import { normalizeEmail, generateUnsubscribeToken } from "~/server/subscribers";
 import { validateSignupEmail } from "~/server/email-validation";
 import { env } from "~/env";
@@ -94,6 +95,26 @@ export const preregistrationRouter = createTRPCRouter({
 
         if (error) {
           console.error("Error sending preregistration email:", error);
+        }
+
+        // File the contact under the marketing list. Sending alone creates the
+        // contact but files it under no list, so dashboard campaigns — which can
+        // only target a list — never see preregistration signups. `addnoforce`
+        // keeps a previous unsubscribe intact if this address opted out before.
+        // Best-effort: the row is already committed, so a Mailjet failure here
+        // must not turn a successful signup into an error for the user.
+        if (env.MAILJET_CONTACT_LIST_ID) {
+          const listed = await manageContact(
+            env.MAILJET_CONTACT_LIST_ID,
+            normalized,
+            { apiKey: env.MAILJET_API_KEY, secretKey: env.MAILJET_SECRET_KEY },
+          );
+          if (!listed.ok) {
+            console.error(
+              "Error adding preregistration to Mailjet list:",
+              listed.error,
+            );
+          }
         }
 
         return createdPreregistration[0];

@@ -41,6 +41,13 @@ export const env = createEnv({
     // event POST — they are the only thing keeping the endpoint private.
     MAILJET_WEBHOOK_USER: z.string(),
     MAILJET_WEBHOOK_PASSWORD: z.string(),
+    // Mailjet contact list the marketing team sends dashboard campaigns to.
+    // The Send API files contacts under no list, so anyone who should be
+    // reachable from the dashboard has to be added explicitly — new signups by
+    // preregistration.create, the existing audience by scripts/sync-mailjet-list.ts.
+    // Optional: unset simply skips the list write, so a missing value can never
+    // fail a signup or a build.
+    MAILJET_CONTACT_LIST_ID: z.string().optional(),
     // Kickbox email-verification API key (optional). When set, signup emails are
     // verified against Kickbox as the final validation layer; unset = skipped.
     KICKBOX_API_KEY: z.string().optional(),
@@ -110,6 +117,7 @@ export const env = createEnv({
       (process.env.NODE_ENV === "test"
         ? "mock-mailjet-webhook-password"
         : undefined),
+    MAILJET_CONTACT_LIST_ID: process.env.MAILJET_CONTACT_LIST_ID,
     KICKBOX_API_KEY: process.env.KICKBOX_API_KEY,
     APPLE_CERT_PASS: process.env.APPLE_CERT_PASS,
     APPLE_WWDR_CERT: process.env.APPLE_WWDR_CERT,
