@@ -117,7 +117,9 @@ export const env = createEnv({
       (process.env.NODE_ENV === "test"
         ? "mock-mailjet-webhook-password"
         : undefined),
-    MAILJET_CONTACT_LIST_ID: process.env.MAILJET_CONTACT_LIST_ID,
+    MAILJET_CONTACT_LIST_ID:
+      process.env.MAILJET_CONTACT_LIST_ID ??
+      (process.env.NODE_ENV === "test" ? "mock-contact-list-id" : undefined),
     KICKBOX_API_KEY: process.env.KICKBOX_API_KEY,
     APPLE_CERT_PASS: process.env.APPLE_CERT_PASS,
     APPLE_WWDR_CERT: process.env.APPLE_WWDR_CERT,
