@@ -62,3 +62,6 @@ HISTORY_CLEANUP_BACKLOG.md
 
 
 google-wallet-credentials.json
+
+# internal docs — public repo, keep operational details out of it
+docs/internal/
