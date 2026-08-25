@@ -12,19 +12,21 @@ interface Captured {
 
 function stubFetch(body: unknown, ok = true, status = 200) {
   const captured: Captured = { url: "", auth: "", body: "{}", method: "GET" };
-  const fn = vi.fn((url: string | URL, init?: RequestInit): Promise<Response> => {
-    captured.url = String(url);
-    captured.method = init?.method ?? "GET";
-    const headers = (init?.headers ?? {}) as Record<string, string>;
-    captured.auth = headers.Authorization ?? "";
-    captured.body = typeof init?.body === "string" ? init.body : "{}";
-    return Promise.resolve({
-      ok,
-      status,
-      json: () => Promise.resolve(body),
-      text: () => Promise.resolve(JSON.stringify(body)),
-    } as Response);
-  });
+  const fn = vi.fn(
+    (url: string | URL, init?: RequestInit): Promise<Response> => {
+      captured.url = String(url);
+      captured.method = init?.method ?? "GET";
+      const headers = (init?.headers ?? {}) as Record<string, string>;
+      captured.auth = headers.Authorization ?? "";
+      captured.body = typeof init?.body === "string" ? init.body : "{}";
+      return Promise.resolve({
+        ok,
+        status,
+        json: () => Promise.resolve(body),
+        text: () => Promise.resolve(JSON.stringify(body)),
+      } as Response);
+    },
+  );
   vi.stubGlobal("fetch", fn);
   return captured;
 }
