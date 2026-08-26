@@ -68,7 +68,10 @@ export async function validateSignupEmail(
     await Promise.race([
       resolveMx(domain),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("MX lookup timed out")), MX_TIMEOUT_MS),
+        setTimeout(
+          () => reject(new Error("MX lookup timed out")),
+          MX_TIMEOUT_MS,
+        ),
       ),
     ]);
   } catch (err) {
