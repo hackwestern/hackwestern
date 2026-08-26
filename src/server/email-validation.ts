@@ -1,5 +1,8 @@
 import { resolveMx } from "dns/promises";
 
+/** Matches the Kickbox call's budget below; a signup waits on this. */
+const MX_TIMEOUT_MS = 5000;
+
 // Free signup-email validation: format check + disposable-domain blocklist +
 // domain-existence (MX) lookup. Runs before we send a confirmation, so junk
 // addresses never generate a bounce. It does NOT catch a well-formed address
@@ -59,7 +62,15 @@ export async function validateSignupEmail(
   }
 
   try {
-    await resolveMx(domain);
+    // Bounded: a signup blocks on this, and Node's resolver has no default
+    // deadline — an unresponsive nameserver would otherwise hang the request
+    // until the platform kills it. Losing the race fails open, same as ENODATA.
+    await Promise.race([
+      resolveMx(domain),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("MX lookup timed out")), MX_TIMEOUT_MS),
+      ),
+    ]);
   } catch (err) {
     // ENOTFOUND = the domain does not resolve at all -> definitely junk.
     // ENODATA (no MX, but domain exists) / timeouts / anything else -> fail open.
