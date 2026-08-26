@@ -10,11 +10,6 @@ import { validateSignupEmail } from "~/server/email-validation";
 import { env } from "~/env";
 import { signupTemplate } from "./email-templates";
 
-// Email links must be canonical + permanent — never a per-deployment preview
-// URL (which may be scheme-less or expire) — so hardcode the public domain
-// rather than trusting the deployment's NEXTAUTH_URL.
-const BASE = "https://www.hackwestern.com";
-
 const preregistrationCreateSchema = createInsertSchema(preregistrations).omit({
   createdAt: true,
   id: true,
@@ -83,45 +78,46 @@ export const preregistrationRouter = createTRPCRouter({
         // "foobar@gmail.com" — two Mailjet contacts for one mailbox, billed and
         // mailed separately. A prod audit on 2026-08-25 found 2,552 contacts
         // collapsing to 2,481 unique addresses; this was the cause.
-        const { error } = await sendViaMailjet(
-          {
-            from: "Hack Western Team <hello@hackwestern.com>",
-            to: normalized,
-            subject: "You're signed up for Hack Western 13 updates!",
-            html: signupTemplate(
-              normalized,
-              `${BASE}/unsubscribe?token=${unsubscribeToken}`,
-            ),
-            headers: {
-              "List-Unsubscribe": `<${BASE}/api/unsubscribe?token=${unsubscribeToken}>`,
-              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        // Two independent Mailjet round-trips, run concurrently rather than
+        // back-to-back — the user waits on this mutation, and neither call
+        // reads the other's result. Both are best-effort: the row is already
+        // committed, so a Mailjet failure must never surface as a signup error.
+        //
+        // The list write is what makes a signup visible to marketing at all.
+        // Sending alone creates a Mailjet contact but files it under no list,
+        // and dashboard campaigns can only target a list. `addnoforce` leaves a
+        // previous unsubscribe intact if this address opted out before.
+        const creds = {
+          apiKey: env.MAILJET_API_KEY,
+          secretKey: env.MAILJET_SECRET_KEY,
+        };
+        const [{ error }, listed] = await Promise.all([
+          sendViaMailjet(
+            {
+              from: "Hack Western Team <hello@hackwestern.com>",
+              to: normalized,
+              subject: "You're signed up for Hack Western 13 updates!",
+              // No unsubscribe link or List-Unsubscribe header — see the note on
+              // signupTemplate. Marketing's campaigns carry Mailjet's own
+              // unsubscribe, and a second link writing only to Postgres would
+              // mean an opt-out honoured in one system and ignored in the other.
+              html: signupTemplate(normalized),
             },
-          },
-          { apiKey: env.MAILJET_API_KEY, secretKey: env.MAILJET_SECRET_KEY },
-        );
+            creds,
+          ),
+          env.MAILJET_CONTACT_LIST_ID
+            ? manageContact(env.MAILJET_CONTACT_LIST_ID, normalized, creds)
+            : Promise.resolve({ ok: true } as const),
+        ]);
 
         if (error) {
           console.error("Error sending preregistration email:", error);
         }
-
-        // File the contact under the marketing list. Sending alone creates the
-        // contact but files it under no list, so dashboard campaigns — which can
-        // only target a list — never see preregistration signups. `addnoforce`
-        // keeps a previous unsubscribe intact if this address opted out before.
-        // Best-effort: the row is already committed, so a Mailjet failure here
-        // must not turn a successful signup into an error for the user.
-        if (env.MAILJET_CONTACT_LIST_ID) {
-          const listed = await manageContact(
-            env.MAILJET_CONTACT_LIST_ID,
-            normalized,
-            { apiKey: env.MAILJET_API_KEY, secretKey: env.MAILJET_SECRET_KEY },
+        if (!listed.ok) {
+          console.error(
+            "Error adding preregistration to Mailjet list:",
+            listed.error,
           );
-          if (!listed.ok) {
-            console.error(
-              "Error adding preregistration to Mailjet list:",
-              listed.error,
-            );
-          }
         }
 
         return createdPreregistration[0];

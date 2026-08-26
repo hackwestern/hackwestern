@@ -101,6 +101,20 @@ describe("preregistration.create", async () => {
     expect(arg?.html).toBeTruthy();
   });
 
+  // Deliberate: this email confirms a subscription the recipient just asked for
+  // (CASL s.6(6)(d)), and marketing's dashboard campaigns already carry Mailjet's
+  // own unsubscribe. A second link writing only to Postgres would mean an opt-out
+  // honoured in one system and ignored in the other.
+  test("carries no unsubscribe link or List-Unsubscribe header", async () => {
+    await caller.preregistration.create(testPreregistration);
+
+    const arg = sendEmailSpy.mock.calls[0]?.[0];
+    expect(arg?.html).not.toContain("/unsubscribe");
+    expect(arg?.html).not.toMatch(/>\s*Unsubscribe\s*</i);
+    expect(arg?.headers?.["List-Unsubscribe"]).toBeUndefined();
+    expect(arg?.headers?.["List-Unsubscribe-Post"]).toBeUndefined();
+  });
+
   test("files the new signup into the Mailjet contact list, normalized", async () => {
     await caller.preregistration.create(testPreregistration);
 

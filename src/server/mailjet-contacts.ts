@@ -1,4 +1,4 @@
-import type { MailjetCreds } from "~/server/mail-mailjet";
+import { authHeader, type MailjetCreds } from "~/server/mail-mailjet";
 
 /**
  * Mailjet contact-list membership (v3 REST), as opposed to sending (v3.1).
@@ -24,12 +24,6 @@ export interface ContactListInfo {
   id: number;
   name: string;
   subscriberCount: number;
-}
-
-export function authHeader(creds: MailjetCreds): string {
-  return `Basic ${Buffer.from(`${creds.apiKey}:${creds.secretKey}`).toString(
-    "base64",
-  )}`;
 }
 
 interface ContactsListRow {
