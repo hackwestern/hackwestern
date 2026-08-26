@@ -10,11 +10,6 @@ import { validateSignupEmail } from "~/server/email-validation";
 import { env } from "~/env";
 import { signupTemplate } from "./email-templates";
 
-// Email links must be canonical + permanent — never a per-deployment preview
-// URL (which may be scheme-less or expire) — so hardcode the public domain
-// rather than trusting the deployment's NEXTAUTH_URL.
-const BASE = "https://www.hackwestern.com";
-
 const preregistrationCreateSchema = createInsertSchema(preregistrations).omit({
   createdAt: true,
   id: true,
@@ -102,14 +97,11 @@ export const preregistrationRouter = createTRPCRouter({
               from: "Hack Western Team <hello@hackwestern.com>",
               to: normalized,
               subject: "You're signed up for Hack Western 13 updates!",
-              html: signupTemplate(
-                normalized,
-                `${BASE}/unsubscribe?token=${unsubscribeToken}`,
-              ),
-              headers: {
-                "List-Unsubscribe": `<${BASE}/api/unsubscribe?token=${unsubscribeToken}>`,
-                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-              },
+              // No unsubscribe link or List-Unsubscribe header — see the note on
+              // signupTemplate. Marketing's campaigns carry Mailjet's own
+              // unsubscribe, and a second link writing only to Postgres would
+              // mean an opt-out honoured in one system and ignored in the other.
+              html: signupTemplate(normalized),
             },
             creds,
           ),
