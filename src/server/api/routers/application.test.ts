@@ -1,6 +1,7 @@
-import { afterEach, assert, describe, expect, test } from "vitest";
+import { afterEach, assert, describe, expect, test, vi } from "vitest";
 import { faker } from "@faker-js/faker";
 import { type Session } from "next-auth";
+import * as mailModule from "~/server/mail-mailjet";
 
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -17,6 +18,17 @@ import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { seed, seedUsers } from "~/server/db/seed/helpers";
 
 import { GITHUB_URL, LINKEDIN_URL, DEVPOST_URL } from "~/utils/urls";
+
+// application.submit sends a real confirmation email, and CI runs with live
+// Mailjet credentials — so without this, every test run delivered
+// "We've received your Hack Western 13 application!" to a faker-generated
+// address. Those are guaranteed hard bounces on hello@hackwestern.com, the apex
+// domain that password resets and email verification depend on, and they showed
+// up as untraceable contacts in the production Mailjet account.
+vi.spyOn(mailModule, "sendViaMailjet").mockResolvedValue({
+  data: { delivered: [], queued: [], bounced: [] },
+  error: null,
+});
 
 const session = await mockSession(db);
 const organizerSession = await mockOrganizerSession(db);

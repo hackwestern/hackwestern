@@ -1,7 +1,7 @@
 import { env } from "~/env";
 import { db } from "~/server/db";
 import { emailSubscribers, preregistrations } from "~/server/db/schema";
-import { authHeader } from "~/server/mailjet-contacts";
+import { authHeader } from "~/server/mail-mailjet";
 import { normalizeEmail } from "~/server/subscribers";
 
 /**
