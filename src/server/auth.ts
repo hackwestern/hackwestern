@@ -13,7 +13,7 @@ import {
   type DefaultSession,
   type NextAuthOptions,
 } from "next-auth";
-import { type Adapter } from "next-auth/adapters";
+import { type Adapter, type AdapterUser } from "next-auth/adapters";
 import GithubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import DiscordProvider from "next-auth/providers/discord";
@@ -43,6 +43,30 @@ declare module "next-auth" {
   //   // ...other properties
   //   // role: UserRole;
   // }
+}
+
+/**
+ * DrizzleAdapter with email canonicalization (trim + lowercase) on every path
+ * that writes or looks up a user by email. Credentials signup already
+ * normalizes in auth.create, but OAuth signups (Google/GitHub/Discord) go
+ * through the adapter directly — and GitHub can hand over a mixed-case email,
+ * which would dodge the unique constraint (a plain string constraint, not
+ * lower()-based) and recreate the HW12 duplicate-account bug through the side
+ * door. Wrapping here makes the whole system case-insensitive regardless of
+ * how the account was created.
+ */
+function caseInsensitiveAdapter(): Adapter {
+  const base = DrizzleAdapter(db) as Adapter;
+  return {
+    ...base,
+    createUser: base.createUser
+      ? (user: AdapterUser) =>
+          base.createUser!({ ...user, email: normalizeAuthEmail(user.email) })
+      : undefined,
+    getUserByEmail: base.getUserByEmail
+      ? (email: string) => base.getUserByEmail!(normalizeAuthEmail(email))
+      : undefined,
+  };
 }
 
 /**
@@ -79,7 +103,7 @@ export const authOptions: NextAuthOptions = {
     encode,
     decode,
   },
-  adapter: DrizzleAdapter(db) as Adapter,
+  adapter: caseInsensitiveAdapter(),
   providers: [
     GithubProvider({
       clientId: env.GITHUB_CLIENT_ID,
