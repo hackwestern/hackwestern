@@ -42,7 +42,9 @@ describe("normalizeAuthEmail", () => {
   // gmail dots and plus tags. Stripping them is right for a mailing list, wrong
   // for a login credential.
   test("does NOT strip gmail dots or plus tags", () => {
-    expect(normalizeAuthEmail("A.rjun+hw@gmail.com")).toBe("a.rjun+hw@gmail.com");
+    expect(normalizeAuthEmail("A.rjun+hw@gmail.com")).toBe(
+      "a.rjun+hw@gmail.com",
+    );
     expect(normalizeEmail("A.rjun+hw@gmail.com")).toBe("arjun@gmail.com");
   });
 });
