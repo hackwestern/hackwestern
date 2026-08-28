@@ -9,6 +9,7 @@ import { applications, users } from "~/server/db/schema";
 import { db } from "~/server/db";
 import { sendViaMailjet } from "~/server/mail-mailjet";
 import { env } from "~/env";
+import { normalizeAuthEmail } from "~/server/subscribers";
 import { applicationSubmittedTemplate } from "./email-templates";
 import {
   applicationSaveSchema,
@@ -407,11 +408,15 @@ export const applicationRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const { emails, status } = input;
       try {
+        // Stored emails are canonical (trim+lowercase). A decision CSV with any
+        // other casing would otherwise silently skip those rows — and a skipped
+        // row here is a person who never hears their decision.
+        const canonical = emails.map(normalizeAuthEmail);
         const result = await db.transaction(async (tx) => {
           const userRows = await tx
             .select({ id: users.id })
             .from(users)
-            .where(inArray(users.email, emails));
+            .where(inArray(users.email, canonical));
 
           const userIds = userRows.map((r) => r.id);
           if (userIds.length === 0) {

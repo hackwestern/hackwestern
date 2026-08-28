@@ -5,6 +5,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
 import { TRPCError } from "@trpc/server";
 import { encode, decode } from "next-auth/jwt";
+import { normalizeAuthEmail } from "~/server/subscribers";
 
 import {
   type Session,
@@ -176,8 +177,12 @@ export async function mockOrganizerSession(db: Database): Promise<Session> {
 
 async function login(email: string, password: string) {
   try {
+    // Stored emails are canonical (trim+lowercase) — see normalizeAuthEmail.
+    // Without canonicalizing here, someone who registered "Luka@uwo.ca" on a
+    // phone (autocapitalized) and later types "luka@uwo.ca" gets NOT_FOUND and,
+    // naturally, registers a second account.
     const user = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.email, email),
+      where: (users, { eq }) => eq(users.email, normalizeAuthEmail(email)),
     });
 
     if (!user) {
