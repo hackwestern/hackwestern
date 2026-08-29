@@ -1,5 +1,5 @@
 import * as React from "react";
-import { motion, useDragControls } from "framer-motion";
+import { motion, useDragControls, type MotionProps } from "framer-motion";
 import { cn } from "~/lib/utils";
 
 const TITLE_BAR_HEIGHT = 34;
@@ -16,6 +16,7 @@ export interface WindowProps {
   onMinimizedChange?: (minimized: boolean) => void;
   onClose?: () => void;
   draggable?: boolean;
+  dragConstraints?: MotionProps["dragConstraints"];
   disableExpand?: boolean;
   autoHeight?: boolean;
 }
@@ -31,6 +32,7 @@ export function Window({
   onMinimizedChange,
   onClose,
   draggable = true,
+  dragConstraints,
   disableExpand = false,
   autoHeight = false,
 }: WindowProps) {
@@ -48,7 +50,10 @@ export function Window({
 
   const titleBar = (
     <div
-      className="relative flex h-[34px] cursor-move items-center rounded-t-[10px] border-b-[0.9px] border-b-white bg-[repeating-linear-gradient(180deg,rgba(255,255,255,0.2)_0px,rgba(255,255,255,0.2)_1px,rgba(0,0,0,0.035)_1px,rgba(0,0,0,0.035)_2px),linear-gradient(180deg,#eceeef_0%,#c8cbcf_100%)] px-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(40,45,55,0.25)] active:cursor-grabbing"
+      className={cn(
+        "relative flex h-[34px] select-none items-center rounded-t-[10px] border-b-[0.9px] border-b-white bg-[repeating-linear-gradient(180deg,rgba(255,255,255,0.2)_0px,rgba(255,255,255,0.2)_1px,rgba(0,0,0,0.035)_1px,rgba(0,0,0,0.035)_2px),linear-gradient(180deg,#eceeef_0%,#c8cbcf_100%)] px-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-1px_0_rgba(40,45,55,0.25)]",
+        draggable && "cursor-move active:cursor-grabbing",
+      )}
       onPointerDown={(event) => {
         if (draggable && !(event.target as HTMLElement).closest("button")) {
           event.preventDefault();
@@ -74,10 +79,10 @@ export function Window({
         />
         <button
           type="button"
-          aria-label="Maximize window"
+          aria-label="Restore window"
           onClick={() => setMinimized(false)}
           disabled={!minimized || disableExpand}
-          title="Maximize window"
+          title="Restore window"
           className="window-traffic-light window-traffic-light-green"
         />
       </div>
@@ -90,10 +95,11 @@ export function Window({
   if (autoHeight) {
     return (
       <motion.div
-        className={cn("relative select-none", className)}
+        className={cn("relative", className)}
         style={{ width }}
         drag={draggable}
         dragControls={dragControls}
+        dragConstraints={dragConstraints}
         dragListener={false}
         dragMomentum={false}
       >
@@ -110,6 +116,30 @@ export function Window({
               )}
             >
               <div className="relative min-h-0 overflow-hidden bg-[#f4f5f8] font-cossetteTexte text-[10.8px] font-normal leading-normal text-black">
+                {showDots && (
+                  <svg
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 z-0 h-full w-full"
+                  >
+                    <defs>
+                      <pattern
+                        id={patternId}
+                        x={((width - 8) % DOT_SPACING) / 2}
+                        y={0}
+                        width={DOT_SPACING}
+                        height={DOT_SPACING}
+                        patternUnits="userSpaceOnUse"
+                      >
+                        <rect width="1" height="1" className="fill-[#C8C8C8]" />
+                      </pattern>
+                    </defs>
+                    <rect
+                      width="100%"
+                      height="100%"
+                      fill={`url(#${patternId})`}
+                    />
+                  </svg>
+                )}
                 <div className="relative grid place-items-center px-4 py-3">
                   <div className="relative z-10">{children}</div>
                 </div>
@@ -123,10 +153,11 @@ export function Window({
 
   return (
     <motion.div
-      className={cn("relative select-none", className)}
+      className={cn("relative", className)}
       style={{ width, height }}
       drag={draggable}
       dragControls={dragControls}
+      dragConstraints={dragConstraints}
       dragListener={false}
       dragMomentum={false}
     >
@@ -156,25 +187,19 @@ export function Window({
             <rect width="100%" height="100%" fill={`url(#${patternId})`} />
           </svg>
         )}
-      </div>
 
-      {children && (
-        <div
-          className="pointer-events-none absolute left-0 right-0 top-0 overflow-hidden transition-[height] duration-200"
-          style={{ height: minimized ? TITLE_BAR_HEIGHT : height }}
-        >
+        {children && (
           <div
             className={cn(
-              "pointer-events-auto absolute inset-x-0 bottom-0 top-[34px] z-10 grid place-items-center font-cossetteTexte text-[10.8px] font-normal leading-normal text-black",
+              "absolute inset-x-0 bottom-0 top-[34px] z-10 grid place-items-center overflow-hidden font-cossetteTexte text-[10.8px] font-normal leading-normal text-black",
               "transition-opacity duration-150 ease-in-out",
               minimized ? "pointer-events-none opacity-0" : "opacity-100",
             )}
-            style={{ height: height - TITLE_BAR_HEIGHT }}
           >
             {children}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </motion.div>
   );
 }
