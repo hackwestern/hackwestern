@@ -59,7 +59,9 @@ export function PromoNavbar({
         className,
       )}
     >
-      <div className={cn("flex items-baseline gap-6 whitespace-nowrap", navText)}>
+      <div
+        className={cn("flex items-baseline gap-6 whitespace-nowrap", navText)}
+      >
         <Link href={brandHref} className={cn("cursor-pixel-hover", navFocus)}>
           Hack Western 13
         </Link>
