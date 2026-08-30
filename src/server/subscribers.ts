@@ -33,6 +33,24 @@ export function normalizeEmail(raw: string): string {
   return email;
 }
 
+/**
+ * Canonical form for an AUTH identity (user.email): trim + lowercase, nothing
+ * more. Deliberately weaker than normalizeEmail above — gmail dot/plus
+ * stripping is right for a mailing list (one mailbox, one contact) but wrong
+ * for a login credential, where the address should stay recognizable as what
+ * the user typed.
+ *
+ * Why it exists at all, measured in the HW12 dump: register.tsx used a
+ * type="text" input (mobile keyboards autocapitalize), every lookup was an
+ * exact string match, and user.email had no unique constraint — 7 of 2,278
+ * users ended up with two accounts, one of them ACCEPTED on one account with a
+ * duplicate still sitting in PENDING_REVIEW. Every read AND write of
+ * user.email must go through this.
+ */
+export function normalizeAuthEmail(raw: string): string {
+  return raw.trim().toLowerCase();
+}
+
 export function isSchoolEmail(email: string): boolean {
   const domain = email.split("@")[1] ?? "";
   if (domain.endsWith(".edu")) return true;
