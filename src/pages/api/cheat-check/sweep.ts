@@ -210,12 +210,10 @@ export default async function handler(
     if (inFlight > 0) {
       // The worker holding those items finishes or chains; if it died instead,
       // the heartbeat goes stale and `resumeSweep` recovers them.
-      return res
-        .status(200)
-        .json({
-          message: "Another worker owns the remaining items",
-          processed,
-        });
+      return res.status(200).json({
+        message: "Another worker owns the remaining items",
+        processed,
+      });
     }
 
     await finishSweep(sweep.id);
