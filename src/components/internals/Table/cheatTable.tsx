@@ -51,7 +51,11 @@ export default function CheatTable({ final_data }: CheatTableProps) {
             <Fragment key={team.teamId}>
               <TableRow
                 key={team.teamId}
-                onClick={() => toggleTeam(team.teamId)}
+                onClick={(e) => {
+                  // Links inside cells shouldn't also toggle the row.
+                  if ((e.target as HTMLElement).closest("a, button")) return;
+                  toggleTeam(team.teamId);
+                }}
                 className="cursor-pointer"
               >
                 <TableCell
@@ -65,7 +69,7 @@ export default function CheatTable({ final_data }: CheatTableProps) {
                 {columns.map((col) => (
                   <TableCell
                     key={col.header}
-                    className={`${col.header == "Name" && "font-bold"} ${col.className}`}
+                    className={`${col.header == "Name" ? "font-bold" : ""} ${col.className}`}
                   >
                     {col.teamCell(team)}
                   </TableCell>

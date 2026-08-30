@@ -5,7 +5,7 @@ import { Button } from "~/components/ui/button";
 import Link from "next/link";
 
 const CheatCheck = () => {
-  const { data: teams } = api.cheatCheck.getDisplayTeams.useQuery();
+  const { data: teams, error } = api.cheatCheck.getDisplayTeams.useQuery();
 
   return (
     <div className="bg-hw-linear-gradient-day flex min-h-screen flex-col items-center bg-primary-100 py-4">
@@ -16,7 +16,13 @@ const CheatCheck = () => {
         </Button>
       </div>
       <div className="z-10 w-full max-w-6xl px-4 font-secondary text-medium">
-        {teams ? <CheatTable final_data={teams} /> : <h2>Loading...</h2>}
+        {error ? (
+          <h2>Failed to load checks: {error.message}</h2>
+        ) : teams ? (
+          <CheatTable final_data={teams} />
+        ) : (
+          <h2>Loading...</h2>
+        )}
       </div>
     </div>
   );
