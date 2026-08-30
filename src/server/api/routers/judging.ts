@@ -512,9 +512,12 @@ export const judgingRouter = createTRPCRouter({
 
           // `submitMark` has committed, so `trg_team_mark_autoqueue` has
           // already removed the team from the queue if it was fully judged —
-          // only now is the queue count meaningful. Deliberately not awaited:
-          // the cheat-check sweep must never delay or fail a judge's mark.
-          void maybeTriggerSweepOnDrain();
+          // only now is the queue count meaningful. Awaited on purpose: Vercel
+          // freezes the instance once the response flushes, so a fire-and-
+          // forget chain silently dies after ~one query in production. The
+          // non-drain cost is a single COUNT; the drain itself costs ~2s once
+          // per queue-drain. The hook never throws, so it can't fail the mark.
+          await maybeTriggerSweepOnDrain();
         }, "Failed to submit team mark");
       }),
 

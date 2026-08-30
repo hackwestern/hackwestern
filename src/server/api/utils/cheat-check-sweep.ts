@@ -99,16 +99,31 @@ export async function createSweep(
     .from(teams)
     .where(eligibleTeamsFilter());
 
-  let sweep: SweepRow | undefined;
+  // One transaction for the sweep row and its items: a failure between the two
+  // inserts would otherwise strand a 0-item `running` sweep that the partial
+  // unique index then lets block every future sweep.
+  let sweep: SweepRow | null | undefined;
   try {
-    [sweep] = await db
-      .insert(cheatCheckSweeps)
-      .values({
-        triggeredBy,
-        forceRerun: opts.forceRerun ?? false,
-        totalTeams: eligible.length,
-      })
-      .returning();
+    sweep = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(cheatCheckSweeps)
+        .values({
+          triggeredBy,
+          forceRerun: opts.forceRerun ?? false,
+          totalTeams: eligible.length,
+        })
+        .returning();
+
+      if (!row) return null;
+
+      if (eligible.length > 0) {
+        await tx
+          .insert(cheatCheckSweepItems)
+          .values(eligible.map((t) => ({ sweepId: row.id, teamId: t.id })));
+      }
+
+      return row;
+    });
   } catch (error) {
     if (isUniqueViolation(error)) return null;
     throw error;
@@ -116,11 +131,7 @@ export async function createSweep(
 
   if (!sweep) return null;
 
-  if (eligible.length > 0) {
-    await db
-      .insert(cheatCheckSweepItems)
-      .values(eligible.map((t) => ({ sweepId: sweep.id, teamId: t.id })));
-  } else {
+  if (eligible.length === 0) {
     // Nothing to do — don't leave an empty sweep sitting in `running` forever.
     await finishSweep(sweep.id);
     return { ...sweep, status: "completed" as const };
@@ -173,14 +184,26 @@ export async function maybeTriggerSweepOnDrain(): Promise<void> {
 export async function claimBatch(
   sweepId: number,
   limit: number,
+  excludeTeamIds: string[] = [],
 ): Promise<string[]> {
+  // `exclude` lets one invocation skip teams it already attempted, so a failed
+  // item waits for the next chain link instead of burning its whole retry
+  // budget in seconds against the same transient error.
+  const exclude =
+    excludeTeamIds.length > 0
+      ? sql`AND team_id NOT IN (${sql.join(
+          excludeTeamIds.map((id) => sql`${id}`),
+          sql`, `,
+        )})`
+      : sql``;
+
   const claimed = await db.execute<{ team_id: string }>(sql`
     UPDATE cheat_check_sweep_item
     SET status = 'running', attempts = attempts + 1, updated_at = NOW()
     WHERE (sweep_id, team_id) IN (
       SELECT sweep_id, team_id
       FROM cheat_check_sweep_item
-      WHERE sweep_id = ${sweepId} AND status = 'pending'
+      WHERE sweep_id = ${sweepId} AND status = 'pending' ${exclude}
       ORDER BY team_id
       LIMIT ${limit}
       FOR UPDATE SKIP LOCKED
@@ -257,18 +280,25 @@ export async function releaseOrphanedItems(sweepId: number): Promise<number> {
   return reset.length;
 }
 
-export async function countPendingItems(sweepId: number): Promise<number> {
+export async function countItemsWithStatus(
+  sweepId: number,
+  statuses: ("pending" | "running")[],
+): Promise<number> {
   const [row] = await db
     .select({ value: count() })
     .from(cheatCheckSweepItems)
     .where(
       and(
         eq(cheatCheckSweepItems.sweepId, sweepId),
-        inArray(cheatCheckSweepItems.status, ["pending", "running"]),
+        inArray(cheatCheckSweepItems.status, statuses),
       ),
     );
 
   return row?.value ?? 0;
+}
+
+export async function countPendingItems(sweepId: number): Promise<number> {
+  return countItemsWithStatus(sweepId, ["pending", "running"]);
 }
 
 /** The user ids of every member of a team in this sweep. */
@@ -366,8 +396,16 @@ export async function getSweepStatus(): Promise<SweepStatus | null> {
   const items = { pending: 0, running: 0, done: 0, failed: 0 };
   for (const row of grouped) items[row.status] = row.value;
 
+  // A rate-limit pause is not a stall: the worker went quiet on purpose, and
+  // reporting it as stalled invites a resume click that clears the pause and
+  // hammers GitHub again before the reset. `sweep.rateLimitedUntil` tells the
+  // dashboard what is actually happening.
+  const pausedForRateLimit =
+    sweep.rateLimitedUntil !== null && sweep.rateLimitedUntil > new Date();
+
   const stalled =
     sweep.status === "running" &&
+    !pausedForRateLimit &&
     sweep.lastHeartbeatAt.getTime() <
       Date.now() - STALLED_HEARTBEAT_MINUTES * 60_000;
 
@@ -376,14 +414,33 @@ export async function getSweepStatus(): Promise<SweepStatus | null> {
 
 /**
  * Re-kick a stalled or rate-limited sweep. Vercel Hobby cron only runs daily, so
- * recovery is organizer-driven rather than automatic.
+ * recovery is organizer-driven rather than automatic — this is also the way a
+ * rate-limited sweep gets going again after the reset time passes.
+ *
+ * Refuses while the worker is demonstrably alive (fresh heartbeat, no rate-limit
+ * pause): releasing a live worker's claimed items would double-process them and
+ * double the GitHub request rate the concurrency budget assumes.
  */
 export async function resumeSweep(): Promise<{
   resumed: boolean;
   released: number;
+  reason?: string;
 }> {
   const sweep = await getRunningSweep();
-  if (!sweep) return { resumed: false, released: 0 };
+  if (!sweep) return { resumed: false, released: 0, reason: "nothing running" };
+
+  const heartbeatStale =
+    sweep.lastHeartbeatAt.getTime() <
+    Date.now() - STALLED_HEARTBEAT_MINUTES * 60_000;
+  const rateLimited = sweep.rateLimitedUntil !== null;
+
+  if (!heartbeatStale && !rateLimited) {
+    return {
+      resumed: false,
+      released: 0,
+      reason: "worker is still active; nothing to resume",
+    };
+  }
 
   await db
     .update(cheatCheckSweeps)
@@ -429,11 +486,19 @@ export async function kickWorker(): Promise<void> {
   }
 
   try {
-    await fetch(sweepWorkerUrl(), {
+    const response = await fetch(sweepWorkerUrl(), {
       method: "POST",
       headers: { Authorization: `Bearer ${env.CHEAT_SWEEP_SECRET}` },
       signal: AbortSignal.timeout(1500),
     });
+    // Usually the abort fires first; if a response does come back, a non-2xx
+    // means every chain link is dying silently (e.g. Vercel Deployment
+    // Protection intercepting the self-fetch) — say so.
+    if (!response.ok) {
+      console.error(
+        `[cheat-check-sweep] worker kick was rejected: ${response.status}`,
+      );
+    }
   } catch (error) {
     // An abort means the request went out and we stopped waiting — expected.
     if (error instanceof Error && error.name === "AbortError") return;

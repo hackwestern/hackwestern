@@ -20,7 +20,7 @@ import {
   SWEEP_TIME_BUDGET_MS,
   bumpHeartbeat,
   claimBatch,
-  countPendingItems,
+  countItemsWithStatus,
   failSweep,
   finishSweep,
   getRunningSweep,
@@ -131,10 +131,15 @@ export default async function handler(
 
     let processed = 0;
     let rateLimit: GithubRateLimitError | undefined;
+    // Teams this invocation already attempted. Excluding them from later claims
+    // means a failed item waits for the next chain link instead of burning its
+    // whole retry budget in seconds against the same transient error.
+    const attempted: string[] = [];
 
     while (Date.now() - startedAt < SWEEP_TIME_BUDGET_MS && !rateLimit) {
-      const teamIds = await claimBatch(sweep.id, SWEEP_CONCURRENCY);
+      const teamIds = await claimBatch(sweep.id, SWEEP_CONCURRENCY, attempted);
       if (teamIds.length === 0) break;
+      attempted.push(...teamIds);
 
       await withConcurrency(teamIds, SWEEP_CONCURRENCY, async (teamId) => {
         try {
@@ -189,12 +194,28 @@ export default async function handler(
       });
     }
 
-    const remaining = await countPendingItems(sweep.id);
-    if (remaining > 0) {
+    // Chain only on strictly-pending work. Items in `running` belong to another
+    // worker (an overlapped chain link, or a resume racing a live worker) —
+    // counting them here would make a worker that claimed nothing re-kick
+    // instantly, forever: a hot HTTP self-invocation loop.
+    const pending = await countItemsWithStatus(sweep.id, ["pending"]);
+    if (pending > 0) {
       await kickWorker();
       return res
         .status(200)
-        .json({ message: "Batch done; chained", processed, remaining });
+        .json({ message: "Batch done; chained", processed, pending });
+    }
+
+    const inFlight = await countItemsWithStatus(sweep.id, ["running"]);
+    if (inFlight > 0) {
+      // The worker holding those items finishes or chains; if it died instead,
+      // the heartbeat goes stale and `resumeSweep` recovers them.
+      return res
+        .status(200)
+        .json({
+          message: "Another worker owns the remaining items",
+          processed,
+        });
     }
 
     await finishSweep(sweep.id);

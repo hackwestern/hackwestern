@@ -69,6 +69,8 @@ const {
   markItemDone,
   releaseItem,
   releaseOrphanedItems,
+  resumeSweep,
+  setRateLimited,
 } = await import("~/server/api/utils/cheat-check-sweep");
 
 // ---------------------------------------------------------------------------
@@ -503,6 +505,50 @@ describe("sweep work list", () => {
 
     expect(await releaseOrphanedItems(sweep.id)).toBe(2);
     expect(await claimBatch(sweep.id, 2)).toHaveLength(2);
+  });
+
+  test("resumeSweep refuses while the worker's heartbeat is fresh", async () => {
+    const teamId = await makeTeam();
+    const sweep = await makeSweepWith([teamId]);
+    await claimBatch(sweep.id, 1);
+
+    const result = await resumeSweep();
+
+    // The live worker keeps its claim — releasing it would double-process.
+    expect(result.resumed).toBe(false);
+    expect(result.released).toBe(0);
+    expect(await claimBatch(sweep.id, 1)).toEqual([]);
+  });
+
+  test("resumeSweep releases a dead worker's items once the heartbeat is stale", async () => {
+    const teamId = await makeTeam();
+    const sweep = await makeSweepWith([teamId]);
+    await claimBatch(sweep.id, 1);
+
+    await db
+      .update(cheatCheckSweeps)
+      .set({ lastHeartbeatAt: new Date(Date.now() - 5 * 60_000) })
+      .where(eq(cheatCheckSweeps.id, sweep.id));
+
+    const result = await resumeSweep();
+
+    expect(result.resumed).toBe(true);
+    expect(result.released).toBe(1);
+    expect(await claimBatch(sweep.id, 1)).toEqual([teamId]);
+  });
+
+  test("resumeSweep clears a rate-limit pause even with a fresh heartbeat", async () => {
+    const teamId = await makeTeam();
+    const sweep = await makeSweepWith([teamId]);
+    await setRateLimited(sweep.id, new Date(Date.now() + 60 * 60_000));
+
+    const result = await resumeSweep();
+
+    expect(result.resumed).toBe(true);
+    const row = await db.query.cheatCheckSweeps.findFirst({
+      where: eq(cheatCheckSweeps.id, sweep.id),
+    });
+    expect(row?.rateLimitedUntil).toBeNull();
   });
 
   test("markItemDone clears a previous error and drops the item from the pending count", async () => {

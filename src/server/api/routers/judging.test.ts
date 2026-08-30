@@ -1,6 +1,23 @@
-import { beforeAll, beforeEach, describe, expect, test } from "vitest";
+import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { faker } from "@faker-js/faker";
 import { eq, sql } from "drizzle-orm";
+
+// Same guard as cheat-check-sweep.test.ts: with a real CHEAT_SWEEP_SECRET in
+// .env, the drain tests below would otherwise POST the real bearer token at
+// NEXTAUTH_URL and could start a real worker. Unset, `kickWorker` no-ops while
+// the sweep rows are still written and assertable.
+vi.mock("~/env", async (importOriginal) => {
+  const original = await importOriginal<typeof import("~/env")>();
+  const env = original.env as Record<string | symbol, unknown>;
+  return {
+    env: new Proxy(env, {
+      get(target, prop) {
+        if (prop === "CHEAT_SWEEP_SECRET") return undefined;
+        return target[prop];
+      },
+    }),
+  };
+});
 
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";

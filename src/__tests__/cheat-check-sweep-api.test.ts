@@ -296,8 +296,16 @@ describe("sweep worker", () => {
     fetchAllCommits.mockRejectedValue(new Error("GitHub API error 404"));
     const sweep = await startSweep([teamId]);
 
-    // A failed item goes back to `pending`, so the invocation's own loop
-    // re-claims it until the budget is spent — no chaining needed here.
+    // A failed item goes back to `pending`, but an invocation never re-claims
+    // a team it already attempted — each retry waits for the next chain link.
+    // Simulate the chain: two links that defer, and a third that exhausts the
+    // attempt budget and finishes the sweep.
+    expect((await invoke()).body).toMatchObject({
+      message: "Batch done; chained",
+    });
+    expect((await invoke()).body).toMatchObject({
+      message: "Batch done; chained",
+    });
     const res = await invoke();
 
     expect(res.body).toMatchObject({ message: "Sweep complete" });
@@ -337,6 +345,9 @@ describe("sweep worker", () => {
     fetchAllCommits.mockRejectedValue(new Error("network is down"));
     fetchContributors.mockRejectedValue(new Error("network is down"));
 
+    // One attempt per chain link; three links exhaust the retry budget.
+    await invoke();
+    await invoke();
     await invoke();
 
     const finished = await db.query.cheatCheckSweeps.findFirst({
