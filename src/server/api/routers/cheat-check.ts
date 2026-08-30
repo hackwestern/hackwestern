@@ -7,13 +7,10 @@ import {
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import {
-  applications,
-  dayOfRegistrations,
   hackerCheckResults,
   hackerCheckType,
   teamCheckResults,
   teamCheckType,
-  teams,
 } from "~/server/db/schema";
 import { env } from "~/env";
 import { getHackerCheckRows } from "~/lib/cheat-checks/getHackerChecks";
@@ -24,56 +21,32 @@ import {
   HACKER_CHECK_TYPES,
   TEAM_CHECK_TYPES,
 } from "~/lib/cheat-checks/constants";
-import type { HackerProfile, TeamProfile } from "~/lib/cheat-checks/types";
+import type {
+  HackerProfile,
+  TeamProfile,
+  HackerCheckType,
+  TeamCheckType,
+} from "~/lib/cheat-checks/types";
 import {
-  fetchAllCommits,
-  fetchContributors,
-  parseGithubUrl,
-} from "~/utils/github";
-
-const AGE_THRESHOLD = 18;
-
-type HackerCheckType = (typeof hackerCheckType.enumValues)[number];
-type TeamCheckType = (typeof teamCheckType.enumValues)[number];
-async function upsertHackerResult(
-  userId: string,
-  checkType: HackerCheckType,
-  passed: boolean,
-  details: Record<string, unknown>,
-  checkedByUserId: string,
-) {
-  const [result] = await db
-    .insert(hackerCheckResults)
-    .values({ userId, checkType, passed, details, checkedByUserId })
-    .onConflictDoUpdate({
-      target: [hackerCheckResults.userId, hackerCheckResults.checkType],
-      set: { passed, details, checkedByUserId, checkedAt: new Date() },
-    })
-    .returning();
-
-  return result!;
-}
-
-async function upsertTeamResult(
-  teamId: string,
-  checkType: TeamCheckType,
-  passed: boolean,
-  details: Record<string, unknown>,
-  checkedByUserId: string,
-) {
-  const [result] = await db
-    .insert(teamCheckResults)
-    .values({ teamId, checkType, passed, details, checkedByUserId })
-    .onConflictDoUpdate({
-      target: [teamCheckResults.teamId, teamCheckResults.checkType],
-      set: { passed, details, checkedByUserId, checkedAt: new Date() },
-    })
-    .returning();
-
-  return result!;
-}
+  findCachedHackerResult,
+  findCachedTeamResult,
+  hasAllHackerChecks,
+  runAllTeamChecks,
+  runCommitWithinAllottedTime,
+  runDevpostMembersRegistered,
+  runIsOfAge,
+  runIsRegistered,
+  runOnlyTeamMemberCommits,
+} from "~/server/api/utils/cheat-check-runners";
+import {
+  createSweep,
+  getSweepStatus,
+  kickWorker,
+  resumeSweep,
+} from "~/server/api/utils/cheat-check-sweep";
 
 const userIdInput = z.object({ userId: z.string() });
+const teamIdInput = z.object({ teamId: z.string() });
 
 // Pass forceRerun to each cheat check to skip the cached result and force re-evaluation.
 export const cheatCheckRouter = createTRPCRouter({
@@ -81,38 +54,11 @@ export const cheatCheckRouter = createTRPCRouter({
     .input(userIdInput.extend({ forceRerun: z.boolean().default(false) }))
     .query(async ({ input, ctx }) => {
       if (!input.forceRerun) {
-        const cached = await db.query.hackerCheckResults.findFirst({
-          where: and(
-            eq(hackerCheckResults.userId, input.userId),
-            eq(hackerCheckResults.checkType, "IS_OF_AGE"),
-          ),
-        });
+        const cached = await findCachedHackerResult(input.userId, "IS_OF_AGE");
         if (cached) return { ...cached, fromCache: true };
       }
 
-      const application = await db.query.applications.findFirst({
-        where: eq(applications.userId, input.userId),
-        columns: { age: true },
-      });
-
-      if (!application) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Application not found",
-        });
-      }
-
-      const passed =
-        application.age !== null && application.age >= AGE_THRESHOLD;
-      const details = { age: application.age, threshold: AGE_THRESHOLD };
-
-      const result = await upsertHackerResult(
-        input.userId,
-        "IS_OF_AGE",
-        passed,
-        details,
-        ctx.session.user.id,
-      );
+      const result = await runIsOfAge(input.userId, ctx.session.user.id);
       return { ...result, fromCache: false };
     }),
 
@@ -123,30 +69,14 @@ export const cheatCheckRouter = createTRPCRouter({
     .input(userIdInput.extend({ forceRerun: z.boolean().default(false) }))
     .query(async ({ input, ctx }) => {
       if (!input.forceRerun) {
-        const cached = await db.query.hackerCheckResults.findFirst({
-          where: and(
-            eq(hackerCheckResults.userId, input.userId),
-            eq(hackerCheckResults.checkType, "IS_REGISTERED"),
-          ),
-        });
+        const cached = await findCachedHackerResult(
+          input.userId,
+          "IS_REGISTERED",
+        );
         if (cached) return { ...cached, fromCache: true };
       }
 
-      const dayOf = await db.query.dayOfRegistrations.findFirst({
-        where: eq(dayOfRegistrations.userId, input.userId),
-        columns: { signedInAt: true },
-      });
-
-      const passed = !!dayOf?.signedInAt;
-      const details = { signedInAt: dayOf?.signedInAt ?? null };
-
-      const result = await upsertHackerResult(
-        input.userId,
-        "IS_REGISTERED",
-        passed,
-        details,
-        ctx.session.user.id,
-      );
+      const result = await runIsRegistered(input.userId, ctx.session.user.id);
       return { ...result, fromCache: false };
     }),
 
@@ -163,42 +93,14 @@ export const cheatCheckRouter = createTRPCRouter({
         const cached = await db.query.hackerCheckResults.findMany({
           where: eq(hackerCheckResults.userId, input.userId),
         });
-        if (cached.length === 2) return { results: cached, fromCache: true };
-      }
-
-      const [application, dayOf] = await Promise.all([
-        db.query.applications.findFirst({
-          where: eq(applications.userId, input.userId),
-          columns: { age: true },
-        }),
-        db.query.dayOfRegistrations.findFirst({
-          where: eq(dayOfRegistrations.userId, input.userId),
-          columns: { signedInAt: true },
-        }),
-      ]);
-
-      if (!application) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Application not found",
-        });
+        if (hasAllHackerChecks(cached)) {
+          return { results: cached, fromCache: true };
+        }
       }
 
       const [ageResult, registeredResult] = await Promise.all([
-        upsertHackerResult(
-          input.userId,
-          "IS_OF_AGE",
-          application.age !== null && application.age >= AGE_THRESHOLD,
-          { age: application.age, threshold: AGE_THRESHOLD },
-          organizerId,
-        ),
-        upsertHackerResult(
-          input.userId,
-          "IS_REGISTERED",
-          !!dayOf?.signedInAt,
-          { signedInAt: dayOf?.signedInAt ?? null },
-          organizerId,
-        ),
+        runIsOfAge(input.userId, organizerId),
+        runIsRegistered(input.userId, organizerId),
       ]);
 
       return {
@@ -216,75 +118,18 @@ export const cheatCheckRouter = createTRPCRouter({
    * the allotted hacking window.
    */
   commitWithinAllottedTime: protectedOrganizerProcedure
-    .input(
-      z.object({ teamId: z.string(), forceRerun: z.boolean().default(false) }),
-    )
+    .input(teamIdInput.extend({ forceRerun: z.boolean().default(false) }))
     .query(async ({ input, ctx }) => {
       if (!input.forceRerun) {
-        const cached = await db.query.teamCheckResults.findFirst({
-          where: and(
-            eq(teamCheckResults.teamId, input.teamId),
-            eq(teamCheckResults.checkType, "COMMIT_WITHIN_ALLOTTED_TIME"),
-          ),
-        });
+        const cached = await findCachedTeamResult(
+          input.teamId,
+          "COMMIT_WITHIN_ALLOTTED_TIME",
+        );
         if (cached) return { ...cached, fromCache: true };
       }
 
-      const submission = await requireSubmission(input.teamId);
-      const parsed = parseGithubUrl(submission.githubUrl);
-      if (!parsed) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Could not parse GitHub URL",
-        });
-      }
-
-      const window = requireHackWindow();
-
-      const commits = await fetchAllCommits(parsed.owner, parsed.repo);
-      const violations = commits.filter((c) => {
-        const date = new Date(c.commit.author.date);
-        return date < window.hackStart || date > window.hackEnd;
-      });
-
-      // Sort all commits chronologically to find true first/last
-      const sorted = [...commits].sort(
-        (a, b) =>
-          new Date(a.commit.author.date).getTime() -
-          new Date(b.commit.author.date).getTime(),
-      );
-
-      const details = {
-        hackStart: window.hackStart.toISOString(),
-        hackEnd: window.hackEnd.toISOString(),
-        totalCommits: commits.length,
-        firstCommit: sorted[0]
-          ? {
-              sha: sorted[0].sha,
-              date: sorted[0].commit.author.date,
-              author: sorted[0].commit.author.name,
-            }
-          : null,
-        lastCommit: sorted.at(-1)
-          ? {
-              sha: sorted.at(-1)!.sha,
-              date: sorted.at(-1)!.commit.author.date,
-              author: sorted.at(-1)!.commit.author.name,
-            }
-          : null,
-        violations: violations.map((c) => ({
-          sha: c.sha,
-          date: c.commit.author.date,
-          author: c.commit.author.name,
-          message: c.commit.message.split("\n")[0],
-        })),
-      };
-
-      const result = await upsertTeamResult(
+      const result = await runCommitWithinAllottedTime(
         input.teamId,
-        "COMMIT_WITHIN_ALLOTTED_TIME",
-        violations.length === 0,
-        details,
         ctx.session.user.id,
       );
       return { ...result, fromCache: false };
@@ -294,57 +139,18 @@ export const cheatCheckRouter = createTRPCRouter({
    * Checks that Github contributors matches the Github usernames submitted by the team.
    */
   onlyTeamMemberCommits: protectedOrganizerProcedure
-    .input(
-      z.object({ teamId: z.string(), forceRerun: z.boolean().default(false) }),
-    )
+    .input(teamIdInput.extend({ forceRerun: z.boolean().default(false) }))
     .query(async ({ input, ctx }) => {
       if (!input.forceRerun) {
-        const cached = await db.query.teamCheckResults.findFirst({
-          where: and(
-            eq(teamCheckResults.teamId, input.teamId),
-            eq(teamCheckResults.checkType, "ONLY_TEAM_MEMBER_COMMITS"),
-          ),
-        });
+        const cached = await findCachedTeamResult(
+          input.teamId,
+          "ONLY_TEAM_MEMBER_COMMITS",
+        );
         if (cached) return { ...cached, fromCache: true };
       }
 
-      const submission = await requireSubmission(input.teamId);
-      const parsed = parseGithubUrl(submission.githubUrl);
-      if (!parsed) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Could not parse GitHub URL",
-        });
-      }
-
-      const team = await db.query.teams.findFirst({
-        where: eq(teams.id, input.teamId),
-        columns: { memberGithubUsernames: true },
-      });
-
-      const registeredLogins = new Set(
-        (team?.memberGithubUsernames ?? []).map((u) => u.toLowerCase()),
-      );
-
-      const contributors = await fetchContributors(parsed.owner, parsed.repo);
-
-      const unregistered = contributors.filter(
-        (c) => !registeredLogins.has(c.login.toLowerCase()),
-      );
-
-      const details = {
-        registeredGithubLogins: [...registeredLogins],
-        unregisteredContributors: unregistered.map((c) => ({
-          login: c.login,
-          contributions: c.contributions,
-        })),
-      };
-
-      const result = await upsertTeamResult(
+      const result = await runOnlyTeamMemberCommits(
         input.teamId,
-        "ONLY_TEAM_MEMBER_COMMITS",
-        unregistered.length === 0,
-        details,
         ctx.session.user.id,
       );
       return { ...result, fromCache: false };
@@ -354,53 +160,47 @@ export const cheatCheckRouter = createTRPCRouter({
    * Checks that the people listed on DevPost match the team registered on HackWestern.
    */
   devPostMembersAreRegistered: protectedOrganizerProcedure
-    .input(
-      z.object({ teamId: z.string(), forceRerun: z.boolean().default(false) }),
-    )
+    .input(teamIdInput.extend({ forceRerun: z.boolean().default(false) }))
     .query(async ({ input, ctx }) => {
       if (!input.forceRerun) {
-        const cached = await db.query.teamCheckResults.findFirst({
-          where: and(
-            eq(teamCheckResults.teamId, input.teamId),
-            eq(teamCheckResults.checkType, "DEVPOST_MEMBERS_REGISTERED"),
-          ),
-        });
+        const cached = await findCachedTeamResult(
+          input.teamId,
+          "DEVPOST_MEMBERS_REGISTERED",
+        );
         if (cached) return { ...cached, fromCache: true };
       }
 
-      const submission = await requireSubmission(input.teamId);
-
-      const team = await db.query.teams.findFirst({
-        where: eq(teams.id, input.teamId),
-        columns: { memberDevpostUsernames: true },
-      });
-
-      const registeredDevpostUsernames = new Set(
-        (team?.memberDevpostUsernames ?? []).map((u) => u.toLowerCase()),
-      );
-
-      const devpostCollaborators = await getDevpostCollaboratorUsernames(
-        submission.devpostUrl,
-      );
-
-      const unmatched = devpostCollaborators.filter(
-        (u) => !registeredDevpostUsernames.has(u.toLowerCase()),
-      );
-
-      const details = {
-        devpostCollaborators,
-        registeredDevpostUsernames: [...registeredDevpostUsernames],
-        unmatchedCollaborators: unmatched,
-      };
-
-      const result = await upsertTeamResult(
+      const result = await runDevpostMembersRegistered(
         input.teamId,
-        "DEVPOST_MEMBERS_REGISTERED",
-        unmatched.length === 0,
-        details,
         ctx.session.user.id,
       );
       return { ...result, fromCache: false };
+    }),
+
+  /**
+   * Runs every team check for one team and returns them together — the
+   * synchronous counterpart to a sweep, for when an organizer wants one team
+   * looked at now rather than waiting for the queue to drain.
+   *
+   * One failing check (a deleted repo, a DevPost 404) does not discard the
+   * others — `failures` carries the messages for the ones that threw.
+   */
+  runAllTeamChecks: protectedOrganizerProcedure
+    .input(teamIdInput.extend({ forceRerun: z.boolean().default(false) }))
+    .mutation(async ({ input, ctx }) => {
+      const { results, failures, skipped } = await runAllTeamChecks(
+        input.teamId,
+        ctx.session.user.id,
+        { forceRerun: input.forceRerun },
+      );
+
+      return {
+        results,
+        skipped,
+        failures: failures.map((f) =>
+          f instanceof Error ? f.message : String(f),
+        ),
+      };
     }),
 
   // -------------------------------------------------------------------------
@@ -412,7 +212,7 @@ export const cheatCheckRouter = createTRPCRouter({
    * The frontend calls this on page load; it never triggers re-runs.
    */
   getCachedTeamResults: protectedOrganizerProcedure
-    .input(z.object({ teamId: z.string() }))
+    .input(teamIdInput)
     .query(async ({ input }) => {
       return db.query.teamCheckResults.findMany({
         where: eq(teamCheckResults.teamId, input.teamId),
@@ -550,84 +350,50 @@ export const cheatCheckRouter = createTRPCRouter({
 
     return TeamResults(groupedHackers, groupedTeams);
   }),
+
+  // -------------------------------------------------------------------------
+  // Automated sweeps
+  // -------------------------------------------------------------------------
+
+  /**
+   * Progress of the running sweep, or of the most recent one if none is running.
+   * `stalled` means the worker has gone quiet and the sweep needs resuming.
+   */
+  getSweepStatus: protectedOrganizerProcedure.query(async () => {
+    return getSweepStatus();
+  }),
+
+  /**
+   * Re-kick a stalled or rate-limited sweep: clears the rate-limit stamp, puts
+   * items abandoned by a dead worker back in the queue, and starts a new worker.
+   */
+  resumeSweep: protectedOrganizerProcedure.mutation(async () => {
+    return resumeSweep();
+  }),
+
+  /**
+   * Start a full sweep by hand, without waiting for the judging queue to drain.
+   * Pass forceRerun to re-check teams that already have cached results.
+   */
+  startSweep: protectedOrganizerProcedure
+    .input(
+      z.object({ forceRerun: z.boolean().default(false) }).default({
+        forceRerun: false,
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const sweep = await createSweep("manual", {
+        forceRerun: input.forceRerun,
+      });
+
+      if (!sweep) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "A cheat check sweep is already running",
+        });
+      }
+
+      if (sweep.status === "running") await kickWorker();
+      return sweep;
+    }),
 });
-
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
-function requireHackWindow() {
-  if (!env.HACK_START || !env.HACK_END) {
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message:
-        "HACK_START and HACK_END environment variables must be set before running commit checks",
-    });
-  }
-  return {
-    hackStart: new Date(env.HACK_START),
-    hackEnd: new Date(env.HACK_END),
-  };
-}
-
-async function requireSubmission(teamId: string) {
-  const team = await db.query.teams.findFirst({
-    where: eq(teams.id, teamId),
-    columns: {
-      id: true,
-      devpostUrl: true,
-      githubUrl: true,
-      submissionStatus: true,
-    },
-  });
-
-  if (!team) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
-  }
-
-  if (!team.githubUrl || !team.devpostUrl) {
-    throw new TRPCError({
-      code: "NOT_FOUND",
-      message: "This team has not submitted yet",
-    });
-  }
-
-  return { ...team, githubUrl: team.githubUrl, devpostUrl: team.devpostUrl };
-}
-
-/** Scrapes the DevPost project page and returns the collaborator usernames from href attributes. */
-async function getDevpostCollaboratorUsernames(
-  devpostUrl: string,
-): Promise<string[]> {
-  const res = await fetch(devpostUrl, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (compatible; HackWesternCheatCheck/1.0; +https://hackwestern.com)",
-      Accept: "text/html",
-    },
-  });
-
-  if (!res.ok) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: `DevPost fetch failed with status ${res.status}`,
-    });
-  }
-
-  const html = await res.text();
-  const blockMatch = html.match(
-    /<ul[^>]+id="collaborators"[^>]*>([\s\S]*?)<\/ul>/,
-  );
-  if (!blockMatch?.[1]) return [];
-
-  const block = blockMatch[1];
-  const usernames: string[] = [];
-  const hrefRegex = /href="\/([^/"?\s]+)"/g;
-  let match: RegExpExecArray | null;
-
-  while ((match = hrefRegex.exec(block)) !== null) {
-    if (match[1]) usernames.push(match[1]);
-  }
-
-  return usernames;
-}

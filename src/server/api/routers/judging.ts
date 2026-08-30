@@ -6,7 +6,7 @@ import {
   protectedJudgeProcedure,
   protectedOrganizerProcedure,
 } from "~/server/api/trpc";
-import { db } from "~/server/db";
+import { db, extractRows } from "~/server/db";
 import {
   judges,
   judgingQueue,
@@ -15,6 +15,7 @@ import {
   teams,
   users,
 } from "~/server/db/schema";
+import { maybeTriggerSweepOnDrain } from "~/server/api/utils/cheat-check-sweep";
 import {
   type AddJudgeInput,
   addJudgesSchema,
@@ -51,12 +52,6 @@ const withErrorHandling = async <T>(
     });
   }
 };
-
-function extractRows<T>(result: unknown): T[] {
-  return Array.isArray(result)
-    ? (result as T[])
-    : ((result as { rows?: T[] }).rows ?? []);
-}
 
 async function getCurrentHold(judgeId: string): Promise<QueueRow | undefined> {
   return db.query.judgingQueue.findFirst({
@@ -514,6 +509,15 @@ export const judgingRouter = createTRPCRouter({
             input.score,
             roundType,
           );
+
+          // `submitMark` has committed, so `trg_team_mark_autoqueue` has
+          // already removed the team from the queue if it was fully judged —
+          // only now is the queue count meaningful. Awaited on purpose: Vercel
+          // freezes the instance once the response flushes, so a fire-and-
+          // forget chain silently dies after ~one query in production. The
+          // non-drain cost is a single COUNT; the drain itself costs ~2s once
+          // per queue-drain. The hook never throws, so it can't fail the mark.
+          await maybeTriggerSweepOnDrain();
         }, "Failed to submit team mark");
       }),
 
