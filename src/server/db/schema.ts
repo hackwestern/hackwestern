@@ -283,7 +283,10 @@ export const users = pgTable(
     id: varchar("id", { length: 255 }).notNull().primaryKey(),
     name: varchar("name", { length: 255 }),
     password: varchar("password", { length: 255 }),
-    email: varchar("email", { length: 255 }).notNull(),
+    // Stored canonical (trim+lowercase) — every read/write goes through
+    // normalizeAuthEmail. The unique constraint is the backstop: HW12 shipped
+    // without it and 7 people ended up with two accounts each.
+    email: varchar("email", { length: 255 }).notNull().unique(),
     emailVerified: timestamp("emailVerified", {
       mode: "date",
     }).default(sql`CURRENT_TIMESTAMP`),

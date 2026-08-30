@@ -4,15 +4,11 @@ import { preregistrations } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { db } from "~/server/db";
 import { sendViaMailjet } from "~/server/mail-mailjet";
+import { manageContact } from "~/server/mailjet-contacts";
 import { normalizeEmail, generateUnsubscribeToken } from "~/server/subscribers";
 import { validateSignupEmail } from "~/server/email-validation";
 import { env } from "~/env";
 import { signupTemplate } from "./email-templates";
-
-// Email links must be canonical + permanent — never a per-deployment preview
-// URL (which may be scheme-less or expire) — so hardcode the public domain
-// rather than trusting the deployment's NEXTAUTH_URL.
-const BASE = "https://www.hackwestern.com";
 
 const preregistrationCreateSchema = createInsertSchema(preregistrations).omit({
   createdAt: true,
@@ -75,25 +71,53 @@ export const preregistrationRouter = createTRPCRouter({
 
         // Send confirmation email. Don't fail the signup if the email bounces —
         // the preregistration is already saved.
-        const { error } = await sendViaMailjet(
-          {
-            from: "Hack Western Team <hello@hackwestern.com>",
-            to: input.email,
-            subject: "You're signed up for Hack Western 13 updates!",
-            html: signupTemplate(
-              input.email,
-              `${BASE}/unsubscribe?token=${unsubscribeToken}`,
-            ),
-            headers: {
-              "List-Unsubscribe": `<${BASE}/api/unsubscribe?token=${unsubscribeToken}>`,
-              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        //
+        // Send to `normalized`, NOT `input.email`. Mailjet's Send API creates a
+        // contact from whatever address it delivered to, so sending to the raw
+        // input filed "Foo.Bar@gmail.com" while the list write below files
+        // "foobar@gmail.com" — two Mailjet contacts for one mailbox, billed and
+        // mailed separately. A prod audit on 2026-08-25 found 2,552 contacts
+        // collapsing to 2,481 unique addresses; this was the cause.
+        // Two independent Mailjet round-trips, run concurrently rather than
+        // back-to-back — the user waits on this mutation, and neither call
+        // reads the other's result. Both are best-effort: the row is already
+        // committed, so a Mailjet failure must never surface as a signup error.
+        //
+        // The list write is what makes a signup visible to marketing at all.
+        // Sending alone creates a Mailjet contact but files it under no list,
+        // and dashboard campaigns can only target a list. `addnoforce` leaves a
+        // previous unsubscribe intact if this address opted out before.
+        const creds = {
+          apiKey: env.MAILJET_API_KEY,
+          secretKey: env.MAILJET_SECRET_KEY,
+        };
+        const [{ error }, listed] = await Promise.all([
+          sendViaMailjet(
+            {
+              from: "Hack Western Team <hello@hackwestern.com>",
+              to: normalized,
+              subject: "You're signed up for Hack Western 13 updates!",
+              // No unsubscribe link or List-Unsubscribe header — see the note on
+              // signupTemplate. Marketing's campaigns carry Mailjet's own
+              // unsubscribe, and a second link writing only to Postgres would
+              // mean an opt-out honoured in one system and ignored in the other.
+              html: signupTemplate(normalized),
             },
-          },
-          { apiKey: env.MAILJET_API_KEY, secretKey: env.MAILJET_SECRET_KEY },
-        );
+            creds,
+          ),
+          env.MAILJET_CONTACT_LIST_ID
+            ? manageContact(env.MAILJET_CONTACT_LIST_ID, normalized, creds)
+            : Promise.resolve({ ok: true } as const),
+        ]);
 
         if (error) {
           console.error("Error sending preregistration email:", error);
+        }
+        if (!listed.ok) {
+          console.error(
+            "Error adding preregistration to Mailjet list:",
+            listed.error,
+          );
         }
 
         return createdPreregistration[0];
