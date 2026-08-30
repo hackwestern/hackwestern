@@ -99,6 +99,13 @@
       "when": 1788080333798,
       "tag": "0013_apply_judging_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788080707170,
+      "tag": "0014_team_join_codes",
+      "breakpoints": true
     }
   ]
 }
