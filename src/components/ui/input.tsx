@@ -10,7 +10,7 @@ export interface InputProps
 const inputVariants = cva(
   cn(
     "flex w-full relative bg-white px-[8px] py-[8px] outline-none",
-    `font-secondary font-medium text-[16px] leading-normal`,
+    `font-figtree font-medium text-[16px] leading-normal`,
     `text-gray-6`,
     `placeholder:text-gray-3`,
     "disabled:cursor-not-allowed disabled:opacity-50",
@@ -20,10 +20,10 @@ const inputVariants = cva(
     variants: {
       variant: {
         default: cn(
-          `shadow-[inset_1px_1px_0px_0px_rgba(5,6,8,0.5),inset_-1px_-1px_0px_0px_rgba(255,255,255,0.3),inset_2px_2px_0px_0px_rgba(137,139,143,0.5),inset_-2px_-2px_0px_0px_rgba(222,223,225,0.5)]`,
-          `hover:shadow-[inset_1px_1px_0px_0px_rgba(5,6,8,0.4),inset_-1px_-1px_0px_0px_rgba(255,255,255,0.2),inset_2px_2px_0px_0px_rgba(137,139,143,0.4),inset_-2px_-2px_0px_0px_rgba(222,223,225,0.4)]`,
-          `hover:placeholder:text-gray-2`,
-          `focus:shadow-[inset_1px_1px_0px_0px_rgba(5,6,8,1),inset_-1px_-1px_0px_0px_rgba(0,0,0,1),inset_2px_2px_0px_0px_rgba(137,139,143,0.5),inset_-2px_-2px_0px_0px_rgba(222,223,225,0.5)]`,
+          `border rounded-[4px] border-gray-2`,
+          `shadow-[inset_1px_1px_3px_0px_rgba(137,139,143,0.5),inset_-1px_-1px_3px_0px_rgba(137,139,143,0.5)]`,
+          `hover:placeholder:text-gray-2 hover:border-gray-1`,
+          `focus:border-black`,
           `focus:placeholder:opacity-0`,
         ),
         primary: "rounded-md bg-faint-lilac px-3 py-2 text-heavy border-muted",
@@ -39,7 +39,7 @@ const inputVariants = cva(
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, variant, type, ...props }, ref) => {
     return (
-      <div className="drop-shadow-[2px_2px_2px_rgba(0,0,0,0.12)]">
+      <div className="drop-shadow-[2px_2px_2px_rgba(0,0,0,0.08)]">
         <input
           type={type}
           className={cn(inputVariants({ variant, className }))}

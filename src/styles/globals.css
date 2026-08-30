@@ -171,10 +171,10 @@ html {
     @apply font-cossetteTexte text-sm-sub font-normal uppercase leading-normal tracking-subtitle text-black;
   }
   .button-lg {
-    @apply font-pix32 text-lg-b font-normal leading-default tracking-default text-black;
+    @apply font-figtree text-lg-b font-normal leading-default tracking-default text-black;
   }
   .button-sm {
-    @apply font-pix32 text-sm-b font-normal leading-none tracking-default text-black;
+    @apply font-figtree text-sm-b font-normal leading-none tracking-default text-black;
   }
 }
 @layer utilities {
