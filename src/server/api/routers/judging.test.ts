@@ -628,3 +628,87 @@ describe("getLatestRanking", () => {
     expect(top.team_id).toBe(t1);
   });
 });
+
+/* ---------- stat maintenance across judge reassignment ---------- */
+
+/**
+ * These bypass the router deliberately. Reassignment can't happen through the
+ * application, so the point is that the aggregates survive it when it arrives
+ * from somewhere else — an admin fixing data by hand, most likely.
+ */
+describe("team_mark stat maintenance", () => {
+  test("reassigning judge_id moves the mark between both judges' aggregates", async () => {
+    const teamId = await makeTeam();
+    const a = await makeJudge();
+    const b = await makeJudge();
+    await db
+      .insert(teamMarks)
+      .values({ teamId, judgeId: a.session.user.id, score: 40 });
+
+    await db
+      .update(teamMarks)
+      .set({ judgeId: b.session.user.id })
+      .where(eq(teamMarks.teamId, teamId));
+
+    const rowA = await db.query.judges.findFirst({
+      where: eq(judges.id, a.session.user.id),
+    });
+    const rowB = await db.query.judges.findFirst({
+      where: eq(judges.id, b.session.user.id),
+    });
+    // A is emptied out, B gains the mark whole — counts included.
+    expect(rowA?.marksCount).toBe(0);
+    expect(rowA?.marksSum).toBe(0);
+    expect(rowA?.marksSquaredSum).toBe(0);
+    expect(rowB?.marksCount).toBe(1);
+    expect(rowB?.marksSum).toBe(40);
+    expect(rowB?.marksSquaredSum).toBe(1600);
+  });
+
+  test("reassigning judge_id and score together stays consistent", async () => {
+    const teamId = await makeTeam();
+    const a = await makeJudge();
+    const b = await makeJudge();
+    await db
+      .insert(teamMarks)
+      .values({ teamId, judgeId: a.session.user.id, score: 40 });
+
+    await db
+      .update(teamMarks)
+      .set({ judgeId: b.session.user.id, score: 90 })
+      .where(eq(teamMarks.teamId, teamId));
+
+    const rowA = await db.query.judges.findFirst({
+      where: eq(judges.id, a.session.user.id),
+    });
+    const rowB = await db.query.judges.findFirst({
+      where: eq(judges.id, b.session.user.id),
+    });
+    // A loses the old score, B gains the new one — not a delta between them.
+    expect(rowA?.marksCount).toBe(0);
+    expect(rowA?.marksSum).toBe(0);
+    expect(rowB?.marksCount).toBe(1);
+    expect(rowB?.marksSum).toBe(90);
+    expect(rowB?.marksSquaredSum).toBe(8100);
+  });
+
+  test("editing only the score is still a delta on one judge", async () => {
+    const teamId = await makeTeam();
+    const j = await makeJudge();
+    await db
+      .insert(teamMarks)
+      .values({ teamId, judgeId: j.session.user.id, score: 40 });
+
+    await db
+      .update(teamMarks)
+      .set({ score: 90 })
+      .where(eq(teamMarks.teamId, teamId));
+
+    const row = await db.query.judges.findFirst({
+      where: eq(judges.id, j.session.user.id),
+    });
+    expect(row?.marksCount).toBe(1);
+    expect(row?.marksSum).toBe(90);
+    expect(row?.marksSquaredSum).toBe(8100);
+  });
+});
