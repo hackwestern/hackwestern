@@ -111,6 +111,10 @@ function stubDevpost(usernames: string[]) {
 async function makeTeam(opts: { members?: string[] } = {}) {
   const id = faker.string.alphanumeric(6);
   await db.insert(teams).values({
+    joinCode: faker.string.fromCharacters(
+      "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
+      6,
+    ),
     id,
     name: `team-${id}`,
     githubUrl: `https://github.com/owner/${id}`,
@@ -573,6 +577,10 @@ describe("createSweep / getSweepStatus", () => {
 
   test("completes immediately when no team is eligible", async () => {
     await db.insert(teams).values({
+      joinCode: faker.string.fromCharacters(
+        "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
+        6,
+      ),
       id: faker.string.alphanumeric(6),
       name: "draft team",
       submissionStatus: "draft",

@@ -363,6 +363,10 @@ describe("cheat check sweep trigger", () => {
   async function makeUnsubmittableTeam() {
     const id = faker.string.alphanumeric(6);
     await db.insert(teams).values({
+      joinCode: faker.string.fromCharacters(
+        "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
+        6,
+      ),
       id,
       name: `team-${id}`,
       devpostUrl: null,
