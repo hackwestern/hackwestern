@@ -10,10 +10,14 @@ function CalculateResult(
   members: GroupedHackers[],
   checkType: HackerCheckType,
 ) {
-  const result = members.every((member) => {
-    const check = member.checks[checkType];
-    return check?.manualOverride ?? check?.passed ?? false;
-  });
+  // A team with no member rows has had no hacker checks run, which is not
+  // the same as all of them passing.
+  const result =
+    members.length > 0 &&
+    members.every((member) => {
+      const check = member.checks[checkType];
+      return check?.manualOverride ?? check?.passed ?? false;
+    });
 
   return {
     passed: result,
@@ -62,7 +66,7 @@ export function TeamResults(
       teamId: teamId,
       devPost: devPost,
       github: github,
-      name: teamEntry?.name ?? null,
+      name: teamEntry?.name ?? (teamId === "no-team" ? "No team" : null),
       members: members,
       checks: checks,
       finalResult: finalResult,
