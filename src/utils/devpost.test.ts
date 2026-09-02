@@ -127,6 +127,30 @@ describe("parseBuiltWith", () => {
     expect(parseBuiltWith(html)).toEqual(["c#", "amazon web services", "at&t"]);
   });
 
+  it("leaves out-of-range numeric entities as literal text", () => {
+    const html = builtWithHtml([
+      { label: "bad&#999999999;tag", recognized: false },
+      { label: "hex&#x110000;tag", recognized: false },
+      { label: "python" },
+    ]);
+
+    expect(() => parseBuiltWith(html)).not.toThrow();
+    expect(parseBuiltWith(html)).toEqual([
+      "bad&#999999999;tag",
+      "hex&#x110000;tag",
+      "python",
+    ]);
+  });
+
+  it("still decodes entities at the edges of the valid range", () => {
+    const html = builtWithHtml([
+      { label: "&#65;", recognized: false },
+      { label: "&#x10FFFF;", recognized: false },
+    ]);
+
+    expect(parseBuiltWith(html)).toEqual(["A", String.fromCodePoint(0x10ffff)]);
+  });
+
   it("deduplicates case-insensitively, keeping the first spelling", () => {
     const html = builtWithHtml([
       { label: "React" },
@@ -196,6 +220,53 @@ describe("fetchDevpostTechStack", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("bounds the request with an abort signal it supplies itself", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      url: "https://devpost.com/software/hackwestern",
+      text: () => Promise.resolve(builtWithHtml([{ label: "python" }])),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchDevpostTechStack("https://devpost.com/software/hackwestern");
+
+    const signal = (
+      fetchMock.mock.calls[0]?.[1] as { signal?: AbortSignal } | undefined
+    )?.signal;
+    expect(signal).toBeInstanceOf(AbortSignal);
+    expect(signal?.aborted).toBe(false);
+  });
+
+  it("names a timeout for what it is", async () => {
+    const timeout = new Error("The operation was aborted");
+    timeout.name = "TimeoutError";
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(timeout));
+
+    await expect(
+      fetchDevpostTechStack("https://devpost.com/software/slow"),
+    ).rejects.toThrow(/timed out after \d+ms/);
+  });
+
+  it("bounds the body read too, not just the response headers", async () => {
+    const timeout = new Error("terminated");
+    timeout.name = "TimeoutError";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        url: "https://devpost.com/software/slow",
+        // Headers arrive, then the stream stalls out.
+        text: () => Promise.reject(timeout),
+      }),
+    );
+
+    await expect(
+      fetchDevpostTechStack("https://devpost.com/software/slow"),
+    ).rejects.toThrow(/timed out after \d+ms/);
+  });
+
   it("throws when DevPost bounces the project to a login page", async () => {
     vi.stubGlobal(
       "fetch",
@@ -208,7 +279,7 @@ describe("fetchDevpostTechStack", () => {
     );
 
     await expect(
-      fetchDevpostTechStack("https://devpost.com/software/d-iq67xn"),
+      fetchDevpostTechStack("https://devpost.com/software/hackwestern"),
     ).rejects.toThrow(/private, unpublished, or deleted/);
   });
 

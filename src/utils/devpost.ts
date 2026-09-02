@@ -10,6 +10,8 @@
 const USER_AGENT =
   "Mozilla/5.0 (compatible; HackWesternTechStack/1.0; +https://hackwestern.com)";
 
+const FETCH_TIMEOUT_MS = 10_000;
+
 /**
  * Thrown when a DevPost URL is unusable or the page can't be read. Callers that
  * scrape many teams in a row catch this per team rather than failing the batch.
@@ -53,14 +55,20 @@ export function normalizeDevpostUrl(input: string): string {
   return `https://devpost.com/software/${segments[2]}`;
 }
 
+function decodeCodePoint(literal: string, raw: string, radix: number): string {
+  const code = parseInt(raw, radix);
+  if (!Number.isInteger(code) || code < 0 || code > 0x10ffff) return literal;
+  return String.fromCodePoint(code);
+}
+
 /** Decodes the handful of HTML entities that show up in tag text (`C#`, `AT&T`). */
 function decodeEntities(text: string): string {
   return text
-    .replace(/&#(\d+);/g, (_, code: string) =>
-      String.fromCodePoint(Number(code)),
+    .replace(/&#(\d+);/g, (match: string, code: string) =>
+      decodeCodePoint(match, code, 10),
     )
-    .replace(/&#x([0-9a-f]+);/gi, (_, code: string) =>
-      String.fromCodePoint(parseInt(code, 16)),
+    .replace(/&#x([0-9a-f]+);/gi, (match: string, code: string) =>
+      decodeCodePoint(match, code, 16),
     )
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
@@ -101,6 +109,17 @@ export function parseBuiltWith(html: string): string[] {
   return tags;
 }
 
+function asScrapeError(cause: unknown, url: string): DevpostScrapeError {
+  if (cause instanceof Error && cause.name === "TimeoutError") {
+    return new DevpostScrapeError(
+      `DevPost fetch for ${url} timed out after ${FETCH_TIMEOUT_MS}ms`,
+    );
+  }
+  return new DevpostScrapeError(
+    `DevPost fetch failed for ${url}: ${String(cause)}`,
+  );
+}
+
 /**
  * Fetches a DevPost project page and returns its "Built With" technologies.
  *
@@ -116,11 +135,10 @@ export async function fetchDevpostTechStack(
   try {
     res = await fetch(url, {
       headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   } catch (cause) {
-    throw new DevpostScrapeError(
-      `DevPost fetch failed for ${url}: ${String(cause)}`,
-    );
+    throw asScrapeError(cause, url);
   }
 
   if (!res.ok) {
@@ -138,5 +156,12 @@ export async function fetchDevpostTechStack(
     );
   }
 
-  return parseBuiltWith(await res.text());
+  let html: string;
+  try {
+    html = await res.text();
+  } catch (cause) {
+    throw asScrapeError(cause, url);
+  }
+
+  return parseBuiltWith(html);
 }
