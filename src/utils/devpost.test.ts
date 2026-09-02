@@ -35,9 +35,9 @@ describe("normalizeDevpostUrl", () => {
   });
 
   it("leaves an already-clean URL alone", () => {
-    expect(normalizeDevpostUrl("https://devpost.com/software/hackwestern")).toBe(
-      "https://devpost.com/software/hackwestern",
-    );
+    expect(
+      normalizeDevpostUrl("https://devpost.com/software/hackwestern"),
+    ).toBe("https://devpost.com/software/hackwestern");
   });
 
   it("drops trailing sub-paths and fragments", () => {
@@ -54,7 +54,9 @@ describe("normalizeDevpostUrl", () => {
 
   it("accepts a hackathon subdomain and canonicalizes it", () => {
     expect(
-      normalizeDevpostUrl("https://hackwestern.devpost.com/software/hackwestern"),
+      normalizeDevpostUrl(
+        "https://hackwestern.devpost.com/software/hackwestern",
+      ),
     ).toBe("https://devpost.com/software/hackwestern");
   });
 
@@ -101,9 +103,9 @@ describe("parseBuiltWith", () => {
   });
 
   it("returns [] when the page has no Built With section at all", () => {
-    expect(parseBuiltWith("<html><body><h1>hackwestern</h1></body></html>")).toEqual(
-      [],
-    );
+    expect(
+      parseBuiltWith("<html><body><h1>hackwestern</h1></body></html>"),
+    ).toEqual([]);
   });
 
   it("ignores cp-tag spans outside the Built With section", () => {
@@ -152,7 +154,9 @@ describe("fetchDevpostTechStack", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(
-      fetchDevpostTechStack("https://devpost.com/software/hackwestern?_gl=1*znq4gl"),
+      fetchDevpostTechStack(
+        "https://devpost.com/software/hackwestern?_gl=1*znq4gl",
+      ),
     ).resolves.toEqual(["python", "redis"]);
 
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
