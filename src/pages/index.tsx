@@ -1,16 +1,59 @@
+import { FilmStrip } from "~/components/promo/film-strip";
 import { SkyBackground } from "~/components/promo/sky-background";
 
-/**
- * Promo site (HW13). Currently just the shared parallax sky from Figma
- * `13 - Promo Site V2` — the four foreground sections land on top of it.
- *
- * The HW13 single-screen hero is parked at the bottom of this file; uncomment
- * that block and return it again to bring the old landing page back.
- */
+
+const SECTIONS = [
+  { id: "hero", label: "Hero", height: 1290, tiltAfter: 0.4 },
+  { id: "about", label: "About", height: 1109, tiltAfter: 3.5 },
+  { id: "projects", label: "Projects", height: 1237, tiltAfter: 1.2 },
+  { id: "sponsors", label: "Sponsors + FAQ", height: 1886, tiltAfter: 0 },
+];
+
+/** Team photo cut-outs in the footer band, as % across the 1440 design frame. */
+const TEAM_FIGURES = [
+  { left: 0, top: 58.78 },
+  { left: 8.87, top: 71.74 },
+  { left: 17.04, top: 78.78 },
+  { left: 34.09, top: 78.78 },
+  { left: 42.95, top: 71.74 },
+  { left: 68.18, top: 38.78 },
+  { left: 85.22, top: 50.1 },
+];
+
 export default function Home() {
   return (
-    <main className="relative min-h-svh cursor-pixel-default">
+    <main id="top" className="relative cursor-pixel-default">
       <SkyBackground />
+
+      <FilmStrip />
+      {SECTIONS.map((section) => (
+        <div key={section.id}>
+          <section
+            id={section.id}
+            className="flex items-center justify-center"
+            style={{ minHeight: `${section.height}px` }}
+          >
+            <h2 className="text-[clamp(2.5rem,7vw,100px)] text-black">
+              {section.label}
+            </h2>
+          </section>
+          <FilmStrip rotate={section.tiltAfter} />
+        </div>
+      ))}
+      <span id="faq" />
+
+      <div className="relative h-[295px] bg-black">
+        {TEAM_FIGURES.map((figure) => (
+          <div
+            key={`${figure.left}-${figure.top}`}
+            className="absolute h-[110px] w-[80px] rounded-sm bg-white/10"
+            style={{ left: `${figure.left}%`, top: `${figure.top}px` }}
+          />
+        ))}
+        <h2 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-[clamp(2rem,7vw,100px)] text-white">
+          Meet the Team
+        </h2>
+      </div>
     </main>
   );
 }
