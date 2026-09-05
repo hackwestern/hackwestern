@@ -60,7 +60,7 @@ export default function Login() {
             <Input
               id="email"
               name="email"
-              type="text"
+              type="email"
               autoComplete="username"
               className="mb-4 h-[60px] bg-highlight text-medium"
               placeholder="hello@hackwestern.com"
