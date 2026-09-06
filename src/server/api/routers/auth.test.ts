@@ -4,7 +4,7 @@ import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { eq } from "drizzle-orm";
-import { mockSession } from "~/server/auth";
+import { authOptions, mockSession } from "~/server/auth";
 import {
   resetPasswordTokens,
   users,
@@ -400,6 +400,30 @@ describe("auth.checkValidToken", () => {
         .where(eq(resetPasswordTokens.userId, fakeId));
       await db.delete(users).where(eq(users.id, fakeId));
     }
+  });
+});
+
+// OAuth sign-ins (GitHub/Google/Discord) create the user through next-auth's
+// own flow and never touch auth.verify, so the createUser event is what files
+// them into the marketing list. The credentials path bypasses events entirely
+// (auth.create calls adapter.createUser directly) and joins at verification.
+describe("authOptions.events.createUser", () => {
+  test("files an OAuth-created user into the Mailjet contact list, normalized", async () => {
+    manageContactSpy.mockClear();
+
+    await authOptions.events?.createUser?.({
+      user: {
+        id: faker.string.uuid(),
+        email: "oauth.reg.test+hw13@gmail.com",
+      },
+    });
+
+    expect(manageContactSpy).toHaveBeenCalledTimes(1);
+    const [listId, email, , action] = manageContactSpy.mock.calls[0] ?? [];
+    expect(listId).toBe(env.MAILJET_CONTACT_LIST_ID);
+    expect(email).toBe(normalizeEmail("oauth.reg.test+hw13@gmail.com"));
+    // Default action. addforce would reset IsUnsubscribed and resurrect opt-outs.
+    expect(action).toBeUndefined();
   });
 });
 
