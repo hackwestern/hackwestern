@@ -121,6 +121,39 @@ async function mirrorUnsubToMailjet(email: string): Promise<void> {
   }
 }
 
+/**
+ * File a registrant into the marketing contact list once their email is
+ * verified.
+ *
+ * Every account registrant joins the list — decided 2026-09-06, consent =
+ * CASL implied (inquiry from the application/registration). Gated on email
+ * verification rather than raw signup so typo'd addresses never reach the
+ * list and feed its bounce rate. Normalized, because managecontact on the raw
+ * gmail form files a second contact for the same mailbox.
+ *
+ * Best-effort like the prereg path: the verification is already committed,
+ * so a Mailjet outage must not fail it. `addnoforce` (manageContact's
+ * default) leaves a previous unsubscribe intact.
+ */
+export async function addVerifiedRegistrantToList(
+  email: string,
+): Promise<void> {
+  if (!env.MAILJET_CONTACT_LIST_ID) return;
+  if (!env.MAILJET_API_KEY || !env.MAILJET_SECRET_KEY) return;
+  const res = await manageContact(
+    env.MAILJET_CONTACT_LIST_ID,
+    normalizeEmail(email),
+    { apiKey: env.MAILJET_API_KEY, secretKey: env.MAILJET_SECRET_KEY },
+  );
+  if (!res.ok) {
+    console.error(
+      "Error adding registrant to Mailjet list:",
+      email,
+      res.error,
+    );
+  }
+}
+
 export async function unsubscribeByToken(token: string): Promise<boolean> {
   // The token belongs to exactly one list (email_subscriber or preregistration
   // — kept disjoint by email). Try the campaign list first, then the updates
