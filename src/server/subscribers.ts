@@ -146,11 +146,7 @@ export async function addVerifiedRegistrantToList(
     { apiKey: env.MAILJET_API_KEY, secretKey: env.MAILJET_SECRET_KEY },
   );
   if (!res.ok) {
-    console.error(
-      "Error adding registrant to Mailjet list:",
-      email,
-      res.error,
-    );
+    console.error("Error adding registrant to Mailjet list:", email, res.error);
   }
 }
 
