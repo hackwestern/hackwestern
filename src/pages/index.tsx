@@ -1,7 +1,6 @@
 import { FilmStrip } from "~/components/promo/film-strip";
 import { SkyBackground } from "~/components/promo/sky-background";
 
-
 const SECTIONS = [
   { id: "hero", label: "Hero", height: 1290, tiltAfter: 0.4 },
   { id: "about", label: "About", height: 1109, tiltAfter: 3.5 },
