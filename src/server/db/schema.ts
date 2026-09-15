@@ -17,6 +17,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 import type { CanvasPaths } from "~/types/canvas";
+import type { GithubCommit } from "~/utils/github";
 
 /**
  * The status of a hacker application, from when it's first started (`IN_PROGRESS`).
