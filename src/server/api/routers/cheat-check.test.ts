@@ -476,6 +476,16 @@ describe.skipIf(!process.env.GITHUB_TOKEN)(
       });
       expect(result.fromCache).toBe(false);
       expect(result.passed).toBe(true);
+
+      const team = await db.query.teams.findFirst({
+        where: eq(teams.id, TEST_TEAM_ID),
+        columns: { commitLog: true },
+      });
+      expect(team?.commitLog?.length).toBeGreaterThan(0);
+      expect(team?.commitLog?.[0]).toMatchObject({
+        sha: expect.any(String) as string,
+        commit: { author: { date: expect.any(String) as string } },
+      });
     }, 30_000);
 
     test("commitWithinAllottedTime: throws PRECONDITION_FAILED when hack window not configured", async () => {

@@ -23,12 +23,13 @@ import {
   teams,
   users,
 } from "~/server/db/schema";
-import { env } from "~/env";
 import {
   fetchAllCommits,
   fetchContributors,
   parseGithubUrl,
+  commitsInWindow,
 } from "~/utils/github";
+import { requireHackWindow } from "./hack-window";
 
 const AGE_THRESHOLD = 18;
 
@@ -196,6 +197,17 @@ export async function runCommitWithinAllottedTime(
   const window = requireHackWindow();
 
   const commits = await fetchAllCommits(parsed.owner, parsed.repo);
+
+  await db
+    .update(teams)
+    .set({
+      commitLog: commitsInWindow(commits, {
+        since: window.hackStart,
+        until: window.hackEnd,
+      }),
+    })
+    .where(eq(teams.id, teamId));
+
   const violations = commits.filter((c) => {
     const date = new Date(c.commit.author.date);
     return date < window.hackStart || date > window.hackEnd;
@@ -529,20 +541,6 @@ export function findCachedTeamResult(teamId: string, checkType: TeamCheckType) {
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
-
-export function requireHackWindow() {
-  if (!env.HACK_START || !env.HACK_END) {
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message:
-        "HACK_START and HACK_END environment variables must be set before running commit checks",
-    });
-  }
-  return {
-    hackStart: new Date(env.HACK_START),
-    hackEnd: new Date(env.HACK_END),
-  };
-}
 
 export async function requireSubmission(teamId: string) {
   const team = await db.query.teams.findFirst({
