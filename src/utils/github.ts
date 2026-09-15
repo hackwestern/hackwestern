@@ -82,18 +82,17 @@ async function githubFetch(path: string): Promise<unknown> {
 // Types
 // ---------------------------------------------------------------------------
 
-export interface GithubCommit {
+export type GithubCommit = {
   sha: string;
   commit: {
     author: {
       name: string;
-      email: string;
       date: string; // ISO 8601
     };
     message: string;
   };
-  author: { login: string } | null; // null for unlinked accounts
-}
+  author: { login: string } | null; // The Github account associated with the author
+};
 
 export interface GithubContributor {
   login: string;
@@ -118,6 +117,32 @@ export function parseGithubUrl(
   return { owner: match[1], repo };
 }
 
+function trimCommit(raw: GithubCommit): GithubCommit {
+  return {
+    sha: raw.sha,
+    commit: {
+      author: {
+        name: raw.commit.author.name,
+        date: raw.commit.author.date,
+      },
+      message: raw.commit.message,
+    },
+    author: raw.author ? { login: raw.author.login } : null,
+  };
+}
+
+export function commitsInWindow(
+  commits: GithubCommit[],
+  opts: { since: Date; until: Date },
+): GithubCommit[] {
+  const since = opts.since.getTime();
+  const until = opts.until.getTime();
+  return commits.filter((commit) => {
+    const at = new Date(commit.commit.author.date).getTime();
+    return !Number.isNaN(at) && at >= since && at < until;
+  });
+}
+
 // ---------------------------------------------------------------------------
 // API calls
 // ---------------------------------------------------------------------------
@@ -128,24 +153,25 @@ export function parseGithubUrl(
 export async function fetchAllCommits(
   owner: string,
   repo: string,
+  opts: { since?: Date; until?: Date } = {},
 ): Promise<GithubCommit[]> {
   const commits: GithubCommit[] = [];
   let page = 1;
   while (true) {
+    const query = new URLSearchParams({ per_page: "100", page: String(page) });
+    if (opts.since) query.set("since", opts.since.toISOString());
+    if (opts.until) query.set("until", opts.until.toISOString());
+
     const data = (await githubFetch(
-      `/repos/${owner}/${repo}/commits?per_page=100&page=${page}`,
+      `/repos/${owner}/${repo}/commits?${query.toString()}`,
     )) as GithubCommit[];
-    commits.push(...data);
+    commits.push(...data.map(trimCommit));
     if (data.length < 100) break;
     page++;
   }
   return commits;
 }
 
-/**
- * Fetches all contributors for a repo.
- * Note: GitHub links at most 500 email addresses to accounts; the rest are anonymous (login absent).
- */
 export async function fetchContributors(
   owner: string,
   repo: string,
