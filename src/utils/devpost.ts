@@ -2,9 +2,7 @@
  * Scraping helpers for DevPost project pages.
  *
  * DevPost has no public API for a submission, so the "Built With" tags are read
- * straight out of the page HTML. Kept free of any `~/server/db` import so it
- * stays a pure fetch/parse module, like `~/utils/github`; the piece that writes
- * to a team row lives in `~/server/api/utils/wrapped`.
+ * straight out of the page HTML.
  */
 
 const USER_AGENT =
