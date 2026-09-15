@@ -24,6 +24,8 @@ const teamsSaveSchema = createInsertSchema(teams, {
   judgingTableId: true,
   // Written by the Devpost import only.
   importFlags: true,
+  techStack: true,
+  commitLog: true,
 });
 
 const teamsSelectSchema = createSelectSchema(teams).omit({
@@ -35,6 +37,8 @@ const teamsSelectSchema = createSelectSchema(teams).omit({
   judgingTableId: true,
   // Organizer-only notes from the Devpost import.
   importFlags: true,
+  techStack: true,
+  commitLog: true,
 });
 
 const teamsSubmitSchema = z.object({
