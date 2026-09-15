@@ -257,6 +257,8 @@ export const teams = pgTable(
     tracks: trackEnum("tracks").array(),
     memberGithubUsernames: text("member_github_usernames").array(),
     memberDevpostUsernames: text("member_devpost_usernames").array(),
+    techStack: text("tech_stack").array(),
+    commitLog: jsonb("commit_log").$type<GithubCommit[]>(), // Commits within the hack window
 
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
