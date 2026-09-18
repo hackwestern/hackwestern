@@ -142,10 +142,7 @@ async function seedJudging(args: Args): Promise<void> {
         devpostUrl: `https://devpost.com/software/seed-${id}`,
         githubUrl: `https://github.com/hackwestern/seed-${id}`,
         submissionStatus: "submitted" as const,
-        tracks: [
-          "General" as const,
-          sponsorTracks[i % sponsorTracks.length]!,
-        ],
+        tracks: ["General" as const, sponsorTracks[i % sponsorTracks.length]!],
       })),
     );
 
@@ -164,9 +161,9 @@ async function seedJudging(args: Args): Promise<void> {
         track: sponsored ? [sponsorTracks[i % sponsorTracks.length]!] : null,
       };
     });
-    await tx.insert(users).values(
-      judgeUsers.map(({ sponsored: _s, track: _t, ...u }) => u),
-    );
+    await tx
+      .insert(users)
+      .values(judgeUsers.map(({ sponsored: _s, track: _t, ...u }) => u));
     await tx.insert(users).values({
       id: faker.string.uuid(),
       name: "Judging Organizer",

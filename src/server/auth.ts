@@ -21,8 +21,7 @@ import DiscordProviderImport from "next-auth/providers/discord";
 // export, but a plain Node ESM runtime (tsx — used by scripts/ and the
 // judging seed/driver) hands us the module namespace instead. Unwrap either
 // way so this file loads under both.
-const unwrap = <T>(mod: T): T =>
-  (mod as { default?: T }).default ?? mod;
+const unwrap = <T>(mod: T): T => (mod as { default?: T }).default ?? mod;
 const GithubProvider = unwrap(GithubProviderImport);
 const GoogleProvider = unwrap(GoogleProviderImport);
 const DiscordProvider = unwrap(DiscordProviderImport);
