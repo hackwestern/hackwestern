@@ -15,6 +15,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx ./src/server/db/migrate.ts",
     "db:seed": "dotenv tsx ./src/server/db/seed/index.ts",
+    "seed:judging": "dotenv -- tsx ./src/server/db/seed/judging.ts",
+    "judging:driver": "dotenv -- tsx ./scripts/judging-driver.ts",
     "dev": "next dev --turbopack",
     "dev:prod": "dotenv -e .env.prod next dev --turbopack",
     "lint": "next lint",

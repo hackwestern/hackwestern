@@ -1,7 +1,7 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { type GetServerSidePropsContext } from "next";
-import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
+import NextAuthImport from "next-auth";
+import CredentialsProviderImport from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
 import { TRPCError } from "@trpc/server";
 import { encode, decode } from "next-auth/jwt";
@@ -13,9 +13,20 @@ import {
   type NextAuthOptions,
 } from "next-auth";
 import { type Adapter } from "next-auth/adapters";
-import GithubProvider from "next-auth/providers/github";
-import GoogleProvider from "next-auth/providers/google";
-import DiscordProvider from "next-auth/providers/discord";
+import GithubProviderImport from "next-auth/providers/github";
+import GoogleProviderImport from "next-auth/providers/google";
+import DiscordProviderImport from "next-auth/providers/discord";
+
+// next-auth v4 providers ship as CJS. Next's bundler unwraps the default
+// export, but a plain Node ESM runtime (tsx — used by scripts/ and the
+// judging seed/driver) hands us the module namespace instead. Unwrap either
+// way so this file loads under both.
+const unwrap = <T>(mod: T): T => (mod as { default?: T }).default ?? mod;
+const GithubProvider = unwrap(GithubProviderImport);
+const GoogleProvider = unwrap(GoogleProviderImport);
+const DiscordProvider = unwrap(DiscordProviderImport);
+const CredentialsProvider = unwrap(CredentialsProviderImport);
+const NextAuth = unwrap(NextAuthImport);
 
 import { env } from "~/env";
 import { type Database, db } from "~/server/db";
