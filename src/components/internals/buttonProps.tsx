@@ -9,4 +9,5 @@ export interface ButtonProps {
   direction?: "left" | "right";
   full?: boolean;
   className?: string;
+  variant?: "primary-1" | "primary-2";
 }
