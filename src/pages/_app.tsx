@@ -40,6 +40,7 @@ const pix32 = localFont({
 
 const figtree = Figtree({
   subsets: ["latin"],
+  weight: ["400", "600"],
   variable: "--font-figtree",
   fallback: ["Inter", "sans-serif"],
 });
