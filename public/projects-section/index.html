@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Projects — Promo Site</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&family=Figtree:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  /* Cossette Texte (licensed) — the .ttf files ship in assets/fonts/. */
+  @font-face {
+    font-family: 'Cossette Texte';
+    src: url('assets/fonts/CossetteTexte-Regular.ttf') format('truetype');
+    font-weight: 400; font-style: normal; font-display: swap;
+  }
+  @font-face {
+    font-family: 'Cossette Texte';
+    src: url('assets/fonts/CossetteTexte-Bold.ttf') format('truetype');
+    font-weight: 700; font-style: normal; font-display: swap;
+  }
+  :root { --body: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+          --cossette: 'Cossette Texte', var(--body);
+          --fig:  'Figtree', var(--body); }
+  html { overscroll-behavior-y: none; }   /* stop the elastic rubber-band at the bottom */
+  html, body { margin: 0; min-height: 100%; background: #c7d6eb; overflow-x: hidden; overflow-y: auto; }
+  /* width-fill: scale the 1440-wide canvas to the window width; the tall stage scrolls */
+  #viewport { min-height: 100svh; width: 100%; display: flex; align-items: flex-start; justify-content: center; }
+  /* the fixed 1440×2205 Figma frame; the sky→blue gradient is baked in so you scroll down into the scene */
+  #stage {
+    width: 1440px; height: 2205px; position: relative; overflow: hidden; flex: none;
+    background: linear-gradient(180deg, #c7d6eb 0%, #c7d6eb 42.827%, #a2c9ff 100%);
+  }
+
+  .font-cossette { font-family: var(--cossette); }
+  .font-fig      { font-family: var(--fig); }
+
+  /* ---- clouds: drift gently back and forth ---- */
+  .cloud { position: absolute; pointer-events: none; will-change: transform;
+           animation: drift var(--dur, 44s) ease-in-out infinite alternate; }
+  .cloud img { display: block; width: 100%; height: auto; }
+  .cloud.flip img { transform: scaleX(-1); }
+  @keyframes drift { from { transform: translateX(0); } to { transform: translateX(var(--dx, 80px)); } }
+
+  /* ---- project icons ("folders"): hidden until scrolled into view, click to open ---- */
+  .folder {
+    position: absolute; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    opacity: 0; transform: translateY(14px) scale(.82); pointer-events: none; z-index: 20;
+    transition: opacity .55s cubic-bezier(.2,.8,.2,1),
+                transform .55s cubic-bezier(.2,.8,.2,1);
+    will-change: opacity, transform;
+  }
+  .folder.in { opacity: 1; transform: none; pointer-events: auto; cursor: pointer; }
+  .folder.in:hover { transform: translateY(-6px) scale(1.05); }
+  .folder-icon { width: 69px; height: 69px; display: flex; align-items: center; justify-content: center; padding: 3px; }
+  .folder-icon img { width: 63px; height: 63px; object-fit: contain; image-rendering: pixelated; pointer-events: none; }
+  .folder-chip { background: rgba(113,113,113,.8); border-radius: 5px; padding: 5px 10px; }
+  .folder-chip span { font-family: var(--cossette); font-size: 15px; color: #fff; white-space: nowrap; }
+
+  /* ---- project preview window (cloned on folder click) ---- */
+  .pw { position: absolute; opacity: 0; transition: opacity .2s ease; }
+  .pw.open { opacity: 1; }
+  .pw-header { cursor: grab; touch-action: none; }
+  .pw-header:active { cursor: grabbing; }
+  .pw-dots { display: flex; gap: 4.998px; align-items: center; position: relative; z-index: 2; }
+
+  /* temp demo reset (not part of the design) */
+  #reset { position: fixed; bottom: 14px; right: 16px; z-index: 9999;
+    font: 12px var(--body); color: #33415c; background: rgba(255,255,255,.65);
+    border: 1px solid rgba(51,65,92,.25); border-radius: 999px; padding: 7px 14px;
+    cursor: pointer; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(31,48,73,.15); }
+  #reset:hover { background: rgba(255,255,255,.9); }
+</style>
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+
+    <!-- ===== drifting clouds ===== -->
+    <div class="cloud"      style="left:0px;   top:1204px; width:946px;  --dx:70px;  --dur:50s;"><img src="assets/cloud.png" alt="" /></div>
+    <div class="cloud flip" style="left:512px; top:478px;  width:1203px; --dx:-90px; --dur:60s;"><img src="assets/cloud.png" alt="" /></div>
+
+    <!-- ===== tree background (behind the window) ===== -->
+    <div class="absolute" style="left:352px; top:1233px; width:956px; height:972px;">
+      <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <img alt="" class="absolute" style="height:99.96%; left:.05%; top:.05%; width:93.46%; max-width:none;" src="assets/tree.png" />
+      </div>
+    </div>
+
+    <!-- ===== window hollow (display:contents — children position against the stage) ===== -->
+    <div style="display:contents;">
+      <!-- header bar -->
+      <div class="absolute flex items-center justify-between border border-[#9f9f9f] border-solid rounded-tl-[6px] rounded-tr-[6px]"
+           style="left:373.24px; top:1435px; width:734.267px; height:34.271px; padding:3.998px 5.998px;">
+        <img alt="" class="absolute inset-0 object-cover pointer-events-none rounded-tl-[6px] rounded-tr-[6px] size-full" style="max-width:none;" src="assets/header.png" />
+        <!-- traffic-light strip -->
+        <div class="absolute -translate-y-1/2" style="height:17.993px; left:-1px; top:calc(50% + 0.36px); width:277.556px;">
+          <img alt="" class="block size-full" style="max-width:none;" src="assets/titlebar.svg" />
+        </div>
+        <!-- left icon group -->
+        <div class="flex items-center relative shrink-0" style="gap:4.998px;">
+          <img class="relative shrink-0" style="width:11.995px;height:11.995px;max-width:none;" src="assets/hdr-4.svg" />
+          <img class="relative shrink-0" style="width:11.995px;height:11.995px;max-width:none;" src="assets/hdr-3.svg" />
+          <img class="relative shrink-0" style="width:11.995px;height:11.995px;max-width:none;" src="assets/hdr-5.svg" />
+        </div>
+        <p class="font-cossette relative shrink-0 text-center whitespace-nowrap" style="color:#626262; font-size:12px;">Projects</p>
+        <!-- right group (invisible spacer, matches Figma opacity-0 group) -->
+        <div class="flex items-center opacity-0 relative shrink-0" style="gap:4.998px; width:44px; height:11.329px;"></div>
+      </div>
+
+      <!-- window body -->
+      <img alt="" class="absolute block" style="left:373px; top:1469.34px; width:735px; height:514px; max-width:none;" src="assets/window-body-v2.svg" />
+    </div>
+
+    <!-- ===== tree foreground (embeds the trunk in front of the window) ===== -->
+    <div class="absolute" style="left:352px; top:1233px; width:956px; height:671px;">
+      <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <img alt="" class="absolute" style="height:144.8%; left:.05%; top:.07%; width:93.46%; max-width:none;" src="assets/tree.png" />
+      </div>
+      <!-- small foreground object (right side) -->
+      <div class="absolute" style="inset:46.65% 6.38% 43.37% 91.32%;">
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+          <img alt="" class="absolute" style="height:97.8%; left:.05%; top:1.42%; width:95.41%; max-width:none;" src="assets/tree-object.png" />
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== branch foreground ===== -->
+    <div class="absolute" style="left:352px; top:1791px; width:356px; height:158px;">
+      <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <img alt="" class="absolute" style="height:614.96%; left:.14%; top:-352.88%; width:250.99%; max-width:none;" src="assets/branch.png" />
+      </div>
+    </div>
+
+    <!-- ===== section heading (left of the tree) ===== -->
+    <div class="absolute flex flex-col items-start" style="left:76px; top:1242px; width:341px; gap:18px;">
+      <p class="font-cossette" style="font-weight:700; font-size:32px; line-height:1.2; color:#042239; margin:0; width:100%;">Discover past projects</p>
+      <p class="font-fig" style="font-weight:500; font-size:16px; line-height:normal; color:#2e547a; margin:0; width:100%;">Here is what other students like you have created at Hack Western</p>
+    </div>
+
+    <!-- ===== project icons (appear as you scroll; click to open) ===== -->
+    <div class="folder" data-project="Vril"           style="left:336px;  top:1505px; width:69px;">
+      <div class="folder-icon"><img src="assets/stylized-icon.png" alt="folder" /></div>
+      <div class="folder-chip"><span>Vril</span></div>
+    </div>
+    <div class="folder" data-project="FlowBoard"      style="left:422px;  top:1674px; width:90px;">
+      <div class="folder-icon"><img src="assets/stylized-icon.png" alt="folder" /></div>
+      <div class="folder-chip"><span>FlowBoard</span></div>
+    </div>
+    <div class="folder" data-project="Blocks"         style="left:1247px; top:1663px; width:69px;">
+      <div class="folder-icon"><img src="assets/stylized-icon.png" alt="folder" /></div>
+      <div class="folder-chip"><span>Blocks</span></div>
+    </div>
+    <div class="folder" data-project="Mark3d"         style="left:994px;  top:1860px; width:71px;">
+      <div class="folder-icon"><img src="assets/stylized-icon.png" alt="folder" /></div>
+      <div class="folder-chip"><span>Mark3d</span></div>
+    </div>
+    <div class="folder" data-project="Invvest"        style="left:1225px; top:1983px; width:69px;">
+      <div class="folder-icon"><img src="assets/stylized-icon.png" alt="folder" /></div>
+      <div class="folder-chip"><span>Invvest</span></div>
+    </div>
+    <div class="folder" data-project="komo"           style="left:464px;  top:1350px; width:69px;">
+      <div class="folder-icon"><img src="assets/stylized-icon.png" alt="folder" /></div>
+      <div class="folder-chip"><span>Komo</span></div>
+    </div>
+    <div class="folder" data-project="BravoDispatch"  style="left:1114px; top:1336px; width:171px;">
+      <div class="folder-icon"><img src="assets/stylized-icon.png" alt="folder" /></div>
+      <div class="folder-chip"><span>BravoDispatch</span></div>
+    </div>
+    <div class="folder" data-project="Manhattanhenge" style="left:162px;  top:1801px; width:148px;">
+      <div class="folder-icon"><img src="assets/stylized-icon.png" alt="folder" /></div>
+      <div class="folder-chip"><span>Manhattanhenge</span></div>
+    </div>
+
+  </div>
+</div>
+
+<button id="reset" type="button">↺ reset</button>
+
+<!-- ===== Project preview window (cloned on folder open) ===== -->
+<template id="project-window-tpl">
+  <div class="pw overflow-hidden border border-[#9f9f9f] border-solid rounded-[5.998px]"
+       style="width:212px; height:382px; background:#b70f0f; box-shadow:0 24px 48px rgba(0,0,0,.4);">
+    <!-- window header (drag handle) -->
+    <div class="pw-header flex items-center justify-between border border-[#9f9f9f] border-solid relative"
+         style="height:30px; padding:3.998px 5.998px; border-radius:5px 5px 0 0;">
+      <img alt="" class="absolute inset-0 object-cover pointer-events-none size-full" style="max-width:none;" src="assets/plate.png" />
+      <!-- traffic-light strip behind -->
+      <div class="absolute -translate-y-1/2" style="height:17.993px; left:-1px; top:calc(50% + 0.5px); width:277.556px;">
+        <img alt="" class="block size-full" style="max-width:none;" src="assets/titlebar.svg" />
+      </div>
+      <!-- traffic lights: red closes -->
+      <div class="pw-dots">
+        <img class="pw-close" title="Close" alt="Close" src="assets/hdr-4.svg" style="width:11.995px;height:11.995px;max-width:none;cursor:pointer;" />
+        <img alt="" src="assets/hdr-3.svg" style="width:11.995px;height:11.995px;max-width:none;" />
+        <img alt="" src="assets/hdr-5.svg" style="width:11.995px;height:11.995px;max-width:none;" />
+      </div>
+      <p class="pw-name-sm font-cossette relative shrink-0 text-center whitespace-nowrap" style="color:#626262; font-size:12px; z-index:2;">Name</p>
+      <div class="relative shrink-0" style="width:44px; height:11.329px; opacity:0;"></div>
+    </div>
+
+    <!-- title -->
+    <p class="pw-title font-cossette absolute uppercase whitespace-nowrap"
+       style="left:50%; top:43px; transform:translateX(-50%); font-size:24px; color:#fff; letter-spacing:-0.48px; line-height:normal; margin:0;">NAME</p>
+
+    <!-- created by -->
+    <p class="pw-createdby font-fig absolute text-center"
+       style="left:50%; top:79px; transform:translateX(-50%); width:191px; color:#fff; font-size:14px; line-height:normal; margin:0;">
+      <span style="font-weight:700;">Created by</span> <span style="font-weight:500;">X, Y, Z</span>
+    </p>
+
+    <!-- awards (populated from data) -->
+    <div class="pw-awards font-fig absolute text-center"
+         style="left:50%; top:152px; transform:translateX(-50%); width:196px; color:#fff; display:flex; flex-direction:column; gap:14px; align-items:center;">
+      <div>
+        <p style="font-size:14px; font-weight:500; margin:0; line-height:normal;">Award Name</p>
+        <p style="font-size:14px; margin:0; line-height:normal;"><span style="font-weight:500;">Presented by</span> <span style="font-weight:700;">X</span></p>
+      </div>
+    </div>
+
+    <!-- More Info button -> project link -->
+    <div class="pw-moreinfo absolute flex items-center justify-center"
+         style="left:calc(50% + 2px); top:306px; transform:translateX(-50%); height:31px; padding:12px 18px; gap:10px; cursor:pointer;">
+      <div class="absolute inset-0 border border-[#666] border-solid overflow-hidden rounded-[100px]" style="box-shadow:0 8px 12px 0 rgba(31,48,73,.24);">
+        <div aria-hidden class="absolute inset-0 pointer-events-none rounded-[100px]" style="background:#c2c2c2;"></div>
+        <div class="absolute rounded-[100px]" style="inset:-1px 9.67px 24.2px 9.67px; background:linear-gradient(to bottom, rgba(255,255,255,.8), rgba(255,255,255,0));"></div>
+        <div class="absolute inset-0 pointer-events-none rounded-[inherit]" style="box-shadow: inset 0 -12px 10px 0 rgba(255,255,255,.4);"></div>
+      </div>
+      <span class="font-fig relative shrink-0 whitespace-nowrap" style="color:#626262; font-size:16px; font-weight:500;">More Info</span>
+    </div>
+
+    <!-- footer: edition + date -->
+    <p class="pw-hw font-cossette absolute uppercase text-center"
+       style="left:calc(50% - 0.5px); top:355px; transform:translateX(-50%); width:161px; font-size:8px; color:#fff; letter-spacing:-0.16px; margin:0; line-height:normal;">HACKWESTERN #</p>
+    <p class="pw-date font-cossette absolute uppercase text-center"
+       style="left:50%; top:365px; transform:translateX(-50%); width:92px; font-size:8px; color:#fff; letter-spacing:-0.16px; margin:0; line-height:normal;">DD,MM,YYYY</p>
+  </div>
+</template>
+
+<script>
+  const stage = document.getElementById('stage');
+
+  // scale the 1440-wide canvas to FILL the window width, via CSS `zoom`.
+  function fit() { stage.style.zoom = window.innerWidth / 1440; }
+  window.addEventListener('resize', fit);
+  fit();
+
+  const zoom = () => parseFloat(stage.style.zoom) || 1;
+  const STAGE_W = 1440, STAGE_H = 2205, PW_W = 212, PW_H = 382;
+
+  // ---- project data (keyed by lowercase name) ----
+  const PROJECTS = new Map();
+  const dataReady = fetch('hackwestern_projects.json')
+    .then((r) => r.json())
+    .then((list) => list.forEach((p) => PROJECTS.set(p.name.toLowerCase(), p)))
+    .catch((err) => console.warn('Could not load hackwestern_projects.json:', err));
+
+  // ---- z-order: last-touched window on top ----
+  let topZ = 1000;
+  const bringToFront = (el) => { el.style.zIndex = ++topZ; };
+
+  // ---- generic pointer drag (windows only; folders are not draggable) ----
+  function makeDraggable(el, handle, opts = {}) {
+    handle = handle || el;
+    handle.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      opts.onGrab && opts.onGrab();
+      const z = zoom();
+      const sx = e.clientX, sy = e.clientY;
+      const sl = parseFloat(el.style.left) || 0;
+      const st = parseFloat(el.style.top)  || 0;
+      handle.setPointerCapture && handle.setPointerCapture(e.pointerId);
+      const move = (ev) => {
+        el.style.left = (sl + (ev.clientX - sx) / z) + 'px';
+        el.style.top  = (st + (ev.clientY - sy) / z) + 'px';
+      };
+      const up = () => {
+        handle.removeEventListener('pointermove', move);
+        handle.removeEventListener('pointerup', up);
+      };
+      handle.addEventListener('pointermove', move);
+      handle.addEventListener('pointerup', up);
+      e.preventDefault();
+    });
+  }
+
+  // ---- open a project preview window, anchored over the clicked folder ----
+  const tpl = document.getElementById('project-window-tpl');
+  function openProjectWindow(folder) {
+    const win = tpl.content.firstElementChild.cloneNode(true);
+
+    // ---- populate from JSON ----
+    const data = PROJECTS.get((folder.dataset.project || '').toLowerCase());
+    const name = data?.name || folder.dataset.project || 'Project';
+    win.querySelector('.pw-name-sm').textContent = name;
+    win.querySelector('.pw-title').textContent = name;
+
+    const createdEl = win.querySelector('.pw-createdby');
+    const awardsEl  = win.querySelector('.pw-awards');
+    const hwEl      = win.querySelector('.pw-hw');
+    const dateEl    = win.querySelector('.pw-date');
+    const moreBtn   = win.querySelector('.pw-moreinfo');
+
+    if (data) {
+      // created by
+      createdEl.replaceChildren(
+        Object.assign(document.createElement('span'), { textContent: 'Created by ', style: 'font-weight:700;' }),
+        Object.assign(document.createElement('span'), { textContent: (data.createdBy || []).join(', '), style: 'font-weight:500;' })
+      );
+
+      // awards
+      awardsEl.replaceChildren(...(data.awards || []).map((a) => {
+        const wrap = document.createElement('div');
+        const n = Object.assign(document.createElement('p'), { textContent: a.awardName });
+        n.style.cssText = 'font-size:14px;font-weight:500;margin:0;line-height:normal;';
+        wrap.append(n);
+        // Overall placements are the organizer's own ranking — no "Presented by".
+        // Sponsor awards keep their presenter.
+        if (!/\boverall\b/i.test(a.awardName)) {
+          const by = document.createElement('p');
+          by.style.cssText = 'font-size:14px;margin:0;line-height:normal;';
+          by.append(
+            Object.assign(document.createElement('span'), { textContent: 'Presented by ', style: 'font-weight:500;' }),
+            Object.assign(document.createElement('span'), { textContent: a.presentedBy, style: 'font-weight:700;' })
+          );
+          wrap.append(by);
+        }
+        return wrap;
+      }));
+
+      hwEl.textContent   = 'HACKWESTERN ' + data.hackWestern;
+      dateEl.textContent = data.date || '';
+
+      if (data.link) {
+        moreBtn.addEventListener('click', () => window.open(data.link, '_blank', 'noopener'));
+      } else {
+        moreBtn.style.display = 'none';
+      }
+    } else {
+      // no matching JSON entry (e.g. Manhattanhenge): name-only card
+      createdEl.textContent = '';
+      awardsEl.replaceChildren(
+        Object.assign(document.createElement('p'), { textContent: 'Details coming soon', style: 'font-size:14px;font-weight:500;margin:0;' })
+      );
+      hwEl.textContent = '';
+      dateEl.textContent = '';
+      moreBtn.style.display = 'none';
+    }
+
+    // anchor over the folder, clamped inside the stage
+    const fl = parseFloat(folder.style.left) || 0;
+    const ft = parseFloat(folder.style.top)  || 0;
+    const left = Math.max(8, Math.min(fl, STAGE_W - PW_W - 8));
+    const top  = Math.max(8, Math.min(ft, STAGE_H - PW_H - 8));
+    win.style.left = left + 'px';
+    win.style.top  = top + 'px';
+
+    stage.appendChild(win);
+    bringToFront(win);
+
+    win.addEventListener('pointerdown', () => bringToFront(win));
+    makeDraggable(win, win.querySelector('.pw-header'), { onGrab: () => bringToFront(win) });
+
+    const close = win.querySelector('.pw-close');
+    close.addEventListener('pointerdown', (e) => e.stopPropagation()); // don't start a drag
+    close.addEventListener('click', () => win.remove());
+
+    requestAnimationFrame(() => win.classList.add('open'));
+  }
+
+  // ---- folders: click to open (not draggable) ----
+  const folders = [...document.querySelectorAll('.folder')];
+  folders.forEach((f) => {
+    f.addEventListener('click', () => { if (f.classList.contains('in')) openProjectWindow(f); });
+  });
+
+  // ---- reveal folders as they scroll into view (pop-in) ----
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => {
+      if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+    });
+  }, { threshold: 0.2, rootMargin: '0px 0px -22% 0px' });
+  const observeFolders = () => folders.forEach((f) => io.observe(f));
+  observeFolders();
+
+  // ---- review deep-link: ?open=<project name> opens that window on load ----
+  const openParam = new URLSearchParams(location.search).get('open');
+  if (openParam) {
+    const target = folders.find((f) => f.dataset.project.toLowerCase() === openParam.toLowerCase()) || folders[0];
+    target.classList.add('in');
+    dataReady.then(() => requestAnimationFrame(() => openProjectWindow(target)));
+  }
+
+  // ---- temp reset: close windows, re-arm scroll reveal, scroll up ----
+  document.getElementById('reset').addEventListener('click', () => {
+    document.querySelectorAll('.pw').forEach((w) => w.remove());
+    folders.forEach((f) => f.classList.remove('in'));
+    observeFolders();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+</script>
+</body>
+</html>

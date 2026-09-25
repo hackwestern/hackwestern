@@ -1,0 +1,86 @@
+[
+  {
+    "name": "Vril",
+    "link": "https://devpost.com/software/vril",
+    "createdBy": ["Eric Lee", "Joseph Zhang", "Isaac Nguyen", "Otis Lau"],
+    "awards": [
+      { "awardName": "First Place Overall", "presentedBy": "Hack Western" },
+      { "awardName": "Best Use of Gemini API", "presentedBy": "MLH" }
+    ],
+    "hackWestern": 12,
+    "date": "23,11,2025"
+  },
+  {
+    "name": "FlowBoard",
+    "link": "https://devpost.com/software/flowboard-bdpqzg",
+    "createdBy": ["Austin Jian", "James Li", "Ferdinand Zhang", "Daniel Pu"],
+    "awards": [
+      { "awardName": "Second Place Overall", "presentedBy": "Hack Western" }
+    ],
+    "hackWestern": 12,
+    "date": "23,11,2025"
+  },
+  {
+    "name": "komo",
+    "link": "https://devpost.com/software/komo-4lrjdg",
+    "createdBy": ["Angela Cheng", "Daksh Shahani", "Zain Syed", "Karen Agustino"],
+    "awards": [
+      { "awardName": "Third Place Overall", "presentedBy": "Hack Western" }
+    ],
+    "hackWestern": 12,
+    "date": "23,11,2025"
+  },
+  {
+    "name": "BravoDispatch",
+    "link": "https://dorahacks.io/buidl/20371",
+    "createdBy": ["Zayn Abed", "Maged Armanios", "Jinal Kasturiarachchi", "Jane Klavir"],
+    "awards": [
+      { "awardName": "First Overall", "presentedBy": "Hack Western" },
+      { "awardName": "Best AI Application Built with Cloudflare", "presentedBy": "Cloudflare" }
+    ],
+    "hackWestern": 11,
+    "date": "01,12,2024"
+  },
+  {
+    "name": "Blocks",
+    "link": "https://dorahacks.io/buidl/20342",
+    "createdBy": ["Caroline Huang", "Charlene Shao", "Feng Zhang", "Ian Korovinsky"],
+    "awards": [
+      { "awardName": "Second Overall", "presentedBy": "Hack Western" },
+      { "awardName": "Best Developer Tool", "presentedBy": "Warp" },
+      { "awardName": "Best Use of Starknet (2nd Place)", "presentedBy": "Starknet" }
+    ],
+    "hackWestern": 11,
+    "date": "01,12,2024"
+  },
+  {
+    "name": "Mark3d",
+    "link": "https://dorahacks.io/buidl/20367",
+    "createdBy": ["Krish Chopra", "Janice Shi", "Fahmi Omer", "Ashley Ge"],
+    "awards": [
+      { "awardName": "Third Overall", "presentedBy": "Hack Western" }
+    ],
+    "hackWestern": 11,
+    "date": "01,12,2024"
+  },
+  {
+    "name": "Invvest",
+    "link": "https://devpost.com/software/mow",
+    "createdBy": ["Joanna Cui", "Jasmine Zhu", "Kathy Dong"],
+    "awards": [
+      { "awardName": "Best Hack to Transform Mass Market Women's Investment Capabilities", "presentedBy": "Canada Life" }
+    ],
+    "hackWestern": 12,
+    "date": "23,11,2025"
+  },
+  {
+    "name": "Manhattanhenge",
+    "link": "https://devpost.com/software/manhattanhenge",
+    "createdBy": ["Vincent Nguyen"],
+    "awards": [
+      { "awardName": "Organizer's Choice Awards: Most Creative Impact", "presentedBy": "Hack Western" }
+    ],
+    "hackWestern": 12,
+    "date": "23,11,2025"
+  }
+]
