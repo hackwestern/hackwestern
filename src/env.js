@@ -41,6 +41,13 @@ export const env = createEnv({
     // event POST — they are the only thing keeping the endpoint private.
     MAILJET_WEBHOOK_USER: z.string(),
     MAILJET_WEBHOOK_PASSWORD: z.string(),
+    // Mailjet contact list the marketing team sends dashboard campaigns to.
+    // The Send API files contacts under no list, so anyone who should be
+    // reachable from the dashboard has to be added explicitly — new signups by
+    // preregistration.create, the existing audience by scripts/sync-mailjet-list.ts.
+    // Optional: unset simply skips the list write, so a missing value can never
+    // fail a signup or a build.
+    MAILJET_CONTACT_LIST_ID: z.string().optional(),
     // Kickbox email-verification API key (optional). When set, signup emails are
     // verified against Kickbox as the final validation layer; unset = skipped.
     KICKBOX_API_KEY: z.string().optional(),
@@ -68,6 +75,9 @@ export const env = createEnv({
     // ISO 8601 datetime for the project submission deadline. Submissions after
     // this are marked "late". Unset = no deadline, everything counts as on-time.
     PROJECT_SUBMISSION_DEADLINE: z.string().datetime().optional(),
+    // Bearer token for /api/cheat-check/sweep, which the sweep worker also uses
+    // to re-invoke itself. Leave unset to disable automated sweeps entirely.
+    CHEAT_SWEEP_SECRET: z.string().optional(),
   },
 
   /**
@@ -110,6 +120,9 @@ export const env = createEnv({
       (process.env.NODE_ENV === "test"
         ? "mock-mailjet-webhook-password"
         : undefined),
+    MAILJET_CONTACT_LIST_ID:
+      process.env.MAILJET_CONTACT_LIST_ID ??
+      (process.env.NODE_ENV === "test" ? "mock-contact-list-id" : undefined),
     KICKBOX_API_KEY: process.env.KICKBOX_API_KEY,
     APPLE_CERT_PASS: process.env.APPLE_CERT_PASS,
     APPLE_WWDR_CERT: process.env.APPLE_WWDR_CERT,
@@ -128,6 +141,7 @@ export const env = createEnv({
     HACK_START: process.env.HACK_START,
     HACK_END: process.env.HACK_END,
     PROJECT_SUBMISSION_DEADLINE: process.env.PROJECT_SUBMISSION_DEADLINE,
+    CHEAT_SWEEP_SECRET: process.env.CHEAT_SWEEP_SECRET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

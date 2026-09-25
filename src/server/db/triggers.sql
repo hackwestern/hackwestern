@@ -1,9 +1,14 @@
 -- Judging triggers.
 --
 -- Drizzle's schema DSL can't express triggers, so they live here. This file
--- is the source of truth: it is applied by the production migration AND by
--- the Vitest harness (see src/server/db/triggers.ts -> applyTriggers), so the
--- tests exercise the real triggers rather than a mock.
+-- is the source of truth: it is applied by the production migration
+-- (drizzle/0013_apply_judging_triggers.sql) AND by the Vitest harness (see
+-- src/server/db/triggers.ts -> applyTriggers), so the tests exercise the real
+-- triggers rather than a mock.
+--
+-- If you change anything below, add a new custom migration carrying the same
+-- DDL (`npx drizzle-kit generate --custom`) — editing this file alone only
+-- updates the tests.
 --
 -- All statements are idempotent (CREATE OR REPLACE / DROP IF EXISTS) so the
 -- file can be re-applied safely.
@@ -21,10 +26,31 @@ BEGIN
     WHERE id = NEW.judge_id;
     RETURN NEW;
   ELSIF (TG_OP = 'UPDATE') THEN
-    UPDATE "judge" SET
-      marks_sum         = marks_sum - OLD.score + NEW.score,
-      marks_squared_sum = marks_squared_sum - (OLD.score * OLD.score) + (NEW.score * NEW.score)
-    WHERE id = NEW.judge_id;
+    IF NEW.judge_id <> OLD.judge_id THEN
+      -- The mark moved between judges, so this is a delete from one and an
+      -- insert into the other rather than a score delta. Treating it as a delta
+      -- would leave the old judge still counting the mark and the new judge
+      -- never gaining it — and marks_count, which no score arithmetic touches,
+      -- would be wrong for both. Reassignment shouldn't happen through the
+      -- application, but admin SQL can do it, and the aggregates are the only
+      -- record of a judge's distribution.
+      UPDATE "judge" SET
+        marks_count       = marks_count - 1,
+        marks_sum         = marks_sum - OLD.score,
+        marks_squared_sum = marks_squared_sum - (OLD.score * OLD.score)
+      WHERE id = OLD.judge_id;
+
+      UPDATE "judge" SET
+        marks_count       = marks_count + 1,
+        marks_sum         = marks_sum + NEW.score,
+        marks_squared_sum = marks_squared_sum + (NEW.score * NEW.score)
+      WHERE id = NEW.judge_id;
+    ELSE
+      UPDATE "judge" SET
+        marks_sum         = marks_sum - OLD.score + NEW.score,
+        marks_squared_sum = marks_squared_sum - (OLD.score * OLD.score) + (NEW.score * NEW.score)
+      WHERE id = NEW.judge_id;
+    END IF;
     RETURN NEW;
   ELSIF (TG_OP = 'DELETE') THEN
     UPDATE "judge" SET

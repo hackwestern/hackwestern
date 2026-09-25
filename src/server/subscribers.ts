@@ -1,7 +1,9 @@
 import { randomBytes } from "crypto";
 import { eq, and, isNull } from "drizzle-orm";
+import { env } from "~/env";
 import { db } from "~/server/db";
 import { emailSubscribers, preregistrations } from "~/server/db/schema";
+import { manageContact } from "~/server/mailjet-contacts";
 
 const SCHOOL_DOMAINS = new Set([
   "uwo.ca",
@@ -29,6 +31,24 @@ export function normalizeEmail(raw: string): string {
     return `${canonical}@${domain}`;
   }
   return email;
+}
+
+/**
+ * Canonical form for an AUTH identity (user.email): trim + lowercase, nothing
+ * more. Deliberately weaker than normalizeEmail above — gmail dot/plus
+ * stripping is right for a mailing list (one mailbox, one contact) but wrong
+ * for a login credential, where the address should stay recognizable as what
+ * the user typed.
+ *
+ * Why it exists at all, measured in the HW12 dump: register.tsx used a
+ * type="text" input (mobile keyboards autocapitalize), every lookup was an
+ * exact string match, and user.email had no unique constraint — 7 of 2,278
+ * users ended up with two accounts, one of them ACCEPTED on one account with a
+ * duplicate still sitting in PENDING_REVIEW. Every read AND write of
+ * user.email must go through this.
+ */
+export function normalizeAuthEmail(raw: string): string {
+  return raw.trim().toLowerCase();
 }
 
 export function isSchoolEmail(email: string): boolean {
@@ -69,6 +89,38 @@ export async function tokenExists(
   return "invalid";
 }
 
+/**
+ * Mirror an opt-out onto the Mailjet contact list.
+ *
+ * Our unsubscribe link is our own (`/api/unsubscribe`), so a click writes
+ * `unsubscribed_at` in Postgres and Mailjet never hears about it. That was
+ * harmless while no contact list existed, but the list is now the target of
+ * marketing's dashboard campaigns — so without this, someone who unsubscribes
+ * from the confirmation email still has `IsUnsubscribed=false` on the list and
+ * receives the next campaign.
+ *
+ * Best-effort by design. The database write has already happened and is what
+ * actually honours the request; a Mailjet outage must not turn a successful
+ * unsubscribe into a 500, least of all on the RFC 8058 one-click POST that
+ * inbox providers expect to answer 200.
+ *
+ * Fires on the already-unsubscribed path too, so a previously failed mirror
+ * heals itself the next time the link is clicked.
+ */
+async function mirrorUnsubToMailjet(email: string): Promise<void> {
+  if (!env.MAILJET_CONTACT_LIST_ID) return;
+  if (!env.MAILJET_API_KEY || !env.MAILJET_SECRET_KEY) return;
+  const res = await manageContact(
+    env.MAILJET_CONTACT_LIST_ID,
+    email,
+    { apiKey: env.MAILJET_API_KEY, secretKey: env.MAILJET_SECRET_KEY },
+    "unsub",
+  );
+  if (!res.ok) {
+    console.error("Error mirroring unsubscribe to Mailjet:", email, res.error);
+  }
+}
+
 export async function unsubscribeByToken(token: string): Promise<boolean> {
   // The token belongs to exactly one list (email_subscriber or preregistration
   // — kept disjoint by email). Try the campaign list first, then the updates
@@ -82,13 +134,19 @@ export async function unsubscribeByToken(token: string): Promise<boolean> {
         isNull(emailSubscribers.unsubscribedAt),
       ),
     )
-    .returning({ id: emailSubscribers.id });
-  if (subRows.length > 0) return true;
+    .returning({ email: emailSubscribers.email });
+  if (subRows[0]) {
+    await mirrorUnsubToMailjet(subRows[0].email);
+    return true;
+  }
   const subExisting = await db.query.emailSubscribers.findFirst({
     where: eq(emailSubscribers.unsubscribeToken, token),
-    columns: { id: true },
+    columns: { email: true },
   });
-  if (subExisting) return true;
+  if (subExisting) {
+    await mirrorUnsubToMailjet(subExisting.email);
+    return true;
+  }
 
   const preRows = await db
     .update(preregistrations)
@@ -99,11 +157,18 @@ export async function unsubscribeByToken(token: string): Promise<boolean> {
         isNull(preregistrations.unsubscribedAt),
       ),
     )
-    .returning({ id: preregistrations.id });
-  if (preRows.length > 0) return true;
+    .returning({ email: preregistrations.email });
+  if (preRows[0]) {
+    await mirrorUnsubToMailjet(preRows[0].email);
+    return true;
+  }
   const preExisting = await db.query.preregistrations.findFirst({
     where: eq(preregistrations.unsubscribeToken, token),
-    columns: { id: true },
+    columns: { email: true },
   });
-  return !!preExisting;
+  if (preExisting) {
+    await mirrorUnsubToMailjet(preExisting.email);
+    return true;
+  }
+  return false;
 }

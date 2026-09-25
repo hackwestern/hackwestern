@@ -64,7 +64,10 @@ export default function Register() {
             <Input
               required
               id="email"
-              type="text"
+              // type="email", not "text": mobile keyboards autocapitalize text
+              // inputs, which is how HW12 got mixed-case emails into the user
+              // table and 7 duplicate accounts out of it.
+              type="email"
               name="email"
               autoComplete="username"
               className="mb-4 h-[60px] bg-highlight text-medium"

@@ -36,13 +36,16 @@ describe.sequential("auth.reset", async () => {
         error: null,
       });
 
-    // insert fake user
+    // Insert the fake user CANONICAL (trim+lowercase) — that is the only form
+    // a real row can have, since auth.create normalizes on write. Calling
+    // reset with faker's raw (often mixed-case) email then exercises the
+    // lookup-side normalization.
     await db
       .insert(users)
       .values({
         id: fakeUserId,
         name: faker.person.fullName(),
-        email: fakeEmail,
+        email: fakeEmail.toLowerCase(),
         emailVerified: faker.date.anytime(),
         image: faker.image.avatar(),
       })
@@ -61,7 +64,7 @@ describe.sequential("auth.reset", async () => {
       await db
         .delete(resetPasswordTokens)
         .where(eq(resetPasswordTokens.userId, fakeUserId));
-      await db.delete(users).where(eq(users.email, fakeEmail));
+      await db.delete(users).where(eq(users.email, fakeEmail.toLowerCase()));
     }
   });
 });
@@ -88,11 +91,13 @@ describe.sequential("auth.create", () => {
 
       expect(createdUser.success).toBe(true);
 
+      // Stored canonical: trim+lowercase, whatever casing was typed. (faker
+      // emails are often mixed-case, so this also exercises the normalization.)
       const dbUser = await db.query.users.findFirst({
-        where: eq(users.email, fakeUser.email),
+        where: eq(users.email, fakeUser.email.toLowerCase()),
       });
 
-      expect(dbUser?.email).toBe(fakeUser.email);
+      expect(dbUser?.email).toBe(fakeUser.email.toLowerCase());
     } finally {
       sendEmailSpy.mockRestore();
     }
@@ -102,6 +107,25 @@ describe.sequential("auth.create", () => {
     await expect(caller.auth.create(fakeUser)).rejects.toThrowError(
       /already exists/i,
     );
+  });
+
+  // The HW12 failure mode: same mailbox, different casing, second account
+  // created. 7 of 2,278 HW12 users hit this — one was ACCEPTED on one account
+  // with a duplicate still in PENDING_REVIEW.
+  test("rejects a duplicate that differs only in casing", async () => {
+    const swapped =
+      fakeUser.email === fakeUser.email.toLowerCase()
+        ? fakeUser.email.toUpperCase()
+        : fakeUser.email.toLowerCase();
+    await expect(
+      caller.auth.create({ ...fakeUser, email: swapped }),
+    ).rejects.toThrowError(/already exists/i);
+  });
+
+  test("rejects a duplicate with surrounding whitespace", async () => {
+    await expect(
+      caller.auth.create({ ...fakeUser, email: ` ${fakeUser.email} ` }),
+    ).rejects.toThrowError();
   });
 });
 

@@ -19,6 +19,17 @@ export interface MailjetCreds {
   secretKey: string;
 }
 
+/**
+ * HTTP Basic header for the Mailjet API. Lives here, beside MailjetCreds, so
+ * both Mailjet clients (this one for v3.1 Send, mailjet-contacts.ts for the v3
+ * REST contact endpoints) share one definition and the dependency runs one way.
+ */
+export function authHeader(creds: MailjetCreds): string {
+  return `Basic ${Buffer.from(`${creds.apiKey}:${creds.secretKey}`).toString(
+    "base64",
+  )}`;
+}
+
 /** Subset of the Mailjet Send API v3.1 response we care about. */
 interface MailjetV31Response {
   Messages?: {
@@ -62,15 +73,11 @@ export async function sendViaMailjet(
   const from = parseAddress(
     options.from ?? "Hack Western Team <hello@hackwestern.com>",
   );
-  const auth = Buffer.from(`${creds.apiKey}:${creds.secretKey}`).toString(
-    "base64",
-  );
-
   try {
     const response = await fetch("https://api.mailjet.com/v3.1/send", {
       method: "POST",
       headers: {
-        Authorization: `Basic ${auth}`,
+        Authorization: authHeader(creds),
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

@@ -15,7 +15,9 @@ import { emailSubscribers, preregistrations } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
 import { PreregistrationSeeder } from "~/server/db/seed/preregistrationSeeder";
 import * as mailModule from "~/server/mail-mailjet";
+import * as contactsModule from "~/server/mailjet-contacts";
 import { generateUnsubscribeToken, normalizeEmail } from "~/server/subscribers";
+import { env } from "~/env";
 
 const session = await mockSession(db);
 
@@ -30,9 +32,15 @@ const sendEmailSpy = vi.spyOn(mailModule, "sendViaMailjet").mockResolvedValue({
   error: null,
 });
 
+// Same for the contact-list write, so tests never touch the real Mailjet list.
+const manageContactSpy = vi
+  .spyOn(contactsModule, "manageContact")
+  .mockResolvedValue({ ok: true });
+
 describe("preregistration.create", async () => {
   beforeEach(async () => {
     sendEmailSpy.mockClear();
+    manageContactSpy.mockClear();
 
     // Delete by the NORMALIZED address, because that is what create() stores.
     // Deleting by the raw seed address left the row behind, and every later test
@@ -46,6 +54,7 @@ describe("preregistration.create", async () => {
 
   afterEach(() => {
     sendEmailSpy.mockClear();
+    manageContactSpy.mockClear();
   });
 
   test("creates a new preregistration when it does not exist", async () => {
@@ -84,9 +93,53 @@ describe("preregistration.create", async () => {
 
     expect(sendEmailSpy).toHaveBeenCalledTimes(1);
     const arg = sendEmailSpy.mock.calls[0]?.[0];
-    expect(arg?.to).toBe(testPreregistration.email);
+    // NORMALIZED, not the raw input. Mailjet's Send API creates a contact from
+    // whatever address it delivered to, so sending to the raw form files a
+    // second contact for the same mailbox alongside the one managecontact adds.
+    expect(arg?.to).toBe(normalizeEmail(testPreregistration.email));
     expect(arg?.subject).toContain("signed up");
     expect(arg?.html).toBeTruthy();
+  });
+
+  // Deliberate: this email confirms a subscription the recipient just asked for
+  // (CASL s.6(6)(d)), and marketing's dashboard campaigns already carry Mailjet's
+  // own unsubscribe. A second link writing only to Postgres would mean an opt-out
+  // honoured in one system and ignored in the other.
+  test("carries no unsubscribe link or List-Unsubscribe header", async () => {
+    await caller.preregistration.create(testPreregistration);
+
+    const arg = sendEmailSpy.mock.calls[0]?.[0];
+    expect(arg?.html).not.toContain("/unsubscribe");
+    expect(arg?.html).not.toMatch(/>\s*Unsubscribe\s*</i);
+    expect(arg?.headers?.["List-Unsubscribe"]).toBeUndefined();
+    expect(arg?.headers?.["List-Unsubscribe-Post"]).toBeUndefined();
+  });
+
+  test("files the new signup into the Mailjet contact list, normalized", async () => {
+    await caller.preregistration.create(testPreregistration);
+
+    expect(manageContactSpy).toHaveBeenCalledTimes(1);
+    const [listId, email, , action] = manageContactSpy.mock.calls[0] ?? [];
+    expect(listId).toBe(env.MAILJET_CONTACT_LIST_ID);
+    expect(email).toBe(normalizeEmail(testPreregistration.email));
+    // Default action. addforce would reset IsUnsubscribed and resurrect opt-outs.
+    expect(action).toBeUndefined();
+  });
+
+  // The row is committed before this call, so a Mailjet outage must not turn a
+  // successful signup into an error for the user.
+  test("still succeeds when the Mailjet list write fails", async () => {
+    manageContactSpy.mockResolvedValueOnce({ ok: false, error: "boom" });
+
+    await expect(
+      caller.preregistration.create(testPreregistration),
+    ).resolves.toBeTruthy();
+
+    const row = await db.query.preregistrations.findFirst({
+      where: (p, { eq }) =>
+        eq(p.email, normalizeEmail(testPreregistration.email)),
+    });
+    expect(row).toBeTruthy();
   });
 
   test("does not send a confirmation email when the signup already exists", async () => {
