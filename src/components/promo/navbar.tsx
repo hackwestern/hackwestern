@@ -48,6 +48,11 @@ const navText =
 const navFocus =
   "rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-offwhite focus-visible:ring-offset-2 focus-visible:ring-offset-transparent";
 
+const navPress =
+  "transition-transform duration-100 ease-out active:translate-y-px active:scale-[0.97] active:duration-0 motion-reduce:transition-none motion-reduce:active:transform-none";
+
+const navTextPress = cn("-m-1 p-1", navPress);
+
 type PromoNavbarProps = {
   className?: string;
   brandHref?: string;
@@ -72,7 +77,10 @@ export function PromoNavbar({
       <div
         className={cn("flex items-baseline gap-6 whitespace-nowrap", navText)}
       >
-        <Link href={brandHref} className={cn("cursor-pixel-hover", navFocus)}>
+        <Link
+          href={brandHref}
+          className={cn("cursor-pixel-hover", navFocus, navTextPress)}
+        >
           Hack Western 13
         </Link>
         <div className="hidden items-baseline gap-6 md:flex">
@@ -80,7 +88,7 @@ export function PromoNavbar({
             <a
               key={link.href}
               href={link.href}
-              className={cn("cursor-pixel-hover", navFocus)}
+              className={cn("cursor-pixel-hover", navFocus, navTextPress)}
             >
               {link.label}
             </a>
@@ -98,6 +106,7 @@ export function PromoNavbar({
             className={cn(
               "flex size-6 shrink-0 cursor-pixel-hover items-center justify-center overflow-clip",
               navFocus,
+              navPress,
             )}
           >
             <Image
@@ -118,6 +127,7 @@ export function PromoNavbar({
             className={cn(
               "flex size-8 cursor-pixel-hover items-center justify-center text-offwhite md:hidden",
               navFocus,
+              navPress,
             )}
           >
             <Menu className="size-6" aria-hidden="true" />
@@ -125,7 +135,7 @@ export function PromoNavbar({
         </SheetTrigger>
         <SheetContent
           side="right"
-          className="w-[min(85vw,320px)] border-white/[0.08] bg-[#173f52] font-figtree text-offwhite"
+          className="w-[min(85vw,320px)] border-white/[0.08] bg-[#173f52] font-figtree text-offwhite data-[state=closed]:duration-150 data-[state=open]:duration-300"
         >
           <SheetTitle className="sr-only">Site navigation</SheetTitle>
           <SheetDescription className="sr-only">
@@ -138,7 +148,7 @@ export function PromoNavbar({
                   <a
                     href={link.href}
                     className={cn(
-                      "cursor-pixel-hover border-b border-white/10 py-4 text-[18px] font-semibold leading-none",
+                      "cursor-pixel-hover border-b border-white/10 py-4 text-[18px] font-semibold leading-none transition-transform duration-100 ease-out active:translate-y-px active:duration-0 motion-reduce:transition-none motion-reduce:active:transform-none",
                       navFocus,
                     )}
                   >
@@ -158,6 +168,7 @@ export function PromoNavbar({
                     className={cn(
                       "flex size-8 cursor-pixel-hover items-center justify-center",
                       navFocus,
+                      navPress,
                     )}
                   >
                     <Image src={social.iconSrc} alt="" width={24} height={24} />
