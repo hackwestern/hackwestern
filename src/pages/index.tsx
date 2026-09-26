@@ -1,4 +1,5 @@
 import { FilmStrip } from "~/components/promo/film-strip";
+import { Hero } from "~/components/promo/hero";
 import { SkyBackground } from "~/components/promo/sky-background";
 
 const SECTIONS = [
@@ -27,15 +28,19 @@ export default function Home() {
       <FilmStrip />
       {SECTIONS.map((section) => (
         <div key={section.id}>
-          <section
-            id={section.id}
-            className="flex items-center justify-center"
-            style={{ minHeight: `${section.height}px` }}
-          >
-            <h2 className="text-[clamp(2.5rem,7vw,100px)] text-black">
-              {section.label}
-            </h2>
-          </section>
+          {section.id === "hero" ? (
+            <Hero />
+          ) : (
+            <section
+              id={section.id}
+              className="flex items-center justify-center"
+              style={{ minHeight: `${section.height}px` }}
+            >
+              <h2 className="text-[clamp(2.5rem,7vw,100px)] text-black">
+                {section.label}
+              </h2>
+            </section>
+          )}
           <FilmStrip rotate={section.tiltAfter} />
         </div>
       ))}
