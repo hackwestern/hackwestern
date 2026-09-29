@@ -18,7 +18,7 @@ function StatusCard({ title, description, primaryAction }: StatusCardProps) {
       <h1 className="font-primary text-[36px] font-bold leading-tight text-highlight">
         {title}
       </h1>
-      <p className="font-secondary text-md-p text-highlight">
+      <p className="font-figtree text-md-p text-highlight">
         {description}
       </p>
       {primaryAction && (
