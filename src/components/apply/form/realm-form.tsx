@@ -78,7 +78,7 @@ export function RealmForm() {
               ? `${horseFirstName} ${horseLastName} will be your companion for Hack Western 13!`
               : "Name your horse companion"}
           </p>
-          <p className="mt-2 font-secondary text-lg-p font-medium text-light">
+          <p className="mt-2 font-figtree text-lg-p font-medium text-light">
             You will be journeying through the{" "}
             <span className="font-semibold text-medium">
               {realmLabel[selectedHorse.realm]}
@@ -137,7 +137,7 @@ export function RealmForm() {
           <button
             type="button"
             onClick={handleChangeHorse}
-            className="font-secondary text-md-p font-medium text-medium underline-offset-2 hover:underline"
+            className="font-figtree text-md-p font-medium text-medium underline-offset-2 hover:underline"
           >
             Pick a different horse
           </button>

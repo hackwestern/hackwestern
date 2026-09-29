@@ -353,10 +353,10 @@ function RealmReview({}: ReviewSectionProps) {
           />
         )}
         <div className="flex flex-col">
-          <p className="font-secondary text-md-p font-semibold text-heavy">
+          <p className="font-figtree text-md-p font-semibold text-heavy">
             {formatHorseName(data?.horseFirstName, data?.horseLastName)}
           </p>
-          <p className="font-secondary text-sm-p text-medium">
+          <p className="font-figtree text-sm-p text-medium">
             {data?.realm
               ? `${realmLabel[data.realm]} realm`
               : "(no realm chosen)"}
