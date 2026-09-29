@@ -43,6 +43,17 @@ export const avatarColour = pgEnum("avatar_colour", [
 ]);
 
 /**
+ * The realm each hacker's horse companion belongs to, chosen during the
+ * application flow. Drives themed visuals across the portal.
+ */
+export const realm = pgEnum("realm", [
+  "safari",
+  "mountain",
+  "desert",
+  "ocean",
+]);
+
+/**
  * Year of study for the hacker
  */
 export const yearOfStudy = pgEnum("year_of_study", [
@@ -450,6 +461,12 @@ export const applications = pgTable(
     avatarLeftHand: integer("avatar_left_hand"),
     avatarRightHand: integer("avatar_right_hand"),
     avatarHat: integer("avatar_hat"),
+
+    // Horse companion + realm (HW13 redesign)
+    realm: realm("realm"),
+    horseId: integer("horse_id"),
+    horseFirstName: varchar("horse_first_name", { length: 255 }),
+    horseLastName: varchar("horse_last_name", { length: 255 }),
 
     // About You
     firstName: varchar("first_name", { length: 255 }),
