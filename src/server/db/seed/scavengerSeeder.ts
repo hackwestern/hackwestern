@@ -3,9 +3,9 @@ import { scavengerHuntItems } from "~/server/db/schema";
 import { type Seeder } from "./helpers";
 
 const ITEMS = 20;
-export class ScavengerHuntItemSeeder
-  implements Seeder<typeof scavengerHuntItems>
-{
+export class ScavengerHuntItemSeeder implements Seeder<
+  typeof scavengerHuntItems
+> {
   tableName = "ScavengerHuntItems";
   table = scavengerHuntItems;
 

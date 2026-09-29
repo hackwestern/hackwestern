@@ -229,8 +229,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
   ): boolean => {
     if (!currentEvent || idx === 0) return false;
     const prevEvent = timeSlots[idx - 1]?.[eventKey] as
-      | { title: string; location: string }
-      | undefined;
+      { title: string; location: string } | undefined;
     return prevEvent?.title === currentEvent.title;
   };
 
@@ -240,15 +239,13 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
     eventKey: keyof ParsedScheduleEvent,
   ): number => {
     const startEvent = timeSlots[startIdx]?.[eventKey] as
-      | { title: string; location: string }
-      | undefined;
+      { title: string; location: string } | undefined;
     if (!startEvent) return 56;
 
     let totalHeight = 0;
     for (let i = startIdx; i < timeSlots.length; i++) {
       const currentEvent = timeSlots[i]?.[eventKey] as
-        | { title: string; location: string }
-        | undefined;
+        { title: string; location: string } | undefined;
 
       // If event changes, stop calculating
       if (currentEvent?.title !== startEvent.title) break;
@@ -358,16 +355,14 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
             while (i < eventColumns.length) {
               const col = eventColumns[i]!;
               const currentEvent = event[col.key] as
-                | { title: string; location: string }
-                | undefined;
+                { title: string; location: string } | undefined;
 
               let span = 1;
               // Check how many consecutive columns have the same event
               while (i + span < eventColumns.length) {
                 const nextCol = eventColumns[i + span]!;
                 const nextEvent = event[nextCol.key] as
-                  | { title: string; location: string }
-                  | undefined;
+                  { title: string; location: string } | undefined;
                 if (
                   currentEvent &&
                   nextEvent &&

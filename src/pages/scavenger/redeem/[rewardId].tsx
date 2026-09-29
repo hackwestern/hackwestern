@@ -134,8 +134,8 @@ const RedeemScanPage = () => {
 
       // Try to get getUserMedia function from various possible locations
       let getUserMedia:
-        | ((constraints: MediaStreamConstraints) => Promise<MediaStream>)
-        | null = null;
+        ((constraints: MediaStreamConstraints) => Promise<MediaStream>) | null =
+        null;
 
       // Try modern API first
       if (
