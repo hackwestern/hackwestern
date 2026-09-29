@@ -8,8 +8,6 @@ import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { cn } from "~/lib/utils";
 import { applicationSubmitSchema } from "~/schemas/application";
 import { api } from "~/utils/api";
-import { AvatarDisplay } from "../avatar-display";
-import { colors } from "~/constants/avatar";
 import { getHorse, realmLabel } from "~/constants/realms";
 import { type CanvasPaths } from "~/types/canvas";
 import { QUESTION1, QUESTION2, QUESTION3 } from "./application-form";
@@ -327,6 +325,14 @@ function OptionalReview({}: ReviewSectionProps) {
   );
 }
 
+function formatHorseName(
+  first: string | null | undefined,
+  last: string | null | undefined,
+): string {
+  const name = `${first ?? ""} ${last ?? ""}`.trim();
+  return name.length > 0 ? name : "(no name yet)";
+}
+
 /* eslint-disable @next/next/no-img-element */
 function RealmReview({}: ReviewSectionProps) {
   const { data } = api.application.get.useQuery({
@@ -348,53 +354,13 @@ function RealmReview({}: ReviewSectionProps) {
         )}
         <div className="flex flex-col">
           <p className="font-secondary text-md-p font-semibold text-heavy">
-            {data?.horseFirstName || data?.horseLastName
-              ? `${data?.horseFirstName ?? ""} ${data?.horseLastName ?? ""}`.trim()
-              : "(no name yet)"}
+            {formatHorseName(data?.horseFirstName, data?.horseLastName)}
           </p>
           <p className="font-secondary text-sm-p text-medium">
             {data?.realm
               ? `${realmLabel[data.realm]} realm`
               : "(no realm chosen)"}
           </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AvatarReview({}: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: [
-      "avatarColour",
-      "avatarFace",
-      "avatarLeftHand",
-      "avatarRightHand",
-      "avatarHat",
-    ],
-  });
-
-  const selectedColor = colors.find(
-    (c) => c.name === (data?.avatarColour ?? "green"),
-  );
-
-  return (
-    <div className="space-y-2">
-      <Label>Your Avatar</Label>
-      <div
-        className="mx-auto -mt-4 flex h-80 w-80 scale-90 flex-col justify-center rounded-2xl p-4 pt-8"
-        style={{
-          background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
-        }}
-      >
-        <div className="flex items-center justify-center">
-          <AvatarDisplay
-            avatarColour={data?.avatarColour}
-            avatarFace={data?.avatarFace}
-            avatarLeftHand={data?.avatarLeftHand}
-            avatarRightHand={data?.avatarRightHand}
-            avatarHat={data?.avatarHat}
-          />
         </div>
       </div>
     </div>
