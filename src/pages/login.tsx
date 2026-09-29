@@ -55,7 +55,7 @@ export default function Login() {
           <div className="flex flex-col gap-2">
             <label
               htmlFor="email"
-              className="font-secondary text-md-p font-medium text-gray-4"
+              className="font-figtree text-md-p font-medium text-gray-4"
             >
               Email
             </label>
@@ -64,7 +64,7 @@ export default function Login() {
               name="email"
               type="email"
               autoComplete="username"
-              className="h-12 bg-white font-secondary text-md-p"
+              className="h-12 bg-white font-figtree text-md-p"
               placeholder="hacker@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -75,7 +75,7 @@ export default function Login() {
           <div className="flex flex-col gap-2">
             <label
               htmlFor="password"
-              className="font-secondary text-md-p font-medium text-gray-4"
+              className="font-figtree text-md-p font-medium text-gray-4"
             >
               Password
             </label>
@@ -84,7 +84,7 @@ export default function Login() {
               name="password"
               type="password"
               autoComplete="current-password"
-              className="h-12 bg-white font-secondary text-md-p"
+              className="h-12 bg-white font-figtree text-md-p"
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -105,7 +105,7 @@ export default function Login() {
 
         <div className="flex items-center gap-3">
           <div className="h-px flex-1 bg-gray-3/30" />
-          <span className="font-secondary text-sm-p text-gray-3">or</span>
+          <span className="font-figtree text-sm-p text-gray-3">or</span>
           <div className="h-px flex-1 bg-gray-3/30" />
         </div>
 
@@ -116,7 +116,7 @@ export default function Login() {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 font-secondary text-md-p text-gray-6">
+          <div className="flex items-center gap-1.5 font-figtree text-md-p text-gray-6">
             <span>New here?</span>
             <Button asChild variant="tertiary" className="h-max p-0">
               <Link className="text-light hover:text-medium" href="/register">
@@ -126,7 +126,7 @@ export default function Login() {
           </div>
           <Button asChild variant="tertiary" className="h-max p-0">
             <Link
-              className="font-secondary text-md-p text-light hover:text-medium"
+              className="font-figtree text-md-p text-light hover:text-medium"
               href="/forgot-password"
             >
               Forgot password?
