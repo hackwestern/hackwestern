@@ -67,7 +67,7 @@ export const fonts = {
   // and everything using font-primary / font-secondary carries over automatically.
   // This year: primary = CossetteTexte (display), secondary = Pix32 (body/UI).
   // figtree is deprecated (last year's font) and being migrated out — see #794.
-  primary: "var(--font-cossetteTexte)",
+  primary: "ar(--font-figtree)",
   secondary: "var(--font-pix32)",
 } as const;
 
