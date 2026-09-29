@@ -18,8 +18,24 @@ export interface ApplicationSidebarProps {
 function formatSavedTime(date: Date) {
   return date
     .toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
-    .toLowerCase()
-    .replace(" ", " ");
+    .toLowerCase();
+}
+
+/**
+ * Renders the formatted saved time only after mount. toLocaleTimeString varies
+ * with the runtime's locale + timezone, so rendering it during SSR causes a
+ * hydration mismatch when the client's locale differs from the server's.
+ */
+function useSavedTimeLabel(date: Date | null | undefined): string | null {
+  const [label, setLabel] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (!date) {
+      setLabel(null);
+      return;
+    }
+    setLabel(formatSavedTime(date));
+  }, [date]);
+  return label;
 }
 
 export function ApplicationSidebar({
@@ -29,6 +45,7 @@ export function ApplicationSidebar({
   onStepClick,
   className,
 }: ApplicationSidebarProps) {
+  const savedLabel = useSavedTimeLabel(lastSavedAt);
   return (
     <aside
       className={cn(
@@ -80,8 +97,11 @@ export function ApplicationSidebar({
 
       {lastSavedAt && (
         <div className="flex items-center justify-center px-[14px]">
-          <p className="whitespace-nowrap font-secondary text-md-p font-medium italic text-medium">
-            Last saved {formatSavedTime(lastSavedAt)}
+          <p
+            suppressHydrationWarning
+            className="whitespace-nowrap font-secondary text-md-p font-medium italic text-medium"
+          >
+            {savedLabel ? `Last saved ${savedLabel}` : " "}
           </p>
         </div>
       )}
