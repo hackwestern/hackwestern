@@ -180,8 +180,8 @@ const AddToWallet = ({
         <Image
           src={
             walletType === "GOOGLE"
-              ? "/images/wallet/GoogleWallet.svg"
-              : "/images/wallet/AppleWallet.svg"
+              ? "/portal/wallet/GoogleWallet.svg"
+              : "/portal/wallet/AppleWallet.svg"
           }
           alt={
             walletType === "GOOGLE"

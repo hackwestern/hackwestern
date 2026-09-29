@@ -5,7 +5,7 @@ const SITE_URL = "https://hackwestern.com";
 const SITE_NAME = "Hack Western";
 const DEFAULT_DESCRIPTION =
   "Hack Western is one of Canada's largest student-run hackathons, hosted annually at Western University in London, Ontario. Join 500+ students for a weekend of building, learning, and innovation.";
-const DEFAULT_OG_IMAGE = `${SITE_URL}/images/og-image.png`;
+const DEFAULT_OG_IMAGE = `${SITE_URL}/meta/og-image.png`;
 
 interface SEOProps {
   title?: string;

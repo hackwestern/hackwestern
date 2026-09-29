@@ -34,7 +34,7 @@ export default function CharacterIcon() {
         >
           {applicationData?.avatarColour ? (
             <Image
-              src={`/avatar/body/${bodyColor}.webp`}
+              src={`/apply/avatar/body/${bodyColor}.webp`}
               alt="Character"
               width={32}
               height={32}

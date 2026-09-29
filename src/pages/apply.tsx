@@ -63,7 +63,7 @@ function getNextIncompleteStep(
       case "info": {
         if (
           isEmpty(application.school) ||
-          isEmpty(application.levelOfStudy) ||
+          isEmpty(application.yearOfStudy) ||
           isEmpty(application.major) ||
           isEmpty(application.attendedBefore) ||
           isEmpty(application.numOfHackathons)

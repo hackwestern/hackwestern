@@ -201,13 +201,6 @@ export default function Navbar({ panToOffset, onReset }: NavbarProps) {
               isPushed={expandedButton === CanvasSection.FAQ}
               onDebouncedClick={handleDebouncedClick}
             />
-            <SingleButton
-              label="Team"
-              icon="Users"
-              onClick={() => handlePan(CanvasSection.Team)}
-              isPushed={expandedButton === CanvasSection.Team}
-              onDebouncedClick={handleDebouncedClick}
-            />
           </div>
         </motion.div>
       </div>

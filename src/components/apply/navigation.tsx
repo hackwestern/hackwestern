@@ -142,7 +142,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
             >
               <div className="flex items-center gap-2">
                 <Image
-                  src="/arrow-left.svg"
+                  src="/shared/arrow-left.svg"
                   alt="Left Arrow"
                   width={12}
                   height={12}
@@ -179,7 +179,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
               <div className="flex items-center gap-2">
                 Next
                 <Image
-                  src="/arrow-right.svg"
+                  src="/shared/arrow-right.svg"
                   alt="Right Arrow"
                   width={12}
                   height={12}
@@ -209,7 +209,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
               >
                 <div className="flex items-center gap-2 pr-2">
                   <Image
-                    src="/arrow-left.svg"
+                    src="/shared/arrow-left.svg"
                     alt="Left Arrow"
                     width={12}
                     height={12}
@@ -237,7 +237,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
               <div className="flex gap-2">
                 Next
                 <Image
-                  src="/arrow-right.svg"
+                  src="/shared/arrow-right.svg"
                   alt="Right Arrow"
                   width={10}
                   height={10}

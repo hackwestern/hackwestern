@@ -10,33 +10,33 @@ type experienceType = (typeof numOfHackathons.enumValues)[number];
 const majorMap = (type: majorType | undefined | null): string | undefined => {
   switch (type) {
     case "Computer Science":
-      return "/stamps/major/cs.svg";
+      return "/apply/stamps/major/cs.svg";
     case "Computer Engineering":
-      return "/stamps/major/compeng.svg";
+      return "/apply/stamps/major/compeng.svg";
     case "Software Engineering":
-      return "/stamps/major/swe.svg";
+      return "/apply/stamps/major/swe.svg";
     case "Other Engineering Discipline":
-      return "/stamps/major/eng.svg";
+      return "/apply/stamps/major/eng.svg";
     case "Information Systems":
-      return "/stamps/major/infosys.svg";
+      return "/apply/stamps/major/infosys.svg";
     case "Information Technology":
-      return "/stamps/major/infotech.svg";
+      return "/apply/stamps/major/infotech.svg";
     case "System Administration":
-      return "/stamps/major/sysadmin.svg";
+      return "/apply/stamps/major/sysadmin.svg";
     case "Natural Sciences (Biology, Chemistry, Physics, etc.)":
-      return "/stamps/major/natsci.svg";
+      return "/apply/stamps/major/natsci.svg";
     case "Mathematics/Statistics":
-      return "/stamps/major/math.svg";
+      return "/apply/stamps/major/math.svg";
     case "Web Development/Web Design":
-      return "/stamps/major/webdev.svg";
+      return "/apply/stamps/major/webdev.svg";
     case "Business Administration":
-      return "/stamps/major/bus.svg";
+      return "/apply/stamps/major/bus.svg";
     case "Humanities":
-      return "/stamps/major/socsci.svg";
+      return "/apply/stamps/major/socsci.svg";
     case "Social Science":
-      return "/stamps/major/socsci.svg";
+      return "/apply/stamps/major/socsci.svg";
     case "Fine Arts/Performing Arts":
-      return "/stamps/major/perfarts.svg";
+      return "/apply/stamps/major/perfarts.svg";
     case "Other":
     default:
       return undefined;
@@ -48,24 +48,24 @@ const schoolMap = (
 ): string | undefined => {
   switch (school) {
     case "Western University":
-      return "/stamps/schools/uwo.svg";
+      return "/apply/stamps/schools/uwo.svg";
     case "University of Waterloo":
-      return "/stamps/schools/uw.svg";
+      return "/apply/stamps/schools/uw.svg";
     case "McMaster University":
-      return "/stamps/schools/mac.svg";
+      return "/apply/stamps/schools/mac.svg";
     case "York University":
-      return "/stamps/schools/york.svg";
+      return "/apply/stamps/schools/york.svg";
     case "University of Toronto":
-      return "/stamps/schools/uoft.svg";
+      return "/apply/stamps/schools/uoft.svg";
     case "University of Toronto Mississauga":
-      return "/stamps/schools/utm.svg";
+      return "/apply/stamps/schools/utm.svg";
     case "University of Toronto Scarborough":
-      return "/stamps/schools/utsc.svg";
+      return "/apply/stamps/schools/utsc.svg";
     case "Wilfrid Laurier University":
-      return "/stamps/schools/laurier.svg";
+      return "/apply/stamps/schools/laurier.svg";
     case "Other":
     default:
-      return "/stamps/schools/other.svg";
+      return "/apply/stamps/schools/other.svg";
   }
 };
 
@@ -74,13 +74,13 @@ const experienceMap = (
 ): string | undefined => {
   switch (experience) {
     case "0":
-      return "/stamps/experience/0.svg";
+      return "/apply/stamps/experience/0.svg";
     case "1-3":
-      return "/stamps/experience/1-3.svg";
+      return "/apply/stamps/experience/1-3.svg";
     case "4-6":
-      return "/stamps/experience/4-6.svg";
+      return "/apply/stamps/experience/4-6.svg";
     case "7+":
-      return "/stamps/experience/7.svg";
+      return "/apply/stamps/experience/7.svg";
     default:
       return undefined;
   }
@@ -110,7 +110,7 @@ export function HWStamp({
 }: {
   returning: "newcomer" | "returnee";
 }): React.ReactElement {
-  const stampSrc = `/stamps/returning/${returning}.svg`;
+  const stampSrc = `/apply/stamps/returning/${returning}.svg`;
   return (
     <img
       alt="Hack Western Experience Stamp"
@@ -161,7 +161,7 @@ export function SubmittedStamp(): React.ReactElement {
   return (
     <img
       alt="Submitted Stamp"
-      src="/stamps/completion/submitted.svg"
+      src="/apply/stamps/completion/submitted.svg"
       className={`${sharedStampClass}`}
     />
   );
@@ -171,7 +171,7 @@ export function LinksStamp(): React.ReactElement {
   return (
     <img
       alt="Links Added Stamp"
-      src="/stamps/completion/linked.svg"
+      src="/apply/stamps/completion/linked.svg"
       className={`${sharedStampClass} rotate-[2.13deg]`}
     />
   );

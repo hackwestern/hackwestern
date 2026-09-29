@@ -26,7 +26,14 @@ import {
 export function LinksForm() {
   const utils = api.useUtils();
   const { data: defaultValues } = api.application.get.useQuery({
-    fields: ["status", "githubLink", "linkedInLink", "otherLink", "resumeLink"],
+    fields: [
+      "status",
+      "devpostLink",
+      "githubLink",
+      "linkedInLink",
+      "otherLink",
+      "resumeLink",
+    ],
   });
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -152,6 +159,27 @@ export function LinksForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="devpostLink"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Devpost</FormLabel>
+              <FormControl>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <span>devpost.com/</span>
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="hacker"
+                    variant="primary"
+                    disabled={!canEdit}
+                  />
+                </div>
+              </FormControl>
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="githubLink"

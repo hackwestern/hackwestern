@@ -53,7 +53,7 @@ export function MacBook({ rotate }: { rotate: string }) {
     >
       <div className="absolute left-[386.49px] top-[239.58px] h-[144px] w-[96px]">
         <motion.img
-          src="/hackwesternmaclogo.svg"
+          src="/landing/hackwesternmaclogo.svg"
           alt="hackwestern"
           width={95.541}
           height={144.834}
@@ -91,7 +91,7 @@ function Sponsors() {
   return (
     <CanvasComponent
       offset={coordinates.sponsors}
-      imageFallback="/images/promo/sponsors.png"
+      imageFallback="/landing/promo/sponsors.png"
     >
       <div className="mt-16 flex flex-col items-center justify-center space-y-4">
         <div className="flex origin-center scale-150 flex-col items-center justify-center space-y-8 transition-transform duration-300 ease-in-out">
@@ -121,7 +121,7 @@ function Sponsors() {
               <div className="mt-10 flex h-[380px] w-[400px] origin-top-left scale-90 flex-col items-center">
                 <div className="relative h-[418px] w-[440px] scale-[1.1]">
                   <motion.img
-                    src="/notepad.svg"
+                    src="/landing/notepad.svg"
                     alt="notepad"
                     width={440}
                     height={418}

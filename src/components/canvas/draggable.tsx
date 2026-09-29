@@ -186,7 +186,7 @@ function updateCursor(
   isMouseDown: boolean,
   img: HTMLImageElement | null,
 ) {
-  let cursor = "url('customcursor.svg'), auto"; // default
+  let cursor = "url('/shared/customcursor.svg'), auto"; // default
   if (opaque) cursor = "grab";
   if (isMouseDown) cursor = "grabbing";
   if (img) img.style.cursor = cursor;

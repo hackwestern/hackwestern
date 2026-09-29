@@ -1,0 +1,38 @@
+name: Schema drift check
+
+on:
+  pull_request:
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate migrations from current schema
+        run: npx drizzle-kit generate
+        env:
+          SKIP_ENV_VALIDATION: 1
+
+      - name: Fail if generated SQL is uncommitted
+        run: |
+          if [ -n "$(git status --porcelain drizzle/)" ]; then
+            echo "::error::Schema drift detected. Run 'npm run db:generate' locally and commit the new file in drizzle/."
+            echo ""
+            echo "Files that drizzle-kit generate produced but are not committed:"
+            git status --short drizzle/
+            echo ""
+            echo "Diff:"
+            git diff drizzle/
+            exit 1
+          fi

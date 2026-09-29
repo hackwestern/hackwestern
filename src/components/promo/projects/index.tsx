@@ -10,7 +10,7 @@ function Projects() {
   return (
     <CanvasComponent
       offset={coordinates.projects}
-      imageFallback="/images/promo/projects.png"
+      imageFallback="/landing/promo/projects.png"
     >
       <div className="m-auto flex w-full shrink-0 flex-col items-center">
         {/* Top projects */}

@@ -21,6 +21,8 @@ if (env.NODE_ENV !== "production") globalForDb.conn = conn;
 
 export const db = drizzle(conn, { schema, logger: true });
 
+export const silentdb = drizzle(conn, { schema, logger: false });
+
 export type Database = PostgresJsDatabase<typeof schema>;
 
 export type Transaction = PostgresJsTransaction<

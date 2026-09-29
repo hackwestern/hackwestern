@@ -132,15 +132,15 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           disabled={disabled ?? isPending}
         >
           {variant === "tertiary-arrow" ? (
-            <div className="w-full">
+            <>
               <Image
-                src="/arrow-left.svg"
+                src="/shared/arrow-left.svg"
                 alt="Left Arrow"
                 width={10}
                 height={10}
               />
               {children}
-            </div>
+            </>
           ) : (
             children
           )}

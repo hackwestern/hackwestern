@@ -54,7 +54,11 @@ const requestVerifyEmail = async (user: AdapterUser) => {
 
 export const authRouter = createTRPCRouter({
   reset: publicProcedure
+    .meta({
+      openapi: { method: "POST", path: "/api/auth/reset" },
+    })
     .input(z.object({ email: z.string() }))
+    .output(z.object({ success: z.boolean() }))
     .mutation(async ({ input }) => {
       // Fetch user by email
       const user = await db.query.users.findFirst({
@@ -115,7 +119,11 @@ export const authRouter = createTRPCRouter({
     }),
 
   create: publicProcedure
+    .meta({
+      openapi: { method: "POST", path: "/api/auth/create" },
+    })
     .input(createInputSchema)
+    .output(z.object({ success: z.boolean() }))
     .mutation(async ({ input }) => {
       try {
         const user = await db.query.users.findFirst({
@@ -180,7 +188,12 @@ export const authRouter = createTRPCRouter({
       }
     }),
 
-  checkVerified: publicProcedure.query(async ({ ctx }) => {
+  checkVerified: publicProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/auth/checkVerified" },
+    })
+    .output(z.object({ verified: z.date().nullable() }))
+    .query(async ({ ctx }) => {
     if (!ctx?.session?.user) {
       throw new TRPCError({
         code: "UNAUTHORIZED",
@@ -204,7 +217,12 @@ export const authRouter = createTRPCRouter({
     };
   }),
 
-  resendEmail: publicProcedure.mutation(async ({ ctx }) => {
+  resendEmail: publicProcedure
+    .meta({
+      openapi: { method: "POST", path: "/api/auth/resendEmail" },
+    })
+    .output(z.object({ success: z.boolean() }))
+    .mutation(async ({ ctx }) => {
     if (!ctx?.session?.user) {
       throw new TRPCError({
         code: "UNAUTHORIZED",
@@ -241,7 +259,11 @@ export const authRouter = createTRPCRouter({
   }),
 
   verify: publicProcedure
+    .meta({
+      openapi: { method: "POST", path: "/api/auth/verify" },
+    })
     .input(z.object({ token: z.string() }))
+    .output(z.object({ success: z.boolean() }))
     .mutation(async ({ input }) => {
       const token = await db.query.verificationTokens.findFirst({
         where: eq(verificationTokens.token, input.token),
@@ -278,7 +300,11 @@ export const authRouter = createTRPCRouter({
     }),
 
   setPassword: publicProcedure
+    .meta({
+      openapi: { method: "POST", path: "/api/auth/setPassword" },
+    })
     .input(setPasswordInputSchema)
+    .output(z.object({ success: z.boolean() }))
     .mutation(async ({ input }) => {
       try {
         const token = await db.query.resetPasswordTokens.findFirst({
@@ -329,7 +355,11 @@ export const authRouter = createTRPCRouter({
     }),
 
   checkValidToken: publicProcedure
+    .meta({
+      openapi: { method: "GET", path: "/api/auth/checkValidToken" },
+    })
     .input(z.object({ token: z.string() }))
+    .output(z.object({ success: z.boolean() }))
     .query(async ({ input }) => {
       const token = await db.query.resetPasswordTokens.findFirst({
         where: eq(resetPasswordTokens.token, input.token),

@@ -18,9 +18,9 @@ export class ReviewSeeder implements Seeder<typeof reviews> {
 
   static createRandomWithoutUser() {
     const review = {
-      originalityRating: faker.number.int({ min: 1, max: 10 }),
-      technicalityRating: faker.number.int({ min: 1, max: 10 }),
-      passionRating: faker.number.int({ min: 1, max: 10 }),
+      originalityRating: faker.number.int({ min: 1, max: 100 }),
+      technicalityRating: faker.number.int({ min: 1, max: 100 }),
+      passionRating: faker.number.int({ min: 1, max: 100 }),
       comments: faker.lorem.sentence(),
       referral: faker.datatype.boolean(),
     };

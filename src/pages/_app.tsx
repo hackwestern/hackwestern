@@ -13,7 +13,7 @@ import { Toaster as CustomToaster } from "~/components/ui/toaster";
 import { TooltipProvider } from "~/components/ui/tooltip";
 
 const dico = localFont({
-  src: "../../public/fonts/dico/Dico.ttf",
+  src: "../../public/shared/fonts/dico/Dico.ttf",
   variable: "--font-dico",
   display: "swap",
 });

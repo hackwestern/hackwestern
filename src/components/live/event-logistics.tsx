@@ -99,7 +99,7 @@ const EventLogistics = () => {
         break;
     }
     if (step !== 1) {
-      fetch(`/live-logistics/${id}.md`)
+      fetch(`/live/logistics/${id}.md`)
         .then((response) => response.text())
         .then((text) => setMarkdownContent(text))
         .catch((error) => console.error("Error fetching markdown:", error));
