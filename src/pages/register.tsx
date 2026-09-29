@@ -8,7 +8,7 @@ import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { disabledRedirect } from "~/utils/redirect";
+import { hackerLoginRedirect } from "~/utils/redirect";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
 import { useRouter } from "next/router";
 
@@ -144,4 +144,4 @@ export default function Register() {
   );
 }
 
-export const getServerSideProps = disabledRedirect;
+export const getServerSideProps = hackerLoginRedirect;
