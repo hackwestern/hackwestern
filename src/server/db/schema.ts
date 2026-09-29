@@ -46,12 +46,7 @@ export const avatarColour = pgEnum("avatar_colour", [
  * The realm each hacker's horse companion belongs to, chosen during the
  * application flow. Drives themed visuals across the portal.
  */
-export const realm = pgEnum("realm", [
-  "safari",
-  "mountain",
-  "desert",
-  "ocean",
-]);
+export const realm = pgEnum("realm", ["safari", "mountain", "desert", "ocean"]);
 
 /**
  * Year of study for the hacker
