@@ -1,6 +1,6 @@
 import * as React from "react";
 import Image from "next/image";
-import { Slot } from "@radix-ui/react-slot";
+import { Slot, Slottable } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "~/lib/utils";
 import * as tokens from "~/lib/tokens";
@@ -173,7 +173,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             props.onPointerLeave?.(e);
           }}
           className={cn(
-            "flex items-end",
+            "isolate flex items-end",
             (variant === "primary" ||
               variant === "primary-2" ||
               variant === "secondary" ||
@@ -184,22 +184,32 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           )}
           disabled={disabled ?? isPending}
         >
+          {/* With asChild, Comp is Radix Slot, which needs exactly one element
+              to merge into. Slottable marks that element (the child link);
+              Slot renders the highlight inside it. -z-10 inside the isolate
+              stacking context keeps the highlight above the background and
+              below the text, for both the <button> and the asChild case.
+              The inline-flex wrapper can't wrap an asChild link, so it is
+              only kept for real buttons, where it holds icon + label
+              together instead of letting gap-[10px] space them apart. */}
           {(variant === "primary" || variant === "primary-2") && (
             <span
               aria-hidden
               className={cn(
-                "pointer-events-none absolute inset-x-[9.67px] -top-px h-[17.8px] rounded-full bg-gradient-to-b from-gray-0/80 to-gray-0/0",
+                "pointer-events-none absolute inset-x-[9.67px] -top-px -z-10 h-[17.8px] rounded-full bg-gradient-to-b from-gray-0/80 to-gray-0/0",
                 variant === "primary" && "group-active:from-gray-0/[64%]",
               )}
             />
           )}
-          {variant === "primary" || variant === "primary-2" ? (
-            <span className="relative z-10 inline-flex items-center">
-              {children}
-            </span>
-          ) : (
-            children
-          )}
+          <Slottable>
+            {!asChild && (variant === "primary" || variant === "primary-2") ? (
+              <span className="relative z-10 inline-flex items-center">
+                {children}
+              </span>
+            ) : (
+              children
+            )}
+          </Slottable>
         </Comp>
       </div>
     );
