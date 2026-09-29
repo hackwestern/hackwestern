@@ -60,10 +60,10 @@ export function ApplicationSidebar({
 
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-1 px-[14px]">
-            <p className="font-secondary text-md-p font-bold text-heavy">
+            <p className="font-figtree text-md-p font-bold text-heavy">
               Application Portal
             </p>
-            <p className="font-secondary text-sm-p font-medium text-medium">
+            <p className="font-figtree text-sm-p font-medium text-medium">
               Hack Western 13
             </p>
           </div>
@@ -80,7 +80,7 @@ export function ApplicationSidebar({
                     onStepClick ? () => onStepClick(step.key) : undefined
                   }
                   className={cn(
-                    "flex items-center justify-between overflow-hidden rounded-md px-[14px] py-3 text-left font-secondary text-md-p transition-colors",
+                    "flex items-center justify-between overflow-hidden rounded-md px-[14px] py-3 text-left font-figtree text-md-p transition-colors",
                     isActive
                       ? "bg-highlight font-semibold text-heavy"
                       : "font-medium text-medium hover:bg-highlight/40",
@@ -99,7 +99,7 @@ export function ApplicationSidebar({
         <div className="flex items-center justify-center px-[14px]">
           <p
             suppressHydrationWarning
-            className="whitespace-nowrap font-secondary text-md-p font-medium italic text-medium"
+            className="whitespace-nowrap font-figtree text-md-p font-medium italic text-medium"
           >
             {savedLabel ? `Last saved ${savedLabel}` : " "}
           </p>

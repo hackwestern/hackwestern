@@ -21,7 +21,7 @@ export function UserBadge({
         className,
       )}
     >
-      <p className="font-secondary text-md-p font-medium text-light">
+      <p className="font-figtree text-md-p font-medium text-light">
         Hi, {firstName}!{" "}
         <span aria-hidden className="mx-1 text-light/70">
           |
