@@ -10,6 +10,7 @@ import { applicationSubmitSchema } from "~/schemas/application";
 import { api } from "~/utils/api";
 import { AvatarDisplay } from "../avatar-display";
 import { colors } from "~/constants/avatar";
+import { getHorse, realmLabel } from "~/constants/realms";
 import { type CanvasPaths } from "~/types/canvas";
 import { QUESTION1, QUESTION2, QUESTION3 } from "./application-form";
 import React from "react";
@@ -56,8 +57,8 @@ function ReviewSectionInfo({ step, error }: ReviewSectionProps) {
       return <AgreementsReview step={step} error={error} />;
     case "optional":
       return <OptionalReview step={step} error={error} />;
-    case "character":
-      return <AvatarReview step={step} error={error} />;
+    case "realm":
+      return <RealmReview step={step} error={error} />;
     case "canvas":
       return <CanvasReview step={step} error={error} />;
     default:
@@ -323,6 +324,42 @@ function OptionalReview({}: ReviewSectionProps) {
         error={null}
       />
     </>
+  );
+}
+
+/* eslint-disable @next/next/no-img-element */
+function RealmReview({}: ReviewSectionProps) {
+  const { data } = api.application.get.useQuery({
+    fields: ["realm", "horseId", "horseFirstName", "horseLastName"],
+  });
+  const horse = getHorse(data?.horseId);
+
+  return (
+    <div className="space-y-2">
+      <Label>Your Companion</Label>
+      <div className="flex items-center gap-4 rounded-lg bg-highlight/40 p-4">
+        {horse && (
+          <img
+            src={horse.asset}
+            alt=""
+            className="h-24 w-24 shrink-0 object-contain"
+            draggable={false}
+          />
+        )}
+        <div className="flex flex-col">
+          <p className="font-secondary text-md-p font-semibold text-heavy">
+            {data?.horseFirstName || data?.horseLastName
+              ? `${data?.horseFirstName ?? ""} ${data?.horseLastName ?? ""}`.trim()
+              : "(no name yet)"}
+          </p>
+          <p className="font-secondary text-sm-p text-medium">
+            {data?.realm
+              ? `${realmLabel[data.realm]} realm`
+              : "(no realm chosen)"}
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
