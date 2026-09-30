@@ -385,6 +385,12 @@ export function Hero() {
   const pathProgress = useTransform(scrollYProgress, [PAN_END, 1], [0, 1]);
   const backgroundY = useTransform(pan, [0, 1], [0, 100]);
   const backgroundPosition = useMotionTemplate`center ${backgroundY}%`;
+  const introOpacity = useTransform(
+    scrollYProgress,
+    [0, 0.08, 0.15],
+    [1, 1, 0],
+  );
+  const introY = useTransform(scrollYProgress, [0, 0.15], [0, -24]);
 
   React.useEffect(() => {
     const measure = () =>
@@ -405,6 +411,37 @@ export function Hero() {
               backgroundPosition,
             }}
           />
+          <motion.div
+            className="absolute left-[clamp(24px,10vw,160px)] top-[20svh] z-20 flex max-w-[calc(100%_-_48px)] flex-col items-start gap-12"
+            style={{ opacity: introOpacity, y: introY }}
+          >
+            <div className="flex flex-col items-start gap-[30px] font-cossetteTexte">
+              <div className="flex flex-wrap items-center gap-[14px] text-[clamp(16px,1.67vw,24px)] font-normal leading-normal tracking-[-0.03em] text-[#d0d6dd]">
+                <p className="whitespace-nowrap">November 20 - 22, 2026</p>
+                <span
+                  aria-hidden
+                  className="size-[6px] shrink-0 rounded-full bg-[#d0d6dd]"
+                />
+                <p className="whitespace-nowrap">In-person event</p>
+              </div>
+
+              <div className="flex flex-col items-start gap-3">
+                <h1 className="whitespace-nowrap text-[clamp(40px,4.45vw,64px)] font-bold leading-[0.82] tracking-[-0.035em] text-[#f5f9ff] [text-shadow:3px_3px_0_rgba(35,83,108,0.55)]">
+                  Hack Western 13
+                </h1>
+                <p className="text-[clamp(24px,2.13vw,30.72px)] font-normal leading-normal tracking-[-0.02em] text-highlight">
+                  Discover the unknown
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="cursor-pixel-hover overflow-hidden rounded-full border border-[#969696] bg-[#cacaca] px-6 py-3 font-figtree text-base font-semibold leading-none text-[#313a45] shadow-[0_8px_12px_rgba(31,48,73,0.24),inset_0_-14px_10px_rgba(255,255,255,0.4)] transition-transform duration-100 active:translate-y-px active:scale-[0.98]"
+            >
+              Sign up for updates
+            </button>
+          </motion.div>
           <PathCanvas progress={pathProgress} />
           {PIN_DATA.map((pin) => (
             <StoryPin
