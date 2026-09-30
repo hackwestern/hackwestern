@@ -120,7 +120,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
       .catch((e) => {
         toast({
           title: "Error Submitting Application",
-          description: JSON.stringify(e),
+          description: e instanceof Error ? e.message : JSON.stringify(e),
           variant: "destructive",
           duration: 4000,
         });

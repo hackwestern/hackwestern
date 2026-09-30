@@ -19,6 +19,19 @@ import { GITHUB_URL, LINKEDIN_URL, DEVPOST_URL } from "~/utils/urls";
 import { eq, count, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { type CanvasPaths } from "~/types/canvas";
+import { isPastDeadline } from "~/lib/date";
+
+// /apply redirects once the deadline passes, but that only runs on page load.
+// Checking here also stops a tab left open past the deadline, or a direct API
+// call, from saving or submitting.
+function assertApplicationsOpen() {
+  if (isPastDeadline()) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Applications are closed.",
+    });
+  }
+}
 
 export const applicationRouter = createTRPCRouter({
   get: protectedProcedure
@@ -234,6 +247,7 @@ export const applicationRouter = createTRPCRouter({
   save: protectedProcedure
     .input(applicationSaveSchema)
     .mutation(async ({ input, ctx }) => {
+      assertApplicationsOpen();
       try {
         const userId = ctx.session.user.id;
         const { canvasData, ...restData } = input;
@@ -300,6 +314,7 @@ export const applicationRouter = createTRPCRouter({
     }),
 
   submit: protectedProcedure.mutation(async ({ ctx }) => {
+    assertApplicationsOpen();
     try {
       const userId = ctx.session.user.id;
 
