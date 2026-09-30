@@ -10,6 +10,7 @@
 // import CharacterIcon from "~/components/dashboard/CharacterIcon";
 // import SubmittedDisplay from "~/components/dashboard/SubmittedDisplay";
 import { disabledRedirect } from "~/utils/redirect";
+import { isPastDeadline } from "~/lib/date";
 import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "~/server/auth";
@@ -153,9 +154,9 @@ export default Dashboard;
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
-  // On prod everything's blocked (disabledRedirect -> /). On dev/preview,
-  // organizers land here via login's default callbackUrl; send them to the
-  // internal dashboard instead of the (disabled) hacker dashboard.
+  // On dev/preview, organizers land here via login's default callbackUrl;
+  // send them to the internal dashboard instead of the (disabled) hacker
+  // dashboard.
   if (process.env.VERCEL_ENV !== "production") {
     const session = await getServerSession(
       context.req,
@@ -174,6 +175,13 @@ export const getServerSideProps = async (
     }
   }
 
-  // Everyone else keeps the existing disabled-page behavior.
+  // Until the deadline, /apply (no step) is the hacker's home: it shows their
+  // status and a start/continue/review button. /apply sends people back here
+  // once the deadline passes, so only redirect before it to avoid a loop.
+  if (!isPastDeadline()) {
+    return { redirect: { destination: "/apply", permanent: false } };
+  }
+
+  // After the deadline, keep the existing disabled-page behavior.
   return disabledRedirect();
 };
