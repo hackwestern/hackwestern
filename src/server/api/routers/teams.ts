@@ -20,6 +20,8 @@ const teamsSaveSchema = createInsertSchema(teams, {
   submissionStatus: true,
   submittedAt: true,
   createdAt: true,
+  techStack: true,
+  commitLog: true,
 });
 
 const teamsSelectSchema = createSelectSchema(teams).omit({
@@ -27,6 +29,8 @@ const teamsSelectSchema = createSelectSchema(teams).omit({
   submissionStatus: true,
   submittedAt: true,
   createdAt: true,
+  techStack: true,
+  commitLog: true,
 });
 
 const teamsSubmitSchema = z.object({

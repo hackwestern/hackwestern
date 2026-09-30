@@ -17,6 +17,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 import type { CanvasPaths } from "~/types/canvas";
+import type { GithubCommit } from "~/utils/github";
 
 /**
  * The status of a hacker application, from when it's first started (`IN_PROGRESS`).
@@ -256,6 +257,8 @@ export const teams = pgTable(
     tracks: trackEnum("tracks").array(),
     memberGithubUsernames: text("member_github_usernames").array(),
     memberDevpostUsernames: text("member_devpost_usernames").array(),
+    techStack: text("tech_stack").array(),
+    commitLog: jsonb("commit_log").$type<GithubCommit[]>(), // Commits within the hack window
 
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
