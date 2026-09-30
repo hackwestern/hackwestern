@@ -5,7 +5,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
 import { TRPCError } from "@trpc/server";
 import { encode, decode } from "next-auth/jwt";
-import { normalizeAuthEmail } from "~/server/subscribers";
+import {
+  addVerifiedRegistrantToList,
+  normalizeAuthEmail,
+} from "~/server/subscribers";
 
 import {
   type Session,
@@ -94,6 +97,18 @@ export const authOptions: NextAuthOptions = {
       // Allows callback URLs on the same origin
       else if (new URL(url).origin === baseUrl) return url;
       return baseUrl;
+    },
+  },
+  events: {
+    // Fires only for next-auth-managed creation, i.e. the OAuth providers —
+    // the credentials path (auth.create) calls adapter.createUser directly,
+    // which bypasses events, and those users join the list at email
+    // verification instead. Provider emails are real, deliverable mailboxes,
+    // so the bounce-hygiene reason for gating on verification doesn't apply.
+    createUser: async ({ user }) => {
+      if (user.email) {
+        await addVerifiedRegistrantToList(user.email);
+      }
     },
   },
   session: {
