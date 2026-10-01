@@ -67,8 +67,8 @@ export const buttonVariants = cva(buttonBase, {
     },
     size: {
       default: "h-10 px-4 py-2",
-      sm: "px-[12px] py-[7px] h-[33px]",
-      lg: "px-[18px] py-[12px] h-[43px]",
+      sm: "px-[12px] py-[7px] min-h-[33px]",
+      lg: "px-[18px] py-[12px] min-h-[43px]",
       icon: "h-10 w-10",
     },
   },
