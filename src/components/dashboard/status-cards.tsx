@@ -51,7 +51,17 @@ export function AcceptedStatusCard({ onRsvp }: { onRsvp?: () => void }) {
     <StatusCard
       title="You're in — welcome to Hack Western 13!"
       description="We can't wait to see what you build. RSVP below to lock in your spot for the weekend."
-      primaryAction={{ label: "RSVP", onClick: onRsvp }}
+      primaryAction={onRsvp ? { label: "RSVP", onClick: onRsvp } : undefined}
+    />
+  );
+}
+
+export function NotSubmittedStatusCard() {
+  return (
+    <StatusCard
+      title="Applications are closed"
+      description="We didn't receive a submitted application from you before the deadline. We hope to see you at the next Hack Western!"
+      primaryAction={{ label: "Return home", href: "/" }}
     />
   );
 }
