@@ -134,8 +134,9 @@ export function PromoNavbar({
           </button>
         </SheetTrigger>
         <SheetContent
+          onCloseAutoFocus={(e) => e.preventDefault()}
           side="right"
-          className="w-[min(85vw,320px)] border-white/[0.08] bg-[#173f52] font-figtree text-offwhite data-[state=closed]:duration-150 data-[state=open]:duration-300"
+          className="w-[min(85vw,320px)] border-white/[0.08] bg-promo-sheet font-figtree text-offwhite data-[state=closed]:duration-150 data-[state=open]:duration-300"
         >
           <SheetTitle className="sr-only">Site navigation</SheetTitle>
           <SheetDescription className="sr-only">
