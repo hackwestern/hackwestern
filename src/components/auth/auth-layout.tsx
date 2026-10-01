@@ -35,6 +35,7 @@ export function AuthLayout({
         <Window
           fluid
           draggable={false}
+          disableControls
           title={windowTitle}
           className={cn("w-full max-w-[600px]", windowClassName)}
           contentClassName="p-6 sm:p-12"

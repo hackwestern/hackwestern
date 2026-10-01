@@ -80,6 +80,7 @@ function DesignSystem() {
             <Window
               fluid
               draggable={false}
+              disableControls
               title="Hack Western 13: Discover the Unknown"
               className="h-full"
             >

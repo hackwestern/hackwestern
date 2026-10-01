@@ -22,6 +22,8 @@ export interface WindowProps {
   /** Size comes from className instead of width/height; content scrolls. */
   fluid?: boolean;
   contentClassName?: string;
+  /** Traffic lights render but do nothing. */
+  disableControls?: boolean;
 }
 
 export function Window({
@@ -40,6 +42,7 @@ export function Window({
   autoHeight = false,
   fluid = false,
   contentClassName,
+  disableControls = false,
 }: WindowProps) {
   const [internalMinimized, setInternalMinimized] = React.useState(false);
   const isControlled = minimizedProp !== undefined;
@@ -66,19 +69,25 @@ export function Window({
         }
       }}
     >
-      <div className="z-10 flex items-center gap-2">
+      <div
+        className={cn(
+          "z-10 flex items-center gap-2",
+          disableControls &&
+            "pointer-events-none [&>button:disabled]:opacity-100",
+        )}
+      >
         <button
           type="button"
           aria-label="Close window"
           onClick={onClose}
-          disabled={!onClose}
+          disabled={disableControls || !onClose}
           className="window-traffic-light window-traffic-light-red"
         />
         <button
           type="button"
           aria-label="Minimize window"
           onClick={() => setMinimized(true)}
-          disabled={minimized}
+          disabled={disableControls || minimized}
           title="Minimize window"
           className="window-traffic-light window-traffic-light-yellow"
         />
@@ -86,7 +95,7 @@ export function Window({
           type="button"
           aria-label="Restore window"
           onClick={() => setMinimized(false)}
-          disabled={!minimized || disableExpand}
+          disabled={disableControls || !minimized || disableExpand}
           title="Restore window"
           className="window-traffic-light window-traffic-light-green"
         />

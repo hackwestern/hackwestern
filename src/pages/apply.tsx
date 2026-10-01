@@ -232,6 +232,7 @@ export default function Apply() {
                   <Window
                     fluid
                     draggable={false}
+                    disableControls
                     title="Hack Western 13: Discover the Unknown"
                     className="w-full max-w-[600px]"
                     contentClassName="flex justify-center px-8 py-12"
@@ -248,6 +249,7 @@ export default function Apply() {
                     <Window
                       fluid
                       draggable={false}
+                      disableControls
                       title="Hack Western 13: Discover the Unknown"
                       className="min-h-0 flex-1"
                       contentClassName="px-8 py-8 md:px-12 md:py-10"
