@@ -1,5 +1,6 @@
 import Topbar from "~/components/live/topbar";
 import { FilmStrip } from "~/components/promo/film-strip";
+import { Hero } from "~/components/promo/hero";
 import { SkyBackground } from "~/components/promo/sky-background";
 import { Button } from "~/components/ui/button";
 import Image from "next/image";

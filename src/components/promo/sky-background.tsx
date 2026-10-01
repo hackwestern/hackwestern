@@ -36,6 +36,7 @@ export function SkyBackground() {
     let frame = 0;
     let pageTravel = 0;
     let skyTravel = 0;
+    let holds: { start: number; end: number }[] = [];
 
     function measure() {
       if (!sky || !noise) return;
@@ -53,7 +54,25 @@ export function SkyBackground() {
         ? viewport
         : Math.max(pageHeight * SKY_TO_PAGE_RATIO, viewport);
 
-      pageTravel = Math.max(pageHeight - viewport, 0);
+      // A `data-sky-hold` element is a sticky scene whose bottom pins to the
+      // viewport bottom. While it is pinned the sky stays still with it.
+      holds = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-sky-hold]"),
+        (scene) => {
+          const section = scene.parentElement ?? scene;
+          const top = section.getBoundingClientRect().top + window.scrollY;
+          return {
+            start: top + Math.max(scene.offsetHeight - viewport, 0),
+            end: top + section.offsetHeight - viewport,
+          };
+        },
+      ).filter((hold) => hold.end > hold.start);
+      const heldTravel = holds.reduce(
+        (total, hold) => total + hold.end - hold.start,
+        0,
+      );
+
+      pageTravel = Math.max(pageHeight - viewport - heldTravel, 0);
       skyTravel = Math.max(skyHeight - viewport, 0);
 
       sky.style.height = `${skyHeight}px`;
@@ -70,9 +89,18 @@ export function SkyBackground() {
 
       // Clamped both ends: iOS rubber-banding reports scrollY outside [0, max],
       // which would slide the sky off its container and expose the page canvas.
+      const held = holds.reduce(
+        (total, hold) =>
+          total +
+          Math.min(
+            Math.max(window.scrollY - hold.start, 0),
+            hold.end - hold.start,
+          ),
+        0,
+      );
       const progress =
         pageTravel > 0
-          ? Math.min(Math.max(window.scrollY / pageTravel, 0), 1)
+          ? Math.min(Math.max((window.scrollY - held) / pageTravel, 0), 1)
           : 0;
 
       sky.style.transform = `translate3d(0, ${-progress * skyTravel}px, 0)`;
