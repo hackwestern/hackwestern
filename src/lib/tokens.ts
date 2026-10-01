@@ -54,17 +54,6 @@ export const colors = {
     textHover: "#75777a", // = grays.gray-4
     textActive: "#262626", // = grays.gray-7
   },
-  buttonPrimary: {
-    bg: "#a7a7a7",
-    border: "#999999",
-    bgHover: "#bdbdbd", // = grays.gray-2
-    borderHover: "#bdbdbd", // = grays.gray-2
-    bgActive: "#a7a7a7",
-    borderActive: "#75777a", // = grays.gray-4
-    textDefault: "#262626", // = grays.gray-7
-    textHover: "#75777a", // = grays.gray-4
-    textActive: "#262626", // = grays.gray-7
-  },
 } as const;
 
 // ------------------------------------------------------------
