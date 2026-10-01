@@ -25,7 +25,7 @@ export default function ApplicationPrompt({
 }: Props) {
   return (
     <>
-      <div className="z-[99] -ml-6 mt-10 w-screen max-w-md space-y-12 text-center md:ml-auto md:mt-0">
+      <div className="z-[99] -ml-6 mt-10 w-screen max-w-md space-y-12 text-center md:ml-0 md:mt-0">
         <div>
           <h1 className="font-dico flex flex-col items-center text-3xl font-medium text-heavy md:-ml-4 md:w-max md:text-6xl">
             Hack Western 13

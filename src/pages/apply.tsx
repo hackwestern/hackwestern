@@ -229,12 +229,18 @@ export default function Apply() {
 
               <div className="flex flex-1 items-center justify-center pt-16">
                 {!step ? (
-                  <ApplicationPrompt
-                    status={application?.status ?? "NOT_STARTED"}
-                    continueStep={continueStep}
-                    onApplyNavigate={handleApplyNavigate}
-                    pending={pending}
-                  />
+                  <MacWindow
+                    title="Hack Western 13: Discover the Unknown"
+                    className="w-full max-w-[600px]"
+                    contentClassName="flex justify-center px-8 py-12"
+                  >
+                    <ApplicationPrompt
+                      status={application?.status ?? "NOT_STARTED"}
+                      continueStep={continueStep}
+                      onApplyNavigate={handleApplyNavigate}
+                      pending={pending}
+                    />
+                  </MacWindow>
                 ) : (
                   <div className="flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4">
                     <MacWindow
