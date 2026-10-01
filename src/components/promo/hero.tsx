@@ -157,6 +157,7 @@ function revealAt(x: number, y: number) {
 
 function PathCanvas({ progress }: { progress: MotionValue<number> }) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const reduceMotion = useReducedMotion() ?? false;
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -171,7 +172,8 @@ function PathCanvas({ progress }: { progress: MotionValue<number> }) {
     let sceneHeight = 0;
     let pathScale = 1;
     let frame = 0;
-    let visible = true;
+    let visible = false;
+    let image = context.createImageData(1, 1);
 
     const resize = () => {
       const scene = canvas.parentElement;
@@ -184,7 +186,9 @@ function PathCanvas({ progress }: { progress: MotionValue<number> }) {
       canvas.width = Math.ceil(sceneWidth / DOT);
       canvas.height = Math.ceil((sceneHeight + BLEED) / DOT);
       canvas.style.height = `${sceneHeight + BLEED}px`;
+      image = context.createImageData(canvas.width, canvas.height);
       mask = null;
+      schedule();
     };
 
     const buildMask = (value: number) => {
@@ -224,51 +228,66 @@ function PathCanvas({ progress }: { progress: MotionValue<number> }) {
       maskProgress = value;
     };
 
-    const draw = (time: number) => {
-      if (visible) {
-        const value = Math.round(currentProgress * 1000) / 1000;
-        if (!mask || value !== maskProgress) buildMask(value);
+    const render = (time: number) => {
+      const value = Math.round(currentProgress * 1000) / 1000;
+      if (!mask || value !== maskProgress) buildMask(value);
 
-        const image = context.createImageData(canvas.width, canvas.height);
-        const breathe = 0.82 + 0.18 * Math.sin(time / 700);
+      const data = image.data;
+      data.fill(0);
+      const breathe = reduceMotion ? 1 : 0.82 + 0.18 * Math.sin(time / 700);
 
-        for (let y = 0; y < canvas.height; y++) {
-          const row = BAYER[y & 7]!;
-          for (let x = 0; x < canvas.width; x++) {
-            const proximity = mask?.[y * canvas.width + x] ?? 0;
-            if (row[x & 7]! < 48 * proximity * breathe) {
-              const index = (y * canvas.width + x) * 4;
-              image.data[index] = 255;
-              image.data[index + 1] = 255;
-              image.data[index + 2] = 255;
-              image.data[index + 3] = 255;
-            }
+      for (let y = 0; y < canvas.height; y++) {
+        const row = BAYER[y & 7]!;
+        for (let x = 0; x < canvas.width; x++) {
+          const proximity = mask?.[y * canvas.width + x] ?? 0;
+          if (row[x & 7]! < 48 * proximity * breathe) {
+            const index = (y * canvas.width + x) * 4;
+            data[index] = 255;
+            data[index + 1] = 255;
+            data[index + 2] = 255;
+            data[index + 3] = 255;
           }
         }
-
-        context.putImageData(image, 0, 0);
       }
-      frame = requestAnimationFrame(draw);
+
+      context.putImageData(image, 0, 0);
+    };
+
+    const tick = (time: number) => {
+      frame = 0;
+      render(time);
+      if (visible && !reduceMotion) frame = requestAnimationFrame(tick);
+    };
+
+    function schedule() {
+      if (visible && !frame) frame = requestAnimationFrame(tick);
+    }
+
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      frame = 0;
     };
 
     resize();
     const unsubscribe = progress.on("change", (value) => {
       currentProgress = value;
+      if (reduceMotion) schedule();
     });
     const observer = new IntersectionObserver(([entry]) => {
       visible = entry?.isIntersecting ?? false;
+      if (visible) schedule();
+      else stop();
     });
     observer.observe(canvas);
     window.addEventListener("resize", resize);
-    frame = requestAnimationFrame(draw);
 
     return () => {
       unsubscribe();
       observer.disconnect();
       window.removeEventListener("resize", resize);
-      cancelAnimationFrame(frame);
+      stop();
     };
-  }, [progress]);
+  }, [progress, reduceMotion]);
 
   return (
     <canvas
