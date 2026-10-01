@@ -1,20 +1,13 @@
-import type { CSSProperties, ReactNode } from "react";
+import React, { CSSProperties } from "react";
 
 interface CloudDriftProps {
-  children: ReactNode;
-
-  // How long one complete trip across the screen takes.
+  children: React.ReactNode;
   duration?: number;
-
-  // Delay before starting.
   delay?: number;
-
-  // Starting position.
   startX?: string;
-
-  // Ending position.
   endX?: string;
-
+  wait?: number;
+  top?: string;
   className?: string;
 }
 
@@ -22,10 +15,14 @@ export default function CloudDrift({
   children,
   duration = 30,
   delay = 0,
-  startX = "-30vw",
-  endX = "130vw",
+  startX = "-40vw",
+  endX = "100vw",
   className = "",
+  wait = 0,
 }: CloudDriftProps) {
+  const totalTime = duration + wait;
+
+  const movePercent = (duration / totalTime) * 100;
   return (
     <div
       className={className}
@@ -33,13 +30,12 @@ export default function CloudDrift({
         {
           position: "absolute",
           left: 0,
-          top: 0,
           pointerEvents: "none",
 
           animation: `cloud-drift ${duration}s linear ${delay}s infinite`,
+          animationFillMode: "backwards", 
 
           "--cloud-start": startX,
-
           "--cloud-end": endX,
         } as CSSProperties & Record<`--${string}`, string>
       }
@@ -50,6 +46,10 @@ export default function CloudDrift({
         @keyframes cloud-drift {
           0% {
             transform: translateX(var(--cloud-start));
+          }
+
+          var(--cloud-move-percent) {
+            transform: translateX(var(--cloud-end));
           }
 
           100% {

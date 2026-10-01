@@ -15,7 +15,10 @@ import { TRPCError } from "@trpc/server";
 import { authOptions } from "~/server/auth";
 import { type AdapterUser } from "next-auth/adapters";
 import { resetTemplate, verifyTemplate } from "./email-templates";
-import { normalizeAuthEmail } from "~/server/subscribers";
+import {
+  addVerifiedRegistrantToList,
+  normalizeAuthEmail,
+} from "~/server/subscribers";
 
 const TOKEN_EXPIRY = 1000 * 60 * 11; // 11 minutes
 const passwordSchema = z
@@ -280,16 +283,23 @@ export const authRouter = createTRPCRouter({
         });
       }
 
-      await db
+      const verified = await db
         .update(users)
         .set({
           emailVerified: new Date(),
         })
-        .where(eq(users.id, token.identifier));
+        .where(eq(users.id, token.identifier))
+        .returning({ email: users.email });
 
       await db
         .delete(verificationTokens)
         .where(eq(verificationTokens.token, input.token));
+
+      // Verified registrants join the marketing list. Awaited (serverless —
+      // fire-and-forget dies with the response), best-effort inside.
+      if (verified[0]?.email) {
+        await addVerifiedRegistrantToList(verified[0].email);
+      }
 
       return {
         success: true,
@@ -368,16 +378,24 @@ export const authRouter = createTRPCRouter({
         });
       }
 
-      await db
+      const verified = await db
         .update(users)
         .set({
           emailVerified: new Date(),
         })
-        .where(eq(users.id, token.userId));
+        .where(eq(users.id, token.userId))
+        .returning({ email: users.email });
 
       await db
         .delete(verificationTokens)
         .where(eq(verificationTokens.token, input.token));
+
+      // Second site that sets emailVerified (a delivered reset email proves
+      // mailbox ownership), so it files the registrant the same way verify
+      // does. Idempotent under addnoforce, safe on repeat clicks.
+      if (verified[0]?.email) {
+        await addVerifiedRegistrantToList(verified[0].email);
+      }
 
       return {
         success: true,

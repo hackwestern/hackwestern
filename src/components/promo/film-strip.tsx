@@ -5,7 +5,7 @@ const OVERHANG = DESIGN_STRIP_WIDTH / DESIGN_WIDTH;
 
 const THICKNESS = 30;
 
-export function FilmStrip({ rotate = 0 }: { rotate?: number }) {
+export function FilmStrip({ rotate = 0, className = "" }: { rotate?: number, className?: string }) {
   const tilt = Math.abs(Math.sin((rotate * Math.PI) / 180)) * OVERHANG * 100;
 
   return (
