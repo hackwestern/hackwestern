@@ -25,7 +25,9 @@ function GithubAuthButton({
           width={20}
           height={20}
         />
-        <span className="font-figtree">Sign {register ? "up" : "in"} with Github</span>
+        <span className="font-figtree">
+          Sign {register ? "up" : "in"} with Github
+        </span>
       </div>
     </Button>
   );

@@ -25,7 +25,9 @@ function GoogleAuthButton({
           width={20}
           height={20}
         />
-        <span className="font-figtree">Sign {register ? "up" : "in"} with Google</span>
+        <span className="font-figtree">
+          Sign {register ? "up" : "in"} with Google
+        </span>
       </div>
     </Button>
   );
