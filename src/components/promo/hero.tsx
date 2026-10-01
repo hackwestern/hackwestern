@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import * as React from "react";
 import {
@@ -7,23 +8,36 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
+import { Window } from "~/components/internals/window";
+import {
+  closestProgress,
+  coverRect,
+  type CoverRect,
+  FOREGROUND_PARALLAX,
+  IMAGE_HEIGHT,
+  IMAGE_WIDTH,
+  PIN_DATA,
+  samplePath,
+  type StoryPinData,
+  WAYPOINTS,
+  type Waypoint,
+} from "./hero-path";
+
+const PathEditor = dynamic(() => import("./path-editor"), { ssr: false });
 
 const HOLD_SCREENS = 1.5;
-const MACBOOK_PRO_PANEL_WIDTH = 3024;
-const RETINA_SCALE = 2;
-// Chrome lays out a 3024px Retina panel in 1512 CSS pixels. The live
-// scene width still comes from the browser, so a 2560px Air resolves to
-// 1280 CSS pixels and scales from this reference automatically.
-const DESIGN_WIDTH = MACBOOK_PRO_PANEL_WIDTH / RETINA_SCALE;
-const MIN_PATH_SCALE = 0.48;
-const PATH_SHIFT = 100;
-const PATH_SHIFT_CSS = "clamp(48px, 6.614vw, 100px)";
+const SCENE_HEIGHT = `max(100svh, ${(IMAGE_HEIGHT / IMAGE_WIDTH) * 100}vw)`;
 const BLEED = 240;
 const DOT = 3;
-const FOREGROUND_PARALLAX = 56;
-const PATH_ROTATION = (-1 * Math.PI) / 180;
-const PATH_ASPECT_RATIO = 1440 / 1290;
-const PATH_PIVOT = { x: -0.12, y: 0.88 } as const;
+const PATH_SAMPLES = 200;
+const PIN_ASPECT = 2.5;
+const PIN_TIP = 0.97;
+const WINDOW_GAP = 16;
+const WINDOW_DESIGN_WIDTH = 1512;
+const WINDOW_MIN_SCALE = 0.8;
+const WINDOW_MAX_SCALE = 1.15;
+const WINDOW_EDGE_MARGIN = 24;
+const WINDOW_ANCHOR_SHIFT = { left: 0.1, center: 0.5, right: 0.9 } as const;
 
 const MOUNTAIN_LAYERS = [
   { src: "/landing/promo/hero/mountain-4.png", offset: 8 },
@@ -43,121 +57,40 @@ const BAYER = [
   [252, 124, 220, 92, 244, 116, 212, 84],
 ] as const;
 
-const WAYPOINTS = [
-  { x: 1.05, y: 1.01, w: 190 },
-  { x: 0.91, y: 0.98, w: 170 },
-  { x: 0.79, y: 0.96, w: 150 },
-  { x: 0.68, y: 0.94, w: 135 },
-  { x: 0.57, y: 0.92, w: 120 },
-  { x: 0.45, y: 0.9, w: 105 },
-  { x: 0.33, y: 0.89, w: 90 },
-  { x: 0.18, y: 0.89, w: 78 },
-  { x: 0.02, y: 0.89, w: 70 },
-  { x: -0.12, y: 0.88, w: 65 },
-  { x: 0.03, y: 0.84, w: 62 },
-  { x: 0.18, y: 0.835, w: 58 },
-  { x: 0.35, y: 0.825, w: 52 },
-  { x: 0.48, y: 0.8, w: 44 },
-  { x: 0.57, y: 0.775, w: 36 },
-  { x: 0.64, y: 0.75, w: 28 },
-] as const;
+function useCoverRect(ref: React.RefObject<HTMLElement | null>) {
+  const [rect, setRect] = React.useState<CoverRect | null>(null);
 
-const PIN_DATA = [
-  {
-    x: 0.982,
-    y: 1.01,
-    w: 64,
-    title: "Create. Collaborate. Innovate.",
-    body: "Collaborate in teams of up to four to create tech projects, while participating in workshops, learning from mentors, competing for prizes, and meeting like-minded hackers.",
-    windowWidth: 500,
-  },
-  {
-    x: 0.03,
-    y: 0.87,
-    w: 22,
-    anchor: "left",
-    title: "It's on us",
-    body: "We cover food, travel, and lodging so you can focus on bringing your ideas to life!",
-    windowWidth: 400,
-  },
-  {
-    x: 0.48,
-    y: 0.8,
-    w: 18,
-    title: "Build something unexpected",
-    body: "Spend the weekend exploring an idea, learning new tools, and sharing what you made.",
-    windowWidth: 320,
-  },
-] as const;
+  React.useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
 
-function catmullRom(
-  before: number,
-  from: number,
-  to: number,
-  after: number,
-  t: number,
-) {
-  return (
-    0.5 *
-    (2 * from +
-      (-before + to) * t +
-      (2 * before - 5 * from + 4 * to - after) * t ** 2 +
-      (-before + 3 * from - 3 * to + after) * t ** 3)
-  );
+    const update = () =>
+      setRect(coverRect(element.clientWidth, element.clientHeight));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return rect;
 }
 
-function rotatePathPoint(x: number, y: number) {
-  const dx = (x - PATH_PIVOT.x) * PATH_ASPECT_RATIO;
-  const dy = y - PATH_PIVOT.y;
-  const cosine = Math.cos(PATH_ROTATION);
-  const sine = Math.sin(PATH_ROTATION);
-
-  return {
-    x: PATH_PIVOT.x + (dx * cosine - dy * sine) / PATH_ASPECT_RATIO,
-    y: PATH_PIVOT.y + dx * sine + dy * cosine,
-  };
-}
-
-function samplePath(t: number) {
-  const last = WAYPOINTS.length - 1;
-  const segment = Math.min(last - 1, Math.floor(t * last));
-  const local = t * last - segment;
-  const before = WAYPOINTS[Math.max(0, segment - 1)]!;
-  const from = WAYPOINTS[segment]!;
-  const to = WAYPOINTS[segment + 1]!;
-  const after = WAYPOINTS[Math.min(last, segment + 2)]!;
-
-  const point = rotatePathPoint(
-    catmullRom(before.x, from.x, to.x, after.x, local),
-    catmullRom(before.y, from.y, to.y, after.y, local),
-  );
-
-  return {
-    ...point,
-    w: Math.max(2, catmullRom(before.w, from.w, to.w, after.w, local)),
-  };
-}
-
-function revealAt(x: number, y: number) {
-  let closest = Infinity;
-  let progress = 0;
-
-  for (let step = 0; step <= 300; step++) {
-    const t = step / 300;
-    const point = samplePath(t);
-    const distance = (point.x - x) ** 2 + (point.y - y) ** 2;
-    if (distance < closest) {
-      closest = distance;
-      progress = t;
-    }
-  }
-
-  return progress;
-}
-
-function PathCanvas({ progress }: { progress: MotionValue<number> }) {
+function PathCanvas({
+  progress,
+  waypoints,
+}: {
+  progress: MotionValue<number>;
+  waypoints: readonly Waypoint[];
+}) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const waypointsRef = React.useRef(waypoints);
+  const invalidateRef = React.useRef<() => void>(() => undefined);
   const reduceMotion = useReducedMotion() ?? false;
+
+  React.useEffect(() => {
+    waypointsRef.current = waypoints;
+    invalidateRef.current();
+  }, [waypoints]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -169,20 +102,16 @@ function PathCanvas({ progress }: { progress: MotionValue<number> }) {
     let currentProgress = progress.get();
     let mask: Float32Array | null = null;
     let maskProgress = -1;
-    let sceneHeight = 0;
-    let pathScale = 1;
+    let rect = coverRect(1, 1);
     let frame = 0;
     let visible = false;
     let image = context.createImageData(1, 1);
 
     const resize = () => {
       const scene = canvas.parentElement;
-      sceneHeight = scene?.clientHeight ?? window.innerHeight;
       const sceneWidth = scene?.clientWidth ?? window.innerWidth;
-      pathScale = Math.max(
-        MIN_PATH_SCALE,
-        Math.min(sceneWidth / DESIGN_WIDTH, 1),
-      );
+      const sceneHeight = scene?.clientHeight ?? window.innerHeight;
+      rect = coverRect(sceneWidth, sceneHeight);
       canvas.width = Math.ceil(sceneWidth / DOT);
       canvas.height = Math.ceil((sceneHeight + BLEED) / DOT);
       canvas.style.height = `${sceneHeight + BLEED}px`;
@@ -195,15 +124,16 @@ function PathCanvas({ progress }: { progress: MotionValue<number> }) {
       const width = canvas.width;
       const height = canvas.height;
       const next = new Float32Array(width * height);
-      const sampleCount = Math.floor(160 * value);
+      const sampleCount = Math.floor(PATH_SAMPLES * value);
 
       for (let step = 0; value > 0 && step <= sampleCount; step++) {
-        const point = samplePath(Math.min(step / 160, 1));
-        const cx = Math.round(point.x * width);
-        const cy = Math.round(
-          (point.y * sceneHeight - PATH_SHIFT * pathScale) / DOT,
+        const point = samplePath(
+          waypointsRef.current,
+          Math.min(step / PATH_SAMPLES, 1),
         );
-        const radius = Math.ceil((point.w * pathScale) / (DOT * 2));
+        const cx = Math.round((rect.left + point.x * rect.width) / DOT);
+        const cy = Math.round((rect.top + point.y * rect.height) / DOT);
+        const radius = Math.ceil((point.w * rect.scale) / (DOT * 2));
         const radiusSquared = radius * radius;
 
         for (let dy = -radius; dy <= radius; dy++) {
@@ -268,6 +198,10 @@ function PathCanvas({ progress }: { progress: MotionValue<number> }) {
       frame = 0;
     };
 
+    invalidateRef.current = () => {
+      mask = null;
+      schedule();
+    };
     resize();
     const unsubscribe = progress.on("change", (value) => {
       currentProgress = value;
@@ -282,6 +216,7 @@ function PathCanvas({ progress }: { progress: MotionValue<number> }) {
     window.addEventListener("resize", resize);
 
     return () => {
+      invalidateRef.current = () => undefined;
       unsubscribe();
       observer.disconnect();
       window.removeEventListener("resize", resize);
@@ -293,7 +228,7 @@ function PathCanvas({ progress }: { progress: MotionValue<number> }) {
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="pointer-events-none absolute left-0 top-0 z-10 w-full [image-rendering:pixelated]"
+      className="pointer-events-none absolute left-0 top-0 w-full [image-rendering:pixelated]"
     />
   );
 }
@@ -351,46 +286,158 @@ function MountainScene({ pan }: { pan: MotionValue<number> }) {
 
 function StoryPin({
   pin,
+  rect,
+  waypoints,
   pathProgress,
+  interactive,
 }: {
-  pin: (typeof PIN_DATA)[number];
+  pin: StoryPinData;
+  rect: CoverRect;
+  waypoints: readonly Waypoint[];
   pathProgress: MotionValue<number>;
+  interactive: boolean;
 }) {
-  const pinWidth = "w" in pin ? pin.w : 36;
-  const pinHeight = pinWidth * 2.5;
-  const position = rotatePathPoint(pin.x, pin.y);
-  const top = `calc(${position.y * 100}% - ${PATH_SHIFT_CSS})`;
-  const start = revealAt(position.x, position.y);
-  const opacity = useTransform(
-    pathProgress,
-    [Math.max(0, start - 0.04), start],
-    [0, 1],
+  const [open, setOpen] = React.useState(true);
+  const pinWidth = pin.size * rect.scale;
+  const pinHeight = pinWidth * PIN_ASPECT;
+  const windowScale = Math.min(
+    WINDOW_MAX_SCALE,
+    Math.max(WINDOW_MIN_SCALE, rect.width / WINDOW_DESIGN_WIDTH),
   );
-  const scale = useTransform(
-    pathProgress,
-    [Math.max(0, start - 0.04), start],
-    [0.88, 1],
+  const left = rect.left + pin.x * rect.width;
+  const top = rect.top + pin.y * rect.height;
+  const windowWidth = Math.round(pin.windowWidth * windowScale);
+  const sceneWidth = rect.width + 2 * rect.left;
+  const windowLeft = Math.min(
+    Math.max(
+      left - windowWidth * WINDOW_ANCHOR_SHIFT[pin.anchor ?? "center"],
+      WINDOW_EDGE_MARGIN,
+    ),
+    sceneWidth - windowWidth - WINDOW_EDGE_MARGIN,
+  );
+  const start = closestProgress(waypoints, pin.x, pin.y);
+  const reveal = [Math.max(0, start - 0.04), start];
+  const opacity = useTransform(pathProgress, reveal, [0, 1]);
+  const scale = useTransform(pathProgress, reveal, [0.88, 1]);
+  const pointerEvents = useTransform(opacity, (value) =>
+    interactive && value > 0.5 ? "auto" : "none",
   );
 
   return (
+    <>
+      <motion.button
+        type="button"
+        aria-label={open ? `Hide "${pin.title}"` : `Show "${pin.title}"`}
+        onClick={() => setOpen((value) => !value)}
+        className="absolute z-20 cursor-pointer"
+        style={{
+          left,
+          top,
+          x: "-50%",
+          y: `-${PIN_TIP * 100}%`,
+          opacity,
+          scale,
+          pointerEvents,
+        }}
+      >
+        <Image
+          src="/landing/promo/pin.svg"
+          alt=""
+          width={pinWidth}
+          height={pinHeight}
+        />
+      </motion.button>
+
+      {open && (
+        <div
+          className="absolute z-30"
+          style={{
+            left: windowLeft,
+            top,
+            transform: `translateY(calc(-100% - ${
+              pinHeight * PIN_TIP + WINDOW_GAP * windowScale
+            }px))`,
+          }}
+        >
+          <motion.div
+            style={{
+              opacity,
+              scale,
+              pointerEvents,
+              transformOrigin: `${left - windowLeft}px 100%`,
+            }}
+          >
+            <Window
+              title="You have a message"
+              width={windowWidth}
+              autoHeight
+              draggable={false}
+              onClose={() => setOpen(false)}
+            >
+              <div className="flex flex-col gap-2 py-1 text-left">
+                <h2 className="font-cossetteTexte text-[clamp(18px,1.59vw,26px)] font-bold leading-tight tracking-[-0.02em] text-[#111]">
+                  {pin.title}
+                </h2>
+                <p className="font-figtree text-[clamp(13px,1.06vw,17px)] leading-normal text-[#555]">
+                  {pin.body}
+                </p>
+              </div>
+            </Window>
+          </motion.div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ForegroundStory({
+  pan,
+  pathProgress,
+  editing,
+}: {
+  pan: MotionValue<number>;
+  pathProgress: MotionValue<number>;
+  editing: boolean;
+}) {
+  const groupRef = React.useRef<HTMLDivElement>(null);
+  const rect = useCoverRect(groupRef);
+  const reduceMotion = useReducedMotion();
+  const y = useTransform(
+    pan,
+    [0, 1],
+    [0, reduceMotion ? 0 : FOREGROUND_PARALLAX],
+  );
+  const [waypoints, setWaypoints] = React.useState(WAYPOINTS);
+  const [pins, setPins] = React.useState(PIN_DATA);
+  const fullProgress = useTransform(pathProgress, () => 1);
+  const progress = editing ? fullProgress : pathProgress;
+
+  return (
     <motion.div
-      aria-hidden
-      className="pointer-events-none absolute z-20"
-      style={{
-        left: `${position.x * 100}%`,
-        top,
-        x: "-50%",
-        y: "-97%",
-        opacity,
-        scale,
-      }}
+      ref={groupRef}
+      className={editing ? "absolute inset-0 z-30" : "absolute inset-0 z-10"}
+      style={{ y }}
     >
-      <Image
-        src="/landing/promo/pin.svg"
-        alt=""
-        width={pinWidth}
-        height={pinHeight}
-      />
+      <PathCanvas progress={progress} waypoints={waypoints} />
+      {rect &&
+        pins.map((pin) => (
+          <StoryPin
+            key={pin.title}
+            pin={pin}
+            rect={rect}
+            waypoints={waypoints}
+            pathProgress={progress}
+            interactive={!editing}
+          />
+        ))}
+      {editing && (
+        <PathEditor
+          waypoints={waypoints}
+          pins={pins}
+          onWaypointsChange={setWaypoints}
+          onPinsChange={setPins}
+        />
+      )}
     </motion.div>
   );
 }
@@ -457,7 +504,7 @@ function MountainDitherFade() {
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="relative -mb-[60px] block h-[120px] w-full [image-rendering:pixelated]"
+      className="relative -mb-[100px] block h-[120px] w-full [image-rendering:pixelated]"
     />
   );
 }
@@ -466,6 +513,7 @@ export function Hero() {
   const sectionRef = React.useRef<HTMLElement>(null);
   const sceneRef = React.useRef<HTMLDivElement>(null);
   const [snapProgress, setSnapProgress] = React.useState(0.2);
+  const [editing, setEditing] = React.useState(false);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end end"],
@@ -480,6 +528,15 @@ export function Hero() {
     [snapProgress, 0.9],
     [0, 1],
   );
+
+  React.useEffect(() => {
+    if (
+      process.env.NODE_ENV !== "production" &&
+      new URLSearchParams(window.location.search).has("pathEditor")
+    ) {
+      setEditing(true);
+    }
+  }, []);
 
   React.useEffect(() => {
     const measure = () => {
@@ -505,14 +562,16 @@ export function Hero() {
         ref={sectionRef}
         id="hero"
         className="relative"
-        style={{
-          height: `calc(max(100svh, 89.583vw) + ${HOLD_SCREENS * 100}svh)`,
-        }}
+        style={{ height: `calc(${SCENE_HEIGHT} + ${HOLD_SCREENS * 100}svh)` }}
       >
         <div
           ref={sceneRef}
-          className="sticky h-[max(100svh,89.583vw)] overflow-hidden"
-          style={{ top: "calc(100svh - max(100svh, 89.583vw))" }}
+          data-sky-hold
+          className="sticky overflow-hidden"
+          style={{
+            height: SCENE_HEIGHT,
+            top: `calc(100svh - ${SCENE_HEIGHT})`,
+          }}
         >
           <MountainScene pan={pan} />
           <div className="absolute left-[clamp(24px,11.11vw,160px)] top-[20%] z-20 flex max-w-[calc(100%_-_48px)] flex-col items-start gap-12">
@@ -543,10 +602,12 @@ export function Hero() {
               Sign up for updates
             </button>
           </div>
-          <PathCanvas progress={pathProgress} />
-          {PIN_DATA.map((pin) => (
-            <StoryPin key={pin.title} pin={pin} pathProgress={pathProgress} />
-          ))}
+          <ForegroundStory
+            key={editing ? "editing" : "live"}
+            pan={pan}
+            pathProgress={pathProgress}
+            editing={editing}
+          />
         </div>
       </section>
       <MountainDitherFade />
