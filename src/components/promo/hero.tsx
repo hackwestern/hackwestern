@@ -22,6 +22,7 @@ import {
   WAYPOINTS,
   type Waypoint,
 } from "./hero-path";
+import { PromoNavbar } from "./navbar";
 
 const PathEditor = dynamic(() => import("./path-editor"), { ssr: false });
 
@@ -573,6 +574,8 @@ export function Hero() {
             top: `calc(100svh - ${SCENE_HEIGHT})`,
           }}
         >
+          {/* placeholder until links added */}
+          <PromoNavbar className="ml-[10%] mr-[10%]"/>
           <MountainScene pan={pan} />
           <div className="absolute left-[clamp(24px,11.11vw,160px)] top-[20%] z-20 flex max-w-[calc(100%_-_48px)] flex-col items-start gap-12">
             <div className="flex flex-col items-start gap-[30px] font-cossetteTexte">
