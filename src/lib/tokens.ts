@@ -41,6 +41,7 @@ export const colors = {
   },
   greens: {
     "green-primary": "#539933",
+    "green-dark": "#193f13",
   },
   buttonPrimary: {
     bg: "#a7a7a7",

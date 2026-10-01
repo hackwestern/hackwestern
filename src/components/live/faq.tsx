@@ -35,10 +35,11 @@ export function FaqItem({ question, answer, isOpen, onToggle }: FaqItemProps) {
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-[30px] border border-[#c3c3c3]
-                 bg-gradient-to-b from-[#b8d9ff] from-[72.861%] to-[#dcecff]
-                 px-[20px] py-[18px] shadow-[0px_4px_8px_0px_rgba(0,0,0,0.12)]"
-    >
+  className="relative w-full overflow-hidden rounded-[12px] border border-[#c3c3c3]
+             bg-gradient-to-b from-[#b8d9ff] from-[72.861%] to-[#dcecff]
+             px-[20px] py-[10px] shadow-[0px_4px_8px_0px_rgba(0,0,0,0.12)]
+             lg:rounded-[30px] lg:py-[18px]"
+>
       {/* Glass highlight band — same construction as the promo-site button's
           top gloss (rgba(255,255,255,0.7) -> rgba(255,255,255,0.14)). */}
       <div
@@ -98,17 +99,19 @@ function PlusIcon({ className }: { className?: string }) {
 type Faq = { question: string; answer: string };
 
 export function FaqColumn({ items }: { items: Faq[] }) {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [openQuestion, setOpenQuestion] = useState<string | null>(null);
 
   return (
-    <div className="flex min-w-px flex-1 flex-col items-start gap-[12px]">
-      {items.map((faq, i) => (
+    <div className="flex w-full min-w-px flex-1 flex-col items-start gap-[12px]">
+      {items.map((faq) => (
         <FaqItem
           key={faq.question}
           question={faq.question}
           answer={faq.answer}
-          isOpen={openIndex === i}
-          onToggle={() => setOpenIndex(openIndex === i ? null : i)}
+          isOpen={openQuestion === faq.question}
+          onToggle={() =>
+            setOpenQuestion((prev) => (prev === faq.question ? null : faq.question))
+          }
         />
       ))}
     </div>

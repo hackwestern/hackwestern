@@ -53,6 +53,7 @@ const config = {
         highlight: tokens.colors.bg.highlight,
 
         green: tokens.colors.greens["green-primary"],
+        "green-dark": tokens.colors.greens["green-dark"],
 
         primary: {
           "50": "hsl(var(--primary-50))",

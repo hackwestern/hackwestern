@@ -114,17 +114,46 @@ export default function Home() {
       </section>
       <FilmStrip rotate={1.2} />
 
-      <section id="sponsors" style={{minHeight:1886}} className="relative">
-        <Image src="/landing/home/sponsor-bg.png" alt="" width="2880" height="2808" className="absolute -bottom-[15%] object-cover z-0 h-auto w-full"></Image>
-        
-        <div className="absolute left-1/2 w-[1120px] -translate-x-1/2 ">
-        {/* Page Title */}
-          <div className="absolute left-0 top-[164px] flex w-[488px] flex-col items-start gap-[36px]">
+     
+    <section
+  id="sponsors"
+  className="relative flex min-h-[1790px] flex-col gap-12 overflow-hidden px-6 pb-16 pt-12
+             [--photo-h:360px] [--photo-offset:150px]
+             lg:block lg:min-h-[1886px] lg:overflow-visible lg:p-0"
+>
+  {/* desktop background (unchanged, just hidden on mobile) */}
+  <Image
+    src="/landing/home/sponsor-bg.png" alt="" width={2880} height={2808}
+    className="absolute -bottom-[15%] z-0 hidden h-auto w-full object-cover lg:block"
+  />
+
+  {/* mobile background */}
+  <div aria-hidden className="lg:hidden">
+    {/* green: unchanged position, from --photo-h to the bottom of the section */}
+    <div className="absolute inset-x-0 bottom-0 top-[var(--photo-h)] z-0 bg-green-dark" />
+
+    {/* photo: full height, no crop, pushed down by --photo-offset */}
+    <div className="absolute inset-x-0 top-[var(--photo-offset)] z-0">
+      <Image
+        src="/landing/home/sponsor-bg.png" alt="" width={402} height={464}
+        className="h-auto w-full" priority
+      />
+      <div className="absolute inset-x-0 bottom-0 h-[15%] bg-gradient-to-b from-transparent to-green-dark" />
+    </div>
+  </div>
+
+
+
+  <div className="contents lg:absolute lg:left-1/2 lg:block lg:w-[1120px] lg:-translate-x-1/2">
+    {/* Title block */}
+    {/* Page Title */}
+          <div className="absolute left-6 right-6 top-[80px] flex flex-col items-start gap-[36px]
+                lg:left-0 lg:right-auto lg:w-[488px]">
             <div className="flex flex-col items-start gap-[18px]">
               <div className="flex flex-col items-start">
                 {/* Line 1 */}
                 <div className="relative">
-                  <h2 className="font-cossetteTexte text-[36px] font-bold leading-[1.2] text-heavy">
+                  <h2 className="font-cossetteTexte text-[24px] lg:text-[36px] font-bold leading-[1.2] text-heavy">
                     Sponsor a weekend of
                   </h2>
                   <h2
@@ -135,7 +164,7 @@ export default function Home() {
                     }}
                     className="pointer-events-none absolute inset-x-0 top-full -translate-y-[13px]
                               scale-y-[-1] select-none bg-clip-text font-cossetteTexte
-                              text-[36px] font-bold leading-[1.2] text-transparent opacity-20"
+                              text-[24px] lg:text-[36px] font-bold leading-[1.2] text-transparent opacity-20"
                   >
                     Sponsor a weekend of
                   </h2>
@@ -143,7 +172,7 @@ export default function Home() {
 
                 {/* Line 2 */}
                 <div className="relative">
-                  <h2 className="font-cossetteTexte text-[36px] font-bold leading-[1.2] text-heavy">
+                  <h2 className="font-cossetteTexte text-[24px] lg:text-[36px] font-bold leading-[1.2] text-heavy">
                     inspiration and creation
                   </h2>
                   <h2
@@ -154,7 +183,7 @@ export default function Home() {
                     }}
                     className="pointer-events-none absolute inset-x-0 top-full -translate-y-[13px]
                               scale-y-[-1] select-none bg-clip-text font-cossetteTexte
-                              text-[36px] font-bold leading-[1.2] text-transparent opacity-20"
+                              text-[24px] lg:text-[36px] font-bold leading-[1.2] text-transparent opacity-20"
                   >
                     inspiration and creation
                   </h2>
@@ -177,54 +206,81 @@ export default function Home() {
               </a>
             </div>
 
-            {/* FAQ section */}
-            {/* limit for how many open? */}
-            <div className="absolute left-0 top-[1007px] flex w-full flex-col items-start gap-[64px]">
-              <div className="flex w-full max-w-[488px] flex-col items-start gap-[18px]">
-                <div className="relative">
-                  <h2 className="font-cossetteTexte text-[36px] font-bold leading-[1.2] text-highlight">
-                    Frequently Asked Questions
-                  </h2>
-                  <h2
-                    aria-hidden="true"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(to bottom, rgba(255,255,255,0.2) 24.444%, #ffffff 65.273%)",
-                    }}
-                    className="pointer-events-none absolute inset-x-0 top-full translate-y-[30px]
-                              origin-top scale-y-[-1] select-none bg-clip-text font-cossetteTexte
-                              text-[36px] font-bold leading-[1.2] text-transparent opacity-15"
-                  >
-                    Frequently Asked Questions
-                  </h2>
-                </div>
-        
-                <p className="font-figtree text-[16px] font-medium text-[#d0d6dd]">
-                  Have another question? Reach out to us at{" "}
-                  <a href="mailto:hello@hackwestern.com" className="underline">
-                    hello@hackwestern.com
-                  </a>
-                </p>
-              </div>
+    {/* MOBILE window */}
+<Window
+  autoHeight
+  width={382}
+  title="Thank you to our sponsors"
+  className="relative z-10 mt-[250px] w-full max-w-[382px] self-center lg:hidden"
+>
+  <Image
+    src="/landing/home/sponsors.png"
+    alt="sponsors"
+    width={382}
+    height={400}
+    className="h-auto w-full"
+  />
+</Window>
+    
 
-                    {/* note: update FAQ and answers */}
-              <div className="flex w-full items-start gap-[24px]">
-                <FaqColumn items={left} />
-                <FaqColumn items={right} />
-              </div>
-            </div>
-        
+    {/* FAQ */}
+<div className="relative z-10 flex w-full flex-col items-start gap-[24px] lg:absolute lg:left-0 lg:top-[1171px] lg:gap-[64px]">
+  <div className="flex w-full max-w-[488px] flex-col items-start gap-[18px]">
+    <div className="relative">
+      <h2 className="font-cossetteTexte text-[24px] font-bold leading-[1.2] text-highlight lg:text-[36px]">
+        Frequently Asked Questions
+      </h2>
+      <h2
+        aria-hidden="true"
+        style={{
+          backgroundImage:
+            "linear-gradient(to bottom, rgba(255,255,255,0.2) 24.444%, #ffffff 65.273%)",
+        }}
+        className="pointer-events-none absolute inset-x-0 top-full origin-top translate-y-[20px]
+                   scale-y-[-1] select-none bg-clip-text font-cossetteTexte text-[24px]
+                   font-bold leading-[1.2] text-transparent opacity-15
+                   lg:translate-y-[30px] lg:text-[36px]"
+      >
+        Frequently Asked Questions
+      </h2>
     </div>
-          <Window autoHeight width={700} title="Thank you to our sponsors" className="absolute left-[40%] bottom-[50%]">
-            <Image 
-              src="/landing/home/sponsors.png"
-              alt="sponsors"
-              width={1067}
-              height={795}
-            />
-          </Window>
 
-      </section>
+    <p className="font-figtree text-[16px] font-medium text-[#d0d6dd]">
+      Have another question? Reach out to us at{" "}
+      <a href="mailto:hello@hackwestern.com" className="underline">
+        hello@hackwestern.com
+      </a>
+    </p>
+  </div>
+
+  {/* mobile: one column, one item open at a time */}
+  <div className="flex w-full flex-col lg:hidden">
+    <FaqColumn items={[...left, ...right]} />
+  </div>
+
+  {/* desktop: two columns, one item open per column */}
+  <div className="hidden w-full items-start gap-[24px] lg:flex">
+    <FaqColumn items={left} />
+    <FaqColumn items={right} />
+  </div>
+</div>
+  </div>
+{/* Sponsors window desktop*/}
+    <Window
+    autoHeight
+    width={700}
+    title="Thank you to our sponsors"
+    className="z-10 hidden lg:absolute lg:bottom-[50%] lg:left-[40%] lg:block"
+  >
+    <Image
+      src="/landing/home/sponsors.png"
+      alt="sponsors"
+      width={1067}
+      height={795}
+    />
+  </Window>
+  
+</section>
       <FilmStrip rotate={0} />
 
       <div className="relative h-[295px] bg-black">
