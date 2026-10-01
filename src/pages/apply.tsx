@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import React from "react";
 import SEO from "~/components/seo";
 import { useSearchParams } from "next/navigation";
@@ -9,15 +10,15 @@ import { api } from "~/utils/api";
 import ApplicationPrompt from "~/components/dashboard/ApplicationPrompt";
 import { ApplyNavigation } from "~/components/apply/navigation";
 import ApplyHeading from "~/components/apply/heading";
-import {
-  LeftStampColumn,
-  RightStampColumn,
-} from "~/components/apply/animated-stamps";
 import { motion } from "framer-motion";
 import { MobileStickerDrawer } from "~/components/apply/mobile-sticker-drawer";
 import CharacterIcon from "~/components/dashboard/CharacterIcon";
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import { signOut } from "next-auth/react";
+import { ApplicationSidebar } from "~/components/apply/application-sidebar";
+import { Window } from "~/components/internals/window";
+import { UserBadge } from "~/components/apply/user-badge";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   const steps = applySteps;
@@ -110,34 +111,25 @@ export default function Apply() {
   const step = applyStep?.step ?? null;
   const heading = applyStep?.heading ?? null;
   const subheading = applyStep?.subheading ?? null;
-  const desktopScrollRef = useRef<HTMLDivElement | null>(null);
-  const [desktopPreviewHeight, setDesktopPreviewHeight] = useState<
-    number | null
-  >(null);
   const { data: application } = api.application.get.useQuery({
     fields: ["status"],
+  });
+  const { data: userInfo } = api.application.get.useQuery({
+    fields: ["firstName", "updatedAt"],
   });
   const continueStep = getNextIncompleteStep(application);
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
+  const sidebarSteps = useMemo(
+    () => applySteps.map((s) => ({ key: s.step, label: s.label })),
+    [],
+  );
+
   const handleApplyNavigate = (stepKey: string) => {
     setPending(true);
     void router.push(`/apply?step=${stepKey}`).then(() => setPending(false));
   };
-
-  useEffect(() => {
-    const el = desktopScrollRef.current;
-    if (!el) return;
-    const update = () => setDesktopPreviewHeight(el.clientHeight ?? null);
-    // initial
-    update();
-    const ro = new ResizeObserver(() => {
-      update();
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [applyStep]);
 
   return (
     <>
@@ -147,7 +139,7 @@ export default function Apply() {
         noindex
       />
       <motion.main
-        className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-x-hidden md:overflow-y-hidden"
+        className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 font-figtree md:overflow-x-hidden md:overflow-y-hidden"
         key={"apply-page"}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -159,7 +151,7 @@ export default function Apply() {
           {/* Mobile Header */}
           <div className="fixed z-[99] flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
             <div className="h-8 w-8"></div>
-            <h1 className="font-secondary text-lg font-semibold text-heavy">
+            <h1 className="font-figtree text-lg font-semibold text-heavy">
               {step
                 ? step.charAt(0).toUpperCase() + step.slice(1)
                 : "Application"}
@@ -182,7 +174,7 @@ export default function Apply() {
               </div>
 
               {step ? (
-                <div className="flex-1 overflow-visible font-secondary">
+                <div className="flex-1 overflow-visible font-figtree">
                   <ApplyForm step={step} />
                 </div>
               ) : (
@@ -209,66 +201,77 @@ export default function Apply() {
 
         <MobileStickerDrawer />
 
-        {/* Desktop View */}
-        <div className="relative z-10 hidden h-full w-full flex-grow items-center overflow-x-hidden overflow-y-hidden md:flex">
-          <div
-            id="left-panel"
-            className="z-30 flex h-full items-center justify-center"
-          >
-            <ApplyMenu step={step} />
-          </div>
-          <div
-            id="right-panel"
-            className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
-          >
-            <div className="absolute right-6 top-6 flex items-center gap-4">
-              <CharacterIcon />
-            </div>
-            <div className="overflow-y-none overflow-x-none z-10 flex flex-col items-center justify-center">
-              {!step ? (
-                <ApplicationPrompt
-                  status={application?.status ?? "NOT_STARTED"}
-                  continueStep={continueStep}
-                  onApplyNavigate={handleApplyNavigate}
-                  pending={pending}
-                />
-              ) : (
-                <div className="flex h-full w-full items-start justify-center gap-8 overflow-hidden 2xl:flex-row">
-                  {/* Left stamps column (up to 3) */}
-                  <LeftStampColumn />
+        {/* Desktop View — redesigned portal shell */}
+        <div className="relative z-10 hidden h-screen w-full overflow-hidden md:flex">
+          <img
+            src="/apply/realm/background.png"
+            alt=""
+            aria-hidden
+            className="absolute inset-0 h-full w-full object-cover"
+            draggable={false}
+          />
 
-                  {/* Main card */}
-                  <div>
-                    <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-md md:px-12 md:py-12 lg:w-xl 2xl:h-[65vh] 2xl:w-3xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
-                      <div className="space-y-4 py-1.5">
+          <div className="relative z-10 flex h-full w-full gap-6 p-9">
+            <ApplicationSidebar
+              steps={sidebarSteps}
+              activeStep={step}
+              lastSavedAt={userInfo?.updatedAt ?? null}
+              onStepClick={handleApplyNavigate}
+            />
+
+            <div className="relative flex flex-1 flex-col">
+              <div className="absolute right-0 top-0 z-10">
+                <UserBadge
+                  firstName={userInfo?.firstName ?? "there"}
+                  onSignOut={() => void signOut({ callbackUrl: "/" })}
+                />
+              </div>
+
+              <div className="flex flex-1 items-center justify-center pt-16">
+                {!step ? (
+                  <Window
+                    fluid
+                    draggable={false}
+                    disableControls
+                    title="Hack Western 13: Discover the Unknown"
+                    className="w-full max-w-[600px]"
+                    contentClassName="flex justify-center px-8 py-12"
+                  >
+                    <ApplicationPrompt
+                      status={application?.status ?? "NOT_STARTED"}
+                      continueStep={continueStep}
+                      onApplyNavigate={handleApplyNavigate}
+                      pending={pending}
+                    />
+                  </Window>
+                ) : (
+                  <div className="flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4">
+                    <Window
+                      fluid
+                      draggable={false}
+                      disableControls
+                      title="Hack Western 13: Discover the Unknown"
+                      className="min-h-0 flex-1"
+                      contentClassName="px-8 py-8 md:px-12 md:py-10"
+                      footer={<ApplyNavigation step={step} />}
+                    >
+                      <div className="space-y-6">
                         <ApplyHeading
                           heading={heading}
                           subheading={subheading}
                           stepKey={step}
                         />
+                        <div className="scrollbar font-figtree">
+                          <ApplyForm step={step} />
+                        </div>
                       </div>
-                      <div
-                        className="scrollbar min-h-0 flex-1 overflow-auto rounded-md pb-2 pl-1 pr-4 font-secondary"
-                        ref={desktopScrollRef}
-                      >
-                        <ApplyForm
-                          step={step}
-                          previewHeight={(desktopPreviewHeight ?? 300) - 10}
-                        />
-                      </div>
-                    </div>
-                    <ApplyNavigation step={step} />
+                    </Window>
                   </div>
-
-                  {/* Right stamps column (up to 3) */}
-                  <RightStampColumn />
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
-
-        <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
         {/* End of Desktop View */}
       </motion.main>
     </>

@@ -135,7 +135,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
           {!step || previousStep ? (
             <Button
               variant="secondary"
-              className="h-10 border-gray-300 px-4 text-gray-700 hover:bg-gray-50"
+              className="h-10 border-gray-300 px-4 font-figtree text-gray-700 hover:bg-gray-50"
               onClick={() => navigate(`/apply?step=${previousStep ?? step}`)}
               disabled={pending}
               aria-busy={pending}
@@ -196,25 +196,25 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
 
       {/* Desktop Layout */}
       <div className="hidden w-full justify-between py-3 md:flex">
-        <SavedIndicator />
-        <div className="ml-auto flex items-center gap-12">
+        <div className="ml-auto flex items-center gap-3">
           {!step ||
             (previousStep && (
               <Button
-                variant="tertiary"
-                className="h-6 w-16 text-base font-medium text-heavy"
+                variant="primary-2"
+                className="w-28"
                 onClick={() => navigate(`/apply?step=${previousStep}`)}
                 disabled={pending}
                 aria-busy={pending}
               >
-                <div className="flex items-center gap-2 pr-2">
+                <div className="flex items-center gap-2">
                   <Image
                     src="/shared/arrow-left.svg"
                     alt="Left Arrow"
                     width={12}
                     height={12}
+                    className="brightness-0 invert"
                   />
-                  <div className="text-sm">Back</div>
+                  Back
                 </div>
               </Button>
             ))}

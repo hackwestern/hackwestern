@@ -10,7 +10,6 @@ import { Window } from "~/components/internals/window";
 import { SmallCard } from "~/components/internals/smallCard";
 import { SearchBar } from "~/components/internals/search-bar";
 import { ApplicationSidebar } from "~/components/apply/application-sidebar";
-import { MacWindow } from "~/components/apply/mac-window";
 import { UserBadge } from "~/components/apply/user-badge";
 
 function DesignSystem() {
@@ -78,7 +77,13 @@ function DesignSystem() {
           </div>
 
           <div className="mx-auto mt-16 h-[500px] w-[600px]">
-            <MacWindow title="Hack Western 13: Discover the Unknown">
+            <Window
+              fluid
+              draggable={false}
+              disableControls
+              title="Hack Western 13: Discover the Unknown"
+              className="h-full"
+            >
               <div className="flex h-full flex-col items-center justify-center gap-3 p-10 text-center">
                 <p className="font-primary text-sm-display font-bold text-heavy">
                   Click to choose your horse companion
@@ -87,7 +92,7 @@ function DesignSystem() {
                   Who will accompany you along this adventure?
                 </p>
               </div>
-            </MacWindow>
+            </Window>
           </div>
         </div>
       </div>

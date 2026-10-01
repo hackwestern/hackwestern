@@ -91,7 +91,7 @@ export function RealmForm() {
           <img
             src={selectedHorse.asset}
             alt={`${realmLabel[selectedHorse.realm]} horse`}
-            className="mx-auto h-auto w-full select-none"
+            className="mx-auto max-h-[240px] w-auto max-w-full select-none object-contain"
             draggable={false}
           />
         </div>

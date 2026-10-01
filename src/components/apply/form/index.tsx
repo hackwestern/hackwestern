@@ -7,7 +7,6 @@ import { ApplicationForm } from "./application-form";
 import { LinksForm } from "./links-form";
 import { AgreementsForm } from "./agreements-form";
 import { OptionalForm } from "./optional-form";
-import { CanvasForm } from "./canvas-form";
 import { ReviewForm } from "./review-form";
 import { AnimatePresence, type Easing, motion } from "framer-motion";
 import { usePendingNavigation } from "~/hooks/use-pending-navigation";
@@ -74,8 +73,6 @@ export function ApplyForm({ step, previewHeight }: ApplyFormProps) {
               return <AgreementsForm />;
             case "optional":
               return <OptionalForm />;
-            case "canvas":
-              return <CanvasForm />;
             case "review":
               return <ReviewForm />;
             default:
