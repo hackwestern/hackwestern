@@ -45,8 +45,9 @@ vi.mock("~/utils/github", async (importOriginal) => {
 });
 
 const { GithubRateLimitError } = await import("~/utils/github");
-const { SYSTEM_USER_ID } =
-  await import("~/server/api/utils/cheat-check-runners");
+const { SYSTEM_USER_ID } = await import(
+  "~/server/api/utils/cheat-check-runners"
+);
 const handler = (await import("~/pages/api/cheat-check/sweep")).default;
 
 // ---------------------------------------------------------------------------

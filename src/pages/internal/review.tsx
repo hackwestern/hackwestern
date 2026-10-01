@@ -429,7 +429,9 @@ const Review = () => {
                         };
 
                         const canvasData = applicationData.canvasData as
-                          CanvasData | null | undefined;
+                          | CanvasData
+                          | null
+                          | undefined;
                         const pathStrings =
                           canvasData?.paths?.map((path) =>
                             path.reduce((acc, point, index) => {
