@@ -5,6 +5,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
 import { TRPCError } from "@trpc/server";
 import { encode, decode } from "next-auth/jwt";
+import {
+  addVerifiedRegistrantToList,
+  normalizeAuthEmail,
+} from "~/server/subscribers";
 
 import {
   type Session,
@@ -12,7 +16,7 @@ import {
   type DefaultSession,
   type NextAuthOptions,
 } from "next-auth";
-import { type Adapter } from "next-auth/adapters";
+import { type Adapter, type AdapterUser } from "next-auth/adapters";
 import GithubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import DiscordProvider from "next-auth/providers/discord";
@@ -45,6 +49,30 @@ declare module "next-auth" {
 }
 
 /**
+ * DrizzleAdapter with email canonicalization (trim + lowercase) on every path
+ * that writes or looks up a user by email. Credentials signup already
+ * normalizes in auth.create, but OAuth signups (Google/GitHub/Discord) go
+ * through the adapter directly — and GitHub can hand over a mixed-case email,
+ * which would dodge the unique constraint (a plain string constraint, not
+ * lower()-based) and recreate the HW12 duplicate-account bug through the side
+ * door. Wrapping here makes the whole system case-insensitive regardless of
+ * how the account was created.
+ */
+function caseInsensitiveAdapter(): Adapter {
+  const base = DrizzleAdapter(db) as Adapter;
+  return {
+    ...base,
+    createUser: base.createUser
+      ? (user: AdapterUser) =>
+          base.createUser!({ ...user, email: normalizeAuthEmail(user.email) })
+      : undefined,
+    getUserByEmail: base.getUserByEmail
+      ? (email: string) => base.getUserByEmail!(normalizeAuthEmail(email))
+      : undefined,
+  };
+}
+
+/**
  * Options for NextAuth.js used to configure adapters, providers, callbacks, etc.
  *
  * @see https://next-auth.js.org/configuration/options
@@ -71,6 +99,18 @@ export const authOptions: NextAuthOptions = {
       return baseUrl;
     },
   },
+  events: {
+    // Fires only for next-auth-managed creation, i.e. the OAuth providers —
+    // the credentials path (auth.create) calls adapter.createUser directly,
+    // which bypasses events, and those users join the list at email
+    // verification instead. Provider emails are real, deliverable mailboxes,
+    // so the bounce-hygiene reason for gating on verification doesn't apply.
+    createUser: async ({ user }) => {
+      if (user.email) {
+        await addVerifiedRegistrantToList(user.email);
+      }
+    },
+  },
   session: {
     strategy: "jwt",
   },
@@ -78,7 +118,7 @@ export const authOptions: NextAuthOptions = {
     encode,
     decode,
   },
-  adapter: DrizzleAdapter(db) as Adapter,
+  adapter: caseInsensitiveAdapter(),
   providers: [
     GithubProvider({
       clientId: env.GITHUB_CLIENT_ID,
@@ -176,8 +216,12 @@ export async function mockOrganizerSession(db: Database): Promise<Session> {
 
 async function login(email: string, password: string) {
   try {
+    // Stored emails are canonical (trim+lowercase) — see normalizeAuthEmail.
+    // Without canonicalizing here, someone who registered "Luka@uwo.ca" on a
+    // phone (autocapitalized) and later types "luka@uwo.ca" gets NOT_FOUND and,
+    // naturally, registers a second account.
     const user = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.email, email),
+      where: (users, { eq }) => eq(users.email, normalizeAuthEmail(email)),
     });
 
     if (!user) {

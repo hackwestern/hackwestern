@@ -8,9 +8,7 @@ import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { cn } from "~/lib/utils";
 import { applicationSubmitSchema } from "~/schemas/application";
 import { api } from "~/utils/api";
-import { AvatarDisplay } from "../avatar-display";
-import { colors } from "~/constants/avatar";
-import { type CanvasPaths } from "~/types/canvas";
+import { getHorse, realmLabel } from "~/constants/realms";
 import { QUESTION1, QUESTION2, QUESTION3 } from "./application-form";
 import React from "react";
 
@@ -28,7 +26,7 @@ function ReviewSection({ step, error, className }: ReviewSectionProps) {
         <h2 className="font-jetbrains-mono text-base uppercase text-medium">
           {step.label}
         </h2>
-        <Button asChild variant="secondary" className="gap-2">
+        <Button asChild variant="secondary" className="gap-2 font-figtree">
           <Link href={{ pathname: "/apply", query: { step: step.step } }}>
             <PencilLine className="w-4" />
             Edit
@@ -56,10 +54,8 @@ function ReviewSectionInfo({ step, error }: ReviewSectionProps) {
       return <AgreementsReview step={step} error={error} />;
     case "optional":
       return <OptionalReview step={step} error={error} />;
-    case "character":
-      return <AvatarReview step={step} error={error} />;
-    case "canvas":
-      return <CanvasReview step={step} error={error} />;
+    case "realm":
+      return <RealmReview step={step} error={error} />;
     default:
       return <></>;
   }
@@ -326,85 +322,44 @@ function OptionalReview({}: ReviewSectionProps) {
   );
 }
 
-function AvatarReview({}: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: [
-      "avatarColour",
-      "avatarFace",
-      "avatarLeftHand",
-      "avatarRightHand",
-      "avatarHat",
-    ],
-  });
-
-  const selectedColor = colors.find(
-    (c) => c.name === (data?.avatarColour ?? "green"),
-  );
-
-  return (
-    <div className="space-y-2">
-      <Label>Your Avatar</Label>
-      <div
-        className="mx-auto -mt-4 flex h-80 w-80 scale-90 flex-col justify-center rounded-2xl p-4 pt-8"
-        style={{
-          background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
-        }}
-      >
-        <div className="flex items-center justify-center">
-          <AvatarDisplay
-            avatarColour={data?.avatarColour}
-            avatarFace={data?.avatarFace}
-            avatarLeftHand={data?.avatarLeftHand}
-            avatarRightHand={data?.avatarRightHand}
-            avatarHat={data?.avatarHat}
-          />
-        </div>
-      </div>
-    </div>
-  );
+function formatHorseName(
+  first: string | null | undefined,
+  last: string | null | undefined,
+): string {
+  const name = `${first ?? ""} ${last ?? ""}`.trim();
+  return name.length > 0 ? name : "(no name yet)";
 }
 
-function CanvasReview({}: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({ fields: ["canvasData"] });
-
-  // reuse shared canvas types
-  type CanvasData = {
-    paths: CanvasPaths;
-    timestamp: number;
-    version: string;
-  };
-
-  const canvasData = data?.canvasData as CanvasData | null | undefined;
-  const pathStrings =
-    canvasData?.paths?.map((path) =>
-      path.reduce((acc, point, index) => {
-        if (index === 0) return `M ${point[0]} ${point[1]}`;
-        return `${acc} L ${point[0]} ${point[1]}`;
-      }, ""),
-    ) ?? [];
+/* eslint-disable @next/next/no-img-element */
+function RealmReview({}: ReviewSectionProps) {
+  const { data } = api.application.get.useQuery({
+    fields: ["realm", "horseId", "horseFirstName", "horseLastName"],
+  });
+  const horse = getHorse(data?.horseId);
 
   return (
     <div className="space-y-2">
-      <Label>Your Drawing</Label>
-      {pathStrings.length > 0 ? (
-        <div className="h-64 w-64 overflow-hidden rounded-lg border-2 border-gray-300 bg-white lg:h-72 lg:w-72">
-          <svg className="h-full w-full">
-            {pathStrings.map((pathString, pathIndex) => (
-              <path
-                key={pathIndex}
-                d={pathString}
-                stroke="#a16bc7"
-                strokeWidth="4"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))}
-          </svg>
+      <Label>Your Companion</Label>
+      <div className="flex items-center gap-4 rounded-lg bg-highlight/40 p-4">
+        {horse && (
+          <img
+            src={horse.asset}
+            alt=""
+            className="h-24 w-24 shrink-0 object-contain"
+            draggable={false}
+          />
+        )}
+        <div className="flex flex-col">
+          <p className="font-figtree text-md-p font-semibold text-heavy">
+            {formatHorseName(data?.horseFirstName, data?.horseLastName)}
+          </p>
+          <p className="font-figtree text-sm-p text-medium">
+            {data?.realm
+              ? `${realmLabel[data.realm]} realm`
+              : "(no realm chosen)"}
+          </p>
         </div>
-      ) : (
-        <p className="text-sm text-medium">(no drawing)</p>
-      )}
+      </div>
     </div>
   );
 }
