@@ -9,13 +9,11 @@ import { PhotoGallery } from "~/components/live/photo-gallery";
 import { WindowFolder } from "~/components/live/window-folder";
 import { PROMO_FAQ } from "~/constants/faq";
 
-// HOLIA's TODO
+// ABOUT & FAQ TODO
 // 1. add waterfall
 // 2. add clouds
-// 3. check with faq answers and questions
 // 4. check with "dear hackers" message
 // 5. add "dither" on mobile FAQ
-// 6. rename folder component 
 
 const SECTIONS = [
   { id: "hero", label: "Hero", height: 1290, tiltAfter: 0.4 },
