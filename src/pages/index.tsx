@@ -4,7 +4,7 @@ import { SkyBackground } from "~/components/promo/sky-background";
 import { Button } from "~/components/ui/button";
 import Image from "next/image";
 import { Window } from "~/components/internals/window";
-import { FaqItem } from "~/components/live/faq";
+import { FaqColumn, FaqItem } from "~/components/live/faq";
 import { PhotoGallery } from "~/components/live/photo-gallery";
 import { Folder } from "~/components/live/folder";
 import { PROMO_FAQ } from "~/constants/faq";
@@ -41,31 +41,28 @@ export default function Home() {
       <section id="hero" style={{minHeight:1290}}>
       </section>
 
-      {/* get filmstrip on top of background */}
-      <div className="z-10">
       <FilmStrip rotate={0.4} />
-      </div>
 
       
         <section
           id="about"
           style={{minHeight: 1109}}
-          className="relative sm:h-0"
+          className="relative hidden sm:block"
         >
           {/* are they allowed to move the window outside the section? */}
-          <div
-  className="absolute inset-x-0 -bottom-[10.5%] z-0 h-[118%] w-full" 
-  style={{
-  clipPath: "polygon(0 5%, 100% 5%, 100% 100%, 0 calc(100% - 6vw))",
-}}
->
-  <Image
-    src="/landing/home/about.png"
-    alt=""
-    fill
-    className="object-cover"
-    style={{ objectPosition: "80% 80%" }}  />
-</div>
+                      <div
+              className="absolute inset-x-0 -bottom-[10.5%] z-0 h-[118%] w-full" 
+              style={{
+              clipPath: "polygon(0 5%, 100% 5%, 100% 100%, 0 calc(100% - 6vw))",
+            }}
+            >
+              <Image
+                src="/landing/home/about.png"
+                alt=""
+                fill
+                className="object-cover"
+                style={{ objectPosition: "80% 80%" }}  />
+            </div>
             {/* insert waterfall */}
             <Folder defaultOpen label="A message to new hackers" className="absolute left-[100px] bottom-[120px]" windowTitle="A message to new hackers" windowProps={{width: 400, autoHeight: true, className:"isolate absolute right-[500px] top-[200px]"}}>
               <div className="p3 font-figtree whitespace-pre-line">
@@ -110,7 +107,7 @@ export default function Home() {
               ]} />
             </Folder>
         </section>
-        <FilmStrip rotate={3.5} />
+      <FilmStrip rotate={3.5} />
 
       {/* placeholder */}
       <section id="projects" style={{minHeight:1237}}>
@@ -209,21 +206,11 @@ export default function Home() {
                 </p>
               </div>
 
-                    {/* note: update FAQ if wanted */}
+                    {/* note: update FAQ and answers */}
               <div className="flex w-full items-start gap-[24px]">
-                <div className="flex min-w-px flex-1 flex-col items-start gap-[12px]">
-                  {left.map((faq) => (
-                    <FaqItem key={faq.question} question={faq.question} answer={faq.answer} />
-                  ))}
-                </div>
-                <div className="flex min-w-px flex-1 flex-col items-start gap-[12px]">
-                  {right.map((faq) => (
-                    <FaqItem key={faq.question} question={faq.question} answer={faq.answer} />
-                  ))}
-                </div>
+                <FaqColumn items={left} />
+                <FaqColumn items={right} />
               </div>
-            
-            
             </div>
         
     </div>

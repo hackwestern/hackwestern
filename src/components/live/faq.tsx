@@ -26,11 +26,12 @@ import { useState } from "react";
 interface FaqItemProps {
   question: string;
   answer: string;
-  defaultOpen?: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
 }
 
-export function FaqItem({ question, answer, defaultOpen = false }: FaqItemProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+export function FaqItem({ question, answer, isOpen, onToggle }: FaqItemProps) {
+//   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
     <div
@@ -49,11 +50,11 @@ export function FaqItem({ question, answer, defaultOpen = false }: FaqItemProps)
       />
 
       <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        aria-expanded={isOpen}
-        className="relative flex w-full items-center justify-between gap-[12px] text-left"
-      >
+      type="button"
+      onClick={onToggle}
+      aria-expanded={isOpen}
+      className="relative flex w-full items-center justify-between gap-[12px] text-left"
+    >
         <p className="font-figtree text-[16px] leading-[1.5] text-heavy">{question}</p>
         <PlusIcon
           className={`size-[24px] shrink-0 text-heavy transition-transform duration-200 ${
@@ -91,5 +92,25 @@ function PlusIcon({ className }: { className?: string }) {
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
       <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
+  );
+}
+
+type Faq = { question: string; answer: string };
+
+export function FaqColumn({ items }: { items: Faq[] }) {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  return (
+    <div className="flex min-w-px flex-1 flex-col items-start gap-[12px]">
+      {items.map((faq, i) => (
+        <FaqItem
+          key={faq.question}
+          question={faq.question}
+          answer={faq.answer}
+          isOpen={openIndex === i}
+          onToggle={() => setOpenIndex(openIndex === i ? null : i)}
+        />
+      ))}
+    </div>
   );
 }
