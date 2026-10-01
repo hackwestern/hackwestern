@@ -75,11 +75,21 @@ export function WaitlistedStatusCard() {
   );
 }
 
-export function DeclinedStatusCard() {
+export function RejectedStatusCard() {
   return (
     <StatusCard
       title="Application decision"
       description="Thank you for applying to Hack Western 13. Unfortunately we can't offer you a spot this year — hope to see your application again next year!"
+      primaryAction={{ label: "Return home", href: "/" }}
+    />
+  );
+}
+
+export function DeclinedStatusCard() {
+  return (
+    <StatusCard
+      title="You've declined your spot"
+      description="Thanks for letting us know. We hope to see you at a future Hack Western!"
       primaryAction={{ label: "Return home", href: "/" }}
     />
   );

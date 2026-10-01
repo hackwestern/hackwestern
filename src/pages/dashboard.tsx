@@ -12,6 +12,7 @@ import {
   AcceptedStatusCard,
   DeclinedStatusCard,
   NotSubmittedStatusCard,
+  RejectedStatusCard,
   SubmittedStatusCard,
   WaitlistedStatusCard,
 } from "~/components/dashboard/status-cards";
@@ -25,6 +26,7 @@ function StatusContent({ status }: { status: string | null | undefined }) {
     case "WAITLISTED":
       return <WaitlistedStatusCard />;
     case "REJECTED":
+      return <RejectedStatusCard />;
     case "DECLINED":
       return <DeclinedStatusCard />;
     case "NOT_STARTED":
