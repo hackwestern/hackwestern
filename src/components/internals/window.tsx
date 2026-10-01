@@ -9,6 +9,8 @@ export interface WindowProps {
   title: string;
   children?: React.ReactNode;
   className?: string;
+  /** Merged onto the outer element; use for positioning (e.g. CSS-var driven `left`/`top`). */
+  style?: React.CSSProperties;
   width?: number;
   height?: number;
   showDots?: boolean;
@@ -32,6 +34,7 @@ export function Window({
   title,
   children,
   className,
+  style,
   width = 374,
   height = 208,
   showDots = true,
@@ -169,7 +172,7 @@ export function Window({
     return (
       <motion.div
         className={cn("relative", className)}
-        style={{ width }}
+        style={{ ...style, width }}
         drag={draggable}
         dragControls={dragControls}
         dragConstraints={dragConstraints}
@@ -227,7 +230,7 @@ export function Window({
   return (
     <motion.div
       className={cn("relative", className)}
-      style={{ width, height }}
+      style={{ ...style, width, height }}
       drag={draggable}
       dragControls={dragControls}
       dragConstraints={dragConstraints}
