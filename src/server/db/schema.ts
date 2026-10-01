@@ -510,7 +510,7 @@ export const applications = pgTable(
     gender: gender("gender"),
     ethnicity: ethnicity("ethnicity"),
     sexualOrientation: sexualOrientation("sexual_orientation"),
-    
+
     // Emergency Contact Info
     emergencyContactName: varchar("emergency_contact_name", { length: 255 }),
     emergencyContactRelationship: emergencyContactRelationship(
@@ -537,7 +537,6 @@ export const applications = pgTable(
       }>()
       .default(sql`'{"paths":[],"timestamp":0,"version":""}'::jsonb`)
       .notNull(),
-
   },
   (application) => [index("user_id_idx").on(application.userId)],
 );
