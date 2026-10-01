@@ -313,6 +313,7 @@ export default function Home() {
 </div>
   </div>
 {/* Sponsors window desktop*/}
+{/* this closes downwards...? */}
     <Window
     autoHeight
     width={700}
