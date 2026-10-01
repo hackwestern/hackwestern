@@ -126,7 +126,7 @@ export default function Register() {
         <div className="flex items-center gap-1.5 font-figtree text-md-p text-gray-6">
           <span>Already have an account?</span>
           <Button asChild variant="tertiary" className="h-max p-0">
-            <Link href="/login" className="text-light hover:text-medium">
+            <Link href="/login" className="text-light font-figtree hover:text-medium">
               Login
             </Link>
           </Button>

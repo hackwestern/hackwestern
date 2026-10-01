@@ -42,7 +42,7 @@ export function AuthLayout({
         >
           <div className="flex flex-col gap-8">
             {title && (
-              <h1 className="font-primary text-sm-display font-bold text-gray-5">
+              <h1 className="font-figtree text-sm-display font-bold text-gray-5">
                 {title}
               </h1>
             )}

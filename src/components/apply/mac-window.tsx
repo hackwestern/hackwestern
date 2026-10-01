@@ -34,7 +34,7 @@ export function MacWindow({
       <div className="relative flex h-[23px] shrink-0 items-center justify-between border-b border-[#9f9f9f] bg-[rgba(240,240,240,0.8)] px-[6px]">
         <TrafficLights />
         {title && (
-          <p className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-primary text-[12px] text-[#626262]">
+          <p className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-figtree text-[12px] text-[#626262]">
             {title}
           </p>
         )}
