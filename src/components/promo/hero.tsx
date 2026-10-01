@@ -3,19 +3,34 @@ import * as React from "react";
 import {
   motion,
   type MotionValue,
-  useMotionTemplate,
+  useReducedMotion,
   useScroll,
   useTransform,
 } from "framer-motion";
-import { Window } from "~/components/internals/window";
 
-const PHOTO = "/landing/promo/hero-photo.jpg";
-const IMG_W = 4152;
-const IMG_H = 5536;
-const PAN_END = 0.45;
+const HOLD_SCREENS = 1.5;
+const MACBOOK_PRO_PANEL_WIDTH = 3024;
+const RETINA_SCALE = 2;
+// Chrome lays out a 3024px Retina panel in 1512 CSS pixels. The live
+// scene width still comes from the browser, so a 2560px Air resolves to
+// 1280 CSS pixels and scales from this reference automatically.
+const DESIGN_WIDTH = MACBOOK_PRO_PANEL_WIDTH / RETINA_SCALE;
+const MIN_PATH_SCALE = 0.48;
 const PATH_SHIFT = 100;
+const PATH_SHIFT_CSS = "clamp(48px, 6.614vw, 100px)";
 const BLEED = 240;
 const DOT = 3;
+const FOREGROUND_PARALLAX = 56;
+const PATH_ROTATION = (-1 * Math.PI) / 180;
+const PATH_ASPECT_RATIO = 1440 / 1290;
+const PATH_PIVOT = { x: -0.12, y: 0.88 } as const;
+
+const MOUNTAIN_LAYERS = [
+  { src: "/landing/promo/hero/mountain-4.png", offset: 8 },
+  { src: "/landing/promo/hero/mountain-3.png", offset: 20 },
+  { src: "/landing/promo/hero/mountain-2.png", offset: 36 },
+  { src: "/landing/promo/hero/mountain-1.png", offset: FOREGROUND_PARALLAX },
+] as const;
 
 const BAYER = [
   [0, 128, 32, 160, 8, 136, 40, 168],
@@ -29,55 +44,97 @@ const BAYER = [
 ] as const;
 
 const WAYPOINTS = [
-  { x: 1.25, y: 1.25, w: 300 },
-  { x: 0.62, y: 0.95, w: 100 },
-  { x: 0.28, y: 0.88, w: 60 },
-  { x: 0.06, y: 0.86, w: 40 },
-  { x: -0.05, y: 0.88, w: 20 },
-  { x: 0.2, y: 0.8, w: 24 },
-  { x: 0.35, y: 0.77, w: 20 },
-  { x: 0.5, y: 0.69, w: 4 },
+  { x: 1.05, y: 1.01, w: 190 },
+  { x: 0.91, y: 0.98, w: 170 },
+  { x: 0.79, y: 0.96, w: 150 },
+  { x: 0.68, y: 0.94, w: 135 },
+  { x: 0.57, y: 0.92, w: 120 },
+  { x: 0.45, y: 0.9, w: 105 },
+  { x: 0.33, y: 0.89, w: 90 },
+  { x: 0.18, y: 0.89, w: 78 },
+  { x: 0.02, y: 0.89, w: 70 },
+  { x: -0.12, y: 0.88, w: 65 },
+  { x: 0.03, y: 0.84, w: 62 },
+  { x: 0.18, y: 0.835, w: 58 },
+  { x: 0.35, y: 0.825, w: 52 },
+  { x: 0.48, y: 0.8, w: 44 },
+  { x: 0.57, y: 0.775, w: 36 },
+  { x: 0.64, y: 0.75, w: 28 },
 ] as const;
 
 const PIN_DATA = [
   {
-    x: 0.82,
-    y: 0.93,
-    w: 44,
+    x: 0.982,
+    y: 1.01,
+    w: 64,
     title: "Create. Collaborate. Innovate.",
     body: "Collaborate in teams of up to four to create tech projects, while participating in workshops, learning from mentors, competing for prizes, and meeting like-minded hackers.",
     windowWidth: 500,
   },
   {
-    x: 0.09,
-    y: 0.82,
+    x: 0.03,
+    y: 0.87,
+    w: 22,
     anchor: "left",
     title: "It's on us",
     body: "We cover food, travel, and lodging so you can focus on bringing your ideas to life!",
     windowWidth: 400,
   },
   {
-    x: 0.47,
-    y: 0.7,
-    w: 24,
+    x: 0.48,
+    y: 0.8,
+    w: 18,
     title: "Build something unexpected",
     body: "Spend the weekend exploring an idea, learning new tools, and sharing what you made.",
     windowWidth: 320,
   },
 ] as const;
 
+function catmullRom(
+  before: number,
+  from: number,
+  to: number,
+  after: number,
+  t: number,
+) {
+  return (
+    0.5 *
+    (2 * from +
+      (-before + to) * t +
+      (2 * before - 5 * from + 4 * to - after) * t ** 2 +
+      (-before + 3 * from - 3 * to + after) * t ** 3)
+  );
+}
+
+function rotatePathPoint(x: number, y: number) {
+  const dx = (x - PATH_PIVOT.x) * PATH_ASPECT_RATIO;
+  const dy = y - PATH_PIVOT.y;
+  const cosine = Math.cos(PATH_ROTATION);
+  const sine = Math.sin(PATH_ROTATION);
+
+  return {
+    x: PATH_PIVOT.x + (dx * cosine - dy * sine) / PATH_ASPECT_RATIO,
+    y: PATH_PIVOT.y + dx * sine + dy * cosine,
+  };
+}
+
 function samplePath(t: number) {
   const last = WAYPOINTS.length - 1;
   const segment = Math.min(last - 1, Math.floor(t * last));
   const local = t * last - segment;
+  const before = WAYPOINTS[Math.max(0, segment - 1)]!;
   const from = WAYPOINTS[segment]!;
   const to = WAYPOINTS[segment + 1]!;
-  const lerp = (a: number, b: number) => a + (b - a) * local;
+  const after = WAYPOINTS[Math.min(last, segment + 2)]!;
+
+  const point = rotatePathPoint(
+    catmullRom(before.x, from.x, to.x, after.x, local),
+    catmullRom(before.y, from.y, to.y, after.y, local),
+  );
 
   return {
-    x: lerp(from.x, to.x),
-    y: lerp(from.y, to.y),
-    w: lerp(from.w, to.w),
+    ...point,
+    w: Math.max(2, catmullRom(before.w, from.w, to.w, after.w, local)),
   };
 }
 
@@ -111,15 +168,22 @@ function PathCanvas({ progress }: { progress: MotionValue<number> }) {
     let currentProgress = progress.get();
     let mask: Float32Array | null = null;
     let maskProgress = -1;
-    let viewportHeight = 0;
+    let sceneHeight = 0;
+    let pathScale = 1;
     let frame = 0;
     let visible = true;
 
     const resize = () => {
-      viewportHeight = window.innerHeight;
-      canvas.width = Math.ceil(window.innerWidth / DOT);
-      canvas.height = Math.ceil((viewportHeight + BLEED) / DOT);
-      canvas.style.height = `${viewportHeight + BLEED}px`;
+      const scene = canvas.parentElement;
+      sceneHeight = scene?.clientHeight ?? window.innerHeight;
+      const sceneWidth = scene?.clientWidth ?? window.innerWidth;
+      pathScale = Math.max(
+        MIN_PATH_SCALE,
+        Math.min(sceneWidth / DESIGN_WIDTH, 1),
+      );
+      canvas.width = Math.ceil(sceneWidth / DOT);
+      canvas.height = Math.ceil((sceneHeight + BLEED) / DOT);
+      canvas.style.height = `${sceneHeight + BLEED}px`;
       mask = null;
     };
 
@@ -129,11 +193,13 @@ function PathCanvas({ progress }: { progress: MotionValue<number> }) {
       const next = new Float32Array(width * height);
       const sampleCount = Math.floor(160 * value);
 
-      for (let step = 0; step <= sampleCount; step++) {
+      for (let step = 0; value > 0 && step <= sampleCount; step++) {
         const point = samplePath(Math.min(step / 160, 1));
         const cx = Math.round(point.x * width);
-        const cy = Math.round((point.y * viewportHeight - PATH_SHIFT) / DOT);
-        const radius = Math.ceil(point.w / DOT);
+        const cy = Math.round(
+          (point.y * sceneHeight - PATH_SHIFT * pathScale) / DOT,
+        );
+        const radius = Math.ceil((point.w * pathScale) / (DOT * 2));
         const radiusSquared = radius * radius;
 
         for (let dy = -radius; dy <= radius; dy++) {
@@ -213,42 +279,69 @@ function PathCanvas({ progress }: { progress: MotionValue<number> }) {
   );
 }
 
+function MountainLayer({
+  src,
+  offset,
+  pan,
+  priority,
+}: {
+  src: string;
+  offset: number;
+  pan: MotionValue<number>;
+  priority: boolean;
+}) {
+  const reduceMotion = useReducedMotion();
+  const y = useTransform(pan, [0, 1], [0, reduceMotion ? 0 : offset]);
+
+  return (
+    <motion.div
+      aria-hidden
+      className="pointer-events-none absolute inset-0"
+      style={{ y }}
+    >
+      <Image
+        src={src}
+        alt=""
+        fill
+        priority={priority}
+        sizes="100vw"
+        className="object-cover"
+      />
+    </motion.div>
+  );
+}
+
+function MountainScene({ pan }: { pan: MotionValue<number> }) {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+    >
+      {MOUNTAIN_LAYERS.map((layer, index) => (
+        <MountainLayer
+          key={layer.src}
+          src={layer.src}
+          offset={layer.offset}
+          pan={pan}
+          priority={index === 0 || index === MOUNTAIN_LAYERS.length - 1}
+        />
+      ))}
+    </div>
+  );
+}
+
 function StoryPin({
   pin,
-  pan,
   pathProgress,
-  viewport,
 }: {
   pin: (typeof PIN_DATA)[number];
-  pan: MotionValue<number>;
   pathProgress: MotionValue<number>;
-  viewport: { width: number; height: number };
 }) {
   const pinWidth = "w" in pin ? pin.w : 36;
   const pinHeight = pinWidth * 2.5;
-  const responsiveWidth =
-    viewport.width < 700
-      ? viewport.width - 24
-      : viewport.width < 1200
-        ? viewport.width * 0.38
-        : pin.windowWidth;
-  const windowWidth = Math.min(pin.windowWidth, responsiveWidth);
-  const anchor =
-    "anchor" in pin
-      ? pin.anchor
-      : pin.x * viewport.width + windowWidth / 2 > viewport.width - 12
-        ? "right"
-        : pin.x * viewport.width - windowWidth / 2 < 12
-          ? "left"
-          : "center";
-  const x = anchor === "left" ? "-10%" : anchor === "right" ? "-100%" : "-50%";
-  const top = useTransform(pan, (value) => {
-    const scale = Math.max(viewport.width / IMG_W, viewport.height / IMG_H);
-    const visibleFraction = viewport.height / (IMG_H * scale);
-    const panShift = (1 / visibleFraction - 1) * (1 - value);
-    return `calc(${(pin.y + panShift) * 100}% - ${PATH_SHIFT}px)`;
-  });
-  const start = revealAt(pin.x, pin.y);
+  const position = rotatePathPoint(pin.x, pin.y);
+  const top = `calc(${position.y * 100}% - ${PATH_SHIFT_CSS})`;
+  const start = revealAt(position.x, position.y);
   const opacity = useTransform(
     pathProgress,
     [Math.max(0, start - 0.04), start],
@@ -261,59 +354,29 @@ function StoryPin({
   );
 
   return (
-    <>
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute z-20"
-        style={{
-          left: `${pin.x * 100}%`,
-          top,
-          x: "-50%",
-          y: "-97%",
-        }}
-      >
-        <Image
-          src="/landing/promo/pin.svg"
-          alt=""
-          width={pinWidth}
-          height={pinHeight}
-        />
-      </motion.div>
-
-      <motion.div
-        className="pointer-events-none absolute z-30"
-        style={{
-          left: `${pin.x * 100}%`,
-          top,
-          x,
-          y: `calc(-100% - ${pinHeight + 30}px)`,
-          opacity,
-          scale,
-          transformOrigin: `bottom ${anchor}`,
-        }}
-      >
-        <Window
-          title="You have a message"
-          width={windowWidth}
-          autoHeight
-          draggable={false}
-          disableExpand
-        >
-          <div className="max-w-full px-2 py-1 text-left">
-            <h2 className="mb-2 text-[clamp(18px,2vw,30px)] leading-tight">
-              {pin.title}
-            </h2>
-            <p className="font-secondary text-[clamp(13px,1.3vw,18px)] leading-relaxed text-[#555]">
-              {pin.body}
-            </p>
-          </div>
-        </Window>
-      </motion.div>
-    </>
+    <motion.div
+      aria-hidden
+      className="pointer-events-none absolute z-20"
+      style={{
+        left: `${position.x * 100}%`,
+        top,
+        x: "-50%",
+        y: "-97%",
+        opacity,
+        scale,
+      }}
+    >
+      <Image
+        src="/landing/promo/pin.svg"
+        alt=""
+        width={pinWidth}
+        height={pinHeight}
+      />
+    </motion.div>
   );
 }
 
-function PhotoFade() {
+function MountainDitherFade() {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
   React.useEffect(() => {
@@ -323,24 +386,30 @@ function PhotoFade() {
     if (!context) return;
 
     const image = new window.Image();
-    image.src = PHOTO;
+    image.src = "/landing/promo/hero/mountain-1.png";
 
     const draw = () => {
       const width = window.innerWidth;
-      const height = 360;
+      const height = 120;
+      const scale = width / image.naturalWidth;
+      const sourceHeight = Math.min(
+        image.naturalHeight,
+        height / Math.max(scale, 0.001),
+      );
+
       canvas.width = width;
       canvas.height = height;
-
-      const scale = Math.max(width / IMG_W, height / IMG_H);
-      const drawnWidth = IMG_W * scale;
-      const drawnHeight = IMG_H * scale;
       context.clearRect(0, 0, width, height);
       context.drawImage(
         image,
-        (width - drawnWidth) / 2,
-        height - drawnHeight,
-        drawnWidth,
-        drawnHeight,
+        0,
+        image.naturalHeight - sourceHeight,
+        image.naturalWidth,
+        sourceHeight,
+        0,
+        0,
+        width,
+        height,
       );
 
       for (let y = 0; y < height; y += DOT) {
@@ -369,32 +438,43 @@ function PhotoFade() {
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="relative -mb-[234px] block h-[360px] w-full"
+      className="relative -mb-[60px] block h-[120px] w-full [image-rendering:pixelated]"
     />
   );
 }
 
 export function Hero() {
   const sectionRef = React.useRef<HTMLElement>(null);
-  const [viewport, setViewport] = React.useState({ width: 1440, height: 900 });
+  const sceneRef = React.useRef<HTMLDivElement>(null);
+  const [snapProgress, setSnapProgress] = React.useState(0.2);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end end"],
   });
-  const pan = useTransform(scrollYProgress, [0, PAN_END], [0, 1]);
-  const pathProgress = useTransform(scrollYProgress, [PAN_END, 1], [0, 1]);
-  const backgroundY = useTransform(pan, [0, 1], [0, 100]);
-  const backgroundPosition = useMotionTemplate`center ${backgroundY}%`;
-  const introOpacity = useTransform(
+  const pan = useTransform(
     scrollYProgress,
-    [0, 0.08, 0.15],
-    [1, 1, 0],
+    [0, Math.max(snapProgress, 0.001)],
+    [0, 1],
   );
-  const introY = useTransform(scrollYProgress, [0, 0.15], [0, -24]);
+  const pathProgress = useTransform(
+    scrollYProgress,
+    [snapProgress, 0.9],
+    [0, 1],
+  );
 
   React.useEffect(() => {
-    const measure = () =>
-      setViewport({ width: window.innerWidth, height: window.innerHeight });
+    const measure = () => {
+      const sceneHeight = sceneRef.current?.clientHeight ?? window.innerHeight;
+      const viewportHeight = window.innerHeight;
+      const totalScroll = sceneHeight + viewportHeight * (HOLD_SCREENS - 1);
+
+      setSnapProgress(
+        totalScroll > 0
+          ? Math.max(sceneHeight - viewportHeight, 0) / totalScroll
+          : 0,
+      );
+    };
+
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
@@ -402,19 +482,21 @@ export function Hero() {
 
   return (
     <>
-      <section ref={sectionRef} id="hero" className="relative h-[600svh]">
-        <div className="sticky top-0 h-[100svh]">
-          <motion.div
-            className="absolute inset-0 bg-cover bg-no-repeat"
-            style={{
-              backgroundImage: `url(${PHOTO})`,
-              backgroundPosition,
-            }}
-          />
-          <motion.div
-            className="absolute left-[clamp(24px,10vw,160px)] top-[20svh] z-20 flex max-w-[calc(100%_-_48px)] flex-col items-start gap-12"
-            style={{ opacity: introOpacity, y: introY }}
-          >
+      <section
+        ref={sectionRef}
+        id="hero"
+        className="relative"
+        style={{
+          height: `calc(max(100svh, 89.583vw) + ${HOLD_SCREENS * 100}svh)`,
+        }}
+      >
+        <div
+          ref={sceneRef}
+          className="sticky h-[max(100svh,89.583vw)] overflow-hidden"
+          style={{ top: "calc(100svh - max(100svh, 89.583vw))" }}
+        >
+          <MountainScene pan={pan} />
+          <div className="absolute left-[clamp(24px,11.11vw,160px)] top-[20%] z-20 flex max-w-[calc(100%_-_48px)] flex-col items-start gap-12">
             <div className="flex flex-col items-start gap-[30px] font-cossetteTexte">
               <div className="flex flex-wrap items-center gap-[14px] text-[clamp(16px,1.67vw,24px)] font-normal leading-normal tracking-[-0.03em] text-[#d0d6dd]">
                 <p className="whitespace-nowrap">November 20 - 22, 2026</p>
@@ -441,21 +523,14 @@ export function Hero() {
             >
               Sign up for updates
             </button>
-          </motion.div>
+          </div>
           <PathCanvas progress={pathProgress} />
           {PIN_DATA.map((pin) => (
-            <StoryPin
-              key={pin.title}
-              pin={pin}
-              pan={pan}
-              pathProgress={pathProgress}
-              viewport={viewport}
-            />
+            <StoryPin key={pin.title} pin={pin} pathProgress={pathProgress} />
           ))}
         </div>
       </section>
-
-      <PhotoFade />
+      <MountainDitherFade />
     </>
   );
 }
