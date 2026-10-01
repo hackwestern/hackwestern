@@ -165,7 +165,7 @@ export default function Home() {
       Interested in supporting the event?
     </p>
   </div>
-        
+        <a href="mailto:hello@hackwestern.com">
               <Button >
               
                 <svg viewBox="0 0 14 14" fill="none" className={"relative z-10 size-[14px]"} aria-hidden="true">
@@ -174,6 +174,7 @@ export default function Home() {
             </svg>
                 <span className="relative z-10 pl-2">Get in touch</span>
               </Button>
+              </a>
             </div>
 
             {/* FAQ section */}
