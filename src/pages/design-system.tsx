@@ -9,6 +9,8 @@ import { ColorSwatch } from "~/components/ui/color-swatch";
 import { Window } from "~/components/internals/window";
 import { SmallCard } from "~/components/internals/smallCard";
 import { SearchBar } from "~/components/internals/search-bar";
+import { ApplicationSidebar } from "~/components/apply/application-sidebar";
+import { UserBadge } from "~/components/apply/user-badge";
 
 function DesignSystem() {
   const [isLoading, setIsLoading] = useState(false);
@@ -51,6 +53,49 @@ function DesignSystem() {
       <Window title="Placeholder">
         <div className="pb-10 font-figtree text-9xl">0:00</div>
       </Window>
+
+      <div className="h3">Application Portal Shell: </div>
+      <div className="relative flex h-[700px] w-full gap-6 overflow-hidden rounded-md bg-gradient-to-b from-[#8fa8bd] to-[#6a8398] p-9">
+        <ApplicationSidebar
+          steps={[
+            { key: "realm", label: "Realm" },
+            { key: "basics", label: "Basics" },
+            { key: "info", label: "Info" },
+            { key: "application", label: "Application" },
+            { key: "links", label: "Links" },
+            { key: "agreements", label: "Agreements" },
+            { key: "optional", label: "Optional" },
+            { key: "review", label: "Review" },
+          ]}
+          activeStep="realm"
+          lastSavedAt={new Date(new Date().setHours(15, 42, 0, 0))}
+        />
+
+        <div className="relative flex flex-1 flex-col">
+          <div className="absolute right-0 top-0">
+            <UserBadge firstName="Katrina" />
+          </div>
+
+          <div className="mx-auto mt-16 h-[500px] w-[600px]">
+            <Window
+              fluid
+              draggable={false}
+              disableControls
+              title="Hack Western 13: Discover the Unknown"
+              className="h-full"
+            >
+              <div className="flex h-full flex-col items-center justify-center gap-3 p-10 text-center">
+                <p className="font-primary text-sm-display font-bold text-heavy">
+                  Click to choose your horse companion
+                </p>
+                <p className="font-secondary text-lg-p font-medium text-light">
+                  Who will accompany you along this adventure?
+                </p>
+              </div>
+            </Window>
+          </div>
+        </div>
+      </div>
 
       <div className="h3">typography: </div>
       <div className="h1">heading 1</div>

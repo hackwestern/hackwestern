@@ -19,6 +19,13 @@ export interface WindowProps {
   dragConstraints?: MotionProps["dragConstraints"];
   disableExpand?: boolean;
   autoHeight?: boolean;
+  /** Size comes from className instead of width/height; content scrolls. */
+  fluid?: boolean;
+  contentClassName?: string;
+  /** Traffic lights render but do nothing. */
+  disableControls?: boolean;
+  /** Fluid only: a bar pinned under the scrolling content. */
+  footer?: React.ReactNode;
 }
 
 export function Window({
@@ -35,6 +42,10 @@ export function Window({
   dragConstraints,
   disableExpand = false,
   autoHeight = false,
+  fluid = false,
+  contentClassName,
+  disableControls = false,
+  footer,
 }: WindowProps) {
   const [internalMinimized, setInternalMinimized] = React.useState(false);
   const isControlled = minimizedProp !== undefined;
@@ -61,19 +72,25 @@ export function Window({
         }
       }}
     >
-      <div className="z-10 flex items-center gap-2">
+      <div
+        className={cn(
+          "z-10 flex items-center gap-2",
+          disableControls &&
+            "pointer-events-none [&>button:disabled]:opacity-100",
+        )}
+      >
         <button
           type="button"
           aria-label="Close window"
           onClick={onClose}
-          disabled={!onClose}
+          disabled={disableControls || !onClose}
           className="window-traffic-light window-traffic-light-red"
         />
         <button
           type="button"
           aria-label="Minimize window"
           onClick={() => setMinimized(true)}
-          disabled={minimized}
+          disabled={disableControls || minimized}
           title="Minimize window"
           className="window-traffic-light window-traffic-light-yellow"
         />
@@ -81,7 +98,7 @@ export function Window({
           type="button"
           aria-label="Restore window"
           onClick={() => setMinimized(false)}
-          disabled={!minimized || disableExpand}
+          disabled={disableControls || !minimized || disableExpand}
           title="Restore window"
           className="window-traffic-light window-traffic-light-green"
         />
@@ -91,6 +108,62 @@ export function Window({
       </p>
     </div>
   );
+
+  if (fluid) {
+    return (
+      <motion.div
+        className={cn("relative flex flex-col", className)}
+        drag={draggable}
+        dragControls={dragControls}
+        dragConstraints={dragConstraints}
+        dragListener={false}
+        dragMomentum={false}
+      >
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border-[0.9px] border-[#9F9F9F] bg-[#f4f5f8] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_40px_rgba(30,40,60,0.3),0_4px_10px_rgba(30,40,60,0.2)]">
+          <div className="shrink-0">{titleBar}</div>
+          {!minimized && (
+            <div className="relative min-h-0 flex-1">
+              {showDots && (
+                <svg
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 z-0 h-full w-full"
+                >
+                  <defs>
+                    <pattern
+                      id={patternId}
+                      width={DOT_SPACING}
+                      height={DOT_SPACING}
+                      patternUnits="userSpaceOnUse"
+                    >
+                      <rect width="1" height="1" className="fill-[#C8C8C8]" />
+                    </pattern>
+                  </defs>
+                  <rect
+                    width="100%"
+                    height="100%"
+                    fill={`url(#${patternId})`}
+                  />
+                </svg>
+              )}
+              <div
+                className={cn(
+                  "relative z-10 h-full overflow-auto",
+                  contentClassName,
+                )}
+              >
+                {children}
+              </div>
+            </div>
+          )}
+          {!minimized && footer && (
+            <div className="shrink-0 border-t-[0.9px] border-[#9F9F9F] bg-[#f4f5f8] px-6 py-2">
+              {footer}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
 
   if (autoHeight) {
     return (

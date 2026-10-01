@@ -15,6 +15,7 @@ export const colors = {
   bg: {
     light: "#f5f9ff",
     highlight: "#d7e2ef",
+    promoSheet: "#173f52",
   },
   grays: {
     "white-0": "#ffffff",
