@@ -253,6 +253,7 @@ export default function Apply() {
                       title="Hack Western 13: Discover the Unknown"
                       className="min-h-0 flex-1"
                       contentClassName="px-8 py-8 md:px-12 md:py-10"
+                      footer={<ApplyNavigation step={step} />}
                     >
                       <div className="space-y-6">
                         <ApplyHeading
@@ -265,7 +266,6 @@ export default function Apply() {
                         </div>
                       </div>
                     </Window>
-                    <ApplyNavigation step={step} />
                   </div>
                 )}
               </div>

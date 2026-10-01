@@ -24,6 +24,8 @@ export interface WindowProps {
   contentClassName?: string;
   /** Traffic lights render but do nothing. */
   disableControls?: boolean;
+  /** Fluid only: a bar pinned under the scrolling content. */
+  footer?: React.ReactNode;
 }
 
 export function Window({
@@ -43,6 +45,7 @@ export function Window({
   fluid = false,
   contentClassName,
   disableControls = false,
+  footer,
 }: WindowProps) {
   const [internalMinimized, setInternalMinimized] = React.useState(false);
   const isControlled = minimizedProp !== undefined;
@@ -150,6 +153,11 @@ export function Window({
               >
                 {children}
               </div>
+            </div>
+          )}
+          {!minimized && footer && (
+            <div className="shrink-0 border-t-[0.9px] border-[#9F9F9F] bg-[#f4f5f8] px-6 py-2">
+              {footer}
             </div>
           )}
         </div>
