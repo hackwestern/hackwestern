@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "~/lib/utils";
 import { HWLogo } from "./hw-logo";
+import { realmTint, type Realm } from "~/constants/realms";
 
 export type SidebarStep = {
   key: string;
@@ -13,6 +14,7 @@ export interface ApplicationSidebarProps {
   lastSavedAt?: Date | null;
   onStepClick?: (key: string) => void;
   className?: string;
+  realm?: Realm | null;
 }
 
 function formatSavedTime(date: Date) {
@@ -44,14 +46,22 @@ export function ApplicationSidebar({
   lastSavedAt,
   onStepClick,
   className,
+  realm,
 }: ApplicationSidebarProps) {
   const savedLabel = useSavedTimeLabel(lastSavedAt);
+  const tint = realm ? realmTint[realm] : null;
   return (
     <aside
       className={cn(
-        "flex h-full w-[267px] flex-col justify-between rounded-[12px] border border-white/25 bg-white/70 px-3 py-6 shadow-[0px_8.65px_10.81px_6.49px_rgba(0,0,0,0.05)] backdrop-blur-sm",
+        "flex h-full w-[267px] flex-col justify-between rounded-[12px] border px-3 py-6 shadow-[0px_8.65px_10.81px_6.49px_rgba(0,0,0,0.05)] backdrop-blur-sm transition-colors duration-500",
+        tint ? "" : "border-white/25 bg-white/70",
         className,
       )}
+      style={
+        tint
+          ? { backgroundColor: tint.sidebarBg, borderColor: tint.sidebarBorder }
+          : undefined
+      }
     >
       <div className="flex flex-col gap-9">
         <div className="px-3">

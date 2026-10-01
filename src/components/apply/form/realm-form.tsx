@@ -64,19 +64,31 @@ export function RealmForm() {
   if (!selectedHorse) {
     return (
       <Form {...form}>
-        <HorsePicker selectedId={horseId ?? null} onSelect={handlePick} />
+        <div className="flex flex-col items-center gap-4">
+          <div className="text-center">
+            <p className="font-primary text-sm-display font-bold text-heavy">
+              Click to choose your horse companion
+            </p>
+            <p className="mt-1 font-figtree text-lg-p font-medium text-light">
+              Who will accompany you along this adventure?
+            </p>
+          </div>
+          <HorsePicker selectedId={horseId ?? null} onSelect={handlePick} />
+        </div>
       </Form>
     );
   }
+
+  const hasNames = Boolean(horseFirstName && horseLastName);
 
   return (
     <Form {...form}>
       <div className="flex flex-col items-center gap-6">
         <div className="text-center">
           <p className="font-primary text-sm-display font-bold text-heavy">
-            {horseFirstName && horseLastName
+            {hasNames
               ? `${horseFirstName} ${horseLastName} will be your companion for Hack Western 13!`
-              : "Name your horse companion"}
+              : "Good choice! Next, pick a name for your companion"}
           </p>
           <p className="mt-2 font-figtree text-lg-p font-medium text-light">
             You will be journeying through the{" "}

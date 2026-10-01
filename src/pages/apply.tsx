@@ -19,6 +19,7 @@ import { signOut } from "next-auth/react";
 import { ApplicationSidebar } from "~/components/apply/application-sidebar";
 import { Window } from "~/components/internals/window";
 import { UserBadge } from "~/components/apply/user-badge";
+import { realmTint } from "~/constants/realms";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   const steps = applySteps;
@@ -115,8 +116,10 @@ export default function Apply() {
     fields: ["status"],
   });
   const { data: userInfo } = api.application.get.useQuery({
-    fields: ["firstName", "updatedAt"],
+    fields: ["firstName", "updatedAt", "realm"],
   });
+  const realm = userInfo?.realm ?? null;
+  const tint = realm ? realmTint[realm] : null;
   const continueStep = getNextIncompleteStep(application);
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -210,6 +213,13 @@ export default function Apply() {
             className="absolute inset-0 h-full w-full object-cover"
             draggable={false}
           />
+          {tint && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 transition-colors duration-500"
+              style={{ backgroundColor: tint.overlay }}
+            />
+          )}
 
           <div className="relative z-10 flex h-full w-full gap-6 p-9">
             <ApplicationSidebar
@@ -217,6 +227,7 @@ export default function Apply() {
               activeStep={step}
               lastSavedAt={userInfo?.updatedAt ?? null}
               onStepClick={handleApplyNavigate}
+              realm={realm}
             />
 
             <div className="relative flex flex-1 flex-col">

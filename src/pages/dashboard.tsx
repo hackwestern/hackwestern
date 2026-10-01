@@ -41,7 +41,7 @@ function StatusContent({ status }: { status: string | null | undefined }) {
 
 export default function Dashboard() {
   const { data: app } = api.application.get.useQuery({
-    fields: ["status", "firstName"],
+    fields: ["status", "firstName", "realm"],
   });
 
   return (
@@ -53,6 +53,7 @@ export default function Dashboard() {
       />
       <PortalShell
         firstName={app?.firstName ?? "there"}
+        realm={app?.realm ?? null}
         onSignOut={() => void signOut({ callbackUrl: "/" })}
       >
         {/* undefined = still loading; null = no application row */}

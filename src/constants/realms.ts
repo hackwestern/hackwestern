@@ -12,6 +12,40 @@ export const realmLabel: Record<Realm, string> = {
 };
 
 /**
+ * Per-realm tint tokens applied to the application background and sidebar
+ * when the hacker has picked a horse. Matches the Figma realm variants
+ * (Yellow=Safari, Blue=Ocean, Green=Mountain, Orange=Desert).
+ */
+export type RealmTint = {
+  overlay: string;
+  sidebarBg: string;
+  sidebarBorder: string;
+};
+
+export const realmTint: Record<Realm, RealmTint> = {
+  safari: {
+    overlay: "rgba(234, 179, 8, 0.22)",
+    sidebarBg: "rgba(254, 243, 199, 0.78)",
+    sidebarBorder: "rgba(234, 179, 8, 0.35)",
+  },
+  ocean: {
+    overlay: "rgba(37, 99, 235, 0.22)",
+    sidebarBg: "rgba(219, 234, 254, 0.78)",
+    sidebarBorder: "rgba(37, 99, 235, 0.35)",
+  },
+  mountain: {
+    overlay: "rgba(22, 163, 74, 0.22)",
+    sidebarBg: "rgba(220, 252, 231, 0.78)",
+    sidebarBorder: "rgba(22, 163, 74, 0.35)",
+  },
+  desert: {
+    overlay: "rgba(234, 88, 12, 0.22)",
+    sidebarBg: "rgba(254, 215, 170, 0.78)",
+    sidebarBorder: "rgba(234, 88, 12, 0.35)",
+  },
+};
+
+/**
  * The eight horse companions the applicant can pick from during the realm
  * step. Position values are percentages of the horse-scene box so the layout
  * scales with the container. Sourced from Figma frame 219:1327.
