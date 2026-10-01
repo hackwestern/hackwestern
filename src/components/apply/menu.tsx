@@ -70,11 +70,6 @@ function computeStepStatuses(
       return true;
     }
     if (typeof v === "number") return false; // numbers are considered filled
-    // Special case for canvasData: check if paths array is empty
-    if (typeof v === "object" && v !== null && "paths" in v) {
-      const paths = (v as { paths: unknown }).paths;
-      if (Array.isArray(paths) && paths.length === 0) return true;
-    }
     return false;
   };
 
@@ -104,7 +99,6 @@ function computeStepStatuses(
       "agreeEmailsFromMLH",
     ],
     optional: ["underrepGroup", "gender", "ethnicity", "sexualOrientation"],
-    canvas: ["canvasData"],
     review: [],
   };
 
@@ -134,7 +128,6 @@ function computeStepStatuses(
       "agreeWillBe18",
     ],
     optional: [],
-    canvas: [],
     review: [],
   };
 

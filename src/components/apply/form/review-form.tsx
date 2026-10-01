@@ -9,7 +9,6 @@ import { cn } from "~/lib/utils";
 import { applicationSubmitSchema } from "~/schemas/application";
 import { api } from "~/utils/api";
 import { getHorse, realmLabel } from "~/constants/realms";
-import { type CanvasPaths } from "~/types/canvas";
 import { QUESTION1, QUESTION2, QUESTION3 } from "./application-form";
 import React from "react";
 
@@ -57,8 +56,6 @@ function ReviewSectionInfo({ step, error }: ReviewSectionProps) {
       return <OptionalReview step={step} error={error} />;
     case "realm":
       return <RealmReview step={step} error={error} />;
-    case "canvas":
-      return <CanvasReview step={step} error={error} />;
     default:
       return <></>;
   }
@@ -363,51 +360,6 @@ function RealmReview({}: ReviewSectionProps) {
           </p>
         </div>
       </div>
-    </div>
-  );
-}
-
-function CanvasReview({}: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({ fields: ["canvasData"] });
-
-  // reuse shared canvas types
-  type CanvasData = {
-    paths: CanvasPaths;
-    timestamp: number;
-    version: string;
-  };
-
-  const canvasData = data?.canvasData as CanvasData | null | undefined;
-  const pathStrings =
-    canvasData?.paths?.map((path) =>
-      path.reduce((acc, point, index) => {
-        if (index === 0) return `M ${point[0]} ${point[1]}`;
-        return `${acc} L ${point[0]} ${point[1]}`;
-      }, ""),
-    ) ?? [];
-
-  return (
-    <div className="space-y-2">
-      <Label>Your Drawing</Label>
-      {pathStrings.length > 0 ? (
-        <div className="h-64 w-64 overflow-hidden rounded-lg border-2 border-gray-300 bg-white lg:h-72 lg:w-72">
-          <svg className="h-full w-full">
-            {pathStrings.map((pathString, pathIndex) => (
-              <path
-                key={pathIndex}
-                d={pathString}
-                stroke="#a16bc7"
-                strokeWidth="4"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))}
-          </svg>
-        </div>
-      ) : (
-        <p className="text-sm text-medium">(no drawing)</p>
-      )}
     </div>
   );
 }
