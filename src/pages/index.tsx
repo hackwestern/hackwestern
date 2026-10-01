@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Window } from "~/components/internals/window";
 import { FaqColumn, FaqItem } from "~/components/live/faq";
 import { PhotoGallery } from "~/components/live/photo-gallery";
-import { Folder } from "~/components/live/folder";
+import { WindowFolder } from "~/components/live/window-folder";
 import { PROMO_FAQ } from "~/constants/faq";
 
 // HOLIA's TODO
@@ -15,7 +15,7 @@ import { PROMO_FAQ } from "~/constants/faq";
 // 3. check with faq answers and questions
 // 4. check with "dear hackers" message
 // 5. add "dither" on mobile FAQ
-
+// 6. rename folder component 
 
 const SECTIONS = [
   { id: "hero", label: "Hero", height: 1290, tiltAfter: 0.4 },
@@ -69,7 +69,7 @@ export default function Home() {
     />
   </div>
             {/* insert waterfall */}
-            <Folder defaultOpen label="A message to new hackers" className="absolute left-[100px] bottom-[120px]" windowTitle="A message to new hackers" windowProps={{width: 400, autoHeight: true, className:"isolate absolute right-[500px] top-[200px]"}}>
+            <WindowFolder defaultOpen label="A message to new hackers" className="absolute left-[100px] bottom-[120px]" windowTitle="A message to new hackers" windowProps={{width: 400, autoHeight: true, className:"isolate absolute right-[500px] top-[200px]"}}>
               <div className="p3 font-figtree whitespace-pre-line">
               {`Dear Hacker,
 
@@ -81,8 +81,8 @@ export default function Home() {
 
                 Etc. etc.`}
               </div>
-            </Folder>
-            <Folder defaultOpen label="Impact" className="absolute left-[200px] bottom-[400px]" windowTitle="Last year's impact" windowProps={{autoHeight: true, className:"isolate absolute right-[300px] top-[500px]"}}>
+            </WindowFolder>
+            <WindowFolder defaultOpen label="Impact" className="absolute left-[200px] bottom-[400px]" windowTitle="Last year's impact" windowProps={{autoHeight: true, className:"isolate absolute right-[300px] top-[500px]"}}>
                 <div className="flex flex-col items-center gap-[28px] text-center">
                 <div className="flex items-start gap-[64px]">
                   <div className="flex flex-col items-center">
@@ -101,16 +101,16 @@ export default function Home() {
                   <p className="text-[14.4px] font-medium text-light">in prizes</p>
                 </div>
               </div>
-            </Folder>
+            </WindowFolder>
                           
-            <Folder defaultOpen label="Exploration" className="absolute left-[80px] bottom-[300px]" windowTitle="A world of exploration" windowProps={{className:"isolate absolute right-[100px] top-[100px]"}}>
+            <WindowFolder defaultOpen label="Exploration" className="absolute left-[80px] bottom-[300px]" windowTitle="A world of exploration" windowProps={{className:"isolate absolute right-[100px] top-[100px]"}}>
               <PhotoGallery images={[
                   "/landing/home/gallery/placeholder-1.png",
                   "/landing/home/gallery/placeholder-2.png",
                   "/landing/home/gallery/placeholder-3.png",
                   "/landing/home/gallery/placeholder-4.png",
               ]} />
-            </Folder>
+            </WindowFolder>
         </section>
       <FilmStrip rotate={3.5} className="relative z-10"/>
 

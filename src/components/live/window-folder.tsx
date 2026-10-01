@@ -27,7 +27,7 @@ export interface FolderProps {
  * backgrounds are implemented here as hover-only via `group-hover`, not as
  * permanent chrome.
  */
-export function Folder({
+export function WindowFolder({
   label,
   windowTitle,
   children,
