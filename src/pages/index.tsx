@@ -15,8 +15,6 @@ import Cloud from "~/components/live/cloud";
 import { useRef } from "react";
 
 // ABOUT & FAQ TODO
-// 1. add waterfall
-// 2. add clouds
 // 4. check with "dear hackers" message
 // 5. add "dither" on mobile FAQ
 
@@ -52,9 +50,7 @@ export default function Home() {
       <SkyBackground />
       <FilmStrip />
 
-      {/* placeholder */}
-      <section id="hero" style={{minHeight:1290}}>
-      </section>
+      <Hero />
 
       <FilmStrip rotate={0.4} className="relative z-10" />
 
