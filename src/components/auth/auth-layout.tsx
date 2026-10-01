@@ -11,6 +11,30 @@ export interface AuthLayoutProps {
   windowClassName?: string;
 }
 
+const DOT_SPACING = 12;
+
+function DotPattern() {
+  const patternId = React.useId();
+  return (
+    <svg
+      aria-hidden
+      className="pointer-events-none absolute inset-0 h-full w-full"
+    >
+      <defs>
+        <pattern
+          id={patternId}
+          width={DOT_SPACING}
+          height={DOT_SPACING}
+          patternUnits="userSpaceOnUse"
+        >
+          <rect width="1" height="1" className="fill-[#C8C8C8]" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill={`url(#${patternId})`} />
+    </svg>
+  );
+}
+
 export function AuthLayout({
   title,
   windowTitle = "Hack Western 13: Discover the Unknown",
@@ -38,9 +62,10 @@ export function AuthLayout({
             "w-full max-w-[600px] bg-[#ededed] shadow-2xl",
             windowClassName,
           )}
-          contentClassName="p-6 sm:p-12"
+          contentClassName="relative p-6 sm:p-12"
         >
-          <div className="flex flex-col gap-8">
+          <DotPattern />
+          <div className="relative flex flex-col gap-8">
             {title && (
               <h1 className="font-figtree text-sm-display font-bold text-gray-5">
                 {title}

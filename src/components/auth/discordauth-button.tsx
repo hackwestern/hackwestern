@@ -14,7 +14,7 @@ function DiscordAuthButton({
       onClick={() => {
         void signIn("discord", { callbackUrl: redirect });
       }}
-      variant="secondary"
+      variant="primary"
       size="lg"
       full
     >

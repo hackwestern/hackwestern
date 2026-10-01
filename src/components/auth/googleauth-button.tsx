@@ -14,7 +14,7 @@ function GoogleAuthButton({
       onClick={() => {
         void signIn("google", { callbackUrl: redirect });
       }}
-      variant="secondary"
+      variant="primary"
       size="lg"
       full
     >

@@ -101,7 +101,7 @@ export default function Register() {
           </div>
 
           <Button
-            variant="primary"
+            variant="primary-2"
             type="submit"
             size="lg"
             full

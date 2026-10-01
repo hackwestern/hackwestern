@@ -93,7 +93,7 @@ export default function Login() {
           </div>
 
           <Button
-            variant="primary"
+            variant="primary-2"
             type="submit"
             size="lg"
             full

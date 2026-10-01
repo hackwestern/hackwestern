@@ -14,7 +14,7 @@ function GithubAuthButton({
       onClick={() => {
         void signIn("github", { callbackUrl: redirect });
       }}
-      variant="secondary"
+      variant="primary"
       size="lg"
       full
     >
