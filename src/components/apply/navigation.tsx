@@ -135,7 +135,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
           {!step || previousStep ? (
             <Button
               variant="secondary"
-              className="h-10 border-gray-300 px-4 text-gray-700 hover:bg-gray-50"
+              className="h-10 border-gray-300 px-4 font-figtree text-gray-700 hover:bg-gray-50"
               onClick={() => navigate(`/apply?step=${previousStep ?? step}`)}
               disabled={pending}
               aria-busy={pending}
@@ -202,7 +202,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
             (previousStep && (
               <Button
                 variant="tertiary"
-                className="h-6 w-16 text-base font-medium text-heavy"
+                className="h-6 w-16 font-figtree text-base font-medium text-heavy"
                 onClick={() => navigate(`/apply?step=${previousStep}`)}
                 disabled={pending}
                 aria-busy={pending}

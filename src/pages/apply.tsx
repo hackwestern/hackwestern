@@ -139,7 +139,7 @@ export default function Apply() {
         noindex
       />
       <motion.main
-        className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-x-hidden md:overflow-y-hidden"
+        className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 font-figtree md:overflow-x-hidden md:overflow-y-hidden"
         key={"apply-page"}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -151,7 +151,7 @@ export default function Apply() {
           {/* Mobile Header */}
           <div className="fixed z-[99] flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
             <div className="h-8 w-8"></div>
-            <h1 className="font-secondary text-lg font-semibold text-heavy">
+            <h1 className="font-figtree text-lg font-semibold text-heavy">
               {step
                 ? step.charAt(0).toUpperCase() + step.slice(1)
                 : "Application"}
@@ -174,7 +174,7 @@ export default function Apply() {
               </div>
 
               {step ? (
-                <div className="flex-1 overflow-visible font-secondary">
+                <div className="flex-1 overflow-visible font-figtree">
                   <ApplyForm step={step} />
                 </div>
               ) : (
@@ -254,7 +254,7 @@ export default function Apply() {
                           subheading={subheading}
                           stepKey={step}
                         />
-                        <div className="scrollbar font-secondary">
+                        <div className="scrollbar font-figtree">
                           <ApplyForm step={step} />
                         </div>
                       </div>
