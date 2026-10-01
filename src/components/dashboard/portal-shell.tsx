@@ -20,7 +20,9 @@ export function PortalShell({
   background = "/apply/realm/background.png",
 }: PortalShellProps) {
   return (
-    <div className={cn("relative min-h-screen w-full overflow-hidden", className)}>
+    <div
+      className={cn("relative min-h-screen w-full overflow-hidden", className)}
+    >
       <img
         src={background}
         alt=""
@@ -34,10 +36,7 @@ export function PortalShell({
       </div>
 
       <div className="absolute right-9 top-9 z-10">
-        <UserBadge
-          firstName={firstName ?? "there"}
-          onSignOut={onSignOut}
-        />
+        <UserBadge firstName={firstName ?? "there"} onSignOut={onSignOut} />
       </div>
 
       <div className="relative z-[5] flex min-h-screen items-center justify-center px-6">

@@ -14,11 +14,7 @@ import {
   WaitlistedStatusCard,
 } from "~/components/dashboard/status-cards";
 
-function StatusContent({
-  status,
-}: {
-  status: string | null | undefined;
-}) {
+function StatusContent({ status }: { status: string | null | undefined }) {
   switch (status) {
     case "ACCEPTED":
     case "CONFIRMED":
@@ -41,7 +37,11 @@ export default function Dashboard() {
 
   return (
     <>
-      <SEO title="Dashboard" description="Your Hack Western application status." noindex />
+      <SEO
+        title="Dashboard"
+        description="Your Hack Western application status."
+        noindex
+      />
       <PortalShell
         firstName={app?.firstName ?? "there"}
         onSignOut={() => void signOut({ callbackUrl: "/" })}

@@ -18,9 +18,7 @@ function StatusCard({ title, description, primaryAction }: StatusCardProps) {
       <h1 className="font-primary text-[36px] font-bold leading-tight text-highlight">
         {title}
       </h1>
-      <p className="font-figtree text-md-p text-highlight">
-        {description}
-      </p>
+      <p className="font-figtree text-md-p text-highlight">{description}</p>
       {primaryAction && (
         <div className="mt-2">
           {primaryAction.href ? (
@@ -28,11 +26,7 @@ function StatusCard({ title, description, primaryAction }: StatusCardProps) {
               <Link href={primaryAction.href}>{primaryAction.label}</Link>
             </Button>
           ) : (
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={primaryAction.onClick}
-            >
+            <Button variant="primary" size="lg" onClick={primaryAction.onClick}>
               {primaryAction.label}
             </Button>
           )}
