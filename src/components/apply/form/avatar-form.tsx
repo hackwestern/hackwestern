@@ -12,7 +12,13 @@ import type { AvatarObject } from "../../../constants/avatar";
 import { AvatarDisplay } from "../avatar-display";
 
 type AvatarColor =
-  "red" | "orange" | "yellow" | "green" | "blue" | "purple" | "pink";
+  | "red"
+  | "orange"
+  | "yellow"
+  | "green"
+  | "blue"
+  | "purple"
+  | "pink";
 
 // Helper to get accessory object from ID
 export const getAccessoryFromId = (
