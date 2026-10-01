@@ -13,7 +13,7 @@ import ApplyHeading from "~/components/apply/heading";
 import { motion } from "framer-motion";
 import { MobileStickerDrawer } from "~/components/apply/mobile-sticker-drawer";
 import CharacterIcon from "~/components/dashboard/CharacterIcon";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { signOut } from "next-auth/react";
 import { ApplicationSidebar } from "~/components/apply/application-sidebar";
@@ -111,10 +111,6 @@ export default function Apply() {
   const step = applyStep?.step ?? null;
   const heading = applyStep?.heading ?? null;
   const subheading = applyStep?.subheading ?? null;
-  const desktopScrollRef = useRef<HTMLDivElement | null>(null);
-  const [desktopPreviewHeight, setDesktopPreviewHeight] = useState<
-    number | null
-  >(null);
   const { data: application } = api.application.get.useQuery({
     fields: ["status"],
   });
@@ -134,19 +130,6 @@ export default function Apply() {
     setPending(true);
     void router.push(`/apply?step=${stepKey}`).then(() => setPending(false));
   };
-
-  useEffect(() => {
-    const el = desktopScrollRef.current;
-    if (!el) return;
-    const update = () => setDesktopPreviewHeight(el.clientHeight ?? null);
-    // initial
-    update();
-    const ro = new ResizeObserver(() => {
-      update();
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [applyStep]);
 
   return (
     <>
@@ -265,16 +248,8 @@ export default function Apply() {
                           subheading={subheading}
                           stepKey={step}
                         />
-                        <div
-                          ref={desktopScrollRef}
-                          className="scrollbar font-secondary"
-                        >
-                          <ApplyForm
-                            step={step}
-                            previewHeight={
-                              (desktopPreviewHeight ?? 300) - 10
-                            }
-                          />
+                        <div className="scrollbar font-secondary">
+                          <ApplyForm step={step} />
                         </div>
                       </div>
                     </MacWindow>
