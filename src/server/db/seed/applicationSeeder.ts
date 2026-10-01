@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import {
   applications,
-  avatarColour,
+  realm,
   countrySelection,
   dietaryRestrictions,
   emergencyContactRelationship,
@@ -57,11 +57,10 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
     ) as (typeof dietaryRestrictions.enumValues)[number];
 
     const application = {
-      avatarColour: faker.helpers.arrayElement(avatarColour.enumValues),
-      avatarFace: faker.number.int({ min: 1, max: 5 }),
-      avatarLeftHand: faker.number.int({ min: 1, max: 5 }),
-      avatarRightHand: faker.number.int({ min: 1, max: 5 }),
-      avatarHat: faker.number.int({ min: 1, max: 5 }),
+      realm: faker.helpers.arrayElement(realm.enumValues),
+      horseId: faker.number.int({ min: 1, max: 5 }),
+      horseFirstName: faker.person.firstName(),
+      horseLastName: faker.person.lastName(),
 
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),

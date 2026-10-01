@@ -9,6 +9,7 @@ import {
 } from "~/components/apply/stamp";
 import { AvatarDisplay } from "~/components/apply/avatar-display";
 import { api } from "~/utils/api";
+import { avatarColour } from "~/server/db/schema";
 
 const itemAnim = {
   initial: { opacity: 0, y: -6 },
