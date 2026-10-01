@@ -1,7 +1,6 @@
 import { faker } from "@faker-js/faker";
 import {
   applications,
-  realm,
   countrySelection,
   dietaryRestrictions,
   emergencyContactRelationship,
@@ -60,11 +59,6 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
     const horse = faker.helpers.arrayElement(horses);
 
     const application = {
-      realm: faker.helpers.arrayElement(realm.enumValues),
-      horseId: faker.number.int({ min: 1, max: 5 }),
-      horseFirstName: faker.person.firstName(),
-      horseLastName: faker.person.lastName(),
-
       realm: horse.realm,
       horseId: horse.id,
       horseFirstName: faker.person.firstName(),
