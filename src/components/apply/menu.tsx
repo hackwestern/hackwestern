@@ -79,13 +79,7 @@ function computeStepStatuses(
   };
 
   const stepFields: Record<string, string[]> = {
-    character: [
-      "avatarColour",
-      "avatarFace",
-      "avatarLeftHand",
-      "avatarRightHand",
-      "avatarHat",
-    ],
+    realm: ["realm", "horseId", "horseFirstName", "horseLastName"],
     basics: [
       "firstName",
       "lastName",
@@ -116,13 +110,7 @@ function computeStepStatuses(
 
   // Mandatory fields from applicationSubmitSchema
   const mandatoryFields: Record<string, string[]> = {
-    character: [
-      "avatarColour",
-      "avatarFace",
-      "avatarLeftHand",
-      "avatarRightHand",
-      "avatarHat",
-    ],
+    realm: ["realm", "horseId", "horseFirstName", "horseLastName"],
     basics: [
       "firstName",
       "lastName",

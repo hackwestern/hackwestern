@@ -16,15 +16,6 @@ export function HorsePicker({
 }: HorsePickerProps) {
   return (
     <div className={cn("flex flex-col items-center gap-3", className)}>
-      <div className="text-center">
-        <h2 className="font-primary text-sm-display font-bold text-heavy">
-          Click to choose your horse companion
-        </h2>
-        <p className="mt-2 font-secondary text-lg-p font-medium text-light">
-          Who will accompany you along this adventure?
-        </p>
-      </div>
-
       <div className="relative aspect-[823/500] w-full">
         {horses.map((horse) => {
           const isSelected = horse.id === selectedId;
