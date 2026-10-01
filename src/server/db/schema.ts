@@ -526,7 +526,7 @@ export const applications = pgTable(
     avatarColour: avatarColour("avatar_colour"),
     avatarFace: integer("avatar_face"),
     avatarLeftHand: integer("avatar_left_hand"),
-    avatarRightHand: integer("avatar_right_qqhand"),
+    avatarRightHand: integer("avatar_right_hand"),
     avatarHat: integer("avatar_hat"),
 
     canvasData: jsonb("canvas_data")
