@@ -55,6 +55,13 @@ export const personaSaveSchema = applicationSaveSchema.pick({
   avatarHat: true,
 });
 
+export const realmSaveSchema = applicationSaveSchema.pick({
+  realm: true,
+  horseId: true,
+  horseFirstName: true,
+  horseLastName: true,
+});
+
 export const infoSaveSchema = z.object({
   school: z.preprocess(
     (val) => (val === "" ? undefined : val),

@@ -37,13 +37,12 @@ function getNextIncompleteStep(
     if (step.step === "review") continue; // review is final
 
     switch (step.step) {
-      case "character": {
+      case "realm": {
         if (
-          isEmpty(application.avatarColour) ||
-          isEmpty(application.avatarFace) ||
-          isEmpty(application.avatarLeftHand) ||
-          isEmpty(application.avatarRightHand) ||
-          isEmpty(application.avatarHat)
+          isEmpty(application.realm) ||
+          isEmpty(application.horseId) ||
+          isEmpty(application.horseFirstName) ||
+          isEmpty(application.horseLastName)
         )
           return step.step;
         break;

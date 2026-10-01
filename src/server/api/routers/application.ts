@@ -39,6 +39,11 @@ export const applicationRouter = createTRPCRouter({
                 "avatarLeftHand",
                 "avatarRightHand",
                 "avatarHat",
+                // Realm + horse companion
+                "realm",
+                "horseId",
+                "horseFirstName",
+                "horseLastName",
                 // Basics
                 "firstName",
                 "lastName",

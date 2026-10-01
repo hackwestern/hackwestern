@@ -1,6 +1,6 @@
 import React from "react";
 import type { ApplyStep } from "~/constants/apply";
-import { AvatarForm } from "./avatar-form";
+import { RealmForm } from "./realm-form";
 import { BasicsForm } from "./basics-form";
 import { InfoForm } from "./info-form";
 import { ApplicationForm } from "./application-form";
@@ -60,8 +60,8 @@ export function ApplyForm({ step, previewHeight }: ApplyFormProps) {
       >
         {(() => {
           switch (step) {
-            case "character":
-              return <AvatarForm previewHeight={previewHeight} />;
+            case "realm":
+              return <RealmForm />;
             case "basics":
               return <BasicsForm />;
             case "info":

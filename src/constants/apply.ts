@@ -7,10 +7,10 @@ type Step = {
 
 const allSteps = [
   {
-    step: "character",
-    label: "Character",
-    heading: "Choose your character",
-    subheading: null,
+    step: "realm",
+    label: "Realm",
+    heading: "Click to choose your horse companion",
+    subheading: "Who will accompany you along this adventure?",
   },
   {
     step: "basics",
