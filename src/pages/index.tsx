@@ -9,6 +9,15 @@ import { PhotoGallery } from "~/components/live/photo-gallery";
 import { Folder } from "~/components/live/folder";
 import { PROMO_FAQ } from "~/constants/faq";
 
+// HOLIA's TODO
+// 1. add waterfall
+// 2. add clouds
+// 3. check with faq answers and questions
+// 4. check with "dear hackers" message
+// 5. finalize the about background
+// 6. add "dither" on mobile FAQ
+
+
 const SECTIONS = [
   { id: "hero", label: "Hero", height: 1290, tiltAfter: 0.4 },
   { id: "about", label: "About", height: 1109, tiltAfter: 3.5 },
@@ -41,28 +50,25 @@ export default function Home() {
       <section id="hero" style={{minHeight:1290}}>
       </section>
 
-      <FilmStrip rotate={0.4} />
+      <FilmStrip rotate={0.4} className="relative z-10" />
 
       
-        <section
-          id="about"
-          style={{minHeight: 1109}}
-          className="relative hidden sm:block"
-        >
-          {/* are they allowed to move the window outside the section? */}
-                      <div
-              className="absolute inset-x-0 -bottom-[10.5%] z-0 h-[118%] w-full" 
-              style={{
-              clipPath: "polygon(0 5%, 100% 5%, 100% 100%, 0 calc(100% - 6vw))",
-            }}
-            >
-              <Image
-                src="/landing/home/about.png"
-                alt=""
-                fill
-                className="object-cover"
-                style={{ objectPosition: "80% 80%" }}  />
-            </div>
+        <section id="about" style={{ minHeight: 1109 }} className="relative hidden sm:block">
+  <div
+  className="absolute inset-x-0 -top-6 z-0"
+  style={{
+    bottom: "calc(-7.06vw - 15px)",
+    clipPath: "polygon(0 0, 100% 0.7vw, 100% 100%, 0 calc(100% - 6vw))"
+  }}
+>
+    <Image
+      src="/landing/home/about.png"
+      alt=""
+      fill
+      sizes="100vw"
+      className="object-cover object-right"
+    />
+  </div>
             {/* insert waterfall */}
             <Folder defaultOpen label="A message to new hackers" className="absolute left-[100px] bottom-[120px]" windowTitle="A message to new hackers" windowProps={{width: 400, autoHeight: true, className:"isolate absolute right-[500px] top-[200px]"}}>
               <div className="p3 font-figtree whitespace-pre-line">
@@ -107,7 +113,7 @@ export default function Home() {
               ]} />
             </Folder>
         </section>
-      <FilmStrip rotate={3.5} />
+      <FilmStrip rotate={3.5} className="relative z-10"/>
 
       {/* placeholder */}
       <section id="projects" style={{minHeight:1237}}>
