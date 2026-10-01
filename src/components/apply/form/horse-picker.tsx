@@ -16,7 +16,7 @@ export function HorsePicker({
 }: HorsePickerProps) {
   return (
     <div className={cn("flex flex-col items-center gap-3", className)}>
-      <div className="relative aspect-[823/500] w-full">
+      <div className="relative aspect-[823/500] w-full max-w-[720px]">
         {horses.map((horse) => {
           const isSelected = horse.id === selectedId;
           return (
