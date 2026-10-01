@@ -19,28 +19,22 @@ export function PortalShell({
   onSignOut,
   children,
   className,
-  background = "/apply/realm/background.png",
+  background,
   realm = null,
 }: PortalShellProps) {
   const tint = realm ? realmTint[realm] : null;
+  const bgSrc = background ?? tint?.background ?? "/apply/realm/background.png";
   return (
     <div
       className={cn("relative min-h-screen w-full overflow-hidden", className)}
     >
       <img
-        src={background}
+        src={bgSrc}
         alt=""
         aria-hidden
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
         draggable={false}
       />
-      {tint && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 transition-colors duration-500"
-          style={{ backgroundColor: tint.overlay }}
-        />
-      )}
 
       <div className="absolute left-10 top-16 z-10 px-3">
         <HWLogo className="h-[60px] w-[40px]" />

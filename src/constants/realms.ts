@@ -17,29 +17,29 @@ export const realmLabel: Record<Realm, string> = {
  * (Yellow=Safari, Blue=Ocean, Green=Mountain, Orange=Desert).
  */
 export type RealmTint = {
-  overlay: string;
+  background: string;
   sidebarBg: string;
   sidebarBorder: string;
 };
 
 export const realmTint: Record<Realm, RealmTint> = {
   safari: {
-    overlay: "rgba(234, 179, 8, 0.22)",
+    background: "/apply/realm/background-safari.png",
     sidebarBg: "rgba(254, 243, 199, 0.78)",
     sidebarBorder: "rgba(234, 179, 8, 0.35)",
   },
   ocean: {
-    overlay: "rgba(37, 99, 235, 0.22)",
+    background: "/apply/realm/background-ocean.png",
     sidebarBg: "rgba(219, 234, 254, 0.78)",
     sidebarBorder: "rgba(37, 99, 235, 0.35)",
   },
   mountain: {
-    overlay: "rgba(22, 163, 74, 0.22)",
+    background: "/apply/realm/background-mountain.png",
     sidebarBg: "rgba(220, 252, 231, 0.78)",
     sidebarBorder: "rgba(22, 163, 74, 0.35)",
   },
   desert: {
-    overlay: "rgba(234, 88, 12, 0.22)",
+    background: "/apply/realm/background-desert.png",
     sidebarBg: "rgba(254, 215, 170, 0.78)",
     sidebarBorder: "rgba(234, 88, 12, 0.35)",
   },

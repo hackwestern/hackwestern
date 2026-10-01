@@ -207,19 +207,12 @@ export default function Apply() {
         {/* Desktop View — redesigned portal shell */}
         <div className="relative z-10 hidden h-screen w-full overflow-hidden md:flex">
           <img
-            src="/apply/realm/background.png"
+            src={tint?.background ?? "/apply/realm/background.png"}
             alt=""
             aria-hidden
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
             draggable={false}
           />
-          {tint && (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 transition-colors duration-500"
-              style={{ backgroundColor: tint.overlay }}
-            />
-          )}
 
           <div className="relative z-10 flex h-full w-full gap-6 p-9">
             <ApplicationSidebar
