@@ -40,10 +40,10 @@ const WINDOW_EDGE_MARGIN = 24;
 const WINDOW_ANCHOR_SHIFT = { left: 0.1, center: 0.5, right: 0.9 } as const;
 
 const MOUNTAIN_LAYERS = [
-  { src: "/landing/promo/hero/mountain-4.png", offset: 8 },
-  { src: "/landing/promo/hero/mountain-3.png", offset: 20 },
-  { src: "/landing/promo/hero/mountain-2.png", offset: 36 },
-  { src: "/landing/promo/hero/mountain-1.png", offset: FOREGROUND_PARALLAX },
+  { src: "/landing/promo/hero/mountain-4.webp", offset: 16 },
+  { src: "/landing/promo/hero/mountain-3.webp", offset: 16 },
+  { src: "/landing/promo/hero/mountain-2.webp", offset: 24 },
+  { src: "/landing/promo/hero/mountain-1.webp", offset: FOREGROUND_PARALLAX },
 ] as const;
 
 const BAYER = [
@@ -452,7 +452,7 @@ function MountainDitherFade() {
     if (!context) return;
 
     const image = new window.Image();
-    image.src = "/landing/promo/hero/mountain-1.png";
+    image.src = "/landing/promo/hero/mountain-1.webp";
 
     const draw = () => {
       const width = window.innerWidth;
