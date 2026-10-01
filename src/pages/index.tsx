@@ -8,6 +8,10 @@ import { FaqColumn, FaqItem } from "~/components/live/faq";
 import { PhotoGallery } from "~/components/live/photo-gallery";
 import { WindowFolder } from "~/components/live/window-folder";
 import { PROMO_FAQ } from "~/constants/faq";
+import Waterfall from "~/components/live/waterfall";
+import CloudDrift from "~/components/live/clouddrift";
+import Cloud from "~/components/live/cloud";
+import { useRef } from "react";
 
 // ABOUT & FAQ TODO
 // 1. add waterfall
@@ -37,7 +41,11 @@ const TEAM_FIGURES = [
   { left: 85.22, top: 50.1 },
 ];
 
+
+
 export default function Home() {
+    const containerRef = useRef<HTMLDivElement>(null)
+
   return (
     <main id="top" className="relative cursor-pixel-default">
       <SkyBackground />
@@ -51,21 +59,39 @@ export default function Home() {
 
       
         <section id="about" style={{ minHeight: 1109 }} className="relative hidden sm:block">
-  <div
-  className="absolute inset-x-0 -top-6 z-0"
-  style={{
-    bottom: "calc(-7.06vw - 15px)",
-    clipPath: "polygon(0 0, 100% 0.7vw, 100% 100%, 0 calc(100% - 6vw))"
-  }}
->
-    <Image
-      src="/landing/home/about.png"
-      alt=""
-      fill
-      sizes="100vw"
-      className="object-cover object-right"
-    />
-  </div>
+    <div
+      ref={containerRef}
+      className="absolute inset-x-0 -top-6 z-0"
+      style={{
+        bottom: "calc(-7.06vw - 15px)",
+        clipPath: "polygon(0 0, 100% 0.7vw, 100% 100%, 0 calc(100% - 6vw))"
+      }}
+    >
+      <Image
+        src="/landing/home/about.png"
+        alt=""
+        fill
+        sizes="100vw"
+        className="object-cover object-center"
+      />
+
+      <Waterfall
+        containerRef={containerRef}
+        backgroundSrc="/landing/home/about.png"
+        objectPositionX="center"
+        sourceLeft={670}
+        sourceTop={1350}
+        sourceWidth={400}
+        sourceHeight={1200}
+      />
+    </div>
+
+  {/* //   top="37%"
+  //   left="26%"
+  //   width="140px"
+  //   height="52%" */}
+
+
             {/* insert waterfall */}
             <WindowFolder defaultOpen label="A message to new hackers" className="absolute left-[100px] bottom-[120px]" windowTitle="A message to new hackers" windowProps={{width: 400, autoHeight: true, className:"isolate absolute right-[500px] top-[200px]"}}>
               <div className="p3 font-figtree whitespace-pre-line">
@@ -120,14 +146,32 @@ export default function Home() {
      
     <section
   id="sponsors"
-  className="relative flex min-h-[1790px] flex-col gap-12 overflow-hidden px-6 pb-16 pt-12
+  className="relative flex min-h-[1880px] flex-col gap-12 overflow-hidden px-6 pb-16 pt-12
              [--photo-h:360px] [--photo-offset:150px]
-             lg:block lg:min-h-[1886px] lg:overflow-visible lg:p-0"
+             lg:block lg:min-h-[1790px] lg:p-0"
 >
+{/* CLOUDS */}
+ <CloudDrift delay={0} duration={40} wait={50} className="top-[50px]">
+  <Cloud variant="cloud10" className="hidden lg:block" />
+</CloudDrift>
+
+<CloudDrift delay={10} duration={40} wait={38} className="top-[200px]">
+  <Cloud variant="cloud12" className="hidden lg:block" />
+</CloudDrift>
+
+<CloudDrift delay={20} duration={40} wait={30} className="top-[20px]">
+  <Cloud variant="cloud13" className="hidden lg:block" />
+</CloudDrift>
+
+<CloudDrift delay={30} duration={40} wait={16} className="top-[300px]">
+  <Cloud variant="cloud14" className="hidden lg:block" />
+</CloudDrift>
+  
+  
   {/* desktop background (unchanged, just hidden on mobile) */}
   <Image
     src="/landing/home/sponsor-bg.png" alt="" width={2880} height={2808}
-    className="absolute -bottom-[15%] z-0 hidden h-auto w-full object-cover lg:block"
+    className="absolute -bottom-[0%] z-0 hidden h-auto w-full object-cover lg:block"
   />
 
   {/* mobile background */}
@@ -227,7 +271,7 @@ export default function Home() {
     
 
     {/* FAQ */}
-<div className="relative z-10 flex w-full flex-col items-start gap-[24px] lg:absolute lg:left-0 lg:top-[1171px] lg:gap-[64px]">
+<div className="relative z-10 flex w-full flex-col items-start gap-[24px] lg:absolute lg:left-0 lg:top-[900px] lg:gap-[64px]">
   <div className="flex w-full max-w-[488px] flex-col items-start gap-[18px]">
     <div className="relative">
       <h2 className="font-cossetteTexte text-[24px] font-bold leading-[1.2] text-highlight lg:text-[36px]">
@@ -273,7 +317,7 @@ export default function Home() {
     autoHeight
     width={700}
     title="Thank you to our sponsors"
-    className="z-10 hidden lg:absolute lg:bottom-[50%] lg:left-[40%] lg:block"
+    className="z-10 hidden lg:absolute lg:bottom-[55%] lg:left-[40%] lg:block"
   >
     <Image
       src="/landing/home/sponsors.png"
