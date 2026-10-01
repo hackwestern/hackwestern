@@ -14,8 +14,7 @@ import { PROMO_FAQ } from "~/constants/faq";
 // 2. add clouds
 // 3. check with faq answers and questions
 // 4. check with "dear hackers" message
-// 5. finalize the about background
-// 6. add "dither" on mobile FAQ
+// 5. add "dither" on mobile FAQ
 
 
 const SECTIONS = [
