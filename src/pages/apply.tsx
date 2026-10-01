@@ -17,7 +17,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { signOut } from "next-auth/react";
 import { ApplicationSidebar } from "~/components/apply/application-sidebar";
-import { MacWindow } from "~/components/apply/mac-window";
+import { Window } from "~/components/internals/window";
 import { UserBadge } from "~/components/apply/user-badge";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
@@ -229,7 +229,9 @@ export default function Apply() {
 
               <div className="flex flex-1 items-center justify-center pt-16">
                 {!step ? (
-                  <MacWindow
+                  <Window
+                    fluid
+                    draggable={false}
                     title="Hack Western 13: Discover the Unknown"
                     className="w-full max-w-[600px]"
                     contentClassName="flex justify-center px-8 py-12"
@@ -240,12 +242,14 @@ export default function Apply() {
                       onApplyNavigate={handleApplyNavigate}
                       pending={pending}
                     />
-                  </MacWindow>
+                  </Window>
                 ) : (
                   <div className="flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4">
-                    <MacWindow
+                    <Window
+                      fluid
+                      draggable={false}
                       title="Hack Western 13: Discover the Unknown"
-                      className="flex-1"
+                      className="min-h-0 flex-1"
                       contentClassName="px-8 py-8 md:px-12 md:py-10"
                     >
                       <div className="space-y-6">
@@ -258,7 +262,7 @@ export default function Apply() {
                           <ApplyForm step={step} />
                         </div>
                       </div>
-                    </MacWindow>
+                    </Window>
                     <ApplyNavigation step={step} />
                   </div>
                 )}
