@@ -18,6 +18,7 @@ import { USERS } from "./userSeeder";
 import { type UserPartial, type Seeder } from "./helpers";
 import type { z } from "zod";
 import { applicationSubmitSchema } from "~/schemas/application";
+import { horses } from "~/constants/realms";
 
 const schools = [
   "Western University",
@@ -56,9 +57,16 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       dietaryRestrictions.enumValues as [string, ...string[]],
     ) as (typeof dietaryRestrictions.enumValues)[number];
 
+    const horse = faker.helpers.arrayElement(horses);
+
     const application = {
       realm: faker.helpers.arrayElement(realm.enumValues),
       horseId: faker.number.int({ min: 1, max: 5 }),
+      horseFirstName: faker.person.firstName(),
+      horseLastName: faker.person.lastName(),
+
+      realm: horse.realm,
+      horseId: horse.id,
       horseFirstName: faker.person.firstName(),
       horseLastName: faker.person.lastName(),
 
