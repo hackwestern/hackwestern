@@ -96,7 +96,7 @@ export function ApplicationSidebar({
       </div>
 
       {lastSavedAt && (
-        <div className="flex items-center justify-center px-[14px]">
+        <div className="flex items-center justify-start px-[14px]">
           <p
             suppressHydrationWarning
             className="whitespace-nowrap font-figtree text-md-p font-medium italic text-medium"
