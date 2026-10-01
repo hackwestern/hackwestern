@@ -139,7 +139,7 @@ export function commitsInWindow(
   const until = opts.until.getTime();
   return commits.filter((commit) => {
     const at = new Date(commit.commit.author.date).getTime();
-    return !Number.isNaN(at) && at >= since && at < until;
+    return !Number.isNaN(at) && at >= since && at <= until;
   });
 }
 
