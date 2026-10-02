@@ -65,7 +65,8 @@ const ABOUT_DESIGN_HEIGHT = Math.round(
   ABOUT_BG_RATIO * 1440 - 39 - 7.06 * 14.4,
 );
 // The sponsors photo's box reaches up behind the strip by its height.
-const SPONSORS_MIN_HEIGHT = `max(1790px, calc(${(SPONSORS_BG_RATIO * 100).toFixed(2)}vw - ${SPONSORS_STRIP_EDGE.height}px))`;
+// 1790px is the 1440 layout's height, which grows with --ui-scale.
+const SPONSORS_MIN_HEIGHT = `max(calc(1790px * var(--ui-scale, 1)), calc(${(SPONSORS_BG_RATIO * 100).toFixed(2)}vw - ${SPONSORS_STRIP_EDGE.height}px))`;
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -120,7 +121,7 @@ export default function Home() {
 
         {/* insert waterfall */}
         <div
-          className="absolute inset-0 m-auto max-w-[1440px]"
+          className="absolute inset-0 m-auto max-w-[1440px] lg:[scale:var(--ui-scale,1)]"
           style={{ maxHeight: ABOUT_DESIGN_HEIGHT }}
         >
           <WindowFolder
@@ -275,7 +276,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="contents lg:absolute lg:left-1/2 lg:block lg:w-[1120px] lg:-translate-x-1/2">
+        <div className="contents lg:absolute lg:left-1/2 lg:block lg:w-[1120px] lg:origin-top lg:[transform:translateX(-50%)_scale(var(--ui-scale,1))]">
           {/* Title block */}
           {/* Page Title */}
           <div
@@ -420,13 +421,14 @@ export default function Home() {
         </div>
         {/* Sponsors window desktop*/}
         {/* this closes downwards...? */}
-        {/* bottom edge stays 805.5px from the top (55% up a 1790px section),
-            so it keeps clear of the FAQ when the section grows with the photo */}
+        {/* bottom-left corner stays where it sits in the 1440 layout (805.5px
+            down, 144px left of centre), scaled with --ui-scale, so it keeps
+            clear of the FAQ when the section grows with the photo */}
         <Window
           autoHeight
           width={700}
           title="Thank you to our sponsors"
-          className="z-10 hidden lg:absolute lg:bottom-[calc(100%-805.5px)] lg:left-[40%] lg:block"
+          className="z-10 hidden lg:absolute lg:bottom-[calc(100%-805.5px*var(--ui-scale,1))] lg:left-[max(40%,calc(50%-144px*var(--ui-scale,1)))] lg:block lg:origin-bottom-left lg:[scale:var(--ui-scale,1)]"
         >
           <SponsorLogos className="w-full p-6" />
         </Window>

@@ -570,7 +570,7 @@ export function Hero() {
           {/* placeholder until links added */}
           <MountainScene pan={pan} />
 
-          <div className="absolute left-[clamp(24px,11.11vw,160px)] top-[20%] z-20 flex max-w-[calc(100%_-_48px)] flex-col items-start gap-12">
+          <div className="absolute left-[clamp(24px,11.11vw,160px)] top-[20%] z-20 flex max-w-[calc(100%_-_48px)] flex-col items-start gap-12 lg:left-[clamp(24px,11.11vw,calc(160px*var(--ui-scale,1)))] lg:origin-top-left lg:[scale:var(--ui-scale,1)]">
             <div className="flex flex-col items-start gap-[30px] font-cossetteTexte">
               <div className="flex flex-wrap items-center gap-[14px] text-[clamp(16px,1.67vw,24px)] font-normal leading-normal tracking-[-0.03em] text-[#d0d6dd]">
                 <p className="whitespace-nowrap">November 20 - 22, 2026</p>
