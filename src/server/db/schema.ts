@@ -146,6 +146,7 @@ export const countrySelection = pgEnum("country", [
 export const shirtSize = pgEnum("shirt_size", ["S", "M", "L", "XL"]);
 
 export const dietaryRestrictions = pgEnum("dietary_restrictions", [
+  "None",
   "Vegetarian",
   "Vegan",
   "Kosher",
