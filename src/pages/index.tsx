@@ -1,5 +1,5 @@
 import Topbar from "~/components/live/topbar";
-import { FilmStrip } from "~/components/promo/film-strip";
+import { FilmStrip, filmStripEdge } from "~/components/promo/film-strip";
 import { Hero } from "~/components/promo/hero";
 import { PromoHeader } from "~/components/promo/navbar";
 import { SponsorLogos } from "~/components/promo/sponsor-logos";
@@ -16,7 +16,13 @@ import { PROMO_FAQ } from "~/constants/faq";
 import Waterfall from "~/components/live/waterfall";
 import CloudDrift from "~/components/live/clouddrift";
 import Cloud from "~/components/live/cloud";
-import { useRef } from "react";
+import { type CSSProperties, useRef } from "react";
+import {
+  type CoverPhoto,
+  coverPhotoVars,
+  halfRateHeight,
+  photoPoint,
+} from "~/components/promo/photo-pin";
 
 // ABOUT & FAQ TODO
 // 4. check with "dear hackers" message
@@ -46,11 +52,51 @@ const IMAGES = [
   "/landing/home/gallery/hw-10.jpg",
 ];
 
+// The strip between projects and sponsors; the sponsors photo starts under its
+// centre line so the tape always sits on the seam, at any screen width.
+// Negative: the tape rises to the right, as in Figma 561:687.
+const SPONSORS_STRIP_ROTATE = -1.2;
+const SPONSORS_STRIP_EDGE = filmStripEdge(SPONSORS_STRIP_ROTATE);
+
+// Desktop sponsors: a band of open sky (SPONSORS_SKY at 1440, growing with the
+// section) sits above the photo, whose own sky is transparent, so the page's
+// sky shows behind the title. The photo starts that far below where it used
+// to (behind the strip).
+const SPONSORS_SKY = 150;
+const SPONSORS_PHOTO: CoverPhoto = {
+  imageWidth: 2880,
+  imageHeight: 3427,
+  designHeight: 1690 + SPONSORS_SKY,
+  top: SPONSORS_SKY - SPONSORS_STRIP_EDGE.height,
+  topCss: `calc(${halfRateHeight(SPONSORS_SKY)} - ${SPONSORS_STRIP_EDGE.height}px)`,
+  align: "top",
+};
+// Where the title, sponsors window and FAQ start at 1440 (px from the section
+// top). The window's top sits ~20px under the "Get in touch" button (which
+// ends ~365px), and the FAQ sits 100px under the ~569px-tall window.
+const SPONSORS_TITLE_Y = 155;
+const SPONSORS_WINDOW_Y = 385;
+const SPONSORS_FAQ_Y = 1054;
+const SPONSORS_TITLE_POINT = photoPoint(SPONSORS_PHOTO, 160, SPONSORS_TITLE_Y);
+// The window and FAQ follow the title rather than the photo, so their gaps
+// grow only with --ui-scale, like the elements themselves.
+const belowSponsorsTitle = (x: number, y: number) =>
+  ({
+    "--x": photoPoint(SPONSORS_PHOTO, x, 0)["--x"],
+    "--y": `calc(${SPONSORS_TITLE_POINT["--y"]} + ${y - SPONSORS_TITLE_Y}px * var(--ui-scale, 1))`,
+  }) as CSSProperties;
+const SPONSORS_WINDOW_POINT = belowSponsorsTitle(576, SPONSORS_WINDOW_Y);
+const SPONSORS_FAQ_POINT = belowSponsorsTitle(160, SPONSORS_FAQ_Y);
+
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   return (
-    <main id="top" className="relative cursor-pixel-default">
+    <main
+      id="top"
+      className="relative cursor-pixel-default [--dvw:1vw] lg:[--dvw:14.4px]"
+    >
+      {/* --dvw: 1% of the 1440 design on desktop, so sizes stay fixed as the screen widens */}
       <SkyBackground />
       <PromoHeader />
 
@@ -60,15 +106,16 @@ export default function Home() {
 
       <section
         id="about"
-        style={{ minHeight: 1109 }}
+        style={{ minHeight: halfRateHeight(1109) }}
         className="relative hidden sm:block"
       >
         <div
           ref={containerRef}
           className="absolute inset-x-0 -top-6 z-0"
           style={{
-            bottom: "calc(-7.06vw - 15px)",
-            clipPath: "polygon(0 0, 100% 0.7vw, 100% 100%, 0 calc(100% - 6vw))",
+            bottom: "calc(-7.06 * var(--dvw) - 15px)",
+            clipPath:
+              "polygon(0 0, 100% calc(0.7 * var(--dvw)), 100% 100%, 0 calc(100% - 6 * var(--dvw)))",
           }}
         >
           <Image
@@ -93,20 +140,25 @@ export default function Home() {
         </div>
 
         {/* insert waterfall */}
-        <WindowFolder
-          defaultOpen
-          variant="labelled"
-          label="A message to new hackers"
-          className="absolute bottom-[120px] left-[100px]"
-          windowTitle="A message to new hackers"
-          windowProps={{
-            width: 400,
-            autoHeight: true,
-            className: "isolate absolute right-[500px] top-[200px]",
-          }}
-        >
-          <div className="p3 whitespace-pre-line font-figtree">
-            {`Dear Hacker,
+        {/* Up to 1440, windows and folders sit in px from the edges. Wider, each
+            keeps its 1440 spot in the centred column (like the projects stage),
+            scaled with --ui-scale; its top stays a % of the section */}
+        <div className="absolute inset-0 m-auto max-w-[1440px] min-[1440px]:max-w-none">
+          <WindowFolder
+            defaultOpen
+            variant="labelled"
+            label="A message to new hackers"
+            className="absolute bottom-[120px] left-[100px] min-[1440px]:bottom-auto min-[1440px]:left-[calc(50%-620px*var(--ui-scale,1))] min-[1440px]:top-[79.486%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]"
+            windowTitle="A message to new hackers"
+            windowProps={{
+              width: 400,
+              autoHeight: true,
+              className:
+                "isolate absolute right-[500px] top-[200px] min-[1440px]:right-auto min-[1440px]:left-[calc(50%-180px*var(--ui-scale,1))] min-[1440px]:top-[18.034%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]",
+            }}
+          >
+            <div className="p3 whitespace-pre-line font-figtree">
+              {`Dear Hacker,
 
               Whether you’re an experienced hacker or have never touched a line of code, you belong at Hack Western.
 
@@ -119,70 +171,81 @@ export default function Home() {
               Love,
 
               The Hack Western 13 Team`}
-          </div>
-        </WindowFolder>
-        <WindowFolder
-          defaultOpen
-          variant="labelled"
-          label="Impact"
-          className="absolute bottom-[500px] left-[200px]"
-          windowTitle="Last year's impact"
-          windowProps={{
-            autoHeight: true,
-            className: "isolate absolute right-[300px] top-[550px]",
-          }}
-        >
-          <div className="flex flex-col items-center gap-[28px] text-center">
-            <div className="flex items-start gap-[64px]">
-              <div className="flex flex-col items-center">
-                <p className="font-cossetteTexte text-[47.917px] text-medium">
-                  82
-                </p>
-                <p className="w-[78.52px] text-[14.4px] font-medium text-light">
-                  Projects Submitted
-                </p>
+            </div>
+          </WindowFolder>
+          <WindowFolder
+            defaultOpen
+            variant="labelled"
+            label="Impact"
+            className="absolute bottom-[500px] left-[200px] min-[1440px]:bottom-auto min-[1440px]:left-[calc(50%-520px*var(--ui-scale,1))] min-[1440px]:top-[45.221%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]"
+            windowTitle="Last year's impact"
+            windowProps={{
+              autoHeight: true,
+              className:
+                "isolate absolute right-[300px] top-[550px] min-[1440px]:right-auto min-[1440px]:left-[calc(50%+46px*var(--ui-scale,1))] min-[1440px]:top-[49.594%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]",
+            }}
+          >
+            <div className="flex flex-col items-center gap-[28px] text-center">
+              <div className="flex items-start gap-[64px]">
+                <div className="flex flex-col items-center">
+                  <p className="font-cossetteTexte text-[47.917px] text-medium">
+                    82
+                  </p>
+                  <p className="w-[78.52px] text-[14.4px] font-medium text-light">
+                    Projects Submitted
+                  </p>
+                </div>
+                <div className="flex flex-col items-center">
+                  <p className="font-cossetteTexte text-[47.917px] text-medium">
+                    320
+                  </p>
+                  <p className="text-[14.4px] font-medium text-light">
+                    Participants
+                  </p>
+                </div>
               </div>
               <div className="flex flex-col items-center">
                 <p className="font-cossetteTexte text-[47.917px] text-medium">
-                  320
+                  $10,000
                 </p>
                 <p className="text-[14.4px] font-medium text-light">
-                  Participants
+                  in prizes
                 </p>
               </div>
             </div>
-            <div className="flex flex-col items-center">
-              <p className="font-cossetteTexte text-[47.917px] text-medium">
-                $10,000
-              </p>
-              <p className="text-[14.4px] font-medium text-light">in prizes</p>
-            </div>
-          </div>
-        </WindowFolder>
+          </WindowFolder>
 
-        <WindowFolder
-          defaultOpen
-          variant="labelled"
-          label="Exploration"
-          className="absolute bottom-[300px] left-[80px]"
-          windowTitle="A world of exploration"
-          windowProps={{
-            className: "isolate absolute right-[100px] top-[100px]",
-          }}
-        >
-          <PhotoGallery images={IMAGES} />
-        </WindowFolder>
+          <WindowFolder
+            defaultOpen
+            variant="labelled"
+            label="Exploration"
+            className="absolute bottom-[300px] left-[80px] min-[1440px]:bottom-auto min-[1440px]:left-[calc(50%-640px*var(--ui-scale,1))] min-[1440px]:top-[63.255%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]"
+            windowTitle="A world of exploration"
+            windowProps={{
+              className:
+                "isolate absolute right-[100px] top-[100px] min-[1440px]:right-auto min-[1440px]:left-[calc(50%+246px*var(--ui-scale,1))] min-[1440px]:top-[9.017%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]",
+            }}
+          >
+            <PhotoGallery images={IMAGES} />
+          </WindowFolder>
+        </div>
       </section>
       <FilmStrip rotate={3.5} className="relative z-10 hidden lg:block" />
 
       <PastProjects />
-      <FilmStrip rotate={1.2} className="relative z-10" />
+      <FilmStrip rotate={SPONSORS_STRIP_ROTATE} className="relative z-10" />
 
       <section
         id="sponsors"
-        className="relative flex min-h-[1880px] flex-col gap-12 overflow-hidden px-6 pb-16 pt-12
-             [--photo-h:320px] [--photo-offset:150px]
-             lg:block lg:min-h-[1790px] lg:p-0"
+        className="relative flex flex-col gap-12 overflow-hidden px-6 pb-12 pt-12 [--photo-h:320px] [--photo-offset:150px]
+             lg:block lg:h-[var(--section-h)] lg:overflow-visible
+             lg:overflow-x-clip lg:p-0 lg:[container-type:size]"
+        style={
+          {
+            "--section-h": halfRateHeight(SPONSORS_PHOTO.designHeight),
+            ...coverPhotoVars(SPONSORS_PHOTO),
+          } as CSSProperties
+        }
       >
         {/* CLOUDS */}
         <CloudDrift delay={0} duration={40} wait={50} className="top-[50px]">
@@ -201,14 +264,21 @@ export default function Home() {
           <Cloud variant="cloud14" className="hidden lg:block" />
         </CloudDrift>
 
-        {/* desktop background (unchanged, just hidden on mobile) */}
-        <Image
-          src="/landing/home/sponsor-bg.png"
-          alt=""
-          width={2880}
-          height={2808}
-          className="absolute -bottom-[0%] z-0 hidden h-auto w-full object-cover lg:block"
-        />
+        {/* desktop background: starts below the sky band (SPONSORS_PHOTO), and
+            object-top keeps the mountains' tops just under it; wider screens
+            crop the bottom instead */}
+        <div
+          className="absolute inset-x-0 bottom-0 z-0 hidden lg:block"
+          style={{ top: SPONSORS_PHOTO.topCss }}
+        >
+          <Image
+            src="/landing/home/sponsor-bg.png"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover object-top"
+          />
+        </div>
 
         {/* mobile background */}
         {/* absolute so this wrapper isn't a flex item and doesn't add an extra gap-12 on mobile */}
@@ -230,12 +300,14 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="contents lg:absolute lg:left-1/2 lg:block lg:w-[1120px] lg:-translate-x-1/2">
+        {/* desktop: title, FAQ and sponsors window each stay on their spot of the photo */}
+        <div className="contents lg:absolute lg:inset-0 lg:block">
           {/* Title block */}
           {/* Page Title */}
           <div
             className="relative flex flex-col items-start gap-[36px]
-                lg:absolute lg:left-0 lg:top-[80px] lg:w-[488px]"
+                lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:w-[488px] lg:origin-top-left lg:[scale:var(--ui-scale,1)]"
+            style={SPONSORS_TITLE_POINT}
           >
             <div className="flex flex-col items-start gap-[18px]">
               <div className="flex flex-col items-start">
@@ -331,7 +403,10 @@ export default function Home() {
                  max-lg:before:bg-gradient-to-b max-lg:before:from-transparent max-lg:before:to-green-dark"
           >
             {/* FAQ */}
-            <div className="relative z-10 flex w-full flex-col items-start gap-[24px] lg:absolute lg:left-0 lg:top-[900px] lg:gap-[64px]">
+            <div
+              className="relative z-10 flex w-full flex-col items-start gap-[24px] lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:w-[1120px] lg:origin-top-left lg:gap-[64px] lg:[scale:var(--ui-scale,1)]"
+              style={SPONSORS_FAQ_POINT}
+            >
               <div className="flex w-full max-w-[488px] flex-col items-start gap-[18px]">
                 <div className="relative">
                   <h2 className="font-cossetteTexte text-[24px] font-bold leading-[1.2] text-highlight lg:text-[36px]">
@@ -379,7 +454,9 @@ export default function Home() {
           autoHeight
           width={700}
           title="Thank you to our sponsors"
-          className="z-10 hidden lg:absolute lg:bottom-[55%] lg:left-[40%] lg:block"
+          // its top-left corner is the pinned point
+          className="z-10 hidden lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:block lg:origin-top-left lg:[scale:var(--ui-scale,1)]"
+          style={SPONSORS_WINDOW_POINT}
         >
           <SponsorLogos className="w-full p-6" />
         </Window>

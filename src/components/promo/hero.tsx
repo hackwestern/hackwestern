@@ -56,6 +56,8 @@ const WINDOW_DESIGN_WIDTH = 1512;
 const WINDOW_MIN_SCALE = 0.8;
 const WINDOW_MAX_SCALE = 1.15;
 const WINDOW_EDGE_MARGIN = 24;
+// The design width the page's --ui-scale grows from.
+const DESIGN_WIDTH = 1440;
 const WINDOW_ANCHOR_SHIFT = { left: 0.1, center: 0.5, right: 0.9 } as const;
 
 const MOUNTAIN_LAYERS = [
@@ -342,6 +344,9 @@ function StoryPin({
   const [open, setOpen] = React.useState(true);
   const pinWidth = pin.size * rect.scale;
   const pinHeight = pinWidth * PIN_ASPECT;
+  const sceneWidth = rect.width + 2 * rect.left;
+  // Past 1440 wide, matches the page's --ui-scale (a third of the width's rate).
+  const uiScale = Math.max(1, (2 + sceneWidth / DESIGN_WIDTH) / 3);
   const windowScale = Math.min(
     WINDOW_MAX_SCALE,
     Math.max(WINDOW_MIN_SCALE, rect.width / WINDOW_DESIGN_WIDTH),
@@ -349,13 +354,14 @@ function StoryPin({
   const left = rect.left + pin.x * rect.width;
   const top = rect.top + pin.y * rect.height;
   const windowWidth = Math.round(pin.windowWidth * windowScale);
-  const sceneWidth = rect.width + 2 * rect.left;
+  // The window (box and text) is drawn uiScale times larger.
+  const shownWidth = windowWidth * uiScale;
   const windowLeft = Math.min(
     Math.max(
-      left - windowWidth * WINDOW_ANCHOR_SHIFT[pin.anchor ?? "center"],
+      left - shownWidth * WINDOW_ANCHOR_SHIFT[pin.anchor ?? "center"],
       WINDOW_EDGE_MARGIN,
     ),
-    sceneWidth - windowWidth - WINDOW_EDGE_MARGIN,
+    sceneWidth - shownWidth - WINDOW_EDGE_MARGIN,
   );
   const start = closestProgress(waypoints, pin.x, pin.y);
   const reveal = [Math.max(0, start - 0.04), start];
@@ -409,22 +415,25 @@ function StoryPin({
               transformOrigin: `${left - windowLeft}px 100%`,
             }}
           >
-            <Window
-              title="You have a message"
-              width={windowWidth}
-              autoHeight
-              draggable={false}
-              onClose={() => setOpen(false)}
-            >
-              <div className="flex flex-col gap-2 py-1 text-left">
-                <h2 className="font-cossetteTexte text-[clamp(18px,1.59vw,26px)] font-bold leading-tight tracking-[-0.02em] text-[#111]">
-                  {pin.title}
-                </h2>
-                <p className="font-figtree text-[clamp(13px,1.06vw,17px)] leading-normal text-[#555]">
-                  {pin.body}
-                </p>
-              </div>
-            </Window>
+            {/* grows from its bottom-left, so it stays the same gap above the pin */}
+            <div style={{ scale: String(uiScale), transformOrigin: "0 100%" }}>
+              <Window
+                title="You have a message"
+                width={windowWidth}
+                autoHeight
+                draggable={false}
+                onClose={() => setOpen(false)}
+              >
+                <div className="flex flex-col gap-2 py-1 text-left">
+                  <h2 className="font-cossetteTexte text-[clamp(18px,1.59vw,26px)] font-bold leading-tight tracking-[-0.02em] text-[#111]">
+                    {pin.title}
+                  </h2>
+                  <p className="font-figtree text-[clamp(13px,1.06vw,17px)] leading-normal text-[#555]">
+                    {pin.body}
+                  </p>
+                </div>
+              </Window>
+            </div>
           </motion.div>
         </div>
       )}
@@ -561,7 +570,9 @@ export function Hero() {
           {/* placeholder until links added */}
           <MountainScene pan={pan} />
 
-          <div className="absolute left-[clamp(24px,11.11vw,160px)] top-[20%] z-20 flex max-w-[calc(100%_-_48px)] flex-col items-start gap-12">
+          {/* past 1440 wide: grows with --ui-scale and lines up with the
+              centred column, like the other sections' titles */}
+          <div className="absolute left-[clamp(24px,11.11vw,160px)] top-[20%] z-20 flex max-w-[calc(100%_-_48px)] flex-col items-start gap-12 min-[1440px]:left-[calc(50%-560px*var(--ui-scale,1))] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]">
             <div className="flex flex-col items-start gap-[30px] font-cossetteTexte">
               <div className="flex flex-wrap items-center gap-[14px] text-[clamp(16px,1.67vw,24px)] font-normal leading-normal tracking-[-0.03em] text-[#d0d6dd]">
                 <p className="whitespace-nowrap">November 20 - 22, 2026</p>
@@ -573,10 +584,43 @@ export function Hero() {
               </div>
 
               <div className="flex flex-col items-start gap-3">
-                <h1 className="whitespace-nowrap text-[clamp(40px,4.45vw,64px)] font-bold leading-[0.82] tracking-[-0.035em] text-[#f5f9ff] [text-shadow:3px_3px_0_rgba(35,83,108,0.55)]">
-                  Hack Western 13
-                </h1>
-                <p className="text-[clamp(24px,2.13vw,30.72px)] font-normal leading-normal tracking-[-0.02em] text-highlight">
+                <div className="relative">
+                  {/* Figma 561:1011: an inner shadow along the letters' bottom
+                      edges (up 3.2px, 1.28 blur, #00344e at 20%), so their
+                      tops read as lit */}
+                  <svg aria-hidden width="0" height="0" className="absolute">
+                    <filter id="hero-title-glow">
+                      <feOffset in="SourceAlpha" dy="-3.2" />
+                      <feGaussianBlur stdDeviation="1.28" result="offsetBlur" />
+                      <feComposite
+                        in="SourceAlpha"
+                        in2="offsetBlur"
+                        operator="arithmetic"
+                        k2="1"
+                        k3="-1"
+                        result="edge"
+                      />
+                      <feFlood floodColor="#00344e" floodOpacity="0.2" />
+                      <feComposite in2="edge" operator="in" result="shadow" />
+                      <feMerge>
+                        <feMergeNode in="SourceGraphic" />
+                        <feMergeNode in="shadow" />
+                      </feMerge>
+                    </filter>
+                  </svg>
+                  <h1 className="whitespace-nowrap text-[clamp(40px,4.45vw,64px)] font-bold leading-[0.82] tracking-[-0.035em] text-[#f5f9ff] [filter:url(#hero-title-glow)]">
+                    Hack Western 13
+                  </h1>
+                  {/* Figma 561:1010: a flipped copy below the title, fading
+                      from white next to it to 20% white, at 10% opacity */}
+                  <p
+                    aria-hidden
+                    className="pointer-events-none absolute left-0 top-[calc(100%-0.64px)] -scale-y-100 select-none whitespace-nowrap bg-gradient-to-b from-white/20 from-[25.25%] to-white to-[67.42%] bg-clip-text text-[clamp(40px,4.45vw,64px)] font-bold leading-[0.82] tracking-[-0.035em] text-transparent opacity-10"
+                  >
+                    Hack Western 13
+                  </p>
+                </div>
+                <p className="relative text-[clamp(24px,2.13vw,30.72px)] font-normal leading-normal tracking-[-0.02em] text-highlight">
                   Discover the unknown
                 </p>
               </div>
