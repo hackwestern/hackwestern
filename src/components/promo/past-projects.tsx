@@ -69,6 +69,7 @@ const ASCII_CLOUD_WIDTH = "clamp(220px, 40.12 * var(--dvw, 1vw), 578px)";
 const ASCII_CLOUD_HEIGHT = "clamp(91px, 16.56 * var(--dvw, 1vw), 238px)";
 
 const SKY_LINK = process.env.NEXT_PUBLIC_SKY_LINK;
+const SKY_LABEL = process.env.NEXT_PUBLIC_SKY_LABEL;
 
 function AsciiClouds() {
   const [chestOpened] = useKeepsake(1);
@@ -95,7 +96,7 @@ function AsciiClouds() {
       top="0"
       width={ASCII_CLOUD_WIDTH}
       height={ASCII_CLOUD_HEIGHT}
-      label={linked ? "Click me!" : undefined}
+      label={linked ? SKY_LABEL : undefined}
     />
   );
 

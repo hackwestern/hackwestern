@@ -229,6 +229,27 @@ function sampleMaskAlpha(
 // sparse, so it reads as part of the cloud. Only rebuilt when the
 // canvas, cloud or text changes.
 
+const LABEL_LINE_HEIGHT = 1.05;
+
+// Long labels go on two lines, split at the space nearest the middle.
+function wrapLabel(label: string): string[] {
+  if (label.length <= 10) return [label];
+
+  const middle = label.length / 2;
+  let split = -1;
+
+  for (let i = 0; i < label.length; i++) {
+    if (
+      label[i] === " " &&
+      (split < 0 || Math.abs(i - middle) < Math.abs(split - middle))
+    ) {
+      split = i;
+    }
+  }
+
+  return split < 0 ? [label] : [label.slice(0, split), label.slice(split + 1)];
+}
+
 let labelCanvas: HTMLCanvasElement | null = null;
 let labelData: Uint8ClampedArray | null = null;
 let labelKey = "";
@@ -257,12 +278,21 @@ function buildLabelMask(
 
   labelCtx.clearRect(0, 0, width, height);
 
+  const lines = wrapLabel(label);
+
   // As big as fits in the cloud's middle.
-  let fontSize = cloudBox.height * 0.32;
+  let fontSize = Math.min(
+    cloudBox.height * 0.32,
+    (cloudBox.height * 0.56) / (lines.length * LABEL_LINE_HEIGHT),
+  );
 
   labelCtx.font = `800 ${fontSize}px sans-serif`;
 
-  const fit = (cloudBox.width * 0.62) / labelCtx.measureText(label).width;
+  const widest = Math.max(
+    ...lines.map((line) => labelCtx.measureText(line).width),
+  );
+
+  const fit = (cloudBox.width * 0.62) / widest;
 
   if (fit < 1) {
     fontSize *= fit;
@@ -275,11 +305,15 @@ function buildLabelMask(
 
   // A little below centre: the bumps on top make the cloud's
   // visual middle sit low in its box.
-  labelCtx.fillText(
-    label,
-    cloudBox.x + cloudBox.width / 2,
-    cloudBox.y + cloudBox.height * 0.58,
-  );
+  lines.forEach((line, i) => {
+    labelCtx.fillText(
+      line,
+      cloudBox.x + cloudBox.width / 2,
+      cloudBox.y +
+        cloudBox.height * 0.58 +
+        (i - (lines.length - 1) / 2) * fontSize * LABEL_LINE_HEIGHT,
+    );
+  });
 
   labelData = labelCtx.getImageData(0, 0, width, height).data;
 
