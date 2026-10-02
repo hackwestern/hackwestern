@@ -54,6 +54,8 @@ function ReviewSectionInfo({ step, error }: ReviewSectionProps) {
       return <AgreementsReview step={step} error={error} />;
     case "optional":
       return <OptionalReview step={step} error={error} />;
+    case "logistics":
+      return <LogisticsReview step={step} error={error} />;
     case "realm":
       return <RealmReview step={step} error={error} />;
     default:
@@ -317,6 +319,55 @@ function OptionalReview({}: ReviewSectionProps) {
         label="What is your sexual orientation?"
         value={data?.sexualOrientation}
         error={null}
+      />
+    </>
+  );
+}
+
+function LogisticsReview({ error }: ReviewSectionProps) {
+  const { data } = api.application.get.useQuery({
+    fields: [
+      "shirtSize",
+      "dietaryRestrictions",
+      "dietaryRestrictionsOther",
+      "emergencyContactName",
+      "emergencyContactRelationship",
+      "emergencyContactPhoneNumber",
+    ],
+  });
+  return (
+    <>
+      <ReviewField
+        label="Shirt size"
+        value={data?.shirtSize}
+        error={error?.shirtSize?._errors}
+      />
+      <ReviewField
+        label="Dietary restrictions"
+        value={
+          data?.dietaryRestrictions === "Other"
+            ? (data?.dietaryRestrictionsOther ?? "Other")
+            : data?.dietaryRestrictions
+        }
+        error={
+          error?.dietaryRestrictions?._errors ??
+          error?.dietaryRestrictionsOther?._errors
+        }
+      />
+      <ReviewField
+        label="Emergency contact name"
+        value={data?.emergencyContactName}
+        error={error?.emergencyContactName?._errors}
+      />
+      <ReviewField
+        label="Emergency contact relationship"
+        value={data?.emergencyContactRelationship}
+        error={error?.emergencyContactRelationship?._errors}
+      />
+      <ReviewField
+        label="Emergency contact phone number"
+        value={data?.emergencyContactPhoneNumber}
+        error={error?.emergencyContactPhoneNumber?._errors}
       />
     </>
   );

@@ -6,6 +6,7 @@ import { InfoForm } from "./info-form";
 import { ApplicationForm } from "./application-form";
 import { LinksForm } from "./links-form";
 import { AgreementsForm } from "./agreements-form";
+import { LogisticsForm } from "./logistics-form";
 import { OptionalForm } from "./optional-form";
 import { ReviewForm } from "./review-form";
 import { AnimatePresence, type Easing, motion } from "framer-motion";
@@ -73,6 +74,8 @@ export function ApplyForm({ step, previewHeight }: ApplyFormProps) {
               return <AgreementsForm />;
             case "optional":
               return <OptionalForm />;
+            case "logistics":
+              return <LogisticsForm />;
             case "review":
               return <ReviewForm />;
             default:

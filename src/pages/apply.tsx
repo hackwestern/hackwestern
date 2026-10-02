@@ -95,6 +95,19 @@ function getNextIncompleteStep(
           return step.step;
         break;
       }
+      case "logistics": {
+        if (
+          isEmpty(application.shirtSize) ||
+          isEmpty(application.dietaryRestrictions) ||
+          (application.dietaryRestrictions === "Other" &&
+            isEmpty(application.dietaryRestrictionsOther)) ||
+          isEmpty(application.emergencyContactName) ||
+          isEmpty(application.emergencyContactRelationship) ||
+          isEmpty(application.emergencyContactPhoneNumber)
+        )
+          return step.step;
+        break;
+      }
       default:
         break;
     }

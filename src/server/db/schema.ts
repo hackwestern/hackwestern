@@ -451,10 +451,10 @@ export const applications = pgTable(
     status: applicationStatus("status").default("IN_PROGRESS").notNull(),
 
     // Horse companion + realm (HW13 redesign)
-    realm: realm("realm"),
-    horseId: integer("horse_id"),
-    horseFirstName: varchar("horse_first_name", { length: 255 }),
-    horseLastName: varchar("horse_last_name", { length: 255 }),
+    realm: realm("realm").notNull(),
+    horseId: integer("horse_id").notNull(),
+    horseFirstName: varchar("horse_first_name", { length: 255 }).notNull(),
+    horseLastName: varchar("horse_last_name", { length: 255 }).notNull(),
 
     // About You
     firstName: varchar("first_name", { length: 255 }),

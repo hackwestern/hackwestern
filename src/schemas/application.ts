@@ -93,6 +93,32 @@ export const agreementsSaveSchema = applicationSaveSchema.pick({
   agreeEmailsFromMLH: true,
 });
 
+export const logisticsSaveSchema = applicationSaveSchema
+  .pick({
+    shirtSize: true,
+    dietaryRestrictions: true,
+    dietaryRestrictionsOther: true,
+    emergencyContactName: true,
+    emergencyContactRelationship: true,
+    emergencyContactPhoneNumber: true,
+  })
+  .extend({
+    // Allow empty-string selections (unselected dropdowns/radios) to be
+    // treated as undefined so partial autosaves don't fail validation.
+    shirtSize: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(shirtSize.enumValues).optional(),
+    ),
+    dietaryRestrictions: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(dietaryRestrictions.enumValues).optional(),
+    ),
+    emergencyContactRelationship: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(emergencyContactRelationship.enumValues).optional(),
+    ),
+  });
+
 export const underrepGroupAnswers = [
   "Yes",
   "No",

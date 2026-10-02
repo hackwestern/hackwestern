@@ -51,6 +51,12 @@ const allSteps = [
       "The next few questions are completely optional and will not be used in any way during your application review process; it will not affect your candidacy positively or negatively. It will only be accessed as a pool to help focus our future outreach to ensure equal access to opportunities for everyone.",
   },
   {
+    step: "logistics",
+    label: "Logistics",
+    heading: "Logistics & emergency contact",
+    subheading: "We need these details for event day.",
+  },
+  {
     step: "review",
     label: "Review",
     heading: "Review Your Application",
