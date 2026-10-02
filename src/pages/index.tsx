@@ -59,6 +59,11 @@ const ABOUT_BG_RATIO = 3277 / 2880;
 const SPONSORS_BG_RATIO = 3427 / 2880;
 // The about photo's box reaches 24px above the section and 7.06dvw + 15px below.
 const ABOUT_MIN_HEIGHT = `max(1109px, calc(${(ABOUT_BG_RATIO * 100).toFixed(2)}vw - 39px - 7.06 * var(--dvw)))`;
+// The about section's height at the 1440 design width. Its windows and folders
+// stay in a box this size, centred, so wider screens group them in the middle.
+const ABOUT_DESIGN_HEIGHT = Math.round(
+  ABOUT_BG_RATIO * 1440 - 39 - 7.06 * 14.4,
+);
 // The sponsors photo's box reaches up behind the strip by its height.
 const SPONSORS_MIN_HEIGHT = `max(1790px, calc(${(SPONSORS_BG_RATIO * 100).toFixed(2)}vw - ${SPONSORS_STRIP_EDGE.height}px))`;
 
@@ -114,20 +119,24 @@ export default function Home() {
         </div>
 
         {/* insert waterfall */}
-        <WindowFolder
-          defaultOpen
-          variant="labelled"
-          label="A message to new hackers"
-          className="absolute bottom-[120px] left-[100px]"
-          windowTitle="A message to new hackers"
-          windowProps={{
-            width: 400,
-            autoHeight: true,
-            className: "isolate absolute right-[500px] top-[200px]",
-          }}
+        <div
+          className="absolute inset-0 m-auto max-w-[1440px]"
+          style={{ maxHeight: ABOUT_DESIGN_HEIGHT }}
         >
-          <div className="p3 whitespace-pre-line font-figtree">
-            {`Dear Hacker,
+          <WindowFolder
+            defaultOpen
+            variant="labelled"
+            label="A message to new hackers"
+            className="absolute bottom-[120px] left-[100px]"
+            windowTitle="A message to new hackers"
+            windowProps={{
+              width: 400,
+              autoHeight: true,
+              className: "isolate absolute right-[500px] top-[200px]",
+            }}
+          >
+            <div className="p3 whitespace-pre-line font-figtree">
+              {`Dear Hacker,
 
               Whether you’re an experienced hacker or have never touched a line of code, you belong at Hack Western.
 
@@ -140,59 +149,62 @@ export default function Home() {
               Love,
 
               The Hack Western 13 Team`}
-          </div>
-        </WindowFolder>
-        <WindowFolder
-          defaultOpen
-          variant="labelled"
-          label="Impact"
-          className="absolute bottom-[500px] left-[200px]"
-          windowTitle="Last year's impact"
-          windowProps={{
-            autoHeight: true,
-            className: "isolate absolute right-[300px] top-[550px]",
-          }}
-        >
-          <div className="flex flex-col items-center gap-[28px] text-center">
-            <div className="flex items-start gap-[64px]">
-              <div className="flex flex-col items-center">
-                <p className="font-cossetteTexte text-[47.917px] text-medium">
-                  82
-                </p>
-                <p className="w-[78.52px] text-[14.4px] font-medium text-light">
-                  Projects Submitted
-                </p>
+            </div>
+          </WindowFolder>
+          <WindowFolder
+            defaultOpen
+            variant="labelled"
+            label="Impact"
+            className="absolute bottom-[500px] left-[200px]"
+            windowTitle="Last year's impact"
+            windowProps={{
+              autoHeight: true,
+              className: "isolate absolute right-[300px] top-[550px]",
+            }}
+          >
+            <div className="flex flex-col items-center gap-[28px] text-center">
+              <div className="flex items-start gap-[64px]">
+                <div className="flex flex-col items-center">
+                  <p className="font-cossetteTexte text-[47.917px] text-medium">
+                    82
+                  </p>
+                  <p className="w-[78.52px] text-[14.4px] font-medium text-light">
+                    Projects Submitted
+                  </p>
+                </div>
+                <div className="flex flex-col items-center">
+                  <p className="font-cossetteTexte text-[47.917px] text-medium">
+                    320
+                  </p>
+                  <p className="text-[14.4px] font-medium text-light">
+                    Participants
+                  </p>
+                </div>
               </div>
               <div className="flex flex-col items-center">
                 <p className="font-cossetteTexte text-[47.917px] text-medium">
-                  320
+                  $10,000
                 </p>
                 <p className="text-[14.4px] font-medium text-light">
-                  Participants
+                  in prizes
                 </p>
               </div>
             </div>
-            <div className="flex flex-col items-center">
-              <p className="font-cossetteTexte text-[47.917px] text-medium">
-                $10,000
-              </p>
-              <p className="text-[14.4px] font-medium text-light">in prizes</p>
-            </div>
-          </div>
-        </WindowFolder>
+          </WindowFolder>
 
-        <WindowFolder
-          defaultOpen
-          variant="labelled"
-          label="Exploration"
-          className="absolute bottom-[300px] left-[80px]"
-          windowTitle="A world of exploration"
-          windowProps={{
-            className: "isolate absolute right-[100px] top-[100px]",
-          }}
-        >
-          <PhotoGallery images={IMAGES} />
-        </WindowFolder>
+          <WindowFolder
+            defaultOpen
+            variant="labelled"
+            label="Exploration"
+            className="absolute bottom-[300px] left-[80px]"
+            windowTitle="A world of exploration"
+            windowProps={{
+              className: "isolate absolute right-[100px] top-[100px]",
+            }}
+          >
+            <PhotoGallery images={IMAGES} />
+          </WindowFolder>
+        </div>
       </section>
       <FilmStrip rotate={3.5} className="relative z-10 hidden lg:block" />
 
