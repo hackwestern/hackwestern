@@ -14,7 +14,6 @@ import {
   shirtSize,
   dietaryRestrictions,
   emergencyContactRelationship,
-  transportationMethod,
 } from "~/server/db/schema";
 
 // Save schema
@@ -24,6 +23,7 @@ export const applicationSaveSchema = createInsertSchema(applications)
     updatedAt: true,
     status: true,
     userId: true,
+    transportationMethod: true,
   })
   .extend({
     devpostLink: z.string().nullish(),
@@ -255,7 +255,10 @@ export const applicationSubmitSchema = z
 
     // RSVP fields
     shirtSize: z.enum(shirtSize.enumValues),
-    dietaryRestrictions: z.enum(dietaryRestrictions.enumValues),
+    dietaryRestrictions: z.preprocess(
+      (v) => (!v ? undefined : v),
+      z.enum(dietaryRestrictions.enumValues).optional(),
+    ),
     dietaryRestrictionsOther: z.string().nullable(),
     emergencyContactName: z.string().min(1),
     emergencyContactRelationship: z.enum(
@@ -265,7 +268,6 @@ export const applicationSubmitSchema = z
       .string()
       .min(1)
       .regex(phoneRegex, "Invalid phone number"),
-    transportationMethod: z.enum(transportationMethod.enumValues),
   })
   .superRefine((data, ctx) => {
     if (data.dietaryRestrictions == "Other" && !data.dietaryRestrictionsOther) {

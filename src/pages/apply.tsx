@@ -100,7 +100,6 @@ function getNextIncompleteStep(
       case "logistics": {
         if (
           isEmpty(application.shirtSize) ||
-          isEmpty(application.dietaryRestrictions) ||
           (application.dietaryRestrictions === "Other" &&
             isEmpty(application.dietaryRestrictionsOther)) ||
           isEmpty(application.emergencyContactName) ||
