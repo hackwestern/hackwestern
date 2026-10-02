@@ -48,7 +48,8 @@ const IMAGES = [
 
 // The strip between projects and sponsors; the sponsors photo starts under its
 // centre line so the tape always sits on the seam, at any screen width.
-const SPONSORS_STRIP_ROTATE = 1.2;
+// Negative: the tape rises to the right, as in Figma 561:687.
+const SPONSORS_STRIP_ROTATE = -1.2;
 const SPONSORS_STRIP_EDGE = filmStripEdge(SPONSORS_STRIP_ROTATE);
 
 export default function Home() {
