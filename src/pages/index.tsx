@@ -1,4 +1,5 @@
 import Topbar from "~/components/live/topbar";
+import { MobileStoryStack } from "~/components/promo/story-mobile";
 import { FilmStrip, filmStripEdge } from "~/components/promo/film-strip";
 import { Hero } from "~/components/promo/hero";
 import { PromoHeader } from "~/components/promo/navbar";
@@ -100,7 +101,14 @@ export default function Home() {
       <SkyBackground />
       <PromoHeader />
 
-      <Hero />
+      {/* On mobile the hero holds still as one screen while the story
+          windows roll up over it, then everything moves on together. */}
+      <div className="relative">
+        <div className="max-sm:sticky max-sm:top-0 max-sm:h-[100svh] max-sm:overflow-hidden">
+          <Hero />
+        </div>
+        <MobileStoryStack />
+      </div>
 
       <FilmStrip rotate={0.4} className="relative z-10" />
 
