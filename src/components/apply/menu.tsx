@@ -138,6 +138,7 @@ function computeStepStatuses(
     optional: [],
     logistics: [
       "shirtSize",
+      "dietaryRestrictions",
       "emergencyContactName",
       "emergencyContactRelationship",
       "emergencyContactPhoneNumber",

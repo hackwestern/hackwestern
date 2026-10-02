@@ -77,7 +77,7 @@ export function RealmForm() {
 
   return (
     <Form {...form}>
-      <div className="flex w-full flex-col items-center gap-4 text-center">
+      <div className="flex w-full flex-col items-center gap-4 pb-8 text-center">
         <HorsePicker selectedId={highlightedId} onSelect={handlePick} />
       </div>
     </Form>

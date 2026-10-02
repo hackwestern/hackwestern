@@ -70,7 +70,7 @@ export function CompanionForm() {
 
   return (
     <Form {...form}>
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-10 pb-12 pt-6">
         <div className="text-center">
           <p className="font-primary text-lg-p font-bold leading-tight text-heavy sm:text-sm-display">
             {hasNames
@@ -86,11 +86,11 @@ export function CompanionForm() {
           </p>
         </div>
 
-        <div className="relative w-full max-w-[280px]">
+        <div className="relative w-full max-w-[360px]">
           <img
             src={selectedHorse.asset}
             alt={`${realmLabel[selectedHorse.realm]} horse`}
-            className="mx-auto max-h-[160px] w-auto max-w-full select-none object-contain"
+            className="mx-auto max-h-[260px] w-auto max-w-full select-none object-contain"
             draggable={false}
           />
         </div>
