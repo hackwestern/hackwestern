@@ -1,6 +1,7 @@
 import Topbar from "~/components/live/topbar";
 import { FilmStrip } from "~/components/promo/film-strip";
 import { Hero } from "~/components/promo/hero";
+import { PromoHeader } from "~/components/promo/navbar";
 import { PastProjects } from "~/components/promo/past-projects";
 import { SkyBackground } from "~/components/promo/sky-background";
 import { TeamFooter } from "~/components/promo/team-footer";
@@ -37,7 +38,7 @@ export default function Home() {
   return (
     <main id="top" className="relative cursor-pixel-default">
       <SkyBackground />
-      <FilmStrip />
+      <PromoHeader />
 
       <Hero />
 
