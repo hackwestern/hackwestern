@@ -71,7 +71,7 @@ export function ApplicationForm() {
                   />
                 </FormControl>
                 <div
-                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "text-gray-500" : "text-destructive"}`}
+                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "text-light font-figtree" : "text-destructive"}`}
                 >
                   {field.value?.split(/\s+/).filter(Boolean).length ?? 0} / 150
                   words
@@ -102,7 +102,7 @@ export function ApplicationForm() {
                   />
                 </FormControl>
                 <div
-                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "text-gray-500" : "text-destructive"}`}
+                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "text-light font-figtree" : "text-destructive"}`}
                 >
                   {field.value?.split(/\s+/).filter(Boolean).length ?? 0} / 150
                   words
@@ -133,7 +133,7 @@ export function ApplicationForm() {
                   />
                 </FormControl>
                 <div
-                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "text-gray-500" : "text-destructive"}`}
+                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "text-light font-figtree" : "text-destructive"}`}
                 >
                   {field.value?.split(/\s+/).filter(Boolean).length ?? 0} / 150
                   words
