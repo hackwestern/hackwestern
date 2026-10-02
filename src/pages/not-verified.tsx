@@ -62,7 +62,7 @@ const NotVerified = () => {
           </Button>
 
           <Button
-            variant="secondary"
+            variant="primary"
             size="lg"
             full
             onClick={() => signOut().then(() => void router.push("/login"))}
