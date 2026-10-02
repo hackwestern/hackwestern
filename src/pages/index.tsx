@@ -62,7 +62,7 @@ const SPONSORS_STRIP_EDGE = filmStripEdge(SPONSORS_STRIP_ROTATE);
 // section) sits above the photo, whose own sky is transparent, so the page's
 // sky shows behind the title. The photo starts that far below where it used
 // to (behind the strip).
-const SPONSORS_SKY = 300;
+const SPONSORS_SKY = 150;
 const SPONSORS_PHOTO: CoverPhoto = {
   imageWidth: 2880,
   imageHeight: 3427,
@@ -71,6 +71,19 @@ const SPONSORS_PHOTO: CoverPhoto = {
   topCss: `calc(${halfRateHeight(SPONSORS_SKY)} - ${SPONSORS_STRIP_EDGE.height}px)`,
   align: "top",
 };
+// Where the title, sponsors window and FAQ start at 1440 (px from the section
+// top). The window's top sits just under the title's second line (~241px),
+// and the FAQ keeps its 94px gap below the ~569px-tall window.
+const SPONSORS_TITLE_Y = 155;
+const SPONSORS_WINDOW_Y = 256;
+const SPONSORS_FAQ_Y = 919;
+const SPONSORS_TITLE_POINT = photoPoint(SPONSORS_PHOTO, 160, SPONSORS_TITLE_Y);
+// The window follows the title rather than the photo, so the gap under the
+// title grows only with --ui-scale, like the title itself.
+const SPONSORS_WINDOW_POINT = {
+  "--x": photoPoint(SPONSORS_PHOTO, 576, 0)["--x"],
+  "--y": `calc(${SPONSORS_TITLE_POINT["--y"]} + ${SPONSORS_WINDOW_Y - SPONSORS_TITLE_Y}px * var(--ui-scale, 1))`,
+} as CSSProperties;
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -291,7 +304,7 @@ export default function Home() {
           <div
             className="relative flex flex-col items-start gap-[36px]
                 lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:w-[488px] lg:origin-top-left lg:[scale:var(--ui-scale,1)]"
-            style={photoPoint(SPONSORS_PHOTO, 160, 80 + SPONSORS_SKY / 4)}
+            style={SPONSORS_TITLE_POINT}
           >
             <div className="flex flex-col items-start gap-[18px]">
               <div className="flex flex-col items-start">
@@ -389,7 +402,7 @@ export default function Home() {
             {/* FAQ */}
             <div
               className="relative z-10 flex w-full flex-col items-start gap-[24px] lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:w-[1120px] lg:origin-top-left lg:gap-[64px] lg:[scale:var(--ui-scale,1)]"
-              style={photoPoint(SPONSORS_PHOTO, 160, 900 + SPONSORS_SKY / 3)}
+              style={photoPoint(SPONSORS_PHOTO, 160, SPONSORS_FAQ_Y)}
             >
               <div className="flex w-full max-w-[488px] flex-col items-start gap-[18px]">
                 <div className="relative">
@@ -438,9 +451,9 @@ export default function Home() {
           autoHeight
           width={700}
           title="Thank you to our sponsors"
-          // its bottom-left corner is the pinned point
-          className="z-10 hidden lg:absolute lg:bottom-[calc(100%-var(--y))] lg:left-[var(--x)] lg:block lg:origin-bottom-left lg:[scale:var(--ui-scale,1)]"
-          style={photoPoint(SPONSORS_PHOTO, 576, 805.5 + SPONSORS_SKY / 3)}
+          // its top-left corner is the pinned point
+          className="z-10 hidden lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:block lg:origin-top-left lg:[scale:var(--ui-scale,1)]"
+          style={SPONSORS_WINDOW_POINT}
         >
           <SponsorLogos className="w-full p-6" />
         </Window>
