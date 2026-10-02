@@ -26,9 +26,11 @@ import {
 
 const PathEditor = dynamic(() => import("./path-editor"), { ssr: false });
 
-// Desktop keeps the hero one fixed height on every screen size: the scene is
-// the art at the 1440 design width, plus 1.5 screens of the 1440x900 design
-// to scroll through. Wider screens crop the art (cover), taller ones show sky.
+// Desktop scene: the full art at the screen's width, never shorter than the
+// art at the 1440 design width. It grows on wider screens rather than
+// cropping, because the story path and pins sit in the art's bottom third.
+// The scroll hold stays 1.5 screens of the 1440x900 design. Taller screens
+// show sky.
 const DESIGN_WIDTH = 1440;
 const HOLD_PX = 1350;
 // Mobile skips the extended "hold" almost entirely — the desktop
@@ -43,7 +45,7 @@ const HOLD_SCREENS_MOBILE = 0;
 // elsewhere in the codebase (e.g. FilmStrip's `hidden lg:block`).
 const MOBILE_BREAKPOINT_PX = 1024;
 const SCENE_HEIGHT_MOBILE = `max(100svh, ${(IMAGE_HEIGHT / IMAGE_WIDTH) * 100}vw)`;
-const SCENE_HEIGHT_DESKTOP = `${Math.round((IMAGE_HEIGHT / IMAGE_WIDTH) * DESIGN_WIDTH)}px`;
+const SCENE_HEIGHT_DESKTOP = `max(${Math.round((IMAGE_HEIGHT / IMAGE_WIDTH) * DESIGN_WIDTH)}px, ${(IMAGE_HEIGHT / IMAGE_WIDTH) * 100}vw)`;
 const BLEED = 240;
 // With HOLD_SCREENS_MOBILE at ~0, there's no scroll buffer left
 // for the full 240px bleed to sit comfortably within before the
