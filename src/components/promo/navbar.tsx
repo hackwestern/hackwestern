@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Menu } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import {
   Sheet,
   SheetClose,
@@ -181,5 +182,55 @@ export function PromoNavbar({
         </SheetContent>
       </Sheet>
     </nav>
+  );
+}
+
+// Near the top of the page the header always shows, sitting over the hero.
+const ALWAYS_VISIBLE_UNTIL = 80;
+// Ignore tiny scroll jitter (trackpad momentum) so the header doesn't flicker.
+const DIRECTION_THRESHOLD = 4;
+
+// Fixed to the viewport: hides while scrolling down, slides back in on any
+// scroll up so the nav is reachable from anywhere on the page.
+export function PromoHeader(props: PromoNavbarProps) {
+  const [hidden, setHidden] = useState(false);
+  const lastY = useRef(0);
+
+  useEffect(() => {
+    lastY.current = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      const delta = y - lastY.current;
+      if (y < ALWAYS_VISIBLE_UNTIL) setHidden(false);
+      else if (delta > DIRECTION_THRESHOLD) setHidden(true);
+      else if (delta < -DIRECTION_THRESHOLD) setHidden(false);
+      else return;
+      lastY.current = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <header
+      className={cn(
+        "fixed inset-x-0 top-3 z-50 px-[10%] transition-transform duration-300 ease-out focus-within:translate-y-0 motion-reduce:transition-none",
+        hidden && "-translate-y-[calc(100%_+_12px)]",
+      )}
+    >
+      <div className="flex items-start gap-6">
+        <PromoNavbar {...props} className={cn("flex-1", props.className)} />
+
+        <a href="https://www.mlh.com/" target="_blank">
+          <Image
+            height={43}
+            width={75}
+            src="/landing/promo/mlh.png"
+            alt="mlh"
+            className="-mt-[55px] hidden lg:block"
+          />
+        </a>
+      </div>
+    </header>
   );
 }
