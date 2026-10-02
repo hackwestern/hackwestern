@@ -194,13 +194,15 @@ export default function Apply() {
           {/* Mobile Content */}
           <div className="flex-1 bg-white py-24">
             <div className="mx-6 flex h-full flex-col">
-              <div className="mb-6">
-                <ApplyHeading
-                  heading={heading}
-                  subheading={subheading}
-                  stepKey={step}
-                />
-              </div>
+              {step !== "realm" && (
+                <div className="mb-6">
+                  <ApplyHeading
+                    heading={heading}
+                    subheading={subheading}
+                    stepKey={step}
+                  />
+                </div>
+              )}
 
               {step ? (
                 <div className="flex-1 overflow-visible font-figtree">
