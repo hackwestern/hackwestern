@@ -226,9 +226,14 @@ const config = {
           "80%": { transform: "translateY(-10px)" },
           "100%": { transform: "translateY(0)" },
         },
+        "team-marquee": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         "bounce-jump": "bounce-jump 0.6s ease-in-out",
+        "team-marquee": "team-marquee 80s linear infinite",
       },
     },
   },
