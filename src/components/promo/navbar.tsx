@@ -220,7 +220,7 @@ export function PromoHeader(props: PromoNavbarProps) {
     >
       {/* past 1440 wide, zoom grows the bar's text and icons with --ui-scale
           while it still spans the same width */}
-      <div className="flex items-start gap-6 min-[1440px]:[zoom:var(--ui-scale,1)]">
+      <div className="flex items-start lg:gap-6 min-[1440px]:[zoom:var(--ui-scale,1)]">
         <PromoNavbar {...props} className={cn("flex-1", props.className)} />
 
         <a href="https://www.mlh.com/" target="_blank">
@@ -229,7 +229,7 @@ export function PromoHeader(props: PromoNavbarProps) {
             width={75}
             src="/landing/promo/mlh.png"
             alt="mlh"
-            className="-mt-[55px] hidden lg:block"
+            className="hidden lg:block"
           />
         </a>
       </div>
