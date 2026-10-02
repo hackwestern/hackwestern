@@ -3,6 +3,7 @@ import * as React from "react";
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { AnimatePresence, motion, type Easing } from "framer-motion";
 import {
   Form,
   FormControl,
@@ -11,6 +12,7 @@ import {
   FormLabel,
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
+import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { realmSaveSchema } from "~/schemas/application";
@@ -18,6 +20,20 @@ import { getHorse, realmLabel, type Horse } from "~/constants/realms";
 import { HorsePicker } from "./horse-picker";
 
 type RealmFormValues = z.infer<typeof realmSaveSchema>;
+
+const viewFade = {
+  initial: { opacity: 0, y: 8 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: [0.37, 0.1, 0.6, 1] as Easing },
+  },
+  exit: {
+    opacity: 0,
+    y: -8,
+    transition: { duration: 0.2, ease: [0.37, 0.1, 0.6, 1] as Easing },
+  },
+};
 
 export function RealmForm() {
   const utils = api.useUtils();
@@ -49,102 +65,139 @@ export function RealmForm() {
   const horseLastName = form.watch("horseLastName");
   const selectedHorse = getHorse(horseId);
 
+  // Jump straight to the naming view for returning users who already have a
+  // horse saved; otherwise require pressing Next to confirm the pick.
+  const [view, setView] = React.useState<"pick" | "name">(() =>
+    getHorse(defaults?.horseId) ? "name" : "pick",
+  );
+
+  React.useEffect(() => {
+    if (defaults?.horseId && getHorse(defaults.horseId)) setView("name");
+  }, [defaults?.horseId]);
+
   const handlePick = (horse: Horse) => {
     if (!canEdit) return;
     form.setValue("horseId", horse.id, { shouldDirty: true });
     form.setValue("realm", horse.realm, { shouldDirty: true });
   };
 
-  const handleChangeHorse = () => {
-    if (!canEdit) return;
-    form.setValue("horseId", null, { shouldDirty: true });
-    form.setValue("realm", null, { shouldDirty: true });
+  const handleConfirmPick = () => {
+    if (!selectedHorse) return;
+    setView("name");
   };
 
-  if (!selectedHorse) {
-    return (
-      <Form {...form}>
-        <HorsePicker selectedId={horseId ?? null} onSelect={handlePick} />
-      </Form>
-    );
-  }
+  const handleChangeHorse = () => {
+    if (!canEdit) return;
+    setView("pick");
+  };
 
   const hasNames = Boolean(horseFirstName && horseLastName);
 
   return (
     <Form {...form}>
-      <div className="flex flex-col items-center gap-6">
-        <div className="text-center">
-          <p className="font-primary text-sm-display font-bold text-heavy">
-            {hasNames
-              ? `${horseFirstName} ${horseLastName} will be your companion for Hack Western 13!`
-              : "Good choice! Next, pick a name for your companion"}
-          </p>
-          <p className="mt-2 font-figtree text-lg-p font-medium text-light">
-            You will be journeying through the{" "}
-            <span className="font-semibold text-medium">
-              {realmLabel[selectedHorse.realm]}
-            </span>{" "}
-            realm.
-          </p>
-        </div>
-
-        <div className="relative w-full max-w-[420px]">
-          <img
-            src={selectedHorse.asset}
-            alt={`${realmLabel[selectedHorse.realm]} horse`}
-            className="mx-auto max-h-[240px] w-auto max-w-full select-none object-contain"
-            draggable={false}
-          />
-        </div>
-
-        <div className="grid w-full max-w-[600px] grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="horseFirstName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>First Name</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value ?? ""}
-                    disabled={!canEdit}
-                    placeholder="Wobbly"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="horseLastName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Last Name</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value ?? ""}
-                    disabled={!canEdit}
-                    placeholder="Biscuit"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {canEdit && (
-          <button
-            type="button"
-            onClick={handleChangeHorse}
-            className="font-figtree text-md-p font-medium text-medium underline-offset-2 hover:underline"
+      <AnimatePresence mode="wait" initial={false}>
+        {view === "pick" || !selectedHorse ? (
+          <motion.div
+            key="pick"
+            variants={viewFade}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="flex flex-col items-center gap-6"
           >
-            Pick a different horse
-          </button>
+            <HorsePicker selectedId={horseId ?? null} onSelect={handlePick} />
+            <Button
+              type="button"
+              variant="primary"
+              size="lg"
+              disabled={!selectedHorse || !canEdit}
+              onClick={handleConfirmPick}
+            >
+              Next
+            </Button>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="name"
+            variants={viewFade}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="flex flex-col items-center gap-6"
+          >
+            <div className="text-center">
+              <p className="font-primary text-sm-display font-bold text-heavy">
+                {hasNames
+                  ? `${horseFirstName} ${horseLastName} will be your companion for Hack Western 13!`
+                  : "Good choice! Next, pick a name for your companion"}
+              </p>
+              <p className="mt-2 font-figtree text-lg-p font-medium text-light">
+                You will be journeying through the{" "}
+                <span className="font-semibold text-medium">
+                  {realmLabel[selectedHorse.realm]}
+                </span>{" "}
+                realm.
+              </p>
+            </div>
+
+            <div className="relative w-full max-w-[420px]">
+              <img
+                src={selectedHorse.asset}
+                alt={`${realmLabel[selectedHorse.realm]} horse`}
+                className="mx-auto max-h-[240px] w-auto max-w-full select-none object-contain"
+                draggable={false}
+              />
+            </div>
+
+            <div className="grid w-full max-w-[600px] grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="horseFirstName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value ?? ""}
+                        disabled={!canEdit}
+                        placeholder="Wobbly"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="horseLastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value ?? ""}
+                        disabled={!canEdit}
+                        placeholder="Biscuit"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {canEdit && (
+              <button
+                type="button"
+                onClick={handleChangeHorse}
+                className="font-figtree text-md-p font-medium text-medium underline-offset-2 hover:underline"
+              >
+                Pick a different horse
+              </button>
+            )}
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </Form>
   );
 }

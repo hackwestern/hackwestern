@@ -14,6 +14,7 @@ export function HorsePicker({
   onSelect,
   className,
 }: HorsePickerProps) {
+  const hasSelection = selectedId != null;
   return (
     <div className={cn("flex flex-col items-center gap-3", className)}>
       <div className="relative aspect-[823/500] w-full max-w-[720px]">
@@ -25,11 +26,14 @@ export function HorsePicker({
               type="button"
               onClick={() => onSelect(horse)}
               aria-label={`Choose horse ${horse.id} from the ${horse.realm} realm`}
+              aria-pressed={isSelected}
               className={cn(
-                "absolute cursor-pointer transition-transform duration-150 ease-out",
+                "absolute cursor-pointer transition-all duration-300 ease-out",
                 isSelected
-                  ? "scale-110 drop-shadow-[0_6px_12px_rgba(4,34,57,0.35)]"
-                  : "hover:scale-[1.06] hover:drop-shadow-[0_4px_10px_rgba(4,34,57,0.25)]",
+                  ? "scale-110 opacity-100 drop-shadow-[0_6px_12px_rgba(4,34,57,0.45)]"
+                  : hasSelection
+                    ? "scale-95 opacity-50 hover:scale-100 hover:opacity-80"
+                    : "hover:scale-[1.06] hover:drop-shadow-[0_4px_10px_rgba(4,34,57,0.25)]",
               )}
               style={{
                 left: `${horse.leftPct}%`,
