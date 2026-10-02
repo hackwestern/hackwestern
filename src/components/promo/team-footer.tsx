@@ -51,7 +51,7 @@ export const TEAM: TeamMember[] = [
   member("Jamie Gao", "Growth Organizer", "jamie", "#c2a022"),
   member("Jasmine Gu", "Product Lead", "jasmine", "#a85231"),
   member("Jessica Wang", "Design Lead", "jessica-w", "#808d25"),
-  member("Jessica Xu", "Events Organizer", "jessica-x", "#92a5a4"),
+  member("Jessica Xing", "Events Organizer", "jessica-x", "#92a5a4"),
   member("Julian Laxman", "Co-Director", "julian", "#c9cacd"),
   member("Kevin Li", "Web Organizer", "kevin", "#5b6e34"),
   member("Lillian Wei", "Design Organizer", "lillian", "#afb095"),

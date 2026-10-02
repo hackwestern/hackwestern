@@ -75,8 +75,6 @@ export function FaqItem({ question, answer, isOpen, onToggle }: FaqItemProps) {
         }`}
       >
         <div className="overflow-hidden">
-          <div className="mb-[12px] h-px w-full bg-[#c3c3c3]" />{" "}
-          {/* TODO: divider color assumed same as border; confirm against Line 1 asset if precision matters */}
           <p className="font-figtree text-[16px] font-medium leading-[1.5] text-medium">
             {answer}
           </p>
