@@ -9,6 +9,10 @@
 // Size of each dither block.
 const DOT_SCALE = 8;
 
+// DOT_SCALE was tuned on a 2x (Retina) screen. Dots are scaled by
+// the screen's dpr so they're the same on-page size on every screen.
+const REFERENCE_DPR = 2;
+
 // Maximum scale applied when fitting the mask image into the
 // canvas (prevents the shape from oversampling on very wide
 // containers — same role as MAX_CLOUD_SCALE in cloud-animate3).
@@ -258,9 +262,10 @@ export function drawAsciiWaterfall(
   // ----------------------------------------------------------
   // GRID
   // ----------------------------------------------------------
+  const dotSize = Math.max(1, Math.round((DOT_SCALE / REFERENCE_DPR) * dpr));
 
-  const cols = Math.ceil(width / DOT_SCALE);
-  const rows = Math.ceil(height / DOT_SCALE);
+  const cols = Math.ceil(width / dotSize);
+  const rows = Math.ceil(height / dotSize);
 
   // ----------------------------------------------------------
   // DRAW
@@ -272,8 +277,8 @@ export function drawAsciiWaterfall(
     const bayerRow = BAYER[row & 7] ?? [];
 
     for (let col = 0; col < cols; col++) {
-      const x = col * DOT_SCALE + DOT_SCALE / 2;
-      const y = row * DOT_SCALE + DOT_SCALE / 2;
+      const x = col * dotSize + dotSize / 2;
+      const y = row * dotSize + dotSize / 2;
 
       if (x >= width || y >= height) {
         continue;
@@ -325,7 +330,7 @@ export function drawAsciiWaterfall(
         if (flickerValue < SIDE_DOT_CHANCE) {
           ctx.fillStyle = "black";
 
-          ctx.fillRect(col * DOT_SCALE, row * DOT_SCALE, DOT_SCALE, DOT_SCALE);
+          ctx.fillRect(col * dotSize, row * dotSize, dotSize, dotSize);
 
           drewSideDot = true;
         }
@@ -391,7 +396,7 @@ export function drawAsciiWaterfall(
 
       ctx.fillStyle = "white";
 
-      ctx.fillRect(col * DOT_SCALE, row * DOT_SCALE, DOT_SCALE, DOT_SCALE);
+      ctx.fillRect(col * dotSize, row * dotSize, dotSize, dotSize);
     }
   }
 }
