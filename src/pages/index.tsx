@@ -78,10 +78,12 @@ export default function Home() {
             containerRef={containerRef}
             backgroundSrc="/landing/home/about.png"
             objectPositionX="center"
-            sourceLeft={670}
-            sourceTop={1350}
-            sourceWidth={400}
-            sourceHeight={1200}
+            // The photo's own waterfall in about.png (file px), sized to
+            // the mask's 220:1217 ratio so the dither sits on it.
+            sourceLeft={1210}
+            sourceTop={1746}
+            sourceWidth={202}
+            sourceHeight={1115}
           />
         </div>
 
