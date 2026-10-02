@@ -1,3 +1,5 @@
+import { cn } from "~/lib/utils";
+
 const DESIGN_WIDTH = 1440;
 const DESIGN_STRIP_WIDTH = 1890;
 
