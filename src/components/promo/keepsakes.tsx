@@ -538,7 +538,7 @@ export function Flag({ className }: { className?: string }) {
     >
       {(found) => (
         <svg
-          viewBox="0 0 64 84"
+          viewBox="0 0 70 90"
           overflow="visible"
           aria-hidden
           className={cn(
@@ -554,7 +554,7 @@ export function Flag({ className }: { className?: string }) {
               x="6"
               y="6"
               width="4"
-              height="76"
+              height="82"
               rx="2"
               fill="#7a4a26"
               stroke="#4a2a12"
@@ -568,19 +568,22 @@ export function Flag({ className }: { className?: string }) {
               stroke="#7a4d02"
               strokeWidth=".6"
             />
-            {/* the cloth waves from the pole */}
+            {/* the cloth (and the logo on it) waves from the pole */}
             <g className="origin-left [transform-box:fill-box] motion-safe:animate-flag-wave">
               <path
-                d="M10 9c8-4 16 3 26 0s16-3 22 0v24c-6-3-12-3-22 0s-18 4-26 0Z"
-                fill="#e8543e"
+                d="M10 9c9-4 18 3 28 0s19-3 28 0v32c-9-3-18-3-28 0s-19 4-28 0Z"
+                fill="#e1c8fa"
               />
               <path
-                d="M10 27c8 4 18 3 26 0s16-3 22 0v6c-6-3-12-3-22 0s-18 4-26 0Z"
-                fill="#c43d2a"
+                d="M10 35c9 4 19 3 28 0s19-3 28 0v6c-9-3-18-3-28 0s-19 4-28 0Z"
+                fill="#c9a8ef"
               />
-              <path
-                d="m34 14 1.6 3.4 3.7.4-2.8 2.5.8 3.7-3.3-1.9-3.3 1.9.8-3.7-2.8-2.5 3.7-.4Z"
-                fill="white"
+              <image
+                href="/shared/horse.svg"
+                x="28.4"
+                y="11"
+                width="19.1"
+                height="28"
               />
             </g>
           </g>
