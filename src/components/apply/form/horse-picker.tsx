@@ -17,7 +17,16 @@ export function HorsePicker({
   const hasSelection = selectedId != null;
   return (
     <div className={cn("flex w-full flex-col items-center gap-3", className)}>
-      <div className="relative aspect-[823/500] min-h-[320px] w-full max-w-[720px]">
+      <div
+        className={cn(
+          "relative aspect-[823/500] w-full",
+          // Cap by viewport so the picker never pushes the Window off-screen.
+          // 60vh gives enough room for the sidebar nav + footer button.
+          "max-h-[min(60vh,440px)]",
+          // Keep width in sync with the height cap so aspect ratio holds.
+          "max-w-[min(calc(60vh*1.646),720px)]",
+        )}
+      >
         {horses.map((horse) => {
           const isSelected = horse.id === selectedId;
           return (
