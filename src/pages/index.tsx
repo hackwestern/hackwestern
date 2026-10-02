@@ -180,8 +180,8 @@ export default function Home() {
 
       <section
         id="sponsors"
-        className="relative flex flex-col gap-12 overflow-hidden px-6 pb-12 pt-12
-             [--photo-h:360px] [--photo-offset:150px]
+        className="relative flex min-h-[1880px] flex-col gap-12 overflow-hidden px-6 pb-16 pt-12
+             [--photo-h:320px] [--photo-offset:150px]
              lg:block lg:min-h-[1790px] lg:p-0"
       >
         {/* CLOUDS */}
