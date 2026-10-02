@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { ClipboardEvent } from "react";
 import { useForm } from "react-hook-form";
 import {
   Form,
@@ -11,7 +12,7 @@ import {
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
@@ -20,11 +21,8 @@ import {
   getDevpostUsername,
   getGithubUsername,
   getLinkedinUsername,
+  ensureUrlHasProtocol,
 } from "~/utils/urls";
-
-function withPrefix(prefix: string, username?: string | null) {
-  return username ? `${prefix}${username}` : username;
-}
 
 export function LinksForm() {
   const utils = api.useUtils();
@@ -68,20 +66,7 @@ export function LinksForm() {
     resolver: zodResolver(linksSaveSchema),
   });
 
-  // The server stores and returns just the username for these three; the
-  // form shows and accepts the whole link.
-  const formDefaults = useMemo(
-    () =>
-      defaultValues && {
-        ...defaultValues,
-        devpostLink: withPrefix(DEVPOST_URL, defaultValues.devpostLink),
-        githubLink: withPrefix(GITHUB_URL, defaultValues.githubLink),
-        linkedInLink: withPrefix(LINKEDIN_URL, defaultValues.linkedInLink),
-      },
-    [defaultValues],
-  );
-
-  useAutoSave(form, onSubmit, formDefaults);
+  useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof linksSaveSchema>) {
     // Normalize usernames so pasted full URLs don't get double-prefixed
@@ -99,6 +84,24 @@ export function LinksForm() {
     mutate({
       ...normalizedData,
     });
+  }
+
+  function onGithubPaste(e: ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+    const githubUsername = getGithubUsername(pastedText);
+
+    form.setValue("githubLink", githubUsername);
+    return form.handleSubmit(onSubmit)();
+  }
+
+  function onLinkedinPaste(e: ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+    const linkedinUsername = getLinkedinUsername(pastedText);
+
+    form.setValue("linkedInLink", linkedinUsername);
+    return form.handleSubmit(onSubmit)();
   }
 
   function fileNameFromUrl(url: string) {
