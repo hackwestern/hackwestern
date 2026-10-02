@@ -18,11 +18,7 @@ export default function CloudDrift({
   startX = "-40vw",
   endX = "100vw",
   className = "",
-  wait = 0,
 }: CloudDriftProps) {
-  const totalTime = duration + wait;
-
-  const movePercent = (duration / totalTime) * 100;
   return (
     <div
       className={className}
@@ -46,10 +42,6 @@ export default function CloudDrift({
         @keyframes cloud-drift {
           0% {
             transform: translateX(var(--cloud-start));
-          }
-
-          var(--cloud-move-percent) {
-            transform: translateX(var(--cloud-end));
           }
 
           100% {
