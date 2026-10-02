@@ -22,6 +22,10 @@ export type RealmTint = {
   sidebarBorder: string;
   sidebarItemHover: string;
   sidebarItemActive: string;
+  /** Solid, readable realm color used for text + accents inside tinted forms. */
+  accent: string;
+  /** Softer realm color used for secondary / muted copy inside tinted forms. */
+  accentMuted: string;
 };
 
 export const realmTint: Record<Realm, RealmTint> = {
@@ -31,6 +35,8 @@ export const realmTint: Record<Realm, RealmTint> = {
     sidebarBorder: "rgba(234, 179, 8, 0.35)",
     sidebarItemHover: "rgba(234, 179, 8, 0.22)",
     sidebarItemActive: "rgba(234, 179, 8, 0.45)",
+    accent: "#854d0e",
+    accentMuted: "#a16207",
   },
   ocean: {
     background: "/apply/realm/background-ocean.png",
@@ -38,6 +44,8 @@ export const realmTint: Record<Realm, RealmTint> = {
     sidebarBorder: "rgba(37, 99, 235, 0.35)",
     sidebarItemHover: "rgba(37, 99, 235, 0.22)",
     sidebarItemActive: "rgba(37, 99, 235, 0.4)",
+    accent: "#1e3a8a",
+    accentMuted: "#1d4ed8",
   },
   mountain: {
     background: "/apply/realm/background-mountain.png",
@@ -45,6 +53,8 @@ export const realmTint: Record<Realm, RealmTint> = {
     sidebarBorder: "rgba(22, 163, 74, 0.35)",
     sidebarItemHover: "rgba(22, 163, 74, 0.22)",
     sidebarItemActive: "rgba(22, 163, 74, 0.4)",
+    accent: "#14532d",
+    accentMuted: "#166534",
   },
   desert: {
     background: "/apply/realm/background-desert.png",
@@ -52,6 +62,8 @@ export const realmTint: Record<Realm, RealmTint> = {
     sidebarBorder: "rgba(234, 88, 12, 0.35)",
     sidebarItemHover: "rgba(234, 88, 12, 0.22)",
     sidebarItemActive: "rgba(234, 88, 12, 0.4)",
+    accent: "#7c2d12",
+    accentMuted: "#9a3412",
   },
 };
 

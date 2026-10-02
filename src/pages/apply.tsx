@@ -267,6 +267,8 @@ export default function Apply() {
                         ? ({
                             "--form-tint-bg": tint.sidebarBg,
                             "--form-tint-border": tint.sidebarBorder,
+                            "--form-tint-text": tint.accent,
+                            "--form-tint-text-muted": tint.accentMuted,
                           } as React.CSSProperties)
                         : undefined
                     }
