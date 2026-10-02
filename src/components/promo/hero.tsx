@@ -554,10 +554,14 @@ export function Hero() {
 
   return (
     <>
+      {/* Below lg the scene is pushed down (MOBILE_SKY_EXTENSION, parallax)
+          with no scroll room under it, so clip it at the section's bottom;
+          otherwise the foreground spills past the film strip. `clip`, not
+          `hidden`, so the sticky scene still sticks. */}
       <section
         ref={sectionRef}
         id="hero"
-        className="relative isolate md:bg-none"
+        className="relative isolate max-lg:overflow-y-clip md:bg-none"
         style={{ height: `calc(${SCENE_HEIGHT} + ${holdScreens * 100}svh)` }}
       >
         {/* Mobile background */}
