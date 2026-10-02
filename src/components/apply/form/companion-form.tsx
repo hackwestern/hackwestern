@@ -13,7 +13,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
-import { realmSaveSchema } from "~/schemas/application";
+import { HORSE_NAME_MAX_LENGTH, realmSaveSchema } from "~/schemas/application";
 import { getHorse, realmLabel } from "~/constants/realms";
 
 type CompanionFormValues = z.infer<typeof realmSaveSchema>;
@@ -107,6 +107,7 @@ export function CompanionForm() {
                     value={field.value ?? ""}
                     disabled={!canEdit}
                     placeholder="Wobbly"
+                    maxLength={HORSE_NAME_MAX_LENGTH}
                   />
                 </FormControl>
               </FormItem>
@@ -124,6 +125,7 @@ export function CompanionForm() {
                     value={field.value ?? ""}
                     disabled={!canEdit}
                     placeholder="Biscuit"
+                    maxLength={HORSE_NAME_MAX_LENGTH}
                   />
                 </FormControl>
               </FormItem>

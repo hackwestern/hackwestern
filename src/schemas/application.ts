@@ -55,12 +55,31 @@ export const personaSaveSchema = applicationSaveSchema.pick({
   avatarHat: true,
 });
 
-export const realmSaveSchema = applicationSaveSchema.pick({
-  realm: true,
-  horseId: true,
-  horseFirstName: true,
-  horseLastName: true,
-});
+export const HORSE_NAME_MAX_LENGTH = 24;
+
+export const realmSaveSchema = applicationSaveSchema
+  .pick({
+    realm: true,
+    horseId: true,
+    horseFirstName: true,
+    horseLastName: true,
+  })
+  .extend({
+    horseFirstName: z
+      .string()
+      .trim()
+      .max(HORSE_NAME_MAX_LENGTH, {
+        message: `Keep it under ${HORSE_NAME_MAX_LENGTH} characters.`,
+      })
+      .nullish(),
+    horseLastName: z
+      .string()
+      .trim()
+      .max(HORSE_NAME_MAX_LENGTH, {
+        message: `Keep it under ${HORSE_NAME_MAX_LENGTH} characters.`,
+      })
+      .nullish(),
+  });
 
 export const infoSaveSchema = z.object({
   school: z.preprocess(
