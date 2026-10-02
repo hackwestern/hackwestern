@@ -68,7 +68,9 @@ export function RealmForm() {
         horseLastName: defaults?.horseLastName ?? null,
       } as RealmFormValues,
       {
-        onSuccess: () => utils.application.get.invalidate(),
+        onSuccess: () => {
+          void utils.application.get.invalidate();
+        },
       },
     );
   };
