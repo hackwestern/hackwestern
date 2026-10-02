@@ -9,6 +9,8 @@ interface CloudProps {
   top?: string;
   className?: string;
   variant?: CloudVariant;
+  /** Text drawn into the cloud itself. */
+  label?: string;
 }
 
 export default function Cloud({
@@ -17,6 +19,7 @@ export default function Cloud({
   top = "10%",
   className = "",
   variant = "cloud1",
+  label,
 }: CloudProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -25,6 +28,12 @@ export default function Cloud({
   useEffect(() => {
     variantRef.current = variant;
   }, [variant]);
+
+  const labelRef = useRef(label);
+
+  useEffect(() => {
+    labelRef.current = label;
+  }, [label]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -67,6 +76,7 @@ export default function Cloud({
         time,
         dpr,
         variantRef.current,
+        labelRef.current,
       );
 
       animationFrame = requestAnimationFrame(animate);

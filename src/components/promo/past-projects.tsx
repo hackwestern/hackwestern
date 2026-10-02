@@ -4,6 +4,7 @@ import Image from "next/image";
 import Cloud from "~/components/live/cloud";
 import CloudDrift from "~/components/live/clouddrift";
 import { WindowFolder } from "~/components/live/window-folder";
+import { useKeepsake } from "~/components/promo/keepsakes";
 import { Button } from "~/components/ui/button";
 import { PAST_PROJECTS, type PastProject } from "~/constants/past-projects";
 import { cn } from "~/lib/utils";
@@ -64,7 +65,26 @@ export function PastProjects() {
   );
 }
 
+const ASCII_CLOUD_WIDTH = "clamp(220px, 40.12 * var(--dvw, 1vw), 578px)";
+const ASCII_CLOUD_HEIGHT = "clamp(91px, 16.56 * var(--dvw, 1vw), 238px)";
+
+const SKY_LINK = process.env.NEXT_PUBLIC_SKY_LINK;
+
 function AsciiClouds() {
+  const [chestOpened] = useKeepsake(1);
+  const [knightClicked] = useKeepsake(2);
+  const linked = Boolean(SKY_LINK) && chestOpened && knightClicked;
+
+  const topCloud = (
+    <Cloud
+      variant="cloud7"
+      top="0"
+      width={ASCII_CLOUD_WIDTH}
+      height={ASCII_CLOUD_HEIGHT}
+      label={linked ? "Click me!" : undefined}
+    />
+  );
+
   return (
     <div
       aria-hidden
@@ -74,12 +94,19 @@ function AsciiClouds() {
     >
       <div className="absolute inset-x-0 top-[2%] md:top-[14.27%]">
         <CloudDrift duration={40} delay={-30}>
-          <Cloud
-            variant="cloud7"
-            top="0"
-            width="clamp(220px, 40.12 * var(--dvw, 1vw), 578px)"
-            height="clamp(91px, 16.56 * var(--dvw, 1vw), 238px)"
-          />
+          {linked ? (
+            <a
+              href={SKY_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pointer-events-auto absolute left-0 top-0 block cursor-pixel-hover"
+              style={{ width: ASCII_CLOUD_WIDTH, height: ASCII_CLOUD_HEIGHT }}
+            >
+              {topCloud}
+            </a>
+          ) : (
+            topCloud
+          )}
         </CloudDrift>
       </div>
       <div className="absolute inset-x-0 top-[62%] md:top-[65.83%]">

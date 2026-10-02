@@ -6,6 +6,7 @@ import { SponsorLogos } from "~/components/promo/sponsor-logos";
 import { PastProjects } from "~/components/promo/past-projects";
 import { SkyBackground } from "~/components/promo/sky-background";
 import { TeamFooter } from "~/components/promo/team-footer";
+import { Chest, Knight } from "~/components/promo/keepsakes";
 import { Button } from "~/components/ui/button";
 import Image from "next/image";
 import { Window } from "~/components/internals/window";
@@ -157,7 +158,7 @@ export default function Home() {
                 "isolate absolute right-[500px] top-[200px] min-[1440px]:right-auto min-[1440px]:left-[calc(50%-180px*var(--ui-scale,1))] min-[1440px]:top-[18.034%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]",
             }}
           >
-            <div className="p3 whitespace-pre-line font-figtree">
+            <div className="p3 relative whitespace-pre-line font-figtree">
               {`Dear Hacker,
 
               Whether you’re an experienced hacker or have never touched a line of code, you belong at Hack Western.
@@ -171,6 +172,8 @@ export default function Home() {
               Love,
 
               The Hack Western 13 Team`}
+              {/* right of "Love,", clear of the impact window */}
+              <Knight className="absolute bottom-[26px] left-[110px]" />
             </div>
           </WindowFolder>
           <WindowFolder
@@ -467,7 +470,11 @@ export default function Home() {
           30px box. Overlap it onto the sponsors background so its bottom edge
           meets the background's, and start the footer right there — otherwise
           the sky shows through the gaps. */}
-      <FilmStrip rotate={0} className="z-10 -mb-[9px] -mt-[21px]" />
+      <div className="relative -mb-[9px] -mt-[21px]">
+        <FilmStrip rotate={0} className="z-10" />
+        {/* above the footer, whose name-tag room reaches up over the strip */}
+        <Chest className="absolute bottom-[calc(100%-6px)] left-[7%] z-20" />
+      </div>
 
       <TeamFooter />
     </main>

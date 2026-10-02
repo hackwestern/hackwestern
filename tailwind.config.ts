@@ -230,10 +230,33 @@ const config = {
           from: { transform: "translateX(0)" },
           to: { transform: "translateX(-50%)" },
         },
+        // Same number of drop-shadows at both ends so the filter interpolates.
+        "glow-pulse": {
+          "0%, 100%": {
+            filter:
+              "drop-shadow(0 0 0 rgb(255 214 90 / 0)) drop-shadow(0 0 0 rgb(255 214 90 / 0))",
+          },
+          "50%": {
+            filter:
+              "drop-shadow(0 0 1.5px rgb(255 214 90)) drop-shadow(0 0 6px rgb(255 214 90))",
+          },
+        },
+        // A quick wiggle, then a long rest, so it reads as an occasional nudge.
+        wiggle: {
+          "0%, 16%, 100%": { transform: "rotate(0deg)" },
+          "2%": { transform: "rotate(-8deg)" },
+          "4%": { transform: "rotate(8deg)" },
+          "6%": { transform: "rotate(-6deg)" },
+          "8%": { transform: "rotate(6deg)" },
+          "10%": { transform: "rotate(-3deg)" },
+          "12%": { transform: "rotate(3deg)" },
+        },
       },
       animation: {
         "bounce-jump": "bounce-jump 0.6s ease-in-out",
         "team-marquee": "team-marquee 80s linear infinite",
+        "glow-pulse": "glow-pulse 2.8s ease-in-out infinite",
+        wiggle: "wiggle 3.5s ease-in-out infinite",
       },
     },
   },

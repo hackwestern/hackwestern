@@ -108,6 +108,8 @@ let cachedWidth = 0;
 let cachedHeight = 0;
 let cachedVariant: CloudVariant | null = null;
 let cachedDotSize = 0;
+// Where the cloud lands in the canvas, for centring a label on it.
+let cloudBox = { x: 0, y: 0, width: 0, height: 0 };
 
 function buildMask(
   width: number,
@@ -172,6 +174,13 @@ function buildMask(
 
   const offsetY = (height - renderedHeight) / 2;
 
+  cloudBox = {
+    x: offsetX,
+    y: offsetY,
+    width: renderedWidth,
+    height: renderedHeight,
+  };
+
   // ----------------------------------------------------------
   // DRAW SVG INTO MASK
   // ----------------------------------------------------------
@@ -213,6 +222,71 @@ function sampleMaskAlpha(
 }
 
 // ------------------------------------------------------------
+// OPTIONAL LABEL
+// ------------------------------------------------------------
+
+// Text drawn in the cloud's own dither blocks, solid instead of
+// sparse, so it reads as part of the cloud. Only rebuilt when the
+// canvas, cloud or text changes.
+
+let labelCanvas: HTMLCanvasElement | null = null;
+let labelData: Uint8ClampedArray | null = null;
+let labelKey = "";
+
+function buildLabelMask(
+  width: number,
+  height: number,
+  label: string,
+): Uint8ClampedArray | null {
+  const key = `${width}x${height}:${JSON.stringify(cloudBox)}:${label}`;
+
+  if (key === labelKey) {
+    return labelData;
+  }
+
+  labelCanvas ??= document.createElement("canvas");
+
+  const labelCtx = labelCanvas.getContext("2d", { willReadFrequently: true });
+
+  if (!labelCtx) return null;
+
+  labelKey = key;
+
+  labelCanvas.width = width;
+  labelCanvas.height = height;
+
+  labelCtx.clearRect(0, 0, width, height);
+
+  // As big as fits in the cloud's middle.
+  let fontSize = cloudBox.height * 0.32;
+
+  labelCtx.font = `800 ${fontSize}px sans-serif`;
+
+  const fit = (cloudBox.width * 0.62) / labelCtx.measureText(label).width;
+
+  if (fit < 1) {
+    fontSize *= fit;
+    labelCtx.font = `800 ${fontSize}px sans-serif`;
+  }
+
+  labelCtx.textAlign = "center";
+  labelCtx.textBaseline = "middle";
+  labelCtx.fillStyle = "white";
+
+  // A little below centre: the bumps on top make the cloud's
+  // visual middle sit low in its box.
+  labelCtx.fillText(
+    label,
+    cloudBox.x + cloudBox.width / 2,
+    cloudBox.y + cloudBox.height * 0.58,
+  );
+
+  labelData = labelCtx.getImageData(0, 0, width, height).data;
+
+  return labelData;
+}
+
+// ------------------------------------------------------------
 // MAIN DRAW
 // ------------------------------------------------------------
 
@@ -223,6 +297,7 @@ export function drawAsciiCloud(
   time = 0,
   dpr = 1,
   variant: CloudVariant = "cloud1",
+  label?: string,
 ): void {
   ctx.clearRect(0, 0, width, height);
 
@@ -236,7 +311,12 @@ export function drawAsciiCloud(
 
   if (!maskData) return;
 
+  const labelMask = label ? buildLabelMask(width, height, label) : null;
+
   const t = time * TIME_SCALE;
+
+  // The label breathes between mostly and fully solid.
+  const labelDensity = 0.8 + 0.2 * Math.sin(t * 1.3);
 
   const warpTime = time * EDGE_WARP_SPEED;
 
@@ -268,6 +348,18 @@ export function drawAsciiCloud(
       const y = row * dotSize + dotSize / 2;
 
       if (x >= width || y >= height) {
+        continue;
+      }
+
+      // Label blocks sit still (no edge warp) so the text stays legible.
+      if (
+        labelMask &&
+        (labelMask[(Math.floor(y) * width + Math.floor(x)) * 4 + 3] ?? 0) > 127
+      ) {
+        if ((bayerRow[col & 7] ?? 0) < 256 * labelDensity) {
+          ctx.fillRect(col * dotSize, row * dotSize, dotSize, dotSize);
+        }
+
         continue;
       }
 
