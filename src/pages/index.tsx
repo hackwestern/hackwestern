@@ -1,6 +1,7 @@
 import Topbar from "~/components/live/topbar";
 import { FilmStrip } from "~/components/promo/film-strip";
 import { Hero } from "~/components/promo/hero";
+import { PastProjects } from "~/components/promo/past-projects";
 import { SkyBackground } from "~/components/promo/sky-background";
 import { Button } from "~/components/ui/button";
 import Image from "next/image";
@@ -135,10 +136,8 @@ export default function Home() {
         </section>
       <FilmStrip rotate={3.5} className="relative z-10"/>
 
-      {/* placeholder */}
-      <section id="projects" style={{minHeight:1237}}>
-      </section>
-      <FilmStrip rotate={1.2} />
+      <PastProjects />
+      <FilmStrip rotate={1.2} className="relative z-10" />
 
      
     <section
