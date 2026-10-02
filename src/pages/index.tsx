@@ -166,7 +166,7 @@ export default function Home() {
           }}
         >
           <Image
-            src="/landing/home/about.png"
+            src="/landing/home/about.webp"
             alt=""
             fill
             sizes="100vw"
@@ -175,10 +175,8 @@ export default function Home() {
 
           <Waterfall
             containerRef={containerRef}
-            backgroundSrc="/landing/home/about.png"
+            backgroundSrc="/landing/home/about.webp"
             objectPositionX="center"
-            // The photo's own waterfall in about.png (file px), sized to
-            // the mask's 220:1217 ratio so the dither sits on it.
             sourceLeft={1210}
             sourceTop={1746}
             sourceWidth={202}

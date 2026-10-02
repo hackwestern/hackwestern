@@ -290,15 +290,11 @@ html {
   .scrollbar::-webkit-scrollbar {
     width: 4px;
     height: 4px;
-    scrollbar-width: none;
-    scrollbar-color: none;
   }
 
   .custom-scroll::-webkit-scrollbar {
     width: 8px;
     height: 8px;
-    scrollbar-width: none;
-    scrollbar-color: none;
   }
 
   .scrollbar::-webkit-scrollbar-track {
@@ -328,8 +324,6 @@ html {
   .scrollbar::-webkit-scrollbar {
     width: 4px;
     height: 4px;
-    scrollbar-width: none;
-    scrollbar-color: none;
   }
 
   .scrollbar::-webkit-scrollbar-track {
