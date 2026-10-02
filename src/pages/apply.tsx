@@ -10,7 +10,7 @@ import { api } from "~/utils/api";
 import ApplicationPrompt from "~/components/dashboard/ApplicationPrompt";
 import { ApplyNavigation } from "~/components/apply/navigation";
 import ApplyHeading from "~/components/apply/heading";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { MobileStickerDrawer } from "~/components/apply/mobile-sticker-drawer";
 import CharacterIcon from "~/components/dashboard/CharacterIcon";
 import { useMemo, useState } from "react";
@@ -121,12 +121,18 @@ export default function Apply() {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
+  // Grow-out-of-folder animation, armed only when leaving the start
+  // screen (no step). Step-to-step moves and direct reloads on a step
+  // never animate.
+  const [growWindow, setGrowWindow] = useState(false);
+
   const sidebarSteps = useMemo(
     () => applySteps.map((s) => ({ key: s.step, label: s.label })),
     [],
   );
 
   const handleApplyNavigate = (stepKey: string) => {
+    if (step === null) setGrowWindow(true);
     setPending(true);
     void router.push(`/apply?step=${stepKey}`).then(() => setPending(false));
   };
@@ -180,7 +186,6 @@ export default function Apply() {
               ) : (
                 <>
                   <ApplicationPrompt
-                    status={application?.status ?? "NOT_STARTED"}
                     continueStep={continueStep}
                     onApplyNavigate={handleApplyNavigate}
                     pending={pending}
@@ -227,48 +232,83 @@ export default function Apply() {
                 />
               </div>
 
-              <div className="flex flex-1 items-center justify-center pt-16">
-                {!step ? (
-                  <Window
-                    fluid
-                    draggable={false}
-                    disableControls
-                    title="Hack Western 13: Discover the Unknown"
-                    className="w-full max-w-[600px]"
-                    contentClassName="flex justify-center px-8 py-12"
-                  >
-                    <ApplicationPrompt
-                      status={application?.status ?? "NOT_STARTED"}
-                      continueStep={continueStep}
-                      onApplyNavigate={handleApplyNavigate}
-                      pending={pending}
-                    />
-                  </Window>
-                ) : (
-                  <div className="flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4">
-                    <Window
-                      fluid
-                      draggable={false}
-                      disableControls
-                      title="Hack Western 13: Discover the Unknown"
-                      className="min-h-0 flex-1"
-                      contentClassName="px-8 py-8 md:px-12 md:py-10"
-                      footer={<ApplyNavigation step={step} />}
+              <div className="relative flex flex-1 pt-16">
+                <AnimatePresence mode="wait">
+                  {!step ? (
+                    <motion.div
+                      key="portal-start"
+                      className="-mt-8 w-full max-w-[600px] self-start px-8 md:px-12"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.18 }}
                     >
-                      <div className="space-y-6">
-                        <ApplyHeading
-                          heading={heading}
-                          subheading={subheading}
-                          stepKey={step}
-                        />
-                        <div className="scrollbar font-figtree">
-                          <ApplyForm step={step} />
+                      <ApplicationPrompt
+                        continueStep={continueStep}
+                        onApplyNavigate={handleApplyNavigate}
+                        pending={pending}
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="portal-window"
+                      className="m-auto flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4"
+                      style={{ transformOrigin: "bottom right" }}
+                      initial={
+                        growWindow
+                          ? { scale: 0.25, opacity: 0, x: 280, y: 220 }
+                          : false
+                      }
+                      animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
+                      exit={{ scale: 0.25, opacity: 0, x: 280, y: 220 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 260,
+                        damping: 26,
+                      }}
+                      onAnimationComplete={() => {
+                        setGrowWindow(false);
+                      }}
+                    >
+                      <Window
+                        fluid
+                        draggable={false}
+                        disableControls
+                        title="Hack Western 13: Discover the Unknown"
+                        className="min-h-0 flex-1"
+                        contentClassName="px-8 py-8 md:px-12 md:py-10"
+                        footer={<ApplyNavigation step={step} />}
+                      >
+                        <div className="space-y-6">
+                          <ApplyHeading
+                            heading={heading}
+                            subheading={subheading}
+                            stepKey={step}
+                          />
+                          <div className="scrollbar font-figtree">
+                            <ApplyForm step={step} />
+                          </div>
                         </div>
-                      </div>
-                    </Window>
-                  </div>
-                )}
+                      </Window>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
+
+              {!step && (
+                <div className="absolute bottom-8 right-8 z-10 flex flex-col items-center gap-1.5">
+                  <img
+                    src="/landing/home/folder.png"
+                    alt="HW13 Applications folder"
+                    className="h-auto w-[64px]"
+                    style={{ imageRendering: "pixelated" }}
+                    draggable={false}
+                  />
+                  <p className="font-figtree text-xs font-medium text-white">
+                    HW13_Applications
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

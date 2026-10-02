@@ -9,6 +9,14 @@
 // import { notVerifiedRedirectDashboard } from "~/utils/redirect";
 // import CharacterIcon from "~/components/dashboard/CharacterIcon";
 // import SubmittedDisplay from "~/components/dashboard/SubmittedDisplay";
+/* eslint-disable @next/next/no-img-element */
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import type { Realm } from "~/constants/realms";
+import SEO from "~/components/seo";
+import { Button } from "~/components/ui/button";
+import { HorseGame } from "~/components/dashboard/horse-game";
 import { disabledRedirect } from "~/utils/redirect";
 import { isPastDeadline } from "~/lib/date";
 import type { GetServerSidePropsContext } from "next";
@@ -147,9 +155,136 @@ import { db } from "~/server/db";
 
 // export default Dashboard;
 
-// Temporary placeholder component - redirect happens in getServerSideProps
-const Dashboard = () => null;
+// Game window height (title bar + play area) and the room kept clear for the
+// film reels above and below it.
+const GAME_WINDOW_HEIGHT = 643;
+const REEL_CLEARANCE = 120;
+
+/**
+ * Shrinks the game window on short screens so the page never has to scroll.
+ * The game only reads keys and clicks, never pointer positions, so scaling it
+ * doesn't affect play.
+ */
+function useGameScale() {
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const update = () =>
+      setScale(
+        Math.min(1, (window.innerHeight - REEL_CLEARANCE) / GAME_WINDOW_HEIGHT),
+      );
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return scale;
+}
+
+type DashboardProps = {
+  /** Realm picked in the application; picks the background (Figma 263:2105). */
+  realm: Realm | null;
+};
+
+/**
+ * Submitted dashboard (Figma 221:15930 / 221:17193): a thank-you note beside
+ * the horse runner game. Only applicants with a submitted application reach
+ * it; everyone else is redirected in getServerSideProps.
+ */
+const Dashboard = ({ realm }: DashboardProps) => {
+  const gameScale = useGameScale();
+
+  return (
+    <>
+      <SEO
+        title="Dashboard"
+        description="Your Hack Western 13 application status."
+        noindex
+      />
+      <div className="relative h-screen w-full overflow-hidden font-figtree">
+        {/* next/image resizes the realm photos — some are 4K source files */}
+        <Image
+          src={`/dashboard/realm/${realm ?? "safari"}.png`}
+          alt=""
+          aria-hidden
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+          draggable={false}
+        />
+
+        {/* Film reel strips along the top and bottom edges */}
+        <img
+          src="/dashboard/reel-frame.svg"
+          alt=""
+          aria-hidden
+          width={1913.6}
+          height={54}
+          className="pointer-events-none fixed left-1/2 top-[-8px] z-20 h-[54px] w-[1913.6px] max-w-none -translate-x-1/2"
+        />
+        <img
+          src="/dashboard/reel-frame.svg"
+          alt=""
+          aria-hidden
+          width={1913.6}
+          height={54}
+          className="pointer-events-none fixed bottom-[-16px] left-1/2 z-20 h-[54px] w-[1913.6px] max-w-none -translate-x-1/2"
+        />
+
+        <img
+          src="/shared/horse.svg"
+          alt="Hack Western"
+          width={40}
+          height={60}
+          className="absolute left-[52px] top-[70px] z-10"
+        />
+
+        <div className="relative z-10 flex h-full flex-col items-center justify-center gap-16 px-6 py-[60px] lg:flex-row lg:gap-12 xl:gap-[115px]">
+          <div className="flex w-full max-w-[403px] flex-col gap-[62px]">
+            <div className="flex flex-col gap-6 text-[#d7e2ef]">
+              <h1 className="font-cossetteTexte text-[36px] font-bold leading-[1.2]">
+                Your application has been submitted
+              </h1>
+              <p className="font-figtree text-base leading-none">
+                Thank you for applying to Hack Western 13! A copy of your
+                responses have been sent to your email.
+              </p>
+            </div>
+            <div>
+              <Button
+                variant="primary"
+                asChild
+                className="font-figtree font-medium"
+              >
+                <Link href="/">
+                  <img
+                    src="/shared/arrow-left.svg"
+                    alt=""
+                    width={16}
+                    height={16}
+                    className="mr-[10px]"
+                  />
+                  Return home
+                </Link>
+              </Button>
+            </div>
+          </div>
+
+          {/* The game needs its full 634px, so it's desktop-only like the rest of the portal redesign */}
+          <div
+            className="hidden shrink-0 lg:block"
+            style={{ transform: `scale(${gameScale})` }}
+          >
+            <HorseGame />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
 export default Dashboard;
+
+// Statuses that mean the application is in and waiting on a decision.
+const SUBMITTED_STATUSES = ["PENDING_REVIEW", "IN_REVIEW"];
 
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
@@ -171,6 +306,17 @@ export const getServerSideProps = async (
         return {
           redirect: { destination: "/internal/dashboard", permanent: false },
         };
+      }
+
+      // The submitted dashboard is still being built, so like other disabled
+      // pages it only renders off production for now.
+      const application = await db.query.applications.findFirst({
+        where: (applications, { eq }) =>
+          eq(applications.userId, session.user.id),
+        columns: { status: true, realm: true },
+      });
+      if (application && SUBMITTED_STATUSES.includes(application.status)) {
+        return { props: { realm: application.realm } };
       }
     }
   }
