@@ -5,7 +5,6 @@ export default function Document() {
     <Html lang="en">
       <Head>
         <link rel="manifest" href="/meta/manifest.json" />
-        <meta name="theme-color" content="#7C3AED" />
       </Head>
       <body>
         {/* --ui-scale: past 1440 wide, promo elements grow at a third of the
