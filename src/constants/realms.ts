@@ -89,14 +89,6 @@ export type Horse = {
   leftPct: number;
   topPct: number;
   widthPct: number;
-  /** Mouth position inside the horse PNG, as a % of the image's bounding box. */
-  mouthXPct: number;
-  mouthYPct: number;
-  /**
-   * Which side of the horse the speech bubble should emerge from. Horses that
-   * face right get a right-side bubble; left-facing horses get a left-side one.
-   */
-  bubbleSide: "left" | "right";
 };
 
 const SCENE_W = 823;
@@ -113,9 +105,6 @@ export const horses: readonly Horse[] = [
     leftPct: px(6.3, SCENE_W),
     topPct: px(499.5 - HORSE_ZONE_TOP, HORSE_ZONE_H),
     widthPct: px(233, SCENE_W),
-    mouthXPct: 42,
-    mouthYPct: 29,
-    bubbleSide: "right",
   },
   {
     id: 2,
@@ -124,9 +113,6 @@ export const horses: readonly Horse[] = [
     leftPct: px(71.3, SCENE_W),
     topPct: px(349.5 - HORSE_ZONE_TOP, HORSE_ZONE_H),
     widthPct: px(189.8, SCENE_W),
-    mouthXPct: 86,
-    mouthYPct: 78,
-    bubbleSide: "right",
   },
   {
     id: 3,
@@ -135,9 +121,6 @@ export const horses: readonly Horse[] = [
     leftPct: px(244.3, SCENE_W),
     topPct: px(237.5 - HORSE_ZONE_TOP, HORSE_ZONE_H),
     widthPct: px(105, SCENE_W),
-    mouthXPct: 14,
-    mouthYPct: 28,
-    bubbleSide: "left",
   },
   {
     id: 4,
@@ -146,9 +129,6 @@ export const horses: readonly Horse[] = [
     leftPct: px(390.3, SCENE_W),
     topPct: px(208.5 - HORSE_ZONE_TOP, HORSE_ZONE_H),
     widthPct: px(147.2, SCENE_W),
-    mouthXPct: 92,
-    mouthYPct: 36,
-    bubbleSide: "right",
   },
   {
     id: 5,
@@ -157,9 +137,6 @@ export const horses: readonly Horse[] = [
     leftPct: px(557.3, SCENE_W),
     topPct: px(286.5 - HORSE_ZONE_TOP, HORSE_ZONE_H),
     widthPct: px(153.75, SCENE_W),
-    mouthXPct: 8,
-    mouthYPct: 32,
-    bubbleSide: "left",
   },
   {
     id: 6,
@@ -168,9 +145,6 @@ export const horses: readonly Horse[] = [
     leftPct: px(631.3, SCENE_W),
     topPct: px(405.5 - HORSE_ZONE_TOP, HORSE_ZONE_H),
     widthPct: px(185.4, SCENE_W),
-    mouthXPct: 92,
-    mouthYPct: 36,
-    bubbleSide: "right",
   },
   {
     id: 7,
@@ -179,9 +153,6 @@ export const horses: readonly Horse[] = [
     leftPct: px(490.3, SCENE_W),
     topPct: px(524.5 - HORSE_ZONE_TOP, HORSE_ZONE_H),
     widthPct: px(176.3, SCENE_W),
-    mouthXPct: 6,
-    mouthYPct: 29,
-    bubbleSide: "left",
   },
   {
     id: 8,
@@ -190,9 +161,6 @@ export const horses: readonly Horse[] = [
     leftPct: px(198.3, SCENE_W),
     topPct: px(577.5 - HORSE_ZONE_TOP, HORSE_ZONE_H),
     widthPct: px(251, SCENE_W),
-    mouthXPct: 94,
-    mouthYPct: 27,
-    bubbleSide: "right",
   },
 ] as const;
 
