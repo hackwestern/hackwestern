@@ -7,6 +7,8 @@ export type PromoSponsorLink = {
   top: number;
   width: number;
   height: number;
+  // Logos missing from the flattened image are drawn on top of it.
+  overlaySrc?: string;
 };
 
 export const PROMO_SPONSORS_IMAGE = {
@@ -63,5 +65,14 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
     top: 85,
     width: 55,
     height: 15,
+  },
+  {
+    name: "Autodesk",
+    href: "https://www.autodesk.com/",
+    left: 57.83,
+    top: 86.54,
+    width: 16.59,
+    height: 12.58,
+    overlaySrc: "/shared/sponsors/autodesk.svg",
   },
 ];

@@ -31,7 +31,16 @@ export function SponsorLogos({ className }: { className?: string }) {
               width: `${sponsor.width}%`,
               height: `${sponsor.height}%`,
             }}
-          />
+          >
+            {sponsor.overlaySrc && (
+              <Image
+                src={sponsor.overlaySrc}
+                alt=""
+                fill
+                className="object-contain"
+              />
+            )}
+          </a>
         ))}
       </div>
     </div>
