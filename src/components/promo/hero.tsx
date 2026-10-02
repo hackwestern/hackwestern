@@ -47,6 +47,10 @@ const BLEED = 240;
 // removing it outright) still smooths the sticky-release edge
 // without spilling into the next section.
 const BLEED_MOBILE = 48;
+// On tall mobile screens the cover-fit mountains rise into the headline. Push
+// the scene down so more sky shows above them and the peaks sit below
+// "Discover the unknown"; the bottom of the foreground is cropped instead.
+const MOBILE_SKY_EXTENSION = "10svh";
 const DOT = 3;
 const PATH_SAMPLES = 200;
 const PIN_ASPECT = 2.5;
@@ -397,8 +401,10 @@ function StoryPin({
       </motion.button>
 
       {open && (
+        // Below `sm` these windows are replaced by MobileStoryStack
+        // (story-mobile.tsx), which rolls the same messages up over the hero.
         <div
-          className="absolute z-30"
+          className="absolute z-30 max-sm:hidden"
           style={{
             left: windowLeft,
             top,
@@ -568,7 +574,25 @@ export function Hero() {
           }}
         >
           {/* placeholder until links added */}
-          <MountainScene pan={pan} />
+          {/* Mountains and the story layer move together so the story pins
+              stay on the art when the mobile sky extension shifts them. */}
+          <div
+            className={
+              editing ? "absolute inset-0 z-30" : "absolute inset-0 z-10"
+            }
+            style={{
+              transform: `translateY(${isMobile ? MOBILE_SKY_EXTENSION : "0px"})`,
+            }}
+          >
+            <MountainScene pan={pan} />
+            <ForegroundStory
+              key={editing ? "editing" : "live"}
+              pan={pan}
+              pathProgress={pathProgress}
+              editing={editing}
+              bleed={bleed}
+            />
+          </div>
 
           {/* past 1440 wide: grows with --ui-scale and lines up with the
               centred column, like the other sections' titles */}
@@ -626,15 +650,11 @@ export function Hero() {
               </div>
             </div>
 
-            <Button type="button">Sign up for updates</Button>
+            {/* data-hero-cta: the mobile story windows rest below this. */}
+            <Button type="button" data-hero-cta>
+              Sign up for updates
+            </Button>
           </div>
-          <ForegroundStory
-            key={editing ? "editing" : "live"}
-            pan={pan}
-            pathProgress={pathProgress}
-            editing={editing}
-            bleed={bleed}
-          />
         </div>
       </section>
     </>
