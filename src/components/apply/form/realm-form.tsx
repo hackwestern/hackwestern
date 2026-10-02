@@ -65,18 +65,20 @@ export function RealmForm() {
   const horseLastName = form.watch("horseLastName");
   const selectedHorse = getHorse(horseId);
 
-  // Resolve the initial view only after the defaults query has finished:
-  // returning hackers with a saved horse name land directly on the naming
-  // view; otherwise we require pressing Next to confirm the pick. Keeping
-  // the view null until defaults load avoids the pick ⇄ name flicker.
-  const [view, setView] = React.useState<"pick" | "name" | null>(null);
+  // Start on the picker and only hop to the naming view once defaults have
+  // actually loaded with both a saved horse and a saved name. Doing it this
+  // way means the picker always shows even if the defaults query is slow,
+  // errors out, or returns an empty row.
+  const [view, setView] = React.useState<"pick" | "name">("pick");
+  const didResolveInitialViewRef = React.useRef(false);
 
   React.useEffect(() => {
-    if (view !== null || defaults === undefined) return;
-    const savedHorse = getHorse(defaults?.horseId);
-    const savedName = defaults?.horseFirstName && defaults?.horseLastName;
-    setView(savedHorse && savedName ? "name" : "pick");
-  }, [defaults, view]);
+    if (didResolveInitialViewRef.current || !defaults) return;
+    const savedHorse = getHorse(defaults.horseId);
+    const savedName = defaults.horseFirstName && defaults.horseLastName;
+    if (savedHorse && savedName) setView("name");
+    didResolveInitialViewRef.current = true;
+  }, [defaults]);
 
   const handlePick = (horse: Horse) => {
     if (!canEdit) return;
@@ -95,15 +97,6 @@ export function RealmForm() {
   };
 
   const hasNames = Boolean(horseFirstName && horseLastName);
-
-  if (view === null) {
-    return (
-      <div
-        aria-hidden
-        className="flex min-h-[400px] items-center justify-center"
-      />
-    );
-  }
 
   // Guard: if we're meant to be on the naming view but the saved horseId is
   // somehow unknown, fall back to the picker instead of crashing on
