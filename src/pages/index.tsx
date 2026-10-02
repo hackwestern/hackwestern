@@ -3,6 +3,7 @@ import { FilmStrip } from "~/components/promo/film-strip";
 import { Hero } from "~/components/promo/hero";
 import { PastProjects } from "~/components/promo/past-projects";
 import { SkyBackground } from "~/components/promo/sky-background";
+import { TeamFooter } from "~/components/promo/team-footer";
 import { Button } from "~/components/ui/button";
 import Image from "next/image";
 import { Window } from "~/components/internals/window";
@@ -29,17 +30,6 @@ const SECTIONS = [
 const mid = Math.ceil(PROMO_FAQ.length / 2);
 const left = PROMO_FAQ.slice(0, mid);
 const right = PROMO_FAQ.slice(mid);
-
-/** Team photo cut-outs in the footer band, as % across the 1440 design frame. */
-const TEAM_FIGURES = [
-  { left: 0, top: 58.78 },
-  { left: 8.87, top: 71.74 },
-  { left: 17.04, top: 78.78 },
-  { left: 34.09, top: 78.78 },
-  { left: 42.95, top: 71.74 },
-  { left: 68.18, top: 38.78 },
-  { left: 85.22, top: 50.1 },
-];
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -78,10 +68,12 @@ export default function Home() {
             containerRef={containerRef}
             backgroundSrc="/landing/home/about.png"
             objectPositionX="center"
-            sourceLeft={670}
-            sourceTop={1350}
-            sourceWidth={400}
-            sourceHeight={1200}
+            // The photo's own waterfall in about.png (file px), sized to
+            // the mask's 220:1217 ratio so the dither sits on it.
+            sourceLeft={1210}
+            sourceTop={1746}
+            sourceWidth={202}
+            sourceHeight={1115}
           />
         </div>
 
@@ -393,20 +385,13 @@ export default function Home() {
           />
         </Window>
       </section>
-      <FilmStrip rotate={0} />
+      {/* The strip art spans y 8–38 of its 54-tall SVG, i.e. ~4–21px of this
+          30px box. Overlap it onto the sponsors background so its bottom edge
+          meets the background's, and start the footer right there — otherwise
+          the sky shows through the gaps. */}
+      <FilmStrip rotate={0} className="z-10 -mb-[9px] -mt-[21px]" />
 
-      <div className="relative h-[295px] bg-black">
-        {TEAM_FIGURES.map((figure) => (
-          <div
-            key={`${figure.left}-${figure.top}`}
-            className="absolute h-[110px] w-[80px] rounded-sm bg-white/10"
-            style={{ left: `${figure.left}%`, top: `${figure.top}px` }}
-          />
-        ))}
-        <h2 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-[clamp(2rem,7vw,100px)] text-white">
-          Meet the Team
-        </h2>
-      </div>
+      <TeamFooter />
     </main>
   );
 }
