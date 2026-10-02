@@ -26,11 +26,11 @@ const inputVariants = cva(
           `focus:border-black`,
           `focus:placeholder:opacity-0`,
         ),
-        primary: "rounded-md bg-faint-lilac px-3 py-2 text-heavy border-muted",
+        primary: "rounded-md bg-white px-3 py-2 text-heavy border-muted",
         noRing:
           "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
         invalid:
-          "rounded-md bg-[#f6f3f9] px-3 py-2 text-heavy outline outline-1 outline-[#f76b7c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f76b7c] focus-visible:ring-offset-2",
+          "rounded-md bg-white px-3 py-2 text-heavy outline outline-1 outline-[#f76b7c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f76b7c] focus-visible:ring-offset-2",
       },
     },
   },
