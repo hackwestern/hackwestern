@@ -1,5 +1,5 @@
 import Topbar from "~/components/live/topbar";
-import { FilmStrip } from "~/components/promo/film-strip";
+import { FilmStrip, filmStripEdge } from "~/components/promo/film-strip";
 import { Hero } from "~/components/promo/hero";
 import { PromoHeader } from "~/components/promo/navbar";
 import { SponsorLogos } from "~/components/promo/sponsor-logos";
@@ -45,6 +45,11 @@ const IMAGES = [
   "/landing/home/gallery/hw-9.jpg",
   "/landing/home/gallery/hw-10.jpg",
 ];
+
+// The strip between projects and sponsors; the sponsors photo starts under its
+// centre line so the tape always sits on the seam, at any screen width.
+const SPONSORS_STRIP_ROTATE = 1.2;
+const SPONSORS_STRIP_EDGE = filmStripEdge(SPONSORS_STRIP_ROTATE);
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -181,13 +186,13 @@ export default function Home() {
       <FilmStrip rotate={3.5} className="relative z-10 hidden lg:block" />
 
       <PastProjects />
-      <FilmStrip rotate={1.2} className="relative z-10" />
+      <FilmStrip rotate={SPONSORS_STRIP_ROTATE} className="relative z-10" />
 
       <section
         id="sponsors"
-        className="relative flex flex-col gap-12 overflow-hidden px-6 pb-12 pt-12
-             [--photo-h:320px] [--photo-offset:150px]
-             lg:block lg:min-h-[1790px] lg:p-0"
+        className="relative flex flex-col gap-12 overflow-hidden px-6 pb-12 pt-12 [--photo-h:320px] [--photo-offset:150px]
+             lg:block lg:min-h-[1790px]
+             lg:overflow-visible lg:overflow-x-clip lg:p-0"
       >
         {/* CLOUDS */}
         <CloudDrift delay={0} duration={40} wait={50} className="top-[50px]">
@@ -206,10 +211,17 @@ export default function Home() {
           <Cloud variant="cloud14" className="hidden lg:block" />
         </CloudDrift>
 
-        {/* desktop background: fixed at its 1440-wide height (3427/2880 * 1440) so the
-            photo's sky stays behind the title on wider screens; extra width crops
-            the bottom instead */}
-        <div className="absolute inset-x-0 bottom-0 z-0 hidden h-[1714px] lg:block">
+        {/* desktop background: reaches up behind the film strip and is cut along
+            its centre line, so the tape covers the seam at every width. The
+            section height is fixed, so object-top keeps the sky behind the
+            title and wider screens crop the bottom instead */}
+        <div
+          className="absolute inset-x-0 bottom-0 z-0 hidden lg:block"
+          style={{
+            top: -SPONSORS_STRIP_EDGE.height,
+            clipPath: `polygon(0 ${SPONSORS_STRIP_EDGE.left}px, 100% ${SPONSORS_STRIP_EDGE.right}px, 100% 100%, 0 100%)`,
+          }}
+        >
           <Image
             src="/landing/home/sponsor-bg.png"
             alt=""

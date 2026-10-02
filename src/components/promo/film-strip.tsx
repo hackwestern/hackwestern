@@ -7,6 +7,19 @@ const OVERHANG = DESIGN_STRIP_WIDTH / DESIGN_WIDTH;
 
 const THICKNESS = 30;
 
+/**
+ * Desktop (lg+) geometry of a strip, in px: its box height and where its
+ * centre line meets the left and right edges of the box. Constant at every
+ * screen width, so a neighbouring section can tuck its edge under the tape.
+ */
+export function filmStripEdge(rotate: number) {
+  const radians = (rotate * Math.PI) / 180;
+  const tilt = Math.abs(Math.sin(radians)) * OVERHANG * 100;
+  const rise = DESIGN_WIDTH * Math.tan(radians);
+  const height = Number(tilt.toFixed(2)) * (DESIGN_WIDTH / 100) + THICKNESS;
+  return { height, left: height / 2 - rise / 2, right: height / 2 + rise / 2 };
+}
+
 export function FilmStrip({
   rotate = 0,
   className = "",
