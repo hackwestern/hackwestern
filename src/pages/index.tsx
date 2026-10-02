@@ -95,16 +95,20 @@ export default function Home() {
               <div className="p3 font-figtree whitespace-pre-line">
               {`Dear Hacker,
 
-                You belong.
+              Whether you’re an experienced hacker or have never touched a line of code, you belong at Hack Western.
 
-                Whether you’re an experienced hacker or you’ve never touched a line of code before, you belong at Hack Western.
+              Since the start of Hack Western in 2014, our mission has been to build a welcoming and accessible environment for students from all backgrounds to learn, build, and pursue their dreams.
 
-                Since the start of Hack Western in 2014, our mission has been to build a welcoming and accessible environment for students from all backgrounds to learn, build, and pursue their dreams.
+              If you've been wondering if you belong at a hackathon, YOU DO!
 
-                Etc. etc.`}
+              Let us know if you have any concerns. We hope to see you there!
+
+              Love,
+
+              The Hack Western 13 Team`}
               </div>
             </WindowFolder>
-            <WindowFolder defaultOpen label="Impact" className="absolute left-[200px] bottom-[400px]" windowTitle="Last year's impact" windowProps={{autoHeight: true, className:"isolate absolute right-[300px] top-[500px]"}}>
+            <WindowFolder defaultOpen label="Impact" className="absolute left-[200px] bottom-[500px]" windowTitle="Last year's impact" windowProps={{autoHeight: true, className:"isolate absolute right-[300px] top-[550px]"}}>
                 <div className="flex flex-col items-center gap-[28px] text-center">
                 <div className="flex items-start gap-[64px]">
                   <div className="flex flex-col items-center">
@@ -265,7 +269,7 @@ export default function Home() {
   />
 </Window>
     
-
+<section id="faq" className="relative scroll-mt-24">
     {/* FAQ */}
 <div className="relative z-10 flex w-full flex-col items-start gap-[24px] lg:absolute lg:left-0 lg:top-[900px] lg:gap-[64px]">
   <div className="flex w-full max-w-[488px] flex-col items-start gap-[18px]">
@@ -307,10 +311,11 @@ export default function Home() {
     <FaqColumn items={right} />
   </div>
 </div>
+</section>
   </div>
 {/* Sponsors window desktop*/}
 {/* this closes downwards...? */}
-    <Window
+  <Window
     autoHeight
     width={700}
     title="Thank you to our sponsors"
