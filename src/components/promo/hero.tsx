@@ -8,6 +8,7 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
+import { Button } from "~/components/ui/button";
 import { Window } from "~/components/internals/window";
 import {
   closestProgress,
@@ -599,12 +600,7 @@ export function Hero() {
               </div>
             </div>
 
-            <button
-              type="button"
-              className="cursor-pixel-hover overflow-hidden rounded-full border border-[#969696] bg-[#cacaca] px-6 py-3 font-figtree text-base font-semibold leading-none text-[#313a45] shadow-[0_8px_12px_rgba(31,48,73,0.24),inset_0_-14px_10px_rgba(255,255,255,0.4)] transition-transform duration-100 active:translate-y-px active:scale-[0.98]"
-            >
-              Sign up for updates
-            </button>
+            <Button type="button">Sign up for updates</Button>
           </div>
           <ForegroundStory
             key={editing ? "editing" : "live"}
