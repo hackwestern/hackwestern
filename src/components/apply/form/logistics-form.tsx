@@ -61,7 +61,8 @@ export function LogisticsForm() {
       emergencyContactName: data.emergencyContactName ?? undefined,
       emergencyContactRelationship:
         data.emergencyContactRelationship ?? undefined,
-      emergencyContactPhoneNumber: data.emergencyContactPhoneNumber ?? undefined,
+      emergencyContactPhoneNumber:
+        data.emergencyContactPhoneNumber ?? undefined,
     };
   }, [data]);
 
