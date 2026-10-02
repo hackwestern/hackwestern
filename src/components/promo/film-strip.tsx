@@ -1,3 +1,5 @@
+import { cn } from "~/lib/utils";
+
 const DESIGN_WIDTH = 1440;
 const DESIGN_STRIP_WIDTH = 1890;
 
@@ -17,7 +19,7 @@ export function FilmStrip({
   return (
     <div
       aria-hidden
-      className="relative w-full overflow-hidden"
+      className={cn("relative w-full overflow-hidden", className)}
       style={{ height: `calc(${tilt.toFixed(2)}vw + ${THICKNESS}px)` }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
