@@ -73,8 +73,7 @@ export interface CoverRect {
   scale: number;
 }
 
-// Mirrors `object-fit: cover` + `object-position: bottom` for the artwork:
-// extra height is cropped from the top, keeping the path's valley in view.
+// Mirrors `object-fit: cover` + centered `object-position` for the artwork.
 export function coverRect(sceneWidth: number, sceneHeight: number): CoverRect {
   const scale = Math.max(sceneWidth / IMAGE_WIDTH, sceneHeight / IMAGE_HEIGHT);
   const width = IMAGE_WIDTH * scale;
@@ -82,7 +81,7 @@ export function coverRect(sceneWidth: number, sceneHeight: number): CoverRect {
 
   return {
     left: (sceneWidth - width) / 2,
-    top: sceneHeight - height,
+    top: (sceneHeight - height) / 2,
     width,
     height,
     scale,

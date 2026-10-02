@@ -26,25 +26,19 @@ import {
 
 const PathEditor = dynamic(() => import("./path-editor"), { ssr: false });
 
-// Desktop keeps the hero one fixed height on every screen size: the scene is
-// the art at the 1440 design width, plus 1.5 screens of the 1440x900 design
-// to scroll through. Wider screens crop the art from the top (see coverRect),
-// since the story path and pins sit in its bottom third. Taller ones show sky.
-const DESIGN_WIDTH = 1440;
-const HOLD_PX = 1350;
+const HOLD_SCREENS = 1.5;
 // Mobile skips the extended "hold" almost entirely — the desktop
-// value (plus SCENE_HEIGHT_MOBILE's own ~100svh) makes the whole hero a
+// value (plus SCENE_HEIGHT's own ~100svh) makes the whole hero a
 // multi-screen scroll, which reads as excessively long on a small
 // viewport. At ~0, total section height collapses to roughly
-// SCENE_HEIGHT_MOBILE alone (one normal screen), so the section behaves
+// SCENE_HEIGHT alone (one normal screen), so the section behaves
 // like an ordinary hero rather than an extended scroll-jacked one.
 const HOLD_SCREENS_MOBILE = 0;
 // Matches the project's existing `lg` Tailwind breakpoint (see
 // tailwind.config.ts) so "mobile" here means the same thing as
 // elsewhere in the codebase (e.g. FilmStrip's `hidden lg:block`).
 const MOBILE_BREAKPOINT_PX = 1024;
-const SCENE_HEIGHT_MOBILE = `max(100svh, ${(IMAGE_HEIGHT / IMAGE_WIDTH) * 100}vw)`;
-const SCENE_HEIGHT_DESKTOP = `${Math.round((IMAGE_HEIGHT / IMAGE_WIDTH) * DESIGN_WIDTH)}px`;
+const SCENE_HEIGHT = `max(100svh, ${(IMAGE_HEIGHT / IMAGE_WIDTH) * 100}vw)`;
 const BLEED = 240;
 // With HOLD_SCREENS_MOBILE at ~0, there's no scroll buffer left
 // for the full 240px bleed to sit comfortably within before the
@@ -307,8 +301,7 @@ function MountainLayer({
         fill
         priority={priority}
         sizes="100vw"
-        // bottom: matches coverRect, so the path stays on its valley
-        className="object-cover object-bottom"
+        className="object-cover"
       />
     </motion.div>
   );
@@ -499,8 +492,7 @@ export function Hero() {
   const [snapProgress, setSnapProgress] = React.useState(0.2);
   const [editing, setEditing] = React.useState(false);
   const isMobile = useIsMobile(MOBILE_BREAKPOINT_PX);
-  const sceneHeightCss = isMobile ? SCENE_HEIGHT_MOBILE : SCENE_HEIGHT_DESKTOP;
-  const holdCss = isMobile ? `${HOLD_SCREENS_MOBILE * 100}svh` : `${HOLD_PX}px`;
+  const holdScreens = isMobile ? HOLD_SCREENS_MOBILE : HOLD_SCREENS;
   const bleed = isMobile ? BLEED_MOBILE : BLEED;
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -530,8 +522,7 @@ export function Hero() {
     const measure = () => {
       const sceneHeight = sceneRef.current?.clientHeight ?? window.innerHeight;
       const viewportHeight = window.innerHeight;
-      const hold = isMobile ? viewportHeight * HOLD_SCREENS_MOBILE : HOLD_PX;
-      const totalScroll = sceneHeight + hold - viewportHeight;
+      const totalScroll = sceneHeight + viewportHeight * (holdScreens - 1);
 
       setSnapProgress(
         totalScroll > 0
@@ -543,7 +534,7 @@ export function Hero() {
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [isMobile]);
+  }, [holdScreens]);
 
   return (
     <>
@@ -551,7 +542,7 @@ export function Hero() {
         ref={sectionRef}
         id="hero"
         className="relative isolate md:bg-none"
-        style={{ height: `calc(${sceneHeightCss} + ${holdCss})` }}
+        style={{ height: `calc(${SCENE_HEIGHT} + ${holdScreens * 100}svh)` }}
       >
         {/* Mobile background */}
         <div
@@ -563,8 +554,8 @@ export function Hero() {
           data-sky-hold
           className="sticky translate-y-[20px] overflow-visible"
           style={{
-            height: sceneHeightCss,
-            top: `calc(100svh - ${sceneHeightCss})`,
+            height: SCENE_HEIGHT,
+            top: `calc(100svh - ${SCENE_HEIGHT})`,
           }}
         >
           {/* placeholder until links added */}
