@@ -16,7 +16,13 @@ import { PROMO_FAQ } from "~/constants/faq";
 import Waterfall from "~/components/live/waterfall";
 import CloudDrift from "~/components/live/clouddrift";
 import Cloud from "~/components/live/cloud";
-import { useRef } from "react";
+import { type CSSProperties, useRef } from "react";
+import {
+  type CoverPhoto,
+  coverPhotoVars,
+  halfRateHeight,
+  photoPoint,
+} from "~/components/promo/photo-pin";
 
 // ABOUT & FAQ TODO
 // 4. check with "dear hackers" message
@@ -52,6 +58,17 @@ const IMAGES = [
 const SPONSORS_STRIP_ROTATE = -1.2;
 const SPONSORS_STRIP_EDGE = filmStripEdge(SPONSORS_STRIP_ROTATE);
 
+// Desktop sponsors photo: its box reaches up behind the strip above, and
+// object-top keeps the sky behind the title.
+const SPONSORS_PHOTO: CoverPhoto = {
+  imageWidth: 2880,
+  imageHeight: 3427,
+  designHeight: 1790,
+  top: -SPONSORS_STRIP_EDGE.height,
+  extraHeight: SPONSORS_STRIP_EDGE.height,
+  align: "top",
+};
+
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -70,7 +87,7 @@ export default function Home() {
 
       <section
         id="about"
-        style={{ minHeight: 1109 }}
+        style={{ minHeight: halfRateHeight(1109) }}
         className="relative hidden sm:block"
       >
         <div
@@ -104,19 +121,21 @@ export default function Home() {
         </div>
 
         {/* insert waterfall */}
-        {/* windows and folders sit in a centred 1440 box, so wider screens
-            keep them grouped in the middle */}
-        <div className="absolute inset-0 m-auto max-w-[1440px]">
+        {/* Up to 1440, windows and folders sit in px from the edges. Wider, each
+            keeps its 1440 spot as a % of the section: the photo fills the width,
+            so they stay beside the same part of it (e.g. the waterfall) */}
+        <div className="absolute inset-0 m-auto max-w-[1440px] min-[1440px]:max-w-none">
           <WindowFolder
             defaultOpen
             variant="labelled"
             label="A message to new hackers"
-            className="absolute bottom-[120px] left-[100px]"
+            className="absolute bottom-[120px] left-[100px] min-[1440px]:bottom-auto min-[1440px]:left-[6.944%] min-[1440px]:top-[79.486%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]"
             windowTitle="A message to new hackers"
             windowProps={{
               width: 400,
               autoHeight: true,
-              className: "isolate absolute right-[500px] top-[200px]",
+              className:
+                "isolate absolute right-[500px] top-[200px] min-[1440px]:right-auto min-[1440px]:left-[37.5%] min-[1440px]:top-[18.034%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]",
             }}
           >
             <div className="p3 whitespace-pre-line font-figtree">
@@ -139,11 +158,12 @@ export default function Home() {
             defaultOpen
             variant="labelled"
             label="Impact"
-            className="absolute bottom-[500px] left-[200px]"
+            className="absolute bottom-[500px] left-[200px] min-[1440px]:bottom-auto min-[1440px]:left-[13.889%] min-[1440px]:top-[45.221%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]"
             windowTitle="Last year's impact"
             windowProps={{
               autoHeight: true,
-              className: "isolate absolute right-[300px] top-[550px]",
+              className:
+                "isolate absolute right-[300px] top-[550px] min-[1440px]:right-auto min-[1440px]:left-[53.194%] min-[1440px]:top-[49.594%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]",
             }}
           >
             <div className="flex flex-col items-center gap-[28px] text-center">
@@ -180,10 +200,11 @@ export default function Home() {
             defaultOpen
             variant="labelled"
             label="Exploration"
-            className="absolute bottom-[300px] left-[80px]"
+            className="absolute bottom-[300px] left-[80px] min-[1440px]:bottom-auto min-[1440px]:left-[5.556%] min-[1440px]:top-[63.255%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]"
             windowTitle="A world of exploration"
             windowProps={{
-              className: "isolate absolute right-[100px] top-[100px]",
+              className:
+                "isolate absolute right-[100px] top-[100px] min-[1440px]:right-auto min-[1440px]:left-[67.083%] min-[1440px]:top-[9.017%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]",
             }}
           >
             <PhotoGallery images={IMAGES} />
@@ -198,8 +219,14 @@ export default function Home() {
       <section
         id="sponsors"
         className="relative flex flex-col gap-12 overflow-hidden px-6 pb-12 pt-12 [--photo-h:320px] [--photo-offset:150px]
-             lg:block lg:min-h-[1790px]
-             lg:overflow-visible lg:overflow-x-clip lg:p-0"
+             lg:block lg:h-[var(--section-h)] lg:overflow-visible
+             lg:overflow-x-clip lg:p-0 lg:[container-type:size]"
+        style={
+          {
+            "--section-h": halfRateHeight(1790),
+            ...coverPhotoVars(SPONSORS_PHOTO),
+          } as CSSProperties
+        }
       >
         {/* CLOUDS */}
         <CloudDrift delay={0} duration={40} wait={50} className="top-[50px]">
@@ -258,12 +285,14 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="contents lg:absolute lg:left-1/2 lg:block lg:w-[1120px] lg:-translate-x-1/2">
+        {/* desktop: title, FAQ and sponsors window each stay on their spot of the photo */}
+        <div className="contents lg:absolute lg:inset-0 lg:block">
           {/* Title block */}
           {/* Page Title */}
           <div
             className="relative flex flex-col items-start gap-[36px]
-                lg:absolute lg:left-0 lg:top-[80px] lg:w-[488px]"
+                lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:w-[488px] lg:origin-top-left lg:[scale:var(--ui-scale,1)]"
+            style={photoPoint(SPONSORS_PHOTO, 160, 80)}
           >
             <div className="flex flex-col items-start gap-[18px]">
               <div className="flex flex-col items-start">
@@ -359,7 +388,10 @@ export default function Home() {
                  max-lg:before:bg-gradient-to-b max-lg:before:from-transparent max-lg:before:to-green-dark"
           >
             {/* FAQ */}
-            <div className="relative z-10 flex w-full flex-col items-start gap-[24px] lg:absolute lg:left-0 lg:top-[900px] lg:gap-[64px]">
+            <div
+              className="relative z-10 flex w-full flex-col items-start gap-[24px] lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:w-[1120px] lg:origin-top-left lg:gap-[64px] lg:[scale:var(--ui-scale,1)]"
+              style={photoPoint(SPONSORS_PHOTO, 160, 900)}
+            >
               <div className="flex w-full max-w-[488px] flex-col items-start gap-[18px]">
                 <div className="relative">
                   <h2 className="font-cossetteTexte text-[24px] font-bold leading-[1.2] text-highlight lg:text-[36px]">
@@ -407,7 +439,9 @@ export default function Home() {
           autoHeight
           width={700}
           title="Thank you to our sponsors"
-          className="z-10 hidden lg:absolute lg:bottom-[55%] lg:left-[40%] lg:block"
+          // its bottom-left corner is the pinned point
+          className="z-10 hidden lg:absolute lg:bottom-[calc(100%-var(--y))] lg:left-[var(--x)] lg:block lg:origin-bottom-left lg:[scale:var(--ui-scale,1)]"
+          style={photoPoint(SPONSORS_PHOTO, 576, 805.5)}
         >
           <SponsorLogos className="w-full p-6" />
         </Window>
