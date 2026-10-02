@@ -16,7 +16,9 @@ const DOT_SCALE = 5;
 // the screen's dpr so they're the same on-page size on every screen.
 const REFERENCE_DPR = 2;
 
-// Maximum size of the cloud.
+// Maximum size of the cloud, in canvas px per SVG unit at DOT_SCALE.
+// Scaled with the actual dot size so the cloud is always the same
+// number of dots across, whatever the screen's dpr.
 const MAX_CLOUD_SCALE = 2.5;
 
 // Overall animation speed.
@@ -105,8 +107,14 @@ let maskData: Uint8ClampedArray | null = null;
 let cachedWidth = 0;
 let cachedHeight = 0;
 let cachedVariant: CloudVariant | null = null;
+let cachedDotSize = 0;
 
-function buildMask(width: number, height: number, variant: CloudVariant): void {
+function buildMask(
+  width: number,
+  height: number,
+  variant: CloudVariant,
+  dotSize: number,
+): void {
   if (!maskCanvas) {
     maskCanvas = document.createElement("canvas");
 
@@ -124,6 +132,7 @@ function buildMask(width: number, height: number, variant: CloudVariant): void {
     cachedWidth === width &&
     cachedHeight === height &&
     cachedVariant === variant &&
+    cachedDotSize === dotSize &&
     maskData
   ) {
     return;
@@ -132,6 +141,7 @@ function buildMask(width: number, height: number, variant: CloudVariant): void {
   cachedWidth = width;
   cachedHeight = height;
   cachedVariant = variant;
+  cachedDotSize = dotSize;
 
   maskCanvas.width = width;
   maskCanvas.height = height;
@@ -144,7 +154,15 @@ function buildMask(width: number, height: number, variant: CloudVariant): void {
 
   const { width: svgWidth, height: svgHeight } = CLOUD_VIEWBOX_SIZES[variant];
 
-  const cloudScale = Math.min(MAX_CLOUD_SCALE, width / svgWidth);
+  // Cap in dots, not canvas px: MAX_CLOUD_SCALE is in canvas px,
+  // so a fixed cap would let the cloud grow bigger (relative to the
+  // dots and to the page) on a 1x screen than on a 2x one. Also fit
+  // the height so the cloud is never clipped by its box.
+  const cloudScale = Math.min(
+    MAX_CLOUD_SCALE * (dotSize / DOT_SCALE),
+    width / svgWidth,
+    height / svgHeight,
+  );
 
   const renderedWidth = svgWidth * cloudScale;
 
@@ -212,7 +230,9 @@ export function drawAsciiCloud(
     return;
   }
 
-  buildMask(width, height, variant);
+  const dotSize = Math.max(1, Math.round((DOT_SCALE / REFERENCE_DPR) * dpr));
+
+  buildMask(width, height, variant, dotSize);
 
   if (!maskData) return;
 
@@ -225,7 +245,6 @@ export function drawAsciiCloud(
   // ----------------------------------------------------------
   // GRID
   // ----------------------------------------------------------
-  const dotSize = Math.max(1, Math.round((DOT_SCALE / REFERENCE_DPR) * dpr));
 
   const cols = Math.ceil(width / dotSize);
 
