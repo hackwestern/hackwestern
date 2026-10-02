@@ -147,7 +147,10 @@ export default function Apply() {
   // Hide the companion on the two realm-flow steps (the horse is already the
   // star of those screens) and on the start screen (no step selected).
   const showCompanion =
-    horseId != null && step !== null && step !== "realm" && step !== "companion";
+    horseId != null &&
+    step !== null &&
+    step !== "realm" &&
+    step !== "companion";
   const tint = realm ? realmTint[realm] : null;
   const continueStep = getNextIncompleteStep(application);
   const router = useRouter();
@@ -312,7 +315,7 @@ export default function Apply() {
                   ) : (
                     <motion.div
                       key="portal-window"
-                      className="mr-auto my-auto flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4"
+                      className="my-auto mr-auto flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4"
                       style={{ transformOrigin: "bottom right" }}
                       initial={
                         growWindow
@@ -381,7 +384,6 @@ export default function Apply() {
                   />
                 </div>
               )}
-
             </div>
           </div>
         </div>
