@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 import Cloud from "~/components/live/cloud";
@@ -6,6 +6,7 @@ import CloudDrift from "~/components/live/clouddrift";
 import { WindowFolder } from "~/components/live/window-folder";
 import { Button } from "~/components/ui/button";
 import { PAST_PROJECTS, type PastProject } from "~/constants/past-projects";
+import { cn } from "~/lib/utils";
 
 const ASSETS = "/landing/promo/projects";
 
@@ -18,6 +19,9 @@ type CssVars = CSSProperties & Record<`--${string}`, string>;
  * group is sized in `cqw` so its window chrome scales with the art.
  */
 export function PastProjects() {
+  const stageRef = useRef<HTMLDivElement>(null);
+  const revealed = useRevealOnScroll(stageRef, ".past-project-folder");
+
   return (
     <section
       id="projects"
@@ -42,11 +46,18 @@ export function PastProjects() {
         </p>
       </div>
 
-      <div className="relative aspect-[402/544] w-full md:aspect-[1440/1167]">
+      <div
+        ref={stageRef}
+        className="relative aspect-[402/544] w-full md:aspect-[1440/1167]"
+      >
         <AsciiClouds />
         <TreeScene />
-        {PAST_PROJECTS.map((project) => (
-          <ProjectFolder key={project.name} project={project} />
+        {PAST_PROJECTS.map((project, index) => (
+          <ProjectFolder
+            key={project.name}
+            project={project}
+            revealed={revealed.has(index)}
+          />
         ))}
       </div>
     </section>
@@ -60,7 +71,7 @@ function AsciiClouds() {
       className="pointer-events-none absolute inset-0 overflow-hidden"
     >
       <div className="absolute inset-x-0 top-[2%] md:top-[14.27%]">
-        <CloudDrift duration={140} delay={-105}>
+        <CloudDrift duration={40} delay={-30}>
           <Cloud
             variant="cloud7"
             top="0"
@@ -70,7 +81,7 @@ function AsciiClouds() {
         </CloudDrift>
       </div>
       <div className="absolute inset-x-0 top-[62%] md:top-[65.83%]">
-        <CloudDrift duration={120} delay={-30}>
+        <CloudDrift duration={40} delay={-10}>
           <Cloud
             variant="cloud1"
             top="0"
@@ -172,7 +183,45 @@ function TreeImage() {
   );
 }
 
-function ProjectFolder({ project }: { project: PastProject }) {
+/**
+ * Indexes (in DOM order) of the `selector` elements under `rootRef` that have
+ * scrolled into view. Each one stays revealed once seen.
+ */
+function useRevealOnScroll(
+  rootRef: React.RefObject<HTMLElement | null>,
+  selector: string,
+) {
+  const [revealed, setRevealed] = useState<Set<number>>(() => new Set());
+
+  useEffect(() => {
+    const elements = Array.from(
+      rootRef.current?.querySelectorAll<HTMLElement>(selector) ?? [],
+    );
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const seen = entries
+          .filter((entry) => entry.isIntersecting)
+          .map((entry) => elements.indexOf(entry.target as HTMLElement));
+        if (seen.length === 0) return;
+        seen.forEach((index) => observer.unobserve(elements[index]!));
+        setRevealed((prev) => new Set([...prev, ...seen]));
+      },
+      { threshold: 0.2, rootMargin: "0px 0px -22% 0px" },
+    );
+    elements.forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, [rootRef, selector]);
+
+  return revealed;
+}
+
+function ProjectFolder({
+  project,
+  revealed,
+}: {
+  project: PastProject;
+  revealed: boolean;
+}) {
   const { desktop, mobile } = project.position;
   const vars: CssVars = {
     "--mx": `${mobile.x}%`,
@@ -186,7 +235,15 @@ function ProjectFolder({ project }: { project: PastProject }) {
       <WindowFolder
         variant="labelled"
         label={project.name}
-        className="absolute left-[var(--mx)] top-[var(--my)] z-20 origin-top -translate-x-1/2 scale-[0.64] md:left-[var(--dx)] md:top-[var(--dy)] md:scale-100"
+        className={cn(
+          "past-project-folder absolute left-[var(--mx)] top-[var(--my)] z-20 origin-top -translate-x-1/2 scale-[0.64] md:left-[var(--dx)] md:top-[var(--dy)] md:scale-100",
+          // `translate`/`scale` here are the standalone CSS properties, so the
+          // reveal composes with the positioning transform above.
+          "transition-[opacity,translate,scale] [transition-duration:550ms] [transition-timing-function:cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none",
+          revealed
+            ? "opacity-100"
+            : "pointer-events-none opacity-0 [scale:0.82] [translate:0_14px] motion-reduce:pointer-events-auto motion-reduce:opacity-100 motion-reduce:[scale:none] motion-reduce:[translate:none]",
+        )}
         windowProps={{
           width: POPUP_WIDTH,
           autoHeight: true,

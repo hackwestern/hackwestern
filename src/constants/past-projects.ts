@@ -115,6 +115,25 @@ export const PAST_PROJECTS: PastProject[] = [
     },
   },
   {
+    name: "Invvest",
+    link: "https://devpost.com/software/mow",
+    createdBy: ["Joanna Cui", "Jasmine Zhu", "Kathy Dong"],
+    awards: [
+      {
+        name: "Best Hack to Transform Mass Market Women's Investment Capabilities",
+        presentedBy: "Canada Life",
+      },
+    ],
+    edition: 12,
+    date: "November 2025",
+    // Not in the Figma; placed in open space below Blocks (as in
+    // luka/projects-section-prototype) and left of Komo on mobile.
+    position: {
+      desktop: { x: 87.85, y: 84.4 },
+      mobile: { x: 12, y: 24 },
+    },
+  },
+  {
     name: "Manhattanhenge",
     link: "https://devpost.com/software/manhattanhenge",
     createdBy: ["Vincent Nguyen"],
