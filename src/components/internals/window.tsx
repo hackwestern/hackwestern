@@ -159,6 +159,7 @@ export function Window({
       >
         <div
           ref={frameRef}
+          data-window-frame
           className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border-[0.9px] border-[#9F9F9F] bg-[var(--realm-surface,#f4f5f8)] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_40px_rgba(30,40,60,0.3),0_4px_10px_rgba(30,40,60,0.2)] transition-[background-color] duration-700 ease-in-out"
         >
           <div className="shrink-0">{titleBar}</div>
@@ -219,6 +220,7 @@ export function Window({
       >
         <div
           ref={frameRef}
+          data-window-frame
           className="relative overflow-hidden rounded-[10px] border-[0.9px] border-[#9F9F9F] bg-[#f4f5f8] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_40px_rgba(30,40,60,0.3),0_4px_10px_rgba(30,40,60,0.2)]"
           style={{ width }}
         >
@@ -278,6 +280,7 @@ export function Window({
     >
       <div
         ref={frameRef}
+        data-window-frame
         className="relative overflow-hidden rounded-[10px] border-[0.9px] border-[#9F9F9F] bg-[#f4f5f8] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_40px_rgba(30,40,60,0.3),0_4px_10px_rgba(30,40,60,0.2)] transition-[height] duration-200"
         style={{ width, height: minimized ? TITLE_BAR_HEIGHT : height }}
       >
