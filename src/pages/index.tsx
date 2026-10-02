@@ -391,7 +391,7 @@ export default function Home() {
 
           {/* MOBILE window, with the flag planted behind it */}
           <div className="relative w-full max-w-[382px] self-center lg:hidden">
-            <Flag className="absolute -top-[52px] right-6" />
+            <Flag className="absolute -top-[64px] right-6" />
             <Window
               autoHeight
               width={382}
@@ -462,7 +462,7 @@ export default function Home() {
           className="hidden lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:block lg:w-[700px] lg:origin-top-left lg:[scale:var(--ui-scale,1)]"
           style={SPONSORS_WINDOW_POINT}
         >
-          <Flag className="absolute -top-[60px] right-10" />
+          <Flag className="absolute -top-[77px] right-10" />
         </div>
         {/* Sponsors window desktop*/}
         {/* this closes downwards...? */}

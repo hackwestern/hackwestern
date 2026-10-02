@@ -542,7 +542,7 @@ export function Flag({ className }: { className?: string }) {
           overflow="visible"
           aria-hidden
           className={cn(
-            "block h-auto w-12 lg:w-14",
+            "block h-auto w-[60px] lg:w-[72px]",
             !found && "motion-safe:animate-glow-pulse",
           )}
         >
