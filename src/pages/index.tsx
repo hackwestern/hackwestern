@@ -31,6 +31,19 @@ const mid = Math.ceil(PROMO_FAQ.length / 2);
 const left = PROMO_FAQ.slice(0, mid);
 const right = PROMO_FAQ.slice(mid);
 
+const IMAGES =[
+              "/landing/home/gallery/hw-1.jpg",
+              "/landing/home/gallery/hw-2.jpg",
+              "/landing/home/gallery/hw-3.jpg",
+              "/landing/home/gallery/hw-4.jpg",
+              "/landing/home/gallery/hw-5.jpg",
+              "/landing/home/gallery/hw-6.jpg",
+              "/landing/home/gallery/hw-7.jpg",
+              "/landing/home/gallery/hw-8.jpg",
+              "/landing/home/gallery/hw-9.jpg",
+              "/landing/home/gallery/hw-10.jpg",
+            ]
+            
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -153,12 +166,7 @@ export default function Home() {
           }}
         >
           <PhotoGallery
-            images={[
-              "/landing/home/gallery/placeholder-1.png",
-              "/landing/home/gallery/placeholder-2.png",
-              "/landing/home/gallery/placeholder-3.png",
-              "/landing/home/gallery/placeholder-4.png",
-            ]}
+            images = {IMAGES}
           />
         </WindowFolder>
       </section>
