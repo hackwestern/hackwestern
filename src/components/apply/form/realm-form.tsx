@@ -12,7 +12,6 @@ import {
   FormLabel,
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
-import { Button } from "~/components/ui/button";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { realmSaveSchema } from "~/schemas/application";
@@ -84,10 +83,6 @@ export function RealmForm() {
     if (!canEdit) return;
     form.setValue("horseId", horse.id, { shouldDirty: true });
     form.setValue("realm", horse.realm, { shouldDirty: true });
-  };
-
-  const handleConfirmPick = () => {
-    if (!selectedHorse) return;
     setView("name");
   };
 
@@ -113,9 +108,9 @@ export function RealmForm() {
             initial="initial"
             animate="animate"
             exit="exit"
-            className="flex flex-col items-center gap-4"
+            className="flex w-full flex-col items-center gap-4 text-center"
           >
-            <div className="text-center">
+            <div className="w-full">
               <p className="font-primary text-sm-display font-bold text-heavy">
                 Click to choose your horse companion
               </p>
@@ -124,15 +119,6 @@ export function RealmForm() {
               </p>
             </div>
             <HorsePicker selectedId={horseId ?? null} onSelect={handlePick} />
-            <Button
-              type="button"
-              variant="primary"
-              size="lg"
-              disabled={!selectedHorse || !canEdit}
-              onClick={handleConfirmPick}
-            >
-              Next
-            </Button>
           </motion.div>
         ) : (
           <motion.div
