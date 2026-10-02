@@ -53,7 +53,7 @@ export function ApplicationSidebar({
   return (
     <aside
       className={cn(
-        "flex h-full w-[267px] flex-col justify-between rounded-[12px] border px-3 py-6 shadow-[0px_8.65px_10.81px_6.49px_rgba(0,0,0,0.05)] backdrop-blur-sm transition-[background-color,border-color] duration-700 ease-in-out",
+        "flex h-full w-[220px] flex-col justify-between rounded-[12px] border px-2 py-4 shadow-[0px_8.65px_10.81px_6.49px_rgba(0,0,0,0.05)] backdrop-blur-sm transition-[background-color,border-color] duration-700 ease-in-out",
         tint ? "" : "border-white/25 bg-white/70",
         className,
       )}
@@ -68,22 +68,22 @@ export function ApplicationSidebar({
           : undefined
       }
     >
-      <div className="flex flex-col gap-9">
-        <div className="px-3">
-          <HWLogo className="h-[45px] w-[30px]" />
+      <div className="flex flex-col gap-5">
+        <div className="px-2">
+          <HWLogo className="h-[36px] w-[24px]" />
         </div>
 
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-1 px-[14px]">
-            <p className="font-figtree text-md-p font-bold text-heavy">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-0.5 px-2.5">
+            <p className="font-figtree text-sm-p font-bold text-heavy">
               Application Portal
             </p>
-            <p className="font-figtree text-sm-p font-medium text-medium">
+            <p className="font-figtree text-xs font-medium text-medium">
               Hack Western 13
             </p>
           </div>
 
-          <nav className="flex flex-col gap-1.5">
+          <nav className="flex flex-col gap-1">
             {steps.map((step) => {
               const isActive = step.key === activeStep;
               const Element = onStepClick ? "button" : "div";
@@ -95,7 +95,7 @@ export function ApplicationSidebar({
                     onStepClick ? () => onStepClick(step.key) : undefined
                   }
                   className={cn(
-                    "flex items-center justify-between overflow-hidden rounded-md px-[14px] py-3 text-left font-figtree text-md-p transition-colors",
+                    "flex items-center justify-between overflow-hidden rounded-md px-2.5 py-1.5 text-left font-figtree text-sm-p transition-colors",
                     isActive
                       ? tint
                         ? "font-semibold text-heavy"
@@ -120,10 +120,10 @@ export function ApplicationSidebar({
       </div>
 
       {lastSavedAt && (
-        <div className="flex items-center justify-start px-[14px]">
+        <div className="flex items-center justify-start px-2.5">
           <p
             suppressHydrationWarning
-            className="whitespace-nowrap font-figtree text-md-p font-medium italic text-medium"
+            className="whitespace-nowrap font-figtree text-xs font-medium italic text-medium"
           >
             {savedLabel ? `Last saved ${savedLabel}` : " "}
           </p>
