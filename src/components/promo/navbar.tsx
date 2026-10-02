@@ -183,3 +183,13 @@ export function PromoNavbar({
     </nav>
   );
 }
+
+// Pinned to the top of the viewport so the nav stays reachable while
+// scrolling anywhere on the page.
+export function PromoHeader(props: PromoNavbarProps) {
+  return (
+    <header className="fixed inset-x-0 top-3 z-50 px-[10%]">
+      <PromoNavbar {...props} />
+    </header>
+  );
+}
