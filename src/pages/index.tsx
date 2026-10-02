@@ -206,14 +206,18 @@ export default function Home() {
           <Cloud variant="cloud14" className="hidden lg:block" />
         </CloudDrift>
 
-        {/* desktop background (unchanged, just hidden on mobile) */}
-        <Image
-          src="/landing/home/sponsor-bg.png"
-          alt=""
-          width={2880}
-          height={2808}
-          className="absolute -bottom-[0%] z-0 hidden h-auto w-full object-cover lg:block"
-        />
+        {/* desktop background: fixed at its 1440-wide height (3427/2880 * 1440) so the
+            photo's sky stays behind the title on wider screens; extra width crops
+            the bottom instead */}
+        <div className="absolute inset-x-0 bottom-0 z-0 hidden h-[1714px] lg:block">
+          <Image
+            src="/landing/home/sponsor-bg.png"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover object-top"
+          />
+        </div>
 
         {/* mobile background */}
         {/* absolute so this wrapper isn't a flex item and doesn't add an extra gap-12 on mobile */}
