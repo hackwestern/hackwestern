@@ -33,7 +33,6 @@ export function HorsePicker({
                 // so overlapping rectangular hitboxes don't steal clicks
                 // from the horse the user is actually aiming at.
                 "z-0 hover:z-20 focus-visible:z-20",
-                "border-2 border-red-700",
                 isSelected
                   ? "z-10 scale-110 opacity-100 drop-shadow-[0_6px_12px_rgba(4,34,57,0.45)]"
                   : hasSelection
@@ -46,11 +45,10 @@ export function HorsePicker({
                 width: `${horse.widthPct}%`,
               }}
             >
-              <p>{horse.id}</p>
               <img
                 src={horse.asset}
                 alt=""
-                className="border-2 border-blue-7 pointer-events-none h-auto w-full select-none"
+                className="pointer-events-none h-auto w-full select-none"
                 draggable={false}
               />
             </button>

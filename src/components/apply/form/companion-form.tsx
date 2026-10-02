@@ -9,6 +9,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
 import { api } from "~/utils/api";
@@ -69,14 +70,14 @@ export function CompanionForm() {
 
   return (
     <Form {...form}>
-      <div className="flex flex-col items-center gap-6">
+      <div className="flex flex-col items-center gap-3">
         <div className="text-center">
-          <p className="font-primary text-sm-display font-bold text-heavy">
+          <p className="font-primary text-lg-p font-bold leading-tight text-heavy sm:text-sm-display">
             {hasNames
               ? `${horseFirstName} ${horseLastName} will be your companion for Hack Western 13!`
               : "Good choice! Next, pick a name for your companion"}
           </p>
-          <p className="mt-2 font-figtree text-lg-p font-medium text-light">
+          <p className="mt-1 font-figtree text-md-p font-medium text-light">
             You will be journeying through the{" "}
             <span className="font-semibold text-medium">
               {realmLabel[selectedHorse.realm]}
@@ -85,16 +86,16 @@ export function CompanionForm() {
           </p>
         </div>
 
-        <div className="relative w-full max-w-[420px]">
+        <div className="relative w-full max-w-[280px]">
           <img
             src={selectedHorse.asset}
             alt={`${realmLabel[selectedHorse.realm]} horse`}
-            className="mx-auto max-h-[240px] w-auto max-w-full select-none object-contain"
+            className="mx-auto max-h-[160px] w-auto max-w-full select-none object-contain"
             draggable={false}
           />
         </div>
 
-        <div className="grid w-full max-w-[600px] grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid w-full max-w-[600px] grid-cols-1 gap-3 sm:grid-cols-2">
           <FormField
             control={form.control}
             name="horseFirstName"
@@ -110,6 +111,7 @@ export function CompanionForm() {
                     maxLength={HORSE_NAME_MAX_LENGTH}
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -128,6 +130,7 @@ export function CompanionForm() {
                     maxLength={HORSE_NAME_MAX_LENGTH}
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
