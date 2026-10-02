@@ -130,6 +130,25 @@ export default function Apply() {
     [],
   );
 
+  // Mirror the realm tint onto document.documentElement so portaled
+  // elements (Radix Select content, dropdown menus, etc.) can read the
+  // same CSS vars even though they mount outside .apply-form-tint.
+  React.useEffect(() => {
+    const root = document.documentElement;
+    if (tint) {
+      root.style.setProperty("--form-tint-bg", tint.sidebarBg);
+      root.style.setProperty("--form-tint-border", tint.sidebarBorder);
+      root.style.setProperty("--form-tint-text", tint.accent);
+      root.style.setProperty("--form-tint-text-muted", tint.accentMuted);
+      root.setAttribute("data-apply-tint", "on");
+    } else {
+      root.removeAttribute("data-apply-tint");
+    }
+    return () => {
+      root.removeAttribute("data-apply-tint");
+    };
+  }, [tint]);
+
   const handleApplyNavigate = (stepKey: string) => {
     setPending(true);
     void router.push(`/apply?step=${stepKey}`).then(() => setPending(false));

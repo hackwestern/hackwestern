@@ -421,3 +421,35 @@ html {
   background-color: var(--form-tint-text, inherit) !important;
   color: var(--form-tint-bg, inherit) !important;
 }
+
+/* Catch any lingering purple utility classes inside the tinted area
+ * (radio toggles use text-violet-500, labels pick up text-primary-600
+ * on checked, etc.) so "Prefer not to say", "Other", and friends also
+ * take on the realm palette. */
+.apply-form-tint [class*="text-violet"],
+.apply-form-tint [class*="text-primary"],
+.apply-form-tint [class*="hover:bg-primary"] {
+  color: var(--form-tint-text, inherit) !important;
+}
+
+/*
+ * Portaled dropdown + popover content lives OUTSIDE the apply shell, so
+ * we promote the tint onto :root (via data-apply-tint on <html>) and
+ * target the Radix content elements directly from there.
+ */
+html[data-apply-tint] [role="listbox"],
+html[data-apply-tint] [data-radix-popper-content-wrapper] [role="listbox"] {
+  background-color: var(--form-tint-bg, inherit) !important;
+  color: var(--form-tint-text, inherit) !important;
+  border-color: var(--form-tint-border, transparent) !important;
+}
+
+html[data-apply-tint] [role="option"] {
+  color: var(--form-tint-text, inherit) !important;
+}
+
+html[data-apply-tint] [role="option"][data-highlighted],
+html[data-apply-tint] [role="option"][data-state="checked"] {
+  background-color: var(--form-tint-border, inherit) !important;
+  color: var(--form-tint-text, inherit) !important;
+}
