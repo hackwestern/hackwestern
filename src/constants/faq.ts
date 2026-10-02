@@ -25,7 +25,7 @@ export const PROMO_FAQ: readonly [
   {
     question: "When do hacker applications open?",
     answer:
-      "We will be announcing hacker applications in early October. Follow our social media and sign up for our mailing list by pre-registering here to be the first to find out.",
+      "Hacker applications open October 2 at 11:59 PM and close October 18 at 11:59 PM.",
   },
   {
     question: "How many people do I need in a team?",

@@ -6,6 +6,7 @@ import { useToast } from "~/hooks/use-toast";
 import { useRouter } from "next/router";
 import { Button } from "~/components/ui/button";
 import { isVerifiedRedirect } from "~/utils/redirect";
+import { AuthLayout } from "~/components/auth/auth-layout";
 
 const Verify = () => {
   const router = useRouter();
@@ -88,35 +89,40 @@ const Verify = () => {
     <>
       <SEO title="Verify Email" noindex />
 
-      <div className="bg-hw-radial-gradient flex h-screen flex-col items-center justify-center">
-        <div className="z-10 w-full max-w-lg rounded-lg bg-violet-50 bg-white p-5 shadow-md">
-          {verifySuccess && (
-            <div>
-              <div className="text-center">Email Verified!</div>
-              <div className="text-center">You can now login.</div>
-            </div>
-          )}
-          {verifyFailed && (
-            <div className="flex flex-col justify-center">
-              <div className="mb-6 text-left font-secondary">
-                Invalid or Expired Verification Token.
-              </div>
-              {verifyToken && (
-                <Button
-                  variant="primary"
-                  className="mx-auto w-fit text-sm"
-                  onClick={handleResendVerification}
-                >
-                  Request New Verification Link
-                </Button>
-              )}
-            </div>
-          )}
-          {!verifySuccess && !verifyFailed && (
-            <div className="text-center">Verifying email...</div>
-          )}
-        </div>
-      </div>
+      <AuthLayout title="Verify your email">
+        {verifySuccess && (
+          <div className="flex flex-col gap-2">
+            <p className="text-center font-figtree text-md-p font-medium text-gray-6">
+              Email Verified!
+            </p>
+            <p className="text-center font-figtree text-md-p text-gray-6">
+              You can now login.
+            </p>
+          </div>
+        )}
+        {verifyFailed && (
+          <div className="flex flex-col gap-6">
+            <p className="font-figtree text-md-p text-gray-6">
+              Invalid or Expired Verification Token.
+            </p>
+            {verifyToken && (
+              <Button
+                variant="primary-2"
+                size="lg"
+                full
+                onClick={handleResendVerification}
+              >
+                Request New Verification Link
+              </Button>
+            )}
+          </div>
+        )}
+        {!verifySuccess && !verifyFailed && (
+          <p className="text-center font-figtree text-md-p text-gray-6">
+            Verifying email...
+          </p>
+        )}
+      </AuthLayout>
     </>
   );
 };

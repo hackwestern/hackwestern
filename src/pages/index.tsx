@@ -17,7 +17,8 @@ import { PROMO_FAQ } from "~/constants/faq";
 import Waterfall from "~/components/live/waterfall";
 import CloudDrift from "~/components/live/clouddrift";
 import Cloud from "~/components/live/cloud";
-import { type CSSProperties, useRef } from "react";
+import Head from "next/head";
+import { type CSSProperties, useEffect, useRef } from "react";
 import {
   type CoverPhoto,
   coverPhotoVars,
@@ -89,14 +90,52 @@ const belowSponsorsTitle = (x: number, y: number) =>
 const SPONSORS_WINDOW_POINT = belowSponsorsTitle(576, SPONSORS_WINDOW_Y);
 const SPONSORS_FAQ_POINT = belowSponsorsTitle(160, SPONSORS_FAQ_Y);
 
+// What the sky (with its noise) and the team footer look like at the page's
+// top and bottom edges, measured from the rendered page.
+const TOP_EDGE_COLOR = "#1b4960";
+const BOTTOM_EDGE_COLOR = "#000000";
+
+// The fixed sky covers the whole viewport, so body's color (which paints the
+// canvas) only shows when rubber-band scrolling past an edge. Match it to
+// whichever edge is closer. Below md the body is the scroller, not the page.
+function useOverscrollColor() {
+  useEffect(() => {
+    const body = document.body;
+
+    function paint(event?: Event) {
+      const target = event?.target ?? document;
+      if (target !== document && target !== body) return;
+      const scroller = target === body ? body : document.documentElement;
+      const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+      body.style.backgroundColor =
+        scroller.scrollTop * 2 > maxScroll ? BOTTOM_EDGE_COLOR : TOP_EDGE_COLOR;
+    }
+
+    paint();
+    // Scroll events from body don't bubble, so listen in the capture phase.
+    document.addEventListener("scroll", paint, {
+      capture: true,
+      passive: true,
+    });
+    return () => {
+      document.removeEventListener("scroll", paint, { capture: true });
+      body.style.backgroundColor = "";
+    };
+  }, []);
+}
+
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
+  useOverscrollColor();
 
   return (
     <main
       id="top"
       className="relative cursor-pixel-default [--dvw:1vw] lg:[--dvw:14.4px]"
     >
+      <Head>
+        <meta name="theme-color" content={TOP_EDGE_COLOR} key="theme-color" />
+      </Head>
       {/* --dvw: 1% of the 1440 design on desktop, so sizes stay fixed as the screen widens */}
       <SkyBackground />
       <PromoHeader />
@@ -110,7 +149,7 @@ export default function Home() {
         <MobileStoryStack />
       </div>
 
-      <FilmStrip rotate={0.4} className="relative z-10" />
+      <FilmStrip rotate={0.4} className="relative z-10 " />
 
       <section
         id="about"
