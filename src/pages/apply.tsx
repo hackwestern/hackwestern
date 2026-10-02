@@ -18,6 +18,7 @@ import { signOut } from "next-auth/react";
 import { ApplicationSidebar } from "~/components/apply/application-sidebar";
 import { Window } from "~/components/internals/window";
 import { UserBadge } from "~/components/apply/user-badge";
+import { HorseCompanion } from "~/components/apply/horse-companion";
 import { realmTint } from "~/constants/realms";
 import { cn } from "~/lib/utils";
 
@@ -132,9 +133,21 @@ export default function Apply() {
     fields: ["status"],
   });
   const { data: userInfo } = api.application.get.useQuery({
-    fields: ["firstName", "updatedAt", "realm"],
+    fields: [
+      "firstName",
+      "updatedAt",
+      "realm",
+      "horseId",
+      "horseFirstName",
+      "horseLastName",
+    ],
   });
   const realm = userInfo?.realm ?? null;
+  const horseId = userInfo?.horseId ?? null;
+  // Hide the companion on the two realm-flow steps (the horse is already the
+  // star of those screens) and on the start screen (no step selected).
+  const showCompanion =
+    horseId != null && step !== null && step !== "realm" && step !== "companion";
   const tint = realm ? realmTint[realm] : null;
   const continueStep = getNextIncompleteStep(application);
   const router = useRouter();
@@ -279,7 +292,7 @@ export default function Apply() {
                 />
               </div>
 
-              <div className="relative flex flex-1 pt-16">
+              <div className="relative flex flex-1 pt-14">
                 <AnimatePresence mode="wait">
                   {!step ? (
                     <motion.div
@@ -299,7 +312,7 @@ export default function Apply() {
                   ) : (
                     <motion.div
                       key="portal-window"
-                      className="m-auto flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4"
+                      className="mr-auto my-auto flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4"
                       style={{ transformOrigin: "bottom right" }}
                       initial={
                         growWindow
@@ -358,6 +371,17 @@ export default function Apply() {
                   </p>
                 </div>
               )}
+
+              {showCompanion && (
+                <div className="pointer-events-none absolute bottom-6 right-6 z-20">
+                  <HorseCompanion
+                    horseId={horseId}
+                    firstName={userInfo?.horseFirstName}
+                    lastName={userInfo?.horseLastName}
+                  />
+                </div>
+              )}
+
             </div>
           </div>
         </div>
