@@ -122,20 +122,20 @@ export default function Home() {
 
         {/* insert waterfall */}
         {/* Up to 1440, windows and folders sit in px from the edges. Wider, each
-            keeps its 1440 spot as a % of the section: the photo fills the width,
-            so they stay beside the same part of it (e.g. the waterfall) */}
+            keeps its 1440 spot in the centred column (like the projects stage),
+            scaled with --ui-scale; its top stays a % of the section */}
         <div className="absolute inset-0 m-auto max-w-[1440px] min-[1440px]:max-w-none">
           <WindowFolder
             defaultOpen
             variant="labelled"
             label="A message to new hackers"
-            className="absolute bottom-[120px] left-[100px] min-[1440px]:bottom-auto min-[1440px]:left-[6.944%] min-[1440px]:top-[79.486%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]"
+            className="absolute bottom-[120px] left-[100px] min-[1440px]:bottom-auto min-[1440px]:left-[calc(50%-620px*var(--ui-scale,1))] min-[1440px]:top-[79.486%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]"
             windowTitle="A message to new hackers"
             windowProps={{
               width: 400,
               autoHeight: true,
               className:
-                "isolate absolute right-[500px] top-[200px] min-[1440px]:right-auto min-[1440px]:left-[37.5%] min-[1440px]:top-[18.034%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]",
+                "isolate absolute right-[500px] top-[200px] min-[1440px]:right-auto min-[1440px]:left-[calc(50%-180px*var(--ui-scale,1))] min-[1440px]:top-[18.034%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]",
             }}
           >
             <div className="p3 whitespace-pre-line font-figtree">
@@ -158,12 +158,12 @@ export default function Home() {
             defaultOpen
             variant="labelled"
             label="Impact"
-            className="absolute bottom-[500px] left-[200px] min-[1440px]:bottom-auto min-[1440px]:left-[13.889%] min-[1440px]:top-[45.221%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]"
+            className="absolute bottom-[500px] left-[200px] min-[1440px]:bottom-auto min-[1440px]:left-[calc(50%-520px*var(--ui-scale,1))] min-[1440px]:top-[45.221%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]"
             windowTitle="Last year's impact"
             windowProps={{
               autoHeight: true,
               className:
-                "isolate absolute right-[300px] top-[550px] min-[1440px]:right-auto min-[1440px]:left-[53.194%] min-[1440px]:top-[49.594%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]",
+                "isolate absolute right-[300px] top-[550px] min-[1440px]:right-auto min-[1440px]:left-[calc(50%+46px*var(--ui-scale,1))] min-[1440px]:top-[49.594%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]",
             }}
           >
             <div className="flex flex-col items-center gap-[28px] text-center">
@@ -200,11 +200,11 @@ export default function Home() {
             defaultOpen
             variant="labelled"
             label="Exploration"
-            className="absolute bottom-[300px] left-[80px] min-[1440px]:bottom-auto min-[1440px]:left-[5.556%] min-[1440px]:top-[63.255%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]"
+            className="absolute bottom-[300px] left-[80px] min-[1440px]:bottom-auto min-[1440px]:left-[calc(50%-640px*var(--ui-scale,1))] min-[1440px]:top-[63.255%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]"
             windowTitle="A world of exploration"
             windowProps={{
               className:
-                "isolate absolute right-[100px] top-[100px] min-[1440px]:right-auto min-[1440px]:left-[67.083%] min-[1440px]:top-[9.017%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]",
+                "isolate absolute right-[100px] top-[100px] min-[1440px]:right-auto min-[1440px]:left-[calc(50%+246px*var(--ui-scale,1))] min-[1440px]:top-[9.017%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]",
             }}
           >
             <PhotoGallery images={IMAGES} />

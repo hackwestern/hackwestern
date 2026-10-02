@@ -30,7 +30,7 @@ export interface CoverPhoto {
 }
 
 /**
- * The photo's rendered rect as CSS vars (--pw, --ph, --pl, --pt), mirroring
+ * The photo's rendered height and top as CSS vars (--ph, --pt), mirroring
  * `object-fit: cover`. Set them on a section that is a size container
  * (`container-type: size`) so `cqw` / `cqh` measure the section.
  */
@@ -38,9 +38,7 @@ export function coverPhotoVars(photo: CoverPhoto): CssVars {
   const ratio = photo.imageWidth / photo.imageHeight;
   const boxHeight = `(100cqh + ${photo.extraHeight}px)`;
   return {
-    "--pw": `max(100cqw, calc(${boxHeight} * ${ratio}))`,
     "--ph": `max(calc(${boxHeight}), calc(100cqw / ${ratio}))`,
-    "--pl": "calc((100cqw - var(--pw)) / 2)",
     "--pt":
       photo.align === "top"
         ? `${photo.top}px`
@@ -49,21 +47,19 @@ export function coverPhotoVars(photo: CoverPhoto): CssVars {
 }
 
 /**
- * A point placed at (x, y) px in the 1440 design, as CSS vars --x / --y that
- * follow the same spot of the photo at any width.
+ * A point placed at (x, y) px in the 1440 design, as CSS vars --x / --y.
+ * --x keeps its place in the centred 1440 column, scaled with --ui-scale like
+ * the projects stage; --y follows the same spot of the photo at any width.
  */
 export function photoPoint(photo: CoverPhoto, x: number, y: number): CssVars {
   const ratio = photo.imageWidth / photo.imageHeight;
   const boxHeight = photo.designHeight + photo.extraHeight;
-  const width = Math.max(DESIGN_WIDTH, boxHeight * ratio);
   const height = Math.max(boxHeight, DESIGN_WIDTH / ratio);
-  const left = (DESIGN_WIDTH - width) / 2;
   const top =
     photo.align === "top" ? photo.top : photo.top + (boxHeight - height) / 2;
-  const u = ((x - left) / width).toFixed(5);
   const v = ((y - top) / height).toFixed(5);
   return {
-    "--x": `calc(var(--pl) + ${u} * var(--pw))`,
+    "--x": `calc(50% + ${x - DESIGN_WIDTH / 2}px * var(--ui-scale, 1))`,
     "--y": `calc(var(--pt) + ${v} * var(--ph))`,
   };
 }
