@@ -46,6 +46,7 @@ export function HorsePicker({
                 width: `${horse.widthPct}%`,
               }}
             >
+              <p>{horse.id}</p>
               <img
                 src={horse.asset}
                 alt=""

@@ -47,16 +47,26 @@ export function RealmForm() {
     onSuccess: () => utils.application.get.invalidate(),
   });
 
+  // Use `values` (reactive) instead of `defaultValues` (one-shot) so RHF
+  // re-syncs the form every time the server data refetches. keepDirtyValues
+  // preserves whatever the user is currently editing (e.g. half-typed
+  // horse name) across refetches.
   const form = useForm<RealmFormValues>({
     resolver: zodResolver(realmSaveSchema),
-    defaultValues: defaults as RealmFormValues,
+    values: (defaults ?? {
+      realm: null,
+      horseId: null,
+      horseFirstName: null,
+      horseLastName: null,
+    }) as RealmFormValues,
+    resetOptions: { keepDirtyValues: true },
   });
 
+  // Text fields (first/last name) keep their debounced auto-save.
   const onSubmit = React.useCallback(
     (data: RealmFormValues) => mutate(data),
     [mutate],
   );
-
   useAutoSave(form, onSubmit, defaults);
 
   const horseId = form.watch("horseId");
@@ -64,31 +74,41 @@ export function RealmForm() {
   const horseLastName = form.watch("horseLastName");
   const selectedHorse = getHorse(horseId);
 
-  // Start on the picker and only hop to the naming view once defaults have
-  // actually loaded with both a saved horse and a saved name. Doing it this
-  // way means the picker always shows even if the defaults query is slow,
-  // errors out, or returns an empty row.
-  const [view, setView] = React.useState<"pick" | "name">("pick");
-  const didResolveInitialViewRef = React.useRef(false);
-
+  // The view is derived from server state: if the server has a horse saved
+  // for us, start on the naming view; otherwise show the picker. Users can
+  // override temporarily (handleChangeHorse) via forcedView.
+  const [forcedView, setForcedView] = React.useState<"pick" | null>(null);
+  const serverHorseId = defaults?.horseId ?? null;
   React.useEffect(() => {
-    if (didResolveInitialViewRef.current || !defaults) return;
-    const savedHorse = getHorse(defaults.horseId);
-    const savedName = defaults.horseFirstName && defaults.horseLastName;
-    if (savedHorse && savedName) setView("name");
-    didResolveInitialViewRef.current = true;
-  }, [defaults]);
+    // Clear the manual override as soon as the server confirms a new pick.
+    if (serverHorseId && forcedView === "pick") setForcedView(null);
+  }, [serverHorseId, forcedView]);
 
   const handlePick = (horse: Horse) => {
     if (!canEdit) return;
+    // Optimistic local update so the UI flips immediately.
     form.setValue("horseId", horse.id, { shouldDirty: true });
     form.setValue("realm", horse.realm, { shouldDirty: true });
-    setView("name");
+    setForcedView(null);
+    // Persist the pick NOW (no 750 ms debounce) and refetch on success so
+    // the frontend state is driven by the server row rather than by local
+    // RHF state alone.
+    mutate(
+      {
+        realm: horse.realm,
+        horseId: horse.id,
+        horseFirstName: horseFirstName ?? null,
+        horseLastName: horseLastName ?? null,
+      } as RealmFormValues,
+      {
+        onSuccess: () => utils.application.get.invalidate(),
+      },
+    );
   };
 
   const handleChangeHorse = () => {
     if (!canEdit) return;
-    setView("pick");
+    setForcedView("pick");
   };
 
   const hasNames = Boolean(horseFirstName && horseLastName);
@@ -96,7 +116,7 @@ export function RealmForm() {
   // Guard: if we're meant to be on the naming view but the saved horseId is
   // somehow unknown, fall back to the picker instead of crashing on
   // selectedHorse.asset.
-  const showPick = view === "pick" || !selectedHorse;
+  const showPick = forcedView === "pick" || !selectedHorse;
 
   return (
     <Form {...form}>
