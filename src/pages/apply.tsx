@@ -258,10 +258,7 @@ export default function Apply() {
                   </Window>
                 ) : (
                   <div
-                    className={cn(
-                      "flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4",
-                      tint && "apply-form-tint",
-                    )}
+                    className="flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4"
                     style={
                       tint
                         ? ({
@@ -282,7 +279,12 @@ export default function Apply() {
                       contentClassName="px-8 py-8 md:px-12 md:py-10"
                       footer={<ApplyNavigation step={step} />}
                     >
-                      <div className="space-y-6">
+                      <div
+                        className={cn(
+                          "space-y-6",
+                          tint && "apply-form-tint",
+                        )}
+                      >
                         {step !== "realm" && (
                           <ApplyHeading
                             heading={heading}
