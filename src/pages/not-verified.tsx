@@ -6,6 +6,7 @@ import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { isVerifiedRedirect } from "~/utils/redirect";
 import { useRouter } from "next/router";
+import { AuthLayout } from "~/components/auth/auth-layout";
 
 const NotVerified = () => {
   const { toast } = useToast();
@@ -45,30 +46,31 @@ const NotVerified = () => {
     <>
       <SEO title="Verify Email" noindex />
 
-      <div className="bg-hw-radial-gradient flex h-screen flex-col items-center justify-center">
-        <div className="z-10 flex w-full max-w-2xl flex-col justify-center gap-6 rounded-lg bg-violet-50 bg-white p-8 font-secondary shadow-md">
-          <p className="text-lg">
-            You have registered successfully! Please verify your email before
-            continuing. If you do not see an email, try requesting a new one.
-          </p>
-          <div className="flex justify-between">
-            <Button
-              variant="primary"
-              className="w-fit text-sm"
-              onClick={handleResendVerification}
-            >
-              Request New Verification Link
-            </Button>
+      <AuthLayout title="Verify your email">
+        <p className="font-figtree text-md-p text-gray-6">
+          You have registered successfully! Please verify your email before
+          continuing. If you do not see an email, try requesting a new one.
+        </p>
+        <div className="flex flex-col gap-4">
+          <Button
+            variant="primary-2"
+            size="lg"
+            full
+            onClick={handleResendVerification}
+          >
+            Request New Verification Link
+          </Button>
 
-            <Button
-              variant="destructive"
-              onClick={() => signOut().then(() => void router.push("/login"))}
-            >
-              Sign Out
-            </Button>
-          </div>
+          <Button
+            variant="secondary"
+            size="lg"
+            full
+            onClick={() => signOut().then(() => void router.push("/login"))}
+          >
+            Sign Out
+          </Button>
         </div>
-      </div>
+      </AuthLayout>
     </>
   );
 };
