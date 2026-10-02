@@ -315,7 +315,7 @@ export default function Apply() {
                   ) : (
                     <motion.div
                       key="portal-window"
-                      className="my-auto mr-auto flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4"
+                      className="m-auto flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[clamp(900px,68.4vw,1400px)] flex-col gap-4"
                       style={{ transformOrigin: "bottom right" }}
                       initial={
                         growWindow
