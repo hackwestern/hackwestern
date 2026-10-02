@@ -1,4 +1,5 @@
 import Topbar from "~/components/live/topbar";
+import { MobileStoryStack } from "~/components/promo/story-mobile";
 import { FilmStrip } from "~/components/promo/film-strip";
 import { Hero } from "~/components/promo/hero";
 import { PastProjects } from "~/components/promo/past-projects";
@@ -50,61 +51,73 @@ export default function Home() {
   return (
     <main id="top" className="relative cursor-pixel-default">
       <SkyBackground />
-      <FilmStrip />
-
-      <Hero />
-
-      <FilmStrip rotate={0.4} className="relative z-10" />
-
-      <section
-        id="about"
-        style={{ minHeight: 1109 }}
-        className="relative hidden sm:block"
-      >
-        <div
-          ref={containerRef}
-          className="absolute inset-x-0 -top-6 z-0"
-          style={{
-            bottom: "calc(-7.06vw - 15px)",
-            clipPath: "polygon(0 0, 100% 0.7vw, 100% 100%, 0 calc(100% - 6vw))",
-          }}
-        >
-          <Image
-            src="/landing/home/about.png"
-            alt=""
-            fill
-            sizes="100vw"
-            className="object-cover object-center"
-          />
-
-          <Waterfall
-            containerRef={containerRef}
-            backgroundSrc="/landing/home/about.png"
-            objectPositionX="center"
-            // The photo's own waterfall in about.png (file px), sized to
-            // the mask's 220:1217 ratio so the dither sits on it.
-            sourceLeft={1210}
-            sourceTop={1746}
-            sourceWidth={202}
-            sourceHeight={1115}
-          />
+      {/* On mobile the top film strip and hero hold still as one screen
+          (clipping the hero's last strip-height of grass) while the story
+          windows roll up over them, then everything moves on together. */}
+      <div className="relative">
+        <div className="max-sm:sticky max-sm:top-0 max-sm:h-[100svh] max-sm:overflow-hidden">
+          <FilmStrip />
+          <Hero />
         </div>
+        <MobileStoryStack />
+      </div>
 
-        {/* insert waterfall */}
-        <WindowFolder
-          defaultOpen
-          variant="labelled"
-          label="A message to new hackers"
-          className="absolute bottom-[120px] left-[100px]"
-          windowTitle="A message to new hackers"
-          windowProps={{
-            width: 400,
-            autoHeight: true,
-            className: "isolate absolute right-[500px] top-[200px]",
-          }}
+      {/* Mobile: from the strip above past projects down, the page sits on
+          its own sky image (scrolling with the content) instead of the fixed
+          hero sky. Below the image it continues in its bottom colour. */}
+      <div className="max-md:bg-[#89c7e2] max-md:bg-[url('/landing/promo/mobile-bg2.jpg')] max-md:bg-[length:100%_auto] max-md:bg-top max-md:bg-no-repeat">
+        <FilmStrip rotate={0.4} className="relative z-10" />
+
+        <section
+          id="about"
+          style={{ minHeight: 1109 }}
+          className="relative hidden sm:block"
         >
-          <div className="p3 whitespace-pre-line font-figtree">
-            {`Dear Hacker,
+          <div
+            ref={containerRef}
+            className="absolute inset-x-0 -top-6 z-0"
+            style={{
+              bottom: "calc(-7.06vw - 15px)",
+              clipPath:
+                "polygon(0 0, 100% 0.7vw, 100% 100%, 0 calc(100% - 6vw))",
+            }}
+          >
+            <Image
+              src="/landing/home/about.png"
+              alt=""
+              fill
+              sizes="100vw"
+              className="object-cover object-center"
+            />
+
+            <Waterfall
+              containerRef={containerRef}
+              backgroundSrc="/landing/home/about.png"
+              objectPositionX="center"
+              // The photo's own waterfall in about.png (file px), sized to
+              // the mask's 220:1217 ratio so the dither sits on it.
+              sourceLeft={1210}
+              sourceTop={1746}
+              sourceWidth={202}
+              sourceHeight={1115}
+            />
+          </div>
+
+          {/* insert waterfall */}
+          <WindowFolder
+            defaultOpen
+            variant="labelled"
+            label="A message to new hackers"
+            className="absolute bottom-[120px] left-[100px]"
+            windowTitle="A message to new hackers"
+            windowProps={{
+              width: 400,
+              autoHeight: true,
+              className: "isolate absolute right-[500px] top-[200px]",
+            }}
+          >
+            <div className="p3 whitespace-pre-line font-figtree">
+              {`Dear Hacker,
 
               Whether you’re an experienced hacker or have never touched a line of code, you belong at Hack Western.
 
@@ -117,282 +130,295 @@ export default function Home() {
               Love,
 
               The Hack Western 13 Team`}
-          </div>
-        </WindowFolder>
-        <WindowFolder
-          defaultOpen
-          variant="labelled"
-          label="Impact"
-          className="absolute bottom-[500px] left-[200px]"
-          windowTitle="Last year's impact"
-          windowProps={{
-            autoHeight: true,
-            className: "isolate absolute right-[300px] top-[550px]",
-          }}
-        >
-          <div className="flex flex-col items-center gap-[28px] text-center">
-            <div className="flex items-start gap-[64px]">
-              <div className="flex flex-col items-center">
-                <p className="font-cossetteTexte text-[47.917px] text-medium">
-                  82
-                </p>
-                <p className="w-[78.52px] text-[14.4px] font-medium text-light">
-                  Projects Submitted
-                </p>
+            </div>
+          </WindowFolder>
+          <WindowFolder
+            defaultOpen
+            variant="labelled"
+            label="Impact"
+            className="absolute bottom-[500px] left-[200px]"
+            windowTitle="Last year's impact"
+            windowProps={{
+              autoHeight: true,
+              className: "isolate absolute right-[300px] top-[550px]",
+            }}
+          >
+            <div className="flex flex-col items-center gap-[28px] text-center">
+              <div className="flex items-start gap-[64px]">
+                <div className="flex flex-col items-center">
+                  <p className="font-cossetteTexte text-[47.917px] text-medium">
+                    82
+                  </p>
+                  <p className="w-[78.52px] text-[14.4px] font-medium text-light">
+                    Projects Submitted
+                  </p>
+                </div>
+                <div className="flex flex-col items-center">
+                  <p className="font-cossetteTexte text-[47.917px] text-medium">
+                    320
+                  </p>
+                  <p className="text-[14.4px] font-medium text-light">
+                    Participants
+                  </p>
+                </div>
               </div>
               <div className="flex flex-col items-center">
                 <p className="font-cossetteTexte text-[47.917px] text-medium">
-                  320
+                  $10,000
                 </p>
                 <p className="text-[14.4px] font-medium text-light">
-                  Participants
+                  in prizes
                 </p>
               </div>
             </div>
-            <div className="flex flex-col items-center">
-              <p className="font-cossetteTexte text-[47.917px] text-medium">
-                $10,000
-              </p>
-              <p className="text-[14.4px] font-medium text-light">in prizes</p>
-            </div>
-          </div>
-        </WindowFolder>
+          </WindowFolder>
 
-        <WindowFolder
-          defaultOpen
-          variant="labelled"
-          label="Exploration"
-          className="absolute bottom-[300px] left-[80px]"
-          windowTitle="A world of exploration"
-          windowProps={{
-            className: "isolate absolute right-[100px] top-[100px]",
-          }}
-        >
-          <PhotoGallery images={IMAGES} />
-        </WindowFolder>
-      </section>
-      <FilmStrip rotate={3.5} className="relative z-10 hidden lg:block" />
+          <WindowFolder
+            defaultOpen
+            variant="labelled"
+            label="Exploration"
+            className="absolute bottom-[300px] left-[80px]"
+            windowTitle="A world of exploration"
+            windowProps={{
+              className: "isolate absolute right-[100px] top-[100px]",
+            }}
+          >
+            <PhotoGallery images={IMAGES} />
+          </WindowFolder>
+        </section>
+        <FilmStrip rotate={3.5} className="relative z-10 hidden lg:block" />
 
-      <PastProjects />
-      <FilmStrip rotate={1.2} className="relative z-10" />
+        <PastProjects />
+        <FilmStrip rotate={1.2} className="relative z-10" />
 
-      <section
-        id="sponsors"
-        className="relative flex min-h-[1880px] flex-col gap-12 overflow-hidden px-6 pb-16 pt-12
+        <section
+          id="sponsors"
+          className="relative flex min-h-[1880px] flex-col gap-12 overflow-hidden px-6 pb-16 pt-12
              [--photo-h:360px] [--photo-offset:150px]
              lg:block lg:min-h-[1790px] lg:p-0"
-      >
-        {/* CLOUDS */}
-        <CloudDrift delay={0} duration={40} wait={50} className="top-[50px]">
-          <Cloud variant="cloud10" className="hidden lg:block" />
-        </CloudDrift>
+        >
+          {/* CLOUDS */}
+          <CloudDrift delay={0} duration={40} wait={50} className="top-[50px]">
+            <Cloud variant="cloud10" className="hidden lg:block" />
+          </CloudDrift>
 
-        <CloudDrift delay={10} duration={40} wait={38} className="top-[200px]">
-          <Cloud variant="cloud12" className="hidden lg:block" />
-        </CloudDrift>
-
-        <CloudDrift delay={20} duration={40} wait={30} className="top-[20px]">
-          <Cloud variant="cloud13" className="hidden lg:block" />
-        </CloudDrift>
-
-        <CloudDrift delay={30} duration={40} wait={16} className="top-[300px]">
-          <Cloud variant="cloud14" className="hidden lg:block" />
-        </CloudDrift>
-
-        {/* desktop background (unchanged, just hidden on mobile) */}
-        <Image
-          src="/landing/home/sponsor-bg.png"
-          alt=""
-          width={2880}
-          height={2808}
-          className="absolute -bottom-[0%] z-0 hidden h-auto w-full object-cover lg:block"
-        />
-
-        {/* mobile background */}
-        <div aria-hidden className="lg:hidden">
-          {/* green: unchanged position, from --photo-h to the bottom of the section */}
-          <div className="absolute inset-x-0 bottom-0 top-[var(--photo-h)] z-0 bg-green-dark" />
-
-          {/* photo: full height, no crop, pushed down by --photo-offset */}
-          <div className="absolute inset-x-0 top-[var(--photo-offset)] z-0">
-            <Image
-              src="/landing/home/sponsor-bg.png"
-              alt=""
-              width={402}
-              height={464}
-              className="h-auto w-full"
-              priority
-            />
-            <div className="absolute inset-x-0 bottom-0 h-[15%] bg-gradient-to-b from-transparent to-green-dark" />
-          </div>
-        </div>
-
-        <div className="contents lg:absolute lg:left-1/2 lg:block lg:w-[1120px] lg:-translate-x-1/2">
-          {/* Title block */}
-          {/* Page Title */}
-          <div
-            className="absolute left-6 right-6 top-[80px] flex flex-col items-start gap-[36px]
-                lg:left-0 lg:right-auto lg:w-[488px]"
+          <CloudDrift
+            delay={10}
+            duration={40}
+            wait={38}
+            className="top-[200px]"
           >
-            <div className="flex flex-col items-start gap-[18px]">
-              <div className="flex flex-col items-start">
-                {/* Line 1 */}
-                <div className="relative">
-                  <h2 className="font-cossetteTexte text-[24px] font-bold leading-[1.2] text-heavy lg:text-[36px]">
-                    Sponsor a weekend of
-                  </h2>
-                  <h2
-                    aria-hidden="true"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(to bottom, rgba(0,142,202,0.2) 24.444%, #008eca 65.273%)",
-                    }}
-                    className="pointer-events-none absolute inset-x-0 top-full -translate-y-[13px]
+            <Cloud variant="cloud12" className="hidden lg:block" />
+          </CloudDrift>
+
+          <CloudDrift delay={20} duration={40} wait={30} className="top-[20px]">
+            <Cloud variant="cloud13" className="hidden lg:block" />
+          </CloudDrift>
+
+          <CloudDrift
+            delay={30}
+            duration={40}
+            wait={16}
+            className="top-[300px]"
+          >
+            <Cloud variant="cloud14" className="hidden lg:block" />
+          </CloudDrift>
+
+          {/* desktop background (unchanged, just hidden on mobile) */}
+          <Image
+            src="/landing/home/sponsor-bg.png"
+            alt=""
+            width={2880}
+            height={2808}
+            className="absolute -bottom-[0%] z-0 hidden h-auto w-full object-cover lg:block"
+          />
+
+          {/* mobile background */}
+          <div aria-hidden className="lg:hidden">
+            {/* green: unchanged position, from --photo-h to the bottom of the section */}
+            <div className="absolute inset-x-0 bottom-0 top-[var(--photo-h)] z-0 bg-green-dark" />
+
+            {/* photo: full height, no crop, pushed down by --photo-offset */}
+            <div className="absolute inset-x-0 top-[var(--photo-offset)] z-0">
+              <Image
+                src="/landing/home/sponsor-bg.png"
+                alt=""
+                width={402}
+                height={464}
+                className="h-auto w-full"
+                priority
+              />
+              <div className="absolute inset-x-0 bottom-0 h-[15%] bg-gradient-to-b from-transparent to-green-dark" />
+            </div>
+          </div>
+
+          <div className="contents lg:absolute lg:left-1/2 lg:block lg:w-[1120px] lg:-translate-x-1/2">
+            {/* Title block */}
+            {/* Page Title */}
+            <div
+              className="absolute left-6 right-6 top-[80px] flex flex-col items-start gap-[36px]
+                lg:left-0 lg:right-auto lg:w-[488px]"
+            >
+              <div className="flex flex-col items-start gap-[18px]">
+                <div className="flex flex-col items-start">
+                  {/* Line 1 */}
+                  <div className="relative">
+                    <h2 className="font-cossetteTexte text-[24px] font-bold leading-[1.2] text-heavy lg:text-[36px]">
+                      Sponsor a weekend of
+                    </h2>
+                    <h2
+                      aria-hidden="true"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(to bottom, rgba(0,142,202,0.2) 24.444%, #008eca 65.273%)",
+                      }}
+                      className="pointer-events-none absolute inset-x-0 top-full -translate-y-[13px]
                               scale-y-[-1] select-none bg-clip-text font-cossetteTexte
                               text-[24px] font-bold leading-[1.2] text-transparent opacity-20 lg:text-[36px]"
-                  >
-                    Sponsor a weekend of
-                  </h2>
+                    >
+                      Sponsor a weekend of
+                    </h2>
+                  </div>
+
+                  {/* Line 2 */}
+                  <div className="relative">
+                    <h2 className="font-cossetteTexte text-[24px] font-bold leading-[1.2] text-heavy lg:text-[36px]">
+                      inspiration and creation
+                    </h2>
+                    <h2
+                      aria-hidden="true"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(to bottom, rgba(0,142,202,0.2) 24.444%, #008eca 65.273%)",
+                      }}
+                      className="pointer-events-none absolute inset-x-0 top-full -translate-y-[13px]
+                              scale-y-[-1] select-none bg-clip-text font-cossetteTexte
+                              text-[24px] font-bold leading-[1.2] text-transparent opacity-20 lg:text-[36px]"
+                    >
+                      inspiration and creation
+                    </h2>
+                  </div>
                 </div>
 
-                {/* Line 2 */}
-                <div className="relative">
-                  <h2 className="font-cossetteTexte text-[24px] font-bold leading-[1.2] text-heavy lg:text-[36px]">
-                    inspiration and creation
-                  </h2>
-                  <h2
+                <p className="font-figtree text-[16px] font-medium text-medium">
+                  Interested in supporting the event?
+                </p>
+              </div>
+              <a href="mailto:hello@hackwestern.com">
+                <Button>
+                  <svg
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    className={"relative z-10 size-[14px]"}
                     aria-hidden="true"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(to bottom, rgba(0,142,202,0.2) 24.444%, #008eca 65.273%)",
-                    }}
-                    className="pointer-events-none absolute inset-x-0 top-full -translate-y-[13px]
-                              scale-y-[-1] select-none bg-clip-text font-cossetteTexte
-                              text-[24px] font-bold leading-[1.2] text-transparent opacity-20 lg:text-[36px]"
                   >
-                    inspiration and creation
-                  </h2>
+                    <rect
+                      x="1"
+                      y="2.5"
+                      width="12"
+                      height="9"
+                      rx="1.2"
+                      stroke="currentColor"
+                      strokeWidth="1.1"
+                    />
+                    <path
+                      d="M1.5 3.2 7 7.5l5.5-4.3"
+                      stroke="currentColor"
+                      strokeWidth="1.1"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span className="relative z-10 pl-2">Get in touch</span>
+                </Button>
+              </a>
+            </div>
+
+            {/* MOBILE window */}
+            <Window
+              autoHeight
+              width={382}
+              title="Thank you to our sponsors"
+              className="relative z-10 mt-[250px] w-full max-w-[382px] self-center lg:hidden"
+            >
+              <Image
+                src="/landing/home/sponsors.png"
+                alt="sponsors"
+                width={382}
+                height={400}
+                className="h-auto w-full p-3"
+              />
+            </Window>
+
+            <section id="faq" className="relative scroll-mt-24">
+              {/* FAQ */}
+              <div className="relative z-10 flex w-full flex-col items-start gap-[24px] lg:absolute lg:left-0 lg:top-[900px] lg:gap-[64px]">
+                <div className="flex w-full max-w-[488px] flex-col items-start gap-[18px]">
+                  <div className="relative">
+                    <h2 className="font-cossetteTexte text-[24px] font-bold leading-[1.2] text-highlight lg:text-[36px]">
+                      Frequently Asked Questions
+                    </h2>
+                    <h2
+                      aria-hidden="true"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(to bottom, rgba(255,255,255,0.2) 24.444%, #ffffff 65.273%)",
+                      }}
+                      className="pointer-events-none absolute inset-x-0 top-full origin-top translate-y-[20px]
+                   scale-y-[-1] select-none bg-clip-text font-cossetteTexte text-[24px]
+                   font-bold leading-[1.2] text-transparent opacity-15
+                   lg:translate-y-[30px] lg:text-[36px]"
+                    >
+                      Frequently Asked Questions
+                    </h2>
+                  </div>
+
+                  <p className="font-figtree text-[16px] font-medium text-[#d0d6dd]">
+                    Have another question? Reach out to us at{" "}
+                    <a
+                      href="mailto:hello@hackwestern.com"
+                      className="underline"
+                    >
+                      hello@hackwestern.com
+                    </a>
+                  </p>
+                </div>
+
+                {/* mobile: one column, one item open at a time */}
+                <div className="flex w-full flex-col lg:hidden">
+                  <FaqColumn items={[...left, ...right]} />
+                </div>
+
+                {/* desktop: two columns, one item open per column */}
+                <div className="hidden w-full items-start gap-[24px] lg:flex">
+                  <FaqColumn items={left} />
+                  <FaqColumn items={right} />
                 </div>
               </div>
-
-              <p className="font-figtree text-[16px] font-medium text-medium">
-                Interested in supporting the event?
-              </p>
-            </div>
-            <a href="mailto:hello@hackwestern.com">
-              <Button>
-                <svg
-                  viewBox="0 0 14 14"
-                  fill="none"
-                  className={"relative z-10 size-[14px]"}
-                  aria-hidden="true"
-                >
-                  <rect
-                    x="1"
-                    y="2.5"
-                    width="12"
-                    height="9"
-                    rx="1.2"
-                    stroke="currentColor"
-                    strokeWidth="1.1"
-                  />
-                  <path
-                    d="M1.5 3.2 7 7.5l5.5-4.3"
-                    stroke="currentColor"
-                    strokeWidth="1.1"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <span className="relative z-10 pl-2">Get in touch</span>
-              </Button>
-            </a>
+            </section>
           </div>
-
-          {/* MOBILE window */}
+          {/* Sponsors window desktop*/}
+          {/* this closes downwards...? */}
           <Window
             autoHeight
-            width={382}
+            width={700}
             title="Thank you to our sponsors"
-            className="relative z-10 mt-[250px] w-full max-w-[382px] self-center lg:hidden"
+            className="z-10 hidden lg:absolute lg:bottom-[55%] lg:left-[40%] lg:block"
           >
             <Image
               src="/landing/home/sponsors.png"
               alt="sponsors"
-              width={382}
-              height={400}
-              className="h-auto w-full p-3"
+              width={1067}
+              height={795}
+              className="h-auto w-full p-6"
             />
           </Window>
+        </section>
 
-          <section id="faq" className="relative scroll-mt-24">
-            {/* FAQ */}
-            <div className="relative z-10 flex w-full flex-col items-start gap-[24px] lg:absolute lg:left-0 lg:top-[900px] lg:gap-[64px]">
-              <div className="flex w-full max-w-[488px] flex-col items-start gap-[18px]">
-                <div className="relative">
-                  <h2 className="font-cossetteTexte text-[24px] font-bold leading-[1.2] text-highlight lg:text-[36px]">
-                    Frequently Asked Questions
-                  </h2>
-                  <h2
-                    aria-hidden="true"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(to bottom, rgba(255,255,255,0.2) 24.444%, #ffffff 65.273%)",
-                    }}
-                    className="pointer-events-none absolute inset-x-0 top-full origin-top translate-y-[20px]
-                   scale-y-[-1] select-none bg-clip-text font-cossetteTexte text-[24px]
-                   font-bold leading-[1.2] text-transparent opacity-15
-                   lg:translate-y-[30px] lg:text-[36px]"
-                  >
-                    Frequently Asked Questions
-                  </h2>
-                </div>
+        <FilmStrip rotate={0} className="z-10 -mb-[9px] -mt-[21px]" />
 
-                <p className="font-figtree text-[16px] font-medium text-[#d0d6dd]">
-                  Have another question? Reach out to us at{" "}
-                  <a href="mailto:hello@hackwestern.com" className="underline">
-                    hello@hackwestern.com
-                  </a>
-                </p>
-              </div>
-
-              {/* mobile: one column, one item open at a time */}
-              <div className="flex w-full flex-col lg:hidden">
-                <FaqColumn items={[...left, ...right]} />
-              </div>
-
-              {/* desktop: two columns, one item open per column */}
-              <div className="hidden w-full items-start gap-[24px] lg:flex">
-                <FaqColumn items={left} />
-                <FaqColumn items={right} />
-              </div>
-            </div>
-          </section>
-        </div>
-        {/* Sponsors window desktop*/}
-        {/* this closes downwards...? */}
-        <Window
-          autoHeight
-          width={700}
-          title="Thank you to our sponsors"
-          className="z-10 hidden lg:absolute lg:bottom-[55%] lg:left-[40%] lg:block"
-        >
-          <Image
-            src="/landing/home/sponsors.png"
-            alt="sponsors"
-            width={1067}
-            height={795}
-            className="h-auto w-full p-6"
-          />
-        </Window>
-      </section>
-      {/* The strip art spans y 8–38 of its 54-tall SVG, i.e. ~4–21px of this
-          30px box. Overlap it onto the sponsors background so its bottom edge
-          meets the background's, and start the footer right there — otherwise
-          the sky shows through the gaps. */}
-      <FilmStrip rotate={0} className="z-10 -mb-[9px] -mt-[21px]" />
-
-      <TeamFooter />
+        <TeamFooter />
+      </div>
     </main>
   );
 }

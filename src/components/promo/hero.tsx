@@ -48,6 +48,7 @@ const BLEED = 240;
 // removing it outright) still smooths the sticky-release edge
 // without spilling into the next section.
 const BLEED_MOBILE = 48;
+const MOBILE_SKY_EXTENSION = "10svh";
 const DOT = 3;
 const PATH_SAMPLES = 200;
 const PIN_ASPECT = 2.5;
@@ -555,7 +556,25 @@ export function Hero() {
           }}
         >
           {/* placeholder until links added */}
-          <MountainScene pan={pan} />
+          {/* Mountains and the story layer move together so the story pins
+              stay on the art when the mobile sky extension shifts them. */}
+          <div
+            className={
+              editing ? "absolute inset-0 z-30" : "absolute inset-0 z-10"
+            }
+            style={{
+              transform: `translateY(${isMobile ? MOBILE_SKY_EXTENSION : "0px"})`,
+            }}
+          >
+            <MountainScene pan={pan} />
+            <ForegroundStory
+              key={editing ? "editing" : "live"}
+              pan={pan}
+              pathProgress={pathProgress}
+              editing={editing}
+              bleed={bleed}
+            />
+          </div>
           <PromoNavbar className="relative z-50 ml-[10%] mr-[10%]" />
 
           <div className="absolute left-[clamp(24px,11.11vw,160px)] top-[20%] z-20 flex max-w-[calc(100%_-_48px)] flex-col items-start gap-12">
@@ -579,15 +598,11 @@ export function Hero() {
               </div>
             </div>
 
-            <Button type="button">Sign up for updates</Button>
+            {/* data-hero-cta: the mobile story windows rest below this. */}
+            <Button type="button" data-hero-cta>
+              Sign up for updates
+            </Button>
           </div>
-          <ForegroundStory
-            key={editing ? "editing" : "live"}
-            pan={pan}
-            pathProgress={pathProgress}
-            editing={editing}
-            bleed={bleed}
-          />
         </div>
       </section>
     </>
