@@ -27,8 +27,26 @@ import {
 const PathEditor = dynamic(() => import("./path-editor"), { ssr: false });
 
 const HOLD_SCREENS = 1.5;
+// Mobile skips the extended "hold" almost entirely — the desktop
+// value (plus SCENE_HEIGHT's own ~100svh) makes the whole hero a
+// multi-screen scroll, which reads as excessively long on a small
+// viewport. At ~0, total section height collapses to roughly
+// SCENE_HEIGHT alone (one normal screen), so the section behaves
+// like an ordinary hero rather than an extended scroll-jacked one.
+const HOLD_SCREENS_MOBILE = 0;
+// Matches the project's existing `lg` Tailwind breakpoint (see
+// tailwind.config.ts) so "mobile" here means the same thing as
+// elsewhere in the codebase (e.g. FilmStrip's `hidden lg:block`).
+const MOBILE_BREAKPOINT_PX = 1024;
 const SCENE_HEIGHT = `max(100svh, ${(IMAGE_HEIGHT / IMAGE_WIDTH) * 100}vw)`;
 const BLEED = 240;
+// With HOLD_SCREENS_MOBILE at ~0, there's no scroll buffer left
+// for the full 240px bleed to sit comfortably within before the
+// next section begins — on mobile it visibly collides with
+// whatever follows the hero instead. Shrinking it (rather than
+// removing it outright) still smooths the sticky-release edge
+// without spilling into the next section.
+const BLEED_MOBILE = 48;
 const DOT = 3;
 const PATH_SAMPLES = 200;
 const PIN_ASPECT = 2.5;
@@ -58,6 +76,27 @@ const BAYER = [
   [252, 124, 220, 92, 244, 116, 212, 84],
 ] as const;
 
+// Tracks whether the viewport is below `breakpointPx`, via a
+// matchMedia listener rather than a one-off window.innerWidth
+// check — this reacts to resize/orientation changes live, not
+// just at mount.
+function useIsMobile(breakpointPx: number) {
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const query = window.matchMedia(`(max-width: ${breakpointPx - 1}px)`);
+
+    const update = () => setIsMobile(query.matches);
+
+    update();
+    query.addEventListener("change", update);
+
+    return () => query.removeEventListener("change", update);
+  }, [breakpointPx]);
+
+  return isMobile;
+}
+
 function useCoverRect(ref: React.RefObject<HTMLElement | null>) {
   const [rect, setRect] = React.useState<CoverRect | null>(null);
 
@@ -79,9 +118,11 @@ function useCoverRect(ref: React.RefObject<HTMLElement | null>) {
 function PathCanvas({
   progress,
   waypoints,
+  bleed,
 }: {
   progress: MotionValue<number>;
   waypoints: readonly Waypoint[];
+  bleed: number;
 }) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const waypointsRef = React.useRef(waypoints);
@@ -114,8 +155,8 @@ function PathCanvas({
       const sceneHeight = scene?.clientHeight ?? window.innerHeight;
       rect = coverRect(sceneWidth, sceneHeight);
       canvas.width = Math.ceil(sceneWidth / DOT);
-      canvas.height = Math.ceil((sceneHeight + BLEED) / DOT);
-      canvas.style.height = `${sceneHeight + BLEED}px`;
+      canvas.height = Math.ceil((sceneHeight + bleed) / DOT);
+      canvas.style.height = `${sceneHeight + bleed}px`;
       image = context.createImageData(canvas.width, canvas.height);
       mask = null;
       schedule();
@@ -223,7 +264,7 @@ function PathCanvas({
       window.removeEventListener("resize", resize);
       stop();
     };
-  }, [progress, reduceMotion]);
+  }, [progress, reduceMotion, bleed]);
 
   return (
     <canvas
@@ -395,10 +436,12 @@ function ForegroundStory({
   pan,
   pathProgress,
   editing,
+  bleed,
 }: {
   pan: MotionValue<number>;
   pathProgress: MotionValue<number>;
   editing: boolean;
+  bleed: number;
 }) {
   const groupRef = React.useRef<HTMLDivElement>(null);
   const rect = useCoverRect(groupRef);
@@ -419,7 +462,7 @@ function ForegroundStory({
       className={editing ? "absolute inset-0 z-30" : "absolute inset-0 z-10"}
       style={{ y }}
     >
-      <PathCanvas progress={progress} waypoints={waypoints} />
+      <PathCanvas progress={progress} waypoints={waypoints} bleed={bleed} />
       {rect &&
         pins.map((pin) => (
           <StoryPin
@@ -443,78 +486,14 @@ function ForegroundStory({
   );
 }
 
-function MountainDitherFade() {
-  const canvasRef = React.useRef<HTMLCanvasElement>(null);
-
-  React.useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-
-    const image = new window.Image();
-    image.src = "/landing/promo/hero/mountain-1.webp";
-
-    const draw = () => {
-      const width = window.innerWidth;
-      const height = 120;
-      const scale = width / image.naturalWidth;
-      const sourceHeight = Math.min(
-        image.naturalHeight,
-        height / Math.max(scale, 0.001),
-      );
-
-      canvas.width = width;
-      canvas.height = height;
-      context.clearRect(0, 0, width, height);
-      context.drawImage(
-        image,
-        0,
-        image.naturalHeight - sourceHeight,
-        image.naturalWidth,
-        sourceHeight,
-        0,
-        0,
-        width,
-        height,
-      );
-
-      for (let y = 0; y < height; y += DOT) {
-        for (let x = 0; x < width; x += DOT) {
-          if (
-            y / height >
-            BAYER[(y / DOT) & 7]![Math.floor(x / DOT) & 7]! / 256
-          ) {
-            context.clearRect(x, y, DOT, DOT);
-          }
-        }
-      }
-    };
-
-    image.addEventListener("load", draw);
-    window.addEventListener("resize", draw);
-    if (image.complete) draw();
-
-    return () => {
-      image.removeEventListener("load", draw);
-      window.removeEventListener("resize", draw);
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      aria-hidden
-      className="relative -mb-[100px] block h-[120px] w-full [image-rendering:pixelated]"
-    />
-  );
-}
-
 export function Hero() {
   const sectionRef = React.useRef<HTMLElement>(null);
   const sceneRef = React.useRef<HTMLDivElement>(null);
   const [snapProgress, setSnapProgress] = React.useState(0.2);
   const [editing, setEditing] = React.useState(false);
+  const isMobile = useIsMobile(MOBILE_BREAKPOINT_PX);
+  const holdScreens = isMobile ? HOLD_SCREENS_MOBILE : HOLD_SCREENS;
+  const bleed = isMobile ? BLEED_MOBILE : BLEED;
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end end"],
@@ -543,7 +522,7 @@ export function Hero() {
     const measure = () => {
       const sceneHeight = sceneRef.current?.clientHeight ?? window.innerHeight;
       const viewportHeight = window.innerHeight;
-      const totalScroll = sceneHeight + viewportHeight * (HOLD_SCREENS - 1);
+      const totalScroll = sceneHeight + viewportHeight * (holdScreens - 1);
 
       setSnapProgress(
         totalScroll > 0
@@ -555,7 +534,7 @@ export function Hero() {
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, []);
+  }, [holdScreens]);
 
   return (
     <>
@@ -563,12 +542,12 @@ export function Hero() {
         ref={sectionRef}
         id="hero"
         className="relative"
-        style={{ height: `calc(${SCENE_HEIGHT} + ${HOLD_SCREENS * 100}svh)` }}
+        style={{ height: `calc(${SCENE_HEIGHT} + ${holdScreens * 100}svh)` }}
       >
         <div
           ref={sceneRef}
           data-sky-hold
-          className="sticky overflow-hidden"
+          className="sticky translate-y-[20px] overflow-hidden"
           style={{
             height: SCENE_HEIGHT,
             top: `calc(100svh - ${SCENE_HEIGHT})`,
@@ -605,10 +584,10 @@ export function Hero() {
             pan={pan}
             pathProgress={pathProgress}
             editing={editing}
+            bleed={bleed}
           />
         </div>
       </section>
-      <MountainDitherFade />
     </>
   );
 }
