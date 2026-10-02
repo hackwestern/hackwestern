@@ -130,14 +130,6 @@ export function RealmForm() {
             exit="exit"
             className="flex w-full flex-col items-center gap-4 text-center"
           >
-            <div className="w-full">
-              <p className="font-primary text-sm-display font-bold text-heavy">
-                Click to choose your horse companion
-              </p>
-              <p className="mt-1 font-figtree text-lg-p font-medium text-light">
-                Who will accompany you along this adventure?
-              </p>
-            </div>
             <HorsePicker selectedId={horseId ?? null} onSelect={handlePick} />
           </motion.div>
         ) : (
