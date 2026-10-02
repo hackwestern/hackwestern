@@ -51,8 +51,10 @@ const config = {
 
         offwhite: tokens.colors.bg.light,
         highlight: tokens.colors.bg.highlight,
+        "promo-sheet": tokens.colors.bg.promoSheet,
 
         green: tokens.colors.greens["green-primary"],
+        "green-dark": tokens.colors.greens["green-dark"],
 
         primary: {
           "50": "hsl(var(--primary-50))",

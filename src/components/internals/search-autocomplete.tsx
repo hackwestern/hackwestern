@@ -211,7 +211,7 @@ const SearchAutocomplete = React.forwardRef<
             className={cn(
               "absolute z-50 mt-[8px] max-h-[320px] w-full overflow-auto",
               "rounded-md border border-border-light bg-offwhite p-[4px]",
-              "shadow-button-secondary",
+              "shadow-secondary-btn",
             )}
           >
             {filtered.length === 0 ? (
