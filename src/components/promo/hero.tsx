@@ -585,7 +585,30 @@ export function Hero() {
 
               <div className="flex flex-col items-start gap-3">
                 <div className="relative">
-                  <h1 className="whitespace-nowrap text-[clamp(40px,4.45vw,64px)] font-bold leading-[0.82] tracking-[-0.035em] text-[#f5f9ff] [text-shadow:3px_3px_0_rgba(35,83,108,0.55)]">
+                  {/* Figma 561:1011: an inner shadow along the letters' bottom
+                      edges (up 3.2px, 1.28 blur, #00344e at 20%), so their
+                      tops read as lit */}
+                  <svg aria-hidden width="0" height="0" className="absolute">
+                    <filter id="hero-title-glow">
+                      <feOffset in="SourceAlpha" dy="-3.2" />
+                      <feGaussianBlur stdDeviation="1.28" result="offsetBlur" />
+                      <feComposite
+                        in="SourceAlpha"
+                        in2="offsetBlur"
+                        operator="arithmetic"
+                        k2="1"
+                        k3="-1"
+                        result="edge"
+                      />
+                      <feFlood floodColor="#00344e" floodOpacity="0.2" />
+                      <feComposite in2="edge" operator="in" result="shadow" />
+                      <feMerge>
+                        <feMergeNode in="SourceGraphic" />
+                        <feMergeNode in="shadow" />
+                      </feMerge>
+                    </filter>
+                  </svg>
+                  <h1 className="whitespace-nowrap text-[clamp(40px,4.45vw,64px)] font-bold leading-[0.82] tracking-[-0.035em] text-[#f5f9ff] [filter:url(#hero-title-glow)]">
                     Hack Western 13
                   </h1>
                   {/* Figma 561:1010: a flipped copy below the title, fading
