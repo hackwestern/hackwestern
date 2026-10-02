@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useId, useState, useSyncExternalStore } from "react";
+import { type CSSProperties, useState, useSyncExternalStore } from "react";
 import { cn } from "~/lib/utils";
 
 /** Small clickable props on the landing page; clicks are remembered across visits. */
@@ -98,20 +98,16 @@ function PopArrow({
   );
 }
 
-const WOOD = "#8b5a2b";
-const WOOD_LIGHT = "#a0682f";
-const WOOD_GRAIN = "#6b4320";
-const INK = "#3b2412";
-const GOLD = "#d4a73a";
-const LID = "M4 26V16C4 9 14 6 32 6s28 3 28 10v10Z";
+// Chest photo cut out as a sticker and split at the lid seam; the lid
+// layer (and the hook hanging off it) swings up about the seam's left end.
+const CHEST_SEAM = "52.66%";
 
 export function Chest({ className }: { className?: string }) {
   const [opened, open] = useKeepsake(1);
   const [popping, setPopping] = useState(false);
-  const lidClip = useId();
 
   return (
-    <div className={cn("w-12 lg:w-[72px]", className)}>
+    <div className={cn("w-12 lg:w-20", className)}>
       {popping && <PopArrow direction="up" onDone={() => setPopping(false)} />}
       <button
         type="button"
@@ -128,94 +124,38 @@ export function Chest({ className }: { className?: string }) {
           !opened && "motion-safe:animate-wiggle",
         )}
       >
-        <svg
-          viewBox="0 0 64 56"
-          overflow="visible"
-          aria-hidden
+        <span
           className={cn(
-            "h-auto w-full",
+            "relative block",
             !opened && "motion-safe:animate-glow-pulse",
           )}
+          style={{ "--seam": CHEST_SEAM } as CSSProperties}
         >
-          <defs>
-            <clipPath id={lidClip}>
-              <path d={LID} />
-            </clipPath>
-          </defs>
-
-          {/* gold inside, hidden by the closed lid */}
-          <rect x="7" y="17" width="50" height="10" fill="#ffd65a" />
-
-          <rect
-            x="4"
-            y="25"
-            width="56"
-            height="27"
-            rx="2"
-            fill={WOOD}
-            stroke={INK}
-            strokeWidth="2"
-          />
-          <path d="M5 38h54" stroke={WOOD_GRAIN} strokeWidth="1.5" />
-          <rect
-            x="11"
-            y="25"
-            width="5"
-            height="27"
-            fill={GOLD}
-            stroke={INK}
-            strokeWidth="1.5"
-          />
-          <rect
-            x="48"
-            y="25"
-            width="5"
-            height="27"
-            fill={GOLD}
-            stroke={INK}
-            strokeWidth="1.5"
-          />
-
-          {/* hinged at its back-left corner */}
-          <g
+          {/* gold inside, showing through the gap once the lid lifts */}
+          <span
             className={cn(
-              "origin-bottom-left transition-transform duration-700 [transform-box:fill-box] [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none",
-              opened && "-rotate-12",
+              "absolute inset-x-[18%] top-[var(--seam)] h-[16%] -translate-y-1/2 rounded-full bg-[#ffd65a] blur-[3px] transition-opacity duration-700",
+              opened ? "opacity-100" : "opacity-0",
             )}
-          >
-            <g clipPath={`url(#${lidClip})`}>
-              <rect x="4" y="6" width="56" height="20" fill={WOOD_LIGHT} />
-              <path d="M4 21h56" stroke={WOOD_GRAIN} strokeWidth="1.5" />
-              <rect x="11" y="4" width="5" height="22" fill={GOLD} />
-              <rect x="48" y="4" width="5" height="22" fill={GOLD} />
-            </g>
-            <path
-              d={LID}
-              fill="none"
-              stroke={INK}
-              strokeWidth="2"
-              strokeLinejoin="round"
-            />
-          </g>
-
-          <rect
-            x="27"
-            y="23"
-            width="10"
-            height="12"
-            rx="1.5"
-            fill="#f2c94c"
-            stroke={INK}
-            strokeWidth="1.5"
           />
-          <circle cx="32" cy="28" r="1.6" fill={INK} />
-          <path
-            d="M32 29v3"
-            stroke={INK}
-            strokeWidth="1.5"
-            strokeLinecap="round"
+          <Image
+            src="/landing/promo/chest-body.webp"
+            alt=""
+            width={244}
+            height={188}
+            className="relative block h-auto w-full"
           />
-        </svg>
+          <Image
+            src="/landing/promo/chest-lid.webp"
+            alt=""
+            width={244}
+            height={188}
+            className={cn(
+              "absolute inset-0 h-auto w-full origin-[0%_var(--seam)] transition-transform duration-700 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none",
+              opened && "-rotate-[10deg]",
+            )}
+          />
+        </span>
       </button>
     </div>
   );
