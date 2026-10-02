@@ -175,7 +175,7 @@ export default function Home() {
           />
         </WindowFolder>
       </section>
-      <FilmStrip rotate={3.5} className="relative z-10" />
+      <FilmStrip rotate={3.5} className="relative z-10 hidden lg:block" />
 
       <PastProjects />
       <FilmStrip rotate={1.2} className="relative z-10" />
