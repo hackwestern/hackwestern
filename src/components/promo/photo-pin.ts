@@ -21,10 +21,11 @@ export interface CoverPhoto {
   imageHeight: number;
   /** The section's height at the 1440 design width. */
   designHeight: number;
-  /** Where the photo's box starts, in px from the section's top (negative = above). */
+  /** Where the photo's box starts at 1440, in px from the section's top
+   *  (negative = above). The box ends at the section's bottom. */
   top: number;
-  /** How much taller the photo's box is than the section. */
-  extraHeight: number;
+  /** The same as a CSS length, when it grows with the width. */
+  topCss?: string;
   /** `object-position` on the vertical axis. */
   align: "top" | "center";
 }
@@ -36,13 +37,14 @@ export interface CoverPhoto {
  */
 export function coverPhotoVars(photo: CoverPhoto): CssVars {
   const ratio = photo.imageWidth / photo.imageHeight;
-  const boxHeight = `(100cqh + ${photo.extraHeight}px)`;
+  const top = photo.topCss ?? `${photo.top}px`;
+  const boxHeight = `(100cqh - ${top})`;
   return {
     "--ph": `max(calc(${boxHeight}), calc(100cqw / ${ratio}))`,
     "--pt":
       photo.align === "top"
-        ? `${photo.top}px`
-        : `calc(${photo.top}px + (${boxHeight} - var(--ph)) / 2)`,
+        ? top
+        : `calc(${top} + (${boxHeight} - var(--ph)) / 2)`,
   };
 }
 
@@ -53,7 +55,7 @@ export function coverPhotoVars(photo: CoverPhoto): CssVars {
  */
 export function photoPoint(photo: CoverPhoto, x: number, y: number): CssVars {
   const ratio = photo.imageWidth / photo.imageHeight;
-  const boxHeight = photo.designHeight + photo.extraHeight;
+  const boxHeight = photo.designHeight - photo.top;
   const height = Math.max(boxHeight, DESIGN_WIDTH / ratio);
   const top =
     photo.align === "top" ? photo.top : photo.top + (boxHeight - height) / 2;

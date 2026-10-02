@@ -58,14 +58,17 @@ const IMAGES = [
 const SPONSORS_STRIP_ROTATE = -1.2;
 const SPONSORS_STRIP_EDGE = filmStripEdge(SPONSORS_STRIP_ROTATE);
 
-// Desktop sponsors photo: its box reaches up behind the strip above, and
-// object-top keeps the sky behind the title.
+// Desktop sponsors: a band of open sky (SPONSORS_SKY at 1440, growing with the
+// section) sits above the photo, whose own sky is transparent, so the page's
+// sky shows behind the title. The photo starts that far below where it used
+// to (behind the strip).
+const SPONSORS_SKY = 300;
 const SPONSORS_PHOTO: CoverPhoto = {
   imageWidth: 2880,
   imageHeight: 3427,
-  designHeight: 1790,
-  top: -SPONSORS_STRIP_EDGE.height,
-  extraHeight: SPONSORS_STRIP_EDGE.height,
+  designHeight: 1790 + SPONSORS_SKY,
+  top: SPONSORS_SKY - SPONSORS_STRIP_EDGE.height,
+  topCss: `calc(${halfRateHeight(SPONSORS_SKY)} - ${SPONSORS_STRIP_EDGE.height}px)`,
   align: "top",
 };
 
@@ -223,7 +226,7 @@ export default function Home() {
              lg:overflow-x-clip lg:p-0 lg:[container-type:size]"
         style={
           {
-            "--section-h": halfRateHeight(1790),
+            "--section-h": halfRateHeight(SPONSORS_PHOTO.designHeight),
             ...coverPhotoVars(SPONSORS_PHOTO),
           } as CSSProperties
         }
@@ -245,16 +248,12 @@ export default function Home() {
           <Cloud variant="cloud14" className="hidden lg:block" />
         </CloudDrift>
 
-        {/* desktop background: reaches up behind the film strip and is cut along
-            its centre line, so the tape covers the seam at every width. The
-            section height is fixed, so object-top keeps the sky behind the
-            title and wider screens crop the bottom instead */}
+        {/* desktop background: starts below the sky band (SPONSORS_PHOTO), and
+            object-top keeps the mountains' tops just under it; wider screens
+            crop the bottom instead */}
         <div
           className="absolute inset-x-0 bottom-0 z-0 hidden lg:block"
-          style={{
-            top: -SPONSORS_STRIP_EDGE.height,
-            clipPath: `polygon(0 ${SPONSORS_STRIP_EDGE.left}px, 100% ${SPONSORS_STRIP_EDGE.right}px, 100% 100%, 0 100%)`,
-          }}
+          style={{ top: SPONSORS_PHOTO.topCss }}
         >
           <Image
             src="/landing/home/sponsor-bg.png"
@@ -292,7 +291,7 @@ export default function Home() {
           <div
             className="relative flex flex-col items-start gap-[36px]
                 lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:w-[488px] lg:origin-top-left lg:[scale:var(--ui-scale,1)]"
-            style={photoPoint(SPONSORS_PHOTO, 160, 80)}
+            style={photoPoint(SPONSORS_PHOTO, 160, 80 + SPONSORS_SKY / 4)}
           >
             <div className="flex flex-col items-start gap-[18px]">
               <div className="flex flex-col items-start">
@@ -390,7 +389,7 @@ export default function Home() {
             {/* FAQ */}
             <div
               className="relative z-10 flex w-full flex-col items-start gap-[24px] lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:w-[1120px] lg:origin-top-left lg:gap-[64px] lg:[scale:var(--ui-scale,1)]"
-              style={photoPoint(SPONSORS_PHOTO, 160, 900)}
+              style={photoPoint(SPONSORS_PHOTO, 160, 900 + SPONSORS_SKY / 3)}
             >
               <div className="flex w-full max-w-[488px] flex-col items-start gap-[18px]">
                 <div className="relative">
@@ -441,7 +440,7 @@ export default function Home() {
           title="Thank you to our sponsors"
           // its bottom-left corner is the pinned point
           className="z-10 hidden lg:absolute lg:bottom-[calc(100%-var(--y))] lg:left-[var(--x)] lg:block lg:origin-bottom-left lg:[scale:var(--ui-scale,1)]"
-          style={photoPoint(SPONSORS_PHOTO, 576, 805.5)}
+          style={photoPoint(SPONSORS_PHOTO, 576, 805.5 + SPONSORS_SKY / 3)}
         >
           <SponsorLogos className="w-full p-6" />
         </Window>
