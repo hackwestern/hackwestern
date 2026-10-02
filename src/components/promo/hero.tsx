@@ -56,8 +56,8 @@ const WINDOW_DESIGN_WIDTH = 1512;
 const WINDOW_MIN_SCALE = 0.8;
 const WINDOW_MAX_SCALE = 1.15;
 const WINDOW_EDGE_MARGIN = 24;
-// The page's content column at the 1440 design width.
-const COLUMN_WIDTH = 1440;
+// The design width the page's --ui-scale grows from.
+const DESIGN_WIDTH = 1440;
 const WINDOW_ANCHOR_SHIFT = { left: 0.1, center: 0.5, right: 0.9 } as const;
 
 const MOUNTAIN_LAYERS = [
@@ -345,8 +345,8 @@ function StoryPin({
   const pinWidth = pin.size * rect.scale;
   const pinHeight = pinWidth * PIN_ASPECT;
   const sceneWidth = rect.width + 2 * rect.left;
-  // Past 1440 wide, matches the page's --ui-scale (half the rate of the width).
-  const uiScale = Math.max(1, 0.5 + sceneWidth / (2 * COLUMN_WIDTH));
+  // Past 1440 wide, matches the page's --ui-scale (a third of the width's rate).
+  const uiScale = Math.max(1, (2 + sceneWidth / DESIGN_WIDTH) / 3);
   const windowScale = Math.min(
     WINDOW_MAX_SCALE,
     Math.max(WINDOW_MIN_SCALE, rect.width / WINDOW_DESIGN_WIDTH),
@@ -356,14 +356,12 @@ function StoryPin({
   const windowWidth = Math.round(pin.windowWidth * windowScale);
   // The window (box and text) is drawn uiScale times larger.
   const shownWidth = windowWidth * uiScale;
-  // Windows stay inside the centred column the rest of the page's content uses.
-  const columnLeft = Math.max(0, sceneWidth / 2 - (COLUMN_WIDTH / 2) * uiScale);
   const windowLeft = Math.min(
     Math.max(
       left - shownWidth * WINDOW_ANCHOR_SHIFT[pin.anchor ?? "center"],
-      columnLeft + WINDOW_EDGE_MARGIN,
+      WINDOW_EDGE_MARGIN,
     ),
-    sceneWidth - columnLeft - shownWidth - WINDOW_EDGE_MARGIN,
+    sceneWidth - shownWidth - WINDOW_EDGE_MARGIN,
   );
   const start = closestProgress(waypoints, pin.x, pin.y);
   const reveal = [Math.max(0, start - 0.04), start];
