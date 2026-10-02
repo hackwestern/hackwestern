@@ -55,12 +55,31 @@ export const personaSaveSchema = applicationSaveSchema.pick({
   avatarHat: true,
 });
 
-export const realmSaveSchema = applicationSaveSchema.pick({
-  realm: true,
-  horseId: true,
-  horseFirstName: true,
-  horseLastName: true,
-});
+export const HORSE_NAME_MAX_LENGTH = 24;
+
+export const realmSaveSchema = applicationSaveSchema
+  .pick({
+    realm: true,
+    horseId: true,
+    horseFirstName: true,
+    horseLastName: true,
+  })
+  .extend({
+    horseFirstName: z
+      .string()
+      .trim()
+      .max(HORSE_NAME_MAX_LENGTH, {
+        message: `Keep it under ${HORSE_NAME_MAX_LENGTH} characters.`,
+      })
+      .nullish(),
+    horseLastName: z
+      .string()
+      .trim()
+      .max(HORSE_NAME_MAX_LENGTH, {
+        message: `Keep it under ${HORSE_NAME_MAX_LENGTH} characters.`,
+      })
+      .nullish(),
+  });
 
 export const infoSaveSchema = z.object({
   school: z.preprocess(
@@ -92,6 +111,32 @@ export const agreementsSaveSchema = applicationSaveSchema.pick({
   agreeWillBe18: true,
   agreeEmailsFromMLH: true,
 });
+
+export const logisticsSaveSchema = applicationSaveSchema
+  .pick({
+    shirtSize: true,
+    dietaryRestrictions: true,
+    dietaryRestrictionsOther: true,
+    emergencyContactName: true,
+    emergencyContactRelationship: true,
+    emergencyContactPhoneNumber: true,
+  })
+  .extend({
+    // Allow empty-string selections (unselected dropdowns/radios) to be
+    // treated as undefined so partial autosaves don't fail validation.
+    shirtSize: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(shirtSize.enumValues).optional(),
+    ),
+    dietaryRestrictions: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(dietaryRestrictions.enumValues).optional(),
+    ),
+    emergencyContactRelationship: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(emergencyContactRelationship.enumValues).optional(),
+    ),
+  });
 
 export const underrepGroupAnswers = [
   "Yes",

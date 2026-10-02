@@ -13,6 +13,12 @@ const allSteps = [
     subheading: "Who will accompany you along this adventure?",
   },
   {
+    step: "companion",
+    label: "Companion",
+    heading: "Name your horse companion",
+    subheading: "Give your new friend a first and last name.",
+  },
+  {
     step: "basics",
     label: "Basics",
     heading: "Let's start with the basics",
@@ -49,6 +55,12 @@ const allSteps = [
     heading: "Optional Questions",
     subheading:
       "The next few questions are completely optional and will not be used in any way during your application review process; it will not affect your candidacy positively or negatively. It will only be accessed as a pool to help focus our future outreach to ensure equal access to opportunities for everyone.",
+  },
+  {
+    step: "logistics",
+    label: "Logistics",
+    heading: "Logistics & emergency contact",
+    subheading: "We need these details for event day.",
   },
   {
     step: "review",

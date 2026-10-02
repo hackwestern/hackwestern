@@ -63,59 +63,50 @@ export function BasicsForm() {
         onSubmit={form.handleSubmit(onSubmit)}
         className="space-y-6 md:space-y-8 md:pb-4"
       >
-        <div className="flex w-full flex-col gap-3 md:gap-2">
-          <FormLabel className="w-full text-sm font-medium text-gray-700">
-            Full Name
-          </FormLabel>
-          <div className="flex w-full gap-3 md:gap-2">
-            <FormField
-              control={form.control}
-              name="firstName"
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <FormLabel className="hidden">First Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? ""}
-                      placeholder="First Name"
-                      variant="primary"
-                      className="form-input-mobile h-12"
-                      disabled={!canEdit}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="lastName"
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <FormLabel className="hidden">Last Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? ""}
-                      placeholder="Last Name"
-                      variant="primary"
-                      className="form-input-mobile h-12"
-                      disabled={!canEdit}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
+        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="firstName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>First Name</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="First Name"
+                    variant="primary"
+                    disabled={!canEdit}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="lastName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Last Name</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="Last Name"
+                    variant="primary"
+                    disabled={!canEdit}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
         </div>
         <FormField
           control={form.control}
           name="phoneNumber"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700">
-                Phone Number
-              </FormLabel>
+              <FormLabel>Phone Number</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -123,7 +114,6 @@ export function BasicsForm() {
                   type="tel"
                   placeholder="Enter your phone number"
                   variant="primary"
-                  className="form-input-mobile h-12"
                   disabled={!canEdit}
                 />
               </FormControl>
@@ -135,21 +125,17 @@ export function BasicsForm() {
           name="age"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700">
-                Age
-              </FormLabel>
+              <FormLabel>Age</FormLabel>
               <FormControl>
                 <Input
                   {...field}
                   onChange={(e) => {
                     const v = e.target.value;
                     if (v === "") {
-                      // allow clearing the field
                       field.onChange(null);
                     } else {
                       const n = Number(v);
                       if (Number.isNaN(n)) return;
-                      // never allow negative ages
                       field.onChange(Math.max(0, n));
                     }
                   }}
@@ -157,15 +143,12 @@ export function BasicsForm() {
                   value={field.value ?? ""}
                   placeholder="Enter your age"
                   variant={(field.value ?? 18) >= 18 ? "primary" : "invalid"}
-                  className="form-input-mobile h-12"
                   disabled={!canEdit}
                 />
               </FormControl>
               {(field.value ?? 18) < 18 && (
-                <FormDescription>
-                  <p className="text-destructive">
-                    You must be 18 years of age by November 21, 2025.
-                  </p>
+                <FormDescription className="text-destructive">
+                  You must be 18 years of age by November 21, 2025.
                 </FormDescription>
               )}
             </FormItem>
@@ -176,9 +159,7 @@ export function BasicsForm() {
           name="countryOfResidence"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm font-medium text-gray-700">
-                Your Country of Residence
-              </FormLabel>
+              <FormLabel>Your Country of Residence</FormLabel>
               <FormControl>
                 <Select
                   {...field}
@@ -186,7 +167,7 @@ export function BasicsForm() {
                   onValueChange={field.onChange}
                   disabled={!canEdit}
                 >
-                  <SelectTrigger className="form-input-mobile h-12 w-full">
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

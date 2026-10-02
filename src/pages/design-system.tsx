@@ -65,6 +65,7 @@ function DesignSystem() {
             { key: "links", label: "Links" },
             { key: "agreements", label: "Agreements" },
             { key: "optional", label: "Optional" },
+            { key: "logistics", label: "Logistics" },
             { key: "review", label: "Review" },
           ]}
           activeStep="realm"

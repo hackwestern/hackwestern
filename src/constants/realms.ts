@@ -12,6 +12,71 @@ export const realmLabel: Record<Realm, string> = {
 };
 
 /**
+ * Per-realm tint tokens applied to the application background and sidebar
+ * when the hacker has picked a horse. Matches the Figma realm variants
+ * (Yellow=Safari, Blue=Ocean, Green=Mountain, Orange=Desert).
+ */
+export type RealmTint = {
+  background: string;
+  sidebarBg: string;
+  sidebarBorder: string;
+  sidebarItemHover: string;
+  sidebarItemActive: string;
+  /** Solid, readable realm color used for text + accents inside tinted forms. */
+  accent: string;
+  /** Softer realm color used for secondary / muted copy inside tinted forms. */
+  accentMuted: string;
+  /**
+   * Opaque sidebar color. The application window and its form fields mix in
+   * a little of it (see `--realm-tint` in globals.css).
+   */
+  tintColor: string;
+};
+
+export const realmTint: Record<Realm, RealmTint> = {
+  safari: {
+    background: "/apply/realm/background-safari.png",
+    sidebarBg: "rgba(254, 243, 199, 0.78)",
+    sidebarBorder: "rgba(234, 179, 8, 0.35)",
+    sidebarItemHover: "rgba(234, 179, 8, 0.22)",
+    sidebarItemActive: "rgba(234, 179, 8, 0.45)",
+    accent: "#854d0e",
+    accentMuted: "#a16207",
+    tintColor: "rgb(254, 243, 199)",
+  },
+  ocean: {
+    background: "/apply/realm/background-ocean.png",
+    sidebarBg: "rgba(219, 234, 254, 0.78)",
+    sidebarBorder: "rgba(37, 99, 235, 0.35)",
+    sidebarItemHover: "rgba(37, 99, 235, 0.22)",
+    sidebarItemActive: "rgba(37, 99, 235, 0.4)",
+    accent: "#1e3a8a",
+    accentMuted: "#1d4ed8",
+    tintColor: "rgb(219, 234, 254)",
+  },
+  mountain: {
+    background: "/apply/realm/background-mountain.png",
+    sidebarBg: "rgba(220, 252, 231, 0.78)",
+    sidebarBorder: "rgba(22, 163, 74, 0.35)",
+    sidebarItemHover: "rgba(22, 163, 74, 0.22)",
+    sidebarItemActive: "rgba(22, 163, 74, 0.4)",
+    accent: "#14532d",
+    accentMuted: "#166534",
+    tintColor: "rgb(220, 252, 231)",
+  },
+  desert: {
+    background: "/apply/realm/background-desert.png",
+    sidebarBg: "rgba(254, 215, 170, 0.78)",
+    sidebarBorder: "rgba(234, 88, 12, 0.35)",
+    sidebarItemHover: "rgba(234, 88, 12, 0.22)",
+    sidebarItemActive: "rgba(234, 88, 12, 0.4)",
+    accent: "#7c2d12",
+    accentMuted: "#9a3412",
+    tintColor: "rgb(254, 215, 170)",
+  },
+};
+
+/**
  * The eight horse companions the applicant can pick from during the realm
  * step. Position values are percentages of the horse-scene box so the layout
  * scales with the container. Sourced from Figma frame 219:1327.

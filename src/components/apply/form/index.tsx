@@ -1,11 +1,13 @@
 import React from "react";
 import type { ApplyStep } from "~/constants/apply";
 import { RealmForm } from "./realm-form";
+import { CompanionForm } from "./companion-form";
 import { BasicsForm } from "./basics-form";
 import { InfoForm } from "./info-form";
 import { ApplicationForm } from "./application-form";
 import { LinksForm } from "./links-form";
 import { AgreementsForm } from "./agreements-form";
+import { LogisticsForm } from "./logistics-form";
 import { OptionalForm } from "./optional-form";
 import { ReviewForm } from "./review-form";
 import { AnimatePresence, type Easing, motion } from "framer-motion";
@@ -61,6 +63,8 @@ export function ApplyForm({ step, previewHeight }: ApplyFormProps) {
           switch (step) {
             case "realm":
               return <RealmForm />;
+            case "companion":
+              return <CompanionForm />;
             case "basics":
               return <BasicsForm />;
             case "info":
@@ -73,6 +77,8 @@ export function ApplyForm({ step, previewHeight }: ApplyFormProps) {
               return <AgreementsForm />;
             case "optional":
               return <OptionalForm />;
+            case "logistics":
+              return <LogisticsForm />;
             case "review":
               return <ReviewForm />;
             default:
