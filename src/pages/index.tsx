@@ -149,10 +149,7 @@ export default function Home() {
         <MobileStoryStack />
       </div>
 
-      <FilmStrip
-        rotate={0.4}
-        className="relative z-10 max-lg:translate-y-[7rem]"
-      />
+      <FilmStrip rotate={0.4} className="relative z-10 " />
 
       <section
         id="about"
