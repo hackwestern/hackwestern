@@ -139,9 +139,19 @@ export function SkyBackground() {
       aria-hidden
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
     >
+      {/* Mobile: one fixed image, no parallax */}
+      <div className="absolute inset-0 block md:hidden">
+        <img
+          src="/landing/promo/mobile-bg.png"
+          alt=""
+          className="h-full w-full object-cover"
+        />
+      </div>
+
+      {/* Desktop: existing parallax sky */}
       <div
         ref={skyRef}
-        className="absolute left-0 top-0 h-screen w-full will-change-transform"
+        className="absolute left-0 top-0 hidden h-screen w-full will-change-transform md:block"
         style={{ backgroundImage: SKY_GRADIENT }}
       >
         <div

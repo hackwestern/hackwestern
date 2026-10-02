@@ -3,6 +3,7 @@ import { FilmStrip } from "~/components/promo/film-strip";
 import { Hero } from "~/components/promo/hero";
 import { PastProjects } from "~/components/promo/past-projects";
 import { SkyBackground } from "~/components/promo/sky-background";
+import { TeamFooter } from "~/components/promo/team-footer";
 import { Button } from "~/components/ui/button";
 import Image from "next/image";
 import { Window } from "~/components/internals/window";
@@ -30,15 +31,17 @@ const mid = Math.ceil(PROMO_FAQ.length / 2);
 const left = PROMO_FAQ.slice(0, mid);
 const right = PROMO_FAQ.slice(mid);
 
-/** Team photo cut-outs in the footer band, as % across the 1440 design frame. */
-const TEAM_FIGURES = [
-  { left: 0, top: 58.78 },
-  { left: 8.87, top: 71.74 },
-  { left: 17.04, top: 78.78 },
-  { left: 34.09, top: 78.78 },
-  { left: 42.95, top: 71.74 },
-  { left: 68.18, top: 38.78 },
-  { left: 85.22, top: 50.1 },
+const IMAGES = [
+  "/landing/home/gallery/hw-1.jpg",
+  "/landing/home/gallery/hw-2.jpg",
+  "/landing/home/gallery/hw-3.jpg",
+  "/landing/home/gallery/hw-4.jpg",
+  "/landing/home/gallery/hw-5.jpg",
+  "/landing/home/gallery/hw-6.jpg",
+  "/landing/home/gallery/hw-7.jpg",
+  "/landing/home/gallery/hw-8.jpg",
+  "/landing/home/gallery/hw-9.jpg",
+  "/landing/home/gallery/hw-10.jpg",
 ];
 
 export default function Home() {
@@ -47,7 +50,7 @@ export default function Home() {
   return (
     <main id="top" className="relative cursor-pixel-default">
       <SkyBackground />
-      <FilmStrip />
+      <FilmStrip className="relative z-10" />
 
       <Hero />
 
@@ -78,21 +81,19 @@ export default function Home() {
             containerRef={containerRef}
             backgroundSrc="/landing/home/about.png"
             objectPositionX="center"
-            sourceLeft={670}
-            sourceTop={1350}
-            sourceWidth={400}
-            sourceHeight={1200}
+            // The photo's own waterfall in about.png (file px), sized to
+            // the mask's 220:1217 ratio so the dither sits on it.
+            sourceLeft={1210}
+            sourceTop={1746}
+            sourceWidth={202}
+            sourceHeight={1115}
           />
         </div>
-
-        {/* //   top="37%"
-  //   left="26%"
-  //   width="140px"
-  //   height="52%" */}
 
         {/* insert waterfall */}
         <WindowFolder
           defaultOpen
+          variant="labelled"
           label="A message to new hackers"
           className="absolute bottom-[120px] left-[100px]"
           windowTitle="A message to new hackers"
@@ -120,6 +121,7 @@ export default function Home() {
         </WindowFolder>
         <WindowFolder
           defaultOpen
+          variant="labelled"
           label="Impact"
           className="absolute bottom-[500px] left-[200px]"
           windowTitle="Last year's impact"
@@ -158,6 +160,7 @@ export default function Home() {
 
         <WindowFolder
           defaultOpen
+          variant="labelled"
           label="Exploration"
           className="absolute bottom-[300px] left-[80px]"
           windowTitle="A world of exploration"
@@ -165,17 +168,10 @@ export default function Home() {
             className: "isolate absolute right-[100px] top-[100px]",
           }}
         >
-          <PhotoGallery
-            images={[
-              "/landing/home/gallery/placeholder-1.png",
-              "/landing/home/gallery/placeholder-2.png",
-              "/landing/home/gallery/placeholder-3.png",
-              "/landing/home/gallery/placeholder-4.png",
-            ]}
-          />
+          <PhotoGallery images={IMAGES} />
         </WindowFolder>
       </section>
-      <FilmStrip rotate={3.5} className="relative z-10" />
+      <FilmStrip rotate={3.5} className="relative z-10 hidden lg:block" />
 
       <PastProjects />
       <FilmStrip rotate={1.2} className="relative z-10" />
@@ -325,7 +321,7 @@ export default function Home() {
               alt="sponsors"
               width={382}
               height={400}
-              className="h-auto w-full"
+              className="h-auto w-full p-3"
             />
           </Window>
 
@@ -386,23 +382,17 @@ export default function Home() {
             alt="sponsors"
             width={1067}
             height={795}
+            className="h-auto w-full p-6"
           />
         </Window>
       </section>
-      <FilmStrip rotate={0} />
+      {/* The strip art spans y 8–38 of its 54-tall SVG, i.e. ~4–21px of this
+          30px box. Overlap it onto the sponsors background so its bottom edge
+          meets the background's, and start the footer right there — otherwise
+          the sky shows through the gaps. */}
+      <FilmStrip rotate={0} className="z-10 -mb-[9px] -mt-[21px]" />
 
-      <div className="relative h-[295px] bg-black">
-        {TEAM_FIGURES.map((figure) => (
-          <div
-            key={`${figure.left}-${figure.top}`}
-            className="absolute h-[110px] w-[80px] rounded-sm bg-white/10"
-            style={{ left: `${figure.left}%`, top: `${figure.top}px` }}
-          />
-        ))}
-        <h2 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-[clamp(2rem,7vw,100px)] text-white">
-          Meet the Team
-        </h2>
-      </div>
+      <TeamFooter />
     </main>
   );
 }
