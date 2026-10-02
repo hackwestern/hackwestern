@@ -562,18 +562,18 @@ export function Hero() {
           {/* placeholder until links added */}
           <MountainScene pan={pan} />
           <div className="ml-[10%] mr-[10%] flex items-start gap-6">
-  <PromoNavbar className="relative z-50 flex-1" />
+            <PromoNavbar className="relative z-50 flex-1" />
 
-<a href="https://www.mlh.com/" target="_blank">
-  <Image
-    height={43}
-    width={75}
-    src="/landing/promo/mlh.png"
-    alt="mlh"
-    className="relative z-50 -mt-[55px] hidden lg:block"
-  />
-</a>
-</div>
+            <a href="https://www.mlh.com/" target="_blank">
+              <Image
+                height={43}
+                width={75}
+                src="/landing/promo/mlh.png"
+                alt="mlh"
+                className="relative z-50 -mt-[55px] hidden lg:block"
+              />
+            </a>
+          </div>
 
           <div className="absolute left-[clamp(24px,11.11vw,160px)] top-[20%] z-20 flex max-w-[calc(100%_-_48px)] flex-col items-start gap-12">
             <div className="flex flex-col items-start gap-[30px] font-cossetteTexte">
