@@ -1,6 +1,7 @@
 import Topbar from "~/components/live/topbar";
 import { FilmStrip } from "~/components/promo/film-strip";
 import { Hero } from "~/components/promo/hero";
+import { SponsorLogos } from "~/components/promo/sponsor-logos";
 import { PastProjects } from "~/components/promo/past-projects";
 import { SkyBackground } from "~/components/promo/sky-background";
 import { TeamFooter } from "~/components/promo/team-footer";
@@ -315,13 +316,7 @@ export default function Home() {
             title="Thank you to our sponsors"
             className="relative z-10 mt-[250px] w-full max-w-[382px] self-center lg:hidden"
           >
-            <Image
-              src="/landing/home/sponsors.png"
-              alt="sponsors"
-              width={382}
-              height={400}
-              className="h-auto w-full p-3"
-            />
+            <SponsorLogos className="w-full p-3" />
           </Window>
 
           <section id="faq" className="relative scroll-mt-24">
@@ -376,13 +371,7 @@ export default function Home() {
           title="Thank you to our sponsors"
           className="z-10 hidden lg:absolute lg:bottom-[55%] lg:left-[40%] lg:block"
         >
-          <Image
-            src="/landing/home/sponsors.png"
-            alt="sponsors"
-            width={1067}
-            height={795}
-            className="h-auto w-full p-6"
-          />
+          <SponsorLogos className="w-full p-6" />
         </Window>
       </section>
       {/* The strip art spans y 8–38 of its 54-tall SVG, i.e. ~4–21px of this
