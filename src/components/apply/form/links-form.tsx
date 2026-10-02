@@ -86,6 +86,15 @@ export function LinksForm() {
     });
   }
 
+  function onDevpostPaste(e: ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+    const devpostUsername = getDevpostUsername(pastedText);
+
+    form.setValue("devpostLink", devpostUsername);
+    return form.handleSubmit(onSubmit)();
+  }
+
   function onGithubPaste(e: ClipboardEvent<HTMLInputElement>) {
     e.preventDefault();
     const pastedText = e.clipboardData.getData("text");
@@ -175,6 +184,7 @@ export function LinksForm() {
                 <div className="flex items-center gap-4 text-sm text-gray-5">
                   <span>devpost.com/</span>
                   <Input
+                    onPaste={onDevpostPaste}
                     {...field}
                     value={field.value ?? ""}
                     placeholder="hacker"
