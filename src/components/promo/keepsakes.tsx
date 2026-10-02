@@ -68,7 +68,10 @@ export function playReveal() {
   playArpeggio(ARPEGGIO.length);
 }
 
-/** Pops off the item just clicked, drifts the way to go next, and fades. */
+/**
+ * Pops off the item just clicked, drifts the way to go next, and fades. A
+ * small white arrow in a roomy box, so its soft warm glow has space to spread.
+ */
 function PopArrow({
   direction,
   onDone,
@@ -76,23 +79,45 @@ function PopArrow({
   direction: "up" | "down";
   onDone: () => void;
 }) {
+  const glow = `pop-glow${useId()}`;
+
   return (
     <svg
-      viewBox="0 0 44 50"
+      viewBox="0 0 100 110"
       aria-hidden
       onAnimationEnd={onDone}
       className={cn(
-        "pointer-events-none absolute left-1/2 z-10 h-auto w-8 animate-pop-arrow opacity-0 [filter:drop-shadow(0_0_5px_rgb(250_232_107))_drop-shadow(0_0_12px_rgb(250_232_107))]",
+        "pointer-events-none absolute left-1/2 z-10 h-auto w-11 animate-pop-arrow opacity-0",
         direction === "up" ? "top-0 [--pop-dir:-1]" : "bottom-0 [--pop-dir:1]",
       )}
     >
+      <defs>
+        <filter
+          id={glow}
+          x="0"
+          y="0"
+          width="100"
+          height="110"
+          filterUnits="userSpaceOnUse"
+        >
+          <feGaussianBlur in="SourceAlpha" stdDeviation="13" />
+          <feComponentTransfer>
+            <feFuncA type="linear" slope="1.6" />
+          </feComponentTransfer>
+          <feComposite in2="SourceAlpha" operator="out" result="halo" />
+          <feFlood floodColor="#fae86b" />
+          <feComposite in2="halo" operator="in" />
+          <feMerge>
+            <feMergeNode />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
       <path
-        d="M22 3 41 23H30v24H14V23H3Z"
-        transform={direction === "down" ? "rotate(180 22 25)" : undefined}
+        d="M48.6 30.6a2 2 0 0 1 2.8 0l19.2 19.9a1.5 1.5 0 0 1-1.1 2.5H59v24a4 4 0 0 1-4 4H45a4 4 0 0 1-4-4V53H30.5a1.5 1.5 0 0 1-1.1-2.5Z"
+        transform={direction === "down" ? "rotate(180 50 55)" : undefined}
         fill="white"
-        stroke="white"
-        strokeWidth="4"
-        strokeLinejoin="round"
+        filter={`url(#${glow})`}
       />
     </svg>
   );
