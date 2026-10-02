@@ -99,6 +99,14 @@ function computeStepStatuses(
       "agreeEmailsFromMLH",
     ],
     optional: ["underrepGroup", "gender", "ethnicity", "sexualOrientation"],
+    logistics: [
+      "shirtSize",
+      "dietaryRestrictions",
+      "dietaryRestrictionsOther",
+      "emergencyContactName",
+      "emergencyContactRelationship",
+      "emergencyContactPhoneNumber",
+    ],
     review: [],
   };
 
@@ -128,6 +136,13 @@ function computeStepStatuses(
       "agreeWillBe18",
     ],
     optional: [],
+    logistics: [
+      "shirtSize",
+      "dietaryRestrictions",
+      "emergencyContactName",
+      "emergencyContactRelationship",
+      "emergencyContactPhoneNumber",
+    ],
     review: [],
   };
 
