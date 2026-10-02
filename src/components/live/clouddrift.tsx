@@ -33,7 +33,7 @@ export default function CloudDrift({
           pointerEvents: "none",
 
           animation: `cloud-drift ${duration}s linear ${delay}s infinite`,
-          animationFillMode: "backwards", 
+          animationFillMode: "backwards",
 
           "--cloud-start": startX,
           "--cloud-end": endX,

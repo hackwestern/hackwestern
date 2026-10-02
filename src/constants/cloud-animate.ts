@@ -10,20 +10,20 @@
 // 2 = smaller / denser
 // 3 = balanced
 // 4 = larger
-const DOT_SCALE = 5
+const DOT_SCALE = 5;
 
 // Maximum size of the cloud.
-const MAX_CLOUD_SCALE = 2.5
+const MAX_CLOUD_SCALE = 2.5;
 
 // Overall animation speed.
-const TIME_SCALE = 1
+const TIME_SCALE = 1;
 
 // How strongly the billow travels through the cloud.
 // Higher = more obvious travelling wave.
-const BILLOW_STRENGTH = 0.2
+const BILLOW_STRENGTH = 0.2;
 
 // Main travelling-wave speed.
-const BILLOW_SPEED = 1.8
+const BILLOW_SPEED = 1.8;
 
 // ------------------------------------------------------------
 // EDGE WARP (this is what makes the silhouette itself shift,
@@ -32,10 +32,10 @@ const BILLOW_SPEED = 1.8
 
 // How far the mask boundary displaces, in CSS px (scaled by dpr
 // at draw time). Higher = more obvious billowing edge.
-const EDGE_WARP_STRENGTH = 9
+const EDGE_WARP_STRENGTH = 9;
 
 // How fast the edge warp moves over time.
-const EDGE_WARP_SPEED = 0.8
+const EDGE_WARP_SPEED = 0.8;
 
 // ------------------------------------------------------------
 // BAYER MATRIX
@@ -50,11 +50,11 @@ const BAYER: number[][] = [
   [204, 76, 236, 108, 196, 68, 228, 100],
   [60, 188, 28, 156, 52, 180, 20, 148],
   [252, 124, 220, 92, 244, 116, 212, 84],
-]
+];
 
 // Lower = denser.
 // Higher = sparser.
-const THRESHOLD = 58
+const THRESHOLD = 58;
 
 // ------------------------------------------------------------
 // CLOUD PATH REGISTRY
@@ -69,53 +69,49 @@ import {
   CLOUD_PATHS,
   CLOUD_VIEWBOX_SIZES,
   type CloudVariant,
-} from "./cloud-paths"
+} from "./cloud-paths";
 
 // One Path2D per variant, built lazily and cached — so switching
 // back and forth between clouds doesn't rebuild a Path2D you've
 // already used before.
-const pathCache = new Map<CloudVariant, Path2D>()
+const pathCache = new Map<CloudVariant, Path2D>();
 
 function getCloudPath(variant: CloudVariant): Path2D {
-  const cached = pathCache.get(variant)
+  const cached = pathCache.get(variant);
 
   if (cached) {
-    return cached
+    return cached;
   }
 
-  const path = new Path2D(CLOUD_PATHS[variant])
+  const path = new Path2D(CLOUD_PATHS[variant]);
 
-  pathCache.set(variant, path)
+  pathCache.set(variant, path);
 
-  return path
+  return path;
 }
 
 // ------------------------------------------------------------
 // CACHED SVG MASK
 // ------------------------------------------------------------
 
-let maskCanvas: HTMLCanvasElement | null = null
-let maskCtx: CanvasRenderingContext2D | null = null
-let maskData: Uint8ClampedArray | null = null
+let maskCanvas: HTMLCanvasElement | null = null;
+let maskCtx: CanvasRenderingContext2D | null = null;
+let maskData: Uint8ClampedArray | null = null;
 
-let cachedWidth = 0
-let cachedHeight = 0
-let cachedVariant: CloudVariant | null = null
+let cachedWidth = 0;
+let cachedHeight = 0;
+let cachedVariant: CloudVariant | null = null;
 
-function buildMask(
-  width: number,
-  height: number,
-  variant: CloudVariant,
-): void {
+function buildMask(width: number, height: number, variant: CloudVariant): void {
   if (!maskCanvas) {
-    maskCanvas = document.createElement("canvas")
+    maskCanvas = document.createElement("canvas");
 
     maskCtx = maskCanvas.getContext("2d", {
       willReadFrequently: true,
-    })
+    });
   }
 
-  if (!maskCtx) return
+  if (!maskCtx) return;
 
   // Only rebuild when dimensions OR the selected cloud change —
   // switching variant must invalidate the cache same as a
@@ -126,82 +122,48 @@ function buildMask(
     cachedVariant === variant &&
     maskData
   ) {
-    return
+    return;
   }
 
-  cachedWidth = width
-  cachedHeight = height
-  cachedVariant = variant
+  cachedWidth = width;
+  cachedHeight = height;
+  cachedVariant = variant;
 
-  maskCanvas.width = width
-  maskCanvas.height = height
+  maskCanvas.width = width;
+  maskCanvas.height = height;
 
-  maskCtx.clearRect(
-    0,
-    0,
-    width,
-    height,
-  )
+  maskCtx.clearRect(0, 0, width, height);
 
   // ----------------------------------------------------------
   // RESPONSIVE SCALE
   // ----------------------------------------------------------
 
-  const { width: svgWidth, height: svgHeight } =
-    CLOUD_VIEWBOX_SIZES[variant]
+  const { width: svgWidth, height: svgHeight } = CLOUD_VIEWBOX_SIZES[variant];
 
-  const cloudScale = Math.min(
-    MAX_CLOUD_SCALE,
-    width / svgWidth,
-  )
+  const cloudScale = Math.min(MAX_CLOUD_SCALE, width / svgWidth);
 
-  const renderedWidth =
-    svgWidth * cloudScale
+  const renderedWidth = svgWidth * cloudScale;
 
-  const renderedHeight =
-    svgHeight * cloudScale
+  const renderedHeight = svgHeight * cloudScale;
 
-  const offsetX =
-    (width - renderedWidth) / 2
+  const offsetX = (width - renderedWidth) / 2;
 
-  const offsetY =
-    (height - renderedHeight) / 2
+  const offsetY = (height - renderedHeight) / 2;
 
   // ----------------------------------------------------------
   // DRAW SVG INTO MASK
   // ----------------------------------------------------------
 
-  maskCtx.setTransform(
-    cloudScale,
-    0,
-    0,
-    cloudScale,
-    offsetX,
-    offsetY,
-  )
+  maskCtx.setTransform(cloudScale, 0, 0, cloudScale, offsetX, offsetY);
 
-  maskCtx.fillStyle = "white"
+  maskCtx.fillStyle = "white";
 
-  maskCtx.fill(
-    getCloudPath(variant),
-  )
+  maskCtx.fill(getCloudPath(variant));
 
-  maskCtx.setTransform(
-    1,
-    0,
-    0,
-    1,
-    0,
-    0,
-  )
+  maskCtx.setTransform(1, 0, 0, 1, 0, 0);
 
   // Expensive operation — only happens on resize.
-  maskData = maskCtx.getImageData(
-    0,
-    0,
-    width,
-    height,
-  ).data
+  maskData = maskCtx.getImageData(0, 0, width, height).data;
 }
 
 // ------------------------------------------------------------
@@ -217,22 +179,15 @@ function sampleMaskAlpha(
   width: number,
   height: number,
 ): number {
-  if (!maskData) return 0
+  if (!maskData) return 0;
 
-  const cx = Math.min(
-    width - 1,
-    Math.max(0, Math.floor(x)),
-  )
+  const cx = Math.min(width - 1, Math.max(0, Math.floor(x)));
 
-  const cy = Math.min(
-    height - 1,
-    Math.max(0, Math.floor(y)),
-  )
+  const cy = Math.min(height - 1, Math.max(0, Math.floor(y)));
 
-  const index =
-    (cy * width + cx) * 4
+  const index = (cy * width + cx) * 4;
 
-  return maskData[index + 3] ?? 0
+  return maskData[index + 3] ?? 0;
 }
 
 // ------------------------------------------------------------
@@ -247,93 +202,58 @@ export function drawAsciiCloud(
   dpr = 1,
   variant: CloudVariant = "cloud1",
 ): void {
-  ctx.clearRect(
-    0,
-    0,
-    width,
-    height,
-  )
+  ctx.clearRect(0, 0, width, height);
 
-  if (
-    width <= 0 ||
-    height <= 0
-  ) {
-    return
+  if (width <= 0 || height <= 0) {
+    return;
   }
 
-  buildMask(
-    width,
-    height,
-    variant,
-  )
+  buildMask(width, height, variant);
 
-  if (!maskData) return
+  if (!maskData) return;
 
-  const t =
-    time * TIME_SCALE
+  const t = time * TIME_SCALE;
 
-  const warpTime =
-    time * EDGE_WARP_SPEED
+  const warpTime = time * EDGE_WARP_SPEED;
 
-  const warpAmplitude =
-    EDGE_WARP_STRENGTH * dpr
+  const warpAmplitude = EDGE_WARP_STRENGTH * dpr;
 
   // ----------------------------------------------------------
   // GRID
   // ----------------------------------------------------------
 
-  const cols =
-    Math.ceil(width / DOT_SCALE)
+  const cols = Math.ceil(width / DOT_SCALE);
 
-  const rows =
-    Math.ceil(height / DOT_SCALE)
+  const rows = Math.ceil(height / DOT_SCALE);
 
   // ----------------------------------------------------------
   // DRAW
   // ----------------------------------------------------------
 
-  ctx.fillStyle = "white"
+  ctx.fillStyle = "white";
 
-  for (
-    let row = 0;
-    row < rows;
-    row++
-  ) {
+  for (let row = 0; row < rows; row++) {
     // `& 7` always yields 0-7, and BAYER has exactly 8 rows, so
     // this is always defined at runtime — the `?? []` fallback
     // exists purely to satisfy noUncheckedIndexedAccess.
-    const bayerRow =
-      BAYER[row & 7] ?? []
+    const bayerRow = BAYER[row & 7] ?? [];
 
-    for (
-      let col = 0;
-      col < cols;
-      col++
-    ) {
-      const x =
-        col * DOT_SCALE +
-        DOT_SCALE / 2
+    for (let col = 0; col < cols; col++) {
+      const x = col * DOT_SCALE + DOT_SCALE / 2;
 
-      const y =
-        row * DOT_SCALE +
-        DOT_SCALE / 2
+      const y = row * DOT_SCALE + DOT_SCALE / 2;
 
-      if (
-        x >= width ||
-        y >= height
-      ) {
-        continue
+      if (x >= width || y >= height) {
+        continue;
       }
 
       // ------------------------------------------------------
       // NORMALIZED POSITION
       // ------------------------------------------------------
 
-      const nx =
-        x / width
+      const nx = x / width;
 
-      const ny =
-        y / height
+      const ny = y / height;
 
       // ------------------------------------------------------
       // EDGE WARP — displace the sampling point so the
@@ -342,51 +262,27 @@ export function drawAsciiCloud(
       // ------------------------------------------------------
 
       const warpX =
-        (
-          Math.sin(
-            ny * 8 +
-            warpTime * 1.3,
-          ) * 0.6 +
-          Math.sin(
-            ny * 17 -
-            warpTime * 0.7 +
-            nx * 4,
-          ) * 0.4
-        ) * warpAmplitude
+        (Math.sin(ny * 8 + warpTime * 1.3) * 0.6 +
+          Math.sin(ny * 17 - warpTime * 0.7 + nx * 4) * 0.4) *
+        warpAmplitude;
 
       const warpY =
-        (
-          Math.cos(
-            nx * 7 -
-            warpTime * 1.1,
-          ) * 0.6 +
-          Math.sin(
-            nx * 19 +
-            warpTime * 0.9 +
-            ny * 5,
-          ) * 0.4
-        ) * warpAmplitude
+        (Math.cos(nx * 7 - warpTime * 1.1) * 0.6 +
+          Math.sin(nx * 19 + warpTime * 0.9 + ny * 5) * 0.4) *
+        warpAmplitude;
 
-      const sampleX =
-        x + warpX
+      const sampleX = x + warpX;
 
-      const sampleY =
-        y + warpY
+      const sampleY = y + warpY;
 
       // ------------------------------------------------------
       // CLOUD MASK (sampled at the warped position)
       // ------------------------------------------------------
 
-      const maskAlpha =
-        sampleMaskAlpha(
-          sampleX,
-          sampleY,
-          width,
-          height,
-        )
+      const maskAlpha = sampleMaskAlpha(sampleX, sampleY, width, height);
 
       if (maskAlpha === 0) {
-        continue
+        continue;
       }
 
       // ------------------------------------------------------
@@ -398,64 +294,30 @@ export function drawAsciiCloud(
       // This is the important difference from the previous
       // version: the wave MOVES through the cloud instead
       // of the entire cloud pulsing simultaneously.
-      const travellingWave =
-        Math.sin(
-          nx * 9 +
-          t * BILLOW_SPEED +
-          ny * 2.5,
-        )
+      const travellingWave = Math.sin(nx * 9 + t * BILLOW_SPEED + ny * 2.5);
 
       // Second slower diagonal wave.
-      const diagonalWave =
-        Math.sin(
-          nx * 15 +
-          ny * 8 -
-          t * 1.15,
-        )
+      const diagonalWave = Math.sin(nx * 15 + ny * 8 - t * 1.15);
 
       // Smaller local movement.
-      const localWave =
-        Math.sin(
-          nx * 30 -
-          ny * 11 +
-          t * 0.75,
-        )
+      const localWave = Math.sin(nx * 30 - ny * 11 + t * 0.75);
 
       // ------------------------------------------------------
       // COMBINE WAVES
       // ------------------------------------------------------
 
-      let density =
-        0.78
+      let density = 0.78;
 
-      density +=
-        travellingWave *
-        BILLOW_STRENGTH
+      density += travellingWave * BILLOW_STRENGTH;
 
-      density +=
-        diagonalWave *
-        0.10
+      density += diagonalWave * 0.1;
 
-      density +=
-        localWave *
-        0.045
+      density += localWave * 0.045;
 
       // Slow global breathing.
-      density *=
-        0.90 +
-        0.10 *
-          Math.sin(
-            t * 1.3,
-          )
+      density *= 0.9 + 0.1 * Math.sin(t * 1.3);
 
-      density =
-        Math.max(
-          0,
-          Math.min(
-            1,
-            density,
-          ),
-        )
+      density = Math.max(0, Math.min(1, density));
 
       // ------------------------------------------------------
       // EDGE SOFTNESS
@@ -465,44 +327,30 @@ export function drawAsciiCloud(
       // slightly softer instead of having a perfectly hard
       // silhouette. Uses the same warped alpha so the soft
       // edge travels with the ripple instead of staying fixed.
-      const edgeSample =
-        maskAlpha / 255
+      const edgeSample = maskAlpha / 255;
 
-      density *=
-        0.82 +
-        edgeSample * 0.18
+      density *= 0.82 + edgeSample * 0.18;
 
       // ------------------------------------------------------
       // BAYER
       // ------------------------------------------------------
 
-      const threshold =
-        THRESHOLD *
-        density
+      const threshold = THRESHOLD * density;
 
       // Same reasoning as bayerRow above — `col & 7` is always
       // 0-7, and bayerRow always has 8 elements, so this is
       // always defined at runtime.
-      const bayerValue =
-        bayerRow[col & 7] ?? 0
+      const bayerValue = bayerRow[col & 7] ?? 0;
 
-      if (
-        bayerValue >=
-        threshold
-      ) {
-        continue
+      if (bayerValue >= threshold) {
+        continue;
       }
 
       // ------------------------------------------------------
       // DRAW DITHER BLOCK
       // ------------------------------------------------------
 
-      ctx.fillRect(
-        col * DOT_SCALE,
-        row * DOT_SCALE,
-        DOT_SCALE,
-        DOT_SCALE,
-      )
+      ctx.fillRect(col * DOT_SCALE, row * DOT_SCALE, DOT_SCALE, DOT_SCALE);
     }
   }
 }

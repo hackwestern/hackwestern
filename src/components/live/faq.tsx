@@ -31,15 +31,15 @@ interface FaqItemProps {
 }
 
 export function FaqItem({ question, answer, isOpen, onToggle }: FaqItemProps) {
-//   const [isOpen, setIsOpen] = useState(defaultOpen);
+  //   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
     <div
-  className="relative w-full overflow-hidden rounded-[12px] border border-[#c3c3c3]
+      className="relative w-full overflow-hidden rounded-[12px] border border-[#c3c3c3]
              bg-gradient-to-b from-[#b8d9ff] from-[72.861%] to-[#dcecff]
              px-[20px] py-[10px] shadow-[0px_4px_8px_0px_rgba(0,0,0,0.12)]
              lg:rounded-[30px] lg:py-[18px]"
->
+    >
       {/* Glass highlight band — same construction as the promo-site button's
           top gloss (rgba(255,255,255,0.7) -> rgba(255,255,255,0.14)). */}
       <div
@@ -51,12 +51,14 @@ export function FaqItem({ question, answer, isOpen, onToggle }: FaqItemProps) {
       />
 
       <button
-      type="button"
-      onClick={onToggle}
-      aria-expanded={isOpen}
-      className="relative flex w-full items-center justify-between gap-[12px] text-left"
-    >
-        <p className="font-figtree text-[16px] leading-[1.5] text-heavy">{question}</p>
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        className="relative flex w-full items-center justify-between gap-[12px] text-left"
+      >
+        <p className="font-figtree text-[16px] leading-[1.5] text-heavy">
+          {question}
+        </p>
         <PlusIcon
           className={`size-[24px] shrink-0 text-heavy transition-transform duration-200 ${
             isOpen ? "rotate-45" : "rotate-0"
@@ -67,11 +69,14 @@ export function FaqItem({ question, answer, isOpen, onToggle }: FaqItemProps) {
       {/* Answer block. */}
       <div
         className={`grid transition-all duration-200 ease-out ${
-          isOpen ? "mt-[12px] grid-rows-[1fr] opacity-100" : "mt-0 grid-rows-[0fr] opacity-0"
+          isOpen
+            ? "mt-[12px] grid-rows-[1fr] opacity-100"
+            : "mt-0 grid-rows-[0fr] opacity-0"
         }`}
       >
         <div className="overflow-hidden">
-          <div className="mb-[12px] h-px w-full bg-[#c3c3c3]" /> {/* TODO: divider color assumed same as border; confirm against Line 1 asset if precision matters */}
+          <div className="mb-[12px] h-px w-full bg-[#c3c3c3]" />{" "}
+          {/* TODO: divider color assumed same as border; confirm against Line 1 asset if precision matters */}
           <p className="font-figtree text-[16px] font-medium leading-[1.5] text-medium">
             {answer}
           </p>
@@ -90,8 +95,18 @@ export function FaqItem({ question, answer, isOpen, onToggle }: FaqItemProps) {
 
 function PlusIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        d="M12 5v14M5 12h14"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -110,7 +125,9 @@ export function FaqColumn({ items }: { items: Faq[] }) {
           answer={faq.answer}
           isOpen={openQuestion === faq.question}
           onToggle={() =>
-            setOpenQuestion((prev) => (prev === faq.question ? null : faq.question))
+            setOpenQuestion((prev) =>
+              prev === faq.question ? null : faq.question,
+            )
           }
         />
       ))}

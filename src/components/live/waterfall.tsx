@@ -1,10 +1,6 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { useEffect, useRef, useState } from "react";
 
-import { drawAsciiWaterfall } from '~/constants/waterfall'
+import { drawAsciiWaterfall } from "~/constants/waterfall";
 
 interface WaterfallProps<T extends HTMLElement = HTMLElement> {
   // ----------------------------------------------------------
@@ -12,10 +8,10 @@ interface WaterfallProps<T extends HTMLElement = HTMLElement> {
   // below are NOT provided. Plain, fixed positioning you set
   // yourself.
   // ----------------------------------------------------------
-  width?: string
-  height?: string
-  top?: string
-  left?: string
+  width?: string;
+  height?: string;
+  top?: string;
+  left?: string;
 
   // ----------------------------------------------------------
   // COVER-FIT MODE — used when `containerRef` is provided.
@@ -33,18 +29,18 @@ interface WaterfallProps<T extends HTMLElement = HTMLElement> {
   // over T so it accepts a ref typed to whatever specific
   // element the caller is using (HTMLDivElement, etc.) without
   // a variance mismatch.
-  containerRef?: React.RefObject<T | null>
+  containerRef?: React.RefObject<T | null>;
 
   // Same src as your background <Image> — used only to read the
   // image's natural (file) pixel dimensions, never rendered.
-  backgroundSrc?: string
+  backgroundSrc?: string;
 
   // Must match whatever object-position your <Image> actually
   // uses (e.g. Tailwind's object-right / object-left /
   // object-center). Only the horizontal keyword matters here —
   // vertical is assumed center, matching how a single-keyword
   // CSS object-position value behaves.
-  objectPositionX?: 'left' | 'right' | 'center'
+  objectPositionX?: "left" | "right" | "center";
 
   // Where the shape should sit, in the SOURCE IMAGE's own pixel
   // coordinates (open the actual file in an image editor and
@@ -52,90 +48,78 @@ interface WaterfallProps<T extends HTMLElement = HTMLElement> {
   // 1200px from the left, 300px from the top, in a 2400x1600
   // source photo"). These numbers never change based on screen
   // size, which is the whole point.
-  sourceLeft?: number
-  sourceTop?: number
-  sourceWidth?: number
-  sourceHeight?: number
+  sourceLeft?: number;
+  sourceTop?: number;
+  sourceWidth?: number;
+  sourceHeight?: number;
 
-  className?: string
+  className?: string;
   // Draws a visible red outline/fill instead of the real
   // dither effect — useful for confirming positioning
   // independent of the canvas draw.
-  debug?: boolean
+  debug?: boolean;
 }
 
-export default function Waterfall<
-  T extends HTMLElement = HTMLElement,
->({
-  width = '66px',
-  height = '606px',
-  top = '10%',
-  left = '38px',
+export default function Waterfall<T extends HTMLElement = HTMLElement>({
+  width = "66px",
+  height = "606px",
+  top = "10%",
+  left = "38px",
   containerRef,
   backgroundSrc,
-  objectPositionX = 'center',
+  objectPositionX = "center",
   sourceLeft = 0,
   sourceTop = 0,
   sourceWidth = 0,
   sourceHeight = 0,
-  className = '',
+  className = "",
   debug = false,
 }: WaterfallProps<T>) {
-  const canvasRef =
-    useRef<HTMLCanvasElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const maskImageRef =
-    useRef<HTMLImageElement | null>(null)
+  const maskImageRef = useRef<HTMLImageElement | null>(null);
 
-  const coverFitMode = Boolean(containerRef)
+  const coverFitMode = Boolean(containerRef);
 
   // ----------------------------------------------------------
   // COVER-FIT CALCULATION
   // ----------------------------------------------------------
 
   const [coverFitRect, setCoverFitRect] = useState<{
-    left: number
-    top: number
-    width: number
-    height: number
-  } | null>(null)
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!coverFitMode || !containerRef || !backgroundSrc) {
-      return
+      return;
     }
 
-    let isMounted = true
+    let isMounted = true;
 
-    let naturalWidth = 0
-    let naturalHeight = 0
+    let naturalWidth = 0;
+    let naturalHeight = 0;
 
-    const sizingImage = new Image()
+    const sizingImage = new Image();
 
-    sizingImage.src = backgroundSrc
+    sizingImage.src = backgroundSrc;
 
     const recompute = () => {
-      const container = containerRef.current
+      const container = containerRef.current;
 
-      if (
-        !container ||
-        !naturalWidth ||
-        !naturalHeight
-      ) {
-        return
+      if (!container || !naturalWidth || !naturalHeight) {
+        return;
       }
 
-      const rect =
-        container.getBoundingClientRect()
+      const rect = container.getBoundingClientRect();
 
-      const containerWidth = rect.width
-      const containerHeight = rect.height
+      const containerWidth = rect.width;
+      const containerHeight = rect.height;
 
-      if (
-        containerWidth === 0 ||
-        containerHeight === 0
-      ) {
-        return
+      if (containerWidth === 0 || containerHeight === 0) {
+        return;
       }
 
       // object-cover uses the LARGER of the two ratios, so the
@@ -144,51 +128,47 @@ export default function Waterfall<
       const scale = Math.max(
         containerWidth / naturalWidth,
         containerHeight / naturalHeight,
-      )
+      );
 
-      const renderedWidth = naturalWidth * scale
-      const renderedHeight = naturalHeight * scale
+      const renderedWidth = naturalWidth * scale;
+      const renderedHeight = naturalHeight * scale;
 
       // Horizontal offset of the rendered image's left edge,
       // relative to the container's left edge. Negative means
       // the image overflows past the container on that side
       // (the part that gets cropped).
-      let offsetX: number
+      let offsetX: number;
 
-      if (objectPositionX === 'left') {
-        offsetX = 0
-      } else if (objectPositionX === 'right') {
-        offsetX = containerWidth - renderedWidth
+      if (objectPositionX === "left") {
+        offsetX = 0;
+      } else if (objectPositionX === "right") {
+        offsetX = containerWidth - renderedWidth;
       } else {
-        offsetX = (containerWidth - renderedWidth) / 2
+        offsetX = (containerWidth - renderedWidth) / 2;
       }
 
       // Vertical is always treated as centered — matches how a
       // single-keyword object-position value (e.g. just
       // "right") leaves the other axis at its default, center.
-      const offsetY =
-        (containerHeight - renderedHeight) / 2
+      const offsetY = (containerHeight - renderedHeight) / 2;
 
-      if (
-        debug &&
-        process.env.NODE_ENV !== 'production'
-      ) {
+      if (debug && process.env.NODE_ENV !== "production") {
         console.log(
-          'Waterfall (debug, cover-fit): container',
+          "Waterfall (debug, cover-fit): container",
           containerWidth,
-          'x',
+          "x",
           containerHeight,
-          '| natural',
+          "| natural",
           naturalWidth,
-          'x',
+          "x",
           naturalHeight,
-          '| scale',
+          "| scale",
           scale.toFixed(3),
-          '| offsetX',
+          "| offsetX",
           offsetX.toFixed(1),
-          '| offsetY',
+          "| offsetY",
           offsetY.toFixed(1),
-        )
+        );
       }
 
       setCoverFitRect({
@@ -196,38 +176,38 @@ export default function Waterfall<
         top: offsetY + sourceTop * scale,
         width: sourceWidth * scale,
         height: sourceHeight * scale,
-      })
-    }
+      });
+    };
 
     sizingImage.onload = () => {
-      if (!isMounted) return
+      if (!isMounted) return;
 
-      naturalWidth = sizingImage.naturalWidth
-      naturalHeight = sizingImage.naturalHeight
+      naturalWidth = sizingImage.naturalWidth;
+      naturalHeight = sizingImage.naturalHeight;
 
-      recompute()
-    }
+      recompute();
+    };
 
     sizingImage.onerror = () => {
       console.error(
         `Waterfall: failed to load background image at "${backgroundSrc}" for cover-fit sizing.`,
-      )
-    }
+      );
+    };
 
-    const resizeObserver = new ResizeObserver(recompute)
+    const resizeObserver = new ResizeObserver(recompute);
 
     if (containerRef.current) {
-      resizeObserver.observe(containerRef.current)
+      resizeObserver.observe(containerRef.current);
     }
 
     return () => {
-      isMounted = false
+      isMounted = false;
 
-      sizingImage.onload = null
-      sizingImage.onerror = null
+      sizingImage.onload = null;
+      sizingImage.onerror = null;
 
-      resizeObserver.disconnect()
-    }
+      resizeObserver.disconnect();
+    };
   }, [
     coverFitMode,
     containerRef,
@@ -238,77 +218,62 @@ export default function Waterfall<
     sourceWidth,
     sourceHeight,
     debug,
-  ])
+  ]);
 
   // In cover-fit mode, don't render until the first real
   // measurement comes back — avoids a flash at (0,0).
-  const shouldRender =
-    !coverFitMode || coverFitRect !== null
+  const shouldRender = !coverFitMode || coverFitRect !== null;
 
   // ----------------------------------------------------------
   // CANVAS DRAW LOOP (unchanged from manual mode)
   // ----------------------------------------------------------
 
   useEffect(() => {
-    const canvas =
-      canvasRef.current
+    const canvas = canvasRef.current;
 
-    if (!canvas) return
+    if (!canvas) return;
 
-    const ctx =
-      canvas.getContext('2d')
+    const ctx = canvas.getContext("2d");
 
-    if (!ctx) return
+    if (!ctx) return;
 
-    let animationFrame = 0
-    let isMounted = true
+    let animationFrame = 0;
+    let isMounted = true;
 
-    const startTime =
-      performance.now()
+    const startTime = performance.now();
 
-    const maskImage = new Image()
+    const maskImage = new Image();
 
-    maskImage.src = '/landing/waterfall-mask.png'
+    maskImage.src = "/landing/waterfall-mask.png";
 
     maskImage.onload = () => {
       if (isMounted) {
-        maskImageRef.current = maskImage
+        maskImageRef.current = maskImage;
       }
-    }
+    };
 
     maskImage.onerror = () => {
       console.error(
         `Waterfall: failed to load mask image at "${maskImage.src}". Check that waterfall-mask.png is in public/landing/ and the path matches exactly.`,
-      )
-    }
+      );
+    };
 
     const resizeCanvas = () => {
-      const dpr =
-        window.devicePixelRatio || 1
+      const dpr = window.devicePixelRatio || 1;
 
-      const rect =
-        canvas.getBoundingClientRect()
+      const rect = canvas.getBoundingClientRect();
 
-      canvas.width = Math.max(
-        1,
-        Math.round(rect.width * dpr),
-      )
+      canvas.width = Math.max(1, Math.round(rect.width * dpr));
 
-      canvas.height = Math.max(
-        1,
-        Math.round(rect.height * dpr),
-      )
-    }
+      canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    };
 
     const animate = () => {
-      const now =
-        performance.now()
+      const now = performance.now();
 
-      const time =
-        (now - startTime) / 1000
+      const time = (now - startTime) / 1000;
 
-      const dpr =
-        window.devicePixelRatio || 1
+      const dpr = window.devicePixelRatio || 1;
 
       drawAsciiWaterfall(
         ctx,
@@ -317,46 +282,44 @@ export default function Waterfall<
         maskImageRef.current,
         time,
         dpr,
-      )
+      );
 
-      animationFrame =
-        requestAnimationFrame(animate)
-    }
+      animationFrame = requestAnimationFrame(animate);
+    };
 
-    resizeCanvas()
+    resizeCanvas();
 
-    const resizeObserver =
-      new ResizeObserver(resizeCanvas)
+    const resizeObserver = new ResizeObserver(resizeCanvas);
 
-    resizeObserver.observe(canvas)
+    resizeObserver.observe(canvas);
 
-    animationFrame =
-      requestAnimationFrame(animate)
+    animationFrame = requestAnimationFrame(animate);
 
     return () => {
-      isMounted = false
+      isMounted = false;
 
-      maskImage.onload = null
-      maskImage.onerror = null
+      maskImage.onload = null;
+      maskImage.onerror = null;
 
-      resizeObserver.disconnect()
+      resizeObserver.disconnect();
 
-      cancelAnimationFrame(animationFrame)
-    }
-  }, [shouldRender])
+      cancelAnimationFrame(animationFrame);
+    };
+  }, [shouldRender]);
 
   if (!shouldRender) {
-    return null
+    return null;
   }
 
-  const positionStyle = coverFitMode && coverFitRect
-    ? {
-        left: `${coverFitRect.left}px`,
-        top: `${coverFitRect.top}px`,
-        width: `${coverFitRect.width}px`,
-        height: `${coverFitRect.height}px`,
-      }
-    : { top, left, width, height }
+  const positionStyle =
+    coverFitMode && coverFitRect
+      ? {
+          left: `${coverFitRect.left}px`,
+          top: `${coverFitRect.top}px`,
+          width: `${coverFitRect.width}px`,
+          height: `${coverFitRect.height}px`,
+        }
+      : { top, left, width, height };
 
   return (
     <div
@@ -366,8 +329,8 @@ export default function Waterfall<
         ...positionStyle,
         ...(debug
           ? {
-              outline: '2px solid red',
-              backgroundColor: 'rgba(255, 0, 0, 0.15)',
+              outline: "2px solid red",
+              backgroundColor: "rgba(255, 0, 0, 0.15)",
             }
           : {}),
       }}
@@ -375,11 +338,11 @@ export default function Waterfall<
       <canvas
         ref={canvasRef}
         style={{
-          display: 'block',
-          width: '100%',
-          height: '100%',
+          display: "block",
+          width: "100%",
+          height: "100%",
         }}
       />
     </div>
-  )
+  );
 }
