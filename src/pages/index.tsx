@@ -85,6 +85,7 @@ export default function Home() {
         {/* insert waterfall */}
         <WindowFolder
           defaultOpen
+          variant="labelled"
           label="A message to new hackers"
           className="absolute bottom-[120px] left-[100px]"
           windowTitle="A message to new hackers"
@@ -112,6 +113,7 @@ export default function Home() {
         </WindowFolder>
         <WindowFolder
           defaultOpen
+          variant="labelled"
           label="Impact"
           className="absolute bottom-[500px] left-[200px]"
           windowTitle="Last year's impact"
@@ -150,6 +152,7 @@ export default function Home() {
 
         <WindowFolder
           defaultOpen
+          variant="labelled"
           label="Exploration"
           className="absolute bottom-[300px] left-[80px]"
           windowTitle="A world of exploration"
@@ -317,7 +320,7 @@ export default function Home() {
               alt="sponsors"
               width={382}
               height={400}
-              className="h-auto w-full"
+              className="h-auto w-full p-3"
             />
           </Window>
 
@@ -378,6 +381,7 @@ export default function Home() {
             alt="sponsors"
             width={1067}
             height={795}
+            className="h-auto w-full p-6"
           />
         </Window>
       </section>
