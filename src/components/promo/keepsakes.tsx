@@ -27,46 +27,107 @@ export function useKeepsake(id: number) {
   return [clicked, markClicked] as const;
 }
 
-// Xylophone-ish: a sine with a quiet, fast-fading 4th partial. Each step
-// strikes one more note of a C major arpeggio, and the cloud reveal adds
-// the octave. Built on demand, so no audio files to load.
-const ARPEGGIO = [0, 4, 7, 12];
+// Synthesised xylophone, so there are no audio files to load. Every step
+// plays the same quick "found it" pair; the cloud reveal gets the fanfare.
 const C5 = 523.25;
-const NOTE_GAP_S = 0.15;
+const note = (semitones: number) => C5 * 2 ** (semitones / 12);
 
-let audio: AudioContext | null = null;
+// A struck xylophone bar: partials that die away fast, the higher ones
+// fastest. Bars are tuned so the strongest overtone sits a twelfth (3x) up.
+// [ratio to the note, peak gain, seconds to fade out]
+const PARTIALS = [
+  [1, 0.3, 0.55],
+  [3, 0.13, 0.18],
+  [6.2, 0.045, 0.07],
+  [9.8, 0.02, 0.04],
+] as const;
+const MALLET_S = 0.03;
+
+let audio: { ctx: AudioContext; out: AudioNode; noise: AudioBuffer } | null =
+  null;
 let revealPlayed = false;
 
-function playArpeggio(noteCount: number) {
-  const ctx = (audio ??= new AudioContext());
-  const start = ctx.currentTime;
-
-  ARPEGGIO.slice(0, noteCount).forEach((semitones, i) => {
-    const freq = C5 * 2 ** (semitones / 12);
-    const at = start + i * NOTE_GAP_S;
-
-    for (const [ratio, peak, decay] of [
-      [1, 0.25, 0.6],
-      [3.93, 0.06, 0.15],
-    ] as const) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.frequency.value = freq * ratio;
-      gain.gain.setValueAtTime(0.0001, at);
-      gain.gain.exponentialRampToValueAtTime(peak, at + 0.005);
-      gain.gain.exponentialRampToValueAtTime(0.0001, at + decay);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(at);
-      osc.stop(at + decay);
-    }
-  });
+function getAudio() {
+  if (!audio) {
+    const ctx = new AudioContext();
+    // Keeps stacked strikes (the reveal's roll) from clipping.
+    const out = ctx.createDynamicsCompressor();
+    out.connect(ctx.destination);
+    const noise = ctx.createBuffer(
+      1,
+      ctx.sampleRate * MALLET_S,
+      ctx.sampleRate,
+    );
+    const data = noise.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    audio = { ctx, out, noise };
+  }
+  return audio;
 }
 
-/** The full arpeggio, once, and only after a step was clicked in this tab. */
+/** One mallet strike; `ring` stretches how long it sounds. */
+function strike(freq: number, at: number, gain = 1, ring = 1) {
+  const { ctx, out, noise } = getAudio();
+
+  for (const [ratio, peak, decay] of PARTIALS) {
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.frequency.value = freq * ratio;
+    env.gain.setValueAtTime(0.0001, at);
+    env.gain.exponentialRampToValueAtTime(peak * gain, at + 0.002);
+    env.gain.exponentialRampToValueAtTime(0.0001, at + decay * ring);
+    osc.connect(env).connect(out);
+    osc.start(at);
+    osc.stop(at + decay * ring);
+  }
+
+  // The mallet's woody "tock": a short burst of noise around the bar's pitch.
+  const tock = ctx.createBufferSource();
+  const band = ctx.createBiquadFilter();
+  const env = ctx.createGain();
+  tock.buffer = noise;
+  band.type = "bandpass";
+  band.frequency.value = freq * 4;
+  band.Q.value = 1.2;
+  env.gain.setValueAtTime(0.25 * gain, at);
+  env.gain.exponentialRampToValueAtTime(0.0001, at + MALLET_S);
+  tock.connect(band).connect(env).connect(out);
+  tock.start(at);
+}
+
+function playFound() {
+  const now = getAudio().ctx.currentTime;
+  strike(note(7), now);
+  strike(note(12), now + 0.08);
+}
+
+const SCALE = [0, 2, 4, 5, 7, 9, 11, 12];
+const CHORD = [0, 4, 7, 12];
+
+/**
+ * The payoff: a run up the scale into a rolled C major chord that rings out.
+ * Plays once, and only after a step was clicked in this tab.
+ */
 export function playReveal() {
   if (!audio || revealPlayed) return;
   revealPlayed = true;
-  playArpeggio(ARPEGGIO.length);
+  const start = audio.ctx.currentTime;
+
+  SCALE.forEach((semitones, i) =>
+    strike(note(semitones), start + i * 0.045, 0.6),
+  );
+
+  // A xylophone "roll": every chord note struck again and again, swelling,
+  // then one last strike left to ring.
+  const chord = start + SCALE.length * 0.045 + 0.05;
+  for (let t = 0; t < 0.8; t += 0.065) {
+    CHORD.forEach((semitones, i) =>
+      strike(note(semitones), chord + t + i * 0.016, 0.35 + t * 0.4, 0.5),
+    );
+  }
+  CHORD.forEach((semitones, i) =>
+    strike(note(semitones), chord + 0.85 + i * 0.02, 0.8, 3),
+  );
 }
 
 /**
@@ -189,7 +250,7 @@ export function Chest({ className }: { className?: string }) {
         aria-label="Chest"
         onClick={() => {
           if (!opened) {
-            playArpeggio(1);
+            playFound();
             setPopping(true);
           }
           open();
@@ -459,7 +520,7 @@ function HiddenStep({
         aria-label={label}
         onClick={(event) => {
           if (!found) {
-            playArpeggio(step);
+            playFound();
             setArrowSpot(
               arrowOutsideWindow ? outsideWindow(event.currentTarget) : null,
             );

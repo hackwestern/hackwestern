@@ -332,6 +332,8 @@ export function drawAsciiCloud(
   dpr = 1,
   variant: CloudVariant = "cloud1",
   label?: string,
+  // 0 to 1: how much of the label has filled in so far.
+  labelProgress = 1,
 ): void {
   ctx.clearRect(0, 0, width, height);
 
@@ -390,7 +392,8 @@ export function drawAsciiCloud(
         labelMask &&
         (labelMask[(Math.floor(y) * width + Math.floor(x)) * 4 + 3] ?? 0) > 127
       ) {
-        if ((bayerRow[col & 7] ?? 0) < 256 * labelDensity) {
+        // Ordered by the Bayer matrix, so the text dithers in as it appears.
+        if ((bayerRow[col & 7] ?? 0) < 256 * labelDensity * labelProgress) {
           ctx.fillRect(col * dotSize, row * dotSize, dotSize, dotSize);
         }
 
