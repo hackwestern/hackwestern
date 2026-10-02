@@ -19,7 +19,6 @@ import { ApplicationSidebar } from "~/components/apply/application-sidebar";
 import { Window } from "~/components/internals/window";
 import { UserBadge } from "~/components/apply/user-badge";
 import { realmTint } from "~/constants/realms";
-import { cn } from "~/lib/utils";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   const steps = applySteps;

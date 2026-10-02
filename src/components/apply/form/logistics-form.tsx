@@ -111,12 +111,10 @@ export function LogisticsForm() {
           name="dietaryRestrictions"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
-                What are your dietary restrictions? (optional)
-              </FormLabel>
+              <FormLabel>What are your dietary restrictions? </FormLabel>
               <FormControl>
                 <RadioButtonGroup
-                  value={field.value ?? undefined}
+                  value={field.value}
                   onValueChange={field.onChange}
                   disabled={!canEdit}
                 >

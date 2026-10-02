@@ -257,9 +257,10 @@ export const applicationSubmitSchema = z
     shirtSize: z.enum(shirtSize.enumValues),
     dietaryRestrictions: z.preprocess(
       (v) => (!v ? undefined : v),
-      z.enum(dietaryRestrictions.enumValues).optional(),
+      z.enum(dietaryRestrictions.enumValues),
     ),
-    dietaryRestrictionsOther: z.string().nullable(),
+
+    dietaryRestrictionsOther: z.string().max(255).optional(),
     emergencyContactName: z.string().min(1),
     emergencyContactRelationship: z.enum(
       emergencyContactRelationship.enumValues,
@@ -270,7 +271,10 @@ export const applicationSubmitSchema = z
       .regex(phoneRegex, "Invalid phone number"),
   })
   .superRefine((data, ctx) => {
-    if (data.dietaryRestrictions == "Other" && !data.dietaryRestrictionsOther) {
+    if (
+      data.dietaryRestrictions === "Other" &&
+      !data.dietaryRestrictionsOther?.trim()
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Please specify your dietary restriction",

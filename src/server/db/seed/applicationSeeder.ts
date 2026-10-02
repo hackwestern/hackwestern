@@ -48,6 +48,8 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       agreeShareWithSponsors: true,
       school: "Western University",
       phoneNumber: "519-936-5950",
+      dietaryRestrictionsOther: "",
+      dietaryRestrictions: "None",
     };
   }
 
@@ -116,9 +118,7 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       ) as (typeof emergencyContactRelationship.enumValues)[number],
       emergencyContactPhoneNumber: "519-936-5950",
 
-      transportationMethod: faker.helpers.arrayElement(
-        transportationMethod.enumValues as [string, ...string[]],
-      ) as (typeof transportationMethod.enumValues)[number],
+      transportationMethod: null,
     };
 
     const isComplete = applicationSubmitSchema.safeParse(application).success;

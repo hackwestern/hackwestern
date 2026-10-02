@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { ClipboardEvent } from "react";
 import { useForm } from "react-hook-form";
 import {
   Form,
@@ -11,24 +12,17 @@ import {
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { linksSaveSchema } from "~/schemas/application";
 import {
-  DEVPOST_URL,
-  GITHUB_URL,
-  LINKEDIN_URL,
-  ensureUrlHasProtocol,
   getDevpostUsername,
   getGithubUsername,
   getLinkedinUsername,
+  ensureUrlHasProtocol,
 } from "~/utils/urls";
-
-function withPrefix(prefix: string, username?: string | null) {
-  return username ? `${prefix}${username}` : username;
-}
 
 export function LinksForm() {
   const utils = api.useUtils();
@@ -72,23 +66,12 @@ export function LinksForm() {
     resolver: zodResolver(linksSaveSchema),
   });
 
-  // The server stores and returns just the username for these three; the
-  // form shows and accepts the whole link.
-  const formDefaults = useMemo(
-    () =>
-      defaultValues && {
-        ...defaultValues,
-        devpostLink: withPrefix(DEVPOST_URL, defaultValues.devpostLink),
-        githubLink: withPrefix(GITHUB_URL, defaultValues.githubLink),
-        linkedInLink: withPrefix(LINKEDIN_URL, defaultValues.linkedInLink),
-      },
-    [defaultValues],
-  );
-
-  useAutoSave(form, onSubmit, formDefaults);
+  useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof linksSaveSchema>) {
-    // Normalize resume and other links so they validate as URLs (prepend https:// if missing)
+    // Normalize usernames so pasted full URLs don't get double-prefixed
+    // on save (backend prepends the URL prefix), and normalize resume
+    // and other links so they validate as URLs (prepend https:// if missing)
     const normalizedData = {
       ...data,
       devpostLink: data.devpostLink && getDevpostUsername(data.devpostLink),
@@ -101,6 +84,24 @@ export function LinksForm() {
     mutate({
       ...normalizedData,
     });
+  }
+
+  function onGithubPaste(e: ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+    const githubUsername = getGithubUsername(pastedText);
+
+    form.setValue("githubLink", githubUsername);
+    return form.handleSubmit(onSubmit)();
+  }
+
+  function onLinkedinPaste(e: ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+    const linkedinUsername = getLinkedinUsername(pastedText);
+
+    form.setValue("linkedInLink", linkedinUsername);
+    return form.handleSubmit(onSubmit)();
   }
 
   function fileNameFromUrl(url: string) {
@@ -171,13 +172,16 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>Devpost</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ""}
-                  placeholder="https://devpost.com/hacker"
-                  variant="primary"
-                  disabled={!canEdit}
-                />
+                <div className="flex items-center gap-4 text-sm text-gray-5">
+                  <span>devpost.com/</span>
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="hacker"
+                    variant="primary"
+                    disabled={!canEdit}
+                  />
+                </div>
               </FormControl>
             </FormItem>
           )}
@@ -189,13 +193,17 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>Github</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ""}
-                  placeholder="https://github.com/hacker"
-                  variant="primary"
-                  disabled={!canEdit}
-                />
+                <div className="flex items-center gap-4 text-sm text-gray-5">
+                  <span>github.com/</span>
+                  <Input
+                    onPaste={onGithubPaste}
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="hacker"
+                    variant="primary"
+                    disabled={!canEdit}
+                  />
+                </div>
               </FormControl>
             </FormItem>
           )}
@@ -207,13 +215,17 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>LinkedIn</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ""}
-                  placeholder="https://linkedin.com/in/hacker"
-                  variant="primary"
-                  disabled={!canEdit}
-                />
+                <div className="flex items-center gap-2 text-sm text-gray-5">
+                  <span className="w-32">linkedin.com/in/</span>
+                  <Input
+                    onPaste={onLinkedinPaste}
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="hacker"
+                    variant="primary"
+                    disabled={!canEdit}
+                  />
+                </div>
               </FormControl>
             </FormItem>
           )}
@@ -250,7 +262,7 @@ export function LinksForm() {
                         href={field.value}
                         target="_blank"
                         rel="noreferrer"
-                        className="max-w-64 overflow-hidden text-ellipsis whitespace-nowrap underline underline-offset-2"
+                        className="max-w-64 overflow-hidden text-ellipsis whitespace-nowrap text-gray-6 underline decoration-gray-4 underline-offset-2 visited:text-gray-6 hover:text-gray-7"
                       >
                         {resumeName ?? fileNameFromUrl(field.value)}
                       </a>
@@ -258,7 +270,7 @@ export function LinksForm() {
                         <button
                           type="button"
                           onClick={clearResume}
-                          className="text-xl text-gray-4 hover:text-gray-6"
+                          className="text-xl text-gray-5 hover:text-gray-7"
                           aria-label="Remove resume"
                         >
                           ×
@@ -282,13 +294,13 @@ export function LinksForm() {
                           onClick={() => fileInputRef.current?.click()}
                           disabled={!canEdit || uploading}
                           aria-label="Choose resume file"
-                          className="-py-4 px-2"
+                          className="-py-4 bg-white px-2 text-gray-6 hover:bg-gray-1 hover:text-gray-7"
                         >
-                          <span className="text-gray-6">
+                          <span className="text-gray-7">
                             {uploading ? "Uploading…" : "Choose file"}
                           </span>
                         </Button>
-                        <span className="text-xs text-gray-4">
+                        <span className="text-xs text-gray-5">
                           PDF or DOC/DOCX, max 3 MB
                         </span>
                       </div>
@@ -296,7 +308,9 @@ export function LinksForm() {
                   )}
                 </div>
               </FormControl>
-              <FormDescription>Upload your resume</FormDescription>
+              <FormDescription className="text-gray-4">
+                Upload your resume
+              </FormDescription>
             </FormItem>
           )}
         />

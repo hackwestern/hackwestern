@@ -134,6 +134,13 @@
       "when": 1790916186409,
       "tag": "0018_windy_shard",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790918712074,
+      "tag": "0019_bent_madame_hydra",
+      "breakpoints": true
     }
   ]
 }
