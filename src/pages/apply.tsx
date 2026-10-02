@@ -11,7 +11,6 @@ import ApplicationPrompt from "~/components/dashboard/ApplicationPrompt";
 import { ApplyNavigation } from "~/components/apply/navigation";
 import ApplyHeading from "~/components/apply/heading";
 import { motion, AnimatePresence } from "framer-motion";
-import { MobileStickerDrawer } from "~/components/apply/mobile-sticker-drawer";
 import CharacterIcon from "~/components/dashboard/CharacterIcon";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
@@ -244,8 +243,6 @@ export default function Apply() {
           )}
         </div>
         {/* End of Mobile View */}
-
-        <MobileStickerDrawer />
 
         {/* Desktop View — redesigned portal shell */}
         <div className="relative z-10 hidden h-screen w-full overflow-hidden md:flex">
