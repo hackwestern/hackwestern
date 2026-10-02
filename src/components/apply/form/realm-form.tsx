@@ -65,15 +65,18 @@ export function RealmForm() {
   const horseLastName = form.watch("horseLastName");
   const selectedHorse = getHorse(horseId);
 
-  // Jump straight to the naming view for returning users who already have a
-  // horse saved; otherwise require pressing Next to confirm the pick.
-  const [view, setView] = React.useState<"pick" | "name">(() =>
-    getHorse(defaults?.horseId) ? "name" : "pick",
-  );
+  // Resolve the initial view only after the defaults query has finished:
+  // returning hackers with a saved horse name land directly on the naming
+  // view; otherwise we require pressing Next to confirm the pick. Keeping
+  // the view null until defaults load avoids the pick ⇄ name flicker.
+  const [view, setView] = React.useState<"pick" | "name" | null>(null);
 
   React.useEffect(() => {
-    if (defaults?.horseId && getHorse(defaults.horseId)) setView("name");
-  }, [defaults?.horseId]);
+    if (view !== null || defaults === undefined) return;
+    const savedHorse = getHorse(defaults?.horseId);
+    const savedName = defaults?.horseFirstName && defaults?.horseLastName;
+    setView(savedHorse && savedName ? "name" : "pick");
+  }, [defaults, view]);
 
   const handlePick = (horse: Horse) => {
     if (!canEdit) return;
@@ -93,10 +96,24 @@ export function RealmForm() {
 
   const hasNames = Boolean(horseFirstName && horseLastName);
 
+  if (view === null) {
+    return (
+      <div
+        aria-hidden
+        className="flex min-h-[400px] items-center justify-center"
+      />
+    );
+  }
+
+  // Guard: if we're meant to be on the naming view but the saved horseId is
+  // somehow unknown, fall back to the picker instead of crashing on
+  // selectedHorse.asset.
+  const showPick = view === "pick" || !selectedHorse;
+
   return (
     <Form {...form}>
       <AnimatePresence mode="wait" initial={false}>
-        {view === "pick" || !selectedHorse ? (
+        {showPick ? (
           <motion.div
             key="pick"
             variants={viewFade}
