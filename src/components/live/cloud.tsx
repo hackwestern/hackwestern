@@ -76,10 +76,18 @@ export default function Cloud({
 
     window.addEventListener("resize", resize);
 
-    animationFrame = requestAnimationFrame(animate);
+    const visibility = new IntersectionObserver(([entry]) => {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = entry?.isIntersecting
+        ? requestAnimationFrame(animate)
+        : 0;
+    });
+    visibility.observe(canvas);
 
     return () => {
       window.removeEventListener("resize", resize);
+
+      visibility.disconnect();
 
       cancelAnimationFrame(animationFrame);
     };

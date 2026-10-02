@@ -142,7 +142,7 @@ export function SkyBackground() {
       {/* Mobile: one fixed image, no parallax */}
       <div className="absolute inset-0 block md:hidden">
         <img
-          src="/landing/promo/mobile-bg.png"
+          src="/landing/promo/mobile-bg.webp"
           alt=""
           className="h-full w-full object-cover"
         />
@@ -158,7 +158,7 @@ export function SkyBackground() {
           ref={noiseRef}
           className="absolute inset-0 opacity-20"
           style={{
-            backgroundImage: 'url("/landing/promo/sky-noise.png")',
+            backgroundImage: 'url("/landing/promo/sky-noise.webp")',
             backgroundPosition: "top left",
           }}
         />

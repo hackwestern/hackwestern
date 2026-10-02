@@ -149,6 +149,7 @@ function PathCanvas({
 
     let currentProgress = progress.get();
     let mask: Float32Array | null = null;
+    let maskPixels = new Uint32Array(0);
     let maskProgress = -1;
     let rect = coverRect(1, 1);
     let frame = 0;
@@ -202,7 +203,17 @@ function PathCanvas({
         }
       }
 
+      let count = 0;
+      for (const proximity of next) {
+        if (proximity > 0) count++;
+      }
+      const pixels = new Uint32Array(count);
+      for (let index = 0, at = 0; index < next.length; index++) {
+        if (next[index]! > 0) pixels[at++] = index;
+      }
+
       mask = next;
+      maskPixels = pixels;
       maskProgress = value;
     };
 
@@ -214,17 +225,17 @@ function PathCanvas({
       data.fill(0);
       const breathe = reduceMotion ? 1 : 0.82 + 0.18 * Math.sin(time / 700);
 
-      for (let y = 0; y < canvas.height; y++) {
-        const row = BAYER[y & 7]!;
-        for (let x = 0; x < canvas.width; x++) {
-          const proximity = mask?.[y * canvas.width + x] ?? 0;
-          if (row[x & 7]! < 48 * proximity * breathe) {
-            const index = (y * canvas.width + x) * 4;
-            data[index] = 255;
-            data[index + 1] = 255;
-            data[index + 2] = 255;
-            data[index + 3] = 255;
-          }
+      const width = canvas.width;
+      for (const pixel of maskPixels) {
+        const x = pixel % width;
+        const y = (pixel - x) / width;
+        const proximity = mask?.[pixel] ?? 0;
+        if (BAYER[y & 7]![x & 7]! < 48 * proximity * breathe) {
+          const index = pixel * 4;
+          data[index] = 255;
+          data[index + 1] = 255;
+          data[index + 2] = 255;
+          data[index + 3] = 255;
         }
       }
 
@@ -562,7 +573,7 @@ export function Hero() {
         {/* Mobile background */}
         <div
           aria-hidden
-          className="absolute inset-x-0 -top-[100px] bottom-0 bg-[url('/landing/promo/mobile-bg-hero.png')] bg-cover bg-top bg-no-repeat md:hidden"
+          className="absolute inset-x-0 -top-[100px] bottom-0 bg-[url('/landing/promo/mobile-bg-hero.webp')] bg-cover bg-top bg-no-repeat md:hidden"
         />
         <div
           ref={sceneRef}
