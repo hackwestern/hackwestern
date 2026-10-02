@@ -50,7 +50,7 @@ export default function Home() {
   return (
     <main id="top" className="relative cursor-pixel-default">
       <SkyBackground />
-      <FilmStrip className="relative z-10"/>
+      <FilmStrip className="relative z-10" />
 
       <Hero />
 
