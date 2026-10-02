@@ -1,6 +1,7 @@
 import React from "react";
 import type { ApplyStep } from "~/constants/apply";
 import { RealmForm } from "./realm-form";
+import { CompanionForm } from "./companion-form";
 import { BasicsForm } from "./basics-form";
 import { InfoForm } from "./info-form";
 import { ApplicationForm } from "./application-form";
@@ -61,6 +62,8 @@ export function ApplyForm({ step, previewHeight }: ApplyFormProps) {
           switch (step) {
             case "realm":
               return <RealmForm />;
+            case "companion":
+              return <CompanionForm />;
             case "basics":
               return <BasicsForm />;
             case "info":

@@ -41,9 +41,12 @@ function getNextIncompleteStep(
 
     switch (step.step) {
       case "realm": {
+        if (isEmpty(application.realm) || isEmpty(application.horseId))
+          return step.step;
+        break;
+      }
+      case "companion": {
         if (
-          isEmpty(application.realm) ||
-          isEmpty(application.horseId) ||
           isEmpty(application.horseFirstName) ||
           isEmpty(application.horseLastName)
         )
@@ -194,7 +197,7 @@ export default function Apply() {
           {/* Mobile Content */}
           <div className="flex-1 bg-white py-24">
             <div className="mx-6 flex h-full flex-col">
-              {step !== "realm" && (
+              {step !== "companion" && (
                 <div className="mb-6">
                   <ApplyHeading
                     heading={heading}
@@ -313,11 +316,13 @@ export default function Apply() {
                         footer={<ApplyNavigation step={step} />}
                       >
                         <div className="space-y-6">
-                          <ApplyHeading
-                            heading={heading}
-                            subheading={subheading}
-                            stepKey={step}
-                          />
+                          {step !== "companion" && (
+                            <ApplyHeading
+                              heading={heading}
+                              subheading={subheading}
+                              stepKey={step}
+                            />
+                          )}
                           <div className="scrollbar font-figtree">
                             <ApplyForm step={step} />
                           </div>

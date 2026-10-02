@@ -13,6 +13,12 @@ const allSteps = [
     subheading: "Who will accompany you along this adventure?",
   },
   {
+    step: "companion",
+    label: "Companion",
+    heading: "Name your horse companion",
+    subheading: "Give your new friend a first and last name.",
+  },
+  {
     step: "basics",
     label: "Basics",
     heading: "Let's start with the basics",
