@@ -147,7 +147,7 @@ export function AgreementsForm() {
                 />
               </FormControl>
               <FormLabel className="text-sm text-slate-500">
-                I will be at least 18 years old on November 21st, 2025
+                I will be at least 18 years old on November 20th, 2026
               </FormLabel>
             </FormItem>
           )}

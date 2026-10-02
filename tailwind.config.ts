@@ -51,8 +51,10 @@ const config = {
 
         offwhite: tokens.colors.bg.light,
         highlight: tokens.colors.bg.highlight,
+        "promo-sheet": tokens.colors.bg.promoSheet,
 
         green: tokens.colors.greens["green-primary"],
+        "green-dark": tokens.colors.greens["green-dark"],
 
         primary: {
           "50": "hsl(var(--primary-50))",
@@ -68,6 +70,7 @@ const config = {
           foreground: "hsl(var(--primary-foreground))",
         },
         gray: {
+          "0": tokens.colors.grays["white-0"],
           "1": tokens.colors.grays["gray-1"],
           "2": tokens.colors.grays["gray-2"],
           "3": tokens.colors.grays["gray-3"],
@@ -93,6 +96,13 @@ const config = {
         "button-secondary": "rgb(244, 242, 247)",
         "button-secondary-hover": "rgb(248, 247, 249)",
         "button-secondary-active": "rgb(253, 252, 253)",
+
+        "button-primary": tokens.colors.buttonPrimary.bg,
+        "button-primary-border": tokens.colors.buttonPrimary.border,
+        "button-primary-hover": tokens.colors.buttonPrimary.bgHover,
+        "button-primary-hover-border": tokens.colors.buttonPrimary.borderHover,
+        "button-primary-active": tokens.colors.buttonPrimary.bgActive,
+        "button-primary-active-border": tokens.colors.buttonPrimary.borderActive,
         violet: {
           "100": "hsl(var(--violet-100))",
           "200": "hsl(var(--violet-200))",
@@ -140,10 +150,12 @@ const config = {
         "hw-gradient-radius": "60vw",
       },
       boxShadow: {
-        "button-primary": tokens.shadows.button,
-        "button-primary-active": tokens.shadows.activeButton,
-        "button-secondary": tokens.shadows.secondary,
-        "button-icon": tokens.shadows.icon,
+        "primary-btn": tokens.shadows.button,
+        "primary-btn-hover": tokens.shadows.buttonHover,
+        "primary-btn-active": tokens.shadows.activeButton,
+        "primary-btn-2": tokens.shadows.primary2,
+        "secondary-btn": tokens.shadows.secondary,
+        "icon-btn": tokens.shadows.icon,
       },
       fontFamily: {
         primary: [tokens.fonts.primary],
@@ -204,7 +216,7 @@ const config = {
       cursor: {
         "pixel-default": "url('/cursors/cursor-default.webp'),auto",
         "pixel-hover": "url('/cursors/hover-hand.webp'),pointer",
-        telescope: "url('/cursors/telescope.webp'),pointer",
+        telescope:"url('/cursors/telescope.webp'),pointer",
       },
       keyframes: {
         "bounce-jump": {
@@ -214,9 +226,14 @@ const config = {
           "80%": { transform: "translateY(-10px)" },
           "100%": { transform: "translateY(0)" },
         },
+        "team-marquee": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         "bounce-jump": "bounce-jump 0.6s ease-in-out",
+        "team-marquee": "team-marquee 80s linear infinite",
       },
     },
   },
