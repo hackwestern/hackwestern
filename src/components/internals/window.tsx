@@ -69,7 +69,7 @@ export function Window({
   const frameRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     const frame = frameRef.current;
-    if (!attentionKey || !frame || !frame.animate) return;
+    if (!attentionKey || !frame?.animate) return;
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
