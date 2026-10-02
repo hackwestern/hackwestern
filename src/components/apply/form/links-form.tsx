@@ -300,15 +300,14 @@ export function LinksForm() {
                       <div className="flex items-center gap-3">
                         <Button
                           type="button"
-                          variant="outline"
+                          variant="primary"
+                          size="sm"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={!canEdit || uploading}
                           aria-label="Choose resume file"
-                          className="-py-4 bg-white px-2 text-gray-6 hover:bg-gray-1 hover:text-gray-7"
+                          className="gap-2 font-figtree"
                         >
-                          <span className="text-gray-7">
-                            {uploading ? "Uploading…" : "Choose file"}
-                          </span>
+                          {uploading ? "Uploading…" : "Choose file"}
                         </Button>
                         <span className="text-xs text-gray-5">
                           PDF or DOC/DOCX, max 3 MB
