@@ -59,7 +59,12 @@ export function ApplicationSidebar({
       )}
       style={
         tint
-          ? { backgroundColor: tint.sidebarBg, borderColor: tint.sidebarBorder }
+          ? ({
+              backgroundColor: tint.sidebarBg,
+              borderColor: tint.sidebarBorder,
+              "--sidebar-item-hover": tint.sidebarItemHover,
+              "--sidebar-item-active": tint.sidebarItemActive,
+            } as React.CSSProperties)
           : undefined
       }
     >
@@ -92,10 +97,19 @@ export function ApplicationSidebar({
                   className={cn(
                     "flex items-center justify-between overflow-hidden rounded-md px-[14px] py-3 text-left font-figtree text-md-p transition-colors",
                     isActive
-                      ? "bg-highlight font-semibold text-heavy"
-                      : "font-medium text-medium hover:bg-highlight/40",
+                      ? tint
+                        ? "font-semibold text-heavy"
+                        : "bg-highlight font-semibold text-heavy"
+                      : tint
+                        ? "font-medium text-medium hover:bg-[var(--sidebar-item-hover)]"
+                        : "font-medium text-medium hover:bg-highlight/40",
                     onStepClick && "cursor-pointer",
                   )}
+                  style={
+                    isActive && tint
+                      ? { backgroundColor: tint.sidebarItemActive }
+                      : undefined
+                  }
                 >
                   <span className="whitespace-nowrap">{step.label}</span>
                 </Element>
