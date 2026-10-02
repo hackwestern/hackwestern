@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import Link from "next/link";
 import * as React from "react";
 import {
   motion,
@@ -10,7 +11,6 @@ import {
 } from "framer-motion";
 import { Button } from "~/components/ui/button";
 import { Window } from "~/components/internals/window";
-import { Knight } from "~/components/promo/keepsakes";
 import {
   closestProgress,
   coverRect,
@@ -48,6 +48,10 @@ const BLEED = 240;
 // removing it outright) still smooths the sticky-release edge
 // without spilling into the next section.
 const BLEED_MOBILE = 48;
+// On tall mobile screens the cover-fit mountains rise into the headline. Push
+// the scene down so more sky shows above them and the peaks sit below
+// "Discover the unknown"; the bottom of the foreground is cropped instead.
+const MOBILE_SKY_EXTENSION = "10svh";
 const DOT = 3;
 const PATH_SAMPLES = 200;
 const PIN_ASPECT = 2.5;
@@ -59,8 +63,6 @@ const WINDOW_MAX_SCALE = 1.15;
 const WINDOW_EDGE_MARGIN = 24;
 // The design width the page's --ui-scale grows from.
 const DESIGN_WIDTH = 1440;
-// Phones don't get the about section, so its knight lives in this window there.
-const KNIGHT_PIN = "Build something unexpected";
 const WINDOW_ANCHOR_SHIFT = { left: 0.1, center: 0.5, right: 0.9 } as const;
 
 const MOUNTAIN_LAYERS = [
@@ -148,6 +150,7 @@ function PathCanvas({
 
     let currentProgress = progress.get();
     let mask: Float32Array | null = null;
+    let maskPixels = new Uint32Array(0);
     let maskProgress = -1;
     let rect = coverRect(1, 1);
     let frame = 0;
@@ -201,7 +204,17 @@ function PathCanvas({
         }
       }
 
+      let count = 0;
+      for (const proximity of next) {
+        if (proximity > 0) count++;
+      }
+      const pixels = new Uint32Array(count);
+      for (let index = 0, at = 0; index < next.length; index++) {
+        if (next[index]! > 0) pixels[at++] = index;
+      }
+
       mask = next;
+      maskPixels = pixels;
       maskProgress = value;
     };
 
@@ -213,17 +226,17 @@ function PathCanvas({
       data.fill(0);
       const breathe = reduceMotion ? 1 : 0.82 + 0.18 * Math.sin(time / 700);
 
-      for (let y = 0; y < canvas.height; y++) {
-        const row = BAYER[y & 7]!;
-        for (let x = 0; x < canvas.width; x++) {
-          const proximity = mask?.[y * canvas.width + x] ?? 0;
-          if (row[x & 7]! < 48 * proximity * breathe) {
-            const index = (y * canvas.width + x) * 4;
-            data[index] = 255;
-            data[index + 1] = 255;
-            data[index + 2] = 255;
-            data[index + 3] = 255;
-          }
+      const width = canvas.width;
+      for (const pixel of maskPixels) {
+        const x = pixel % width;
+        const y = (pixel - x) / width;
+        const proximity = mask?.[pixel] ?? 0;
+        if (BAYER[y & 7]![x & 7]! < 48 * proximity * breathe) {
+          const index = pixel * 4;
+          data[index] = 255;
+          data[index + 1] = 255;
+          data[index + 2] = 255;
+          data[index + 3] = 255;
         }
       }
 
@@ -400,8 +413,10 @@ function StoryPin({
       </motion.button>
 
       {open && (
+        // Below `sm` these windows are replaced by MobileStoryStack
+        // (story-mobile.tsx), which rolls the same messages up over the hero.
         <div
-          className="absolute z-30"
+          className="absolute z-30 max-sm:hidden"
           style={{
             left: windowLeft,
             top,
@@ -428,14 +443,9 @@ function StoryPin({
                 onClose={() => setOpen(false)}
               >
                 <div className="flex flex-col gap-2 py-1 text-left">
-                  <div className="flex items-start justify-between gap-2">
-                    <h2 className="font-cossetteTexte text-[clamp(18px,1.59vw,26px)] font-bold leading-tight tracking-[-0.02em] text-[#111]">
-                      {pin.title}
-                    </h2>
-                    {pin.title === KNIGHT_PIN && (
-                      <Knight className="relative shrink-0 sm:hidden" />
-                    )}
-                  </div>
+                  <h2 className="font-cossetteTexte text-[clamp(18px,1.59vw,26px)] font-bold leading-tight tracking-[-0.02em] text-[#111]">
+                    {pin.title}
+                  </h2>
                   <p className="font-figtree text-[clamp(13px,1.06vw,17px)] leading-normal text-[#555]">
                     {pin.body}
                   </p>
@@ -555,16 +565,21 @@ export function Hero() {
 
   return (
     <>
+      {/* Below lg the scene is pushed down (MOBILE_SKY_EXTENSION, parallax)
+          with no scroll room under it, so clip it just past the section's
+          bottom; otherwise the foreground spills past the film strip. The
+          15px (half the tape) runs it under the tape so no sky shows above
+          it. clip-path, not overflow-hidden, so the sticky scene still sticks. */}
       <section
         ref={sectionRef}
         id="hero"
-        className="relative isolate md:bg-none"
+        className="relative isolate max-lg:[clip-path:inset(-100vh_0_-15px_0)] md:bg-none"
         style={{ height: `calc(${SCENE_HEIGHT} + ${holdScreens * 100}svh)` }}
       >
         {/* Mobile background */}
         <div
           aria-hidden
-          className="absolute inset-x-0 -top-[100px] bottom-0 bg-[url('/landing/promo/mobile-bg-hero.png')] bg-cover bg-top bg-no-repeat md:hidden"
+          className="absolute inset-x-0 -top-[100px] bottom-0 bg-[url('/landing/promo/mobile-bg-hero.webp')] bg-cover bg-top bg-no-repeat md:hidden"
         />
         <div
           ref={sceneRef}
@@ -576,7 +591,25 @@ export function Hero() {
           }}
         >
           {/* placeholder until links added */}
-          <MountainScene pan={pan} />
+          {/* Mountains and the story layer move together so the story pins
+              stay on the art when the mobile sky extension shifts them. */}
+          <div
+            className={
+              editing ? "absolute inset-0 z-30" : "absolute inset-0 z-10"
+            }
+            style={{
+              transform: `translateY(${isMobile ? MOBILE_SKY_EXTENSION : "0px"})`,
+            }}
+          >
+            <MountainScene pan={pan} />
+            <ForegroundStory
+              key={editing ? "editing" : "live"}
+              pan={pan}
+              pathProgress={pathProgress}
+              editing={editing}
+              bleed={bleed}
+            />
+          </div>
 
           {/* past 1440 wide: grows with --ui-scale and lines up with the
               centred column, like the other sections' titles */}
@@ -634,15 +667,11 @@ export function Hero() {
               </div>
             </div>
 
-            <Button type="button">Sign up for updates</Button>
+            {/* data-hero-cta: the mobile story windows rest below this. */}
+            <Button asChild data-hero-cta>
+              <Link href="/apply">Apply</Link>
+            </Button>
           </div>
-          <ForegroundStory
-            key={editing ? "editing" : "live"}
-            pan={pan}
-            pathProgress={pathProgress}
-            editing={editing}
-            bleed={bleed}
-          />
         </div>
       </section>
     </>

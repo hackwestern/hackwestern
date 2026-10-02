@@ -20,13 +20,18 @@ type ReviewSectionProps = {
 
 function ReviewSection({ step, error, className }: ReviewSectionProps) {
   return (
-    <div className={cn("py-4", className)}>
+    <div className={cn("py-4 pr-2", className)}>
       <Separator />
       <div className="flex justify-between pt-4">
         <h2 className="font-jetbrains-mono text-base uppercase text-medium">
           {step.label}
         </h2>
-        <Button asChild variant="secondary" className="gap-2 font-figtree">
+        <Button
+          asChild
+          variant="primary"
+          size="sm"
+          className="gap-2 font-figtree"
+        >
           <Link href={{ pathname: "/apply", query: { step: step.step } }}>
             <PencilLine className="w-4" />
             Edit
@@ -281,7 +286,7 @@ function AgreementsReview({ error }: ReviewSectionProps) {
         error={error?.agreeShareWithSponsors?._errors}
       />
       <ReviewField
-        label="I will be at least 18 years old on November 21st, 2025"
+        label="I will be at least 18 years old on November 20th, 2026"
         value={data?.agreeWillBe18}
         error={error?.agreeWillBe18?._errors}
       />
@@ -455,7 +460,7 @@ export function ReviewForm() {
   const result = applicationSubmitSchema.safeParse(data);
   const error = result.error?.format();
   return (
-    <div className="overflow-auto">
+    <div className="overflow-auto py-1 pl-1 pr-1">
       {reviewSteps.map((step, idx) => (
         <ReviewSection step={step} key={idx} error={error} />
       ))}

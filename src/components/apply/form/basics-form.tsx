@@ -148,7 +148,7 @@ export function BasicsForm() {
               </FormControl>
               {(field.value ?? 18) < 18 && (
                 <FormDescription className="text-destructive">
-                  You must be 18 years of age by November 21, 2025.
+                  You must be 18 years of age by November 20, 2026.
                 </FormDescription>
               )}
             </FormItem>

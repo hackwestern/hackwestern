@@ -102,21 +102,27 @@ function getCloudPath(variant: CloudVariant): Path2D {
 
 let maskCanvas: HTMLCanvasElement | null = null;
 let maskCtx: CanvasRenderingContext2D | null = null;
-let maskData: Uint8ClampedArray | null = null;
-
-let cachedWidth = 0;
-let cachedHeight = 0;
-let cachedVariant: CloudVariant | null = null;
-let cachedDotSize = 0;
 // Where the cloud lands in the canvas, for centring a label on it.
 let cloudBox = { x: 0, y: 0, width: 0, height: 0 };
+const maskCache = new Map<
+  string,
+  { data: Uint8ClampedArray; box: typeof cloudBox }
+>();
 
 function buildMask(
   width: number,
   height: number,
   variant: CloudVariant,
   dotSize: number,
-): void {
+): Uint8ClampedArray | null {
+  // Only rebuild when dimensions OR the selected cloud change
+  const key = `${variant}:${width}x${height}:${dotSize}`;
+  const cached = maskCache.get(key);
+  if (cached) {
+    cloudBox = cached.box;
+    return cached.data;
+  }
+
   if (!maskCanvas) {
     maskCanvas = document.createElement("canvas");
 
@@ -125,25 +131,7 @@ function buildMask(
     });
   }
 
-  if (!maskCtx) return;
-
-  // Only rebuild when dimensions OR the selected cloud change —
-  // switching variant must invalidate the cache same as a
-  // resize does, or you'd keep seeing the old silhouette.
-  if (
-    cachedWidth === width &&
-    cachedHeight === height &&
-    cachedVariant === variant &&
-    cachedDotSize === dotSize &&
-    maskData
-  ) {
-    return;
-  }
-
-  cachedWidth = width;
-  cachedHeight = height;
-  cachedVariant = variant;
-  cachedDotSize = dotSize;
+  if (!maskCtx) return null;
 
   maskCanvas.width = width;
   maskCanvas.height = height;
@@ -194,7 +182,11 @@ function buildMask(
   maskCtx.setTransform(1, 0, 0, 1, 0, 0);
 
   // Expensive operation — only happens on resize.
-  maskData = maskCtx.getImageData(0, 0, width, height).data;
+  const maskData = maskCtx.getImageData(0, 0, width, height).data;
+
+  if (maskCache.size >= 24) maskCache.clear();
+  maskCache.set(key, { data: maskData, box: cloudBox });
+  return maskData;
 }
 
 // ------------------------------------------------------------
@@ -205,13 +197,12 @@ function buildMask(
 // canvas bounds so warped samples near the edge don't read
 // garbage/out-of-range memory.
 function sampleMaskAlpha(
+  maskData: Uint8ClampedArray,
   x: number,
   y: number,
   width: number,
   height: number,
 ): number {
-  if (!maskData) return 0;
-
   const cx = Math.min(width - 1, Math.max(0, Math.floor(x)));
 
   const cy = Math.min(height - 1, Math.max(0, Math.floor(y)));
@@ -343,7 +334,7 @@ export function drawAsciiCloud(
 
   const dotSize = Math.max(1, Math.round((DOT_SCALE / REFERENCE_DPR) * dpr));
 
-  buildMask(width, height, variant, dotSize);
+  const maskData = buildMask(width, height, variant, dotSize);
 
   if (!maskData) return;
 
@@ -432,7 +423,13 @@ export function drawAsciiCloud(
       // CLOUD MASK (sampled at the warped position)
       // ------------------------------------------------------
 
-      const maskAlpha = sampleMaskAlpha(sampleX, sampleY, width, height);
+      const maskAlpha = sampleMaskAlpha(
+        maskData,
+        sampleX,
+        sampleY,
+        width,
+        height,
+      );
 
       if (maskAlpha === 0) {
         continue;
