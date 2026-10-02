@@ -67,6 +67,9 @@ export function PastProjects() {
 
 const ASCII_CLOUD_WIDTH = "clamp(220px, 40.12 * var(--dvw, 1vw), 578px)";
 const ASCII_CLOUD_HEIGHT = "clamp(91px, 16.56 * var(--dvw, 1vw), 238px)";
+// Bigger on small screens so its label stays legible; lg+ is unchanged.
+const LINKED_CLOUD_WIDTH = "clamp(340px, 40.12 * var(--dvw, 1vw), 578px)";
+const LINKED_CLOUD_HEIGHT = "clamp(140px, 16.56 * var(--dvw, 1vw), 238px)";
 
 const SKY_LINK = process.env.NEXT_PUBLIC_SKY_LINK;
 const SKY_LABEL = process.env.NEXT_PUBLIC_SKY_LABEL;
@@ -94,8 +97,8 @@ function AsciiClouds() {
     <Cloud
       variant="cloud7"
       top="0"
-      width={ASCII_CLOUD_WIDTH}
-      height={ASCII_CLOUD_HEIGHT}
+      width={linked ? LINKED_CLOUD_WIDTH : ASCII_CLOUD_WIDTH}
+      height={linked ? LINKED_CLOUD_HEIGHT : ASCII_CLOUD_HEIGHT}
       label={linked ? SKY_LABEL : undefined}
     />
   );
@@ -108,7 +111,12 @@ function AsciiClouds() {
       className="pointer-events-none absolute inset-0 overflow-hidden lg:inset-x-[calc(720px-50vw)]"
     >
       <div className="absolute inset-x-0 top-[2%] md:top-[14.27%]">
-        <CloudDrift duration={40} delay={-30}>
+        {/* linked: above the folders (z-20), under opened project windows (z-30) */}
+        <CloudDrift
+          duration={40}
+          delay={-30}
+          className={linked ? "z-[25]" : undefined}
+        >
           {linked ? (
             <a
               ref={linkRef}
@@ -116,7 +124,7 @@ function AsciiClouds() {
               target="_blank"
               rel="noopener noreferrer"
               className="pointer-events-auto absolute left-0 top-0 block cursor-pixel-hover"
-              style={{ width: ASCII_CLOUD_WIDTH, height: ASCII_CLOUD_HEIGHT }}
+              style={{ width: LINKED_CLOUD_WIDTH, height: LINKED_CLOUD_HEIGHT }}
             >
               {topCloud}
             </a>

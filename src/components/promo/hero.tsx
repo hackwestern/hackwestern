@@ -10,6 +10,7 @@ import {
 } from "framer-motion";
 import { Button } from "~/components/ui/button";
 import { Window } from "~/components/internals/window";
+import { Knight } from "~/components/promo/keepsakes";
 import {
   closestProgress,
   coverRect,
@@ -58,6 +59,8 @@ const WINDOW_MAX_SCALE = 1.15;
 const WINDOW_EDGE_MARGIN = 24;
 // The design width the page's --ui-scale grows from.
 const DESIGN_WIDTH = 1440;
+// Phones don't get the about section, so its knight lives in this window there.
+const KNIGHT_PIN = "Build something unexpected";
 const WINDOW_ANCHOR_SHIFT = { left: 0.1, center: 0.5, right: 0.9 } as const;
 
 const MOUNTAIN_LAYERS = [
@@ -425,9 +428,14 @@ function StoryPin({
                 onClose={() => setOpen(false)}
               >
                 <div className="flex flex-col gap-2 py-1 text-left">
-                  <h2 className="font-cossetteTexte text-[clamp(18px,1.59vw,26px)] font-bold leading-tight tracking-[-0.02em] text-[#111]">
-                    {pin.title}
-                  </h2>
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="font-cossetteTexte text-[clamp(18px,1.59vw,26px)] font-bold leading-tight tracking-[-0.02em] text-[#111]">
+                      {pin.title}
+                    </h2>
+                    {pin.title === KNIGHT_PIN && (
+                      <Knight className="relative shrink-0 sm:hidden" />
+                    )}
+                  </div>
                   <p className="font-figtree text-[clamp(13px,1.06vw,17px)] leading-normal text-[#555]">
                     {pin.body}
                   </p>
