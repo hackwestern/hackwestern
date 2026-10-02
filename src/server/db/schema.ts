@@ -450,11 +450,13 @@ export const applications = pgTable(
       .notNull(),
     status: applicationStatus("status").default("IN_PROGRESS").notNull(),
 
-    // Horse companion + realm (HW13 redesign)
-    realm: realm("realm").notNull(),
-    horseId: integer("horse_id").notNull(),
-    horseFirstName: varchar("horse_first_name", { length: 255 }).notNull(),
-    horseLastName: varchar("horse_last_name", { length: 255 }).notNull(),
+    // Horse companion + realm (HW13 redesign). Columns are nullable in the
+    // DB (see drizzle/0016_add_realm_and_horse_companion.sql) because
+    // applications exist before the realm step is filled out.
+    realm: realm("realm"),
+    horseId: integer("horse_id"),
+    horseFirstName: varchar("horse_first_name", { length: 255 }),
+    horseLastName: varchar("horse_last_name", { length: 255 }),
 
     // About You
     firstName: varchar("first_name", { length: 255 }),
