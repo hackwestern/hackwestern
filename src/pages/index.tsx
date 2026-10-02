@@ -31,6 +31,19 @@ const mid = Math.ceil(PROMO_FAQ.length / 2);
 const left = PROMO_FAQ.slice(0, mid);
 const right = PROMO_FAQ.slice(mid);
 
+const IMAGES = [
+  "/landing/home/gallery/hw-1.jpg",
+  "/landing/home/gallery/hw-2.jpg",
+  "/landing/home/gallery/hw-3.jpg",
+  "/landing/home/gallery/hw-4.jpg",
+  "/landing/home/gallery/hw-5.jpg",
+  "/landing/home/gallery/hw-6.jpg",
+  "/landing/home/gallery/hw-7.jpg",
+  "/landing/home/gallery/hw-8.jpg",
+  "/landing/home/gallery/hw-9.jpg",
+  "/landing/home/gallery/hw-10.jpg",
+];
+
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -76,11 +89,6 @@ export default function Home() {
             sourceHeight={1115}
           />
         </div>
-
-        {/* //   top="37%"
-  //   left="26%"
-  //   width="140px"
-  //   height="52%" */}
 
         {/* insert waterfall */}
         <WindowFolder
@@ -160,17 +168,10 @@ export default function Home() {
             className: "isolate absolute right-[100px] top-[100px]",
           }}
         >
-          <PhotoGallery
-            images={[
-              "/landing/home/gallery/placeholder-1.png",
-              "/landing/home/gallery/placeholder-2.png",
-              "/landing/home/gallery/placeholder-3.png",
-              "/landing/home/gallery/placeholder-4.png",
-            ]}
-          />
+          <PhotoGallery images={IMAGES} />
         </WindowFolder>
       </section>
-      <FilmStrip rotate={3.5} className="relative z-10" />
+      <FilmStrip rotate={3.5} className="relative z-10 hidden lg:block" />
 
       <PastProjects />
       <FilmStrip rotate={1.2} className="relative z-10" />
