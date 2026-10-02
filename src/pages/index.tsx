@@ -6,7 +6,7 @@ import { SponsorLogos } from "~/components/promo/sponsor-logos";
 import { PastProjects } from "~/components/promo/past-projects";
 import { SkyBackground } from "~/components/promo/sky-background";
 import { TeamFooter } from "~/components/promo/team-footer";
-import { Chest, Knight, Telescope } from "~/components/promo/keepsakes";
+import { Chest, Flag, Knight } from "~/components/promo/keepsakes";
 import { Button } from "~/components/ui/button";
 import Image from "next/image";
 import { Window } from "~/components/internals/window";
@@ -389,9 +389,9 @@ export default function Home() {
             </a>
           </div>
 
-          {/* MOBILE window, with the telescope peeking out from behind it */}
+          {/* MOBILE window, with the flag planted behind it */}
           <div className="relative w-full max-w-[382px] self-center lg:hidden">
-            <Telescope className="absolute -top-[34px] right-6" />
+            <Flag className="absolute -top-[52px] right-6" />
             <Window
               autoHeight
               width={382}
@@ -457,12 +457,12 @@ export default function Home() {
           </section>
         </div>
         {/* Pinned where the desktop window is, but underneath it, so the
-            telescope peeks out from behind its top edge */}
+            flag sticks up from behind its top edge */}
         <div
           className="hidden lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:block lg:w-[700px] lg:origin-top-left lg:[scale:var(--ui-scale,1)]"
           style={SPONSORS_WINDOW_POINT}
         >
-          <Telescope className="absolute -top-[34px] right-10" />
+          <Flag className="absolute -top-[60px] right-10" />
         </div>
         {/* Sponsors window desktop*/}
         {/* this closes downwards...? */}

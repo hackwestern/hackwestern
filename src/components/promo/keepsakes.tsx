@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { type ReactNode, useId, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "~/lib/utils";
 
 /** Small clickable props on the landing page; clicks are remembered across visits. */
@@ -72,11 +73,22 @@ export function playReveal() {
  * Pops off the item just clicked, drifts the way to go next, and fades. A
  * small white arrow in a roomy box, so its soft warm glow has space to spread.
  */
+const POP_PATHS = {
+  // rises off the top of the item
+  "up-above": "top-0 [--pop-from:-78%] [--pop-mid:-92%] [--pop-to:-104%]",
+  // sinks off the bottom of the item or edge
+  "down-below": "bottom-0 [--pop-from:78%] [--pop-mid:92%] [--pop-to:104%]",
+  // sinks towards an edge from above it, stopping short of it
+  "down-above": "top-0 [--pop-from:-130%] [--pop-mid:-116%] [--pop-to:-104%]",
+};
+
 function PopArrow({
   direction,
+  side = direction === "up" ? "above" : "below",
   onDone,
 }: {
   direction: "up" | "down";
+  side?: "above" | "below";
   onDone: () => void;
 }) {
   const glow = `pop-glow${useId()}`;
@@ -88,7 +100,7 @@ function PopArrow({
       onAnimationEnd={onDone}
       className={cn(
         "pointer-events-none absolute left-1/2 z-10 h-auto w-11 animate-pop-arrow opacity-0",
-        direction === "up" ? "top-0 [--pop-dir:-1]" : "bottom-0 [--pop-dir:1]",
+        POP_PATHS[`${direction}-${side}` as keyof typeof POP_PATHS],
       )}
     >
       <defs>
@@ -128,6 +140,26 @@ function PopArrow({
 const LID = "M6 46V26C6 15 26 10 60 10s54 5 54 16v20Z";
 const BAND = "#7a4d02";
 const RIVET = "#fff3b0";
+
+/** White sticker border around whatever it's applied to. */
+function StickerFilter({ id }: { id: string }) {
+  return (
+    <filter id={id} x="-10%" y="-10%" width="120%" height="120%">
+      <feMorphology
+        in="SourceAlpha"
+        operator="dilate"
+        radius="3"
+        result="grown"
+      />
+      <feFlood floodColor="white" />
+      <feComposite in2="grown" operator="in" result="border" />
+      <feMerge>
+        <feMergeNode in="border" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  );
+}
 
 function Rivets({ points }: { points: [number, number][] }) {
   return points.map(([cx, cy]) => (
@@ -200,27 +232,7 @@ export function Chest({ className }: { className?: string }) {
             <clipPath id={`lid${id}`}>
               <path d={LID} />
             </clipPath>
-            {/* white sticker border around whatever it's applied to */}
-            <filter
-              id={`sticker${id}`}
-              x="-10%"
-              y="-10%"
-              width="120%"
-              height="120%"
-            >
-              <feMorphology
-                in="SourceAlpha"
-                operator="dilate"
-                radius="3"
-                result="grown"
-              />
-              <feFlood floodColor="white" />
-              <feComposite in2="grown" operator="in" result="border" />
-              <feMerge>
-                <feMergeNode in="border" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
+            <StickerFilter id={`sticker${id}`} />
           </defs>
 
           <ellipse cx="60" cy="95" rx="50" ry="3.5" fill="#000" opacity=".3" />
@@ -378,16 +390,38 @@ export function Chest({ className }: { className?: string }) {
   );
 }
 
+type ArrowSpot = { x: number; y: number; side: "above" | "below" };
+
+/**
+ * Just outside the window `el` sits in, on the edge nearer to it, so the arrow
+ * shows against the page instead of the window's light background.
+ */
+function outsideWindow(el: HTMLElement): ArrowSpot | null {
+  const frame = el.closest("[data-window-frame]")?.getBoundingClientRect();
+  if (!frame) return null;
+  const item = el.getBoundingClientRect();
+  const below = item.top + item.height / 2 > frame.top + frame.height / 2;
+  return {
+    x: item.left + item.width / 2 + window.scrollX,
+    y: (below ? frame.bottom : frame.top) + window.scrollY,
+    side: below ? "below" : "above",
+  };
+}
+
 /** A step that only appears once the one before it has been found. */
 function HiddenStep({
   step,
   arrow,
+  arrowOutsideWindow = false,
+  onFound,
   label,
   className,
   children,
 }: {
   step: number;
   arrow: "up" | "down";
+  arrowOutsideWindow?: boolean;
+  onFound?: () => void;
   label: string;
   className?: string;
   children: (found: boolean) => ReactNode;
@@ -395,21 +429,42 @@ function HiddenStep({
   const [unlocked] = useKeepsake(step - 1);
   const [found, markFound] = useKeepsake(step);
   const [popping, setPopping] = useState(false);
+  const [arrowSpot, setArrowSpot] = useState<ArrowSpot | null>(null);
 
   if (!unlocked) return null;
 
+  const done = () => {
+    setPopping(false);
+    setArrowSpot(null);
+  };
+
   return (
     <div className={className}>
-      {popping && (
-        <PopArrow direction={arrow} onDone={() => setPopping(false)} />
-      )}
+      {popping &&
+        (arrowSpot ? (
+          createPortal(
+            <div
+              className="pointer-events-none absolute z-50"
+              style={{ left: arrowSpot.x, top: arrowSpot.y }}
+            >
+              <PopArrow direction={arrow} side={arrowSpot.side} onDone={done} />
+            </div>,
+            document.body,
+          )
+        ) : (
+          <PopArrow direction={arrow} onDone={done} />
+        ))}
       <button
         type="button"
         aria-label={label}
-        onClick={() => {
+        onClick={(event) => {
           if (!found) {
             playArpeggio(step);
+            setArrowSpot(
+              arrowOutsideWindow ? outsideWindow(event.currentTarget) : null,
+            );
             setPopping(true);
+            onFound?.();
           }
           markFound();
         }}
@@ -423,7 +478,13 @@ function HiddenStep({
 
 export function Knight({ className }: { className?: string }) {
   return (
-    <HiddenStep step={2} arrow="down" label="Knight" className={className}>
+    <HiddenStep
+      step={2}
+      arrow="down"
+      arrowOutsideWindow
+      label="Knight"
+      className={className}
+    >
       {(found) => (
         <Image
           src="/landing/promo/knight.webp"
@@ -440,22 +501,90 @@ export function Knight({ className }: { className?: string }) {
   );
 }
 
-/** The pixel telescope cursor, scaled up 3x with its pixels kept crisp. */
-export function Telescope({ className }: { className?: string }) {
+/** The nearest ancestor that actually scrolls (body on phones, html elsewhere). */
+function scrollParent(el: Element) {
+  for (let node = el.parentElement; node; node = node.parentElement) {
+    const { overflowY } = getComputedStyle(node);
+    const scrolls = overflowY === "auto" || overflowY === "scroll";
+    if (scrolls && node.scrollHeight > node.clientHeight) return node;
+  }
+  return document.documentElement;
+}
+
+/** Once the arrow has had a moment, brings the linked cloud to mid-screen. */
+function scrollToSky() {
+  window.setTimeout(() => {
+    const sky = document.querySelector("[data-sky]");
+    if (!sky) return;
+    const { top, height } = sky.getBoundingClientRect();
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    scrollParent(sky).scrollBy({
+      top: top - (window.innerHeight - height) / 2,
+      behavior: reduce.matches ? "auto" : "smooth",
+    });
+  }, 700);
+}
+
+export function Flag({ className }: { className?: string }) {
+  const id = useId();
+
   return (
-    <HiddenStep step={3} arrow="up" label="Telescope" className={className}>
+    <HiddenStep
+      step={3}
+      arrow="up"
+      onFound={scrollToSky}
+      label="Flag"
+      className={className}
+    >
       {(found) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src="/cursors/telescope.webp"
-          alt=""
-          width={99}
-          height={69}
+        <svg
+          viewBox="0 0 64 84"
+          overflow="visible"
+          aria-hidden
           className={cn(
-            "block [image-rendering:pixelated]",
+            "block h-auto w-12 lg:w-14",
             !found && "motion-safe:animate-glow-pulse",
           )}
-        />
+        >
+          <defs>
+            <StickerFilter id={`flag-sticker${id}`} />
+          </defs>
+          <g filter={`url(#flag-sticker${id})`}>
+            <rect
+              x="6"
+              y="6"
+              width="4"
+              height="76"
+              rx="2"
+              fill="#7a4a26"
+              stroke="#4a2a12"
+              strokeWidth=".6"
+            />
+            <circle
+              cx="8"
+              cy="5"
+              r="3.2"
+              fill="#f5bf1d"
+              stroke="#7a4d02"
+              strokeWidth=".6"
+            />
+            {/* the cloth waves from the pole */}
+            <g className="origin-left [transform-box:fill-box] motion-safe:animate-flag-wave">
+              <path
+                d="M10 9c8-4 16 3 26 0s16-3 22 0v24c-6-3-12-3-22 0s-18 4-26 0Z"
+                fill="#e8543e"
+              />
+              <path
+                d="M10 27c8 4 18 3 26 0s16-3 22 0v6c-6-3-12-3-22 0s-18 4-26 0Z"
+                fill="#c43d2a"
+              />
+              <path
+                d="m34 14 1.6 3.4 3.7.4-2.8 2.5.8 3.7-3.3-1.9-3.3 1.9.8-3.7-2.8-2.5 3.7-.4Z"
+                fill="white"
+              />
+            </g>
+          </g>
+        </svg>
       )}
     </HiddenStep>
   );

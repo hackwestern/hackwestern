@@ -77,9 +77,9 @@ const SKY_LABEL = process.env.NEXT_PUBLIC_SKY_LABEL;
 function AsciiClouds() {
   const [chestOpened] = useKeepsake(1);
   const [knightClicked] = useKeepsake(2);
-  const [telescopeClicked] = useKeepsake(3);
+  const [flagClicked] = useKeepsake(3);
   const linked =
-    Boolean(SKY_LINK) && chestOpened && knightClicked && telescopeClicked;
+    Boolean(SKY_LINK) && chestOpened && knightClicked && flagClicked;
   const linkRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
@@ -122,6 +122,7 @@ function AsciiClouds() {
           {linked ? (
             <a
               ref={linkRef}
+              data-sky
               href={SKY_LINK}
               target="_blank"
               rel="noopener noreferrer"
