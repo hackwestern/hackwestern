@@ -287,20 +287,13 @@ export default function Apply() {
               realm={realm}
             />
 
-            <div className="relative flex flex-1 flex-col">
-              <div className="absolute right-0 top-0 z-10">
-                <UserBadge
-                  firstName={userInfo?.firstName ?? "there"}
-                  onSignOut={() => void signOut({ callbackUrl: "/" })}
-                />
-              </div>
-
-              <div className="relative flex flex-1 pt-14">
+            <div className="relative flex min-w-0 flex-1 flex-col">
+              <div className="relative flex flex-1">
                 <AnimatePresence mode="wait">
                   {!step ? (
                     <motion.div
                       key="portal-start"
-                      className="-mt-8 w-full max-w-[600px] self-start px-8 md:px-12"
+                      className="mt-6 w-full max-w-[600px] self-start px-8 md:px-12"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
@@ -315,7 +308,7 @@ export default function Apply() {
                   ) : (
                     <motion.div
                       key="portal-window"
-                      className="m-auto flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[clamp(900px,68.4vw,1400px)] flex-col gap-4"
+                      className="m-auto flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4"
                       style={{ transformOrigin: "bottom right" }}
                       initial={
                         growWindow
@@ -359,9 +352,17 @@ export default function Apply() {
                   )}
                 </AnimatePresence>
               </div>
+            </div>
+
+            <div className="pointer-events-none absolute inset-y-9 right-9 z-20 flex w-[220px] flex-col items-end justify-between lg:relative lg:inset-auto lg:shrink-0">
+              <UserBadge
+                className="pointer-events-auto"
+                firstName={userInfo?.firstName ?? "there"}
+                onSignOut={() => void signOut({ callbackUrl: "/" })}
+              />
 
               {!step && (
-                <div className="absolute bottom-8 right-8 z-10 flex flex-col items-center gap-1.5">
+                <div className="mb-2 mr-2 flex flex-col items-center gap-1.5">
                   <img
                     src="/landing/home/folder.png"
                     alt="HW13 Applications folder"
@@ -376,13 +377,11 @@ export default function Apply() {
               )}
 
               {showCompanion && (
-                <div className="pointer-events-none absolute bottom-6 right-6 z-20">
-                  <HorseCompanion
-                    horseId={horseId}
-                    firstName={userInfo?.horseFirstName}
-                    lastName={userInfo?.horseLastName}
-                  />
-                </div>
+                <HorseCompanion
+                  horseId={horseId}
+                  firstName={userInfo?.horseFirstName}
+                  lastName={userInfo?.horseLastName}
+                />
               )}
             </div>
           </div>
