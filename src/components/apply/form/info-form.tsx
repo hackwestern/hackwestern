@@ -21,7 +21,6 @@ import {
 } from "~/components/ui/select";
 import { schools } from "~/constants/schools";
 import { major, numOfHackathons, yearOfStudy } from "~/server/db/schema";
-import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
 
 export function InfoForm() {
   const utils = api.useUtils();
@@ -170,49 +169,61 @@ export function InfoForm() {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="attendedBefore"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Have you attended Hack Western before?</FormLabel>
-              <FormControl>
-                <RadioButtonGroup
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  disabled={!canEdit}
-                >
-                  <RadioButtonItem key="yes" label="Yes" value="yes" />
-                  <RadioButtonItem key="no" label="No" value="no" />
-                </RadioButtonGroup>
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="numOfHackathons"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>How many hackathons have you attended?</FormLabel>
-              <FormControl>
-                <RadioButtonGroup
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  disabled={!canEdit}
-                >
-                  {numOfHackathons.enumValues.map((option) => (
-                    <RadioButtonItem
-                      key={option}
-                      label={option}
-                      value={option}
-                    />
-                  ))}
-                </RadioButtonGroup>
-              </FormControl>
-            </FormItem>
-          )}
-        />
+        <div className="grid gap-6 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="attendedBefore"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Have you attended Hack Western before?</FormLabel>
+                <FormControl>
+                  <Select
+                    {...field}
+                    value={field.value ?? undefined}
+                    onValueChange={field.onChange}
+                    disabled={!canEdit}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="yes">Yes</SelectItem>
+                      <SelectItem value="no">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="numOfHackathons"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>How many hackathons have you attended?</FormLabel>
+                <FormControl>
+                  <Select
+                    {...field}
+                    value={field.value ?? undefined}
+                    onValueChange={field.onChange}
+                    disabled={!canEdit}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {numOfHackathons.enumValues.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
       </form>
     </Form>
   );

@@ -3,18 +3,10 @@ import * as React from "react";
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-} from "~/components/ui/form";
-import { Input } from "~/components/ui/input";
+import { Form } from "~/components/ui/form";
 import { api } from "~/utils/api";
-import { useAutoSave } from "~/hooks/use-auto-save";
 import { realmSaveSchema } from "~/schemas/application";
-import { getHorse, realmLabel, type Horse } from "~/constants/realms";
+import { type Horse } from "~/constants/realms";
 import { HorsePicker } from "./horse-picker";
 
 type RealmFormValues = z.infer<typeof realmSaveSchema>;
@@ -34,114 +26,59 @@ export function RealmForm() {
 
   const form = useForm<RealmFormValues>({
     resolver: zodResolver(realmSaveSchema),
-    defaultValues: defaults as RealmFormValues,
+    values: (defaults ?? {
+      realm: null,
+      horseId: null,
+      horseFirstName: null,
+      horseLastName: null,
+    }) as RealmFormValues,
+    resetOptions: { keepDirtyValues: true },
   });
 
-  const onSubmit = React.useCallback(
-    (data: RealmFormValues) => mutate(data),
-    [mutate],
+  // Highlight is pure local state so a click paints on the very next frame
+  // without waiting for RHF subscriptions or the server round-trip. The
+  // effect below just keeps it mirrored to whatever the server last confirmed.
+  const [highlightedId, setHighlightedId] = React.useState<number | null>(
+    defaults?.horseId ?? null,
   );
 
-  useAutoSave(form, onSubmit, defaults);
-
-  const horseId = form.watch("horseId");
-  const horseFirstName = form.watch("horseFirstName");
-  const horseLastName = form.watch("horseLastName");
-  const selectedHorse = getHorse(horseId);
+  React.useEffect(() => {
+    if (defaults?.horseId != null && defaults.horseId !== highlightedId) {
+      setHighlightedId(defaults.horseId);
+    }
+    // We only want to react to server-side changes here; local optimistic
+    // picks are handled by handlePick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaults?.horseId]);
 
   const handlePick = (horse: Horse) => {
     if (!canEdit) return;
+    // Flip the highlight synchronously. This is the only state the picker
+    // reads, so React re-renders it immediately with the new selection.
+    setHighlightedId(horse.id);
+    // Mirror into form state so the companion step picks it up.
     form.setValue("horseId", horse.id, { shouldDirty: true });
     form.setValue("realm", horse.realm, { shouldDirty: true });
-  };
-
-  const handleChangeHorse = () => {
-    if (!canEdit) return;
-    form.setValue("horseId", null, { shouldDirty: true });
-    form.setValue("realm", null, { shouldDirty: true });
-  };
-
-  if (!selectedHorse) {
-    return (
-      <Form {...form}>
-        <HorsePicker selectedId={horseId ?? null} onSelect={handlePick} />
-      </Form>
+    // Persist + refetch.
+    mutate(
+      {
+        realm: horse.realm,
+        horseId: horse.id,
+        horseFirstName: defaults?.horseFirstName ?? null,
+        horseLastName: defaults?.horseLastName ?? null,
+      } as RealmFormValues,
+      {
+        onSuccess: () => {
+          void utils.application.get.invalidate();
+        },
+      },
     );
-  }
+  };
 
   return (
     <Form {...form}>
-      <div className="flex flex-col items-center gap-6">
-        <div className="text-center">
-          <p className="font-primary text-sm-display font-bold text-heavy">
-            {horseFirstName && horseLastName
-              ? `${horseFirstName} ${horseLastName} will be your companion for Hack Western 13!`
-              : "Name your horse companion"}
-          </p>
-          <p className="mt-2 font-figtree text-lg-p font-medium text-light">
-            You will be journeying through the{" "}
-            <span className="font-semibold text-medium">
-              {realmLabel[selectedHorse.realm]}
-            </span>{" "}
-            realm.
-          </p>
-        </div>
-
-        <div className="relative w-full max-w-[420px]">
-          <img
-            src={selectedHorse.asset}
-            alt={`${realmLabel[selectedHorse.realm]} horse`}
-            className="mx-auto max-h-[240px] w-auto max-w-full select-none object-contain"
-            draggable={false}
-          />
-        </div>
-
-        <div className="grid w-full max-w-[600px] grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="horseFirstName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>First Name</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value ?? ""}
-                    disabled={!canEdit}
-                    placeholder="Wobbly"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="horseLastName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Last Name</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value ?? ""}
-                    disabled={!canEdit}
-                    placeholder="Biscuit"
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {canEdit && (
-          <button
-            type="button"
-            onClick={handleChangeHorse}
-            className="font-figtree text-md-p font-medium text-medium underline-offset-2 hover:underline"
-          >
-            Pick a different horse
-          </button>
-        )}
+      <div className="flex w-full flex-col items-center gap-4 pb-8 text-center">
+        <HorsePicker selectedId={highlightedId} onSelect={handlePick} />
       </div>
     </Form>
   );
