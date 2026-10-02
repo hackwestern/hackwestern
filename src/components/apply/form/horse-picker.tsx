@@ -20,11 +20,11 @@ export function HorsePicker({
       <div
         className={cn(
           "relative aspect-[823/500] w-full",
-          // Cap by viewport so the picker never pushes the Window off-screen.
-          // 60vh gives enough room for the sidebar nav + footer button.
-          "max-h-[min(60vh,440px)]",
-          // Keep width in sync with the height cap so aspect ratio holds.
-          "max-w-[min(calc(60vh*1.646),720px)]",
+          // Keep the picker contained within whatever space the Window gives
+          // it after the heading + footer. 40vh / 320px cap is small enough
+          // to fit on a 720p laptop even after sidebar + traffic-light chrome.
+          "max-h-[min(40vh,320px)]",
+          "max-w-[min(calc(40vh*1.646),calc(320px*1.646))]",
         )}
       >
         {horses.map((horse) => {
