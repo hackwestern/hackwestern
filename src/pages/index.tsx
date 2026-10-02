@@ -16,7 +16,7 @@ import { PROMO_FAQ } from "~/constants/faq";
 import Waterfall from "~/components/live/waterfall";
 import CloudDrift from "~/components/live/clouddrift";
 import Cloud from "~/components/live/cloud";
-import { useRef } from "react";
+import { type CSSProperties, useRef } from "react";
 
 // ABOUT & FAQ TODO
 // 4. check with "dear hackers" message
@@ -52,6 +52,16 @@ const IMAGES = [
 const SPONSORS_STRIP_ROTATE = -1.2;
 const SPONSORS_STRIP_EDGE = filmStripEdge(SPONSORS_STRIP_ROTATE);
 
+// Section photos (height / width of the file). Each photo's box is at least
+// as tall as the photo at the current screen width, so the whole image shows
+// and only the film strips overlap it at the seams.
+const ABOUT_BG_RATIO = 3277 / 2880;
+const SPONSORS_BG_RATIO = 3427 / 2880;
+// The about photo's box reaches 24px above the section and 7.06dvw + 15px below.
+const ABOUT_MIN_HEIGHT = `max(1109px, calc(${(ABOUT_BG_RATIO * 100).toFixed(2)}vw - 39px - 7.06 * var(--dvw)))`;
+// The sponsors photo's box reaches up behind the strip by its height.
+const SPONSORS_MIN_HEIGHT = `max(1790px, calc(${(SPONSORS_BG_RATIO * 100).toFixed(2)}vw - ${SPONSORS_STRIP_EDGE.height}px))`;
+
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -70,7 +80,7 @@ export default function Home() {
 
       <section
         id="about"
-        style={{ minHeight: 1109 }}
+        style={{ minHeight: ABOUT_MIN_HEIGHT }}
         className="relative hidden sm:block"
       >
         <div
@@ -192,8 +202,9 @@ export default function Home() {
       <section
         id="sponsors"
         className="relative flex flex-col gap-12 overflow-hidden px-6 pb-12 pt-12 [--photo-h:320px] [--photo-offset:150px]
-             lg:block lg:min-h-[1790px]
+             lg:block lg:min-h-[var(--sponsors-min-h)]
              lg:overflow-visible lg:overflow-x-clip lg:p-0"
+        style={{ "--sponsors-min-h": SPONSORS_MIN_HEIGHT } as CSSProperties}
       >
         {/* CLOUDS */}
         <CloudDrift delay={0} duration={40} wait={50} className="top-[50px]">
@@ -397,11 +408,13 @@ export default function Home() {
         </div>
         {/* Sponsors window desktop*/}
         {/* this closes downwards...? */}
+        {/* bottom edge stays 805.5px from the top (55% up a 1790px section),
+            so it keeps clear of the FAQ when the section grows with the photo */}
         <Window
           autoHeight
           width={700}
           title="Thank you to our sponsors"
-          className="z-10 hidden lg:absolute lg:bottom-[55%] lg:left-[40%] lg:block"
+          className="z-10 hidden lg:absolute lg:bottom-[calc(100%-805.5px)] lg:left-[40%] lg:block"
         >
           <SponsorLogos className="w-full p-6" />
         </Window>

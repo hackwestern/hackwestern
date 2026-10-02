@@ -68,7 +68,9 @@ function AsciiClouds() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 overflow-hidden"
+      // Desktop: reach past the centred 1440 stage to the screen edges so the
+      // clouds drift across the full width, like the sponsors ones.
+      className="pointer-events-none absolute inset-0 overflow-hidden lg:inset-x-[calc(720px-50vw)]"
     >
       <div className="absolute inset-x-0 top-[2%] md:top-[14.27%]">
         <CloudDrift duration={40} delay={-30}>
