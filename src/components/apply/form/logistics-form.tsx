@@ -79,8 +79,6 @@ export function LogisticsForm() {
     });
   }
 
-  const dietaryValue = form.watch("dietaryRestrictions");
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -132,26 +130,26 @@ export function LogisticsForm() {
             </FormItem>
           )}
         />
-        {dietaryValue === "Other" && (
-          <FormField
-            control={form.control}
-            name="dietaryRestrictionsOther"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Please specify your dietary restriction *</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    value={field.value ?? ""}
-                    placeholder="e.g. gluten-free"
-                    variant="primary"
-                    disabled={!canEdit}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        )}
+        <FormField
+          control={form.control}
+          name="dietaryRestrictionsOther"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                If selected Other then tell us more (optional)
+              </FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  value={field.value ?? ""}
+                  placeholder="e.g. gluten-free"
+                  variant="primary"
+                  disabled={!canEdit}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="emergencyContactName"

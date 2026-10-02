@@ -14,7 +14,6 @@ import {
   shirtSize,
   dietaryRestrictions,
   emergencyContactRelationship,
-  transportationMethod,
 } from "~/server/db/schema";
 
 // Save schema
@@ -24,6 +23,7 @@ export const applicationSaveSchema = createInsertSchema(applications)
     updatedAt: true,
     status: true,
     userId: true,
+    transportationMethod: true,
   })
   .extend({
     devpostLink: z.string().nullish(),
@@ -255,8 +255,12 @@ export const applicationSubmitSchema = z
 
     // RSVP fields
     shirtSize: z.enum(shirtSize.enumValues),
-    dietaryRestrictions: z.enum(dietaryRestrictions.enumValues),
-    dietaryRestrictionsOther: z.string().nullable(),
+    dietaryRestrictions: z.preprocess(
+      (v) => (!v ? undefined : v),
+      z.enum(dietaryRestrictions.enumValues),
+    ),
+
+    dietaryRestrictionsOther: z.string().max(255).optional(),
     emergencyContactName: z.string().min(1),
     emergencyContactRelationship: z.enum(
       emergencyContactRelationship.enumValues,
@@ -265,10 +269,12 @@ export const applicationSubmitSchema = z
       .string()
       .min(1)
       .regex(phoneRegex, "Invalid phone number"),
-    transportationMethod: z.enum(transportationMethod.enumValues),
   })
   .superRefine((data, ctx) => {
-    if (data.dietaryRestrictions == "Other" && !data.dietaryRestrictionsOther) {
+    if (
+      data.dietaryRestrictions === "Other" &&
+      !data.dietaryRestrictionsOther?.trim()
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Please specify your dietary restriction",
