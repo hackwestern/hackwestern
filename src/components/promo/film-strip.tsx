@@ -1,4 +1,4 @@
-import { cn } from "~/lib/utils";
+import type { CSSProperties } from "react";
 
 const DESIGN_WIDTH = 1440;
 const DESIGN_STRIP_WIDTH = 1890;
@@ -14,23 +14,33 @@ export function FilmStrip({
   rotate?: number;
   className?: string;
 }) {
-  const tilt = Math.abs(Math.sin((rotate * Math.PI) / 180)) * OVERHANG * 100;
+  const radians = (rotate * Math.PI) / 180;
+  const tilt = Math.abs(Math.sin(radians)) * OVERHANG * 100;
+  // Desktop keeps the strip's rise across the screen at its 1440 design value,
+  // so wider screens get a flatter angle instead of a taller strip.
+  const rise = DESIGN_WIDTH * Math.tan(radians);
 
   return (
     <div
       aria-hidden
-      className={`relative w-full overflow-hidden ${className}`}
-      style={{ height: `calc(${tilt.toFixed(2)}vw + ${THICKNESS}px)` }}
+      className={`relative h-[calc(var(--tilt)*1vw+var(--thickness))] w-full overflow-hidden [container-type:inline-size] lg:h-[calc(var(--tilt)*14.4px+var(--thickness))] ${className}`}
+      style={
+        {
+          "--tilt": tilt.toFixed(2),
+          "--thickness": `${THICKNESS}px`,
+          "--angle": `${rotate}deg`,
+          "--rise": `${rise.toFixed(2)}px`,
+        } as CSSProperties
+      }
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/landing/promo/film-strip.svg"
         alt=""
-        className="absolute left-1/2 top-1/2 max-w-none"
+        className="absolute left-1/2 top-1/2 max-w-none [transform:translate(-50%,-50%)_rotate(var(--angle))] lg:[transform:translate(-50%,-50%)_rotate(atan2(var(--rise),100cqw))]"
         style={{
           width: `${OVERHANG * 100}%`,
           height: `${THICKNESS}px`,
-          transform: `translate(-50%, -50%) rotate(${rotate}deg)`,
         }}
       />
     </div>

@@ -181,10 +181,11 @@ export function TeamFooter({ team = TEAM }: { team?: TeamMember[] }) {
       className="relative z-10 overflow-x-clip bg-black [container-type:inline-size]"
     >
       <div
-        className="relative [--fade:64px] md:[--fade:160px]"
+        // Desktop: one design px per px, so the band keeps its height and wider
+        // screens just show more of the marquee.
+        className="relative [--fade:64px] [--u:calc(max(100cqw,576px)/1440)] md:[--fade:160px] lg:[--u:1px]"
         style={
           {
-            "--u": "calc(max(100cqw, 576px) / 1440)",
             height: u(BAND_H),
           } as CssVars
         }

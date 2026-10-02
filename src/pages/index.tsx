@@ -50,7 +50,11 @@ export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   return (
-    <main id="top" className="relative cursor-pixel-default">
+    <main
+      id="top"
+      className="relative cursor-pixel-default [--dvw:1vw] lg:[--dvw:14.4px]"
+    >
+      {/* --dvw: 1% of the 1440 design on desktop, so sizes stay fixed as the screen widens */}
       <SkyBackground />
       <PromoHeader />
 
@@ -67,8 +71,9 @@ export default function Home() {
           ref={containerRef}
           className="absolute inset-x-0 -top-6 z-0"
           style={{
-            bottom: "calc(-7.06vw - 15px)",
-            clipPath: "polygon(0 0, 100% 0.7vw, 100% 100%, 0 calc(100% - 6vw))",
+            bottom: "calc(-7.06 * var(--dvw) - 15px)",
+            clipPath:
+              "polygon(0 0, 100% calc(0.7 * var(--dvw)), 100% 100%, 0 calc(100% - 6 * var(--dvw)))",
           }}
         >
           <Image
