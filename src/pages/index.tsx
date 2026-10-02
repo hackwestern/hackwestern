@@ -66,24 +66,27 @@ const SPONSORS_SKY = 150;
 const SPONSORS_PHOTO: CoverPhoto = {
   imageWidth: 2880,
   imageHeight: 3427,
-  designHeight: 1790 + SPONSORS_SKY,
+  designHeight: 1690 + SPONSORS_SKY,
   top: SPONSORS_SKY - SPONSORS_STRIP_EDGE.height,
   topCss: `calc(${halfRateHeight(SPONSORS_SKY)} - ${SPONSORS_STRIP_EDGE.height}px)`,
   align: "top",
 };
 // Where the title, sponsors window and FAQ start at 1440 (px from the section
-// top). The window's top sits just under the title's second line (~241px),
-// and the FAQ keeps its 94px gap below the ~569px-tall window.
+// top). The window's top sits ~20px under the "Get in touch" button (which
+// ends ~365px), and the FAQ sits 60px under the ~569px-tall window.
 const SPONSORS_TITLE_Y = 155;
-const SPONSORS_WINDOW_Y = 256;
-const SPONSORS_FAQ_Y = 919;
+const SPONSORS_WINDOW_Y = 385;
+const SPONSORS_FAQ_Y = 1014;
 const SPONSORS_TITLE_POINT = photoPoint(SPONSORS_PHOTO, 160, SPONSORS_TITLE_Y);
-// The window follows the title rather than the photo, so the gap under the
-// title grows only with --ui-scale, like the title itself.
-const SPONSORS_WINDOW_POINT = {
-  "--x": photoPoint(SPONSORS_PHOTO, 576, 0)["--x"],
-  "--y": `calc(${SPONSORS_TITLE_POINT["--y"]} + ${SPONSORS_WINDOW_Y - SPONSORS_TITLE_Y}px * var(--ui-scale, 1))`,
-} as CSSProperties;
+// The window and FAQ follow the title rather than the photo, so their gaps
+// grow only with --ui-scale, like the elements themselves.
+const belowSponsorsTitle = (x: number, y: number) =>
+  ({
+    "--x": photoPoint(SPONSORS_PHOTO, x, 0)["--x"],
+    "--y": `calc(${SPONSORS_TITLE_POINT["--y"]} + ${y - SPONSORS_TITLE_Y}px * var(--ui-scale, 1))`,
+  }) as CSSProperties;
+const SPONSORS_WINDOW_POINT = belowSponsorsTitle(576, SPONSORS_WINDOW_Y);
+const SPONSORS_FAQ_POINT = belowSponsorsTitle(160, SPONSORS_FAQ_Y);
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -402,7 +405,7 @@ export default function Home() {
             {/* FAQ */}
             <div
               className="relative z-10 flex w-full flex-col items-start gap-[24px] lg:absolute lg:left-[var(--x)] lg:top-[var(--y)] lg:w-[1120px] lg:origin-top-left lg:gap-[64px] lg:[scale:var(--ui-scale,1)]"
-              style={photoPoint(SPONSORS_PHOTO, 160, SPONSORS_FAQ_Y)}
+              style={SPONSORS_FAQ_POINT}
             >
               <div className="flex w-full max-w-[488px] flex-col items-start gap-[18px]">
                 <div className="relative">
