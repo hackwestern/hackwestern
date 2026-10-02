@@ -87,11 +87,6 @@ export default function Home() {
           />
         </div>
 
-        {/* //   top="37%"
-  //   left="26%"
-  //   width="140px"
-  //   height="52%" */}
-
         {/* insert waterfall */}
         <WindowFolder
           defaultOpen

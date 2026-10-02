@@ -547,7 +547,7 @@ export function Hero() {
         <div
           ref={sceneRef}
           data-sky-hold
-          className="sticky overflow-hidden"
+          className="sticky translate-y-[20px] overflow-hidden"
           style={{
             height: SCENE_HEIGHT,
             top: `calc(100svh - ${SCENE_HEIGHT})`,
