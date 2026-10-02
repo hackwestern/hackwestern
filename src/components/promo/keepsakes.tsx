@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useId, useSyncExternalStore } from "react";
+import { useId, useState, useSyncExternalStore } from "react";
 import { cn } from "~/lib/utils";
 
 /** Small clickable props on the landing page; clicks are remembered across visits. */
@@ -68,26 +68,33 @@ export function playReveal() {
   playArpeggio(ARPEGGIO.length);
 }
 
-function Arrow({ direction }: { direction: "up" | "down" }) {
+/** Pops off the item just clicked, drifts the way to go next, and fades. */
+function PopArrow({
+  direction,
+  onDone,
+}: {
+  direction: "up" | "down";
+  onDone: () => void;
+}) {
   return (
-    <span className="block motion-safe:animate-bounce">
-      <svg
-        viewBox="0 0 24 32"
-        aria-hidden
-        className={cn(
-          "h-auto w-5 drop-shadow lg:w-6",
-          direction === "down" && "rotate-180",
-        )}
-      >
-        <path
-          d="M12 2 22 13h-6.5v17h-7V13H2Z"
-          fill="white"
-          stroke="#1b1f23"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </span>
+    <svg
+      viewBox="0 0 44 50"
+      aria-hidden
+      onAnimationEnd={onDone}
+      className={cn(
+        "pointer-events-none absolute left-1/2 z-10 h-auto w-8 animate-pop-arrow opacity-0 [filter:drop-shadow(0_0_5px_rgb(250_232_107))_drop-shadow(0_0_12px_rgb(250_232_107))]",
+        direction === "up" ? "top-0 [--pop-dir:-1]" : "bottom-0 [--pop-dir:1]",
+      )}
+    >
+      <path
+        d="M22 3 41 23H30v24H14V23H3Z"
+        transform={direction === "down" ? "rotate(180 22 25)" : undefined}
+        fill="white"
+        stroke="white"
+        strokeWidth="4"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -100,21 +107,20 @@ const LID = "M4 26V16C4 9 14 6 32 6s28 3 28 10v10Z";
 
 export function Chest({ className }: { className?: string }) {
   const [opened, open] = useKeepsake(1);
-  const [knightClicked] = useKeepsake(2);
+  const [popping, setPopping] = useState(false);
   const lidClip = useId();
 
   return (
     <div className={cn("w-12 lg:w-[72px]", className)}>
-      {opened && !knightClicked && (
-        <div className="absolute inset-x-0 bottom-full mb-3 flex justify-center">
-          <Arrow direction="up" />
-        </div>
-      )}
+      {popping && <PopArrow direction="up" onDone={() => setPopping(false)} />}
       <button
         type="button"
         aria-label="Chest"
         onClick={() => {
-          if (!opened) playArpeggio(1);
+          if (!opened) {
+            playArpeggio(1);
+            setPopping(true);
+          }
           open();
         }}
         className={cn(
@@ -218,19 +224,26 @@ export function Chest({ className }: { className?: string }) {
 export function Knight({ className }: { className?: string }) {
   const [chestOpened] = useKeepsake(1);
   const [clicked, markClicked] = useKeepsake(2);
+  const [popping, setPopping] = useState(false);
 
   if (!chestOpened) return null;
 
   return (
-    <div className={cn("flex items-center gap-3", className)}>
+    <div className={className}>
+      {popping && (
+        <PopArrow direction="down" onDone={() => setPopping(false)} />
+      )}
       <button
         type="button"
         aria-label="Knight"
         onClick={() => {
-          if (!clicked) playArpeggio(2);
+          if (!clicked) {
+            playArpeggio(2);
+            setPopping(true);
+          }
           markClicked();
         }}
-        className="cursor-pixel-hover"
+        className="block cursor-pixel-hover"
       >
         <Image
           src="/landing/promo/knight.webp"
@@ -243,7 +256,6 @@ export function Knight({ className }: { className?: string }) {
           )}
         />
       </button>
-      {clicked && <Arrow direction="down" />}
     </div>
   );
 }

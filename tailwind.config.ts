@@ -241,6 +241,22 @@ const config = {
               "drop-shadow(0 0 1.5px rgb(255 214 90)) drop-shadow(0 0 6px rgb(255 214 90))",
           },
         },
+        // --pop-dir: -1 rises off the top edge, 1 sinks off the bottom.
+        "pop-arrow": {
+          "0%": {
+            opacity: "0",
+            transform: "translate(-50%, calc(var(--pop-dir) * 78%)) scale(0.9)",
+          },
+          "16%, 64%": {
+            opacity: "1",
+            transform: "translate(-50%, calc(var(--pop-dir) * 92%)) scale(1)",
+          },
+          "100%": {
+            opacity: "0",
+            transform:
+              "translate(-50%, calc(var(--pop-dir) * 104%)) scale(0.96)",
+          },
+        },
         // A quick wiggle, then a long rest, so it reads as an occasional nudge.
         wiggle: {
           "0%, 16%, 100%": { transform: "rotate(0deg)" },
@@ -253,6 +269,7 @@ const config = {
         },
       },
       animation: {
+        "pop-arrow": "pop-arrow 1.2s ease-out forwards",
         "bounce-jump": "bounce-jump 0.6s ease-in-out",
         "team-marquee": "team-marquee 80s linear infinite",
         "glow-pulse": "glow-pulse 2.8s ease-in-out infinite",
