@@ -21,49 +21,34 @@ import { disabledRedirect } from "~/utils/redirect";
 import { isPastDeadline } from "~/lib/date";
 import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
-import type { GetServerSidePropsContext } from "next";
-import SEO from "~/components/seo";
-import { api } from "~/utils/api";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
-import { disabledRedirect } from "~/utils/redirect";
-import { isPastDeadline } from "~/lib/date";
-import { PortalShell } from "~/components/dashboard/portal-shell";
-import {
-  AcceptedStatusCard,
-  DeclinedStatusCard,
-  NotSubmittedStatusCard,
-  RejectedStatusCard,
-  SubmittedStatusCard,
-  WaitlistedStatusCard,
-} from "~/components/dashboard/status-cards";
 
-function StatusContent({ status }: { status: string | null | undefined }) {
-  if (!status) return null;
-  switch (status) {
-    case "ACCEPTED":
-    case "CONFIRMED":
-      return <AcceptedStatusCard />;
-    case "WAITLISTED":
-      return <WaitlistedStatusCard />;
-    case "REJECTED":
-      return <RejectedStatusCard />;
-    case "DECLINED":
-      return <DeclinedStatusCard />;
-    case "NOT_STARTED":
-    case "IN_PROGRESS":
-      return <NotSubmittedStatusCard />;
-    case "PENDING_REVIEW":
-    case "IN_REVIEW":
-    default:
-      return <SubmittedStatusCard />;
-  }
-}
+// function getApplyStep(stepValue: string | null): ApplyStepFull | null {
+//   return applySteps.find((s) => s.step === stepValue) ?? null;
+// }
 
-export default function Dashboard() {
-  const { data: app } = api.application.get.useQuery({
-    fields: ["status", "firstName", "realm"],
-  });
+// const Dashboard = () => {
+//   const { data: application } = api.application.get.useQuery({
+//     fields: [
+//       "firstName",
+//       "lastName",
+//       "avatarColour",
+//       "avatarFace",
+//       "avatarLeftHand",
+//       "avatarRightHand",
+//       "avatarHat",
+//       "school",
+//       "major",
+//       "attendedBefore",
+//       "numOfHackathons",
+//       "githubLink",
+//       "linkedInLink",
+//       "otherLink",
+//       "resumeLink",
+//       "canvasData",
+//     ],
+//   });
 
 //   const selectedColor = colors.find(
 //     (c) => c.name === (application?.avatarColour ?? "green"),
