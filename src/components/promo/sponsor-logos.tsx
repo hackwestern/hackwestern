@@ -15,6 +15,9 @@ export function SponsorLogos({ className }: { className?: string }) {
           alt=""
           width={PROMO_SPONSORS_IMAGE.width}
           height={PROMO_SPONSORS_IMAGE.height}
+          // Mobile window is at most 382px wide; desktop is 700px minus padding,
+          // times --ui-scale (up to ~1.26)
+          sizes="(min-width: 1024px) 822px, 360px"
           className="h-auto w-full"
         />
         {PROMO_SPONSOR_LINKS.map((sponsor) => (

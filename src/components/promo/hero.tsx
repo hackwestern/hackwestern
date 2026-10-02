@@ -562,7 +562,7 @@ export function Hero() {
         {/* Mobile background */}
         <div
           aria-hidden
-          className="absolute inset-x-0 -top-[100px] bottom-0 bg-[url('/landing/promo/mobile-bg-hero.png')] bg-cover bg-top bg-no-repeat md:hidden"
+          className="absolute inset-x-0 -top-[100px] bottom-0 bg-[url('/landing/promo/mobile-bg-hero.webp')] bg-cover bg-top bg-no-repeat md:hidden"
         />
         <div
           ref={sceneRef}

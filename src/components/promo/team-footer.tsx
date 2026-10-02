@@ -14,8 +14,10 @@ import { useEffect, useRef, type CSSProperties } from "react";
 export type TeamMember = {
   name: string;
   role: string;
-  /** Transparent full-body cut-out, from scripts/cutout-team-photos.ts. */
+  /** Transparent full-body cut-out, 346px tall: 2x the 173px desktop figure. */
   image: string;
+  /** The same cut-out at 180px tall, for the ~69-84px figure below md. */
+  smallImage: string;
   /** Hover outline, matching their label on the organizing team poster. */
   color: string;
 };
@@ -31,6 +33,7 @@ const member = (
   name,
   role,
   image: `${CUTOUTS}/${slug}.webp`,
+  smallImage: `${CUTOUTS}/${slug}-sm.webp`,
   color,
 });
 
@@ -259,13 +262,16 @@ function TeamFigure({
         } as CssVars
       }
     >
-      <img
-        src={member.image}
-        alt=""
-        loading="lazy"
-        draggable={false}
-        className={`h-full w-auto select-none ${OUTLINE}`}
-      />
+      <picture className="contents">
+        <source media="(min-width: 768px)" srcSet={member.image} />
+        <img
+          src={member.smallImage}
+          alt=""
+          loading="lazy"
+          draggable={false}
+          className={`h-full w-auto select-none ${OUTLINE}`}
+        />
+      </picture>
       <NameTag member={member} />
     </div>
   );

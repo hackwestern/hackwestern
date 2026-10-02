@@ -342,6 +342,7 @@ export default function Home() {
               alt=""
               width={402}
               height={464}
+              sizes="100vw"
               className="h-auto w-full"
               priority
             />
