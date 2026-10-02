@@ -42,6 +42,7 @@ export const colors = {
   },
   greens: {
     "green-primary": "#539933",
+    "green-dark": "#193f13",
   },
   buttonPrimary: {
     bg: "#a7a7a7",
@@ -66,6 +67,8 @@ export const fonts = {
   pix32: "var(--font-pix32)",
   // Semantic aliases — repoint these two when the yearly theme fonts change,
   // and everything using font-primary / font-secondary carries over automatically.
+
+  // TODO: CONFIRM WITH DESIGN FOR SECONDARY FONT
   // This year: primary = CossetteTexte (display), secondary = Pix32 (body/UI).
   // figtree is deprecated (last year's font) and being migrated out — see #794.
   primary: "var(--font-cossetteTexte)",
