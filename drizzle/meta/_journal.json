@@ -120,6 +120,13 @@
       "when": 1790852811333,
       "tag": "0016_add_realm_and_horse_companion",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790915036365,
+      "tag": "0017_chief_ben_grimm",
+      "breakpoints": true
     }
   ]
 }
