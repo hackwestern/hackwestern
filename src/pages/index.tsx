@@ -1,6 +1,8 @@
 import Topbar from "~/components/live/topbar";
 import { FilmStrip } from "~/components/promo/film-strip";
 import { Hero } from "~/components/promo/hero";
+import { PromoHeader } from "~/components/promo/navbar";
+import { SponsorLogos } from "~/components/promo/sponsor-logos";
 import { PastProjects } from "~/components/promo/past-projects";
 import { SkyBackground } from "~/components/promo/sky-background";
 import { TeamFooter } from "~/components/promo/team-footer";
@@ -50,7 +52,7 @@ export default function Home() {
   return (
     <main id="top" className="relative cursor-pixel-default">
       <SkyBackground />
-      <FilmStrip className="relative z-10" />
+      <PromoHeader />
 
       <Hero />
 
@@ -179,7 +181,7 @@ export default function Home() {
       <section
         id="sponsors"
         className="relative flex min-h-[1880px] flex-col gap-12 overflow-hidden px-6 pb-16 pt-12
-             [--photo-h:360px] [--photo-offset:150px]
+             [--photo-h:320px] [--photo-offset:150px]
              lg:block lg:min-h-[1790px] lg:p-0"
       >
         {/* CLOUDS */}
@@ -209,7 +211,8 @@ export default function Home() {
         />
 
         {/* mobile background */}
-        <div aria-hidden className="lg:hidden">
+        {/* absolute so this wrapper isn't a flex item and doesn't add an extra gap-12 on mobile */}
+        <div aria-hidden className="absolute inset-0 lg:hidden">
           {/* green: unchanged position, from --photo-h to the bottom of the section */}
           <div className="absolute inset-x-0 bottom-0 top-[var(--photo-h)] z-0 bg-green-dark" />
 
@@ -231,8 +234,8 @@ export default function Home() {
           {/* Title block */}
           {/* Page Title */}
           <div
-            className="absolute left-6 right-6 top-[80px] flex flex-col items-start gap-[36px]
-                lg:left-0 lg:right-auto lg:w-[488px]"
+            className="relative flex flex-col items-start gap-[36px]
+                lg:absolute lg:left-0 lg:top-[80px] lg:w-[488px]"
           >
             <div className="flex flex-col items-start gap-[18px]">
               <div className="flex flex-col items-start">
@@ -314,18 +317,19 @@ export default function Home() {
             autoHeight
             width={382}
             title="Thank you to our sponsors"
-            className="relative z-10 mt-[250px] w-full max-w-[382px] self-center lg:hidden"
+            className="relative z-10 w-full max-w-[382px] self-center lg:hidden"
           >
-            <Image
-              src="/landing/home/sponsors.png"
-              alt="sponsors"
-              width={382}
-              height={400}
-              className="h-auto w-full p-3"
-            />
+            <SponsorLogos className="w-full p-3" />
           </Window>
 
-          <section id="faq" className="relative scroll-mt-24">
+          {/* mobile: the FAQ carries its own solid green (full-bleed, with a fade
+              above it) so it always sits on dark green and grows with open items */}
+          <section
+            id="faq"
+            className="relative scroll-mt-24 max-lg:-mx-6 max-lg:bg-green-dark max-lg:px-6
+                 max-lg:before:absolute max-lg:before:inset-x-0 max-lg:before:bottom-full max-lg:before:h-12
+                 max-lg:before:bg-gradient-to-b max-lg:before:from-transparent max-lg:before:to-green-dark"
+          >
             {/* FAQ */}
             <div className="relative z-10 flex w-full flex-col items-start gap-[24px] lg:absolute lg:left-0 lg:top-[900px] lg:gap-[64px]">
               <div className="flex w-full max-w-[488px] flex-col items-start gap-[18px]">
@@ -377,13 +381,7 @@ export default function Home() {
           title="Thank you to our sponsors"
           className="z-10 hidden lg:absolute lg:bottom-[55%] lg:left-[40%] lg:block"
         >
-          <Image
-            src="/landing/home/sponsors.png"
-            alt="sponsors"
-            width={1067}
-            height={795}
-            className="h-auto w-full p-6"
-          />
+          <SponsorLogos className="w-full p-6" />
         </Window>
       </section>
       {/* The strip art spans y 8–38 of its 54-tall SVG, i.e. ~4–21px of this
