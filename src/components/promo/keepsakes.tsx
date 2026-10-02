@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useId, useState, useSyncExternalStore } from "react";
+import { type ReactNode, useId, useState, useSyncExternalStore } from "react";
 import { cn } from "~/lib/utils";
 
 /** Small clickable props on the landing page; clicks are remembered across visits. */
@@ -378,30 +378,53 @@ export function Chest({ className }: { className?: string }) {
   );
 }
 
-export function Knight({ className }: { className?: string }) {
-  const [chestOpened] = useKeepsake(1);
-  const [clicked, markClicked] = useKeepsake(2);
+/** A step that only appears once the one before it has been found. */
+function HiddenStep({
+  step,
+  arrow,
+  label,
+  className,
+  children,
+}: {
+  step: number;
+  arrow: "up" | "down";
+  label: string;
+  className?: string;
+  children: (found: boolean) => ReactNode;
+}) {
+  const [unlocked] = useKeepsake(step - 1);
+  const [found, markFound] = useKeepsake(step);
   const [popping, setPopping] = useState(false);
 
-  if (!chestOpened) return null;
+  if (!unlocked) return null;
 
   return (
     <div className={className}>
       {popping && (
-        <PopArrow direction="down" onDone={() => setPopping(false)} />
+        <PopArrow direction={arrow} onDone={() => setPopping(false)} />
       )}
       <button
         type="button"
-        aria-label="Knight"
+        aria-label={label}
         onClick={() => {
-          if (!clicked) {
-            playArpeggio(2);
+          if (!found) {
+            playArpeggio(step);
             setPopping(true);
           }
-          markClicked();
+          markFound();
         }}
         className="block cursor-pixel-hover"
       >
+        {children(found)}
+      </button>
+    </div>
+  );
+}
+
+export function Knight({ className }: { className?: string }) {
+  return (
+    <HiddenStep step={2} arrow="down" label="Knight" className={className}>
+      {(found) => (
         <Image
           src="/landing/promo/knight.webp"
           alt=""
@@ -409,10 +432,31 @@ export function Knight({ className }: { className?: string }) {
           height={264}
           className={cn(
             "h-[56px] w-auto",
-            !clicked && "motion-safe:animate-glow-pulse",
+            !found && "motion-safe:animate-glow-pulse",
           )}
         />
-      </button>
-    </div>
+      )}
+    </HiddenStep>
+  );
+}
+
+/** The pixel telescope cursor, scaled up 3x with its pixels kept crisp. */
+export function Telescope({ className }: { className?: string }) {
+  return (
+    <HiddenStep step={3} arrow="up" label="Telescope" className={className}>
+      {(found) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src="/cursors/telescope.webp"
+          alt=""
+          width={99}
+          height={69}
+          className={cn(
+            "block [image-rendering:pixelated]",
+            !found && "motion-safe:animate-glow-pulse",
+          )}
+        />
+      )}
+    </HiddenStep>
   );
 }

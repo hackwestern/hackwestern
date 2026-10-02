@@ -77,7 +77,9 @@ const SKY_LABEL = process.env.NEXT_PUBLIC_SKY_LABEL;
 function AsciiClouds() {
   const [chestOpened] = useKeepsake(1);
   const [knightClicked] = useKeepsake(2);
-  const linked = Boolean(SKY_LINK) && chestOpened && knightClicked;
+  const [telescopeClicked] = useKeepsake(3);
+  const linked =
+    Boolean(SKY_LINK) && chestOpened && knightClicked && telescopeClicked;
   const linkRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
