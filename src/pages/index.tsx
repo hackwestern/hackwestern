@@ -325,7 +325,7 @@ export default function Home() {
               alt="sponsors"
               width={382}
               height={400}
-              className="h-auto w-full"
+              className="h-auto w-full p-3"
             />
           </Window>
 
@@ -386,6 +386,7 @@ export default function Home() {
             alt="sponsors"
             width={1067}
             height={795}
+            className="h-auto w-full p-6"
           />
         </Window>
       </section>
