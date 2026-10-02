@@ -166,7 +166,7 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>Devpost</FormLabel>
               <FormControl>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-4 text-sm text-gray-6">
                   <span>devpost.com/</span>
                   <Input
                     {...field}
@@ -187,7 +187,7 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>Github</FormLabel>
               <FormControl>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-4 text-sm text-gray-6">
                   <span>github.com/</span>
                   <Input
                     onPaste={onGithubPaste}
@@ -209,7 +209,7 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>LinkedIn</FormLabel>
               <FormControl>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-gray-6">
                   <span className="w-32">linkedin.com/in/</span>
                   <Input
                     onPaste={onLinkedinPaste}
@@ -264,7 +264,7 @@ export function LinksForm() {
                         <button
                           type="button"
                           onClick={clearResume}
-                          className="text-xl text-muted-foreground hover:text-foreground"
+                          className="text-xl text-gray-4 hover:text-gray-6"
                           aria-label="Remove resume"
                         >
                           ×
@@ -290,11 +290,11 @@ export function LinksForm() {
                           aria-label="Choose resume file"
                           className="-py-4 px-2"
                         >
-                          <span className="text-medium">
+                          <span className="text-gray-6">
                             {uploading ? "Uploading…" : "Choose file"}
                           </span>
                         </Button>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-gray-4">
                           PDF or DOC/DOCX, max 3 MB
                         </span>
                       </div>

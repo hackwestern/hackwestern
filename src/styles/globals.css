@@ -350,7 +350,7 @@ html {
  * textareas, selects, checkboxes, radio toggles, file-pickers, links,
  * and labels all shift to the realm's accent/sidebar palette.
  */
-.apply-form-tint :where(input, textarea, [role="combobox"]) {
+.apply-form-tint :where(input, textarea) {
   background-color: var(--form-tint-bg, transparent) !important;
   border-color: var(--form-tint-border, inherit) !important;
   color: var(--form-tint-text, inherit) !important;
@@ -382,7 +382,7 @@ html {
 /* All buttons inside the form area (primary, outline, secondary, file
  * picker, etc) — the Back/Next buttons live in the footer which is
  * outside .apply-form-tint, so they stay normal. */
-.apply-form-tint button {
+.apply-form-tint button:not([role="combobox"]) {
   background-color: var(--form-tint-bg, inherit) !important;
   border-color: var(--form-tint-border, inherit) !important;
   color: var(--form-tint-text, inherit) !important;
@@ -433,23 +433,23 @@ html {
 }
 
 /*
- * Portaled dropdown + popover content lives OUTSIDE the apply shell, so
- * we promote the tint onto :root (via data-apply-tint on <html>) and
- * target the Radix content elements directly from there.
+ * Portaled dropdown content stays monochrome gray and never picks up the
+ * realm tint. These overrides beat the tint vars so the Select menu looks
+ * the same on every background.
  */
 html[data-apply-tint] [role="listbox"],
 html[data-apply-tint] [data-radix-popper-content-wrapper] [role="listbox"] {
-  background-color: var(--form-tint-bg, inherit) !important;
-  color: var(--form-tint-text, inherit) !important;
-  border-color: var(--form-tint-border, transparent) !important;
+  background-color: #ffffff !important;
+  color: #323232 !important;
+  border-color: #bdbdbd !important;
 }
 
 html[data-apply-tint] [role="option"] {
-  color: var(--form-tint-text, inherit) !important;
+  color: #323232 !important;
 }
 
 html[data-apply-tint] [role="option"][data-highlighted],
 html[data-apply-tint] [role="option"][data-state="checked"] {
-  background-color: var(--form-tint-border, inherit) !important;
-  color: var(--form-tint-text, inherit) !important;
+  background-color: #dedede !important;
+  color: #262626 !important;
 }
