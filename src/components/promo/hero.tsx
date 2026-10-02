@@ -584,10 +584,20 @@ export function Hero() {
               </div>
 
               <div className="flex flex-col items-start gap-3">
-                <h1 className="whitespace-nowrap text-[clamp(40px,4.45vw,64px)] font-bold leading-[0.82] tracking-[-0.035em] text-[#f5f9ff] [text-shadow:3px_3px_0_rgba(35,83,108,0.55)]">
-                  Hack Western 13
-                </h1>
-                <p className="text-[clamp(24px,2.13vw,30.72px)] font-normal leading-normal tracking-[-0.02em] text-highlight">
+                <div className="relative">
+                  <h1 className="whitespace-nowrap text-[clamp(40px,4.45vw,64px)] font-bold leading-[0.82] tracking-[-0.035em] text-[#f5f9ff] [text-shadow:3px_3px_0_rgba(35,83,108,0.55)]">
+                    Hack Western 13
+                  </h1>
+                  {/* Figma 561:1010: a flipped copy below the title, fading
+                      from white next to it to 20% white, at 10% opacity */}
+                  <p
+                    aria-hidden
+                    className="pointer-events-none absolute left-0 top-[calc(100%-0.64px)] -scale-y-100 select-none whitespace-nowrap bg-gradient-to-b from-white/20 from-[25.25%] to-white to-[67.42%] bg-clip-text text-[clamp(40px,4.45vw,64px)] font-bold leading-[0.82] tracking-[-0.035em] text-transparent opacity-10"
+                  >
+                    Hack Western 13
+                  </p>
+                </div>
+                <p className="relative text-[clamp(24px,2.13vw,30.72px)] font-normal leading-normal tracking-[-0.02em] text-highlight">
                   Discover the unknown
                 </p>
               </div>
