@@ -28,6 +28,8 @@ export interface WindowProps {
   disableControls?: boolean;
   /** Fluid only: a bar pinned under the scrolling content. */
   footer?: React.ReactNode;
+  /** Bump to nudge the user's attention: the window shakes (or flashes under reduced motion). */
+  attentionKey?: number;
 }
 
 export function Window({
@@ -49,6 +51,7 @@ export function Window({
   contentClassName,
   disableControls = false,
   footer,
+  attentionKey = 0,
 }: WindowProps) {
   const [internalMinimized, setInternalMinimized] = React.useState(false);
   const isControlled = minimizedProp !== undefined;
@@ -61,6 +64,38 @@ export function Window({
 
   const patternId = React.useId();
   const dragControls = useDragControls();
+
+  // Shake the inner frame (not the motion.div, whose transform belongs to drag).
+  const frameRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const frame = frameRef.current;
+    if (!attentionKey || !frame || !frame.animate) return;
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const animation = reduceMotion
+      ? frame.animate(
+          [
+            { filter: "brightness(1)" },
+            { filter: "brightness(1.08)" },
+            { filter: "brightness(1)" },
+          ],
+          { duration: 300 },
+        )
+      : frame.animate(
+          [
+            { transform: "translateX(0)" },
+            { transform: "translateX(-10px)" },
+            { transform: "translateX(9px)" },
+            { transform: "translateX(-7px)" },
+            { transform: "translateX(5px)" },
+            { transform: "translateX(-2px)" },
+            { transform: "translateX(0)" },
+          ],
+          { duration: 350, easing: "ease-in-out" },
+        );
+    return () => animation.cancel();
+  }, [attentionKey]);
 
   const titleBar = (
     <div
@@ -122,7 +157,10 @@ export function Window({
         dragListener={false}
         dragMomentum={false}
       >
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border-[0.9px] border-[#9F9F9F] bg-[#f4f5f8] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_40px_rgba(30,40,60,0.3),0_4px_10px_rgba(30,40,60,0.2)]">
+        <div
+          ref={frameRef}
+          className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border-[0.9px] border-[#9F9F9F] bg-[#f4f5f8] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_40px_rgba(30,40,60,0.3),0_4px_10px_rgba(30,40,60,0.2)]"
+        >
           <div className="shrink-0">{titleBar}</div>
           {!minimized && (
             <div className="relative min-h-0 flex-1">
@@ -180,6 +218,7 @@ export function Window({
         dragMomentum={false}
       >
         <div
+          ref={frameRef}
           className="relative overflow-hidden rounded-[10px] border-[0.9px] border-[#9F9F9F] bg-[#f4f5f8] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_40px_rgba(30,40,60,0.3),0_4px_10px_rgba(30,40,60,0.2)]"
           style={{ width }}
         >
@@ -238,6 +277,7 @@ export function Window({
       dragMomentum={false}
     >
       <div
+        ref={frameRef}
         className="relative overflow-hidden rounded-[10px] border-[0.9px] border-[#9F9F9F] bg-[#f4f5f8] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_40px_rgba(30,40,60,0.3),0_4px_10px_rgba(30,40,60,0.2)] transition-[height] duration-200"
         style={{ width, height: minimized ? TITLE_BAR_HEIGHT : height }}
       >
