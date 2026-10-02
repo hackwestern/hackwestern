@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import * as React from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { HWLogo } from "~/components/apply/hw-logo";
 import { UserBadge } from "~/components/apply/user-badge";
 import { cn } from "~/lib/utils";
@@ -28,13 +29,20 @@ export function PortalShell({
     <div
       className={cn("relative min-h-screen w-full overflow-hidden", className)}
     >
-      <img
-        src={bgSrc}
-        alt=""
-        aria-hidden
-        className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-        draggable={false}
-      />
+      <AnimatePresence mode="sync" initial={false}>
+        <motion.img
+          key={bgSrc}
+          src={bgSrc}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 h-full w-full object-cover"
+          draggable={false}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.9, ease: "easeInOut" }}
+        />
+      </AnimatePresence>
 
       <div className="absolute left-10 top-16 z-10 px-3">
         <HWLogo className="h-[60px] w-[40px]" />

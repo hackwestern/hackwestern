@@ -10,7 +10,7 @@ import { api } from "~/utils/api";
 import ApplicationPrompt from "~/components/dashboard/ApplicationPrompt";
 import { ApplyNavigation } from "~/components/apply/navigation";
 import ApplyHeading from "~/components/apply/heading";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { MobileStickerDrawer } from "~/components/apply/mobile-sticker-drawer";
 import CharacterIcon from "~/components/dashboard/CharacterIcon";
 import { useMemo, useState } from "react";
@@ -206,13 +206,20 @@ export default function Apply() {
 
         {/* Desktop View — redesigned portal shell */}
         <div className="relative z-10 hidden h-screen w-full overflow-hidden md:flex">
-          <img
-            src={tint?.background ?? "/apply/realm/background.png"}
-            alt=""
-            aria-hidden
-            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-            draggable={false}
-          />
+          <AnimatePresence mode="sync" initial={false}>
+            <motion.img
+              key={tint?.background ?? "/apply/realm/background.png"}
+              src={tint?.background ?? "/apply/realm/background.png"}
+              alt=""
+              aria-hidden
+              className="absolute inset-0 h-full w-full object-cover"
+              draggable={false}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.9, ease: "easeInOut" }}
+            />
+          </AnimatePresence>
 
           <div className="relative z-10 flex h-full w-full gap-6 p-9">
             <ApplicationSidebar
@@ -260,11 +267,13 @@ export default function Apply() {
                       footer={<ApplyNavigation step={step} />}
                     >
                       <div className="space-y-6">
-                        <ApplyHeading
-                          heading={heading}
-                          subheading={subheading}
-                          stepKey={step}
-                        />
+                        {step !== "realm" && (
+                          <ApplyHeading
+                            heading={heading}
+                            subheading={subheading}
+                            stepKey={step}
+                          />
+                        )}
                         <div className="scrollbar font-figtree">
                           <ApplyForm step={step} />
                         </div>

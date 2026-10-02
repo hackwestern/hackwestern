@@ -53,7 +53,7 @@ export function ApplicationSidebar({
   return (
     <aside
       className={cn(
-        "flex h-full w-[267px] flex-col justify-between rounded-[12px] border px-3 py-6 shadow-[0px_8.65px_10.81px_6.49px_rgba(0,0,0,0.05)] backdrop-blur-sm transition-colors duration-500",
+        "flex h-full w-[267px] flex-col justify-between rounded-[12px] border px-3 py-6 shadow-[0px_8.65px_10.81px_6.49px_rgba(0,0,0,0.05)] backdrop-blur-sm transition-[background-color,border-color] duration-700 ease-in-out",
         tint ? "" : "border-white/25 bg-white/70",
         className,
       )}
