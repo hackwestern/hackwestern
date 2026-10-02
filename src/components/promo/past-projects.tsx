@@ -4,7 +4,7 @@ import Image from "next/image";
 import Cloud from "~/components/live/cloud";
 import CloudDrift from "~/components/live/clouddrift";
 import { WindowFolder } from "~/components/live/window-folder";
-import { useKeepsake } from "~/components/promo/keepsakes";
+import { playReveal, useKeepsake } from "~/components/promo/keepsakes";
 import { Button } from "~/components/ui/button";
 import { PAST_PROJECTS, type PastProject } from "~/constants/past-projects";
 import { cn } from "~/lib/utils";
@@ -74,6 +74,20 @@ function AsciiClouds() {
   const [chestOpened] = useKeepsake(1);
   const [knightClicked] = useKeepsake(2);
   const linked = Boolean(SKY_LINK) && chestOpened && knightClicked;
+  const linkRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    const link = linkRef.current;
+    if (!linked || !link) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) playReveal();
+      },
+      { threshold: 0.25 },
+    );
+    observer.observe(link);
+    return () => observer.disconnect();
+  }, [linked]);
 
   const topCloud = (
     <Cloud
@@ -96,6 +110,7 @@ function AsciiClouds() {
         <CloudDrift duration={40} delay={-30}>
           {linked ? (
             <a
+              ref={linkRef}
               href={SKY_LINK}
               target="_blank"
               rel="noopener noreferrer"

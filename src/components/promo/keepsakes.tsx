@@ -26,19 +26,22 @@ export function useKeepsake(id: number) {
   return [clicked, markClicked] as const;
 }
 
-// Xylophone-ish: a sine with a quiet, fast-fading 4th partial, struck
-// up a major scale. Built on demand, so no audio files to load.
-const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11, 12];
-const NOTE_GAP_S = 0.09;
+// Xylophone-ish: a sine with a quiet, fast-fading 4th partial. Each step
+// strikes one more note of a C major arpeggio, and the cloud reveal adds
+// the octave. Built on demand, so no audio files to load.
+const ARPEGGIO = [0, 4, 7, 12];
+const C5 = 523.25;
+const NOTE_GAP_S = 0.15;
 
 let audio: AudioContext | null = null;
+let revealPlayed = false;
 
-function playScale(rootHz: number) {
+function playArpeggio(noteCount: number) {
   const ctx = (audio ??= new AudioContext());
   const start = ctx.currentTime;
 
-  MAJOR_SCALE.forEach((semitones, i) => {
-    const freq = rootHz * 2 ** (semitones / 12);
+  ARPEGGIO.slice(0, noteCount).forEach((semitones, i) => {
+    const freq = C5 * 2 ** (semitones / 12);
     const at = start + i * NOTE_GAP_S;
 
     for (const [ratio, peak, decay] of [
@@ -58,8 +61,12 @@ function playScale(rootHz: number) {
   });
 }
 
-const C5 = 523.25;
-const G5 = 783.99;
+/** The full arpeggio, once, and only after a step was clicked in this tab. */
+export function playReveal() {
+  if (!audio || revealPlayed) return;
+  revealPlayed = true;
+  playArpeggio(ARPEGGIO.length);
+}
 
 function Arrow({ direction }: { direction: "up" | "down" }) {
   return (
@@ -107,7 +114,7 @@ export function Chest({ className }: { className?: string }) {
         type="button"
         aria-label="Chest"
         onClick={() => {
-          if (!opened) playScale(C5);
+          if (!opened) playArpeggio(1);
           open();
         }}
         className={cn(
@@ -220,7 +227,7 @@ export function Knight({ className }: { className?: string }) {
         type="button"
         aria-label="Knight"
         onClick={() => {
-          if (!clicked) playScale(G5);
+          if (!clicked) playArpeggio(2);
           markClicked();
         }}
         className="cursor-pixel-hover"
