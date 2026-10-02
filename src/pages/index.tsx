@@ -16,7 +16,7 @@ import { PROMO_FAQ } from "~/constants/faq";
 import Waterfall from "~/components/live/waterfall";
 import CloudDrift from "~/components/live/clouddrift";
 import Cloud from "~/components/live/cloud";
-import { type CSSProperties, useRef } from "react";
+import { useRef } from "react";
 
 // ABOUT & FAQ TODO
 // 4. check with "dear hackers" message
@@ -52,22 +52,6 @@ const IMAGES = [
 const SPONSORS_STRIP_ROTATE = -1.2;
 const SPONSORS_STRIP_EDGE = filmStripEdge(SPONSORS_STRIP_ROTATE);
 
-// Section photos (height / width of the file). Each photo's box is at least
-// as tall as the photo at the current screen width, so the whole image shows
-// and only the film strips overlap it at the seams.
-const ABOUT_BG_RATIO = 3277 / 2880;
-const SPONSORS_BG_RATIO = 3427 / 2880;
-// The about photo's box reaches 24px above the section and 7.06dvw + 15px below.
-const ABOUT_MIN_HEIGHT = `max(1109px, calc(${(ABOUT_BG_RATIO * 100).toFixed(2)}vw - 39px - 7.06 * var(--dvw)))`;
-// The about section's height at the 1440 design width. Its windows and folders
-// stay in a box this size, centred, so wider screens group them in the middle.
-const ABOUT_DESIGN_HEIGHT = Math.round(
-  ABOUT_BG_RATIO * 1440 - 39 - 7.06 * 14.4,
-);
-// The sponsors photo's box reaches up behind the strip by its height.
-// 1790px is the 1440 layout's height, which grows with --ui-scale.
-const SPONSORS_MIN_HEIGHT = `max(calc(1790px * var(--ui-scale, 1)), calc(${(SPONSORS_BG_RATIO * 100).toFixed(2)}vw - ${SPONSORS_STRIP_EDGE.height}px))`;
-
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -86,7 +70,7 @@ export default function Home() {
 
       <section
         id="about"
-        style={{ minHeight: ABOUT_MIN_HEIGHT }}
+        style={{ minHeight: 1109 }}
         className="relative hidden sm:block"
       >
         <div
@@ -120,10 +104,9 @@ export default function Home() {
         </div>
 
         {/* insert waterfall */}
-        <div
-          className="absolute inset-0 m-auto max-w-[1440px] lg:[scale:var(--ui-scale,1)]"
-          style={{ maxHeight: ABOUT_DESIGN_HEIGHT }}
-        >
+        {/* windows and folders sit in a centred 1440 box, so wider screens
+            keep them grouped in the middle */}
+        <div className="absolute inset-0 m-auto max-w-[1440px]">
           <WindowFolder
             defaultOpen
             variant="labelled"
@@ -215,9 +198,8 @@ export default function Home() {
       <section
         id="sponsors"
         className="relative flex flex-col gap-12 overflow-hidden px-6 pb-12 pt-12 [--photo-h:320px] [--photo-offset:150px]
-             lg:block lg:min-h-[var(--sponsors-min-h)]
+             lg:block lg:min-h-[1790px]
              lg:overflow-visible lg:overflow-x-clip lg:p-0"
-        style={{ "--sponsors-min-h": SPONSORS_MIN_HEIGHT } as CSSProperties}
       >
         {/* CLOUDS */}
         <CloudDrift delay={0} duration={40} wait={50} className="top-[50px]">
@@ -276,7 +258,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="contents lg:absolute lg:left-1/2 lg:block lg:w-[1120px] lg:origin-top lg:[transform:translateX(-50%)_scale(var(--ui-scale,1))]">
+        <div className="contents lg:absolute lg:left-1/2 lg:block lg:w-[1120px] lg:-translate-x-1/2">
           {/* Title block */}
           {/* Page Title */}
           <div
@@ -421,14 +403,11 @@ export default function Home() {
         </div>
         {/* Sponsors window desktop*/}
         {/* this closes downwards...? */}
-        {/* bottom-left corner stays where it sits in the 1440 layout (805.5px
-            down, 144px left of centre), scaled with --ui-scale, so it keeps
-            clear of the FAQ when the section grows with the photo */}
         <Window
           autoHeight
           width={700}
           title="Thank you to our sponsors"
-          className="z-10 hidden lg:absolute lg:bottom-[calc(100%-805.5px*var(--ui-scale,1))] lg:left-[max(40%,calc(50%-144px*var(--ui-scale,1)))] lg:block lg:origin-bottom-left lg:[scale:var(--ui-scale,1)]"
+          className="z-10 hidden lg:absolute lg:bottom-[55%] lg:left-[40%] lg:block"
         >
           <SponsorLogos className="w-full p-6" />
         </Window>

@@ -183,7 +183,7 @@ export function TeamFooter({ team = TEAM }: { team?: TeamMember[] }) {
       <div
         // Desktop: one design px per px, so the band keeps its height and wider
         // screens just show more of the marquee.
-        className="relative [--fade:64px] [--u:calc(max(100cqw,576px)/1440)] md:[--fade:160px] lg:[--u:calc(1px*var(--ui-scale,1))]"
+        className="relative [--fade:64px] [--u:calc(max(100cqw,576px)/1440)] md:[--fade:160px] lg:[--u:1px]"
         style={
           {
             height: u(BAND_H),

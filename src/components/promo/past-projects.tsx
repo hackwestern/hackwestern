@@ -27,9 +27,9 @@ export function PastProjects() {
       id="projects"
       // Pull the following film strip up so it crosses the trunk where the
       // tree image ends, instead of leaving a bare cut-off above the strip.
-      className="relative mb-[calc(-2.45vw-15px)] flex flex-col gap-6 pt-12 md:mb-[calc(-4.02vw-15px)] md:block md:pt-0 lg:mb-[calc(-57.888px*var(--ui-scale,1)-15px)] lg:overflow-x-clip"
+      className="relative mb-[calc(-2.45vw-15px)] flex flex-col gap-6 pt-12 md:mb-[calc(-4.02vw-15px)] md:block md:pt-0 lg:mb-[calc(-4.02*14.4px-15px)] lg:overflow-x-clip"
     >
-      <div className="relative z-10 flex w-full max-w-[341px] flex-col gap-[18px] px-[35px] md:absolute md:left-[11.14%] md:top-[6.6%] md:px-0 lg:left-[calc(50%-559.584px*var(--ui-scale,1))] lg:top-[calc(77px*var(--ui-scale,1))] lg:origin-top-left lg:[scale:var(--ui-scale,1)]">
+      <div className="relative z-10 flex w-full max-w-[341px] flex-col gap-[18px] px-[35px] md:absolute md:left-[11.14%] md:top-[6.6%] md:px-0 lg:left-[calc(50%-720px+11.14*14.4px)]">
         <div className="flex h-[25px] flex-col md:h-[38px]">
           <h2 className="-mb-[9px] whitespace-nowrap font-cossetteTexte text-[24px] font-bold leading-[1.2] text-heavy md:-mb-[13px] md:text-[36px]">
             Discover past projects
@@ -48,7 +48,7 @@ export function PastProjects() {
 
       <div
         ref={stageRef}
-        className="relative aspect-[402/544] w-full md:aspect-[1440/1167] lg:mx-[calc(50%-720px)] lg:mb-[calc(1167px*(var(--ui-scale,1)-1))] lg:w-[1440px] lg:origin-top lg:[scale:var(--ui-scale,1)]"
+        className="relative aspect-[402/544] w-full md:aspect-[1440/1167] lg:mx-[calc(50%-720px)] lg:w-[1440px]"
       >
         <AsciiClouds />
         <TreeScene />

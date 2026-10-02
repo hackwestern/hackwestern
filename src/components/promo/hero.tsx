@@ -26,11 +26,10 @@ import {
 
 const PathEditor = dynamic(() => import("./path-editor"), { ssr: false });
 
-// Desktop scene: the full art at the screen's width, never shorter than the
-// art at the 1440 design width. It grows on wider screens rather than
-// cropping, because the story path and pins sit in the art's bottom third.
-// The scroll hold stays 1.5 screens of the 1440x900 design. Taller screens
-// show sky.
+// Desktop keeps the hero one fixed height on every screen size: the scene is
+// the art at the 1440 design width, plus 1.5 screens of the 1440x900 design
+// to scroll through. Wider screens crop the art from the top (see coverRect),
+// since the story path and pins sit in its bottom third. Taller ones show sky.
 const DESIGN_WIDTH = 1440;
 const HOLD_PX = 1350;
 // Mobile skips the extended "hold" almost entirely — the desktop
@@ -45,7 +44,7 @@ const HOLD_SCREENS_MOBILE = 0;
 // elsewhere in the codebase (e.g. FilmStrip's `hidden lg:block`).
 const MOBILE_BREAKPOINT_PX = 1024;
 const SCENE_HEIGHT_MOBILE = `max(100svh, ${(IMAGE_HEIGHT / IMAGE_WIDTH) * 100}vw)`;
-const SCENE_HEIGHT_DESKTOP = `max(${Math.round((IMAGE_HEIGHT / IMAGE_WIDTH) * DESIGN_WIDTH)}px, ${(IMAGE_HEIGHT / IMAGE_WIDTH) * 100}vw)`;
+const SCENE_HEIGHT_DESKTOP = `${Math.round((IMAGE_HEIGHT / IMAGE_WIDTH) * DESIGN_WIDTH)}px`;
 const BLEED = 240;
 // With HOLD_SCREENS_MOBILE at ~0, there's no scroll buffer left
 // for the full 240px bleed to sit comfortably within before the
@@ -308,7 +307,8 @@ function MountainLayer({
         fill
         priority={priority}
         sizes="100vw"
-        className="object-cover"
+        // bottom: matches coverRect, so the path stays on its valley
+        className="object-cover object-bottom"
       />
     </motion.div>
   );
@@ -570,7 +570,7 @@ export function Hero() {
           {/* placeholder until links added */}
           <MountainScene pan={pan} />
 
-          <div className="absolute left-[clamp(24px,11.11vw,160px)] top-[20%] z-20 flex max-w-[calc(100%_-_48px)] flex-col items-start gap-12 lg:left-[clamp(24px,11.11vw,calc(160px*var(--ui-scale,1)))] lg:origin-top-left lg:[scale:var(--ui-scale,1)]">
+          <div className="absolute left-[clamp(24px,11.11vw,160px)] top-[20%] z-20 flex max-w-[calc(100%_-_48px)] flex-col items-start gap-12">
             <div className="flex flex-col items-start gap-[30px] font-cossetteTexte">
               <div className="flex flex-wrap items-center gap-[14px] text-[clamp(16px,1.67vw,24px)] font-normal leading-normal tracking-[-0.03em] text-[#d0d6dd]">
                 <p className="whitespace-nowrap">November 20 - 22, 2026</p>
