@@ -44,6 +44,7 @@ export function WindowFolder({
   variant = "hover",
 }: FolderProps) {
   const [isOpen, setIsOpen] = React.useState(defaultOpen);
+  const [attentionKey, setAttentionKey] = React.useState(0);
   const labelled = variant === "labelled";
 
   React.useEffect(() => {
@@ -59,7 +60,10 @@ export function WindowFolder({
     <>
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          if (isOpen) setAttentionKey((key) => key + 1);
+          else setIsOpen(true);
+        }}
         aria-expanded={isOpen}
         className={cn(
           "group flex cursor-pixel-hover flex-col items-center",
@@ -105,6 +109,7 @@ export function WindowFolder({
           {...windowProps}
           className={cn(windowProps?.className)}
           draggable
+          attentionKey={attentionKey}
         >
           {children}
         </Window>
