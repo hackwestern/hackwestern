@@ -31,19 +31,19 @@ const mid = Math.ceil(PROMO_FAQ.length / 2);
 const left = PROMO_FAQ.slice(0, mid);
 const right = PROMO_FAQ.slice(mid);
 
-const IMAGES =[
-              "/landing/home/gallery/hw-1.jpg",
-              "/landing/home/gallery/hw-2.jpg",
-              "/landing/home/gallery/hw-3.jpg",
-              "/landing/home/gallery/hw-4.jpg",
-              "/landing/home/gallery/hw-5.jpg",
-              "/landing/home/gallery/hw-6.jpg",
-              "/landing/home/gallery/hw-7.jpg",
-              "/landing/home/gallery/hw-8.jpg",
-              "/landing/home/gallery/hw-9.jpg",
-              "/landing/home/gallery/hw-10.jpg",
-            ]
-            
+const IMAGES = [
+  "/landing/home/gallery/hw-1.jpg",
+  "/landing/home/gallery/hw-2.jpg",
+  "/landing/home/gallery/hw-3.jpg",
+  "/landing/home/gallery/hw-4.jpg",
+  "/landing/home/gallery/hw-5.jpg",
+  "/landing/home/gallery/hw-6.jpg",
+  "/landing/home/gallery/hw-7.jpg",
+  "/landing/home/gallery/hw-8.jpg",
+  "/landing/home/gallery/hw-9.jpg",
+  "/landing/home/gallery/hw-10.jpg",
+];
+
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -165,9 +165,7 @@ export default function Home() {
             className: "isolate absolute right-[100px] top-[100px]",
           }}
         >
-          <PhotoGallery
-            images = {IMAGES}
-          />
+          <PhotoGallery images={IMAGES} />
         </WindowFolder>
       </section>
       <FilmStrip rotate={3.5} className="relative z-10 hidden lg:block" />
