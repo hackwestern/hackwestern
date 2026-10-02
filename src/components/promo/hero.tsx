@@ -542,9 +542,14 @@ export function Hero() {
       <section
         ref={sectionRef}
         id="hero"
-        className="relative"
+        className="relative isolate md:bg-none"
         style={{ height: `calc(${SCENE_HEIGHT} + ${holdScreens * 100}svh)` }}
       >
+        {/* Mobile background */}
+  <div
+    aria-hidden
+    className="absolute inset-x-0 -top-[100px] bottom-0 bg-[url('/landing/promo/mobile-bg-hero.png')] bg-cover bg-top bg-no-repeat md:hidden"
+  />
         <div
           ref={sceneRef}
           data-sky-hold
