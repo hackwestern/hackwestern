@@ -35,30 +35,31 @@ export function RealmForm() {
     resetOptions: { keepDirtyValues: true },
   });
 
-  const formHorseId = form.watch("horseId");
-
-  // Local optimistic highlight so the picked horse is re-highlighted on the
-  // very next frame — independent of RHF/server round-trips. Falls back to
-  // whatever the form/server says once no pending pick is set.
-  const [pendingHorseId, setPendingHorseId] = React.useState<number | null>(
-    null,
+  // Highlight is pure local state so a click paints on the very next frame
+  // without waiting for RHF subscriptions or the server round-trip. The
+  // effect below just keeps it mirrored to whatever the server last confirmed.
+  const [highlightedId, setHighlightedId] = React.useState<number | null>(
+    defaults?.horseId ?? null,
   );
-  const highlightedHorseId = pendingHorseId ?? formHorseId ?? null;
 
-  // Clear the local override once the server confirms it (or any other value).
   React.useEffect(() => {
-    if (pendingHorseId == null) return;
-    if (defaults?.horseId === pendingHorseId) setPendingHorseId(null);
-  }, [defaults?.horseId, pendingHorseId]);
+    if (defaults?.horseId != null && defaults.horseId !== highlightedId) {
+      setHighlightedId(defaults.horseId);
+    }
+    // We only want to react to server-side changes here; local optimistic
+    // picks are handled by handlePick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaults?.horseId]);
 
   const handlePick = (horse: Horse) => {
     if (!canEdit) return;
-    // 1. Flip the visible highlight immediately — before any RHF/network work.
-    setPendingHorseId(horse.id);
-    // 2. Mirror into form state (keeps the companion step in sync).
+    // Flip the highlight synchronously. This is the only state the picker
+    // reads, so React re-renders it immediately with the new selection.
+    setHighlightedId(horse.id);
+    // Mirror into form state so the companion step picks it up.
     form.setValue("horseId", horse.id, { shouldDirty: true });
     form.setValue("realm", horse.realm, { shouldDirty: true });
-    // 3. Persist + refetch.
+    // Persist + refetch.
     mutate(
       {
         realm: horse.realm,
@@ -75,7 +76,7 @@ export function RealmForm() {
   return (
     <Form {...form}>
       <div className="flex w-full flex-col items-center gap-4 text-center">
-        <HorsePicker selectedId={highlightedHorseId} onSelect={handlePick} />
+        <HorsePicker selectedId={highlightedId} onSelect={handlePick} />
       </div>
     </Form>
   );
