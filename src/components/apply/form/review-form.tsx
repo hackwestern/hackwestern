@@ -26,7 +26,12 @@ function ReviewSection({ step, error, className }: ReviewSectionProps) {
         <h2 className="font-jetbrains-mono text-base uppercase text-medium">
           {step.label}
         </h2>
-        <Button asChild variant="primary" size="sm" className="gap-2 font-figtree">
+        <Button
+          asChild
+          variant="primary"
+          size="sm"
+          className="gap-2 font-figtree"
+        >
           <Link href={{ pathname: "/apply", query: { step: step.step } }}>
             <PencilLine className="w-4" />
             Edit
