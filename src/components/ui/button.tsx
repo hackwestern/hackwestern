@@ -162,6 +162,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <div className={wrapperClasses}>
         <Comp
           ref={ref}
+          data-variant={variant}
           {...props}
           onPointerDown={holdDown}
           onPointerUp={(e: React.PointerEvent<HTMLButtonElement>) => {

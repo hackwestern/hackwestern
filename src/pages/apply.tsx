@@ -20,6 +20,7 @@ import { ApplicationSidebar } from "~/components/apply/application-sidebar";
 import { Window } from "~/components/internals/window";
 import { UserBadge } from "~/components/apply/user-badge";
 import { realmTint } from "~/constants/realms";
+import { cn } from "~/lib/utils";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   const steps = applySteps;
@@ -256,7 +257,20 @@ export default function Apply() {
                     />
                   </Window>
                 ) : (
-                  <div className="flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4">
+                  <div
+                    className={cn(
+                      "flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4",
+                      tint && "apply-form-tint",
+                    )}
+                    style={
+                      tint
+                        ? ({
+                            "--form-tint-bg": tint.sidebarBg,
+                            "--form-tint-border": tint.sidebarBorder,
+                          } as React.CSSProperties)
+                        : undefined
+                    }
+                  >
                     <Window
                       fluid
                       draggable={false}

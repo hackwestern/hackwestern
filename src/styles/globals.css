@@ -342,3 +342,25 @@ html {
     border-radius: 100vh;
   }
 }
+
+/*
+ * Realm-tinted form area: when a realm has been picked, the apply page
+ * sets --form-tint-bg / --form-tint-border on this container so inputs,
+ * textareas, selects, and primary buttons blend with the realm sidebar.
+ */
+.apply-form-tint :where(input, textarea, [role="combobox"]) {
+  background-color: var(--form-tint-bg, transparent) !important;
+  border-color: var(--form-tint-border, inherit) !important;
+  transition:
+    background-color 0.7s ease-in-out,
+    border-color 0.7s ease-in-out;
+}
+
+.apply-form-tint button[data-variant="primary"],
+.apply-form-tint button[data-variant="primary-2"] {
+  background-color: var(--form-tint-bg, inherit) !important;
+  border-color: var(--form-tint-border, inherit) !important;
+  transition:
+    background-color 0.7s ease-in-out,
+    border-color 0.7s ease-in-out;
+}
