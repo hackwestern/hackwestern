@@ -230,7 +230,9 @@ export default function Home() {
           </WindowFolder>
         </div>
       </section>
-      <FilmStrip rotate={3.5} className="relative z-10 hidden lg:block" />
+      {/* hidden only where the about section is (below sm), so it always
+          covers the about photo's slanted bottom edge */}
+      <FilmStrip rotate={3.5} className="relative z-10 hidden sm:block" />
 
       <PastProjects />
       <FilmStrip rotate={SPONSORS_STRIP_ROTATE} className="relative z-10" />
