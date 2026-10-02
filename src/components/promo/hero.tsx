@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import Link from "next/link";
 import * as React from "react";
 import {
   motion,
@@ -651,8 +652,8 @@ export function Hero() {
             </div>
 
             {/* data-hero-cta: the mobile story windows rest below this. */}
-            <Button type="button" data-hero-cta>
-              Sign up for updates
+            <Button asChild data-hero-cta>
+              <Link href="/apply">Apply</Link>
             </Button>
           </div>
         </div>
