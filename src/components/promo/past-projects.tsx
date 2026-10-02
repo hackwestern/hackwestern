@@ -162,10 +162,10 @@ function TreeScene() {
         <Image
           src={`${ASSETS}/branch.webp`}
           alt=""
-          width={719}
-          height={323}
-          sizes="(min-width: 768px) 25vw, 33vw"
-          className="absolute left-[0.14%] top-[-0.62%] h-[101.5%] w-[100.26%] max-w-none"
+          width={1800}
+          height={1957}
+          sizes="(min-width: 768px) 62vw, 82vw"
+          className="absolute left-[0.14%] top-[-352.88%] h-[614.96%] w-[250.99%] max-w-none"
         />
       </div>
     </div>

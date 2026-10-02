@@ -8,9 +8,6 @@ const SKY_TO_PAGE_RATIO = DESIGN_SKY_HEIGHT / DESIGN_PAGE_HEIGHT;
 
 const NOISE_TILE_RATIO = 921.6 / DESIGN_WIDTH;
 
-const BLANK_PIXEL =
-  "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-
 const SKY_GRADIENT = [
   "linear-gradient(178.45246986254318deg,",
   "rgb(0, 52, 78) 0.16018%,",
@@ -144,16 +141,11 @@ export function SkyBackground() {
     >
       {/* Mobile: one fixed image, no parallax */}
       <div className="absolute inset-0 block md:hidden">
-        {/* md:hidden doesn't stop an <img> downloading, so from md up the
-            source swaps in a 1px blank and the photo is never fetched */}
-        <picture>
-          <source media="(min-width: 768px)" srcSet={BLANK_PIXEL} />
-          <img
-            src="/landing/promo/mobile-bg.webp"
-            alt=""
-            className="h-full w-full object-cover"
-          />
-        </picture>
+        <img
+          src="/landing/promo/mobile-bg.png"
+          alt=""
+          className="h-full w-full object-cover"
+        />
       </div>
 
       {/* Desktop: existing parallax sky */}
