@@ -113,8 +113,16 @@ export function RealmForm() {
             initial="initial"
             animate="animate"
             exit="exit"
-            className="flex flex-col items-center gap-6"
+            className="flex flex-col items-center gap-4"
           >
+            <div className="text-center">
+              <p className="font-primary text-sm-display font-bold text-heavy">
+                Click to choose your horse companion
+              </p>
+              <p className="mt-1 font-figtree text-lg-p font-medium text-light">
+                Who will accompany you along this adventure?
+              </p>
+            </div>
             <HorsePicker selectedId={horseId ?? null} onSelect={handlePick} />
             <Button
               type="button"
