@@ -159,7 +159,7 @@ export function Window({
       >
         <div
           ref={frameRef}
-          className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border-[0.9px] border-[#9F9F9F] bg-[#f4f5f8] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_40px_rgba(30,40,60,0.3),0_4px_10px_rgba(30,40,60,0.2)]"
+          className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border-[0.9px] border-[#9F9F9F] bg-[var(--realm-surface,#f4f5f8)] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_40px_rgba(30,40,60,0.3),0_4px_10px_rgba(30,40,60,0.2)] transition-[background-color] duration-700 ease-in-out"
         >
           <div className="shrink-0">{titleBar}</div>
           {!minimized && (
@@ -197,7 +197,7 @@ export function Window({
             </div>
           )}
           {!minimized && footer && (
-            <div className="shrink-0 border-t-[0.9px] border-[#9F9F9F] bg-[#f4f5f8] px-6 py-2">
+            <div className="shrink-0 border-t-[0.9px] border-[#9F9F9F] bg-[var(--realm-surface,#f4f5f8)] px-6 py-2 transition-[background-color] duration-700 ease-in-out">
               {footer}
             </div>
           )}

@@ -26,6 +26,11 @@ export type RealmTint = {
   accent: string;
   /** Softer realm color used for secondary / muted copy inside tinted forms. */
   accentMuted: string;
+  /**
+   * Opaque sidebar color. The application window and its form fields mix in
+   * a little of it (see `--realm-tint` in globals.css).
+   */
+  tintColor: string;
 };
 
 export const realmTint: Record<Realm, RealmTint> = {
@@ -37,6 +42,7 @@ export const realmTint: Record<Realm, RealmTint> = {
     sidebarItemActive: "rgba(234, 179, 8, 0.45)",
     accent: "#854d0e",
     accentMuted: "#a16207",
+    tintColor: "rgb(254, 243, 199)",
   },
   ocean: {
     background: "/apply/realm/background-ocean.png",
@@ -46,6 +52,7 @@ export const realmTint: Record<Realm, RealmTint> = {
     sidebarItemActive: "rgba(37, 99, 235, 0.4)",
     accent: "#1e3a8a",
     accentMuted: "#1d4ed8",
+    tintColor: "rgb(219, 234, 254)",
   },
   mountain: {
     background: "/apply/realm/background-mountain.png",
@@ -55,6 +62,7 @@ export const realmTint: Record<Realm, RealmTint> = {
     sidebarItemActive: "rgba(22, 163, 74, 0.4)",
     accent: "#14532d",
     accentMuted: "#166534",
+    tintColor: "rgb(220, 252, 231)",
   },
   desert: {
     background: "/apply/realm/background-desert.png",
@@ -64,6 +72,7 @@ export const realmTint: Record<Realm, RealmTint> = {
     sidebarItemActive: "rgba(234, 88, 12, 0.4)",
     accent: "#7c2d12",
     accentMuted: "#9a3412",
+    tintColor: "rgb(254, 215, 170)",
   },
 };
 

@@ -160,6 +160,7 @@ export default function Apply() {
       root.style.setProperty("--form-tint-border", tint.sidebarBorder);
       root.style.setProperty("--form-tint-text", tint.accent);
       root.style.setProperty("--form-tint-text-muted", tint.accentMuted);
+      root.style.setProperty("--realm-tint", tint.tintColor);
       root.setAttribute("data-apply-tint", "on");
     } else {
       root.removeAttribute("data-apply-tint");
@@ -322,7 +323,7 @@ export default function Apply() {
                         disableControls
                         title="Hack Western 13: Discover the Unknown"
                         className="min-h-0 flex-1"
-                        contentClassName="px-8 py-8 md:px-12 md:py-10"
+                        contentClassName="realm-tinted px-8 py-8 md:px-12 md:py-10"
                         footer={<ApplyNavigation step={step} />}
                       >
                         <div className="space-y-6">

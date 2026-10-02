@@ -127,6 +127,13 @@
       "when": 1790915036365,
       "tag": "0017_chief_ben_grimm",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790916186409,
+      "tag": "0018_windy_shard",
+      "breakpoints": true
     }
   ]
 }

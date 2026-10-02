@@ -453,3 +453,28 @@ html[data-apply-tint] [role="option"][data-state="checked"] {
   background-color: #dedede !important;
   color: #262626 !important;
 }
+
+/*
+ * Faint realm tint for the application window and everything in it. A
+ * little of the sidebar color (--realm-tint, set by /apply) is mixed into
+ * the window's grey and into the white form fields. Select dropdowns are
+ * portaled outside the window, so they match on the html attribute alone.
+ */
+html[data-apply-tint="on"] {
+  --realm-surface: color-mix(in srgb, var(--realm-tint) 15%, #f4f5f8);
+  --realm-field: color-mix(in srgb, var(--realm-tint) 15%, white);
+}
+
+html[data-apply-tint="on"]
+  .realm-tinted
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]),
+    textarea,
+    button[role="combobox"],
+    [role="radio"]:not([data-state="checked"]),
+    .realm-field
+  ),
+html[data-apply-tint="on"] [role="listbox"] {
+  background-color: var(--realm-field);
+  transition: background-color 0.7s ease-in-out;
+}
