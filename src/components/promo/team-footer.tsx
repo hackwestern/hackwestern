@@ -1,11 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
-import type { CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 
 /**
  * Meet the Team footer — Figma 402:6565 (desktop) / 585:3670 (mobile).
  *
- * The team stands in a slowly scrolling row on a black band, fading out at
- * both edges. Sizes come from the 1440px design frame via `--u` (one design
+ * The team travels in a slowly scrolling row on a black band, fading out at
+ * both edges, along a bouncing squiggle (see pathY). Sizes come from the 1440px design frame via `--u` (one design
  * px); mobile is the same layout at 0.4× (a 576px-wide frame), as in the
  * Figma. Hovering or focusing someone pauses the row, outlines them and shows
  * their name tag.
@@ -71,8 +71,92 @@ const GAP = 28;
 /** Room above the band for name tags, so the edge fade doesn't clip them. */
 const TAG_ROOM = 60;
 
-/** Staggered drop of each figure from the band's top, cycled (Figma). */
-const OFFSETS = [56, 77, 88, 110, 88, 61, 56, 45, 31, 22, 43, 64];
+/** Seconds for the row to scroll by one copy of the team. */
+const MARQUEE_S = 70;
+
+/**
+ * The squiggle everyone travels along, fixed on screen: a zigzag with sharp
+ * vertices at both the top and the bottom. Between vertices the path eases
+ * through the middle and speeds up exponentially (sinh) into each vertex,
+ * where it bounces off in the other direction.
+ */
+const PATH_TOP = 22;
+const PATH_DROP = 88;
+const PATH_WAVELENGTH = 480;
+const PATH_STEEPNESS = 3;
+
+/** Drop below PATH_TOP, in design px, for a figure centred at design-px x. */
+function pathY(x: number) {
+  const phase = (((x / PATH_WAVELENGTH) % 1) + 1) % 1;
+  // Triangle wave: -1 at a top vertex, 1 at a bottom vertex.
+  const zigzag = 1 - 4 * Math.abs(phase - 0.5);
+  const curve = Math.sinh(PATH_STEEPNESS * zigzag) / Math.sinh(PATH_STEEPNESS);
+  return (PATH_DROP / 2) * (1 + curve);
+}
+
+/**
+ * Keeps each figure on the path as the CSS marquee carries it sideways. Reads
+ * the track's current offset once a frame, so pausing the marquee on hover
+ * also freezes everyone in place.
+ */
+function useSquigglePath(
+  footerRef: React.RefObject<HTMLElement | null>,
+  trackRef: React.RefObject<HTMLElement | null>,
+) {
+  useEffect(() => {
+    const footer = footerRef.current;
+    const track = trackRef.current;
+    if (!footer || !track) return;
+    const figures = [...track.querySelectorAll<HTMLElement>("[data-figure]")];
+
+    // Figure centres within the untransformed track, and px per design px.
+    let centers: number[] = [];
+    let unit = 1;
+    const measure = () => {
+      unit = Math.max(footer.clientWidth, 576) / 1440;
+      centers = figures.map((f) => f.offsetLeft + f.offsetWidth / 2);
+    };
+    const place = () => {
+      const offset = new DOMMatrix(getComputedStyle(track).transform).m41;
+      figures.forEach((f, i) => {
+        const y = pathY((centers[i]! + offset) / unit) * unit;
+        f.style.transform = `translateY(${y}px)`;
+      });
+    };
+
+    measure();
+    place();
+    // Widths settle as the lazy cut-outs load, and change on resize.
+    const resize = new ResizeObserver(() => {
+      measure();
+      place();
+    });
+    resize.observe(track);
+    resize.observe(footer);
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return () => resize.disconnect();
+    }
+
+    // Only animate while the footer is on screen.
+    let frame = 0;
+    const loop = () => {
+      place();
+      frame = requestAnimationFrame(loop);
+    };
+    const visibility = new IntersectionObserver(([entry]) => {
+      cancelAnimationFrame(frame);
+      if (entry?.isIntersecting) frame = requestAnimationFrame(loop);
+    });
+    visibility.observe(footer);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      visibility.disconnect();
+      resize.disconnect();
+    };
+  }, [footerRef, trackRef]);
+}
 
 const u = (px: number) => `calc(${px} * var(--u))`;
 
@@ -87,8 +171,15 @@ const EDGE_FADE =
   "linear-gradient(to right, transparent calc(var(--fade) / 2), #000 var(--fade), #000 calc(100% - var(--fade)), transparent calc(100% - var(--fade) / 2))";
 
 export function TeamFooter({ team = TEAM }: { team?: TeamMember[] }) {
+  const footerRef = useRef<HTMLElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  useSquigglePath(footerRef, trackRef);
+
   return (
-    <footer className="relative z-10 overflow-x-clip bg-black [container-type:inline-size]">
+    <footer
+      ref={footerRef}
+      className="relative z-10 overflow-x-clip bg-black [container-type:inline-size]"
+    >
       <div
         className="relative [--fade:64px] md:[--fade:160px]"
         style={
@@ -108,15 +199,18 @@ export function TeamFooter({ team = TEAM }: { team?: TeamMember[] }) {
         >
           {/* The list is rendered twice so the loop has no seam. */}
           <div
+            ref={trackRef}
             className="flex w-max animate-team-marquee items-start focus-within:[animation-play-state:paused] hover:[animation-play-state:paused] motion-reduce:animate-none"
-            style={{ paddingTop: u(TAG_ROOM) }}
+            style={{
+              paddingTop: u(TAG_ROOM),
+              animationDuration: `${MARQUEE_S}s`,
+            }}
           >
             {[0, 1].map((copy) =>
-              team.map((m, i) => (
+              team.map((m) => (
                 <TeamFigure
                   key={`${copy}-${m.image}`}
                   member={m}
-                  offset={OFFSETS[i % OFFSETS.length]!}
                   hidden={copy === 1}
                 />
               )),
@@ -142,11 +236,9 @@ export function TeamFooter({ team = TEAM }: { team?: TeamMember[] }) {
 
 function TeamFigure({
   member,
-  offset,
   hidden,
 }: {
   member: TeamMember;
-  offset: number;
   /** The loop's second copy: kept out of the tab order and screen readers. */
   hidden: boolean;
 }) {
@@ -155,10 +247,11 @@ function TeamFigure({
       tabIndex={hidden ? -1 : 0}
       aria-hidden={hidden || undefined}
       aria-label={hidden ? undefined : `${member.name}, ${member.role}`}
+      data-figure
       className="group relative flex-none outline-none"
       style={
         {
-          marginTop: u(offset),
+          marginTop: u(PATH_TOP),
           marginRight: u(GAP),
           height: u(FIGURE_H),
           "--outline": member.color,
