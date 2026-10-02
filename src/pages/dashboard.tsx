@@ -13,10 +13,13 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import type { Realm } from "~/constants/realms";
 import SEO from "~/components/seo";
 import { Button } from "~/components/ui/button";
 import { HorseGame } from "~/components/dashboard/horse-game";
+import { Confetti } from "~/components/dashboard/confetti";
+import { FilmStrip } from "~/components/promo/film-strip";
 import { disabledRedirect } from "~/utils/redirect";
 import { isPastDeadline } from "~/lib/date";
 import type { GetServerSidePropsContext } from "next";
@@ -182,15 +185,35 @@ function useGameScale() {
 type DashboardProps = {
   /** Realm picked in the application; picks the background (Figma 263:2105). */
   realm: Realm | null;
+  /** Application accepted: swaps in the invitation text (Figma 221:16802). */
+  accepted: boolean;
+  /**
+   * Arrived via the acceptance email's link (/dashboard?celebrate=1), so the
+   * confetti plays. Any other way in skips it.
+   */
+  celebrate: boolean;
 };
 
 /**
  * Submitted dashboard (Figma 221:15930 / 221:17193): a thank-you note beside
  * the horse runner game. Only applicants with a submitted application reach
- * it; everyone else is redirected in getServerSideProps.
+ * it; everyone else is redirected in getServerSideProps. Once accepted it
+ * shows the invitation instead (Figma 221:16802), with confetti when opened
+ * from the acceptance email.
  */
-const Dashboard = ({ realm }: DashboardProps) => {
+const Dashboard = ({ realm, accepted, celebrate }: DashboardProps) => {
   const gameScale = useGameScale();
+  const router = useRouter();
+
+  // Drop ?celebrate from the URL once the confetti has started, so a refresh
+  // or a copied link doesn't replay it.
+  useEffect(() => {
+    if (router.query.celebrate === undefined) return;
+    const { celebrate: _celebrate, ...query } = router.query;
+    void router.replace({ pathname: router.pathname, query }, undefined, {
+      shallow: true,
+    });
+  }, [router]);
 
   return (
     <>
@@ -199,6 +222,7 @@ const Dashboard = ({ realm }: DashboardProps) => {
         description="Your Hack Western 13 application status."
         noindex
       />
+      {celebrate && <Confetti />}
       <div className="relative h-screen w-full overflow-hidden font-figtree">
         {/* next/image resizes the realm photos — some are 4K source files */}
         <Image
@@ -213,22 +237,12 @@ const Dashboard = ({ realm }: DashboardProps) => {
         />
 
         {/* Film reel strips along the top and bottom edges */}
-        <img
-          src="/dashboard/reel-frame.svg"
-          alt=""
-          aria-hidden
-          width={1913.6}
-          height={54}
-          className="pointer-events-none fixed left-1/2 top-[-8px] z-20 h-[54px] w-[1913.6px] max-w-none -translate-x-1/2"
-        />
-        <img
-          src="/dashboard/reel-frame.svg"
-          alt=""
-          aria-hidden
-          width={1913.6}
-          height={54}
-          className="pointer-events-none fixed bottom-[-16px] left-1/2 z-20 h-[54px] w-[1913.6px] max-w-none -translate-x-1/2"
-        />
+        <div className="pointer-events-none fixed inset-x-0 top-0 z-20">
+          <FilmStrip />
+        </div>
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20">
+          <FilmStrip />
+        </div>
 
         <img
           src="/shared/horse.svg"
@@ -239,14 +253,18 @@ const Dashboard = ({ realm }: DashboardProps) => {
         />
 
         <div className="relative z-10 flex h-full flex-col items-center justify-center gap-16 px-6 py-[60px] lg:flex-row lg:gap-12 xl:gap-[115px]">
-          <div className="flex w-full max-w-[403px] flex-col gap-[62px]">
-            <div className="flex flex-col gap-6 text-[#d7e2ef]">
+          <div className="flex w-full max-w-[470px] flex-col gap-[62px]">
+            <div className="flex -translate-y-[2px] flex-col gap-6 text-[#d7e2ef]">
               <h1 className="font-cossetteTexte text-[36px] font-bold leading-[1.2]">
-                Your application has been submitted
+                {accepted
+                  ? "Congratulations, you’re invited to Hack Western 13!"
+                  : "Your application has been submitted"}
               </h1>
               <p className="font-figtree text-base leading-none">
-                Thank you for applying to Hack Western 13! A copy of your
-                responses have been sent to your email.
+                {/* TODO: link "here" to the RSVP page once it exists. */}
+                {accepted
+                  ? "RSVP here to confirm your attendance"
+                  : "Thank you for applying to Hack Western 13! A copy of your responses have been sent to your email."}
               </p>
             </div>
             <div>
@@ -298,6 +316,16 @@ export const getServerSideProps = async (
       context.res,
       authOptions,
     );
+    // The email's confetti link only works once signed in, so carry it
+    // through login instead of losing it on the way via /apply.
+    if (!session && context.query.celebrate !== undefined) {
+      return {
+        redirect: {
+          destination: `/login?callbackUrl=${encodeURIComponent(context.resolvedUrl)}`,
+          permanent: false,
+        },
+      };
+    }
     if (session) {
       const user = await db.query.users.findFirst({
         where: (users, { eq }) => eq(users.id, session.user.id),
@@ -316,7 +344,22 @@ export const getServerSideProps = async (
         columns: { status: true, realm: true },
       });
       if (application && SUBMITTED_STATUSES.includes(application.status)) {
-        return { props: { realm: application.realm } };
+        return {
+          props: {
+            realm: application.realm,
+            accepted: false,
+            celebrate: false,
+          },
+        };
+      }
+      if (application?.status === "ACCEPTED") {
+        return {
+          props: {
+            realm: application.realm,
+            accepted: true,
+            celebrate: context.query.celebrate === "1",
+          },
+        };
       }
     }
   }
