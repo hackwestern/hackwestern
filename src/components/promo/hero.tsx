@@ -1,0 +1,679 @@
+import dynamic from "next/dynamic";
+import Image from "next/image";
+import Link from "next/link";
+import * as React from "react";
+import {
+  motion,
+  type MotionValue,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "framer-motion";
+import { Button } from "~/components/ui/button";
+import { Window } from "~/components/internals/window";
+import {
+  closestProgress,
+  coverRect,
+  type CoverRect,
+  FOREGROUND_PARALLAX,
+  IMAGE_HEIGHT,
+  IMAGE_WIDTH,
+  PIN_DATA,
+  samplePath,
+  type StoryPinData,
+  WAYPOINTS,
+  type Waypoint,
+} from "./hero-path";
+
+const PathEditor = dynamic(() => import("./path-editor"), { ssr: false });
+
+const HOLD_SCREENS = 1.5;
+// Mobile skips the extended "hold" almost entirely — the desktop
+// value (plus SCENE_HEIGHT's own ~100svh) makes the whole hero a
+// multi-screen scroll, which reads as excessively long on a small
+// viewport. At ~0, total section height collapses to roughly
+// SCENE_HEIGHT alone (one normal screen), so the section behaves
+// like an ordinary hero rather than an extended scroll-jacked one.
+const HOLD_SCREENS_MOBILE = 0;
+// Matches the project's existing `lg` Tailwind breakpoint (see
+// tailwind.config.ts) so "mobile" here means the same thing as
+// elsewhere in the codebase (e.g. FilmStrip's `hidden lg:block`).
+const MOBILE_BREAKPOINT_PX = 1024;
+const SCENE_HEIGHT = `max(100svh, ${(IMAGE_HEIGHT / IMAGE_WIDTH) * 100}vw)`;
+const BLEED = 240;
+// With HOLD_SCREENS_MOBILE at ~0, there's no scroll buffer left
+// for the full 240px bleed to sit comfortably within before the
+// next section begins — on mobile it visibly collides with
+// whatever follows the hero instead. Shrinking it (rather than
+// removing it outright) still smooths the sticky-release edge
+// without spilling into the next section.
+const BLEED_MOBILE = 48;
+// On tall mobile screens the cover-fit mountains rise into the headline. Push
+// the scene down so more sky shows above them and the peaks sit below
+// "Discover the unknown"; the bottom of the foreground is cropped instead.
+const MOBILE_SKY_EXTENSION = "10svh";
+const DOT = 3;
+const PATH_SAMPLES = 200;
+const PIN_ASPECT = 2.5;
+const PIN_TIP = 0.97;
+const WINDOW_GAP = 16;
+const WINDOW_DESIGN_WIDTH = 1512;
+const WINDOW_MIN_SCALE = 0.8;
+const WINDOW_MAX_SCALE = 1.15;
+const WINDOW_EDGE_MARGIN = 24;
+// The design width the page's --ui-scale grows from.
+const DESIGN_WIDTH = 1440;
+const WINDOW_ANCHOR_SHIFT = { left: 0.1, center: 0.5, right: 0.9 } as const;
+
+const MOUNTAIN_LAYERS = [
+  { src: "/landing/promo/hero/mountain-4.webp", offset: 16 },
+  { src: "/landing/promo/hero/mountain-3.webp", offset: 16 },
+  { src: "/landing/promo/hero/mountain-2.webp", offset: 24 },
+  { src: "/landing/promo/hero/mountain-1.webp", offset: FOREGROUND_PARALLAX },
+] as const;
+
+const BAYER = [
+  [0, 128, 32, 160, 8, 136, 40, 168],
+  [192, 64, 224, 96, 200, 72, 232, 104],
+  [48, 176, 16, 144, 56, 184, 24, 152],
+  [240, 112, 208, 80, 248, 120, 216, 88],
+  [12, 140, 44, 172, 4, 132, 36, 164],
+  [204, 76, 236, 108, 196, 68, 228, 100],
+  [60, 188, 28, 156, 52, 180, 20, 148],
+  [252, 124, 220, 92, 244, 116, 212, 84],
+] as const;
+
+// Tracks whether the viewport is below `breakpointPx`, via a
+// matchMedia listener rather than a one-off window.innerWidth
+// check — this reacts to resize/orientation changes live, not
+// just at mount.
+function useIsMobile(breakpointPx: number) {
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const query = window.matchMedia(`(max-width: ${breakpointPx - 1}px)`);
+
+    const update = () => setIsMobile(query.matches);
+
+    update();
+    query.addEventListener("change", update);
+
+    return () => query.removeEventListener("change", update);
+  }, [breakpointPx]);
+
+  return isMobile;
+}
+
+function useCoverRect(ref: React.RefObject<HTMLElement | null>) {
+  const [rect, setRect] = React.useState<CoverRect | null>(null);
+
+  React.useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const update = () =>
+      setRect(coverRect(element.clientWidth, element.clientHeight));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return rect;
+}
+
+function PathCanvas({
+  progress,
+  waypoints,
+  bleed,
+}: {
+  progress: MotionValue<number>;
+  waypoints: readonly Waypoint[];
+  bleed: number;
+}) {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const waypointsRef = React.useRef(waypoints);
+  const invalidateRef = React.useRef<() => void>(() => undefined);
+  const reduceMotion = useReducedMotion() ?? false;
+
+  React.useEffect(() => {
+    waypointsRef.current = waypoints;
+    invalidateRef.current();
+  }, [waypoints]);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    let currentProgress = progress.get();
+    let mask: Float32Array | null = null;
+    let maskPixels = new Uint32Array(0);
+    let maskProgress = -1;
+    let rect = coverRect(1, 1);
+    let frame = 0;
+    let visible = false;
+    let image = context.createImageData(1, 1);
+
+    const resize = () => {
+      const scene = canvas.parentElement;
+      const sceneWidth = scene?.clientWidth ?? window.innerWidth;
+      const sceneHeight = scene?.clientHeight ?? window.innerHeight;
+      rect = coverRect(sceneWidth, sceneHeight);
+      canvas.width = Math.ceil(sceneWidth / DOT);
+      canvas.height = Math.ceil((sceneHeight + bleed) / DOT);
+      canvas.style.height = `${sceneHeight + bleed}px`;
+      image = context.createImageData(canvas.width, canvas.height);
+      mask = null;
+      schedule();
+    };
+
+    const buildMask = (value: number) => {
+      const width = canvas.width;
+      const height = canvas.height;
+      const next = new Float32Array(width * height);
+      const sampleCount = Math.floor(PATH_SAMPLES * value);
+
+      for (let step = 0; value > 0 && step <= sampleCount; step++) {
+        const point = samplePath(
+          waypointsRef.current,
+          Math.min(step / PATH_SAMPLES, 1),
+        );
+        const cx = Math.round((rect.left + point.x * rect.width) / DOT);
+        const cy = Math.round((rect.top + point.y * rect.height) / DOT);
+        const radius = Math.ceil((point.w * rect.scale) / (DOT * 2));
+        const radiusSquared = radius * radius;
+
+        for (let dy = -radius; dy <= radius; dy++) {
+          const row = cy + dy;
+          if (row < 0 || row >= height) continue;
+          for (let dx = -radius; dx <= radius; dx++) {
+            const distance = dx * dx + dy * dy;
+            const column = cx + dx;
+            if (distance > radiusSquared || column < 0 || column >= width) {
+              continue;
+            }
+            const index = row * width + column;
+            next[index] = Math.max(
+              next[index] ?? 0,
+              1 - distance / radiusSquared,
+            );
+          }
+        }
+      }
+
+      let count = 0;
+      for (const proximity of next) {
+        if (proximity > 0) count++;
+      }
+      const pixels = new Uint32Array(count);
+      for (let index = 0, at = 0; index < next.length; index++) {
+        if (next[index]! > 0) pixels[at++] = index;
+      }
+
+      mask = next;
+      maskPixels = pixels;
+      maskProgress = value;
+    };
+
+    const render = (time: number) => {
+      const value = Math.round(currentProgress * 1000) / 1000;
+      if (!mask || value !== maskProgress) buildMask(value);
+
+      const data = image.data;
+      data.fill(0);
+      const breathe = reduceMotion ? 1 : 0.82 + 0.18 * Math.sin(time / 700);
+
+      const width = canvas.width;
+      for (const pixel of maskPixels) {
+        const x = pixel % width;
+        const y = (pixel - x) / width;
+        const proximity = mask?.[pixel] ?? 0;
+        if (BAYER[y & 7]![x & 7]! < 48 * proximity * breathe) {
+          const index = pixel * 4;
+          data[index] = 255;
+          data[index + 1] = 255;
+          data[index + 2] = 255;
+          data[index + 3] = 255;
+        }
+      }
+
+      context.putImageData(image, 0, 0);
+    };
+
+    const tick = (time: number) => {
+      frame = 0;
+      render(time);
+      if (visible && !reduceMotion) frame = requestAnimationFrame(tick);
+    };
+
+    function schedule() {
+      if (visible && !frame) frame = requestAnimationFrame(tick);
+    }
+
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      frame = 0;
+    };
+
+    invalidateRef.current = () => {
+      mask = null;
+      schedule();
+    };
+    resize();
+    const unsubscribe = progress.on("change", (value) => {
+      currentProgress = value;
+      if (reduceMotion) schedule();
+    });
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry?.isIntersecting ?? false;
+      if (visible) schedule();
+      else stop();
+    });
+    observer.observe(canvas);
+    window.addEventListener("resize", resize);
+
+    return () => {
+      invalidateRef.current = () => undefined;
+      unsubscribe();
+      observer.disconnect();
+      window.removeEventListener("resize", resize);
+      stop();
+    };
+  }, [progress, reduceMotion, bleed]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden
+      className="pointer-events-none absolute left-0 top-0 w-full [image-rendering:pixelated]"
+    />
+  );
+}
+
+function MountainLayer({
+  src,
+  offset,
+  pan,
+  priority,
+}: {
+  src: string;
+  offset: number;
+  pan: MotionValue<number>;
+  priority: boolean;
+}) {
+  const reduceMotion = useReducedMotion();
+  const y = useTransform(pan, [0, 1], [0, reduceMotion ? 0 : offset]);
+
+  return (
+    <motion.div
+      aria-hidden
+      className="pointer-events-none absolute inset-0"
+      style={{ y }}
+    >
+      <Image
+        src={src}
+        alt=""
+        fill
+        priority={priority}
+        sizes="100vw"
+        className="object-cover"
+      />
+    </motion.div>
+  );
+}
+
+function MountainScene({ pan }: { pan: MotionValue<number> }) {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+    >
+      {MOUNTAIN_LAYERS.map((layer, index) => (
+        <MountainLayer
+          key={layer.src}
+          src={layer.src}
+          offset={layer.offset}
+          pan={pan}
+          priority={index === 0 || index === MOUNTAIN_LAYERS.length - 1}
+        />
+      ))}
+    </div>
+  );
+}
+
+function StoryPin({
+  pin,
+  rect,
+  waypoints,
+  pathProgress,
+  interactive,
+}: {
+  pin: StoryPinData;
+  rect: CoverRect;
+  waypoints: readonly Waypoint[];
+  pathProgress: MotionValue<number>;
+  interactive: boolean;
+}) {
+  const [open, setOpen] = React.useState(true);
+  const pinWidth = pin.size * rect.scale;
+  const pinHeight = pinWidth * PIN_ASPECT;
+  const sceneWidth = rect.width + 2 * rect.left;
+  // Past 1440 wide, matches the page's --ui-scale (a third of the width's rate).
+  const uiScale = Math.max(1, (2 + sceneWidth / DESIGN_WIDTH) / 3);
+  const windowScale = Math.min(
+    WINDOW_MAX_SCALE,
+    Math.max(WINDOW_MIN_SCALE, rect.width / WINDOW_DESIGN_WIDTH),
+  );
+  const left = rect.left + pin.x * rect.width;
+  const top = rect.top + pin.y * rect.height;
+  const windowWidth = Math.round(pin.windowWidth * windowScale);
+  // The window (box and text) is drawn uiScale times larger.
+  const shownWidth = windowWidth * uiScale;
+  const windowLeft = Math.min(
+    Math.max(
+      left - shownWidth * WINDOW_ANCHOR_SHIFT[pin.anchor ?? "center"],
+      WINDOW_EDGE_MARGIN,
+    ),
+    sceneWidth - shownWidth - WINDOW_EDGE_MARGIN,
+  );
+  const start = closestProgress(waypoints, pin.x, pin.y);
+  const reveal = [Math.max(0, start - 0.04), start];
+  const opacity = useTransform(pathProgress, reveal, [0, 1]);
+  const scale = useTransform(pathProgress, reveal, [0.88, 1]);
+  const pointerEvents = useTransform(opacity, (value) =>
+    interactive && value > 0.5 ? "auto" : "none",
+  );
+
+  return (
+    <>
+      <motion.button
+        type="button"
+        aria-label={open ? `Hide "${pin.title}"` : `Show "${pin.title}"`}
+        onClick={() => setOpen((value) => !value)}
+        className="absolute z-20 cursor-pointer"
+        style={{
+          left,
+          top,
+          x: "-50%",
+          y: `-${PIN_TIP * 100}%`,
+          opacity,
+          scale,
+          pointerEvents,
+        }}
+      >
+        <Image
+          src="/landing/promo/pin.svg"
+          alt=""
+          width={pinWidth}
+          height={pinHeight}
+        />
+      </motion.button>
+
+      {open && (
+        // Below `sm` these windows are replaced by MobileStoryStack
+        // (story-mobile.tsx), which rolls the same messages up over the hero.
+        <div
+          className="absolute z-30 max-sm:hidden"
+          style={{
+            left: windowLeft,
+            top,
+            transform: `translateY(calc(-100% - ${
+              pinHeight * PIN_TIP + WINDOW_GAP * windowScale
+            }px))`,
+          }}
+        >
+          <motion.div
+            style={{
+              opacity,
+              scale,
+              pointerEvents,
+              transformOrigin: `${left - windowLeft}px 100%`,
+            }}
+          >
+            {/* grows from its bottom-left, so it stays the same gap above the pin */}
+            <div style={{ scale: String(uiScale), transformOrigin: "0 100%" }}>
+              <Window
+                title="You have a message"
+                width={windowWidth}
+                autoHeight
+                draggable={false}
+                onClose={() => setOpen(false)}
+              >
+                <div className="flex flex-col gap-2 py-1 text-left">
+                  <h2 className="font-cossetteTexte text-[clamp(18px,1.59vw,26px)] font-bold leading-tight tracking-[-0.02em] text-[#111]">
+                    {pin.title}
+                  </h2>
+                  <p className="font-figtree text-[clamp(13px,1.06vw,17px)] leading-normal text-[#555]">
+                    {pin.body}
+                  </p>
+                </div>
+              </Window>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ForegroundStory({
+  pan,
+  pathProgress,
+  editing,
+  bleed,
+}: {
+  pan: MotionValue<number>;
+  pathProgress: MotionValue<number>;
+  editing: boolean;
+  bleed: number;
+}) {
+  const groupRef = React.useRef<HTMLDivElement>(null);
+  const rect = useCoverRect(groupRef);
+  const reduceMotion = useReducedMotion();
+  const y = useTransform(
+    pan,
+    [0, 1],
+    [0, reduceMotion ? 0 : FOREGROUND_PARALLAX],
+  );
+  const [waypoints, setWaypoints] = React.useState(WAYPOINTS);
+  const [pins, setPins] = React.useState(PIN_DATA);
+  const fullProgress = useTransform(pathProgress, () => 1);
+  const progress = editing ? fullProgress : pathProgress;
+
+  return (
+    <motion.div
+      ref={groupRef}
+      className={editing ? "absolute inset-0 z-30" : "absolute inset-0 z-10"}
+      style={{ y }}
+    >
+      <PathCanvas progress={progress} waypoints={waypoints} bleed={bleed} />
+      {rect &&
+        pins.map((pin) => (
+          <StoryPin
+            key={pin.title}
+            pin={pin}
+            rect={rect}
+            waypoints={waypoints}
+            pathProgress={progress}
+            interactive={!editing}
+          />
+        ))}
+      {editing && (
+        <PathEditor
+          waypoints={waypoints}
+          pins={pins}
+          onWaypointsChange={setWaypoints}
+          onPinsChange={setPins}
+        />
+      )}
+    </motion.div>
+  );
+}
+
+export function Hero() {
+  const sectionRef = React.useRef<HTMLElement>(null);
+  const sceneRef = React.useRef<HTMLDivElement>(null);
+  const [snapProgress, setSnapProgress] = React.useState(0.2);
+  const [editing, setEditing] = React.useState(false);
+  const isMobile = useIsMobile(MOBILE_BREAKPOINT_PX);
+  const holdScreens = isMobile ? HOLD_SCREENS_MOBILE : HOLD_SCREENS;
+  const bleed = isMobile ? BLEED_MOBILE : BLEED;
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start start", "end end"],
+  });
+  const pan = useTransform(
+    scrollYProgress,
+    [0, Math.max(snapProgress, 0.001)],
+    [0, 1],
+  );
+  const pathProgress = useTransform(
+    scrollYProgress,
+    [snapProgress, 0.9],
+    [0, 1],
+  );
+
+  React.useEffect(() => {
+    if (
+      process.env.NODE_ENV !== "production" &&
+      new URLSearchParams(window.location.search).has("pathEditor")
+    ) {
+      setEditing(true);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    const measure = () => {
+      const sceneHeight = sceneRef.current?.clientHeight ?? window.innerHeight;
+      const viewportHeight = window.innerHeight;
+      const totalScroll = sceneHeight + viewportHeight * (holdScreens - 1);
+
+      setSnapProgress(
+        totalScroll > 0
+          ? Math.max(sceneHeight - viewportHeight, 0) / totalScroll
+          : 0,
+      );
+    };
+
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [holdScreens]);
+
+  return (
+    <>
+      {/* Below lg the scene is pushed down (MOBILE_SKY_EXTENSION, parallax)
+          with no scroll room under it, so clip it just past the section's
+          bottom; otherwise the foreground spills past the film strip. The
+          15px (half the tape) runs it under the tape so no sky shows above
+          it. clip-path, not overflow-hidden, so the sticky scene still sticks. */}
+      <section
+        ref={sectionRef}
+        id="hero"
+        className="relative isolate max-lg:[clip-path:inset(-100vh_0_-15px_0)] md:bg-none"
+        style={{ height: `calc(${SCENE_HEIGHT} + ${holdScreens * 100}svh)` }}
+      >
+        {/* Mobile background */}
+        <div
+          aria-hidden
+          className="absolute inset-x-0 -top-[100px] bottom-0 bg-[url('/landing/promo/mobile-bg-hero.webp')] bg-cover bg-top bg-no-repeat md:hidden"
+        />
+        <div
+          ref={sceneRef}
+          data-sky-hold
+          className="sticky translate-y-[20px] overflow-visible"
+          style={{
+            height: SCENE_HEIGHT,
+            top: `calc(100svh - ${SCENE_HEIGHT})`,
+          }}
+        >
+          {/* placeholder until links added */}
+          {/* Mountains and the story layer move together so the story pins
+              stay on the art when the mobile sky extension shifts them. */}
+          <div
+            className={
+              editing ? "absolute inset-0 z-30" : "absolute inset-0 z-10"
+            }
+            style={{
+              transform: `translateY(${isMobile ? MOBILE_SKY_EXTENSION : "0px"})`,
+            }}
+          >
+            <MountainScene pan={pan} />
+            <ForegroundStory
+              key={editing ? "editing" : "live"}
+              pan={pan}
+              pathProgress={pathProgress}
+              editing={editing}
+              bleed={bleed}
+            />
+          </div>
+
+          {/* past 1440 wide: grows with --ui-scale and lines up with the
+              centred column, like the other sections' titles */}
+          <div className="absolute left-[clamp(24px,11.11vw,160px)] top-[20%] z-20 flex max-w-[calc(100%_-_48px)] flex-col items-start gap-12 min-[1440px]:left-[calc(50%-560px*var(--ui-scale,1))] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]">
+            <div className="flex flex-col items-start gap-[30px] font-cossetteTexte">
+              <div className="flex flex-wrap items-center gap-[14px] text-[clamp(16px,1.67vw,24px)] font-normal leading-normal tracking-[-0.03em] text-[#d0d6dd]">
+                <p className="whitespace-nowrap">November 20 - 22, 2026</p>
+                <span
+                  aria-hidden
+                  className="size-[6px] shrink-0 rounded-full bg-[#d0d6dd]"
+                />
+                <p className="whitespace-nowrap">In-person event</p>
+              </div>
+
+              <div className="flex flex-col items-start gap-3">
+                <div className="relative">
+                  {/* Figma 561:1011: an inner shadow along the letters' bottom
+                      edges (up 3.2px, 1.28 blur, #00344e at 20%), so their
+                      tops read as lit */}
+                  <svg aria-hidden width="0" height="0" className="absolute">
+                    <filter id="hero-title-glow">
+                      <feOffset in="SourceAlpha" dy="-3.2" />
+                      <feGaussianBlur stdDeviation="1.28" result="offsetBlur" />
+                      <feComposite
+                        in="SourceAlpha"
+                        in2="offsetBlur"
+                        operator="arithmetic"
+                        k2="1"
+                        k3="-1"
+                        result="edge"
+                      />
+                      <feFlood floodColor="#00344e" floodOpacity="0.2" />
+                      <feComposite in2="edge" operator="in" result="shadow" />
+                      <feMerge>
+                        <feMergeNode in="SourceGraphic" />
+                        <feMergeNode in="shadow" />
+                      </feMerge>
+                    </filter>
+                  </svg>
+                  <h1 className="whitespace-nowrap text-[clamp(40px,4.45vw,64px)] font-bold leading-[0.82] tracking-[-0.035em] text-[#f5f9ff] [filter:url(#hero-title-glow)]">
+                    Hack Western 13
+                  </h1>
+                  {/* Figma 561:1010: a flipped copy below the title, fading
+                      from white next to it to 20% white, at 10% opacity */}
+                  <p
+                    aria-hidden
+                    className="pointer-events-none absolute left-0 top-[calc(100%-0.64px)] -scale-y-100 select-none whitespace-nowrap bg-gradient-to-b from-white/20 from-[25.25%] to-white to-[67.42%] bg-clip-text text-[clamp(40px,4.45vw,64px)] font-bold leading-[0.82] tracking-[-0.035em] text-transparent opacity-10"
+                  >
+                    Hack Western 13
+                  </p>
+                </div>
+                <p className="relative text-[clamp(24px,2.13vw,30.72px)] font-normal leading-normal tracking-[-0.02em] text-highlight">
+                  Discover the unknown
+                </p>
+              </div>
+            </div>
+
+            {/* data-hero-cta: the mobile story windows rest below this. */}
+            <Button asChild data-hero-cta>
+              <Link href="/apply">Apply</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}

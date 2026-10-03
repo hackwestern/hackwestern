@@ -43,6 +43,12 @@ export const avatarColour = pgEnum("avatar_colour", [
 ]);
 
 /**
+ * The realm each hacker's horse companion belongs to, chosen during the
+ * application flow. Drives themed visuals across the portal.
+ */
+export const realm = pgEnum("realm", ["safari", "mountain", "desert", "ocean"]);
+
+/**
  * Year of study for the hacker
  */
 export const yearOfStudy = pgEnum("year_of_study", [
@@ -130,7 +136,6 @@ export const sexualOrientation = pgEnum("sexual_orientation", [
 export const countrySelection = pgEnum("country", [
   "Canada",
   "United States",
-  "India",
   "Other",
 ]);
 
@@ -140,6 +145,7 @@ export const countrySelection = pgEnum("country", [
 export const shirtSize = pgEnum("shirt_size", ["S", "M", "L", "XL"]);
 
 export const dietaryRestrictions = pgEnum("dietary_restrictions", [
+  "None",
   "Vegetarian",
   "Vegan",
   "Kosher",
@@ -328,6 +334,12 @@ export const users = pgTable(
 
     scavengerHuntEarned: integer("scavenger_hunt_earned").default(0),
     scavengerHuntBalance: integer("scavenger_hunt_balance").default(0),
+
+    // When the account was made, for stats. Accounts from before this column
+    // existed are all stamped 2026-10-03 10:00 ET (see the migration).
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
   },
   (user) => [
     index("user_scavenger_hunt_earned_idx").on(user.scavengerHuntEarned),
@@ -347,6 +359,22 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     relationName: "hacker_check_hacker",
   }),
 }));
+
+// One row per reminder email sent, so a re-run never emails anyone twice
+// (scripts/send-incomplete-reminder.ts).
+export const emailReminderSent = pgTable(
+  "email_reminder_sent",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: varchar("kind", { length: 32 }).notNull(),
+    sentAt: timestamp("sent_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.kind] })],
+);
 
 export const accounts = pgTable(
   "account",
@@ -444,12 +472,13 @@ export const applications = pgTable(
       .notNull(),
     status: applicationStatus("status").default("IN_PROGRESS").notNull(),
 
-    // Avatar
-    avatarColour: avatarColour("avatar_colour"),
-    avatarFace: integer("avatar_face"),
-    avatarLeftHand: integer("avatar_left_hand"),
-    avatarRightHand: integer("avatar_right_hand"),
-    avatarHat: integer("avatar_hat"),
+    // Horse companion + realm (HW13 redesign). Columns are nullable in the
+    // DB (see drizzle/0016_add_realm_and_horse_companion.sql) because
+    // applications exist before the realm step is filled out.
+    realm: realm("realm"),
+    horseId: integer("horse_id"),
+    horseFirstName: varchar("horse_first_name", { length: 255 }),
+    horseLastName: varchar("horse_last_name", { length: 255 }),
 
     // About You
     firstName: varchar("first_name", { length: 255 }),
@@ -506,16 +535,6 @@ export const applications = pgTable(
     ethnicity: ethnicity("ethnicity"),
     sexualOrientation: sexualOrientation("sexual_orientation"),
 
-    // Canvas - default to an empty but well-typed structure so new rows are valid
-    canvasData: jsonb("canvas_data")
-      .$type<{
-        paths: CanvasPaths;
-        timestamp: number;
-        version: string;
-      }>()
-      .default(sql`'{"paths":[],"timestamp":0,"version":""}'::jsonb`)
-      .notNull(),
-
     // Emergency Contact Info
     emergencyContactName: varchar("emergency_contact_name", { length: 255 }),
     emergencyContactRelationship: emergencyContactRelationship(
@@ -526,6 +545,22 @@ export const applications = pgTable(
     }),
 
     transportationMethod: transportationMethod("transportation_method"),
+
+    // OLDER DEPREEACTED FIELDS <can clean up but might be good to keep the forms in the code base>
+    avatarColour: avatarColour("avatar_colour"),
+    avatarFace: integer("avatar_face"),
+    avatarLeftHand: integer("avatar_left_hand"),
+    avatarRightHand: integer("avatar_right_hand"),
+    avatarHat: integer("avatar_hat"),
+
+    canvasData: jsonb("canvas_data")
+      .$type<{
+        paths: CanvasPaths;
+        timestamp: number;
+        version: string;
+      }>()
+      .default(sql`'{"paths":[],"timestamp":0,"version":""}'::jsonb`)
+      .notNull(),
   },
   (application) => [index("user_id_idx").on(application.userId)],
 );

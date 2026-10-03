@@ -1,0 +1,106 @@
+name: Incomplete Application Reminder
+
+# Emails everyone whose application is still IN_PROGRESS
+# (scripts/send-incomplete-reminder.ts). Plan agreed with marketing:
+#   Sun Oct 11, noon ET   reminder-1: one week left            (armed by REMINDER_1_LIVE)
+#   Fri Oct 16, noon ET   dry run of reminder-2, for the count (never sends)
+#   Sat Oct 17, noon ET   reminder-2: closes tomorrow           (armed by REMINDER_2_LIVE)
+# Marketing's own 48-hour blast to the whole HW13 Announce list goes out from
+# Mailjet on Oct 16 and is not part of this workflow.
+#
+# SAFETY / ARMING:
+#   - Scheduled runs are dry runs unless the repo variable for that reminder is
+#     'true':  gh variable set REMINDER_1_LIVE --body true
+#   - Manual run: Actions → this workflow → Run workflow. Untick "send" for a
+#     dry run; set "only" to one email for a test send to that address.
+#   - Each person gets each reminder at most once (email_reminder_sent).
+#   - Logs show masked emails only: this repo's Actions logs are public.
+
+on:
+  schedule:
+    - cron: "0 16 11 10 *" # Oct 11, 12:00 ET
+    - cron: "0 16 16 10 *" # Oct 16, 12:00 ET (count only)
+    - cron: "0 16 17 10 *" # Oct 17, 12:00 ET
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: "Which reminder"
+        type: choice
+        options: ["reminder-1", "reminder-2"]
+        default: "reminder-1"
+      send:
+        description: "Actually send (unticked = dry run)"
+        type: boolean
+        default: false
+      only:
+        description: "Send only to this email (test). Blank = everyone eligible."
+        type: string
+        default: ""
+
+concurrency:
+  group: incomplete-reminder
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    environment: Production
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      MAILJET_API_KEY: ${{ secrets.MAILJET_API_KEY }}
+      MAILJET_SECRET_KEY: ${{ secrets.MAILJET_SECRET_KEY }}
+      SKIP_ENV_VALIDATION: "1"
+    steps:
+      - name: Decide which reminder and whether to send
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          INPUT_KIND: ${{ inputs.kind }}
+          INPUT_SEND: ${{ inputs.send }}
+          LIVE_1: ${{ vars.REMINDER_1_LIVE }}
+          LIVE_2: ${{ vars.REMINDER_2_LIVE }}
+        run: |
+          # The cron has no year, so never let it fire after this cycle.
+          if [ "$EVENT" = "schedule" ] && [ "$(date -u +%Y)" != "2026" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "Not 2026; skipping."; exit 0
+          fi
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            KIND="$INPUT_KIND"; ARMED="$INPUT_SEND"
+          else
+            case "$SCHEDULE" in
+              "0 16 11 10 *") KIND="reminder-1"; ARMED="$LIVE_1" ;;
+              "0 16 16 10 *") KIND="reminder-2"; ARMED="false" ;;
+              "0 16 17 10 *") KIND="reminder-2"; ARMED="$LIVE_2" ;;
+              *) echo "Unknown schedule $SCHEDULE"; exit 1 ;;
+            esac
+          fi
+          echo "kind=$KIND" >> "$GITHUB_OUTPUT"
+          if [ "$ARMED" = "true" ]; then echo "flag=--send" >> "$GITHUB_OUTPUT"; fi
+          echo "Reminder: $KIND, send: ${ARMED:-false}"
+
+      - uses: actions/checkout@v4
+        if: steps.mode.outputs.skip != 'true'
+      - uses: actions/setup-node@v4
+        if: steps.mode.outputs.skip != 'true'
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+        if: steps.mode.outputs.skip != 'true'
+
+      - name: Send reminder
+        if: steps.mode.outputs.skip != 'true'
+        env:
+          KIND: ${{ steps.mode.outputs.kind }}
+          FLAG: ${{ steps.mode.outputs.flag }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          set -o pipefail
+          args=(--kind="$KIND")
+          [ -n "$FLAG" ] && args+=("$FLAG")
+          [ -n "$ONLY" ] && args+=(--only="$ONLY")
+          npx tsx scripts/send-incomplete-reminder.ts "${args[@]}" | tee out.log
+          # First line is "<kind>: N recipient(s)... Mode: ..." — surface it on the run page.
+          head -1 out.log >> "$GITHUB_STEP_SUMMARY"
+          grep -E "^Done\." out.log >> "$GITHUB_STEP_SUMMARY" || true

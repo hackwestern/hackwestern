@@ -7,10 +7,11 @@ import type { FormEvent } from "react";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
 import Link from "next/link";
-import { disabledRedirect } from "~/utils/redirect";
+import { hackerLoginRedirect } from "~/utils/redirect";
 import { useRouter } from "next/router";
 import { useToast } from "~/hooks/use-toast";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
+import { AuthLayout } from "~/components/auth/auth-layout";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -19,7 +20,6 @@ export default function Login() {
   const router = useRouter();
   const { toast } = useToast();
 
-  // Get the callbackUrl from query params, default to /dashboard
   const callbackUrl = (router.query.callbackUrl as string) ?? "/dashboard";
 
   async function handleSubmit(e: FormEvent) {
@@ -50,91 +50,95 @@ export default function Login() {
         description="Sign in to your Hack Western account. Hack Western is one of Canada's largest student-run hackathons at Western University."
       />
 
-      <div className="bg-hw-radial-gradient m-auto flex h-screen flex-col items-center justify-center">
-        <div className="z-10 mx-4 flex-col items-center rounded-lg bg-background p-8 text-sm shadow-md sm:w-xl sm:p-12 md:w-2xl md:text-base">
-          <h2 className="font-dico mb-4 self-start text-[30px] text-heavy md:text-[34px]">
-            Sign into your account
-          </h2>
-          <form onSubmit={handleSubmit}>
-            <h2 className="mb-1 font-secondary text-medium">Email</h2>
+      <AuthLayout title="Sign into your account">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="email"
+              className="font-figtree text-md-p font-medium text-gray-4"
+            >
+              Email
+            </label>
             <Input
               id="email"
               name="email"
               type="email"
               autoComplete="username"
-              className="mb-4 h-[60px] bg-highlight text-medium"
-              placeholder="hello@hackwestern.com"
+              className="h-12 bg-white font-figtree text-md-p"
+              placeholder="hacker@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            <h2 className="mb-1 font-secondary text-medium">Password</h2>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="password"
+              className="font-figtree text-md-p font-medium text-gray-4"
+            >
+              Password
+            </label>
             <Input
               id="password"
               name="password"
               type="password"
               autoComplete="current-password"
-              className="mb-8 h-[60px] bg-highlight text-medium"
+              className="h-12 bg-white font-figtree text-md-p"
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <Button
-              variant="primary"
-              type="submit"
-              size="lg"
-              full
-              isPending={pending}
-            >
-              {pending ? "Signing In..." : "Sign In"}
-            </Button>
-          </form>
+          </div>
 
-          <div className="relative flex w-full items-center py-2 md:py-6">
-            <div className="flex-grow border-t border-gray-400 opacity-20" />
-            <span className="mx-4 flex-shrink text-gray-400">or</span>
-            <div className="flex-grow border-t border-gray-400 opacity-20" />
-          </div>
-          <div className="flex flex-col items-stretch gap-4">
-            <GoogleAuthButton redirect={callbackUrl} />
-            <GithubAuthButton redirect={callbackUrl} />
-            <DiscordAuthButton redirect={callbackUrl} />
-          </div>
-          <div className="mt-6 font-secondary text-medium">
-            Don&apos;t have an account yet?
-            <Button
-              asChild
-              variant="tertiary"
-              className="ml-2 h-max p-0 text-sm md:text-base"
-            >
+          <Button
+            variant="primary-2"
+            type="submit"
+            size="lg"
+            full
+            isPending={pending}
+          >
+            {pending ? "Signing In..." : "Sign In"}
+          </Button>
+        </form>
+
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-gray-3/30" />
+          <span className="font-figtree text-sm-p text-gray-3">or</span>
+          <div className="h-px flex-1 bg-gray-3/30" />
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <GoogleAuthButton redirect={callbackUrl} />
+          <GithubAuthButton redirect={callbackUrl} />
+          <DiscordAuthButton redirect={callbackUrl} />
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 font-figtree text-md-p text-gray-6">
+            <span>New here?</span>
+            <Button asChild variant="tertiary" className="h-max p-0">
               <Link
-                className="text-purple-500 hover:text-violet-700"
+                className="font-figtree text-light hover:text-medium"
                 href="/register"
               >
-                Create Account
+                Create an account
               </Link>
             </Button>
           </div>
-          <div className="font-secondary text-medium">
-            Forget password?
-            <Button
-              asChild
-              variant="tertiary"
-              className="ml-2 h-max p-0 text-sm md:text-base"
+          <Button asChild variant="tertiary" className="h-max p-0">
+            <Link
+              className="font-figtree text-md-p text-light hover:text-medium"
+              href="/forgot-password"
             >
-              <Link
-                className="text-purple-500 hover:text-violet-700"
-                href="/forgot-password"
-              >
-                Reset Password
-              </Link>
-            </Button>
-          </div>
+              Forgot password?
+            </Link>
+          </Button>
         </div>
-      </div>
+      </AuthLayout>
     </>
   );
 }
 
-export const getServerSideProps = disabledRedirect;
+export const getServerSideProps = hackerLoginRedirect;

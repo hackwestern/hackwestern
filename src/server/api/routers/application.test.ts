@@ -70,6 +70,11 @@ describe("application.get", async () => {
       devpostLink: application?.devpostLink?.substring(DEVPOST_URL.length),
       githubLink: application?.githubLink?.substring(GITHUB_URL.length),
       linkedInLink: application?.linkedInLink?.substring(LINKEDIN_URL.length),
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -122,6 +127,11 @@ describe("application.getById", async () => {
 
       githubLink: application?.githubLink,
       linkedInLink: application?.linkedInLink,
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -207,6 +217,11 @@ describe.sequential("application.save", async () => {
       ...application,
       dietaryRestrictionsOther: application.dietaryRestrictionsOther ?? null,
 
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -242,6 +257,11 @@ describe.sequential("application.save", async () => {
       dietaryRestrictionsOther:
         updatedApplication.dietaryRestrictionsOther ?? null,
 
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -268,6 +288,11 @@ describe.sequential("application.save", async () => {
         completeApplication.dietaryRestrictionsOther ?? null,
 
       status: "PENDING_REVIEW",
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -286,6 +311,23 @@ describe.sequential("application.save", async () => {
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
 
     expect(got).toEqual(want);
+  });
+
+  test("submits when dietaryRestrictionsOther was never filled in", async () => {
+    // Picking "None" leaves the Other text box untouched, so the column stays
+    // null — the submit schema must accept that.
+    const { dietaryRestrictionsOther: _other, ...completeApplication } =
+      createCompleteSaveInput(session);
+
+    await caller.application.save(completeApplication);
+    const saved = await caller.application.get();
+    assert(!!saved);
+    expect(saved.dietaryRestrictionsOther).toBeNull();
+    expect(applicationSubmitSchema.safeParse(saved).success).toBe(true);
+
+    await caller.application.submit();
+    const result = await caller.application.get();
+    expect(result?.status).toBe("PENDING_REVIEW");
   });
 });
 
