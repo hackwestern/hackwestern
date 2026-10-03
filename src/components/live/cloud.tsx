@@ -3,12 +3,17 @@ import { useEffect, useRef } from "react";
 import type { CloudVariant } from "~/constants/cloud-paths";
 import { drawAsciiCloud } from "~/constants/cloud-animate";
 
+/** How long a newly set label takes to fill in. */
+const LABEL_FILL_MS = 1200;
+
 interface CloudProps {
   width?: string;
   height?: string;
   top?: string;
   className?: string;
   variant?: CloudVariant;
+  /** Text drawn into the cloud itself. */
+  label?: string;
 }
 
 export default function Cloud({
@@ -17,6 +22,7 @@ export default function Cloud({
   top = "10%",
   className = "",
   variant = "cloud1",
+  label,
 }: CloudProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -25,6 +31,14 @@ export default function Cloud({
   useEffect(() => {
     variantRef.current = variant;
   }, [variant]);
+
+  const labelRef = useRef(label);
+  const labelSinceRef = useRef(0);
+
+  useEffect(() => {
+    labelRef.current = label;
+    labelSinceRef.current = performance.now();
+  }, [label]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -67,6 +81,8 @@ export default function Cloud({
         time,
         dpr,
         variantRef.current,
+        labelRef.current,
+        Math.min(1, (now - labelSinceRef.current) / LABEL_FILL_MS),
       );
 
       animationFrame = requestAnimationFrame(animate);

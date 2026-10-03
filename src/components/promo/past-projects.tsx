@@ -4,6 +4,7 @@ import Image from "next/image";
 import Cloud from "~/components/live/cloud";
 import CloudDrift from "~/components/live/clouddrift";
 import { WindowFolder } from "~/components/live/window-folder";
+import { playReveal, useKeepsake } from "~/components/promo/keepsakes";
 import { Button } from "~/components/ui/button";
 import { PAST_PROJECTS, type PastProject } from "~/constants/past-projects";
 import { cn } from "~/lib/utils";
@@ -64,7 +65,40 @@ export function PastProjects() {
   );
 }
 
+const ASCII_CLOUD_WIDTH = "clamp(220px, 40.12 * var(--dvw, 1vw), 578px)";
+const ASCII_CLOUD_HEIGHT = "clamp(91px, 16.56 * var(--dvw, 1vw), 238px)";
+// Bigger on small screens so its label stays legible; lg+ is unchanged.
+const LINKED_CLOUD_WIDTH = "clamp(340px, 40.12 * var(--dvw, 1vw), 578px)";
+const LINKED_CLOUD_HEIGHT = "clamp(140px, 16.56 * var(--dvw, 1vw), 238px)";
+
+const SKY_LINK = process.env.NEXT_PUBLIC_SKY_LINK;
+const SKY_LABEL = process.env.NEXT_PUBLIC_SKY_LABEL;
+
 function AsciiClouds() {
+  const [chestOpened] = useKeepsake(1);
+  const [knightClicked] = useKeepsake(2);
+  const [flagClicked] = useKeepsake(3);
+  const linked =
+    Boolean(SKY_LINK) && chestOpened && knightClicked && flagClicked;
+  const [arrived, setArrived] = useState(false);
+  const linkRef = useRef<HTMLAnchorElement>(null);
+
+  // The reveal happens once the found cloud is properly on screen.
+  useEffect(() => {
+    const link = linkRef.current;
+    if (!linked || !link) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setArrived(true);
+        playReveal();
+      },
+      { threshold: 0.6 },
+    );
+    observer.observe(link);
+    return () => observer.disconnect();
+  }, [linked]);
+
   return (
     <div
       aria-hidden
@@ -73,14 +107,40 @@ function AsciiClouds() {
       className="pointer-events-none absolute inset-0 overflow-hidden lg:inset-x-[calc(720px-50vw)]"
     >
       <div className="absolute inset-x-0 top-[2%] md:top-[14.27%]">
-        <CloudDrift duration={40} delay={-30}>
-          <Cloud
-            variant="cloud7"
-            top="0"
-            width="clamp(220px, 40.12 * var(--dvw, 1vw), 578px)"
-            height="clamp(91px, 16.56 * var(--dvw, 1vw), 238px)"
-          />
-        </CloudDrift>
+        {linked ? (
+          // Found: it stops drifting and settles where the design has it,
+          // above the folders (z-20) and under opened project windows (z-30).
+          <a
+            ref={linkRef}
+            data-sky
+            href={SKY_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pointer-events-auto absolute left-1/2 top-0 z-[25] block -translate-x-1/2 cursor-pixel-hover md:left-auto md:right-[3%] md:translate-x-0"
+            style={{ width: LINKED_CLOUD_WIDTH, height: LINKED_CLOUD_HEIGHT }}
+          >
+            {/* phones: sky-tinted haze, so folders underneath don't muddle
+                the text (on desktop it settles over open sky) */}
+            <span className="absolute inset-0 bg-[#7fccd8]/50 backdrop-blur-[8px] [mask-image:radial-gradient(ellipse_at_center,black_45%,transparent_75%)] md:hidden" />
+            <Cloud
+              variant="cloud7"
+              top="0"
+              width={LINKED_CLOUD_WIDTH}
+              height={LINKED_CLOUD_HEIGHT}
+              label={arrived ? SKY_LABEL : undefined}
+              className={arrived ? "motion-safe:animate-glow-pulse" : undefined}
+            />
+          </a>
+        ) : (
+          <CloudDrift duration={40} delay={-30}>
+            <Cloud
+              variant="cloud7"
+              top="0"
+              width={ASCII_CLOUD_WIDTH}
+              height={ASCII_CLOUD_HEIGHT}
+            />
+          </CloudDrift>
+        )}
       </div>
       <div className="absolute inset-x-0 top-[62%] md:top-[65.83%]">
         <CloudDrift duration={40} delay={-10}>

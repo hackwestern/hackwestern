@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useReducedMotion } from "framer-motion";
 import { Window } from "~/components/internals/window";
+import { Knight } from "~/components/promo/keepsakes";
 import { PIN_DATA } from "./hero-path";
 
 /**
@@ -22,6 +23,8 @@ const STACK_OFFSET = 34;
 // Least space kept between the bottom of the stack and the bottom of the
 // screen, if the stack is too tall to sit centred below the hero's button.
 const BOTTOM_GUTTER = 10;
+// Phones don't get the about section, so its knight lives in this window there.
+const KNIGHT_PIN = "Build something unexpected";
 
 type Phase = { start: number; rest: number };
 
@@ -167,9 +170,12 @@ function StoryWindow({ title, body }: { title: string; body: string }) {
   return (
     <Window fluid draggable={false} disableControls title="You have a message">
       <div className="flex flex-col gap-2 px-5 py-4 text-left">
-        <h2 className="font-cossetteTexte text-[22px] font-bold leading-tight tracking-[-0.02em] text-[#111]">
-          {title}
-        </h2>
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="font-cossetteTexte text-[22px] font-bold leading-tight tracking-[-0.02em] text-[#111]">
+            {title}
+          </h2>
+          {title === KNIGHT_PIN && <Knight className="relative shrink-0" />}
+        </div>
         <p className="font-figtree text-[16px] leading-normal text-[#555]">
           {body}
         </p>
