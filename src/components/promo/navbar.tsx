@@ -142,7 +142,7 @@ export function PromoNavbar({
         <SheetContent
           onCloseAutoFocus={(e) => e.preventDefault()}
           side="right"
-          closeClassName="right-5 top-5 p-2 opacity-90 focus:ring-0 focus:ring-offset-0 focus-visible:ring-2 focus-visible:ring-offset-0 data-[state=open]:bg-transparent"
+          closeClassName="right-5 top-5 p-2 opacity-90 focus:ring-0 focus:ring-offset-0 focus-visible:ring-2 focus-visible:ring-offwhite focus-visible:ring-offset-0 data-[state=open]:bg-transparent"
           closeIconClassName="size-6 stroke-[2.5]"
           className="w-[min(85vw,320px)] border-white/[0.08] bg-promo-sheet font-figtree text-offwhite data-[state=closed]:duration-150 data-[state=open]:duration-300"
         >
