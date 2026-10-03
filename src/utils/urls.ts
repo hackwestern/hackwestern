@@ -6,7 +6,7 @@ export function getGithubUsername(text: string) {
   try {
     const url = new URL(text.startsWith("http") ? text : `https://${text}`);
 
-    if (url.hostname === "github.com") {
+    if (url.hostname === "github.com" || url.hostname === "www.github.com") {
       const pathSegments = url.pathname.split("/");
       return pathSegments[1] ?? text;
     }
@@ -21,9 +21,10 @@ export function getLinkedinUsername(text: string) {
   try {
     const url = new URL(text.startsWith("http") ? text : `https://${text}`);
 
+    // Includes country subdomains like ca.linkedin.com.
     if (
       url.hostname === "linkedin.com" ||
-      url.hostname === "www.linkedin.com"
+      url.hostname.endsWith(".linkedin.com")
     ) {
       const pathSegments = url.pathname.split("/");
       return pathSegments[2] ?? text;
