@@ -137,13 +137,15 @@ export function PromoNavbar({
         <SheetContent
           onCloseAutoFocus={(e) => e.preventDefault()}
           side="right"
+          closeClassName="right-5 top-5 p-2 opacity-90 focus:ring-0 focus:ring-offset-0 focus-visible:ring-2 focus-visible:ring-offset-0 data-[state=open]:bg-transparent"
+          closeIconClassName="size-6 stroke-[2.5]"
           className="w-[min(85vw,320px)] border-white/[0.08] bg-promo-sheet font-figtree text-offwhite data-[state=closed]:duration-150 data-[state=open]:duration-300"
         >
           <SheetTitle className="sr-only">Site navigation</SheetTitle>
           <SheetDescription className="sr-only">
             Links to sections of the Hack Western website and social media.
           </SheetDescription>
-          <div className="mt-8 flex h-[calc(100%-2rem)] flex-col justify-between">
+          <div className="mt-14 flex h-[calc(100%-3.5rem)] flex-col justify-between">
             <div className="flex flex-col">
               {links.map((link) => (
                 <SheetClose key={link.href} asChild>
