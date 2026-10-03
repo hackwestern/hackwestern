@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { HWLogo } from "~/components/apply/hw-logo";
+import { HWLogoLink } from "~/components/apply/hw-logo";
 import { UserBadge } from "~/components/apply/user-badge";
 import { cn } from "~/lib/utils";
 import { realmTint, type Realm } from "~/constants/realms";
@@ -44,8 +44,9 @@ export function PortalShell({
         />
       </AnimatePresence>
 
-      <div className="absolute left-10 top-16 z-10 px-3">
-        <HWLogo className="h-[60px] w-[40px]" />
+      {/* Above the full-screen content layer, or it can't be clicked. */}
+      <div className="absolute left-10 top-16 z-20 px-3">
+        <HWLogoLink className="h-[60px] w-[40px]" />
       </div>
 
       <div className="absolute right-9 top-9 z-10">
