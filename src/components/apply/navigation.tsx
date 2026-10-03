@@ -106,9 +106,8 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
       return;
     }
 
-    submitMutation
-      .mutateAsync()
-      .then(() => {
+    submitMutation.mutate(undefined, {
+      onSuccess: () => {
         toast({
           title: "Application Submitted",
           description: "Your application was submitted successfully.",
@@ -116,15 +115,21 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
           duration: 4000,
         });
         navigate("/dashboard");
-      })
-      .catch((e) => {
+      },
+      onError: (e) => {
         toast({
           title: "Error Submitting Application",
-          description: JSON.stringify(e),
+          // Our own errors (missing fields etc.) are written for applicants;
+          // a server or network failure gets a generic line instead.
+          description:
+            !e.data || e.data.code === "INTERNAL_SERVER_ERROR"
+              ? "Something went wrong. Please try again in a moment."
+              : e.message,
           variant: "destructive",
           duration: 4000,
         });
-      });
+      },
+    });
   };
 
   return (
