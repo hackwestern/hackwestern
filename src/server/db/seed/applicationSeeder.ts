@@ -11,12 +11,14 @@ import {
   sexualOrientation,
   shirtSize,
   transportationMethod,
-  yearOfStudy,
 } from "../schema";
 import { USERS } from "./userSeeder";
 import { type UserPartial, type Seeder } from "./helpers";
 import type { z } from "zod";
-import { applicationSubmitSchema } from "~/schemas/application";
+import {
+  applicationSubmitSchema,
+  YEAR_OF_STUDY_OPTIONS,
+} from "~/schemas/application";
 import { horses } from "~/constants/realms";
 
 const schools = [
@@ -75,7 +77,7 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       ),
 
       school: faker.helpers.arrayElement(schools),
-      yearOfStudy: faker.helpers.arrayElement(yearOfStudy.enumValues),
+      yearOfStudy: faker.helpers.arrayElement(YEAR_OF_STUDY_OPTIONS),
       major: faker.helpers.arrayElement(major.enumValues),
 
       shirtSize: faker.helpers.arrayElement(
