@@ -162,6 +162,13 @@
       "when": 1791049653787,
       "tag": "0022_user_created_at_from_application",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791051486270,
+      "tag": "0023_stats_application_view",
+      "breakpoints": true
     }
   ]
 }
