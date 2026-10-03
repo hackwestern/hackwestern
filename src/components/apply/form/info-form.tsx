@@ -11,7 +11,7 @@ import {
 } from "~/components/ui/form";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
-import { infoSaveSchema } from "~/schemas/application";
+import { infoSaveSchema, YEAR_OF_STUDY_OPTIONS } from "~/schemas/application";
 import {
   Select,
   SelectTrigger,
@@ -20,7 +20,7 @@ import {
   SelectItem,
 } from "~/components/ui/select";
 import { schools } from "~/constants/schools";
-import { major, numOfHackathons, yearOfStudy } from "~/server/db/schema";
+import { major, numOfHackathons } from "~/server/db/schema";
 import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 export function InfoForm() {
@@ -131,7 +131,7 @@ export function InfoForm() {
                     <SelectValue placeholder="Select year of study" />
                   </SelectTrigger>
                   <SelectContent>
-                    {yearOfStudy.enumValues.map((item) => (
+                    {YEAR_OF_STUDY_OPTIONS.map((item) => (
                       <SelectItem key={item} value={item}>
                         {item}
                       </SelectItem>

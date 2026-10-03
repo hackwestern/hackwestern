@@ -191,6 +191,20 @@ const tooFewWords = `Response must be at least ${MIN_WORDS} words`;
 const tooManyWords = `Response must be fewer than ${MAX_WORDS} words`;
 
 // Submission schema with data validation
+// The years an applicant can pick. The year_of_study enum also has "N/A" and
+// "Prefer not to answer"; they stay valid in the database (an HW13 application
+// was submitted with one) but can't be chosen or submitted anymore.
+export const YEAR_OF_STUDY_OPTIONS = [
+  "1st",
+  "2nd",
+  "3rd",
+  "4th",
+  "5th+",
+] as const;
+
+export const isValidYearOfStudy = (value: unknown) =>
+  (YEAR_OF_STUDY_OPTIONS as readonly unknown[]).includes(value);
+
 export const applicationSubmitSchema = z
   .object({
     firstName: z.string().min(1),
@@ -199,7 +213,7 @@ export const applicationSubmitSchema = z
     countryOfResidence: z.enum(countrySelection.enumValues),
     age: z.number().min(18).max(99),
     school: z.enum(schools),
-    yearOfStudy: z.enum(yearOfStudy.enumValues),
+    yearOfStudy: z.enum(YEAR_OF_STUDY_OPTIONS),
     major: z.enum(major.enumValues),
     attendedBefore: z.boolean(),
     numOfHackathons: z.enum(numOfHackathons.enumValues),
