@@ -21,6 +21,7 @@ import {
 } from "~/components/ui/select";
 import { schools } from "~/constants/schools";
 import { major, numOfHackathons, yearOfStudy } from "~/server/db/schema";
+import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 export function InfoForm() {
   const utils = api.useUtils();
@@ -36,7 +37,7 @@ export function InfoForm() {
   });
 
   const status = data?.status ?? "NOT_STARTED";
-  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+  const canEdit = useCanEditApplication(status);
 
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {

@@ -25,6 +25,7 @@ import {
   getGithubUsername,
   getLinkedinUsername,
 } from "~/utils/urls";
+import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 function withPrefix(prefix: string, username?: string | null) {
   return username ? `${prefix}${username}` : username;
@@ -48,7 +49,7 @@ export function LinksForm() {
   const [resumeName, setResumeName] = useState<string | null>(null);
 
   const status = defaultValues?.status ?? "NOT_STARTED";
-  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+  const canEdit = useCanEditApplication(status);
 
   // If the application already has a resumeLink when the component mounts,
   // derive a display name from the URL so the original filename shows.

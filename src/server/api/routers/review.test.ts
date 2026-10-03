@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, describe, expect, test } from "vitest";
+import { beforeEach, afterEach, describe, expect, test, vi } from "vitest";
 import { faker } from "@faker-js/faker";
 import { type Session } from "next-auth";
 import { eq } from "drizzle-orm";
@@ -11,6 +11,11 @@ import { ReviewSeeder } from "~/server/db/seed/reviewSeeder";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
 import { createEmptyReview } from "~/server/api/routers/review";
+import * as dateModule from "~/lib/date";
+
+// application.save refuses writes once applications close. Pin "before the
+// deadline" so the tests that seed through save keep passing after Oct 18.
+vi.spyOn(dateModule, "isPastDeadline").mockReturnValue(false);
 
 const session = await mockOrganizerSession(db);
 const ctx = createInnerTRPCContext({ session });

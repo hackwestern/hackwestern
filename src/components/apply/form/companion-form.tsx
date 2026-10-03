@@ -16,6 +16,7 @@ import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { HORSE_NAME_MAX_LENGTH, realmSaveSchema } from "~/schemas/application";
 import { getHorse, realmLabel } from "~/constants/realms";
+import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 type CompanionFormValues = z.infer<typeof realmSaveSchema>;
 
@@ -26,7 +27,7 @@ export function CompanionForm() {
   });
 
   const status = defaults?.status ?? "NOT_STARTED";
-  const canEdit = status === "NOT_STARTED" || status === "IN_PROGRESS";
+  const canEdit = useCanEditApplication(status);
 
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => utils.application.get.invalidate(),
