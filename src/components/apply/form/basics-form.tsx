@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { countrySelection } from "~/server/db/schema";
+import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 export function BasicsForm() {
   const utils = api.useUtils();
@@ -36,7 +37,7 @@ export function BasicsForm() {
   });
   const status = defaultValues?.status ?? "NOT_STARTED";
 
-  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+  const canEdit = useCanEditApplication(status);
 
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {

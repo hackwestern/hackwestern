@@ -8,6 +8,7 @@ import { api } from "~/utils/api";
 import { realmSaveSchema } from "~/schemas/application";
 import { type Horse } from "~/constants/realms";
 import { HorsePicker } from "./horse-picker";
+import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 type RealmFormValues = z.infer<typeof realmSaveSchema>;
 
@@ -18,7 +19,7 @@ export function RealmForm() {
   });
 
   const status = defaults?.status ?? "NOT_STARTED";
-  const canEdit = status === "NOT_STARTED" || status === "IN_PROGRESS";
+  const canEdit = useCanEditApplication(status);
 
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => utils.application.get.invalidate(),

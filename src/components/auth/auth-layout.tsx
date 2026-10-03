@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import * as React from "react";
-import { HWLogo } from "~/components/apply/hw-logo";
+import { HWLogoLink } from "~/components/apply/hw-logo";
 import { Window } from "~/components/internals/window";
 import { cn } from "~/lib/utils";
 
@@ -27,8 +27,9 @@ export function AuthLayout({
         draggable={false}
       />
 
-      <div className="absolute left-10 top-16 z-10 px-3">
-        <HWLogo className="h-[60px] w-[40px]" />
+      {/* Above the full-screen content layer, or it can't be clicked. */}
+      <div className="absolute left-10 top-16 z-20 px-3">
+        <HWLogoLink className="h-[60px] w-[40px]" />
       </div>
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-16">

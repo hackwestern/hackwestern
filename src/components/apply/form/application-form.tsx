@@ -13,6 +13,7 @@ import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { applicationStepSaveSchema } from "~/schemas/application";
 import { text } from "stream/consumers";
+import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 export const QUESTION1 = `An AI assistant spends a week observing your habits, then writes an honest review of you. What does it say? (30 to 150 words)`;
 export const QUESTION2 = ` What’s one technical skill or tool you taught yourself recently? What did you make or try with it? (30 to 150 words)`;
@@ -25,7 +26,7 @@ export function ApplicationForm() {
   });
 
   const status = defaultValues?.status ?? "NOT_STARTED";
-  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+  const canEdit = useCanEditApplication(status);
 
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {

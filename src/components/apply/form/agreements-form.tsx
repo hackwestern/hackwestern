@@ -13,6 +13,7 @@ import type { z } from "zod";
 import { agreementsSaveSchema } from "~/schemas/application";
 import { Checkbox } from "~/components/ui/checkbox";
 import Link from "next/link";
+import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 const StyledLink = ({ url, text }: { url: string; text: string }) => {
   return (
@@ -41,7 +42,7 @@ export function AgreementsForm() {
   });
 
   const status = defaultValues?.status ?? "NOT_STARTED";
-  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+  const canEdit = useCanEditApplication(status);
 
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {

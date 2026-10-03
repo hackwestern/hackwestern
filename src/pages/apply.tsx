@@ -19,6 +19,7 @@ import { ApplicationSidebar } from "~/components/apply/application-sidebar";
 import { Window } from "~/components/internals/window";
 import { UserBadge } from "~/components/apply/user-badge";
 import { HorseCompanion } from "~/components/apply/horse-companion";
+import { useApplicationsOpen } from "~/hooks/use-can-edit-application";
 import { realmTint } from "~/constants/realms";
 import { cn } from "~/lib/utils";
 
@@ -132,6 +133,21 @@ export default function Apply() {
   const { data: application } = api.application.get.useQuery({
     fields: ["status"],
   });
+  const applicationsOpen = useApplicationsOpen();
+  const status = application?.status ?? "NOT_STARTED";
+  // A tab left open past the deadline: the fields lock (useCanEditApplication)
+  // and this says why. Submitted applications keep their normal view.
+  const closedBanner =
+    !applicationsOpen &&
+    (status === "NOT_STARTED" || status === "IN_PROGRESS") ? (
+      <div
+        role="status"
+        className="mb-6 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 font-figtree text-md-p text-amber-900"
+      >
+        Applications closed on Sunday, October 18 at 11:59 PM ET. Your answers
+        are saved, but they can no longer be edited or submitted.
+      </div>
+    ) : null;
   const { data: userInfo } = api.application.get.useQuery({
     fields: [
       "firstName",
@@ -238,6 +254,7 @@ export default function Apply() {
 
               {step ? (
                 <div className="flex-1 overflow-visible font-figtree">
+                  {closedBanner}
                   <ApplyForm step={step} />
                 </div>
               ) : (
@@ -344,6 +361,7 @@ export default function Apply() {
                             />
                           )}
                           <div className="scrollbar font-figtree">
+                            {closedBanner}
                             <ApplyForm step={step} />
                           </div>
                         </div>

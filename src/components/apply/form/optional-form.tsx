@@ -25,6 +25,7 @@ import {
 } from "~/components/ui/select";
 import { ethnicity, gender, sexualOrientation } from "~/server/db/schema";
 import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
+import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 function getUnderrepGroup(underrepGroup: boolean | null) {
   if (underrepGroup === null) {
@@ -57,7 +58,7 @@ export function OptionalForm() {
   });
 
   const status = data?.status ?? "NOT_STARTED";
-  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+  const canEdit = useCanEditApplication(status);
 
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {

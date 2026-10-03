@@ -2,6 +2,7 @@ import { afterEach, assert, describe, expect, test, vi } from "vitest";
 import { faker } from "@faker-js/faker";
 import { type Session } from "next-auth";
 import * as mailModule from "~/server/mail-mailjet";
+import * as dateModule from "~/lib/date";
 
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -29,6 +30,13 @@ vi.spyOn(mailModule, "sendViaMailjet").mockResolvedValue({
   data: { delivered: [], queued: [], bounced: [] },
   error: null,
 });
+
+// save and submit refuse writes once applications close. Pin "before the
+// deadline" so these tests keep passing after Oct 18; the deadline tests below
+// flip it for a single call.
+const pastDeadline = vi
+  .spyOn(dateModule, "isPastDeadline")
+  .mockReturnValue(false);
 
 const session = await mockSession(db);
 const organizerSession = await mockOrganizerSession(db);
@@ -320,6 +328,34 @@ describe.sequential("application.save", async () => {
     await caller.application.submit();
     const result = await caller.application.get();
     expect(result?.status).toBe("PENDING_REVIEW");
+  });
+});
+
+describe.sequential("application deadline", async () => {
+  afterEach(async () => {
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, session.user.id));
+  });
+
+  test("save is refused after the deadline and writes nothing", async () => {
+    pastDeadline.mockReturnValueOnce(true);
+
+    await expect(
+      caller.application.save(createRandomSaveInput(session)),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.application.get()).resolves.toBeNull();
+  });
+
+  test("submit is refused after the deadline and the application stays in progress", async () => {
+    await caller.application.save(createCompleteSaveInput(session));
+    pastDeadline.mockReturnValueOnce(true);
+
+    await expect(caller.application.submit()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    const result = await caller.application.get();
+    expect(result?.status).toBe("IN_PROGRESS");
   });
 });
 
