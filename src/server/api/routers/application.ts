@@ -361,11 +361,15 @@ export const applicationRouter = createTRPCRouter({
       const parseResult = applicationSubmitSchema.safeParse(normalized);
 
       if (!parseResult.success) {
+        // Applicants see this message, so the field details go to the log.
+        console.error(
+          "Incomplete application submitted:",
+          JSON.stringify(parseResult.error.format()),
+        );
         throw new TRPCError({
           code: "BAD_REQUEST",
           message:
-            "Application is not complete: " +
-            JSON.stringify(parseResult.error.format()),
+            "Your application isn't complete yet. Check each step and try again.",
         });
       }
 
