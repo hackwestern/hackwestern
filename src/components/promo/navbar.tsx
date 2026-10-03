@@ -41,6 +41,11 @@ const DEFAULT_SOCIALS: PromoSocial[] = [
     href: "https://www.linkedin.com/company/hack-western/",
     iconSrc: "/landing/promo/icons/linkedin.svg",
   },
+  {
+    name: "X",
+    href: "https://x.com/hackwestern",
+    iconSrc: "/landing/promo/icons/x.svg",
+  },
 ];
 
 const navText =
