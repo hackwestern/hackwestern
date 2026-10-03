@@ -230,7 +230,13 @@ export function PromoHeader(props: PromoNavbarProps) {
       <div className="flex items-start lg:gap-6 min-[1440px]:[zoom:var(--ui-scale,1)]">
         <PromoNavbar {...props} className={cn("flex-1", props.className)} />
 
-        <a href="https://www.mlh.com/" target="_blank">
+        {/* Cancels the header's top-3 so the badge hangs from the top edge.
+            Divided by --ui-scale because the row's zoom scales it back up. */}
+        <a
+          href="https://www.mlh.com/"
+          target="_blank"
+          className="lg:mt-[calc(-12px/var(--ui-scale,1))]"
+        >
           <Image
             height={43}
             width={75}
