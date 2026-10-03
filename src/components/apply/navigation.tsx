@@ -7,6 +7,7 @@ import { useToast } from "~/hooks/use-toast";
 import { usePendingNavigation } from "~/hooks/use-pending-navigation";
 import { applySteps, type ApplyStep } from "~/constants/apply";
 import { applicationSubmitSchema } from "~/schemas/application";
+import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 type ApplyNavigationProps = {
   step: ApplyStep | null;
@@ -41,7 +42,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
 
   const { data: applicationData } = api.application.get.useQuery();
   const status = applicationData?.status ?? "NOT_STARTED";
-  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+  const canEdit = useCanEditApplication(status);
 
   const { pending, navigate } = usePendingNavigation();
 
