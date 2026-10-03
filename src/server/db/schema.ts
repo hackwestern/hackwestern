@@ -360,6 +360,22 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   }),
 }));
 
+// One row per reminder email sent, so a re-run never emails anyone twice
+// (scripts/send-incomplete-reminder.ts).
+export const emailReminderSent = pgTable(
+  "email_reminder_sent",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: varchar("kind", { length: 32 }).notNull(),
+    sentAt: timestamp("sent_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.kind] })],
+);
+
 export const accounts = pgTable(
   "account",
   {
