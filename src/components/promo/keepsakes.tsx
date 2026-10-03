@@ -47,6 +47,10 @@ let audio: { ctx: AudioContext; out: AudioNode; noise: AudioBuffer } | null =
   null;
 let revealPlayed = false;
 
+const REVEAL_SRC = "/landing/promo/level-up.mp3";
+// Fetched with the first click, so it's ready by the time the cloud shows.
+let revealSound: Promise<AudioBuffer | null> | null = null;
+
 function getAudio() {
   if (!audio) {
     const ctx = new AudioContext();
@@ -61,6 +65,10 @@ function getAudio() {
     const data = noise.getChannelData(0);
     for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
     audio = { ctx, out, noise };
+    revealSound = fetch(REVEAL_SRC)
+      .then((res) => res.arrayBuffer())
+      .then((data) => ctx.decodeAudioData(data))
+      .catch(() => null);
   }
   return audio;
 }
@@ -101,33 +109,22 @@ function playFound() {
   strike(note(12), now + 0.08);
 }
 
-const SCALE = [0, 2, 4, 5, 7, 9, 11, 12];
-const CHORD = [0, 4, 7, 12];
-
 /**
- * The payoff: a run up the scale into a rolled C major chord that rings out.
+ * The payoff: a level-up sting when the way into the CTF appears.
  * Plays once, and only after a step was clicked in this tab.
  */
 export function playReveal() {
   if (!audio || revealPlayed) return;
   revealPlayed = true;
-  const start = audio.ctx.currentTime;
+  const { ctx } = audio;
 
-  SCALE.forEach((semitones, i) =>
-    strike(note(semitones), start + i * 0.045, 0.6),
-  );
-
-  // A xylophone "roll": every chord note struck again and again, swelling,
-  // then one last strike left to ring.
-  const chord = start + SCALE.length * 0.045 + 0.05;
-  for (let t = 0; t < 0.8; t += 0.065) {
-    CHORD.forEach((semitones, i) =>
-      strike(note(semitones), chord + t + i * 0.016, 0.35 + t * 0.4, 0.5),
-    );
-  }
-  CHORD.forEach((semitones, i) =>
-    strike(note(semitones), chord + 0.85 + i * 0.02, 0.8, 3),
-  );
+  void revealSound?.then((buffer) => {
+    if (!buffer) return;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start();
+  });
 }
 
 /**
