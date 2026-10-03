@@ -35,6 +35,21 @@ export function getLinkedinUsername(text: string) {
   return text;
 }
 
+export function getDevpostUsername(text: string) {
+  try {
+    const url = new URL(text.startsWith("http") ? text : `https://${text}`);
+
+    if (url.hostname === "devpost.com" || url.hostname === "www.devpost.com") {
+      const pathSegments = url.pathname.split("/");
+      return pathSegments[1] ?? text;
+    }
+  } catch (error) {
+    return text;
+  }
+
+  return text;
+}
+
 /**
  * Ensure a URL string has an http(s) protocol. Returns the original value for
  * falsy inputs. If the text already starts with http:// or https:// (case

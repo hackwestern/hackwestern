@@ -39,6 +39,11 @@ export const applicationRouter = createTRPCRouter({
                 "avatarLeftHand",
                 "avatarRightHand",
                 "avatarHat",
+                // Realm + horse companion
+                "realm",
+                "horseId",
+                "horseFirstName",
+                "horseLastName",
                 // Basics
                 "firstName",
                 "lastName",
@@ -287,7 +292,20 @@ export const applicationRouter = createTRPCRouter({
           .onConflictDoUpdate({
             target: applications.userId,
             set: {
-              ...dataToInsert,
+              // honestly im pretty lost on why this works
+              //
+              // Only touch columns the client actually sent. dataToInsert
+              // defaults missing links to "" and dietaryRestrictionsOther to
+              // null for the INSERT path, so spreading it here used to let
+              // one step's autosave (e.g. logistics) wipe another step's
+              // columns (e.g. links) on every conflict update.
+              ...Object.fromEntries(
+                Object.keys(restData).map((key) => [
+                  key,
+                  (dataToInsert as Record<string, unknown>)[key],
+                ]),
+              ),
+
               updatedAt: new Date(),
             },
           });
@@ -343,11 +361,15 @@ export const applicationRouter = createTRPCRouter({
       const parseResult = applicationSubmitSchema.safeParse(normalized);
 
       if (!parseResult.success) {
+        // Applicants see this message, so the field details go to the log.
+        console.error(
+          "Incomplete application submitted:",
+          JSON.stringify(parseResult.error.format()),
+        );
         throw new TRPCError({
           code: "BAD_REQUEST",
           message:
-            "Application is not complete: " +
-            JSON.stringify(parseResult.error.format()),
+            "Your application isn't complete yet. Check each step and try again.",
         });
       }
 

@@ -18,6 +18,7 @@ import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { linksSaveSchema } from "~/schemas/application";
 import {
+  getDevpostUsername,
   getGithubUsername,
   getLinkedinUsername,
   ensureUrlHasProtocol,
@@ -68,9 +69,14 @@ export function LinksForm() {
   useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(data: z.infer<typeof linksSaveSchema>) {
-    // Normalize resume and other links so they validate as URLs (prepend https:// if missing)
+    // Normalize usernames so pasted full URLs don't get double-prefixed
+    // on save (backend prepends the URL prefix), and normalize resume
+    // and other links so they validate as URLs (prepend https:// if missing)
     const normalizedData = {
       ...data,
+      devpostLink: data.devpostLink && getDevpostUsername(data.devpostLink),
+      githubLink: data.githubLink && getGithubUsername(data.githubLink),
+      linkedInLink: data.linkedInLink && getLinkedinUsername(data.linkedInLink),
       resumeLink: ensureUrlHasProtocol(data.resumeLink),
       otherLink: ensureUrlHasProtocol(data.otherLink),
     } as z.infer<typeof linksSaveSchema>;
@@ -78,6 +84,15 @@ export function LinksForm() {
     mutate({
       ...normalizedData,
     });
+  }
+
+  function onDevpostPaste(e: ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text");
+    const devpostUsername = getDevpostUsername(pastedText);
+
+    form.setValue("devpostLink", devpostUsername);
+    return form.handleSubmit(onSubmit)();
   }
 
   function onGithubPaste(e: ClipboardEvent<HTMLInputElement>) {
@@ -166,9 +181,10 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>Devpost</FormLabel>
               <FormControl>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-4 text-sm text-gray-5">
                   <span>devpost.com/</span>
                   <Input
+                    onPaste={onDevpostPaste}
                     {...field}
                     value={field.value ?? ""}
                     placeholder="hacker"
@@ -187,7 +203,7 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>Github</FormLabel>
               <FormControl>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-4 text-sm text-gray-5">
                   <span>github.com/</span>
                   <Input
                     onPaste={onGithubPaste}
@@ -209,7 +225,7 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>LinkedIn</FormLabel>
               <FormControl>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-gray-5">
                   <span className="w-32">linkedin.com/in/</span>
                   <Input
                     onPaste={onLinkedinPaste}
@@ -256,7 +272,7 @@ export function LinksForm() {
                         href={field.value}
                         target="_blank"
                         rel="noreferrer"
-                        className="max-w-64 overflow-hidden text-ellipsis whitespace-nowrap underline underline-offset-2"
+                        className="max-w-64 overflow-hidden text-ellipsis whitespace-nowrap text-gray-6 underline decoration-gray-4 underline-offset-2 visited:text-gray-6 hover:text-gray-7"
                       >
                         {resumeName ?? fileNameFromUrl(field.value)}
                       </a>
@@ -264,7 +280,7 @@ export function LinksForm() {
                         <button
                           type="button"
                           onClick={clearResume}
-                          className="text-xl text-muted-foreground hover:text-foreground"
+                          className="text-xl text-gray-5 hover:text-gray-7"
                           aria-label="Remove resume"
                         >
                           ×
@@ -284,17 +300,16 @@ export function LinksForm() {
                       <div className="flex items-center gap-3">
                         <Button
                           type="button"
-                          variant="outline"
+                          variant="primary"
+                          size="sm"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={!canEdit || uploading}
                           aria-label="Choose resume file"
-                          className="-py-4 px-2"
+                          className="gap-2 font-figtree"
                         >
-                          <span className="text-medium">
-                            {uploading ? "Uploading…" : "Choose file"}
-                          </span>
+                          {uploading ? "Uploading…" : "Choose file"}
                         </Button>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-gray-5">
                           PDF or DOC/DOCX, max 3 MB
                         </span>
                       </div>
@@ -302,7 +317,9 @@ export function LinksForm() {
                   )}
                 </div>
               </FormControl>
-              <FormDescription>Upload your resume</FormDescription>
+              <FormDescription className="text-gray-4">
+                Upload your resume
+              </FormDescription>
             </FormItem>
           )}
         />

@@ -58,7 +58,8 @@ export const buttonVariants = cva(buttonBase, {
       icon: cn("bg-gray-2 shadow-icon-btn hover:bg-[#CBCBCB]"),
       destructive:
         "bg-destructive text-destructive-foreground hover:bg-destructive-dark",
-      outline: "bg-violet-100 hover:bg-muted border border-[1px] border-muted",
+      outline:
+        "bg-white hover:bg-gray-1 border border-[1px] border-gray-2 text-gray-6",
       ghost: "hover:bg-accent hover:text-accent-foreground",
       link: "text-primary underline-offset-4 hover:underline",
       "apply-ghost":
@@ -67,8 +68,8 @@ export const buttonVariants = cva(buttonBase, {
     },
     size: {
       default: "h-10 px-4 py-2",
-      sm: "px-[12px] py-[7px] h-[33px]",
-      lg: "px-[18px] py-[12px] h-[43px]",
+      sm: "px-[12px] py-[7px] min-h-[33px]",
+      lg: "px-[18px] py-[12px] min-h-[43px]",
       icon: "h-10 w-10",
     },
   },
@@ -162,6 +163,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <div className={wrapperClasses}>
         <Comp
           ref={ref}
+          data-variant={variant}
           {...props}
           onPointerDown={holdDown}
           onPointerUp={(e: React.PointerEvent<HTMLButtonElement>) => {

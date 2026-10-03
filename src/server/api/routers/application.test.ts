@@ -62,6 +62,11 @@ describe("application.get", async () => {
       devpostLink: application?.devpostLink?.substring(DEVPOST_URL.length),
       githubLink: application?.githubLink?.substring(GITHUB_URL.length),
       linkedInLink: application?.linkedInLink?.substring(LINKEDIN_URL.length),
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -114,6 +119,11 @@ describe("application.getById", async () => {
 
       githubLink: application?.githubLink,
       linkedInLink: application?.linkedInLink,
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -199,6 +209,11 @@ describe.sequential("application.save", async () => {
       ...application,
       dietaryRestrictionsOther: application.dietaryRestrictionsOther ?? null,
 
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -234,6 +249,11 @@ describe.sequential("application.save", async () => {
       dietaryRestrictionsOther:
         updatedApplication.dietaryRestrictionsOther ?? null,
 
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -260,6 +280,11 @@ describe.sequential("application.save", async () => {
         completeApplication.dietaryRestrictionsOther ?? null,
 
       status: "PENDING_REVIEW",
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,

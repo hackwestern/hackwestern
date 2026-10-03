@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import React from "react";
 import SEO from "~/components/seo";
 import { useSearchParams } from "next/navigation";
@@ -9,15 +10,17 @@ import { api } from "~/utils/api";
 import ApplicationPrompt from "~/components/dashboard/ApplicationPrompt";
 import { ApplyNavigation } from "~/components/apply/navigation";
 import ApplyHeading from "~/components/apply/heading";
-import {
-  LeftStampColumn,
-  RightStampColumn,
-} from "~/components/apply/animated-stamps";
-import { motion } from "framer-motion";
-import { MobileStickerDrawer } from "~/components/apply/mobile-sticker-drawer";
+import { motion, AnimatePresence } from "framer-motion";
 import CharacterIcon from "~/components/dashboard/CharacterIcon";
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import { signOut } from "next-auth/react";
+import { ApplicationSidebar } from "~/components/apply/application-sidebar";
+import { Window } from "~/components/internals/window";
+import { UserBadge } from "~/components/apply/user-badge";
+import { HorseCompanion } from "~/components/apply/horse-companion";
+import { realmTint } from "~/constants/realms";
+import { cn } from "~/lib/utils";
 
 function getApplyStep(stepValue: string | null): ApplyStepFull | null {
   const steps = applySteps;
@@ -37,13 +40,15 @@ function getNextIncompleteStep(
     if (step.step === "review") continue; // review is final
 
     switch (step.step) {
-      case "character": {
+      case "realm": {
+        if (isEmpty(application.realm) || isEmpty(application.horseId))
+          return step.step;
+        break;
+      }
+      case "companion": {
         if (
-          isEmpty(application.avatarColour) ||
-          isEmpty(application.avatarFace) ||
-          isEmpty(application.avatarLeftHand) ||
-          isEmpty(application.avatarRightHand) ||
-          isEmpty(application.avatarHat)
+          isEmpty(application.horseFirstName) ||
+          isEmpty(application.horseLastName)
         )
           return step.step;
         break;
@@ -93,6 +98,19 @@ function getNextIncompleteStep(
           return step.step;
         break;
       }
+      case "logistics": {
+        if (
+          isEmpty(application.shirtSize) ||
+          isEmpty(application.dietaryRestrictions) ||
+          (application.dietaryRestrictions === "Other" &&
+            isEmpty(application.dietaryRestrictionsOther)) ||
+          isEmpty(application.emergencyContactName) ||
+          isEmpty(application.emergencyContactRelationship) ||
+          isEmpty(application.emergencyContactPhoneNumber)
+        )
+          return step.step;
+        break;
+      }
       default:
         break;
     }
@@ -111,34 +129,68 @@ export default function Apply() {
   const step = applyStep?.step ?? null;
   const heading = applyStep?.heading ?? null;
   const subheading = applyStep?.subheading ?? null;
-  const desktopScrollRef = useRef<HTMLDivElement | null>(null);
-  const [desktopPreviewHeight, setDesktopPreviewHeight] = useState<
-    number | null
-  >(null);
   const { data: application } = api.application.get.useQuery({
     fields: ["status"],
   });
+  const { data: userInfo } = api.application.get.useQuery({
+    fields: [
+      "firstName",
+      "updatedAt",
+      "realm",
+      "horseId",
+      "horseFirstName",
+      "horseLastName",
+    ],
+  });
+  const realm = userInfo?.realm ?? null;
+  const horseId = userInfo?.horseId ?? null;
+  // Hide the companion on the two realm-flow steps (the horse is already the
+  // star of those screens) and on the start screen (no step selected).
+  const showCompanion =
+    horseId != null &&
+    step !== null &&
+    step !== "realm" &&
+    step !== "companion";
+  const tint = realm ? realmTint[realm] : null;
   const continueStep = getNextIncompleteStep(application);
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
+  // Grow-out-of-folder animation, armed only when leaving the start
+  // screen (no step). Step-to-step moves and direct reloads on a step
+  // never animate.
+  const [growWindow, setGrowWindow] = useState(false);
+
+  const sidebarSteps = useMemo(
+    () => applySteps.map((s) => ({ key: s.step, label: s.label })),
+    [],
+  );
+
+  // Mirror the realm tint onto document.documentElement so portaled
+  // elements (Radix Select content, dropdown menus, etc.) can read the
+  // same CSS vars even though they mount outside .apply-form-tint.
+  React.useEffect(() => {
+    const root = document.documentElement;
+    if (tint) {
+      root.style.setProperty("--form-tint-bg", tint.sidebarBg);
+      root.style.setProperty("--form-tint-border", tint.sidebarBorder);
+      root.style.setProperty("--form-tint-text", tint.accent);
+      root.style.setProperty("--form-tint-text-muted", tint.accentMuted);
+      root.style.setProperty("--realm-tint", tint.tintColor);
+      root.setAttribute("data-apply-tint", "on");
+    } else {
+      root.removeAttribute("data-apply-tint");
+    }
+    return () => {
+      root.removeAttribute("data-apply-tint");
+    };
+  }, [tint]);
+
   const handleApplyNavigate = (stepKey: string) => {
+    if (step === null) setGrowWindow(true);
     setPending(true);
     void router.push(`/apply?step=${stepKey}`).then(() => setPending(false));
   };
-
-  useEffect(() => {
-    const el = desktopScrollRef.current;
-    if (!el) return;
-    const update = () => setDesktopPreviewHeight(el.clientHeight ?? null);
-    // initial
-    update();
-    const ro = new ResizeObserver(() => {
-      update();
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [applyStep]);
 
   return (
     <>
@@ -148,7 +200,7 @@ export default function Apply() {
         noindex
       />
       <motion.main
-        className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 md:overflow-x-hidden md:overflow-y-hidden"
+        className="bg-hw-linear-gradient-day flex h-screen flex-col items-center overscroll-contain bg-primary-50 font-figtree md:overflow-x-hidden md:overflow-y-hidden"
         key={"apply-page"}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -160,7 +212,7 @@ export default function Apply() {
           {/* Mobile Header */}
           <div className="fixed z-[99] flex h-16 w-full items-center justify-between bg-white px-4 shadow-sm">
             <div className="h-8 w-8"></div>
-            <h1 className="font-secondary text-lg font-semibold text-heavy">
+            <h1 className="font-figtree text-lg font-semibold text-heavy">
               {step
                 ? step.charAt(0).toUpperCase() + step.slice(1)
                 : "Application"}
@@ -174,22 +226,23 @@ export default function Apply() {
           {/* Mobile Content */}
           <div className="flex-1 bg-white py-24">
             <div className="mx-6 flex h-full flex-col">
-              <div className="mb-6">
-                <ApplyHeading
-                  heading={heading}
-                  subheading={subheading}
-                  stepKey={step}
-                />
-              </div>
+              {step !== "companion" && (
+                <div className="mb-6">
+                  <ApplyHeading
+                    heading={heading}
+                    subheading={subheading}
+                    stepKey={step}
+                  />
+                </div>
+              )}
 
               {step ? (
-                <div className="flex-1 overflow-visible font-secondary">
+                <div className="flex-1 overflow-visible font-figtree">
                   <ApplyForm step={step} />
                 </div>
               ) : (
                 <>
                   <ApplicationPrompt
-                    status={application?.status ?? "NOT_STARTED"}
                     continueStep={continueStep}
                     onApplyNavigate={handleApplyNavigate}
                     pending={pending}
@@ -208,68 +261,131 @@ export default function Apply() {
         </div>
         {/* End of Mobile View */}
 
-        <MobileStickerDrawer />
+        {/* Desktop View — redesigned portal shell */}
+        <div className="relative z-10 hidden h-screen w-full overflow-hidden md:flex">
+          <AnimatePresence mode="sync" initial={false}>
+            <motion.img
+              key={tint?.background ?? "/apply/realm/background.png"}
+              src={tint?.background ?? "/apply/realm/background.png"}
+              alt=""
+              aria-hidden
+              className="absolute inset-0 h-full w-full object-cover"
+              draggable={false}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.9, ease: "easeInOut" }}
+            />
+          </AnimatePresence>
 
-        {/* Desktop View */}
-        <div className="relative z-10 hidden h-full w-full flex-grow items-center overflow-x-hidden overflow-y-hidden md:flex">
-          <div
-            id="left-panel"
-            className="z-30 flex h-full items-center justify-center"
-          >
-            <ApplyMenu step={step} />
-          </div>
-          <div
-            id="right-panel"
-            className="bg-hw-linear-gradient-day flex h-full w-full flex-col items-center justify-center px-4"
-          >
-            <div className="absolute right-6 top-6 flex items-center gap-4">
-              <CharacterIcon />
-            </div>
-            <div className="overflow-y-none overflow-x-none z-10 flex flex-col items-center justify-center">
-              {!step ? (
-                <ApplicationPrompt
-                  status={application?.status ?? "NOT_STARTED"}
-                  continueStep={continueStep}
-                  onApplyNavigate={handleApplyNavigate}
-                  pending={pending}
-                />
-              ) : (
-                <div className="flex h-full w-full items-start justify-center gap-8 overflow-hidden 2xl:flex-row">
-                  {/* Left stamps column (up to 3) */}
-                  <LeftStampColumn />
+          <div className="relative z-10 flex h-full w-full gap-6 p-9">
+            <ApplicationSidebar
+              steps={sidebarSteps}
+              activeStep={step}
+              lastSavedAt={userInfo?.updatedAt ?? null}
+              onStepClick={handleApplyNavigate}
+              realm={realm}
+            />
 
-                  {/* Main card */}
-                  <div>
-                    <div className="flex h-lg w-md flex-col justify-start space-y-8 rounded-md bg-white px-8 py-8 shadow-lg sm:w-md md:px-12 md:py-12 lg:w-xl 2xl:h-[65vh] 2xl:w-3xl 3xl:h-[60vh] 3xl:w-6xl 4xl:w-7xl">
-                      <div className="space-y-4 py-1.5">
-                        <ApplyHeading
-                          heading={heading}
-                          subheading={subheading}
-                          stepKey={step}
-                        />
-                      </div>
-                      <div
-                        className="scrollbar min-h-0 flex-1 overflow-auto rounded-md pb-2 pl-1 pr-4 font-secondary"
-                        ref={desktopScrollRef}
+            <div className="relative flex min-w-0 flex-1 flex-col">
+              <div className="relative flex flex-1">
+                <AnimatePresence mode="wait">
+                  {!step ? (
+                    <motion.div
+                      key="portal-start"
+                      className="mt-6 w-full max-w-[600px] self-start px-8 md:px-12"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.18 }}
+                    >
+                      <ApplicationPrompt
+                        continueStep={continueStep}
+                        onApplyNavigate={handleApplyNavigate}
+                        pending={pending}
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="portal-window"
+                      className="m-auto flex h-full max-h-[calc(100vh-9rem)] w-full max-w-[900px] flex-col gap-4"
+                      style={{ transformOrigin: "bottom right" }}
+                      initial={
+                        growWindow
+                          ? { scale: 0.25, opacity: 0, x: 280, y: 220 }
+                          : false
+                      }
+                      animate={{ scale: 1, opacity: 1, x: 0, y: 0 }}
+                      exit={{ scale: 0.25, opacity: 0, x: 280, y: 220 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 260,
+                        damping: 26,
+                      }}
+                      onAnimationComplete={() => {
+                        setGrowWindow(false);
+                      }}
+                    >
+                      <Window
+                        fluid
+                        draggable={false}
+                        disableControls
+                        title="Hack Western 13: Discover the Unknown"
+                        className="min-h-0 flex-1"
+                        contentClassName="realm-tinted px-8 py-8 md:px-12 md:py-10"
+                        footer={<ApplyNavigation step={step} />}
                       >
-                        <ApplyForm
-                          step={step}
-                          previewHeight={(desktopPreviewHeight ?? 300) - 10}
-                        />
-                      </div>
-                    </div>
-                    <ApplyNavigation step={step} />
-                  </div>
+                        <div className="space-y-6">
+                          {step !== "companion" && (
+                            <ApplyHeading
+                              heading={heading}
+                              subheading={subheading}
+                              stepKey={step}
+                            />
+                          )}
+                          <div className="scrollbar font-figtree">
+                            <ApplyForm step={step} />
+                          </div>
+                        </div>
+                      </Window>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
 
-                  {/* Right stamps column (up to 3) */}
-                  <RightStampColumn />
+            <div className="pointer-events-none absolute inset-y-9 right-9 z-20 flex w-[220px] flex-col items-end justify-between lg:relative lg:inset-auto lg:shrink-0">
+              <UserBadge
+                className="pointer-events-auto"
+                firstName={userInfo?.firstName ?? "there"}
+                onSignOut={() => void signOut({ callbackUrl: "/" })}
+              />
+
+              {!step && (
+                <div className="mb-2 mr-2 flex flex-col items-center gap-1.5">
+                  <img
+                    src="/landing/home/folder.png"
+                    alt="HW13 Applications folder"
+                    className="h-auto w-[64px]"
+                    style={{ imageRendering: "pixelated" }}
+                    draggable={false}
+                  />
+                  <p className="font-figtree text-xs font-medium text-white">
+                    HW13_Applications
+                  </p>
                 </div>
+              )}
+
+              {showCompanion && (
+                <HorseCompanion
+                  horseId={horseId}
+                  firstName={userInfo?.horseFirstName}
+                  lastName={userInfo?.horseLastName}
+                />
               )}
             </div>
           </div>
         </div>
-
-        <div className="relative z-10 flex w-[100%] flex-col items-center justify-center"></div>
         {/* End of Desktop View */}
       </motion.main>
     </>

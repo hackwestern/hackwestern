@@ -1,14 +1,17 @@
 import SEO from "~/components/seo";
 import { useState } from "react";
+import type { FormEvent } from "react";
+import Link from "next/link";
 import { hackerLoginRedirect } from "~/utils/redirect";
 import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
+import { AuthLayout } from "~/components/auth/auth-layout";
 
 export default function ResetRequest() {
   const [email, setEmail] = useState("");
-  const [resetRequsted, setResetRequested] = useState(false);
+  const [resetRequested, setResetRequested] = useState(false);
   const { toast } = useToast();
   const reset = api.auth.reset.useMutation({
     onSuccess: () => {
@@ -25,11 +28,11 @@ export default function ResetRequest() {
         description: error.message ?? "Error sending reset email.",
         variant: "destructive",
       });
-      console.log("error sending email", error);
     },
   });
 
-  async function handleSubmit() {
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
     if (!email) {
       toast({
         title: "Error",
@@ -38,7 +41,7 @@ export default function ResetRequest() {
       });
       return;
     }
-    if (resetRequsted) {
+    if (resetRequested) {
       toast({
         title: "Error",
         description:
@@ -54,22 +57,56 @@ export default function ResetRequest() {
     <>
       <SEO title="Forgot Password" noindex />
 
-      <div className="bg-hw-radial-gradient flex h-screen flex-col items-center justify-center">
-        <div className="z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:w-xl sm:rounded-[48px] sm:p-12 md:w-2xl">
-          <h2 className="mb-2 text-3xl font-bold">Reset Password</h2>
-          <h2>We&apos;ll send you a link to reset your password.</h2>
-          <h2 className="mb-2 mt-6 text-sm">Email</h2>
-          <Input
-            type="email"
-            onChange={(e) => setEmail(e.target.value)}
-            className="font-jetbrains-mono mb-8 h-[60px] bg-highlight text-medium"
-            placeholder="hello@hackwestern.com"
-          />
-          <Button variant="primary" onClick={handleSubmit} size="default" full>
-            Reset Password
+      <AuthLayout title="Reset your password">
+        <p className="font-figtree text-md-p text-gray-6">
+          We&apos;ll send you a link to reset your password.
+        </p>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="email"
+              className="font-figtree text-md-p font-medium text-gray-4"
+            >
+              Email
+            </label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              className="h-12 bg-white font-figtree text-md-p"
+              placeholder="hacker@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <Button
+            variant="primary-2"
+            type="submit"
+            size="lg"
+            full
+            isPending={reset.isPending}
+            disabled={resetRequested}
+          >
+            {reset.isPending ? "Sending..." : "Reset Password"}
+          </Button>
+        </form>
+
+        <div className="flex items-center gap-1.5 font-figtree text-md-p text-gray-6">
+          <span>Remembered it?</span>
+          <Button asChild variant="tertiary" className="h-max p-0">
+            <Link
+              className="font-figtree text-light hover:text-medium"
+              href="/login"
+            >
+              Back to sign in
+            </Link>
           </Button>
         </div>
-      </div>
+      </AuthLayout>
     </>
   );
 }
