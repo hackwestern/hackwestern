@@ -1,8 +1,10 @@
--- "N/A" and "Prefer not to answer" are no longer valid years of study, so an
--- application submitted with one goes back to in progress until the applicant
--- picks a real year. No email: the incomplete-application reminder covers it.
--- Only applications still awaiting review; anything already decided is left alone.
+-- "N/A" and "Prefer not to answer" are no longer valid years of study. Clear
+-- them so the applicant has to pick a real year, and send any application
+-- still awaiting review back to in progress so it can't stay submitted
+-- without one. No email: the incomplete-application reminder covers it.
 UPDATE "application"
-SET "status" = 'IN_PROGRESS', "updated_at" = now()
-WHERE "status" = 'PENDING_REVIEW'
-  AND "year_of_study" IN ('N/A', 'Prefer not to answer');
+SET
+  "year_of_study" = NULL,
+  "status" = CASE WHEN "status" = 'PENDING_REVIEW' THEN 'IN_PROGRESS' ELSE "status" END,
+  "updated_at" = now()
+WHERE "year_of_study" IN ('N/A', 'Prefer not to answer');
