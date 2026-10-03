@@ -46,6 +46,11 @@ const DEFAULT_SOCIALS: PromoSocial[] = [
     href: "https://x.com/hackwestern",
     iconSrc: "/landing/promo/icons/x.svg",
   },
+  {
+    name: "Medium",
+    href: "https://hackwestern.medium.com",
+    iconSrc: "/landing/promo/icons/medium.svg",
+  },
 ];
 
 const navText =
@@ -89,7 +94,7 @@ export function PromoNavbar({
         >
           Hack Western 13
         </Link>
-        <div className="hidden items-baseline gap-6 md:flex">
+        <div className="hidden items-baseline gap-4 md:flex lg:gap-6">
           {links.map((link) => (
             <a
               key={link.href}
@@ -101,7 +106,7 @@ export function PromoNavbar({
           ))}
         </div>
       </div>
-      <div className="hidden items-center gap-6 md:flex">
+      <div className="hidden items-center gap-4 md:flex lg:gap-6">
         {socials.map((social) => (
           <a
             key={social.name}
