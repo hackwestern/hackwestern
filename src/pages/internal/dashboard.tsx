@@ -74,6 +74,9 @@ const Internal = () => {
         <Button asChild variant="primary">
           <Link href="/internal/adjust-status">Adjust Status</Link>
         </Button>
+        <Button asChild variant="primary">
+          <Link href="/internal/cheat-check">Cheat Checks</Link>
+        </Button>
       </div>
       <Input
         className="z-10 mb-4 mt-3 w-96"

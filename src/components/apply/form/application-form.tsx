@@ -14,9 +14,9 @@ import { useAutoSave } from "~/hooks/use-auto-save";
 import { applicationStepSaveSchema } from "~/schemas/application";
 import { text } from "stream/consumers";
 
-export const QUESTION1 = `If your laptop suddenly gained consciousness, what do you think it would say about your working style and why? (30 to 150 words)`;
-export const QUESTION2 = `What’s one piece of feedback you’ve received that stuck with you and why? (30 to 150 words)`;
-export const QUESTION3 = `What’s a project you’d love to revisit and improve if you had the time, and why? (30 to 150 words)`;
+export const QUESTION1 = `An AI assistant spends a week observing your habits, then writes an honest review of you. What does it say? (30 to 150 words)`;
+export const QUESTION2 = ` What’s one technical skill or tool you taught yourself recently? What did you make or try with it? (30 to 150 words)`;
+export const QUESTION3 = `What’s your favourite thing you’ve ever built? Why did you start, and what did you enjoy most about making it? It can be technical or nontechnical, finished or unfinished. Include a link if you have one. (30 to 150 words)`;
 
 export function ApplicationForm() {
   const utils = api.useUtils();
@@ -71,7 +71,7 @@ export function ApplicationForm() {
                   />
                 </FormControl>
                 <div
-                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "text-gray-500" : "text-destructive"}`}
+                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "font-figtree text-light" : "text-destructive"}`}
                 >
                   {field.value?.split(/\s+/).filter(Boolean).length ?? 0} / 150
                   words
@@ -102,7 +102,7 @@ export function ApplicationForm() {
                   />
                 </FormControl>
                 <div
-                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "text-gray-500" : "text-destructive"}`}
+                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "font-figtree text-light" : "text-destructive"}`}
                 >
                   {field.value?.split(/\s+/).filter(Boolean).length ?? 0} / 150
                   words
@@ -133,7 +133,7 @@ export function ApplicationForm() {
                   />
                 </FormControl>
                 <div
-                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "text-gray-500" : "text-destructive"}`}
+                  className={`text-sm ${(field.value?.split(/\s+/).filter(Boolean).length ?? 0) <= 150 ? "font-figtree text-light" : "text-destructive"}`}
                 >
                   {field.value?.split(/\s+/).filter(Boolean).length ?? 0} / 150
                   words

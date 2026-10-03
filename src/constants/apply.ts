@@ -7,10 +7,16 @@ type Step = {
 
 const allSteps = [
   {
-    step: "character",
-    label: "Character",
-    heading: "Choose your character",
-    subheading: null,
+    step: "realm",
+    label: "Realm",
+    heading: "Click to choose your horse companion",
+    subheading: "Who will accompany you along this adventure?",
+  },
+  {
+    step: "companion",
+    label: "Companion",
+    heading: "Name your horse companion",
+    subheading: "Give your new friend a first and last name.",
   },
   {
     step: "basics",
@@ -51,10 +57,10 @@ const allSteps = [
       "The next few questions are completely optional and will not be used in any way during your application review process; it will not affect your candidacy positively or negatively. It will only be accessed as a pool to help focus our future outreach to ensure equal access to opportunities for everyone.",
   },
   {
-    step: "canvas",
-    label: "Canvas",
-    heading: "Lastly, draw something!",
-    subheading: "This won't impact your application. Or will it?",
+    step: "logistics",
+    label: "Logistics",
+    heading: "Logistics & emergency contact",
+    subheading: "We need these details for event day.",
   },
   {
     step: "review",

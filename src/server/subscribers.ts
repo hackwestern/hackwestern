@@ -33,6 +33,24 @@ export function normalizeEmail(raw: string): string {
   return email;
 }
 
+/**
+ * Canonical form for an AUTH identity (user.email): trim + lowercase, nothing
+ * more. Deliberately weaker than normalizeEmail above — gmail dot/plus
+ * stripping is right for a mailing list (one mailbox, one contact) but wrong
+ * for a login credential, where the address should stay recognizable as what
+ * the user typed.
+ *
+ * Why it exists at all, measured in the HW12 dump: register.tsx used a
+ * type="text" input (mobile keyboards autocapitalize), every lookup was an
+ * exact string match, and user.email had no unique constraint — 7 of 2,278
+ * users ended up with two accounts, one of them ACCEPTED on one account with a
+ * duplicate still sitting in PENDING_REVIEW. Every read AND write of
+ * user.email must go through this.
+ */
+export function normalizeAuthEmail(raw: string): string {
+  return raw.trim().toLowerCase();
+}
+
 export function isSchoolEmail(email: string): boolean {
   const domain = email.split("@")[1] ?? "";
   if (domain.endsWith(".edu")) return true;
@@ -100,6 +118,35 @@ async function mirrorUnsubToMailjet(email: string): Promise<void> {
   );
   if (!res.ok) {
     console.error("Error mirroring unsubscribe to Mailjet:", email, res.error);
+  }
+}
+
+/**
+ * File a registrant into the marketing contact list once their email is
+ * verified.
+ *
+ * Every account registrant joins the list — decided 2026-09-06, consent =
+ * CASL implied (inquiry from the application/registration). Gated on email
+ * verification rather than raw signup so typo'd addresses never reach the
+ * list and feed its bounce rate. Normalized, because managecontact on the raw
+ * gmail form files a second contact for the same mailbox.
+ *
+ * Best-effort like the prereg path: the verification is already committed,
+ * so a Mailjet outage must not fail it. `addnoforce` (manageContact's
+ * default) leaves a previous unsubscribe intact.
+ */
+export async function addVerifiedRegistrantToList(
+  email: string,
+): Promise<void> {
+  if (!env.MAILJET_CONTACT_LIST_ID) return;
+  if (!env.MAILJET_API_KEY || !env.MAILJET_SECRET_KEY) return;
+  const res = await manageContact(
+    env.MAILJET_CONTACT_LIST_ID,
+    normalizeEmail(email),
+    { apiKey: env.MAILJET_API_KEY, secretKey: env.MAILJET_SECRET_KEY },
+  );
+  if (!res.ok) {
+    console.error("Error adding registrant to Mailjet list:", email, res.error);
   }
 }
 

@@ -43,6 +43,12 @@ export const avatarColour = pgEnum("avatar_colour", [
 ]);
 
 /**
+ * The realm each hacker's horse companion belongs to, chosen during the
+ * application flow. Drives themed visuals across the portal.
+ */
+export const realm = pgEnum("realm", ["safari", "mountain", "desert", "ocean"]);
+
+/**
  * Year of study for the hacker
  */
 export const yearOfStudy = pgEnum("year_of_study", [
@@ -140,6 +146,7 @@ export const countrySelection = pgEnum("country", [
 export const shirtSize = pgEnum("shirt_size", ["S", "M", "L", "XL"]);
 
 export const dietaryRestrictions = pgEnum("dietary_restrictions", [
+  "None",
   "Vegetarian",
   "Vegan",
   "Kosher",
@@ -180,6 +187,34 @@ export const judgingQueueStatusEnum = pgEnum("judging_queue_status", [
 
 export const roundTypeEnum = pgEnum("round_type", ["regular", "sponsored"]);
 
+/**
+ * The lifecycle of an automated cheat-check sweep across every eligible team.
+ */
+export const cheatSweepStatusEnum = pgEnum("cheat_sweep_status", [
+  "running",
+  "completed",
+  "failed",
+]);
+
+/**
+ * What caused a sweep to start — the judging queue draining, or an organizer
+ * kicking one off by hand.
+ */
+export const cheatSweepTriggerEnum = pgEnum("cheat_sweep_trigger", [
+  "queue_drain",
+  "manual",
+]);
+
+/**
+ * The state of a single team's slot in a sweep's work list.
+ */
+export const cheatSweepItemStatusEnum = pgEnum("cheat_sweep_item_status", [
+  "pending",
+  "running",
+  "done",
+  "failed",
+]);
+
 export const trackEnum = pgEnum("track", [
   "Best Use of Cohere",
   "Best Use of AntiGravity",
@@ -215,7 +250,7 @@ export const teamCheckType = pgEnum("team_check_type", [
 export const teams = pgTable(
   "team",
   {
-    id: varchar("id", { length: 6 }).notNull().primaryKey(),
+    id: varchar("id", { length: 12 }).notNull().primaryKey(),
     name: varchar("name", { length: 255 }).notNull(),
 
     // Project submission
@@ -232,6 +267,7 @@ export const teams = pgTable(
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
       .notNull(),
+    joinCode: varchar("joinCode", { length: 6 }).notNull().unique(),
   },
   (t) => [index("team_created_at_idx").on(t.createdAt)],
 );
@@ -283,7 +319,10 @@ export const users = pgTable(
     id: varchar("id", { length: 255 }).notNull().primaryKey(),
     name: varchar("name", { length: 255 }),
     password: varchar("password", { length: 255 }),
-    email: varchar("email", { length: 255 }).notNull(),
+    // Stored canonical (trim+lowercase) — every read/write goes through
+    // normalizeAuthEmail. The unique constraint is the backstop: HW12 shipped
+    // without it and 7 people ended up with two accounts each.
+    email: varchar("email", { length: 255 }).notNull().unique(),
     emailVerified: timestamp("emailVerified", {
       mode: "date",
     }).default(sql`CURRENT_TIMESTAMP`),
@@ -412,12 +451,13 @@ export const applications = pgTable(
       .notNull(),
     status: applicationStatus("status").default("IN_PROGRESS").notNull(),
 
-    // Avatar
-    avatarColour: avatarColour("avatar_colour"),
-    avatarFace: integer("avatar_face"),
-    avatarLeftHand: integer("avatar_left_hand"),
-    avatarRightHand: integer("avatar_right_hand"),
-    avatarHat: integer("avatar_hat"),
+    // Horse companion + realm (HW13 redesign). Columns are nullable in the
+    // DB (see drizzle/0016_add_realm_and_horse_companion.sql) because
+    // applications exist before the realm step is filled out.
+    realm: realm("realm"),
+    horseId: integer("horse_id"),
+    horseFirstName: varchar("horse_first_name", { length: 255 }),
+    horseLastName: varchar("horse_last_name", { length: 255 }),
 
     // About You
     firstName: varchar("first_name", { length: 255 }),
@@ -474,16 +514,6 @@ export const applications = pgTable(
     ethnicity: ethnicity("ethnicity"),
     sexualOrientation: sexualOrientation("sexual_orientation"),
 
-    // Canvas - default to an empty but well-typed structure so new rows are valid
-    canvasData: jsonb("canvas_data")
-      .$type<{
-        paths: CanvasPaths;
-        timestamp: number;
-        version: string;
-      }>()
-      .default(sql`'{"paths":[],"timestamp":0,"version":""}'::jsonb`)
-      .notNull(),
-
     // Emergency Contact Info
     emergencyContactName: varchar("emergency_contact_name", { length: 255 }),
     emergencyContactRelationship: emergencyContactRelationship(
@@ -494,6 +524,22 @@ export const applications = pgTable(
     }),
 
     transportationMethod: transportationMethod("transportation_method"),
+
+    // OLDER DEPREEACTED FIELDS <can clean up but might be good to keep the forms in the code base>
+    avatarColour: avatarColour("avatar_colour"),
+    avatarFace: integer("avatar_face"),
+    avatarLeftHand: integer("avatar_left_hand"),
+    avatarRightHand: integer("avatar_right_hand"),
+    avatarHat: integer("avatar_hat"),
+
+    canvasData: jsonb("canvas_data")
+      .$type<{
+        paths: CanvasPaths;
+        timestamp: number;
+        version: string;
+      }>()
+      .default(sql`'{"paths":[],"timestamp":0,"version":""}'::jsonb`)
+      .notNull(),
   },
   (application) => [index("user_id_idx").on(application.userId)],
 );
@@ -825,6 +871,106 @@ export const teamCheckResultsRelations = relations(
     checkedBy: one(users, {
       fields: [teamCheckResults.checkedByUserId],
       references: [users.id],
+    }),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Cheat check sweeps
+// ---------------------------------------------------------------------------
+
+/**
+ * One row per automated cheat-check sweep. A sweep is started when the judging
+ * queue drains (or manually by an organizer) and is worked off in slices by
+ * `/api/cheat-check/sweep`, which re-invokes itself until every item is done.
+ *
+ * `lastHeartbeatAt` is bumped after every batch so a sweep whose worker died
+ * mid-flight can be spotted and resumed.
+ */
+export const cheatCheckSweeps = pgTable(
+  "cheat_check_sweep",
+  {
+    id: serial("id").primaryKey(),
+    status: cheatSweepStatusEnum("status").default("running").notNull(),
+    triggeredBy: cheatSweepTriggerEnum("triggered_by").notNull(),
+    startedAt: timestamp("started_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    lastHeartbeatAt: timestamp("last_heartbeat_at", {
+      mode: "date",
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+    finishedAt: timestamp("finished_at", { mode: "date", precision: 3 }),
+    totalTeams: integer("total_teams").default(0).notNull(),
+    // The two hacker checks are pure DB reads, so they run once per sweep in
+    // bulk rather than per team.
+    hackerChecksDone: boolean("hacker_checks_done").default(false).notNull(),
+    // When false (the default) the sweep skips check types that already have a
+    // cached result.
+    forceRerun: boolean("force_rerun").default(false).notNull(),
+    rateLimitedUntil: timestamp("rate_limited_until", {
+      mode: "date",
+      precision: 3,
+    }),
+    error: text("error"),
+  },
+  (t) => [
+    // Partial unique index: at most one sweep may be `running` at a time. This
+    // is what makes double-triggering impossible (two judges submitting their
+    // final marks near-simultaneously) without application-level locking.
+    uniqueIndex("cheat_check_sweep_active_idx")
+      .on(t.status)
+      .where(sql`status = 'running'`),
+    index("cheat_check_sweep_finished_at_idx").on(t.finishedAt),
+  ],
+);
+
+/**
+ * One row per team in a sweep — the durable work list. It makes a sweep
+ * resumable after a function timeout, caps retries so a permanently broken
+ * repo can't loop forever, and gives per-team error visibility.
+ */
+export const cheatCheckSweepItems = pgTable(
+  "cheat_check_sweep_item",
+  {
+    sweepId: integer("sweep_id")
+      .notNull()
+      .references(() => cheatCheckSweeps.id, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    status: cheatSweepItemStatusEnum("status").default("pending").notNull(),
+    attempts: integer("attempts").default(0).notNull(),
+    error: text("error"),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sweepId, t.teamId] }),
+    index("cheat_check_sweep_item_claim_idx").on(t.sweepId, t.status),
+  ],
+);
+
+export const cheatCheckSweepsRelations = relations(
+  cheatCheckSweeps,
+  ({ many }) => ({
+    items: many(cheatCheckSweepItems),
+  }),
+);
+
+export const cheatCheckSweepItemsRelations = relations(
+  cheatCheckSweepItems,
+  ({ one }) => ({
+    sweep: one(cheatCheckSweeps, {
+      fields: [cheatCheckSweepItems.sweepId],
+      references: [cheatCheckSweeps.id],
+    }),
+    team: one(teams, {
+      fields: [cheatCheckSweepItems.teamId],
+      references: [teams.id],
     }),
   }),
 );

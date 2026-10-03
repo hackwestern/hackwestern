@@ -1,6 +1,7 @@
 import { type Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 import { type AppType } from "next/app";
+import Head from "next/head";
 import { Figtree } from "next/font/google";
 import localFont from "next/font/local";
 import { api } from "~/utils/api";
@@ -40,6 +41,7 @@ const pix32 = localFont({
 
 const figtree = Figtree({
   subsets: ["latin"],
+  weight: ["400", "600"],
   variable: "--font-figtree",
   fallback: ["Inter", "sans-serif"],
 });
@@ -58,6 +60,10 @@ const MyApp: AppType<{ session: Session | null }> = ({
         description={DEFAULT_DESCRIPTION}
         image={DEFAULT_OG_IMAGE}
       />
+      {/* Keyed so a page can swap the browser tint (the home page does) */}
+      <Head>
+        <meta name="theme-color" content="#7C3AED" key="theme-color" />
+      </Head>
       <SpeedInsights />
       <main
         className={`${figtree.variable} font-secondary ${cossetteTexte.variable} font-cossetteTexte ${pix32.variable} font-pix32`}
