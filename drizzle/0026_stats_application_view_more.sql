@@ -1,0 +1,46 @@
+-- More read-only columns for hw-stats (see 0023). New columns go at the end:
+-- CREATE OR REPLACE VIEW can only append. Essays and links are exposed as
+-- word counts and present/absent flags, never their text.
+CREATE OR REPLACE VIEW "stats_application" AS
+SELECT
+  a.user_id,
+  a.status,
+  a.created_at,
+  a.updated_at,
+  a.year_of_study,
+  a.name AS school,
+  a.major,
+  a.num_of_hackathons,
+  a.attended,
+  a.country_of_residence,
+  a.realm,
+  a.age,
+  a.gender,
+  a.ethnicity,
+  a.underrep_group,
+  (a.realm IS NOT NULL AND a.horse_id IS NOT NULL) AS "step_realm",
+  (nullif(trim(a.horse_first_name), '') IS NOT NULL AND nullif(trim(a.horse_last_name), '') IS NOT NULL) AS "step_companion",
+  (nullif(trim(a.first_name), '') IS NOT NULL AND nullif(trim(a.last_name), '') IS NOT NULL AND nullif(trim(a.phone_number), '') IS NOT NULL AND a.age IS NOT NULL AND a.country_of_residence IS NOT NULL) AS "step_basics",
+  (nullif(trim(a.name), '') IS NOT NULL AND a.year_of_study IS NOT NULL AND a.major IS NOT NULL AND a.attended IS NOT NULL AND a.num_of_hackathons IS NOT NULL) AS "step_info",
+  (nullif(trim(a.question1), '') IS NOT NULL AND nullif(trim(a.question2), '') IS NOT NULL AND nullif(trim(a.question3), '') IS NOT NULL) AS "step_application",
+  (nullif(trim(a.resume_link), '') IS NOT NULL) AS "step_links",
+  (a.agree_code_of_conduct IS TRUE AND a.agree_share_with_mlh IS TRUE AND a.agree_share_with_sponsors IS TRUE AND a.agree_will_be_18 IS TRUE) AS "step_agreements",
+  (a.shirt_size IS NOT NULL AND a.dietary_restrictions IS NOT NULL AND (a.dietary_restrictions <> 'Other' OR nullif(trim(a.dietary_restrictions_other), '') IS NOT NULL) AND nullif(trim(a.emergency_contact_name), '') IS NOT NULL AND a.emergency_contact_relationship IS NOT NULL AND nullif(trim(a.emergency_contact_phone_number), '') IS NOT NULL) AS "step_logistics",
+  -- 0026: logistics, picks, opt-ins, and lengths/presence only (never the text)
+  a.shirt_size,
+  a.dietary_restrictions,
+  (nullif(trim(a.dietary_restrictions_other), '') IS NOT NULL) AS has_dietary_other,
+  a.transportation_method,
+  a.horse_id,
+  a.agree_share_with_sponsors,
+  a.agree_emails_from_mlh,
+  a.sexual_orientation,
+  (nullif(trim(a.resume_link), '') IS NOT NULL) AS has_resume,
+  (nullif(trim(a.github_link), '') IS NOT NULL) AS has_github,
+  (nullif(trim(a.linkedin_link), '') IS NOT NULL) AS has_linkedin,
+  (nullif(trim(a.devpost_link), '') IS NOT NULL) AS has_devpost,
+  (nullif(trim(a.other_link), '') IS NOT NULL) AS has_other_link,
+  coalesce(array_length(regexp_split_to_array(nullif(trim(a.question1), ''), '\s+'), 1), 0) AS q1_words,
+  coalesce(array_length(regexp_split_to_array(nullif(trim(a.question2), ''), '\s+'), 1), 0) AS q2_words,
+  coalesce(array_length(regexp_split_to_array(nullif(trim(a.question3), ''), '\s+'), 1), 0) AS q3_words
+FROM "application" AS a;
