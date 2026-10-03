@@ -5,7 +5,7 @@ import { useEffect, useRef, type CSSProperties } from "react";
  * Meet the Team footer — Figma 402:6565 (desktop) / 585:3670 (mobile).
  *
  * The team travels in a slowly scrolling row on a black band, fading out at
- * both edges, along a bouncing squiggle (see pathY). Sizes come from the 1440px design frame via `--u` (one design
+ * both edges, along a smooth wave (see pathY). Sizes come from the 1440px design frame via `--u` (one design
  * px); mobile is the same layout at 0.4× (a 576px-wide frame), as in the
  * Figma. Hovering or focusing someone pauses the row, outlines them and shows
  * their name tag.
@@ -18,6 +18,8 @@ export type TeamMember = {
   image: string;
   /** Hover outline, matching their label on the organizing team poster. */
   color: string;
+  /** LinkedIn or personal site, opened when they're clicked. */
+  url?: string;
 };
 
 const CUTOUTS = "/landing/meet-the-team";
@@ -27,42 +29,208 @@ const member = (
   role: string,
   slug: string,
   color: string,
+  url?: string,
 ): TeamMember => ({
   name,
   role,
   image: `${CUTOUTS}/${slug}.webp`,
   color,
+  url,
 });
 
+const linkedin = (handle: string) => `https://www.linkedin.com/in/${handle}`;
+
 export const TEAM: TeamMember[] = [
-  member("Aleeza Jahan", "Design Organizer", "aleeza", "#39c9b4"),
-  member("Alex Li", "Events Organizer", "alex", "#1b2861"),
-  member("Alice Nguyen", "Spon Organizer", "alice", "#a19895"),
-  member("Allison Ye", "Marketing Lead", "allisonl", "#c3ba9b"),
-  member("Aniya Liu", "Spon Organizer", "aniya", "#729762"),
-  member("Anson Wang", "Marketing Organizer", "anson", "#72d428"),
-  member("Brittney Chong", "Co-Director", "brittney", "#a4dfe7"),
-  member("Caroline Ge", "Spon Organizer", "caroline", "#a38f97"),
-  member("Daniel Wang", "Spon Organizer", "daniel", "#4aae8e"),
-  member("Edmund Chen", "Design Organizer", "edmund", "#778d4e"),
-  member("Emily Liu", "Events Organizer", "emily", "#ad958e"),
-  member("Ethan Rong", "Web Organizer", "ethan", "#bb694b"),
-  member("Holia Zhang", "Web Organizer", "holia", "#1eada4"),
-  member("Jamie Gao", "Growth Organizer", "jamie", "#c2a022"),
-  member("Jasmine Gu", "Product Lead", "jasmine", "#a85231"),
-  member("Jessica Wang", "Design Lead", "jessica-w", "#808d25"),
+  member(
+    "Aleeza Jahan",
+    "Design Organizer",
+    "aleeza",
+    "#39c9b4",
+    "https://aleezajahan.com",
+  ),
+  member(
+    "Alex Li",
+    "Events Organizer",
+    "alex",
+    "#1b2861",
+    linkedin("alexyouli"),
+  ),
+  member(
+    "Alice Nguyen",
+    "Spon Organizer",
+    "alice",
+    "#a19895",
+    linkedin("alicebtnguyen"),
+  ),
+  member(
+    "Allison Ye",
+    "Marketing Lead",
+    "allisonl",
+    "#c3ba9b",
+    linkedin("-allison-ye"),
+  ),
+  member(
+    "Aniya Liu",
+    "Spon Organizer",
+    "aniya",
+    "#729762",
+    linkedin("aniyaliu"),
+  ),
+  member(
+    "Anson Wang",
+    "Marketing Organizer",
+    "anson",
+    "#72d428",
+    linkedin("anson-wang-b187a7233"),
+  ),
+  member(
+    "Brittney Chong",
+    "Co-Director",
+    "brittney",
+    "#a4dfe7",
+    linkedin("brittneyrachellechong"),
+  ),
+  member(
+    "Caroline Ge",
+    "Spon Organizer",
+    "caroline",
+    "#a38f97",
+    linkedin("carolinege"),
+  ),
+  member(
+    "Daniel Wang",
+    "Spon Organizer",
+    "daniel",
+    "#4aae8e",
+    linkedin("daniel04wang"),
+  ),
+  member(
+    "Edmund Chen",
+    "Design Organizer",
+    "edmund",
+    "#778d4e",
+    "https://edmundchen.art",
+  ),
+  member(
+    "Emily Liu",
+    "Events Organizer",
+    "emily",
+    "#ad958e",
+    linkedin("emiliuly"),
+  ),
+  member(
+    "Ethan Rong",
+    "Web Organizer",
+    "ethan",
+    "#bb694b",
+    "https://ethan-rng.site",
+  ),
+  member(
+    "Holia Zhang",
+    "Web Organizer",
+    "holia",
+    "#1eada4",
+    linkedin("holiazhang"),
+  ),
+  member(
+    "Jamie Gao",
+    "Growth Organizer",
+    "jamie",
+    "#c2a022",
+    linkedin("jamie6551"),
+  ),
+  member(
+    "Jasmine Gu",
+    "Product Lead",
+    "jasmine",
+    "#a85231",
+    linkedin("jasmine-gu-b2aa65201"),
+  ),
+  member(
+    "Jessica Wang",
+    "Design Lead",
+    "jessica-w",
+    "#808d25",
+    "https://jessicaywang.co",
+  ),
   member("Jessica Xing", "Events Organizer", "jessica-x", "#92a5a4"),
-  member("Julian Laxman", "Co-Director", "julian", "#c9cacd"),
-  member("Kevin Li", "Web Organizer", "kevin", "#5b6e34"),
-  member("Lillian Wei", "Design Organizer", "lillian", "#afb095"),
-  member("Lucas Vanderwielen", "Web Organizer", "lucas", "#75a59b"),
-  member("Luka Lavric", "Web Lead", "luka", "#9da5ab"),
-  member("Natalie Wang", "Web Organizer", "natalie", "#64745e"),
-  member("Noah Medland", "Spon Lead", "noah", "#5d265b"),
-  member("Pranav Varma", "Web Organizer", "pranav", "#9abdb0"),
-  member("Sarah Lieng", "Events Lead", "sarah", "#42aa8c"),
-  member("Sarina Cheng", "Events Lead", "sarina", "#b4b431"),
-  member("William Jiang", "Growth Organizer", "will", "#704181"),
+  member(
+    "Julian Laxman",
+    "Co-Director",
+    "julian",
+    "#c9cacd",
+    "https://x.com/julianlaxman",
+  ),
+  member(
+    "Kevin Li",
+    "Web Organizer",
+    "kevin",
+    "#5b6e34",
+    linkedin("kevinli5371"),
+  ),
+  member(
+    "Lillian Wei",
+    "Design Organizer",
+    "lillian",
+    "#afb095",
+    linkedin("lillianhwei"),
+  ),
+  member(
+    "Lucas Vanderwielen",
+    "Web Organizer",
+    "lucas",
+    "#75a59b",
+    linkedin("lucas-vanderwielen-5b7947338"),
+  ),
+  member(
+    "Luka Lavric",
+    "Web Lead",
+    "luka",
+    "#9da5ab",
+    linkedin("lucianlavric"),
+  ),
+  member(
+    "Natalie Wang",
+    "Web Organizer",
+    "natalie",
+    "#64745e",
+    linkedin("wang-natalie"),
+  ),
+  member(
+    "Noah Medland",
+    "Spon Lead",
+    "noah",
+    "#5d265b",
+    linkedin("noah-medland-72a82b340"),
+  ),
+  member(
+    "Pranav Varma",
+    "Web Organizer",
+    "pranav",
+    "#9abdb0",
+    linkedin("pranavarma"),
+  ),
+  member(
+    "Sarah Lieng",
+    "Events Lead",
+    "sarah",
+    "#42aa8c",
+    linkedin("sarah-lieng"),
+  ),
+  member(
+    "Sarina Cheng",
+    "Events Lead",
+    "sarina",
+    "#b4b431",
+    linkedin("sarinacheng"),
+  ),
+  member(
+    "William Jiang",
+    "Growth Organizer",
+    "will",
+    "#704181",
+    linkedin("williamxjiang"),
+  ),
 ];
 
 const BAND_H = 354;
@@ -75,87 +243,220 @@ const TAG_ROOM = 60;
 const MARQUEE_S = 70;
 
 /**
- * The squiggle everyone travels along, fixed on screen: a zigzag with sharp
- * vertices at both the top and the bottom. Between vertices the path eases
- * through the middle and speeds up exponentially (sinh) into each vertex,
- * where it bounces off in the other direction.
+ * The wave the row is laid out along: a sine wave whose crests sit PATH_DROP
+ * above its troughs. It's fixed to the row, so it scrolls with everyone and
+ * nobody moves up or down.
  */
 const PATH_TOP = 22;
 const PATH_DROP = 88;
+/** Target crest-to-crest distance, rounded so the loop has no seam. */
 const PATH_WAVELENGTH = 480;
-const PATH_STEEPNESS = 3;
 
-/** Drop below PATH_TOP, in design px, for a figure centred at design-px x. */
-function pathY(x: number) {
-  const phase = (((x / PATH_WAVELENGTH) % 1) + 1) % 1;
-  // Triangle wave: -1 at a top vertex, 1 at a bottom vertex.
-  const zigzag = 1 - 4 * Math.abs(phase - 0.5);
-  const curve = Math.sinh(PATH_STEEPNESS * zigzag) / Math.sinh(PATH_STEEPNESS);
-  return (PATH_DROP / 2) * (1 + curve);
+/** Drop below PATH_TOP, in design px, at design-px x along the row. */
+function pathY(x: number, wavelength: number) {
+  return (PATH_DROP / 2) * (1 - Math.cos((2 * Math.PI * x) / wavelength));
 }
 
 /**
- * Keeps each figure on the path as the CSS marquee carries it sideways. Reads
- * the track's current offset once a frame, so pausing the marquee on hover
- * also freezes everyone in place.
+ * Offsets each figure onto the wave by its position in the row. Each copy of
+ * the team holds a whole number of waves, so both copies line up exactly.
  */
-function useSquigglePath(
-  footerRef: React.RefObject<HTMLElement | null>,
-  trackRef: React.RefObject<HTMLElement | null>,
-) {
+function useWaveLayout(trackRef: React.RefObject<HTMLElement | null>) {
   useEffect(() => {
-    const footer = footerRef.current;
     const track = trackRef.current;
-    if (!footer || !track) return;
+    if (!track) return;
     const figures = [...track.querySelectorAll<HTMLElement>("[data-figure]")];
+    if (!figures.length) return;
 
-    // Figure centres within the untransformed track, and px per design px.
-    let centers: number[] = [];
-    let unit = 1;
-    const measure = () => {
-      unit = Math.max(footer.clientWidth, 576) / 1440;
-      centers = figures.map((f) => f.offsetLeft + f.offsetWidth / 2);
-    };
     const place = () => {
-      const offset = new DOMMatrix(getComputedStyle(track).transform).m41;
-      figures.forEach((f, i) => {
-        const y = pathY((centers[i]! + offset) / unit) * unit;
+      // px per design px, from the figures' rendered height.
+      const unit = figures[0]!.offsetHeight / FIGURE_H;
+      const copyWidth = track.offsetWidth / 2 / unit;
+      const waves = Math.max(1, Math.round(copyWidth / PATH_WAVELENGTH));
+      figures.forEach((f) => {
+        const center = (f.offsetLeft + f.offsetWidth / 2) / unit;
+        const y = pathY(center, copyWidth / waves) * unit;
         f.style.transform = `translateY(${y}px)`;
       });
     };
 
-    measure();
     place();
     // Widths settle as the lazy cut-outs load, and change on resize.
-    const resize = new ResizeObserver(() => {
-      measure();
-      place();
-    });
+    const resize = new ResizeObserver(place);
     resize.observe(track);
-    resize.observe(footer);
+    return () => resize.disconnect();
+  }, [trackRef]);
+}
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return () => resize.disconnect();
+type AlphaMask = { width: number; height: number; alpha: Uint8ClampedArray };
+
+/** Downscaled alpha channel of each cut-out, keyed by image URL. */
+const masks = new Map<string, AlphaMask>();
+const MASK_H = 256;
+/** Pixels at least this opaque count as part of the person. */
+const ALPHA_MIN = 64;
+
+function alphaMask(img: HTMLImageElement) {
+  const cached = masks.get(img.src);
+  if (cached) return cached;
+  if (!img.complete || !img.naturalWidth) return null;
+
+  const height = Math.min(MASK_H, img.naturalHeight);
+  const width = Math.round((img.naturalWidth * height) / img.naturalHeight);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return null;
+  ctx.drawImage(img, 0, 0, width, height);
+  const { data } = ctx.getImageData(0, 0, width, height);
+  const alpha = new Uint8ClampedArray(width * height);
+  for (let i = 0; i < alpha.length; i++) alpha[i] = data[i * 4 + 3]!;
+
+  const mask = { width, height, alpha };
+  masks.set(img.src, mask);
+  return mask;
+}
+
+/** Hover margin around each person, in px, so the edges aren't twitchy. */
+const SAFE_PX = 12;
+/** How long someone stays selected after the pointer leaves their margin. */
+const LEAVE_DELAY_MS = 180;
+
+/**
+ * Whether client point (x, y) is within SAFE_PX of an opaque pixel of the
+ * cut-out.
+ */
+function hitsPerson(img: HTMLImageElement, x: number, y: number) {
+  const mask = alphaMask(img);
+  // Until the image has loaded there's nothing visible to hover.
+  if (!mask) return false;
+  const rect = img.getBoundingClientRect();
+  const scale = mask.height / rect.height;
+  const cx = (x - rect.left) * scale;
+  const cy = (y - rect.top) * scale;
+  const r = SAFE_PX * scale;
+  const x0 = Math.max(0, Math.floor(cx - r));
+  const x1 = Math.min(mask.width - 1, Math.ceil(cx + r));
+  const y0 = Math.max(0, Math.floor(cy - r));
+  const y1 = Math.min(mask.height - 1, Math.ceil(cy + r));
+  for (let py = y0; py <= y1; py++) {
+    for (let px = x0; px <= x1; px++) {
+      if ((px - cx) ** 2 + (py - cy) ** 2 > r * r) continue;
+      if (mask.alpha[py * mask.width + px]! >= ALPHA_MIN) return true;
     }
+  }
+  return false;
+}
 
-    // Only animate while the footer is on screen.
+/**
+ * Marks the figure whose visible pixels are under the pointer with
+ * `data-active`, which outlines them, shows their tag and pauses the row.
+ * Re-checked every frame while the mouse is over the row, since people
+ * move under a still cursor.
+ */
+function usePersonHover(trackRef: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    const figures = [...track.querySelectorAll<HTMLElement>("[data-figure]")];
+    let active: HTMLElement | null = null;
+    let pointer: { x: number; y: number } | null = null;
     let frame = 0;
+    let leaveTimer = 0;
+
+    const activate = (figure: HTMLElement | null) => {
+      if (figure === active) return;
+      active?.removeAttribute("data-active");
+      if (figure) {
+        figure.setAttribute("data-active", "");
+        // data-glow plays the underglow once. It's left on after leaving so
+        // the glow can fade out, and re-added (after a reflow) to replay it.
+        figure.removeAttribute("data-glow");
+        void figure.offsetWidth;
+        figure.setAttribute("data-glow", "");
+      }
+      active = figure;
+    };
+    // Switching to someone is instant; letting go waits LEAVE_DELAY_MS.
+    const setActive = (figure: HTMLElement | null) => {
+      if (figure) {
+        clearTimeout(leaveTimer);
+        leaveTimer = 0;
+        activate(figure);
+      } else if (active && !leaveTimer) {
+        leaveTimer = window.setTimeout(() => {
+          leaveTimer = 0;
+          activate(null);
+        }, LEAVE_DELAY_MS);
+      }
+    };
+    /** The figure under the pointer (margin included), or null. */
+    const hit = () => {
+      if (!pointer) return null;
+      const { x, y } = pointer;
+      const on = (f: HTMLElement) => hitsPerson(f.querySelector("img")!, x, y);
+      // The current person wins ties, so overlapping margins don't flicker.
+      return active && on(active) ? active : (figures.find(on) ?? null);
+    };
+    const test = () => {
+      const figure = hit();
+      setActive(figure);
+      return figure;
+    };
     const loop = () => {
-      place();
+      test();
       frame = requestAnimationFrame(loop);
     };
-    const visibility = new IntersectionObserver(([entry]) => {
-      cancelAnimationFrame(frame);
-      if (entry?.isIntersecting) frame = requestAnimationFrame(loop);
-    });
-    visibility.observe(footer);
 
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      pointer = { x: e.clientX, y: e.clientY };
+      test();
+      if (!frame) frame = requestAnimationFrame(loop);
+    };
+    const onLeave = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      cancelAnimationFrame(frame);
+      frame = 0;
+      pointer = null;
+      setActive(null);
+    };
+    // Touch has no hover: the first tap on someone selects them (showing their
+    // tag), and a second tap on them opens their link.
+    let tapType = "mouse";
+    let tappedAgain = false;
+    const onDown = (e: PointerEvent) => {
+      tapType = e.pointerType;
+      if (e.pointerType === "mouse") return;
+      const before = active;
+      pointer = { x: e.clientX, y: e.clientY };
+      const figure = test();
+      tappedAgain = figure !== null && figure === before;
+    };
+    // Links only open from the person's visible pixels, not the rest of the box.
+    const onClick = (e: MouseEvent) => {
+      const figure = (e.target as Element).closest("[data-figure]");
+      // detail is 0 for keyboard activation, which always follows the link.
+      if (!figure || e.detail === 0) return;
+      const onPerson = tapType === "mouse" ? figure === active : tappedAgain;
+      if (!onPerson) e.preventDefault();
+    };
+
+    track.addEventListener("pointermove", onMove);
+    track.addEventListener("pointerleave", onLeave);
+    track.addEventListener("pointerdown", onDown);
+    track.addEventListener("click", onClick);
     return () => {
       cancelAnimationFrame(frame);
-      visibility.disconnect();
-      resize.disconnect();
+      clearTimeout(leaveTimer);
+      track.removeEventListener("pointermove", onMove);
+      track.removeEventListener("pointerleave", onLeave);
+      track.removeEventListener("pointerdown", onDown);
+      track.removeEventListener("click", onClick);
     };
-  }, [footerRef, trackRef]);
+  }, [trackRef]);
 }
 
 const u = (px: number) => `calc(${px} * var(--u))`;
@@ -163,23 +464,21 @@ const u = (px: number) => `calc(${px} * var(--u))`;
 type CssVars = CSSProperties & Record<`--${string}`, string>;
 
 // Cut-out outline in the member's colour (set as --outline on the figure).
+// Written out in full for both variants so Tailwind can find the classes.
 const OUTLINE =
-  "group-hover:[filter:drop-shadow(2.5px_0_0_var(--outline))_drop-shadow(-2.5px_0_0_var(--outline))_drop-shadow(0_2.5px_0_var(--outline))_drop-shadow(0_-2.5px_0_var(--outline))] group-focus:[filter:drop-shadow(2.5px_0_0_var(--outline))_drop-shadow(-2.5px_0_0_var(--outline))_drop-shadow(0_2.5px_0_var(--outline))_drop-shadow(0_-2.5px_0_var(--outline))]";
+  "group-data-[active]:[filter:drop-shadow(3px_0_0_var(--outline))_drop-shadow(-3px_0_0_var(--outline))_drop-shadow(0_3px_0_var(--outline))_drop-shadow(0_-3px_0_var(--outline))] group-focus:[filter:drop-shadow(3px_0_0_var(--outline))_drop-shadow(-3px_0_0_var(--outline))_drop-shadow(0_3px_0_var(--outline))_drop-shadow(0_-3px_0_var(--outline))]";
 
 // Solid black for the outer half of the fade, then a ramp (Figma 160px / 64px).
 const EDGE_FADE =
   "linear-gradient(to right, transparent calc(var(--fade) / 2), #000 var(--fade), #000 calc(100% - var(--fade)), transparent calc(100% - var(--fade) / 2))";
 
 export function TeamFooter({ team = TEAM }: { team?: TeamMember[] }) {
-  const footerRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  useSquigglePath(footerRef, trackRef);
+  useWaveLayout(trackRef);
+  usePersonHover(trackRef);
 
   return (
-    <footer
-      ref={footerRef}
-      className="relative z-10 overflow-x-clip bg-black [container-type:inline-size]"
-    >
+    <footer className="relative z-10 overflow-x-clip bg-black [container-type:inline-size]">
       <div
         // Desktop: one design px per px, so the band keeps its height and wider
         // screens just show more of the marquee.
@@ -201,7 +500,7 @@ export function TeamFooter({ team = TEAM }: { team?: TeamMember[] }) {
           {/* The list is rendered twice so the loop has no seam. */}
           <div
             ref={trackRef}
-            className="flex w-max animate-team-marquee items-start focus-within:[animation-play-state:paused] hover:[animation-play-state:paused] motion-reduce:animate-none"
+            className="flex w-max animate-team-marquee items-start focus-within:[animation-play-state:paused] has-[[data-active]]:[animation-play-state:paused] motion-reduce:animate-none"
             style={{
               paddingTop: u(TAG_ROOM),
               animationDuration: `${MARQUEE_S}s`,
@@ -244,12 +543,15 @@ function TeamFigure({
   hidden: boolean;
 }) {
   return (
-    <div
+    <a
+      href={member.url}
+      target={member.url && "_blank"}
+      rel="noreferrer"
       tabIndex={hidden ? -1 : 0}
       aria-hidden={hidden || undefined}
       aria-label={hidden ? undefined : `${member.name}, ${member.role}`}
       data-figure
-      className="group relative flex-none outline-none"
+      className={`group relative flex-none cursor-default outline-none ${member.url ? "data-[active]:cursor-pointer" : ""}`}
       style={
         {
           marginTop: u(PATH_TOP),
@@ -259,15 +561,27 @@ function TeamFigure({
         } as CssVars
       }
     >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-[-15%] bottom-[-8%] h-[22%] opacity-0 transition-opacity duration-300 group-data-[active]:opacity-100"
+      >
+        <div
+          className="h-full w-full opacity-0 blur-md group-data-[glow]:animate-team-glow motion-reduce:hidden"
+          style={{
+            background:
+              "radial-gradient(closest-side, var(--outline), transparent)",
+          }}
+        />
+      </div>
       <img
         src={member.image}
         alt=""
         loading="lazy"
         draggable={false}
-        className={`h-full w-auto select-none ${OUTLINE}`}
+        className={`relative h-full w-auto select-none transition-[filter] duration-150 group-data-[active]:transition-none ${OUTLINE}`}
       />
       <NameTag member={member} />
-    </div>
+    </a>
   );
 }
 
@@ -275,7 +589,7 @@ function NameTag({ member }: { member: TeamMember }) {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute bottom-[calc(100%-10px)] left-1/2 z-10 flex w-max min-w-[112px] -translate-x-1/2 flex-col items-center justify-center gap-[3px] overflow-hidden rounded-full border border-[#969696] bg-[#cacaca] px-3 py-2 opacity-0 shadow-[0px_8px_12px_0px_rgba(31,48,73,0.24),inset_0px_-14px_10px_0px_rgba(255,255,255,0.4)] transition-opacity duration-150 group-hover:opacity-100 group-focus:opacity-100 md:min-w-[140px]"
+      className="pointer-events-none absolute bottom-[calc(100%-10px)] left-1/2 z-10 flex w-max min-w-[112px] -translate-x-1/2 flex-col items-center justify-center gap-[3px] overflow-hidden rounded-full border border-[#969696] bg-[#cacaca] px-3 py-2 opacity-0 shadow-[0px_8px_12px_0px_rgba(31,48,73,0.24),inset_0px_-14px_10px_0px_rgba(255,255,255,0.4)] transition-opacity duration-150 group-focus:opacity-100 group-data-[active]:opacity-100 md:min-w-[140px]"
     >
       <span className="absolute inset-x-[7px] -top-px h-[15px] rounded-full bg-gradient-to-b from-white/60 to-white/0" />
       <span className="relative whitespace-nowrap font-figtree text-[12px] font-semibold leading-none text-[#313a45] md:text-[14px]">
