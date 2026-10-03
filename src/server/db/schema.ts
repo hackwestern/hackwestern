@@ -136,7 +136,6 @@ export const sexualOrientation = pgEnum("sexual_orientation", [
 export const countrySelection = pgEnum("country", [
   "Canada",
   "United States",
-  "India",
   "Other",
 ]);
 
