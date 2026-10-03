@@ -178,7 +178,7 @@ export function TeamFooter({ team = TEAM }: { team?: TeamMember[] }) {
   return (
     <footer
       ref={footerRef}
-      className="relative z-10 overflow-x-clip bg-black [container-type:inline-size]"
+      className="group/footer relative z-10 overflow-x-clip bg-black [container-type:inline-size]"
     >
       <div
         // Desktop: one design px per px, so the band keeps its height and wider
@@ -191,7 +191,7 @@ export function TeamFooter({ team = TEAM }: { team?: TeamMember[] }) {
         }
       >
         <div
-          className="absolute inset-x-0 bottom-0"
+          className="pointer-events-none absolute inset-x-0 bottom-0"
           style={{
             top: u(-TAG_ROOM),
             maskImage: EDGE_FADE,
@@ -201,7 +201,7 @@ export function TeamFooter({ team = TEAM }: { team?: TeamMember[] }) {
           {/* The list is rendered twice so the loop has no seam. */}
           <div
             ref={trackRef}
-            className="flex w-max animate-team-marquee items-start focus-within:[animation-play-state:paused] hover:[animation-play-state:paused] motion-reduce:animate-none"
+            className="flex w-max animate-team-marquee items-start focus-within:[animation-play-state:paused] group-hover/footer:[animation-play-state:paused] motion-reduce:animate-none"
             style={{
               paddingTop: u(TAG_ROOM),
               animationDuration: `${MARQUEE_S}s`,
@@ -249,7 +249,7 @@ function TeamFigure({
       aria-hidden={hidden || undefined}
       aria-label={hidden ? undefined : `${member.name}, ${member.role}`}
       data-figure
-      className="group relative flex-none outline-none"
+      className="group pointer-events-auto relative flex-none outline-none"
       style={
         {
           marginTop: u(PATH_TOP),
