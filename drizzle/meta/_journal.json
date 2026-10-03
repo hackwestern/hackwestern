@@ -176,6 +176,13 @@
       "when": 1791053062209,
       "tag": "0024_email_reminder_sent",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791058966822,
+      "tag": "0025_reopen_invalid_year_of_study",
+      "breakpoints": true
     }
   ]
 }

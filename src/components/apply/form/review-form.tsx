@@ -6,7 +6,10 @@ import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { cn } from "~/lib/utils";
-import { applicationSubmitSchema } from "~/schemas/application";
+import {
+  applicationSubmitSchema,
+  isValidYearOfStudy,
+} from "~/schemas/application";
 import { api } from "~/utils/api";
 import { getHorse, realmLabel } from "~/constants/realms";
 import { QUESTION1, QUESTION2, QUESTION3 } from "./application-form";
@@ -176,7 +179,9 @@ function InfoReview({ error }: ReviewSectionProps) {
       <ReviewField
         label="Which year are you in?"
         value={data?.yearOfStudy}
-        error={!data?.yearOfStudy ? ["Year is required"] : []}
+        error={
+          !isValidYearOfStudy(data?.yearOfStudy) ? ["Year is required"] : []
+        }
       />
       <ReviewField
         label="What is your major?"

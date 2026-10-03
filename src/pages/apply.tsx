@@ -20,6 +20,7 @@ import { Window } from "~/components/internals/window";
 import { UserBadge } from "~/components/apply/user-badge";
 import { HorseCompanion } from "~/components/apply/horse-companion";
 import { useApplicationsOpen } from "~/hooks/use-can-edit-application";
+import { isValidYearOfStudy } from "~/schemas/application";
 import { realmTint } from "~/constants/realms";
 import { cn } from "~/lib/utils";
 
@@ -68,7 +69,7 @@ function getNextIncompleteStep(
       case "info": {
         if (
           isEmpty(application.school) ||
-          isEmpty(application.yearOfStudy) ||
+          !isValidYearOfStudy(application.yearOfStudy) ||
           isEmpty(application.major) ||
           isEmpty(application.attendedBefore) ||
           isEmpty(application.numOfHackathons)
