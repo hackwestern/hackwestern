@@ -169,6 +169,13 @@
       "when": 1791051486270,
       "tag": "0023_stats_application_view",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791053062209,
+      "tag": "0024_email_reminder_sent",
+      "breakpoints": true
     }
   ]
 }
