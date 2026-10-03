@@ -1,6 +1,6 @@
 import * as React from "react";
 import { cn } from "~/lib/utils";
-import { HWLogo } from "./hw-logo";
+import { HWLogoLink } from "./hw-logo";
 import { realmTint, type Realm } from "~/constants/realms";
 
 export type SidebarStep = {
@@ -70,7 +70,7 @@ export function ApplicationSidebar({
     >
       <div className="flex flex-col gap-5">
         <div className="px-2">
-          <HWLogo className="h-[36px] w-[24px]" />
+          <HWLogoLink className="h-[36px] w-[24px]" />
         </div>
 
         <div className="flex flex-col gap-3">

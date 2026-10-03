@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 type HWLogoProps = {
   className?: string;
 };
@@ -129,5 +131,18 @@ export function HWLogo({ className }: HWLogoProps) {
         fill="#BBAED5"
       />
     </svg>
+  );
+}
+
+/** The logo as a link home, for the top-left corner of portal pages. */
+export function HWLogoLink({ className }: HWLogoProps) {
+  return (
+    <Link
+      href="/"
+      aria-label="Hack Western home"
+      className="inline-block cursor-pixel-hover rounded-md outline-none transition-transform duration-200 ease-out hover:-translate-y-0.5 hover:-rotate-6 hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:transform-none"
+    >
+      <HWLogo className={className} />
+    </Link>
   );
 }
