@@ -260,7 +260,7 @@ export const applicationSubmitSchema = z
       z.enum(dietaryRestrictions.enumValues),
     ),
 
-    dietaryRestrictionsOther: z.string().max(255).optional(),
+    dietaryRestrictionsOther: z.string().max(255).nullish(),
     emergencyContactName: z.string().min(1),
     emergencyContactRelationship: z.enum(
       emergencyContactRelationship.enumValues,
