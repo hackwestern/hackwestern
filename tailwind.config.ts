@@ -102,7 +102,8 @@ const config = {
         "button-primary-hover": tokens.colors.buttonPrimary.bgHover,
         "button-primary-hover-border": tokens.colors.buttonPrimary.borderHover,
         "button-primary-active": tokens.colors.buttonPrimary.bgActive,
-        "button-primary-active-border": tokens.colors.buttonPrimary.borderActive,
+        "button-primary-active-border":
+          tokens.colors.buttonPrimary.borderActive,
         violet: {
           "100": "hsl(var(--violet-100))",
           "200": "hsl(var(--violet-200))",
@@ -216,7 +217,7 @@ const config = {
       cursor: {
         "pixel-default": "url('/cursors/cursor-default.webp'),auto",
         "pixel-hover": "url('/cursors/hover-hand.webp'),pointer",
-        telescope:"url('/cursors/telescope.webp'),pointer",
+        telescope: "url('/cursors/telescope.webp'),pointer",
       },
       keyframes: {
         "bounce-jump": {
@@ -230,10 +231,16 @@ const config = {
           from: { transform: "translateX(0)" },
           to: { transform: "translateX(-50%)" },
         },
+        "team-glow": {
+          "0%": { opacity: "0" },
+          "15%": { opacity: "0.35" },
+          "100%": { opacity: "0" },
+        },
       },
       animation: {
         "bounce-jump": "bounce-jump 0.6s ease-in-out",
         "team-marquee": "team-marquee 80s linear infinite",
+        "team-glow": "team-glow 2.5s ease-out forwards",
       },
     },
   },
