@@ -183,6 +183,13 @@
       "when": 1791058966822,
       "tag": "0025_reopen_invalid_year_of_study",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791064513883,
+      "tag": "0026_stats_application_view_more",
+      "breakpoints": true
     }
   ]
 }
