@@ -5,6 +5,7 @@ import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
+import { AuthLayout } from "~/components/auth/auth-layout";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -36,9 +37,12 @@ export default function ResetRequest() {
 
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
-  const { isSuccess: isValidToken } = api.auth.checkValidToken.useQuery({
-    token,
-  });
+  const { isSuccess: isValidToken, isLoading: isCheckingToken } =
+    api.auth.checkValidToken.useQuery(
+      { token },
+      // A bad or used token is a final answer, so show it right away.
+      { retry: false },
+    );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
@@ -73,69 +77,94 @@ export default function ResetRequest() {
     <>
       <SEO title="Reset Password" noindex />
 
-      <div className="bg-hw-radial-gradient flex h-screen flex-col items-center justify-center">
-        <div className="z-10 mx-4 flex-col items-center rounded-xl bg-violet-50 bg-white p-8 shadow-md sm:w-xl sm:rounded-[48px] sm:p-12 md:w-2xl">
-          {isValidToken ? (
-            <>
-              <h2 className="mb-2 text-3xl font-bold">Reset Password</h2>
-              <h2>Enter your new password</h2>
-              <form onSubmit={(e) => handleSubmit(e)}>
-                <h2 className="mb-1 mt-6 text-sm">Password</h2>
-                <Input
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="enter your new password"
-                  className="font-jetbrains-mono mb-4 h-[60px] bg-highlight text-medium"
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <h2 className=" mb-1 mt-4 text-sm">Confirm Password</h2>
-                <Input
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="confirm your new password"
-                  className="font-jetbrains-mono mb-4 h-[60px] bg-highlight text-medium"
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-                <Button variant="primary" className="w-full" type="submit" full>
-                  Reset Password
-                </Button>
-              </form>
-            </>
-          ) : (
-            <>
-              <h2 className="text-center text-lg font-bold">
-                Password reset link is invalid or expired
-              </h2>
-              <div className="mt-4 text-center">
-                Try requesting a new password reset link{" "}
-                <Link
-                  href="/forgot-password"
-                  className="text-purple-500 underline hover:text-violet-700"
-                >
-                  here
-                </Link>
-              </div>
-              <div className="mt-4 text-center">
-                Or return to the{" "}
-                <Link
-                  href="/login"
-                  className="text-purple-500 underline hover:text-violet-700"
-                >
-                  login
-                </Link>{" "}
-                or{" "}
-                <Link
-                  href="/register"
-                  className="text-purple-500 underline hover:text-violet-700"
-                >
-                  registration
-                </Link>{" "}
-                page
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+      {isCheckingToken ? (
+        <AuthLayout>
+          <p className="font-figtree text-md-p text-gray-6">
+            Checking your link...
+          </p>
+        </AuthLayout>
+      ) : isValidToken ? (
+        <AuthLayout title="Choose a new password">
+          <p className="font-figtree text-md-p text-gray-6">
+            Use at least 8 characters.
+          </p>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="password"
+                className="font-figtree text-md-p font-medium text-gray-4"
+              >
+                New password
+              </label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                className="h-12 bg-white font-figtree text-md-p"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="confirmPassword"
+                className="font-figtree text-md-p font-medium text-gray-4"
+              >
+                Confirm new password
+              </label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                className="h-12 bg-white font-figtree text-md-p"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <Button
+              variant="primary-2"
+              type="submit"
+              size="lg"
+              full
+              isPending={reset.isPending}
+            >
+              {reset.isPending ? "Saving..." : "Reset Password"}
+            </Button>
+          </form>
+        </AuthLayout>
+      ) : (
+        <AuthLayout title="This link has expired">
+          <p className="font-figtree text-md-p text-gray-6">
+            Password reset links only work once and expire after a while. Ask
+            for a new one and we&apos;ll email it to you.
+          </p>
+
+          <Button asChild variant="primary-2" size="lg" full>
+            <Link href="/forgot-password">Send a new link</Link>
+          </Button>
+
+          <div className="flex items-center gap-1.5 font-figtree text-md-p text-gray-6">
+            <span>Remembered it?</span>
+            <Button asChild variant="tertiary" className="h-max p-0">
+              <Link
+                className="font-figtree text-light hover:text-medium"
+                href="/login"
+              >
+                Back to sign in
+              </Link>
+            </Button>
+          </div>
+        </AuthLayout>
+      )}
     </>
   );
 }
