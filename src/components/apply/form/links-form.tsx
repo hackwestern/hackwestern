@@ -1,6 +1,5 @@
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ClipboardEvent } from "react";
 import { useForm } from "react-hook-form";
 import {
   Form,
@@ -12,17 +11,24 @@ import {
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { linksSaveSchema } from "~/schemas/application";
 import {
+  DEVPOST_URL,
+  GITHUB_URL,
+  LINKEDIN_URL,
+  ensureUrlHasProtocol,
   getDevpostUsername,
   getGithubUsername,
   getLinkedinUsername,
-  ensureUrlHasProtocol,
 } from "~/utils/urls";
+
+function withPrefix(prefix: string, username?: string | null) {
+  return username ? `${prefix}${username}` : username;
+}
 
 export function LinksForm() {
   const utils = api.useUtils();
@@ -66,7 +72,20 @@ export function LinksForm() {
     resolver: zodResolver(linksSaveSchema),
   });
 
-  useAutoSave(form, onSubmit, defaultValues);
+  // The server stores and returns just the username for these three; the
+  // form shows and accepts the whole link.
+  const formDefaults = useMemo(
+    () =>
+      defaultValues && {
+        ...defaultValues,
+        devpostLink: withPrefix(DEVPOST_URL, defaultValues.devpostLink),
+        githubLink: withPrefix(GITHUB_URL, defaultValues.githubLink),
+        linkedInLink: withPrefix(LINKEDIN_URL, defaultValues.linkedInLink),
+      },
+    [defaultValues],
+  );
+
+  useAutoSave(form, onSubmit, formDefaults);
 
   function onSubmit(data: z.infer<typeof linksSaveSchema>) {
     // Normalize usernames so pasted full URLs don't get double-prefixed
@@ -84,33 +103,6 @@ export function LinksForm() {
     mutate({
       ...normalizedData,
     });
-  }
-
-  function onDevpostPaste(e: ClipboardEvent<HTMLInputElement>) {
-    e.preventDefault();
-    const pastedText = e.clipboardData.getData("text");
-    const devpostUsername = getDevpostUsername(pastedText);
-
-    form.setValue("devpostLink", devpostUsername);
-    return form.handleSubmit(onSubmit)();
-  }
-
-  function onGithubPaste(e: ClipboardEvent<HTMLInputElement>) {
-    e.preventDefault();
-    const pastedText = e.clipboardData.getData("text");
-    const githubUsername = getGithubUsername(pastedText);
-
-    form.setValue("githubLink", githubUsername);
-    return form.handleSubmit(onSubmit)();
-  }
-
-  function onLinkedinPaste(e: ClipboardEvent<HTMLInputElement>) {
-    e.preventDefault();
-    const pastedText = e.clipboardData.getData("text");
-    const linkedinUsername = getLinkedinUsername(pastedText);
-
-    form.setValue("linkedInLink", linkedinUsername);
-    return form.handleSubmit(onSubmit)();
   }
 
   function fileNameFromUrl(url: string) {
@@ -181,17 +173,13 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>Devpost</FormLabel>
               <FormControl>
-                <div className="flex items-center gap-4 text-sm text-gray-5">
-                  <span>devpost.com/</span>
-                  <Input
-                    onPaste={onDevpostPaste}
-                    {...field}
-                    value={field.value ?? ""}
-                    placeholder="hacker"
-                    variant="primary"
-                    disabled={!canEdit}
-                  />
-                </div>
+                <Input
+                  {...field}
+                  value={field.value ?? ""}
+                  placeholder="https://devpost.com/hacker"
+                  variant="primary"
+                  disabled={!canEdit}
+                />
               </FormControl>
             </FormItem>
           )}
@@ -203,17 +191,13 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>Github</FormLabel>
               <FormControl>
-                <div className="flex items-center gap-4 text-sm text-gray-5">
-                  <span>github.com/</span>
-                  <Input
-                    onPaste={onGithubPaste}
-                    {...field}
-                    value={field.value ?? ""}
-                    placeholder="hacker"
-                    variant="primary"
-                    disabled={!canEdit}
-                  />
-                </div>
+                <Input
+                  {...field}
+                  value={field.value ?? ""}
+                  placeholder="https://github.com/hacker"
+                  variant="primary"
+                  disabled={!canEdit}
+                />
               </FormControl>
             </FormItem>
           )}
@@ -225,17 +209,13 @@ export function LinksForm() {
             <FormItem>
               <FormLabel>LinkedIn</FormLabel>
               <FormControl>
-                <div className="flex items-center gap-2 text-sm text-gray-5">
-                  <span className="w-32">linkedin.com/in/</span>
-                  <Input
-                    onPaste={onLinkedinPaste}
-                    {...field}
-                    value={field.value ?? ""}
-                    placeholder="hacker"
-                    variant="primary"
-                    disabled={!canEdit}
-                  />
-                </div>
+                <Input
+                  {...field}
+                  value={field.value ?? ""}
+                  placeholder="https://linkedin.com/in/hacker"
+                  variant="primary"
+                  disabled={!canEdit}
+                />
               </FormControl>
             </FormItem>
           )}
