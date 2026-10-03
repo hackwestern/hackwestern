@@ -221,21 +221,26 @@ export function PromoHeader(props: PromoNavbarProps) {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-3 z-50 px-[10%] transition-transform duration-300 ease-out focus-within:translate-y-0 motion-reduce:transition-none",
+        "pointer-events-none fixed inset-x-0 top-3 z-50 px-[10%] transition-transform duration-300 ease-out focus-within:translate-y-0 motion-reduce:transition-none",
         hidden && "-translate-y-[calc(100%_+_12px)]",
       )}
     >
       {/* past 1440 wide, zoom grows the bar's text and icons with --ui-scale
           while it still spans the same width */}
       <div className="flex items-start lg:gap-6 min-[1440px]:[zoom:var(--ui-scale,1)]">
-        <PromoNavbar {...props} className={cn("flex-1", props.className)} />
+        {/* The header strip is as tall as the MLH badge and full width, so
+            only the bar and the badge take clicks; the page shows through. */}
+        <PromoNavbar
+          {...props}
+          className={cn("pointer-events-auto flex-1", props.className)}
+        />
 
         {/* Cancels the header's top-3 so the badge hangs from the top edge.
             Divided by --ui-scale because the row's zoom scales it back up. */}
         <a
           href="https://www.mlh.com/"
           target="_blank"
-          className="lg:mt-[calc(-12px/var(--ui-scale,1))]"
+          className="pointer-events-auto lg:mt-[calc(-12px/var(--ui-scale,1))]"
         >
           <Image
             height={43}
