@@ -334,6 +334,12 @@ export const users = pgTable(
 
     scavengerHuntEarned: integer("scavenger_hunt_earned").default(0),
     scavengerHuntBalance: integer("scavenger_hunt_balance").default(0),
+
+    // When the account was made, for stats. Accounts from before this column
+    // existed are all stamped 2026-10-03 10:00 ET (see the migration).
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
   },
   (user) => [
     index("user_scavenger_hunt_earned_idx").on(user.scavengerHuntEarned),
