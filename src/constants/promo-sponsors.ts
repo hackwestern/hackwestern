@@ -1,4 +1,4 @@
-// Clickable regions over /landing/home/sponsors.png (1067x795), as
+// Clickable regions over /landing/home/sponsors-hw13.png (1067x795), as
 // percentages of the image so they track it at any rendered size.
 export type PromoSponsorLink = {
   name: string;
@@ -12,7 +12,7 @@ export type PromoSponsorLink = {
 };
 
 export const PROMO_SPONSORS_IMAGE = {
-  src: "/landing/home/sponsors.png",
+  src: "/landing/home/sponsors-hw13.png",
   width: 1067,
   height: 795,
 };
@@ -59,17 +59,9 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
     height: 15,
   },
   {
-    name: "Western Morrissette Institute for Entrepreneurship",
-    href: "https://entrepreneurship.uwo.ca/",
-    left: 0,
-    top: 85,
-    width: 55,
-    height: 15,
-  },
-  {
     name: "Autodesk",
     href: "https://www.autodesk.com/",
-    left: 57.83,
+    left: 1,
     top: 86.54,
     width: 16.59,
     height: 12.58,
