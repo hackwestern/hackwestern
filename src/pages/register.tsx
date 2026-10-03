@@ -7,7 +7,6 @@ import { Input } from "~/components/ui/input";
 import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
 import { disabledRedirect } from "~/utils/redirect";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
 import { useRouter } from "next/router";
@@ -30,16 +29,15 @@ export default function Register() {
       });
       setPending(false);
     },
-    onSuccess: () =>
-      signIn("credentials", { username: email, password }).then(() => {
-        toast({
-          title: "Success",
-          description: "Account created successfully",
-          variant: "default",
-        });
-        setPending(false);
-        void router.push("/dashboard");
-      }),
+    onSuccess: () => {
+      toast({
+        title: "Account created",
+        description: "Check your email to verify your account, then log in.",
+        variant: "default",
+      });
+      setPending(false);
+      void router.push("/login");
+    },
   });
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
