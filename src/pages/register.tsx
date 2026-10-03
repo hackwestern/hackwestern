@@ -30,8 +30,14 @@ export default function Register() {
       });
       setPending(false);
     },
+    // redirect: false so NextAuth doesn't reload /register. The dashboard
+    // sends unverified users on to /not-verified.
     onSuccess: () =>
-      signIn("credentials", { username: email, password }).then(() => {
+      signIn("credentials", {
+        username: email,
+        password,
+        redirect: false,
+      }).then(() => {
         toast({
           title: "Success",
           description: "Account created successfully",

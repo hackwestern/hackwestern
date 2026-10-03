@@ -41,6 +41,11 @@ const DEFAULT_SOCIALS: PromoSocial[] = [
     href: "https://www.linkedin.com/company/hack-western/",
     iconSrc: "/landing/promo/icons/linkedin.svg",
   },
+  {
+    name: "X",
+    href: "https://x.com/hackwestern",
+    iconSrc: "/landing/promo/icons/x.svg",
+  },
 ];
 
 const navText =
@@ -137,13 +142,15 @@ export function PromoNavbar({
         <SheetContent
           onCloseAutoFocus={(e) => e.preventDefault()}
           side="right"
+          closeClassName="right-5 top-5 p-2 opacity-90 focus:ring-0 focus:ring-offset-0 focus-visible:ring-2 focus-visible:ring-offwhite focus-visible:ring-offset-0 data-[state=open]:bg-transparent"
+          closeIconClassName="size-6 stroke-[2.5]"
           className="w-[min(85vw,320px)] border-white/[0.08] bg-promo-sheet font-figtree text-offwhite data-[state=closed]:duration-150 data-[state=open]:duration-300"
         >
           <SheetTitle className="sr-only">Site navigation</SheetTitle>
           <SheetDescription className="sr-only">
             Links to sections of the Hack Western website and social media.
           </SheetDescription>
-          <div className="mt-8 flex h-[calc(100%-2rem)] flex-col justify-between">
+          <div className="mt-14 flex h-[calc(100%-3.5rem)] flex-col justify-between">
             <div className="flex flex-col">
               {links.map((link) => (
                 <SheetClose key={link.href} asChild>
@@ -214,16 +221,27 @@ export function PromoHeader(props: PromoNavbarProps) {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-3 z-50 px-[10%] transition-transform duration-300 ease-out focus-within:translate-y-0 motion-reduce:transition-none",
+        "pointer-events-none fixed inset-x-0 top-3 z-50 px-[10%] transition-transform duration-300 ease-out focus-within:translate-y-0 motion-reduce:transition-none",
         hidden && "-translate-y-[calc(100%_+_12px)]",
       )}
     >
       {/* past 1440 wide, zoom grows the bar's text and icons with --ui-scale
           while it still spans the same width */}
       <div className="flex items-start lg:gap-6 min-[1440px]:[zoom:var(--ui-scale,1)]">
-        <PromoNavbar {...props} className={cn("flex-1", props.className)} />
+        {/* The header strip is as tall as the MLH badge and full width, so
+            only the bar and the badge take clicks; the page shows through. */}
+        <PromoNavbar
+          {...props}
+          className={cn("pointer-events-auto flex-1", props.className)}
+        />
 
-        <a href="https://www.mlh.com/" target="_blank">
+        {/* Cancels the header's top-3 so the badge hangs from the top edge.
+            Divided by --ui-scale because the row's zoom scales it back up. */}
+        <a
+          href="https://www.mlh.com/"
+          target="_blank"
+          className="pointer-events-auto lg:mt-[calc(-12px/var(--ui-scale,1))]"
+        >
           <Image
             height={43}
             width={75}
