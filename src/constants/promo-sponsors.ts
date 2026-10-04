@@ -21,10 +21,12 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Scotiabank",
     href: "https://www.scotiabank.com/ca/en/personal.html",
-    left: 0,
-    top: 0,
-    width: 98,
-    height: 20,
+    // The logo touches the top of the image (y 0.25%–18.36%), so the box
+    // starts above it to leave the same 13px gap on every side.
+    left: 0.56,
+    top: -1.39,
+    width: 97.85,
+    height: 21.39,
   },
   {
     name: "Canada Life",
