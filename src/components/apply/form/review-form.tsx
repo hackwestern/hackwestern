@@ -163,6 +163,7 @@ function InfoReview({ error }: ReviewSectionProps) {
   const { data } = api.application.get.useQuery({
     fields: [
       "school",
+      "schoolOther",
       "yearOfStudy",
       "major",
       "attendedBefore",
@@ -173,8 +174,16 @@ function InfoReview({ error }: ReviewSectionProps) {
     <>
       <ReviewField
         label="Which school do you attend?"
-        value={data?.school}
-        error={!data?.school ? ["School is required"] : []}
+        value={
+          data?.school === "Other"
+            ? (data?.schoolOther ?? "Other")
+            : data?.school
+        }
+        error={
+          !data?.school
+            ? ["School is required"]
+            : (error?.schoolOther?._errors ?? [])
+        }
       />
       <ReviewField
         label="Which year are you in?"
@@ -437,6 +446,7 @@ export function ReviewForm() {
       "countryOfResidence",
       "age",
       "school",
+      "schoolOther",
       "major",
       "attendedBefore",
       "numOfHackathons",

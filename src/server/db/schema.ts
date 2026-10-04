@@ -488,6 +488,8 @@ export const applications = pgTable(
     countryOfResidence: countrySelection("country_of_residence"),
 
     school: varchar("name", { length: 255 }),
+    // What they typed when their school isn't in the list ("Other").
+    schoolOther: varchar("school_other", { length: 255 }),
     yearOfStudy: yearOfStudy("year_of_study"),
     major: major("major"),
 

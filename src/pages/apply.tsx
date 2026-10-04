@@ -69,6 +69,8 @@ function getNextIncompleteStep(
       case "info": {
         if (
           isEmpty(application.school) ||
+          (application.school === "Other" &&
+            isEmpty(application.schoolOther)) ||
           !isValidYearOfStudy(application.yearOfStudy) ||
           isEmpty(application.major) ||
           isEmpty(application.attendedBefore) ||

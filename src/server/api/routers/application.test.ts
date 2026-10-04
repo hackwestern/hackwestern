@@ -329,6 +329,33 @@ describe.sequential("application.save", async () => {
     const result = await caller.application.get();
     expect(result?.status).toBe("PENDING_REVIEW");
   });
+
+  test("won't submit Other without the school's name", async () => {
+    await caller.application.save({
+      ...createCompleteSaveInput(session),
+      school: "Other",
+      schoolOther: null,
+    });
+
+    await expect(caller.application.submit()).rejects.toThrowError(
+      "Your application isn't complete yet",
+    );
+    const result = await caller.application.get();
+    expect(result?.status).toBe("IN_PROGRESS");
+  });
+
+  test("submits Other with the school's name", async () => {
+    await caller.application.save({
+      ...createCompleteSaveInput(session),
+      school: "Other",
+      schoolOther: "University of Illinois Urbana-Champaign",
+    });
+
+    await caller.application.submit();
+    const result = await caller.application.get();
+    expect(result?.status).toBe("PENDING_REVIEW");
+    expect(result?.schoolOther).toBe("University of Illinois Urbana-Champaign");
+  });
 });
 
 describe.sequential("application deadline", async () => {

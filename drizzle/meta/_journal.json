@@ -190,6 +190,20 @@
       "when": 1791064513883,
       "tag": "0026_stats_application_view_more",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791087446633,
+      "tag": "0027_school_other",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791087463400,
+      "tag": "0028_reopen_us_other_school",
+      "breakpoints": true
     }
   ]
 }
