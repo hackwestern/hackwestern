@@ -172,7 +172,7 @@ export function LinksForm() {
           name="devpostLink"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Devpost</FormLabel>
+              <FormLabel>Devpost *</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -190,7 +190,7 @@ export function LinksForm() {
           name="githubLink"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Github</FormLabel>
+              <FormLabel>Github *</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -208,7 +208,7 @@ export function LinksForm() {
           name="linkedInLink"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>LinkedIn</FormLabel>
+              <FormLabel>LinkedIn *</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -226,7 +226,7 @@ export function LinksForm() {
           name="otherLink"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Personal Portfolio</FormLabel>
+              <FormLabel>Personal Portfolio (optional)</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -244,7 +244,7 @@ export function LinksForm() {
           name="resumeLink"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Resume</FormLabel>
+              <FormLabel>Resume *</FormLabel>
               <FormControl>
                 <div className="flex flex-col gap-2">
                   {field.value ? (

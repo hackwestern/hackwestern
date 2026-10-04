@@ -330,6 +330,31 @@ describe.sequential("application.save", async () => {
     expect(result?.status).toBe("PENDING_REVIEW");
   });
 
+  test("Devpost, GitHub and LinkedIn are required, portfolio isn't", async () => {
+    const complete = createCompleteSaveInput(session);
+
+    // The form's check (review step) flags each missing link on its own...
+    for (const link of ["devpostLink", "githubLink", "linkedInLink"] as const) {
+      const result = applicationSubmitSchema.safeParse({
+        ...complete,
+        [link]: "",
+      });
+      expect(result.success).toBe(false);
+      expect(result.error?.format()[link]?._errors.length).toBeGreaterThan(0);
+    }
+    expect(
+      applicationSubmitSchema.safeParse({ ...complete, otherLink: "" }).success,
+    ).toBe(true);
+
+    // ...and the server refuses the same application.
+    await caller.application.save({ ...complete, githubLink: "" });
+    await expect(caller.application.submit()).rejects.toThrowError(
+      "GitHub link",
+    );
+    const result = await caller.application.get();
+    expect(result?.status).toBe("IN_PROGRESS");
+  });
+
   test("won't submit Other without the school's name", async () => {
     await caller.application.save({
       ...createCompleteSaveInput(session),

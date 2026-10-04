@@ -244,10 +244,21 @@ function ApplicationReview({ error }: ReviewSectionProps) {
 
 function LinksReview({ error }: ReviewSectionProps) {
   const { data } = api.application.get.useQuery({
-    fields: ["githubLink", "linkedInLink", "otherLink", "resumeLink"],
+    fields: [
+      "devpostLink",
+      "githubLink",
+      "linkedInLink",
+      "otherLink",
+      "resumeLink",
+    ],
   });
   return (
     <>
+      <ReviewField
+        label="Devpost"
+        value={data?.devpostLink}
+        error={error?.devpostLink?._errors}
+      />
       <ReviewField
         label="Github"
         value={data?.githubLink}
@@ -455,6 +466,7 @@ export function ReviewForm() {
       "question2",
       "question3",
       "resumeLink",
+      "devpostLink",
       "githubLink",
       "linkedInLink",
       "otherLink",
