@@ -66,15 +66,19 @@ export default function JudgingControlRoom() {
               aria-live="polite"
               className="m-0 rounded-xl bg-[#fdecea] px-4 py-3 text-[15px] font-medium text-[#7a1a0f]"
             >
-              Couldn&apos;t refresh ({errorText(failed)}). Trying again every
-              5 seconds.
+              Couldn&apos;t refresh ({errorText(failed)}). Trying again every 5
+              seconds.
             </p>
           )}
 
           <ControlQueue queue={queueQ.data} />
-          <ControlProgress queue={queueQ.data} judges={judgesQ.data} now={now} />
+          <ControlProgress
+            queue={queueQ.data}
+            judges={judgesQ.data}
+            now={now}
+          />
 
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:items-start">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:items-start">
             <ControlJudges
               judges={judgesQ.data}
               queue={queueQ.data}
@@ -84,7 +88,7 @@ export default function JudgingControlRoom() {
             <ControlRanking ranking={rankingQ.data} queue={queueQ.data} />
           </div>
 
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:items-start">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:items-start">
             <ControlQueueTable queue={queueQ.data} now={now} />
             <div className="flex min-w-0 flex-col gap-5">
               <ControlSponsorTracks />
