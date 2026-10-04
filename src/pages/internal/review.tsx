@@ -4,7 +4,7 @@ import { Button } from "~/components/ui/button";
 import { Slider } from "~/components/ui/slider";
 import { api } from "~/utils/api";
 import Link from "next/link";
-import { disabledRedirect } from "~/utils/redirect";
+import { authRedirectOrganizer } from "~/utils/redirect";
 import type { z } from "zod";
 import { reviewSaveSchema } from "~/schemas/review";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,7 +29,7 @@ import { useToast } from "~/hooks/use-toast";
 import { useSession } from "next-auth/react";
 import { AvatarDisplay } from "~/components/apply/avatar-display";
 import { colors } from "~/constants/avatar";
-import type { CanvasPaths } from "~/types/canvas";
+import { getHorse, realmLabel } from "~/constants/realms";
 import {
   QUESTION1,
   QUESTION2,
@@ -419,66 +419,41 @@ const Review = () => {
                       </div>
                     )}
 
-                    {/* Canvas Section */}
+                    {/* Horse companion (replaces the HW12 canvas drawing) */}
                     {applicationData &&
                       (() => {
-                        type CanvasData = {
-                          paths: CanvasPaths;
-                          timestamp: number;
-                          version: string;
-                        };
-
-                        const canvasData = applicationData.canvasData as
-                          | CanvasData
-                          | null
-                          | undefined;
-                        const pathStrings =
-                          canvasData?.paths?.map((path) =>
-                            path.reduce((acc, point, index) => {
-                              if (index === 0)
-                                return `M ${point[0]} ${point[1]}`;
-                              return `${acc} L ${point[0]} ${point[1]}`;
-                            }, ""),
-                          ) ?? [];
-
-                        // Get the stroke color based on avatar color (same logic as SimpleCanvas)
-                        const selectedColour = colors.find(
-                          (color) =>
-                            color.name === applicationData.avatarColour,
-                        )?.value;
-                        const strokeColour = selectedColour
-                          ? selectedColour + "dd"
-                          : "#a16bc7";
-
+                        const horse = getHorse(applicationData.horseId);
+                        const name = [
+                          applicationData.horseFirstName,
+                          applicationData.horseLastName,
+                        ]
+                          .filter(Boolean)
+                          .join(" ");
                         return (
-                          <div className="-ml-4 mt-4 space-y-2 md:ml-0">
-                            {pathStrings.length > 0 ? (
-                              <div className="flex justify-center">
-                                <div className="-mt-8 h-80 w-80 scale-[0.78] overflow-hidden rounded-lg border-2 border-primary-300 bg-white">
-                                  <svg className="h-full w-full">
-                                    {pathStrings.map(
-                                      (pathString, pathIndex) => (
-                                        <path
-                                          key={pathIndex}
-                                          d={pathString}
-                                          stroke={strokeColour}
-                                          strokeWidth="4"
-                                          fill="none"
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                        />
-                                      ),
-                                    )}
-                                  </svg>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex justify-center">
+                          <div className="ml-8 mt-4 md:ml-4">
+                            <div className="flex h-64 w-64 flex-col items-center justify-center gap-2 rounded-2xl border border-primary-300 bg-white p-4">
+                              {horse ? (
+                                <>
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={horse.asset}
+                                    alt={`${realmLabel[horse.realm]} horse`}
+                                    className="max-h-40 w-auto max-w-full object-contain"
+                                    draggable={false}
+                                  />
+                                  <p className="text-center text-base">
+                                    {name || "(no name yet)"}
+                                  </p>
+                                  <p className="text-sm text-primary-600">
+                                    {realmLabel[horse.realm]} realm
+                                  </p>
+                                </>
+                              ) : (
                                 <p className="text-sm text-primary-600">
-                                  (no drawing)
+                                  (no horse picked)
                                 </p>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         );
                       })()}
@@ -559,4 +534,5 @@ const postfix = (num: number) => {
 };
 
 export default Review;
-export const getServerSideProps = disabledRedirect;
+// Open on every environment, organizers only (the review APIs check too).
+export const getServerSideProps = authRedirectOrganizer;
