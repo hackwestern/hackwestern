@@ -30,17 +30,7 @@ import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 export function LogisticsForm() {
   const utils = api.useUtils();
-  const { data } = api.application.get.useQuery({
-    fields: [
-      "status",
-      "shirtSize",
-      "dietaryRestrictions",
-      "dietaryRestrictionsOther",
-      "emergencyContactName",
-      "emergencyContactRelationship",
-      "emergencyContactPhoneNumber",
-    ],
-  });
+  const { data } = api.application.get.useQuery();
 
   const status = data?.status ?? "NOT_STARTED";
   const canEdit = useCanEditApplication(status);

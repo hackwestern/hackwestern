@@ -47,15 +47,7 @@ function isUnderrepGroup(answer: UnderrepGroupAnswer) {
 
 export function OptionalForm() {
   const utils = api.useUtils();
-  const { data } = api.application.get.useQuery({
-    fields: [
-      "status",
-      "underrepGroup",
-      "gender",
-      "ethnicity",
-      "sexualOrientation",
-    ],
-  });
+  const { data } = api.application.get.useQuery();
 
   const status = data?.status ?? "NOT_STARTED";
   const canEdit = useCanEditApplication(status);
