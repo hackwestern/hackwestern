@@ -204,6 +204,13 @@
       "when": 1791087463400,
       "tag": "0028_reopen_us_other_school",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791092776577,
+      "tag": "0029_stats_application_school_other",
+      "breakpoints": true
     }
   ]
 }
