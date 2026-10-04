@@ -21,21 +21,23 @@ export function UserBadge({
         className,
       )}
     >
-      <p className="font-figtree text-md-p font-medium text-light">
+      {/* Frosted backing: the realm backgrounds are mid-tone photos, so bare
+          text can't stay readable on all of them. */}
+      <p className="rounded-full bg-white/80 px-4 py-1.5 font-figtree text-md-p font-medium text-medium shadow-sm backdrop-blur-sm">
         Hi, {firstName}!{" "}
-        <span aria-hidden className="mx-1 text-light/70">
+        <span aria-hidden className="mx-1 text-medium/50">
           |
         </span>{" "}
         {onSignOut ? (
           <button
             type="button"
             onClick={onSignOut}
-            className="font-medium text-light underline-offset-2 hover:underline"
+            className="font-medium text-medium underline-offset-2 hover:underline"
           >
             Sign Out
           </button>
         ) : (
-          <span className="font-medium text-light">Sign Out</span>
+          <span className="font-medium text-medium">Sign Out</span>
         )}
       </p>
       <span
