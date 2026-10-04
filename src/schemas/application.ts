@@ -235,14 +235,10 @@ export const applicationSubmitSchema = z
       .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
       .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
     resumeLink: z.preprocess((v) => (!v ? undefined : v), z.string().url()),
-    githubLink: z.preprocess(
-      (v) => (!v ? undefined : v),
-      z.string().optional(),
-    ),
-    linkedInLink: z.preprocess(
-      (v) => (!v ? undefined : v),
-      z.string().optional(),
-    ),
+    // Required for the cheat check; only the portfolio (otherLink) is optional.
+    devpostLink: z.string().min(1, "Add your Devpost profile"),
+    githubLink: z.string().min(1, "Add your GitHub profile"),
+    linkedInLink: z.string().min(1, "Add your LinkedIn profile"),
     otherLink: z.preprocess(
       (v) => (!v ? undefined : v),
       z.string().url().optional(),

@@ -91,7 +91,13 @@ function computeStepStatuses(
       "numOfHackathons",
     ],
     application: ["question1", "question2", "question3"],
-    links: ["githubLink", "linkedInLink", "resumeLink", "otherLink"],
+    links: [
+      "devpostLink",
+      "githubLink",
+      "linkedInLink",
+      "resumeLink",
+      "otherLink",
+    ],
     agreements: [
       "agreeCodeOfConduct",
       "agreeShareWithMLH",
@@ -129,7 +135,7 @@ function computeStepStatuses(
       "numOfHackathons",
     ],
     application: ["question1", "question2", "question3"],
-    links: ["resumeLink"],
+    links: ["devpostLink", "githubLink", "linkedInLink", "resumeLink"],
     agreements: [
       "agreeCodeOfConduct",
       "agreeShareWithMLH",

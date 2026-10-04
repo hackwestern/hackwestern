@@ -89,7 +89,13 @@ function getNextIncompleteStep(
         break;
       }
       case "links": {
-        if (isEmpty(application.resumeLink)) return step.step;
+        if (
+          isEmpty(application.devpostLink) ||
+          isEmpty(application.githubLink) ||
+          isEmpty(application.linkedInLink) ||
+          isEmpty(application.resumeLink)
+        )
+          return step.step;
         break;
       }
       case "agreements": {
