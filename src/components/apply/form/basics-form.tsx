@@ -25,16 +25,7 @@ import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 export function BasicsForm() {
   const utils = api.useUtils();
-  const { data: defaultValues } = api.application.get.useQuery({
-    fields: [
-      "status",
-      "firstName",
-      "lastName",
-      "phoneNumber",
-      "age",
-      "countryOfResidence",
-    ],
-  });
+  const { data: defaultValues } = api.application.get.useQuery();
   const status = defaultValues?.status ?? "NOT_STARTED";
 
   const canEdit = useCanEditApplication(status);

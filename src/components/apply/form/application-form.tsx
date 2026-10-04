@@ -21,9 +21,7 @@ export const QUESTION3 = `What’s your favourite thing you’ve ever built? Why
 
 export function ApplicationForm() {
   const utils = api.useUtils();
-  const { data: defaultValues } = api.application.get.useQuery({
-    fields: ["status", "question1", "question2", "question3"],
-  });
+  const { data: defaultValues } = api.application.get.useQuery();
 
   const status = defaultValues?.status ?? "NOT_STARTED";
   const canEdit = useCanEditApplication(status);
