@@ -553,7 +553,13 @@ export const judgingRouter = createTRPCRouter({
      */
     getCurrentAssignment: protectedJudgeProcedure.query(async ({ ctx }) => {
       return withErrorHandling(async () => {
-        const hold = await getCurrentHold(ctx.session.user.id);
+        const [hold, account] = await Promise.all([
+          getCurrentHold(ctx.session.user.id),
+          db.query.users.findFirst({
+            where: eq(users.id, ctx.session.user.id),
+            columns: { type: true },
+          }),
+        ]);
         const team = hold
           ? await db.query.teams.findFirst({
               where: eq(teams.id, hold.teamId),
@@ -565,6 +571,9 @@ export const judgingRouter = createTRPCRouter({
           team: team ?? null,
           assignedAt: hold?.assignedAt ?? null,
           judge: { type: ctx.judge.type, track: ctx.judge.track },
+          // An organizer-type judge isn't necessarily an organizer account;
+          // only accounts can open the control room.
+          canManage: account?.type === "organizer",
         };
       }, "Failed to get current assignment");
     }),

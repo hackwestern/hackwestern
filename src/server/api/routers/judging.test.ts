@@ -168,6 +168,7 @@ describe("auth gating", () => {
       team: null,
       assignedAt: null,
       judge: { type: "organizer", track: null },
+      canManage: false,
     });
   });
 });
@@ -207,6 +208,19 @@ describe("getCurrentAssignment / getQueue", () => {
     const holder = q.teams.find((t) => t.currentJudgeId === j.session.user.id);
     expect(holder).toBeDefined();
     expect(holder?.assignedAt).toBeInstanceOf(Date);
+  });
+
+  test("only an organizer account can manage, not every organizer judge", async () => {
+    const org = await makeOrganizer();
+    await db
+      .insert(judges)
+      .values({ id: org.session.user.id, type: "organizer" });
+    const asOrganizer = await org.caller.judging.me.getCurrentAssignment();
+    expect(asOrganizer.canManage).toBe(true);
+
+    const j = await makeJudge({ type: "organizer" });
+    const asJudge = await j.caller.judging.me.getCurrentAssignment();
+    expect(asJudge.canManage).toBe(false);
   });
 
   test("judge-facing team data never includes the join code", async () => {

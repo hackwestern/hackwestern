@@ -235,10 +235,9 @@ export default function JudgePage() {
       <div className="min-h-dvh bg-[#eef1f6] font-figtree text-[#0b2238]">
         <div className="mx-auto flex min-h-dvh w-full flex-col sm:max-w-md sm:border-x sm:border-[#d6dbe5]">
           <JudgeHeader
-            // Password sign-ins carry no name in the session; show the email.
             name={session?.user?.name ?? session?.user?.email ?? "Judge"}
             role={role}
-            showControlRoom={judge?.type === "organizer"}
+            showControlRoom={data?.canManage ?? false}
           />
           <main className="flex-1 px-5 pb-5 pt-4">
             <div aria-live="polite">
