@@ -57,14 +57,15 @@ async function GET(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-function getMlhApplications() {
-  return db.query.applications.findMany({
+async function getMlhApplications() {
+  const applications = await db.query.applications.findMany({
     columns: {
       firstName: true,
       lastName: true,
       age: true,
       phoneNumber: true,
       school: true,
+      schoolOther: true,
       yearOfStudy: true,
       countryOfResidence: true,
       agreeCodeOfConduct: true,
@@ -80,6 +81,15 @@ function getMlhApplications() {
     },
     where: ({ status }, { eq }) => eq(status, "ACCEPTED"),
   });
+
+  // Same columns as before: "school" carries the typed name instead of "Other".
+  return applications.map(({ schoolOther, ...application }) => ({
+    ...application,
+    school:
+      application.school === "Other" && schoolOther?.trim()
+        ? schoolOther.trim()
+        : application.school,
+  }));
 }
 
 function getApplications() {
