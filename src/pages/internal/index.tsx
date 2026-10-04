@@ -9,7 +9,7 @@ export default Internal;
 export const getServerSideProps = async () => {
   return {
     redirect: {
-      destination: "/scavenger",
+      destination: "/internal/dashboard",
       permanent: false,
     },
   };

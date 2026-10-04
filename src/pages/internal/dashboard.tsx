@@ -1,4 +1,4 @@
-import { disabledRedirect } from "~/utils/redirect";
+import { authRedirectOrganizer } from "~/utils/redirect";
 import { api } from "~/utils/api";
 import { DataTable } from "~/components/ui/data-table";
 import { reviewDashboardColumns } from "~/components/columns";
@@ -97,4 +97,5 @@ const Internal = () => {
 
 export default Internal;
 
-export const getServerSideProps = disabledRedirect;
+// Open on every environment, organizers only (the review APIs check too).
+export const getServerSideProps = authRedirectOrganizer;
