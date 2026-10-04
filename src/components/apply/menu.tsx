@@ -84,6 +84,7 @@ function computeStepStatuses(
     ],
     info: [
       "school",
+      "schoolOther",
       "yearOfStudy",
       "major",
       "attendedBefore",

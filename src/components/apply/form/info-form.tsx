@@ -1,7 +1,7 @@
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import {
   Form,
   FormControl,
@@ -9,6 +9,7 @@ import {
   FormItem,
   FormLabel,
 } from "~/components/ui/form";
+import { Input } from "~/components/ui/input";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { infoSaveSchema, YEAR_OF_STUDY_OPTIONS } from "~/schemas/application";
@@ -29,6 +30,7 @@ export function InfoForm() {
     fields: [
       "status",
       "school",
+      "schoolOther",
       "yearOfStudy",
       "major",
       "attendedBefore",
@@ -52,6 +54,7 @@ export function InfoForm() {
       major: data.major ?? undefined,
       school:
         (data.school as (typeof schools)[number] | undefined) ?? undefined,
+      schoolOther: data.schoolOther ?? undefined,
       yearOfStudy: data.yearOfStudy ?? undefined,
       numOfHackathons: data.numOfHackathons ?? undefined,
       attendedBefore:
@@ -69,11 +72,15 @@ export function InfoForm() {
   });
 
   useAutoSave(form, onSubmit, formValues);
+  const school = useWatch({ control: form.control, name: "school" });
 
   function onSubmit(formData: z.infer<typeof infoSaveSchema>) {
     if (!data) return;
     mutate({
       ...formData, // Override with new form values
+      // Only kept while "Other" is picked, so a stale name can't linger
+      schoolOther:
+        formData.school === "Other" ? (formData.schoolOther ?? null) : null,
       attendedBefore:
         formData.attendedBefore === "yes"
           ? true
@@ -114,6 +121,27 @@ export function InfoForm() {
             </FormItem>
           )}
         />
+        {school === "Other" && (
+          <FormField
+            control={form.control}
+            name="schoolOther"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>What is the name of your school?</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="e.g. University of Illinois Urbana-Champaign"
+                    maxLength={255}
+                    variant="primary"
+                    disabled={!canEdit}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        )}
         <FormField
           control={form.control}
           name="yearOfStudy"
