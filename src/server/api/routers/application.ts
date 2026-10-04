@@ -269,6 +269,13 @@ export const applicationRouter = createTRPCRouter({
           dietaryRestrictionsOther: restData.dietaryRestrictionsOther ?? null,
         };
 
+        // "Other" only saves once the school is named, so an unnamed pick
+        // leaves the school blank instead of a nameless "Other"
+        if (restData.school === "Other" && !restData.schoolOther?.trim()) {
+          dataToInsert.school = null;
+          dataToInsert.schoolOther = null;
+        }
+
         // Only include canvasData if it was actually provided
         if (Object.prototype.hasOwnProperty.call(input, "canvasData")) {
           (dataToInsert as typeof input).canvasData =
