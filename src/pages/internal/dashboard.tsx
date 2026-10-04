@@ -71,9 +71,10 @@ const Internal = () => {
         ) : (
           <div>All reviews completed! 🎉</div>
         )}
+        {/* Bulk status tool (#558) is hard-disabled (#798); hidden until it's back.
         <Button asChild variant="primary">
           <Link href="/internal/adjust-status">Adjust Status</Link>
-        </Button>
+        </Button> */}
         <Button asChild variant="primary">
           <Link href="/internal/cheat-check">Cheat Checks</Link>
         </Button>
