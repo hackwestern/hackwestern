@@ -30,16 +30,7 @@ const StyledLink = ({ url, text }: { url: string; text: string }) => {
 
 export function AgreementsForm() {
   const utils = api.useUtils();
-  const { data: defaultValues } = api.application.get.useQuery({
-    fields: [
-      "status",
-      "agreeCodeOfConduct",
-      "agreeShareWithMLH",
-      "agreeShareWithSponsors",
-      "agreeWillBe18",
-      "agreeEmailsFromMLH",
-    ],
-  });
+  const { data: defaultValues } = api.application.get.useQuery();
 
   const status = defaultValues?.status ?? "NOT_STARTED";
   const canEdit = useCanEditApplication(status);

@@ -14,9 +14,7 @@ type RealmFormValues = z.infer<typeof realmSaveSchema>;
 
 export function RealmForm() {
   const utils = api.useUtils();
-  const { data: defaults } = api.application.get.useQuery({
-    fields: ["status", "realm", "horseId", "horseFirstName", "horseLastName"],
-  });
+  const { data: defaults } = api.application.get.useQuery();
 
   const status = defaults?.status ?? "NOT_STARTED";
   const canEdit = useCanEditApplication(status);

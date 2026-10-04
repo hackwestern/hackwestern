@@ -135,9 +135,7 @@ function ReviewField({ value, label, error }: ReviewFieldProps) {
 }
 
 function BasicsReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: ["firstName", "lastName", "phoneNumber", "age"],
-  });
+  const { data } = api.application.get.useQuery();
 
   const nameErrors: string[] = [];
   if (!data?.firstName) nameErrors.push("First name is required");
@@ -160,16 +158,7 @@ function BasicsReview({ error }: ReviewSectionProps) {
 }
 
 function InfoReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: [
-      "school",
-      "schoolOther",
-      "yearOfStudy",
-      "major",
-      "attendedBefore",
-      "numOfHackathons",
-    ],
-  });
+  const { data } = api.application.get.useQuery();
   return (
     <>
       <ReviewField
@@ -212,9 +201,7 @@ function InfoReview({ error }: ReviewSectionProps) {
 }
 
 function ApplicationReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: ["question1", "question2", "question3"],
-  });
+  const { data } = api.application.get.useQuery();
   return (
     <>
       <ReviewField
@@ -243,15 +230,7 @@ function ApplicationReview({ error }: ReviewSectionProps) {
 }
 
 function LinksReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: [
-      "devpostLink",
-      "githubLink",
-      "linkedInLink",
-      "otherLink",
-      "resumeLink",
-    ],
-  });
+  const { data } = api.application.get.useQuery();
   return (
     <>
       <ReviewField
@@ -284,15 +263,7 @@ function LinksReview({ error }: ReviewSectionProps) {
 }
 
 function AgreementsReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: [
-      "agreeCodeOfConduct",
-      "agreeShareWithMLH",
-      "agreeShareWithSponsors",
-      "agreeWillBe18",
-      "agreeEmailsFromMLH",
-    ],
-  });
+  const { data } = api.application.get.useQuery();
   return (
     <>
       <ReviewField
@@ -325,9 +296,7 @@ function AgreementsReview({ error }: ReviewSectionProps) {
 }
 
 function OptionalReview({}: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: ["underrepGroup", "gender", "ethnicity", "sexualOrientation"],
-  });
+  const { data } = api.application.get.useQuery();
   return (
     <>
       <ReviewField
@@ -355,16 +324,7 @@ function OptionalReview({}: ReviewSectionProps) {
 }
 
 function LogisticsReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: [
-      "shirtSize",
-      "dietaryRestrictions",
-      "dietaryRestrictionsOther",
-      "emergencyContactName",
-      "emergencyContactRelationship",
-      "emergencyContactPhoneNumber",
-    ],
-  });
+  const { data } = api.application.get.useQuery();
   return (
     <>
       <ReviewField
@@ -413,9 +373,7 @@ function formatHorseName(
 
 /* eslint-disable @next/next/no-img-element */
 function RealmReview({}: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: ["realm", "horseId", "horseFirstName", "horseLastName"],
-  });
+  const { data } = api.application.get.useQuery();
   const horse = getHorse(data?.horseId);
 
   return (
@@ -448,42 +406,7 @@ function RealmReview({}: ReviewSectionProps) {
 const reviewSteps = applySteps.slice(0, -1);
 
 export function ReviewForm() {
-  const { data } = api.application.get.useQuery({
-    // fields required by applicationSubmitSchema
-    fields: [
-      "firstName",
-      "lastName",
-      "phoneNumber",
-      "countryOfResidence",
-      "age",
-      "school",
-      "schoolOther",
-      "major",
-      "attendedBefore",
-      "numOfHackathons",
-      "yearOfStudy",
-      "question1",
-      "question2",
-      "question3",
-      "resumeLink",
-      "devpostLink",
-      "githubLink",
-      "linkedInLink",
-      "otherLink",
-      "agreeCodeOfConduct",
-      "agreeShareWithMLH",
-      "agreeShareWithSponsors",
-      "agreeWillBe18",
-      "agreeEmailsFromMLH",
-      "shirtSize",
-      "dietaryRestrictions",
-      "dietaryRestrictionsOther",
-      "emergencyContactName",
-      "emergencyContactRelationship",
-      "emergencyContactPhoneNumber",
-      "transportationMethod",
-    ],
-  });
+  const { data } = api.application.get.useQuery();
   const result = applicationSubmitSchema.safeParse(data);
   const error = result.error?.format();
   return (

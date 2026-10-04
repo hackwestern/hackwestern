@@ -33,16 +33,7 @@ function withPrefix(prefix: string, username?: string | null) {
 
 export function LinksForm() {
   const utils = api.useUtils();
-  const { data: defaultValues } = api.application.get.useQuery({
-    fields: [
-      "status",
-      "devpostLink",
-      "githubLink",
-      "linkedInLink",
-      "otherLink",
-      "resumeLink",
-    ],
-  });
+  const { data: defaultValues } = api.application.get.useQuery();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
