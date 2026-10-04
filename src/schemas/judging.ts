@@ -52,6 +52,19 @@ export const addJudgesSchema = z.array(addJudgeSchema).min(1);
 
 export type AddJudgeInput = z.infer<typeof addJudgeSchema>;
 
+// Control-room form: the organizer types the person's account email instead
+// of a user id. Stored emails are canonical (trim+lowercase), so normalize.
+export const addJudgeByEmailSchema = z
+  .object({
+    email: z.string().trim().toLowerCase().email(),
+    type: z.enum(judgeTypeEnum.enumValues).default("organizer"),
+    track: z.array(z.enum(trackEnum.enumValues)).optional(),
+  })
+  .refine((v) => v.type !== "sponsored" || (v.track?.length ?? 0) > 0, {
+    message: "Sponsored judges must have at least one track.",
+    path: ["track"],
+  });
+
 export const deleteTeamMarkSchema = z.object({
   teamMarkId: z.number().int().positive(),
 });

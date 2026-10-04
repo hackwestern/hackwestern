@@ -18,6 +18,7 @@ import {
 import { maybeTriggerSweepOnDrain } from "~/server/api/utils/cheat-check-sweep";
 import {
   type AddJudgeInput,
+  addJudgeByEmailSchema,
   addJudgesSchema,
   assignJudgeForTeamSchema,
   deleteTeamMarkSchema,
@@ -497,11 +498,31 @@ async function getQueueState() {
   };
 }
 
+/**
+ * What a judge sees of a team. Never the whole row: it carries the team's
+ * join code, which only its members should have.
+ */
+const JUDGE_TEAM_COLUMNS = {
+  id: true,
+  name: true,
+  tracks: true,
+  devpostUrl: true,
+  githubUrl: true,
+} as const;
+
+const toJudgeTeam = (t: typeof teams.$inferSelect) => ({
+  id: t.id,
+  name: t.name,
+  tracks: t.tracks,
+  devpostUrl: t.devpostUrl,
+  githubUrl: t.githubUrl,
+});
+
 /** A judge's own submitted marks, most recent first. Read-only. */
 async function getSubmittedMarks(judgeId: string) {
   return db.query.teamMarks.findMany({
     where: eq(teamMarks.judgeId, judgeId),
-    with: { team: true },
+    with: { team: { columns: JUDGE_TEAM_COLUMNS } },
     orderBy: [desc(teamMarks.createdAt)],
   });
 }
@@ -522,7 +543,7 @@ export const judgingRouter = createTRPCRouter({
             message: "No teams are currently available to judge.",
           });
         }
-        return { team };
+        return { team: toJudgeTeam(team) };
       }, "Failed to get next team");
     }),
 
@@ -534,7 +555,10 @@ export const judgingRouter = createTRPCRouter({
       return withErrorHandling(async () => {
         const hold = await getCurrentHold(ctx.session.user.id);
         const team = hold
-          ? await db.query.teams.findFirst({ where: eq(teams.id, hold.teamId) })
+          ? await db.query.teams.findFirst({
+              where: eq(teams.id, hold.teamId),
+              columns: JUDGE_TEAM_COLUMNS,
+            })
           : undefined;
         return {
           currentTeamId: hold?.teamId ?? null,
@@ -636,6 +660,28 @@ export const judgingRouter = createTRPCRouter({
           () => addJudges(input),
           "Failed to add judges",
         );
+      }),
+
+    /** Control-room form: promote (or update) one judge by account email. */
+    addJudgeByEmail: protectedOrganizerProcedure
+      .input(addJudgeByEmailSchema)
+      .mutation(async ({ input }) => {
+        return withErrorHandling(async () => {
+          const user = await db.query.users.findFirst({
+            where: sql`lower(${users.email}) = ${input.email}`,
+            columns: { id: true, name: true },
+          });
+          if (!user) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "No Hack Western account with that email.",
+            });
+          }
+          const [judge] = await addJudges([
+            { id: user.id, type: input.type, track: input.track },
+          ]);
+          return { ...judge!, name: user.name };
+        }, "Failed to add judge");
       }),
 
     deleteTeamMark: protectedOrganizerProcedure
