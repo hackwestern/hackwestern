@@ -135,17 +135,19 @@ async function seedJudging(args: Args): Promise<void> {
       () => faker.string.alphanumeric(6),
       args.teams,
     );
+    const joinCodes = faker.helpers.uniqueArray(
+      () => faker.string.fromCharacters("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 6),
+      args.teams,
+    );
     await tx.insert(teams).values(
       teamIds.map((id, i) => ({
         id,
+        joinCode: joinCodes[i]!,
         name: `${faker.hacker.adjective()} ${faker.hacker.noun()}`,
         devpostUrl: `https://devpost.com/software/seed-${id}`,
         githubUrl: `https://github.com/hackwestern/seed-${id}`,
         submissionStatus: "submitted" as const,
-        tracks: [
-          "General" as const,
-          sponsorTracks[i % sponsorTracks.length]!,
-        ],
+        tracks: ["General" as const, sponsorTracks[i % sponsorTracks.length]!],
       })),
     );
 
@@ -164,24 +166,27 @@ async function seedJudging(args: Args): Promise<void> {
         track: sponsored ? [sponsorTracks[i % sponsorTracks.length]!] : null,
       };
     });
-    await tx.insert(users).values(
-      judgeUsers.map(({ sponsored: _s, track: _t, ...u }) => u),
-    );
+    await tx
+      .insert(users)
+      .values(judgeUsers.map(({ sponsored: _s, track: _t, ...u }) => u));
+    // Organizers judge too, so the organizer account is also an organizer judge.
+    const organizerId = faker.string.uuid();
     await tx.insert(users).values({
-      id: faker.string.uuid(),
+      id: organizerId,
       name: "Judging Organizer",
       email: JUDGING_SEED_ORGANIZER_EMAIL,
       emailVerified: new Date(),
       password: passwordHash,
       type: "organizer",
     });
-    await tx.insert(judges).values(
-      judgeUsers.map((u) => ({
+    await tx.insert(judges).values([
+      ...judgeUsers.map((u) => ({
         id: u.id,
         type: u.sponsored ? ("sponsored" as const) : ("organizer" as const),
         track: u.track,
       })),
-    );
+      { id: organizerId, type: "organizer" as const, track: null },
+    ]);
 
     // 5. Promote real accounts (--emails) to organizer judges.
     if (args.emails.length > 0) {

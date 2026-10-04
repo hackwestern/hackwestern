@@ -165,7 +165,53 @@ describe("auth gating", () => {
     const j = await makeJudge();
     await expect(j.caller.judging.me.getCurrentAssignment()).resolves.toEqual({
       currentTeamId: null,
+      team: null,
+      assignedAt: null,
+      judge: { type: "organizer", track: null },
     });
+  });
+});
+
+/* ---------- reads for the judge screen and control room ---------- */
+
+describe("getCurrentAssignment / getQueue", () => {
+  test("a held team comes back with its details and assignment time", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 3 });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    const current = await j.caller.judging.me.getCurrentAssignment();
+    expect(current.currentTeamId).toBe(teamId);
+    expect(current.team?.name).toBe(`team-${teamId}`);
+    expect(current.assignedAt).toBeInstanceOf(Date);
+  });
+
+  test("getQueue lists queued teams, who holds them, and the totals", async () => {
+    const org = await makeOrganizer();
+    const held = await makeTeam();
+    const waiting = await makeTeam();
+    await makeTeam({ submissionStatus: "draft" });
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 2 });
+
+    const j = await makeJudge();
+    const { team } = await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId: team!.id, score: 70 });
+    await j.caller.judging.me.getNextTeam();
+
+    const q = await org.caller.judging.admin.getQueue();
+    expect(q.submittedTeams).toBe(2);
+    expect(q.regularMarks).toBe(1);
+    expect(q.teams.map((t) => t.teamId).sort()).toEqual([held, waiting].sort());
+    const holder = q.teams.find((t) => t.currentJudgeId === j.session.user.id);
+    expect(holder).toBeDefined();
+    expect(holder?.assignedAt).toBeInstanceOf(Date);
+  });
+
+  test("getQueue is organizer-only", async () => {
+    const j = await makeJudge();
+    await expect(j.caller.judging.admin.getQueue()).rejects.toThrow();
   });
 });
 

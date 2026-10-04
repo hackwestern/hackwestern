@@ -458,6 +458,45 @@ async function getAllJudges() {
   }));
 }
 
+/**
+ * The queue for the organizer control room: every queued team with its
+ * progress and current judge (if held), plus the totals behind the progress
+ * tiles. Read-only.
+ */
+async function getQueueState() {
+  const [rows, submitted, regularMarks] = await Promise.all([
+    db
+      .select({
+        teamId: judgingQueue.teamId,
+        teamName: teams.name,
+        tracks: teams.tracks,
+        seenJudges: judgingQueue.seenJudges,
+        roundsRemaining: judgingQueue.roundsRemaining,
+        status: judgingQueue.status,
+        currentJudgeId: judgingQueue.currentJudgeId,
+        currentJudgeName: users.name,
+        assignedAt: judgingQueue.assignedAt,
+      })
+      .from(judgingQueue)
+      .innerJoin(teams, eq(teams.id, judgingQueue.teamId))
+      .leftJoin(users, eq(users.id, judgingQueue.currentJudgeId))
+      .orderBy(desc(judgingQueue.roundsRemaining), judgingQueue.enqueuedAt),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(teams)
+      .where(inArray(teams.submissionStatus, ["submitted", "late"])),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(teamMarks)
+      .where(eq(teamMarks.roundType, "regular")),
+  ]);
+  return {
+    teams: rows,
+    submittedTeams: submitted[0]?.n ?? 0,
+    regularMarks: regularMarks[0]?.n ?? 0,
+  };
+}
+
 /** A judge's own submitted marks, most recent first. Read-only. */
 async function getSubmittedMarks(judgeId: string) {
   return db.query.teamMarks.findMany({
@@ -487,11 +526,22 @@ export const judgingRouter = createTRPCRouter({
       }, "Failed to get next team");
     }),
 
-    /** This judge's current hold, if any (snapshot read). */
+    /**
+     * This judge's current hold, if any (snapshot read), with the team and
+     * when it was assigned so a reloaded page can show the card and its timer.
+     */
     getCurrentAssignment: protectedJudgeProcedure.query(async ({ ctx }) => {
       return withErrorHandling(async () => {
         const hold = await getCurrentHold(ctx.session.user.id);
-        return { currentTeamId: hold?.teamId ?? null };
+        const team = hold
+          ? await db.query.teams.findFirst({ where: eq(teams.id, hold.teamId) })
+          : undefined;
+        return {
+          currentTeamId: hold?.teamId ?? null,
+          team: team ?? null,
+          assignedAt: hold?.assignedAt ?? null,
+          judge: { type: ctx.judge.type, track: ctx.judge.track },
+        };
       }, "Failed to get current assignment");
     }),
 
@@ -569,6 +619,10 @@ export const judgingRouter = createTRPCRouter({
 
     getLatestRanking: protectedOrganizerProcedure.query(async () => {
       return withErrorHandling(() => getRanking(), "Failed to get ranking");
+    }),
+
+    getQueue: protectedOrganizerProcedure.query(async () => {
+      return withErrorHandling(() => getQueueState(), "Failed to get queue");
     }),
 
     getAllJudges: protectedOrganizerProcedure.query(async () => {
