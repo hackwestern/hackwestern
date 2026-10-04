@@ -1,4 +1,4 @@
-import { disabledRedirect } from "~/utils/redirect";
+import { authRedirectOrganizer } from "~/utils/redirect";
 import { api } from "~/utils/api";
 import { DataTable } from "~/components/ui/data-table";
 import { reviewDashboardColumns } from "~/components/columns";
@@ -71,9 +71,10 @@ const Internal = () => {
         ) : (
           <div>All reviews completed! 🎉</div>
         )}
+        {/* Bulk status tool (#558) is hard-disabled (#798); hidden until it's back.
         <Button asChild variant="primary">
           <Link href="/internal/adjust-status">Adjust Status</Link>
-        </Button>
+        </Button> */}
         <Button asChild variant="primary">
           <Link href="/internal/cheat-check">Cheat Checks</Link>
         </Button>
@@ -97,4 +98,5 @@ const Internal = () => {
 
 export default Internal;
 
-export const getServerSideProps = disabledRedirect;
+// Open on every environment, organizers only (the review APIs check too).
+export const getServerSideProps = authRedirectOrganizer;
