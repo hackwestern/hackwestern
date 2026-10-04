@@ -86,6 +86,7 @@ export const infoSaveSchema = z.object({
     (val) => (val === "" ? undefined : val),
     z.enum(schools).optional(),
   ),
+  schoolOther: z.string().max(255).nullish(),
   yearOfStudy: z.preprocess(
     (val) => (val === "" ? undefined : val),
     z.enum(yearOfStudy.enumValues).optional(),
@@ -213,6 +214,7 @@ export const applicationSubmitSchema = z
     countryOfResidence: z.enum(countrySelection.enumValues),
     age: z.number().min(18).max(99),
     school: z.enum(schools),
+    schoolOther: z.string().max(255).nullish(),
     yearOfStudy: z.enum(YEAR_OF_STUDY_OPTIONS),
     major: z.enum(major.enumValues),
     attendedBefore: z.boolean(),
@@ -285,6 +287,13 @@ export const applicationSubmitSchema = z
       .regex(phoneRegex, "Invalid phone number"),
   })
   .superRefine((data, ctx) => {
+    if (data.school === "Other" && !data.schoolOther?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please tell us which school you attend",
+        path: ["schoolOther"],
+      });
+    }
     if (
       data.dietaryRestrictions === "Other" &&
       !data.dietaryRestrictionsOther?.trim()

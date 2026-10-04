@@ -61,6 +61,7 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
     ) as (typeof dietaryRestrictions.enumValues)[number];
 
     const horse = faker.helpers.arrayElement(horses);
+    const schoolFake = faker.helpers.arrayElement(schools);
 
     const application = {
       realm: horse.realm,
@@ -76,7 +77,8 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
         countrySelection.enumValues,
       ),
 
-      school: faker.helpers.arrayElement(schools),
+      school: schoolFake,
+      schoolOther: schoolFake == "Other" ? "Other University" : null,
       yearOfStudy: faker.helpers.arrayElement(YEAR_OF_STUDY_OPTIONS),
       major: faker.helpers.arrayElement(major.enumValues),
 
