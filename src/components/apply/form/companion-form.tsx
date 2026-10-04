@@ -73,7 +73,9 @@ export function CompanionForm() {
     <Form {...form}>
       <div className="flex flex-col items-center gap-10 pb-12 pt-6">
         <div className="text-center">
-          <p className="font-primary text-lg-p font-bold leading-tight text-heavy sm:text-sm-display">
+          {/* Room reserved for the named version (3 lines on phones, 2 from sm),
+              so typing a name doesn't push the horse down. */}
+          <p className="flex min-h-[3.75em] items-center justify-center text-balance font-primary text-lg-p font-bold leading-tight text-heavy sm:min-h-[2.5em] sm:text-sm-display">
             {hasNames
               ? `${horseFirstName} ${horseLastName} will be your companion for Hack Western 13!`
               : "Good choice! Next, pick a name for your companion"}

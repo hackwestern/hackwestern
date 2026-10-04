@@ -27,12 +27,14 @@ export function AuthLayout({
         draggable={false}
       />
 
-      {/* Above the full-screen content layer, or it can't be clicked. */}
-      <div className="absolute left-10 top-16 z-20 px-3">
+      {/* Above the full-screen content layer, or it can't be clicked. Below lg
+          it sits higher and the content starts under it, so it can't cover
+          the window. */}
+      <div className="absolute left-4 top-6 z-20 px-3 lg:left-10 lg:top-16">
         <HWLogoLink className="h-[60px] w-[40px]" />
       </div>
 
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-16">
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 pb-16 pt-24 lg:py-16">
         <Window
           fluid
           draggable={false}

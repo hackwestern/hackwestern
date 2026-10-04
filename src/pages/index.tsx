@@ -437,9 +437,9 @@ export default function Home() {
           {/* MOBILE window, with the flag planted behind it */}
           <div className="relative w-full max-w-[382px] self-center lg:hidden">
             <Flag className="absolute -top-[64px] right-6" />
+            {/* fluid: follows the container, so it never runs off a narrow phone */}
             <Window
-              autoHeight
-              width={382}
+              fluid
               title="Thank you to our sponsors"
               className="relative z-10 w-full"
             >
