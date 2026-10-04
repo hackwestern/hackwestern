@@ -278,6 +278,23 @@ describe.sequential("application.save", async () => {
     expect(got).toEqual(want);
   });
 
+  test("doesn't save school Other until a school name is typed", async () => {
+    for (const schoolOther of [null, "", "   "]) {
+      await caller.application.save({ school: "Other", schoolOther });
+      const result = await caller.application.get();
+      expect(result?.school).toBeNull();
+      expect(result?.schoolOther).toBeNull();
+    }
+
+    await caller.application.save({
+      school: "Other",
+      schoolOther: "Livingstone College",
+    });
+    const result = await caller.application.get();
+    expect(result?.school).toBe("Other");
+    expect(result?.schoolOther).toBe("Livingstone College");
+  });
+
   test("complete application changes status to PENDING_REVIEW", async () => {
     const completeApplication = createCompleteSaveInput(session);
     applicationSubmitSchema.parse(completeApplication);
