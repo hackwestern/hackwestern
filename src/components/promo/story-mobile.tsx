@@ -62,7 +62,10 @@ export function MobileStoryStack() {
 
   React.useEffect(() => {
     const section = sectionRef.current;
-    const els = windowRefs.current;
+    // A copy: on unmount React nulls the ref array in place before this
+    // effect's cleanup runs, and the ResizeObserver fires in that gap (the
+    // windows just left the page), so reading the live array crashes.
+    const els = [...windowRefs.current];
     if (reduceMotion === true || !section || els.some((el) => !el)) return;
 
     let screen = window.innerHeight;
