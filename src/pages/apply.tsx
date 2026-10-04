@@ -89,7 +89,13 @@ function getNextIncompleteStep(
         break;
       }
       case "links": {
-        if (isEmpty(application.resumeLink)) return step.step;
+        if (
+          isEmpty(application.devpostLink) ||
+          isEmpty(application.githubLink) ||
+          isEmpty(application.linkedInLink) ||
+          isEmpty(application.resumeLink)
+        )
+          return step.step;
         break;
       }
       case "agreements": {
@@ -352,7 +358,9 @@ export default function Apply() {
                         disableControls
                         title="Hack Western 13: Discover the Unknown"
                         className="min-h-0 flex-1"
-                        contentClassName="realm-tinted px-8 py-8 md:px-12 md:py-10"
+                        // Reserve the scrollbar's space so the form doesn't
+                        // narrow when a growing answer makes the window scroll.
+                        contentClassName="realm-tinted px-8 py-8 [scrollbar-gutter:stable] md:px-12 md:py-10"
                         footer={<ApplyNavigation step={step} />}
                       >
                         <div className="space-y-6">

@@ -41,7 +41,7 @@ const allSteps = [
     label: "Links",
     heading: "Where can we find you?",
     subheading:
-      "This is optional! Show off your cool stuff if you want us to see it.",
+      "Devpost, GitHub, LinkedIn and your resume are required. A portfolio is optional, so show it off if you have one!",
   },
   {
     step: "agreements",
