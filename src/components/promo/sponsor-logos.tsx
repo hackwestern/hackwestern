@@ -9,7 +9,14 @@ import {
 export function SponsorLogos({ className }: { className?: string }) {
   return (
     <div className={className}>
-      <div className="relative">
+      {/* margin-bottom % is of the width, so it reserves extraHeight at the
+          image's scale; the extra rows' links overflow into it */}
+      <div
+        className="relative"
+        style={{
+          marginBottom: `${(PROMO_SPONSORS_IMAGE.extraHeight / PROMO_SPONSORS_IMAGE.width) * 100}%`,
+        }}
+      >
         <Image
           src={PROMO_SPONSORS_IMAGE.src}
           alt=""
