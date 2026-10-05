@@ -2,9 +2,9 @@ name: Incomplete Application Reminder
 
 # Emails everyone whose application is still IN_PROGRESS
 # (scripts/send-incomplete-reminder.ts). Plan agreed with marketing:
-#   Sun Oct 11, noon ET   reminder-1: one week left            (armed by REMINDER_1_LIVE)
-#   Fri Oct 16, noon ET   dry run of reminder-2, for the count (never sends)
-#   Sat Oct 17, noon ET   reminder-2: closes tomorrow           (armed by REMINDER_2_LIVE)
+#   Sat Oct 10, noon ET   reminder-1: just over a week left    (armed by REMINDER_1_LIVE)
+#   Sat Oct 17, noon ET   dry run of reminder-2, for the count (never sends)
+#   Sun Oct 18, 10am ET   reminder-2: closes tonight            (armed by REMINDER_2_LIVE)
 # Marketing's own 48-hour blast to the whole HW13 Announce list goes out from
 # Mailjet on Oct 16 and is not part of this workflow.
 #
@@ -18,9 +18,9 @@ name: Incomplete Application Reminder
 
 on:
   schedule:
-    - cron: "0 16 11 10 *" # Oct 11, 12:00 ET
-    - cron: "0 16 16 10 *" # Oct 16, 12:00 ET (count only)
-    - cron: "0 16 17 10 *" # Oct 17, 12:00 ET
+    - cron: "0 16 10 10 *" # Oct 10, 12:00 ET
+    - cron: "0 16 17 10 *" # Oct 17, 12:00 ET (count only)
+    - cron: "0 14 18 10 *" # Oct 18, 10:00 ET
   workflow_dispatch:
     inputs:
       kind:
@@ -69,9 +69,9 @@ jobs:
             KIND="$INPUT_KIND"; ARMED="$INPUT_SEND"
           else
             case "$SCHEDULE" in
-              "0 16 11 10 *") KIND="reminder-1"; ARMED="$LIVE_1" ;;
-              "0 16 16 10 *") KIND="reminder-2"; ARMED="false" ;;
-              "0 16 17 10 *") KIND="reminder-2"; ARMED="$LIVE_2" ;;
+              "0 16 10 10 *") KIND="reminder-1"; ARMED="$LIVE_1" ;;
+              "0 16 17 10 *") KIND="reminder-2"; ARMED="false" ;;
+              "0 14 18 10 *") KIND="reminder-2"; ARMED="$LIVE_2" ;;
               *) echo "Unknown schedule $SCHEDULE"; exit 1 ;;
             esac
           fi
