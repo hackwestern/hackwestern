@@ -1,5 +1,8 @@
-// Clickable regions over /landing/home/sponsors-hw13.png (1067x795), as
-// percentages of the image so they track it at any rendered size.
+// Clickable regions over /landing/home/sponsors-hw13.png (1067x795, drawn at
+// 2x as 2134x1590 so it stays sharp on retina), as percentages of the image so
+// they track it at any rendered size. Rows added
+// after the image was flattened sit below it (top > 100%), in the room that
+// extraHeight reserves.
 export type PromoSponsorLink = {
   name: string;
   href: string;
@@ -15,6 +18,8 @@ export const PROMO_SPONSORS_IMAGE = {
   src: "/landing/home/sponsors-hw13.png",
   width: 1067,
   height: 795,
+  // Image pixels of room below the image for the overlay-only rows.
+  extraHeight: 214,
 };
 
 export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
@@ -61,10 +66,37 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
     height: 15,
   },
   {
+    name: "Manulife",
+    href: "https://www.manulife.ca/",
+    left: 1.97,
+    top: 86.96,
+    width: 44.05,
+    height: 11.26,
+    overlaySrc: "/shared/sponsors/manulife.svg",
+  },
+  {
+    name: "StarTech.com",
+    href: "https://www.startech.com/",
+    left: 57.83,
+    top: 85.91,
+    width: 36.83,
+    height: 13.33,
+    overlaySrc: "/shared/sponsors/startech.svg",
+  },
+  {
+    name: "CSE",
+    href: "https://www.cse-cst.gc.ca/",
+    left: 1.97,
+    top: 109.69,
+    width: 14.25,
+    height: 16.35,
+    overlaySrc: "/shared/sponsors/cse-trimmed.png",
+  },
+  {
     name: "Autodesk",
     href: "https://www.autodesk.com/",
-    left: 1,
-    top: 86.54,
+    left: 57.83,
+    top: 111.57,
     width: 16.59,
     height: 12.58,
     overlaySrc: "/shared/sponsors/autodesk.svg",
