@@ -132,14 +132,4 @@ export const SPONSORS: readonly SponsorLogoProps[] = [
     rotation: 0,
     href: "https://wts.uwo.ca/index.html",
   },
-  {
-    src: `${prefix}morrissette.png`,
-    alt: "Western Morrissette Institute for Entrepreneurship",
-    width: 180,
-    height: 100,
-    x: 610,
-    y: 405,
-    rotation: 0,
-    href: "https://entrepreneurship.uwo.ca/",
-  },
 ];
