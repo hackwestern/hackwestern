@@ -69,17 +69,17 @@ const SPONSORS_SKY = 150;
 const SPONSORS_PHOTO: CoverPhoto = {
   imageWidth: 2880,
   imageHeight: 3427,
-  designHeight: 1690 + SPONSORS_SKY,
+  designHeight: 1821 + SPONSORS_SKY,
   top: SPONSORS_SKY - SPONSORS_STRIP_EDGE.height,
   topCss: `calc(${halfRateHeight(SPONSORS_SKY)} - ${SPONSORS_STRIP_EDGE.height}px)`,
   align: "top",
 };
 // Where the title, sponsors window and FAQ start at 1440 (px from the section
 // top). The window's top sits ~20px under the "Get in touch" button (which
-// ends ~365px), and the FAQ sits 100px under the ~569px-tall window.
+// ends ~365px), and the FAQ sits 100px under the ~700px-tall window.
 const SPONSORS_TITLE_Y = 155;
 const SPONSORS_WINDOW_Y = 385;
-const SPONSORS_FAQ_Y = 1054;
+const SPONSORS_FAQ_Y = 1185;
 const SPONSORS_TITLE_POINT = photoPoint(SPONSORS_PHOTO, 160, SPONSORS_TITLE_Y);
 // The window and FAQ follow the title rather than the photo, so their gaps
 // grow only with --ui-scale, like the elements themselves.
