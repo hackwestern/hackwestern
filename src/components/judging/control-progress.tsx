@@ -27,7 +27,7 @@ function Tile({
       <span className={`text-sm ${warn ? "text-[#8a3f05]" : MUTED}`}>
         {label}
       </span>
-      <span className="text-[30px] font-bold leading-tight tabular-nums">
+      <span className="text-[30px] font-bold tabular-nums leading-tight">
         {value}
       </span>
       {children}
@@ -38,10 +38,7 @@ function Tile({
 function Bar({ done, total }: { done: number; total: number }) {
   const pct = total > 0 ? Math.min(100, (done / total) * 100) : 0;
   return (
-    <div
-      aria-hidden
-      className="h-2 overflow-hidden rounded-full bg-[#e3e7ef]"
-    >
+    <div aria-hidden className="h-2 overflow-hidden rounded-full bg-[#e3e7ef]">
       <div className="h-2 bg-[#5b3fa0]" style={{ width: `${pct}%` }} />
     </div>
   );
@@ -96,7 +93,11 @@ export function ControlProgress({
     if (!t.currentJudgeId || !t.assignedAt) continue;
     const ms = now - new Date(t.assignedAt).getTime();
     if (!longest || ms > longest.ms) {
-      longest = { ms, judge: t.currentJudgeName ?? "A judge", team: t.teamName };
+      longest = {
+        ms,
+        judge: t.currentJudgeName ?? "A judge",
+        team: t.teamName,
+      };
     }
   }
   const tooLong = !!longest && longest.ms > LONG_HOLD_MS;
@@ -133,9 +134,7 @@ export function ControlProgress({
         value={longest ? formatHold(longest.ms) : "—"}
         warn={tooLong}
       >
-        <span
-          className={`text-[13px] ${tooLong ? "text-[#6b3a10]" : MUTED}`}
-        >
+        <span className={`text-[13px] ${tooLong ? "text-[#6b3a10]" : MUTED}`}>
           {longest
             ? `${longest.judge} on ${longest.team}.${tooLong ? " Over 5 minutes" : ""}`
             : "No one is judging right now"}

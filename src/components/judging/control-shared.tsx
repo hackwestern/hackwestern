@@ -4,7 +4,8 @@ import { type RouterOutputs } from "~/utils/api";
 
 export type QueueState = RouterOutputs["judging"]["admin"]["getQueue"];
 export type QueueTeam = QueueState["teams"][number];
-export type JudgeRow = RouterOutputs["judging"]["admin"]["getAllJudges"][number];
+export type JudgeRow =
+  RouterOutputs["judging"]["admin"]["getAllJudges"][number];
 export type RankingRow =
   RouterOutputs["judging"]["admin"]["getLatestRanking"][number];
 
