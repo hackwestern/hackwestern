@@ -173,6 +173,19 @@ export function LinksForm() {
                   disabled={!canEdit}
                 />
               </FormControl>
+              <FormDescription className="text-gray-4">
+                You&apos;ll need a Devpost account to submit your hack.
+                Don&apos;t have one?{" "}
+                <a
+                  href="https://devpost.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-600 underline hover:text-primary-500"
+                >
+                  Create one on Devpost
+                </a>
+                .
+              </FormDescription>
             </FormItem>
           )}
         />
