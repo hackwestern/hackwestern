@@ -165,7 +165,82 @@ describe("auth gating", () => {
     const j = await makeJudge();
     await expect(j.caller.judging.me.getCurrentAssignment()).resolves.toEqual({
       currentTeamId: null,
+      team: null,
+      assignedAt: null,
+      judge: { type: "organizer", track: null },
+      canManage: false,
     });
+  });
+});
+
+/* ---------- reads for the judge screen and control room ---------- */
+
+describe("getCurrentAssignment / getQueue", () => {
+  test("a held team comes back with its details and assignment time", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 3 });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    const current = await j.caller.judging.me.getCurrentAssignment();
+    expect(current.currentTeamId).toBe(teamId);
+    expect(current.team?.name).toBe(`team-${teamId}`);
+    expect(current.assignedAt).toBeInstanceOf(Date);
+  });
+
+  test("getQueue lists queued teams, who holds them, and the totals", async () => {
+    const org = await makeOrganizer();
+    const held = await makeTeam();
+    const waiting = await makeTeam();
+    await makeTeam({ submissionStatus: "draft" });
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 2 });
+
+    const j = await makeJudge();
+    const { team } = await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId: team.id, score: 70 });
+    await j.caller.judging.me.getNextTeam();
+
+    const q = await org.caller.judging.admin.getQueue();
+    expect(q.submittedTeams).toBe(2);
+    expect(q.regularMarks).toBe(1);
+    expect(q.teams.map((t) => t.teamId).sort()).toEqual([held, waiting].sort());
+    const holder = q.teams.find((t) => t.currentJudgeId === j.session.user.id);
+    expect(holder).toBeDefined();
+    expect(holder?.assignedAt).toBeInstanceOf(Date);
+  });
+
+  test("only an organizer account can manage, not every organizer judge", async () => {
+    const org = await makeOrganizer();
+    await db
+      .insert(judges)
+      .values({ id: org.session.user.id, type: "organizer" });
+    const asOrganizer = await org.caller.judging.me.getCurrentAssignment();
+    expect(asOrganizer.canManage).toBe(true);
+
+    const j = await makeJudge({ type: "organizer" });
+    const asJudge = await j.caller.judging.me.getCurrentAssignment();
+    expect(asJudge.canManage).toBe(false);
+  });
+
+  test("judge-facing team data never includes the join code", async () => {
+    const org = await makeOrganizer();
+    await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 3 });
+
+    const j = await makeJudge();
+    const { team } = await j.caller.judging.me.getNextTeam();
+    expect(team).not.toHaveProperty("joinCode");
+    const current = await j.caller.judging.me.getCurrentAssignment();
+    expect(current.team).not.toHaveProperty("joinCode");
+    await j.caller.judging.me.submitTeamMark({ teamId: team.id, score: 60 });
+    const [mark] = await j.caller.judging.me.getSubmittedTeamMarks();
+    expect(mark?.team).not.toHaveProperty("joinCode");
+  });
+
+  test("getQueue is organizer-only", async () => {
+    const j = await makeJudge();
+    await expect(j.caller.judging.admin.getQueue()).rejects.toThrow();
   });
 });
 
@@ -777,6 +852,87 @@ describe("addJudges", () => {
 
     await expect(
       caller.judging.admin.addJudges([{ id: target.user.id }]),
+    ).rejects.toThrow();
+  });
+});
+
+/* ---------- addJudgeByEmail (control room form) ---------- */
+
+describe("addJudgeByEmail", () => {
+  test("finds the account case-insensitively and makes it an organizer judge", async () => {
+    const org = await makeOrganizer();
+    const user = await mockSession(db);
+    const email = user.user.email;
+    assertDefined(email, "mock user should have an email");
+
+    const added = await org.caller.judging.admin.addJudgeByEmail({
+      email: `  ${email.toUpperCase()}  `,
+    });
+    expect(added.id).toBe(user.user.id);
+    expect(added.type).toBe("organizer");
+
+    const row = await db.query.judges.findFirst({
+      where: eq(judges.id, user.user.id),
+    });
+    expect(row?.type).toBe("organizer");
+  });
+
+  test("upserts: re-adding by email switches the judge to sponsored", async () => {
+    const org = await makeOrganizer();
+    const user = await mockSession(db);
+    const email = user.user.email;
+    assertDefined(email, "mock user should have an email");
+
+    await org.caller.judging.admin.addJudgeByEmail({ email });
+    const updated = await org.caller.judging.admin.addJudgeByEmail({
+      email,
+      type: "sponsored",
+      track: ["Best Domain"],
+    });
+    expect(updated.type).toBe("sponsored");
+    expect(updated.track).toEqual(["Best Domain"]);
+
+    const rows = await db.query.judges.findMany({
+      where: eq(judges.id, user.user.id),
+    });
+    expect(rows).toHaveLength(1);
+  });
+
+  test("an unknown email is a friendly NOT_FOUND and writes nothing", async () => {
+    const org = await makeOrganizer();
+
+    await expect(
+      org.caller.judging.admin.addJudgeByEmail({
+        email: "nobody-here@example.com",
+      }),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "No Hack Western account with that email.",
+    });
+    expect(await db.query.judges.findMany({})).toHaveLength(0);
+  });
+
+  test("rejects a sponsored judge with no tracks", async () => {
+    const org = await makeOrganizer();
+    const user = await mockSession(db);
+    const email = user.user.email;
+    assertDefined(email, "mock user should have an email");
+
+    await expect(
+      org.caller.judging.admin.addJudgeByEmail({ email, type: "sponsored" }),
+    ).rejects.toThrow();
+    expect(await db.query.judges.findMany({})).toHaveLength(0);
+  });
+
+  test("rejects non-organizer callers", async () => {
+    const session = await mockSession(db);
+    const caller = createCaller(createInnerTRPCContext({ session }));
+    const target = await mockSession(db);
+    const email = target.user.email;
+    assertDefined(email, "mock user should have an email");
+
+    await expect(
+      caller.judging.admin.addJudgeByEmail({ email }),
     ).rejects.toThrow();
   });
 });
