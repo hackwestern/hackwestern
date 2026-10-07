@@ -74,11 +74,11 @@ export const REMINDER_COPY: Record<
 > = {
   "reminder-1": {
     subject: "Your Hack Western 13 application isn't finished yet",
-    when: "Applications close in one week, on Sunday, October 18 at 11:59 PM ET.",
+    when: "Applications close in just over a week, on Sunday, October 18 at 11:59 PM ET.",
   },
   "reminder-2": {
     subject: "Last call: finish your Hack Western 13 application",
-    when: "Applications close tomorrow, Sunday, October 18 at 11:59 PM ET.",
+    when: "Applications close tonight, Sunday, October 18 at 11:59 PM ET.",
   },
 };
 

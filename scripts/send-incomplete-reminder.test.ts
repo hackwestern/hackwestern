@@ -31,9 +31,9 @@ describe("incomplete reminder helpers", () => {
     const two = renderReminder("reminder-2", null);
     expect(one.subject).not.toBe(two.subject);
     expect(one.html).toContain("Hi Ada,");
-    expect(one.text).toContain("one week");
+    expect(one.text).toContain("just over a week");
     expect(two.html).toContain("Hi there,");
-    expect(two.text).toContain("tomorrow");
+    expect(two.text).toContain("tonight");
     expect(one.html).toContain("https://www.hackwestern.com/apply");
   });
 });
