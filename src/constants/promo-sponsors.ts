@@ -101,4 +101,13 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
     height: 12.58,
     overlaySrc: "/shared/sponsors/autodesk.svg",
   },
+  {
+    name: "Replit",
+    href: "https://replit.com/",
+    left: 80,
+    top: 114.39,
+    width: 18,
+    height: 6.94,
+    overlaySrc: "/shared/sponsors/replit.png",
+  },
 ];
