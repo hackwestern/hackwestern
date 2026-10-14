@@ -70,7 +70,8 @@ export function PhotoGallery({
   }, [imageCount, interval]);
 
   const imageIndex = shuffle ? order?.[index] : index;
-  const currentImage = imageIndex === undefined ? undefined : images[imageIndex];
+  const currentImage =
+    imageIndex === undefined ? undefined : images[imageIndex];
   const currentAlt = imageIndex === undefined ? "" : (alt[imageIndex] ?? "");
 
   return (
