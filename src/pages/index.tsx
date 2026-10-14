@@ -341,7 +341,7 @@ export default function Home() {
                 "isolate absolute right-[100px] top-[100px] min-[1440px]:right-auto min-[1440px]:left-[calc(50%+246px*var(--ui-scale,1))] min-[1440px]:top-[9.017%] min-[1440px]:origin-top-left min-[1440px]:[scale:var(--ui-scale,1)]",
             }}
           >
-            <PhotoGallery images={IMAGES} />
+            <PhotoGallery images={IMAGES} shuffle />
           </WindowFolder>
         </div>
       </section>
