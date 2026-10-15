@@ -212,17 +212,8 @@ export const reviewRouter = createTRPCRouter({
           )
           .limit(1);
 
-        const appAwaitingReview = appAwaitingReviews[0];
-
-        // If there are no applications awaiting review, return
-        if (!appAwaitingReview) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "There are no applications matching this query.",
-          });
-        }
-
-        return appAwaitingReview?.userId;
+        // null = the queue is empty, so the client can tell "all done" apart from an error
+        return appAwaitingReviews[0]?.userId ?? null;
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
