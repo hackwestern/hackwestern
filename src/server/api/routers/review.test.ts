@@ -425,13 +425,13 @@ describe("review.getNextId", () => {
       .where(eq(reviews.reviewerUserId, newOrganizerSession.user.id));
     await db.delete(users).where(eq(users.id, newOrganizerSession.user.id));
   });
-  test("Throws NOT_FOUND when no application matches", async () => {
+  test("Returns null when no application matches", async () => {
     await db.insert(applications).values(app);
     await db.insert(reviews).values(review);
 
     await expect(
       organizerCaller.review.getNextId({ skipId: hackerSession.user.id }),
-    ).rejects.toThrowError("NOT_FOUND");
+    ).resolves.toBeNull();
   });
 });
 
