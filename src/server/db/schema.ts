@@ -547,6 +547,9 @@ export const applications = pgTable(
     }),
 
     transportationMethod: transportationMethod("transportation_method"),
+    // RSVP travel: only asked when transportationMethod is "None" (travelling on their own)
+    travelReimbursement: boolean("travel_reimbursement"),
+    travelFrom: varchar("travel_from", { length: 255 }),
 
     // OLDER DEPREEACTED FIELDS <can clean up but might be good to keep the forms in the code base>
     avatarColour: avatarColour("avatar_colour"),
