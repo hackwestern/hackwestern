@@ -15,6 +15,7 @@ import {
   applicationSaveSchema,
   applicationSubmitSchema,
 } from "~/schemas/application";
+import { OWN_TRAVEL, rsvpTravelSaveSchema } from "~/schemas/rsvp";
 import { GITHUB_URL, LINKEDIN_URL, DEVPOST_URL } from "~/utils/urls";
 import { eq, count, inArray } from "drizzle-orm";
 import { z } from "zod";
@@ -101,6 +102,8 @@ export const applicationRouter = createTRPCRouter({
                 "emergencyContactRelationship",
                 "emergencyContactPhoneNumber",
                 "transportationMethod",
+                "travelReimbursement",
+                "travelFrom",
               ] as const),
             )
             .optional(),
@@ -337,6 +340,40 @@ export const applicationRouter = createTRPCRouter({
           message: "Failed to save application: " + JSON.stringify(error),
         });
       }
+    }),
+
+  // RSVP travel step. save() closes at the deadline, so this has its own
+  // mutation, open only to accepted hackers.
+  saveTravel: protectedProcedure
+    .input(rsvpTravelSaveSchema)
+    .mutation(async ({ ctx, input }) => {
+      const application = await db.query.applications.findFirst({
+        columns: { status: true },
+        where: eq(applications.userId, ctx.session.user.id),
+      });
+
+      if (application?.status !== "ACCEPTED") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only accepted hackers can RSVP.",
+        });
+      }
+
+      // Taking a Hack Western bus means no ticket to reimburse
+      const ownTravel = input.transportationMethod === OWN_TRAVEL;
+      const travelReimbursement = ownTravel ? input.travelReimbursement : null;
+      const travelFrom =
+        ownTravel && travelReimbursement ? input.travelFrom?.trim() : null;
+
+      await db
+        .update(applications)
+        .set({
+          transportationMethod: input.transportationMethod,
+          travelReimbursement,
+          travelFrom: travelFrom ?? null,
+          updatedAt: new Date(),
+        })
+        .where(eq(applications.userId, ctx.session.user.id));
     }),
 
   submit: protectedProcedure.mutation(async ({ ctx }) => {
