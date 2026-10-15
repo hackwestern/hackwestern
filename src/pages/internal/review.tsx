@@ -177,6 +177,10 @@ const Review = () => {
                                   <ul className="max-w-96 list-disc px-3">
                                     <li>Very lame</li>
                                     <li>Same projects as everyone else</li>
+                                    <li>
+                                      Generic answers that could come from
+                                      anyone
+                                    </li>
                                   </ul>
                                 </TooltipContent>
                               </Tooltip>
@@ -190,7 +194,10 @@ const Review = () => {
                                 <TooltipTrigger>🤩</TooltipTrigger>
                                 <TooltipContent>
                                   <ul className="max-w-96 list-disc px-3">
-                                    <li>Novel: ideas are unique!</li>
+                                    <li>
+                                      Novel: unique ideas in their projects and
+                                      their answers!
+                                    </li>
                                     <li>
                                       Creative: out-of-the-box thinking,
                                       creative problem solving techniques
