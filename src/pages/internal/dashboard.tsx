@@ -35,7 +35,7 @@ const Internal = () => {
   });
 
   return (
-    <div className="bg-hw-linear-gradient-day flex flex-col items-center justify-center bg-primary-100 py-4">
+    <div className="bg-hw-linear-gradient-day flex flex-col items-center justify-center bg-primary-100 py-4 font-figtree">
       <h1 className="z-10 mb-4 text-3xl">Internal Dashboard</h1>
       <Accordion type="multiple" className="z-10 mb-3">
         <AccordionItem key="leaderboard" value="leaderboard">
@@ -83,12 +83,13 @@ const Internal = () => {
         <Button asChild variant="primary">
           <Link href="/internal/adjust-status">Adjust Status</Link>
         </Button> */}
+        {/* Hidden while organizers are reviewing; bring back closer to the event.
         <Button asChild variant="primary">
           <Link href="/internal/cheat-check">Cheat Checks</Link>
         </Button>
         <Button asChild variant="primary">
           <Link href="/internal/judging">Judging</Link>
-        </Button>
+        </Button> */}
       </div>
       <Input
         className="z-10 mb-4 mt-3 w-96"
@@ -96,7 +97,7 @@ const Internal = () => {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
-      <div className="z-10 w-full font-secondary text-medium">
+      <div className="z-10 w-full text-medium">
         {reviewData && filteredData ? (
           <DataTable columns={reviewDashboardColumns} data={filteredData} />
         ) : (
