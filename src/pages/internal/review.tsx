@@ -27,8 +27,6 @@ import { SavedIndicator } from "~/components/apply/saved-indicator";
 import { Textarea } from "~/components/ui/textarea";
 import { useToast } from "~/hooks/use-toast";
 import { useSession } from "next-auth/react";
-import { AvatarDisplay } from "~/components/apply/avatar-display";
-import { colors } from "~/constants/avatar";
 import { getHorse, realmLabel } from "~/constants/realms";
 import {
   QUESTION1,
@@ -387,45 +385,6 @@ const Review = () => {
                   </Tooltip>
 
                   <div className="flex flex-col justify-center md:ml-8 md:flex-row">
-                    {/* Avatar Section */}
-                    {applicationData && (
-                      <div className="ml-8 mt-4 space-y-2 md:ml-0">
-                        <div className="flex h-64 w-64 justify-center">
-                          <div
-                            className="flex h-64 w-64 flex-col justify-center rounded-2xl p-4 pt-8"
-                            style={{
-                              background: `linear-gradient(135deg, ${
-                                colors.find(
-                                  (c) =>
-                                    c.name ===
-                                    (applicationData.avatarColour ?? "green"),
-                                )?.bg ?? "#F1FDE0"
-                              } 30%, ${
-                                colors.find(
-                                  (c) =>
-                                    c.name ===
-                                    (applicationData.avatarColour ?? "green"),
-                                )?.gradient ?? "#A7FB73"
-                              } 95%)`,
-                            }}
-                          >
-                            <div className="mt-10 flex scale-75 items-center justify-center">
-                              <AvatarDisplay
-                                avatarColour={applicationData.avatarColour}
-                                avatarFace={applicationData.avatarFace}
-                                avatarLeftHand={applicationData.avatarLeftHand}
-                                avatarRightHand={
-                                  applicationData.avatarRightHand
-                                }
-                                avatarHat={applicationData.avatarHat}
-                                size="lg"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
                     {/* Horse companion (replaces the HW12 canvas drawing) */}
                     {applicationData &&
                       (() => {
