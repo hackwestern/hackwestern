@@ -15,7 +15,11 @@ import { useState } from "react";
 
 const Internal = () => {
   const { data: reviewData } = api.review.getByOrganizer.useQuery();
-  const { data: nextReviewId } = api.review.getNextId.useQuery({});
+  const {
+    data: nextReviewId,
+    isLoading: nextLoading,
+    isError: nextError,
+  } = api.review.getNextId.useQuery({});
   const { data: reviewCount } = api.review.getReviewCounts.useQuery();
   const [search, setSearch] = useState("");
 
@@ -62,7 +66,11 @@ const Internal = () => {
         {reviewData?.length} applications reviewed!
       </div>
       <div className="z-10 mb-3 flex gap-3">
-        {nextReviewId ? (
+        {nextLoading ? (
+          <div>Loading the queue...</div>
+        ) : nextError ? (
+          <div>Couldn&apos;t load the next application. Refresh the page.</div>
+        ) : nextReviewId ? (
           <Button asChild variant="primary">
             <Link href={`/internal/review?applicant=${nextReviewId}`}>
               Review Next

@@ -460,7 +460,13 @@ const Review = () => {
                   </div>
 
                   <div className="flex justify-center text-center">
-                    {["githubLink", "linkedInLink", "otherLink", "resumeLink"]
+                    {[
+                      "githubLink",
+                      "linkedInLink",
+                      "devpostLink",
+                      "otherLink",
+                      "resumeLink",
+                    ]
                       .map((link) => link as keyof typeof applicationData)
                       .map((link) => {
                         if (applicationData?.[link]) {
@@ -506,6 +512,8 @@ const linkName = (link: string) => {
       return "GitHub";
     case "linkedInLink":
       return "LinkedIn";
+    case "devpostLink":
+      return "Devpost";
     case "otherLink":
       return "Other";
     case "resumeLink":
