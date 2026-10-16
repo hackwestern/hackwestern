@@ -4,15 +4,28 @@ import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "~/lib/utils";
 
 export interface PhotoGalleryProps {
-  /** Image paths, in crossfade order. */
+  /** Image paths, in crossfade order unless shuffle is enabled. */
   images: string[];
   /** Optional alt text per image, matched by index. Defaults to decorative (""). */
   alt?: string[];
+  /** Shuffle the images once in the browser for each page load. */
+  shuffle?: boolean;
   /** How long each photo stays on screen before crossfading, in ms. */
   interval?: number;
   /** Crossfade duration, in seconds. */
   fadeDuration?: number;
   className?: string;
+}
+
+function shuffledIndices(length: number) {
+  const indices = Array.from({ length }, (_, index) => index);
+  for (let index = indices.length - 1; index > 0; index--) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    const current = indices[index]!;
+    indices[index] = indices[randomIndex]!;
+    indices[randomIndex] = current;
+  }
+  return indices;
 }
 
 /**
@@ -32,43 +45,57 @@ export interface PhotoGalleryProps {
 export function PhotoGallery({
   images,
   alt = [],
+  shuffle = false,
   interval = 3000,
   fadeDuration = 0.8,
   className,
 }: PhotoGalleryProps) {
   const [index, setIndex] = React.useState(0);
+  const [order, setOrder] = React.useState<number[] | null>(null);
 
   React.useEffect(() => {
-    if (images.length < 2) return;
+    if (!shuffle) return;
+    setOrder(shuffledIndices(images.length));
+    setIndex(0);
+  }, [images.length, shuffle]);
+
+  const imageCount = shuffle ? (order?.length ?? 0) : images.length;
+
+  React.useEffect(() => {
+    if (imageCount < 2) return;
     const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % images.length);
+      setIndex((prev) => (prev + 1) % imageCount);
     }, interval);
     return () => clearInterval(timer);
-  }, [images.length, interval]);
+  }, [imageCount, interval]);
 
-  const currentImage = images[index];
-  if (!currentImage) return null;
+  const imageIndex = shuffle ? order?.[index] : index;
+  const currentImage =
+    imageIndex === undefined ? undefined : images[imageIndex];
+  const currentAlt = imageIndex === undefined ? "" : (alt[imageIndex] ?? "");
 
   return (
     <div className={cn("relative size-full overflow-hidden", className)}>
-      <AnimatePresence initial={false}>
-        <motion.div
-          key={currentImage}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: fadeDuration, ease: "easeInOut" }}
-          className="absolute inset-0"
-        >
-          <Image
-            src={currentImage}
-            alt={alt[index] ?? ""}
-            fill
-            sizes="400px"
-            className="object-cover"
-          />
-        </motion.div>
-      </AnimatePresence>
+      {currentImage && (
+        <AnimatePresence initial={false}>
+          <motion.div
+            key={currentImage}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: fadeDuration, ease: "easeInOut" }}
+            className="absolute inset-0"
+          >
+            <Image
+              src={currentImage}
+              alt={currentAlt}
+              fill
+              sizes="400px"
+              className="object-cover"
+            />
+          </motion.div>
+        </AnimatePresence>
+      )}
     </div>
   );
 }
