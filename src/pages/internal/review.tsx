@@ -128,6 +128,16 @@ const Review = () => {
                         <TooltipContent>They have tooltips!</TooltipContent>
                       </Tooltip>
                     </li>
+                    <li>
+                      <a
+                        href="https://claude.ai/code/artifact/089e47c8-6398-4ac6-b9aa-cb957cb87de4"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-600 underline underline-offset-2"
+                      >
+                        Reviewer guide + scoring rubric
+                      </a>
+                    </li>
                   </ul>
                 </div>
                 {reviewCount && (
