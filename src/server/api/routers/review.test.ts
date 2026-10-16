@@ -189,6 +189,22 @@ describe("review.getReviewCounts", () => {
     expect(result[0]?.reviewCount).toBe(1);
   });
 
+  test("shows the reviewer's email when they have no name", async () => {
+    await db
+      .update(users)
+      .set({ name: null })
+      .where(eq(users.id, organizerSession.user.id));
+    await db.insert(applications).values(application);
+    await db.insert(reviews).values(review);
+
+    const result = await filterBasedOnSession();
+    const reviewer = await db.query.users.findFirst({
+      where: eq(users.id, organizerSession.user.id),
+    });
+
+    expect(result[0]?.reviewerName).toBe(reviewer?.email);
+  });
+
   test("ignores incomplete reviews", async () => {
     // Creating New Hacker (for incomplete review)
     const newHackerSession = await mockSession(db);

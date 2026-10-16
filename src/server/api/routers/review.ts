@@ -265,7 +265,8 @@ export const reviewRouter = createTRPCRouter({
       const reviewCounts = await db
         .select({
           reviewerId: reviews.reviewerUserId,
-          reviewerName: users.name,
+          // Email + password sign-ups have no name, so fall back to the email
+          reviewerName: sql<string>`coalesce(${users.name}, ${users.email})`,
           reviewCount: count(reviews.reviewerUserId).mapWith(Number),
         })
         .from(reviews)
@@ -276,7 +277,7 @@ export const reviewRouter = createTRPCRouter({
             eq(reviews.completed, true),
           ),
         )
-        .groupBy(reviews.reviewerUserId, users.name)
+        .groupBy(reviews.reviewerUserId, users.name, users.email)
         .orderBy(desc(count(reviews.reviewerUserId)));
 
       return reviewCounts;
