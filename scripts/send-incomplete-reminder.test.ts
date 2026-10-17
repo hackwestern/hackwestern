@@ -33,7 +33,9 @@ describe("incomplete reminder helpers", () => {
     expect(one.html).toContain("Hi Ada,");
     expect(one.text).toContain("one week");
     expect(two.html).toContain("Hi there,");
-    expect(two.text).toContain("tomorrow");
+    expect(two.text).toContain("close Sunday");
+    // Goes out at 11:59 PM the night before and is read on the day, so no "tomorrow".
+    expect(two.text).not.toContain("tomorrow");
     expect(one.html).toContain("https://www.hackwestern.com/apply");
   });
 });
