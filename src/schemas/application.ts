@@ -24,6 +24,8 @@ export const applicationSaveSchema = createInsertSchema(applications)
     status: true,
     userId: true,
     transportationMethod: true,
+    travelReimbursement: true,
+    travelFrom: true,
   })
   .extend({
     devpostLink: z.string().nullish(),
