@@ -78,7 +78,7 @@ export const REMINDER_COPY: Record<
   },
   "reminder-2": {
     subject: "Last call: finish your Hack Western 13 application",
-    when: "Applications close tomorrow, Sunday, October 18 at 11:59 PM ET.",
+    when: "Applications close Sunday, October 18 at 11:59 PM ET.",
   },
 };
 

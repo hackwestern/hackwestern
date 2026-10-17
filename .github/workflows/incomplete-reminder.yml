@@ -4,7 +4,7 @@ name: Incomplete Application Reminder
 # (scripts/send-incomplete-reminder.ts). Plan agreed with marketing:
 #   Sun Oct 11, noon ET   reminder-1: one week left            (armed by REMINDER_1_LIVE)
 #   Fri Oct 16, noon ET   dry run of reminder-2, for the count (never sends)
-#   Sat Oct 17, noon ET   reminder-2: closes tomorrow           (armed by REMINDER_2_LIVE)
+#   Sat Oct 17, 11:59 PM ET  reminder-2: last call, read on deadline day (armed by REMINDER_2_LIVE)
 # Marketing's own 48-hour blast to the whole HW13 Announce list goes out from
 # Mailjet on Oct 16 and is not part of this workflow.
 #
@@ -20,7 +20,7 @@ on:
   schedule:
     - cron: "0 16 11 10 *" # Oct 11, 12:00 ET
     - cron: "0 16 16 10 *" # Oct 16, 12:00 ET (count only)
-    - cron: "0 16 17 10 *" # Oct 17, 12:00 ET
+    - cron: "59 3 18 10 *" # Oct 17, 11:59 PM ET (03:59 UTC Oct 18)
   workflow_dispatch:
     inputs:
       kind:
@@ -71,7 +71,7 @@ jobs:
             case "$SCHEDULE" in
               "0 16 11 10 *") KIND="reminder-1"; ARMED="$LIVE_1" ;;
               "0 16 16 10 *") KIND="reminder-2"; ARMED="false" ;;
-              "0 16 17 10 *") KIND="reminder-2"; ARMED="$LIVE_2" ;;
+              "59 3 18 10 *") KIND="reminder-2"; ARMED="$LIVE_2" ;;
               *) echo "Unknown schedule $SCHEDULE"; exit 1 ;;
             esac
           fi
