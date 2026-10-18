@@ -426,6 +426,22 @@ describe.sequential("application deadline", async () => {
     const result = await caller.application.get();
     expect(result?.status).toBe("IN_PROGRESS");
   });
+
+  test("save is refused once the application is submitted and changes nothing", async () => {
+    await caller.application.save(createCompleteSaveInput(session));
+    await caller.application.submit();
+    const before = await caller.application.get();
+
+    await expect(
+      caller.application.save({
+        ...createCompleteSaveInput(session),
+        firstName: "Changed",
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    const after = await caller.application.get();
+    expect(after?.status).toBe("PENDING_REVIEW");
+    expect(after?.firstName).toBe(before?.firstName);
+  });
 });
 
 /**
