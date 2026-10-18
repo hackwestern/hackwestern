@@ -254,6 +254,18 @@ export const applicationRouter = createTRPCRouter({
     .input(applicationSaveSchema)
     .mutation(async ({ input, ctx }) => {
       assertApplicationsOpen();
+      // The forms lock once an application is submitted, but a direct API
+      // call could still rewrite it, so refuse here too.
+      const existing = await db.query.applications.findFirst({
+        where: (schema, { eq }) => eq(schema.userId, ctx.session.user.id),
+        columns: { status: true },
+      });
+      if (existing && existing.status !== "IN_PROGRESS") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Submitted applications can't be changed.",
+        });
+      }
       try {
         const userId = ctx.session.user.id;
         const { canvasData, ...restData } = input;
