@@ -11,6 +11,7 @@ import {
 } from "framer-motion";
 import { Button } from "~/components/ui/button";
 import { Window } from "~/components/internals/window";
+import { useApplicationsOpen } from "~/hooks/use-can-edit-application";
 import {
   closestProgress,
   coverRect,
@@ -518,6 +519,7 @@ export function Hero() {
   const sceneRef = React.useRef<HTMLDivElement>(null);
   const [snapProgress, setSnapProgress] = React.useState(0.2);
   const [editing, setEditing] = React.useState(false);
+  const applicationsOpen = useApplicationsOpen();
   const isMobile = useIsMobile(MOBILE_BREAKPOINT_PX);
   const holdScreens = isMobile ? HOLD_SCREENS_MOBILE : HOLD_SCREENS;
   const bleed = isMobile ? BLEED_MOBILE : BLEED;
@@ -669,7 +671,11 @@ export function Hero() {
 
             {/* data-hero-cta: the mobile story windows rest below this. */}
             <Button asChild data-hero-cta>
-              <Link href="/apply">Apply</Link>
+              {applicationsOpen ? (
+                <Link href="/apply">Apply</Link>
+              ) : (
+                <Link href="/dashboard">Dashboard</Link>
+              )}
             </Button>
           </div>
         </div>
