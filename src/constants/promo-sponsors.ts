@@ -93,6 +93,18 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
     overlaySrc: "/shared/sponsors/cse-trimmed.png",
   },
   {
+    name: "Celsius",
+    href: "https://www.celsius.com/",
+    // Same gap after CSE as between Autodesk and Replit, right edge lined up
+    // with Manulife's, centered on the row. The wordmark is a small part of
+    // the lockup, so the box runs wider than Replit's to match its text size.
+    left: 21.8,
+    top: 112.27,
+    width: 24.22,
+    height: 11.19,
+    overlaySrc: "/shared/sponsors/celsius.svg",
+  },
+  {
     name: "Autodesk",
     href: "https://www.autodesk.com/",
     left: 57.83,
