@@ -669,14 +669,19 @@ export function Hero() {
               </div>
             </div>
 
-            {/* data-hero-cta: the mobile story windows rest below this. */}
-            <Button asChild data-hero-cta>
-              {applicationsOpen ? (
+            {/* data-hero-cta: the mobile story windows rest below this.
+                After the deadline /dashboard redirects home on production
+                (the hacker dashboard isn't live yet), so show a closed label
+                instead of a link that goes nowhere. */}
+            {applicationsOpen ? (
+              <Button asChild data-hero-cta>
                 <Link href="/apply">Apply</Link>
-              ) : (
-                <Link href="/dashboard">Dashboard</Link>
-              )}
-            </Button>
+              </Button>
+            ) : (
+              <Button disabled data-hero-cta>
+                Applications closed
+              </Button>
+            )}
           </div>
         </div>
       </section>
