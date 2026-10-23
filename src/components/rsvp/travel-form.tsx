@@ -12,7 +12,7 @@ import {
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
 import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
-import { Check } from "lucide-react";
+import { Check, CircleAlert } from "lucide-react";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { OWN_TRAVEL, rsvpTravelSaveSchema } from "~/schemas/rsvp";
@@ -29,7 +29,34 @@ const travelLabel = (
     ? "I'll get there on my own"
     : `Hack Western bus from ${option}`;
 
-export function TravelForm({ accent }: { accent?: string } = {}) {
+export type TravelErrors = Partial<
+  Record<keyof z.infer<typeof rsvpTravelSaveSchema>, string>
+>;
+
+/** A required answer that's still missing, shown right under its question. */
+export function FieldError({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <p
+      data-rsvp-error
+      role="alert"
+      className={`flex items-center gap-1.5 text-sm text-red-700 ${className}`}
+    >
+      <CircleAlert aria-hidden className="h-4 w-4 shrink-0" />
+      {children}
+    </p>
+  );
+}
+
+export function TravelForm({
+  accent,
+  errors = {},
+}: { accent?: string; errors?: TravelErrors } = {}) {
   const utils = api.useUtils();
   const { data } = api.application.get.useQuery();
 
@@ -79,6 +106,9 @@ export function TravelForm({ accent }: { accent?: string } = {}) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>How are you getting to Hack Western? *</FormLabel>
+              {errors.transportationMethod && (
+                <FieldError>{errors.transportationMethod}</FieldError>
+              )}
               <FormControl>
                 <RadioButtonGroup
                   value={field.value ?? undefined}
@@ -105,6 +135,9 @@ export function TravelForm({ accent }: { accent?: string } = {}) {
                 <FormLabel>
                   Do you want to request a partial ticket reimbursement? *
                 </FormLabel>
+                {errors.travelReimbursement && (
+                  <FieldError>{errors.travelReimbursement}</FieldError>
+                )}
                 <FormDescription>
                   We cover part of a bus, train or flight ticket at a flat rate
                   based on where you&apos;re travelling from. It&apos;s paid
@@ -137,6 +170,9 @@ export function TravelForm({ accent }: { accent?: string } = {}) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Which city are you travelling from? *</FormLabel>
+                {errors.travelFrom && (
+                  <FieldError>{errors.travelFrom}</FieldError>
+                )}
                 <FormControl>
                   <Input
                     {...field}

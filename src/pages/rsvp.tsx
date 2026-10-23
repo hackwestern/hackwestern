@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
@@ -10,18 +10,19 @@ import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "~/components/ui/alert-dialog";
 import { Confetti } from "~/components/dashboard/confetti";
 import { FilmStrip } from "~/components/promo/film-strip";
-import { TravelForm } from "~/components/rsvp/travel-form";
+import {
+  FieldError,
+  TravelForm,
+  type TravelErrors,
+} from "~/components/rsvp/travel-form";
 import { rsvpTravelSubmitSchema } from "~/schemas/rsvp";
 import { CalendarClock } from "lucide-react";
 import { type Realm, realmTint } from "~/constants/realms";
@@ -32,8 +33,6 @@ import { api } from "~/utils/api";
 
 type RsvpStatus = "ACCEPTED" | "CONFIRMED" | "DECLINED";
 const CONFETTI_SEEN_KEY = "hw13-rsvp-confetti-seen";
-const ENROLLED_MISSING =
-  "Tick the box to confirm you’re enrolled in a college or university program";
 // Primary and secondary buttons size differently; pin both to one height.
 const RSVP_BUTTON = "h-12 min-h-0 py-0 font-figtree font-medium";
 const RSVP_STATUSES: string[] = ["ACCEPTED", "CONFIRMED", "DECLINED"];
@@ -77,7 +76,9 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
   const router = useRouter();
   const [status, setStatus] = useState<RsvpStatus>(initialStatus);
   const [enrolled, setEnrolled] = useState(false);
-  const [missing, setMissing] = useState<string[]>([]);
+  // Errors show at each question only after a Confirm attempt, and clear
+  // as soon as the question is answered.
+  const [attempted, setAttempted] = useState(false);
   const { data: application } = api.application.get.useQuery();
   const accent = realmTint[realm ?? "safari"].accent;
   // Each bump remounts the confetti, so it plays again.
@@ -114,16 +115,31 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
     });
   }, [router]);
 
-  function confirm() {
+  const travelErrors = useMemo(() => {
+    if (!attempted) return {};
     const travel = rsvpTravelSubmitSchema.safeParse(application ?? {});
-    const needed = [
-      ...new Set(
-        travel.success ? [] : travel.error.issues.map((i) => i.message),
-      ),
-      ...(enrolled ? [] : [ENROLLED_MISSING]),
-    ];
-    setMissing(needed);
-    if (needed.length === 0) rsvp.mutate({ attending: true, enrolled });
+    if (travel.success) return {};
+    return Object.fromEntries(
+      travel.error.issues.map((i) => [String(i.path[0]), i.message]),
+    ) as TravelErrors;
+  }, [attempted, application]);
+  const enrollError = attempted && !enrolled;
+
+  function confirm() {
+    setAttempted(true);
+    const travelOk = rsvpTravelSubmitSchema.safeParse(
+      application ?? {},
+    ).success;
+    if (travelOk && enrolled) {
+      rsvp.mutate({ attending: true, enrolled });
+      return;
+    }
+    // Bring the first unanswered question into view (it can be off-screen on a phone).
+    requestAnimationFrame(() =>
+      document
+        .querySelector("[data-rsvp-error]")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" }),
+    );
   }
 
   const copy = COPY[status === "ACCEPTED" && closed ? "CLOSED" : status];
@@ -211,28 +227,25 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
 
           {canEditTravel && (
             <div className="rounded-2xl bg-white/95 p-6 text-heavy shadow-lg">
-              <TravelForm accent={accent} />
+              <TravelForm accent={accent} errors={travelErrors} />
               {status === "ACCEPTED" && (
-                <label
-                  className={`mt-8 flex items-start gap-3 rounded-lg text-sm ${
-                    missing.includes(ENROLLED_MISSING)
-                      ? "-mx-3 bg-red-50 px-3 py-2 ring-1 ring-red-300"
-                      : ""
-                  }`}
-                >
-                  <Checkbox
-                    checked={enrolled}
-                    onCheckedChange={(v) => {
-                      setEnrolled(v === true);
-                      setMissing((m) =>
-                        m.filter((x) => x !== ENROLLED_MISSING),
-                      );
-                    }}
-                    className="mt-0.5"
-                  />
-                  I&apos;m currently enrolled in a college or university
-                  program. Hack Western is for post-secondary students.
-                </label>
+                <div className="mt-8">
+                  <label className="flex items-start gap-3 text-sm">
+                    <Checkbox
+                      checked={enrolled}
+                      onCheckedChange={(v) => setEnrolled(v === true)}
+                      aria-invalid={enrollError}
+                      className={`mt-0.5 ${enrollError ? "border-red-600 ring-1 ring-red-600" : ""}`}
+                    />
+                    I&apos;m currently enrolled in a college or university
+                    program. Hack Western is for post-secondary students.
+                  </label>
+                  {enrollError && (
+                    <FieldError className="ml-7 mt-1.5">
+                      Tick this box to confirm your spot
+                    </FieldError>
+                  )}
+                </div>
               )}
               {status === "ACCEPTED" && (
                 <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -250,16 +263,6 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
                     disabled={rsvp.isPending}
                     onConfirm={() => rsvp.mutate({ attending: false })}
                   />
-                </div>
-              )}
-              {status === "ACCEPTED" && missing.length > 0 && (
-                <div role="alert" className="mt-4 text-sm text-red-700">
-                  <p className="font-semibold">Before you confirm:</p>
-                  <ul className="mt-1 list-disc space-y-0.5 pl-5">
-                    {missing.map((m) => (
-                      <li key={m}>{m}</li>
-                    ))}
-                  </ul>
                 </div>
               )}
               {rsvp.error && (
@@ -302,8 +305,10 @@ function DeclineButton({
   disabled: boolean;
   onConfirm: () => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const keepRef = useRef<HTMLButtonElement>(null);
   return (
-    <AlertDialog>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
         {asLink ? (
           <button
@@ -324,20 +329,46 @@ function DeclineButton({
           </Button>
         )}
       </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Give up your spot?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This can’t be undone. Your spot won’t come back if you change your
-            mind.
+      {/* Styled like the rest of the page: rounded card, the HW buttons at
+          one size, and the safe choice as the main button. */}
+      <AlertDialogContent
+        // Land on the safe choice, so Enter keeps the spot.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          keepRef.current?.focus();
+        }}
+        className="w-[calc(100%-2rem)] max-w-md gap-0 rounded-2xl border-0 p-6 font-figtree shadow-xl"
+      >
+        <AlertDialogHeader className="text-left">
+          <AlertDialogTitle className="font-cossetteTexte text-2xl font-bold text-heavy">
+            Give up your spot?
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-base leading-snug text-medium">
+            You can’t undo this. Once you give up your spot, it’s gone for good.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Keep my spot</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Button
+            ref={keepRef}
+            variant="primary"
+            full
+            className={RSVP_BUTTON}
+            onClick={() => setOpen(false)}
+          >
+            Keep my spot
+          </Button>
+          <Button
+            variant="secondary"
+            full
+            className={`${RSVP_BUTTON} text-red-700 hover:text-red-800`}
+            onClick={() => {
+              setOpen(false);
+              onConfirm();
+            }}
+          >
             Yes, give it up
-          </AlertDialogAction>
-        </AlertDialogFooter>
+          </Button>
+        </div>
       </AlertDialogContent>
     </AlertDialog>
   );
