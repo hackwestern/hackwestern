@@ -226,7 +226,7 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
           </div>
 
           {canEditTravel && (
-            <div className="rounded-2xl bg-white/95 p-6 text-heavy shadow-lg">
+            <div className="relative rounded-2xl bg-white/95 p-6 text-heavy shadow-lg">
               <TravelForm accent={accent} errors={travelErrors} />
               {status === "ACCEPTED" && (
                 <div className="mt-8">

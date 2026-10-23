@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import {
   Form,
@@ -66,6 +66,15 @@ export function TravelForm({
     },
   });
 
+  const [savedShown, setSavedShown] = useState(false);
+  useEffect(() => {
+    if (!save.isSuccess) return;
+    setSavedShown(true);
+    const t = setTimeout(() => setSavedShown(false), 2500);
+    return () => clearTimeout(t);
+  }, [save.isSuccess, save.submittedAt]);
+  const chip = save.isPending || save.isError || savedShown;
+
   const defaultValues = useMemo(() => {
     if (!data) return data;
     return {
@@ -99,7 +108,10 @@ export function TravelForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="relative space-y-8"
+      >
         <FormField
           control={form.control}
           name="transportationMethod"
@@ -185,26 +197,30 @@ export function TravelForm({
             )}
           />
         )}
-        {/* Answers save as they're picked; say so, since there's no save button.
-            Only takes up room once there's something to say. */}
-        {!save.isIdle && (
-          <p
-            aria-live="polite"
-            className={`-mt-5 flex items-center gap-1.5 text-sm ${save.isError ? "text-red-700" : ""}`}
-            style={save.isError ? undefined : { color: accent }}
-          >
-            {save.isPending ? (
-              "Saving…"
-            ) : save.isError ? (
-              "Couldn’t save your answer. Check your connection and pick it again."
-            ) : (
-              <>
-                <Check aria-hidden className="h-4 w-4" />
-                Saved
-              </>
-            )}
-          </p>
-        )}
+        {/* Answers save as they're picked; say so, since there's no save
+            button. A chip anchored to the form and lifted
+            onto the card's top edge (38px = the card's 24px padding plus half
+            the chip; !mt-0 beats the form's space-y margin), so it never pushes
+            the questions around. "Saved" fades
+            out after a moment; a failed save stays until the next try. */}
+        <p
+          aria-live="polite"
+          className={`pointer-events-none absolute -top-[38px] right-0 !mt-0 flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold shadow-md ring-1 ring-black/5 transition-opacity duration-300 motion-reduce:transition-none ${
+            chip ? "opacity-100" : "opacity-0"
+          } ${save.isError ? "text-red-700" : ""}`}
+          style={save.isError ? undefined : { color: accent }}
+        >
+          {save.isPending ? (
+            "Saving…"
+          ) : save.isError ? (
+            "Couldn’t save. Pick your answer again."
+          ) : save.isSuccess ? (
+            <>
+              <Check aria-hidden className="h-3.5 w-3.5" />
+              Saved
+            </>
+          ) : null}
+        </p>
       </form>
     </Form>
   );
