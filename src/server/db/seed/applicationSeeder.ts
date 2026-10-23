@@ -125,6 +125,7 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       transportationMethod: null,
       travelReimbursement: null,
       travelFrom: null,
+      enrollmentConfirmedAt: null,
     };
 
     const isComplete = applicationSubmitSchema.safeParse(application).success;

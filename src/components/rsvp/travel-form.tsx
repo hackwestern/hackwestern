@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import {
   Form,
@@ -15,7 +15,11 @@ import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
 import { CircleAlert } from "lucide-react";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
-import { OWN_TRAVEL, rsvpTravelSaveSchema } from "~/schemas/rsvp";
+import {
+  OWN_TRAVEL,
+  rsvpTravelSaveSchema,
+  type RsvpTravel,
+} from "~/schemas/rsvp";
 import { transportationMethod } from "~/server/db/schema";
 
 // RSVP travel step: a Hack Western bus, or getting here on their own
@@ -53,7 +57,14 @@ export function FieldError({
   );
 }
 
-export function TravelForm({ errors = {} }: { errors?: TravelErrors } = {}) {
+export function TravelForm({
+  errors = {},
+  onChange,
+}: {
+  errors?: TravelErrors;
+  /** Called with the answer on screen whenever it changes (after loading). */
+  onChange?: (values: RsvpTravel) => void;
+} = {}) {
   const utils = api.useUtils();
   const { data } = api.application.get.useQuery();
 
@@ -78,6 +89,18 @@ export function TravelForm({ errors = {} }: { errors?: TravelErrors } = {}) {
   });
 
   useAutoSave(form, onSubmit, defaultValues);
+
+  // Report the answer on screen to the page (it confirms with it), once the
+  // saved answer has loaded and only when it actually changed.
+  const onScreen = useWatch({ control: form.control });
+  const lastReported = useRef("");
+  useEffect(() => {
+    if (!data || !onChange) return;
+    const key = JSON.stringify(onScreen);
+    if (key === lastReported.current) return;
+    lastReported.current = key;
+    onChange(onScreen);
+  }, [data, onChange, onScreen]);
 
   function onSubmit(formData: z.infer<typeof rsvpTravelSaveSchema>) {
     save.mutate({ ...formData });

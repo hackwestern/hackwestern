@@ -13,3 +13,14 @@ export const RSVP_DEADLINE = new Date("2026-11-06T23:59:00-05:00");
 export function isPastRsvpDeadline() {
   return Date.now() >= RSVP_DEADLINE.getTime();
 }
+
+// "Friday, November 6 at 11:59 p.m. ET". Formatted on the server and passed
+// to pages, so the browser's locale data can't make it differ.
+export function formatRsvpDeadline() {
+  const fmt = (o: Intl.DateTimeFormatOptions) =>
+    RSVP_DEADLINE.toLocaleString("en-CA", {
+      timeZone: "America/Toronto",
+      ...o,
+    });
+  return `${fmt({ weekday: "long", month: "long", day: "numeric" })} at ${fmt({ hour: "numeric", minute: "2-digit" })} ET`;
+}

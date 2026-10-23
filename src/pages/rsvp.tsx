@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
@@ -24,10 +24,14 @@ import {
   TravelForm,
   type TravelErrors,
 } from "~/components/rsvp/travel-form";
-import { rsvpTravelSubmitSchema } from "~/schemas/rsvp";
+import {
+  normalizeTravel,
+  rsvpTravelSubmitSchema,
+  type RsvpTravel,
+} from "~/schemas/rsvp";
 import { CalendarClock } from "lucide-react";
 import { type Realm, realmTint } from "~/constants/realms";
-import { RSVP_DEADLINE, isPastRsvpDeadline } from "~/lib/date";
+import { formatRsvpDeadline, isPastRsvpDeadline } from "~/lib/date";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
 import { api } from "~/utils/api";
@@ -51,34 +55,48 @@ type RsvpProps = {
   realm: Realm | null;
   /** Opened from the acceptance email (/rsvp?celebrate=1): play confetti. */
   celebrate: boolean;
+  /**
+   * Decided by the server, not the device clock: a phone set to the wrong
+   * time must not show RSVP as closed (or open) when the server disagrees.
+   */
+  closed: boolean;
+  deadlineText: string;
 };
 
-const fmt = (o: Intl.DateTimeFormatOptions) =>
-  RSVP_DEADLINE.toLocaleString("en-CA", { timeZone: "America/Toronto", ...o });
-const deadlineText = `${fmt({ weekday: "long", month: "long", day: "numeric" })} at ${fmt({ hour: "numeric", minute: "2-digit" })} ET`;
+// Just the travel answer, from whatever holds it (the saved application or
+// the form on screen).
+const pickTravel = (a?: RsvpTravel | null): RsvpTravel => ({
+  transportationMethod: a?.transportationMethod,
+  travelReimbursement: a?.travelReimbursement,
+  travelFrom: a?.travelFrom,
+});
 
-const COPY: Record<PageStatus | "CLOSED", { title: string; body: string }> = {
-  NONE: {
-    title: "There’s no RSVP on this account",
-    body: "If you got an acceptance email, sign in with the account you applied with.",
-  },
-  ACCEPTED: {
-    title: "You’re invited to Hack Western 13!",
-    body: "Hack Western runs November 20–22 at Western University. Tell us how you’re getting here and confirm your spot.",
-  },
-  CLOSED: {
-    title: "RSVP is closed",
-    body: `The RSVP deadline was ${deadlineText}, so your spot has been released. We hope to see you at a future Hack Western.`,
-  },
-  CONFIRMED: {
-    title: "You’re confirmed. See you there!",
-    body: "Hack Western runs November 20–22 at Western University. We’ll email you the schedule and check-in details closer to the event.",
-  },
-  DECLINED: {
-    title: "You’ve declined your spot",
-    body: "Thanks for letting us know. We hope to see you at a future Hack Western.",
-  },
-};
+const copyFor = (
+  key: PageStatus | "CLOSED",
+  deadlineText: string,
+): { title: string; body: string } =>
+  ({
+    NONE: {
+      title: "There’s no RSVP on this account",
+      body: "If you got an acceptance email, sign in with the account you applied with.",
+    },
+    ACCEPTED: {
+      title: "You’re invited to Hack Western 13!",
+      body: "Hack Western runs November 20–22 at Western University. Tell us how you’re getting here and confirm your spot.",
+    },
+    CLOSED: {
+      title: "RSVP is closed",
+      body: `The RSVP deadline was ${deadlineText}, so your spot has been released. We hope to see you at a future Hack Western.`,
+    },
+    CONFIRMED: {
+      title: "You’re confirmed. See you there!",
+      body: "Hack Western runs November 20–22 at Western University. We’ll email you the schedule and check-in details closer to the event.",
+    },
+    DECLINED: {
+      title: "You’ve declined your spot",
+      body: "Thanks for letting us know. We hope to see you at a future Hack Western.",
+    },
+  })[key];
 
 /**
  * RSVP for accepted hackers (status ACCEPTED -> CONFIRMED or DECLINED).
@@ -90,9 +108,16 @@ const Rsvp = ({
   email,
   realm,
   celebrate,
+  closed,
+  deadlineText,
 }: RsvpProps) => {
   const router = useRouter();
   const [status, setStatus] = useState<PageStatus>(initialStatus);
+  // Follow the server when its props are refreshed (see rsvp onError).
+  useEffect(() => setStatus(initialStatus), [initialStatus]);
+  // The travel answer currently on screen, reported by the form as it
+  // changes. Null until the form has loaded the saved answer.
+  const [draft, setDraft] = useState<RsvpTravel | null>(null);
   const [enrolled, setEnrolled] = useState(false);
   // Errors show at each question only after a Confirm attempt, and clear
   // as soon as the question is answered.
@@ -113,13 +138,19 @@ const Rsvp = ({
     }
     setBurst((n) => n + 1);
   }, [initialStatus]);
-  const closed = isPastRsvpDeadline();
   const utils = api.useUtils();
 
   const rsvp = api.application.rsvp.useMutation({
     onSuccess: ({ status }) => {
       setStatus(status);
       return utils.application.get.invalidate();
+    },
+    onError: (err) => {
+      // The deadline passed while the page was open, or another tab changed
+      // the RSVP: reload the server's view so the page matches it.
+      if (err.data?.code === "FORBIDDEN" || err.data?.code === "CONFLICT") {
+        void router.replace(router.asPath, undefined, { scroll: false });
+      }
     },
   });
 
@@ -132,23 +163,25 @@ const Rsvp = ({
     });
   }, [router]);
 
-  const travelErrors = useMemo(() => {
-    if (!attempted) return {};
-    const travel = rsvpTravelSubmitSchema.safeParse(application ?? {});
-    if (travel.success) return {};
-    return Object.fromEntries(
-      travel.error.issues.map((i) => [String(i.path[0]), i.message]),
-    ) as TravelErrors;
-  }, [attempted, application]);
+  // Validate what's on screen, cleaned up the same way the server stores it.
+  const travelNow = draft ?? pickTravel(application);
+  const travelCheck = rsvpTravelSubmitSchema.safeParse(
+    normalizeTravel(travelNow),
+  );
+  const travelErrors: TravelErrors =
+    attempted && !travelCheck.success
+      ? (Object.fromEntries(
+          travelCheck.error.issues.map((i) => [String(i.path[0]), i.message]),
+        ) as TravelErrors)
+      : {};
   const enrollError = attempted && !enrolled;
 
   function confirm() {
     setAttempted(true);
-    const travelOk = rsvpTravelSubmitSchema.safeParse(
-      application ?? {},
-    ).success;
-    if (travelOk && enrolled) {
-      rsvp.mutate({ attending: true, enrolled });
+    if (travelCheck.success && enrolled) {
+      // Send the answer on screen with the confirm: autosave may not have
+      // caught up yet, and the server saves both in one update.
+      rsvp.mutate({ attending: true, enrolled, travel: travelNow });
       return;
     }
     // Bring the first unanswered question into view (it can be off-screen on a phone).
@@ -159,7 +192,10 @@ const Rsvp = ({
     );
   }
 
-  const copy = COPY[status === "ACCEPTED" && closed ? "CLOSED" : status];
+  const copy = copyFor(
+    status === "ACCEPTED" && closed ? "CLOSED" : status,
+    deadlineText,
+  );
   const deadlinePill =
     status === "ACCEPTED" && !closed
       ? `RSVP by ${deadlineText}`
@@ -263,7 +299,7 @@ const Rsvp = ({
 
           {canEditTravel && (
             <div className="relative rounded-2xl bg-white/95 p-6 text-heavy shadow-lg">
-              <TravelForm errors={travelErrors} />
+              <TravelForm errors={travelErrors} onChange={setDraft} />
               {status === "ACCEPTED" && (
                 <div className="mt-8">
                   <label className="flex items-start gap-3 text-sm">
@@ -428,6 +464,8 @@ export const getServerSideProps = async (
       // Confetti is for the invitation, not for someone who already declined.
       celebrate:
         application?.status === "ACCEPTED" && context.query.celebrate === "1",
+      closed: isPastRsvpDeadline(),
+      deadlineText: formatRsvpDeadline(),
     } satisfies RsvpProps,
   };
 };

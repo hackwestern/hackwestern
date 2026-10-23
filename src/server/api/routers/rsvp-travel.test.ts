@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { eq } from "drizzle-orm";
 
 import { createCaller } from "~/server/api/root";
@@ -8,6 +8,7 @@ import { mockSession } from "~/server/auth";
 import { applications } from "~/server/db/schema";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { rsvpTravelSubmitSchema } from "~/schemas/rsvp";
+import { RSVP_DEADLINE } from "~/lib/date";
 
 const session = await mockSession(db);
 const caller = createCaller(createInnerTRPCContext({ session }));
@@ -30,7 +31,15 @@ const savedTravel = async () =>
   });
 
 describe("application.saveTravel", () => {
+  // Pinned before the RSVP deadline so this suite doesn't expire with it.
+  beforeEach(() => {
+    vi.spyOn(Date, "now").mockReturnValue(
+      RSVP_DEADLINE.getTime() - 7 * 24 * 60 * 60 * 1000,
+    );
+  });
+
   afterEach(async () => {
+    vi.restoreAllMocks();
     await db
       .delete(applications)
       .where(eq(applications.userId, session.user.id));

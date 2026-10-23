@@ -16,7 +16,7 @@ import {
   applicationSubmitSchema,
 } from "~/schemas/application";
 import {
-  OWN_TRAVEL,
+  normalizeTravel,
   rsvpRespondSchema,
   rsvpTravelSaveSchema,
   rsvpTravelSubmitSchema,
@@ -386,26 +386,18 @@ export const applicationRouter = createTRPCRouter({
         });
       }
 
-      // Taking a Hack Western bus means no ticket to reimburse
-      const ownTravel = input.transportationMethod === OWN_TRAVEL;
-      const travelReimbursement = ownTravel ? input.travelReimbursement : null;
-      const travelFrom =
-        ownTravel && travelReimbursement ? input.travelFrom?.trim() : null;
-
       await db
         .update(applications)
-        .set({
-          transportationMethod: input.transportationMethod,
-          travelReimbursement,
-          travelFrom: travelFrom ?? null,
-          updatedAt: new Date(),
-        })
+        .set({ ...normalizeTravel(input), updatedAt: new Date() })
         .where(eq(applications.userId, ctx.session.user.id));
     }),
 
   // RSVP. Yes: ACCEPTED -> CONFIRMED, before the RSVP deadline, with the
-  // travel step complete. No: ACCEPTED or CONFIRMED -> DECLINED, which can't
-  // be undone (there's no waitlist to hand the spot back from).
+  // travel step complete and the enrollment attestation; the travel answer
+  // sent with it is saved in the same update. No: ACCEPTED or CONFIRMED ->
+  // DECLINED, which can't be undone (there's no waitlist to hand the spot
+  // back from), and stays possible after the deadline so a confirmed hacker
+  // can still free their spot.
   rsvp: protectedProcedure
     .input(rsvpRespondSchema)
     .mutation(async ({ ctx, input }) => {
@@ -439,7 +431,10 @@ export const applicationRouter = createTRPCRouter({
               "Confirm you're enrolled in a college or university program.",
           });
         }
-        const travel = rsvpTravelSubmitSchema.safeParse(application);
+        // The answer on screen when Confirm was clicked, else what's saved.
+        const travel = rsvpTravelSubmitSchema.safeParse(
+          input.travel ? normalizeTravel(input.travel) : application,
+        );
         if (!travel.success) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -468,7 +463,14 @@ export const applicationRouter = createTRPCRouter({
       // can't flip a decline back to confirmed.
       const updated = await db
         .update(applications)
-        .set({ status, updatedAt: new Date() })
+        .set({
+          status,
+          updatedAt: new Date(),
+          ...(input.attending && {
+            ...(input.travel && normalizeTravel(input.travel)),
+            enrollmentConfirmedAt: new Date(),
+          }),
+        })
         .where(
           and(
             eq(applications.userId, ctx.session.user.id),

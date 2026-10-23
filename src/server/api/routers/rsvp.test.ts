@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { eq } from "drizzle-orm";
 
 import { createCaller } from "~/server/api/root";
@@ -29,6 +29,22 @@ const seed = (
     ...travel,
   });
 
+const saved = async () =>
+  db.query.applications.findFirst({
+    columns: {
+      status: true,
+      transportationMethod: true,
+      travelReimbursement: true,
+      travelFrom: true,
+      enrollmentConfirmedAt: true,
+    },
+    where: eq(applications.userId, session.user.id),
+  });
+
+// A fixed day a week before RSVP closes, so these tests don't start failing
+// once the real deadline passes.
+const WHILE_OPEN = RSVP_DEADLINE.getTime() - 7 * 24 * 60 * 60 * 1000;
+
 const statusNow = async () =>
   (
     await db.query.applications.findFirst({
@@ -38,6 +54,10 @@ const statusNow = async () =>
   )?.status;
 
 describe("application.rsvp", () => {
+  beforeEach(() => {
+    vi.spyOn(Date, "now").mockReturnValue(WHILE_OPEN);
+  });
+
   afterEach(async () => {
     vi.restoreAllMocks();
     await db
@@ -129,5 +149,91 @@ describe("application.rsvp", () => {
       "enrolled",
     );
     expect(await statusNow()).toBe("ACCEPTED");
+  });
+
+  test("confirming records when they attested enrollment", async () => {
+    await seed("ACCEPTED");
+    await caller.application.rsvp({ attending: true, enrolled: true });
+    const row = await saved();
+    expect(row?.status).toBe("CONFIRMED");
+    // Stamped with the real time (new Date() ignores the mocked Date.now).
+    const stamped = row?.enrollmentConfirmedAt?.getTime() ?? 0;
+    expect(Math.abs(stamped - new Date().getTime())).toBeLessThan(60_000);
+  });
+
+  test("declining doesn't record an enrollment attestation", async () => {
+    await seed("ACCEPTED");
+    await caller.application.rsvp({ attending: false, enrolled: true });
+    expect((await saved())?.enrollmentConfirmedAt).toBeNull();
+  });
+
+  test("confirms with the answer on screen even before autosave lands", async () => {
+    // Nothing saved yet: the click beat the autosave debounce.
+    await seed("ACCEPTED", { transportationMethod: null });
+    await caller.application.rsvp({
+      attending: true,
+      enrolled: true,
+      travel: { transportationMethod: "Toronto" },
+    });
+    const row = await saved();
+    expect(row?.status).toBe("CONFIRMED");
+    expect(row?.transportationMethod).toBe("Toronto");
+  });
+
+  test("the answer on screen wins over an older saved one", async () => {
+    // Saved: a bus. On screen: own travel with a reimbursement request.
+    await seed("ACCEPTED");
+    await caller.application.rsvp({
+      attending: true,
+      enrolled: true,
+      travel: {
+        transportationMethod: "None",
+        travelReimbursement: true,
+        travelFrom: " Ottawa ",
+      },
+    });
+    const row = await saved();
+    expect(row).toMatchObject({
+      status: "CONFIRMED",
+      transportationMethod: "None",
+      travelReimbursement: true,
+      travelFrom: "Ottawa",
+    });
+  });
+
+  test("an incomplete answer on screen blocks the confirm, even if a saved one is complete", async () => {
+    await seed("ACCEPTED"); // saved: Waterloo bus (complete)
+    await expect(
+      caller.application.rsvp({
+        attending: true,
+        enrolled: true,
+        travel: { transportationMethod: "None", travelReimbursement: null },
+      }),
+    ).rejects.toThrow("reimbursement");
+    const row = await saved();
+    expect(row?.status).toBe("ACCEPTED");
+    expect(row?.transportationMethod).toBe("Waterloo");
+  });
+
+  test("picking a bus on screen clears a stale reimbursement request", async () => {
+    await seed("ACCEPTED", {
+      transportationMethod: "None",
+      travelReimbursement: true,
+      travelFrom: "Ottawa",
+    });
+    await caller.application.rsvp({
+      attending: true,
+      enrolled: true,
+      travel: {
+        transportationMethod: "Hamilton",
+        travelReimbursement: true,
+        travelFrom: "Ottawa",
+      },
+    });
+    expect(await saved()).toMatchObject({
+      transportationMethod: "Hamilton",
+      travelReimbursement: null,
+      travelFrom: null,
+    });
   });
 });

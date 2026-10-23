@@ -38,8 +38,29 @@ export const rsvpTravelSubmitSchema = rsvpTravelSaveSchema
     }
   });
 
-// Confirming needs the post-secondary enrollment attestation.
+export type RsvpTravel = z.infer<typeof rsvpTravelSaveSchema>;
+
+// What gets stored for a travel answer, used by autosave and by Confirm so
+// both write the same shape: a Hack Western bus means no ticket to
+// reimburse, and the city is only kept with a reimbursement request.
+// Undefined fields are left out of the update, as before.
+export function normalizeTravel(input: z.infer<typeof rsvpTravelSaveSchema>) {
+  const ownTravel = input.transportationMethod === OWN_TRAVEL;
+  const travelReimbursement = ownTravel ? input.travelReimbursement : null;
+  const travelFrom =
+    ownTravel && travelReimbursement ? input.travelFrom?.trim() : null;
+  return {
+    transportationMethod: input.transportationMethod,
+    travelReimbursement,
+    travelFrom: travelFrom ?? null,
+  };
+}
+
+// Confirming needs the post-secondary enrollment attestation. `travel` is
+// the travel answer on screen when Confirm was clicked, so a click inside
+// the autosave debounce can't confirm against an older saved answer.
 export const rsvpRespondSchema = z.object({
   attending: z.boolean(),
   enrolled: z.boolean().optional(),
+  travel: rsvpTravelSaveSchema.optional(),
 });
