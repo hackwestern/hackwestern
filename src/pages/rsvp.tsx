@@ -22,6 +22,8 @@ import {
 import { Confetti } from "~/components/dashboard/confetti";
 import { FilmStrip } from "~/components/promo/film-strip";
 import { TravelForm } from "~/components/rsvp/travel-form";
+import { rsvpTravelSubmitSchema } from "~/schemas/rsvp";
+import { CalendarClock } from "lucide-react";
 import { type Realm, realmTint } from "~/constants/realms";
 import { RSVP_DEADLINE, isPastRsvpDeadline } from "~/lib/date";
 import { authOptions } from "~/server/auth";
@@ -30,6 +32,8 @@ import { api } from "~/utils/api";
 
 type RsvpStatus = "ACCEPTED" | "CONFIRMED" | "DECLINED";
 const CONFETTI_SEEN_KEY = "hw13-rsvp-confetti-seen";
+const ENROLLED_MISSING =
+  "Tick the box to confirm you’re enrolled in a college or university program";
 // Primary and secondary buttons size differently; pin both to one height.
 const RSVP_BUTTON = "h-12 min-h-0 py-0 font-figtree font-medium";
 const RSVP_STATUSES: string[] = ["ACCEPTED", "CONFIRMED", "DECLINED"];
@@ -41,20 +45,14 @@ type RsvpProps = {
   celebrate: boolean;
 };
 
-const deadlineText = RSVP_DEADLINE.toLocaleString("en-CA", {
-  weekday: "long",
-  month: "long",
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-  timeZone: "America/Toronto",
-  timeZoneName: "short",
-});
+const fmt = (o: Intl.DateTimeFormatOptions) =>
+  RSVP_DEADLINE.toLocaleString("en-CA", { timeZone: "America/Toronto", ...o });
+const deadlineText = `${fmt({ weekday: "long", month: "long", day: "numeric" })} at ${fmt({ hour: "numeric", minute: "2-digit" })} ET`;
 
 const COPY: Record<RsvpStatus | "CLOSED", { title: string; body: string }> = {
   ACCEPTED: {
     title: "You’re invited to Hack Western 13!",
-    body: `Hack Western runs November 20–22 at Western University. Tell us how you’re getting here, then confirm your spot by ${deadlineText}.`,
+    body: "Hack Western runs November 20–22 at Western University. Tell us how you’re getting here and confirm your spot.",
   },
   CLOSED: {
     title: "RSVP is closed",
@@ -79,6 +77,9 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
   const router = useRouter();
   const [status, setStatus] = useState<RsvpStatus>(initialStatus);
   const [enrolled, setEnrolled] = useState(false);
+  const [missing, setMissing] = useState<string[]>([]);
+  const { data: application } = api.application.get.useQuery();
+  const accent = realmTint[realm ?? "safari"].accent;
   // Each bump remounts the confetti, so it plays again.
   const [burst, setBurst] = useState(celebrate ? 1 : 0);
 
@@ -113,7 +114,25 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
     });
   }, [router]);
 
+  function confirm() {
+    const travel = rsvpTravelSubmitSchema.safeParse(application ?? {});
+    const needed = [
+      ...new Set(
+        travel.success ? [] : travel.error.issues.map((i) => i.message),
+      ),
+      ...(enrolled ? [] : [ENROLLED_MISSING]),
+    ];
+    setMissing(needed);
+    if (needed.length === 0) rsvp.mutate({ attending: true, enrolled });
+  }
+
   const copy = COPY[status === "ACCEPTED" && closed ? "CLOSED" : status];
+  const deadlinePill =
+    status === "ACCEPTED" && !closed
+      ? `RSVP by ${deadlineText}`
+      : status === "CONFIRMED" && !closed
+        ? `You can change your travel plans until ${deadlineText}`
+        : null;
   const canEditTravel =
     !closed && (status === "ACCEPTED" || status === "CONFIRMED");
 
@@ -136,7 +155,7 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
             className="object-cover"
             draggable={false}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/15 to-black/35" />
         </div>
         {/* The strip art has padding baked into its box; nudge each strip
             flush with its edge. */}
@@ -148,7 +167,7 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
         </div>
 
         <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[560px] flex-col justify-center gap-8 px-6 pb-16 pt-12 sm:py-12">
-          <div className="flex flex-col gap-4 text-[#d7e2ef]">
+          <div className="flex flex-col gap-4 text-[#e6edf5] [text-shadow:0_1px_14px_rgba(0,0,0,0.45)]">
             <div className="flex items-start justify-between gap-4">
               <h1 className="font-cossetteTexte text-[30px] font-bold leading-[1.2] sm:text-[36px]">
                 {copy.title}
@@ -159,23 +178,40 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
                   aria-label="More confetti"
                   title="More confetti"
                   onClick={() => setBurst((n) => n + 1)}
-                  className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-2xl backdrop-blur-sm transition hover:scale-110 hover:bg-white/25 active:scale-95"
+                  className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-2xl backdrop-blur-sm transition hover:scale-110 hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95 motion-reduce:transition-none motion-reduce:hover:scale-100"
                 >
                   🎉
                 </button>
               )}
             </div>
             <p className="text-base leading-snug">{copy.body}</p>
+            {deadlinePill && (
+              <p className="inline-flex w-fit items-center gap-2 rounded-full bg-black/45 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm [text-shadow:none]">
+                <CalendarClock aria-hidden className="h-4 w-4 shrink-0" />
+                {deadlinePill}
+              </p>
+            )}
           </div>
 
           {canEditTravel && (
             <div className="rounded-2xl bg-white/95 p-6 text-heavy shadow-lg">
-              <TravelForm />
+              <TravelForm accent={accent} />
               {status === "ACCEPTED" && (
-                <label className="mt-8 flex items-start gap-3 text-sm">
+                <label
+                  className={`mt-8 flex items-start gap-3 rounded-lg text-sm ${
+                    missing.includes(ENROLLED_MISSING)
+                      ? "-mx-3 bg-red-50 px-3 py-2 ring-1 ring-red-300"
+                      : ""
+                  }`}
+                >
                   <Checkbox
                     checked={enrolled}
-                    onCheckedChange={(v) => setEnrolled(v === true)}
+                    onCheckedChange={(v) => {
+                      setEnrolled(v === true);
+                      setMissing((m) =>
+                        m.filter((x) => x !== ENROLLED_MISSING),
+                      );
+                    }}
                     className="mt-0.5"
                   />
                   I&apos;m currently enrolled in a college or university
@@ -188,8 +224,8 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
                     variant="primary"
                     full
                     className={RSVP_BUTTON}
-                    disabled={rsvp.isPending || !enrolled}
-                    onClick={() => rsvp.mutate({ attending: true, enrolled })}
+                    isPending={rsvp.isPending}
+                    onClick={confirm}
                   >
                     Confirm my spot
                   </Button>
@@ -200,8 +236,18 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
                   />
                 </div>
               )}
+              {status === "ACCEPTED" && missing.length > 0 && (
+                <div role="alert" className="mt-4 text-sm text-red-700">
+                  <p className="font-semibold">Before you confirm:</p>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                    {missing.map((m) => (
+                      <li key={m}>{m}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {rsvp.error && (
-                <p className="mt-4 text-sm text-red-600">
+                <p role="alert" className="mt-4 text-sm text-red-700">
                   {rsvp.error.message}
                 </p>
               )}

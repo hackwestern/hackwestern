@@ -12,6 +12,7 @@ import {
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
 import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
+import { Check } from "lucide-react";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { OWN_TRAVEL, rsvpTravelSaveSchema } from "~/schemas/rsvp";
@@ -28,11 +29,11 @@ const travelLabel = (
     ? "I'll get there on my own"
     : `Hack Western bus from ${option}`;
 
-export function TravelForm() {
+export function TravelForm({ accent }: { accent?: string } = {}) {
   const utils = api.useUtils();
   const { data } = api.application.get.useQuery();
 
-  const { mutate } = api.application.saveTravel.useMutation({
+  const save = api.application.saveTravel.useMutation({
     onSuccess: () => {
       return utils.application.get.invalidate();
     },
@@ -55,7 +56,7 @@ export function TravelForm() {
   useAutoSave(form, onSubmit, defaultValues);
 
   function onSubmit(formData: z.infer<typeof rsvpTravelSaveSchema>) {
-    mutate({ ...formData });
+    save.mutate({ ...formData });
   }
 
   // useWatch, not form.watch: form.watch doesn't re-render under the React Compiler
@@ -147,6 +148,26 @@ export function TravelForm() {
               </FormItem>
             )}
           />
+        )}
+        {/* Answers save as they're picked; say so, since there's no save button.
+            Only takes up room once there's something to say. */}
+        {!save.isIdle && (
+          <p
+            aria-live="polite"
+            className={`-mt-5 flex items-center gap-1.5 text-sm ${save.isError ? "text-red-700" : ""}`}
+            style={save.isError ? undefined : { color: accent }}
+          >
+            {save.isPending ? (
+              "Saving…"
+            ) : save.isError ? (
+              "Couldn’t save your answer. Check your connection and pick it again."
+            ) : (
+              <>
+                <Check aria-hidden className="h-4 w-4" />
+                Saved
+              </>
+            )}
+          </p>
         )}
       </form>
     </Form>
