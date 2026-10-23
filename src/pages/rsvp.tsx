@@ -157,6 +157,22 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/15 to-black/35" />
         </div>
+        {/* The Hack Western horse doubles as the way home (same spot as on the
+            dashboard from md up; above the heading on smaller screens). */}
+        <Link
+          href="/"
+          aria-label="Hack Western home"
+          className="absolute left-6 top-8 z-30 rounded-md transition-transform hover:-rotate-6 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-transparent motion-reduce:transition-none motion-reduce:hover:transform-none md:left-[52px] md:top-[70px]"
+        >
+          <Image
+            src="/shared/horse.svg"
+            alt=""
+            width={40}
+            height={60}
+            priority
+            draggable={false}
+          />
+        </Link>
         {/* The strip art has padding baked into its box; nudge each strip
             flush with its edge. */}
         <div className="pointer-events-none fixed inset-x-0 top-0 z-20 -translate-y-[6px]">
@@ -166,7 +182,7 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
           <FilmStrip />
         </div>
 
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[560px] flex-col justify-center gap-8 px-6 pb-16 pt-12 sm:py-12">
+        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[560px] flex-col justify-center gap-8 px-6 pb-16 pt-28 md:py-12">
           <div className="flex flex-col gap-4 text-[#e6edf5] [text-shadow:0_1px_14px_rgba(0,0,0,0.45)]">
             <div className="flex items-start justify-between gap-4">
               <h1 className="font-cossetteTexte text-[30px] font-bold leading-[1.2] sm:text-[36px]">
@@ -268,25 +284,6 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
               )}
             </div>
           )}
-
-          <div>
-            <Button
-              variant="primary"
-              asChild
-              className="font-figtree font-medium"
-            >
-              <Link href="/">
-                <img
-                  src="/shared/arrow-left.svg"
-                  alt=""
-                  width={16}
-                  height={16}
-                  className="mr-[10px]"
-                />
-                Return home
-              </Link>
-            </Button>
-          </div>
         </div>
       </div>
     </>
