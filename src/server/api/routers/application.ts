@@ -15,9 +15,15 @@ import {
   applicationSaveSchema,
   applicationSubmitSchema,
 } from "~/schemas/application";
-import { OWN_TRAVEL, rsvpTravelSaveSchema } from "~/schemas/rsvp";
+import {
+  OWN_TRAVEL,
+  rsvpRespondSchema,
+  rsvpTravelSaveSchema,
+  rsvpTravelSubmitSchema,
+} from "~/schemas/rsvp";
+import { isPastRsvpDeadline } from "~/lib/date";
 import { GITHUB_URL, LINKEDIN_URL, DEVPOST_URL } from "~/utils/urls";
-import { eq, count, inArray } from "drizzle-orm";
+import { and, eq, count, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { type CanvasPaths } from "~/types/canvas";
 import { isPastDeadline } from "~/lib/date";
@@ -355,7 +361,7 @@ export const applicationRouter = createTRPCRouter({
     }),
 
   // RSVP travel step. save() closes at the deadline, so this has its own
-  // mutation, open only to accepted hackers.
+  // mutation, open to accepted and confirmed hackers until RSVP closes.
   saveTravel: protectedProcedure
     .input(rsvpTravelSaveSchema)
     .mutation(async ({ ctx, input }) => {
@@ -364,10 +370,19 @@ export const applicationRouter = createTRPCRouter({
         where: eq(applications.userId, ctx.session.user.id),
       });
 
-      if (application?.status !== "ACCEPTED") {
+      if (
+        application?.status !== "ACCEPTED" &&
+        application?.status !== "CONFIRMED"
+      ) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Only accepted hackers can RSVP.",
+        });
+      }
+      if (isPastRsvpDeadline()) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "RSVP is closed.",
         });
       }
 
@@ -386,6 +401,82 @@ export const applicationRouter = createTRPCRouter({
           updatedAt: new Date(),
         })
         .where(eq(applications.userId, ctx.session.user.id));
+    }),
+
+  // RSVP. Yes: ACCEPTED -> CONFIRMED, before the RSVP deadline, with the
+  // travel step complete. No: ACCEPTED or CONFIRMED -> DECLINED, which can't
+  // be undone (there's no waitlist to hand the spot back from).
+  rsvp: protectedProcedure
+    .input(rsvpRespondSchema)
+    .mutation(async ({ ctx, input }) => {
+      const application = await db.query.applications.findFirst({
+        columns: {
+          status: true,
+          transportationMethod: true,
+          travelReimbursement: true,
+          travelFrom: true,
+        },
+        where: eq(applications.userId, ctx.session.user.id),
+      });
+
+      if (input.attending) {
+        if (application?.status !== "ACCEPTED") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Only accepted hackers can confirm a spot.",
+          });
+        }
+        if (isPastRsvpDeadline()) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "RSVP is closed.",
+          });
+        }
+        const travel = rsvpTravelSubmitSchema.safeParse(application);
+        if (!travel.success) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              travel.error.issues[0]?.message ?? "Finish the travel questions.",
+          });
+        }
+      } else if (
+        application?.status !== "ACCEPTED" &&
+        application?.status !== "CONFIRMED"
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "There's no spot to decline.",
+        });
+      }
+
+      const from = input.attending
+        ? (["ACCEPTED"] as const)
+        : (["ACCEPTED", "CONFIRMED"] as const);
+      const status: "CONFIRMED" | "DECLINED" = input.attending
+        ? "CONFIRMED"
+        : "DECLINED";
+
+      // Conditional on the current status, so a double click or two tabs
+      // can't flip a decline back to confirmed.
+      const updated = await db
+        .update(applications)
+        .set({ status, updatedAt: new Date() })
+        .where(
+          and(
+            eq(applications.userId, ctx.session.user.id),
+            inArray(applications.status, [...from]),
+          ),
+        )
+        .returning({ status: applications.status });
+
+      if (updated.length === 0) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Your RSVP changed in another tab. Refresh and try again.",
+        });
+      }
+      return { status };
     }),
 
   submit: protectedProcedure.mutation(async ({ ctx }) => {

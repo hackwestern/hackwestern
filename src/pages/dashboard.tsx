@@ -261,10 +261,16 @@ const Dashboard = ({ realm, accepted, celebrate }: DashboardProps) => {
                   : "Your application has been submitted"}
               </h1>
               <p className="font-figtree text-base leading-none">
-                {/* TODO: link "here" to the RSVP page once it exists. */}
-                {accepted
-                  ? "RSVP here to confirm your attendance"
-                  : "Thank you for applying to Hack Western 13! A copy of your responses have been sent to your email."}
+                {accepted ? (
+                  <>
+                    <Link href="/rsvp" className="underline underline-offset-2">
+                      RSVP here
+                    </Link>{" "}
+                    to confirm your attendance
+                  </>
+                ) : (
+                  "Thank you for applying to Hack Western 13! A copy of your responses have been sent to your email."
+                )}
               </p>
             </div>
             <div>
@@ -351,6 +357,13 @@ export const getServerSideProps = async (
             celebrate: false,
           },
         };
+      }
+      // Once they've answered, the RSVP page is their home.
+      if (
+        application?.status === "CONFIRMED" ||
+        application?.status === "DECLINED"
+      ) {
+        return { redirect: { destination: "/rsvp", permanent: false } };
       }
       if (application?.status === "ACCEPTED") {
         return {

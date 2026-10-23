@@ -37,3 +37,5 @@ export const rsvpTravelSubmitSchema = rsvpTravelSaveSchema
       });
     }
   });
+
+export const rsvpRespondSchema = z.object({ attending: z.boolean() });
