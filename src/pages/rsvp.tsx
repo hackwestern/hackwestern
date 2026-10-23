@@ -7,6 +7,7 @@ import { getServerSession } from "next-auth";
 
 import SEO from "~/components/seo";
 import { Button } from "~/components/ui/button";
+import { Checkbox } from "~/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,6 +75,7 @@ const COPY: Record<RsvpStatus | "CLOSED", { title: string; body: string }> = {
 const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
   const router = useRouter();
   const [status, setStatus] = useState<RsvpStatus>(initialStatus);
+  const [enrolled, setEnrolled] = useState(false);
   const closed = isPastRsvpDeadline();
   const utils = api.useUtils();
 
@@ -131,12 +133,23 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
             <div className="rounded-2xl bg-white/95 p-6 text-heavy shadow-lg">
               <TravelForm />
               {status === "ACCEPTED" && (
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <label className="mt-8 flex items-start gap-3 text-sm">
+                  <Checkbox
+                    checked={enrolled}
+                    onCheckedChange={(v) => setEnrolled(v === true)}
+                    className="mt-0.5"
+                  />
+                  I&apos;m currently enrolled in a college or university
+                  program. Hack Western is for post-secondary students.
+                </label>
+              )}
+              {status === "ACCEPTED" && (
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                   <Button
                     variant="primary"
                     className="font-figtree font-medium"
-                    disabled={rsvp.isPending}
-                    onClick={() => rsvp.mutate({ attending: true })}
+                    disabled={rsvp.isPending || !enrolled}
+                    onClick={() => rsvp.mutate({ attending: true, enrolled })}
                   >
                     Confirm my spot
                   </Button>

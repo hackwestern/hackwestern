@@ -38,4 +38,8 @@ export const rsvpTravelSubmitSchema = rsvpTravelSaveSchema
     }
   });
 
-export const rsvpRespondSchema = z.object({ attending: z.boolean() });
+// Confirming needs the post-secondary enrollment attestation.
+export const rsvpRespondSchema = z.object({
+  attending: z.boolean(),
+  enrolled: z.boolean().optional(),
+});

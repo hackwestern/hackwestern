@@ -47,19 +47,19 @@ describe("application.rsvp", () => {
 
   test("confirms an accepted hacker with the travel step done", async () => {
     await seed("ACCEPTED");
-    await expect(caller.application.rsvp({ attending: true })).resolves.toEqual(
-      {
-        status: "CONFIRMED",
-      },
-    );
+    await expect(
+      caller.application.rsvp({ attending: true, enrolled: true }),
+    ).resolves.toEqual({
+      status: "CONFIRMED",
+    });
     expect(await statusNow()).toBe("CONFIRMED");
   });
 
   test("won't confirm until the travel step is done", async () => {
     await seed("ACCEPTED", { transportationMethod: null });
-    await expect(caller.application.rsvp({ attending: true })).rejects.toThrow(
-      "Tell us how you're getting here",
-    );
+    await expect(
+      caller.application.rsvp({ attending: true, enrolled: true }),
+    ).rejects.toThrow("Tell us how you're getting here");
     expect(await statusNow()).toBe("ACCEPTED");
   });
 
@@ -68,9 +68,9 @@ describe("application.rsvp", () => {
       transportationMethod: "None",
       travelReimbursement: null,
     });
-    await expect(caller.application.rsvp({ attending: true })).rejects.toThrow(
-      "reimbursement",
-    );
+    await expect(
+      caller.application.rsvp({ attending: true, enrolled: true }),
+    ).rejects.toThrow("reimbursement");
   });
 
   test("an accepted hacker can decline", async () => {
@@ -87,16 +87,16 @@ describe("application.rsvp", () => {
 
   test("a decline can't be undone", async () => {
     await seed("DECLINED");
-    await expect(caller.application.rsvp({ attending: true })).rejects.toThrow(
-      "Only accepted hackers",
-    );
+    await expect(
+      caller.application.rsvp({ attending: true, enrolled: true }),
+    ).rejects.toThrow("Only accepted hackers");
     expect(await statusNow()).toBe("DECLINED");
   });
 
   test("applicants without a decision can't RSVP", async () => {
     await seed("PENDING_REVIEW");
     await expect(
-      caller.application.rsvp({ attending: true }),
+      caller.application.rsvp({ attending: true, enrolled: true }),
     ).rejects.toThrow();
     await expect(
       caller.application.rsvp({ attending: false }),
@@ -107,9 +107,9 @@ describe("application.rsvp", () => {
   test("confirming closes at the RSVP deadline", async () => {
     await seed("ACCEPTED");
     vi.spyOn(Date, "now").mockReturnValue(RSVP_DEADLINE.getTime() + 1000);
-    await expect(caller.application.rsvp({ attending: true })).rejects.toThrow(
-      "RSVP is closed",
-    );
+    await expect(
+      caller.application.rsvp({ attending: true, enrolled: true }),
+    ).rejects.toThrow("RSVP is closed");
     expect(await statusNow()).toBe("ACCEPTED");
   });
 
@@ -121,5 +121,13 @@ describe("application.rsvp", () => {
       where: eq(applications.userId, session.user.id),
     });
     expect(row?.transportationMethod).toBe("Toronto");
+  });
+
+  test("confirming needs the enrollment attestation", async () => {
+    await seed("ACCEPTED");
+    await expect(caller.application.rsvp({ attending: true })).rejects.toThrow(
+      "enrolled",
+    );
+    expect(await statusNow()).toBe("ACCEPTED");
   });
 });

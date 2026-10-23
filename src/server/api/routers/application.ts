@@ -432,6 +432,13 @@ export const applicationRouter = createTRPCRouter({
             message: "RSVP is closed.",
           });
         }
+        if (!input.enrolled) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "Confirm you're enrolled in a college or university program.",
+          });
+        }
         const travel = rsvpTravelSubmitSchema.safeParse(application);
         if (!travel.success) {
           throw new TRPCError({
