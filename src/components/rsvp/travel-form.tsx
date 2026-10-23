@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import {
   Form,
@@ -12,7 +12,7 @@ import {
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
 import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
-import { Check, CircleAlert } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { OWN_TRAVEL, rsvpTravelSaveSchema } from "~/schemas/rsvp";
@@ -53,10 +53,7 @@ export function FieldError({
   );
 }
 
-export function TravelForm({
-  accent,
-  errors = {},
-}: { accent?: string; errors?: TravelErrors } = {}) {
+export function TravelForm({ errors = {} }: { errors?: TravelErrors } = {}) {
   const utils = api.useUtils();
   const { data } = api.application.get.useQuery();
 
@@ -65,15 +62,6 @@ export function TravelForm({
       return utils.application.get.invalidate();
     },
   });
-
-  const [savedShown, setSavedShown] = useState(false);
-  useEffect(() => {
-    if (!save.isSuccess) return;
-    setSavedShown(true);
-    const t = setTimeout(() => setSavedShown(false), 2500);
-    return () => clearTimeout(t);
-  }, [save.isSuccess, save.submittedAt]);
-  const chip = save.isPending || save.isError || savedShown;
 
   const defaultValues = useMemo(() => {
     if (!data) return data;
@@ -108,10 +96,7 @@ export function TravelForm({
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="relative space-y-8"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
           control={form.control}
           name="transportationMethod"
@@ -125,9 +110,11 @@ export function TravelForm({
                 <RadioButtonGroup
                   value={field.value ?? undefined}
                   onValueChange={field.onChange}
+                  className="flex-col flex-nowrap gap-3"
                 >
                   {transportationMethod.enumValues.map((option) => (
                     <RadioButtonItem
+                      className="w-full"
                       key={option}
                       label={travelLabel(option)}
                       value={option}
@@ -166,9 +153,14 @@ export function TravelForm({
                           : "no"
                     }
                     onValueChange={(value) => field.onChange(value === "yes")}
+                    className="grid grid-cols-2 gap-3"
                   >
-                    <RadioButtonItem label="Yes" value="yes" />
-                    <RadioButtonItem label="No" value="no" />
+                    <RadioButtonItem
+                      className="w-full"
+                      label="Yes"
+                      value="yes"
+                    />
+                    <RadioButtonItem className="w-full" label="No" value="no" />
                   </RadioButtonGroup>
                 </FormControl>
               </FormItem>
@@ -197,30 +189,11 @@ export function TravelForm({
             )}
           />
         )}
-        {/* Answers save as they're picked; say so, since there's no save
-            button. A chip anchored to the form and lifted
-            onto the card's top edge (38px = the card's 24px padding plus half
-            the chip; !mt-0 beats the form's space-y margin), so it never pushes
-            the questions around. "Saved" fades
-            out after a moment; a failed save stays until the next try. */}
-        <p
-          aria-live="polite"
-          className={`pointer-events-none absolute -top-[38px] right-0 !mt-0 flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold shadow-md ring-1 ring-black/5 transition-opacity duration-300 motion-reduce:transition-none ${
-            chip ? "opacity-100" : "opacity-0"
-          } ${save.isError ? "text-red-700" : ""}`}
-          style={save.isError ? undefined : { color: accent }}
-        >
-          {save.isPending ? (
-            "Saving…"
-          ) : save.isError ? (
-            "Couldn’t save. Pick your answer again."
-          ) : save.isSuccess ? (
-            <>
-              <Check aria-hidden className="h-3.5 w-3.5" />
-              Saved
-            </>
-          ) : null}
-        </p>
+        {save.isError && (
+          <FieldError>
+            Couldn’t save your answer. Pick it again to retry.
+          </FieldError>
+        )}
       </form>
     </Form>
   );

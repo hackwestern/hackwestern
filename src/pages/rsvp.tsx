@@ -33,8 +33,10 @@ import { api } from "~/utils/api";
 
 type RsvpStatus = "ACCEPTED" | "CONFIRMED" | "DECLINED";
 const CONFETTI_SEEN_KEY = "hw13-rsvp-confetti-seen";
-// Primary and secondary buttons size differently; pin both to one height.
+// The one main button style on the page; everything secondary is a text link.
 const RSVP_BUTTON = "h-12 min-h-0 py-0 font-figtree font-medium";
+const TEXT_LINK =
+  "text-sm font-medium text-medium underline decoration-gray-3 underline-offset-4 transition-colors hover:text-heavy hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 rounded-sm";
 const RSVP_STATUSES: string[] = ["ACCEPTED", "CONFIRMED", "DECLINED"];
 
 type RsvpProps = {
@@ -80,7 +82,6 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
   // as soon as the question is answered.
   const [attempted, setAttempted] = useState(false);
   const { data: application } = api.application.get.useQuery();
-  const accent = realmTint[realm ?? "safari"].accent;
   // Each bump remounts the confetti, so it plays again.
   const [burst, setBurst] = useState(celebrate ? 1 : 0);
 
@@ -210,7 +211,7 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
                   aria-label="More confetti"
                   title="More confetti"
                   onClick={() => setBurst((n) => n + 1)}
-                  className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-2xl backdrop-blur-sm transition hover:scale-110 hover:bg-white/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95 motion-reduce:transition-none motion-reduce:hover:scale-100"
+                  className="-mr-2 mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-2xl transition hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95 motion-reduce:transition-none motion-reduce:hover:scale-100"
                 >
                   🎉
                 </button>
@@ -218,7 +219,7 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
             </div>
             <p className="text-base leading-snug">{copy.body}</p>
             {deadlinePill && (
-              <p className="inline-flex w-fit items-center gap-2 rounded-full bg-black/45 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm [text-shadow:none]">
+              <p className="flex items-center gap-2 text-sm font-semibold text-white">
                 <CalendarClock aria-hidden className="h-4 w-4 shrink-0" />
                 {deadlinePill}
               </p>
@@ -227,7 +228,7 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
 
           {canEditTravel && (
             <div className="relative rounded-2xl bg-white/95 p-6 text-heavy shadow-lg">
-              <TravelForm accent={accent} errors={travelErrors} />
+              <TravelForm errors={travelErrors} />
               {status === "ACCEPTED" && (
                 <div className="mt-8">
                   <label className="flex items-start gap-3 text-sm">
@@ -248,7 +249,7 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
                 </div>
               )}
               {status === "ACCEPTED" && (
-                <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="mt-6 flex flex-col items-center gap-4">
                   <Button
                     variant="primary"
                     full
@@ -265,6 +266,11 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
                   />
                 </div>
               )}
+              {status === "CONFIRMED" && (
+                <p className="mt-6 text-sm text-medium">
+                  Changes to your travel plans save automatically.
+                </p>
+              )}
               {rsvp.error && (
                 <p role="alert" className="mt-4 text-sm text-red-700">
                   {rsvp.error.message}
@@ -278,7 +284,7 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
               Can’t make it anymore?{" "}
               <DeclineButton
                 label="Give up my spot"
-                asLink
+                className="underline underline-offset-2 hover:text-white"
                 disabled={rsvp.isPending}
                 onConfirm={() => rsvp.mutate({ attending: false })}
               />
@@ -296,41 +302,26 @@ export default Rsvp;
 
 function DeclineButton({
   label,
-  asLink = false,
   disabled,
   onConfirm,
+  className = TEXT_LINK,
 }: {
   label: string;
-  asLink?: boolean;
   disabled: boolean;
   onConfirm: () => void;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const keepRef = useRef<HTMLButtonElement>(null);
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        {asLink ? (
-          <button
-            type="button"
-            className="underline underline-offset-2"
-            disabled={disabled}
-          >
-            {label}
-          </button>
-        ) : (
-          <Button
-            variant="secondary"
-            full
-            className={RSVP_BUTTON}
-            disabled={disabled}
-          >
-            {label}
-          </Button>
-        )}
+        <button type="button" className={className} disabled={disabled}>
+          {label}
+        </button>
       </AlertDialogTrigger>
-      {/* Styled like the rest of the page: rounded card, the HW buttons at
-          one size, and the safe choice as the main button. */}
+      {/* Same pattern as the page: one main button (the safe choice) and the
+          destructive one as a quiet text link. */}
       <AlertDialogContent
         // Land on the safe choice, so Enter keeps the spot.
         onOpenAutoFocus={(e) => {
@@ -347,7 +338,7 @@ function DeclineButton({
             You can’t undo this. Once you give up your spot, it’s gone for good.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="mt-6 flex flex-col items-center gap-4">
           <Button
             ref={keepRef}
             variant="primary"
@@ -357,17 +348,16 @@ function DeclineButton({
           >
             Keep my spot
           </Button>
-          <Button
-            variant="secondary"
-            full
-            className={`${RSVP_BUTTON} text-red-700 hover:text-red-800`}
+          <button
+            type="button"
+            className={`${TEXT_LINK} !text-red-700 hover:!text-red-800`}
             onClick={() => {
               setOpen(false);
               onConfirm();
             }}
           >
             Yes, give it up
-          </Button>
+          </button>
         </div>
       </AlertDialogContent>
     </AlertDialog>
