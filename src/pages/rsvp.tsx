@@ -22,13 +22,16 @@ import {
 import { Confetti } from "~/components/dashboard/confetti";
 import { FilmStrip } from "~/components/promo/film-strip";
 import { TravelForm } from "~/components/rsvp/travel-form";
-import type { Realm } from "~/constants/realms";
+import { type Realm, realmTint } from "~/constants/realms";
 import { RSVP_DEADLINE, isPastRsvpDeadline } from "~/lib/date";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
 import { api } from "~/utils/api";
 
 type RsvpStatus = "ACCEPTED" | "CONFIRMED" | "DECLINED";
+const CONFETTI_SEEN_KEY = "hw13-rsvp-confetti-seen";
+// Primary and secondary buttons size differently; pin both to one height.
+const RSVP_BUTTON = "h-12 min-h-0 py-0 font-figtree font-medium";
 const RSVP_STATUSES: string[] = ["ACCEPTED", "CONFIRMED", "DECLINED"];
 
 type RsvpProps = {
@@ -76,6 +79,21 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
   const router = useRouter();
   const [status, setStatus] = useState<RsvpStatus>(initialStatus);
   const [enrolled, setEnrolled] = useState(false);
+  // Each bump remounts the confetti, so it plays again.
+  const [burst, setBurst] = useState(celebrate ? 1 : 0);
+
+  // Confetti the first time an accepted hacker opens this page on a device,
+  // however they got here (the email link always plays it).
+  useEffect(() => {
+    if (initialStatus !== "ACCEPTED") return;
+    try {
+      if (localStorage.getItem(CONFETTI_SEEN_KEY)) return;
+      localStorage.setItem(CONFETTI_SEEN_KEY, "1");
+    } catch {
+      return;
+    }
+    setBurst((n) => n + 1);
+  }, [initialStatus]);
   const closed = isPastRsvpDeadline();
   const utils = api.useUtils();
 
@@ -102,30 +120,51 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
   return (
     <>
       <SEO title="RSVP" description="RSVP for Hack Western 13." noindex />
-      {celebrate && <Confetti />}
+      {burst > 0 && <Confetti key={burst} />}
       <div className="relative min-h-screen w-full overflow-hidden font-figtree">
-        <Image
-          src={`/dashboard/realm/${realm ?? "safari"}.png`}
-          alt=""
-          aria-hidden
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-          draggable={false}
-        />
-        <div className="pointer-events-none fixed inset-x-0 top-0 z-20">
+        {/* The apply portal's 2400px realm photo (the dashboard's 1024px copy
+            goes soft when stretched), pinned so tall content scrolls over it,
+            with a light shade so the heading stays readable. */}
+        <div className="fixed inset-0">
+          <Image
+            src={realmTint[realm ?? "safari"].background}
+            alt=""
+            aria-hidden
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+            draggable={false}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/30" />
+        </div>
+        {/* The strip art has padding baked into its box; nudge each strip
+            flush with its edge. */}
+        <div className="pointer-events-none fixed inset-x-0 top-0 z-20 -translate-y-[6px]">
           <FilmStrip />
         </div>
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20">
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 translate-y-[10px]">
           <FilmStrip />
         </div>
 
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[560px] flex-col justify-center gap-8 px-6 py-24">
+        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[560px] flex-col justify-center gap-8 px-6 pb-16 pt-12 sm:py-12">
           <div className="flex flex-col gap-4 text-[#d7e2ef]">
-            <h1 className="font-cossetteTexte text-[30px] font-bold leading-[1.2] sm:text-[36px]">
-              {copy.title}
-            </h1>
+            <div className="flex items-start justify-between gap-4">
+              <h1 className="font-cossetteTexte text-[30px] font-bold leading-[1.2] sm:text-[36px]">
+                {copy.title}
+              </h1>
+              {status !== "DECLINED" && (
+                <button
+                  type="button"
+                  aria-label="More confetti"
+                  title="More confetti"
+                  onClick={() => setBurst((n) => n + 1)}
+                  className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-2xl backdrop-blur-sm transition hover:scale-110 hover:bg-white/25 active:scale-95"
+                >
+                  🎉
+                </button>
+              )}
+            </div>
             <p className="text-base leading-snug">{copy.body}</p>
           </div>
 
@@ -144,10 +183,11 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
                 </label>
               )}
               {status === "ACCEPTED" && (
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Button
                     variant="primary"
-                    className="font-figtree font-medium"
+                    full
+                    className={RSVP_BUTTON}
                     disabled={rsvp.isPending || !enrolled}
                     onClick={() => rsvp.mutate({ attending: true, enrolled })}
                   >
@@ -233,7 +273,8 @@ function DeclineButton({
         ) : (
           <Button
             variant="secondary"
-            className="font-figtree font-medium"
+            full
+            className={RSVP_BUTTON}
             disabled={disabled}
           >
             {label}
