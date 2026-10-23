@@ -377,6 +377,29 @@ export const getServerSideProps = async (
     }
   }
 
+  // The submitted dashboard is still off on production, but anyone with a
+  // decision to answer (or already answered) has a home: the RSVP page.
+  if (process.env.VERCEL_ENV === "production") {
+    const session = await getServerSession(
+      context.req,
+      context.res,
+      authOptions,
+    );
+    if (session) {
+      const application = await db.query.applications.findFirst({
+        where: (applications, { eq }) =>
+          eq(applications.userId, session.user.id),
+        columns: { status: true },
+      });
+      if (
+        application &&
+        ["ACCEPTED", "CONFIRMED", "DECLINED"].includes(application.status)
+      ) {
+        return { redirect: { destination: "/rsvp", permanent: false } };
+      }
+    }
+  }
+
   // Until the deadline, /apply (no step) is the hacker's home: it shows their
   // status and a start/continue/review button. /apply sends people back here
   // once the deadline passes, so only redirect before it to avoid a loop.

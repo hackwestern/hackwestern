@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
+import { signOut } from "next-auth/react";
 
 import SEO from "~/components/seo";
 import { Button } from "~/components/ui/button";
@@ -39,8 +40,14 @@ const TEXT_LINK =
   "text-sm font-medium text-medium underline decoration-gray-3 underline-offset-4 transition-colors hover:text-heavy hover:decoration-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 rounded-sm";
 const RSVP_STATUSES: string[] = ["ACCEPTED", "CONFIRMED", "DECLINED"];
 
+// NONE: signed in, but this account has nothing to RSVP to (most often the
+// wrong account, e.g. a different Google login than the one they applied with).
+type PageStatus = RsvpStatus | "NONE";
+
 type RsvpProps = {
-  status: RsvpStatus;
+  status: PageStatus;
+  /** Shown in the NONE state so they can tell which account they're on. */
+  email: string | null;
   realm: Realm | null;
   /** Opened from the acceptance email (/rsvp?celebrate=1): play confetti. */
   celebrate: boolean;
@@ -50,7 +57,11 @@ const fmt = (o: Intl.DateTimeFormatOptions) =>
   RSVP_DEADLINE.toLocaleString("en-CA", { timeZone: "America/Toronto", ...o });
 const deadlineText = `${fmt({ weekday: "long", month: "long", day: "numeric" })} at ${fmt({ hour: "numeric", minute: "2-digit" })} ET`;
 
-const COPY: Record<RsvpStatus | "CLOSED", { title: string; body: string }> = {
+const COPY: Record<PageStatus | "CLOSED", { title: string; body: string }> = {
+  NONE: {
+    title: "There’s no RSVP on this account",
+    body: "If you got an acceptance email, sign in with the account you applied with.",
+  },
   ACCEPTED: {
     title: "You’re invited to Hack Western 13!",
     body: "Hack Western runs November 20–22 at Western University. Tell us how you’re getting here and confirm your spot.",
@@ -74,9 +85,14 @@ const COPY: Record<RsvpStatus | "CLOSED", { title: string; body: string }> = {
  * Same look as the submitted dashboard: the realm background with film
  * strips, with the form on a card.
  */
-const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
+const Rsvp = ({
+  status: initialStatus,
+  email,
+  realm,
+  celebrate,
+}: RsvpProps) => {
   const router = useRouter();
-  const [status, setStatus] = useState<RsvpStatus>(initialStatus);
+  const [status, setStatus] = useState<PageStatus>(initialStatus);
   const [enrolled, setEnrolled] = useState(false);
   // Errors show at each question only after a Confirm attempt, and clear
   // as soon as the question is answered.
@@ -205,7 +221,7 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
               <h1 className="font-cossetteTexte text-[30px] font-bold leading-[1.2] sm:text-[36px]">
                 {copy.title}
               </h1>
-              {status !== "DECLINED" && (
+              {(status === "ACCEPTED" || status === "CONFIRMED") && (
                 <button
                   type="button"
                   aria-label="More confetti"
@@ -217,6 +233,11 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
                 </button>
               )}
             </div>
+            {status === "NONE" && email && (
+              <p className="text-base leading-snug">
+                You’re signed in as <strong>{email}</strong>.
+              </p>
+            )}
             <p className="text-base leading-snug">{copy.body}</p>
             {deadlinePill && (
               <p className="flex items-center gap-2 text-sm font-semibold text-white">
@@ -225,6 +246,20 @@ const Rsvp = ({ status: initialStatus, realm, celebrate }: RsvpProps) => {
               </p>
             )}
           </div>
+
+          {status === "NONE" && (
+            <div>
+              <Button
+                variant="primary"
+                className={RSVP_BUTTON}
+                onClick={() =>
+                  void signOut({ callbackUrl: "/login?callbackUrl=%2Frsvp" })
+                }
+              >
+                Switch account
+              </Button>
+            </div>
+          )}
 
           {canEditTravel && (
             <div className="relative rounded-2xl bg-white/95 p-6 text-heavy shadow-lg">
@@ -382,15 +417,17 @@ export const getServerSideProps = async (
     where: (applications, { eq }) => eq(applications.userId, session.user.id),
     columns: { status: true, realm: true },
   });
-  if (!application || !RSVP_STATUSES.includes(application.status)) {
-    return { redirect: { destination: "/dashboard", permanent: false } };
-  }
+  const hasRsvp = !!application && RSVP_STATUSES.includes(application.status);
 
   return {
     props: {
-      status: application.status as RsvpStatus,
-      realm: application.realm,
-      celebrate: context.query.celebrate === "1",
+      // Never says why there's no RSVP (decisions go out by email).
+      status: hasRsvp ? (application.status as RsvpStatus) : "NONE",
+      email: hasRsvp ? null : (session.user.email ?? null),
+      realm: application?.realm ?? null,
+      // Confetti is for the invitation, not for someone who already declined.
+      celebrate:
+        application?.status === "ACCEPTED" && context.query.celebrate === "1",
     } satisfies RsvpProps,
   };
 };

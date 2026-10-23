@@ -2,6 +2,7 @@ import { type GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { isPastDeadline } from "~/lib/date";
+import { safeCallbackPath } from "~/lib/safe-callback";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
 
@@ -61,9 +62,12 @@ export const hackerLoginRedirect = async (
   const session = await getServerSession(context.req, context.res, authOptions);
 
   if (session) {
+    // Already signed in: go where the link asked (e.g. the acceptance
+    // email's /rsvp), as long as it's a path on this site.
     return {
       redirect: {
-        destination: "/dashboard",
+        destination:
+          safeCallbackPath(context.query.callbackUrl) ?? "/dashboard",
         permanent: false,
       },
     };
