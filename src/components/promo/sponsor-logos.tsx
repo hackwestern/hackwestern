@@ -22,10 +22,6 @@ export function SponsorLogos({ className }: { className?: string }) {
           alt=""
           width={PROMO_SPONSORS_IMAGE.width}
           height={PROMO_SPONSORS_IMAGE.height}
-          // Without sizes the srcset is 1x/2x, so every retina screen loads
-          // the full 2134px file. The phone window draws it at most 356px
-          // wide; the desktop one 618px, times --ui-scale past 1440.
-          sizes="(min-width: 1024px) 800px, 360px"
           className="h-auto w-full"
         />
         {PROMO_SPONSOR_LINKS.map((sponsor) => (

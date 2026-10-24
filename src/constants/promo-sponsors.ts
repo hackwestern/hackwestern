@@ -1,8 +1,8 @@
 // Clickable regions over /landing/home/sponsors-hw13-v2.png (1067x795, drawn
 // at 2x as 2134x1590 so it stays sharp on retina), as percentages of the
-// image so they track it at any rendered size. Rows added
-// after the image was flattened sit below it (top > 100%), in the room that
-// extraHeight reserves.
+// image so they track it at any rendered size. Logos added after the image
+// was flattened are overlays, on its empty lower part or below it (top >
+// 100%), in the room that extraHeight reserves.
 export type PromoSponsorLink = {
   name: string;
   href: string;
@@ -62,9 +62,9 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Manulife",
     href: "https://www.manulife.ca/",
-    // Text baseline on Sun Life's, right edge on the image's right margin.
+    // Text baseline on Sun Life's; right edge lines up with the rows below.
     left: 56.42,
-    top: 64.66,
+    top: 64.36,
     width: 41.8,
     height: 10.68,
     overlaySrc: "/shared/sponsors/manulife.svg",
@@ -72,8 +72,8 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "StarTech.com",
     href: "https://www.startech.com/",
-    // Three across, evenly spaced between the image's margins. Logos in a row
-    // are sized to match text size, not box width.
+    // Rows below: evenly spaced from 1.97% to 98.22%, or centered. Each
+    // logo is sized by eye, and each box matches its logo's aspect.
     left: 1.97,
     top: 84.28,
     width: 29.18,
@@ -83,10 +83,10 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "CSE",
     href: "https://www.cse-cst.gc.ca/",
-    left: 43.31,
-    top: 83.22,
-    width: 11.06,
-    height: 12.68,
+    left: 43.75,
+    top: 83.73,
+    width: 10.18,
+    height: 11.66,
     overlaySrc: "/shared/sponsors/cse-trimmed.png",
   },
   {
@@ -101,66 +101,66 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Replit",
     href: "https://replit.com/",
-    // A centered pair under the row above.
-    left: 26.36,
-    top: 102.39,
-    width: 15.47,
-    height: 5.92,
+    // A centered pair, wordmarks on one baseline.
+    left: 27.76,
+    top: 101.4,
+    width: 17.02,
+    height: 6.51,
     overlaySrc: "/shared/sponsors/replit.png",
   },
   {
     name: "TinyFish",
     href: "https://www.tinyfish.ai/",
-    left: 52.14,
-    top: 102.1,
-    width: 21.69,
-    height: 6.49,
+    left: 55.08,
+    top: 102.21,
+    width: 17.35,
+    height: 5.19,
     overlaySrc: "/shared/sponsors/tinyfish.svg",
   },
   {
     name: "Autodesk",
     href: "https://www.autodesk.com/",
-    // Five across, evenly spaced between the same margins.
+    // Wordmarks on one baseline.
     left: 1.97,
-    top: 115.03,
-    width: 13.9,
-    height: 10.52,
+    top: 114.27,
+    width: 10.84,
+    height: 8.2,
     overlaySrc: "/shared/sponsors/autodesk.svg",
   },
   {
     name: "Composio",
     href: "https://composio.dev/",
-    left: 21.75,
-    top: 117.74,
-    width: 19.69,
-    height: 5.09,
+    left: 22.67,
+    top: 118.9,
+    width: 16.74,
+    height: 4.33,
     overlaySrc: "/shared/sponsors/composio.svg",
   },
   {
     name: "Accenture",
     href: "https://www.accenture.com/",
-    left: 47.32,
-    top: 117.58,
-    width: 15.46,
-    height: 5.43,
+    left: 49.27,
+    top: 117.68,
+    width: 13.45,
+    height: 4.72,
     overlaySrc: "/shared/sponsors/accenture.svg",
   },
   {
     name: "Bell",
     href: "https://www.bell.ca/",
-    left: 68.66,
-    top: 118.14,
-    width: 5.57,
-    height: 4.3,
+    left: 72.58,
+    top: 119.35,
+    width: 4.01,
+    height: 3.1,
     overlaySrc: "/shared/sponsors/bell.svg",
   },
   {
     name: "Celsius",
     href: "https://www.celsius.com/",
-    left: 80.11,
-    top: 116.11,
-    width: 18.11,
-    height: 8.36,
+    left: 86.45,
+    top: 118.78,
+    width: 11.77,
+    height: 5.44,
     overlaySrc: "/shared/sponsors/celsius.svg",
   },
 ];
