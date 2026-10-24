@@ -130,7 +130,7 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Composio",
     href: "https://composio.dev/",
-    left: 22.67,
+    left: 27.29,
     top: 118.9,
     width: 16.74,
     height: 4.33,
@@ -139,20 +139,11 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Accenture",
     href: "https://www.accenture.com/",
-    left: 49.27,
+    left: 58.52,
     top: 117.68,
     width: 13.45,
     height: 4.72,
     overlaySrc: "/shared/sponsors/accenture.svg",
-  },
-  {
-    name: "Bell",
-    href: "https://www.bell.ca/",
-    left: 72.58,
-    top: 119.35,
-    width: 4.01,
-    height: 3.1,
-    overlaySrc: "/shared/sponsors/bell.svg",
   },
   {
     name: "Celsius",
