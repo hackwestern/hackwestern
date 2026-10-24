@@ -1,4 +1,4 @@
-// Clickable regions over /landing/home/sponsors-hw13-v2.png (1067x795, drawn
+// Clickable regions over /landing/home/sponsors-hw13-v3.png (1067x795, drawn
 // at 2x as 2134x1590 so it stays sharp on retina), as percentages of the
 // image so they track it at any rendered size. Logos added after the image
 // was flattened are overlays, on its empty lower part or below it (top >
@@ -17,7 +17,7 @@ export type PromoSponsorLink = {
 export const PROMO_SPONSORS_IMAGE = {
   // Give a changed image a new filename: Cloudflare caches www images for a
   // day, so an in-place edit shows the old picture under the new overlays.
-  src: "/landing/home/sponsors-hw13-v2.png",
+  src: "/landing/home/sponsors-hw13-v3.png",
   width: 1067,
   height: 795,
   // Image pixels of room below the image for the overlay-only rows.
@@ -46,7 +46,7 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "QNX",
     href: "https://qnx.software/en",
-    left: 50,
+    left: 69.12,
     top: 32,
     width: 30,
     height: 17,
@@ -101,8 +101,8 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Replit",
     href: "https://replit.com/",
-    // A centered pair, wordmarks on one baseline.
-    left: 27.76,
+    // Wordmarks on one baseline.
+    left: 1.97,
     top: 101.4,
     width: 17.02,
     height: 6.51,
@@ -111,17 +111,26 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "TinyFish",
     href: "https://www.tinyfish.ai/",
-    left: 55.08,
+    left: 44.05,
     top: 102.21,
     width: 17.35,
     height: 5.19,
     overlaySrc: "/shared/sponsors/tinyfish.svg",
   },
   {
+    name: "Celsius",
+    href: "https://www.celsius.com/",
+    left: 86.45,
+    top: 102.92,
+    width: 11.77,
+    height: 5.44,
+    overlaySrc: "/shared/sponsors/celsius.svg",
+  },
+  {
     name: "Autodesk",
     href: "https://www.autodesk.com/",
-    // Wordmarks on one baseline.
-    left: 1.97,
+    // A centered pair, wordmarks on one baseline.
+    left: 32.8,
     top: 114.27,
     width: 10.84,
     height: 8.2,
@@ -130,19 +139,10 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Accenture",
     href: "https://www.accenture.com/",
-    left: 42.91,
+    left: 53.95,
     top: 117.68,
     width: 13.45,
     height: 4.72,
     overlaySrc: "/shared/sponsors/accenture.svg",
-  },
-  {
-    name: "Celsius",
-    href: "https://www.celsius.com/",
-    left: 86.45,
-    top: 118.78,
-    width: 11.77,
-    height: 5.44,
-    overlaySrc: "/shared/sponsors/celsius.svg",
   },
 ];
