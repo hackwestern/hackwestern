@@ -83,7 +83,7 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "CSE",
     href: "https://www.cse-cst.gc.ca/",
-    left: 43.75,
+    left: 47.72,
     top: 83.73,
     width: 10.18,
     height: 11.66,
@@ -92,10 +92,10 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Commure",
     href: "https://www.commure.com/",
-    left: 66.54,
-    top: 84.28,
-    width: 31.68,
-    height: 10.57,
+    left: 74.46,
+    top: 85.6,
+    width: 23.76,
+    height: 7.93,
     overlaySrc: "/shared/sponsors/commure.svg",
   },
   {
