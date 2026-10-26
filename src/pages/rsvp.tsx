@@ -29,9 +29,10 @@ import {
   rsvpTravelSubmitSchema,
   type RsvpTravel,
 } from "~/schemas/rsvp";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, CircleAlert } from "lucide-react";
 import { type Realm, realmTint } from "~/constants/realms";
 import { formatRsvpDeadline, isPastRsvpDeadline } from "~/lib/date";
+import { describeTravel, rsvpView } from "~/lib/rsvp-view";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
 import { api } from "~/utils/api";
@@ -71,33 +72,6 @@ const pickTravel = (a?: RsvpTravel | null): RsvpTravel => ({
   travelFrom: a?.travelFrom,
 });
 
-const copyFor = (
-  key: PageStatus | "CLOSED",
-  deadlineText: string,
-): { title: string; body: string } =>
-  ({
-    NONE: {
-      title: "There’s no RSVP on this account",
-      body: "If you got an acceptance email, sign in with the account you applied with.",
-    },
-    ACCEPTED: {
-      title: "You’re invited to Hack Western 13!",
-      body: "Hack Western runs November 20–22 at Western University. Tell us how you’re getting here and confirm your spot.",
-    },
-    CLOSED: {
-      title: "RSVP is closed",
-      body: `The RSVP deadline was ${deadlineText}, so your spot has been released. We hope to see you at a future Hack Western.`,
-    },
-    CONFIRMED: {
-      title: "You’re confirmed. See you there!",
-      body: "Hack Western runs November 20–22 at Western University. We’ll email you the schedule and check-in details closer to the event.",
-    },
-    DECLINED: {
-      title: "You’ve declined your spot",
-      body: "Thanks for letting us know. We hope to see you at a future Hack Western.",
-    },
-  })[key];
-
 /**
  * RSVP for accepted hackers (status ACCEPTED -> CONFIRMED or DECLINED).
  * Same look as the submitted dashboard: the realm background with film
@@ -113,7 +87,7 @@ const Rsvp = ({
 }: RsvpProps) => {
   const router = useRouter();
   const [status, setStatus] = useState<PageStatus>(initialStatus);
-  // Follow the server when its props are refreshed (see rsvp onError).
+  // Follow the server when its props are refreshed (see refreshFromServer).
   useEffect(() => setStatus(initialStatus), [initialStatus]);
   // The travel answer currently on screen, reported by the form as it
   // changes. Null until the form has loaded the saved answer.
@@ -140,6 +114,34 @@ const Rsvp = ({
   }, [initialStatus]);
   const utils = api.useUtils();
 
+  // False once the page is gone (and true again after strict mode's
+  // remount). A refused autosave can land after the user has left, since
+  // react-query still runs onError then.
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  // A travel change the server refused (RSVP closed while the page was open).
+  const [saveRefused, setSaveRefused] = useState(false);
+  // While a refresh is loading: the error that caused it is about to be
+  // explained by the refreshed page.
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Reload the server's props (status, closed) in place, without scrolling.
+  // Not once the page is gone, or it would pull the user back here.
+  const refreshFromServer = async () => {
+    if (!mounted.current) return;
+    setRefreshing(true);
+    await router
+      .replace(router.asPath, undefined, { scroll: false })
+      .finally(() => {
+        if (mounted.current) setRefreshing(false);
+      });
+  };
+
   const rsvp = api.application.rsvp.useMutation({
     onSuccess: ({ status }) => {
       setStatus(status);
@@ -147,9 +149,10 @@ const Rsvp = ({
     },
     onError: (err) => {
       // The deadline passed while the page was open, or another tab changed
-      // the RSVP: reload the server's view so the page matches it.
+      // the RSVP: reload the server's view so the page matches it, then drop
+      // the error, which the refreshed page now explains.
       if (err.data?.code === "FORBIDDEN" || err.data?.code === "CONFLICT") {
-        void router.replace(router.asPath, undefined, { scroll: false });
+        void refreshFromServer().then(() => rsvp.reset());
       }
     },
   });
@@ -192,18 +195,14 @@ const Rsvp = ({
     );
   }
 
-  const copy = copyFor(
-    status === "ACCEPTED" && closed ? "CLOSED" : status,
+  const { title, body, pill, canEditTravel, showSavedTravel } = rsvpView({
+    status,
+    closed,
     deadlineText,
-  );
-  const deadlinePill =
-    status === "ACCEPTED" && !closed
-      ? `RSVP by ${deadlineText}`
-      : status === "CONFIRMED" && !closed
-        ? `You can change your travel plans until ${deadlineText}`
-        : null;
-  const canEditTravel =
-    !closed && (status === "ACCEPTED" || status === "CONFIRMED");
+  });
+  const savedTravel = showSavedTravel
+    ? describeTravel(pickTravel(application))
+    : null;
 
   return (
     <>
@@ -238,6 +237,9 @@ const Rsvp = ({
             alt=""
             width={40}
             height={60}
+            // Hold the 60px box: preflight's height:auto would size it from
+            // the SVG's own ratio, which next/image warns about.
+            className="h-[60px]"
             priority
             draggable={false}
           />
@@ -255,7 +257,7 @@ const Rsvp = ({
           <div className="flex flex-col gap-4 text-[#e6edf5] [text-shadow:0_1px_14px_rgba(0,0,0,0.45)]">
             <div className="flex items-start justify-between gap-4">
               <h1 className="font-cossetteTexte text-[30px] font-bold leading-[1.2] sm:text-[36px]">
-                {copy.title}
+                {title}
               </h1>
               {(status === "ACCEPTED" || status === "CONFIRMED") && (
                 <button
@@ -274,11 +276,31 @@ const Rsvp = ({
                 You’re signed in as <strong>{email}</strong>.
               </p>
             )}
-            <p className="text-base leading-snug">{copy.body}</p>
-            {deadlinePill && (
+            <p className="text-base leading-snug">{body}</p>
+            {pill && (
               <p className="flex items-center gap-2 text-sm font-semibold text-white">
                 <CalendarClock aria-hidden className="h-4 w-4 shrink-0" />
-                {deadlinePill}
+                {pill}
+              </p>
+            )}
+            {saveRefused && showSavedTravel && (
+              <p
+                aria-live="polite"
+                className="flex items-center gap-2 text-sm font-semibold text-white"
+              >
+                <CircleAlert aria-hidden className="h-4 w-4 shrink-0" />
+                Your last change wasn’t saved.
+              </p>
+            )}
+            {savedTravel && (
+              <p className="text-sm font-semibold text-white">
+                Your travel: {savedTravel}. Need a change? Email{" "}
+                <a
+                  href="mailto:hello@hackwestern.com"
+                  className="underline underline-offset-2 hover:text-white"
+                >
+                  hello@hackwestern.com
+                </a>
               </p>
             )}
           </div>
@@ -299,7 +321,15 @@ const Rsvp = ({
 
           {canEditTravel && (
             <div className="relative rounded-2xl bg-white/95 p-6 text-heavy shadow-lg">
-              <TravelForm errors={travelErrors} onChange={setDraft} />
+              <TravelForm
+                errors={travelErrors}
+                onChange={setDraft}
+                onSaveRefused={() => {
+                  if (!mounted.current) return;
+                  setSaveRefused(true);
+                  void refreshFromServer();
+                }}
+              />
               {status === "ACCEPTED" && (
                 <div className="mt-8">
                   <label className="flex items-start gap-3 text-sm">
@@ -342,7 +372,7 @@ const Rsvp = ({
                   Changes to your travel plans save automatically.
                 </p>
               )}
-              {rsvp.error && (
+              {rsvp.error && !refreshing && (
                 <p role="alert" className="mt-4 text-sm text-red-700">
                   {rsvp.error.message}
                 </p>
@@ -359,7 +389,7 @@ const Rsvp = ({
                 disabled={rsvp.isPending}
                 onConfirm={() => rsvp.mutate({ attending: false })}
               />
-              {rsvp.error && !canEditTravel && (
+              {rsvp.error && !refreshing && !canEditTravel && (
                 <p className="mt-2 text-red-300">{rsvp.error.message}</p>
               )}
             </div>

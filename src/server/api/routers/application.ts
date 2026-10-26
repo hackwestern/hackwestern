@@ -23,7 +23,7 @@ import {
 } from "~/schemas/rsvp";
 import { isPastRsvpDeadline } from "~/lib/date";
 import { GITHUB_URL, LINKEDIN_URL, DEVPOST_URL } from "~/utils/urls";
-import { and, eq, count, inArray } from "drizzle-orm";
+import { and, eq, count, inArray, notInArray } from "drizzle-orm";
 import { z } from "zod";
 import { type CanvasPaths } from "~/types/canvas";
 import { isPastDeadline } from "~/lib/date";
@@ -614,32 +614,39 @@ export const applicationRouter = createTRPCRouter({
 
           const userIds = userRows.map((r) => r.id);
           if (userIds.length === 0) {
-            return { matched: 0, updated: 0 };
+            return { matched: 0, updated: 0, skippedRsvped: 0 };
           }
 
-          const updateRes = await tx
+          // Never overwrite an RSVP. Re-running an accept list (say, for a few
+          // late accepts) would move CONFIRMED hackers back to ACCEPTED, which
+          // loses their spot once RSVP closes, and flip declines back.
+          const rsvped = ["CONFIRMED", "DECLINED"] as const;
+          const [skipped] = await tx
+            .select({ count: count() })
+            .from(applications)
+            .where(
+              and(
+                inArray(applications.userId, userIds),
+                inArray(applications.status, [...rsvped]),
+              ),
+            );
+
+          const updated = await tx
             .update(applications)
             .set({ status, updatedAt: new Date() })
-            .where(inArray(applications.userId, userIds));
+            .where(
+              and(
+                inArray(applications.userId, userIds),
+                notInArray(applications.status, [...rsvped]),
+              ),
+            )
+            .returning({ userId: applications.userId });
 
-          // drizzle's update may not always expose rowCount across drivers; fall back to querying actual count
-          let updatedCount = userIds.length;
-          if (
-            updateRes &&
-            typeof updateRes === "object" &&
-            "rowCount" in updateRes &&
-            typeof (updateRes as { rowCount?: unknown }).rowCount === "number"
-          ) {
-            updatedCount = (updateRes as { rowCount: number }).rowCount;
-          } else {
-            // Query the actual count of applications for these users
-            const countResult = await tx
-              .select({ count: count() })
-              .from(applications)
-              .where(inArray(applications.userId, userIds));
-            updatedCount = countResult[0]?.count ?? 0;
-          }
-          return { matched: userIds.length, updated: updatedCount };
+          return {
+            matched: userIds.length,
+            updated: updated.length,
+            skippedRsvped: skipped?.count ?? 0,
+          };
         });
         return result;
       } catch (err: unknown) {

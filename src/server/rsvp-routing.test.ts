@@ -87,7 +87,9 @@ describe("/rsvp", () => {
         realm: "desert",
         celebrate: true,
         closed: false,
-        deadlineText: "Friday, November 6 at 11:59 p.m. ET",
+        deadlineText: expect.stringMatching(
+          /^Friday, November 6 at 11:59\sp\.m\. ET$/,
+        ) as string,
       },
     });
   });
@@ -133,7 +135,8 @@ describe("/dashboard on production", () => {
     process.env.VERCEL_ENV = "production";
   });
   afterEach(() => {
-    process.env.VERCEL_ENV = env;
+    if (env === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = env;
   });
 
   test.each(["ACCEPTED", "CONFIRMED", "DECLINED"] as const)(

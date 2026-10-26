@@ -202,6 +202,7 @@ describe("checkIn.checkIsHackerApproved", () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     await db
       .delete(dayOfRegistrations)
       .where(eq(dayOfRegistrations.userId, hackerSession.user.id));
@@ -217,7 +218,6 @@ describe("checkIn.checkIsHackerApproved", () => {
     const result = await organizerCaller.checkIn.checkIsHackerApproved({
       userId: hackerSession.user.id,
     });
-    vi.restoreAllMocks();
     expect(result.isApproved).toBe(true);
   });
 
@@ -227,7 +227,6 @@ describe("checkIn.checkIsHackerApproved", () => {
     const result = await organizerCaller.checkIn.checkIsHackerApproved({
       userId: hackerSession.user.id,
     });
-    vi.restoreAllMocks();
     expect(result.isApproved).toBe(false);
   });
 
@@ -237,7 +236,6 @@ describe("checkIn.checkIsHackerApproved", () => {
     const result = await organizerCaller.checkIn.checkIsHackerApproved({
       userId: hackerSession.user.id,
     });
-    vi.restoreAllMocks();
     expect(result.isApproved).toBe(true);
   });
 

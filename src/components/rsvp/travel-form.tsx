@@ -60,10 +60,13 @@ export function FieldError({
 export function TravelForm({
   errors = {},
   onChange,
+  onSaveRefused,
 }: {
   errors?: TravelErrors;
   /** Called with the answer on screen whenever it changes (after loading). */
   onChange?: (values: RsvpTravel) => void;
+  /** Called when a save is refused (RSVP closed, or no longer accepted). */
+  onSaveRefused?: () => void;
 } = {}) {
   const utils = api.useUtils();
   const { data } = api.application.get.useQuery();
@@ -71,6 +74,9 @@ export function TravelForm({
   const save = api.application.saveTravel.useMutation({
     onSuccess: () => {
       return utils.application.get.invalidate();
+    },
+    onError: (err) => {
+      if (err.data?.code === "FORBIDDEN") onSaveRefused?.();
     },
   });
 
@@ -131,7 +137,9 @@ export function TravelForm({
               )}
               <FormControl>
                 <RadioButtonGroup
-                  value={field.value ?? undefined}
+                  // "" = nothing picked yet; undefined would leave the group
+                  // uncontrolled until the saved answer loads.
+                  value={field.value ?? ""}
                   onValueChange={field.onChange}
                   className="flex-col flex-nowrap gap-3"
                 >
@@ -169,11 +177,7 @@ export function TravelForm({
                 <FormControl>
                   <RadioButtonGroup
                     value={
-                      field.value == null
-                        ? undefined
-                        : field.value
-                          ? "yes"
-                          : "no"
+                      field.value == null ? "" : field.value ? "yes" : "no"
                     }
                     onValueChange={(value) => field.onChange(value === "yes")}
                     className="grid grid-cols-2 gap-3"
@@ -212,7 +216,8 @@ export function TravelForm({
             )}
           />
         )}
-        {save.isError && (
+        {/* Retrying won't fix a refusal; the page refreshes instead. */}
+        {save.isError && save.error.data?.code !== "FORBIDDEN" && (
           <FieldError>
             Couldn’t save your answer. Pick it again to retry.
           </FieldError>

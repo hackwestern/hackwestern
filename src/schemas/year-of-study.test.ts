@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { isValidYearOfStudy, YEAR_OF_STUDY_OPTIONS } from "./application";
+import {
+  applicationSaveSchema,
+  isValidYearOfStudy,
+  YEAR_OF_STUDY_OPTIONS,
+} from "./application";
 
 describe("year of study", () => {
   test("only real years can be picked and submitted", () => {
@@ -13,5 +17,20 @@ describe("year of study", () => {
     expect(isValidYearOfStudy("Prefer not to answer")).toBe(false);
     expect(isValidYearOfStudy(null)).toBe(false);
     expect(isValidYearOfStudy(undefined)).toBe(false);
+  });
+});
+
+// application.save upserts every key it gets, so anything only the server
+// writes has to be dropped before it reaches the resolver.
+describe("application save", () => {
+  test("drops status and the enrollment attestation from client input", () => {
+    const input = applicationSaveSchema.parse({
+      firstName: "Ada",
+      status: "CONFIRMED",
+      enrollmentConfirmedAt: new Date(),
+    });
+    expect(input).not.toHaveProperty("status");
+    expect(input).not.toHaveProperty("enrollmentConfirmedAt");
+    expect(input).toHaveProperty("firstName", "Ada");
   });
 });
