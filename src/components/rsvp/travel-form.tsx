@@ -5,7 +5,6 @@ import { useForm, useWatch } from "react-hook-form";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -168,10 +167,6 @@ export function TravelForm({
                 {errors.travelReimbursement && (
                   <FieldError>{errors.travelReimbursement}</FieldError>
                 )}
-                <FormDescription>
-                  For bus, train or flight tickets. We&apos;ll confirm the
-                  details by email.
-                </FormDescription>
                 <FormControl>
                   <RadioButtonGroup
                     value={
