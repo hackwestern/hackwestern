@@ -224,6 +224,9 @@ const Rsvp = ({
             draggable={false}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/15 to-black/35" />
+          {/* Darker where the text sits: the realm photos are brightest at
+              the horizon, right behind the heading. */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_110%_60%_at_50%_50%,rgba(0,0,0,0.55)_0%,rgba(0,0,0,0.3)_55%,transparent_100%)] sm:bg-[radial-gradient(ellipse_75%_65%_at_50%_50%,rgba(0,0,0,0.55)_0%,rgba(0,0,0,0.3)_55%,transparent_100%)]" />
         </div>
         {/* The Hack Western horse doubles as the way home (same spot as on the
             dashboard from md up; above the heading on smaller screens). */}
@@ -254,9 +257,9 @@ const Rsvp = ({
         </div>
 
         <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[560px] flex-col justify-center gap-8 px-6 pb-16 pt-28 md:py-12">
-          <div className="flex flex-col gap-4 text-[#e6edf5] [text-shadow:0_1px_14px_rgba(0,0,0,0.45)]">
+          <div className="flex flex-col gap-4 text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.5),0_0_18px_rgba(0,0,0,0.35)]">
             <div className="flex items-start justify-between gap-4">
-              <h1 className="font-cossetteTexte text-[30px] font-bold leading-[1.2] sm:text-[36px]">
+              <h1 className="text-balance font-cossetteTexte text-[30px] font-bold leading-[1.2] sm:text-[36px]">
                 {title}
               </h1>
               {(status === "ACCEPTED" || status === "CONFIRMED") && (
@@ -276,7 +279,7 @@ const Rsvp = ({
                 You’re signed in as <strong>{email}</strong>.
               </p>
             )}
-            <p className="text-base leading-snug">{body}</p>
+            <p className="text-pretty text-base leading-snug">{body}</p>
             {pill && (
               <p className="flex items-center gap-2 text-sm font-semibold text-white">
                 <CalendarClock aria-hidden className="h-4 w-4 shrink-0" />
