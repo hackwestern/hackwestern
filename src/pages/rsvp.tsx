@@ -96,6 +96,11 @@ const Rsvp = ({
   // Errors show at each question only after a Confirm attempt, and clear
   // as soon as the question is answered.
   const [attempted, setAttempted] = useState(false);
+  // Once confirmed, the card shows the travel answer with a Change link
+  // instead of the full question.
+  const [editingTravel, setEditingTravel] = useState(false);
+  const travelCardRef = useRef<HTMLDivElement>(null);
+  const changeTravelRef = useRef<HTMLButtonElement>(null);
   const { data: application } = api.application.get.useQuery();
   // Each bump remounts the confetti, so it plays again.
   const [burst, setBurst] = useState(celebrate ? 1 : 0);
@@ -178,6 +183,31 @@ const Rsvp = ({
         ) as TravelErrors)
       : {};
   const enrollError = attempted && !enrolled;
+  // Folded to the summary only while the answer on screen is complete (an
+  // unfinished one stays open with its errors), or while it's still loading.
+  const travelFolded =
+    status === "CONFIRMED" &&
+    !editingTravel &&
+    (!application || travelCheck.success);
+
+  function changeTravel() {
+    setEditingTravel(true);
+    requestAnimationFrame(() =>
+      (
+        travelCardRef.current?.querySelector<HTMLElement>(
+          '[role="radio"][data-state="checked"]',
+        ) ?? travelCardRef.current?.querySelector<HTMLElement>('[role="radio"]')
+      )?.focus(),
+    );
+  }
+
+  function doneTravel() {
+    setAttempted(true);
+    if (!travelCheck.success) return;
+    setAttempted(false);
+    setEditingTravel(false);
+    requestAnimationFrame(() => changeTravelRef.current?.focus());
+  }
 
   function confirm() {
     setAttempted(true);
@@ -323,58 +353,92 @@ const Rsvp = ({
           )}
 
           {canEditTravel && (
-            <div className="relative rounded-2xl bg-white/95 p-6 text-heavy shadow-lg">
-              <TravelForm
-                errors={travelErrors}
-                onChange={setDraft}
-                onSaveRefused={() => {
-                  if (!mounted.current) return;
-                  setSaveRefused(true);
-                  void refreshFromServer();
-                }}
-              />
-              {status === "ACCEPTED" && (
-                <div className="mt-8">
-                  <label className="flex items-start gap-3 text-sm">
-                    <Checkbox
-                      checked={enrolled}
-                      onCheckedChange={(v) => setEnrolled(v === true)}
-                      aria-invalid={enrollError}
-                      className={`mt-0.5 ${enrollError ? "border-red-600 ring-1 ring-red-600" : ""}`}
-                    />
-                    I&apos;m currently enrolled in a college or university
-                    program. Hack Western is for post-secondary students.
-                  </label>
-                  {enrollError && (
-                    <FieldError className="ml-7 mt-1.5">
-                      Tick this box to confirm your spot
-                    </FieldError>
-                  )}
-                </div>
-              )}
-              {status === "ACCEPTED" && (
-                <div className="mt-6 flex flex-col items-center gap-4">
-                  <Button
-                    variant="primary"
-                    full
-                    className={RSVP_BUTTON}
-                    isPending={rsvp.isPending}
-                    onClick={confirm}
+            <div
+              ref={travelCardRef}
+              className="relative rounded-2xl bg-white/95 p-6 text-heavy shadow-lg"
+            >
+              {travelFolded && (
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm text-medium">Your travel</p>
+                    <p className="mt-1 font-medium">
+                      {describeTravel(travelNow)}
+                    </p>
+                  </div>
+                  <button
+                    ref={changeTravelRef}
+                    type="button"
+                    className={TEXT_LINK}
+                    onClick={changeTravel}
                   >
-                    Confirm my spot
-                  </Button>
-                  <DeclineButton
-                    label="I can’t make it"
-                    disabled={rsvp.isPending}
-                    onConfirm={() => rsvp.mutate({ attending: false })}
-                  />
+                    Change
+                  </button>
                 </div>
               )}
-              {status === "CONFIRMED" && (
-                <p className="mt-6 text-sm text-medium">
-                  Changes to your travel plans save automatically.
-                </p>
-              )}
+              {/* Stays mounted while folded, so a change made just before
+                  Done still autosaves. */}
+              <div hidden={travelFolded}>
+                <TravelForm
+                  errors={travelErrors}
+                  onChange={setDraft}
+                  onSaveRefused={() => {
+                    if (!mounted.current) return;
+                    setSaveRefused(true);
+                    void refreshFromServer();
+                  }}
+                />
+                {status === "ACCEPTED" && (
+                  <div className="mt-8">
+                    <label className="flex items-start gap-3 text-sm">
+                      <Checkbox
+                        checked={enrolled}
+                        onCheckedChange={(v) => setEnrolled(v === true)}
+                        aria-invalid={enrollError}
+                        className={`mt-0.5 ${enrollError ? "border-red-600 ring-1 ring-red-600" : ""}`}
+                      />
+                      I&apos;m currently enrolled in a college or university
+                      program. Hack Western is for post-secondary students.
+                    </label>
+                    {enrollError && (
+                      <FieldError className="ml-7 mt-1.5">
+                        Tick this box to confirm your spot
+                      </FieldError>
+                    )}
+                  </div>
+                )}
+                {status === "ACCEPTED" && (
+                  <div className="mt-6 flex flex-col items-center gap-4">
+                    <Button
+                      variant="primary"
+                      full
+                      className={RSVP_BUTTON}
+                      isPending={rsvp.isPending}
+                      onClick={confirm}
+                    >
+                      Confirm my spot
+                    </Button>
+                    <DeclineButton
+                      label="I can’t make it"
+                      disabled={rsvp.isPending}
+                      onConfirm={() => rsvp.mutate({ attending: false })}
+                    />
+                  </div>
+                )}
+                {status === "CONFIRMED" && (
+                  <div className="mt-6 flex items-center justify-between gap-4">
+                    <p className="text-sm text-medium">
+                      Changes save automatically.
+                    </p>
+                    <button
+                      type="button"
+                      className={TEXT_LINK}
+                      onClick={doneTravel}
+                    >
+                      Done
+                    </button>
+                  </div>
+                )}
+              </div>
               {rsvp.error && !refreshing && (
                 <p role="alert" className="mt-4 text-sm text-red-700">
                   {rsvp.error.message}
