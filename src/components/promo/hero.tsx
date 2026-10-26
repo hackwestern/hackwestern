@@ -11,7 +11,12 @@ import {
 } from "framer-motion";
 import { Button } from "~/components/ui/button";
 import { Window } from "~/components/internals/window";
-import { useApplicationsOpen } from "~/hooks/use-can-edit-application";
+import {
+  useApplicationsOpen,
+  useOpenUntil,
+} from "~/hooks/use-can-edit-application";
+import { MENTOR_SIGNUP_DEADLINE, VOLUNTEER_SIGNUP_DEADLINE } from "~/lib/date";
+import { MENTOR_FORM_URL, VOLUNTEER_FORM_URL } from "~/constants/signups";
 import {
   closestProgress,
   coverRect,
@@ -520,6 +525,8 @@ export function Hero() {
   const [snapProgress, setSnapProgress] = React.useState(0.2);
   const [editing, setEditing] = React.useState(false);
   const applicationsOpen = useApplicationsOpen();
+  const volunteerOpen = useOpenUntil(VOLUNTEER_SIGNUP_DEADLINE);
+  const mentorOpen = useOpenUntil(MENTOR_SIGNUP_DEADLINE);
   const isMobile = useIsMobile(MOBILE_BREAKPOINT_PX);
   const holdScreens = isMobile ? HOLD_SCREENS_MOBILE : HOLD_SCREENS;
   const bleed = isMobile ? BLEED_MOBILE : BLEED;
@@ -677,6 +684,36 @@ export function Hero() {
               <Button asChild data-hero-cta>
                 <Link href="/apply">Apply</Link>
               </Button>
+            ) : volunteerOpen || mentorOpen ? (
+              <div data-hero-cta className="flex flex-col items-start gap-3">
+                <div className="flex flex-wrap gap-3">
+                  {volunteerOpen && (
+                    <Button asChild>
+                      <a
+                        href={VOLUNTEER_FORM_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Volunteer
+                      </a>
+                    </Button>
+                  )}
+                  {mentorOpen && (
+                    <Button asChild>
+                      <a
+                        href={MENTOR_FORM_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Mentor
+                      </a>
+                    </Button>
+                  )}
+                </div>
+                <p className="font-figtree text-sm text-[#d0d6dd]">
+                  Hacker applications are closed.
+                </p>
+              </div>
             ) : (
               <Button disabled data-hero-cta>
                 Applications closed
