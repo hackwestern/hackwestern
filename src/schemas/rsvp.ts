@@ -32,7 +32,7 @@ export const rsvpTravelSubmitSchema = rsvpTravelSaveSchema
     if (data.travelReimbursement && !data.travelFrom?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Tell us which city you're travelling from",
+        message: "Tell us which city and country you're travelling from",
         path: ["travelFrom"],
       });
     }

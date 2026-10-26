@@ -25,12 +25,17 @@ import { transportationMethod } from "~/server/db/schema";
 // (which can come with a partial ticket reimbursement request).
 // Not on a page yet; it goes into the RSVP flow once that exists.
 
-const travelLabel = (
-  option: (typeof transportationMethod.enumValues)[number],
-) =>
-  option === OWN_TRAVEL
-    ? "I'll get there on my own"
-    : `Hack Western bus from ${option}`;
+// One question. Asking for ticket help is its own option: it saves as own
+// travel with a reimbursement request, so the stored answer is unchanged.
+const TICKET_HELP = "ticket-help";
+const TRAVEL_OPTIONS = [...transportationMethod.enumValues, TICKET_HELP];
+
+const travelLabel = (option: string) =>
+  option === TICKET_HELP
+    ? "I'm coming from farther away and want help with ticket costs"
+    : option === OWN_TRAVEL
+      ? "I'll get there on my own"
+      : `Hack Western bus from ${option}`;
 
 export type TravelErrors = Partial<
   Record<keyof z.infer<typeof rsvpTravelSaveSchema>, string>
@@ -121,6 +126,35 @@ export function TravelForm({
     name: "travelReimbursement",
   });
   const ownTravel = method === OWN_TRAVEL;
+  // Own travel with no reimbursement answer yet shows as unpicked.
+  const picked = ownTravel
+    ? reimbursement === true
+      ? TICKET_HELP
+      : reimbursement === false
+        ? OWN_TRAVEL
+        : ""
+    : (method ?? "");
+  const travelError =
+    errors.transportationMethod ??
+    (errors.travelReimbursement ? "Tell us how you're getting here" : null);
+
+  function pick(option: string) {
+    const set = { shouldDirty: true };
+    if (option === TICKET_HELP) {
+      form.setValue("transportationMethod", OWN_TRAVEL, set);
+      form.setValue("travelReimbursement", true, set);
+    } else if (option === OWN_TRAVEL) {
+      form.setValue("transportationMethod", OWN_TRAVEL, set);
+      form.setValue("travelReimbursement", false, set);
+    } else {
+      form.setValue(
+        "transportationMethod",
+        option as (typeof transportationMethod.enumValues)[number],
+        set,
+      );
+      form.setValue("travelReimbursement", null, set);
+    }
+  }
 
   return (
     <Form {...form}>
@@ -128,23 +162,21 @@ export function TravelForm({
         <FormField
           control={form.control}
           name="transportationMethod"
-          render={({ field }) => (
+          render={() => (
             <FormItem>
               <FormLabel>How are you getting to Hack Western? *</FormLabel>
-              {errors.transportationMethod && (
-                <FieldError>{errors.transportationMethod}</FieldError>
-              )}
+              {travelError && <FieldError>{travelError}</FieldError>}
               <FormControl>
                 <RadioButtonGroup
                   // "" = nothing picked yet; undefined would leave the group
                   // uncontrolled until the saved answer loads.
-                  value={field.value ?? ""}
-                  onValueChange={field.onChange}
+                  value={picked}
+                  onValueChange={pick}
                   className="flex-col flex-nowrap gap-3"
                 >
-                  {transportationMethod.enumValues.map((option) => (
+                  {TRAVEL_OPTIONS.map((option) => (
                     <RadioButtonItem
-                      className="w-full"
+                      className="w-full whitespace-normal text-left"
                       key={option}
                       label={travelLabel(option)}
                       value={option}
@@ -155,45 +187,15 @@ export function TravelForm({
             </FormItem>
           )}
         />
-        {ownTravel && (
-          <FormField
-            control={form.control}
-            name="travelReimbursement"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Do you want to request a partial ticket reimbursement? *
-                </FormLabel>
-                {errors.travelReimbursement && (
-                  <FieldError>{errors.travelReimbursement}</FieldError>
-                )}
-                <FormControl>
-                  <RadioButtonGroup
-                    value={
-                      field.value == null ? "" : field.value ? "yes" : "no"
-                    }
-                    onValueChange={(value) => field.onChange(value === "yes")}
-                    className="grid grid-cols-2 gap-3"
-                  >
-                    <RadioButtonItem
-                      className="w-full"
-                      label="Yes"
-                      value="yes"
-                    />
-                    <RadioButtonItem className="w-full" label="No" value="no" />
-                  </RadioButtonGroup>
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        )}
         {ownTravel && reimbursement && (
           <FormField
             control={form.control}
             name="travelFrom"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Which city are you travelling from? *</FormLabel>
+                <FormLabel>
+                  Which city and country are you travelling from? *
+                </FormLabel>
                 {errors.travelFrom && (
                   <FieldError>{errors.travelFrom}</FieldError>
                 )}
@@ -201,7 +203,7 @@ export function TravelForm({
                   <Input
                     {...field}
                     value={field.value ?? ""}
-                    placeholder="e.g. Ottawa"
+                    placeholder="e.g. Ottawa, Canada"
                     variant="primary"
                   />
                 </FormControl>
