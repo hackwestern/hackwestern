@@ -169,10 +169,8 @@ export function TravelForm({
                   <FieldError>{errors.travelReimbursement}</FieldError>
                 )}
                 <FormDescription>
-                  We cover part of a bus, train or flight ticket at a flat rate
-                  based on where you&apos;re travelling from. It&apos;s paid
-                  after you check in, and isn&apos;t available from cities with
-                  a Hack Western bus.
+                  For bus, train or flight tickets. We&apos;ll confirm the
+                  details by email.
                 </FormDescription>
                 <FormControl>
                   <RadioButtonGroup
