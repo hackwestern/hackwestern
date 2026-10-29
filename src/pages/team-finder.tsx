@@ -1,8 +1,12 @@
-// SPIKE (local only): team finder mockup with fake data. Not wired to the DB.
+// Team finder: confirmed hackers make a card and browse everyone else's once
+// RSVP closes. Organizers can browse and hide cards at any time.
 import Image from "next/image";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import type { GetServerSidePropsContext } from "next";
+import { getServerSession } from "next-auth";
+import { TRPCClientError } from "@trpc/client";
 import {
   type ReactNode,
   useDeferredValue,
@@ -23,7 +27,18 @@ import {
   Sparkles,
 } from "lucide-react";
 import SEO from "~/components/seo";
-import { MAX_SKILLS, SKILLS, TEXT_LIMIT } from "~/lib/team-finder";
+import {
+  MAX_SKILLS,
+  SKILLS,
+  TEXT_LIMIT,
+  type CardInput,
+  type Skill,
+} from "~/lib/team-finder";
+import { formatRsvpDeadline } from "~/lib/date";
+import { resizeToWebp } from "~/lib/resize-image";
+import { authOptions } from "~/server/auth";
+import { getTeamFinderAccess } from "~/server/api/utils/team-finder-access";
+import { api, type RouterOutputs } from "~/utils/api";
 import { Button } from "~/components/ui/button";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import {
@@ -50,11 +65,16 @@ import {
 
 type Socials = Contacts;
 
+type CardView = RouterOutputs["teamFinder"]["list"][number];
+type Me = RouterOutputs["teamFinder"]["getMine"]["prefill"];
+
 type Hacker = {
+  /** Set on cards from the server; the form's preview has none. */
+  userId?: string;
   name: string;
   school?: string;
   year?: string;
-  horseId: number;
+  horseId: number | null;
   /** Optional photo; without one the card shows their horse. */
   photo?: string;
   /** How many more people they're looking for. Unset = looking for a team to join. */
@@ -69,169 +89,23 @@ type Hacker = {
 const TEAM_SIZE = 4;
 type Needs = 1 | 2;
 
-// Spike: neutral placeholder "photos" (flat illustrated avatars, drawn here).
-function fakePhoto(i: number) {
-  const bg = ["#cfe0f2", "#f3dcc9", "#d6ead8", "#e6dcf3"][i % 4];
-  const skin = ["#8d5524", "#e0ac69", "#c68642", "#f1c27d"][i % 4];
-  const hair = ["#2b1b14", "#4a2c1a", "#1f1f1f", "#7a4b2a"][i % 4];
-  const shirt = ["#3a5a8c", "#7a4aa3", "#2f6b4f", "#b0603a"][i % 4];
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="${bg}"/><path d="M40 256c0-52 39-88 88-88s88 36 88 88z" fill="${shirt}"/><rect x="112" y="140" width="32" height="34" rx="12" fill="${skin}"/><circle cx="128" cy="108" r="46" fill="${skin}"/><path d="M80 104c0-30 21-50 48-50s48 20 48 50c-10-16-28-24-48-24s-38 8-48 24z" fill="${hair}"/></svg>`;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+function fromView(v: CardView): Hacker {
+  return {
+    userId: v.userId,
+    name: v.name,
+    school: v.school,
+    year: v.year,
+    horseId: v.horseId,
+    photo: v.photoUrl,
+    needs: v.needs ?? undefined,
+    firstHackathon: v.firstHackathon,
+    skills: v.skills,
+    lookingFor: v.lookingFor,
+    idea: v.idea ?? undefined,
+    socials: v.contacts,
+  };
 }
 
-const PEOPLE: Hacker[] = [
-  // Worst case: every field at its limit.
-  {
-    name: "Maximilianna-Josephine W.",
-    school: "University of Michigan",
-    year: "5th+ year",
-    horseId: 3,
-    needs: 1,
-    firstHackathon: true,
-    skills: ["Hardware", "Backend", "ML / AI"],
-    lookingFor:
-      "Someone who has shipped embedded firmware before, ideally with BLE, and doesn't mind a 3am debugging session",
-    idea: "https://github.com/maximilianna-josephine/an-extremely-long-repository-name-for-testing",
-    socials: {
-      discord: "maximilianna.josephine.wilberforce",
-      instagram: "@maximilianna.josephine.codes",
-      linkedin:
-        "https://www.linkedin.com/in/maximilianna-josephine-wilberforce-123456/",
-      github: "github.com/maximilianna-josephine",
-    },
-  },
-  {
-    name: "Priya S.",
-    photo: fakePhoto(0),
-    school: "Waterloo",
-    year: "3rd year",
-    horseId: 7,
-    skills: ["Backend", "ML / AI"],
-    lookingFor: "A designer who likes shipping fast",
-    idea: "Reads lecture slides aloud for low-vision students",
-    socials: { discord: "priya.s", linkedin: "priyas", github: "priyas" },
-  },
-  {
-    name: "Aisha K.",
-    photo: fakePhoto(1),
-    school: "Western",
-    year: "2nd year",
-    horseId: 1,
-    needs: 2,
-    skills: ["Frontend", "Hardware"],
-    lookingFor: "Backend, or anyone who’s touched an Arduino",
-    idea: "A plant pot that texts you when it’s thirsty",
-    socials: { instagram: "nightowls.hw", discord: "aishak" },
-  },
-  {
-    name: "Marcus L.",
-    school: "Western",
-    year: "1st year",
-    horseId: 4,
-    firstHackathon: true,
-    skills: ["Frontend"],
-    lookingFor: "Anyone friendly to build with",
-    socials: { instagram: "marcus.l", phone: "(519) 555-0182" },
-  },
-  {
-    name: "Dana T.",
-    photo: fakePhoto(2),
-    school: "UofT",
-    year: "4th year",
-    horseId: 6,
-    skills: ["Pitching", "Design", "Mobile"],
-    lookingFor: "Two or three builders. I’ll handle design and the demo",
-    idea: "Splitting a group trip budget without the awkward texts",
-    socials: { linkedin: "danat", discord: "dana.t" },
-  },
-  {
-    name: "Jo R.",
-    school: "Western",
-    year: "3rd year",
-    horseId: 2,
-    needs: 1,
-    skills: ["Backend", "ML / AI"],
-    lookingFor: "One designer to round us out",
-    socials: { discord: "jo.r" },
-  },
-  {
-    name: "Owen K.",
-    photo: fakePhoto(3),
-    school: "Queen's",
-    year: "2nd year",
-    horseId: 8,
-    skills: ["Hardware", "Backend"],
-    lookingFor: "People who want to build something physical",
-    idea: "A bike lock that tells you if someone’s messing with it",
-    socials: { github: "owenk", instagram: "owen.k" },
-  },
-  // Filler so the list feels like the real thing (a couple hundred people).
-  ...Array.from({ length: 44 }, (_, i): Hacker => {
-    const first = [
-      "Ava",
-      "Liam",
-      "Noor",
-      "Ethan",
-      "Mei",
-      "Omar",
-      "Sofia",
-      "Raj",
-      "Chloe",
-      "Ben",
-      "Lina",
-      "Kai",
-    ];
-    const last = "ABCDEFGHJKLMNPRSTWYZ";
-    const schools = [
-      "Western",
-      "Waterloo",
-      "UofT",
-      "McMaster",
-      "Queen's",
-      "Ottawa",
-      "York",
-      "Michigan",
-    ];
-    const years = ["1st year", "2nd year", "3rd year", "4th year"];
-    const wants = [
-      "Someone who can make it look good",
-      "A backend person who likes databases",
-      "Anyone keen to try hardware",
-      "People who want to win a sponsor prize",
-      "A chill team, first hackathon",
-      "Someone strong at pitching",
-    ];
-    const ideas = [
-      "A study-room finder for campus",
-      "Turning class notes into flashcards",
-      "Splitting rent and bills with roommates",
-      undefined,
-    ];
-    const skillSets = [
-      ["Frontend", "Design"],
-      ["Backend"],
-      ["ML / AI", "Backend", "Pitching"],
-      ["Mobile", "Frontend"],
-      ["Hardware"],
-    ];
-    const name = `${first[i % first.length]} ${last[(i * 7) % last.length]}.`;
-    return {
-      name,
-      school: schools[i % schools.length],
-      year: years[(i * 3) % years.length],
-      horseId: (i % 8) + 1,
-      needs: i % 4 === 1 ? 2 : i % 9 === 4 ? 1 : undefined,
-      firstHackathon: i % 5 === 2,
-      skills: skillSets[i % skillSets.length]!,
-      lookingFor: wants[i % wants.length]!,
-      idea: ideas[i % ideas.length],
-      socials:
-        i % 3 === 0
-          ? { discord: `${first[i % first.length]!.toLowerCase()}${i}` }
-          : { instagram: `hacker${i}`, github: `hacker${i}` },
-    };
-  }),
-];
 // 24 fills whole rows at both 3 and 2 columns.
 const PAGE_SIZE = 24;
 const FIRST = "First hackathon";
@@ -256,7 +130,7 @@ function Avatar({
   className = "",
   round = false,
 }: {
-  horseId: number;
+  horseId: number | null;
   photo?: string;
   className?: string;
   /** A small circle (the status bar), instead of the card's rounded tile. */
@@ -567,6 +441,7 @@ function EntryCard({
   clamp = false,
   you = false,
   ownBar,
+  action,
 }: {
   entry: Hacker;
   muted?: boolean;
@@ -575,6 +450,8 @@ function EntryCard({
   ownBar?: ReactNode;
   /** Grid cards: short text, one contact row, and the whole card opens the full view. */
   clamp?: boolean;
+  /** Beside the contacts in the full view (Report). */
+  action?: ReactNode;
 }) {
   const subtitle = [entry.school, entry.year].filter(Boolean).join(", ");
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -599,7 +476,7 @@ function EntryCard({
             className="max-h-[85dvh] max-w-md overflow-y-auto overscroll-contain border-0 bg-transparent p-0 shadow-none outline-none"
           >
             <DialogTitle className="sr-only">{entry.name}</DialogTitle>
-            <EntryCard entry={entry} you={you} />
+            <EntryCard entry={entry} you={you} action={action} />
           </DialogContent>
         </Dialog>
       )}
@@ -686,8 +563,9 @@ function EntryCard({
             <ContactIcons socials={entry.socials} owner={entry.name} />
           </div>
         ) : (
-          <div className="border-t border-gray-1 pt-2">
+          <div className="flex items-center gap-2 border-t border-gray-1 pt-2">
             <ContactIcons socials={entry.socials} owner={entry.name} />
+            {action && <div className="ml-auto">{action}</div>}
           </div>
         )}
       </div>
@@ -735,6 +613,7 @@ function CompactRow({
   you = false,
   ownBar,
   muted = false,
+  action,
 }: {
   entry: Hacker;
   you?: boolean;
@@ -742,6 +621,8 @@ function CompactRow({
   ownBar?: ReactNode;
   /** Hidden from others. */
   muted?: boolean;
+  /** Beside the contacts once open (Report). */
+  action?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const detailsId = useId();
@@ -869,34 +750,27 @@ function CompactRow({
             <Idea idea={entry.idea} />
           </p>
         )}
-        <ContactIcons socials={entry.socials} owner={entry.name} />
+        <div className="flex items-center gap-2">
+          <ContactIcons socials={entry.socials} owner={entry.name} />
+          {action && <div className="ml-auto">{action}</div>}
+        </div>
       </div>
     </li>
   );
 }
 
 type Card = {
-  /** Spike: a local object URL. */
+  /** The saved photo's URL, or a picked one waiting for Save. */
   photo?: string;
   show: { school: boolean; year: boolean };
   needs?: Needs;
-  skills: string[];
+  skills: Skill[];
   firstHackathon: boolean;
   lookingFor: string;
   idea: string;
   socials: Socials;
   /** Shown to other hackers. */
   listed: boolean;
-};
-
-// Spike: the signed-in hacker, as their application has them.
-const ME = {
-  name: "John D.",
-  school: "Western",
-  schoolFull: "Western University",
-  year: "2nd year",
-  horseId: 4,
-  phone: "(519) 555-0142",
 };
 
 // A new card: only what comes from the application is filled in.
@@ -910,23 +784,41 @@ const BLANK_CARD: Card = {
   listed: false,
 };
 
-// Spike: a saved card, to preview the board with ?card=shown|hidden.
-const SAMPLE_CARD: Card = {
-  show: { school: true, year: false },
-  skills: ["Frontend", "Design"],
-  firstHackathon: false,
-  lookingFor: "A backend person and someone into hardware",
-  idea: "Live campus bus tracker",
-  socials: { discord: "drjohn", instagram: "drjohn", github: "drjohn" },
-  listed: true,
-};
-
-function toHacker(c: Card): Hacker {
+/** A saved card, back in the form's shape. */
+function toCard(v: CardView, hiddenByOrganizer: boolean): Card {
   return {
-    name: ME.name,
-    school: c.show.school ? ME.school : undefined,
-    year: c.show.year ? ME.year : undefined,
-    horseId: ME.horseId,
+    photo: v.photoUrl,
+    show: { school: v.school !== undefined, year: v.year !== undefined },
+    needs: v.needs ?? undefined,
+    skills: v.skills,
+    firstHackathon: v.firstHackathon,
+    lookingFor: v.lookingFor,
+    idea: v.idea ?? "",
+    socials: v.contacts,
+    listed: v.shown && !hiddenByOrganizer,
+  };
+}
+
+function toInput(c: Card): CardInput {
+  return {
+    needs: c.needs ?? null,
+    skills: c.skills,
+    firstHackathon: c.firstHackathon,
+    lookingFor: c.lookingFor,
+    idea: c.idea,
+    showSchool: c.show.school,
+    showYear: c.show.year,
+    contacts: c.socials,
+    shown: c.listed,
+  };
+}
+
+function toHacker(c: Card, me: Me): Hacker {
+  return {
+    name: me.name,
+    school: c.show.school ? me.school : undefined,
+    year: c.show.year ? me.year : undefined,
+    horseId: me.horseId,
     photo: c.photo,
     needs: c.needs,
     firstHackathon: c.firstHackathon,
@@ -935,6 +827,13 @@ function toHacker(c: Card): Hacker {
     idea: c.idea.trim() || undefined,
     socials: c.socials,
   };
+}
+
+async function toBase64(blob: Blob) {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
 }
 
 // Showing a card needs someone to look for and a way to be messaged: Discord,
@@ -948,12 +847,21 @@ function isReady(c: Card) {
 function CardStage({
   initial,
   isNew,
+  me,
+  blocked,
+  photosOff,
   onSave,
   onLeave,
 }: {
   initial: Card;
   isNew: boolean;
-  onSave: (c: Card) => void;
+  me: Me;
+  /** An organizer hid this card, so it can't be shown. */
+  blocked: boolean;
+  /** Photo storage isn't set up: the card keeps the horse. */
+  photosOff: boolean;
+  /** `photo`: a new one to upload, or null to remove the saved one. */
+  onSave: (c: Card, photo?: Blob | null) => Promise<void>;
   onLeave: () => void;
 }) {
   const ids = useId();
@@ -961,23 +869,33 @@ function CardStage({
   const [c, setC] = useState<Card>(initial);
   const set = <K extends keyof Card>(key: K, value: Card[K]) =>
     setC((x) => ({ ...x, [key]: value }));
-  const ready = isReady(c);
+  const ready = isReady(c) && !blocked;
   const listed = c.listed && ready;
-  const me = toHacker(c);
-  // Hints show once a field has been left, not while someone is mid-paste.
-  // Spike: the photo stays a local object URL. The real build must upload it,
-  // resize it to about 256px, strip EXIF/GPS metadata, and let Report and
-  // organizer Hide cover photos too.
+  const preview = toHacker(c, me);
+  const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
+  // A picked photo is resized right away (WebP, no EXIF/GPS) and uploaded on Save.
+  const [newPhoto, setNewPhoto] = useState<Blob | null>();
   const [photoError, setPhotoError] = useState("");
-  const setPhoto = (file?: File) => {
+  const setPhoto = async (file?: File) => {
     if (file && !file.type.startsWith("image/"))
       return setPhotoError("That file isn’t an image. Pick a JPG or PNG.");
     if (file && file.size > 10 * 1024 * 1024)
       return setPhotoError("That image is over 10 MB. Pick a smaller one.");
     setPhotoError("");
+    let blob: Blob | undefined;
+    if (file) {
+      try {
+        blob = await resizeToWebp(file);
+      } catch {
+        return setPhotoError("Couldn’t use that image. Try another one.");
+      }
+    }
     if (c.photo?.startsWith("blob:")) URL.revokeObjectURL(c.photo);
-    set("photo", file ? URL.createObjectURL(file) : undefined);
+    set("photo", blob ? URL.createObjectURL(blob) : undefined);
+    setNewPhoto(blob ?? (initial.photo ? null : undefined));
   };
+  // Hints show once a field has been left, not while someone is mid-paste.
   const [hints, setHints] = useState<Partial<Record<ContactKind, string>>>({});
   const cleanField = (key: ContactKind) => {
     const raw = c.socials[key];
@@ -998,14 +916,14 @@ function CardStage({
     ["github", "GitHub", "username…"],
   ] as const;
 
-  const preview = (
+  const previewCard = (
     <>
       <p className={PHOTO_NOTE}>
         {listed
           ? "This is how other hackers will see your card."
           : "Preview. Only you can see your card until you choose to show it."}
       </p>
-      <EntryCard entry={me} muted={!listed} />
+      <EntryCard entry={preview} muted={!listed} />
     </>
   );
 
@@ -1023,7 +941,15 @@ function CardStage({
           className="flex flex-col gap-6 rounded-2xl bg-white p-5 text-heavy shadow-lg sm:p-7"
           onSubmit={(e) => {
             e.preventDefault();
-            onSave({ ...c, socials: normalizeContacts(c.socials), listed });
+            if (saving) return;
+            setSaving(true);
+            setSaveFailed(false);
+            onSave(
+              { ...c, socials: normalizeContacts(c.socials), listed },
+              newPhoto,
+            )
+              .catch(() => setSaveFailed(true))
+              .finally(() => setSaving(false));
           }}
         >
           <fieldset>
@@ -1033,33 +959,35 @@ function CardStage({
             <div className="flex flex-col gap-2 text-[15px]">
               {(
                 [
-                  ["school", ME.schoolFull],
-                  ["year", ME.year],
+                  ["school", me.school],
+                  ["year", me.year],
                 ] as const
-              ).map(([key, value]) => (
-                <label
-                  key={key}
-                  className="flex items-center justify-between gap-3"
-                >
-                  <span
-                    className={c.show[key] ? "" : "text-medium line-through"}
+              )
+                .filter(([, value]) => value)
+                .map(([key, value]) => (
+                  <label
+                    key={key}
+                    className="flex items-center justify-between gap-3"
                   >
-                    {value}
-                  </span>
-                  <span className="flex items-center gap-2 text-sm text-medium">
-                    {c.show[key] ? "Shown" : "Hidden"}
-                    <input
-                      type="checkbox"
-                      name={`show-${key}`}
-                      checked={c.show[key]}
-                      onChange={() =>
-                        set("show", { ...c.show, [key]: !c.show[key] })
-                      }
-                      className="h-4 w-4 accent-[#a16bc7]"
-                    />
-                  </span>
-                </label>
-              ))}
+                    <span
+                      className={c.show[key] ? "" : "text-medium line-through"}
+                    >
+                      {value}
+                    </span>
+                    <span className="flex items-center gap-2 text-sm text-medium">
+                      {c.show[key] ? "Shown" : "Hidden"}
+                      <input
+                        type="checkbox"
+                        name={`show-${key}`}
+                        checked={c.show[key]}
+                        onChange={() =>
+                          set("show", { ...c.show, [key]: !c.show[key] })
+                        }
+                        className="h-4 w-4 accent-[#a16bc7]"
+                      />
+                    </span>
+                  </label>
+                ))}
             </div>
           </fieldset>
 
@@ -1069,42 +997,50 @@ function CardStage({
             </legend>
             <div className="flex items-center gap-4">
               <Avatar
-                horseId={ME.horseId}
+                horseId={me.horseId}
                 photo={c.photo}
                 className="h-[72px] w-[72px]"
               />
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="cursor-pointer rounded-full border border-gray-2 px-3.5 py-1.5 text-sm font-semibold text-heavy focus-within:ring-2 focus-within:ring-[#a16bc7] focus-within:ring-offset-2 hover:border-[#a16bc7]">
-                  {c.photo ? "Change" : "Upload a photo"}
-                  <input
-                    type="file"
-                    name="photo"
-                    accept="image/*"
-                    aria-describedby={
-                      photoError ? `${ids}-photo-err` : undefined
-                    }
-                    className="sr-only"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) setPhoto(file);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-                {c.photo && (
-                  <button
-                    type="button"
-                    onClick={() => setPhoto(undefined)}
-                    className={`rounded-full px-3 py-1.5 text-sm font-semibold text-medium hover:text-heavy ${FOCUS}`}
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
+              {photosOff ? (
+                <p className="text-sm text-medium">
+                  Photos aren’t available yet.
+                </p>
+              ) : (
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="cursor-pointer rounded-full border border-gray-2 px-3.5 py-1.5 text-sm font-semibold text-heavy focus-within:ring-2 focus-within:ring-[#a16bc7] focus-within:ring-offset-2 hover:border-[#a16bc7]">
+                    {c.photo ? "Change" : "Upload a photo"}
+                    <input
+                      type="file"
+                      name="photo"
+                      accept="image/*"
+                      aria-describedby={
+                        photoError ? `${ids}-photo-err` : undefined
+                      }
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void setPhoto(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  {c.photo && (
+                    <button
+                      type="button"
+                      onClick={() => void setPhoto(undefined)}
+                      className={`rounded-full px-3 py-1.5 text-sm font-semibold text-medium hover:text-heavy ${FOCUS}`}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
-            <p className="mt-2 text-sm text-medium">
-              Without one, your card shows your horse.
-            </p>
+            {!photosOff && (
+              <p className="mt-2 text-sm text-medium">
+                Without one, your card shows your horse.
+              </p>
+            )}
             {photoError && (
               <p
                 id={`${ids}-photo-err`}
@@ -1293,7 +1229,7 @@ function CardStage({
                   onChange={(e) =>
                     set("socials", {
                       ...c.socials,
-                      phone: e.target.checked ? ME.phone : undefined,
+                      phone: e.target.checked ? (me.phone ?? "") : undefined,
                     })
                   }
                 />
@@ -1327,7 +1263,7 @@ function CardStage({
         </form>
 
         {/* Phones: the preview sits right before the last step. */}
-        <div className="flex flex-col gap-3 lg:hidden">{preview}</div>
+        <div className="flex flex-col gap-3 lg:hidden">{previewCard}</div>
 
         <section
           aria-labelledby={`${ids}-show-h`}
@@ -1369,8 +1305,9 @@ function CardStage({
               id={`${ids}-notready`}
               className="rounded-lg bg-[#fff0e6] px-3 py-2 text-sm text-[#9a4c14]"
             >
-              Add who would fit your team and a way to message you (Discord,
-              Instagram or phone) first.
+              {blocked
+                ? "An organizer hid your card."
+                : "Add who would fit your team and a way to message you (Discord, Instagram or phone) first."}
             </p>
           )}
           <Button
@@ -1378,10 +1315,19 @@ function CardStage({
             form={formId}
             variant="primary"
             full
+            isPending={saving}
             className="h-12 min-h-0 py-0 font-figtree font-medium"
           >
             {listed ? "Save and show my card" : "Save, hidden"}
           </Button>
+          {saveFailed && (
+            <p
+              role="alert"
+              className="-mt-2 text-center text-sm text-[#9a4c14]"
+            >
+              Couldn’t save. Try again.
+            </p>
+          )}
           <button
             type="button"
             onClick={onLeave}
@@ -1396,16 +1342,81 @@ function CardStage({
         aria-label="Preview of your card"
         className="hidden flex-col gap-3 lg:sticky lg:top-24 lg:flex"
       >
-        {preview}
+        {previewCard}
       </aside>
     </div>
   );
 }
 
+// Report someone else's card to the organizers, with an optional note.
+function ReportCard({ userId }: { userId: string }) {
+  const noteId = useId();
+  const [note, setNote] = useState("");
+  const report = api.teamFinder.report.useMutation();
+  return (
+    <Popover
+      onOpenChange={(o) => {
+        if (o) return;
+        setNote("");
+        if (!report.isPending) report.reset();
+      }}
+    >
+      <PopoverTrigger
+        className={`rounded-sm text-[13px] font-semibold text-medium underline-offset-4 hover:text-heavy hover:underline ${FOCUS}`}
+      >
+        Report
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        side="top"
+        sideOffset={6}
+        collisionPadding={12}
+        className="font-figtree text-heavy shadow-lg"
+      >
+        {report.isSuccess ? (
+          <p className="text-sm">Thanks. An organizer will take a look.</p>
+        ) : (
+          <form
+            className="flex flex-col gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!report.isPending)
+                report.mutate({ userId, note: note.trim() });
+            }}
+          >
+            <label htmlFor={noteId} className="text-sm font-semibold">
+              What’s wrong?{" "}
+              <span className="font-normal text-medium">(optional)</span>
+            </label>
+            <textarea
+              id={noteId}
+              rows={3}
+              maxLength={500}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className={`${FIELD} resize-none text-sm`}
+            />
+            <button
+              type="submit"
+              disabled={report.isPending}
+              className={`self-end rounded-full bg-[#7a4aa3] px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-[#673d8c] disabled:opacity-60 ${FOCUS}`}
+            >
+              Send report
+            </button>
+            {report.isError && (
+              <p role="alert" className="text-sm text-[#9a4c14]">
+                Couldn’t send. Try again.
+              </p>
+            )}
+          </form>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 type FilterProps = {
   variant: "inline" | "rail";
-  /** The page backdrop: text and chips are styled for it. */
-  light: boolean;
   query: string;
   filter: Filter;
   canDo: string[];
@@ -1418,7 +1429,6 @@ type FilterProps = {
 // phones); desktops get them in a quiet left rail.
 function Filters({
   variant,
-  light,
   query,
   filter,
   canDo,
@@ -1428,8 +1438,6 @@ function Filters({
 }: FilterProps) {
   const searchId = useId();
   const rail = variant === "rail";
-  const ink = light ? "text-heavy" : "text-white";
-  const quiet = light ? "text-medium" : "text-white/75";
 
   const search = (
     <>
@@ -1437,7 +1445,7 @@ function Filters({
         Search names, skills, schools and ideas
       </label>
       <div
-        className={`flex min-w-[150px] items-center gap-2 rounded-full bg-white px-3 focus-within:ring-2 focus-within:ring-[#a16bc7] md:px-4 ${light ? "ring-1 ring-gray-2" : ""} ${rail ? "" : "flex-1"}`}
+        className={`flex min-w-[150px] items-center gap-2 rounded-full bg-white px-3 focus-within:ring-2 focus-within:ring-[#a16bc7] md:px-4 ${rail ? "" : "flex-1"}`}
       >
         <Search aria-hidden className="h-4 w-4 shrink-0 text-medium" />
         <input
@@ -1458,7 +1466,7 @@ function Filters({
     <div
       role="group"
       aria-label="Show"
-      className={`flex shrink-0 rounded-full bg-white p-1 ${light ? "ring-1 ring-gray-2" : ""}`}
+      className="flex shrink-0 rounded-full bg-white p-1"
     >
       {(
         [
@@ -1492,7 +1500,7 @@ function Filters({
       className={`flex flex-wrap items-center gap-1.5 ${rail ? "" : "lg:hidden"}`}
     >
       <span
-        className={`mr-1 shrink-0 text-sm font-semibold ${ink} ${rail ? "w-full" : ""}`}
+        className={`mr-1 shrink-0 text-sm font-semibold text-white ${rail ? "w-full" : ""}`}
       >
         Can do
       </span>
@@ -1507,9 +1515,7 @@ function Filters({
             className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors motion-reduce:transition-none ${FOCUS} focus-visible:ring-offset-transparent ${
               on
                 ? "border-[#7a4aa3] bg-[#7a4aa3] text-white"
-                : light
-                  ? "border-gray-2 bg-white text-heavy hover:border-[#7a4aa3]"
-                  : "border-white/35 text-white hover:border-white/70"
+                : "border-white/35 text-white hover:border-white/70"
             }`}
           >
             {c === FIRST && <Sparkles aria-hidden className="h-3 w-3" />}
@@ -1521,7 +1527,7 @@ function Filters({
   );
 
   const tip = (
-    <p className={`text-sm ${quiet} ${rail ? "pt-1" : "lg:hidden"}`}>
+    <p className={`text-sm text-white/75 ${rail ? "pt-1" : "lg:hidden"}`}>
       Tip: add people on Discord as a friend. Instagram DMs land in requests.
     </p>
   );
@@ -1544,9 +1550,7 @@ function Filters({
   return (
     <>
       {/* Pinned on phones so search and filters stay in reach. */}
-      <div
-        className={`sticky top-6 z-10 -mx-2 flex flex-wrap items-center gap-2 rounded-[28px] p-1.5 backdrop-blur-md md:static md:mx-0 md:gap-3 md:bg-transparent md:p-0 md:backdrop-blur-none lg:hidden ${light ? "bg-white/80 ring-1 ring-gray-2 md:ring-0" : "bg-black/30"}`}
-      >
+      <div className="sticky top-6 z-10 -mx-2 flex flex-wrap items-center gap-2 rounded-[28px] bg-black/30 p-1.5 backdrop-blur-md md:static md:mx-0 md:gap-3 md:bg-transparent md:p-0 md:backdrop-blur-none lg:hidden">
         {search}
         {show}
       </div>
@@ -1556,29 +1560,76 @@ function Filters({
   );
 }
 
-export default function TeamFinder() {
+type Access = "hacker" | "organizer" | "not-open" | "not-confirmed";
+
+type TeamFinderProps = {
+  access: Access;
+  /** When RSVP closes, formatted on the server. */
+  deadlineText: string;
+};
+
+const BACKDROP = "#1f1029";
+const SKIPPED_KEY = "hw13-team-finder-skipped";
+
+function skippedBefore() {
+  try {
+    return localStorage.getItem(SKIPPED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function rememberSkip() {
+  try {
+    localStorage.setItem(SKIPPED_KEY, "1");
+  } catch {
+    // Storage blocked: they get the card step again next visit.
+  }
+}
+
+const photosUnavailable = (e: unknown) =>
+  e instanceof TRPCClientError && e.message === "photos-unavailable";
+
+export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
   const router = useRouter();
-  const q = router.query;
-  // Spike only: ?realm=ocean|mountain|desert previews other realm photos,
-  // ?stage=board opens the board, ?card=shown|hidden starts with a saved card,
-  // ?people=none shows the board before anyone else has posted.
-  const realm: Realm = realms.includes(q.realm as Realm)
-    ? (q.realm as Realm)
+  // ?realm=ocean|mountain|desert previews the other realm photos.
+  const realm: Realm = realms.includes(router.query.realm as Realm)
+    ? (router.query.realm as Realm)
     : "safari";
-  // Spike: ?bg=photo brings back the full-page photo to compare; ?bg=light
-  // and ?bg=plum try the two calm backdrops.
-  const bg: "plum" | "light" | "photo" =
-    q.bg === "photo" || q.bg === "light" || q.bg === "plum" ? q.bg : "plum";
-  const light = bg === "light";
-  const backdrop = light ? "#f5f2f8" : bg === "plum" ? "#1f1029" : "#1a0a24";
-  const [stage, setStage] = useState<"card" | "board">("card");
-  const [card, setCard] = useState<Card | null>(null);
-  useEffect(() => {
-    if (!router.isReady) return;
-    if (q.card === "shown" || q.card === "hidden")
-      setCard({ ...SAMPLE_CARD, listed: q.card === "shown" });
-    if (q.stage === "board") setStage("board");
-  }, [router.isReady, q.card, q.stage]);
+  const open = access === "hacker" || access === "organizer";
+  const organizer = access === "organizer";
+
+  const utils = api.useUtils();
+  // No refetch on focus: every fetch signs the photo URLs again, so all the
+  // photos would download again.
+  const mineQuery = api.teamFinder.getMine.useQuery(undefined, {
+    enabled: access === "hacker",
+    refetchOnWindowFocus: false,
+  });
+  const listQuery = api.teamFinder.list.useQuery(undefined, {
+    enabled: open,
+    refetchOnWindowFocus: false,
+  });
+  const myCard = mineQuery.data?.card ?? null;
+  const blocked = mineQuery.data?.hiddenByOrganizer ?? false;
+  const card = useMemo(
+    () => (myCard ? toCard(myCard, blocked) : null),
+    [myCard, blocked],
+  );
+  const loaded = !!listQuery.data && (organizer || !!mineQuery.data);
+  const failed = mineQuery.isError || listQuery.isError;
+
+  // First visit with no card opens the card step; a saved card, or having
+  // skipped it before on this device, opens the board. Organizers never get a card.
+  const [stage, setStage] = useState<"card" | "board" | null>(
+    organizer ? "board" : null,
+  );
+  if (stage === null && mineQuery.data) {
+    setStage(
+      mineQuery.data.card !== null || skippedBefore() ? "board" : "card",
+    );
+  }
+  const board = stage === "board" && !failed;
 
   // Moving between the two steps: back to the top, focus on the new heading.
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -1594,6 +1645,49 @@ export default function TeamFinder() {
     moved.current = true;
     setStage(next);
   };
+  const skip = () => {
+    rememberSkip();
+    goTo("board");
+  };
+
+  const setMine = (saved: CardView) =>
+    utils.teamFinder.getMine.setData(
+      undefined,
+      (d) => d && { ...d, card: saved },
+    );
+  const saveMine = api.teamFinder.saveMine.useMutation();
+  const uploadPhoto = api.teamFinder.uploadPhoto.useMutation();
+  const removePhoto = api.teamFinder.removePhoto.useMutation();
+  const setShown = api.teamFinder.setShown.useMutation({ onSuccess: setMine });
+  const [photosOff, setPhotosOff] = useState(false);
+  const save = async (c: Card, photo?: Blob | null) => {
+    let saved = await saveMine.mutateAsync(toInput(c));
+    try {
+      if (photo === null) saved = await removePhoto.mutateAsync();
+      if (photo)
+        saved = await uploadPhoto.mutateAsync({
+          webpBase64: await toBase64(photo),
+        });
+    } catch (e) {
+      if (!photosUnavailable(e)) throw e;
+      setPhotosOff(true);
+    } finally {
+      // The card is saved even when its photo isn't.
+      setMine(saved);
+    }
+    goTo("board");
+  };
+
+  // Cards an organizer hid on this visit stay in the list, muted, so the
+  // hide can be undone.
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const hideCard = api.teamFinder.hideCard.useMutation({
+    onSuccess: (_, { userId }) => setHiddenIds((ids) => [...ids, userId]),
+  });
+  const unhideCard = api.teamFinder.unhideCard.useMutation({
+    onSuccess: (_, { userId }) =>
+      setHiddenIds((ids) => ids.filter((id) => id !== userId)),
+  });
 
   const [filter, setFilter] = useState<Filter>("everyone");
   const [query, setQuery] = useState("");
@@ -1601,8 +1695,11 @@ export default function TeamFinder() {
   const [canDo, setCanDo] = useState<string[]>([]);
   const deferredQuery = useDeferredValue(query);
   const filtered = canDo.length > 0 || filter !== "everyone";
-  const others = useMemo(() => (q.people === "none" ? [] : PEOPLE), [q.people]);
-  const mine = useMemo(() => (card ? toHacker(card) : null), [card]);
+  const others = useMemo(
+    () => (listQuery.data ?? []).filter((v) => !v.isMine).map(fromView),
+    [listQuery.data],
+  );
+  const mine = useMemo(() => (myCard ? fromView(myCard) : null), [myCard]);
   const everyone = useMemo(
     () => (mine && card?.listed ? [mine, ...others] : others),
     [mine, card?.listed, others],
@@ -1634,8 +1731,9 @@ export default function TeamFinder() {
       .map(({ p }) => p);
   }, [others, filter, deferredQuery, canDo]);
   // Your card (or the make-card slot) is always first, so others fill the rest
-  // of each 24-card page and rows stay full at 3 and 2 columns.
-  const page = shown.slice(0, limit - 1);
+  // of each 24-card page and rows stay full at 3 and 2 columns. Organizers
+  // have no slot.
+  const page = shown.slice(0, limit - (organizer ? 0 : 1));
   const total = shown.length + (card?.listed ? 1 : 0);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const more = page.length < shown.length;
@@ -1650,11 +1748,12 @@ export default function TeamFinder() {
     );
     io.observe(el);
     return () => io.disconnect();
-    // stage: the sentinel only exists once the board is showing.
-  }, [more, page.length, stage]);
+    // stage, loaded: the sentinel only exists once the board is showing.
+  }, [more, page.length, stage, loaded]);
   const groups = everyone.filter((p) => p.needs).length;
   const early = others.length === 0;
   const cardReady = card ? isReady(card) : false;
+  const canShowCard = cardReady && !blocked;
 
   const pill = `rounded-full px-3 py-1 text-sm font-semibold ${FOCUS}`;
   const accentPill = `${pill} bg-[#7a4aa3] text-white hover:bg-[#673d8c]`;
@@ -1671,22 +1770,24 @@ export default function TeamFinder() {
     card && (
       <>
         <span className="mr-auto whitespace-nowrap text-[13px] font-semibold text-[#7a4aa3]">
-          You · {card.listed ? "Shown" : "Hidden"}
+          You · {blocked ? "Hidden by us" : card.listed ? "Shown" : "Hidden"}
         </span>
         {/* Fixed width, so "Show" and "Hide" take the same box. */}
         <button
           type="button"
-          aria-describedby={cardReady ? undefined : `own-not-ready-${where}`}
-          disabled={!cardReady}
-          onClick={() => setCard({ ...card, listed: !card.listed })}
+          aria-describedby={canShowCard ? undefined : `own-not-ready-${where}`}
+          disabled={!canShowCard}
+          onClick={() => setShown.mutate({ shown: !card.listed })}
           aria-label={card.listed ? "Hide my card" : "Show my card"}
           className={`w-16 shrink-0 text-center disabled:cursor-not-allowed ${card.listed ? quietPill : `${accentPill} disabled:bg-[#7a4aa3]/45 disabled:hover:bg-[#7a4aa3]/45`}`}
         >
           {card.listed ? "Hide" : "Show"}
         </button>
-        {!cardReady && (
+        {!canShowCard && (
           <span id={`own-not-ready-${where}`} className="sr-only">
-            Add who would fit your team and a way to message you first.
+            {blocked
+              ? "An organizer hid your card."
+              : "Add who would fit your team and a way to message you first."}
           </span>
         )}
         <button
@@ -1699,13 +1800,42 @@ export default function TeamFinder() {
         </button>
       </>
     );
+  // Organizers: hide a card from hackers, or undo it.
+  const organizerBar = (p: Hacker) => {
+    const hidden = hiddenIds.includes(p.userId!);
+    return (
+      <>
+        <span className="mr-auto whitespace-nowrap text-[13px] font-semibold text-[#7a4aa3]">
+          {hidden ? "Hidden" : ""}
+        </span>
+        <button
+          type="button"
+          onClick={() =>
+            (hidden ? unhideCard : hideCard).mutate({ userId: p.userId! })
+          }
+          aria-label={`${hidden ? "Unhide" : "Hide"} ${p.name}’s card`}
+          className={`w-[72px] shrink-0 text-center ${hidden ? accentPill : quietPill}`}
+        >
+          {hidden ? "Unhide" : "Hide"}
+        </button>
+      </>
+    );
+  };
+  // What each card in the list gets: Hide/Unhide for organizers, Report for hackers.
+  const cardExtras = (p: Hacker) =>
+    organizer
+      ? {
+          ownBar: organizerBar(p),
+          muted: hiddenIds.includes(p.userId!),
+        }
+      : { action: <ReportCard userId={p.userId!} /> };
 
   // The site's thin lavender scrollbar for the page, with a dark gutter so it
   // doesn't show a white strip beside the photo.
   useEffect(() => {
     const html = document.documentElement;
     html.classList.add("scrollbar");
-    html.style.backgroundColor = backdrop;
+    html.style.backgroundColor = BACKDROP;
     for (const el of [html, document.body]) {
       el.style.scrollPaddingTop = "48px";
       el.style.scrollPaddingBottom = "64px";
@@ -1718,7 +1848,7 @@ export default function TeamFinder() {
         el.style.scrollPaddingBottom = "";
       }
     };
-  }, [backdrop]);
+  }, []);
   const filterProps = {
     query,
     filter,
@@ -1741,54 +1871,36 @@ export default function TeamFinder() {
     <>
       <SEO title="Team finder" />
       <Head>
-        <meta name="theme-color" content={backdrop} />
+        <meta name="theme-color" content={BACKDROP} />
       </Head>
       <div className="relative min-h-screen w-full touch-manipulation overflow-x-clip font-figtree">
-        {bg === "photo" ? (
-          <div className="fixed inset-0">
-            <Image
-              src={realmTint[realm].background}
-              alt=""
-              aria-hidden
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover"
-              draggable={false}
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/35 to-black/55" />
-          </div>
-        ) : (
-          <>
-            <div
-              aria-hidden
-              className="absolute inset-0"
-              style={{ background: backdrop }}
-            />
-            {/* The realm photo only behind the page header, fading into the backdrop. */}
-            <div
-              aria-hidden
-              className={`absolute inset-x-0 top-0 overflow-hidden ${stage === "board" ? "h-[260px] md:h-[250px]" : "h-[420px] md:h-[480px]"}`}
-            >
-              <Image
-                src={realmTint[realm].background}
-                alt=""
-                fill
-                priority
-                sizes="100vw"
-                className="object-cover"
-                draggable={false}
-              />
-              <div className="absolute inset-0 bg-black/35" />
-              <div
-                className="absolute inset-x-0 bottom-0 h-3/4"
-                style={{
-                  background: `linear-gradient(to bottom, transparent, ${backdrop})`,
-                }}
-              />
-            </div>
-          </>
-        )}
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{ background: BACKDROP }}
+        />
+        {/* The realm photo only behind the page header, fading into the backdrop. */}
+        <div
+          aria-hidden
+          className={`absolute inset-x-0 top-0 overflow-hidden ${board ? "h-[260px] md:h-[250px]" : "h-[420px] md:h-[480px]"}`}
+        >
+          <Image
+            src={realmTint[realm].background}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+            draggable={false}
+          />
+          <div className="absolute inset-0 bg-black/35" />
+          <div
+            className="absolute inset-x-0 bottom-0 h-3/4"
+            style={{
+              background: `linear-gradient(to bottom, transparent, ${BACKDROP})`,
+            }}
+          />
+        </div>
         <div className="pointer-events-none fixed inset-x-0 top-0 z-20 -translate-y-[6px]">
           <FilmStrip />
         </div>
@@ -1797,10 +1909,11 @@ export default function TeamFinder() {
         </div>
 
         <div
-          className={`relative z-10 mx-auto w-full px-5 pb-28 sm:px-8 ${stage === "board" ? "max-w-[1360px] pt-14 md:pt-16" : "max-w-6xl pt-14 md:pt-24"}`}
+          className={`relative z-10 mx-auto w-full px-5 pb-28 sm:px-8 ${board ? "max-w-[1360px] pt-14 md:pt-16" : "max-w-6xl pt-14 md:pt-24"}`}
         >
+          {/* Hidden until the data decides which step to show. */}
           <header
-            className={`flex items-start gap-4 text-white sm:gap-5 ${ON_PHOTO}`}
+            className={`flex items-start gap-4 text-white sm:gap-5 ${ON_PHOTO} ${open && !failed && !loaded ? "invisible" : ""}`}
           >
             <Link
               href="/"
@@ -1812,41 +1925,51 @@ export default function TeamFinder() {
                 alt=""
                 width={40}
                 height={60}
-                className={
-                  stage === "board" ? "h-12 w-auto" : "h-[60px] w-auto"
-                }
+                className={board ? "h-12 w-auto" : "h-[60px] w-auto"}
                 priority
                 draggable={false}
               />
             </Link>
-            <div className={stage === "board" ? "min-w-0" : "min-w-0 max-w-xl"}>
+            <div className={board ? "min-w-0" : "min-w-0 max-w-xl"}>
               <h1
                 ref={headingRef}
                 id="stage-h"
                 tabIndex={-1}
-                className={`text-balance font-cossetteTexte font-bold leading-[1.1] focus:outline-none ${stage === "board" ? "text-[28px] sm:text-[34px]" : "text-[34px] sm:text-[48px]"}`}
+                className={`text-balance font-cossetteTexte font-bold leading-[1.1] focus:outline-none ${board ? "text-[28px] sm:text-[34px]" : "text-[34px] sm:text-[48px]"}`}
               >
-                {stage === "card"
-                  ? card
-                    ? "Edit your card"
-                    : "Make your card"
-                  : "Find your team"}
+                {access === "not-open"
+                  ? "Team finder opens when RSVPs close"
+                  : !open
+                    ? "Team finder is for confirmed hackers"
+                    : failed
+                      ? "Couldn’t load the team finder"
+                      : stage === "card"
+                        ? card
+                          ? "Edit your card"
+                          : "Make your card"
+                        : "Find your team"}
               </h1>
-              <p
-                className={
-                  stage === "board"
-                    ? "mt-1 text-[15px]"
-                    : "mt-3 text-pretty text-[17px] leading-relaxed"
-                }
-              >
-                {stage === "card"
-                  ? `Other hackers see your card when they look for teammates. Teams can have up to ${TEAM_SIZE} people.`
-                  : `Message anyone who looks like a fit. Teams can have up to ${TEAM_SIZE} people.`}
-              </p>
-              {stage === "card" && !card && (
+              {(open || access === "not-open") && (
+                <p
+                  className={
+                    board
+                      ? "mt-1 text-[15px]"
+                      : "mt-3 text-pretty text-[17px] leading-relaxed"
+                  }
+                >
+                  {!open
+                    ? `RSVPs close ${deadlineText}.`
+                    : failed
+                      ? "Refresh the page to try again."
+                      : stage === "card"
+                        ? `Other hackers see your card when they look for teammates. Teams can have up to ${TEAM_SIZE} people.`
+                        : `Message anyone who looks like a fit. Teams can have up to ${TEAM_SIZE} people.`}
+                </p>
+              )}
+              {stage === "card" && !card && !failed && (
                 <button
                   type="button"
-                  onClick={() => goTo("board")}
+                  onClick={skip}
                   className={`mt-3 rounded-sm text-[15px] font-semibold underline underline-offset-4 hover:text-[#e1c8fa] ${FOCUS} focus-visible:ring-offset-transparent`}
                 >
                   Just browsing? See who’s looking
@@ -1855,16 +1978,15 @@ export default function TeamFinder() {
             </div>
           </header>
 
-          {stage === "card" ? (
+          {!loaded || failed ? null : stage === "card" ? (
             <CardStage
-              key={card ? "edit" : "new"}
               initial={card ?? BLANK_CARD}
               isNew={!card}
-              onSave={(c) => {
-                setCard(c);
-                goTo("board");
-              }}
-              onLeave={() => goTo("board")}
+              me={mineQuery.data!.prefill}
+              blocked={blocked}
+              photosOff={photosOff}
+              onSave={save}
+              onLeave={card ? () => goTo("board") : skip}
             />
           ) : (
             <div
@@ -1873,7 +1995,7 @@ export default function TeamFinder() {
               {/* Desktop: the filters, pinned as the list scrolls. */}
               {!early && (
                 <div className="hidden lg:block lg:self-stretch">
-                  <Filters variant="rail" light={light} {...filterProps} />
+                  <Filters variant="rail" {...filterProps} />
                 </div>
               )}
 
@@ -1882,7 +2004,7 @@ export default function TeamFinder() {
                 className="flex flex-col gap-4"
               >
                 <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
-                  <div className={light ? "text-heavy" : "text-white"}>
+                  <div className="text-white">
                     <h2
                       id="browse-h"
                       tabIndex={-1}
@@ -1900,12 +2022,13 @@ export default function TeamFinder() {
                   </div>
                 </div>
 
-                {!early && (
-                  <Filters variant="inline" light={light} {...filterProps} />
-                )}
+                {!early && <Filters variant="inline" {...filterProps} />}
 
                 <>
-                  <ul className="divide-y divide-gray-1 overflow-hidden rounded-2xl bg-white text-heavy shadow-lg md:hidden">
+                  {/* Organizers have no card slot: no empty box when no one matches. */}
+                  <ul
+                    className={`divide-y divide-gray-1 overflow-hidden rounded-2xl bg-white text-heavy shadow-lg md:hidden ${organizer && page.length === 0 ? "hidden" : ""}`}
+                  >
                     {mine ? (
                       <CompactRow
                         entry={mine}
@@ -1914,18 +2037,20 @@ export default function TeamFinder() {
                         ownBar={ownBar("row")}
                       />
                     ) : (
-                      <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
-                        <p className="min-w-0 flex-1 text-sm text-medium">
-                          <span className="block font-semibold text-heavy">
-                            No card yet
-                          </span>
-                          Add one so other hackers can find you.
-                        </p>
-                        {makeCardButton}
-                      </li>
+                      !organizer && (
+                        <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+                          <p className="min-w-0 flex-1 text-sm text-medium">
+                            <span className="block font-semibold text-heavy">
+                              No card yet
+                            </span>
+                            Add one so other hackers can find you.
+                          </p>
+                          {makeCardButton}
+                        </li>
+                      )
                     )}
                     {page.map((p) => (
-                      <CompactRow key={p.name} entry={p} />
+                      <CompactRow key={p.userId} entry={p} {...cardExtras(p)} />
                     ))}
                   </ul>
                   <div className="hidden grid-cols-2 gap-4 md:grid xl:grid-cols-3">
@@ -1938,22 +2063,25 @@ export default function TeamFinder() {
                         ownBar={ownBar("grid")}
                       />
                     ) : (
-                      <div
-                        className={`flex flex-col items-start justify-center gap-2 rounded-xl border-2 border-dashed p-5 ${light ? "border-gray-2 text-heavy" : "border-white/35 text-white"}`}
-                      >
-                        <p className="font-cossetteTexte text-xl font-bold">
-                          No card yet
-                        </p>
-                        <p
-                          className={`text-sm ${light ? "text-medium" : "text-white/75"}`}
-                        >
-                          Add one so other hackers can find you.
-                        </p>
-                        <div className="mt-1">{makeCardButton}</div>
-                      </div>
+                      !organizer && (
+                        <div className="flex flex-col items-start justify-center gap-2 rounded-xl border-2 border-dashed border-white/35 p-5 text-white">
+                          <p className="font-cossetteTexte text-xl font-bold">
+                            No card yet
+                          </p>
+                          <p className="text-sm text-white/75">
+                            Add one so other hackers can find you.
+                          </p>
+                          <div className="mt-1">{makeCardButton}</div>
+                        </div>
+                      )
                     )}
                     {page.map((p) => (
-                      <EntryCard key={p.name} entry={p} clamp />
+                      <EntryCard
+                        key={p.userId}
+                        entry={p}
+                        clamp
+                        {...cardExtras(p)}
+                      />
                     ))}
                   </div>
                   {!early &&
@@ -1961,9 +2089,7 @@ export default function TeamFinder() {
                       // Loads the next 24 well before the end of the list.
                       <div ref={sentinelRef} aria-hidden className="h-px" />
                     ) : (
-                      <p
-                        className={`pt-2 text-center text-sm ${light ? "text-medium" : "text-white/70"}`}
-                      >
+                      <p className="pt-2 text-center text-sm text-white/70">
                         {total} {total === 1 ? "hacker" : "hackers"}
                       </p>
                     ))}
@@ -2013,3 +2139,29 @@ export default function TeamFinder() {
     </>
   );
 }
+
+export const getServerSideProps = async (
+  context: GetServerSidePropsContext,
+) => {
+  const session = await getServerSession(context.req, context.res, authOptions);
+  if (!session) {
+    return {
+      redirect: {
+        destination: `/login?callbackUrl=${encodeURIComponent(context.resolvedUrl)}`,
+        permanent: false,
+      },
+    };
+  }
+
+  const access = await getTeamFinderAccess(session.user.id);
+  return {
+    props: {
+      access: access.ok
+        ? access.role
+        : access.reason === "not-open"
+          ? "not-open"
+          : "not-confirmed",
+      deadlineText: formatRsvpDeadline(),
+    } satisfies TeamFinderProps,
+  };
+};
