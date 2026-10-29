@@ -15,8 +15,15 @@ import {
   applicationSaveSchema,
   applicationSubmitSchema,
 } from "~/schemas/application";
+import {
+  normalizeTravel,
+  rsvpRespondSchema,
+  rsvpTravelSaveSchema,
+  rsvpTravelSubmitSchema,
+} from "~/schemas/rsvp";
+import { isPastRsvpDeadline } from "~/lib/date";
 import { GITHUB_URL, LINKEDIN_URL, DEVPOST_URL } from "~/utils/urls";
-import { eq, count, inArray } from "drizzle-orm";
+import { and, eq, count, inArray, notInArray } from "drizzle-orm";
 import { z } from "zod";
 import { type CanvasPaths } from "~/types/canvas";
 import { isPastDeadline } from "~/lib/date";
@@ -101,6 +108,8 @@ export const applicationRouter = createTRPCRouter({
                 "emergencyContactRelationship",
                 "emergencyContactPhoneNumber",
                 "transportationMethod",
+                "travelReimbursement",
+                "travelFrom",
               ] as const),
             )
             .optional(),
@@ -351,6 +360,134 @@ export const applicationRouter = createTRPCRouter({
       }
     }),
 
+  // RSVP travel step. save() closes at the deadline, so this has its own
+  // mutation, open to accepted and confirmed hackers until RSVP closes.
+  saveTravel: protectedProcedure
+    .input(rsvpTravelSaveSchema)
+    .mutation(async ({ ctx, input }) => {
+      const application = await db.query.applications.findFirst({
+        columns: { status: true },
+        where: eq(applications.userId, ctx.session.user.id),
+      });
+
+      if (
+        application?.status !== "ACCEPTED" &&
+        application?.status !== "CONFIRMED"
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only accepted hackers can RSVP.",
+        });
+      }
+      if (isPastRsvpDeadline()) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "RSVP is closed.",
+        });
+      }
+
+      await db
+        .update(applications)
+        .set({ ...normalizeTravel(input), updatedAt: new Date() })
+        .where(eq(applications.userId, ctx.session.user.id));
+    }),
+
+  // RSVP. Yes: ACCEPTED -> CONFIRMED, before the RSVP deadline, with the
+  // travel step complete and the enrollment attestation; the travel answer
+  // sent with it is saved in the same update. No: ACCEPTED or CONFIRMED ->
+  // DECLINED, which can't be undone (there's no waitlist to hand the spot
+  // back from), and stays possible after the deadline so a confirmed hacker
+  // can still free their spot.
+  rsvp: protectedProcedure
+    .input(rsvpRespondSchema)
+    .mutation(async ({ ctx, input }) => {
+      const application = await db.query.applications.findFirst({
+        columns: {
+          status: true,
+          transportationMethod: true,
+          travelReimbursement: true,
+          travelFrom: true,
+        },
+        where: eq(applications.userId, ctx.session.user.id),
+      });
+
+      if (input.attending) {
+        if (application?.status !== "ACCEPTED") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Only accepted hackers can confirm a spot.",
+          });
+        }
+        if (isPastRsvpDeadline()) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "RSVP is closed.",
+          });
+        }
+        if (!input.enrolled) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "Confirm you're enrolled in a college or university program.",
+          });
+        }
+        // The answer on screen when Confirm was clicked, else what's saved.
+        const travel = rsvpTravelSubmitSchema.safeParse(
+          input.travel ? normalizeTravel(input.travel) : application,
+        );
+        if (!travel.success) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              travel.error.issues[0]?.message ?? "Finish the travel questions.",
+          });
+        }
+      } else if (
+        application?.status !== "ACCEPTED" &&
+        application?.status !== "CONFIRMED"
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "There's no spot to decline.",
+        });
+      }
+
+      const from = input.attending
+        ? (["ACCEPTED"] as const)
+        : (["ACCEPTED", "CONFIRMED"] as const);
+      const status: "CONFIRMED" | "DECLINED" = input.attending
+        ? "CONFIRMED"
+        : "DECLINED";
+
+      // Conditional on the current status, so a double click or two tabs
+      // can't flip a decline back to confirmed.
+      const updated = await db
+        .update(applications)
+        .set({
+          status,
+          updatedAt: new Date(),
+          ...(input.attending && {
+            ...(input.travel && normalizeTravel(input.travel)),
+            enrollmentConfirmedAt: new Date(),
+          }),
+        })
+        .where(
+          and(
+            eq(applications.userId, ctx.session.user.id),
+            inArray(applications.status, [...from]),
+          ),
+        )
+        .returning({ status: applications.status });
+
+      if (updated.length === 0) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Your RSVP changed in another tab. Refresh and try again.",
+        });
+      }
+      return { status };
+    }),
+
   submit: protectedProcedure.mutation(async ({ ctx }) => {
     assertApplicationsOpen();
     try {
@@ -477,32 +614,39 @@ export const applicationRouter = createTRPCRouter({
 
           const userIds = userRows.map((r) => r.id);
           if (userIds.length === 0) {
-            return { matched: 0, updated: 0 };
+            return { matched: 0, updated: 0, skippedRsvped: 0 };
           }
 
-          const updateRes = await tx
+          // Never overwrite an RSVP. Re-running an accept list (say, for a few
+          // late accepts) would move CONFIRMED hackers back to ACCEPTED, which
+          // loses their spot once RSVP closes, and flip declines back.
+          const rsvped = ["CONFIRMED", "DECLINED"] as const;
+          const [skipped] = await tx
+            .select({ count: count() })
+            .from(applications)
+            .where(
+              and(
+                inArray(applications.userId, userIds),
+                inArray(applications.status, [...rsvped]),
+              ),
+            );
+
+          const updated = await tx
             .update(applications)
             .set({ status, updatedAt: new Date() })
-            .where(inArray(applications.userId, userIds));
+            .where(
+              and(
+                inArray(applications.userId, userIds),
+                notInArray(applications.status, [...rsvped]),
+              ),
+            )
+            .returning({ userId: applications.userId });
 
-          // drizzle's update may not always expose rowCount across drivers; fall back to querying actual count
-          let updatedCount = userIds.length;
-          if (
-            updateRes &&
-            typeof updateRes === "object" &&
-            "rowCount" in updateRes &&
-            typeof (updateRes as { rowCount?: unknown }).rowCount === "number"
-          ) {
-            updatedCount = (updateRes as { rowCount: number }).rowCount;
-          } else {
-            // Query the actual count of applications for these users
-            const countResult = await tx
-              .select({ count: count() })
-              .from(applications)
-              .where(inArray(applications.userId, userIds));
-            updatedCount = countResult[0]?.count ?? 0;
-          }
-          return { matched: userIds.length, updated: updatedCount };
+          return {
+            matched: userIds.length,
+            updated: updated.length,
+            skippedRsvped: skipped?.count ?? 0,
+          };
         });
         return result;
       } catch (err: unknown) {

@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { RSVP_DEADLINE } from "~/lib/date";
 import { eq } from "drizzle-orm";
 import { db } from "~/server/db";
 import { createCaller } from "~/server/api/root";
@@ -201,6 +202,7 @@ describe("checkIn.checkIsHackerApproved", () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     await db
       .delete(dayOfRegistrations)
       .where(eq(dayOfRegistrations.userId, hackerSession.user.id));
@@ -210,8 +212,27 @@ describe("checkIn.checkIsHackerApproved", () => {
     await db.delete(users).where(eq(users.id, hackerSession.user.id));
   });
 
-  test("returns isApproved=true for ACCEPTED status", async () => {
+  test("returns isApproved=true for ACCEPTED status while RSVP is open", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(RSVP_DEADLINE.getTime() - 1000);
     await insertTestApplication(hackerSession.user.id, { status: "ACCEPTED" });
+    const result = await organizerCaller.checkIn.checkIsHackerApproved({
+      userId: hackerSession.user.id,
+    });
+    expect(result.isApproved).toBe(true);
+  });
+
+  test("returns isApproved=false for ACCEPTED once RSVP closes (never confirmed)", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(RSVP_DEADLINE.getTime() + 1000);
+    await insertTestApplication(hackerSession.user.id, { status: "ACCEPTED" });
+    const result = await organizerCaller.checkIn.checkIsHackerApproved({
+      userId: hackerSession.user.id,
+    });
+    expect(result.isApproved).toBe(false);
+  });
+
+  test("returns isApproved=true for CONFIRMED after RSVP closes", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(RSVP_DEADLINE.getTime() + 1000);
+    await insertTestApplication(hackerSession.user.id, { status: "CONFIRMED" });
     const result = await organizerCaller.checkIn.checkIsHackerApproved({
       userId: hackerSession.user.id,
     });

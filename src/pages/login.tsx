@@ -12,6 +12,7 @@ import { useRouter } from "next/router";
 import { useToast } from "~/hooks/use-toast";
 import DiscordAuthButton from "~/components/auth/discordauth-button";
 import { AuthLayout } from "~/components/auth/auth-layout";
+import { safeCallbackPath } from "~/lib/safe-callback";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -20,7 +21,10 @@ export default function Login() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const callbackUrl = (router.query.callbackUrl as string) ?? "/dashboard";
+  // Only paths on this site: a crafted ?callbackUrl=https://... must not send
+  // someone off-site right after they sign in.
+  const callbackUrl =
+    safeCallbackPath(router.query.callbackUrl) ?? "/dashboard";
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

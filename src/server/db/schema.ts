@@ -547,6 +547,15 @@ export const applications = pgTable(
     }),
 
     transportationMethod: transportationMethod("transportation_method"),
+    // RSVP travel: only asked when transportationMethod is "None" (travelling on their own)
+    travelReimbursement: boolean("travel_reimbursement"),
+    travelFrom: varchar("travel_from", { length: 255 }),
+    // When they confirmed their spot by attesting they're enrolled in a
+    // college or university program (the RSVP checkbox). Null = never did.
+    enrollmentConfirmedAt: timestamp("enrollment_confirmed_at", {
+      mode: "date",
+      precision: 3,
+    }),
 
     // OLDER DEPREEACTED FIELDS <can clean up but might be good to keep the forms in the code base>
     avatarColour: avatarColour("avatar_colour"),
