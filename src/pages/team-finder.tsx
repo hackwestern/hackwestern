@@ -788,7 +788,7 @@ const BLANK_CARD: Card = {
 };
 
 /** A saved card, back in the form's shape. */
-function toCard(v: CardView, hiddenByOrganizer: boolean): Card {
+function toCard(v: CardView): Card {
   return {
     photo: v.photoUrl,
     show: { school: v.school !== undefined, year: v.year !== undefined },
@@ -798,7 +798,7 @@ function toCard(v: CardView, hiddenByOrganizer: boolean): Card {
     lookingFor: v.lookingFor,
     idea: v.idea ?? "",
     socials: v.contacts,
-    listed: v.shown && !hiddenByOrganizer,
+    listed: v.shown,
   };
 }
 
@@ -872,8 +872,11 @@ function CardStage({
   const [c, setC] = useState<Card>(initial);
   const set = <K extends keyof Card>(key: K, value: Card[K]) =>
     setC((x) => ({ ...x, [key]: value }));
-  const ready = isReady(c) && !blocked;
+  const ready = isReady(c);
+  // What gets saved: the owner's choice, kept while an organizer hides the card.
   const listed = c.listed && ready;
+  // What other hackers will see.
+  const visible = listed && !blocked;
   const preview = toHacker(c, me);
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
@@ -923,11 +926,11 @@ function CardStage({
   const previewCard = (
     <>
       <p className={PHOTO_NOTE}>
-        {listed
+        {visible
           ? "This is how other hackers will see your card."
           : "Preview. Only you can see your card until you choose to show it."}
       </p>
-      <EntryCard entry={preview} muted={!listed} />
+      <EntryCard entry={preview} muted={!visible} />
     </>
   );
 
@@ -1286,25 +1289,27 @@ function CardStage({
             <button
               type="button"
               role="switch"
-              aria-checked={listed}
+              aria-checked={visible}
               aria-labelledby={`${ids}-show-h`}
               aria-describedby={
-                ready ? `${ids}-show-d` : `${ids}-show-d ${ids}-notready`
+                ready && !blocked
+                  ? `${ids}-show-d`
+                  : `${ids}-show-d ${ids}-notready`
               }
-              disabled={!ready}
+              disabled={!ready || blocked}
               onClick={() => set("listed", !c.listed)}
               className={`mt-0.5 shrink-0 rounded-full disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`}
             >
               <span
-                className={`relative block h-6 w-11 rounded-full transition-colors motion-reduce:transition-none ${listed ? "bg-[#a16bc7]" : "bg-gray-2"}`}
+                className={`relative block h-6 w-11 rounded-full transition-colors motion-reduce:transition-none ${visible ? "bg-[#a16bc7]" : "bg-gray-2"}`}
               >
                 <span
-                  className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform motion-reduce:transition-none ${listed ? "translate-x-5" : "translate-x-0"}`}
+                  className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform motion-reduce:transition-none ${visible ? "translate-x-5" : "translate-x-0"}`}
                 />
               </span>
             </button>
           </div>
-          {!ready && (
+          {(!ready || blocked) && (
             <p
               id={`${ids}-notready`}
               className="rounded-lg bg-[#fff0e6] px-3 py-2 text-sm text-[#9a4c14]"
@@ -1322,7 +1327,7 @@ function CardStage({
             isPending={saving}
             className="h-12 min-h-0 py-0 font-figtree font-medium"
           >
-            {listed ? "Save and show my card" : "Save, hidden"}
+            {visible ? "Save and show my card" : "Save, hidden"}
           </Button>
           {saveFailed && (
             <p
@@ -1616,10 +1621,9 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
   });
   const myCard = mineQuery.data?.card ?? null;
   const blocked = mineQuery.data?.hiddenByOrganizer ?? false;
-  const card = useMemo(
-    () => (myCard ? toCard(myCard, blocked) : null),
-    [myCard, blocked],
-  );
+  const card = useMemo(() => (myCard ? toCard(myCard) : null), [myCard]);
+  // On the board for others: shown by its owner and not hidden by an organizer.
+  const visible = !!card?.listed && !blocked;
   const loaded = !!listQuery.data && (organizer || !!mineQuery.data);
   const failed = mineQuery.isError || listQuery.isError;
 
@@ -1709,8 +1713,8 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
   );
   const mine = useMemo(() => (myCard ? fromView(myCard) : null), [myCard]);
   const everyone = useMemo(
-    () => (mine && card?.listed ? [mine, ...others] : others),
-    [mine, card?.listed, others],
+    () => (mine && visible ? [mine, ...others] : others),
+    [mine, visible, others],
   );
   // Your own card is pinned first, outside search and filters.
   const shown = useMemo(() => {
@@ -1742,7 +1746,7 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
   // of each 24-card page and rows stay full at 3 and 2 columns. Organizers
   // have no slot.
   const page = shown.slice(0, limit - (organizer ? 0 : 1));
-  const total = shown.length + (card?.listed ? 1 : 0);
+  const total = shown.length + (visible ? 1 : 0);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const more = page.length < shown.length;
   useEffect(() => {
@@ -1778,18 +1782,18 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
     card && (
       <>
         <span className="mr-auto whitespace-nowrap text-[13px] font-semibold text-[#7a4aa3]">
-          You · {blocked ? "Hidden by us" : card.listed ? "Shown" : "Hidden"}
+          You · {blocked ? "Hidden by us" : visible ? "Shown" : "Hidden"}
         </span>
         {/* Fixed width, so "Show" and "Hide" take the same box. */}
         <button
           type="button"
           aria-describedby={canShowCard ? undefined : `own-not-ready-${where}`}
           disabled={!canShowCard}
-          onClick={() => setShown.mutate({ shown: !card.listed })}
-          aria-label={card.listed ? "Hide my card" : "Show my card"}
-          className={`w-16 shrink-0 text-center disabled:cursor-not-allowed ${card.listed ? quietPill : `${accentPill} disabled:bg-[#7a4aa3]/45 disabled:hover:bg-[#7a4aa3]/45`}`}
+          onClick={() => setShown.mutate({ shown: !visible })}
+          aria-label={visible ? "Hide my card" : "Show my card"}
+          className={`w-16 shrink-0 text-center disabled:cursor-not-allowed ${visible ? quietPill : `${accentPill} disabled:bg-[#7a4aa3]/45 disabled:hover:bg-[#7a4aa3]/45`}`}
         >
-          {card.listed ? "Hide" : "Show"}
+          {visible ? "Hide" : "Show"}
         </button>
         {!canShowCard && (
           <span id={`own-not-ready-${where}`} className="sr-only">
@@ -2041,7 +2045,7 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
                       <CompactRow
                         entry={mine}
                         you
-                        muted={!card?.listed}
+                        muted={!visible}
                         ownBar={ownBar("row")}
                       />
                     ) : (
@@ -2067,7 +2071,7 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
                         entry={mine}
                         clamp
                         you
-                        muted={!card?.listed}
+                        muted={!visible}
                         ownBar={ownBar("grid")}
                       />
                     ) : (

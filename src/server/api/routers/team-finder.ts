@@ -151,12 +151,13 @@ const onBoard = and(
   isNull(teamFinderCards.hiddenByOrganizerAt),
 );
 
-const cardValues = (userId: string, input: CardInput, hidden: boolean) => {
+const cardValues = (userId: string, input: CardInput) => {
   const clean = cleanCard(input);
   return {
     userId,
-    // A card goes on the board only if it is complete and not hidden by an organizer.
-    shown: clean.shown && canShow(clean) && !hidden,
+    // Only a complete card can be shown. An organizer's hide is a separate
+    // column, so unhiding brings back what the owner chose.
+    shown: clean.shown && canShow(clean),
     needs: clean.needs,
     skills: clean.skills,
     firstHackathon: clean.firstHackathon,
@@ -232,11 +233,7 @@ export const teamFinderRouter = createTRPCRouter({
       const userId = ctx.session.user.id;
       await requireHacker(userId);
 
-      const existing = await db.query.teamFinderCards.findFirst({
-        where: eq(teamFinderCards.userId, userId),
-        columns: { hiddenByOrganizerAt: true },
-      });
-      const values = cardValues(userId, input, !!existing?.hiddenByOrganizerAt);
+      const values = cardValues(userId, input);
 
       const [card] = await db
         .insert(teamFinderCards)
@@ -261,7 +258,6 @@ export const teamFinderRouter = createTRPCRouter({
 
       const shown =
         input.shown &&
-        !card.hiddenByOrganizerAt &&
         canShow({
           lookingFor: card.lookingFor,
           contacts: toView(card, undefined, true).contacts,

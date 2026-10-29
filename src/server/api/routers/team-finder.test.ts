@@ -69,6 +69,14 @@ async function seedOther(status: "CONFIRMED" | "DECLINED" = "CONFIRMED") {
   return user.id;
 }
 
+// Another confirmed hacker looking at the board.
+async function viewer() {
+  const other = await mockSession(db);
+  await seedApplication(other.user.id);
+  otherUsers.push(other.user.id);
+  return createCaller(createInnerTRPCContext({ session: other }));
+}
+
 const seedCard = (
   userId: string,
   over: Partial<typeof teamFinderCards.$inferInsert> = {},
@@ -166,16 +174,37 @@ describe("teamFinder", () => {
     expect(list[0]).toMatchObject({ isMine: true, shown: false });
   });
 
-  test("setShown(true) on an organizer-hidden card stays hidden", async () => {
+  test("setShown(true) on an organizer-hidden card keeps it off the board", async () => {
     await seedCard(session.user.id, {
       shown: false,
       hiddenByOrganizerAt: new Date(),
     });
-    const card = await caller.teamFinder.setShown({ shown: true });
-    expect(card.shown).toBe(false);
-    const saved = await caller.teamFinder.saveMine(input({ shown: true }));
-    expect(saved.shown).toBe(false);
+    const board = await viewer();
+    await caller.teamFinder.setShown({ shown: true });
+    expect((await board.teamFinder.list()).map((c) => c.userId)).not.toContain(
+      session.user.id,
+    );
+    await caller.teamFinder.saveMine(input({ shown: true }));
+    expect((await board.teamFinder.list()).map((c) => c.userId)).not.toContain(
+      session.user.id,
+    );
     expect((await caller.teamFinder.getMine()).hiddenByOrganizer).toBe(true);
+  });
+
+  test("unhideCard puts the card back on the board with no owner action", async () => {
+    await seedCard(session.user.id);
+    await organizerCaller.teamFinder.hideCard({ userId: session.user.id });
+    // The owner edits their card while it's hidden.
+    await caller.teamFinder.saveMine(input({ lookingFor: "A designer" }));
+    const board = await viewer();
+    expect((await board.teamFinder.list()).map((c) => c.userId)).not.toContain(
+      session.user.id,
+    );
+
+    await organizerCaller.teamFinder.unhideCard({ userId: session.user.id });
+    expect((await board.teamFinder.list()).map((c) => c.userId)).toContain(
+      session.user.id,
+    );
   });
 
   test("deleteMine removes the card", async () => {
