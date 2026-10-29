@@ -49,15 +49,15 @@ describe("incomplete reminder helpers", () => {
     expect(r.text).not.toContain("started your");
   });
 
-  test("the team matching email links to team matching with its own copy", () => {
+  test("the team finder email links to the team finder with its own copy", () => {
     const r = renderReminder("team-matching", "Ada");
     expect(r.subject).toBe("Find your Hack Western 13 team");
     expect(r.html).toContain("Hi Ada,");
-    expect(r.html).toContain("https://www.hackwestern.com/team-matching");
-    expect(r.html).toContain("Make your profile");
+    expect(r.html).toContain("https://www.hackwestern.com/team-finder");
+    expect(r.html).toContain("Make your card");
     expect(r.html).not.toContain("https://www.hackwestern.com/rsvp");
     expect(r.text).toContain("November 20 to 22");
-    expect(r.text).toContain("https://www.hackwestern.com/team-matching");
+    expect(r.text).toContain("https://www.hackwestern.com/team-finder");
     expect(r.text).toContain("up to 4 people");
   });
 });
