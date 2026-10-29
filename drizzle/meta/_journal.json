@@ -141,6 +141,13 @@
       "when": 1790918712074,
       "tag": "0019_bent_madame_hydra",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793313665728,
+      "tag": "0020_rich_masque",
+      "breakpoints": true
     }
   ]
 }
