@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { eq, inArray } from "drizzle-orm";
 
@@ -77,17 +78,25 @@ async function viewer() {
   return createCaller(createInnerTRPCContext({ session: other }));
 }
 
-const seedCard = (
+// Returns the card's id.
+async function seedCard(
   userId: string,
   over: Partial<typeof teamFinderCards.$inferInsert> = {},
-) =>
-  db.insert(teamFinderCards).values({
-    userId,
-    shown: true,
-    lookingFor: "Anyone",
-    discord: "them",
-    ...over,
-  });
+) {
+  const [card] = await db
+    .insert(teamFinderCards)
+    .values({
+      userId,
+      shown: true,
+      lookingFor: "Anyone",
+      discord: "them",
+      ...over,
+    })
+    .returning({ id: teamFinderCards.id });
+  return card!.id;
+}
+
+const ids = (list: { id: string }[]) => list.map((c) => c.id);
 
 const webp = (extra = 0) => {
   const bytes = Buffer.alloc(32 + extra);
@@ -153,8 +162,12 @@ describe("teamFinder", () => {
     const hidden = await seedOther();
     const banned = await seedOther();
     const declined = await seedOther();
-    await seedCard(older, { updatedAt: new Date(AFTER_RSVP - 3000) });
-    await seedCard(newer, { updatedAt: new Date(AFTER_RSVP - 1000) });
+    const olderCard = await seedCard(older, {
+      updatedAt: new Date(AFTER_RSVP - 3000),
+    });
+    const newerCard = await seedCard(newer, {
+      updatedAt: new Date(AFTER_RSVP - 1000),
+    });
     await seedCard(hidden, { shown: false });
     await seedCard(banned, { hiddenByOrganizerAt: new Date() });
     await seedCard(declined);
@@ -164,7 +177,7 @@ describe("teamFinder", () => {
       .where(eq(applications.userId, declined));
 
     const list = await caller.teamFinder.list();
-    expect(list.map((c) => c.userId)).toEqual([newer, older]);
+    expect(ids(list)).toEqual([newerCard, olderCard]);
   });
 
   test("list includes the caller's own hidden card, flagged", async () => {
@@ -175,36 +188,28 @@ describe("teamFinder", () => {
   });
 
   test("setShown(true) on an organizer-hidden card keeps it off the board", async () => {
-    await seedCard(session.user.id, {
+    const mine = await seedCard(session.user.id, {
       shown: false,
       hiddenByOrganizerAt: new Date(),
     });
     const board = await viewer();
     await caller.teamFinder.setShown({ shown: true });
-    expect((await board.teamFinder.list()).map((c) => c.userId)).not.toContain(
-      session.user.id,
-    );
+    expect(ids(await board.teamFinder.list())).not.toContain(mine);
     await caller.teamFinder.saveMine(input({ shown: true }));
-    expect((await board.teamFinder.list()).map((c) => c.userId)).not.toContain(
-      session.user.id,
-    );
+    expect(ids(await board.teamFinder.list())).not.toContain(mine);
     expect((await caller.teamFinder.getMine()).hiddenByOrganizer).toBe(true);
   });
 
   test("unhideCard puts the card back on the board with no owner action", async () => {
-    await seedCard(session.user.id);
-    await organizerCaller.teamFinder.hideCard({ userId: session.user.id });
+    const mine = await seedCard(session.user.id);
+    await organizerCaller.teamFinder.hideCard({ cardId: mine });
     // The owner edits their card while it's hidden.
     await caller.teamFinder.saveMine(input({ lookingFor: "A designer" }));
     const board = await viewer();
-    expect((await board.teamFinder.list()).map((c) => c.userId)).not.toContain(
-      session.user.id,
-    );
+    expect(ids(await board.teamFinder.list())).not.toContain(mine);
 
-    await organizerCaller.teamFinder.unhideCard({ userId: session.user.id });
-    expect((await board.teamFinder.list()).map((c) => c.userId)).toContain(
-      session.user.id,
-    );
+    await organizerCaller.teamFinder.unhideCard({ cardId: mine });
+    expect(ids(await board.teamFinder.list())).toContain(mine);
   });
 
   test("deleteMine removes the card", async () => {
@@ -225,35 +230,36 @@ describe("teamFinder", () => {
   });
 
   test("organizers can read the board but have no card", async () => {
-    const other = await seedOther();
-    await seedCard(other);
+    const other = await seedCard(await seedOther());
     const list = await organizerCaller.teamFinder.list();
-    expect(list.map((c) => c.userId)).toContain(other);
+    expect(ids(list)).toContain(other);
     await expect(organizerCaller.teamFinder.getMine()).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
   });
 
   test("organizers also get organizer-hidden cards, flagged; hackers never do", async () => {
-    const hidden = await seedOther();
-    const unshown = await seedOther();
-    const visible = await seedOther();
-    await seedCard(hidden, { hiddenByOrganizerAt: new Date() });
-    await seedCard(unshown, { shown: false, hiddenByOrganizerAt: new Date() });
-    await seedCard(visible);
+    const hidden = await seedCard(await seedOther(), {
+      hiddenByOrganizerAt: new Date(),
+    });
+    const unshown = await seedCard(await seedOther(), {
+      shown: false,
+      hiddenByOrganizerAt: new Date(),
+    });
+    const visible = await seedCard(await seedOther());
 
     const board = await organizerCaller.teamFinder.list();
-    expect(board.find((c) => c.userId === hidden)).toMatchObject({
+    expect(board.find((c) => c.id === hidden)).toMatchObject({
       hiddenByOrganizer: true,
     });
-    expect(board.find((c) => c.userId === visible)).toMatchObject({
+    expect(board.find((c) => c.id === visible)).toMatchObject({
       hiddenByOrganizer: false,
     });
-    expect(board.map((c) => c.userId)).not.toContain(unshown);
+    expect(ids(board)).not.toContain(unshown);
 
-    const ids = (await caller.teamFinder.list()).map((c) => c.userId);
-    expect(ids).toContain(visible);
-    expect(ids).not.toContain(hidden);
+    const hackerBoard = ids(await caller.teamFinder.list());
+    expect(hackerBoard).toContain(visible);
+    expect(hackerBoard).not.toContain(hidden);
   });
 
   test("a confirmed hacker is refused before RSVP closes", async () => {
@@ -264,8 +270,8 @@ describe("teamFinder", () => {
   });
 
   describe("photos", () => {
-    const prefix = `team-finder/${session.user.id}/`;
-    const oldKey = `${prefix}00000000-0000-0000-0000-000000000000.webp`;
+    const RANDOM_KEY = /^team-finder\/[0-9a-f-]{36}\.(webp|jpg)$/;
+    const oldKey = "team-finder/00000000-0000-0000-0000-000000000000.webp";
     const photoOf = async () =>
       (
         await db.query.teamFinderCards.findFirst({
@@ -273,17 +279,21 @@ describe("teamFinder", () => {
         })
       )?.photoKey;
 
-    test("ownsPhotoKey refuses another user's key", () => {
-      const key = "team-finder/u2/00000000-0000-0000-0000-000000000000.webp";
-      expect(photos.ownsPhotoKey("u1", key)).toBe(false);
-      expect(photos.ownsPhotoKey("u2", key)).toBe(true);
-      expect(photos.ownsPhotoKey("u2", key.replace(".webp", ".jpg"))).toBe(
-        true,
+    test("newPhotoKey is random, with no user id", () => {
+      const key = photos.newPhotoKey("webp");
+      expect(key).toMatch(RANDOM_KEY);
+      expect(key.endsWith(".webp")).toBe(true);
+      expect(photos.newPhotoKey("jpg").endsWith(".jpg")).toBe(true);
+      expect(photos.newPhotoKey("webp")).not.toBe(key);
+    });
+
+    test("deletePhoto refuses a key outside team-finder/", async () => {
+      const { deletePhoto } = await vi.importActual<typeof photos>(
+        "~/server/storage/team-finder-photos",
       );
-      expect(photos.ownsPhotoKey("u2", key.replace(".webp", ".png"))).toBe(
-        false,
+      await expect(deletePhoto("resumes/someone.pdf")).rejects.toThrow(
+        "outside team-finder/",
       );
-      expect(photos.ownsPhotoKey("u2", "other/u2/x.webp")).toBe(false);
     });
 
     test("uploadPhoto rejects PNG and files over 200 KB", async () => {
@@ -314,11 +324,14 @@ describe("teamFinder", () => {
       ).rejects.toThrow("photos-unavailable");
     });
 
-    test("uploadPhoto stores a key under the caller and deletes the previous photo", async () => {
+    test("uploadPhoto stores a random key and deletes only the caller's previous photo", async () => {
+      const othersKey = "team-finder/11111111-1111-1111-1111-111111111111.webp";
+      await seedCard(await seedOther(), { photoKey: othersKey });
       await seedCard(session.user.id, { photoKey: oldKey });
       const card = await caller.teamFinder.uploadPhoto({ photoBase64: webp() });
       const key = await photoOf();
-      expect(key?.startsWith(prefix)).toBe(true);
+      expect(key).toMatch(RANDOM_KEY);
+      expect(key).not.toContain(session.user.id);
       expect(key).not.toBe(oldKey);
       expect(key?.endsWith(".webp")).toBe(true);
       expect(photos.putPhoto).toHaveBeenCalledWith(
@@ -326,6 +339,7 @@ describe("teamFinder", () => {
         expect.anything(),
         "image/webp",
       );
+      expect(photos.deletePhoto).toHaveBeenCalledTimes(1);
       expect(photos.deletePhoto).toHaveBeenCalledWith(oldKey);
       expect(card.photoUrl).toBe(`https://signed.test/${key}`);
     });
@@ -334,7 +348,7 @@ describe("teamFinder", () => {
       await seedCard(session.user.id);
       await caller.teamFinder.uploadPhoto({ photoBase64: jpeg() });
       const key = await photoOf();
-      expect(key?.startsWith(prefix)).toBe(true);
+      expect(key).toMatch(RANDOM_KEY);
       expect(key?.endsWith(".jpg")).toBe(true);
       expect(photos.putPhoto).toHaveBeenCalledWith(
         key,
@@ -366,14 +380,43 @@ describe("teamFinder", () => {
       const [off] = await caller.teamFinder.list();
       expect(off?.photoUrl).toBeUndefined();
     });
+
+    test("no card or photo link on the board carries a user id", async () => {
+      const others = [await seedOther(), await seedOther(), await seedOther()];
+      await seedCard(others[0]!, { photoKey: photos.newPhotoKey("webp") });
+      await seedCard(others[1]!, { photoKey: photos.newPhotoKey("jpg") });
+      // Organizers also get the cards they hid.
+      await seedCard(others[2]!, {
+        photoKey: photos.newPhotoKey("webp"),
+        hiddenByOrganizerAt: new Date(),
+      });
+      await caller.teamFinder.saveMine(input());
+      await caller.teamFinder.uploadPhoto({ photoBase64: jpeg() });
+      const userIds = [session.user.id, organizer.user.id, ...others];
+
+      for (const [board, count] of [
+        [caller, 3],
+        [organizerCaller, 4],
+      ] as const) {
+        const list = await board.teamFinder.list();
+        expect(list).toHaveLength(count);
+        for (const card of list) {
+          expect(card).not.toHaveProperty("userId");
+          expect(card.photoUrl).toBeDefined();
+          for (const userId of userIds) {
+            expect(JSON.stringify(card)).not.toContain(userId);
+            expect(card.photoUrl).not.toContain(userId);
+          }
+        }
+      }
+    });
   });
 
   describe("report and hide", () => {
     test("report emails hello@ once, escaping the note", async () => {
-      const other = await seedOther();
-      await seedCard(other);
+      const other = await seedCard(await seedOther());
       vi.mocked(mailjet.sendViaMailjet).mockClear();
-      await caller.teamFinder.report({ userId: other, note: "<b>bad</b>" });
+      await caller.teamFinder.report({ cardId: other, note: "<b>bad</b>" });
       expect(mailjet.sendViaMailjet).toHaveBeenCalledTimes(1);
       const [opts] = vi.mocked(mailjet.sendViaMailjet).mock.calls[0]!;
       expect(opts.to).toBe("hello@hackwestern.com");
@@ -384,41 +427,48 @@ describe("teamFinder", () => {
     });
 
     test("report on a missing, unshown or own card is refused", async () => {
-      const other = await seedOther();
-      await seedCard(other, { shown: false });
+      const other = await seedCard(await seedOther(), { shown: false });
       await expect(
-        caller.teamFinder.report({ userId: other, note: "x" }),
+        caller.teamFinder.report({ cardId: other, note: "x" }),
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
       await expect(
-        caller.teamFinder.report({ userId: "nobody", note: "x" }),
+        caller.teamFinder.report({ cardId: randomUUID(), note: "x" }),
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
-      await seedCard(session.user.id);
+      const mine = await seedCard(session.user.id);
       await expect(
-        caller.teamFinder.report({ userId: session.user.id, note: "x" }),
+        caller.teamFinder.report({ cardId: mine, note: "x" }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     });
 
-    test("a hacker cannot hide a card", async () => {
+    test("a user id doesn't name a card for report or hide", async () => {
       const other = await seedOther();
-      await seedCard(other);
+      const card = await seedCard(other);
       await expect(
-        caller.teamFinder.hideCard({ userId: other }),
+        caller.teamFinder.report({ cardId: other, note: "x" }),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(
+        organizerCaller.teamFinder.hideCard({ cardId: other }),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      expect(ids(await caller.teamFinder.list())).toContain(card);
+    });
+
+    test("a hacker cannot hide a card", async () => {
+      const other = await seedCard(await seedOther());
+      await expect(
+        caller.teamFinder.hideCard({ cardId: other }),
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
     });
 
     test("hideCard removes the card from list; unhideCard restores it", async () => {
-      await seedCard(session.user.id);
-      await organizerCaller.teamFinder.hideCard({ userId: session.user.id });
+      const mine = await seedCard(session.user.id);
+      await organizerCaller.teamFinder.hideCard({ cardId: mine });
       expect((await caller.teamFinder.getMine()).hiddenByOrganizer).toBe(true);
-      const other = await seedOther();
-      await seedCard(other);
-      await organizerCaller.teamFinder.hideCard({ userId: other });
-      const ids = (await caller.teamFinder.list()).map((c) => c.userId);
-      expect(ids).not.toContain(other);
+      const other = await seedCard(await seedOther());
+      await organizerCaller.teamFinder.hideCard({ cardId: other });
+      expect(ids(await caller.teamFinder.list())).not.toContain(other);
 
-      await organizerCaller.teamFinder.unhideCard({ userId: other });
-      const after = (await caller.teamFinder.list()).map((c) => c.userId);
-      expect(after).toContain(other);
+      await organizerCaller.teamFinder.unhideCard({ cardId: other });
+      expect(ids(await caller.teamFinder.list())).toContain(other);
     });
   });
 });

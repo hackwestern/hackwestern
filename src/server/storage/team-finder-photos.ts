@@ -11,16 +11,10 @@ import { env } from "~/env";
 const PREFIX = "team-finder/";
 const GET_EXPIRES_SECONDS = 60 * 60;
 
-export const newPhotoKey = (userId: string, ext: "webp" | "jpg") =>
-  `${PREFIX}${userId}/${randomUUID()}.${ext}`;
-
-export const ownsPhotoKey = (userId: string, key: string) => {
-  const prefix = `${PREFIX}${userId}/`;
-  return (
-    key.startsWith(prefix) &&
-    /^[0-9a-f-]{36}\.(webp|jpg)$/.test(key.slice(prefix.length))
-  );
-};
+// No user id in the key: photo links reach other hackers, and the user id is
+// the hacker pass QR payload. A photo belongs to whoever's row holds its key.
+export const newPhotoKey = (ext: "webp" | "jpg") =>
+  `${PREFIX}${randomUUID()}.${ext}`;
 
 /** Photos need the private bucket's three env vars. */
 export const photosConfigured = () =>

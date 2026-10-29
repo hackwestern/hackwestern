@@ -21,7 +21,6 @@ import { type Contacts, formatPhone } from "~/lib/socials";
 import {
   deletePhoto,
   newPhotoKey,
-  ownsPhotoKey,
   photosConfigured,
   presignPhotoGet,
   putPhoto,
@@ -30,7 +29,8 @@ import {
 const MAX_PHOTO_BYTES = 200 * 1024;
 
 export type CardView = {
-  userId: string;
+  // The card's own random id, never the user id (the hacker pass QR payload).
+  id: string;
   isMine: boolean;
   shown: boolean;
   hiddenByOrganizer: boolean;
@@ -72,7 +72,7 @@ function toView(
   if (card.phone) contacts.phone = card.phone;
 
   return {
-    userId: card.userId,
+    id: card.id,
     isMine,
     shown: card.shown,
     hiddenByOrganizer: !!card.hiddenByOrganizerAt,
@@ -180,12 +180,12 @@ async function photoUrlFor(card: CardRow) {
   return presignPhotoGet(card.photoKey);
 }
 
-async function setHidden(userId: string, at: Date | null) {
+async function setHidden(cardId: string, at: Date | null) {
   const [updated] = await db
     .update(teamFinderCards)
     .set({ hiddenByOrganizerAt: at })
-    .where(eq(teamFinderCards.userId, userId))
-    .returning({ userId: teamFinderCards.userId });
+    .where(eq(teamFinderCards.id, cardId))
+    .returning({ id: teamFinderCards.id });
   if (!updated) {
     throw new TRPCError({ code: "NOT_FOUND", message: "no-card" });
   }
@@ -318,16 +318,15 @@ export const teamFinderRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "no-card" });
       }
 
-      const key = newPhotoKey(userId, isWebp ? "webp" : "jpg");
+      const key = newPhotoKey(isWebp ? "webp" : "jpg");
       await putPhoto(key, bytes, isWebp ? "image/webp" : "image/jpeg");
       const [updated] = await db
         .update(teamFinderCards)
         .set({ photoKey: key, updatedAt: new Date() })
         .where(eq(teamFinderCards.userId, userId))
         .returning();
-      if (card.photoKey && ownsPhotoKey(userId, card.photoKey)) {
-        await deletePhoto(card.photoKey);
-      }
+      // The previous key comes from the caller's own row, so it's theirs.
+      if (card.photoKey) await deletePhoto(card.photoKey);
       return viewMine(userId, updated!);
     }),
 
@@ -378,13 +377,10 @@ export const teamFinderRouter = createTRPCRouter({
   }),
 
   report: protectedProcedure
-    .input(z.object({ userId: z.string(), note: z.string().max(500) }))
+    .input(z.object({ cardId: z.string().uuid(), note: z.string().max(500) }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
       await requireHacker(userId);
-      if (input.userId === userId) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "own-card" });
-      }
 
       const [row] = await db
         .select({ card: teamFinderCards, app: appColumnsSelect })
@@ -393,14 +389,17 @@ export const teamFinderRouter = createTRPCRouter({
           applications,
           eq(applications.userId, teamFinderCards.userId),
         )
-        .where(and(eq(teamFinderCards.userId, input.userId), onBoard));
+        .where(and(eq(teamFinderCards.id, input.cardId), onBoard));
       if (!row) {
         throw new TRPCError({ code: "NOT_FOUND", message: "no-card" });
+      }
+      if (row.card.userId === userId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "own-card" });
       }
 
       const view = toView(row.card, row.app, false);
       const lines = [
-        `Reported card: ${view.name} (user ${view.userId})`,
+        `Reported card: ${view.name} (card ${view.id})`,
         `Reported by: ${ctx.session.user.name ?? "unknown"} <${ctx.session.user.email}>`,
         "",
         `Looking for: ${view.lookingFor}`,
@@ -436,16 +435,16 @@ export const teamFinderRouter = createTRPCRouter({
     }),
 
   hideCard: protectedProcedure
-    .input(z.object({ userId: z.string() }))
+    .input(z.object({ cardId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       await requireOrganizer(ctx.session.user.id);
-      await setHidden(input.userId, new Date());
+      await setHidden(input.cardId, new Date());
     }),
 
   unhideCard: protectedProcedure
-    .input(z.object({ userId: z.string() }))
+    .input(z.object({ cardId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       await requireOrganizer(ctx.session.user.id);
-      await setHidden(input.userId, null);
+      await setHidden(input.cardId, null);
     }),
 });

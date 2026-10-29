@@ -58,20 +58,20 @@ describe("delete team finder cards (DB integration)", () => {
   });
 
   test("deletes each photo (webp and jpg) then the rows", async () => {
-    await seed("a", "team-finder/u1/a.webp");
-    await seed("b", "team-finder/u2/b.jpg");
+    await seed("a", "team-finder/a.webp");
+    await seed("b", "team-finder/b.jpg");
     await seed("c", null);
     const r = await deleteAllCards(after, seeded("a", "b", "c"));
     expect(r).toEqual({ cards: 3, photosDeleted: 2, photosSkipped: 0 });
     expect(photos.deletePhoto).toHaveBeenCalledTimes(2);
-    expect(photos.deletePhoto).toHaveBeenCalledWith("team-finder/u1/a.webp");
-    expect(photos.deletePhoto).toHaveBeenCalledWith("team-finder/u2/b.jpg");
+    expect(photos.deletePhoto).toHaveBeenCalledWith("team-finder/a.webp");
+    expect(photos.deletePhoto).toHaveBeenCalledWith("team-finder/b.jpg");
     expect(await remaining()).toBe(0);
   });
 
   test("deletes rows and counts skipped photos when storage is off", async () => {
     vi.mocked(photos.photosConfigured).mockReturnValue(false);
-    await seed("a", "team-finder/u1/a.webp");
+    await seed("a", "team-finder/a.webp");
     const r = await deleteAllCards(after, seeded("a"));
     expect(photos.deletePhoto).not.toHaveBeenCalled();
     expect(r).toEqual({ cards: 1, photosDeleted: 0, photosSkipped: 1 });

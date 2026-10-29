@@ -70,7 +70,7 @@ type Me = RouterOutputs["teamFinder"]["getMine"]["prefill"];
 
 type Hacker = {
   /** Set on cards from the server; the form's preview has none. */
-  userId?: string;
+  id?: string;
   name: string;
   school?: string;
   year?: string;
@@ -93,7 +93,7 @@ type Needs = 1 | 2;
 
 function fromView(v: CardView): Hacker {
   return {
-    userId: v.userId,
+    id: v.id,
     name: v.name,
     school: v.school,
     year: v.year,
@@ -1358,7 +1358,7 @@ function CardStage({
 }
 
 // Report someone else's card to the organizers, with an optional note.
-function ReportCard({ userId }: { userId: string }) {
+function ReportCard({ cardId }: { cardId: string }) {
   const noteId = useId();
   const [note, setNote] = useState("");
   const report = api.teamFinder.report.useMutation();
@@ -1390,7 +1390,7 @@ function ReportCard({ userId }: { userId: string }) {
             onSubmit={(e) => {
               e.preventDefault();
               if (!report.isPending)
-                report.mutate({ userId, note: note.trim() });
+                report.mutate({ cardId, note: note.trim() });
             }}
           >
             <label htmlFor={noteId} className="text-sm font-semibold">
@@ -1688,17 +1688,17 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
 
   // Organizers get the cards they hid too, flagged. A hide or unhide flips
   // the flag in place: a refetch would download every photo again.
-  const setHidden = (userId: string, hidden: boolean) =>
+  const setHidden = (cardId: string, hidden: boolean) =>
     utils.teamFinder.list.setData(undefined, (d) =>
       d?.map((v) =>
-        v.userId === userId ? { ...v, hiddenByOrganizer: hidden } : v,
+        v.id === cardId ? { ...v, hiddenByOrganizer: hidden } : v,
       ),
     );
   const hideCard = api.teamFinder.hideCard.useMutation({
-    onSuccess: (_, { userId }) => setHidden(userId, true),
+    onSuccess: (_, { cardId }) => setHidden(cardId, true),
   });
   const unhideCard = api.teamFinder.unhideCard.useMutation({
-    onSuccess: (_, { userId }) => setHidden(userId, false),
+    onSuccess: (_, { cardId }) => setHidden(cardId, false),
   });
 
   const [filter, setFilter] = useState<Filter>("everyone");
@@ -1823,7 +1823,7 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
         <button
           type="button"
           onClick={() =>
-            (hidden ? unhideCard : hideCard).mutate({ userId: p.userId! })
+            (hidden ? unhideCard : hideCard).mutate({ cardId: p.id! })
           }
           aria-label={`${hidden ? "Unhide" : "Hide"} ${p.name}’s card`}
           className={`w-[72px] shrink-0 text-center ${hidden ? accentPill : quietPill}`}
@@ -1840,7 +1840,7 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
           ownBar: organizerBar(p),
           muted: !!p.hiddenByOrganizer,
         }
-      : { action: <ReportCard userId={p.userId!} /> };
+      : { action: <ReportCard cardId={p.id!} /> };
 
   // The site's thin lavender scrollbar for the page, with a dark gutter so it
   // doesn't show a white strip beside the photo.
@@ -2062,7 +2062,7 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
                       )
                     )}
                     {page.map((p) => (
-                      <CompactRow key={p.userId} entry={p} {...cardExtras(p)} />
+                      <CompactRow key={p.id} entry={p} {...cardExtras(p)} />
                     ))}
                   </ul>
                   <div className="hidden grid-cols-2 gap-4 md:grid xl:grid-cols-3">
@@ -2089,7 +2089,7 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
                     )}
                     {page.map((p) => (
                       <EntryCard
-                        key={p.userId}
+                        key={p.id}
                         entry={p}
                         clamp
                         {...cardExtras(p)}
