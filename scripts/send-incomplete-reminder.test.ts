@@ -38,6 +38,16 @@ describe("incomplete reminder helpers", () => {
     expect(two.text).not.toContain("tomorrow");
     expect(one.html).toContain("https://www.hackwestern.com/apply");
   });
+
+  test("the RSVP reminder links to the RSVP page with its own copy", () => {
+    const r = renderReminder("rsvp-reminder", "Ada");
+    expect(r.subject).toContain("RSVP");
+    expect(r.html).toContain("Hi Ada,");
+    expect(r.html).toContain("https://www.hackwestern.com/rsvp");
+    expect(r.html).not.toContain("https://www.hackwestern.com/apply");
+    expect(r.text).toContain("Friday, November 6 at 11:59 PM ET");
+    expect(r.text).not.toContain("started your");
+  });
 });
 
 // The selection query is the "right people, exactly once" guarantee.
@@ -55,7 +65,12 @@ describe("selectRecipients (DB integration)", () => {
 
   async function seed(
     tag: string,
-    status: "IN_PROGRESS" | "PENDING_REVIEW",
+    status:
+      | "IN_PROGRESS"
+      | "PENDING_REVIEW"
+      | "ACCEPTED"
+      | "CONFIRMED"
+      | "DECLINED",
     opts: { type?: "hacker" | "organizer"; email?: string } = {},
   ) {
     await db.insert(users).values({
@@ -103,6 +118,25 @@ describe("selectRecipients (DB integration)", () => {
     expect(ours(await selectRecipients("reminder-2"))).toEqual(
       [ids("already"), ids("inprogress")].sort(),
     );
+  });
+
+  test("rsvp-reminder picks accepted hackers who haven't RSVP'd", async () => {
+    await seed("accepted", "ACCEPTED");
+    await seed("confirmed", "CONFIRMED");
+    await seed("declined", "DECLINED");
+    await seed("inprogress", "IN_PROGRESS");
+    await seed("reminded", "ACCEPTED");
+    await db
+      .insert(emailReminderSent)
+      .values({ userId: ids("reminded"), kind: "rsvp-reminder" });
+
+    const rs = await selectRecipients("rsvp-reminder");
+    expect(
+      rs
+        .map((r) => r.userId)
+        .filter((id) => id.startsWith(PREFIX))
+        .sort(),
+    ).toEqual([ids("accepted")]);
   });
 
   test("--only targets one address whatever its status", async () => {
