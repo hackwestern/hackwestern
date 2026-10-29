@@ -1668,8 +1668,11 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
   const removePhoto = api.teamFinder.removePhoto.useMutation();
   const setShown = api.teamFinder.setShown.useMutation({ onSuccess: setMine });
   const [photosOff, setPhotosOff] = useState(false);
+  // Shown on the board when the card saved but its photo step didn't.
+  const [photoNote, setPhotoNote] = useState("");
   const save = async (c: Card, photo?: Blob | null) => {
     let saved = await saveMine.mutateAsync(toInput(c));
+    setPhotoNote("");
     try {
       if (photo === null) saved = await removePhoto.mutateAsync();
       if (photo)
@@ -1677,12 +1680,15 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
           photoBase64: await toBase64(photo),
         });
     } catch (e) {
-      if (!photosUnavailable(e)) throw e;
-      setPhotosOff(true);
-    } finally {
-      // The card is saved even when its photo isn't.
-      setMine(saved);
+      // The card is saved even when its photo isn't, so carry on to the board.
+      if (photosUnavailable(e)) setPhotosOff(true);
+      setPhotoNote(
+        photo === null
+          ? "Your photo couldn’t be removed."
+          : "Your photo couldn’t be uploaded.",
+      );
     }
+    setMine(saved);
     goTo("board");
   };
 
@@ -2033,6 +2039,12 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
                     )}
                   </div>
                 </div>
+
+                {photoNote && (
+                  <p role="alert" className={`self-start ${PHOTO_NOTE}`}>
+                    {photoNote}
+                  </p>
+                )}
 
                 {!early && <Filters variant="inline" {...filterProps} />}
 
