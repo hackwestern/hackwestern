@@ -376,6 +376,51 @@ export const emailReminderSent = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.kind] })],
 );
 
+// Team finder: one card per hacker, which they choose to show to other
+// confirmed hackers (src/server/api/routers/team-finder.ts). Name, school,
+// year and horse come from the application at read time; contacts are stored
+// already cleaned (src/lib/socials.ts). Deleted after the event (Dec 22).
+export const teamFinderCards = pgTable(
+  "team_finder_card",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    shown: boolean("shown").default(false).notNull(),
+    // How many more people they want: null = solo, looking for a team to join.
+    needs: smallint("needs"),
+    skills: text("skills")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    firstHackathon: boolean("first_hackathon").default(false).notNull(),
+    lookingFor: varchar("looking_for", { length: 280 }).notNull().default(""),
+    idea: varchar("idea", { length: 280 }),
+    showSchool: boolean("show_school").default(true).notNull(),
+    showYear: boolean("show_year").default(false).notNull(),
+    discord: varchar("discord", { length: 100 }),
+    instagram: varchar("instagram", { length: 100 }),
+    linkedin: varchar("linkedin", { length: 100 }),
+    github: varchar("github", { length: 100 }),
+    // Only saved when they choose to show it.
+    phone: varchar("phone", { length: 32 }),
+    // R2 object key; null = show their horse.
+    photoKey: varchar("photo_key", { length: 255 }),
+    hiddenByOrganizerAt: timestamp("hidden_by_organizer_at", {
+      mode: "date",
+      precision: 3,
+    }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [index("team_finder_card_shown_idx").on(t.shown)],
+);
+
 export const accounts = pgTable(
   "account",
   {

@@ -232,6 +232,13 @@
       "when": 1792791886451,
       "tag": "0032_rsvp_enrollment",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793308469352,
+      "tag": "0033_team_finder_card",
+      "breakpoints": true
     }
   ]
 }
