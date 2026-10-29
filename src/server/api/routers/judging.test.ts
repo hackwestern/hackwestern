@@ -465,17 +465,18 @@ describe("cheat check sweep trigger", () => {
     const otherTeamId = await makeTeam();
     await org.caller.judging.admin.loadQueue({ roundsPerTeam: 1 });
 
+    // Both teams tie on priority, so take whichever the queue hands out.
     const j = await makeJudge();
-    await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId, score: 70 });
+    const { team: first } = await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId: first.id, score: 70 });
 
     // Queue still has the second team, so no sweep yet.
     await settleDrainHook();
     expect(await db.query.cheatCheckSweeps.findMany({})).toHaveLength(0);
 
-    await j.caller.judging.me.getNextTeam();
+    const { team: second } = await j.caller.judging.me.getNextTeam();
     await j.caller.judging.me.submitTeamMark({
-      teamId: otherTeamId,
+      teamId: second.id,
       score: 90,
     });
 
