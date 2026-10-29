@@ -12,11 +12,14 @@ import {
   REMINDER_COPY,
   incompleteReminderTemplate,
   incompleteReminderText,
+  rsvpReminderTemplate,
+  rsvpReminderText,
   type ReminderKind,
 } from "~/server/api/routers/email-templates";
 import { classifyResult } from "./send-campaign";
 
-// Reminds people who started an application but haven't submitted it.
+// Reminds people who started an application but haven't submitted it, and
+// (rsvp-reminder) accepted hackers who haven't RSVP'd yet.
 // Run by .github/workflows/incomplete-reminder.yml. Dry run unless --send.
 //
 //   npx tsx scripts/send-incomplete-reminder.ts --kind=reminder-1 [--send] [--only=me@x.com]
@@ -24,7 +27,7 @@ import { classifyResult } from "./send-campaign";
 // --only sends just that address (any status) and never writes the sent-log,
 // so a test can't stop the real send from reaching that person.
 
-const KINDS: ReminderKind[] = ["reminder-1", "reminder-2"];
+const KINDS: ReminderKind[] = ["reminder-1", "reminder-2", "rsvp-reminder"];
 const DELAY_MS = 300;
 // Test and throwaway accounts never get a reminder.
 const TEST_EMAIL = [/@example\.(com|org)$/i, /\+test@/i, /^test[^@]*@/i];
@@ -40,7 +43,8 @@ export const maskEmail = (email: string) => {
   return `${local.slice(0, 1)}***@${domain}`;
 };
 
-/** In-progress hackers who haven't had this reminder and haven't bounced. */
+/** In-progress (or, for rsvp-reminder, accepted) hackers who haven't had
+ * this reminder and haven't bounced. */
 export async function selectRecipients(
   kind: ReminderKind,
   only?: string,
@@ -60,7 +64,10 @@ export async function selectRecipients(
       only
         ? eq(users.email, only.trim().toLowerCase())
         : and(
-            eq(applications.status, "IN_PROGRESS"),
+            eq(
+              applications.status,
+              kind === "rsvp-reminder" ? "ACCEPTED" : "IN_PROGRESS",
+            ),
             eq(users.type, "hacker"),
             isNull(emailSubscribers.bouncedAt),
             notExists(
@@ -80,6 +87,13 @@ export async function selectRecipients(
 }
 
 export function renderReminder(kind: ReminderKind, name: string | null) {
+  if (kind === "rsvp-reminder") {
+    return {
+      subject: REMINDER_COPY[kind].subject,
+      html: rsvpReminderTemplate(name ?? undefined),
+      text: rsvpReminderText(name ?? undefined),
+    };
+  }
   return {
     subject: REMINDER_COPY[kind].subject,
     html: incompleteReminderTemplate(kind, name ?? undefined),
