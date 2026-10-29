@@ -10,6 +10,7 @@ import { getTeamFinderAccess } from "~/server/api/utils/team-finder-access";
 import {
   type CardInput,
   type Skill,
+  CONTACT_LIMITS,
   canShow,
   cardInput,
   cleanCard,
@@ -17,7 +18,7 @@ import {
   schoolLabel,
   yearLabel,
 } from "~/lib/team-finder";
-import { type Contacts, formatPhone } from "~/lib/socials";
+import { type ContactKind, type Contacts, formatPhone } from "~/lib/socials";
 import {
   deletePhoto,
   newPhotoKey,
@@ -153,6 +154,12 @@ const onBoard = and(
 
 const cardValues = (userId: string, input: CardInput) => {
   const clean = cleanCard(input);
+  // The input allows 300 characters a contact; the columns hold less.
+  for (const [kind, value] of Object.entries(clean.contacts)) {
+    if (value && value.length > CONTACT_LIMITS[kind as ContactKind]) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: `${kind}-too-long` });
+    }
+  }
   return {
     userId,
     // Only a complete card can be shown. An organizer's hide is a separate

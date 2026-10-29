@@ -149,6 +149,29 @@ describe("teamFinder", () => {
     expect(row?.instagram).toBeNull();
   });
 
+  test("saveMine refuses a cleaned contact too long for its column", async () => {
+    await expect(
+      caller.teamFinder.saveMine(
+        input({ contacts: { discord: "a".repeat(101) } }),
+      ),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "discord-too-long",
+    });
+    await expect(
+      caller.teamFinder.saveMine(
+        input({ contacts: { discord: "someone", phone: "1".repeat(33) } }),
+      ),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "phone-too-long" });
+    expect((await caller.teamFinder.getMine()).card).toBeNull();
+
+    const card = await caller.teamFinder.saveMine(
+      input({ contacts: { discord: "a".repeat(100), phone: "1".repeat(32) } }),
+    );
+    expect(card.contacts.discord).toHaveLength(100);
+    expect(card.contacts.phone).toHaveLength(32);
+  });
+
   test("saveMine without a messaging contact is saved hidden", async () => {
     const card = await caller.teamFinder.saveMine(
       input({ contacts: { github: "someone" }, shown: true }),

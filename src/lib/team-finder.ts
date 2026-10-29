@@ -29,6 +29,15 @@ const CONTACT_KINDS = [
   "phone",
 ] as const;
 
+// The longest cleaned contact each column holds (src/server/db/schema.ts).
+export const CONTACT_LIMITS: Record<ContactKind, number> = {
+  discord: 100,
+  instagram: 100,
+  linkedin: 100,
+  github: 100,
+  phone: 32,
+};
+
 const text = z.string().trim().max(TEXT_LIMIT);
 
 export const cardInput = z.object({
