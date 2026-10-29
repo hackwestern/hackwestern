@@ -519,7 +519,7 @@ export type TeamJudgingProgress = {
  * Resolve the caller's own team. The team id is never taken from input — that
  * is what stops one hacker reading another team's progress.
  */
-async function requireCallerTeamId(userId: string): Promise<string> {
+export async function requireCallerTeamId(userId: string): Promise<string> {
   const row = await db.query.users.findFirst({
     where: eq(users.id, userId),
     columns: { teamId: true },

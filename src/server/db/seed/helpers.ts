@@ -10,6 +10,7 @@ import { UserSeeder } from "./userSeeder";
 import * as p from "@clack/prompts";
 import { ReviewSeeder } from "./reviewSeeder";
 import { OrganizerSeeder } from "./organizerSeeder";
+import { deleteJudging, seedJudging } from "./judgingSeeder";
 
 const MAX_INSERT_PARAMETERS = 2000;
 
@@ -106,6 +107,9 @@ async function deleteSeedTables(): Promise<void> {
     const delSpinner = p.spinner();
     delSpinner.start("Starting to delete rows from seeded tables.");
 
+    // Judges reference users without a cascade, so judging goes first.
+    await deleteJudging(tx);
+
     const seeders = [new UserSeeder(), ...CreateSeeders([], [])];
     const seederTableNames = seeders.reverse().map((s) => s.tableName);
 
@@ -149,6 +153,9 @@ async function seedTables(): Promise<void> {
 
       const orgSeeder = new OrganizerSeeder();
       const insertedReviewers = await seedUsers(orgSeeder, tx);
+
+      seedSpinner.message("Seeding judging teams, judges and sponsor rooms");
+      await seedJudging(tx);
 
       const seeders = CreateSeeders(insertedUsers, insertedReviewers);
       const seederTableNames = seeders.map((s) => s.tableName);

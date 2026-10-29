@@ -60,3 +60,38 @@ export const campaignTemplate = (
   unsubscribeUrl: string,
 ) =>
   `<div style="word-spacing:normal;background-color:#f4f4f4"><div style="background-color:#f4f4f4"><div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:#f4f4f4;opacity:0">Hack Western 13 is coming. Applications open soon, and you'll be among the first to know.</div><div style="margin:0px auto;max-width:600px"><table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width:100%"><tbody><tr><td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center"><div style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%"><table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%"><tbody><tr><td style="width:600px"><a href="https://www.hackwestern.com" target="_blank"><img alt="Hack Western 13" src="${bannerUrl}" style="border:none;display:block;outline:none;text-decoration:none;height:auto;width:100%;font-size:13px" width="600" height="auto"></a></td></tr></tbody></table></div></td></tr></tbody></table></div><div style="background:#ffffff;margin:0px auto;max-width:600px"><table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;width:100%"><tbody><tr><td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center"><div style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%"><table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%"><tbody><tr><td align="left" style="font-size:0px;padding:0px 25px;word-break:break-word"><div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;text-align:left;color:#55575d"><p style="margin:16px 0">Hi there,</p><p style="margin:16px 0">Hack Western 13 is on the way, and since you expressed interest in a past Hack Western, we wanted you to be among the first to know. 🐎</p><p style="margin:16px 0">Hack Western is Western University's annual hackathon: 36 hours where students from across North America gather in London, Ontario to build something new, learn from mentors, and meet people who love making things as much as you do.</p><p style="margin:16px 0">We'll email you the moment applications open, so keep an eye on your inbox.</p><p style="margin:16px 0">For everything else, from our theme reveal to announcements and behind-the-scenes, follow along on Instagram at <a href="https://www.instagram.com/hackwestern" style="color:#6C3EBB">@hackwestern</a>.</p><p style="margin:16px 0">See you soon,<br/>The Hack Western Team</p></div></td></tr></tbody></table></div></td></tr></tbody></table></div><div style="margin:0px auto;max-width:600px"><table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width:100%"><tbody><tr><td style="direction:ltr;font-size:0px;padding:16px 25px;text-align:center"><div style="font-family:Arial,sans-serif;font-size:11px;line-height:1.6;text-align:center;color:#8a8c92"><span>You're receiving this at ${email} because you expressed interest in Hack Western ${edition}.</span><br/><span>Hack Western · Western University, London, ON, Canada</span><br/><a href="${unsubscribeUrl}" style="color:#8a8c92;text-decoration:underline">Unsubscribe</a> · <a href="https://www.hackwestern.com" style="color:#8a8c92;text-decoration:underline">hackwestern.com</a></div></td></tr></tbody></table></div></div></div>`;
+
+const pitchTime = (d: Date) =>
+  d.toLocaleString("en-CA", {
+    timeZone: "America/Toronto",
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+const sponsorPitchShell = (body: string) =>
+  `<div style="word-spacing:normal;background-color:#f4f4f4"><div style="margin:0px auto;max-width:600px;padding:20px 0"><img alt="Hack Western 13 Banner" src="${bannerUrl}" style="border:none;display:block;height:auto;width:100%" width="600"></div><div style="background:#ffffff;margin:0px auto;max-width:600px;padding:20px 25px;font-family:Verdana,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#55575d">${body}<p style="margin:16px 0">Yours truly,<br/>The Hack Western 13 Team 💜</p></div></div>`;
+
+export const sponsorPitchTeamTemplate = (p: {
+  teamName: string;
+  track: string;
+  room: string;
+  location: string | null;
+  startsAt: Date;
+}) =>
+  sponsorPitchShell(
+    `<p style="margin:16px 0">Hi ${escapeHtml(p.teamName)},</p><p style="margin:16px 0">You've been shortlisted for <b>${escapeHtml(p.track)}</b>! Please come to pitch to the sponsor judges:</p><p style="margin:16px 0"><b>${escapeHtml(p.room)}</b>${p.location ? ` (${escapeHtml(p.location)})` : ""}<br/>${pitchTime(p.startsAt)}</p><p style="margin:16px 0">Please arrive a few minutes early.</p>`,
+  );
+
+export const sponsorPitchJudgeTemplate = (p: {
+  track: string;
+  room: string;
+  location: string | null;
+  pitches: { teamName: string; startsAt: Date }[];
+}) =>
+  sponsorPitchShell(
+    `<p style="margin:16px 0">Hi there,</p><p style="margin:16px 0">Here is your <b>${escapeHtml(p.track)}</b> pitch schedule in <b>${escapeHtml(p.room)}</b>${p.location ? ` (${escapeHtml(p.location)})` : ""}:</p><ul style="margin:16px 0;padding-left:20px">${p.pitches.map((x) => `<li>${pitchTime(x.startsAt)}: ${escapeHtml(x.teamName)}</li>`).join("")}</ul>`,
+  );

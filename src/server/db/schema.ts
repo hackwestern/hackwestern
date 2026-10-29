@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   uniqueIndex,
   serial,
@@ -188,6 +189,27 @@ export const judgingQueueStatusEnum = pgEnum("judging_queue_status", [
 export const roundTypeEnum = pgEnum("round_type", ["regular", "sponsored"]);
 
 /**
+ * Whether the judging plan is still being set up (`draft`: tables, seating and
+ * judge visits can be regenerated) or is live (`published`: frozen, only
+ * single-visit fixes).
+ */
+export const judgingRoundStatusEnum = pgEnum("judging_round_status", [
+  "draft",
+  "published",
+]);
+
+/**
+ * A planned judge visit. `team_absent` keeps the row but flags the no-show;
+ * `reassigned` retires the row after its visit moved to another judge. Whether
+ * a visit happened is read from `team_mark`, not from this status.
+ */
+export const judgingAssignmentStatusEnum = pgEnum("judging_assignment_status", [
+  "scheduled",
+  "team_absent",
+  "reassigned",
+]);
+
+/**
  * The lifecycle of an automated cheat-check sweep across every eligible team.
  */
 export const cheatSweepStatusEnum = pgEnum("cheat_sweep_status", [
@@ -268,6 +290,11 @@ export const teams = pgTable(
       .defaultNow()
       .notNull(),
     joinCode: varchar("joinCode", { length: 6 }).notNull().unique(),
+    // The physical table the team sits at during judging. Set once by the
+    // seating step; never changed by a reshuffle.
+    judgingTableId: integer("judging_table_id")
+      .unique()
+      .references(() => judgingTables.id, { onDelete: "set null" }),
   },
   (t) => [index("team_created_at_idx").on(t.createdAt)],
 );
@@ -335,6 +362,10 @@ export const users = pgTable(
 
     scavengerHuntEarned: integer("scavenger_hunt_earned").default(0),
     scavengerHuntBalance: integer("scavenger_hunt_balance").default(0),
+
+    // Slack member ID, collected during onboarding. Stored for room messages
+    // once Slack delivery is added; email is the only channel for now.
+    slackId: varchar("slack_id", { length: 32 }),
   },
   (user) => [
     index("user_scavenger_hunt_earned_idx").on(user.scavengerHuntEarned),
@@ -673,6 +704,10 @@ export const judges = pgTable("judge", {
   marksCount: integer("marks_count").default(0).notNull(),
   marksSum: real("marks_sum").default(0).notNull(),
   marksSquaredSum: real("marks_squared_sum").default(0).notNull(),
+
+  // Harshness from the calibration session. Stored for score normalization;
+  // the judging engine itself does not read it.
+  harshness: real("harshness"),
 });
 
 export const judgesRelations = relations(judges, ({ one, many }) => ({
@@ -682,6 +717,7 @@ export const judgesRelations = relations(judges, ({ one, many }) => ({
   }),
   marks: many(teamMarks),
   skips: many(judgingSkips),
+  assignments: many(judgingAssignments),
 }));
 
 export const judgingQueue = pgTable(
@@ -775,11 +811,170 @@ export const judgingSkipsRelations = relations(judgingSkips, ({ one }) => ({
   }),
 }));
 
+/**
+ * A physical judging table. Organizers describe each zone as a grid on the day;
+ * `number` is the printed label (reading order), `walkOrder` is the snake path
+ * judges walk, and `mapX`/`mapY` are the grid column and row for table maps.
+ * Inactive tables stay in the layout but are never seated.
+ */
+export const judgingTables = pgTable("judging_table", {
+  id: serial("id").primaryKey(),
+  number: integer("number").notNull().unique(),
+  zone: varchar("zone", { length: 64 }).notNull(),
+  walkOrder: integer("walk_order").notNull().unique(),
+  mapX: integer("map_x").notNull(),
+  mapY: integer("map_y").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+export const judgingTablesRelations = relations(judgingTables, ({ one }) => ({
+  team: one(teams),
+}));
+
+/**
+ * Singleton (`id = 1`) holding the general judging round: whether the plan is
+ * still a draft or published, and the settings the generator and every
+ * "when is my judge coming" read use.
+ */
+export const judgingRound = pgTable(
+  "judging_round",
+  {
+    id: integer("id").primaryKey().default(1),
+    status: judgingRoundStatusEnum("status").default("draft").notNull(),
+    startsAt: timestamp("starts_at", { mode: "date", precision: 3 }).notNull(),
+    slotMinutes: integer("slot_minutes").notNull(),
+    slotCount: integer("slot_count").default(6).notNull(),
+    judgesPerTeam: integer("judges_per_team").default(3).notNull(),
+    publishedAt: timestamp("published_at", { mode: "date", precision: 3 }),
+  },
+  (t) => [check("judging_round_singleton", sql`${t.id} = 1`)],
+);
+
+/**
+ * One planned visit: `judgeId` visits `teamId` in `slot` (1-based; the slot's
+ * start time is `judging_round.startsAt + (slot - 1) * slotMinutes`).
+ * Regenerated wholesale while the round is a draft; after publish, rows are
+ * only flagged or retired by reassignment. The partial unique indexes ignore
+ * retired rows so a slot can be handed to another judge.
+ */
+export const judgingAssignments = pgTable(
+  "judging_assignment",
+  {
+    id: serial("id").primaryKey(),
+    judgeId: varchar("judge_id", { length: 255 })
+      .notNull()
+      .references(() => judges.id, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    slot: integer("slot").notNull(),
+    status: judgingAssignmentStatusEnum("status")
+      .default("scheduled")
+      .notNull(),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex("judging_assignment_judge_slot_idx")
+      .on(t.judgeId, t.slot)
+      .where(sql`${t.status} <> 'reassigned'`),
+    uniqueIndex("judging_assignment_judge_team_idx")
+      .on(t.judgeId, t.teamId)
+      .where(sql`${t.status} <> 'reassigned'`),
+    index("judging_assignment_team_idx").on(t.teamId),
+  ],
+);
+
+export const judgingAssignmentsRelations = relations(
+  judgingAssignments,
+  ({ one }) => ({
+    judge: one(judges, {
+      fields: [judgingAssignments.judgeId],
+      references: [judges.id],
+    }),
+    team: one(teams, {
+      fields: [judgingAssignments.teamId],
+      references: [teams.id],
+    }),
+  }),
+);
+
+/**
+ * The room a sponsor track judges in — one room per track. The room's judges
+ * are the sponsored judges whose `track` list includes it.
+ * `judgesNotifiedAt` is set once those judges have been emailed their schedule.
+ */
+export const sponsorRooms = pgTable("sponsor_room", {
+  track: trackEnum("track").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  location: varchar("location", { length: 255 }),
+  slotMinutes: integer("slot_minutes").notNull(),
+  judgesNotifiedAt: timestamp("judges_notified_at", {
+    mode: "date",
+    precision: 3,
+  }),
+});
+
+export const sponsorRoomsRelations = relations(sponsorRooms, ({ many }) => ({
+  pitches: many(sponsorPitches),
+}));
+
+/**
+ * A team shortlisted by a sponsor track, then scheduled to pitch in that
+ * track's room. The sponsor side inserts `track`, `teamId` and `rank`; the
+ * scheduler fills `startsAt`/`endsAt`, and `notifiedAt` is set once the team
+ * has been emailed.
+ */
+export const sponsorPitches = pgTable(
+  "sponsor_pitch",
+  {
+    track: trackEnum("track")
+      .notNull()
+      .references(() => sponsorRooms.track, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    rank: integer("rank").notNull(),
+    submittedBy: varchar("submitted_by", { length: 255 }).references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
+    startsAt: timestamp("starts_at", { mode: "date", precision: 3 }),
+    endsAt: timestamp("ends_at", { mode: "date", precision: 3 }),
+    notifiedAt: timestamp("notified_at", { mode: "date", precision: 3 }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.track, t.teamId] }),
+    index("sponsor_pitch_team_idx").on(t.teamId),
+  ],
+);
+
+export const sponsorPitchesRelations = relations(sponsorPitches, ({ one }) => ({
+  room: one(sponsorRooms, {
+    fields: [sponsorPitches.track],
+    references: [sponsorRooms.track],
+  }),
+  team: one(teams, {
+    fields: [sponsorPitches.teamId],
+    references: [teams.id],
+  }),
+}));
+
 export const teamsRelations = relations(teams, ({ many, one }) => ({
   members: many(users),
   marks: many(teamMarks),
   skips: many(judgingSkips),
   checkResults: many(teamCheckResults),
+  judgingTable: one(judgingTables, {
+    fields: [teams.judgingTableId],
+    references: [judgingTables.id],
+  }),
+  assignments: many(judgingAssignments),
+  pitches: many(sponsorPitches),
 }));
 
 // ---------------------------------------------------------------------------

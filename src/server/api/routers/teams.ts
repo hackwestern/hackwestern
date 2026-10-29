@@ -27,6 +27,8 @@ const teamsSelectSchema = createSelectSchema(teams).omit({
   submissionStatus: true,
   submittedAt: true,
   createdAt: true,
+  // Seating is revealed through judgingPlan.team.getMyJudging once published.
+  judgingTableId: true,
 });
 
 const teamsSubmitSchema = z.object({
