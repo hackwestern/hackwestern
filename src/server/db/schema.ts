@@ -425,6 +425,24 @@ export const teamFinderCards = pgTable(
   (t) => [index("team_finder_card_shown_idx").on(t.shown)],
 );
 
+// One row per report, so a hacker can't send unlimited mail to hello@ and each
+// card is reported once per person. Deleted with the reporter or the card.
+export const teamFinderReports = pgTable(
+  "team_finder_report",
+  {
+    reporterId: varchar("reporter_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    cardId: uuid("card_id")
+      .notNull()
+      .references(() => teamFinderCards.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.reporterId, t.cardId] })],
+);
+
 export const accounts = pgTable(
   "account",
   {

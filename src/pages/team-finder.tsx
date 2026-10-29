@@ -1417,7 +1417,9 @@ function ReportCard({ cardId }: { cardId: string }) {
             </button>
             {report.isError && (
               <p role="alert" className="text-sm text-[#9a4c14]">
-                Couldn’t send. Try again.
+                {report.error?.message === "report-limit"
+                  ? "You’ve sent too many reports today."
+                  : "Couldn’t send. Try again."}
               </p>
             )}
           </form>

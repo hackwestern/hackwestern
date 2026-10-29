@@ -20,6 +20,8 @@ export const SKILLS = [
 export type Skill = (typeof SKILLS)[number];
 export const MAX_SKILLS = 3;
 export const TEXT_LIMIT = 100;
+// Reports one hacker can send in 24 hours.
+export const REPORTS_PER_DAY = 5;
 
 // Every card and photo is deleted from here on
 // (scripts/delete-team-finder-cards.ts), and the board closes with them.

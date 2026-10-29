@@ -1,5 +1,5 @@
 {
-  "id": "a1a8b2f6-2c21-4e13-b53b-a1feeaa8cdca",
+  "id": "780bb394-ea52-4dcb-a85b-756f5628a679",
   "prevId": "51331617-9059-4dd2-a904-be64bcaf6cad",
   "version": "7",
   "dialect": "postgresql",
@@ -2214,6 +2214,73 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.team_finder_report": {
+      "name": "team_finder_report",
+      "schema": "",
+      "columns": {
+        "reporter_id": {
+          "name": "reporter_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "card_id": {
+          "name": "card_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "team_finder_report_reporter_id_user_id_fk": {
+          "name": "team_finder_report_reporter_id_user_id_fk",
+          "tableFrom": "team_finder_report",
+          "tableTo": "user",
+          "columnsFrom": [
+            "reporter_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "team_finder_report_card_id_team_finder_card_id_fk": {
+          "name": "team_finder_report_card_id_team_finder_card_id_fk",
+          "tableFrom": "team_finder_report",
+          "tableTo": "team_finder_card",
+          "columnsFrom": [
+            "card_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "team_finder_report_reporter_id_card_id_pk": {
+          "name": "team_finder_report_reporter_id_card_id_pk",
+          "columns": [
+            "reporter_id",
+            "card_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

@@ -6,11 +6,16 @@ import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
-import { applications, teamFinderCards, users } from "~/server/db/schema";
+import {
+  applications,
+  teamFinderCards,
+  teamFinderReports,
+  users,
+} from "~/server/db/schema";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { UserSeeder } from "~/server/db/seed/userSeeder";
 import { RSVP_DEADLINE } from "~/lib/date";
-import { type CardInput } from "~/lib/team-finder";
+import { REPORTS_PER_DAY, type CardInput } from "~/lib/team-finder";
 
 import * as mailjet from "~/server/mail-mailjet";
 import * as photos from "~/server/storage/team-finder-photos";
@@ -435,6 +440,69 @@ describe("teamFinder", () => {
       expect(opts.subject).toMatch(/^Team finder report: /);
       expect(opts.html).toContain("&lt;b&gt;bad&lt;/b&gt;");
       expect(opts.html).not.toContain("<b>bad</b>");
+    });
+
+    test("reporting the same card twice succeeds, sends one email, keeps one row", async () => {
+      const other = await seedCard(await seedOther());
+      vi.mocked(mailjet.sendViaMailjet).mockClear();
+      await caller.teamFinder.report({ cardId: other, note: "a" });
+      await caller.teamFinder.report({ cardId: other, note: "b" });
+      expect(mailjet.sendViaMailjet).toHaveBeenCalledTimes(1);
+      const rows = await db
+        .select()
+        .from(teamFinderReports)
+        .where(eq(teamFinderReports.reporterId, session.user.id));
+      expect(rows).toHaveLength(1);
+    });
+
+    test("the sixth report in a day is refused and sends no email", async () => {
+      vi.mocked(mailjet.sendViaMailjet).mockClear();
+      for (let i = 0; i < REPORTS_PER_DAY; i++) {
+        const card = await seedCard(await seedOther());
+        await caller.teamFinder.report({ cardId: card, note: "x" });
+      }
+      const sixth = await seedCard(await seedOther());
+      await expect(
+        caller.teamFinder.report({ cardId: sixth, note: "x" }),
+      ).rejects.toMatchObject({
+        code: "TOO_MANY_REQUESTS",
+        message: "report-limit",
+      });
+      expect(mailjet.sendViaMailjet).toHaveBeenCalledTimes(REPORTS_PER_DAY);
+    });
+
+    test("a report older than 24 hours doesn't count toward the cap", async () => {
+      for (let i = 0; i < REPORTS_PER_DAY; i++) {
+        await db.insert(teamFinderReports).values({
+          reporterId: session.user.id,
+          cardId: await seedCard(await seedOther()),
+          createdAt: new Date(new Date().getTime() - 25 * 60 * 60 * 1000),
+        });
+      }
+      const card = await seedCard(await seedOther());
+      vi.mocked(mailjet.sendViaMailjet).mockClear();
+      await caller.teamFinder.report({ cardId: card, note: "x" });
+      expect(mailjet.sendViaMailjet).toHaveBeenCalledTimes(1);
+    });
+
+    test("a failed email leaves no row, and a retry sends it", async () => {
+      const other = await seedCard(await seedOther());
+      vi.mocked(mailjet.sendViaMailjet).mockClear();
+      vi.mocked(mailjet.sendViaMailjet).mockResolvedValueOnce({
+        data: null,
+        error: new Error("down"),
+      } as never);
+      await expect(
+        caller.teamFinder.report({ cardId: other, note: "x" }),
+      ).rejects.toMatchObject({ message: "report-failed" });
+      expect(
+        await db
+          .select()
+          .from(teamFinderReports)
+          .where(eq(teamFinderReports.reporterId, session.user.id)),
+      ).toHaveLength(0);
+      await caller.teamFinder.report({ cardId: other, note: "x" });
+      expect(mailjet.sendViaMailjet).toHaveBeenCalledTimes(2);
     });
 
     test("report on a missing, unshown or own card is refused", async () => {

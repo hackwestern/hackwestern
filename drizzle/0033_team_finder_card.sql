@@ -21,5 +21,14 @@ CREATE TABLE "team_finder_card" (
 	CONSTRAINT "team_finder_card_id_unique" UNIQUE("id")
 );
 --> statement-breakpoint
+CREATE TABLE "team_finder_report" (
+	"reporter_id" varchar(255) NOT NULL,
+	"card_id" uuid NOT NULL,
+	"created_at" timestamp (3) DEFAULT now() NOT NULL,
+	CONSTRAINT "team_finder_report_reporter_id_card_id_pk" PRIMARY KEY("reporter_id","card_id")
+);
+--> statement-breakpoint
 ALTER TABLE "team_finder_card" ADD CONSTRAINT "team_finder_card_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "team_finder_report" ADD CONSTRAINT "team_finder_report_reporter_id_user_id_fk" FOREIGN KEY ("reporter_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "team_finder_report" ADD CONSTRAINT "team_finder_report_card_id_team_finder_card_id_fk" FOREIGN KEY ("card_id") REFERENCES "public"."team_finder_card"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "team_finder_card_shown_idx" ON "team_finder_card" USING btree ("shown");

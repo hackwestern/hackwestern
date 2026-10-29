@@ -1,16 +1,21 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { env } from "~/env";
 import { db } from "~/server/db";
 import { sendViaMailjet } from "~/server/mail-mailjet";
-import { applications, teamFinderCards } from "~/server/db/schema";
+import {
+  applications,
+  teamFinderCards,
+  teamFinderReports,
+} from "~/server/db/schema";
 import { getTeamFinderAccess } from "~/server/api/utils/team-finder-access";
 import {
   type CardInput,
   type Skill,
   CONTACT_LIMITS,
+  REPORTS_PER_DAY,
   canShow,
   cardInput,
   cleanCard,
@@ -390,6 +395,29 @@ export const teamFinderRouter = createTRPCRouter({
         throw new TRPCError({ code: "BAD_REQUEST", message: "own-card" });
       }
 
+      const [counted] = await db
+        .select({ sent: count() })
+        .from(teamFinderReports)
+        .where(
+          and(
+            eq(teamFinderReports.reporterId, userId),
+            gt(teamFinderReports.createdAt, sql`now() - interval '24 hours'`),
+          ),
+        );
+      if ((counted?.sent ?? 0) >= REPORTS_PER_DAY) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "report-limit",
+        });
+      }
+      // Reporting the same card again is a success that sends nothing.
+      const inserted = await db
+        .insert(teamFinderReports)
+        .values({ reporterId: userId, cardId: row.card.id })
+        .onConflictDoNothing()
+        .returning();
+      if (inserted.length === 0) return;
+
       const view = toView(row.card, row.app, false);
       const lines = [
         `Reported card: ${view.name} (card ${view.id})`,
@@ -420,6 +448,15 @@ export const teamFinderRouter = createTRPCRouter({
         { apiKey: env.MAILJET_API_KEY, secretKey: env.MAILJET_SECRET_KEY },
       );
       if (res.error) {
+        // Free the slot so they can retry.
+        await db
+          .delete(teamFinderReports)
+          .where(
+            and(
+              eq(teamFinderReports.reporterId, userId),
+              eq(teamFinderReports.cardId, row.card.id),
+            ),
+          );
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "report-failed",
