@@ -48,6 +48,18 @@ describe("incomplete reminder helpers", () => {
     expect(r.text).toContain("Friday, November 6 at 11:59 PM ET");
     expect(r.text).not.toContain("started your");
   });
+
+  test("the team matching email links to team matching with its own copy", () => {
+    const r = renderReminder("team-matching", "Ada");
+    expect(r.subject).toBe("Find your Hack Western 13 team");
+    expect(r.html).toContain("Hi Ada,");
+    expect(r.html).toContain("https://www.hackwestern.com/team-matching");
+    expect(r.html).toContain("Make your profile");
+    expect(r.html).not.toContain("https://www.hackwestern.com/rsvp");
+    expect(r.text).toContain("November 20 to 22");
+    expect(r.text).toContain("https://www.hackwestern.com/team-matching");
+    expect(r.text).toContain("up to 4 people");
+  });
 });
 
 // The selection query is the "right people, exactly once" guarantee.
@@ -137,6 +149,25 @@ describe("selectRecipients (DB integration)", () => {
         .filter((id) => id.startsWith(PREFIX))
         .sort(),
     ).toEqual([ids("accepted")]);
+  });
+
+  test("team-matching picks confirmed hackers only", async () => {
+    await seed("confirmed", "CONFIRMED");
+    await seed("accepted", "ACCEPTED");
+    await seed("declined", "DECLINED");
+    await seed("organizer", "CONFIRMED", { type: "organizer" });
+    await seed("sent", "CONFIRMED");
+    await db
+      .insert(emailReminderSent)
+      .values({ userId: ids("sent"), kind: "team-matching" });
+
+    const rs = await selectRecipients("team-matching");
+    expect(
+      rs
+        .map((r) => r.userId)
+        .filter((id) => id.startsWith(PREFIX))
+        .sort(),
+    ).toEqual([ids("confirmed")]);
   });
 
   test("--only targets one address whatever its status", async () => {
