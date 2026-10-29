@@ -22,6 +22,7 @@ import {
   users,
 } from "~/server/db/schema";
 import { sendViaMailjet } from "~/server/mail-mailjet";
+import { HACK_WESTERN_EMAIL } from "~/server/api/routers/auth";
 import {
   sponsorPitchJudgeTemplate,
   sponsorPitchTeamTemplate,
@@ -34,7 +35,6 @@ import { ELIGIBLE_STATUSES, getRound, slotWindow } from "./plan";
 
 const MINUTE = 60_000;
 const MAX_SLOT_SEARCH = 500;
-const HACK_WESTERN_EMAIL = "Hack Western Team <hello@hackwestern.com>";
 
 type Interval = { start: number; end: number };
 

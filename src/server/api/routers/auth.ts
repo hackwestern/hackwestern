@@ -27,7 +27,7 @@ const passwordSchema = z
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
   .regex(/[0-9]/, "Password must contain at least one number")
   .regex(/[^a-zA-Z0-9]/, "Password must contain at least one symbol");
-const HACK_WESTERN_EMAIL = "Hack Western Team <hello@hackwestern.com>";
+export const HACK_WESTERN_EMAIL = "Hack Western Team <hello@hackwestern.com>";
 const mailjetCreds = {
   apiKey: env.MAILJET_API_KEY,
   secretKey: env.MAILJET_SECRET_KEY,
