@@ -1,6 +1,9 @@
 const MAX_BYTES = 200 * 1024;
 
-/** Browser only. Centre-crops to a square and re-encodes as WebP, which drops EXIF/GPS. */
+/**
+ * Browser only. Centre-crops to a square and re-encodes as WebP (JPEG where
+ * the browser can't encode WebP, i.e. Safari), which drops EXIF/GPS.
+ */
 export async function resizeToWebp(file: File, size = 256): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
   const side = Math.min(bitmap.width, bitmap.height);
@@ -22,10 +25,12 @@ export async function resizeToWebp(file: File, size = 256): Promise<Blob> {
   );
   bitmap.close();
 
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/webp", 0.85),
-  );
-  if (!blob || blob.type !== "image/webp") {
+  const encode = (type: string) =>
+    new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, 0.85));
+  // Safari hands back a PNG when asked for WebP.
+  let blob = await encode("image/webp");
+  if (blob?.type !== "image/webp") blob = await encode("image/jpeg");
+  if (blob?.type !== "image/webp" && blob?.type !== "image/jpeg") {
     throw new Error("Could not convert the image");
   }
   if (blob.size > MAX_BYTES) throw new Error("Image is too large");

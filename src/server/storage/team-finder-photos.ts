@@ -11,14 +11,14 @@ import { env } from "~/env";
 const PREFIX = "team-finder/";
 const GET_EXPIRES_SECONDS = 60 * 60;
 
-export const newPhotoKey = (userId: string) =>
-  `${PREFIX}${userId}/${randomUUID()}.webp`;
+export const newPhotoKey = (userId: string, ext: "webp" | "jpg") =>
+  `${PREFIX}${userId}/${randomUUID()}.${ext}`;
 
 export const ownsPhotoKey = (userId: string, key: string) => {
   const prefix = `${PREFIX}${userId}/`;
   return (
     key.startsWith(prefix) &&
-    /^[0-9a-f-]{36}\.webp$/.test(key.slice(prefix.length))
+    /^[0-9a-f-]{36}\.(webp|jpg)$/.test(key.slice(prefix.length))
   );
 };
 
@@ -44,13 +44,17 @@ function photoClient() {
   return client;
 }
 
-export async function putPhoto(key: string, bytes: Uint8Array) {
+export async function putPhoto(
+  key: string,
+  bytes: Uint8Array,
+  contentType: "image/webp" | "image/jpeg",
+) {
   await photoClient().send(
     new PutObjectCommand({
       Bucket: env.TEAM_FINDER_R2_BUCKET,
       Key: key,
       Body: bytes,
-      ContentType: "image/webp",
+      ContentType: contentType,
     }),
   );
 }

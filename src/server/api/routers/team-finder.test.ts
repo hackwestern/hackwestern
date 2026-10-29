@@ -88,6 +88,12 @@ const webp = (extra = 0) => {
   return bytes.toString("base64");
 };
 
+const jpeg = () =>
+  Buffer.concat([
+    Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+    Buffer.alloc(28),
+  ]).toString("base64");
+
 describe("teamFinder", () => {
   beforeEach(async () => {
     vi.mocked(photos.photosConfigured).mockReturnValue(true);
@@ -220,26 +226,32 @@ describe("teamFinder", () => {
       const key = "team-finder/u2/00000000-0000-0000-0000-000000000000.webp";
       expect(photos.ownsPhotoKey("u1", key)).toBe(false);
       expect(photos.ownsPhotoKey("u2", key)).toBe(true);
+      expect(photos.ownsPhotoKey("u2", key.replace(".webp", ".jpg"))).toBe(
+        true,
+      );
+      expect(photos.ownsPhotoKey("u2", key.replace(".webp", ".png"))).toBe(
+        false,
+      );
       expect(photos.ownsPhotoKey("u2", "other/u2/x.webp")).toBe(false);
     });
 
-    test("uploadPhoto rejects non-WebP and files over 200 KB", async () => {
+    test("uploadPhoto rejects PNG and files over 200 KB", async () => {
       await seedCard(session.user.id);
       const png = Buffer.from("\x89PNG\r\n\x1a\n and some more bytes").toString(
         "base64",
       );
       await expect(
-        caller.teamFinder.uploadPhoto({ webpBase64: png }),
+        caller.teamFinder.uploadPhoto({ photoBase64: png }),
       ).rejects.toThrow("invalid-photo");
       await expect(
-        caller.teamFinder.uploadPhoto({ webpBase64: webp(200 * 1024) }),
+        caller.teamFinder.uploadPhoto({ photoBase64: webp(200 * 1024) }),
       ).rejects.toThrow("invalid-photo");
       expect(photos.putPhoto).not.toHaveBeenCalled();
     });
 
     test("uploadPhoto without a card is refused", async () => {
       await expect(
-        caller.teamFinder.uploadPhoto({ webpBase64: webp() }),
+        caller.teamFinder.uploadPhoto({ photoBase64: webp() }),
       ).rejects.toThrow("no-card");
     });
 
@@ -247,19 +259,37 @@ describe("teamFinder", () => {
       vi.mocked(photos.photosConfigured).mockReturnValue(false);
       await seedCard(session.user.id);
       await expect(
-        caller.teamFinder.uploadPhoto({ webpBase64: webp() }),
+        caller.teamFinder.uploadPhoto({ photoBase64: webp() }),
       ).rejects.toThrow("photos-unavailable");
     });
 
     test("uploadPhoto stores a key under the caller and deletes the previous photo", async () => {
       await seedCard(session.user.id, { photoKey: oldKey });
-      const card = await caller.teamFinder.uploadPhoto({ webpBase64: webp() });
+      const card = await caller.teamFinder.uploadPhoto({ photoBase64: webp() });
       const key = await photoOf();
       expect(key?.startsWith(prefix)).toBe(true);
       expect(key).not.toBe(oldKey);
-      expect(photos.putPhoto).toHaveBeenCalledWith(key, expect.anything());
+      expect(key?.endsWith(".webp")).toBe(true);
+      expect(photos.putPhoto).toHaveBeenCalledWith(
+        key,
+        expect.anything(),
+        "image/webp",
+      );
       expect(photos.deletePhoto).toHaveBeenCalledWith(oldKey);
       expect(card.photoUrl).toBe(`https://signed.test/${key}`);
+    });
+
+    test("uploadPhoto accepts JPEG (Safari can't make WebP)", async () => {
+      await seedCard(session.user.id);
+      await caller.teamFinder.uploadPhoto({ photoBase64: jpeg() });
+      const key = await photoOf();
+      expect(key?.startsWith(prefix)).toBe(true);
+      expect(key?.endsWith(".jpg")).toBe(true);
+      expect(photos.putPhoto).toHaveBeenCalledWith(
+        key,
+        expect.anything(),
+        "image/jpeg",
+      );
     });
 
     test("removePhoto clears the key and deletes the object", async () => {

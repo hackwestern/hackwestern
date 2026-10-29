@@ -874,7 +874,8 @@ function CardStage({
   const preview = toHacker(c, me);
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
-  // A picked photo is resized right away (WebP, no EXIF/GPS) and uploaded on Save.
+  // A picked photo is resized right away (WebP or JPEG, no EXIF/GPS) and
+  // uploaded on Save.
   const [newPhoto, setNewPhoto] = useState<Blob | null>();
   const [photoError, setPhotoError] = useState("");
   const setPhoto = async (file?: File) => {
@@ -1666,7 +1667,7 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
       if (photo === null) saved = await removePhoto.mutateAsync();
       if (photo)
         saved = await uploadPhoto.mutateAsync({
-          webpBase64: await toBase64(photo),
+          photoBase64: await toBase64(photo),
         });
     } catch (e) {
       if (!photosUnavailable(e)) throw e;

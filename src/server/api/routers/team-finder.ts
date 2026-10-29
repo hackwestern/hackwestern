@@ -283,7 +283,7 @@ export const teamFinderRouter = createTRPCRouter({
   }),
 
   uploadPhoto: protectedProcedure
-    .input(z.object({ webpBase64: z.string() }))
+    .input(z.object({ photoBase64: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
       await requireHacker(userId);
@@ -294,12 +294,18 @@ export const teamFinderRouter = createTRPCRouter({
         });
       }
 
-      const bytes = Buffer.from(input.webpBase64, "base64");
+      const bytes = Buffer.from(input.photoBase64, "base64");
       const isWebp =
         bytes.length >= 12 &&
         bytes.toString("ascii", 0, 4) === "RIFF" &&
         bytes.toString("ascii", 8, 12) === "WEBP";
-      if (!isWebp || bytes.length > MAX_PHOTO_BYTES) {
+      // Safari can't encode WebP, so the browser sends JPEG there.
+      const isJpeg =
+        bytes.length >= 3 &&
+        bytes[0] === 0xff &&
+        bytes[1] === 0xd8 &&
+        bytes[2] === 0xff;
+      if ((!isWebp && !isJpeg) || bytes.length > MAX_PHOTO_BYTES) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "invalid-photo" });
       }
 
@@ -310,8 +316,8 @@ export const teamFinderRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "no-card" });
       }
 
-      const key = newPhotoKey(userId);
-      await putPhoto(key, bytes);
+      const key = newPhotoKey(userId, isWebp ? "webp" : "jpg");
+      await putPhoto(key, bytes, isWebp ? "image/webp" : "image/jpeg");
       const [updated] = await db
         .update(teamFinderCards)
         .set({ photoKey: key, updatedAt: new Date() })
