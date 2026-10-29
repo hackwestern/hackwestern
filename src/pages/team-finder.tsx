@@ -31,6 +31,7 @@ import {
   MAX_SKILLS,
   SKILLS,
   TEXT_LIMIT,
+  linkLabel,
   type CardInput,
   type Skill,
 } from "~/lib/team-finder";
@@ -587,9 +588,7 @@ function Idea({ idea }: { idea: string }) {
   const href = m[1] ? m[0] : `https://${m[0]}`;
   const path = (m[3] ?? "").split(/[?#]/)[0]!.split("/").filter(Boolean);
   const host = m[2]!.toLowerCase().replace(/^www\./, "");
-  // The repo name for a code host, else the last path part, else the site.
-  const label =
-    (/^(github|gitlab)\.com$/.test(host) ? path[1] : path.at(-1)) ?? host;
+  const label = linkLabel(host, path);
   const text = idea.replace(m[0], "").trim();
   return (
     <>

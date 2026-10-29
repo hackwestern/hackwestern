@@ -102,3 +102,10 @@ export function schoolLabel(school: string | null, schoolOther: string | null) {
   const t = s?.trim();
   return t ? t : undefined;
 }
+
+/** The repo name on GitHub/GitLab; anywhere else the host stays in the label. */
+export function linkLabel(host: string, path: string[]) {
+  if (/^(github|gitlab)\.com$/.test(host)) return path[1] ?? host;
+  const last = path.at(-1);
+  return last ? `${host}/${last}` : host;
+}

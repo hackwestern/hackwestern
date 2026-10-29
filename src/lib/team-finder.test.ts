@@ -4,6 +4,7 @@ import {
   cardInput,
   cleanCard,
   displayName,
+  linkLabel,
   schoolLabel,
   yearLabel,
 } from "./team-finder";
@@ -95,5 +96,22 @@ describe("labels", () => {
     expect(schoolLabel("Other", "Fanshawe College")).toBe("Fanshawe College");
     expect(schoolLabel("Western", null)).toBe("Western");
     expect(schoolLabel(null, null)).toBeUndefined();
+  });
+});
+
+describe("linkLabel", () => {
+  it("shows the repo name on GitHub and GitLab", () => {
+    expect(linkLabel("github.com", ["acme", "app"])).toBe("app");
+    expect(linkLabel("gitlab.com", ["acme", "app"])).toBe("app");
+  });
+  it("falls back to the host with no repo", () => {
+    expect(linkLabel("github.com", ["acme"])).toBe("github.com");
+    expect(linkLabel("example.com", [])).toBe("example.com");
+  });
+  it("keeps the host off GitHub and GitLab", () => {
+    expect(linkLabel("github.com.evil.io", ["acme", "winning-idea"])).toBe(
+      "github.com.evil.io/winning-idea",
+    );
+    expect(linkLabel("example.com", ["a", "demo"])).toBe("example.com/demo");
   });
 });
