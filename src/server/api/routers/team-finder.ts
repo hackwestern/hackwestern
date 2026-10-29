@@ -277,20 +277,6 @@ export const teamFinderRouter = createTRPCRouter({
       return viewMine(userId, updated!);
     }),
 
-  deleteMine: protectedProcedure.mutation(async ({ ctx }) => {
-    const userId = ctx.session.user.id;
-    await requireHacker(userId);
-
-    const card = await db.query.teamFinderCards.findFirst({
-      where: eq(teamFinderCards.userId, userId),
-      columns: { photoKey: true },
-    });
-    if (!card) return;
-
-    await db.delete(teamFinderCards).where(eq(teamFinderCards.userId, userId));
-    if (card.photoKey && photosConfigured()) await deletePhoto(card.photoKey);
-  }),
-
   uploadPhoto: protectedProcedure
     .input(z.object({ photoBase64: z.string() }))
     .mutation(async ({ ctx, input }) => {

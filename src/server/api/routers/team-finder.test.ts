@@ -235,12 +235,6 @@ describe("teamFinder", () => {
     expect(ids(await board.teamFinder.list())).toContain(mine);
   });
 
-  test("deleteMine removes the card", async () => {
-    await seedCard(session.user.id);
-    await caller.teamFinder.deleteMine();
-    expect((await caller.teamFinder.getMine()).card).toBeNull();
-  });
-
   test("an accepted hacker is refused", async () => {
     await db
       .update(applications)
@@ -385,12 +379,6 @@ describe("teamFinder", () => {
       const card = await caller.teamFinder.removePhoto();
       expect(card.photoUrl).toBeUndefined();
       expect(await photoOf()).toBeNull();
-      expect(photos.deletePhoto).toHaveBeenCalledWith(oldKey);
-    });
-
-    test("deleteMine deletes the photo", async () => {
-      await seedCard(session.user.id, { photoKey: oldKey });
-      await caller.teamFinder.deleteMine();
       expect(photos.deletePhoto).toHaveBeenCalledWith(oldKey);
     });
 
