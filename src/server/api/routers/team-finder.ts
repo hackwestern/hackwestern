@@ -1,6 +1,5 @@
 import { TRPCError } from "@trpc/server";
 import { and, count, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
-import sharp from "sharp";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { env } from "~/env";
@@ -315,6 +314,8 @@ export const teamFinderRouter = createTRPCRouter({
       // Store only our own output: the same 256px WebP the page makes.
       let photo: Buffer;
       try {
+        // Loaded here so a missing native binary only fails photo uploads.
+        const { default: sharp } = await import("sharp");
         photo = await sharp(bytes, { limitInputPixels: MAX_PHOTO_PIXELS })
           .resize(256, 256, { fit: "cover" })
           .webp({ quality: 85 })
