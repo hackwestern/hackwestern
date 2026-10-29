@@ -140,7 +140,9 @@ function Avatar({
   round?: boolean;
 }) {
   const shape = round ? "rounded-full border-2 border-white" : "rounded-2xl";
-  if (photo)
+  // Photo links expire after an hour, so a long-open tab falls back to the horse.
+  const [failed, setFailed] = useState<string>();
+  if (photo && photo !== failed)
     return (
       <div className={`shrink-0 overflow-hidden ${shape} ${className}`}>
         <Image
@@ -149,6 +151,7 @@ function Avatar({
           width={256}
           height={256}
           unoptimized
+          onError={() => setFailed(photo)}
           className="h-full w-full object-cover"
         />
       </div>
