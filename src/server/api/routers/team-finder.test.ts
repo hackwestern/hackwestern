@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { eq, inArray } from "drizzle-orm";
+import sharp from "sharp";
 
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -110,11 +111,20 @@ const webp = (extra = 0) => {
   return bytes.toString("base64");
 };
 
-const jpeg = () =>
-  Buffer.concat([
-    Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
-    Buffer.alloc(28),
-  ]).toString("base64");
+// Real images; the server decodes and re-encodes whatever it is sent.
+const picture = (width = 400, height = 300) =>
+  sharp({
+    create: {
+      width,
+      height,
+      channels: 3,
+      background: { r: 120, g: 80, b: 160 },
+    },
+  });
+const jpeg = async (width?: number, height?: number) =>
+  (await picture(width, height).jpeg().toBuffer()).toString("base64");
+const realWebp = async () =>
+  (await picture().webp().toBuffer()).toString("base64");
 
 describe("teamFinder", () => {
   beforeEach(async () => {
@@ -334,7 +344,7 @@ describe("teamFinder", () => {
 
     test("uploadPhoto without a card is refused", async () => {
       await expect(
-        caller.teamFinder.uploadPhoto({ photoBase64: webp() }),
+        caller.teamFinder.uploadPhoto({ photoBase64: await realWebp() }),
       ).rejects.toThrow("no-card");
     });
 
@@ -342,7 +352,7 @@ describe("teamFinder", () => {
       vi.mocked(photos.photosConfigured).mockReturnValue(false);
       await seedCard(session.user.id);
       await expect(
-        caller.teamFinder.uploadPhoto({ photoBase64: webp() }),
+        caller.teamFinder.uploadPhoto({ photoBase64: await realWebp() }),
       ).rejects.toThrow("photos-unavailable");
     });
 
@@ -350,7 +360,9 @@ describe("teamFinder", () => {
       const othersKey = "team-finder/11111111-1111-1111-1111-111111111111.webp";
       await seedCard(await seedOther(), { photoKey: othersKey });
       await seedCard(session.user.id, { photoKey: oldKey });
-      const card = await caller.teamFinder.uploadPhoto({ photoBase64: webp() });
+      const card = await caller.teamFinder.uploadPhoto({
+        photoBase64: await realWebp(),
+      });
       const key = await photoOf();
       expect(key).toMatch(RANDOM_KEY);
       expect(key).not.toContain(session.user.id);
@@ -366,17 +378,45 @@ describe("teamFinder", () => {
       expect(card.photoUrl).toBe(`https://signed.test/${key}`);
     });
 
-    test("uploadPhoto accepts JPEG (Safari can't make WebP)", async () => {
+    test("uploadPhoto re-encodes a JPEG as a 256px WebP (Safari can't make WebP)", async () => {
       await seedCard(session.user.id);
-      await caller.teamFinder.uploadPhoto({ photoBase64: jpeg() });
+      await caller.teamFinder.uploadPhoto({ photoBase64: await jpeg() });
       const key = await photoOf();
-      expect(key).toMatch(RANDOM_KEY);
-      expect(key?.endsWith(".jpg")).toBe(true);
-      expect(photos.putPhoto).toHaveBeenCalledWith(
-        key,
-        expect.anything(),
-        "image/jpeg",
-      );
+      expect(key).toMatch(/^team-finder\/[0-9a-f-]{36}\.webp$/);
+      const [, stored, type] = vi.mocked(photos.putPhoto).mock.calls[0]!;
+      expect(type).toBe("image/webp");
+      const meta = await sharp(stored as Buffer).metadata();
+      expect([meta.format, meta.width, meta.height]).toEqual([
+        "webp",
+        256,
+        256,
+      ]);
+    });
+
+    test("uploadPhoto refuses an image over 4096x4096 pixels", async () => {
+      await seedCard(session.user.id, { photoKey: oldKey });
+      const big = (
+        await picture(4097, 4097).webp({ effort: 0 }).toBuffer()
+      ).toString("base64");
+      expect(Buffer.from(big, "base64").length).toBeLessThan(200 * 1024);
+      await expect(
+        caller.teamFinder.uploadPhoto({ photoBase64: big }),
+      ).rejects.toThrow("invalid-photo");
+      expect(photos.putPhoto).not.toHaveBeenCalled();
+      expect(await photoOf()).toBe(oldKey);
+    });
+
+    test("uploadPhoto refuses a JPEG header followed by garbage", async () => {
+      await seedCard(session.user.id, { photoKey: oldKey });
+      const bad = Buffer.concat([
+        Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+        Buffer.alloc(64, 7),
+      ]).toString("base64");
+      await expect(
+        caller.teamFinder.uploadPhoto({ photoBase64: bad }),
+      ).rejects.toThrow("invalid-photo");
+      expect(photos.putPhoto).not.toHaveBeenCalled();
+      expect(await photoOf()).toBe(oldKey);
     });
 
     test("removePhoto clears the key and deletes the object", async () => {
@@ -407,7 +447,7 @@ describe("teamFinder", () => {
         hiddenByOrganizerAt: new Date(),
       });
       await caller.teamFinder.saveMine(input());
-      await caller.teamFinder.uploadPhoto({ photoBase64: jpeg() });
+      await caller.teamFinder.uploadPhoto({ photoBase64: await jpeg() });
       const userIds = [session.user.id, organizer.user.id, ...others];
 
       for (const [board, count] of [

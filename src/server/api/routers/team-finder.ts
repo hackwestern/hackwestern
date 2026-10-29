@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { and, count, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
+import sharp from "sharp";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { env } from "~/env";
@@ -33,6 +34,8 @@ import {
 } from "~/server/storage/team-finder-photos";
 
 const MAX_PHOTO_BYTES = 200 * 1024;
+// A small file can still declare a huge picture; sharp refuses past this.
+const MAX_PHOTO_PIXELS = 4096 * 4096;
 
 export type CardView = {
   // The card's own random id, never the user id (the hacker pass QR payload).
@@ -309,6 +312,17 @@ export const teamFinderRouter = createTRPCRouter({
         throw new TRPCError({ code: "BAD_REQUEST", message: "invalid-photo" });
       }
 
+      // Store only our own output: the same 256px WebP the page makes.
+      let photo: Buffer;
+      try {
+        photo = await sharp(bytes, { limitInputPixels: MAX_PHOTO_PIXELS })
+          .resize(256, 256, { fit: "cover" })
+          .webp({ quality: 85 })
+          .toBuffer();
+      } catch {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "invalid-photo" });
+      }
+
       const card = await db.query.teamFinderCards.findFirst({
         where: eq(teamFinderCards.userId, userId),
       });
@@ -316,8 +330,8 @@ export const teamFinderRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "no-card" });
       }
 
-      const key = newPhotoKey(isWebp ? "webp" : "jpg");
-      await putPhoto(key, bytes, isWebp ? "image/webp" : "image/jpeg");
+      const key = newPhotoKey("webp");
+      await putPhoto(key, photo, "image/webp");
       const [updated] = await db
         .update(teamFinderCards)
         .set({ photoKey: key, updatedAt: new Date() })
