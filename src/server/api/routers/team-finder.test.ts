@@ -11,6 +11,7 @@ import { UserSeeder } from "~/server/db/seed/userSeeder";
 import { RSVP_DEADLINE } from "~/lib/date";
 import { type CardInput } from "~/lib/team-finder";
 
+import * as mailjet from "~/server/mail-mailjet";
 import * as photos from "~/server/storage/team-finder-photos";
 
 vi.mock("~/server/storage/team-finder-photos", async (importOriginal) => ({
@@ -19,6 +20,13 @@ vi.mock("~/server/storage/team-finder-photos", async (importOriginal) => ({
   putPhoto: vi.fn(async () => undefined),
   deletePhoto: vi.fn(async () => undefined),
   presignPhotoGet: vi.fn(async (key: string) => `https://signed.test/${key}`),
+}));
+
+vi.mock("~/server/mail-mailjet", () => ({
+  sendViaMailjet: vi.fn(async () => ({
+    data: { delivered: [], queued: [], bounced: [] },
+    error: null,
+  })),
 }));
 
 const session = await mockSession(db);
@@ -276,6 +284,60 @@ describe("teamFinder", () => {
       vi.mocked(photos.photosConfigured).mockReturnValue(false);
       const [off] = await caller.teamFinder.list();
       expect(off?.photoUrl).toBeUndefined();
+    });
+  });
+
+  describe("report and hide", () => {
+    test("report emails hello@ once, escaping the note", async () => {
+      const other = await seedOther();
+      await seedCard(other);
+      vi.mocked(mailjet.sendViaMailjet).mockClear();
+      await caller.teamFinder.report({ userId: other, note: "<b>bad</b>" });
+      expect(mailjet.sendViaMailjet).toHaveBeenCalledTimes(1);
+      const [opts] = vi.mocked(mailjet.sendViaMailjet).mock.calls[0]!;
+      expect(opts.to).toBe("hello@hackwestern.com");
+      expect(opts.replyTo).toBe(session.user.email);
+      expect(opts.subject).toMatch(/^Team finder report: /);
+      expect(opts.html).toContain("&lt;b&gt;bad&lt;/b&gt;");
+      expect(opts.html).not.toContain("<b>bad</b>");
+    });
+
+    test("report on a missing, unshown or own card is refused", async () => {
+      const other = await seedOther();
+      await seedCard(other, { shown: false });
+      await expect(
+        caller.teamFinder.report({ userId: other, note: "x" }),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(
+        caller.teamFinder.report({ userId: "nobody", note: "x" }),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await seedCard(session.user.id);
+      await expect(
+        caller.teamFinder.report({ userId: session.user.id, note: "x" }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    });
+
+    test("a hacker cannot hide a card", async () => {
+      const other = await seedOther();
+      await seedCard(other);
+      await expect(
+        caller.teamFinder.hideCard({ userId: other }),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    });
+
+    test("hideCard removes the card from list; unhideCard restores it", async () => {
+      await seedCard(session.user.id);
+      await organizerCaller.teamFinder.hideCard({ userId: session.user.id });
+      expect((await caller.teamFinder.getMine()).hiddenByOrganizer).toBe(true);
+      const other = await seedOther();
+      await seedCard(other);
+      await organizerCaller.teamFinder.hideCard({ userId: other });
+      const ids = (await caller.teamFinder.list()).map((c) => c.userId);
+      expect(ids).not.toContain(other);
+
+      await organizerCaller.teamFinder.unhideCard({ userId: other });
+      const after = (await caller.teamFinder.list()).map((c) => c.userId);
+      expect(after).toContain(other);
     });
   });
 });

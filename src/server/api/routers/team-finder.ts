@@ -2,7 +2,9 @@ import { TRPCError } from "@trpc/server";
 import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { env } from "~/env";
 import { db } from "~/server/db";
+import { sendViaMailjet } from "~/server/mail-mailjet";
 import { applications, teamFinderCards } from "~/server/db/schema";
 import { getTeamFinderAccess } from "~/server/api/utils/team-finder-access";
 import {
@@ -88,6 +90,15 @@ function toView(
   };
 }
 
+const appColumnsSelect = {
+  firstName: applications.firstName,
+  lastName: applications.lastName,
+  school: applications.school,
+  schoolOther: applications.schoolOther,
+  yearOfStudy: applications.yearOfStudy,
+  horseId: applications.horseId,
+};
+
 const appColumns = {
   firstName: true,
   lastName: true,
@@ -112,6 +123,27 @@ async function requireHacker(userId: string) {
     throw new TRPCError({ code: "FORBIDDEN", message: "not-allowed" });
   }
 }
+
+async function requireOrganizer(userId: string) {
+  const access = await requireAccess(userId);
+  if (access.role !== "organizer") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "not-allowed" });
+  }
+}
+
+const escapeHtml = (text: string) =>
+  text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+// What other people can see on the board.
+const onBoard = and(
+  eq(teamFinderCards.shown, true),
+  isNull(teamFinderCards.hiddenByOrganizerAt),
+  sql`${applications.status} = 'CONFIRMED'`,
+);
 
 const cardValues = (userId: string, input: CardInput, hidden: boolean) => {
   const clean = cleanCard(input);
@@ -139,6 +171,17 @@ const cardValues = (userId: string, input: CardInput, hidden: boolean) => {
 async function photoUrlFor(card: CardRow) {
   if (!card.photoKey || !photosConfigured()) return undefined;
   return presignPhotoGet(card.photoKey);
+}
+
+async function setHidden(userId: string, at: Date | null) {
+  const [updated] = await db
+    .update(teamFinderCards)
+    .set({ hiddenByOrganizerAt: at })
+    .where(eq(teamFinderCards.userId, userId))
+    .returning({ userId: teamFinderCards.userId });
+  if (!updated) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "no-card" });
+  }
 }
 
 async function viewMine(userId: string, card: CardRow) {
@@ -307,27 +350,11 @@ export const teamFinderRouter = createTRPCRouter({
     const rows = await db
       .select({
         card: teamFinderCards,
-        app: {
-          firstName: applications.firstName,
-          lastName: applications.lastName,
-          school: applications.school,
-          schoolOther: applications.schoolOther,
-          yearOfStudy: applications.yearOfStudy,
-          horseId: applications.horseId,
-        },
+        app: appColumnsSelect,
       })
       .from(teamFinderCards)
       .innerJoin(applications, eq(applications.userId, teamFinderCards.userId))
-      .where(
-        or(
-          eq(teamFinderCards.userId, userId),
-          and(
-            eq(teamFinderCards.shown, true),
-            isNull(teamFinderCards.hiddenByOrganizerAt),
-            sql`${applications.status} = 'CONFIRMED'`,
-          ),
-        ),
-      )
+      .where(or(eq(teamFinderCards.userId, userId), onBoard))
       .orderBy(desc(teamFinderCards.updatedAt));
 
     return Promise.all(
@@ -336,4 +363,76 @@ export const teamFinderRouter = createTRPCRouter({
       ),
     );
   }),
+
+  report: protectedProcedure
+    .input(z.object({ userId: z.string(), note: z.string().max(500) }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      await requireHacker(userId);
+      if (input.userId === userId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "own-card" });
+      }
+
+      const [row] = await db
+        .select({ card: teamFinderCards, app: appColumnsSelect })
+        .from(teamFinderCards)
+        .innerJoin(
+          applications,
+          eq(applications.userId, teamFinderCards.userId),
+        )
+        .where(and(eq(teamFinderCards.userId, input.userId), onBoard));
+      if (!row) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "no-card" });
+      }
+
+      const view = toView(row.card, row.app, false);
+      const lines = [
+        `Reported card: ${view.name} (user ${view.userId})`,
+        `Reported by: ${ctx.session.user.name ?? "unknown"} <${ctx.session.user.email}>`,
+        "",
+        `Looking for: ${view.lookingFor}`,
+        `Idea: ${view.idea ?? ""}`,
+        `Needs: ${view.needs ?? "solo"}`,
+        `Skills: ${view.skills.join(", ")}`,
+        `First hackathon: ${view.firstHackathon ? "yes" : "no"}`,
+        `School: ${view.school ?? ""}`,
+        `Year: ${view.year ?? ""}`,
+        ...Object.entries(view.contacts).map(([k, v]) => `${k}: ${v}`),
+        "",
+        `Note: ${input.note}`,
+      ];
+      const text = lines.join("\n");
+
+      const res = await sendViaMailjet(
+        {
+          from: "Hack Western Team <hello@hackwestern.com>",
+          to: "hello@hackwestern.com",
+          replyTo: ctx.session.user.email ?? undefined,
+          subject: `Team finder report: ${view.name}`,
+          html: `<pre style="font-family:inherit">${escapeHtml(text)}</pre>`,
+          text,
+        },
+        { apiKey: env.MAILJET_API_KEY, secretKey: env.MAILJET_SECRET_KEY },
+      );
+      if (res.error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "report-failed",
+        });
+      }
+    }),
+
+  hideCard: protectedProcedure
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await requireOrganizer(ctx.session.user.id);
+      await setHidden(input.userId, new Date());
+    }),
+
+  unhideCard: protectedProcedure
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await requireOrganizer(ctx.session.user.id);
+      await setHidden(input.userId, null);
+    }),
 });
