@@ -21,6 +21,10 @@ export type Skill = (typeof SKILLS)[number];
 export const MAX_SKILLS = 3;
 export const TEXT_LIMIT = 100;
 
+// Every card and photo is deleted from here on
+// (scripts/delete-team-finder-cards.ts), and the board closes with them.
+export const RETENTION_DATE = new Date("2026-12-22T00:00:00-05:00");
+
 const CONTACT_KINDS = [
   "discord",
   "instagram",

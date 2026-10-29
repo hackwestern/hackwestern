@@ -9,6 +9,7 @@ import { mockSession } from "~/server/auth";
 import { applications, users } from "~/server/db/schema";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { RSVP_DEADLINE } from "~/lib/date";
+import { RETENTION_DATE } from "~/lib/team-finder";
 
 type Session = Awaited<ReturnType<typeof mockSession>>;
 const signedIn: { current: Session | null } = { current: null };
@@ -86,6 +87,14 @@ describe("/team-finder", () => {
     vi.spyOn(Date, "now").mockReturnValue(AFTER);
     await setType("sponsor");
     expect(await access()).toBe("not-confirmed");
+  });
+
+  test("once the cards are deleted: closed, even for organizers", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(RETENTION_DATE.getTime());
+    await apply("CONFIRMED");
+    expect(await access()).toBe("closed");
+    await setType("organizer");
+    expect(await access()).toBe("closed");
   });
 
   test("organizer before RSVP closes: the board", async () => {

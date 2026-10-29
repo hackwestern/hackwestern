@@ -3,8 +3,8 @@ import { like } from "drizzle-orm";
 import { db } from "~/server/db";
 import { teamFinderCards, users } from "~/server/db/schema";
 import * as photos from "~/server/storage/team-finder-photos";
+import { RETENTION_DATE } from "~/lib/team-finder";
 import {
-  RETENTION_DATE,
   deleteAllCards,
   refuseBeforeRetention,
 } from "./delete-team-finder-cards";

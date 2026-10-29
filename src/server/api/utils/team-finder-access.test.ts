@@ -7,6 +7,7 @@ import { mockSession } from "~/server/auth";
 import { applications, users } from "~/server/db/schema";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { RSVP_DEADLINE } from "~/lib/date";
+import { RETENTION_DATE } from "~/lib/team-finder";
 import { getTeamFinderAccess } from "./team-finder-access";
 
 let opensAt: string | undefined;
@@ -113,6 +114,24 @@ describe("getTeamFinderAccess", () => {
     expect(await getTeamFinderAccess(userId, BEFORE)).toEqual({
       ok: true,
       role: "organizer",
+    });
+  });
+
+  test("everyone is refused once the cards are deleted", async () => {
+    const deleted = RETENTION_DATE.getTime();
+    await seed("CONFIRMED");
+    expect(await getTeamFinderAccess(userId, deleted - 1)).toEqual({
+      ok: true,
+      role: "hacker",
+    });
+    expect(await getTeamFinderAccess(userId, deleted)).toEqual({
+      ok: false,
+      reason: "closed",
+    });
+    await setType("organizer");
+    expect(await getTeamFinderAccess(userId, deleted)).toEqual({
+      ok: false,
+      reason: "closed",
     });
   });
 

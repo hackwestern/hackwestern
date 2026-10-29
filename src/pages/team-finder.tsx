@@ -1572,7 +1572,7 @@ function Filters({
   );
 }
 
-type Access = "hacker" | "organizer" | "not-open" | "not-confirmed";
+type Access = "hacker" | "organizer" | "not-open" | "not-confirmed" | "closed";
 
 type TeamFinderProps = {
   access: Access;
@@ -1958,17 +1958,19 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
                 tabIndex={-1}
                 className={`text-balance font-cossetteTexte font-bold leading-[1.1] focus:outline-none ${board ? "text-[28px] sm:text-[34px]" : "text-[34px] sm:text-[48px]"}`}
               >
-                {access === "not-open"
-                  ? "Team finder opens when RSVPs close"
-                  : !open
-                    ? "Team finder is for confirmed hackers"
-                    : failed
-                      ? "Couldn’t load the team finder"
-                      : stage === "card"
-                        ? card
-                          ? "Edit your card"
-                          : "Make your card"
-                        : "Find your team"}
+                {access === "closed"
+                  ? "Team finder has closed"
+                  : access === "not-open"
+                    ? "Team finder opens when RSVPs close"
+                    : !open
+                      ? "Team finder is for confirmed hackers"
+                      : failed
+                        ? "Couldn’t load the team finder"
+                        : stage === "card"
+                          ? card
+                            ? "Edit your card"
+                            : "Make your card"
+                          : "Find your team"}
               </h1>
               {(open || access === "not-open") && (
                 <p
@@ -2185,8 +2187,8 @@ export const getServerSideProps = async (
     props: {
       access: access.ok
         ? access.role
-        : access.reason === "not-open"
-          ? "not-open"
+        : access.reason === "not-open" || access.reason === "closed"
+          ? access.reason
           : "not-confirmed",
       deadlineText: formatRsvpDeadline(),
     } satisfies TeamFinderProps,

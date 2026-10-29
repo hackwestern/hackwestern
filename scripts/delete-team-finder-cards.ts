@@ -1,6 +1,7 @@
 import { and, inArray, isNotNull } from "drizzle-orm";
 import { db } from "~/server/db";
 import { teamFinderCards } from "~/server/db/schema";
+import { RETENTION_DATE } from "~/lib/team-finder";
 import {
   deletePhoto,
   photosConfigured,
@@ -15,8 +16,6 @@ import {
 // configured the rows are still deleted; the private bucket's lifecycle rule
 // expires the photos on the same date. Prints counts only: this repo's
 // Actions logs are public.
-
-export const RETENTION_DATE = new Date("2026-12-22T00:00:00-05:00");
 
 export function refuseBeforeRetention(now = new Date()) {
   if (now < RETENTION_DATE) {
