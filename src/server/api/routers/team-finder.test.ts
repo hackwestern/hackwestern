@@ -11,6 +11,16 @@ import { UserSeeder } from "~/server/db/seed/userSeeder";
 import { RSVP_DEADLINE } from "~/lib/date";
 import { type CardInput } from "~/lib/team-finder";
 
+import * as photos from "~/server/storage/team-finder-photos";
+
+vi.mock("~/server/storage/team-finder-photos", async (importOriginal) => ({
+  ...(await importOriginal<typeof photos>()),
+  photosConfigured: vi.fn(() => true),
+  putPhoto: vi.fn(async () => undefined),
+  deletePhoto: vi.fn(async () => undefined),
+  presignPhotoGet: vi.fn(async (key: string) => `https://signed.test/${key}`),
+}));
+
 const session = await mockSession(db);
 const organizer = await mockOrganizerSession(db);
 const caller = createCaller(createInnerTRPCContext({ session }));
@@ -63,14 +73,24 @@ const seedCard = (
     ...over,
   });
 
+const webp = (extra = 0) => {
+  const bytes = Buffer.alloc(32 + extra);
+  bytes.write("RIFF", 0, "ascii");
+  bytes.write("WEBP", 8, "ascii");
+  return bytes.toString("base64");
+};
+
 describe("teamFinder", () => {
   beforeEach(async () => {
+    vi.mocked(photos.photosConfigured).mockReturnValue(true);
     vi.spyOn(Date, "now").mockReturnValue(AFTER_RSVP);
     await seedApplication(session.user.id);
   });
 
   afterEach(async () => {
     vi.restoreAllMocks();
+    vi.mocked(photos.putPhoto).mockClear();
+    vi.mocked(photos.deletePhoto).mockClear();
     await db
       .delete(teamFinderCards)
       .where(inArray(teamFinderCards.userId, [session.user.id, ...otherUsers]));
@@ -175,6 +195,87 @@ describe("teamFinder", () => {
     vi.spyOn(Date, "now").mockReturnValue(RSVP_DEADLINE.getTime() - 1000);
     await expect(caller.teamFinder.list()).rejects.toMatchObject({
       message: "not-open",
+    });
+  });
+
+  describe("photos", () => {
+    const prefix = `team-finder/${session.user.id}/`;
+    const oldKey = `${prefix}00000000-0000-0000-0000-000000000000.webp`;
+    const photoOf = async () =>
+      (
+        await db.query.teamFinderCards.findFirst({
+          where: eq(teamFinderCards.userId, session.user.id),
+        })
+      )?.photoKey;
+
+    test("ownsPhotoKey refuses another user's key", () => {
+      const key = "team-finder/u2/00000000-0000-0000-0000-000000000000.webp";
+      expect(photos.ownsPhotoKey("u1", key)).toBe(false);
+      expect(photos.ownsPhotoKey("u2", key)).toBe(true);
+      expect(photos.ownsPhotoKey("u2", "other/u2/x.webp")).toBe(false);
+    });
+
+    test("uploadPhoto rejects non-WebP and files over 200 KB", async () => {
+      await seedCard(session.user.id);
+      const png = Buffer.from("\x89PNG\r\n\x1a\n and some more bytes").toString(
+        "base64",
+      );
+      await expect(
+        caller.teamFinder.uploadPhoto({ webpBase64: png }),
+      ).rejects.toThrow("invalid-photo");
+      await expect(
+        caller.teamFinder.uploadPhoto({ webpBase64: webp(200 * 1024) }),
+      ).rejects.toThrow("invalid-photo");
+      expect(photos.putPhoto).not.toHaveBeenCalled();
+    });
+
+    test("uploadPhoto without a card is refused", async () => {
+      await expect(
+        caller.teamFinder.uploadPhoto({ webpBase64: webp() }),
+      ).rejects.toThrow("no-card");
+    });
+
+    test("uploadPhoto says photos-unavailable when not configured", async () => {
+      vi.mocked(photos.photosConfigured).mockReturnValue(false);
+      await seedCard(session.user.id);
+      await expect(
+        caller.teamFinder.uploadPhoto({ webpBase64: webp() }),
+      ).rejects.toThrow("photos-unavailable");
+    });
+
+    test("uploadPhoto stores a key under the caller and deletes the previous photo", async () => {
+      await seedCard(session.user.id, { photoKey: oldKey });
+      const card = await caller.teamFinder.uploadPhoto({ webpBase64: webp() });
+      const key = await photoOf();
+      expect(key?.startsWith(prefix)).toBe(true);
+      expect(key).not.toBe(oldKey);
+      expect(photos.putPhoto).toHaveBeenCalledWith(key, expect.anything());
+      expect(photos.deletePhoto).toHaveBeenCalledWith(oldKey);
+      expect(card.photoUrl).toBe(`https://signed.test/${key}`);
+    });
+
+    test("removePhoto clears the key and deletes the object", async () => {
+      await seedCard(session.user.id, { photoKey: oldKey });
+      const card = await caller.teamFinder.removePhoto();
+      expect(card.photoUrl).toBeUndefined();
+      expect(await photoOf()).toBeNull();
+      expect(photos.deletePhoto).toHaveBeenCalledWith(oldKey);
+    });
+
+    test("deleteMine deletes the photo", async () => {
+      await seedCard(session.user.id, { photoKey: oldKey });
+      await caller.teamFinder.deleteMine();
+      expect(photos.deletePhoto).toHaveBeenCalledWith(oldKey);
+    });
+
+    test("list returns photoUrl when configured and none when not", async () => {
+      await seedCard(session.user.id, { photoKey: oldKey });
+      const [on] = await caller.teamFinder.list();
+      expect(on?.photoUrl).toBe(`https://signed.test/${oldKey}`);
+
+      vi.mocked(photos.photosConfigured).mockReturnValue(false);
+      const [off] = await caller.teamFinder.list();
+      expect(off?.photoUrl).toBeUndefined();
     });
   });
 });

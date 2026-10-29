@@ -16,6 +16,16 @@ import {
   yearLabel,
 } from "~/lib/team-finder";
 import { type Contacts, formatPhone } from "~/lib/socials";
+import {
+  deletePhoto,
+  newPhotoKey,
+  ownsPhotoKey,
+  photosConfigured,
+  presignPhotoGet,
+  putPhoto,
+} from "~/server/storage/team-finder-photos";
+
+const MAX_PHOTO_BYTES = 200 * 1024;
 
 export type CardView = {
   userId: string;
@@ -49,6 +59,7 @@ function toView(
   card: CardRow,
   app: ApplicationRow | undefined,
   isMine: boolean,
+  photoUrl?: string,
 ): CardView {
   const contacts: Contacts = {};
   if (card.discord) contacts.discord = card.discord;
@@ -67,6 +78,7 @@ function toView(
       : undefined,
     year: card.showYear ? yearLabel(app?.yearOfStudy ?? null) : undefined,
     horseId: app?.horseId ?? null,
+    photoUrl,
     needs: card.needs === 1 || card.needs === 2 ? card.needs : null,
     skills: card.skills as Skill[],
     firstHackathon: card.firstHackathon,
@@ -123,12 +135,18 @@ const cardValues = (userId: string, input: CardInput, hidden: boolean) => {
   };
 };
 
+/** A one-hour link to the card's photo, or undefined when there is none or photos are off. */
+async function photoUrlFor(card: CardRow) {
+  if (!card.photoKey || !photosConfigured()) return undefined;
+  return presignPhotoGet(card.photoKey);
+}
+
 async function viewMine(userId: string, card: CardRow) {
   const app = await db.query.applications.findFirst({
     where: eq(applications.userId, userId),
     columns: appColumns,
   });
-  return toView(card, app, true);
+  return toView(card, app, true, await photoUrlFor(card));
 }
 
 export const teamFinderRouter = createTRPCRouter({
@@ -147,7 +165,7 @@ export const teamFinderRouter = createTRPCRouter({
     ]);
 
     return {
-      card: card ? toView(card, app, true) : null,
+      card: card ? toView(card, app, true, await photoUrlFor(card)) : null,
       prefill: {
         phone: app?.phoneNumber ? formatPhone(app.phoneNumber) : null,
         school: schoolLabel(app?.school ?? null, app?.schoolOther ?? null),
@@ -218,7 +236,68 @@ export const teamFinderRouter = createTRPCRouter({
     if (!card) return;
 
     await db.delete(teamFinderCards).where(eq(teamFinderCards.userId, userId));
-    // card.photoKey is what the photo cleanup (Task 5) removes from storage.
+    if (card.photoKey && photosConfigured()) await deletePhoto(card.photoKey);
+  }),
+
+  uploadPhoto: protectedProcedure
+    .input(z.object({ webpBase64: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      await requireHacker(userId);
+      if (!photosConfigured()) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "photos-unavailable",
+        });
+      }
+
+      const bytes = Buffer.from(input.webpBase64, "base64");
+      const isWebp =
+        bytes.length >= 12 &&
+        bytes.toString("ascii", 0, 4) === "RIFF" &&
+        bytes.toString("ascii", 8, 12) === "WEBP";
+      if (!isWebp || bytes.length > MAX_PHOTO_BYTES) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "invalid-photo" });
+      }
+
+      const card = await db.query.teamFinderCards.findFirst({
+        where: eq(teamFinderCards.userId, userId),
+      });
+      if (!card) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "no-card" });
+      }
+
+      const key = newPhotoKey(userId);
+      await putPhoto(key, bytes);
+      const [updated] = await db
+        .update(teamFinderCards)
+        .set({ photoKey: key, updatedAt: new Date() })
+        .where(eq(teamFinderCards.userId, userId))
+        .returning();
+      if (card.photoKey && ownsPhotoKey(userId, card.photoKey)) {
+        await deletePhoto(card.photoKey);
+      }
+      return viewMine(userId, updated!);
+    }),
+
+  removePhoto: protectedProcedure.mutation(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    await requireHacker(userId);
+
+    const card = await db.query.teamFinderCards.findFirst({
+      where: eq(teamFinderCards.userId, userId),
+    });
+    if (!card) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "no-card" });
+    }
+
+    const [updated] = await db
+      .update(teamFinderCards)
+      .set({ photoKey: null, updatedAt: new Date() })
+      .where(eq(teamFinderCards.userId, userId))
+      .returning();
+    if (card.photoKey && photosConfigured()) await deletePhoto(card.photoKey);
+    return viewMine(userId, updated!);
   }),
 
   list: protectedProcedure.query(async ({ ctx }) => {
@@ -251,8 +330,10 @@ export const teamFinderRouter = createTRPCRouter({
       )
       .orderBy(desc(teamFinderCards.updatedAt));
 
-    return rows.map(({ card, app }) =>
-      toView(card, app, card.userId === userId),
+    return Promise.all(
+      rows.map(async ({ card, app }) =>
+        toView(card, app, card.userId === userId, await photoUrlFor(card)),
+      ),
     );
   }),
 });
