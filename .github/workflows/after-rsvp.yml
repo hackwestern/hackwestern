@@ -1,0 +1,140 @@
+name: After RSVP Closes
+
+# The morning after RSVP closes (Fri Nov 6, 11:59 PM ET), two independent jobs.
+# Clocks fall back Nov 1, so ET = UTC-5: Sat Nov 7, 9:00 AM ET = 14:00 UTC.
+#   lapse          applications still ACCEPTED (never RSVP'd) -> DECLINED
+#                  (scripts/lapse-unconfirmed.ts). Armed by LAPSE_LIVE.
+#                  Undo: scripts/revert-lapse.ts --at=<time the run printed>
+#   team-matching  emails every CONFIRMED hacker that team matching is open
+#                  (scripts/send-incomplete-reminder.ts --kind=team-matching).
+#                  Armed by TEAM_MATCHING_EMAIL_LIVE: arm it only once
+#                  /team-matching is live on the site.
+# The email job doesn't wait for the lapse job, so it goes out even if that fails.
+#
+# SAFETY / ARMING:
+#   - Scheduled runs are dry runs unless the job's repo variable is 'true':
+#       gh variable set LAPSE_LIVE --body true
+#   - The lapse refuses to run before RSVP closes, even when armed.
+#   - Manual run: Actions → this workflow → Run workflow. Pick the job, untick
+#     "apply" for a dry run; "only" sends the email to that one address (test).
+#   - Each person gets the email at most once (email_reminder_sent).
+#   - Logs show counts, a timestamp and masked emails only: this repo's
+#     Actions logs are public.
+
+on:
+  schedule:
+    - cron: "0 14 7 11 *" # Nov 7, 9:00 AM ET
+  workflow_dispatch:
+    inputs:
+      which:
+        description: "Which job"
+        type: choice
+        options: ["lapse", "team-matching"]
+        default: "lapse"
+      apply:
+        description: "Actually apply / send (unticked = dry run)"
+        type: boolean
+        default: false
+      only:
+        description: "team-matching only: send to this email (test). Blank = everyone eligible."
+        type: string
+        default: ""
+
+concurrency:
+  group: after-rsvp
+  cancel-in-progress: false
+
+jobs:
+  lapse:
+    if: github.event_name == 'schedule' || inputs.which == 'lapse'
+    runs-on: ubuntu-latest
+    environment: Production
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SKIP_ENV_VALIDATION: "1"
+    steps:
+      - name: Decide whether to apply
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_APPLY: ${{ inputs.apply }}
+          LIVE: ${{ vars.LAPSE_LIVE }}
+        run: |
+          # The cron has no year, so never let it fire after this cycle.
+          if [ "$EVENT" = "schedule" ] && [ "$(date -u +%Y)" != "2026" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "Not 2026; skipping."; exit 0
+          fi
+          if [ "$EVENT" = "workflow_dispatch" ]; then ARMED="$INPUT_APPLY"; else ARMED="$LIVE"; fi
+          if [ "$ARMED" = "true" ]; then echo "flag=--apply" >> "$GITHUB_OUTPUT"; fi
+          echo "Lapse, apply: ${ARMED:-false}"
+
+      - uses: actions/checkout@v4
+        if: steps.mode.outputs.skip != 'true'
+      - uses: actions/setup-node@v4
+        if: steps.mode.outputs.skip != 'true'
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+        if: steps.mode.outputs.skip != 'true'
+
+      - name: Lapse unconfirmed
+        if: steps.mode.outputs.skip != 'true'
+        env:
+          FLAG: ${{ steps.mode.outputs.flag }}
+        run: |
+          set -o pipefail
+          args=()
+          [ -n "$FLAG" ] && args+=("$FLAG")
+          npx tsx scripts/lapse-unconfirmed.ts "${args[@]}" | tee out.log
+          cat out.log >> "$GITHUB_STEP_SUMMARY"
+
+  team-matching:
+    if: github.event_name == 'schedule' || inputs.which == 'team-matching'
+    runs-on: ubuntu-latest
+    environment: Production
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      MAILJET_API_KEY: ${{ secrets.MAILJET_API_KEY }}
+      MAILJET_SECRET_KEY: ${{ secrets.MAILJET_SECRET_KEY }}
+      SKIP_ENV_VALIDATION: "1"
+    steps:
+      - name: Decide whether to send
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_APPLY: ${{ inputs.apply }}
+          LIVE: ${{ vars.TEAM_MATCHING_EMAIL_LIVE }}
+        run: |
+          # The cron has no year, so never let it fire after this cycle.
+          if [ "$EVENT" = "schedule" ] && [ "$(date -u +%Y)" != "2026" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "Not 2026; skipping."; exit 0
+          fi
+          if [ "$EVENT" = "workflow_dispatch" ]; then ARMED="$INPUT_APPLY"; else ARMED="$LIVE"; fi
+          if [ "$ARMED" = "true" ]; then echo "flag=--send" >> "$GITHUB_OUTPUT"; fi
+          echo "Team matching email, send: ${ARMED:-false}"
+
+      - uses: actions/checkout@v4
+        if: steps.mode.outputs.skip != 'true'
+      - uses: actions/setup-node@v4
+        if: steps.mode.outputs.skip != 'true'
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+        if: steps.mode.outputs.skip != 'true'
+
+      - name: Send team matching email
+        if: steps.mode.outputs.skip != 'true'
+        env:
+          FLAG: ${{ steps.mode.outputs.flag }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          set -o pipefail
+          args=(--kind=team-matching)
+          [ -n "$FLAG" ] && args+=("$FLAG")
+          [ -n "$ONLY" ] && args+=(--only="$ONLY")
+          npx tsx scripts/send-incomplete-reminder.ts "${args[@]}" | tee out.log
+          # First line is "team-matching: N recipient(s)... Mode: ..." — surface it on the run page.
+          head -1 out.log >> "$GITHUB_STEP_SUMMARY"
+          grep -E "^Done\." out.log >> "$GITHUB_STEP_SUMMARY" || true

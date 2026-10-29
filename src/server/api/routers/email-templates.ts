@@ -66,7 +66,11 @@ export const campaignTemplate = (
 // Reminder for applications that were started but not submitted
 // (scripts/send-incomplete-reminder.ts). DRAFT COPY: marketing is writing the
 // final wording; replace the strings in REMINDER_COPY when it arrives.
-export type ReminderKind = "reminder-1" | "reminder-2" | "rsvp-reminder";
+export type ReminderKind =
+  | "reminder-1"
+  | "reminder-2"
+  | "rsvp-reminder"
+  | "team-matching";
 
 export const REMINDER_COPY: Record<
   ReminderKind,
@@ -83,6 +87,10 @@ export const REMINDER_COPY: Record<
   "rsvp-reminder": {
     subject: "24 hours left to RSVP for Hack Western 13",
     when: "RSVP closes in 24 hours, on Friday, November 6 at 11:59 PM ET.",
+  },
+  "team-matching": {
+    subject: "Find your Hack Western 13 team",
+    when: "RSVPs are closed and your spot at Hack Western 13 is confirmed. We'll see you November 20 to 22!",
   },
 };
 
@@ -116,6 +124,26 @@ You've been accepted to Hack Western 13, and we haven't received your RSVP yet. 
 
 RSVP here, or decline if you can't make it:
 ${RSVP_URL}
+
+Yours truly,
+The Hack Western 13 Team
+`;
+
+// Confirmed hackers, the morning after RSVP closes (team-matching).
+const TEAM_MATCHING_URL = "https://www.hackwestern.com/team-finder";
+
+export const teamMatchingTemplate = (name?: string) =>
+  `<div style="word-spacing:normal;background-color:#f4f4f4"><div style="background-color:#f4f4f4"><div style="margin:0px auto;max-width:600px"><table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width:100%"><tbody><tr><td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center"><div style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%"><table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%"><tbody><tr><td style="width:600px"><a href="https://www.hackwestern.com" target="_blank"><img alt="Hack Western 13 Banner" src="${bannerUrl}" style="border:none;display:block;outline:none;text-decoration:none;height:auto;width:100%;font-size:13px" width="600" height="auto"></a></td></tr></tbody></table></div></td></tr></tbody></table></div><div style="background:#ffffff;margin:0px auto;max-width:600px"><table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;width:100%"><tbody><tr><td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center"><div style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%"><table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%"><tbody><tr><td align="left" style="font-size:0px;padding:0px 25px;word-break:break-word"><div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;text-align:left;color:#000000"><p style="margin:16px 0"><span style="color:#55575d;font-family:Verdana,Helvetica,Arial,sans-serif;font-size:13px">Hi ${name ?? "there"},</span></p><p style="margin:16px 0"><span style="color:#55575d;font-family:Verdana,Helvetica,Arial,sans-serif;font-size:13px">${REMINDER_COPY["team-matching"].when}</span></p><p style="margin:16px 0"><span style="color:#55575d;font-family:Verdana,Helvetica,Arial,sans-serif;font-size:13px">Looking for teammates? The team finder is now open. Make a card with what you're good at and who would fit your team, then browse other hackers' cards and message the people you'd like to team up with.</span></p></div></td></tr><tr><td align="center" style="font-size:0px;padding:10px 25px 20px;word-break:break-word"><table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;line-height:100%"><tbody><tr><td align="center" bgcolor="#6C3EBB" role="presentation" style="border:none;border-radius:3px;background:#6C3EBB" valign="middle"><a href="${TEAM_MATCHING_URL}" style="display:inline-block;background:#6C3EBB;color:#ffffff;font-family:Arial,sans-serif;font-size:13px;font-weight:normal;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;border-radius:3px"><span style="font-size:14px;">Make your card</span></a></td></tr></tbody></table></td></tr><tr><td align="left" style="font-size:0px;padding:0px 25px;word-break:break-word"><div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;text-align:left;color:#000000"><p style="margin:16px 0"><span style="color:#55575d;font-family:Verdana,Helvetica,Arial,sans-serif;font-size:13px">Already have a team? You don't need to do anything. Teams can have up to 4 people.</span></p><p style="margin:16px 0"><span style="color:#55575d;font-family:Verdana,Helvetica,Arial,sans-serif;font-size:13px">Yours truly,<br/>The Hack Western 13 Team 💜</span></p></div></td></tr></tbody></table></div></td></tr></tbody></table></div></div></div>`;
+
+export const teamMatchingText = (name?: string) =>
+  `Hi ${name ?? "there"},
+
+${REMINDER_COPY["team-matching"].when}
+
+Looking for teammates? The team finder is now open. Make a card with what you're good at and who would fit your team, then browse other hackers' cards and message the people you'd like to team up with:
+${TEAM_MATCHING_URL}
+
+Already have a team? You don't need to do anything. Teams can have up to 4 people.
 
 Yours truly,
 The Hack Western 13 Team

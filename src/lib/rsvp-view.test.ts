@@ -62,8 +62,8 @@ describe("rsvpView", () => {
   it("ignores the deadline for declined hackers and accounts with no RSVP", () => {
     for (const closed of [false, true]) {
       expect(rsvpView({ status: "DECLINED", closed, deadlineText })).toEqual({
-        title: "You’ve declined your spot",
-        body: "Thanks for letting us know. We hope to see you at a future Hack Western.",
+        title: "You’re not attending Hack Western 13",
+        body: "Your spot has been released. We hope to see you at a future Hack Western.",
         pill: null,
         canEditTravel: false,
         showSavedTravel: false,

@@ -14,20 +14,36 @@ import {
   incompleteReminderText,
   rsvpReminderTemplate,
   rsvpReminderText,
+  teamMatchingTemplate,
+  teamMatchingText,
   type ReminderKind,
 } from "~/server/api/routers/email-templates";
 import { classifyResult } from "./send-campaign";
 
-// Reminds people who started an application but haven't submitted it, and
-// (rsvp-reminder) accepted hackers who haven't RSVP'd yet.
-// Run by .github/workflows/incomplete-reminder.yml. Dry run unless --send.
+// Reminds people who started an application but haven't submitted it,
+// (rsvp-reminder) accepted hackers who haven't RSVP'd yet, and
+// (team-matching) confirmed hackers once RSVP closes.
+// Run by .github/workflows/incomplete-reminder.yml and after-rsvp.yml.
+// Dry run unless --send.
 //
 //   npx tsx scripts/send-incomplete-reminder.ts --kind=reminder-1 [--send] [--only=me@x.com]
 //
 // --only sends just that address (any status) and never writes the sent-log,
 // so a test can't stop the real send from reaching that person.
 
-const KINDS: ReminderKind[] = ["reminder-1", "reminder-2", "rsvp-reminder"];
+const KINDS: ReminderKind[] = [
+  "reminder-1",
+  "reminder-2",
+  "rsvp-reminder",
+  "team-matching",
+];
+// Whose application status each email goes to.
+const STATUS_FOR = {
+  "reminder-1": "IN_PROGRESS",
+  "reminder-2": "IN_PROGRESS",
+  "rsvp-reminder": "ACCEPTED",
+  "team-matching": "CONFIRMED",
+} as const satisfies Record<ReminderKind, string>;
 const DELAY_MS = 300;
 // Test and throwaway accounts never get a reminder.
 const TEST_EMAIL = [/@example\.(com|org)$/i, /\+test@/i, /^test[^@]*@/i];
@@ -43,8 +59,8 @@ export const maskEmail = (email: string) => {
   return `${local.slice(0, 1)}***@${domain}`;
 };
 
-/** In-progress (or, for rsvp-reminder, accepted) hackers who haven't had
- * this reminder and haven't bounced. */
+/** Hackers in this email's status (STATUS_FOR) who haven't had it yet and
+ * haven't bounced. */
 export async function selectRecipients(
   kind: ReminderKind,
   only?: string,
@@ -64,10 +80,7 @@ export async function selectRecipients(
       only
         ? eq(users.email, only.trim().toLowerCase())
         : and(
-            eq(
-              applications.status,
-              kind === "rsvp-reminder" ? "ACCEPTED" : "IN_PROGRESS",
-            ),
+            eq(applications.status, STATUS_FOR[kind]),
             eq(users.type, "hacker"),
             isNull(emailSubscribers.bouncedAt),
             notExists(
@@ -87,6 +100,13 @@ export async function selectRecipients(
 }
 
 export function renderReminder(kind: ReminderKind, name: string | null) {
+  if (kind === "team-matching") {
+    return {
+      subject: REMINDER_COPY[kind].subject,
+      html: teamMatchingTemplate(name ?? undefined),
+      text: teamMatchingText(name ?? undefined),
+    };
+  }
   if (kind === "rsvp-reminder") {
     return {
       subject: REMINDER_COPY[kind].subject,
