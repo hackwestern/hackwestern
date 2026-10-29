@@ -38,8 +38,8 @@ const copyFor = (
       body: "Hack Western runs November 20–22 at Western University. We’ll email you the schedule and check-in details closer to the event.",
     },
     DECLINED: {
-      title: "You’ve declined your spot",
-      body: "Thanks for letting us know. We hope to see you at a future Hack Western.",
+      title: "You’re not attending Hack Western 13",
+      body: "Your spot has been released. We hope to see you at a future Hack Western.",
     },
   })[key];
 
