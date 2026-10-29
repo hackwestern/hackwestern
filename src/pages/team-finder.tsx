@@ -1,0 +1,2024 @@
+// SPIKE (local only): team finder mockup with fake data. Not wired to the DB.
+import Image from "next/image";
+import Head from "next/head";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import {
+  type ReactNode,
+  useDeferredValue,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  ChevronDown,
+  Github,
+  Instagram,
+  Link2,
+  Linkedin,
+  Phone,
+  Search,
+  Sparkles,
+} from "lucide-react";
+import SEO from "~/components/seo";
+import { Button } from "~/components/ui/button";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "~/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "~/components/ui/dialog";
+import { FilmStrip } from "~/components/promo/film-strip";
+import { getHorse, realmTint, realms, type Realm } from "~/constants/realms";
+import {
+  canBeMessaged,
+  contactHref,
+  normalizeContact,
+  normalizeContacts,
+  type ContactKind,
+  type Contacts,
+} from "~/lib/socials";
+
+type Socials = Contacts;
+
+type Hacker = {
+  name: string;
+  school?: string;
+  year?: string;
+  horseId: number;
+  /** Optional photo; without one the card shows their horse. */
+  photo?: string;
+  /** How many more people they're looking for. Unset = looking for a team to join. */
+  needs?: Needs;
+  firstHackathon?: boolean;
+  skills: string[];
+  lookingFor: string;
+  idea?: string;
+  socials: Socials;
+};
+
+const SKILLS = [
+  "Frontend",
+  "Backend",
+  "Design",
+  "Hardware",
+  "ML / AI",
+  "Mobile",
+  "Pitching",
+];
+const TEAM_SIZE = 4;
+type Needs = 1 | 2;
+const MAX_SKILLS = 3;
+
+// Spike: neutral placeholder "photos" (flat illustrated avatars, drawn here).
+function fakePhoto(i: number) {
+  const bg = ["#cfe0f2", "#f3dcc9", "#d6ead8", "#e6dcf3"][i % 4];
+  const skin = ["#8d5524", "#e0ac69", "#c68642", "#f1c27d"][i % 4];
+  const hair = ["#2b1b14", "#4a2c1a", "#1f1f1f", "#7a4b2a"][i % 4];
+  const shirt = ["#3a5a8c", "#7a4aa3", "#2f6b4f", "#b0603a"][i % 4];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="${bg}"/><path d="M40 256c0-52 39-88 88-88s88 36 88 88z" fill="${shirt}"/><rect x="112" y="140" width="32" height="34" rx="12" fill="${skin}"/><circle cx="128" cy="108" r="46" fill="${skin}"/><path d="M80 104c0-30 21-50 48-50s48 20 48 50c-10-16-28-24-48-24s-38 8-48 24z" fill="${hair}"/></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+const PEOPLE: Hacker[] = [
+  // Worst case: every field at its limit.
+  {
+    name: "Maximilianna-Josephine W.",
+    school: "University of Michigan",
+    year: "5th+ year",
+    horseId: 3,
+    needs: 1,
+    firstHackathon: true,
+    skills: ["Hardware", "Backend", "ML / AI"],
+    lookingFor:
+      "Someone who has shipped embedded firmware before, ideally with BLE, and doesn't mind a 3am debugging session",
+    idea: "https://github.com/maximilianna-josephine/an-extremely-long-repository-name-for-testing",
+    socials: {
+      discord: "maximilianna.josephine.wilberforce",
+      instagram: "@maximilianna.josephine.codes",
+      linkedin:
+        "https://www.linkedin.com/in/maximilianna-josephine-wilberforce-123456/",
+      github: "github.com/maximilianna-josephine",
+    },
+  },
+  {
+    name: "Priya S.",
+    photo: fakePhoto(0),
+    school: "Waterloo",
+    year: "3rd year",
+    horseId: 7,
+    skills: ["Backend", "ML / AI"],
+    lookingFor: "A designer who likes shipping fast",
+    idea: "Reads lecture slides aloud for low-vision students",
+    socials: { discord: "priya.s", linkedin: "priyas", github: "priyas" },
+  },
+  {
+    name: "Aisha K.",
+    photo: fakePhoto(1),
+    school: "Western",
+    year: "2nd year",
+    horseId: 1,
+    needs: 2,
+    skills: ["Frontend", "Hardware"],
+    lookingFor: "Backend, or anyone who’s touched an Arduino",
+    idea: "A plant pot that texts you when it’s thirsty",
+    socials: { instagram: "nightowls.hw", discord: "aishak" },
+  },
+  {
+    name: "Marcus L.",
+    school: "Western",
+    year: "1st year",
+    horseId: 4,
+    firstHackathon: true,
+    skills: ["Frontend"],
+    lookingFor: "Anyone friendly to build with",
+    socials: { instagram: "marcus.l", phone: "(519) 555-0182" },
+  },
+  {
+    name: "Dana T.",
+    photo: fakePhoto(2),
+    school: "UofT",
+    year: "4th year",
+    horseId: 6,
+    skills: ["Pitching", "Design", "Mobile"],
+    lookingFor: "Two or three builders. I’ll handle design and the demo",
+    idea: "Splitting a group trip budget without the awkward texts",
+    socials: { linkedin: "danat", discord: "dana.t" },
+  },
+  {
+    name: "Jo R.",
+    school: "Western",
+    year: "3rd year",
+    horseId: 2,
+    needs: 1,
+    skills: ["Backend", "ML / AI"],
+    lookingFor: "One designer to round us out",
+    socials: { discord: "jo.r" },
+  },
+  {
+    name: "Owen K.",
+    photo: fakePhoto(3),
+    school: "Queen's",
+    year: "2nd year",
+    horseId: 8,
+    skills: ["Hardware", "Backend"],
+    lookingFor: "People who want to build something physical",
+    idea: "A bike lock that tells you if someone’s messing with it",
+    socials: { github: "owenk", instagram: "owen.k" },
+  },
+  // Filler so the list feels like the real thing (a couple hundred people).
+  ...Array.from({ length: 44 }, (_, i): Hacker => {
+    const first = [
+      "Ava",
+      "Liam",
+      "Noor",
+      "Ethan",
+      "Mei",
+      "Omar",
+      "Sofia",
+      "Raj",
+      "Chloe",
+      "Ben",
+      "Lina",
+      "Kai",
+    ];
+    const last = "ABCDEFGHJKLMNPRSTWYZ";
+    const schools = [
+      "Western",
+      "Waterloo",
+      "UofT",
+      "McMaster",
+      "Queen's",
+      "Ottawa",
+      "York",
+      "Michigan",
+    ];
+    const years = ["1st year", "2nd year", "3rd year", "4th year"];
+    const wants = [
+      "Someone who can make it look good",
+      "A backend person who likes databases",
+      "Anyone keen to try hardware",
+      "People who want to win a sponsor prize",
+      "A chill team, first hackathon",
+      "Someone strong at pitching",
+    ];
+    const ideas = [
+      "A study-room finder for campus",
+      "Turning class notes into flashcards",
+      "Splitting rent and bills with roommates",
+      undefined,
+    ];
+    const skillSets = [
+      ["Frontend", "Design"],
+      ["Backend"],
+      ["ML / AI", "Backend", "Pitching"],
+      ["Mobile", "Frontend"],
+      ["Hardware"],
+    ];
+    const name = `${first[i % first.length]} ${last[(i * 7) % last.length]}.`;
+    return {
+      name,
+      school: schools[i % schools.length],
+      year: years[(i * 3) % years.length],
+      horseId: (i % 8) + 1,
+      needs: i % 4 === 1 ? 2 : i % 9 === 4 ? 1 : undefined,
+      firstHackathon: i % 5 === 2,
+      skills: skillSets[i % skillSets.length]!,
+      lookingFor: wants[i % wants.length]!,
+      idea: ideas[i % ideas.length],
+      socials:
+        i % 3 === 0
+          ? { discord: `${first[i % first.length]!.toLowerCase()}${i}` }
+          : { instagram: `hacker${i}`, github: `hacker${i}` },
+    };
+  }),
+];
+// 24 fills whole rows at both 3 and 2 columns.
+const PAGE_SIZE = 24;
+const FIRST = "First hackathon";
+
+const FOCUS =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a16bc7] focus-visible:ring-offset-2";
+const FIELD = `w-full rounded-lg border border-gray-2 bg-white px-3 py-2.5 font-figtree text-base text-heavy placeholder:text-gray-3 focus:border-[#a16bc7] focus:outline-none focus:ring-2 focus:ring-[#e1c8fa]`;
+const PHOTO_NOTE =
+  "rounded-xl bg-black/60 px-3 py-2 text-sm text-white backdrop-blur-sm";
+const ON_PHOTO =
+  "[text-shadow:0_1px_3px_rgba(0,0,0,0.5),0_0_18px_rgba(0,0,0,0.35)]";
+
+type Filter = "everyone" | "solo" | "groups";
+
+/**
+ * The card picture: their photo if they added one, otherwise their horse on
+ * its realm tint. Size comes from `className` (h-/w- classes).
+ */
+function Avatar({
+  horseId,
+  photo,
+  className = "",
+  round = false,
+}: {
+  horseId: number;
+  photo?: string;
+  className?: string;
+  /** A small circle (the status bar), instead of the card's rounded tile. */
+  round?: boolean;
+}) {
+  const shape = round ? "rounded-full border-2 border-white" : "rounded-2xl";
+  if (photo)
+    return (
+      <div className={`shrink-0 overflow-hidden ${shape} ${className}`}>
+        <Image
+          src={photo}
+          alt=""
+          width={256}
+          height={256}
+          unoptimized
+          className="h-full w-full object-cover"
+        />
+      </div>
+    );
+  const horse = getHorse(horseId);
+  return (
+    <div
+      className={`shrink-0 overflow-hidden ${shape} ${round ? "p-1" : "p-1.5"} ${className}`}
+      // One neutral tile for every horse: the realm tints competed with the cards.
+      style={{ background: "#f2eff5" }}
+    >
+      <Image
+        src={horse?.asset ?? "/apply/realm/safari-1.png"}
+        alt=""
+        width={96}
+        height={96}
+        className="h-full w-full object-contain"
+      />
+    </div>
+  );
+}
+
+// Only contacts that read cleanly; links are built from the cleaned handle.
+function cleanContacts(raw: Socials): Socials {
+  const clean = (k: ContactKind) => {
+    const { value, hint } = normalizeContact(k, raw[k]);
+    return hint ? "" : value;
+  };
+  return {
+    discord: clean("discord"),
+    phone: clean("phone"),
+    instagram: clean("instagram"),
+    linkedin: clean("linkedin"),
+    github: clean("github"),
+  };
+}
+
+// Green = solo, looking for a team to join; orange = a group looking for more.
+// "Solo" and "Group" match the All / Solo / Groups filter.
+function needsLabel(needs?: Needs) {
+  return needs
+    ? `Group, looking for ${needs} more`
+    : "Solo, looking for a team";
+}
+
+function Status({ needs }: { needs?: Needs }) {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1.5 text-[13px] text-medium">
+      <span
+        aria-hidden
+        className={`h-2 w-2 rounded-full border-[1.5px] border-[#7a4aa3] ${needs ? "bg-[#7a4aa3]" : ""}`}
+      />
+      {needsLabel(needs)}
+    </span>
+  );
+}
+
+// Discord's mark (simple-icons, CC0): lucide has none.
+function DiscordIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+    >
+      <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z" />
+    </svg>
+  );
+}
+
+const ICON_BTN = `inline-flex h-8 w-8 items-center justify-center rounded-md text-medium hover:bg-[#f3eefa] hover:text-heavy ${FOCUS}`;
+// Small dark chips: no labels, no big buttons, kept inside the viewport.
+const CHIP = `w-auto max-w-[min(20rem,calc(100vw-1.5rem))] rounded-lg border-0 bg-[#1f1029] px-3 py-2 font-figtree text-[13px] text-white shadow-lg`;
+const CHIP_BTN = `rounded-sm font-semibold text-white/90 underline-offset-4 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80`;
+
+async function writeClipboard(value: string) {
+  if (!navigator.clipboard) throw new Error("No clipboard");
+  await navigator.clipboard.writeText(value);
+}
+
+function selectText(id: string) {
+  const el = document.getElementById(id);
+  const sel = window.getSelection();
+  if (!el || !sel) return;
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+// Discord: hover or focus shows the username; a click copies it. "Copied"
+// only after the clipboard write succeeds; if it fails, a chip opens with the
+// username selected to copy by hand.
+function DiscordContact({ value }: { value: string }) {
+  const textId = useId();
+  const [copy, setCopy] = useState<"idle" | "copied" | "failed">("idle");
+  const [toast, setToast] = useState(false);
+  const timer = useRef<number | undefined>(undefined);
+  const onCopy = async () => {
+    window.clearTimeout(timer.current);
+    try {
+      await writeClipboard(value);
+      setCopy("copied");
+      // Touch screens have no hover tooltip, so they get a toast instead.
+      setToast(window.matchMedia("(hover: none)").matches);
+      timer.current = window.setTimeout(() => {
+        setCopy("idle");
+        setToast(false);
+      }, 2000);
+    } catch {
+      setCopy("failed");
+    }
+  };
+  return (
+    <PopoverPrimitive.Root
+      open={copy === "failed"}
+      onOpenChange={(o) => !o && setCopy("idle")}
+    >
+      <PopoverPrimitive.Anchor asChild>
+        <span className="group relative inline-flex">
+          <button
+            type="button"
+            aria-label={`Discord: ${value}, copy username`}
+            onClick={() => void onCopy()}
+            className={ICON_BTN}
+          >
+            <DiscordIcon className="h-4 w-4" />
+          </button>
+          <span
+            aria-hidden
+            className={`pointer-events-none absolute bottom-full left-0 mb-2 whitespace-nowrap rounded-md bg-[#1f1029] px-2 py-1 text-[13px] font-medium text-white opacity-0 shadow-md group-hover:opacity-100 [@media(hover:none)]:hidden`}
+          >
+            {copy === "copied" ? "Copied" : value}
+            <span
+              className={`absolute left-3 top-full border-4 border-transparent border-t-[#1f1029]`}
+            />
+          </span>
+        </span>
+      </PopoverPrimitive.Anchor>
+      <span role="status" aria-live="polite" className="sr-only">
+        {copy === "copied" ? `Copied ${value}` : ""}
+      </span>
+      {toast && (
+        <span
+          aria-hidden
+          className={`fixed bottom-8 left-1/2 z-50 max-w-[calc(100vw-2rem)] -translate-x-1/2 truncate rounded-full bg-[#1f1029] px-4 py-2 font-figtree text-[13px] font-medium text-white shadow-lg`}
+        >
+          Copied {value}
+        </span>
+      )}
+      <PopoverPrimitive.Portal>
+        <PopoverPrimitive.Content
+          side="top"
+          align="start"
+          sideOffset={6}
+          collisionPadding={12}
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            selectText(textId);
+          }}
+          className={`z-50 ${CHIP}`}
+        >
+          <p id={textId} className="select-all break-all font-semibold">
+            {value}
+          </p>
+          <p className="mt-0.5 text-white/70">
+            Couldn’t copy. It’s selected for you.
+          </p>
+        </PopoverPrimitive.Content>
+      </PopoverPrimitive.Portal>
+    </PopoverPrimitive.Root>
+  );
+}
+
+// Phone: a compact dark chip with the number and Call · Text · Copy.
+function PhoneContact({ value }: { value: string }) {
+  const textId = useId();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [copy, setCopy] = useState<"idle" | "copied" | "failed">("idle");
+  const tel = contactHref("phone", value) ?? "";
+  const onCopy = async () => {
+    try {
+      await writeClipboard(value);
+      setCopy("copied");
+    } catch {
+      selectText(textId);
+      setCopy("failed");
+    }
+  };
+  return (
+    <Popover onOpenChange={(o) => !o && setCopy("idle")}>
+      <PopoverTrigger
+        aria-label={`Phone: ${value}`}
+        title={value}
+        className={ICON_BTN}
+      >
+        <Phone aria-hidden className="h-4 w-4" />
+      </PopoverTrigger>
+      <PopoverContent
+        ref={contentRef}
+        tabIndex={-1}
+        align="start"
+        side="top"
+        sideOffset={6}
+        collisionPadding={12}
+        // Focus the chip itself, not its first button, so no ring appears.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          contentRef.current?.focus();
+        }}
+        className={`${CHIP} p-0 px-3 py-2 outline-none`}
+      >
+        <p id={textId} className="select-all whitespace-nowrap font-semibold">
+          {value}
+        </p>
+        <p className="mt-1 flex items-center gap-1.5 whitespace-nowrap text-white/50">
+          <a href={tel} className={CHIP_BTN}>
+            Call
+          </a>
+          ·
+          <a href={tel.replace(/^tel:/, "sms:")} className={CHIP_BTN}>
+            Text
+          </a>
+          ·
+          <button
+            type="button"
+            onClick={() => void onCopy()}
+            className={CHIP_BTN}
+          >
+            {copy === "copied"
+              ? "Copied"
+              : copy === "failed"
+                ? "Select it"
+                : "Copy"}
+          </button>
+        </p>
+        <span role="status" aria-live="polite" className="sr-only">
+          {copy === "copied"
+            ? `Copied ${value}`
+            : copy === "failed"
+              ? "Couldn’t copy, the number is selected"
+              : ""}
+        </span>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// Every contact as one row of same-size icons.
+function ContactIcons({
+  socials: raw,
+  owner,
+}: {
+  socials: Socials;
+  owner: string;
+}) {
+  const c = cleanContacts(raw);
+  const links = (
+    [
+      ["instagram", Instagram, "Instagram"],
+      ["linkedin", Linkedin, "LinkedIn"],
+      ["github", Github, "GitHub"],
+    ] as const
+  ).flatMap(([k, Icon, label]) =>
+    c[k] ? [{ k, Icon, label, value: c[k], href: contactHref(k, c[k])! }] : [],
+  );
+  if (!c.discord && !c.phone && !links.length) return null;
+  return (
+    <div className="relative z-10 flex flex-wrap items-center gap-1">
+      {c.discord && <DiscordContact value={c.discord} />}
+      {c.phone && <PhoneContact value={c.phone} />}
+      {links.map(({ k, Icon, label, value, href }) => (
+        <a
+          key={k}
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`${owner} on ${label}`}
+          title={`${label}: ${value}`}
+          className={ICON_BTN}
+        >
+          <Icon aria-hidden className="h-4 w-4" />
+        </a>
+      ))}
+    </div>
+  );
+}
+
+function EntryCard({
+  entry,
+  muted = false,
+  clamp = false,
+  you = false,
+  ownBar,
+}: {
+  entry: Hacker;
+  muted?: boolean;
+  you?: boolean;
+  /** Your own card in the grid: its label and actions (outside the open button). */
+  ownBar?: ReactNode;
+  /** Grid cards: short text, one contact row, and the whole card opens the full view. */
+  clamp?: boolean;
+}) {
+  const subtitle = [entry.school, entry.year].filter(Boolean).join(", ");
+  const dialogRef = useRef<HTMLDivElement>(null);
+  return (
+    <article
+      className={`relative flex flex-col gap-2.5 rounded-xl bg-white p-4 text-heavy shadow-[0_1px_2px_rgba(26,10,36,0.08),0_6px_16px_rgba(26,10,36,0.08)] ${clamp ? "h-full hover:shadow-[0_1px_2px_rgba(26,10,36,0.1),0_10px_24px_rgba(26,10,36,0.14)]" : ""} ${muted ? "outline-dashed outline-2 outline-offset-4 outline-[#a16bc7]" : ""}`}
+    >
+      {clamp && (
+        <Dialog>
+          {/* The whole card is the button; contacts sit above it. */}
+          <DialogTrigger
+            aria-label={`Open ${entry.name}’s card`}
+            className={`absolute inset-0 z-0 rounded-xl ${FOCUS}`}
+          />
+          <DialogContent
+            ref={dialogRef}
+            tabIndex={-1}
+            onOpenAutoFocus={(e) => {
+              e.preventDefault();
+              dialogRef.current?.focus();
+            }}
+            className="max-h-[85dvh] max-w-md overflow-y-auto overscroll-contain border-0 bg-transparent p-0 shadow-none outline-none"
+          >
+            <DialogTitle className="sr-only">{entry.name}</DialogTitle>
+            <EntryCard entry={entry} you={you} />
+          </DialogContent>
+        </Dialog>
+      )}
+      {ownBar && (
+        <div className="pointer-events-auto relative z-10 -mt-1 flex h-8 flex-nowrap items-center gap-2">
+          {ownBar}
+        </div>
+      )}
+      <div className="pointer-events-none flex flex-col gap-2.5">
+        <div className="flex items-start gap-3.5">
+          <Avatar
+            horseId={entry.horseId}
+            photo={entry.photo}
+            className={
+              clamp
+                ? "h-[88px] w-[88px] xl:h-[72px] xl:w-[72px]"
+                : "h-[88px] w-[88px]"
+            }
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <Status needs={entry.needs} />
+              {you && !ownBar && (
+                <span className="text-[13px] font-semibold text-[#7a4aa3]">
+                  You
+                </span>
+              )}
+            </div>
+            <h3 className="mt-1 font-cossetteTexte text-xl font-bold leading-tight [overflow-wrap:anywhere]">
+              {entry.name}
+            </h3>
+            {subtitle && (
+              <p className="mt-0.5 text-sm text-medium">{subtitle}</p>
+            )}
+          </div>
+        </div>
+
+        {(entry.skills.length > 0 || entry.firstHackathon) && (
+          <ul
+            className="flex flex-wrap gap-1.5"
+            aria-label={entry.needs ? "What the group can do" : "Skills"}
+          >
+            {entry.firstHackathon && (
+              <li className="inline-flex items-center gap-1 rounded-md bg-[#f2eff5] px-2 py-0.5 text-[13px] font-medium text-heavy">
+                <Sparkles aria-hidden className="h-3 w-3 text-[#7a4aa3]" />
+                First hackathon
+              </li>
+            )}
+            {entry.skills.map((s) => (
+              <li
+                key={s}
+                className="rounded-md bg-[#f2eff5] px-2 py-0.5 text-[13px] font-medium text-heavy"
+              >
+                {s}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {entry.lookingFor && (
+          <p
+            className={`text-[15px] leading-snug [overflow-wrap:anywhere] ${clamp ? "line-clamp-3" : ""}`}
+          >
+            <span className="font-semibold">
+              {entry.needs ? "Needs " : "Wants "}
+            </span>
+            {lowerFirst(entry.lookingFor)}
+          </p>
+        )}
+        {entry.idea && (
+          <p
+            className={`text-sm leading-snug text-medium [overflow-wrap:anywhere] ${clamp ? "line-clamp-1" : "pointer-events-auto"}`}
+          >
+            <Idea idea={entry.idea} />
+          </p>
+        )}
+      </div>
+
+      <div
+        className={`pointer-events-auto relative z-10 ${clamp ? "mt-auto" : ""}`}
+      >
+        {clamp ? (
+          <div className="border-t border-gray-1 pt-2">
+            <ContactIcons socials={entry.socials} owner={entry.name} />
+          </div>
+        ) : (
+          <div className="border-t border-gray-1 pt-2">
+            <ContactIcons socials={entry.socials} owner={entry.name} />
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+/** A project idea that's a link opens it; anything else stays text. */
+function Idea({ idea }: { idea: string }) {
+  // A link anywhere in the idea: needs a scheme or a path, so "maya.codes" stays text.
+  const m = /(https?:\/\/)?((?:[a-z0-9-]+\.)+[a-z]{2,})(\/[^\s]*)?/i.exec(idea);
+  if (!m || (!m[1] && !m[3])) return <>{idea}</>;
+  const href = m[1] ? m[0] : `https://${m[0]}`;
+  const path = (m[3] ?? "").split(/[?#]/)[0]!.split("/").filter(Boolean);
+  const host = m[2]!.toLowerCase().replace(/^www\./, "");
+  // The repo name for a code host, else the last path part, else the site.
+  const label =
+    (/^(github|gitlab)\.com$/.test(host) ? path[1] : path.at(-1)) ?? host;
+  const text = idea.replace(m[0], "").trim();
+  return (
+    <>
+      {text && <>{text} </>}
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        title={`${host}/${path.join("/")}`}
+        aria-label={`Project link: ${label}`}
+        className={`pointer-events-auto relative z-10 inline-flex max-w-full items-center gap-1 rounded-sm align-bottom font-medium text-heavy underline-offset-4 hover:underline ${FOCUS}`}
+      >
+        <Link2 aria-hidden className="h-3.5 w-3.5 shrink-0 text-[#7a4aa3]" />
+        <span className="truncate">{label}</span>
+      </a>
+    </>
+  );
+}
+
+function lowerFirst(s: string) {
+  return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
+// Phones: one tappable row per person; details open in place.
+function CompactRow({
+  entry,
+  you = false,
+  ownBar,
+  muted = false,
+}: {
+  entry: Hacker;
+  you?: boolean;
+  /** Your own row: label and actions, always visible. */
+  ownBar?: ReactNode;
+  /** Hidden from others. */
+  muted?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const detailsId = useId();
+  const room = entry.firstHackathon ? 1 : 2;
+  const extra = entry.skills.length - room;
+  return (
+    <li
+      className={
+        muted
+          ? "outline-dashed outline-2 -outline-offset-4 outline-[#a16bc7]"
+          : ""
+      }
+    >
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={detailsId}
+        onClick={() => setOpen((v) => !v)}
+        className={`flex w-full scroll-mb-24 scroll-mt-36 items-center gap-3 px-4 py-3 text-left hover:bg-[#faf7fc] ${FOCUS} focus-visible:ring-inset focus-visible:ring-offset-0`}
+      >
+        <Avatar
+          horseId={entry.horseId}
+          photo={entry.photo}
+          className="h-14 w-14"
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-cossetteTexte text-[17px] font-bold leading-tight">
+            {entry.name}
+            {you && (
+              <span className="font-figtree text-sm font-semibold text-medium">
+                {" "}
+                (you)
+              </span>
+            )}
+          </span>
+          <span className="mt-0.5 flex items-center gap-1.5 text-[13px] text-medium">
+            <span
+              aria-hidden
+              className={`h-2 w-2 shrink-0 rounded-full border-[1.5px] border-[#7a4aa3] ${entry.needs ? "bg-[#7a4aa3]" : ""}`}
+            />
+            <span className="truncate">
+              {needsLabel(entry.needs)}
+              {entry.school ? `, ${entry.school}` : ""}
+            </span>
+          </span>
+          {entry.lookingFor && (
+            <span className="mt-1 block truncate text-sm text-heavy">
+              <span className="font-semibold">
+                {entry.needs ? "Needs " : "Wants "}
+              </span>
+              {lowerFirst(entry.lookingFor)}
+            </span>
+          )}
+          <span className="mt-1.5 flex flex-wrap gap-1">
+            {entry.firstHackathon && (
+              <span className="inline-flex items-center gap-1 rounded bg-[#f2eff5] px-1.5 py-px text-xs font-medium text-heavy">
+                <Sparkles aria-hidden className="h-3 w-3 text-[#7a4aa3]" />
+                First hackathon
+              </span>
+            )}
+            {entry.skills.slice(0, room).map((s) => (
+              <span
+                key={s}
+                className="rounded bg-[#f2eff5] px-1.5 py-px text-xs font-medium text-heavy"
+              >
+                {s}
+              </span>
+            ))}
+            {extra > 0 && (
+              <span className="px-1 text-xs font-semibold text-medium">
+                +{extra}
+              </span>
+            )}
+          </span>
+        </span>
+        <ChevronDown
+          aria-hidden
+          className={`h-5 w-5 shrink-0 text-medium transition-transform motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {ownBar && (
+        <div className="px-4 pb-3 pl-[84px]">
+          <div className="flex h-8 flex-nowrap items-center gap-2">
+            {ownBar}
+          </div>
+        </div>
+      )}
+      <div
+        id={detailsId}
+        hidden={!open}
+        className={`${open ? "flex" : "hidden"} flex-col gap-2.5 px-4 pb-4 pl-[84px]`}
+      >
+        {entry.year && <p className="text-sm text-medium">{entry.year}</p>}
+        {(entry.skills.length > 0 || entry.firstHackathon) && (
+          <ul
+            className="flex flex-wrap gap-1.5"
+            aria-label={entry.needs ? "What the group can do" : "Skills"}
+          >
+            {entry.firstHackathon && (
+              <li className="inline-flex items-center gap-1 rounded-md bg-[#f2eff5] px-2 py-0.5 text-[13px] font-medium text-heavy">
+                <Sparkles aria-hidden className="h-3 w-3 text-[#7a4aa3]" />
+                First hackathon
+              </li>
+            )}
+            {entry.skills.map((s) => (
+              <li
+                key={s}
+                className="rounded-md bg-[#f2eff5] px-2 py-0.5 text-[13px] font-medium text-heavy"
+              >
+                {s}
+              </li>
+            ))}
+          </ul>
+        )}
+        {entry.lookingFor && (
+          <p className="text-[15px] leading-snug [overflow-wrap:anywhere]">
+            <span className="font-semibold">
+              {entry.needs ? "Needs " : "Wants "}
+            </span>
+            {lowerFirst(entry.lookingFor)}
+          </p>
+        )}
+        {entry.idea && (
+          <p className="text-sm leading-snug text-medium [overflow-wrap:anywhere]">
+            <Idea idea={entry.idea} />
+          </p>
+        )}
+        <ContactIcons socials={entry.socials} owner={entry.name} />
+      </div>
+    </li>
+  );
+}
+
+type Card = {
+  /** Spike: a local object URL. */
+  photo?: string;
+  show: { school: boolean; year: boolean };
+  needs?: Needs;
+  skills: string[];
+  firstHackathon: boolean;
+  lookingFor: string;
+  idea: string;
+  socials: Socials;
+  /** Shown to other hackers. */
+  listed: boolean;
+};
+
+// Spike: the signed-in hacker, as their application has them.
+const ME = {
+  name: "John D.",
+  school: "Western",
+  schoolFull: "Western University",
+  year: "2nd year",
+  horseId: 4,
+  phone: "(519) 555-0142",
+};
+
+// A new card: only what comes from the application is filled in.
+const BLANK_CARD: Card = {
+  show: { school: true, year: false },
+  skills: [],
+  firstHackathon: false,
+  lookingFor: "",
+  idea: "",
+  socials: {},
+  listed: false,
+};
+
+// Spike: a saved card, to preview the board with ?card=shown|hidden.
+const SAMPLE_CARD: Card = {
+  show: { school: true, year: false },
+  skills: ["Frontend", "Design"],
+  firstHackathon: false,
+  lookingFor: "A backend person and someone into hardware",
+  idea: "Live campus bus tracker",
+  socials: { discord: "drjohn", instagram: "drjohn", github: "drjohn" },
+  listed: true,
+};
+
+function toHacker(c: Card): Hacker {
+  return {
+    name: ME.name,
+    school: c.show.school ? ME.school : undefined,
+    year: c.show.year ? ME.year : undefined,
+    horseId: ME.horseId,
+    photo: c.photo,
+    needs: c.needs,
+    firstHackathon: c.firstHackathon,
+    skills: c.skills,
+    lookingFor: c.lookingFor,
+    idea: c.idea.trim() || undefined,
+    socials: c.socials,
+  };
+}
+
+// Showing a card needs someone to look for and a way to be messaged: Discord,
+// Instagram or a phone number (GitHub and LinkedIn have no DMs from strangers).
+function isReady(c: Card) {
+  return c.lookingFor.trim() !== "" && canBeMessaged(c.socials);
+}
+
+// Step one: make (or edit) your card, with a live preview. Whether to show it
+// to other hackers is the last choice before saving.
+function CardStage({
+  initial,
+  isNew,
+  onSave,
+  onLeave,
+}: {
+  initial: Card;
+  isNew: boolean;
+  onSave: (c: Card) => void;
+  onLeave: () => void;
+}) {
+  const ids = useId();
+  const formId = `${ids}-form`;
+  const [c, setC] = useState<Card>(initial);
+  const set = <K extends keyof Card>(key: K, value: Card[K]) =>
+    setC((x) => ({ ...x, [key]: value }));
+  const ready = isReady(c);
+  const listed = c.listed && ready;
+  const me = toHacker(c);
+  // Hints show once a field has been left, not while someone is mid-paste.
+  // Spike: the photo stays a local object URL. The real build must upload it,
+  // resize it to about 256px, strip EXIF/GPS metadata, and let Report and
+  // organizer Hide cover photos too.
+  const [photoError, setPhotoError] = useState("");
+  const setPhoto = (file?: File) => {
+    if (file && !file.type.startsWith("image/"))
+      return setPhotoError("That file isn’t an image. Pick a JPG or PNG.");
+    if (file && file.size > 10 * 1024 * 1024)
+      return setPhotoError("That image is over 10 MB. Pick a smaller one.");
+    setPhotoError("");
+    if (c.photo?.startsWith("blob:")) URL.revokeObjectURL(c.photo);
+    set("photo", file ? URL.createObjectURL(file) : undefined);
+  };
+  const [hints, setHints] = useState<Partial<Record<ContactKind, string>>>({});
+  const cleanField = (key: ContactKind) => {
+    const raw = c.socials[key];
+    if (raw === undefined) return;
+    const { value, hint, note } = normalizeContact(key, raw);
+    // Phone stays ticked even when emptied; other fields drop when blank.
+    set("socials", {
+      ...c.socials,
+      [key]: value || (key === "phone" ? "" : undefined),
+    });
+    setHints((h) => ({ ...h, [key]: hint ?? note }));
+  };
+
+  const socialFields = [
+    ["discord", "Discord username", "your.username…"],
+    ["instagram", "Instagram", "username…"],
+    ["linkedin", "LinkedIn", "linkedin.com/in/…"],
+    ["github", "GitHub", "username…"],
+  ] as const;
+
+  const preview = (
+    <>
+      <p className={PHOTO_NOTE}>
+        {listed
+          ? "This is how other hackers will see your card."
+          : "Preview. Only you can see your card until you choose to show it."}
+      </p>
+      <EntryCard entry={me} muted={!listed} />
+    </>
+  );
+
+  return (
+    <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-12">
+      <div className="flex flex-col gap-6">
+        <form
+          id={formId}
+          aria-labelledby="stage-h"
+          onKeyDown={(e) => {
+            const t = e.target as HTMLElement;
+            if (e.key === "Enter" && t instanceof HTMLInputElement)
+              e.preventDefault();
+          }}
+          className="flex flex-col gap-6 rounded-2xl bg-white p-5 text-heavy shadow-lg sm:p-7"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSave({ ...c, socials: normalizeContacts(c.socials), listed });
+          }}
+        >
+          <fieldset>
+            <legend className="mb-2 font-semibold">
+              From your application
+            </legend>
+            <div className="flex flex-col gap-2 text-[15px]">
+              {(
+                [
+                  ["school", ME.schoolFull],
+                  ["year", ME.year],
+                ] as const
+              ).map(([key, value]) => (
+                <label
+                  key={key}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <span
+                    className={c.show[key] ? "" : "text-medium line-through"}
+                  >
+                    {value}
+                  </span>
+                  <span className="flex items-center gap-2 text-sm text-medium">
+                    {c.show[key] ? "Shown" : "Hidden"}
+                    <input
+                      type="checkbox"
+                      name={`show-${key}`}
+                      checked={c.show[key]}
+                      onChange={() =>
+                        set("show", { ...c.show, [key]: !c.show[key] })
+                      }
+                      className="h-4 w-4 accent-[#a16bc7]"
+                    />
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend className="mb-2 font-semibold">
+              Photo <span className="font-normal text-medium">(optional)</span>
+            </legend>
+            <div className="flex items-center gap-4">
+              <Avatar
+                horseId={ME.horseId}
+                photo={c.photo}
+                className="h-[72px] w-[72px]"
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="cursor-pointer rounded-full border border-gray-2 px-3.5 py-1.5 text-sm font-semibold text-heavy focus-within:ring-2 focus-within:ring-[#a16bc7] focus-within:ring-offset-2 hover:border-[#a16bc7]">
+                  {c.photo ? "Change" : "Upload a photo"}
+                  <input
+                    type="file"
+                    name="photo"
+                    accept="image/*"
+                    aria-describedby={
+                      photoError ? `${ids}-photo-err` : undefined
+                    }
+                    className="sr-only"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setPhoto(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {c.photo && (
+                  <button
+                    type="button"
+                    onClick={() => setPhoto(undefined)}
+                    className={`rounded-full px-3 py-1.5 text-sm font-semibold text-medium hover:text-heavy ${FOCUS}`}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className="mt-2 text-sm text-medium">
+              Without one, your card shows your horse.
+            </p>
+            {photoError && (
+              <p
+                id={`${ids}-photo-err`}
+                role="alert"
+                className="mt-1 text-sm text-[#9a4c14]"
+              >
+                {photoError}
+              </p>
+            )}
+          </fieldset>
+
+          <fieldset>
+            <legend className="mb-2 font-semibold">
+              What are you looking for?
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {([undefined, 1, 2] as const).map((n) => {
+                const on = c.needs === n;
+                return (
+                  <button
+                    key={n ?? "solo"}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => set("needs", n)}
+                    className={`rounded-md border px-2.5 py-1 text-sm font-semibold transition-colors motion-reduce:transition-none ${FOCUS} ${
+                      on
+                        ? "border-[#cdb2ea] bg-[#ebdff7] text-heavy"
+                        : "border-gray-2 bg-white text-medium hover:border-[#cdb2ea] hover:text-heavy"
+                    }`}
+                  >
+                    {n === undefined
+                      ? "A team to join"
+                      : n === 1
+                        ? "1 more person"
+                        : "2 more people"}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-sm text-medium">
+              Solo? Pick “A team to join”, even if you only want one partner.
+            </p>
+            {c.needs && (
+              <p className="mt-1 text-sm text-medium">
+                Only one of you needs a card. Describe the whole group.
+              </p>
+            )}
+          </fieldset>
+
+          <fieldset>
+            <legend className="mb-2 font-semibold">
+              {c.needs ? "What your group can do" : "What you’re good at"}
+            </legend>
+            <p className="-mt-1 mb-2 text-sm text-medium">
+              Pick up to {MAX_SKILLS} so your strongest ones stand out.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {SKILLS.map((s) => {
+                const on = c.skills.includes(s);
+                const full = !on && c.skills.length >= MAX_SKILLS;
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    aria-pressed={on}
+                    disabled={full}
+                    onClick={() =>
+                      set(
+                        "skills",
+                        on ? c.skills.filter((x) => x !== s) : [...c.skills, s],
+                      )
+                    }
+                    className={`rounded-md border px-2.5 py-1 text-sm font-semibold transition-colors motion-reduce:transition-none ${FOCUS} ${
+                      on
+                        ? "border-[#cdb2ea] bg-[#ebdff7] text-heavy"
+                        : "border-gray-2 bg-white text-medium hover:border-[#cdb2ea] hover:text-heavy disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gray-2 disabled:hover:text-medium"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <label className="flex items-center gap-3 text-[15px]">
+            <input
+              type="checkbox"
+              name="first-hackathon"
+              checked={c.firstHackathon}
+              onChange={() => set("firstHackathon", !c.firstHackathon)}
+              className="h-4 w-4 accent-[#a16bc7]"
+            />
+            {c.needs ? "It’s our first hackathon" : "It’s my first hackathon"}
+          </label>
+
+          <div>
+            <label
+              htmlFor={`${ids}-looking`}
+              className="mb-2 block font-semibold"
+            >
+              Who would fit your team?
+            </label>
+            <input
+              id={`${ids}-looking`}
+              className={FIELD}
+              name="looking-for"
+              autoComplete="off"
+              value={c.lookingFor}
+              maxLength={100}
+              placeholder="A designer who likes shipping fast…"
+              onChange={(e) => set("lookingFor", e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label htmlFor={`${ids}-idea`} className="mb-2 block font-semibold">
+              Project idea{" "}
+              <span className="font-normal text-medium">(optional)</span>
+            </label>
+            <input
+              id={`${ids}-idea`}
+              className={FIELD}
+              name="idea"
+              autoComplete="off"
+              placeholder="A live bus tracker for campus…"
+              value={c.idea}
+              maxLength={100}
+              onChange={(e) => set("idea", e.target.value)}
+            />
+          </div>
+
+          <fieldset>
+            <legend className="mb-1 font-semibold">How to reach you</legend>
+            <p className="mb-3 text-sm text-medium">
+              Add Discord, Instagram or your phone number so people can message
+              you. GitHub and LinkedIn are extras. Only hackers going to Hack
+              Western see these.
+            </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {socialFields.map(([key, label, placeholder]) => (
+                <div key={key}>
+                  <label
+                    htmlFor={`${ids}-${key}`}
+                    className="mb-1 block text-sm text-medium"
+                  >
+                    {label}
+                  </label>
+                  <input
+                    id={`${ids}-${key}`}
+                    className={FIELD}
+                    placeholder={placeholder}
+                    name={key}
+                    value={c.socials[key] ?? ""}
+                    autoComplete="off"
+                    spellCheck={false}
+                    aria-describedby={
+                      hints[key] ? `${ids}-${key}-hint` : undefined
+                    }
+                    onChange={(e) =>
+                      set("socials", {
+                        ...c.socials,
+                        [key]: e.target.value || undefined,
+                      })
+                    }
+                    onBlur={() => cleanField(key)}
+                  />
+                  {hints[key] && (
+                    <p
+                      id={`${ids}-${key}-hint`}
+                      className="mt-1 text-sm text-[#9a4c14]"
+                    >
+                      {hints[key]}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex flex-col gap-2">
+              <label className="flex items-center gap-3 text-[15px]">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-[#a16bc7]"
+                  name="show-phone"
+                  checked={c.socials.phone !== undefined}
+                  onChange={(e) =>
+                    set("socials", {
+                      ...c.socials,
+                      phone: e.target.checked ? ME.phone : undefined,
+                    })
+                  }
+                />
+                Show my phone number
+              </label>
+              {c.socials.phone !== undefined && (
+                <div>
+                  <label
+                    htmlFor={`${ids}-phone`}
+                    className="mb-1 block text-sm text-medium"
+                  >
+                    Phone number (from your application, edit if you like)
+                  </label>
+                  <input
+                    id={`${ids}-phone`}
+                    name="phone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    className={FIELD}
+                    value={c.socials.phone}
+                    onChange={(e) =>
+                      set("socials", { ...c.socials, phone: e.target.value })
+                    }
+                    onBlur={() => cleanField("phone")}
+                  />
+                </div>
+              )}
+            </div>
+          </fieldset>
+        </form>
+
+        {/* Phones: the preview sits right before the last step. */}
+        <div className="flex flex-col gap-3 lg:hidden">{preview}</div>
+
+        <section
+          aria-labelledby={`${ids}-show-h`}
+          className="flex flex-col gap-4 rounded-2xl bg-white p-5 text-heavy shadow-lg sm:p-7"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 id={`${ids}-show-h`} className="font-semibold">
+                Show me to other hackers
+              </h2>
+              <p id={`${ids}-show-d`} className="mt-1 text-sm text-medium">
+                Hackers going to Hack Western will see your card and can message
+                you. You can turn this off any time.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={listed}
+              aria-labelledby={`${ids}-show-h`}
+              aria-describedby={
+                ready ? `${ids}-show-d` : `${ids}-show-d ${ids}-notready`
+              }
+              disabled={!ready}
+              onClick={() => set("listed", !c.listed)}
+              className={`mt-0.5 shrink-0 rounded-full disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`}
+            >
+              <span
+                className={`relative block h-6 w-11 rounded-full transition-colors motion-reduce:transition-none ${listed ? "bg-[#a16bc7]" : "bg-gray-2"}`}
+              >
+                <span
+                  className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform motion-reduce:transition-none ${listed ? "translate-x-5" : "translate-x-0"}`}
+                />
+              </span>
+            </button>
+          </div>
+          {!ready && (
+            <p
+              id={`${ids}-notready`}
+              className="rounded-lg bg-[#fff0e6] px-3 py-2 text-sm text-[#9a4c14]"
+            >
+              Add who would fit your team and a way to message you (Discord,
+              Instagram or phone) first.
+            </p>
+          )}
+          <Button
+            type="submit"
+            form={formId}
+            variant="primary"
+            full
+            className="h-12 min-h-0 py-0 font-figtree font-medium"
+          >
+            {listed ? "Save and show my card" : "Save, hidden"}
+          </Button>
+          <button
+            type="button"
+            onClick={onLeave}
+            className={`self-center rounded-sm text-sm font-semibold text-medium underline underline-offset-4 hover:text-heavy ${FOCUS}`}
+          >
+            {isNew ? "Skip for now" : "Back without saving"}
+          </button>
+        </section>
+      </div>
+
+      <aside
+        aria-label="Preview of your card"
+        className="hidden flex-col gap-3 lg:sticky lg:top-24 lg:flex"
+      >
+        {preview}
+      </aside>
+    </div>
+  );
+}
+
+type FilterProps = {
+  variant: "inline" | "rail";
+  /** The page backdrop: text and chips are styled for it. */
+  light: boolean;
+  query: string;
+  filter: Filter;
+  canDo: string[];
+  onQuery: (v: string) => void;
+  onFilter: (f: Filter) => void;
+  onToggle: (c: string) => void;
+};
+
+// Search and filters. Phones and tablets get them above the list (pinned on
+// phones); desktops get them in a quiet left rail.
+function Filters({
+  variant,
+  light,
+  query,
+  filter,
+  canDo,
+  onQuery,
+  onFilter,
+  onToggle,
+}: FilterProps) {
+  const searchId = useId();
+  const rail = variant === "rail";
+  const ink = light ? "text-heavy" : "text-white";
+  const quiet = light ? "text-medium" : "text-white/75";
+
+  const search = (
+    <>
+      <label htmlFor={searchId} className="sr-only">
+        Search names, skills, schools and ideas
+      </label>
+      <div
+        className={`flex min-w-[150px] items-center gap-2 rounded-full bg-white px-3 focus-within:ring-2 focus-within:ring-[#a16bc7] md:px-4 ${light ? "ring-1 ring-gray-2" : ""} ${rail ? "" : "flex-1"}`}
+      >
+        <Search aria-hidden className="h-4 w-4 shrink-0 text-medium" />
+        <input
+          id={searchId}
+          name="search"
+          autoComplete="off"
+          type="search"
+          value={query}
+          onChange={(e) => onQuery(e.target.value)}
+          placeholder="Search…"
+          className="h-11 w-full bg-transparent text-base text-heavy outline-none placeholder:text-gray-3"
+        />
+      </div>
+    </>
+  );
+
+  const show = (
+    <div
+      role="group"
+      aria-label="Show"
+      className={`flex shrink-0 rounded-full bg-white p-1 ${light ? "ring-1 ring-gray-2" : ""}`}
+    >
+      {(
+        [
+          ["everyone", "All"],
+          ["solo", "Solo"],
+          ["groups", "Groups"],
+        ] as const
+      ).map(([key, label]) => (
+        <button
+          key={key}
+          type="button"
+          aria-pressed={filter === key}
+          onClick={() => onFilter(key)}
+          className={`h-9 rounded-full px-3 text-sm font-semibold transition-colors motion-reduce:transition-none md:px-3.5 ${rail ? "flex-1" : ""} ${FOCUS} ${
+            filter === key
+              ? "bg-[#7a4aa3] text-white"
+              : "text-medium hover:text-heavy"
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
+  // Outline chips; the one accent fills a chip that's on.
+  const chips = (
+    <div
+      role="group"
+      aria-label="Can do"
+      className={`flex flex-wrap items-center gap-1.5 ${rail ? "" : "lg:hidden"}`}
+    >
+      <span
+        className={`mr-1 shrink-0 text-sm font-semibold ${ink} ${rail ? "w-full" : ""}`}
+      >
+        Can do
+      </span>
+      {[...SKILLS, FIRST].map((c) => {
+        const on = canDo.includes(c);
+        return (
+          <button
+            key={c}
+            type="button"
+            aria-pressed={on}
+            onClick={() => onToggle(c)}
+            className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors motion-reduce:transition-none ${FOCUS} focus-visible:ring-offset-transparent ${
+              on
+                ? "border-[#7a4aa3] bg-[#7a4aa3] text-white"
+                : light
+                  ? "border-gray-2 bg-white text-heavy hover:border-[#7a4aa3]"
+                  : "border-white/35 text-white hover:border-white/70"
+            }`}
+          >
+            {c === FIRST && <Sparkles aria-hidden className="h-3 w-3" />}
+            {c}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const tip = (
+    <p className={`text-sm ${quiet} ${rail ? "pt-1" : "lg:hidden"}`}>
+      Tip: add people on Discord as a friend. Instagram DMs land in requests.
+    </p>
+  );
+
+  if (rail)
+    return (
+      <div className="hidden flex-col gap-5 lg:sticky lg:top-24 lg:flex">
+        <div
+          role="search"
+          aria-label="Find hackers"
+          className="flex flex-col gap-3"
+        >
+          {search}
+          {show}
+          {chips}
+          {tip}
+        </div>
+      </div>
+    );
+  return (
+    <>
+      {/* Pinned on phones so search and filters stay in reach. */}
+      <div
+        className={`sticky top-6 z-10 -mx-2 flex flex-wrap items-center gap-2 rounded-[28px] p-1.5 backdrop-blur-md md:static md:mx-0 md:gap-3 md:bg-transparent md:p-0 md:backdrop-blur-none lg:hidden ${light ? "bg-white/80 ring-1 ring-gray-2 md:ring-0" : "bg-black/30"}`}
+      >
+        {search}
+        {show}
+      </div>
+      {chips}
+      {tip}
+    </>
+  );
+}
+
+export default function TeamFinder() {
+  const router = useRouter();
+  const q = router.query;
+  // Spike only: ?realm=ocean|mountain|desert previews other realm photos,
+  // ?stage=board opens the board, ?card=shown|hidden starts with a saved card,
+  // ?people=none shows the board before anyone else has posted.
+  const realm: Realm = realms.includes(q.realm as Realm)
+    ? (q.realm as Realm)
+    : "safari";
+  // Spike: ?bg=photo brings back the full-page photo to compare; ?bg=light
+  // and ?bg=plum try the two calm backdrops.
+  const bg: "plum" | "light" | "photo" =
+    q.bg === "photo" || q.bg === "light" || q.bg === "plum" ? q.bg : "plum";
+  const light = bg === "light";
+  const backdrop = light ? "#f5f2f8" : bg === "plum" ? "#1f1029" : "#1a0a24";
+  const [stage, setStage] = useState<"card" | "board">("card");
+  const [card, setCard] = useState<Card | null>(null);
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (q.card === "shown" || q.card === "hidden")
+      setCard({ ...SAMPLE_CARD, listed: q.card === "shown" });
+    if (q.stage === "board") setStage("board");
+  }, [router.isReady, q.card, q.stage]);
+
+  // Moving between the two steps: back to the top, focus on the new heading.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const moved = useRef(false);
+  useEffect(() => {
+    if (!moved.current) return;
+    for (const el of [document.scrollingElement, document.body])
+      el?.scrollTo({ top: 0 });
+    window.scrollTo({ top: 0 });
+    headingRef.current?.focus({ preventScroll: true });
+  }, [stage]);
+  const goTo = (next: "card" | "board") => {
+    moved.current = true;
+    setStage(next);
+  };
+
+  const [filter, setFilter] = useState<Filter>("everyone");
+  const [query, setQuery] = useState("");
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [canDo, setCanDo] = useState<string[]>([]);
+  const deferredQuery = useDeferredValue(query);
+  const filtered = canDo.length > 0 || filter !== "everyone";
+  const others = useMemo(() => (q.people === "none" ? [] : PEOPLE), [q.people]);
+  const mine = useMemo(() => (card ? toHacker(card) : null), [card]);
+  const everyone = useMemo(
+    () => (mine && card?.listed ? [mine, ...others] : others),
+    [mine, card?.listed, others],
+  );
+  // Your own card is pinned first, outside search and filters.
+  const shown = useMemo(() => {
+    const q = deferredQuery.trim().toLowerCase();
+    return others
+      .filter((p) =>
+        filter === "solo" ? !p.needs : filter === "groups" ? !!p.needs : true,
+      )
+      .filter((p) =>
+        canDo.every((c) =>
+          c === FIRST ? p.firstHackathon : p.skills.includes(c),
+        ),
+      )
+      .map((p) => {
+        if (!q) return { p, rank: 0 };
+        if (p.skills.some((s) => s.toLowerCase().includes(q)))
+          return { p, rank: 0 };
+        const text = [p.name, p.lookingFor, p.idea ?? "", p.school ?? ""];
+        return {
+          p,
+          rank: text.some((t) => t.toLowerCase().includes(q)) ? 1 : 2,
+        };
+      })
+      .filter(({ rank }) => rank < 2)
+      .sort((a, b) => a.rank - b.rank)
+      .map(({ p }) => p);
+  }, [others, filter, deferredQuery, canDo]);
+  // Your card (or the make-card slot) is always first, so others fill the rest
+  // of each 24-card page and rows stay full at 3 and 2 columns.
+  const page = shown.slice(0, limit - 1);
+  const total = shown.length + (card?.listed ? 1 : 0);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const more = page.length < shown.length;
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !more) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) setLimit((n) => n + PAGE_SIZE);
+      },
+      { rootMargin: "0px 0px 800px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+    // stage: the sentinel only exists once the board is showing.
+  }, [more, page.length, stage]);
+  const groups = everyone.filter((p) => p.needs).length;
+  const early = others.length === 0;
+  const cardReady = card ? isReady(card) : false;
+
+  const pill = `rounded-full px-3 py-1 text-sm font-semibold ${FOCUS}`;
+  const accentPill = `${pill} bg-[#7a4aa3] text-white hover:bg-[#673d8c]`;
+  const quietPill = `${pill} text-medium ring-1 ring-gray-2 hover:text-heavy`;
+  const makeCardButton = (
+    <button type="button" onClick={() => goTo("card")} className={accentPill}>
+      Make your card
+    </button>
+  );
+  // Managing your card happens on your card: one fixed-height row, the same
+  // shape shown or hidden (fixed-width Show/Hide), so toggling never moves anything. `where` keeps ids
+  // unique (the grid and the phone list are both in the page).
+  const ownBar = (where: string) =>
+    card && (
+      <>
+        <span className="mr-auto whitespace-nowrap text-[13px] font-semibold text-[#7a4aa3]">
+          You · {card.listed ? "Shown" : "Hidden"}
+        </span>
+        {/* Fixed width, so "Show" and "Hide" take the same box. */}
+        <button
+          type="button"
+          aria-describedby={cardReady ? undefined : `own-not-ready-${where}`}
+          disabled={!cardReady}
+          onClick={() => setCard({ ...card, listed: !card.listed })}
+          aria-label={card.listed ? "Hide my card" : "Show my card"}
+          className={`w-16 shrink-0 text-center disabled:cursor-not-allowed ${card.listed ? quietPill : `${accentPill} disabled:bg-[#7a4aa3]/45 disabled:hover:bg-[#7a4aa3]/45`}`}
+        >
+          {card.listed ? "Hide" : "Show"}
+        </button>
+        {!cardReady && (
+          <span id={`own-not-ready-${where}`} className="sr-only">
+            Add who would fit your team and a way to message you first.
+          </span>
+        )}
+        <button
+          type="button"
+          aria-label={cardReady ? "Edit my card" : "Finish my card"}
+          onClick={() => goTo("card")}
+          className={`shrink-0 ${quietPill}`}
+        >
+          {cardReady ? "Edit" : "Finish"}
+        </button>
+      </>
+    );
+
+  // The site's thin lavender scrollbar for the page, with a dark gutter so it
+  // doesn't show a white strip beside the photo.
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.add("scrollbar");
+    html.style.backgroundColor = backdrop;
+    for (const el of [html, document.body]) {
+      el.style.scrollPaddingTop = "48px";
+      el.style.scrollPaddingBottom = "64px";
+    }
+    return () => {
+      html.classList.remove("scrollbar");
+      html.style.backgroundColor = "";
+      for (const el of [html, document.body]) {
+        el.style.scrollPaddingTop = "";
+        el.style.scrollPaddingBottom = "";
+      }
+    };
+  }, [backdrop]);
+  const filterProps = {
+    query,
+    filter,
+    canDo,
+    onQuery: (v: string) => {
+      setQuery(v);
+      setLimit(PAGE_SIZE);
+    },
+    onFilter: (f: Filter) => {
+      setFilter(f);
+      setLimit(PAGE_SIZE);
+    },
+    onToggle: (c: string) => {
+      setCanDo((v) => (v.includes(c) ? v.filter((x) => x !== c) : [...v, c]));
+      setLimit(PAGE_SIZE);
+    },
+  };
+
+  return (
+    <>
+      <SEO title="Team finder" />
+      <Head>
+        <meta name="theme-color" content={backdrop} />
+      </Head>
+      <div className="relative min-h-screen w-full touch-manipulation overflow-x-clip font-figtree">
+        {bg === "photo" ? (
+          <div className="fixed inset-0">
+            <Image
+              src={realmTint[realm].background}
+              alt=""
+              aria-hidden
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover"
+              draggable={false}
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/35 to-black/55" />
+          </div>
+        ) : (
+          <>
+            <div
+              aria-hidden
+              className="absolute inset-0"
+              style={{ background: backdrop }}
+            />
+            {/* The realm photo only behind the page header, fading into the backdrop. */}
+            <div
+              aria-hidden
+              className={`absolute inset-x-0 top-0 overflow-hidden ${stage === "board" ? "h-[260px] md:h-[250px]" : "h-[420px] md:h-[480px]"}`}
+            >
+              <Image
+                src={realmTint[realm].background}
+                alt=""
+                fill
+                priority
+                sizes="100vw"
+                className="object-cover"
+                draggable={false}
+              />
+              <div className="absolute inset-0 bg-black/35" />
+              <div
+                className="absolute inset-x-0 bottom-0 h-3/4"
+                style={{
+                  background: `linear-gradient(to bottom, transparent, ${backdrop})`,
+                }}
+              />
+            </div>
+          </>
+        )}
+        <div className="pointer-events-none fixed inset-x-0 top-0 z-20 -translate-y-[6px]">
+          <FilmStrip />
+        </div>
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 translate-y-[10px]">
+          <FilmStrip />
+        </div>
+
+        <div
+          className={`relative z-10 mx-auto w-full px-5 pb-28 sm:px-8 ${stage === "board" ? "max-w-[1360px] pt-14 md:pt-16" : "max-w-6xl pt-14 md:pt-24"}`}
+        >
+          <header
+            className={`flex items-start gap-4 text-white sm:gap-5 ${ON_PHOTO}`}
+          >
+            <Link
+              href="/"
+              aria-label="Hack Western home"
+              className={`mt-0.5 shrink-0 rounded-md transition-transform hover:-rotate-6 hover:scale-105 motion-reduce:transition-none motion-reduce:hover:transform-none ${FOCUS} focus-visible:ring-white focus-visible:ring-offset-transparent`}
+            >
+              <Image
+                src="/shared/horse.svg"
+                alt=""
+                width={40}
+                height={60}
+                className={
+                  stage === "board" ? "h-12 w-auto" : "h-[60px] w-auto"
+                }
+                priority
+                draggable={false}
+              />
+            </Link>
+            <div className={stage === "board" ? "min-w-0" : "min-w-0 max-w-xl"}>
+              <h1
+                ref={headingRef}
+                id="stage-h"
+                tabIndex={-1}
+                className={`text-balance font-cossetteTexte font-bold leading-[1.1] focus:outline-none ${stage === "board" ? "text-[28px] sm:text-[34px]" : "text-[34px] sm:text-[48px]"}`}
+              >
+                {stage === "card"
+                  ? card
+                    ? "Edit your card"
+                    : "Make your card"
+                  : "Find your team"}
+              </h1>
+              <p
+                className={
+                  stage === "board"
+                    ? "mt-1 text-[15px]"
+                    : "mt-3 text-pretty text-[17px] leading-relaxed"
+                }
+              >
+                {stage === "card"
+                  ? `Other hackers see your card when they look for teammates. Teams can have up to ${TEAM_SIZE} people.`
+                  : `Message anyone who looks like a fit. Teams can have up to ${TEAM_SIZE} people.`}
+              </p>
+              {stage === "card" && !card && (
+                <button
+                  type="button"
+                  onClick={() => goTo("board")}
+                  className={`mt-3 rounded-sm text-[15px] font-semibold underline underline-offset-4 hover:text-[#e1c8fa] ${FOCUS} focus-visible:ring-offset-transparent`}
+                >
+                  Just browsing? See who’s looking
+                </button>
+              )}
+            </div>
+          </header>
+
+          {stage === "card" ? (
+            <CardStage
+              key={card ? "edit" : "new"}
+              initial={card ?? BLANK_CARD}
+              isNew={!card}
+              onSave={(c) => {
+                setCard(c);
+                goTo("board");
+              }}
+              onLeave={() => goTo("board")}
+            />
+          ) : (
+            <div
+              className={`mt-8 grid grid-cols-1 gap-8 lg:mt-12 lg:items-start lg:gap-10 ${early ? "" : "lg:grid-cols-[300px_1fr]"}`}
+            >
+              {/* Desktop: the filters, pinned as the list scrolls. */}
+              {!early && (
+                <div className="hidden lg:block lg:self-stretch">
+                  <Filters variant="rail" light={light} {...filterProps} />
+                </div>
+              )}
+
+              <section
+                aria-labelledby="browse-h"
+                className="flex flex-col gap-4"
+              >
+                <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+                  <div className={light ? "text-heavy" : "text-white"}>
+                    <h2
+                      id="browse-h"
+                      tabIndex={-1}
+                      className="scroll-mt-28 text-balance font-cossetteTexte text-2xl font-bold focus:outline-none"
+                    >
+                      Who’s looking
+                    </h2>
+                    {everyone.length > 0 && (
+                      <p className="text-sm font-semibold">
+                        {everyone.length}{" "}
+                        {everyone.length === 1 ? "hacker" : "hackers"} so far
+                        {groups > 0 && `, ${groups} of them in groups`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {!early && (
+                  <Filters variant="inline" light={light} {...filterProps} />
+                )}
+
+                <>
+                  <ul className="divide-y divide-gray-1 overflow-hidden rounded-2xl bg-white text-heavy shadow-lg md:hidden">
+                    {mine ? (
+                      <CompactRow
+                        entry={mine}
+                        you
+                        muted={!card?.listed}
+                        ownBar={ownBar("row")}
+                      />
+                    ) : (
+                      <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+                        <p className="min-w-0 flex-1 text-sm text-medium">
+                          <span className="block font-semibold text-heavy">
+                            No card yet
+                          </span>
+                          Add one so other hackers can find you.
+                        </p>
+                        {makeCardButton}
+                      </li>
+                    )}
+                    {page.map((p) => (
+                      <CompactRow key={p.name} entry={p} />
+                    ))}
+                  </ul>
+                  <div className="hidden grid-cols-2 gap-4 md:grid xl:grid-cols-3">
+                    {mine ? (
+                      <EntryCard
+                        entry={mine}
+                        clamp
+                        you
+                        muted={!card?.listed}
+                        ownBar={ownBar("grid")}
+                      />
+                    ) : (
+                      <div
+                        className={`flex flex-col items-start justify-center gap-2 rounded-xl border-2 border-dashed p-5 ${light ? "border-gray-2 text-heavy" : "border-white/35 text-white"}`}
+                      >
+                        <p className="font-cossetteTexte text-xl font-bold">
+                          No card yet
+                        </p>
+                        <p
+                          className={`text-sm ${light ? "text-medium" : "text-white/75"}`}
+                        >
+                          Add one so other hackers can find you.
+                        </p>
+                        <div className="mt-1">{makeCardButton}</div>
+                      </div>
+                    )}
+                    {page.map((p) => (
+                      <EntryCard key={p.name} entry={p} clamp />
+                    ))}
+                  </div>
+                  {!early &&
+                    (page.length < shown.length ? (
+                      // Loads the next 24 well before the end of the list.
+                      <div ref={sentinelRef} aria-hidden className="h-px" />
+                    ) : (
+                      <p
+                        className={`pt-2 text-center text-sm ${light ? "text-medium" : "text-white/70"}`}
+                      >
+                        {total} {total === 1 ? "hacker" : "hackers"}
+                      </p>
+                    ))}
+                </>
+
+                {early ? (
+                  <div className="rounded-2xl bg-white p-6 text-heavy shadow-lg">
+                    <p className="font-semibold">You’re early</p>
+                    <p className="mt-1 text-medium">
+                      No one else has posted a card yet. Others will show up
+                      here as they make theirs, so check back soon.
+                    </p>
+                  </div>
+                ) : (
+                  shown.length === 0 && (
+                    <div className="rounded-2xl bg-white p-6 text-heavy shadow-lg">
+                      <p className="font-semibold">
+                        {query.trim()
+                          ? `No one matches “${query.trim()}”${filtered ? " with these filters" : ""} yet.`
+                          : "No one matches these filters yet."}
+                      </p>
+                      <p className="mt-1 text-medium">
+                        {filtered
+                          ? "Try fewer filters, or "
+                          : "Try another word, or "}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuery("");
+                            setCanDo([]);
+                            setFilter("everyone");
+                          }}
+                          className={`rounded-sm font-semibold text-heavy underline underline-offset-4 ${FOCUS}`}
+                        >
+                          clear all filters
+                        </button>
+                        .
+                      </p>
+                    </div>
+                  )
+                )}
+              </section>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
