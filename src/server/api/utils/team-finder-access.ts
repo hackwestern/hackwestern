@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { env } from "~/env";
 import { db } from "~/server/db";
 import { applications, users } from "~/server/db/schema";
 import { RSVP_DEADLINE } from "~/lib/date";
@@ -9,9 +10,10 @@ export type TeamFinderAccess =
 
 /**
  * Who may use the team finder board. Organizers always; hackers only with a
- * CONFIRMED application, and only once RSVP has closed. Sponsors and unknown
- * users never. Checked at read time, so a hacker who declines loses access
- * with no extra write.
+ * CONFIRMED application, and only once RSVP has closed (or from
+ * TEAM_FINDER_OPENS_AT, when a preview sets it). Sponsors and unknown users
+ * never. Checked at read time, so a hacker who declines loses access with no
+ * extra write.
  */
 export async function getTeamFinderAccess(
   userId: string,
@@ -37,7 +39,10 @@ export async function getTeamFinderAccess(
   if (application?.status !== "CONFIRMED") {
     return { ok: false, reason: "not-confirmed" };
   }
-  if (now < RSVP_DEADLINE.getTime()) {
+  const opensAt = env.TEAM_FINDER_OPENS_AT
+    ? new Date(env.TEAM_FINDER_OPENS_AT)
+    : RSVP_DEADLINE;
+  if (now < opensAt.getTime()) {
     return { ok: false, reason: "not-open" };
   }
   return { ok: true, role: "hacker" };
