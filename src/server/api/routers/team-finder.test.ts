@@ -205,6 +205,28 @@ describe("teamFinder", () => {
     });
   });
 
+  test("organizers also get organizer-hidden cards, flagged; hackers never do", async () => {
+    const hidden = await seedOther();
+    const unshown = await seedOther();
+    const visible = await seedOther();
+    await seedCard(hidden, { hiddenByOrganizerAt: new Date() });
+    await seedCard(unshown, { shown: false, hiddenByOrganizerAt: new Date() });
+    await seedCard(visible);
+
+    const board = await organizerCaller.teamFinder.list();
+    expect(board.find((c) => c.userId === hidden)).toMatchObject({
+      hiddenByOrganizer: true,
+    });
+    expect(board.find((c) => c.userId === visible)).toMatchObject({
+      hiddenByOrganizer: false,
+    });
+    expect(board.map((c) => c.userId)).not.toContain(unshown);
+
+    const ids = (await caller.teamFinder.list()).map((c) => c.userId);
+    expect(ids).toContain(visible);
+    expect(ids).not.toContain(hidden);
+  });
+
   test("a confirmed hacker is refused before RSVP closes", async () => {
     vi.spyOn(Date, "now").mockReturnValue(RSVP_DEADLINE.getTime() - 1000);
     await expect(caller.teamFinder.list()).rejects.toMatchObject({

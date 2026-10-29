@@ -84,6 +84,8 @@ type Hacker = {
   lookingFor: string;
   idea?: string;
   socials: Socials;
+  /** An organizer hid this card. Only organizers and its owner get these. */
+  hiddenByOrganizer?: boolean;
 };
 
 const TEAM_SIZE = 4;
@@ -103,6 +105,7 @@ function fromView(v: CardView): Hacker {
     lookingFor: v.lookingFor,
     idea: v.idea ?? undefined,
     socials: v.contacts,
+    hiddenByOrganizer: v.hiddenByOrganizer,
   };
 }
 
@@ -1679,15 +1682,19 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
     goTo("board");
   };
 
-  // Cards an organizer hid on this visit stay in the list, muted, so the
-  // hide can be undone.
-  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  // Organizers get the cards they hid too, flagged. A hide or unhide flips
+  // the flag in place: a refetch would download every photo again.
+  const setHidden = (userId: string, hidden: boolean) =>
+    utils.teamFinder.list.setData(undefined, (d) =>
+      d?.map((v) =>
+        v.userId === userId ? { ...v, hiddenByOrganizer: hidden } : v,
+      ),
+    );
   const hideCard = api.teamFinder.hideCard.useMutation({
-    onSuccess: (_, { userId }) => setHiddenIds((ids) => [...ids, userId]),
+    onSuccess: (_, { userId }) => setHidden(userId, true),
   });
   const unhideCard = api.teamFinder.unhideCard.useMutation({
-    onSuccess: (_, { userId }) =>
-      setHiddenIds((ids) => ids.filter((id) => id !== userId)),
+    onSuccess: (_, { userId }) => setHidden(userId, false),
   });
 
   const [filter, setFilter] = useState<Filter>("everyone");
@@ -1803,7 +1810,7 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
     );
   // Organizers: hide a card from hackers, or undo it.
   const organizerBar = (p: Hacker) => {
-    const hidden = hiddenIds.includes(p.userId!);
+    const hidden = !!p.hiddenByOrganizer;
     return (
       <>
         <span className="mr-auto whitespace-nowrap text-[13px] font-semibold text-[#7a4aa3]">
@@ -1827,7 +1834,7 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
     organizer
       ? {
           ownBar: organizerBar(p),
-          muted: hiddenIds.includes(p.userId!),
+          muted: !!p.hiddenByOrganizer,
         }
       : { action: <ReportCard userId={p.userId!} /> };
 

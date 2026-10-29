@@ -33,6 +33,7 @@ export type CardView = {
   userId: string;
   isMine: boolean;
   shown: boolean;
+  hiddenByOrganizer: boolean;
   name: string;
   school?: string;
   year?: string;
@@ -74,6 +75,7 @@ function toView(
     userId: card.userId,
     isMine,
     shown: card.shown,
+    hiddenByOrganizer: !!card.hiddenByOrganizerAt,
     name: displayName(app?.firstName ?? null, app?.lastName ?? null),
     school: card.showSchool
       ? schoolLabel(app?.school ?? null, app?.schoolOther ?? null)
@@ -138,11 +140,15 @@ const escapeHtml = (text: string) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
+const shownAndConfirmed = and(
+  eq(teamFinderCards.shown, true),
+  sql`${applications.status} = 'CONFIRMED'`,
+);
+
 // What other people can see on the board.
 const onBoard = and(
-  eq(teamFinderCards.shown, true),
+  shownAndConfirmed,
   isNull(teamFinderCards.hiddenByOrganizerAt),
-  sql`${applications.status} = 'CONFIRMED'`,
 );
 
 const cardValues = (userId: string, input: CardInput, hidden: boolean) => {
@@ -351,7 +357,7 @@ export const teamFinderRouter = createTRPCRouter({
 
   list: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
-    await requireAccess(userId);
+    const { role } = await requireAccess(userId);
 
     const rows = await db
       .select({
@@ -360,7 +366,12 @@ export const teamFinderRouter = createTRPCRouter({
       })
       .from(teamFinderCards)
       .innerJoin(applications, eq(applications.userId, teamFinderCards.userId))
-      .where(or(eq(teamFinderCards.userId, userId), onBoard))
+      .where(
+        role === "organizer"
+          ? // Organizers also get the cards they hid, so they can unhide them.
+            shownAndConfirmed
+          : or(eq(teamFinderCards.userId, userId), onBoard),
+      )
       .orderBy(desc(teamFinderCards.updatedAt));
 
     return Promise.all(
