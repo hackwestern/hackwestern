@@ -7,6 +7,9 @@ name: Incomplete Application Reminder
 #   Sat Oct 17, 11:59 PM ET  reminder-2: last call, read on deadline day (armed by REMINDER_2_LIVE)
 # Marketing's own 48-hour blast to the whole HW13 Announce list goes out from
 # Mailjet on Oct 16 and is not part of this workflow.
+# RSVP reminder, to accepted hackers who haven't RSVP'd (clocks fall back Nov 1, so ET = UTC-5):
+#   Thu Nov 5, noon ET      dry run of rsvp-reminder, for the count (never sends)
+#   Thu Nov 5, 11:59 PM ET  rsvp-reminder: 24 hours left to RSVP (armed by RSVP_REMINDER_LIVE)
 #
 # SAFETY / ARMING:
 #   - Scheduled runs are dry runs unless the repo variable for that reminder is
@@ -21,12 +24,14 @@ on:
     - cron: "0 16 11 10 *" # Oct 11, 12:00 ET
     - cron: "0 16 16 10 *" # Oct 16, 12:00 ET (count only)
     - cron: "59 3 18 10 *" # Oct 17, 11:59 PM ET (03:59 UTC Oct 18)
+    - cron: "0 17 5 11 *" # Nov 5, 12:00 ET (count only)
+    - cron: "59 4 6 11 *" # Nov 5, 11:59 PM ET (04:59 UTC Nov 6)
   workflow_dispatch:
     inputs:
       kind:
         description: "Which reminder"
         type: choice
-        options: ["reminder-1", "reminder-2"]
+        options: ["reminder-1", "reminder-2", "rsvp-reminder"]
         default: "reminder-1"
       send:
         description: "Actually send (unticked = dry run)"
@@ -60,6 +65,7 @@ jobs:
           INPUT_SEND: ${{ inputs.send }}
           LIVE_1: ${{ vars.REMINDER_1_LIVE }}
           LIVE_2: ${{ vars.REMINDER_2_LIVE }}
+          LIVE_RSVP: ${{ vars.RSVP_REMINDER_LIVE }}
         run: |
           # The cron has no year, so never let it fire after this cycle.
           if [ "$EVENT" = "schedule" ] && [ "$(date -u +%Y)" != "2026" ]; then
@@ -72,6 +78,8 @@ jobs:
               "0 16 11 10 *") KIND="reminder-1"; ARMED="$LIVE_1" ;;
               "0 16 16 10 *") KIND="reminder-2"; ARMED="false" ;;
               "59 3 18 10 *") KIND="reminder-2"; ARMED="$LIVE_2" ;;
+              "0 17 5 11 *") KIND="rsvp-reminder"; ARMED="false" ;;
+              "59 4 6 11 *") KIND="rsvp-reminder"; ARMED="$LIVE_RSVP" ;;
               *) echo "Unknown schedule $SCHEDULE"; exit 1 ;;
             esac
           fi

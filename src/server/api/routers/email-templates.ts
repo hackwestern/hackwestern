@@ -66,7 +66,7 @@ export const campaignTemplate = (
 // Reminder for applications that were started but not submitted
 // (scripts/send-incomplete-reminder.ts). DRAFT COPY: marketing is writing the
 // final wording; replace the strings in REMINDER_COPY when it arrives.
-export type ReminderKind = "reminder-1" | "reminder-2";
+export type ReminderKind = "reminder-1" | "reminder-2" | "rsvp-reminder";
 
 export const REMINDER_COPY: Record<
   ReminderKind,
@@ -79,6 +79,10 @@ export const REMINDER_COPY: Record<
   "reminder-2": {
     subject: "Last call: finish your Hack Western 13 application",
     when: "Applications close Sunday, October 18 at 11:59 PM ET.",
+  },
+  "rsvp-reminder": {
+    subject: "24 hours left to RSVP for Hack Western 13",
+    when: "RSVP closes in 24 hours, on Friday, November 6 at 11:59 PM ET.",
   },
 };
 
@@ -94,6 +98,24 @@ You started your Hack Western 13 application but haven't submitted it yet. ${REM
 
 Your answers are saved, so you can pick up right where you left off:
 ${APPLY_URL}
+
+Yours truly,
+The Hack Western 13 Team
+`;
+
+// Accepted hackers who haven't RSVP'd yet (rsvp-reminder).
+const RSVP_URL = "https://www.hackwestern.com/rsvp";
+
+export const rsvpReminderTemplate = (name?: string) =>
+  `<div style="word-spacing:normal;background-color:#f4f4f4"><div style="background-color:#f4f4f4"><div style="margin:0px auto;max-width:600px"><table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="width:100%"><tbody><tr><td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center"><div style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%"><table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%"><tbody><tr><td style="width:600px"><a href="https://www.hackwestern.com" target="_blank"><img alt="Hack Western 13 Banner" src="${bannerUrl}" style="border:none;display:block;outline:none;text-decoration:none;height:auto;width:100%;font-size:13px" width="600" height="auto"></a></td></tr></tbody></table></div></td></tr></tbody></table></div><div style="background:#ffffff;margin:0px auto;max-width:600px"><table align="center" border="0" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;width:100%"><tbody><tr><td style="direction:ltr;font-size:0px;padding:20px 0;text-align:center"><div style="font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%"><table border="0" cellpadding="0" cellspacing="0" role="presentation" style="vertical-align:top" width="100%"><tbody><tr><td align="left" style="font-size:0px;padding:0px 25px;word-break:break-word"><div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;text-align:left;color:#000000"><p style="margin:16px 0"><span style="color:#55575d;font-family:Verdana,Helvetica,Arial,sans-serif;font-size:13px">Hi ${name ?? "there"},</span></p><p style="margin:16px 0"><span style="color:#55575d;font-family:Verdana,Helvetica,Arial,sans-serif;font-size:13px">You've been accepted to Hack Western 13, and we haven't received your RSVP yet. ${REMINDER_COPY["rsvp-reminder"].when}</span></p><p style="margin:16px 0"><span style="color:#55575d;font-family:Verdana,Helvetica,Arial,sans-serif;font-size:13px">If you can't make it, you can decline on the same page.</span></p></div></td></tr><tr><td align="center" style="font-size:0px;padding:10px 25px 20px;word-break:break-word"><table border="0" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:separate;line-height:100%"><tbody><tr><td align="center" bgcolor="#6C3EBB" role="presentation" style="border:none;border-radius:3px;background:#6C3EBB" valign="middle"><a href="${RSVP_URL}" style="display:inline-block;background:#6C3EBB;color:#ffffff;font-family:Arial,sans-serif;font-size:13px;font-weight:normal;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;border-radius:3px"><span style="font-size:14px;">RSVP now</span></a></td></tr></tbody></table></td></tr><tr><td align="left" style="font-size:0px;padding:0px 25px;word-break:break-word"><div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;text-align:left;color:#000000"><p style="margin:16px 0"><span style="color:#55575d;font-family:Verdana,Helvetica,Arial,sans-serif;font-size:13px">Yours truly,<br/>The Hack Western 13 Team 💜</span></p></div></td></tr></tbody></table></div></td></tr></tbody></table></div></div></div>`;
+
+export const rsvpReminderText = (name?: string) =>
+  `Hi ${name ?? "there"},
+
+You've been accepted to Hack Western 13, and we haven't received your RSVP yet. ${REMINDER_COPY["rsvp-reminder"].when}
+
+RSVP here, or decline if you can't make it:
+${RSVP_URL}
 
 Yours truly,
 The Hack Western 13 Team
