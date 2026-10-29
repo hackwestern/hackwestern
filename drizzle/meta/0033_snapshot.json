@@ -1,5 +1,5 @@
 {
-  "id": "aba9726d-ffed-41b5-a8ec-1544628079e1",
+  "id": "a1a8b2f6-2c21-4e13-b53b-a1feeaa8cdca",
   "prevId": "51331617-9059-4dd2-a904-be64bcaf6cad",
   "version": "7",
   "dialect": "postgresql",
@@ -2048,6 +2048,13 @@
       "name": "team_finder_card",
       "schema": "",
       "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
         "user_id": {
           "name": "user_id",
           "type": "varchar(255)",
@@ -2198,7 +2205,15 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "team_finder_card_id_unique": {
+          "name": "team_finder_card_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

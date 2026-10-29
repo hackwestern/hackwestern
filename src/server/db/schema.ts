@@ -13,6 +13,7 @@ import {
   smallint,
   text,
   timestamp,
+  uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
@@ -383,6 +384,9 @@ export const emailReminderSent = pgTable(
 export const teamFinderCards = pgTable(
   "team_finder_card",
   {
+    // What the page and the board use to name a card. Never the user id: that
+    // is the hacker pass QR payload.
+    id: uuid("id").defaultRandom().notNull().unique(),
     userId: varchar("user_id", { length: 255 })
       .notNull()
       .primaryKey()

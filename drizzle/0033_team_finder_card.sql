@@ -1,4 +1,5 @@
 CREATE TABLE "team_finder_card" (
+	"id" uuid DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" varchar(255) PRIMARY KEY NOT NULL,
 	"shown" boolean DEFAULT false NOT NULL,
 	"needs" smallint,
@@ -16,7 +17,8 @@ CREATE TABLE "team_finder_card" (
 	"photo_key" varchar(255),
 	"hidden_by_organizer_at" timestamp (3),
 	"created_at" timestamp (3) DEFAULT now() NOT NULL,
-	"updated_at" timestamp (3) DEFAULT now() NOT NULL
+	"updated_at" timestamp (3) DEFAULT now() NOT NULL,
+	CONSTRAINT "team_finder_card_id_unique" UNIQUE("id")
 );
 --> statement-breakpoint
 ALTER TABLE "team_finder_card" ADD CONSTRAINT "team_finder_card_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
