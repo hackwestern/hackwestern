@@ -1,4 +1,4 @@
-import { isNotNull } from "drizzle-orm";
+import { and, inArray, isNotNull } from "drizzle-orm";
 import { db } from "~/server/db";
 import { teamFinderCards } from "~/server/db/schema";
 import {
@@ -33,13 +33,17 @@ export async function countCards() {
   return rows.length;
 }
 
-/** Deletes each photo, then every card row. Returns the counts. */
-export async function deleteAllCards(now = new Date()) {
+/**
+ * Deletes each photo, then the card rows: every card, or only `userIds`'
+ * (tests use that to stay off other rows). Returns the counts.
+ */
+export async function deleteAllCards(now = new Date(), userIds?: string[]) {
   refuseBeforeRetention(now);
+  const scope = userIds ? inArray(teamFinderCards.userId, userIds) : undefined;
   const withPhotos = await db
     .select({ photoKey: teamFinderCards.photoKey })
     .from(teamFinderCards)
-    .where(isNotNull(teamFinderCards.photoKey));
+    .where(and(isNotNull(teamFinderCards.photoKey), scope));
   const keys = withPhotos.map((r) => r.photoKey!);
 
   let photosDeleted = 0;
@@ -53,10 +57,9 @@ export async function deleteAllCards(now = new Date()) {
     photosSkipped = keys.length;
   }
 
-  // Every row is the point.
-  // eslint-disable-next-line drizzle/enforce-delete-with-where
   const removed = await db
     .delete(teamFinderCards)
+    .where(scope)
     .returning({ userId: teamFinderCards.userId });
   return { cards: removed.length, photosDeleted, photosSkipped };
 }

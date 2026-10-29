@@ -5,7 +5,6 @@ import { teamFinderCards, users } from "~/server/db/schema";
 import * as photos from "~/server/storage/team-finder-photos";
 import {
   RETENTION_DATE,
-  countCards,
   deleteAllCards,
   refuseBeforeRetention,
 } from "./delete-team-finder-cards";
@@ -40,30 +39,42 @@ describe("delete team finder cards (DB integration)", () => {
       .values({ userId: `${PREFIX}${tag}`, photoKey });
   }
 
+  const seeded = (...tags: string[]) => tags.map((t) => `${PREFIX}${t}`);
+  const remaining = async () =>
+    (
+      await db
+        .select({ userId: teamFinderCards.userId })
+        .from(teamFinderCards)
+        .where(like(teamFinderCards.userId, `${PREFIX}%`))
+    ).length;
+
   test("refuses before the retention date, even to apply", async () => {
     await seed("early", null);
     expect(() => refuseBeforeRetention(before)).toThrow("Refusing");
-    await expect(deleteAllCards(before)).rejects.toThrow("Refusing");
-    expect(await countCards()).toBeGreaterThanOrEqual(1);
+    await expect(deleteAllCards(before, seeded("early"))).rejects.toThrow(
+      "Refusing",
+    );
+    expect(await remaining()).toBe(1);
   });
 
-  test("deletes each photo (webp and jpg) then all rows", async () => {
+  test("deletes each photo (webp and jpg) then the rows", async () => {
     await seed("a", "team-finder/u1/a.webp");
     await seed("b", "team-finder/u2/b.jpg");
     await seed("c", null);
-    const r = await deleteAllCards(after);
-    expect(r.photosDeleted).toBeGreaterThanOrEqual(2);
+    const r = await deleteAllCards(after, seeded("a", "b", "c"));
+    expect(r).toEqual({ cards: 3, photosDeleted: 2, photosSkipped: 0 });
+    expect(photos.deletePhoto).toHaveBeenCalledTimes(2);
     expect(photos.deletePhoto).toHaveBeenCalledWith("team-finder/u1/a.webp");
     expect(photos.deletePhoto).toHaveBeenCalledWith("team-finder/u2/b.jpg");
-    expect(await countCards()).toBe(0);
+    expect(await remaining()).toBe(0);
   });
 
   test("deletes rows and counts skipped photos when storage is off", async () => {
     vi.mocked(photos.photosConfigured).mockReturnValue(false);
     await seed("a", "team-finder/u1/a.webp");
-    const r = await deleteAllCards(after);
+    const r = await deleteAllCards(after, seeded("a"));
     expect(photos.deletePhoto).not.toHaveBeenCalled();
-    expect(r.photosSkipped).toBeGreaterThanOrEqual(1);
-    expect(await countCards()).toBe(0);
+    expect(r).toEqual({ cards: 1, photosDeleted: 0, photosSkipped: 1 });
+    expect(await remaining()).toBe(0);
   });
 });
