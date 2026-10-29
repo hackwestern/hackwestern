@@ -23,6 +23,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import SEO from "~/components/seo";
+import { MAX_SKILLS, SKILLS, TEXT_LIMIT } from "~/lib/team-finder";
 import { Button } from "~/components/ui/button";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import {
@@ -65,18 +66,8 @@ type Hacker = {
   socials: Socials;
 };
 
-const SKILLS = [
-  "Frontend",
-  "Backend",
-  "Design",
-  "Hardware",
-  "ML / AI",
-  "Mobile",
-  "Pitching",
-];
 const TEAM_SIZE = 4;
 type Needs = 1 | 2;
-const MAX_SKILLS = 3;
 
 // Spike: neutral placeholder "photos" (flat illustrated avatars, drawn here).
 function fakePhoto(i: number) {
@@ -1223,7 +1214,7 @@ function CardStage({
               name="looking-for"
               autoComplete="off"
               value={c.lookingFor}
-              maxLength={100}
+              maxLength={TEXT_LIMIT}
               placeholder="A designer who likes shipping fast…"
               onChange={(e) => set("lookingFor", e.target.value)}
             />
@@ -1241,7 +1232,7 @@ function CardStage({
               autoComplete="off"
               placeholder="A live bus tracker for campus…"
               value={c.idea}
-              maxLength={100}
+              maxLength={TEXT_LIMIT}
               onChange={(e) => set("idea", e.target.value)}
             />
           </div>
