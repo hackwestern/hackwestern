@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 import { createCsvFile } from "~/utils/csv";
+import { admittedStatuses } from "~/lib/admission";
 
 export default async function handler(
   req: NextApiRequest,
@@ -79,7 +80,10 @@ async function getMlhApplications() {
         },
       },
     },
-    where: ({ status }, { eq }) => eq(status, "ACCEPTED"),
+    // Admitted hackers: once they RSVP they're CONFIRMED, and after RSVP
+    // closes an unanswered ACCEPTED no longer counts (lib/admission).
+    where: ({ status }, { inArray }) =>
+      inArray(status, [...admittedStatuses()]),
   });
 
   // Same columns as before: "school" carries the typed name instead of "Other".

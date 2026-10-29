@@ -60,11 +60,12 @@ const organizerSession = await mockOrganizerSession(db);
 const organizerCtx = createInnerTRPCContext({ session: organizerSession });
 const organizerCaller = createCaller(organizerCtx);
 
-// The scanned hacker must be approved (ACCEPTED/CONFIRMED) to be scanned.
+// The scanned hacker must be admitted to be scanned. CONFIRMED is admitted
+// on any date (ACCEPTED stops counting once RSVP closes).
 await db.insert(applications).values({
   ...ApplicationSeeder.createRandomWithoutUser(),
   userId: session.user.id,
-  status: "ACCEPTED" as const,
+  status: "CONFIRMED" as const,
 });
 
 // Tests
@@ -933,7 +934,7 @@ describe("scavengerHuntRouter scan endpoints", () => {
       await db.insert(applications).values({
         ...ApplicationSeeder.createRandomWithoutUser(),
         userId: testUser.user.id,
-        status: "ACCEPTED" as const,
+        status: "CONFIRMED" as const,
       });
 
       // Scan the item first

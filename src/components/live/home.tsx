@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import * as QRCode from "qrcode";
 import { useSession, signIn } from "next-auth/react";
 import { api } from "~/utils/api";
+import { isAdmittedStatus } from "~/lib/admission";
 
 // Format text: replace underscores with spaces and capitalize each word
 const formatTitle = (text: string | null | undefined): string => {
@@ -44,8 +45,7 @@ const Home = () => {
       { fields: ["status"] },
       { enabled: !!session?.user?.id },
     );
-  const isApproved =
-    application?.status === "ACCEPTED" || application?.status === "CONFIRMED";
+  const isApproved = isAdmittedStatus(application?.status);
 
   useEffect(() => {
     if (session?.user?.id && isApproved) {

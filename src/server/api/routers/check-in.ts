@@ -7,6 +7,7 @@ import {
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { applications, dayOfRegistrations } from "~/server/db/schema";
+import { isAdmittedStatus } from "~/lib/admission";
 
 const ACCEPTED_STATUSES = ["CONFIRMED"] as const;
 
@@ -114,8 +115,9 @@ export const checkInRouter = createTRPCRouter({
         });
       }
 
-      const isAccepted =
-        application.status === "ACCEPTED" || application.status === "CONFIRMED";
+      // Same rule as hacker passes (lib/admission): once RSVP closes, only
+      // hackers who confirmed get in.
+      const isAccepted = isAdmittedStatus(application.status);
 
       return {
         userId: application.userId,

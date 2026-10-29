@@ -2,6 +2,7 @@ import { type Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 import { type AppType } from "next/app";
 import Head from "next/head";
+import { useEffect } from "react";
 import { Figtree } from "next/font/google";
 import localFont from "next/font/local";
 import { api } from "~/utils/api";
@@ -50,6 +51,16 @@ const MyApp: AppType<{ session: Session | null }> = ({
   Component,
   pageProps: { session, ...pageProps },
 }) => {
+  // Dialogs and other portals render into <body>, outside <main>, so give
+  // <body> the font variables too or they fall back to the system font.
+  useEffect(() => {
+    document.body.classList.add(
+      figtree.variable,
+      cossetteTexte.variable,
+      pix32.variable,
+    );
+  }, []);
+
   return (
     <SessionProvider session={session}>
       {/* Site-wide default social tags. Pages that render <SEO/> override

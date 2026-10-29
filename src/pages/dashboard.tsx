@@ -261,10 +261,16 @@ const Dashboard = ({ realm, accepted, celebrate }: DashboardProps) => {
                   : "Your application has been submitted"}
               </h1>
               <p className="font-figtree text-base leading-none">
-                {/* TODO: link "here" to the RSVP page once it exists. */}
-                {accepted
-                  ? "RSVP here to confirm your attendance"
-                  : "Thank you for applying to Hack Western 13! A copy of your responses have been sent to your email."}
+                {accepted ? (
+                  <>
+                    <Link href="/rsvp" className="underline underline-offset-2">
+                      RSVP here
+                    </Link>{" "}
+                    to confirm your attendance
+                  </>
+                ) : (
+                  "Thank you for applying to Hack Western 13! A copy of your responses have been sent to your email."
+                )}
               </p>
             </div>
             <div>
@@ -352,6 +358,13 @@ export const getServerSideProps = async (
           },
         };
       }
+      // Once they've answered, the RSVP page is their home.
+      if (
+        application?.status === "CONFIRMED" ||
+        application?.status === "DECLINED"
+      ) {
+        return { redirect: { destination: "/rsvp", permanent: false } };
+      }
       if (application?.status === "ACCEPTED") {
         return {
           props: {
@@ -360,6 +373,29 @@ export const getServerSideProps = async (
             celebrate: context.query.celebrate === "1",
           },
         };
+      }
+    }
+  }
+
+  // The submitted dashboard is still off on production, but anyone with a
+  // decision to answer (or already answered) has a home: the RSVP page.
+  if (process.env.VERCEL_ENV === "production") {
+    const session = await getServerSession(
+      context.req,
+      context.res,
+      authOptions,
+    );
+    if (session) {
+      const application = await db.query.applications.findFirst({
+        where: (applications, { eq }) =>
+          eq(applications.userId, session.user.id),
+        columns: { status: true },
+      });
+      if (
+        application &&
+        ["ACCEPTED", "CONFIRMED", "DECLINED"].includes(application.status)
+      ) {
+        return { redirect: { destination: "/rsvp", permanent: false } };
       }
     }
   }

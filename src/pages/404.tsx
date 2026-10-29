@@ -54,10 +54,12 @@ export default function NotFound() {
           ))}
         </p>
 
-        <div className="absolute inset-x-0 top-0">
+        {/* The strip art has padding baked into its box; nudge each strip
+            flush with its edge (same as the RSVP page). */}
+        <div className="absolute inset-x-0 top-0 -translate-y-[6px]">
           <FilmStrip />
         </div>
-        <div className="absolute inset-x-0 bottom-0 hidden md:block">
+        <div className="absolute inset-x-0 bottom-0 hidden translate-y-[10px] md:block">
           <FilmStrip />
         </div>
 

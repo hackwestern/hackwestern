@@ -123,6 +123,9 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       emergencyContactPhoneNumber: "519-936-5950",
 
       transportationMethod: null,
+      travelReimbursement: null,
+      travelFrom: null,
+      enrollmentConfirmedAt: null,
     };
 
     const isComplete = applicationSubmitSchema.safeParse(application).success;
