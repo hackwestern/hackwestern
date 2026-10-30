@@ -639,7 +639,9 @@ function CompactRow({
         aria-expanded={open}
         aria-controls={detailsId}
         onClick={() => setOpen((v) => !v)}
-        className={`flex w-full scroll-mb-24 scroll-mt-36 items-center gap-3 px-4 py-3 text-left hover:bg-[#faf7fc] ${FOCUS} focus-visible:ring-inset focus-visible:ring-offset-0`}
+        // Hover tint only where there's a mouse: a tap leaves :hover stuck on
+        // phones, which tinted half of an open row.
+        className={`flex w-full scroll-mb-24 scroll-mt-36 items-center gap-3 px-4 py-3 text-left [@media(hover:hover)]:hover:bg-[#faf7fc] ${FOCUS} focus-visible:ring-inset focus-visible:ring-offset-0`}
       >
         <Avatar
           horseId={entry.horseId}
@@ -666,7 +668,8 @@ function CompactRow({
               {entry.school ? `, ${entry.school}` : ""}
             </span>
           </span>
-          {entry.lookingFor && (
+          {/* Once open, the details below show these in full. */}
+          {!open && entry.lookingFor && (
             <span className="mt-1 block truncate text-sm text-heavy">
               <span className="font-semibold">
                 {entry.needs ? "Needs " : "Wants "}
@@ -674,7 +677,9 @@ function CompactRow({
               {lowerFirst(entry.lookingFor)}
             </span>
           )}
-          <span className="mt-1.5 flex flex-wrap gap-1">
+          <span
+            className={`mt-1.5 flex-wrap gap-1 ${open ? "hidden" : "flex"}`}
+          >
             {entry.firstHackathon && (
               <span className="inline-flex items-center gap-1 rounded bg-[#f2eff5] px-1.5 py-px text-xs font-medium text-heavy">
                 <Sparkles aria-hidden className="h-3 w-3 text-[#7a4aa3]" />
