@@ -633,13 +633,7 @@ function CompactRow({
   const room = entry.firstHackathon ? 1 : 2;
   const extra = entry.skills.length - room;
   return (
-    <li
-      className={
-        muted
-          ? "outline-dashed outline-2 -outline-offset-4 outline-[#a16bc7]"
-          : ""
-      }
-    >
+    <li className={muted ? "bg-[#f7f2fb] shadow-[inset_3px_0_0_#a16bc7]" : ""}>
       <button
         type="button"
         aria-expanded={open}
