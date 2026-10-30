@@ -90,7 +90,19 @@ describe("/rsvp", () => {
         deadlineText: expect.stringMatching(
           /^Friday, November 6 at 11:59\sp\.m\. ET$/,
         ) as string,
+        teamFinder: false,
       },
+    });
+  });
+
+  test("confirmed: links the team finder only once it opens", async () => {
+    await apply("CONFIRMED");
+    expect(await rsvpProps(ctx("/rsvp"))).toMatchObject({
+      props: { status: "CONFIRMED", teamFinder: false },
+    });
+    vi.spyOn(Date, "now").mockReturnValue(RSVP_DEADLINE.getTime());
+    expect(await rsvpProps(ctx("/rsvp"))).toMatchObject({
+      props: { status: "CONFIRMED", teamFinder: true },
     });
   });
 
