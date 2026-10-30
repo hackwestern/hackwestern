@@ -66,6 +66,13 @@ export const env = createEnv({
     R2_BUCKET_NAME: z.string(),
     // Public base URL where objects are accessible, e.g. https://pub-XXXXXXXX.r2.dev or a custom domain
     R2_PUBLIC_BASE_URL: z.string().url(),
+    // Private bucket for team finder photos; unset disables photo upload
+    TEAM_FINDER_R2_BUCKET: z.string().optional(),
+    TEAM_FINDER_R2_ACCESS_KEY_ID: z.string().optional(),
+    TEAM_FINDER_R2_SECRET_ACCESS_KEY: z.string().optional(),
+    // ISO 8601 datetime the team finder opens for hackers; unset = when RSVP
+    // closes. Only for smoke testing on Vercel Preview, never production.
+    TEAM_FINDER_OPENS_AT: z.string().datetime({ offset: true }).optional(),
     // Google Sheets API key for fetching schedule data
     GOOGLE_SHEETS_API_KEY: z.string().optional(),
     GITHUB_TOKEN: z.string().optional(),
@@ -136,6 +143,11 @@ export const env = createEnv({
     R2_ENDPOINT: process.env.R2_ENDPOINT,
     R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
     R2_PUBLIC_BASE_URL: process.env.R2_PUBLIC_BASE_URL,
+    TEAM_FINDER_R2_BUCKET: process.env.TEAM_FINDER_R2_BUCKET,
+    TEAM_FINDER_R2_ACCESS_KEY_ID: process.env.TEAM_FINDER_R2_ACCESS_KEY_ID,
+    TEAM_FINDER_R2_SECRET_ACCESS_KEY:
+      process.env.TEAM_FINDER_R2_SECRET_ACCESS_KEY,
+    TEAM_FINDER_OPENS_AT: process.env.TEAM_FINDER_OPENS_AT,
     GOOGLE_SHEETS_API_KEY: process.env.GOOGLE_SHEETS_API_KEY,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     HACK_START: process.env.HACK_START,
