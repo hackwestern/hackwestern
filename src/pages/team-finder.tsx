@@ -1506,12 +1506,13 @@ function Filters({
     </div>
   );
 
-  // Frosted chips so they read over the photo; the one accent fills a chip that's on.
+  // Frosted chips; the one accent fills a chip that's on. Below the rail they
+  // sit in one row you swipe sideways, edge to edge, instead of three rows.
   const chips = (
     <div
       role="group"
       aria-label="Can do"
-      className={`flex flex-wrap items-center gap-1.5 ${rail ? "" : "lg:hidden"}`}
+      className={`flex items-center gap-1.5 ${rail ? "flex-wrap" : "-mx-5 flex-nowrap overflow-x-auto px-5 py-1 [scrollbar-width:none] sm:-mx-8 sm:px-8 lg:hidden [&::-webkit-scrollbar]:hidden"}`}
     >
       <span
         className={`mr-1 shrink-0 text-sm font-semibold text-white ${rail ? "w-full" : ""}`}
@@ -1541,7 +1542,9 @@ function Filters({
   );
 
   const tip = (
-    <p className={`text-sm text-white/75 ${rail ? "pt-1" : "lg:hidden"}`}>
+    <p
+      className={`text-white/75 ${rail ? "pt-1 text-sm" : "text-[13px] lg:hidden"}`}
+    >
       Tip: add people on Discord as a friend. Instagram DMs land in requests.
     </p>
   );
