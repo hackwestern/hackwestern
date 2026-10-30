@@ -668,7 +668,8 @@ function CompactRow({
               {entry.school ? `, ${entry.school}` : ""}
             </span>
           </span>
-          {entry.lookingFor && (
+          {/* Once open, the details below show these in full. */}
+          {!open && entry.lookingFor && (
             <span className="mt-1 block truncate text-sm text-heavy">
               <span className="font-semibold">
                 {entry.needs ? "Needs " : "Wants "}
@@ -676,7 +677,9 @@ function CompactRow({
               {lowerFirst(entry.lookingFor)}
             </span>
           )}
-          <span className="mt-1.5 flex flex-wrap gap-1">
+          <span
+            className={`mt-1.5 flex-wrap gap-1 ${open ? "hidden" : "flex"}`}
+          >
             {entry.firstHackathon && (
               <span className="inline-flex items-center gap-1 rounded bg-[#f2eff5] px-1.5 py-px text-xs font-medium text-heavy">
                 <Sparkles aria-hidden className="h-3 w-3 text-[#7a4aa3]" />
