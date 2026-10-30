@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
+import { signOut } from "next-auth/react";
 import { TRPCClientError } from "@trpc/client";
 import {
   type ReactNode,
@@ -1579,6 +1580,8 @@ type TeamFinderProps = {
   access: Access;
   /** When RSVP closes, formatted on the server. */
   deadlineText: string;
+  /** Their own email, only when they're turned away: catches a wrong account. */
+  email: string | null;
 };
 
 const BACKDROP = "#1f1029";
@@ -1603,7 +1606,48 @@ function rememberSkip() {
 const photosUnavailable = (e: unknown) =>
   e instanceof TRPCClientError && e.message === "photos-unavailable";
 
-export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
+/**
+ * A blurred stand-in for the board behind the "not yet"/"not for you" screens,
+ * so they show what's here without loading anyone's card.
+ */
+function BoardTeaser() {
+  return (
+    // The fade sits on a padded wrapper so the blur's soft edge isn't clipped.
+    <div
+      aria-hidden
+      className="pointer-events-none -mx-4 mt-8 select-none p-4 [mask-image:linear-gradient(to_bottom,transparent,black_25%,black_45%,transparent_95%)]"
+    >
+      <div className="grid grid-cols-1 gap-4 opacity-70 blur-[5px] sm:grid-cols-2 lg:grid-cols-3">
+        {[3, 7, 1, 12, 5, 9].map((horseId, i) => (
+          <div
+            key={horseId}
+            className={`flex flex-col gap-3 rounded-xl bg-white p-4 ${i >= 3 ? "hidden sm:flex" : ""}`}
+          >
+            <div className="flex items-center gap-3.5">
+              <Avatar horseId={horseId} className="h-16 w-16" />
+              <div className="flex flex-1 flex-col gap-2">
+                <div className="h-4 w-2/3 rounded-full bg-gray-2" />
+                <div className="h-3 w-1/2 rounded-full bg-gray-1" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <div className="h-6 w-20 rounded-md bg-[#f2eff5]" />
+              <div className="h-6 w-16 rounded-md bg-[#f2eff5]" />
+            </div>
+            <div className="h-3 w-full rounded-full bg-gray-1" />
+            <div className="h-3 w-4/5 rounded-full bg-gray-1" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function TeamFinder({
+  access,
+  deadlineText,
+  email,
+}: TeamFinderProps) {
   const router = useRouter();
   // ?realm=ocean|mountain|desert previews the other realm photos.
   const realm: Realm = realms.includes(router.query.realm as Realm)
@@ -1990,6 +2034,41 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
                         : `Message anyone who looks like a fit. Teams can have up to ${TEAM_SIZE} people.`}
                 </p>
               )}
+              {access === "not-confirmed" && (
+                <>
+                  <p className="mt-3 text-pretty text-[17px] leading-relaxed">
+                    It’s open to hackers who confirmed their spot for Hack
+                    Western 13.
+                    {email && (
+                      <>
+                        {" "}
+                        You’re signed in as{" "}
+                        <span className="font-semibold">{email}</span>.
+                      </>
+                    )}
+                  </p>
+                  <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+                    <Button
+                      asChild
+                      variant="primary"
+                      className="h-12 min-h-0 px-6 py-0 font-figtree font-medium"
+                    >
+                      <Link href="/dashboard">Go to your dashboard</Link>
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void signOut({
+                          callbackUrl: "/login?callbackUrl=%2Fteam-finder",
+                        })
+                      }
+                      className={`rounded-sm text-[15px] font-semibold underline underline-offset-4 hover:text-[#e1c8fa] ${FOCUS} focus-visible:ring-offset-transparent`}
+                    >
+                      Use a different account
+                    </button>
+                  </div>
+                </>
+              )}
               {stage === "card" && !card && !failed && (
                 <button
                   type="button"
@@ -2001,6 +2080,8 @@ export default function TeamFinder({ access, deadlineText }: TeamFinderProps) {
               )}
             </div>
           </header>
+
+          {!open && <BoardTeaser />}
 
           {!loaded || failed ? null : stage === "card" ? (
             <CardStage
@@ -2183,15 +2264,17 @@ export const getServerSideProps = async (
     };
   }
 
-  const access = await getTeamFinderAccess(session.user.id);
+  const result = await getTeamFinderAccess(session.user.id);
+  const access: Access = result.ok
+    ? result.role
+    : result.reason === "not-open" || result.reason === "closed"
+      ? result.reason
+      : "not-confirmed";
   return {
     props: {
-      access: access.ok
-        ? access.role
-        : access.reason === "not-open" || access.reason === "closed"
-          ? access.reason
-          : "not-confirmed",
+      access,
       deadlineText: formatRsvpDeadline(),
+      email: access === "not-confirmed" ? (session.user.email ?? null) : null,
     } satisfies TeamFinderProps,
   };
 };

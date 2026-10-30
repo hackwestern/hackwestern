@@ -89,6 +89,20 @@ describe("/team-finder", () => {
     expect(await access()).toBe("not-confirmed");
   });
 
+  test("turned away: shown their own email, to spot a wrong account", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(AFTER);
+    await apply("ACCEPTED");
+    const props = (await getServerSideProps(ctx())).props;
+    expect(props?.email).toBe(session.user.email);
+  });
+
+  test("let in: no email in the props", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(AFTER);
+    await apply("CONFIRMED");
+    const props = (await getServerSideProps(ctx())).props;
+    expect(props?.email).toBeNull();
+  });
+
   test("once the cards are deleted: closed, even for organizers", async () => {
     vi.spyOn(Date, "now").mockReturnValue(RETENTION_DATE.getTime());
     await apply("CONFIRMED");
