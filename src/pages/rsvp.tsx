@@ -34,6 +34,7 @@ import { type Realm, realmTint } from "~/constants/realms";
 import { formatRsvpDeadline, isPastRsvpDeadline } from "~/lib/date";
 import { describeTravel, rsvpView } from "~/lib/rsvp-view";
 import { authOptions } from "~/server/auth";
+import { getTeamFinderAccess } from "~/server/api/utils/team-finder-access";
 import { db } from "~/server/db";
 import { api } from "~/utils/api";
 
@@ -62,6 +63,8 @@ type RsvpProps = {
    */
   closed: boolean;
   deadlineText: string;
+  /** Confirmed and the team finder is open: link to it. */
+  teamFinder: boolean;
 };
 
 // Just the travel answer, from whatever holds it (the saved application or
@@ -84,6 +87,7 @@ const Rsvp = ({
   celebrate,
   closed,
   deadlineText,
+  teamFinder,
 }: RsvpProps) => {
   const router = useRouter();
   const [status, setStatus] = useState<PageStatus>(initialStatus);
@@ -447,6 +451,14 @@ const Rsvp = ({
             </div>
           )}
 
+          {status === "CONFIRMED" && teamFinder && (
+            <div>
+              <Button variant="primary" asChild className={RSVP_BUTTON}>
+                <Link href="/team-finder">Find a team</Link>
+              </Button>
+            </div>
+          )}
+
           {status === "CONFIRMED" && (
             <div className="text-sm text-[#d7e2ef]">
               Can’t make it anymore?{" "}
@@ -551,6 +563,9 @@ export const getServerSideProps = async (
     columns: { status: true, realm: true },
   });
   const hasRsvp = !!application && RSVP_STATUSES.includes(application.status);
+  const teamFinder =
+    application?.status === "CONFIRMED" &&
+    (await getTeamFinderAccess(session.user.id)).ok;
 
   return {
     props: {
@@ -563,6 +578,7 @@ export const getServerSideProps = async (
         application?.status === "ACCEPTED" && context.query.celebrate === "1",
       closed: isPastRsvpDeadline(),
       deadlineText: formatRsvpDeadline(),
+      teamFinder,
     } satisfies RsvpProps,
   };
 };
