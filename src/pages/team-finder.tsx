@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Head from "next/head";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
 import { signOut } from "next-auth/react";
@@ -55,7 +54,7 @@ import {
   DialogTrigger,
 } from "~/components/ui/dialog";
 import { FilmStrip } from "~/components/promo/film-strip";
-import { getHorse, realmTint, realms, type Realm } from "~/constants/realms";
+import { getHorse } from "~/constants/realms";
 import {
   canBeMessaged,
   contactHref,
@@ -120,8 +119,6 @@ const FOCUS =
 const FIELD = `w-full rounded-lg border border-gray-2 bg-white px-3 py-2.5 font-figtree text-base text-heavy placeholder:text-gray-3 focus:border-[#a16bc7] focus:outline-none focus:ring-2 focus:ring-[#e1c8fa]`;
 const PHOTO_NOTE =
   "rounded-xl bg-black/60 px-3 py-2 text-sm text-white backdrop-blur-sm";
-const ON_PHOTO =
-  "[text-shadow:0_1px_3px_rgba(0,0,0,0.5),0_0_18px_rgba(0,0,0,0.35)]";
 
 type Filter = "everyone" | "solo" | "groups";
 
@@ -1615,27 +1612,37 @@ function BoardTeaser() {
     // The fade sits on a padded wrapper so the blur's soft edge isn't clipped.
     <div
       aria-hidden
-      className="pointer-events-none -mx-4 mt-8 select-none p-4 [mask-image:linear-gradient(to_bottom,transparent,black_25%,black_45%,transparent_95%)]"
+      className="pointer-events-none -mx-4 mt-8 select-none p-4 [mask-image:linear-gradient(to_bottom,black_35%,transparent)]"
     >
-      <div className="grid grid-cols-1 gap-4 opacity-70 blur-[5px] sm:grid-cols-2 lg:grid-cols-3">
+      {/* Frosted glass cards in the backdrop's colours, not white ones faded
+          to grey. */}
+      <div className="grid grid-cols-1 gap-4 blur-[2px] sm:grid-cols-2 lg:grid-cols-3">
         {[3, 7, 1, 12, 5, 9].map((horseId, i) => (
           <div
             key={horseId}
-            className={`flex flex-col gap-3 rounded-xl bg-white p-4 ${i >= 3 ? "hidden sm:flex" : ""}`}
+            className={`flex flex-col gap-3 rounded-xl bg-white/[0.07] p-4 ring-1 ring-inset ring-white/15 ${i >= 3 ? "hidden sm:flex" : ""}`}
           >
             <div className="flex items-center gap-3.5">
-              <Avatar horseId={horseId} className="h-16 w-16" />
+              <div className="h-16 w-16 shrink-0 rounded-2xl bg-white/10 p-1.5">
+                <Image
+                  src={getHorse(horseId)?.asset ?? "/apply/realm/safari-1.png"}
+                  alt=""
+                  width={96}
+                  height={96}
+                  className="h-full w-full object-contain opacity-60"
+                />
+              </div>
               <div className="flex flex-1 flex-col gap-2">
-                <div className="h-4 w-2/3 rounded-full bg-gray-2" />
-                <div className="h-3 w-1/2 rounded-full bg-gray-1" />
+                <div className="h-4 w-2/3 rounded-full bg-white/25" />
+                <div className="h-3 w-1/2 rounded-full bg-white/15" />
               </div>
             </div>
             <div className="flex gap-2">
-              <div className="h-6 w-20 rounded-md bg-[#f2eff5]" />
-              <div className="h-6 w-16 rounded-md bg-[#f2eff5]" />
+              <div className="h-6 w-20 rounded-md bg-white/10" />
+              <div className="h-6 w-16 rounded-md bg-white/10" />
             </div>
-            <div className="h-3 w-full rounded-full bg-gray-1" />
-            <div className="h-3 w-4/5 rounded-full bg-gray-1" />
+            <div className="h-3 w-full rounded-full bg-white/10" />
+            <div className="h-3 w-4/5 rounded-full bg-white/10" />
           </div>
         ))}
       </div>
@@ -1648,11 +1655,6 @@ export default function TeamFinder({
   deadlineText,
   email,
 }: TeamFinderProps) {
-  const router = useRouter();
-  // ?realm=ocean|mountain|desert previews the other realm photos.
-  const realm: Realm = realms.includes(router.query.realm as Realm)
-    ? (router.query.realm as Realm)
-    : "safari";
   const open = access === "hacker" || access === "organizer";
   const organizer = access === "organizer";
 
@@ -1945,28 +1947,6 @@ export default function TeamFinder({
           className="absolute inset-0"
           style={{ background: BACKDROP }}
         />
-        {/* The realm photo only behind the page header, fading into the backdrop. */}
-        <div
-          aria-hidden
-          className={`absolute inset-x-0 top-0 overflow-hidden ${board ? "h-[260px] md:h-[250px]" : "h-[420px] md:h-[480px]"}`}
-        >
-          <Image
-            src={realmTint[realm].background}
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover"
-            draggable={false}
-          />
-          <div className="absolute inset-0 bg-black/35" />
-          <div
-            className="absolute inset-x-0 bottom-0 h-3/4"
-            style={{
-              background: `linear-gradient(to bottom, transparent, ${BACKDROP})`,
-            }}
-          />
-        </div>
         <div className="pointer-events-none fixed inset-x-0 top-0 z-20 -translate-y-[6px]">
           <FilmStrip />
         </div>
@@ -1979,7 +1959,7 @@ export default function TeamFinder({
         >
           {/* Hidden until the data decides which step to show. */}
           <header
-            className={`flex items-start gap-4 text-white sm:gap-5 ${ON_PHOTO} ${open && !failed && !loaded ? "invisible" : ""}`}
+            className={`flex items-start gap-4 text-white sm:gap-5 ${open && !failed && !loaded ? "invisible" : ""}`}
           >
             <Link
               href="/"
