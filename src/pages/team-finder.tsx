@@ -639,7 +639,9 @@ function CompactRow({
         aria-expanded={open}
         aria-controls={detailsId}
         onClick={() => setOpen((v) => !v)}
-        className={`flex w-full scroll-mb-24 scroll-mt-36 items-center gap-3 px-4 py-3 text-left hover:bg-[#faf7fc] ${FOCUS} focus-visible:ring-inset focus-visible:ring-offset-0`}
+        // Hover tint only where there's a mouse: a tap leaves :hover stuck on
+        // phones, which tinted half of an open row.
+        className={`flex w-full scroll-mb-24 scroll-mt-36 items-center gap-3 px-4 py-3 text-left [@media(hover:hover)]:hover:bg-[#faf7fc] ${FOCUS} focus-visible:ring-inset focus-visible:ring-offset-0`}
       >
         <Avatar
           horseId={entry.horseId}
