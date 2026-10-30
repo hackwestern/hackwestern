@@ -25,6 +25,7 @@ export default function Login() {
   // someone off-site right after they sign in.
   const callbackUrl =
     safeCallbackPath(router.query.callbackUrl) ?? "/dashboard";
+  const forTeamFinder = callbackUrl.startsWith("/team-finder");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -54,7 +55,14 @@ export default function Login() {
         description="Sign in to your Hack Western account. Hack Western is one of Canada's largest student-run hackathons at Western University."
       />
 
-      <AuthLayout title="Sign into your account">
+      <AuthLayout
+        title={
+          forTeamFinder ? "Sign in to find your team" : "Sign into your account"
+        }
+        subtitle={
+          forTeamFinder ? "Use the account you applied with." : undefined
+        }
+      >
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
             <label

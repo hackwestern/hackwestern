@@ -6,6 +6,8 @@ import { cn } from "~/lib/utils";
 
 export interface AuthLayoutProps {
   title?: string;
+  /** One line under the title. */
+  subtitle?: string;
   windowTitle?: string;
   children: React.ReactNode;
   windowClassName?: string;
@@ -13,6 +15,7 @@ export interface AuthLayoutProps {
 
 export function AuthLayout({
   title,
+  subtitle,
   windowTitle = "Hack Western 13: Discover the Unknown",
   children,
   windowClassName,
@@ -45,9 +48,14 @@ export function AuthLayout({
         >
           <div className="relative flex flex-col gap-8">
             {title && (
-              <h1 className="font-figtree text-sm-display font-bold text-gray-5">
-                {title}
-              </h1>
+              <div>
+                <h1 className="font-figtree text-sm-display font-bold text-gray-5">
+                  {title}
+                </h1>
+                {subtitle && (
+                  <p className="mt-2 font-figtree text-gray-4">{subtitle}</p>
+                )}
+              </div>
             )}
             {children}
           </div>
