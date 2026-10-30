@@ -222,7 +222,7 @@ function DiscordIcon({ className = "" }: { className?: string }) {
   );
 }
 
-const ICON_BTN = `inline-flex h-8 w-8 items-center justify-center rounded-md text-medium hover:bg-[#f3eefa] hover:text-heavy ${FOCUS}`;
+const ICON_BTN = `inline-flex h-10 w-10 items-center sm:h-8 sm:w-8 justify-center rounded-md text-medium hover:bg-[#f3eefa] hover:text-heavy ${FOCUS}`;
 // Small dark chips: no labels, no big buttons, kept inside the viewport.
 const CHIP = `w-auto max-w-[min(20rem,calc(100vw-1.5rem))] rounded-lg border-0 bg-[#1f1029] px-3 py-2 font-figtree text-[13px] text-white shadow-lg`;
 const CHIP_BTN = `rounded-sm font-semibold text-white/90 underline-offset-4 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80`;
@@ -474,6 +474,7 @@ function EntryCard({
           <DialogContent
             ref={dialogRef}
             tabIndex={-1}
+            aria-describedby={undefined}
             onOpenAutoFocus={(e) => {
               e.preventDefault();
               dialogRef.current?.focus();
@@ -1371,7 +1372,7 @@ function ReportCard({ cardId }: { cardId: string }) {
       }}
     >
       <PopoverTrigger
-        className={`rounded-sm text-[13px] font-semibold text-medium underline-offset-4 hover:text-heavy hover:underline ${FOCUS}`}
+        className={`rounded-sm px-2 py-2 text-[13px] font-semibold text-medium underline-offset-4 hover:text-heavy hover:underline sm:p-0 ${FOCUS}`}
       >
         Report
       </PopoverTrigger>
@@ -1399,6 +1400,8 @@ function ReportCard({ cardId }: { cardId: string }) {
             </label>
             <textarea
               id={noteId}
+              name="note"
+              autoComplete="off"
               rows={3}
               maxLength={500}
               value={note}
@@ -1523,7 +1526,7 @@ function Filters({
             type="button"
             aria-pressed={on}
             onClick={() => onToggle(c)}
-            className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors motion-reduce:transition-none ${FOCUS} focus-visible:ring-offset-transparent ${
+            className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1.5 text-[13px] font-semibold transition-colors motion-reduce:transition-none sm:py-1 ${FOCUS} focus-visible:ring-offset-transparent ${
               on
                 ? "border-[#7a4aa3] bg-[#7a4aa3] text-white"
                 : "border-white/40 bg-white/15 text-white backdrop-blur-md hover:border-white/70 hover:bg-white/25"
@@ -2098,7 +2101,7 @@ export default function TeamFinder({
                       Who’s looking
                     </h2>
                     {everyone.length > 0 && (
-                      <p className="text-sm font-semibold">
+                      <p className="text-sm font-semibold tabular-nums">
                         {everyone.length}{" "}
                         {everyone.length === 1 ? "hacker" : "hackers"} so far
                         {groups > 0 && `, ${groups} of them in groups`}
