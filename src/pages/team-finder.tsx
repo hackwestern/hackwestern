@@ -1506,7 +1506,7 @@ function Filters({
     </div>
   );
 
-  // Outline chips; the one accent fills a chip that's on.
+  // Frosted chips so they read over the photo; the one accent fills a chip that's on.
   const chips = (
     <div
       role="group"
@@ -1529,7 +1529,7 @@ function Filters({
             className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1 text-[13px] font-semibold transition-colors motion-reduce:transition-none ${FOCUS} focus-visible:ring-offset-transparent ${
               on
                 ? "border-[#7a4aa3] bg-[#7a4aa3] text-white"
-                : "border-white/35 text-white hover:border-white/70"
+                : "border-white/40 bg-white/15 text-white backdrop-blur-md hover:border-white/70 hover:bg-white/25"
             }`}
           >
             {c === FIRST && <Sparkles aria-hidden className="h-3 w-3" />}
