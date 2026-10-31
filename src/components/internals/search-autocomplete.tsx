@@ -236,7 +236,7 @@ const SearchAutocomplete = React.forwardRef<
                     index === activeIndex ? "bg-highlight" : "bg-transparent",
                   )}
                 >
-                  <span className="p2 text-medium">
+                  <span className="p2 text-medium font-figtree">
                     {highlightMatch(option.label, debouncedQuery)}
                   </span>
                   {option.description && (
