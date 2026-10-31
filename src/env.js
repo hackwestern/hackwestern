@@ -75,6 +75,19 @@ export const env = createEnv({
     TEAM_FINDER_OPENS_AT: z.string().datetime({ offset: true }).optional(),
     // Google Sheets API key for fetching schedule data
     GOOGLE_SHEETS_API_KEY: z.string().optional(),
+    // Sponsor judging Google Sheet ("Judging" tab: sponsor id in column A,
+    // comma-separated chosen team ids in column B)
+    SPONSOR_JUDGING_SHEET: z.string().optional(),
+    // Master sponsor sheet (source of truth for sponsor names). Column A is
+    // "Company Name"; sponsorJudging.syncSponsors reads it to seed private links
+    SPONSOR_MASTER_SHEET: z.string().optional(),
+    // Tab on the master sponsor sheet holding the acquired-sponsors table
+    // (default "HW 13 Sponsors"; header row is found by scanning for
+    // "Company Name" in column A)
+    SPONSOR_MASTER_SHEET_TAB: z.string().optional(),
+    // Dedicated service account for sponsor judging Sheets access
+    SPONSOR_SHEETS_CLIENT_EMAIL: z.string().optional(),
+    SPONSOR_SHEETS_PRIVATE_KEY: z.string().optional(),
     GITHUB_TOKEN: z.string().optional(),
     // ISO 8601 datetime strings for the hacking window used in commit-timing cheat checks
     HACK_START: z.string().datetime().optional(),
@@ -149,6 +162,11 @@ export const env = createEnv({
       process.env.TEAM_FINDER_R2_SECRET_ACCESS_KEY,
     TEAM_FINDER_OPENS_AT: process.env.TEAM_FINDER_OPENS_AT,
     GOOGLE_SHEETS_API_KEY: process.env.GOOGLE_SHEETS_API_KEY,
+    SPONSOR_JUDGING_SHEET: process.env.SPONSOR_JUDGING_SHEET,
+    SPONSOR_MASTER_SHEET: process.env.SPONSOR_MASTER_SHEET,
+    SPONSOR_MASTER_SHEET_TAB: process.env.SPONSOR_MASTER_SHEET_TAB,
+    SPONSOR_SHEETS_CLIENT_EMAIL: process.env.SPONSOR_SHEETS_CLIENT_EMAIL,
+    SPONSOR_SHEETS_PRIVATE_KEY: process.env.SPONSOR_SHEETS_PRIVATE_KEY,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     HACK_START: process.env.HACK_START,
     HACK_END: process.env.HACK_END,

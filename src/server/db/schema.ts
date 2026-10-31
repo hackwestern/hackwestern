@@ -1133,3 +1133,16 @@ export const scavengerHuntRedemptions = pgTable(
   },
   (t) => [index("redemption_user_idx").on(t.userId)],
 );
+
+// Sponsor judging: maps a private UUID (handed to a sponsor as their URL) to
+// the sponsor's name as spelled in the master sheet. The judging Google Sheet
+// itself keeps storing the name in column A; the UUID never appears there.
+export const sponsorJudgingSponsors = pgTable("sponsor_judging_sponsor", {
+  id: uuid("id").defaultRandom().notNull().primaryKey(),
+  // Must match the "Company Name" spelling in the master sheet, since this is
+  // what the judging sheet rows are keyed on.
+  name: varchar("name", { length: 255 }).notNull().unique(),
+  createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
