@@ -244,7 +244,7 @@ export const dashboardColors = {
     heavy: "#0b2b4a",
     medium: "#1c3550",
     light: "#516476",
-    placeholder: "rgba(81,100,118,0.7)", 
+    placeholder: "rgba(81,100,118,0.7)",
     disabled: "rgba(81,100,118,0.5)",
     inverse: "#ffffff",
     link: "#0b6bc4",
@@ -296,7 +296,7 @@ export const dashboardColors = {
 export const dashboardTypography = {
   display: {
     fontFamily: fonts.figtree,
-    fontWeight: "700", 
+    fontWeight: "700",
     fontSize: "48px",
     lineHeight: "120%",
     letterSpacing: "0%",
@@ -486,7 +486,7 @@ export const dashboardShadows = {
     "0px 1px 4px 0px rgba(11,43,74,0.05)",
   ].join(", "),
   primaryButton: "0px 2px 4px 0px rgba(11,43,74,0.2)",
-  secondaryButton: "0px 2px 8px 0px rgba(0,0,0,0.12)", 
+  secondaryButton: "0px 2px 8px 0px rgba(0,0,0,0.12)",
 } as const;
 
 export const dashboardBlur = {
