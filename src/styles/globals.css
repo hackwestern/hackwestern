@@ -12,23 +12,11 @@ html {
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
 
-    --beige: #f7f3ef;
     --lilac: #e1c8fa;
-    --salmon: #ffd2b4;
-    --coral: #ffb6a1;
-    --faint-lilac: #f6f3f9;
 
-    --heavy: #3d214c;
-    --medium: #776780;
-    --light: #bbb3c0;
     --emphasis: #a16bc7;
-    --active: #f0e9f7;
 
-    --offwhite: #fafafb; /* bg-white */
-    --highlight: #f5f2f6;
-    --tinted: #eee2fb;
     --border-light: #fffefe;
 
     --primary-50: 260, 100%, 99%;
@@ -48,16 +36,15 @@ html {
     --violet-200: 250, 33%, 91%;
     --violet-300: 248, 28%, 79%;
     --violet-400: 247, 30%, 70%;
-    --violet-500: 247, 14%, 52%;
     --violet-600: 247, 15%, 34%;
 
-    --secondary: #625679;
+    --secondary: 260.6, 16.9%, 40.6%;
 
     --muted: var(--violet-200);
     --muted-foreground: var(--violet-400);
 
     --accent: var(--violet-300);
-    --accent-foreground: var(--violet-800);
+    --accent-foreground: var(--primary-800);
 
     --destructive: 0 84.2% 60.2%;
     --destructive-dark: 0 72.2% 50.6%;
@@ -85,7 +72,6 @@ html {
     --foreground: 210 40% 98%;
 
     --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
 
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
@@ -94,7 +80,6 @@ html {
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
@@ -136,11 +121,6 @@ html {
       padding: 0;
       height: 100%;
       overflow-x: hidden;
-    }
-
-    /* Allow focus rings to overflow into padding */
-    .form-input-mobile {
-      box-sizing: border-box;
     }
   }
 }
@@ -226,55 +206,6 @@ html {
   }
 }
 @layer utilities {
-  @keyframes cloud-scroll-left {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(-100vw);
-    }
-  }
-
-  @keyframes cloud-scroll-right {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(100vw);
-    }
-  }
-
-  @keyframes cloud-scroll-right-from-left {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(calc(100vw + 12vw));
-    }
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .cloud-scroll-left {
-      animation: cloud-scroll-left 95s linear 5s infinite;
-    }
-
-    .cloud-scroll-right {
-      animation: cloud-scroll-right 70s linear 5s infinite;
-    }
-
-    .cloud-scroll-right-from-left {
-      animation: cloud-scroll-right-from-left 70s linear 5s infinite;
-    }
-
-    .cloud-scroll-right-slow {
-      animation: cloud-scroll-right 95s linear 5s infinite;
-    }
-  }
-
-  .cloud-scroll-right-from-left-copy {
-    right: calc(100vw + 12vw);
-  }
-
   @supports (-moz-appearance: none) {
     .scrollbar {
       scrollbar-width: thin;
@@ -299,7 +230,7 @@ html {
 
   .scrollbar::-webkit-scrollbar-track {
     border-radius: 100vh;
-    background: #d19aee1a;
+    background: transparent;
   }
 
   .scrollbar::-webkit-scrollbar-thumb {
@@ -311,119 +242,6 @@ html {
     background: #d19aee;
     border-radius: 100vh;
   }
-}
-
-@layer utilities {
-  @supports (-moz-appearance: none) {
-    .scrollbar {
-      scrollbar-width: thin;
-      scrollbar-color: #d19aee transparent;
-    }
-  }
-
-  .scrollbar::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
-
-  .scrollbar::-webkit-scrollbar-track {
-    border-radius: 100vh;
-    background: transparent;
-  }
-
-  .scrollbar::-webkit-scrollbar-thumb {
-    background: #d19aee;
-    border-radius: 100vh;
-  }
-}
-
-/*
- * Realm-tinted form area: scoped to the form content only (the Window
- * footer + ApplyNavigation sit outside this class so the Back/Next
- * buttons keep their default styling). Within the form area, inputs,
- * textareas, selects, checkboxes, radio toggles, file-pickers, links,
- * and labels all shift to the realm's accent/sidebar palette.
- */
-.apply-form-tint :where(input, textarea) {
-  background-color: var(--form-tint-bg, transparent) !important;
-  border-color: var(--form-tint-border, inherit) !important;
-  color: var(--form-tint-text, inherit) !important;
-  transition:
-    background-color 0.7s ease-in-out,
-    border-color 0.7s ease-in-out,
-    color 0.7s ease-in-out;
-}
-
-.apply-form-tint :where(input, textarea)::placeholder {
-  color: var(--form-tint-text-muted, inherit) !important;
-  opacity: 0.75;
-}
-
-.apply-form-tint
-  :where(label, p, h1, h2, h3, h4, h5, h6, span, strong, em, a, u, b) {
-  color: var(--form-tint-text, inherit);
-  transition:
-    color 0.7s ease-in-out,
-    text-decoration-color 0.7s ease-in-out;
-}
-
-/* Underlines (href, <u>, utility classes) pick up the tint too. */
-.apply-form-tint :where(a, u),
-.apply-form-tint [class*="underline"] {
-  text-decoration-color: var(--form-tint-text, currentColor) !important;
-}
-
-/* All buttons inside the form area (primary, outline, secondary, file
- * picker, etc) — the Back/Next buttons live in the footer which is
- * outside .apply-form-tint, so they stay normal. */
-.apply-form-tint button:not([role="combobox"]) {
-  background-color: var(--form-tint-bg, inherit) !important;
-  border-color: var(--form-tint-border, inherit) !important;
-  color: var(--form-tint-text, inherit) !important;
-  transition:
-    background-color 0.7s ease-in-out,
-    border-color 0.7s ease-in-out,
-    color 0.7s ease-in-out;
-}
-
-/* Radix radio-group toggle items. */
-.apply-form-tint [role="radio"] {
-  border-color: var(--form-tint-border, inherit) !important;
-  color: var(--form-tint-text, inherit) !important;
-}
-
-.apply-form-tint [role="radio"][data-state="checked"] {
-  background-color: var(--form-tint-bg, inherit) !important;
-  color: var(--form-tint-text, inherit) !important;
-}
-
-.apply-form-tint [role="radio"] [class*="border-primary"],
-.apply-form-tint [role="radio"] [class*="bg-primary"] {
-  border-color: var(--form-tint-text, inherit) !important;
-  background-color: var(--form-tint-bg, inherit) !important;
-  color: var(--form-tint-text, inherit) !important;
-}
-
-/* Radix checkbox checked state. */
-.apply-form-tint button[role="checkbox"] {
-  border-color: var(--form-tint-text, inherit) !important;
-  background-color: var(--form-tint-bg, inherit) !important;
-  color: var(--form-tint-text, inherit) !important;
-}
-
-.apply-form-tint button[role="checkbox"][data-state="checked"] {
-  background-color: var(--form-tint-text, inherit) !important;
-  color: var(--form-tint-bg, inherit) !important;
-}
-
-/* Catch any lingering purple utility classes inside the tinted area
- * (radio toggles use text-violet-500, labels pick up text-primary-600
- * on checked, etc.) so "Prefer not to say", "Other", and friends also
- * take on the realm palette. */
-.apply-form-tint [class*="text-violet"],
-.apply-form-tint [class*="text-primary"],
-.apply-form-tint [class*="hover:bg-primary"] {
-  color: var(--form-tint-text, inherit) !important;
 }
 
 /*
@@ -465,8 +283,7 @@ html[data-apply-tint="on"]
     input:not([type="checkbox"]):not([type="radio"]),
     textarea,
     button[role="combobox"],
-    [role="radio"]:not([data-state="checked"]),
-    .realm-field
+    [role="radio"]:not([data-state="checked"])
   ),
 html[data-apply-tint="on"] [role="listbox"] {
   background-color: var(--realm-field);
