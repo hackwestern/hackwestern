@@ -120,8 +120,8 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Autodesk",
     href: "https://www.autodesk.com/",
-    // A centered pair, wordmarks on one baseline.
-    left: 32.8,
+    // A centered row of three, wordmarks on one baseline.
+    left: 22.76,
     top: 114.27,
     width: 10.84,
     height: 8.2,
@@ -130,10 +130,19 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Accenture",
     href: "https://www.accenture.com/",
-    left: 53.95,
+    left: 43.91,
     top: 117.68,
     width: 13.45,
     height: 4.72,
     overlaySrc: "/shared/sponsors/accenture.svg",
+  },
+  {
+    name: "OpenAI",
+    href: "https://openai.com/",
+    left: 67.67,
+    top: 119.65,
+    width: 9.77,
+    height: 3.53,
+    overlaySrc: "/shared/sponsors/openai.svg",
   },
 ];
