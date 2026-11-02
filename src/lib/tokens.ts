@@ -230,3 +230,271 @@ export const shadows = {
     "inset 2px 2px 0px 0px rgba(223,223,223)", //inner
   ].join(", "),
 } as const;
+
+// ============================================================
+// HW13 Dashboard
+// ============================================================
+
+// ------------------------------------------------------------
+// Dashboard Colors
+// ------------------------------------------------------------
+
+export const dashboardColors = {
+  text: {
+    heavy: "#0b2b4a",
+    medium: "#1c3550",
+    light: "#516476",
+    placeholder: "rgba(81,100,118,0.7)", 
+    disabled: "rgba(81,100,118,0.5)",
+    inverse: "#ffffff",
+    link: "#0b6bc4",
+    active: "#08559c", // selected nav item
+    warning: "#8a4300", // checklist due dates
+  },
+  bg: {
+    page: "#f3f7fc",
+    surface: "#ffffff",
+    nav: "#dbe7f5", // navigation, mobile nav, unselected filters
+    navSelected: "#b9d3f0",
+    inset: "#edf3fa", // empty states, image placeholders
+    highlight: "#e1effb", // scan confirmation, selected rows
+    highlightMedium: "rgba(225,239,251,0.7)",
+    highlightSubtle: "rgba(225,239,251,0.4)", // table rows
+    checklistCurrent: "#e4eefb", // current checklist step
+  },
+  action: {
+    primary: "#0b6bc4", // primary buttons, selected filters, tags, progress
+  },
+  border: {
+    default: "#cdddeb", // navigation, secondary buttons
+    subtle: "#e0eaf3", // dividers, cards
+    card: "#d6e3ef", // hacker checklist
+    control: "#b9cbe0", // "Message on Slack" button
+    outline: "#accae5", // outline button
+    faint: "rgba(81,100,118,0.1)",
+    muted: "rgba(81,100,118,0.2)",
+    medium: "rgba(81,100,118,0.5)",
+    strong: "#516476",
+  },
+  status: {
+    live: "#16803c", // live dot
+    warning: "#a34a00", // steps-left badge
+    iconBadge: "#fbdac4", // food menu icon background
+  },
+  schedule: {
+    pink: "rgba(250,104,235,0.15)",
+    blue: "rgba(37,130,254,0.15)",
+    green: "rgba(104,250,109,0.15)",
+    orange: "rgba(254,145,37,0.15)",
+  },
+} as const;
+
+// ------------------------------------------------------------
+// Dashboard Typography
+// ------------------------------------------------------------
+
+export const dashboardTypography = {
+  display: {
+    fontFamily: fonts.figtree,
+    fontWeight: "700", 
+    fontSize: "48px",
+    lineHeight: "120%",
+    letterSpacing: "0%",
+    textTransform: "none" as const,
+  },
+  h1: {
+    fontFamily: fonts.figtree,
+    fontWeight: "700",
+    fontSize: "32px",
+    lineHeight: "120%",
+    letterSpacing: "0%",
+    textTransform: "none" as const,
+  },
+  h2: {
+    fontFamily: fonts.figtree,
+    fontWeight: "600", // SemiBold
+    fontSize: "24px",
+    lineHeight: "auto",
+    letterSpacing: "0%",
+    textTransform: "none" as const,
+  },
+  h3: {
+    fontFamily: fonts.figtree,
+    fontWeight: "600",
+    fontSize: "20px",
+    lineHeight: "auto",
+    letterSpacing: "0%",
+    textTransform: "none" as const,
+  },
+  h4: {
+    fontFamily: fonts.figtree,
+    fontWeight: "600",
+    fontSize: "18px",
+    lineHeight: "auto",
+    letterSpacing: "0%",
+    textTransform: "none" as const,
+  },
+  sectionLg: {
+    fontFamily: fonts.figtree,
+    fontWeight: "600",
+    fontSize: "24px",
+    lineHeight: "auto",
+    letterSpacing: "-0.02em", // -2%
+    textTransform: "uppercase" as const,
+  },
+  sectionMd: {
+    fontFamily: fonts.figtree,
+    fontWeight: "600",
+    fontSize: "16px",
+    lineHeight: "auto",
+    letterSpacing: "-0.02em",
+    textTransform: "uppercase" as const,
+  },
+  sectionSm: {
+    fontFamily: fonts.figtree,
+    fontWeight: "600",
+    fontSize: "12px",
+    lineHeight: "auto",
+    letterSpacing: "-0.02em",
+    textTransform: "uppercase" as const,
+  },
+  bodyLg: {
+    fontFamily: fonts.figtree,
+    fontWeight: "500", // Medium
+    fontSize: "24px",
+    lineHeight: "auto",
+    letterSpacing: "0%",
+    textTransform: "none" as const,
+  },
+  body: {
+    fontFamily: fonts.figtree,
+    fontWeight: "500",
+    fontSize: "16px",
+    lineHeight: "auto",
+    letterSpacing: "0%",
+    textTransform: "none" as const,
+  },
+  bodyRegular: {
+    fontFamily: fonts.figtree,
+    fontWeight: "400", // Regular
+    fontSize: "16px",
+    lineHeight: "auto",
+    letterSpacing: "0%",
+    textTransform: "none" as const,
+  },
+  bodyLong: {
+    fontFamily: fonts.figtree,
+    fontWeight: "500",
+    fontSize: "16px",
+    lineHeight: "150%",
+    letterSpacing: "0%",
+    textTransform: "none" as const,
+  },
+  bodyStrong: {
+    fontFamily: fonts.figtree,
+    fontWeight: "600",
+    fontSize: "16px",
+    lineHeight: "auto",
+    letterSpacing: "0%",
+    textTransform: "none" as const,
+  },
+  bodySm: {
+    fontFamily: fonts.figtree,
+    fontWeight: "500",
+    fontSize: "14px",
+    lineHeight: "auto",
+    letterSpacing: "0%",
+    textTransform: "none" as const,
+  },
+  bodySmStrong: {
+    fontFamily: fonts.figtree,
+    fontWeight: "600",
+    fontSize: "14px",
+    lineHeight: "auto",
+    letterSpacing: "0%",
+    textTransform: "none" as const,
+  },
+  empty: {
+    fontFamily: fonts.figtree,
+    fontWeight: "500",
+    fontStyle: "italic" as const,
+    fontSize: "14px",
+    lineHeight: "auto",
+    letterSpacing: "0%",
+    textTransform: "none" as const,
+  },
+  caption: {
+    fontFamily: fonts.figtree,
+    fontWeight: "500",
+    fontSize: "12px",
+    lineHeight: "20px",
+    letterSpacing: "0%",
+    textTransform: "none" as const,
+  },
+} as const;
+
+// ------------------------------------------------------------
+// Dashboard Spacing
+// ------------------------------------------------------------
+
+export const dashboardSpacing = {
+  "4": "4px",
+  "6": "6px",
+  "8": "8px",
+  "10": "10px",
+  "12": "12px",
+  "14": "14px",
+  "16": "16px",
+  "18": "18px",
+  "20": "20px",
+  "24": "24px",
+  "32": "32px",
+  "36": "36px",
+  "40": "40px",
+  "48": "48px",
+  "80": "80px",
+} as const;
+
+// ------------------------------------------------------------
+// Dashboard Border Radius
+// ------------------------------------------------------------
+
+export const dashboardRadius = {
+  xs: "3px",
+  sm: "4px",
+  md: "6px",
+  lg: "8px",
+  xl: "10px",
+  "2xl": "12px",
+  "3xl": "20px",
+  iconBadge: "30px",
+  full: "999px",
+} as const;
+
+// ------------------------------------------------------------
+// Dashboard Borders, Shadows, Blur, Opacity
+// ------------------------------------------------------------
+
+export const dashboardBorderWidth = {
+  default: "1px",
+  thick: "1.5px",
+} as const;
+
+export const dashboardShadows = {
+  card: [
+    "0px 1px 2px 0px rgba(11,43,74,0.06)",
+    "0px 1px 4px 0px rgba(11,43,74,0.05)",
+  ].join(", "),
+  primaryButton: "0px 2px 4px 0px rgba(11,43,74,0.2)",
+  secondaryButton: "0px 2px 8px 0px rgba(0,0,0,0.12)", 
+} as const;
+
+export const dashboardBlur = {
+  input: "2px",
+  panel: "24px",
+} as const;
+
+export const dashboardOpacity = {
+  disabled: "0.45",
+  locked: "0.4", // locked hacker pass
+} as const;
