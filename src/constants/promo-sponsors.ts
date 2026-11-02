@@ -99,19 +99,10 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
     overlaySrc: "/shared/sponsors/commure.svg",
   },
   {
-    name: "Replit",
-    href: "https://replit.com/",
-    // Wordmarks on one baseline.
-    left: 1.97,
-    top: 101.4,
-    width: 17.02,
-    height: 6.51,
-    overlaySrc: "/shared/sponsors/replit.png",
-  },
-  {
     name: "TinyFish",
     href: "https://www.tinyfish.ai/",
-    left: 44.05,
+    // A centered pair, wordmarks on one baseline.
+    left: 30.38,
     top: 102.21,
     width: 17.35,
     height: 5.19,
@@ -120,7 +111,7 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Celsius",
     href: "https://www.celsius.com/",
-    left: 86.45,
+    left: 58.04,
     top: 102.92,
     width: 11.77,
     height: 5.44,
