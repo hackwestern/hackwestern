@@ -37,7 +37,7 @@ type QueueRow = typeof judgingQueue.$inferSelect;
  * helpers (CONFLICT, NOT_FOUND, ...) pass through with their original code.
  * Mirrors the helper in `scavenger-hunt.ts`.
  */
-export const withErrorHandling = async <T>(
+const withErrorHandling = async <T>(
   fn: () => Promise<T>,
   errorMessage: string,
 ): Promise<T> => {
