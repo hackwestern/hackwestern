@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { google } from "googleapis";
+import { google, type sheets_v4 } from "googleapis";
 import { eq, count } from "drizzle-orm";
 import { z } from "zod";
 
@@ -56,14 +56,12 @@ export function normalizeHwContact(val: string | undefined): string {
   return trimmed.length > 0 ? trimmed : "—";
 }
 
-// HW team contacts sheet (public). Layout: row 1 blank, row 2 header
-// (Name | Position | Email | Phone Number | ...), data from row 3 down.
-// Used only to look up a phone number for the HW contact shown on the
-// sponsor portal — the contact name itself still comes from the sponsor
-// info tab (master sheet as fallback).
-const CONTACTS_SPREADSHEET_ID =
-  "16bur9ixrVm-DqXtAs3DJZEWZQ7gXTc92Gs4sflFUxSg";
-const CONTACTS_SHEET_TAB = "Sheet1";
+// HW team contacts, copied once into the judging spreadsheet. This tab is
+// the source of truth — edit names/phones here manually; nothing syncs
+// from the external sheet. Layout: header row 1 (Name | Phone Number),
+// data from row 2. Used for the HW Contact dropdown on the sponsor info
+// tab and for phone lookup on the sponsor portal.
+const HW_CONTACTS_TAB = "HW Contacts";
 
 /** Lowercased name with invisible chars / extra spaces removed. */
 export function normalizePersonName(val: string): string {
@@ -422,39 +420,64 @@ async function ensureSponsorInfoTab(
     });
   }
 
-  // Ensure dropdown data validation rule on Column B (Status):
-  // Options: Not arrived, Checked in, Booth set up, Workshop live, Left
+  // Ensure dropdown data validation:
+  // - Column B (Status): Not arrived, Checked in, Booth set up, Workshop live, Left
+  // - Column E (HW Contact): names from the "HW Contacts" tab
   if (sheetId !== null) {
+    const hwContactNames = await fetchHwContactNames(sheets, spreadsheetId);
     try {
+      const requests: sheets_v4.Schema$Request[] = [
+        {
+          setDataValidation: {
+            range: {
+              sheetId,
+              startRowIndex: 1, // row 2 down
+              startColumnIndex: 1, // Column B (A=0, B=1)
+              endColumnIndex: 2,
+            },
+            rule: {
+              condition: {
+                type: "ONE_OF_LIST",
+                values: SPONSOR_STATUS_VALUES.map((val) => ({
+                  userEnteredValue: val,
+                })),
+              },
+              strict: true,
+              showCustomUi: true,
+            },
+          },
+        },
+      ];
+
+      if (hwContactNames.length > 0) {
+        requests.push({
+          setDataValidation: {
+            range: {
+              sheetId,
+              startRowIndex: 1, // row 2 down
+              startColumnIndex: 4, // Column E (HW Contact)
+              endColumnIndex: 5,
+            },
+            rule: {
+              condition: {
+                type: "ONE_OF_LIST",
+                values: hwContactNames.map((name) => ({
+                  userEnteredValue: name,
+                })),
+              },
+              strict: false,
+              showCustomUi: true,
+            },
+          },
+        });
+      }
+
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId,
-        requestBody: {
-          requests: [
-            {
-              setDataValidation: {
-                range: {
-                  sheetId,
-                  startRowIndex: 1, // row 2 down
-                  startColumnIndex: 1, // Column B (A=0, B=1)
-                  endColumnIndex: 2,
-                },
-                rule: {
-                  condition: {
-                    type: "ONE_OF_LIST",
-                    values: SPONSOR_STATUS_VALUES.map((val) => ({
-                      userEnteredValue: val,
-                    })),
-                  },
-                  strict: true,
-                  showCustomUi: true,
-                },
-              },
-            },
-          ],
-        },
+        requestBody: { requests },
       });
     } catch (e) {
-      console.warn("Could not apply status dropdown validation to sheet:", e);
+      console.warn("Could not apply dropdown validation to sheet:", e);
     }
   }
 
@@ -548,21 +571,22 @@ async function fetchAllSponsorInfo(
 
 /**
  * Every HW team member's phone number, keyed by normalized name. Read from
- * the public contacts sheet; empty map if the sheet is unavailable so the
- * portal can still render without a phone.
+ * the "HW Contacts" tab of the judging spreadsheet (source of truth);
+ * empty map if the tab is missing so the portal can still render.
  */
 async function fetchHwContactPhones(): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   try {
     const sheets = await getSheetsClient();
+    const spreadsheetId = getSpreadsheetId();
     const res = await sheets.spreadsheets.values.get({
-      spreadsheetId: CONTACTS_SPREADSHEET_ID,
-      range: `${CONTACTS_SHEET_TAB}!A:D`,
+      spreadsheetId,
+      range: `${HW_CONTACTS_TAB}!A:B`,
     });
 
     const rows = res.data.values ?? [];
     let nameCol = 0;
-    let phoneCol = 3;
+    let phoneCol = 1;
     let dataStartIndex = 0;
 
     for (let i = 0; i < Math.min(rows.length, 3); i++) {
@@ -592,9 +616,30 @@ async function fetchHwContactPhones(): Promise<Map<string, string>> {
       if (!map.has(name)) map.set(name, phone);
     }
   } catch (error) {
-    console.warn("Could not read HW contacts sheet:", error);
+    console.warn("Could not read HW contacts tab:", error);
   }
   return map;
+}
+
+/**
+ * Display names from the "HW Contacts" tab, in sheet order, for the HW
+ * Contact dropdown on the sponsor info tab.
+ */
+async function fetchHwContactNames(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+): Promise<string[]> {
+  try {
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${HW_CONTACTS_TAB}!A2:A`,
+    });
+    return (res.data.values ?? [])
+      .map((row) => String(row[0] ?? "").replace(/\p{Cf}/gu, "").trim())
+      .filter((name) => name.length > 0 && name.toLowerCase() !== "name");
+  } catch {
+    return [];
+  }
 }
 
 /**
