@@ -16,6 +16,7 @@
     "db:migrate": "tsx ./src/server/db/migrate.ts",
     "db:seed": "dotenv tsx ./src/server/db/seed/index.ts",
     "seed:judging": "dotenv -- tsx ./src/server/db/seed/judging.ts",
+    "seed:teams": "dotenv -- tsx ./src/server/db/seed/teams.ts",
     "judging:driver": "dotenv -- tsx ./scripts/judging-driver.ts",
     "judging:warmup": "dotenv -- tsx ./scripts/judging-warmup.ts",
     "dev": "next dev --turbopack",
