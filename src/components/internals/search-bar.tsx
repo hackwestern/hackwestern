@@ -11,10 +11,10 @@ const SITE_SECTIONS = [
 
 export function SearchBar() {
   return (
-    <div className="w-full max-w-[320px]">
+    <div className="w-full max-w-[276px]">
       <SearchAutocomplete
         options={SITE_SECTIONS}
-        placeholder="Search Hack Western…"
+        placeholder="Search"
         emptyMessage="Nothing matches that — try “sponsors” or “faq”."
       />
     </div>

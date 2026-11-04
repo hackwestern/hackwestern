@@ -143,7 +143,9 @@ const config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
         "hw-gradient-radius": "60vw",
+        "dashboard-xs": tokens.dashboardRadius.xs,
         "dashboard-sm": tokens.dashboardRadius.sm,
+        "dashboard-md": tokens.dashboardRadius.md,
         "dashboard-lg": tokens.dashboardRadius.lg,
       },
       boxShadow: {
@@ -153,6 +155,15 @@ const config = {
         "primary-btn-2": tokens.shadows.primary2,
         "secondary-btn": tokens.shadows.secondary,
         "icon-btn": tokens.shadows.icon,
+        "dashboard-card": tokens.dashboardShadows.card,
+        "dashboard-primary-btn": tokens.dashboardShadows.primaryButton,
+        "dashboard-secondary-btn": tokens.dashboardShadows.secondaryButton,
+      },
+      backdropBlur: {
+        "dashboard-input": tokens.dashboardBlur.input,
+      },
+      opacity: {
+        "dashboard-disabled": tokens.dashboardOpacity.disabled,
       },
       fontFamily: {
         primary: [tokens.fonts.primary],
