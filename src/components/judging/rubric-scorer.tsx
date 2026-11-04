@@ -1,18 +1,18 @@
 import { focusRing } from "~/components/judging/judge-ui";
 
-/** Highest point a criterion can offer. Keeps the button row usable on a phone. */
-export const MAX_POINT = 10;
+/** Every criterion is scored on the same slider, from 0 to 100. */
+export const RUBRIC_MIN = 0;
+export const RUBRIC_MAX = 100;
+const RUBRIC_MID = 50;
 
 export interface RubricCriterion {
   id: string;
   name: string;
   /** One short line shown to judges under the name. */
   description: string;
-  min: number;
-  max: number;
   /** Relative importance. Ignored unless the rubric is weighted. */
   weight: number;
-  /** Optional anchors for "What do the points mean?" */
+  /** Optional anchors for "What do the points mean?" (at 0, 50 and 100). */
   low: string;
   mid: string;
   high: string;
@@ -27,7 +27,7 @@ export interface Rubric {
 
 export type Ratings = Record<string, number | undefined>;
 
-/** The rubric judges already had before the builder existed (1–5, equal weight). */
+/** The default rubric: four criteria, equal weight. */
 export const DEFAULT_RUBRIC: Rubric = {
   title: "General judging rubric",
   weighted: false,
@@ -36,8 +36,6 @@ export const DEFAULT_RUBRIC: Rubric = {
       id: "idea",
       name: "Idea",
       description: "",
-      min: 1,
-      max: 5,
       weight: 1,
       low: "seen it many times",
       mid: "fresh angle on a known problem",
@@ -47,8 +45,6 @@ export const DEFAULT_RUBRIC: Rubric = {
       id: "technical",
       name: "Technical",
       description: "",
-      min: 1,
-      max: 5,
       weight: 1,
       low: "mostly slides",
       mid: "core feature works live",
@@ -58,8 +54,6 @@ export const DEFAULT_RUBRIC: Rubric = {
       id: "design",
       name: "Design",
       description: "",
-      min: 1,
-      max: 5,
       weight: 1,
       low: "hard to follow",
       mid: "clear enough to use",
@@ -69,8 +63,6 @@ export const DEFAULT_RUBRIC: Rubric = {
       id: "pitch",
       name: "Pitch",
       description: "",
-      min: 1,
-      max: 5,
       weight: 1,
       low: "unclear what it does",
       mid: "clear demo",
@@ -79,60 +71,41 @@ export const DEFAULT_RUBRIC: Rubric = {
   ],
 };
 
-export const isValidScale = (c: Pick<RubricCriterion, "min" | "max">) =>
-  Number.isInteger(c.min) &&
-  Number.isInteger(c.max) &&
-  c.min >= 0 &&
-  c.max <= MAX_POINT &&
-  c.max > c.min;
-
-export const scaleOf = (c: Pick<RubricCriterion, "min" | "max">): number[] =>
-  isValidScale(c)
-    ? Array.from({ length: c.max - c.min + 1 }, (_, i) => c.min + i)
-    : [];
-
 export const effectiveWeight = (rubric: Rubric, c: RubricCriterion) =>
   rubric.weighted && c.weight > 0 ? c.weight : 1;
 
-/** A rating only counts while it is still on the criterion's scale. */
+/** A rating only counts while it is on the 0–100 slider. */
 export const ratingOf = (c: RubricCriterion, ratings: Ratings) => {
   const r = ratings[c.id];
-  return r !== undefined && r >= c.min && r <= c.max ? r : undefined;
+  return r !== undefined && r >= RUBRIC_MIN && r <= RUBRIC_MAX ? r : undefined;
 };
 
 export const hasGuide = (rubric: Rubric) =>
   rubric.criteria.some((c) => c.low || c.mid || c.high);
 
 /**
- * Turns ratings into the 0–100 score the backend stores. Each criterion is
- * normalised to 0–1 on its own scale, then averaged by weight. With equal
- * weights and 4 criteria on 1–5 this is the old (total - 4) / 16 formula.
+ * Turns ratings into the 0–100 score the backend stores: the weighted average
+ * of the criterion ratings (a plain average when the rubric isn't weighted).
+ * It only means something once every criterion has been rated.
  */
 export function scoreRubric(
   rubric: Rubric,
   ratings: Ratings,
 ): { score: number; label: string; rated: number } {
-  const { criteria } = rubric;
   let rated = 0;
-  let sum = 0;
-  let maxSum = 0;
   let part = 0;
   let totalWeight = 0;
 
-  for (const c of criteria) {
+  for (const c of rubric.criteria) {
     const rating = ratingOf(c, ratings);
     if (rating !== undefined) rated += 1;
     const weight = effectiveWeight(rubric, c);
     totalWeight += weight;
-    part += (weight * ((rating ?? c.min) - c.min)) / Math.max(1, c.max - c.min);
-    sum += rating ?? 0;
-    maxSum += c.max;
+    part += weight * (rating ?? RUBRIC_MIN);
   }
 
-  const score = totalWeight > 0 ? Math.round((100 * part) / totalWeight) : 0;
-  // Unweighted reads back as raw points ("14/20"); weighted as the 0–100 score.
-  const label = rubric.weighted ? String(score) : `${sum}/${maxSum}`;
-  return { score, label, rated };
+  const score = totalWeight > 0 ? Math.round(part / totalWeight) : 0;
+  return { score, label: String(score), rated };
 }
 
 interface RubricScorerProps {
@@ -142,7 +115,7 @@ interface RubricScorerProps {
   guideOpen: boolean;
 }
 
-/** The rating rows judges tap through. Used by the judge screen and the builder preview. */
+/** The slider rows judges work through. Used by the judge screens and the builder preview. */
 export function RubricScorer({
   rubric,
   ratings,
@@ -150,54 +123,56 @@ export function RubricScorer({
   guideOpen,
 }: RubricScorerProps) {
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-3">
       {rubric.criteria.map((c) => {
         const current = ratingOf(c, ratings);
-        const scale = scaleOf(c);
+        const labelId = `rubric-${c.id}`;
+
         return (
           <div
             key={c.id}
             role="group"
-            aria-labelledby={`rubric-${c.id}`}
+            aria-labelledby={labelId}
             className="flex flex-col gap-1"
           >
-            <div className="flex flex-col">
-              <span id={`rubric-${c.id}`} className="text-[15px] font-bold">
-                {c.name.trim() || "Untitled criterion"}
-              </span>
-              {c.description.trim() && (
-                <span className="text-xs leading-snug text-[#4a5d73]">
-                  {c.description}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 flex-col">
+                <span id={labelId} className="text-[15px] font-bold">
+                  {c.name.trim() || "Untitled criterion"}
                 </span>
-              )}
-            </div>
-            {scale.length === 0 ? (
-              <p className="m-0 text-xs text-[#4a5d73]">
-                Set a valid point scale.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-[5px]">
-                {scale.map((value) => {
-                  const on = current === value;
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-pressed={on}
-                      aria-label={`${c.name} ${value} of ${c.max}`}
-                      onClick={() => onRate(c.id, value)}
-                      className={`min-h-[44px] min-w-[44px] flex-1 rounded-[10px] border-[1.5px] text-lg font-bold ${
-                        on
-                          ? "border-[#5b3fa0] bg-[#5b3fa0] text-white"
-                          : "border-[#c3cad8] bg-white text-[#0b2238] hover:bg-[#f6f7fa]"
-                      } ${focusRing}`}
-                    >
-                      {value}
-                    </button>
-                  );
-                })}
+                {c.description.trim() && (
+                  <span className="text-xs leading-snug text-[#4a5d73]">
+                    {c.description}
+                  </span>
+                )}
               </div>
-            )}
+              <output
+                aria-hidden="true"
+                className={`min-w-[3ch] text-right text-[26px] font-bold tabular-nums leading-none ${
+                  current === undefined ? "text-[#8a94a6]" : "text-[#3f2a75]"
+                }`}
+              >
+                {current ?? RUBRIC_MIN}
+              </output>
+            </div>
+            {/* Sliders start at 0 but stay dimmed, and don't count as scored,
+                until the judge actually touches them. */}
+            <input
+              type="range"
+              min={RUBRIC_MIN}
+              max={RUBRIC_MAX}
+              step={1}
+              value={current ?? RUBRIC_MIN}
+              aria-labelledby={labelId}
+              aria-valuetext={
+                current === undefined ? "Not scored yet" : String(current)
+              }
+              onChange={(e) => onRate(c.id, Number(e.target.value))}
+              onPointerUp={(e) => onRate(c.id, Number(e.currentTarget.value))}
+              className={`h-11 w-full cursor-pointer accent-[#5b3fa0] ${
+                current === undefined ? "opacity-50" : ""
+              } ${focusRing}`}
+            />
           </div>
         );
       })}
@@ -208,9 +183,9 @@ export function RubricScorer({
         >
           {rubric.criteria.map((c) => {
             const parts: [number, string][] = [
-              [c.min, c.low],
-              [Math.round((c.min + c.max) / 2), c.mid],
-              [c.max, c.high],
+              [RUBRIC_MIN, c.low],
+              [RUBRIC_MID, c.mid],
+              [RUBRIC_MAX, c.high],
             ];
             const shown = parts.filter(([, text]) => text.trim());
             if (shown.length === 0) return null;

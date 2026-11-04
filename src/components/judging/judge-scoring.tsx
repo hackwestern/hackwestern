@@ -1,260 +1,213 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   card,
   focusRing,
-  primaryButton,
   secondaryButton,
 } from "~/components/judging/judge-ui";
+import {
+  type Ratings,
+  type Rubric,
+  RubricScorer,
+  hasGuide,
+  scoreRubric,
+} from "~/components/judging/rubric-scorer";
 
-type Mode = "slider" | "rubric";
+const nextButton = `min-h-[48px] rounded-xl bg-[#5b3fa0] px-5 text-[17px] font-bold text-white hover:bg-[#4d3488] disabled:cursor-not-allowed disabled:bg-[#9a8cc0] ${focusRing}`;
 
-const MODE_KEY = "hw13-judge-scoring-mode";
+// ---- Draft autosave ---------------------------------------------------------
+// Until the backend exists, drafts are kept in this browser so a refresh or a
+// dropped connection doesn't lose a judge's scores. Storage can throw (private
+// mode, blocked site data), so every call is guarded.
+interface Draft {
+  ratings: Ratings;
+  notes: string;
+}
 
-// Storage can throw (private mode, blocked site data): fall back to the slider.
-function readMode(): Mode {
+const draftKey = (table: number) => `hw13-public-judge-draft-${table}`;
+
+function readDraft(table: number): Draft {
   try {
-    return localStorage.getItem(MODE_KEY) === "rubric" ? "rubric" : "slider";
+    const raw = localStorage.getItem(draftKey(table));
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<Draft>;
+      return {
+        ratings:
+          parsed.ratings && typeof parsed.ratings === "object"
+            ? parsed.ratings
+            : {},
+        notes: typeof parsed.notes === "string" ? parsed.notes : "",
+      };
+    }
   } catch {
-    return "slider";
+    // Unreadable draft: start fresh.
+  }
+  return { ratings: {}, notes: "" };
+}
+
+function writeDraft(table: number, draft: Draft): boolean {
+  try {
+    localStorage.setItem(draftKey(table), JSON.stringify(draft));
+    return true;
+  } catch {
+    return false;
   }
 }
 
-function saveMode(mode: Mode) {
+function clearDraft(table: number) {
   try {
-    localStorage.setItem(MODE_KEY, mode);
+    localStorage.removeItem(draftKey(table));
   } catch {
-    // Not persisted; the choice still applies to this team.
+    // Nothing to clear.
   }
 }
 
-const CRITERIA = [
-  {
-    key: "idea",
-    label: "Idea",
-    low: "seen it many times",
-    mid: "fresh angle on a known problem",
-    high: "new and clearly useful",
-  },
-  {
-    key: "technical",
-    label: "Technical",
-    low: "mostly slides",
-    mid: "core feature works live",
-    high: "hard problem, works end to end",
-  },
-  {
-    key: "design",
-    label: "Design",
-    low: "hard to follow",
-    mid: "clear enough to use",
-    high: "polished and intuitive",
-  },
-  {
-    key: "pitch",
-    label: "Pitch",
-    low: "unclear what it does",
-    mid: "clear demo",
-    high: "compelling, handled questions",
-  },
-] as const;
+type SaveState = "saved" | "saving" | "error";
 
-type CriterionKey = (typeof CRITERIA)[number]["key"];
+const SAVE_LABEL: Record<SaveState, string> = {
+  saved: "Saved",
+  saving: "Saving…",
+  error: "Not saved",
+};
 
-/** What gets saved (0–100) and how it reads back to the judge ("72", "14/20"). */
-export interface ScoreChoice {
+export interface ScoreSubmission {
+  table: number;
+  ratings: Ratings;
+  /** 0–100, the same number the backend stores for a mark. */
   score: number;
-  label: string;
+  notes: string;
 }
 
-export type ScoringBusy = "submit-next" | "submit-pause" | "skip" | null;
-
-interface JudgeScoringProps {
-  busy: ScoringBusy;
-  onSubmit: (choice: ScoreChoice, then: "next" | "pause") => void;
-  onSkip: () => void;
+interface PublicJudgeScoreProps {
+  table: number;
+  /** True when the team was found by scanning, on top of the assigned ones. */
+  adHoc: boolean;
+  rubric: Rubric;
+  onSubmit: (submission: ScoreSubmission) => void;
+  onAbsent: (table: number) => void;
 }
 
-/** Score + actions for the team being judged. Keyed by team, so it resets per team. */
-export function JudgeScoring({ busy, onSubmit, onSkip }: JudgeScoringProps) {
-  const [mode, setMode] = useState<Mode>(readMode);
-  const [sliderScore, setSliderScore] = useState(70);
-  const [ratings, setRatings] = useState<Partial<Record<CriterionKey, number>>>(
-    {},
-  );
+/** The Score page: rubric, notes and the two ways to finish a table. Key it by table. */
+export function PublicJudgeScore({
+  table,
+  adHoc,
+  rubric,
+  onSubmit,
+  onAbsent,
+}: PublicJudgeScoreProps) {
+  const [initial] = useState(() => readDraft(table));
+  const [ratings, setRatings] = useState<Ratings>(initial.ratings);
+  const [notes, setNotes] = useState(initial.notes);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>("saved");
+  const mounted = useRef(false);
 
-  const picked = CRITERIA.filter((c) => ratings[c.key] !== undefined).length;
-  // Shown in the submit label ("Submit 14/20 & next team"), as in the mock.
-  const total = CRITERIA.reduce((sum, c) => sum + (ratings[c.key] ?? 0), 0);
-  const complete = mode === "slider" || picked === CRITERIA.length;
-  // 4 criteria x 1–5 = 4–20, stretched onto the 0–100 score the backend stores.
-  const choice: ScoreChoice =
-    mode === "slider"
-      ? { score: sliderScore, label: String(sliderScore) }
-      : { score: Math.round(((total - 4) / 16) * 100), label: `${total}/20` };
-  const disabled = busy !== null;
+  // Autosave shortly after the judge stops changing things.
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    setSaveState("saving");
+    const timer = setTimeout(
+      () => setSaveState(writeDraft(table, { ratings, notes }) ? "saved" : "error"),
+      500,
+    );
+    return () => clearTimeout(timer);
+  }, [ratings, notes, table]);
 
-  const pickMode = (next: Mode) => {
-    setMode(next);
-    saveMode(next);
+  const count = rubric.criteria.length;
+  const result = scoreRubric(rubric, ratings);
+  const complete = count > 0 && result.rated === count;
+
+  const submit = () => {
+    if (!complete) return;
+    clearDraft(table);
+    onSubmit({ table, ratings, score: result.score, notes: notes.trim() });
+  };
+
+  const absent = () => {
+    if (!window.confirm(`Mark table ${table} as not here?`)) return;
+    clearDraft(table);
+    onAbsent(table);
   };
 
   return (
     <>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="m-0 text-[15px] font-normal text-[#4a5d73]">
+          Table {table}
+          {adHoc ? " · ad hoc" : ""}
+        </h1>
+        <span
+          aria-live="polite"
+          className={`rounded-full border-[1.5px] px-3 py-1 text-sm font-semibold ${
+            saveState === "error"
+              ? "border-[#8f1d1d] text-[#8f1d1d]"
+              : "border-[#c3cad8] text-[#0b2238]"
+          }`}
+        >
+          {SAVE_LABEL[saveState]}
+        </span>
+      </div>
+
       <section
         aria-label="Score this team"
-        className={`${card} flex flex-col gap-2 px-3.5 py-3`}
+        className={`${card} flex flex-col gap-3 px-3.5 py-3`}
       >
-        <div className="flex items-center justify-between gap-3">
-          <div role="group" aria-label="Scoring method" className="flex">
-            {(["slider", "rubric"] as const).map((m, i) => (
-              <button
-                key={m}
-                type="button"
-                aria-pressed={mode === m}
-                onClick={() => pickMode(m)}
-                className={`min-h-[44px] border-[1.5px] px-4 text-sm font-semibold ${
-                  i === 0 ? "rounded-l-xl" : "-ml-[1.5px] rounded-r-xl"
-                } ${
-                  mode === m
-                    ? "relative border-[#5b3fa0] bg-[#5b3fa0] text-white"
-                    : "border-[#c3cad8] bg-white text-[#0b2238] hover:bg-[#f6f7fa]"
-                } ${focusRing}`}
-              >
-                {m === "slider" ? "Slider" : "Rubric"}
-              </button>
-            ))}
-          </div>
-          {mode === "rubric" && (
-            <button
-              type="button"
-              aria-expanded={guideOpen}
-              aria-controls="rubric-guide"
-              onClick={() => setGuideOpen((o) => !o)}
-              className={`min-h-[44px] text-sm font-bold text-[#5b3fa0] hover:text-[#3f2a75] ${focusRing}`}
-            >
-              {guideOpen ? "Hide what 1–5 mean" : "What do 1–5 mean?"}
-            </button>
-          )}
-        </div>
-
-        {mode === "slider" ? (
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-baseline justify-between">
-              <label
-                htmlFor="judge-score"
-                className="text-[15px] font-semibold"
-              >
-                Score
-              </label>
-              <output
-                htmlFor="judge-score"
-                className="text-[40px] font-bold tabular-nums leading-none text-[#3f2a75]"
-              >
-                {sliderScore}
-              </output>
-            </div>
-            <input
-              id="judge-score"
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              value={sliderScore}
-              onChange={(e) => setSliderScore(Number(e.target.value))}
-              className={`h-11 w-full cursor-pointer accent-[#5b3fa0] ${focusRing}`}
-            />
-            <div className="flex justify-between text-xs text-[#4a5d73]">
-              <span>0 weak</span>
-              <span>50 solid</span>
-              <span>100 best</span>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-1.5">
-            {CRITERIA.map((c) => (
-              <div
-                key={c.key}
-                role="group"
-                aria-labelledby={`rubric-${c.key}`}
-                className="grid grid-cols-[76px_repeat(5,minmax(0,1fr))] items-center gap-[5px]"
-              >
-                <span id={`rubric-${c.key}`} className="text-[15px] font-bold">
-                  {c.label}
-                </span>
-                {[1, 2, 3, 4, 5].map((value) => {
-                  const on = ratings[c.key] === value;
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-pressed={on}
-                      aria-label={`${c.label} ${value} of 5`}
-                      onClick={() =>
-                        setRatings((r) => ({ ...r, [c.key]: value }))
-                      }
-                      className={`min-h-[44px] rounded-[10px] border-[1.5px] text-lg font-bold ${
-                        on
-                          ? "border-[#5b3fa0] bg-[#5b3fa0] text-white"
-                          : "border-[#c3cad8] bg-white text-[#0b2238] hover:bg-[#f6f7fa]"
-                      } ${focusRing}`}
-                    >
-                      {value}
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
-            {guideOpen && (
-              <dl
-                id="rubric-guide"
-                className="flex flex-col gap-2 text-xs leading-snug text-[#4a5d73]"
-              >
-                {CRITERIA.map((c) => (
-                  <div key={c.key} className="flex flex-col gap-px">
-                    <dt className="font-bold text-[#0b2238]">{c.label}</dt>
-                    <dd>
-                      1 {c.low} · 3 {c.mid} · 5 {c.high}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-          </div>
+        {hasGuide(rubric) && (
+          <button
+            type="button"
+            aria-expanded={guideOpen}
+            aria-controls="rubric-guide"
+            onClick={() => setGuideOpen((o) => !o)}
+            className={`min-h-[44px] self-end text-sm font-bold text-[#5b3fa0] hover:text-[#3f2a75] ${focusRing}`}
+          >
+            {guideOpen
+              ? "Hide what the points mean"
+              : "What do the points mean?"}
+          </button>
         )}
+        <RubricScorer
+          rubric={rubric}
+          ratings={ratings}
+          onRate={(id, value) => setRatings((r) => ({ ...r, [id]: value }))}
+          guideOpen={guideOpen}
+        />
       </section>
 
-      <button
-        type="button"
-        disabled={!complete || disabled}
-        onClick={() => onSubmit(choice, "next")}
-        className={primaryButton}
-      >
-        {busy === "submit-next"
-          ? "Saving…"
-          : complete
-            ? `Submit ${choice.label} & next team`
-            : `${picked} of 4 scored`}
-      </button>
-      <div className="grid grid-cols-2 gap-2">
+      <textarea
+        aria-label="Notes"
+        rows={3}
+        maxLength={2000}
+        placeholder="Notes…"
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        className={`rounded-xl border-[1.5px] border-[#c3cad8] bg-white px-4 py-3 text-[17px] ${focusRing}`}
+      />
+
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          disabled={!complete || disabled}
-          onClick={() => onSubmit(choice, "pause")}
-          className={secondaryButton}
+          onClick={absent}
+          className={`${secondaryButton} px-4`}
         >
-          {busy === "submit-pause" ? "Saving…" : "Submit & pause"}
+          Team not here
         </button>
         <button
           type="button"
-          disabled={disabled}
-          onClick={onSkip}
-          className={secondaryButton}
+          disabled={!complete}
+          onClick={submit}
+          className={nextButton}
         >
-          {busy === "skip" ? "Skipping…" : "Skip: not there"}
+          Next team
         </button>
       </div>
+      {!complete && (
+        <p className="m-0 px-1 text-[13px] text-[#4a5d73]">
+          Score all {count} criteria to continue.
+        </p>
+      )}
     </>
   );
 }

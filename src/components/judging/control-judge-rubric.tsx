@@ -4,14 +4,14 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { card, focusRing, primaryButton } from "~/components/judging/judge-ui";
 import {
   DEFAULT_RUBRIC,
-  MAX_POINT,
   type Ratings,
+  RUBRIC_MAX,
+  RUBRIC_MIN,
   type Rubric,
   type RubricCriterion,
   RubricScorer,
   effectiveWeight,
   hasGuide,
-  isValidScale,
   scoreRubric,
 } from "~/components/judging/rubric-scorer";
 import {
@@ -47,8 +47,6 @@ const blankCriterion = (): RubricCriterion => ({
   id: uid(),
   name: "",
   description: "",
-  min: 1,
-  max: 5,
   weight: 1,
   low: "",
   mid: "",
@@ -94,10 +92,6 @@ export const STARTER_RUBRICS: SavedRubric[] = [
 function criterionErrors(c: RubricCriterion, weighted: boolean): string[] {
   const errors: string[] = [];
   if (!c.name.trim()) errors.push("Give this criterion a name.");
-  if (!isValidScale(c))
-    errors.push(
-      `Points must be whole numbers from 0 to ${MAX_POINT}, with max above min.`,
-    );
   if (weighted && !(c.weight > 0)) errors.push("Weight must be above 0.");
   return errors;
 }
@@ -312,10 +306,7 @@ export function RubricBuilder({
     0,
   );
   const result = scoreRubric(rubric, ratings);
-  const complete =
-    criteria.length > 0 &&
-    result.rated === criteria.length &&
-    criteria.every(isValidScale);
+  const complete = criteria.length > 0 && result.rated === criteria.length;
 
   const draftErrors = draft ? criterionErrors(draft.criterion, weighted) : [];
 
@@ -437,9 +428,6 @@ export function RubricBuilder({
                         className={`text-[15px] font-bold ${label ? "" : MUTED}`}
                       >
                         {label || `Criterion ${index + 1}`}
-                      </span>
-                      <span className={CHIP}>
-                        {isValidScale(c) ? `${c.min} to ${c.max}` : "Bad scale"}
                       </span>
                       {weighted && (
                         <span className={CHIP}>
@@ -563,7 +551,7 @@ export function RubricBuilder({
             <p className={`m-0 px-1 text-[13px] ${MUTED}`}>
               {complete
                 ? `Saved as ${result.score} out of 100.`
-                : "Tap the points to try it. Nothing here is saved."}
+                : "Drag the sliders to try it. Nothing here is saved."}
             </p>
           </div>
         </aside>
@@ -584,7 +572,8 @@ export function RubricBuilder({
                   {draft.isNew ? "Add criterion" : "Edit criterion"}
                 </DialogTitle>
                 <DialogDescription>
-                  Judges see the name and description, then tap a point.
+                  Judges see the name and description, then drag a slider from{" "}
+                  {RUBRIC_MIN} to {RUBRIC_MAX}.
                 </DialogDescription>
               </DialogHeader>
 
@@ -629,64 +618,32 @@ export function RubricBuilder({
                   </span>
                 </div>
 
-                <div
-                  className={`grid gap-3 ${weighted ? "grid-cols-3" : "grid-cols-2"}`}
-                >
+                {weighted && (
                   <div className="flex flex-col gap-1.5">
-                    <label htmlFor="d-min" className={`text-sm ${MUTED}`}>
-                      Lowest point
+                    <label htmlFor="d-weight" className={`text-sm ${MUTED}`}>
+                      Weight
                     </label>
                     <input
-                      id="d-min"
+                      id="d-weight"
                       type="number"
                       min={0}
-                      max={MAX_POINT}
-                      className={`${FIELD} w-full`}
-                      value={draft.criterion.min}
-                      onChange={(e) => patchDraft({ min: num(e) })}
+                      step={0.5}
+                      className={`${FIELD} w-full sm:w-40`}
+                      value={draft.criterion.weight}
+                      onChange={(e) => patchDraft({ weight: num(e) })}
                     />
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label htmlFor="d-max" className={`text-sm ${MUTED}`}>
-                      Highest point
-                    </label>
-                    <input
-                      id="d-max"
-                      type="number"
-                      min={0}
-                      max={MAX_POINT}
-                      className={`${FIELD} w-full`}
-                      value={draft.criterion.max}
-                      onChange={(e) => patchDraft({ max: num(e) })}
-                    />
-                  </div>
-                  {weighted && (
-                    <div className="flex flex-col gap-1.5">
-                      <label htmlFor="d-weight" className={`text-sm ${MUTED}`}>
-                        Weight
-                      </label>
-                      <input
-                        id="d-weight"
-                        type="number"
-                        min={0}
-                        step={0.5}
-                        className={`${FIELD} w-full`}
-                        value={draft.criterion.weight}
-                        onChange={(e) => patchDraft({ weight: num(e) })}
-                      />
-                    </div>
-                  )}
-                </div>
+                )}
 
                 <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
                   <legend className={`p-0 text-sm ${MUTED}`}>
-                    What the points mean (optional)
+                    What the slider means (optional)
                   </legend>
                   {(
                     [
-                      ["low", "Lowest point means"],
-                      ["mid", "Middle means"],
-                      ["high", "Highest point means"],
+                      ["low", `${RUBRIC_MIN} means`],
+                      ["mid", "50 means"],
+                      ["high", `${RUBRIC_MAX} means`],
                     ] as const
                   ).map(([key, label]) => (
                     <input
