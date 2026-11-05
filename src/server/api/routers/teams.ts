@@ -20,6 +20,8 @@ const teamsSaveSchema = createInsertSchema(teams, {
   submissionStatus: true,
   submittedAt: true,
   createdAt: true,
+  // Organizers seat teams; hackers can't move themselves.
+  judgingTableId: true,
 });
 
 const teamsSelectSchema = createSelectSchema(teams).omit({
@@ -27,6 +29,8 @@ const teamsSelectSchema = createSelectSchema(teams).omit({
   submissionStatus: true,
   submittedAt: true,
   createdAt: true,
+  // Seating is read through judgingPlan.team.getMyJudging.
+  judgingTableId: true,
 });
 
 const teamsSubmitSchema = z.object({
