@@ -2,40 +2,8 @@ import {
   card,
   primaryButton,
   secondaryButton,
-} from "~/components/judging/judge-ui";
-
-// Placeholder floor map: a grid of tables with one highlighted.
-// Replace with the real map once table positions exist.
-const MAP_ROWS = 5;
-const MAP_COLS = 13;
-const HIGHLIGHT = { row: 1, col: 5 };
-
-function MapPlaceholder() {
-  return (
-    <div
-      role="img"
-      aria-label="Floor map placeholder. Your next table is highlighted."
-      className="grid gap-[5px]"
-      style={{ gridTemplateColumns: `repeat(${MAP_COLS}, minmax(0, 1fr))` }}
-    >
-      {Array.from({ length: MAP_ROWS * MAP_COLS }, (_, i) => {
-        const row = Math.floor(i / MAP_COLS);
-        const col = i % MAP_COLS;
-        const here = row === HIGHLIGHT.row && col === HIGHLIGHT.col;
-        return (
-          <span
-            key={i}
-            className={`aspect-[3/2] rounded-[3px] border ${
-              here
-                ? "border-[#0b2238] bg-[#0b2238] ring-2 ring-[#5b3fa0] ring-offset-1"
-                : "border-[#c3cad8] bg-white"
-            }`}
-          />
-        );
-      })}
-    </div>
-  );
-}
+} from "~/components/judging/shared/judge-ui";
+import { VenueMap } from "~/components/judging/judge-app/judge-map";
 
 interface PublicJudgeNextProps {
   started: boolean;
@@ -135,7 +103,7 @@ export function PublicJudgeNext({
       </section>
 
       <section aria-label="Floor map" className={`${card} p-3.5`}>
-        <MapPlaceholder />
+        <VenueMap tables={tables} current={table} />
       </section>
 
       {/* Placeholder clock: static until the pitch timer is wired up. */}

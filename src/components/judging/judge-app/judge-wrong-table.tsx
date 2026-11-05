@@ -4,7 +4,7 @@ import {
   card,
   focusRing,
   secondaryButton,
-} from "~/components/judging/judge-ui";
+} from "~/components/judging/shared/judge-ui";
 
 const useButton = `min-h-[48px] rounded-xl bg-[#5b3fa0] px-5 text-[17px] font-bold text-white hover:bg-[#4d3488] disabled:cursor-not-allowed disabled:bg-[#9a8cc0] ${focusRing}`;
 

@@ -1,4 +1,4 @@
-import { PublicJudgeApp } from "~/components/judging/judge-app";
+import { PublicJudgeApp } from "~/components/judging/judge-app/judge-app";
 import SEO from "~/components/seo";
 
 // Opened from the private link on the judge roster (/judge/link/<token>).

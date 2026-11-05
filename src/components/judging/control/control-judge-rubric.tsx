@@ -1,7 +1,7 @@
 import { Trash2 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { card, focusRing, primaryButton } from "~/components/judging/judge-ui";
+import { card, focusRing, primaryButton } from "~/components/judging/shared/judge-ui";
 import {
   DEFAULT_RUBRIC,
   type Ratings,
@@ -13,7 +13,7 @@ import {
   effectiveWeight,
   hasGuide,
   scoreRubric,
-} from "~/components/judging/rubric-scorer";
+} from "~/components/judging/shared/rubric-scorer";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +31,7 @@ import {
   type Status,
   StatusLine,
 } from "./control-shared";
-import { SearchAutocomplete } from "../internals/search-autocomplete";
+import { SearchAutocomplete } from "../../internals/search-autocomplete";
 
 const MAX_DESCRIPTION = 140;
 

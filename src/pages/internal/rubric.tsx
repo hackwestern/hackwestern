@@ -1,5 +1,5 @@
 import { InternalNavbar } from "~/components/internals/navbar";
-import { RubricBuilder } from "~/components/judging/control-judge-rubric";
+import { RubricBuilder } from "~/components/judging/control/control-judge-rubric";
 import SEO from "~/components/seo";
 import { authRedirectOrganizer } from "~/utils/redirect";
 

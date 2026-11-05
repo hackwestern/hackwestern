@@ -4,15 +4,15 @@ import {
   card,
   focusRing,
   secondaryButton,
-} from "~/components/judging/judge-ui";
-import { type JudgedTeam } from "~/components/judging/judge-teams";
+} from "~/components/judging/shared/judge-ui";
+import { type JudgedTeam } from "~/components/judging/judge-app/judge-teams";
 import {
   type Ratings,
   type Rubric,
   RubricScorer,
   hasGuide,
   scoreRubric,
-} from "~/components/judging/rubric-scorer";
+} from "~/components/judging/shared/rubric-scorer";
 
 const saveButton = `min-h-[48px] rounded-xl bg-[#5b3fa0] px-5 text-[17px] font-bold text-white hover:bg-[#4d3488] disabled:cursor-not-allowed disabled:bg-[#9a8cc0] ${focusRing}`;
 

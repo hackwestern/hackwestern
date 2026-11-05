@@ -1,5 +1,5 @@
 import { InternalNavbar } from "~/components/internals/navbar";
-import { JudgeRoster } from "~/components/judging/judge-roster";
+import { JudgeRoster } from "~/components/judging/control/control-judge-roster";
 import SEO from "~/components/seo";
 import { authRedirectOrganizer } from "~/utils/redirect";
 

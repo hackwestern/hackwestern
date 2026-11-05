@@ -1,5 +1,5 @@
-import { card, focusRing, primaryButton } from "~/components/judging/judge-ui";
-import { type Ratings } from "~/components/judging/rubric-scorer";
+import { card, focusRing, primaryButton } from "~/components/judging/shared/judge-ui";
+import { type Ratings } from "~/components/judging/shared/rubric-scorer";
 
 /** One team this judge has scored or marked absent. */
 export interface JudgedTeam {
@@ -13,10 +13,24 @@ export interface JudgedTeam {
   notes: string;
 }
 
+/**
+ * Where the final submit stands. Once it leaves "open", scores are locked.
+ * - sending: saved on the device, being sent now
+ * - waiting: saved on the device, waiting for a connection
+ * - sent: the server has them
+ */
+export type SubmitStatus = "open" | "sending" | "waiting" | "sent";
+
+const SUBMIT_LABEL: Record<SubmitStatus, string> = {
+  open: "Submit scores",
+  sending: "Sending…",
+  waiting: "Waiting for connection",
+  sent: "Submitted",
+};
+
 interface PublicJudgeTeamsProps {
   results: JudgedTeam[];
-  /** Once submitted, scores are locked. */
-  submitted: boolean;
+  status: SubmitStatus;
   onEdit: (table: number) => void;
   onSubmit: () => void;
 }
@@ -24,7 +38,7 @@ interface PublicJudgeTeamsProps {
 /** The "My teams" tab: review every score, change any of them, then submit. */
 export function PublicJudgeTeams({
   results,
-  submitted,
+  status,
   onEdit,
   onSubmit,
 }: PublicJudgeTeamsProps) {
@@ -36,14 +50,30 @@ export function PublicJudgeTeams({
     );
   }
 
+  const locked = status !== "open";
+
   return (
     <>
-      {submitted ? (
+      {status === "sent" ? (
         <p
           role="status"
           className="m-0 rounded-xl bg-[#e4effd] px-3.5 py-2.5 text-sm font-semibold text-[#123d75]"
         >
           Scores submitted. Thank you!
+        </p>
+      ) : status === "sending" ? (
+        <p
+          role="status"
+          className="m-0 rounded-xl bg-[#e4effd] px-3.5 py-2.5 text-sm font-semibold text-[#123d75]"
+        >
+          Sending your scores…
+        </p>
+      ) : status === "waiting" ? (
+        <p
+          role="status"
+          className="m-0 rounded-xl bg-[#fff3d6] px-3.5 py-2.5 text-sm font-semibold text-[#6b4700]"
+        >
+          Saved on this phone. Your scores send when you&apos;re back online.
         </p>
       ) : (
         <p className="m-0 px-1 text-[13px] text-[#4a5d73]">
@@ -57,7 +87,7 @@ export function PublicJudgeTeams({
             <li key={r.table} className={i > 0 ? "border-t border-[#e3e7ef]" : ""}>
               <button
                 type="button"
-                disabled={submitted}
+                disabled={locked}
                 onClick={() => onEdit(r.table)}
                 aria-label={`${r.table} ${r.teamName}, ${
                   r.absent ? "absent" : `score ${r.score}`
@@ -78,11 +108,11 @@ export function PublicJudgeTeams({
 
       <button
         type="button"
-        disabled={submitted}
+        disabled={locked}
         onClick={onSubmit}
         className={primaryButton}
       >
-        {submitted ? "Submitted" : "Submit scores"}
+        {SUBMIT_LABEL[status]}
       </button>
     </>
   );

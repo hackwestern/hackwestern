@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { focusRing, friendlyError } from "~/components/judging/judge-ui";
+import { focusRing, friendlyError } from "~/components/judging/shared/judge-ui";
 import { SCORE_MAX, SCORE_MIN } from "~/schemas/judging";
 import { api } from "~/utils/api";
 

@@ -1,4 +1,4 @@
-import { focusRing } from "~/components/judging/judge-ui";
+import { focusRing } from "~/components/judging/shared/judge-ui";
 
 export const PUBLIC_JUDGE_TABS = [
   { id: "next", label: "Next" },

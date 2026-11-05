@@ -1,23 +1,32 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
-import { secondaryButton } from "~/components/judging/judge-ui";
-import { PublicJudgeEdit } from "~/components/judging/judge-edit";
+import {
+  JudgeOfflineBanner,
+  readProgress,
+  sendScores,
+  useOutbox,
+  writeProgress,
+} from "~/components/judging/judge-app/judge-offline";
+import { card, secondaryButton } from "~/components/judging/shared/judge-ui";
+import { PublicJudgeEdit } from "~/components/judging/dashboard/judge-edit";
 import {
   PublicJudgeNav,
   type PublicJudgeTab,
-} from "~/components/judging/judge-nav";
-import { PublicJudgeNext } from "~/components/judging/judge-next";
-import { PublicJudgeScan } from "~/components/judging/judge-scan";
+} from "~/components/judging/judge-app/judge-nav";
+import { PublicJudgeNext } from "~/components/judging/judge-app/judge-next";
+import { PublicJudgeScan } from "~/components/judging/judge-app/judge-scan";
 import {
-  PublicJudgeScore,
+  JudgeRubric,
   type ScoreSubmission,
-} from "~/components/judging/judge-scoring";
+} from "~/components/judging/judge-app/judge-rubric";
 import {
   type JudgedTeam,
   PublicJudgeTeams,
-} from "~/components/judging/judge-teams";
-import { PublicJudgeWrongTable } from "~/components/judging/judge-wrong-table";
-import { DEFAULT_RUBRIC } from "~/components/judging/rubric-scorer";
+  type SubmitStatus,
+} from "~/components/judging/judge-app/judge-teams";
+import { PublicJudgeWrongTable } from "~/components/judging/judge-app/judge-wrong-table";
+import { DEFAULT_RUBRIC } from "~/components/judging/shared/rubric-scorer";
+import { VenueMap } from "~/components/judging/judge-app/judge-map";
 
 // Placeholder team name until teams come from the database.
 const TEAM_NAME = "Team";
@@ -28,8 +37,8 @@ const PLACEHOLDER = {
   tables: [41, 42, 43, 44, 45, 46],
   // Tables already judged when the page opens. The next is tables[done].
   done: 3,
-  // What the camera "finds" until real QR scanning exists.
-  scan: { table: 52, judgesSoFar: 1, judgesNeeded: 3 },
+  // How many judges a scanned team has had. Placeholder for every team.
+  scan: { judgesSoFar: 1, judgesNeeded: 3 },
   // The rubric this judge scores with. Will come from the backend.
   rubric: DEFAULT_RUBRIC,
   // Teams judged so far. These match the first three tables above.
@@ -70,8 +79,13 @@ function HeaderRow({ left, right }: { left: string; right?: ReactNode }) {
   );
 }
 
+interface PublicJudgeAppProps {
+  /** Keeps this judge's saved progress apart from other judges' on a shared phone. */
+  judgeKey?: string;
+}
+
 /** Mobile shell for judges who open a private link instead of signing in. */
-export function PublicJudgeApp() {
+export function PublicJudgeApp({ judgeKey = "demo" }: PublicJudgeAppProps) {
   const [tab, setTab] = useState<PublicJudgeTab>("next");
   const [started, setStarted] = useState(false);
   // Tables already judged, so the next one is tables[done].
@@ -87,7 +101,37 @@ export function PublicJudgeApp() {
   const [scoringTable, setScoringTable] = useState<number | null>(null);
   // Everything scored or marked absent, waiting for the final submit.
   const [results, setResults] = useState<JudgedTeam[]>(PLACEHOLDER.results);
-  const [submitted, setSubmitted] = useState(false);
+  // True once the server has the latest results.
+  const [sent, setSent] = useState(false);
+
+  // Offline support. Progress and unsent scores live on the phone, so a reload
+  // or a dead connection doesn't lose them.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    const saved = readProgress(judgeKey);
+    if (saved) {
+      setDone(saved.done);
+      setStarted(saved.started);
+      setResults(saved.results);
+      setSent(saved.sent);
+    }
+    setHydrated(true);
+  }, [judgeKey]);
+  useEffect(() => {
+    if (hydrated) writeProgress(judgeKey, { done, started, results, sent });
+  }, [hydrated, judgeKey, done, started, results, sent]);
+
+  const resultsRef = useRef(results);
+  useEffect(() => {
+    resultsRef.current = results;
+  });
+  const { online, pending, submit } = useOutbox(judgeKey, sendScores, (item) => {
+    // Only counts as sent if nothing changed while it was on its way.
+    setSent(JSON.stringify(item.results) === JSON.stringify(resultsRef.current));
+  });
+  let submitStatus: SubmitStatus = "open";
+  if (pending > 0) submitStatus = online ? "sending" : "waiting";
+  else if (sent) submitStatus = "sent";
 
   const { label, tables, scan, rubric } = PLACEHOLDER;
   const expected = tables[done];
@@ -137,7 +181,7 @@ export function PublicJudgeApp() {
         ? list.map((r) => (r.table === team.table ? team : r))
         : [...list, team],
     );
-    setSubmitted(false);
+    setSent(false);
   };
 
   // After a table is scored or marked absent: move on and show what's next.
@@ -183,9 +227,8 @@ export function PublicJudgeApp() {
       )
     )
       return;
-    // Logged for now. This is where it will go to the backend.
-    console.log("[public judge] scores submitted", { judge: label, results });
-    setSubmitted(true);
+    // Saved on the phone first, then sent when there is a connection.
+    submit({ judge: label, results });
   };
 
   const scanning = tab === "score" && scoreView === "scan";
@@ -212,6 +255,8 @@ export function PublicJudgeApp() {
     );
   } else if (wrongTable) {
     header = <HeaderRow left="Wrong table?" />;
+  } else if (tab === "map") {
+    header = <HeaderRow left="Floor map" />;
   } else if (tab === "teams") {
     // The edit view draws its own header row (team and current score).
     if (!editing) header = <HeaderRow left="Review" />;
@@ -255,7 +300,6 @@ export function PublicJudgeApp() {
     if (scoreView === "scan") {
       body = (
         <PublicJudgeScan
-          table={scan.table}
           judgesSoFar={scan.judgesSoFar}
           judgesNeeded={scan.judgesNeeded}
           onScore={(table) => {
@@ -266,7 +310,7 @@ export function PublicJudgeApp() {
       );
     } else if (scoreTarget !== undefined) {
       body = (
-        <PublicJudgeScore
+        <JudgeRubric
           key={`${scoreTarget}-${adHoc}`}
           table={scoreTarget}
           adHoc={adHoc}
@@ -297,14 +341,24 @@ export function PublicJudgeApp() {
     ) : (
       <PublicJudgeTeams
         results={results}
-        submitted={submitted}
+        status={submitStatus}
         onEdit={setEditingTable}
         onSubmit={submitAll}
       />
     );
   } else {
-    // Map comes later.
-    body = <p className="px-1 text-[15px] text-[#4a5d73]">Nothing here yet.</p>;
+    body = (
+      <>
+        <section aria-label="Floor map" className={`${card} p-3.5`}>
+          <VenueMap tables={tables} current={currentTable} />
+        </section>
+        {currentTable === undefined && (
+          <p className="m-0 px-1 text-[15px] text-[#4a5d73]">
+            Start judging on the Next tab to see your next table here.
+          </p>
+        )}
+      </>
+    );
   }
 
   return (
@@ -316,6 +370,7 @@ export function PublicJudgeApp() {
             scoringPage || editing ? "pt-4" : "pt-3"
           }`}
         >
+          <JudgeOfflineBanner online={online} pending={pending} />
           {body}
         </main>
         <PublicJudgeNav active={tab} onChange={changeTab} />

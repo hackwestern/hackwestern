@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { card, focusRing } from "~/components/judging/judge-ui";
+import { card, focusRing } from "~/components/judging/shared/judge-ui";
 
 const PITCH_MS = 4 * 60 * 1000;
 

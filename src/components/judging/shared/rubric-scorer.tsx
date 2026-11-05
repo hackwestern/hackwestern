@@ -1,4 +1,4 @@
-import { focusRing } from "~/components/judging/judge-ui";
+import { focusRing } from "~/components/judging/shared/judge-ui";
 
 /** Every criterion is scored on the same slider, from 0 to 100. */
 export const RUBRIC_MIN = 0;

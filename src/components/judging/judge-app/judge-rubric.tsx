@@ -4,14 +4,14 @@ import {
   card,
   focusRing,
   secondaryButton,
-} from "~/components/judging/judge-ui";
+} from "~/components/judging/shared/judge-ui";
 import {
   type Ratings,
   type Rubric,
   RubricScorer,
   hasGuide,
   scoreRubric,
-} from "~/components/judging/rubric-scorer";
+} from "~/components/judging/shared/rubric-scorer";
 
 const nextButton = `min-h-[48px] rounded-xl bg-[#5b3fa0] px-5 text-[17px] font-bold text-white hover:bg-[#4d3488] disabled:cursor-not-allowed disabled:bg-[#9a8cc0] ${focusRing}`;
 
@@ -88,7 +88,7 @@ interface PublicJudgeScoreProps {
 }
 
 /** The Score page: rubric, notes and the two ways to finish a table. Key it by table. */
-export function PublicJudgeScore({
+export function JudgeRubric({
   table,
   adHoc,
   rubric,
