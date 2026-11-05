@@ -1,13 +1,5 @@
 "use client";
-"use no memo";
 
-import {
-  type ColumnDef,
-  type Table as TanstackTable,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
 import {
   Table,
   TableBody,
@@ -29,32 +21,26 @@ export type ScanRow = {
   createdAt: Date | null;
 };
 
-const column = (
-  key: keyof ScanRow,
-  header: string,
-  width: string,
-  emphasis = false,
-): ColumnDef<ScanRow> => ({
-  accessorKey: key,
-  header,
-  meta: { width },
-  cell: ({ row }) => (
-    <span
-      className={
-        emphasis ? "text-dashboard-text-heavy" : "text-dashboard-text-light"
-      }
-    >
-      {row.getValue<string>(key)}
-    </span>
-  ),
-});
+type ScanTextField = {
+  [K in keyof ScanRow]: ScanRow[K] extends string ? K : never;
+}[keyof ScanRow];
 
-export const scansColumns: ColumnDef<ScanRow>[] = [
-  column("hackerName", "Hacker Name", "w-[144px]", true),
-  column("event", "Event", "w-[144px]", true),
-  column("scanner", "Scanner", "w-[144px]"),
-  column("day", "Day", "w-[84px]"),
-  column("time", "Time", "w-[124px]"),
+const SCAN_COLUMNS: {
+  key: ScanTextField;
+  header: string;
+  width: string;
+  emphasis?: boolean;
+}[] = [
+  {
+    key: "hackerName",
+    header: "Hacker Name",
+    width: "w-[144px]",
+    emphasis: true,
+  },
+  { key: "event", header: "Event", width: "w-[144px]", emphasis: true },
+  { key: "scanner", header: "Scanner", width: "w-[144px]" },
+  { key: "day", header: "Day", width: "w-[84px]" },
+  { key: "time", header: "Time", width: "w-[124px]" },
 ];
 
 export interface ScanFilter {
@@ -62,15 +48,27 @@ export interface ScanFilter {
   label: string;
 }
 
-interface ScansTableProps {
+type FilterProps =
+  | {
+      filters: ScanFilter[];
+      activeFilter: string;
+      onFilterChange: (value: string) => void;
+    }
+  | {
+      filters?: undefined;
+      activeFilter?: undefined;
+      onFilterChange?: undefined;
+    };
+
+type SearchProps =
+  | { search: string; onSearchChange: (value: string) => void }
+  | { search?: undefined; onSearchChange?: undefined };
+
+type ScansTableProps = {
   scans: ScanRow[];
   isLoading?: boolean;
-  filters?: ScanFilter[];
-  activeFilter?: string;
-  onFilterChange?: (value: string) => void;
-  search?: string;
-  onSearchChange?: (value: string) => void;
-}
+} & FilterProps &
+  SearchProps;
 
 export function ScansTable({
   scans,
@@ -81,20 +79,15 @@ export function ScansTable({
   search,
   onSearchChange,
 }: ScansTableProps) {
-  const table = useReactTable({
-    data: scans,
-    columns: scansColumns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
-  const hasFilters = filters !== undefined && filters.length > 0;
-  const hasSearch = onSearchChange !== undefined;
+  const showFilters =
+    filters !== undefined && filters.length > 0 && onFilterChange !== undefined;
+  const showSearch = search !== undefined && onSearchChange !== undefined;
 
   return (
-    <div className="flex w-full max-w-[640px] flex-col gap-6 font-figtree">
-      {(hasFilters || hasSearch) && (
+    <div className="flex w-full flex-col gap-6 font-figtree">
+      {(showFilters || showSearch) && (
         <div className="flex flex-col-reverse gap-4 md:flex-row md:items-center md:justify-between">
-          {hasFilters && (
+          {showFilters && (
             <div
               role="group"
               aria-label="Filter scans"
@@ -107,7 +100,7 @@ export function ScansTable({
                     key={filter.value}
                     type="button"
                     aria-pressed={isActive}
-                    onClick={() => onFilterChange?.(filter.value)}
+                    onClick={() => onFilterChange(filter.value)}
                     className={cn(
                       "rounded-dashboard-xs text-sm leading-default transition-colors",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
@@ -123,7 +116,7 @@ export function ScansTable({
             </div>
           )}
 
-          {hasSearch && (
+          {showSearch && (
             <div className="relative w-full md:ml-auto md:w-[276px]">
               <Search
                 aria-hidden="true"
@@ -132,7 +125,7 @@ export function ScansTable({
               <input
                 type="search"
                 aria-label="Search scans"
-                value={search ?? ""}
+                value={search}
                 onChange={(event) => onSearchChange(event.target.value)}
                 placeholder="Search by name, activity, scanner"
                 className={cn(
@@ -150,54 +143,48 @@ export function ScansTable({
           {isLoading ? "Loading scans..." : "No scans found"}
         </p>
       ) : (
-        <ScansTableBody table={table} />
+        <div className="w-full overflow-x-auto">
+          <Table className="w-full min-w-[620px] font-figtree leading-default">
+            <TableHeader className="[&_tr]:border-dashboard-border-faint">
+              <TableRow className="hover:bg-transparent">
+                {SCAN_COLUMNS.map((column) => (
+                  <TableHead
+                    key={column.key}
+                    className={cn(
+                      "h-auto px-3 py-2 text-left text-xs font-semibold uppercase text-dashboard-text-light",
+                      column.width,
+                    )}
+                  >
+                    {column.header}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {scans.map((scan) => (
+                <TableRow
+                  key={scan.id}
+                  className="border-0 odd:bg-dashboard-bg-highlightSubtle hover:bg-dashboard-bg-highlight"
+                >
+                  {SCAN_COLUMNS.map((column) => (
+                    <TableCell
+                      key={column.key}
+                      className={cn(
+                        "px-3 py-3 text-sm font-medium",
+                        column.emphasis
+                          ? "text-dashboard-text-heavy"
+                          : "text-dashboard-text-light",
+                      )}
+                    >
+                      {scan[column.key]}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
-    </div>
-  );
-}
-
-function ScansTableBody({ table }: { table: TanstackTable<ScanRow> }) {
-  return (
-    <div className="w-full overflow-x-auto">
-      <Table className="min-w-[620px] font-figtree leading-default">
-        <TableHeader className="[&_tr]:border-dashboard-border-faint">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id} className="hover:bg-transparent">
-              {headerGroup.headers.map((header) => (
-                <TableHead
-                  key={header.id}
-                  className={cn(
-                    "h-auto px-3 py-2 text-left text-xs font-semibold uppercase text-dashboard-text-light",
-                    (header.column.columnDef.meta as { width?: string })?.width,
-                  )}
-                >
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext(),
-                  )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow
-              key={row.id}
-              className="border-0 odd:bg-dashboard-bg-highlightSubtle hover:bg-dashboard-bg-highlight"
-            >
-              {row.getVisibleCells().map((cell) => (
-                <TableCell
-                  key={cell.id}
-                  className="px-3 py-3 text-sm font-medium"
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
     </div>
   );
 }

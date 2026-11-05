@@ -9,6 +9,7 @@ import { api } from "~/utils/api";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import "~/styles/globals.css";
+import { Toaster } from "~/components/ui/sonner";
 import { Toaster as CustomToaster } from "~/components/ui/toaster";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import {
@@ -82,6 +83,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
           <Component {...pageProps} />
         </TooltipProvider>
       </main>
+      <Toaster style={{ zIndex: 90 }} />
       <CustomToaster />
     </SessionProvider>
   );

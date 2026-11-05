@@ -33,16 +33,25 @@ export function ActivityIcon({
   );
 }
 
-export interface ActivityCardProps {
+export type ActivityCardProps = {
   title: string;
   meta?: string;
   kind: ActivityKind;
-  variant?: "default" | "featured";
-  href?: string;
-  onClick?: () => void;
-  children?: React.ReactNode;
   className?: string;
-}
+} & (
+  | {
+      variant?: "default";
+      href?: string;
+      onClick?: () => void;
+      children?: never;
+    }
+  | {
+      variant: "featured";
+      href?: never;
+      onClick?: never;
+      children?: React.ReactNode;
+    }
+);
 
 export function ActivityCard({
   title,

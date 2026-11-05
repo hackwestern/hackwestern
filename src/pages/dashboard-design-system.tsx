@@ -6,7 +6,6 @@ import { ActivityCard } from "~/components/internals/activity-card";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { ScansTable } from "~/components/scans/scans-table";
 import { toast } from "sonner";
-import { Toaster } from "~/components/ui/sonner";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { DashboardChip } from "~/components/internals/dashboard-chip";
@@ -296,40 +295,42 @@ function DashboardDesignSystem() {
       <Showcase
         name="Scans Table"
         file="components/scans/scans-table.tsx"
-        usage="The organizer's All Scans list. Pass filters, activeFilter and onFilterChange to show the All / Meals / Activities filters above it, and search and onSearchChange for the search box beside them; the page does the filtering and matching. Pass isLoading while fetching; it shows a loading message, and a 'No scans found' message for an empty scans array."
+        usage="The organizer's All Scans list. Pass filters, activeFilter and onFilterChange together to show the All / Meals / Activities filters above it, and search and onSearchChange together for the search box beside them; the page does the filtering and matching. Without them the table has no filter or search. It fills its container, so the page sets the width (640px in the Figma). Pass isLoading while fetching; it shows a loading message, and a 'No scans found' message for an empty scans array."
       >
-        <ScansTable
-          filters={[
-            { value: "all", label: "All" },
-            { value: "meals", label: "Meals" },
-            { value: "activities", label: "Activities" },
-          ]}
-          activeFilter={scanFilter}
-          search={scanSearch}
-          onSearchChange={setScanSearch}
-          onFilterChange={setScanFilter}
-          scans={Array.from({ length: 5 }, (_, i) => ({
-            id: String(i),
-            hackerName: "Hacker Name",
-            event: "Friday Dinner",
-            scanner: "Hunter Chen",
-            day: "Nov 21",
-            time: "6:17 PM",
-            createdAt: null,
-          }))}
-        />
+        <div className="w-full max-w-[640px]">
+          <ScansTable
+            filters={[
+              { value: "all", label: "All" },
+              { value: "meals", label: "Meals" },
+              { value: "activities", label: "Activities" },
+            ]}
+            activeFilter={scanFilter}
+            search={scanSearch}
+            onSearchChange={setScanSearch}
+            onFilterChange={setScanFilter}
+            scans={Array.from({ length: 5 }, (_, i) => ({
+              id: String(i),
+              hackerName: "Hacker Name",
+              event: "Friday Dinner",
+              scanner: "Hunter Chen",
+              day: "Nov 21",
+              time: "6:17 PM",
+              createdAt: null,
+            }))}
+          />
+        </div>
       </Showcase>
 
       <Showcase
         name="Toast (mobile only)"
-        file="components/ui/sonner.tsx → Toaster"
+        file="components/ui/sonner.tsx → Toaster (mounted in _app.tsx)"
         usage={
           <>
             Mobile views only. Organizers scan from their phones, so the toast
             only exists on the mobile scanner page and has no desktop design. It
-            confirms a scan without leaving the camera. Mount{" "}
-            <code>&lt;Toaster /&gt;</code> once on that page and call{" "}
-            <code>toast()</code> from &quot;sonner&quot; with the message.
+            confirms a scan without leaving the camera. The Toaster is mounted
+            once in _app.tsx, so just call <code>toast()</code> from
+            &quot;sonner&quot; with the message.
           </>
         }
       >
@@ -348,7 +349,6 @@ function DashboardDesignSystem() {
             Show toast
           </DashboardButton>
         </div>
-        <Toaster />
       </Showcase>
     </div>
   );
