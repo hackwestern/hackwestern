@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "~/lib/utils";
 
 export interface DashboardPanelProps {
-  title?: React.ReactNode;
+  title?: string;
   children: React.ReactNode;
   className?: string;
 }
