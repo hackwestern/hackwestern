@@ -1133,3 +1133,19 @@ export const scavengerHuntRedemptions = pgTable(
   },
   (t) => [index("redemption_user_idx").on(t.userId)],
 );
+
+// One row (id 1) of settings for the venue broadcast display (/broadcast),
+// edited by organizers at /internal/broadcast.
+export const broadcastSettings = pgTable("broadcast_settings", {
+  id: integer("id").primaryKey().default(1),
+  hackingStartsAt: timestamp("hacking_starts_at", {
+    mode: "date",
+    precision: 3,
+  }),
+  hackingEndsAt: timestamp("hacking_ends_at", { mode: "date", precision: 3 }),
+  photoSeconds: integer("photo_seconds").notNull().default(8),
+  videoSeconds: integer("video_seconds").notNull().default(20),
+  updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
