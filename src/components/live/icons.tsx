@@ -4,7 +4,7 @@ import {
   GraduationCap,
   Handshake,
   House,
-  Map,
+  MapIcon,
   Utensils,
 } from "lucide-react";
 
@@ -383,7 +383,7 @@ const Horsey = () => {
 const SIDEBAR_ICONS: Record<string, LucideIcon> = {
   home: House,
   schedule: Calendar,
-  map: Map,
+  map: MapIcon,
   menu: Utensils,
   mentors: GraduationCap,
   sponsors: Handshake,

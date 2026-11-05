@@ -12,9 +12,18 @@ import { SearchBar } from "~/components/internals/search-bar";
 import { ApplicationSidebar } from "~/components/apply/application-sidebar";
 import { UserBadge } from "~/components/apply/user-badge";
 import Sidebar from "~/components/live/sidebar";
+import { ArrowLeft, ArrowRight, ExternalLink } from "lucide-react";
+import { DashboardButton } from "~/components/internals/dashboard-button";
+import { DashboardTag } from "~/components/internals/dashboard-tag";
+import { DashboardChip } from "~/components/internals/dashboard-chip";
+import { NotificationBadge } from "~/components/internals/notification-badge";
+import { DashboardCheckbox } from "~/components/internals/dashboard-checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 
 function DesignSystem() {
   const [isLoading, setIsLoading] = useState(false);
+  const [tagFilter, setTagFilter] = useState("Product Design");
+  const [chipFilter, setChipFilter] = useState("All");
 
   const handleClick = () => {
     setIsLoading(true);
@@ -48,8 +57,6 @@ function DesignSystem() {
         }
       />
 
-      <div className="h3">Search Bar: </div>
-      <SearchBar></SearchBar>
       <div className="h3">Window Asset: </div>
       <Window title="Placeholder">
         <div className="pb-10 font-figtree text-9xl">0:00</div>
@@ -101,6 +108,134 @@ function DesignSystem() {
 
       <div className="h3">Dashboard Sidebar: </div>
       <Sidebar />
+
+      <div className="h3">Dashboard Components: </div>
+      <div className="flex flex-col gap-8 rounded-dashboard-lg bg-dashboard-bg-page p-8">
+        <div className="flex flex-col gap-3">
+          <div className="p1">Buttons</div>
+          <div className="flex flex-wrap items-center gap-4">
+            <DashboardButton>Mark as done</DashboardButton>
+            <DashboardButton>
+              Open RSVP form
+              <ExternalLink />
+            </DashboardButton>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <DashboardButton variant="secondary">
+              <ArrowLeft />
+              Prev
+            </DashboardButton>
+            <DashboardButton variant="secondary">
+              Next
+              <ArrowRight />
+            </DashboardButton>
+            <DashboardButton variant="secondary" disabled>
+              <ArrowLeft />
+              Prev
+            </DashboardButton>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <DashboardButton variant="tertiary">
+              Next: Communications
+              <ArrowRight />
+            </DashboardButton>
+            <DashboardButton variant="tertiary">
+              <ArrowLeft />
+              Back: Packing List
+            </DashboardButton>
+            <DashboardButton variant="outline">
+              Message on Slack
+            </DashboardButton>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div className="p1">Tags</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <DashboardTag>Non-interactive</DashboardTag>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {["Front-End", "Back-End", "Data & AI", "Product Design"].map(
+              (tag) => (
+                <DashboardTag
+                  key={tag}
+                  selected={tagFilter === tag}
+                  onClick={() => setTagFilter(tag)}
+                >
+                  {tag}
+                </DashboardTag>
+              ),
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div className="p1">Chips</div>
+          <div className="flex flex-wrap items-center gap-2">
+            {["All", "Activities", "Meals"].map((chip) => (
+              <DashboardChip
+                key={chip}
+                selected={chipFilter === chip}
+                onClick={() => setChipFilter(chip)}
+              >
+                {chip}
+              </DashboardChip>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div className="p1">Tabs</div>
+          <Tabs defaultValue="friday">
+            <TabsList>
+              <TabsTrigger value="friday">Friday</TabsTrigger>
+              <TabsTrigger value="saturday">Saturday</TabsTrigger>
+              <TabsTrigger value="sunday">Sunday</TabsTrigger>
+            </TabsList>
+            <TabsContent value="friday" className="p2">
+              Friday content
+            </TabsContent>
+            <TabsContent value="saturday" className="p2">
+              Saturday content
+            </TabsContent>
+            <TabsContent value="sunday" className="p2">
+              Sunday content
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div className="p1">Search Bar</div>
+          <SearchBar />
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div className="p1">Checkbox</div>
+          {["Get accepted to Hack Western", "Join the Slack"].map(
+            (label, index) => (
+              <div key={label} className="flex items-center gap-3">
+                <DashboardCheckbox
+                  id={`checklist-${index}`}
+                  defaultChecked={index === 0}
+                />
+                <label
+                  htmlFor={`checklist-${index}`}
+                  className="cursor-pixel-hover font-figtree text-base font-medium text-dashboard-text-light"
+                >
+                  {label}
+                </label>
+              </div>
+            ),
+          )}
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div className="p1">Notification Badge</div>
+          <div className="flex items-center gap-4">
+            <NotificationBadge count={4} />
+          </div>
+        </div>
+      </div>
 
       <div className="h3">typography: </div>
       <div className="h1">heading 1</div>
