@@ -11,6 +11,7 @@ import { SmallCard } from "~/components/internals/smallCard";
 import { SearchBar } from "~/components/internals/search-bar";
 import { ApplicationSidebar } from "~/components/apply/application-sidebar";
 import { UserBadge } from "~/components/apply/user-badge";
+import Sidebar from "~/components/live/sidebar";
 
 function DesignSystem() {
   const [isLoading, setIsLoading] = useState(false);
@@ -97,6 +98,9 @@ function DesignSystem() {
           </div>
         </div>
       </div>
+
+      <div className="h3">Dashboard Sidebar: </div>
+      <Sidebar />
 
       <div className="h3">typography: </div>
       <div className="h1">heading 1</div>
