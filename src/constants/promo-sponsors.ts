@@ -99,19 +99,10 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
     overlaySrc: "/shared/sponsors/commure.svg",
   },
   {
-    name: "Replit",
-    href: "https://replit.com/",
-    // Wordmarks on one baseline.
-    left: 1.97,
-    top: 101.4,
-    width: 17.02,
-    height: 6.51,
-    overlaySrc: "/shared/sponsors/replit.png",
-  },
-  {
     name: "TinyFish",
     href: "https://www.tinyfish.ai/",
-    left: 44.05,
+    // A centered pair, wordmarks on one baseline.
+    left: 30.38,
     top: 102.21,
     width: 17.35,
     height: 5.19,
@@ -120,7 +111,7 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Celsius",
     href: "https://www.celsius.com/",
-    left: 86.45,
+    left: 58.04,
     top: 102.92,
     width: 11.77,
     height: 5.44,
@@ -129,8 +120,8 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Autodesk",
     href: "https://www.autodesk.com/",
-    // A centered pair, wordmarks on one baseline.
-    left: 32.8,
+    // A centered row of four, wordmarks on one baseline.
+    left: 12.85,
     top: 114.27,
     width: 10.84,
     height: 8.2,
@@ -139,10 +130,28 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Accenture",
     href: "https://www.accenture.com/",
-    left: 53.95,
+    left: 34.0,
     top: 117.68,
     width: 13.45,
     height: 4.72,
     overlaySrc: "/shared/sponsors/accenture.svg",
+  },
+  {
+    name: "OpenAI",
+    href: "https://openai.com/",
+    left: 57.76,
+    top: 119.65,
+    width: 9.77,
+    height: 3.53,
+    overlaySrc: "/shared/sponsors/openai.svg",
+  },
+  {
+    name: "PCBWay",
+    href: "https://www.pcbway.com/",
+    left: 77.84,
+    top: 120.12,
+    width: 9.51,
+    height: 3.53,
+    overlaySrc: "/shared/sponsors/pcbway.png",
   },
 ];

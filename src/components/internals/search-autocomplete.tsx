@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import * as React from "react";
 import { useDebounce } from "use-debounce";
 
-import { Input } from "~/components/ui/input";
 import { cn } from "~/lib/utils";
 
 export interface AutocompleteOption {
@@ -39,7 +38,7 @@ function highlightMatch(label: string, query: string) {
   return (
     <>
       {before}
-      <span className="font-semibold text-heavy">{match}</span>
+      <span className="font-semibold text-dashboard-text-heavy">{match}</span>
       {after}
     </>
   );
@@ -163,12 +162,11 @@ const SearchAutocomplete = React.forwardRef<
         <div className="relative">
           <Search
             aria-hidden="true"
-            className="pointer-events-none absolute left-[10px] top-1/2 h-4 w-4 -translate-y-1/2 text-gray-3"
+            className="pointer-events-none absolute left-4 top-1/2 z-10 size-4 -translate-y-1/2 text-dashboard-text-light"
           />
 
-          <Input
+          <input
             ref={ref}
-            variant="default"
             role="combobox"
             aria-expanded={open}
             aria-controls={listboxId}
@@ -185,7 +183,10 @@ const SearchAutocomplete = React.forwardRef<
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={handleKeyDown}
-            className="pl-[32px] pr-[32px]"
+            className={cn(
+              "w-full rounded-dashboard-sm bg-dashboard-bg-surface py-3 pl-11 pr-10 font-figtree text-base font-medium leading-default text-dashboard-text-heavy backdrop-blur-dashboard-input",
+              "placeholder:text-dashboard-text-light focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+            )}
           />
 
           {query.length > 0 && (
@@ -197,9 +198,9 @@ const SearchAutocomplete = React.forwardRef<
                 onChange?.("");
                 setOpen(false);
               }}
-              className="absolute right-[8px] top-1/2 -translate-y-1/2 text-gray-3 transition-colors hover:text-gray-5"
+              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pixel-hover text-dashboard-text-light transition-colors hover:text-dashboard-text-heavy"
             >
-              <X className="h-4 w-4" />
+              <X className="size-4" />
             </button>
           )}
         </div>
@@ -208,14 +209,10 @@ const SearchAutocomplete = React.forwardRef<
           <ul
             id={listboxId}
             role="listbox"
-            className={cn(
-              "absolute z-50 mt-[8px] max-h-[320px] w-full overflow-auto",
-              "rounded-md border border-border-light bg-offwhite p-[4px]",
-              "shadow-secondary-btn",
-            )}
+            className="absolute z-50 mt-2 max-h-[320px] w-full overflow-auto rounded-dashboard-lg border border-dashboard-border-subtle bg-dashboard-bg-surface p-1 shadow-dashboard-card"
           >
             {filtered.length === 0 ? (
-              <li className="p3 px-[12px] py-[8px] text-light">
+              <li className="px-3 py-2 font-figtree text-sm font-medium italic text-dashboard-text-light">
                 {emptyMessage}
               </li>
             ) : (
@@ -232,15 +229,19 @@ const SearchAutocomplete = React.forwardRef<
                   }}
                   onClick={() => commitSelection(option)}
                   className={cn(
-                    "flex cursor-pixel-hover flex-col rounded-sm px-[12px] py-[8px]",
-                    index === activeIndex ? "bg-highlight" : "bg-transparent",
+                    "flex cursor-pixel-hover flex-col gap-0.5 rounded-dashboard-sm px-3 py-2 font-figtree font-medium leading-default",
+                    index === activeIndex
+                      ? "bg-dashboard-bg-highlight"
+                      : "bg-transparent",
                   )}
                 >
-                  <span className="p2 text-medium font-figtree">
+                  <span className="text-base text-dashboard-text-medium">
                     {highlightMatch(option.label, debouncedQuery)}
                   </span>
                   {option.description && (
-                    <span className="p3 text-light">{option.description}</span>
+                    <span className="text-sm text-dashboard-text-light">
+                      {option.description}
+                    </span>
                   )}
                 </li>
               ))
