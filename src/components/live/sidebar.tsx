@@ -1,9 +1,11 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Horsey } from "./icons";
-import { Button } from "../ui/button";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import { SearchAutocomplete } from "../internals/search-autocomplete";
+import { Button } from "../ui/button";
 import { SectionLink, IconlessLink } from "./navlinks";
+import * as tokens from "~/lib/tokens";
 
 const Sidebar = () => {
   const router = useRouter();
@@ -18,29 +20,43 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="hidden h-screen w-1/4 flex-col justify-between bg-highlight px-4 py-8 md:flex lg:px-6 2xl:w-1/5 2xl:px-8 3xl:w-1/6 3xl:px-12">
-      <div>
+    <nav className="hidden h-screen w-[324px] shrink-0 flex-col justify-between overflow-y-auto rounded-dashboard-lg border-r border-dashboard-border-default bg-dashboard-bg-nav px-6 py-12 md:flex">
+      <div className="flex flex-col gap-12">
         <Link
-          className="py-auto flex gap-4 text-center font-secondary text-lg font-bold text-heavy lg:text-xl"
           href="/"
+          className="flex cursor-pixel-hover items-center gap-3 leading-default text-dashboard-text-heavy"
+          style={tokens.dashboardTypography.bodyLg}
         >
-          <Horsey />
-          <div className="flex flex-col justify-center">Hack Western 13</div>
+          <Image
+            src="/shared/horse.svg"
+            alt=""
+            width={34}
+            height={50}
+            className="-my-[2.5px] mx-[7px] shrink-0"
+          />
+          Hack Western 13
         </Link>
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2 pt-8">
-            <SectionLink tab="home" name="Home" />
-            <SectionLink tab="schedule" name="Schedule" />
-            <SectionLink tab="map" name="Map" />
-            <SectionLink tab="menu" name="Menu" />
-            <SectionLink tab="mentors" name="Mentors" />
-            <SectionLink tab="sponsors" name="Sponsors" />
-          </div>
-          <hr className="border-[#ebdff7]" />
-          <div className="flex flex-col gap-2">
-            <IconlessLink tab="event-logistics" name="Event Logistics" />
-            <IconlessLink tab="contact-us" name="Contact Us" />
-            <IconlessLink tab="faq" name="FAQ" />
+        <div className="flex flex-col gap-9">
+          <SearchAutocomplete
+            options={[]}
+            placeholder="Search"
+            className="[&_div]:filter-none [&_input]:border-0 [&_input]:py-3 [&_input]:pl-11 [&_input]:leading-default [&_input]:text-dashboard-text-heavy [&_input]:shadow-none [&_input]:placeholder:text-dashboard-text-light [&_svg]:left-4 [&_svg]:text-dashboard-text-light"
+          />
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-1.5">
+              <SectionLink tab="home" name="Home" />
+              <SectionLink tab="schedule" name="Schedule" />
+              <SectionLink tab="map" name="Map" />
+              <SectionLink tab="menu" name="Food Menu" />
+              <SectionLink tab="mentors" name="Mentors" />
+              <SectionLink tab="sponsors" name="Sponsors" />
+            </div>
+            <hr className="border-dashboard-border-subtle" />
+            <div className="flex flex-col gap-1.5">
+              <IconlessLink tab="event-logistics" name="Event Logistics" />
+              <IconlessLink tab="contact-us" name="Contact Us" />
+              <IconlessLink tab="faq" name="FAQ" />
+            </div>
           </div>
         </div>
       </div>
@@ -48,12 +64,14 @@ const Sidebar = () => {
         <Button
           onClick={logout}
           variant="ghost"
-          className="w-fit border border-light text-base text-medium"
+          size="sm"
+          className="mt-12 w-fit rounded-dashboard-lg border border-dashboard-border-medium px-[11px] py-[7px] leading-default text-dashboard-text-medium hover:bg-dashboard-bg-surface hover:text-dashboard-text-heavy"
+          style={tokens.dashboardTypography.body}
         >
           Logout
         </Button>
       )}
-    </div>
+    </nav>
   );
 };
 

@@ -47,6 +47,8 @@ const config = {
         highlight: tokens.colors.bg.highlight,
         "promo-sheet": tokens.colors.bg.promoSheet,
 
+        dashboard: tokens.dashboardColors,
+
         green: tokens.colors.greens["green-primary"],
         "green-dark": tokens.colors.greens["green-dark"],
 
@@ -141,6 +143,8 @@ const config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
         "hw-gradient-radius": "60vw",
+        "dashboard-sm": tokens.dashboardRadius.sm,
+        "dashboard-lg": tokens.dashboardRadius.lg,
       },
       boxShadow: {
         "primary-btn": tokens.shadows.button,
