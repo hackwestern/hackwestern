@@ -605,7 +605,7 @@ export default function Home() {
 }
 
 // ---------------------------------------------------------------------------
-// PARKED: HW13 single-screen hero (horse, clouds, preregistration form).
+// PARKED: HW13 single-screen hero (horse, preregistration form).
 // Restore by uncommenting everything below and deleting the Home above.
 // ---------------------------------------------------------------------------
 //
@@ -722,52 +722,6 @@ export default function Home() {
 //             }`}
 //           />
 //         </div>
-//       </div>
-//       <div
-//         className="cloud-scroll-right cloud-scroll-right-from-left pointer-events-none absolute left-[-12vw] top-[10vh] w-[55vw]"
-//         aria-hidden="true"
-//       >
-//         <Image
-//           src="/landing/home/cloud1.webp"
-//           alt=""
-//           width={4096}
-//           height={1576}
-//           quality={65}
-//           className="h-auto w-full"
-//           sizes="55vw"
-//         />
-//         <Image
-//           src="/landing/home/cloud1.webp"
-//           alt=""
-//           width={4096}
-//           height={1576}
-//           quality={65}
-//           className="cloud-scroll-right-from-left-copy absolute top-0 h-auto w-full"
-//           sizes="55vw"
-//         />
-//       </div>
-//       <div
-//         className="cloud-scroll-right-slow pointer-events-none absolute bottom-[34vh] right-[calc(-8vw)] w-[63vw] md:bottom-[23vh]"
-//         aria-hidden="true"
-//       >
-//         <Image
-//           src="/landing/home/cloud2.webp"
-//           alt=""
-//           width={1724}
-//           height={570}
-//           quality={65}
-//           className="h-auto w-full"
-//           sizes="63vw"
-//         />
-//         <Image
-//           src="/landing/home/cloud2.webp"
-//           alt=""
-//           width={1724}
-//           height={570}
-//           quality={65}
-//           className="absolute right-[100vw] top-0 h-auto w-full"
-//           sizes="63vw"
-//         />
 //       </div>
 //
 //       <div className="absolute left-1/2 top-[44%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center md:top-[38%]">
