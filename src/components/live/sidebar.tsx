@@ -37,11 +37,7 @@ const Sidebar = () => {
           Hack Western 13
         </Link>
         <div className="flex flex-col gap-9">
-          <SearchAutocomplete
-            options={[]}
-            placeholder="Search"
-            className="[&_div]:filter-none [&_input]:border-0 [&_input]:py-3 [&_input]:pl-11 [&_input]:leading-default [&_input]:text-dashboard-text-heavy [&_input]:shadow-none [&_input]:placeholder:text-dashboard-text-light [&_svg]:left-4 [&_svg]:text-dashboard-text-light"
-          />
+          <SearchAutocomplete options={[]} placeholder="Search" />
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-1.5">
               <SectionLink tab="home" name="Home" />
