@@ -1,42 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { env } from "~/env";
+import { fetchScheduleSheet } from "~/server/schedule-sheet";
 import type {
   DaySchedule,
   ScheduleEvent,
   ParsedScheduleEvent,
 } from "~/types/schedule";
-
-// Google Sheets API v4 configuration
-const SPREADSHEET_ID = "1_dZgkfkhmR-LdqvAplInEOxZJGu7gSsE9FlAiWD64Bk";
-const SHEET_NAME = "Sheet1";
-const RANGE = "A:J";
-
-interface GoogleSheetsCell {
-  formattedValue?: string;
-  effectiveValue?: {
-    stringValue?: string;
-    numberValue?: number;
-  };
-}
-
-interface GoogleSheetsMerge {
-  sheetId: number;
-  startRowIndex: number;
-  endRowIndex: number;
-  startColumnIndex: number;
-  endColumnIndex: number;
-}
-
-interface GoogleSheetsResponse {
-  sheets: Array<{
-    data: Array<{
-      rowData: Array<{
-        values: GoogleSheetsCell[];
-      }>;
-    }>;
-    merges?: GoogleSheetsMerge[];
-  }>;
-}
 
 function parseEventText(
   text: string,
@@ -81,22 +49,7 @@ export default async function handler(
   }
 
   try {
-    const apiKey = env.GOOGLE_SHEETS_API_KEY;
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?includeGridData=true&ranges=${SHEET_NAME}!${RANGE}&key=${apiKey}`;
-
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch schedule data: ${response.statusText}`);
-    }
-
-    const sheetsData = (await response.json()) as GoogleSheetsResponse;
-    const sheet = sheetsData.sheets[0];
-    if (!sheet?.data?.[0]?.rowData) {
-      throw new Error("No data found in sheet");
-    }
-
-    const rowData = sheet.data[0].rowData;
-    const merges = sheet.merges ?? [];
+    const { rowData, merges } = await fetchScheduleSheet();
 
     // Create a map of merged cells
     const mergeMap = new Map<string, { value: string; endRow: number }>();
