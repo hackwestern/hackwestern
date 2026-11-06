@@ -74,7 +74,10 @@ export function normalizePersonName(val: string): string {
 
 /** Phone for display: invisible chars stripped, formatting kept as typed. */
 export function normalizePhoneNumber(val: string): string {
-  return val.replace(/\p{Cf}/gu, "").replace(/\s+/g, " ").trim();
+  return val
+    .replace(/\p{Cf}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /**
@@ -131,8 +134,7 @@ export function lookupHwContactPhones(
       // last name, so we never pair the wrong Jessica.
       const fullNames = [...phoneByName.entries()].filter(
         ([name]) =>
-          name.split(" ")[0] === first &&
-          name.split(" ").slice(-1)[0] === last,
+          name.split(" ")[0] === first && name.split(" ").slice(-1)[0] === last,
       );
       if (fullNames.length === 1) {
         push(fullNames[0]![1]);
@@ -534,7 +536,8 @@ async function fetchAllSponsorInfo(
           else if (str.includes("status")) statusCol = idx;
           else if (str.includes("room")) roomCol = idx;
           else if (str.includes("booth")) boothCol = idx;
-          else if (str.includes("contact") || str.includes("hw")) hwContactCol = idx;
+          else if (str.includes("contact") || str.includes("hw"))
+            hwContactCol = idx;
         });
         break;
       }
@@ -635,7 +638,11 @@ async function fetchHwContactNames(
       range: `${HW_CONTACTS_TAB}!A2:A`,
     });
     return (res.data.values ?? [])
-      .map((row) => String(row[0] ?? "").replace(/\p{Cf}/gu, "").trim())
+      .map((row) =>
+        String(row[0] ?? "")
+          .replace(/\p{Cf}/gu, "")
+          .trim(),
+      )
       .filter((name) => name.length > 0 && name.toLowerCase() !== "name");
   } catch {
     return [];
@@ -925,7 +932,7 @@ export const sponsorJudgingRouter = createTRPCRouter({
         const hwContact =
           info?.hwContact && info.hwContact !== "—"
             ? info.hwContact
-            : (sponsor.hwContact || "—");
+            : sponsor.hwContact || "—";
 
         return {
           name: sponsor.name,
@@ -1181,9 +1188,7 @@ export const sponsorJudgingRouter = createTRPCRouter({
       id: team.id,
       name: team.name,
       members:
-        team.memberCount === 1
-          ? "1 member"
-          : `${team.memberCount} members`,
+        team.memberCount === 1 ? "1 member" : `${team.memberCount} members`,
     }));
   }),
 });
