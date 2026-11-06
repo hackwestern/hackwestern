@@ -52,6 +52,26 @@ export function parseAddress(input: string): { Email: string; Name?: string } {
 }
 
 /**
+ * fetch, retried when the request got no answer at all ("fetch failed": a
+ * dropped connection or DNS blip). An HTTP error is an answer, so it isn't
+ * retried. Three tries, 1s then 2s apart. The Nov 5 RSVP reminder lost 4 of
+ * 143 sends to exactly this; a plain resend worked.
+ */
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+): Promise<Response> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fetch(url, init);
+    } catch (err) {
+      if (attempt >= 3) throw err;
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+    }
+  }
+}
+
+/**
  * Sends an outbound email via the Mailjet Send API v3.1.
  * POST https://api.mailjet.com/v3.1/send — Basic auth (apiKey:secretKey).
  *
@@ -74,7 +94,7 @@ export async function sendViaMailjet(
     options.from ?? "Hack Western Team <hello@hackwestern.com>",
   );
   try {
-    const response = await fetch("https://api.mailjet.com/v3.1/send", {
+    const response = await fetchWithRetry("https://api.mailjet.com/v3.1/send", {
       method: "POST",
       headers: {
         Authorization: authHeader(creds),
