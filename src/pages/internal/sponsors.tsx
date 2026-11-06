@@ -3,11 +3,7 @@ import SEO from "~/components/seo";
 import { InternalNavbar } from "~/components/internals/navbar";
 import { api } from "~/utils/api";
 import { authRedirectOrganizer } from "~/utils/redirect";
-import {
-  CopyIcon,
-  CheckIcon,
-  ExternalLinkIcon,
-} from "@radix-ui/react-icons";
+import { CopyIcon, CheckIcon, ExternalLinkIcon } from "@radix-ui/react-icons";
 
 export type SponsorStatus =
   | "Not arrived"
@@ -188,7 +184,7 @@ function StatusPicker({
           type="button"
           disabled={isPending}
           onClick={() => onStatusChange(next)}
-          className="inline-flex min-h-7 items-center rounded-md border border-purple-200 bg-purple-50 px-2 py-0.5 text-[11px] font-bold text-purple-700 transition active:scale-95 hover:bg-purple-100 disabled:opacity-50"
+          className="inline-flex min-h-7 items-center rounded-md border border-purple-200 bg-purple-50 px-2 py-0.5 text-[11px] font-bold text-purple-700 transition hover:bg-purple-100 active:scale-95 disabled:opacity-50"
           title={`Advance to ${next}`}
         >
           {config.nextLabel}
@@ -253,7 +249,9 @@ export default function SponsorJudgingBoard() {
 
   const sync = api.sponsorJudging.syncSponsors.useMutation({
     onSuccess: async (registered) => {
-      setSyncNote(`Synced ${registered.length} sponsor(s) from the master sheet.`);
+      setSyncNote(
+        `Synced ${registered.length} sponsor(s) from the master sheet.`,
+      );
       await utils.sponsorJudging.getSponsors.invalidate();
     },
     onError: (error) => setSyncNote(`Sync failed: ${error.message}`),
@@ -320,7 +318,9 @@ export default function SponsorJudgingBoard() {
                 Sponsor dashboard
               </h1>
               <span className="text-[12px] tabular-nums text-slate-500">
-                {updatedAt ? `Updated ${ago(Date.now() - updatedAt)} ago` : "Loading…"}
+                {updatedAt
+                  ? `Updated ${ago(Date.now() - updatedAt)} ago`
+                  : "Loading…"}
               </span>
             </div>
 
@@ -478,7 +478,7 @@ export default function SponsorJudgingBoard() {
                           {sponsor.name}
                         </h2>
                         {!sponsor.onMasterSheet && (
-                          <span className="mt-0.5 inline-self-start rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                          <span className="inline-self-start mt-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                             not on master sheet
                           </span>
                         )}
@@ -588,95 +588,95 @@ export default function SponsorJudgingBoard() {
 
           {/* Desktop View: Table */}
           <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
-              <table className="w-full border-collapse text-left text-[14px]">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/60 text-[11px] uppercase tracking-wider text-slate-500">
-                    <th className="px-4 py-3">Company</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Room</th>
-                    <th className="px-4 py-3">Booth</th>
-                    <th className="px-4 py-3">Tier</th>
-                    <th className="px-4 py-3">HW Contact</th>
-                    <th className="px-4 py-3">Picks</th>
-                    <th className="px-4 py-3">Sponsor Page</th>
+            <table className="w-full border-collapse text-left text-[14px]">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50/60 text-[11px] uppercase tracking-wider text-slate-500">
+                  <th className="px-4 py-3">Company</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Room</th>
+                  <th className="px-4 py-3">Booth</th>
+                  <th className="px-4 py-3">Tier</th>
+                  <th className="px-4 py-3">HW Contact</th>
+                  <th className="px-4 py-3">Picks</th>
+                  <th className="px-4 py-3">Sponsor Page</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((sponsor) => (
+                  <tr
+                    key={sponsor.sponsorId ?? sponsor.name}
+                    className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50"
+                  >
+                    <td className="px-4 py-3 font-semibold text-[#0b2238]">
+                      {sponsor.name}
+                      {!sponsor.onMasterSheet && (
+                        <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                          not on master
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <StatusPicker
+                        sponsorName={sponsor.name}
+                        currentStatus={sponsor.status as SponsorStatus}
+                        onStatusChange={(status) =>
+                          updateStatus.mutate({
+                            sponsorName: sponsor.name,
+                            status,
+                          })
+                        }
+                        isPending={updateStatus.isPending}
+                      />
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <RoomBadge roomNumber={sponsor.roomNumber} />
+                    </td>
+
+                    <td className="px-4 py-3 text-[13px] text-slate-600">
+                      {sponsor.boothLocation || "TBD"}
+                    </td>
+
+                    <td className="px-4 py-3 text-[13px] text-slate-600">
+                      {sponsor.tier || "—"}
+                    </td>
+
+                    <td className="px-4 py-3 text-[13px] text-slate-600">
+                      {sponsor.hwContact || sponsor.companyContact || "—"}
+                    </td>
+
+                    <td className="px-4 py-3 font-semibold tabular-nums">
+                      {sponsor.teamIds.length > 0 ? (
+                        <span className="text-emerald-700">
+                          {sponsor.teamIds.length}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">0</span>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <CopyLinkButton sponsorId={sponsor.sponsorId} />
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((sponsor) => (
-                    <tr
-                      key={sponsor.sponsorId ?? sponsor.name}
-                      className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50"
+                ))}
+
+                {filtered.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="px-4 py-8 text-center text-slate-500"
                     >
-                      <td className="px-4 py-3 font-semibold text-[#0b2238]">
-                        {sponsor.name}
-                        {!sponsor.onMasterSheet && (
-                          <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
-                            not on master
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="px-4 py-3">
-                        <StatusPicker
-                          sponsorName={sponsor.name}
-                          currentStatus={sponsor.status as SponsorStatus}
-                          onStatusChange={(status) =>
-                            updateStatus.mutate({
-                              sponsorName: sponsor.name,
-                              status,
-                            })
-                          }
-                          isPending={updateStatus.isPending}
-                        />
-                      </td>
-
-                      <td className="px-4 py-3">
-                        <RoomBadge roomNumber={sponsor.roomNumber} />
-                      </td>
-
-                      <td className="px-4 py-3 text-[13px] text-slate-600">
-                        {sponsor.boothLocation || "TBD"}
-                      </td>
-
-                      <td className="px-4 py-3 text-[13px] text-slate-600">
-                        {sponsor.tier || "—"}
-                      </td>
-
-                      <td className="px-4 py-3 text-[13px] text-slate-600">
-                        {sponsor.hwContact || sponsor.companyContact || "—"}
-                      </td>
-
-                      <td className="px-4 py-3 tabular-nums font-semibold">
-                        {sponsor.teamIds.length > 0 ? (
-                          <span className="text-emerald-700">
-                            {sponsor.teamIds.length}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">0</span>
-                        )}
-                      </td>
-
-                      <td className="px-4 py-3">
-                        <CopyLinkButton sponsorId={sponsor.sponsorId} />
-                      </td>
-                    </tr>
-                  ))}
-
-                  {filtered.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={8}
-                        className="px-4 py-8 text-center text-slate-500"
-                      >
-                        {sponsorsQ.isLoading
-                          ? "Loading…"
-                          : "No sponsors match your filter criteria."}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                      {sponsorsQ.isLoading
+                        ? "Loading…"
+                        : "No sponsors match your filter criteria."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </>

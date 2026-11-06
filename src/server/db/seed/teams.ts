@@ -137,12 +137,17 @@ export async function seedTeams(args: Args) {
 
     for (let i = 0; i < args.count; i++) {
       let name: string;
-      if (i < SAMPLE_PROJECT_NAMES.length && !usedNames.has(SAMPLE_PROJECT_NAMES[i]!)) {
+      if (
+        i < SAMPLE_PROJECT_NAMES.length &&
+        !usedNames.has(SAMPLE_PROJECT_NAMES[i]!)
+      ) {
         name = SAMPLE_PROJECT_NAMES[i]!;
       } else {
         do {
-          name = `${faker.word.adjective()} ${faker.word.noun()}`
-            .replace(/\b\w/g, (c) => c.toUpperCase());
+          name = `${faker.word.adjective()} ${faker.word.noun()}`.replace(
+            /\b\w/g,
+            (c) => c.toUpperCase(),
+          );
         } while (usedNames.has(name));
       }
       usedNames.add(name);
@@ -150,7 +155,8 @@ export async function seedTeams(args: Args) {
     }
 
     // 3. Create teams and their members
-    const createdSummary: { id: string; name: string; memberCount: number }[] = [];
+    const createdSummary: { id: string; name: string; memberCount: number }[] =
+      [];
 
     for (let i = 0; i < names.length; i++) {
       const name = names[i]!;
@@ -165,7 +171,10 @@ export async function seedTeams(args: Args) {
 
       for (let m = 0; m < memberCount; m++) {
         const fullName = faker.person.fullName();
-        const username = faker.internet.userName().toLowerCase().replace(/[^a-z0-9]/g, "");
+        const username = faker.internet
+          .userName()
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "");
         const githubUser = `${username}-${m + 1}`;
         const devpostUser = `${username}_devpost`;
 
@@ -242,7 +251,9 @@ if (isMain) {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 
     console.log(`\nSuccessfully seeded ${args.count} teams in ${elapsed}s!`);
-    console.log("Teams are ready to be selected on the sponsor picks page (/sponsors/[uuid]/picks).\n");
+    console.log(
+      "Teams are ready to be selected on the sponsor picks page (/sponsors/[uuid]/picks).\n",
+    );
   } catch (err) {
     console.error("\nTeams seed failed:", err);
     process.exitCode = 1;
