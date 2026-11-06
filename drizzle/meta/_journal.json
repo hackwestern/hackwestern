@@ -239,6 +239,13 @@
       "when": 1793316144975,
       "tag": "0033_team_finder_card",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793934743357,
+      "tag": "0034_hacker_id",
+      "breakpoints": true
     }
   ]
 }

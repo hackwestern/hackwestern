@@ -7,6 +7,7 @@ import { createInnerTRPCContext } from "~/server/api/trpc";
 import { applications, dayOfRegistrations, users } from "~/server/db/schema";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
 import { TRPCError } from "@trpc/server";
+import { getOrCreateHackerId } from "~/server/api/utils/hacker-id";
 
 const organizerSession = await mockOrganizerSession(db);
 const organizerCtx = createInnerTRPCContext({ session: organizerSession });
@@ -150,6 +151,14 @@ describe("checkIn.signInHacker", () => {
     expect(result?.signedInAt).toBeInstanceOf(Date);
   });
 
+  test("accepts a scanned hacker ID", async () => {
+    const hackerId = await getOrCreateHackerId(hackerSession.user.id);
+    const result = await organizerCaller.checkIn.signInHacker({
+      userId: hackerId,
+    });
+    expect(result?.userId).toBe(hackerSession.user.id);
+  });
+
   test("throws CONFLICT if hacker is already signed in", async () => {
     await organizerCaller.checkIn.signInHacker({
       userId: hackerSession.user.id,
@@ -244,6 +253,16 @@ describe("checkIn.checkIsHackerApproved", () => {
     const result = await organizerCaller.checkIn.checkIsHackerApproved({
       userId: hackerSession.user.id,
     });
+    expect(result.isApproved).toBe(true);
+  });
+
+  test("looks a hacker up by their hacker ID", async () => {
+    await insertTestApplication(hackerSession.user.id, { status: "CONFIRMED" });
+    const hackerId = await getOrCreateHackerId(hackerSession.user.id);
+    const result = await organizerCaller.checkIn.checkIsHackerApproved({
+      userId: hackerId,
+    });
+    expect(result.userId).toBe(hackerSession.user.id);
     expect(result.isApproved).toBe(true);
   });
 
