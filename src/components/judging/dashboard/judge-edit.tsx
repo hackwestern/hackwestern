@@ -1,10 +1,7 @@
 import { useState } from "react";
 
-import {
-  card,
-  focusRing,
-  secondaryButton,
-} from "~/components/judging/shared/judge-ui";
+import { DashboardButton } from "~/components/internals/dashboard-button";
+import { card, field, touch } from "~/components/judging/shared/judge-ui";
 import { type JudgedTeam } from "~/components/judging/judge-app/judge-teams";
 import {
   type Ratings,
@@ -14,9 +11,7 @@ import {
   scoreRubric,
 } from "~/components/judging/shared/rubric-scorer";
 
-const saveButton = `min-h-[48px] rounded-xl bg-[#5b3fa0] px-5 text-[17px] font-bold text-white hover:bg-[#4d3488] disabled:cursor-not-allowed disabled:bg-[#9a8cc0] ${focusRing}`;
-
-interface PublicJudgeEditProps {
+interface JudgeEditProps {
   team: JudgedTeam;
   rubric: Rubric;
   onSave: (updated: JudgedTeam) => void;
@@ -27,12 +22,7 @@ interface PublicJudgeEditProps {
  * Change the score and notes for a team already judged. Nothing is final until
  * "Submit scores" on the My teams list. Key it by table.
  */
-export function PublicJudgeEdit({
-  team,
-  rubric,
-  onSave,
-  onCancel,
-}: PublicJudgeEditProps) {
+export function JudgeEdit({ team, rubric, onSave, onCancel }: JudgeEditProps) {
   const [ratings, setRatings] = useState<Ratings>(team.ratings);
   const [notes, setNotes] = useState(team.notes);
   const [guideOpen, setGuideOpen] = useState(false);
@@ -60,10 +50,10 @@ export function PublicJudgeEdit({
   return (
     <>
       <div className="flex items-baseline justify-between gap-3">
-        <h1 className="m-0 min-w-0 truncate text-[15px] font-normal text-[#4a5d73]">
+        <h1 className="m-0 min-w-0 truncate text-base font-medium text-dashboard-text-light">
           {team.table} · {team.teamName}
         </h1>
-        <span className="shrink-0 text-sm font-semibold tabular-nums text-[#4a5d73]">
+        <span className="shrink-0 text-sm font-semibold tabular-nums text-dashboard-text-light">
           {team.absent ? "Marked absent" : `Now ${team.score}`}
         </span>
       </div>
@@ -73,23 +63,25 @@ export function PublicJudgeEdit({
         className={`${card} flex flex-col gap-3 px-3.5 py-3`}
       >
         {hasGuide(rubric) && (
-          <button
+          <DashboardButton
             type="button"
+            variant="tertiary"
             aria-expanded={guideOpen}
             aria-controls="rubric-guide"
             onClick={() => setGuideOpen((o) => !o)}
-            className={`min-h-[44px] self-end text-sm font-bold text-[#5b3fa0] hover:text-[#3f2a75] ${focusRing}`}
+            className={`${touch} self-end`}
           >
             {guideOpen
               ? "Hide what the points mean"
               : "What do the points mean?"}
-          </button>
+          </DashboardButton>
         )}
         <RubricScorer
           rubric={rubric}
           ratings={ratings}
           onRate={(id, value) => setRatings((r) => ({ ...r, [id]: value }))}
           guideOpen={guideOpen}
+          showValues={false}
         />
       </section>
 
@@ -100,37 +92,39 @@ export function PublicJudgeEdit({
         placeholder="Notes…"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        className={`rounded-xl border-[1.5px] border-[#c3cad8] bg-white px-4 py-3 text-[17px] ${focusRing}`}
+        className={`${field} py-3`}
       />
 
       <div className="flex flex-wrap gap-2">
-        <button
+        <DashboardButton
           type="button"
+          variant="outline"
           onClick={onCancel}
-          className={`${secondaryButton} px-4`}
+          className={`${touch} px-4`}
         >
           Cancel
-        </button>
+        </DashboardButton>
         {!team.absent && (
-          <button
+          <DashboardButton
             type="button"
+            variant="outline"
             onClick={markAbsent}
-            className={`${secondaryButton} px-4`}
+            className={`${touch} px-4`}
           >
             Not here
-          </button>
+          </DashboardButton>
         )}
-        <button
+        <DashboardButton
           type="button"
           disabled={!complete}
           onClick={save}
-          className={saveButton}
+          className="h-11 w-auto flex-1 disabled:opacity-dashboard-disabled md:w-auto"
         >
           Save
-        </button>
+        </DashboardButton>
       </div>
       {!complete && (
-        <p className="m-0 px-1 text-[13px] text-[#4a5d73]">
+        <p className="m-0 px-1 text-sm text-dashboard-text-light">
           Score all {count} criteria to save.
         </p>
       )}

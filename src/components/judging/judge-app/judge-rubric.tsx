@@ -1,10 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
-import {
-  card,
-  focusRing,
-  secondaryButton,
-} from "~/components/judging/shared/judge-ui";
+import { DashboardButton } from "~/components/internals/dashboard-button";
+import { card, field, touch } from "~/components/judging/shared/judge-ui";
 import {
   type Ratings,
   type Rubric,
@@ -12,8 +9,6 @@ import {
   hasGuide,
   scoreRubric,
 } from "~/components/judging/shared/rubric-scorer";
-
-const nextButton = `min-h-[48px] rounded-xl bg-[#5b3fa0] px-5 text-[17px] font-bold text-white hover:bg-[#4d3488] disabled:cursor-not-allowed disabled:bg-[#9a8cc0] ${focusRing}`;
 
 // ---- Draft autosave ---------------------------------------------------------
 // Until the backend exists, drafts are kept in this browser so a refresh or a
@@ -24,7 +19,7 @@ interface Draft {
   notes: string;
 }
 
-const draftKey = (table: number) => `hw13-public-judge-draft-${table}`;
+const draftKey = (table: number) => `hw13-judge-draft-${table}`;
 
 function readDraft(table: number): Draft {
   try {
@@ -78,9 +73,9 @@ export interface ScoreSubmission {
   notes: string;
 }
 
-interface PublicJudgeScoreProps {
+interface JudgeRubricProps {
   table: number;
-  /** True when the team was found by scanning, on top of the assigned ones. */
+  /** True when the judge typed in this table, on top of the assigned ones. */
   adHoc: boolean;
   rubric: Rubric;
   onSubmit: (submission: ScoreSubmission) => void;
@@ -94,7 +89,7 @@ export function JudgeRubric({
   rubric,
   onSubmit,
   onAbsent,
-}: PublicJudgeScoreProps) {
+}: JudgeRubricProps) {
   const [initial] = useState(() => readDraft(table));
   const [ratings, setRatings] = useState<Ratings>(initial.ratings);
   const [notes, setNotes] = useState(initial.notes);
@@ -135,16 +130,16 @@ export function JudgeRubric({
   return (
     <>
       <div className="flex items-center justify-between gap-3">
-        <h1 className="m-0 text-[15px] font-normal text-[#4a5d73]">
+        <h1 className="m-0 text-base font-medium text-dashboard-text-light">
           Table {table}
           {adHoc ? " · ad hoc" : ""}
         </h1>
         <span
           aria-live="polite"
-          className={`rounded-full border-[1.5px] px-3 py-1 text-sm font-semibold ${
+          className={`rounded-full border px-3 py-1 text-sm font-semibold ${
             saveState === "error"
-              ? "border-[#8f1d1d] text-[#8f1d1d]"
-              : "border-[#c3cad8] text-[#0b2238]"
+              ? "border-destructive text-destructive"
+              : "border-dashboard-border-default text-dashboard-text-heavy"
           }`}
         >
           {SAVE_LABEL[saveState]}
@@ -156,23 +151,25 @@ export function JudgeRubric({
         className={`${card} flex flex-col gap-3 px-3.5 py-3`}
       >
         {hasGuide(rubric) && (
-          <button
+          <DashboardButton
             type="button"
+            variant="tertiary"
             aria-expanded={guideOpen}
             aria-controls="rubric-guide"
             onClick={() => setGuideOpen((o) => !o)}
-            className={`min-h-[44px] self-end text-sm font-bold text-[#5b3fa0] hover:text-[#3f2a75] ${focusRing}`}
+            className={`${touch} self-end`}
           >
             {guideOpen
               ? "Hide what the points mean"
               : "What do the points mean?"}
-          </button>
+          </DashboardButton>
         )}
         <RubricScorer
           rubric={rubric}
           ratings={ratings}
           onRate={(id, value) => setRatings((r) => ({ ...r, [id]: value }))}
           guideOpen={guideOpen}
+          showValues={false}
         />
       </section>
 
@@ -183,28 +180,29 @@ export function JudgeRubric({
         placeholder="Notes…"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        className={`rounded-xl border-[1.5px] border-[#c3cad8] bg-white px-4 py-3 text-[17px] ${focusRing}`}
+        className={`${field} py-3`}
       />
 
-      <div className="flex flex-wrap gap-2">
-        <button
+      <div className="flex gap-2">
+        <DashboardButton
           type="button"
+          variant="outline"
           onClick={absent}
-          className={`${secondaryButton} px-4`}
+          className={`${touch} px-4`}
         >
           Team not here
-        </button>
-        <button
+        </DashboardButton>
+        <DashboardButton
           type="button"
           disabled={!complete}
           onClick={submit}
-          className={nextButton}
+          className="h-11 w-auto flex-1 disabled:opacity-dashboard-disabled md:w-auto"
         >
           Next team
-        </button>
+        </DashboardButton>
       </div>
       {!complete && (
-        <p className="m-0 px-1 text-[13px] text-[#4a5d73]">
+        <p className="m-0 px-1 text-sm text-dashboard-text-light">
           Score all {count} criteria to continue.
         </p>
       )}

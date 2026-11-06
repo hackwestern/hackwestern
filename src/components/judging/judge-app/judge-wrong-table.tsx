@@ -1,14 +1,9 @@
 import { useState } from "react";
 
-import {
-  card,
-  focusRing,
-  secondaryButton,
-} from "~/components/judging/shared/judge-ui";
+import { DashboardButton } from "~/components/internals/dashboard-button";
+import { card, field, touch } from "../shared/judge-ui";
 
-const useButton = `min-h-[48px] rounded-xl bg-[#5b3fa0] px-5 text-[17px] font-bold text-white hover:bg-[#4d3488] disabled:cursor-not-allowed disabled:bg-[#9a8cc0] ${focusRing}`;
-
-interface PublicJudgeWrongTableProps {
+interface JudgeWrongTableProps {
   /** The table the judge was sent to. */
   expected: number | undefined;
   onBack: () => void;
@@ -17,11 +12,11 @@ interface PublicJudgeWrongTableProps {
 }
 
 /** Body of the "Wrong table?" screen. */
-export function PublicJudgeWrongTable({
+export function JudgeWrongTable({
   expected,
   onBack,
   onUse,
-}: PublicJudgeWrongTableProps) {
+}: JudgeWrongTableProps) {
   const [value, setValue] = useState("");
   const table = Number(value);
   const valid = value !== "" && Number.isInteger(table) && table > 0;
@@ -39,10 +34,13 @@ export function PublicJudgeWrongTable({
         aria-labelledby="expected-table-label"
         className={`${card} flex flex-col gap-1.5 p-4`}
       >
-        <span id="expected-table-label" className="text-[17px] text-[#4a5d73]">
+        <span
+          id="expected-table-label"
+          className="text-base font-medium text-dashboard-text-light"
+        >
           Expected
         </span>
-        <span className="text-[34px] font-bold leading-none tabular-nums">
+        <span className="text-4xl font-bold leading-none tabular-nums text-dashboard-text-heavy">
           {expected ?? "–"}
         </span>
       </section>
@@ -54,16 +52,25 @@ export function PublicJudgeWrongTable({
         placeholder="Table you're at"
         value={value}
         onChange={(e) => setValue(e.target.value.replace(/\D/g, ""))}
-        className={`min-h-[52px] rounded-xl border-[1.5px] border-[#c3cad8] bg-white px-4 text-[17px] ${focusRing}`}
+        className={`${field} min-h-12`}
       />
 
       <div className="flex gap-2">
-        <button type="button" onClick={onBack} className={`${secondaryButton} px-5`}>
+        <DashboardButton
+          type="button"
+          variant="outline"
+          onClick={onBack}
+          className={`${touch} px-5`}
+        >
           Back
-        </button>
-        <button type="submit" disabled={!valid} className={useButton}>
+        </DashboardButton>
+        <DashboardButton
+          type="submit"
+          disabled={!valid}
+          className="h-11 w-auto flex-1 disabled:opacity-dashboard-disabled md:w-auto"
+        >
           {valid ? `Use ${table}` : "Use table"}
-        </button>
+        </DashboardButton>
       </div>
     </form>
   );

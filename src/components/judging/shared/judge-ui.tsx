@@ -1,14 +1,41 @@
 import { TRPCClientError } from "@trpc/client";
 
-// Shared look for the judge phone screen (colours ported from the judging mock).
+// Shared look for the judge screens. Everything here is a design-system token
+// (dashboard-*), never a raw hex value. Buttons come from DashboardButton.
+
 export const focusRing =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5b3fa0]";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2";
 
-export const primaryButton = `min-h-[56px] w-full rounded-xl bg-[#5b3fa0] px-4 text-lg font-bold text-white hover:bg-[#4d3488] disabled:cursor-not-allowed disabled:bg-[#9a8cc0] ${focusRing}`;
+export const card =
+  "rounded-dashboard-2xl border border-dashboard-border-subtle bg-dashboard-bg-surface shadow-dashboard-card";
 
-export const secondaryButton = `min-h-[48px] rounded-xl border-[1.5px] border-[#c3cad8] bg-white px-3 text-[15px] font-semibold text-[#0b2238] hover:bg-[#f6f7fa] disabled:cursor-not-allowed disabled:text-[#8a94a6] disabled:hover:bg-white ${focusRing}`;
+/** Text inputs and the notes box. */
+export const field = `min-h-11 rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface px-4 text-base font-medium text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder ${focusRing}`;
 
-export const card = "rounded-2xl border border-[#d6dbe5] bg-white";
+/** Status messages. */
+export const infoBanner =
+  "m-0 rounded-dashboard-lg bg-dashboard-bg-highlight px-3.5 py-2.5 text-sm font-semibold text-dashboard-text-active";
+export const warningBanner =
+  "m-0 rounded-dashboard-lg bg-dashboard-status-iconBadge px-3.5 py-2.5 text-sm font-semibold text-dashboard-text-warning";
+
+/**
+ * DashboardButton switches to auto width from the md breakpoint up. The judge
+ * screens stay a phone-sized column on wide screens, so add this to keep a
+ * primary button full width and the same height.
+ */
+export const fullWidth = "md:h-11 md:w-full";
+
+/** Keeps a 44px touch target on the smaller DashboardButton variants. */
+export const touch = "min-h-11";
+
+/**
+ * @deprecated Use <DashboardButton /> instead. Kept, restyled with tokens, only
+ * so older imports keep compiling. Delete once nothing imports them.
+ */
+export const primaryButton = `min-h-14 w-full rounded-dashboard-lg bg-dashboard-action-primary px-4 text-lg font-semibold text-dashboard-text-inverse hover:bg-dashboard-text-active disabled:cursor-not-allowed disabled:opacity-dashboard-disabled ${focusRing}`;
+
+/** @deprecated Use <DashboardButton variant="outline" /> instead. */
+export const secondaryButton = `min-h-12 rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-base font-semibold text-dashboard-text-heavy hover:bg-dashboard-bg-highlight disabled:cursor-not-allowed disabled:opacity-dashboard-disabled ${focusRing}`;
 
 /** tRPC error code (CONFLICT, FORBIDDEN, ...), or undefined for network/other failures. */
 export function errorCode(error: unknown): string | undefined {

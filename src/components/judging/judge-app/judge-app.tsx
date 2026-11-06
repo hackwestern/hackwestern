@@ -7,24 +7,25 @@ import {
   useOutbox,
   writeProgress,
 } from "~/components/judging/judge-app/judge-offline";
-import { card, secondaryButton } from "~/components/judging/shared/judge-ui";
-import { PublicJudgeEdit } from "~/components/judging/dashboard/judge-edit";
+import { DashboardButton } from "~/components/internals/dashboard-button";
+import { card } from "~/components/judging/shared/judge-ui";
+import { JudgeEdit } from "~/components/judging/dashboard/judge-edit";
 import {
-  PublicJudgeNav,
-  type PublicJudgeTab,
+  JudgeNav,
+  type JudgeTab,
 } from "~/components/judging/judge-app/judge-nav";
-import { PublicJudgeNext } from "~/components/judging/judge-app/judge-next";
-import { PublicJudgeScan } from "~/components/judging/judge-app/judge-scan";
+import { JudgeNext } from "~/components/judging/judge-app/judge-next";
+import { JudgeImpromptu } from "~/components/judging/judge-app/judge-impromptu";
 import {
   JudgeRubric,
   type ScoreSubmission,
 } from "~/components/judging/judge-app/judge-rubric";
 import {
   type JudgedTeam,
-  PublicJudgeTeams,
+  JudgeTeams,
   type SubmitStatus,
 } from "~/components/judging/judge-app/judge-teams";
-import { PublicJudgeWrongTable } from "~/components/judging/judge-app/judge-wrong-table";
+import { JudgeWrongTable } from "~/components/judging/judge-app/judge-wrong-table";
 import { DEFAULT_RUBRIC } from "~/components/judging/shared/rubric-scorer";
 import { VenueMap } from "~/components/judging/judge-app/judge-map";
 
@@ -36,9 +37,9 @@ const PLACEHOLDER = {
   label: "Judge 12",
   tables: [41, 42, 43, 44, 45, 46],
   // Tables already judged when the page opens. The next is tables[done].
-  done: 3,
-  // How many judges a scanned team has had. Placeholder for every team.
-  scan: { judgesSoFar: 1, judgesNeeded: 3 },
+  done: 1,
+  // How many judges a table has had. Placeholder for every table.
+  impromptu: { judgesSoFar: 1, judgesNeeded: 3 },
   // The rubric this judge scores with. Will come from the backend.
   rubric: DEFAULT_RUBRIC,
   // Teams judged so far. These match the first three tables above.
@@ -72,33 +73,39 @@ const PLACEHOLDER = {
 
 function HeaderRow({ left, right }: { left: string; right?: ReactNode }) {
   return (
-    <header className="flex min-h-[44px] items-center justify-between gap-3 px-5 pt-4 text-[15px] text-[#4a5d73]">
+    <header className="flex min-h-[44px] items-center justify-between gap-3 px-5 pt-4 text-base font-medium text-dashboard-text-light">
       <span>{left}</span>
       {right}
     </header>
   );
 }
 
-interface PublicJudgeAppProps {
-  /** Keeps this judge's saved progress apart from other judges' on a shared phone. */
+interface JudgeAppProps {
+  /** Keeps this judge's saved progress apart from other judges' on a shared phone, e.g. the signed-in user's id. */
   judgeKey?: string;
 }
 
-/** Mobile shell for judges who open a private link instead of signing in. */
-export function PublicJudgeApp({ judgeKey = "demo" }: PublicJudgeAppProps) {
-  const [tab, setTab] = useState<PublicJudgeTab>("next");
+/** Mobile shell for judging. Judges are signed-in users. */
+export function JudgeApp({ judgeKey = "demo" }: JudgeAppProps) {
+  const [tab, setTab] = useState<JudgeTab>("next");
   const [started, setStarted] = useState(false);
   // Tables already judged, so the next one is tables[done].
   const [done, setDone] = useState(PLACEHOLDER.done);
-  // Sub-screens: "Wrong table?" lives under Next, scanning under Score,
-  // and editing a judged team under My teams.
-  const [nextView, setNextView] = useState<"main" | "wrong-table">("main");
-  const [scoreView, setScoreView] = useState<"main" | "scan">("main");
+  // Sub-screens: "Wrong table?" and "Judge another team" live under Next, and
+  // editing a judged team under My teams.
+  const [nextView, setNextView] = useState<
+    "main" | "wrong-table" | "impromptu"
+  >("main");
   const [editingTable, setEditingTable] = useState<number | null>(null);
   // Set when the judge says they are at a different table than expected.
   const [override, setOverride] = useState<number | null>(null);
-  // The team picked by scanning, to be scored on top of the assigned ones.
-  const [scoringTable, setScoringTable] = useState<number | null>(null);
+  // The team being judged right now. Null until the judge picks one with
+  // "Judge this team" or "Judge another team"; the Score tab stays locked until
+  // then. adHoc means the table was typed in, on top of the assigned ones.
+  const [judging, setJudging] = useState<{
+    table: number;
+    adHoc: boolean;
+  } | null>(null);
   // Everything scored or marked absent, waiting for the final submit.
   const [results, setResults] = useState<JudgedTeam[]>(PLACEHOLDER.results);
   // True once the server has the latest results.
@@ -133,38 +140,60 @@ export function PublicJudgeApp({ judgeKey = "demo" }: PublicJudgeAppProps) {
   if (pending > 0) submitStatus = online ? "sending" : "waiting";
   else if (sent) submitStatus = "sent";
 
-  const { label, tables, scan, rubric } = PLACEHOLDER;
+  const { label, tables, impromptu, rubric } = PLACEHOLDER;
   const expected = tables[done];
   const currentTable = started ? (override ?? expected) : undefined;
-  // What the Score page works on: a scanned team first, else the current table.
-  const scoreTarget = scoringTable ?? currentTable;
-  const adHoc = scoringTable !== null;
+  const adHoc = judging?.adHoc ?? false;
   const editingTeam =
     editingTable !== null
       ? results.find((r) => r.table === editingTable)
       : undefined;
 
   // Tapping a tab always lands on that tab's main screen.
-  const changeTab = (next: PublicJudgeTab) => {
+  // Score keeps whatever is open there (a team being judged or edited).
+  const changeTab = (next: JudgeTab) => {
     setTab(next);
     setNextView("main");
-    setScoreView("main");
+    if (next !== "score") setEditingTable(null);
+  };
+
+  // "Review all teams": jump to the full list.
+  const reviewAll = () => {
+    setTab("teams");
+    setNextView("main");
     setEditingTable(null);
   };
 
-  const startScan = () => {
+  // Tapping a judged team opens it on the Score page.
+  const editTeam = (table: number) => {
+    setEditingTable(table);
     setTab("score");
-    setScoreView("scan");
+    setNextView("main");
   };
 
-  const cancelScan = () => {
-    setScoreView("main");
-    setTab("next");
+  // Leaving an edit goes back to the list it came from.
+  const closeEdit = () => {
+    setEditingTable(null);
+    setTab("teams");
+  };
+
+  // "Judge this team": score the table the Next page is showing.
+  const judgeThisTeam = () => {
+    if (currentTable === undefined) return;
+    setJudging({ table: currentTable, adHoc: false });
+    setTab("score");
+  };
+
+  // "Judge another team": score a table the judge typed in.
+  const judgeAnotherTeam = (table: number) => {
+    setJudging({ table, adHoc: true });
+    setNextView("main");
+    setTab("score");
   };
 
   const useTable = (actual: number) => {
     // Overrides are only logged for now. They will go to the backend later.
-    console.log("[public judge] table override", {
+    console.log("[judge app] table override", {
       judge: label,
       expected,
       actual,
@@ -186,13 +215,12 @@ export function PublicJudgeApp({ judgeKey = "demo" }: PublicJudgeAppProps) {
 
   // After a table is scored or marked absent: move on and show what's next.
   const finishTable = () => {
-    if (adHoc) {
-      setScoringTable(null);
-    } else {
+    if (!adHoc) {
       setDone((d) => d + 1);
       setOverride(null);
     }
-    setScoreView("main");
+    setJudging(null);
+    setNextView("main");
     setTab("next");
   };
 
@@ -231,25 +259,25 @@ export function PublicJudgeApp({ judgeKey = "demo" }: PublicJudgeAppProps) {
     submit({ judge: label, results });
   };
 
-  const scanning = tab === "score" && scoreView === "scan";
+  const impromptuOpen = tab === "next" && nextView === "impromptu";
   const wrongTable = tab === "next" && nextView === "wrong-table";
-  const scoringPage =
-    tab === "score" && scoreView === "main" && scoreTarget !== undefined;
-  const editing = tab === "teams" && editingTeam !== undefined;
+  const editing = tab === "score" && editingTeam !== undefined;
+  const scoringPage = tab === "score" && (judging !== null || editing);
 
   let header: ReactNode = null;
-  if (scanning) {
+  if (impromptuOpen) {
     header = (
       <HeaderRow
-        left="Scan team QR"
+        left="Judge another team"
         right={
-          <button
+          <DashboardButton
             type="button"
-            onClick={cancelScan}
-            className={`${secondaryButton} min-h-[44px]`}
+            variant="outline"
+            onClick={() => setNextView("main")}
+            className="min-h-11"
           >
             Cancel
-          </button>
+          </DashboardButton>
         }
       />
     );
@@ -258,13 +286,12 @@ export function PublicJudgeApp({ judgeKey = "demo" }: PublicJudgeAppProps) {
   } else if (tab === "map") {
     header = <HeaderRow left="Floor map" />;
   } else if (tab === "teams") {
-    // The edit view draws its own header row (team and current score).
-    if (!editing) header = <HeaderRow left="Review" />;
+    header = <HeaderRow left="Review" />;
   } else if (!scoringPage) {
     // The Score page draws its own header row (table and save status).
     header = (
       <HeaderRow
-        left={started ? label : "Public judge"}
+        left={started ? label : "Judge"}
         right={
           started ? (
             <span className="tabular-nums">
@@ -278,71 +305,71 @@ export function PublicJudgeApp({ judgeKey = "demo" }: PublicJudgeAppProps) {
 
   let body: ReactNode;
   if (tab === "next") {
-    body =
-      nextView === "wrong-table" ? (
-        <PublicJudgeWrongTable
+    if (nextView === "wrong-table") {
+      body = (
+        <JudgeWrongTable
           expected={expected}
           onBack={() => setNextView("main")}
           onUse={useTable}
         />
-      ) : (
-        <PublicJudgeNext
+      );
+    } else if (nextView === "impromptu") {
+      body = (
+        <JudgeImpromptu
+          judgesSoFar={impromptu.judgesSoFar}
+          judgesNeeded={impromptu.judgesNeeded}
+          onScore={judgeAnotherTeam}
+        />
+      );
+    } else {
+      body = (
+        <JudgeNext
           started={started}
           onStart={() => setStarted(true)}
           tables={tables}
           currentIndex={done}
           override={override}
+          onJudge={judgeThisTeam}
+          onReview={reviewAll}
           onWrongTable={() => setNextView("wrong-table")}
-          onScan={startScan}
+          onImpromptu={() => setNextView("impromptu")}
         />
-      );
-  } else if (tab === "score") {
-    if (scoreView === "scan") {
-      body = (
-        <PublicJudgeScan
-          judgesSoFar={scan.judgesSoFar}
-          judgesNeeded={scan.judgesNeeded}
-          onScore={(table) => {
-            setScoringTable(table);
-            setScoreView("main");
-          }}
-        />
-      );
-    } else if (scoreTarget !== undefined) {
-      body = (
-        <JudgeRubric
-          key={`${scoreTarget}-${adHoc}`}
-          table={scoreTarget}
-          adHoc={adHoc}
-          rubric={rubric}
-          onSubmit={submitScore}
-          onAbsent={markAbsent}
-        />
-      );
-    } else {
-      body = (
-        <p className="px-1 text-[15px] text-[#4a5d73]">
-          Start judging on the Next tab to score a table.
-        </p>
       );
     }
-  } else if (tab === "teams") {
+  } else if (tab === "score") {
+    // The Score tab is locked until a team is chosen or opened for edit, so the
+    // last message is only a fallback.
     body = editingTeam ? (
-      <PublicJudgeEdit
+      <JudgeEdit
         key={editingTeam.table}
         team={editingTeam}
         rubric={rubric}
         onSave={(updated) => {
           recordResult(updated);
-          setEditingTable(null);
+          closeEdit();
         }}
-        onCancel={() => setEditingTable(null)}
+        onCancel={closeEdit}
+      />
+    ) : judging ? (
+      <JudgeRubric
+        key={`${judging.table}-${judging.adHoc}`}
+        table={judging.table}
+        adHoc={judging.adHoc}
+        rubric={rubric}
+        onSubmit={submitScore}
+        onAbsent={markAbsent}
       />
     ) : (
-      <PublicJudgeTeams
+      <p className="px-1 text-base font-medium text-dashboard-text-light">
+        Choose a team to judge on the Next tab first.
+      </p>
+    );
+  } else if (tab === "teams") {
+    body = (
+      <JudgeTeams
         results={results}
         status={submitStatus}
-        onEdit={setEditingTable}
+        onEdit={editTeam}
         onSubmit={submitAll}
       />
     );
@@ -353,7 +380,7 @@ export function PublicJudgeApp({ judgeKey = "demo" }: PublicJudgeAppProps) {
           <VenueMap tables={tables} current={currentTable} />
         </section>
         {currentTable === undefined && (
-          <p className="m-0 px-1 text-[15px] text-[#4a5d73]">
+          <p className="m-0 px-1 text-base font-medium text-dashboard-text-light">
             Start judging on the Next tab to see your next table here.
           </p>
         )}
@@ -361,9 +388,15 @@ export function PublicJudgeApp({ judgeKey = "demo" }: PublicJudgeAppProps) {
     );
   }
 
+  // Each section opens at the top and fades in, instead of snapping.
+  const sectionKey = `${tab}:${nextView}:${started}:${editingTable ?? ""}:${judging?.table ?? ""}`;
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [sectionKey]);
+
   return (
-    <div className="min-h-dvh bg-[#eef1f6] font-figtree text-[#0b2238]">
-      <div className="mx-auto flex min-h-dvh w-full flex-col sm:max-w-md sm:border-x sm:border-[#d6dbe5]">
+    <div className="min-h-dvh bg-dashboard-bg-page font-figtree text-dashboard-text-heavy">
+      <div className="mx-auto flex min-h-dvh w-full flex-col sm:max-w-md sm:border-x sm:border-dashboard-border-subtle">
         {header}
         <main
           className={`flex flex-1 flex-col gap-3 px-5 pb-5 ${
@@ -371,9 +404,18 @@ export function PublicJudgeApp({ judgeKey = "demo" }: PublicJudgeAppProps) {
           }`}
         >
           <JudgeOfflineBanner online={online} pending={pending} />
-          {body}
+          <div
+            key={sectionKey}
+            className="flex flex-col gap-3 duration-200 animate-in fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none"
+          >
+            {body}
+          </div>
         </main>
-        <PublicJudgeNav active={tab} onChange={changeTab} />
+        <JudgeNav
+          active={tab}
+          onChange={changeTab}
+          disabled={judging === null && !editing ? ["score"] : []}
+        />
       </div>
     </div>
   );

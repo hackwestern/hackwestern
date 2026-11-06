@@ -1,4 +1,4 @@
-import { PublicJudgeApp } from "~/components/judging/judge-app/judge-app";
+import { JudgeApp } from "~/components/judging/judge-app/judge-app";
 import SEO from "~/components/seo";
 
 // Opened from the private link on the judge roster (/judge/link/<token>).
@@ -8,7 +8,7 @@ export default function PublicJudgePage() {
   return (
     <>
       <SEO title="Judging" noindex />
-      <PublicJudgeApp />
+      <JudgeApp />
     </>
   );
 }

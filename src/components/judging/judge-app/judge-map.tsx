@@ -1,13 +1,13 @@
 import { useState } from "react";
 
-import { focusRing } from "~/components/judging/shared/judge-ui";
+import { DashboardChip } from "~/components/internals/dashboard-chip";
 import {
   TABLE_H,
   TABLE_W,
   VENUE_HEIGHT,
   VENUE_TABLES,
   VENUE_WIDTH,
-} from "~/components/judging/judge-app/judge-map-layout";
+} from "../judge-app/judge-map-layout";
 
 /** Width of the "Near me" view, in map units. About five tables across. */
 const ZOOM_WIDTH = 210;
@@ -60,7 +60,7 @@ export function VenueMap({ tables, current }: VenueMapProps) {
           width={VENUE_WIDTH}
           height={VENUE_HEIGHT}
           rx={6}
-          fill="#f6f7fa"
+          className="fill-dashboard-bg-inset"
         />
         {VENUE_TABLES.filter((t) => t.n !== current).map((t) => {
           const isMine = mine.has(t.n);
@@ -72,9 +72,12 @@ export function VenueMap({ tables, current }: VenueMapProps) {
                 width={TABLE_W}
                 height={TABLE_H}
                 rx={3}
-                fill={isMine ? "#e6defa" : "#ffffff"}
-                stroke={isMine ? "#5b3fa0" : "#c3cad8"}
                 strokeWidth={1}
+                className={
+                  isMine
+                    ? "fill-dashboard-bg-highlight stroke-dashboard-action-primary"
+                    : "fill-dashboard-bg-surface stroke-dashboard-border-default"
+                }
               />
               {showLabels && (
                 <text
@@ -83,7 +86,7 @@ export function VenueMap({ tables, current }: VenueMapProps) {
                   textAnchor="middle"
                   dominantBaseline="central"
                   fontSize={11}
-                  fill="#0b2238"
+                  className="fill-dashboard-text-heavy"
                 >
                   {t.n}
                 </text>
@@ -99,9 +102,8 @@ export function VenueMap({ tables, current }: VenueMapProps) {
               width={TABLE_W + 8}
               height={TABLE_H + 8}
               rx={6}
-              fill="none"
-              stroke="#5b3fa0"
               strokeWidth={2.5}
+              className="fill-none stroke-dashboard-action-primary"
             />
             <rect
               x={here.x}
@@ -109,7 +111,7 @@ export function VenueMap({ tables, current }: VenueMapProps) {
               width={TABLE_W}
               height={TABLE_H}
               rx={3}
-              fill="#0b2238"
+              className="fill-dashboard-text-heavy"
             />
             {showLabels && (
               <text
@@ -119,7 +121,7 @@ export function VenueMap({ tables, current }: VenueMapProps) {
                 dominantBaseline="central"
                 fontSize={12}
                 fontWeight={700}
-                fill="#ffffff"
+                className="fill-dashboard-text-inverse"
               >
                 {here.n}
               </text>
@@ -129,57 +131,40 @@ export function VenueMap({ tables, current }: VenueMapProps) {
       </svg>
 
       {current !== undefined && !here && (
-        <p className="m-0 text-[13px] text-[#4a5d73]">
+        <p className="m-0 text-sm text-dashboard-text-light">
           Table {current} isn&apos;t on the map yet.
         </p>
       )}
 
       <div className="flex items-center justify-between gap-3">
-        <ul className="m-0 flex list-none flex-col gap-1 p-0 text-[13px] text-[#4a5d73]">
+        <ul className="m-0 flex list-none flex-col gap-1 p-0 text-xs text-dashboard-text-light">
           <li className="flex items-center gap-2">
             <span
               aria-hidden
-              className="inline-block h-3 w-4 rounded-[3px] bg-[#0b2238] ring-2 ring-[#5b3fa0] ring-offset-1"
+              className="inline-block h-3 w-4 rounded-dashboard-xs bg-dashboard-text-heavy ring-2 ring-dashboard-action-primary ring-offset-1"
             />
             Next table
           </li>
           <li className="flex items-center gap-2">
             <span
               aria-hidden
-              className="inline-block h-3 w-4 rounded-[3px] border border-[#5b3fa0] bg-[#e6defa]"
+              className="inline-block h-3 w-4 rounded-dashboard-xs border border-dashboard-action-primary bg-dashboard-bg-highlight"
             />
             Your other tables
           </li>
         </ul>
 
-        <div role="group" aria-label="Map view" className="flex">
-          {(
-            [
-              { id: false, text: "Whole room" },
-              { id: true, text: "Near me" },
-            ] as const
-          ).map((o, i) => {
-            const on = zoomed === o.id;
-            return (
-              <button
-                key={o.text}
-                type="button"
-                aria-pressed={on}
-                disabled={o.id && !here}
-                onClick={() => setZoomed(o.id)}
-                className={`min-h-[44px] border-[1.5px] px-3 text-sm font-semibold disabled:opacity-40 ${
-                  i === 0 ? "rounded-l-xl" : "-ml-[1.5px] rounded-r-xl"
-                } ${
-                  on
-                    ? "relative border-[#5b3fa0] bg-[#5b3fa0] text-white"
-                    : "border-[#c3cad8] bg-white text-[#0b2238] enabled:hover:bg-[#f6f7fa]"
-                } ${focusRing}`}
-              >
-                {o.text}
-              </button>
-            );
-          })}
-        </div>
+        {/* "Near me" only exists when there is a table on the map to zoom to. */}
+        {here && (
+          <div role="group" aria-label="Map view" className="flex gap-2">
+            <DashboardChip selected={!zoomed} onClick={() => setZoomed(false)}>
+              Whole room
+            </DashboardChip>
+            <DashboardChip selected={zoomed} onClick={() => setZoomed(true)}>
+              Near me
+            </DashboardChip>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,47 +1,56 @@
-import {
-  card,
-  primaryButton,
-  secondaryButton,
-} from "~/components/judging/shared/judge-ui";
+import { DashboardButton } from "~/components/internals/dashboard-button";
 import { VenueMap } from "~/components/judging/judge-app/judge-map";
+import { card, fullWidth, touch } from "~/components/judging/shared/judge-ui";
 
-interface PublicJudgeNextProps {
+interface JudgeNextProps {
   started: boolean;
   onStart: () => void;
   /** Table numbers this judge covers, in order. */
   tables: number[];
   /** Index into `tables` of the table to visit next. */
   currentIndex: number;
+  /** Start scoring the table shown. */
+  onJudge: () => void;
+  /** Opens the full list of judged teams. */
+  onReview: () => void;
   /** Set when the judge said they are at a different table than expected. */
   override: number | null;
   onWrongTable: () => void;
-  onScan: () => void;
+  onImpromptu: () => void;
 }
 
 /** The "Next" tab: a welcome first, then the next table once judging starts. */
-export function PublicJudgeNext({
+export function JudgeNext({
   started,
   onStart,
   tables,
   currentIndex,
   override,
+  onJudge,
+  onReview,
   onWrongTable,
-  onScan,
-}: PublicJudgeNextProps) {
+  onImpromptu,
+}: JudgeNextProps) {
   if (!started) {
     const first = tables[0];
     const last = tables[tables.length - 1];
     return (
       <>
         <section className={`${card} flex flex-col gap-1.5 p-4`}>
-          <h1 className="text-[22px] font-bold">Welcome, judge</h1>
-          <p className="text-[17px] text-[#4a5d73]">No account needed</p>
+          <h1 className="text-3xl font-bold leading-tight text-dashboard-text-heavy">
+            Welcome, judge
+          </h1>
+          <p className="text-base font-medium text-dashboard-text-light">
+            No account needed
+          </p>
         </section>
         <section
           className={`${card} flex items-baseline justify-between gap-3 px-4 py-3.5`}
         >
-          <span className="text-[17px]">Your tables</span>
-          <span className="text-[20px] font-bold tabular-nums">
+          <span className="text-base font-medium text-dashboard-text-heavy">
+            Your tables
+          </span>
+          <span className="text-xl font-semibold tabular-nums text-dashboard-text-heavy">
             {first === undefined
               ? "None yet"
               : first === last
@@ -49,9 +58,9 @@ export function PublicJudgeNext({
                 : `${first}–${last}`}
           </span>
         </section>
-        <button type="button" onClick={onStart} className={primaryButton}>
+        <DashboardButton type="button" onClick={onStart} className={fullWidth}>
           Start judging
-        </button>
+        </DashboardButton>
       </>
     );
   }
@@ -59,25 +68,29 @@ export function PublicJudgeNext({
   const expected = tables[currentIndex];
   const table = override ?? expected;
 
-  // Every assigned table is done. Scanning is still open for ad hoc teams.
+  // Every assigned table is done. Another team can still be judged by number.
   if (table === undefined) {
     return (
       <>
         <section className={`${card} flex flex-col gap-1.5 p-4`}>
-          <h1 className="text-[22px] font-bold">All done</h1>
-          <p className="text-[17px] text-[#4a5d73]">
+          <h1 className="text-3xl font-bold leading-tight text-dashboard-text-heavy">
+            All done
+          </h1>
+          <p className="text-base font-medium text-dashboard-text-light">
             You&apos;ve judged all your tables. Thank you!
           </p>
         </section>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={onScan}
-            className={`${secondaryButton} px-4`}
-          >
-            Scan team QR
-          </button>
-        </div>
+        <DashboardButton type="button" onClick={onReview} className={fullWidth}>
+          Review all teams
+        </DashboardButton>
+        <DashboardButton
+          type="button"
+          variant="outline"
+          onClick={onImpromptu}
+          className={fullWidth}
+        >
+          Judge another team
+        </DashboardButton>
       </>
     );
   }
@@ -88,14 +101,17 @@ export function PublicJudgeNext({
         aria-labelledby="next-table-label"
         className={`${card} flex flex-col gap-2 p-4`}
       >
-        <span id="next-table-label" className="text-[17px] text-[#4a5d73]">
+        <span
+          id="next-table-label"
+          className="text-base font-medium text-dashboard-text-light"
+        >
           Next table
         </span>
-        <span className="text-[64px] font-bold leading-none tabular-nums">
+        <span className="text-6xl font-bold leading-none tabular-nums text-dashboard-text-heavy">
           {table ?? "–"}
         </span>
         {/* Placeholder directions. */}
-        <span className="mt-2 text-[17px]">
+        <span className="mt-2 text-base font-medium text-dashboard-text-heavy">
           {override !== null && override !== expected
             ? `Changed from ${expected ?? "–"}`
             : "Row 2 · walk right"}
@@ -111,27 +127,34 @@ export function PublicJudgeNext({
         aria-label="Presentation time"
         className={`${card} flex items-center justify-between gap-3 px-4 py-3`}
       >
-        <span className="text-[17px]">Presentation</span>
-        <span className="font-mono text-[32px] font-bold tabular-nums">
+        <span className="text-base font-medium text-dashboard-text-heavy">
+          Presentation
+        </span>
+        <span className="font-mono text-3xl font-bold tabular-nums text-dashboard-text-heavy">
           02:41
         </span>
       </section>
 
+      <DashboardButton type="button" onClick={onJudge} className={fullWidth}>
+        Judge this team
+      </DashboardButton>
       <div className="flex flex-wrap gap-2">
-        <button
+        <DashboardButton
           type="button"
+          variant="outline"
           onClick={onWrongTable}
-          className={`${secondaryButton} px-4`}
+          className={touch}
         >
           Wrong table?
-        </button>
-        <button
+        </DashboardButton>
+        <DashboardButton
           type="button"
-          onClick={onScan}
-          className={`${secondaryButton} px-4`}
+          variant="outline"
+          onClick={onImpromptu}
+          className={touch}
         >
-          Scan team QR
-        </button>
+          Judge another team
+        </DashboardButton>
       </div>
     </>
   );

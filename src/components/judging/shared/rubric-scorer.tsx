@@ -113,6 +113,8 @@ interface RubricScorerProps {
   ratings: Ratings;
   onRate: (criterionId: string, value: number) => void;
   guideOpen: boolean;
+  /** Show the number beside each slider. On by default; the judge app turns it off. */
+  showValues?: boolean;
 }
 
 /** The slider rows judges work through. Used by the judge screens and the builder preview. */
@@ -121,6 +123,7 @@ export function RubricScorer({
   ratings,
   onRate,
   guideOpen,
+  showValues = true,
 }: RubricScorerProps) {
   return (
     <div className="flex flex-col gap-3">
@@ -137,23 +140,30 @@ export function RubricScorer({
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 flex-col">
-                <span id={labelId} className="text-[15px] font-bold">
+                <span
+                  id={labelId}
+                  className="text-base font-semibold text-dashboard-text-heavy"
+                >
                   {c.name.trim() || "Untitled criterion"}
                 </span>
                 {c.description.trim() && (
-                  <span className="text-xs leading-snug text-[#4a5d73]">
+                  <span className="text-xs leading-snug text-dashboard-text-light">
                     {c.description}
                   </span>
                 )}
               </div>
-              <output
-                aria-hidden="true"
-                className={`min-w-[3ch] text-right text-[26px] font-bold tabular-nums leading-none ${
-                  current === undefined ? "text-[#8a94a6]" : "text-[#3f2a75]"
-                }`}
-              >
-                {current ?? RUBRIC_MIN}
-              </output>
+              {showValues && (
+                <output
+                  aria-hidden="true"
+                  className={`min-w-[3ch] text-right text-2xl font-semibold tabular-nums leading-none ${
+                    current === undefined
+                      ? "text-dashboard-text-disabled"
+                      : "text-dashboard-text-active"
+                  }`}
+                >
+                  {current ?? RUBRIC_MIN}
+                </output>
+              )}
             </div>
             {/* Sliders start at 0 but stay dimmed, and don't count as scored,
                 until the judge actually touches them. */}
@@ -169,8 +179,8 @@ export function RubricScorer({
               }
               onChange={(e) => onRate(c.id, Number(e.target.value))}
               onPointerUp={(e) => onRate(c.id, Number(e.currentTarget.value))}
-              className={`h-11 w-full cursor-pointer accent-[#5b3fa0] ${
-                current === undefined ? "opacity-50" : ""
+              className={`h-11 w-full cursor-pixel-hover accent-dashboard-action-primary ${
+                current === undefined ? "opacity-dashboard-disabled" : ""
               } ${focusRing}`}
             />
           </div>
@@ -179,7 +189,7 @@ export function RubricScorer({
       {guideOpen && (
         <dl
           id="rubric-guide"
-          className="flex flex-col gap-2 text-xs leading-snug text-[#4a5d73]"
+          className="flex flex-col gap-2 text-xs leading-snug text-dashboard-text-light"
         >
           {rubric.criteria.map((c) => {
             const parts: [number, string][] = [
@@ -191,7 +201,9 @@ export function RubricScorer({
             if (shown.length === 0) return null;
             return (
               <div key={c.id} className="flex flex-col gap-px">
-                <dt className="font-bold text-[#0b2238]">{c.name}</dt>
+                <dt className="font-semibold text-dashboard-text-heavy">
+                  {c.name}
+                </dt>
                 <dd>{shown.map(([p, text]) => `${p} ${text}`).join(" · ")}</dd>
               </div>
             );

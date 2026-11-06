@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
-import { card, focusRing } from "~/components/judging/shared/judge-ui";
+import { DashboardTag } from "~/components/internals/dashboard-tag";
+import { card, focusRing } from "../shared/judge-ui";
 
 const PITCH_MS = 4 * 60 * 1000;
 
@@ -26,11 +27,13 @@ function PitchTimer({ assignedAt }: { assignedAt: Date }) {
     <div
       role="timer"
       aria-label="Pitch time"
-      className={`flex min-w-[112px] shrink-0 flex-col items-end gap-0.5 rounded-xl px-2.5 py-2 ${
-        over ? "bg-[#fdf0e3] text-[#8a3f05]" : "bg-[#eef1f6] text-[#0b2238]"
+      className={`flex min-w-28 shrink-0 flex-col items-end gap-0.5 rounded-dashboard-xl px-2.5 py-2 ${
+        over
+          ? "bg-dashboard-status-iconBadge text-dashboard-text-warning"
+          : "bg-dashboard-bg-inset text-dashboard-text-heavy"
       }`}
     >
-      <span className="text-[26px] font-bold tabular-nums leading-none">
+      <span className="text-2xl font-semibold tabular-nums leading-none">
         {formatClock(elapsed)}
       </span>
       <span className="text-xs font-semibold">
@@ -50,7 +53,7 @@ interface JudgeAssignmentCardProps {
   assignedAt: Date | null;
 }
 
-const linkClass = `-my-3 inline-flex min-h-[44px] items-center px-1 text-[13px] font-semibold text-[#5b3fa0] underline underline-offset-2 hover:text-[#3f2a75] ${focusRing}`;
+const linkClass = `-my-3 inline-flex min-h-11 items-center px-1 text-sm font-semibold text-dashboard-text-link underline underline-offset-2 hover:text-dashboard-text-active ${focusRing}`;
 
 export function JudgeAssignmentCard({
   team,
@@ -63,28 +66,28 @@ export function JudgeAssignmentCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[13px] font-bold text-[#8a3f05]">GO TO</span>
+          <span className="text-xs font-semibold text-dashboard-text-warning">
+            GO TO
+          </span>
           {/* Placeholder: teams have no table field yet. */}
-          <span className="text-[34px] font-bold leading-none text-[#8a3f05]">
+          <span className="text-4xl font-bold leading-none text-dashboard-text-warning">
             Table —
           </span>
-          <span className="text-xs text-[#4a5d73]">
+          <span className="text-xs text-dashboard-text-light">
             {"Teams don't have table numbers yet"}
           </span>
         </div>
         {assignedAt && <PitchTimer assignedAt={assignedAt} />}
       </div>
-      <h1 id="judge-team-name" className="text-2xl font-bold leading-tight">
+      <h1
+        id="judge-team-name"
+        className="text-2xl font-semibold leading-tight text-dashboard-text-heavy"
+      >
         {team.name}
       </h1>
       <div className="flex flex-wrap items-center gap-1.5">
         {team.tracks?.map((track) => (
-          <span
-            key={track}
-            className="rounded-full bg-[#eef1f6] px-2 py-1 text-xs font-semibold text-[#2e4a66]"
-          >
-            {track}
-          </span>
+          <DashboardTag key={track}>{track}</DashboardTag>
         ))}
         {(!!team.devpostUrl || !!team.githubUrl) && (
           <span className="ml-auto flex gap-2">

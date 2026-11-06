@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { type JudgedTeam } from "~/components/judging/judge-app/judge-teams";
+import { infoBanner, warningBanner } from "../shared/judge-ui";
+import { type JudgedTeam } from "../judge-app/judge-teams";
 
 /** Scores the judge submitted, waiting to reach the server. */
 export interface QueuedSubmission {
@@ -198,7 +199,7 @@ export function JudgeOfflineBanner({ online, pending }: JudgeOfflineBannerProps)
     return (
       <p
         role="status"
-        className="m-0 rounded-xl bg-[#fff3d6] px-3.5 py-2.5 text-sm font-semibold text-[#6b4700]"
+        className={warningBanner}
       >
         You&apos;re offline. Scores save on this phone and send when you&apos;re
         back online.
@@ -209,7 +210,7 @@ export function JudgeOfflineBanner({ online, pending }: JudgeOfflineBannerProps)
     return (
       <p
         role="status"
-        className="m-0 rounded-xl bg-[#e4effd] px-3.5 py-2.5 text-sm font-semibold text-[#123d75]"
+        className={infoBanner}
       >
         Sending your scores…
       </p>

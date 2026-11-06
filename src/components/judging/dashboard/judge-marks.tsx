@@ -1,6 +1,7 @@
 import { useState } from "react";
 
-import { focusRing, friendlyError } from "~/components/judging/shared/judge-ui";
+import { DashboardButton } from "~/components/internals/dashboard-button";
+import { field, focusRing, friendlyError, touch } from "../shared/judge-ui";
 import { SCORE_MAX, SCORE_MIN } from "~/schemas/judging";
 import { api } from "~/utils/api";
 
@@ -38,7 +39,7 @@ function MarkEditor({ mark, onDone }: { mark: Mark; onDone: () => void }) {
         }
       }}
     >
-      <label htmlFor={inputId} className="text-[13px] text-[#4a5d73]">
+      <label htmlFor={inputId} className="text-xs text-dashboard-text-light">
         New score
       </label>
       <input
@@ -50,29 +51,30 @@ function MarkEditor({ mark, onDone }: { mark: Mark; onDone: () => void }) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         aria-invalid={!valid}
-        className={`min-h-[44px] w-[76px] rounded-[10px] border-[1.5px] border-[#c3cad8] px-2.5 text-base ${focusRing}`}
+        className={`${field} w-20 px-2.5`}
       />
-      <button
+      <DashboardButton
         type="submit"
         disabled={!valid || edit.isPending}
-        className={`min-h-[44px] rounded-[10px] bg-[#5b3fa0] px-3.5 text-sm font-bold text-white hover:bg-[#4d3488] disabled:cursor-not-allowed disabled:bg-[#9a8cc0] ${focusRing}`}
+        className="h-11 w-auto px-3.5 disabled:opacity-dashboard-disabled md:w-auto"
       >
         {edit.isPending ? "Saving…" : "Save"}
-      </button>
-      <button
+      </DashboardButton>
+      <DashboardButton
         type="button"
+        variant="tertiary"
         onClick={onDone}
-        className={`min-h-[44px] rounded-[10px] px-3 text-sm font-semibold text-[#4a5d73] hover:text-[#0b2238] ${focusRing}`}
+        className={touch}
       >
         Cancel
-      </button>
+      </DashboardButton>
       {!valid && (
-        <p className="w-full text-xs text-[#4a5d73]">
+        <p className="w-full text-xs text-dashboard-text-light">
           Enter a score from 0 to 100.
         </p>
       )}
       {edit.error && (
-        <p role="alert" className="w-full text-sm font-semibold text-[#8f1d1d]">
+        <p role="alert" className="w-full text-sm font-semibold text-destructive">
           {friendlyError(edit.error)}
         </p>
       )}
@@ -92,42 +94,43 @@ export function JudgeMarks({ marks }: { marks: Mark[] }) {
         aria-expanded={open}
         aria-controls="judge-marks-list"
         onClick={() => setOpen((o) => !o)}
-        className={`flex min-h-[44px] items-center justify-between rounded-lg px-1 text-[15px] font-bold ${focusRing}`}
+        className={`flex min-h-11 cursor-pixel-hover items-center justify-between rounded-dashboard-lg px-1 text-base font-semibold text-dashboard-text-heavy ${focusRing}`}
       >
         <span>Your marks · {marks.length}</span>
-        <span className="font-semibold text-[#4a5d73]">
+        <span className="font-semibold text-dashboard-text-light">
           {open ? "Hide" : "Show"}
         </span>
       </button>
       {open && (
         <ul id="judge-marks-list" className="flex flex-col gap-2">
           {marks.length === 0 && (
-            <li className="px-1 text-sm text-[#4a5d73]">
+            <li className="px-1 text-sm text-dashboard-text-light">
               No marks yet. They show up here after you submit.
             </li>
           )}
           {marks.map((mark) => (
             <li
               key={mark.id}
-              className="flex flex-col gap-2 rounded-xl border border-[#d6dbe5] bg-white px-3.5 py-2"
+              className="flex flex-col gap-2 rounded-dashboard-xl border border-dashboard-border-subtle bg-dashboard-bg-surface px-3.5 py-2"
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="min-w-0 truncate text-[15px] font-semibold">
+                <span className="min-w-0 truncate text-base font-semibold text-dashboard-text-heavy">
                   {mark.team.name}
                 </span>
                 <div className="flex shrink-0 items-center gap-3">
-                  <span className="text-lg font-bold tabular-nums">
+                  <span className="text-lg font-semibold tabular-nums text-dashboard-text-heavy">
                     {mark.score}
                   </span>
                   {editingId !== mark.id && (
-                    <button
+                    <DashboardButton
                       type="button"
+                      variant="outline"
                       onClick={() => setEditingId(mark.id)}
                       aria-label={`Edit score for ${mark.team.name}`}
-                      className={`min-h-[44px] rounded-[10px] border-[1.5px] border-[#c3cad8] bg-white px-3.5 text-sm font-semibold hover:bg-[#f6f7fa] ${focusRing}`}
+                      className={touch}
                     >
                       Edit
-                    </button>
+                    </DashboardButton>
                   )}
                 </div>
               </div>
