@@ -37,7 +37,10 @@ export default function SponsorHubPage() {
     );
   }
 
-  if (!validUuid || (sponsorQ.isError && sponsorQ.error.data?.code === "NOT_FOUND")) {
+  if (
+    !validUuid ||
+    (sponsorQ.isError && sponsorQ.error.data?.code === "NOT_FOUND")
+  ) {
     return (
       <Shell>
         <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
@@ -46,7 +49,8 @@ export default function SponsorHubPage() {
           </h1>
           <p className="mb-0 mt-2 text-sm leading-relaxed text-[#4a5d73]">
             This private link isn&apos;t valid. If you believe this is an error,
-            please reach out to your Hack Western organizer contact for assistance.
+            please reach out to your Hack Western organizer contact for
+            assistance.
           </p>
         </div>
       </Shell>
@@ -56,7 +60,8 @@ export default function SponsorHubPage() {
   const sponsorName = data?.sponsorName ?? "Sponsor";
   const roomNumber = data?.roomNumber ?? "TBD";
   const boothLocation = data?.boothLocation ?? "TBD";
-  const hwContact = data?.hwContact && data.hwContact !== "—" ? data.hwContact : null;
+  const hwContact =
+    data?.hwContact && data.hwContact !== "—" ? data.hwContact : null;
   const hwContactPhone = data?.hwContactPhone ?? null;
   const picksCount = data?.picksCount ?? 0;
 
@@ -75,8 +80,9 @@ export default function SponsorHubPage() {
             </h1>
 
             <p className="m-0 text-[14px] leading-relaxed text-purple-100 sm:text-[15px]">
-              We&apos;re thrilled to have you with us this weekend. Use this portal
-              to check your booth and judging details and pick your top projects.
+              We&apos;re thrilled to have you with us this weekend. Use this
+              portal to check your booth and judging details and pick your top
+              projects.
             </p>
           </div>
 
@@ -118,7 +124,11 @@ export default function SponsorHubPage() {
               href={`/sponsors/${id}/picks`}
               className="mt-1 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#5b3fa0] px-5 text-[16px] font-bold text-white shadow-sm transition hover:bg-[#4b3387] active:scale-[0.99]"
             >
-              <span>{picksCount > 0 ? "Review & edit your picks" : "Select top teams"}</span>
+              <span>
+                {picksCount > 0
+                  ? "Review & edit your picks"
+                  : "Select top teams"}
+              </span>
               <span className="text-lg">→</span>
             </Link>
           </div>

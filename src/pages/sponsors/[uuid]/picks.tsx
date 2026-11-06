@@ -98,7 +98,10 @@ export default function SponsorPicksPage() {
           <div className="h-8 w-40 animate-pulse rounded bg-[#e3e7ef]" />
           <div className="h-11 w-full animate-pulse rounded-[10px] bg-[#e3e7ef]" />
           {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-16 w-full animate-pulse rounded-2xl bg-[#e3e7ef]" />
+            <div
+              key={i}
+              className="h-16 w-full animate-pulse rounded-2xl bg-[#e3e7ef]"
+            />
           ))}
         </div>
       </Shell>
@@ -152,9 +155,8 @@ export default function SponsorPicksPage() {
             Pick your top teams
           </h1>
           <p className="mb-0 mt-1.5 text-[15px] leading-[1.5] text-[#4a5d73]">
-            Choose between {MIN_PICKS} and {MAX_PICKS} teams.
-            You can come back and change your picks any time before judging
-            closes.
+            Choose between {MIN_PICKS} and {MAX_PICKS} teams. You can come back
+            and change your picks any time before judging closes.
           </p>
         </div>
 
@@ -193,41 +195,42 @@ export default function SponsorPicksPage() {
               ))}
             </>
           )}
-          {!teamsQ.isLoading && visibleTeams.map((team) => {
-            const on = selected.includes(team.id);
-            const disabled = !on && atMax;
-            return (
-              <li key={team.id}>
-                <button
-                  type="button"
-                  aria-pressed={on}
-                  disabled={disabled}
-                  onClick={() => toggle(team.id)}
-                  className={`${CARD} ${
-                    on ? CARD_ON : CARD_OFF
-                  } ${disabled ? "opacity-50" : "cursor-pointer"}`}
-                >
-                  <span className="flex items-center gap-3">
-                    <span
-                      className={`${COUNTER} ${
-                        on ? COUNTER_ON : COUNTER_OFF
-                      }`}
-                    >
-                      {on ? "✓" : ""}
-                    </span>
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="truncate text-[16px] font-bold text-[#0b2238]">
-                        {team.name}
+          {!teamsQ.isLoading &&
+            visibleTeams.map((team) => {
+              const on = selected.includes(team.id);
+              const disabled = !on && atMax;
+              return (
+                <li key={team.id}>
+                  <button
+                    type="button"
+                    aria-pressed={on}
+                    disabled={disabled}
+                    onClick={() => toggle(team.id)}
+                    className={`${CARD} ${
+                      on ? CARD_ON : CARD_OFF
+                    } ${disabled ? "opacity-50" : "cursor-pointer"}`}
+                  >
+                    <span className="flex items-center gap-3">
+                      <span
+                        className={`${COUNTER} ${
+                          on ? COUNTER_ON : COUNTER_OFF
+                        }`}
+                      >
+                        {on ? "✓" : ""}
                       </span>
-                      <span className="truncate text-[13px] text-[#4a5d73]">
-                        {team.members}
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate text-[16px] font-bold text-[#0b2238]">
+                          {team.name}
+                        </span>
+                        <span className="truncate text-[13px] text-[#4a5d73]">
+                          {team.members}
+                        </span>
                       </span>
                     </span>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
+                  </button>
+                </li>
+              );
+            })}
           {!teamsQ.isLoading && visibleTeams.length === 0 && query && (
             <li className="rounded-2xl bg-white px-4 py-6 text-center text-sm text-[#4a5d73]">
               No teams match “{query}”.
