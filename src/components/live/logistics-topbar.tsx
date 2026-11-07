@@ -8,27 +8,19 @@ import { Button } from "../ui/button";
 import { Menu } from "lucide-react";
 import { LogisticsLink } from "./navlinks";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
+import { logisticsHref, logisticsSteps } from "~/constants/event-logistics";
 
 const LogisticsTopbar = () => {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const logisticsData: [string, string][] = [
-    ["1", "Packing List"],
-    ["2", "Communications"],
-    ["3", "Housekeeping"],
-    ["4", "Scavenger Hunt"],
-    ["5", "Project Rules"],
-    ["6", "Contact Us"],
-    ["7", "FAQ"],
-  ];
 
-  const handleLinkClick = (step: string, e: React.MouseEvent) => {
+  const handleLinkClick = (step: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDrawerOpen(false);
     requestAnimationFrame(() => {
-      void router.push(`live/?tab=event-logistics&step=${step}`);
+      void router.push(logisticsHref(step), undefined, { shallow: true });
     });
   };
 
@@ -37,19 +29,22 @@ const LogisticsTopbar = () => {
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
         <DrawerTrigger asChild>
           <Button className="w-fit rounded-2xl p-0">
-            <Menu strokeWidth={2.5} className="size-6 text-slate-800" />
+            <Menu
+              strokeWidth={2.5}
+              className="size-6 text-dashboard-text-heavy"
+            />
           </Button>
         </DrawerTrigger>
         <DrawerContent>
           <DrawerHeader>
-            <div className="flex flex-col gap-4">
-              <h1 className="font-jetbrains-mono font-semibold text-heavy">
-                EVENT LOGISTICS OVERVIEW
-              </h1>
-              <div className="flex flex-col gap-2">
-                {logisticsData.map((s) => (
-                  <div key={s[0]} onClick={(e) => handleLinkClick(s[0], e)}>
-                    <LogisticsLink step={s[0]} name={s[1]} />
+            <div className="flex flex-col gap-3 font-figtree">
+              <h2 className="text-base font-semibold uppercase leading-default tracking-[-0.02em] text-dashboard-text-heavy">
+                Overview
+              </h2>
+              <div className="flex flex-col">
+                {logisticsSteps.map((s, i) => (
+                  <div key={s.slug} onClick={(e) => handleLinkClick(i + 1, e)}>
+                    <LogisticsLink step={i + 1} />
                   </div>
                 ))}
               </div>
