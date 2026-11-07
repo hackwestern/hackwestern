@@ -19,14 +19,17 @@ export const SectionLink = ({
   name,
   locked = false,
   badge,
+  href,
 }: {
   tab: string;
   name: string;
   locked?: boolean; // Locked pages (before RSVP) show a lock and can't be opened
   badge?: number;
+  href?: string;
 }) => {
   const searchParams = useSearchParams();
-  const isActive = (searchParams.get("tab") ?? "home") === tab;
+  const isActive =
+    href === undefined && (searchParams.get("tab") ?? "home") === tab;
 
   if (locked) {
     return (
@@ -52,7 +55,7 @@ export const SectionLink = ({
 
   return (
     <Link
-      href={`/live?tab=${tab}`}
+      href={href ?? `/live?tab=${tab}`}
       aria-current={isActive ? "page" : undefined}
       className={navLinkClass(isActive)}
       style={tokens.dashboardTypography.body}

@@ -5,6 +5,7 @@ import {
   Handshake,
   House,
   MapIcon,
+  ScanLine,
   Utensils,
 } from "lucide-react";
 
@@ -387,6 +388,7 @@ const SIDEBAR_ICONS: Record<string, LucideIcon> = {
   menu: Utensils,
   mentors: GraduationCap,
   sponsors: Handshake,
+  scan: ScanLine,
 };
 
 const SidebarIcon = ({
