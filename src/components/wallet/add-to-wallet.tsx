@@ -21,6 +21,12 @@ const AddToWallet = ({
   const isLoading = generatePass.isPending || loading;
 
   const handleGeneratePass = async () => {
+    if (walletType === "APPLE") {
+      // A real file response (not a blob) is what iPhone Safari hands to Wallet.
+      window.location.href = "/api/wallet/apple";
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -69,9 +75,7 @@ const AddToWallet = ({
 
             if (isNotFound) {
               setError(
-                walletType === "APPLE"
-                  ? "Your wallet pass hasn't been generated yet. Please contact an organizer to generate passes for accepted attendees."
-                  : "Your wallet pass hasn't been generated yet. Please contact an organizer to generate passes for accepted attendees.",
+                "Your wallet pass hasn't been generated yet. Please contact an organizer to generate passes for accepted attendees.",
               );
             } else {
               const errorMessage =
