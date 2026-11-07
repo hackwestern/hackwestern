@@ -49,7 +49,6 @@ export default async function handler(
         lastName: true,
         school: true,
         schoolOther: true,
-        realm: true,
       },
     }),
   ]);
@@ -70,9 +69,7 @@ export default async function handler(
       name: appName !== "" ? appName : (user?.name ?? "Hacker"),
       school: school ?? null,
       role: (user?.type ?? "hacker").toUpperCase(),
-      realm: application?.realm ?? null,
     },
-    req.query.look === "realm" ? "realm" : "teal",
     {
       wwdr: pem(env.APPLE_WWDR_CERT),
       signerCert: pem(env.APPLE_SIGNER_CERT),

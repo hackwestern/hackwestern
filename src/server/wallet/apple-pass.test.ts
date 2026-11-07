@@ -11,7 +11,6 @@ const holder = {
   name: "Jessica Wang",
   school: "Western University",
   role: "HACKER",
-  realm: "safari" as const,
 };
 
 let dir: string;
@@ -56,8 +55,8 @@ function unzip(pass: Buffer, file: string) {
 }
 
 describe("buildApplePass", () => {
-  test("QR holds the hacker ID and the teal look carries the banner", () => {
-    const pass = buildApplePass(holder, "teal", certificates);
+  test("QR holds the hacker ID and the pass carries the banner", () => {
+    const pass = buildApplePass(holder, certificates);
     const json = JSON.parse(unzip(pass, "pass.json").toString()) as {
       barcodes: { message: string }[];
       backgroundColor: string;
@@ -74,20 +73,5 @@ describe("buildApplePass", () => {
       expect.arrayContaining(["pass.json", "icon.png", "strip@3x.png"]),
     );
     expect(unzip(pass, "signature").length).toBeGreaterThan(0);
-  });
-
-  test("realm look uses the realm color and no banner", () => {
-    const pass = buildApplePass(holder, "realm", certificates);
-    const json = JSON.parse(unzip(pass, "pass.json").toString()) as {
-      backgroundColor: string;
-      generic?: unknown;
-    };
-    const manifest = JSON.parse(
-      unzip(pass, "manifest.json").toString(),
-    ) as Record<string, string>;
-
-    expect(json.backgroundColor).toBe("rgb(157, 61, 49)");
-    expect(json.generic).toBeDefined();
-    expect(Object.keys(manifest)).not.toContain("strip.png");
   });
 });

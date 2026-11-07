@@ -23,7 +23,10 @@ const AddToWallet = ({
   const handleGeneratePass = async () => {
     if (walletType === "APPLE") {
       // A real file response (not a blob) is what iPhone Safari hands to Wallet.
+      // The page stays put while Wallet opens, so just block repeat taps briefly.
+      setLoading(true);
       window.location.href = "/api/wallet/apple";
+      setTimeout(() => setLoading(false), 4000);
       return;
     }
 
