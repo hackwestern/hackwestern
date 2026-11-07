@@ -16,7 +16,6 @@ import Topbar from "~/components/live/topbar";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
 import { formatTitle } from "~/utils/format";
-import { disabledRedirect } from "~/utils/redirect";
 
 const Live = ({ isOrganizer }: { isOrganizer: boolean }) => {
   const searchParams = useSearchParams();
@@ -85,16 +84,17 @@ export default Live;
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
-  const disabled = await disabledRedirect();
-  if ("redirect" in disabled) return disabled;
-
+  // Any signed-in user can open /live. Navigation between tabs is shallow, so
+  // this only runs on a full page load. TODO: tighten before launch.
   const session = await getServerSession(context.req, context.res, authOptions);
-  const user = session
-    ? await db.query.users.findFirst({
-        where: (users, { eq }) => eq(users.id, session.user.id),
-        columns: { type: true },
-      })
-    : undefined;
+  if (!session) {
+    return { redirect: { destination: "/login", permanent: false } };
+  }
+
+  const user = await db.query.users.findFirst({
+    where: (users, { eq }) => eq(users.id, session.user.id),
+    columns: { type: true },
+  });
 
   return { props: { isOrganizer: user?.type === "organizer" } };
 };
