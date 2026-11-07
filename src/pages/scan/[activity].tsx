@@ -340,16 +340,12 @@ const ScanActivityPage = () => {
     }
     isProcessingRef.current = true;
 
-    // Stop camera and scanning immediately when scan is detected
+    // Pause scanning while this scan is processed. The camera stays on so
+    // scanning can resume after an error; success navigates away, which
+    // stops it.
     if (scanIntervalRef.current) {
       clearInterval(scanIntervalRef.current);
       scanIntervalRef.current = null;
-    }
-
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-      setCameraActive(false);
     }
 
     try {
@@ -360,6 +356,7 @@ const ScanActivityPage = () => {
         setTimeout(() => {
           setStatus("scanning");
           setErrorMessage(null);
+          isProcessingRef.current = false;
         }, 3000);
         return;
       }
@@ -371,6 +368,7 @@ const ScanActivityPage = () => {
         setTimeout(() => {
           setStatus("scanning");
           setErrorMessage(null);
+          isProcessingRef.current = false;
         }, 3000);
         return;
       }
@@ -382,6 +380,7 @@ const ScanActivityPage = () => {
         setTimeout(() => {
           setStatus("scanning");
           setErrorMessage(null);
+          isProcessingRef.current = false;
         }, 2000);
         return;
       }
