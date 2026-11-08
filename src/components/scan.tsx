@@ -1,119 +1,86 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/router";
 import { api } from "~/utils/api";
-import SecondaryButton from "~/components/internals/secondary-button";
+import { ActivityCard } from "~/components/internals/activity-card";
+import { DashboardButton } from "~/components/internals/dashboard-button";
+import { DashboardChip } from "~/components/internals/dashboard-chip";
+import Sidebar from "~/components/live/sidebar";
+import Topbar from "~/components/live/topbar";
 
-interface Activity {
-  id: number;
-  description: string | null;
-  points: number;
-  code: string;
-  type: string;
-  winPoints: number | null;
-}
-
-interface Category {
-  title: string;
-  items: Activity[];
-}
+const FILTERS = [
+  { value: "all", label: "All" },
+  { value: "meals", label: "Meals" },
+  { value: "activities", label: "Activities" },
+];
 
 const Scan = () => {
   const router = useRouter();
+  const [filter, setFilter] = useState("all");
   const { data: items, isLoading } =
     api.scavengerHunt.getAllScavengerHuntItems.useQuery();
 
-  // Categorize items by type
-  const categorizeItems = (items: Activity[] | undefined): Category[] => {
-    if (!items) return [];
-
-    const categories: Category[] = [
-      { title: "Meals", items: [] },
-      { title: "Regular Workshops", items: [] },
-      { title: "Sponsor Workshops", items: [] },
-      { title: "Non-Winnable Activities", items: [] },
-      { title: "Winnable Activities", items: [] },
-      { title: "Bonus", items: [] },
-    ];
-
-    items.forEach((item) => {
-      if (item.type === "meal") {
-        categories[0]!.items.push(item);
-      } else if (item.type === "workshop") {
-        categories[1]!.items.push(item);
-      } else if (item.type === "sponsor_workshop") {
-        categories[2]!.items.push(item);
-      } else if (item.type === "activity" && item.winPoints === null) {
-        categories[3]!.items.push(item);
-      } else if (item.type === "activity") {
-        categories[4]!.items.push(item);
-      } else if (item.type === "bonus") {
-        categories[5]!.items.push(item);
-      }
-    });
-
-    // Filter out empty categories
-    return categories.filter((cat) => cat.items.length > 0);
-  };
-
-  const categories = categorizeItems(items);
-
-  const handleActivityClick = (itemId: number): void => {
-    void router.push(`/scan/${itemId}`);
-  };
+  const filteredItems = (items ?? []).filter((item) => {
+    if (filter === "meals") return item.type === "meal";
+    if (filter === "activities") return item.type !== "meal";
+    return true;
+  });
 
   return (
-    <div className="flex min-h-screen flex-col bg-highlight">
-      {/* Header */}
-      <header className="flex items-center justify-between p-4">
-        <div></div>
-        <SecondaryButton
-          size="sm"
-          onClick={() => {
-            void router.push("/scavenger/redeem");
-          }}
-        >
-          Redeem Points
-        </SecondaryButton>
-      </header>
+    <div className="flex h-screen w-screen flex-col bg-dashboard-bg-page md:flex-row">
+      <Topbar title="Scan" isOrganizer />
+      <Sidebar isOrganizer />
+      <main className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-4 pb-10 pt-6 font-figtree md:gap-10 md:p-12">
+        {/* Header */}
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="dashboard-h1">Choose an activity</h1>
+          <DashboardButton
+            variant="outline"
+            onClick={() => {
+              void router.push("/scavenger/redeem");
+            }}
+          >
+            Redeem Points
+          </DashboardButton>
+        </header>
 
-      {/* Main Content */}
-      <main className="w-full flex-1 space-y-6 p-6">
-        <h1 className="text-left font-primary text-3xl font-medium text-heavy">
-          Select activity to scan
-        </h1>
-
-        {isLoading && (
-          <div className="text-center font-secondary text-medium">
-            Loading activities...
+        <div className="flex flex-col gap-6 md:max-w-[640px]">
+          <div
+            role="group"
+            aria-label="Filter activities"
+            className="flex flex-wrap gap-2"
+          >
+            {FILTERS.map((option) => (
+              <DashboardChip
+                key={option.value}
+                selected={filter === option.value}
+                onClick={() => setFilter(option.value)}
+              >
+                {option.label}
+              </DashboardChip>
+            ))}
           </div>
-        )}
 
-        {!isLoading && categories.length === 0 && (
-          <div className="text-center font-secondary text-medium">
-            No activities found
-          </div>
-        )}
-
-        {!isLoading &&
-          categories.map((category) => (
-            <section key={category.title} className="space-y-4">
-              <h3 className="font-secondary text-base font-medium text-medium">
-                {category.title}
-              </h3>
-              <div className="space-y-2">
-                {category.items.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleActivityClick(item.id)}
-                    className="w-full rounded-lg bg-offwhite px-4 py-3 text-left font-secondary font-semibold text-heavy shadow-md transition-colors hover:bg-blue-1 active:bg-blue-2"
-                  >
-                    {item.description ?? item.code}
-                  </button>
-                ))}
-              </div>
-            </section>
-          ))}
+          {isLoading || filteredItems.length === 0 ? (
+            <p className="rounded-dashboard-sm bg-dashboard-bg-inset p-5 text-sm font-medium italic leading-default text-dashboard-text-medium">
+              {isLoading ? "Loading activities..." : "No activities found"}
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {filteredItems.map((item) => (
+                <ActivityCard
+                  key={item.id}
+                  kind={item.type === "meal" ? "meal" : "activity"}
+                  title={item.description ?? item.code}
+                  onClick={() => {
+                    void router.push(`/scan/${item.id}`);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );
