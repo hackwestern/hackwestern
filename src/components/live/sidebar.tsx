@@ -28,6 +28,9 @@ export const SidebarNav = ({
             <SectionLink tab="scan" name="Scan" href="/scavenger" />
           </div>
         )}
+        {isOrganizer && (
+          <SectionLink tab="judge" name="Judging" href="/judge" />
+        )}
       </div>
       <hr className="border-dashboard-border-subtle" />
       <div className="flex flex-col gap-1.5">
