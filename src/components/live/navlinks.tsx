@@ -1,4 +1,4 @@
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Lock } from "lucide-react";
 import { SidebarIcon, LogisticsIcon } from "./icons";
@@ -28,8 +28,11 @@ export const SectionLink = ({
   href?: string;
 }) => {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const isActive =
-    href === undefined && (searchParams.get("tab") ?? "home") === tab;
+    href !== undefined
+      ? pathname?.startsWith(href) === true
+      : pathname === "/live" && (searchParams.get("tab") ?? "home") === tab;
 
   if (locked) {
     return (
@@ -79,10 +82,12 @@ export const SectionLink = ({
 
 export const IconlessLink = ({ tab, name }: { tab: string; name: string }) => {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const activeStep = searchParams.get("step");
   const step = tab === "contact-us" ? "6" : tab === "faq" ? "7" : "1";
 
   const isActive =
+    pathname === "/live" &&
     searchParams.get("tab") === "event-logistics" &&
     (tab === "event-logistics"
       ? activeStep !== "6" && activeStep !== "7"
