@@ -253,6 +253,13 @@
       "when": 1794444018111,
       "tag": "0035_judging_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1794468140981,
+      "tag": "0036_organizer_clock",
+      "breakpoints": true
     }
   ]
 }
