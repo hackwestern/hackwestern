@@ -19,6 +19,9 @@ export function InternalNavbar() {
           <Link href="/internal/review">Applicant Review</Link>
         </Button>
         <Button className="text-primary-600" variant={"link"} asChild>
+          <Link href="/internal/clock">Clock</Link>
+        </Button>
+        <Button className="text-primary-600" variant={"link"} asChild>
           <Link href="/internal/adjust-status">Status Adjustment</Link>
         </Button>
 
