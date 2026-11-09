@@ -93,7 +93,11 @@ const FormLabel = React.forwardRef<
   return (
     <Label
       ref={ref}
-      className={cn(className, "text-sm 2xl:text-base")}
+      className={cn(
+        "font-figtree text-sm font-medium text-heavy 2xl:text-base",
+        error && "text-destructive",
+        className,
+      )}
       htmlFor={formItemId}
       {...props}
     />

@@ -1,7 +1,7 @@
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import {
   Form,
   FormControl,
@@ -9,9 +9,10 @@ import {
   FormItem,
   FormLabel,
 } from "~/components/ui/form";
+import { Input } from "~/components/ui/input";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
-import { infoSaveSchema } from "~/schemas/application";
+import { infoSaveSchema, YEAR_OF_STUDY_OPTIONS } from "~/schemas/application";
 import {
   Select,
   SelectTrigger,
@@ -20,24 +21,15 @@ import {
   SelectItem,
 } from "~/components/ui/select";
 import { schools } from "~/constants/schools";
-import { major, numOfHackathons, yearOfStudy } from "~/server/db/schema";
-import { RadioButtonGroup, RadioButtonItem } from "~/components/ui/radio-group";
+import { major, numOfHackathons } from "~/server/db/schema";
+import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 export function InfoForm() {
   const utils = api.useUtils();
-  const { data } = api.application.get.useQuery({
-    fields: [
-      "status",
-      "school",
-      "yearOfStudy",
-      "major",
-      "attendedBefore",
-      "numOfHackathons",
-    ],
-  });
+  const { data } = api.application.get.useQuery();
 
   const status = data?.status ?? "NOT_STARTED";
-  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+  const canEdit = useCanEditApplication(status);
 
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
@@ -52,6 +44,7 @@ export function InfoForm() {
       major: data.major ?? undefined,
       school:
         (data.school as (typeof schools)[number] | undefined) ?? undefined,
+      schoolOther: data.schoolOther ?? undefined,
       yearOfStudy: data.yearOfStudy ?? undefined,
       numOfHackathons: data.numOfHackathons ?? undefined,
       attendedBefore:
@@ -69,11 +62,15 @@ export function InfoForm() {
   });
 
   useAutoSave(form, onSubmit, formValues);
+  const school = useWatch({ control: form.control, name: "school" });
 
   function onSubmit(formData: z.infer<typeof infoSaveSchema>) {
     if (!data) return;
     mutate({
       ...formData, // Override with new form values
+      // Only kept while "Other" is picked, so a stale name can't linger
+      schoolOther:
+        formData.school === "Other" ? (formData.schoolOther ?? null) : null,
       attendedBefore:
         formData.attendedBefore === "yes"
           ? true
@@ -114,6 +111,27 @@ export function InfoForm() {
             </FormItem>
           )}
         />
+        {school === "Other" && (
+          <FormField
+            control={form.control}
+            name="schoolOther"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>What is the name of your school?</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    placeholder="e.g. University of Illinois Urbana-Champaign"
+                    maxLength={255}
+                    variant="primary"
+                    disabled={!canEdit}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        )}
         <FormField
           control={form.control}
           name="yearOfStudy"
@@ -131,7 +149,7 @@ export function InfoForm() {
                     <SelectValue placeholder="Select year of study" />
                   </SelectTrigger>
                   <SelectContent>
-                    {yearOfStudy.enumValues.map((item) => (
+                    {YEAR_OF_STUDY_OPTIONS.map((item) => (
                       <SelectItem key={item} value={item}>
                         {item}
                       </SelectItem>
@@ -170,49 +188,61 @@ export function InfoForm() {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="attendedBefore"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Have you attended Hack Western before?</FormLabel>
-              <FormControl>
-                <RadioButtonGroup
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  disabled={!canEdit}
-                >
-                  <RadioButtonItem key="yes" label="Yes" value="yes" />
-                  <RadioButtonItem key="no" label="No" value="no" />
-                </RadioButtonGroup>
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="numOfHackathons"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>How many hackathons have you attended?</FormLabel>
-              <FormControl>
-                <RadioButtonGroup
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  disabled={!canEdit}
-                >
-                  {numOfHackathons.enumValues.map((option) => (
-                    <RadioButtonItem
-                      key={option}
-                      label={option}
-                      value={option}
-                    />
-                  ))}
-                </RadioButtonGroup>
-              </FormControl>
-            </FormItem>
-          )}
-        />
+        <div className="grid gap-6 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="attendedBefore"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Have you attended Hack Western before?</FormLabel>
+                <FormControl>
+                  <Select
+                    {...field}
+                    value={field.value ?? undefined}
+                    onValueChange={field.onChange}
+                    disabled={!canEdit}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="yes">Yes</SelectItem>
+                      <SelectItem value="no">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="numOfHackathons"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>How many hackathons have you attended?</FormLabel>
+                <FormControl>
+                  <Select
+                    {...field}
+                    value={field.value ?? undefined}
+                    onValueChange={field.onChange}
+                    disabled={!canEdit}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {numOfHackathons.enumValues.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
       </form>
     </Form>
   );

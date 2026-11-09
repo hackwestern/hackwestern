@@ -4,6 +4,8 @@ import { IncomingForm, type File, type Fields, type Files } from "formidable";
 import fs from "node:fs";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client, R2_BUCKET, R2_PUBLIC_BASE_URL } from "~/server/storage/r2";
+import { db } from "~/server/db";
+import { isPastDeadline } from "~/lib/date";
 
 export const config = {
   api: {
@@ -31,6 +33,22 @@ export default async function handler(
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ message: "Method not allowed" });
+  }
+
+  // Uploads overwrite resumes/<userId>/<filename> in place, so a submitted
+  // application's resume link would serve the new file. Only in-progress
+  // applications, before the deadline, may upload.
+  if (isPastDeadline()) {
+    return res.status(403).json({ message: "Applications are closed." });
+  }
+  const application = await db.query.applications.findFirst({
+    where: (schema, { eq }) => eq(schema.userId, session.user.id),
+    columns: { status: true },
+  });
+  if (application && application.status !== "IN_PROGRESS") {
+    return res
+      .status(403)
+      .json({ message: "Submitted applications can't be changed." });
   }
 
   try {

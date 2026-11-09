@@ -1,12 +1,31 @@
-import { beforeAll, beforeEach, describe, expect, test } from "vitest";
+import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { faker } from "@faker-js/faker";
 import { eq, sql } from "drizzle-orm";
+
+// Same guard as cheat-check-sweep.test.ts: with a real CHEAT_SWEEP_SECRET in
+// .env, the drain tests below would otherwise POST the real bearer token at
+// NEXTAUTH_URL and could start a real worker. Unset, `kickWorker` no-ops while
+// the sweep rows are still written and assertable.
+vi.mock("~/env", async (importOriginal) => {
+  const original = await importOriginal<typeof import("~/env")>();
+  const env = original.env as Record<string | symbol, unknown>;
+  return {
+    env: new Proxy(env, {
+      get(target, prop) {
+        if (prop === "CHEAT_SWEEP_SECRET") return undefined;
+        return target[prop];
+      },
+    }),
+  };
+});
 
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
 import {
+  cheatCheckSweepItems,
+  cheatCheckSweeps,
   judges,
   judgingQueue,
   judgingSkips,
@@ -63,7 +82,8 @@ async function makeTeam(opts?: {
   tracks?: Track[];
   submissionStatus?: SubmissionStatus;
 }) {
-  const id = faker.string.alphanumeric(6);
+  const code = faker.string.alphanumeric(4);
+  const id = faker.string.alphanumeric(12);
   await db.insert(teams).values({
     id,
     name: `team-${id}`,
@@ -71,6 +91,7 @@ async function makeTeam(opts?: {
     githubUrl: `https://github.com/${id}`,
     tracks: opts?.tracks,
     submissionStatus: opts?.submissionStatus ?? "submitted",
+    joinCode: code,
   });
   return id;
 }
@@ -80,7 +101,33 @@ async function resetAll() {
   await db.delete(judgingSkips).where(sql`true`);
   await db.delete(judgingQueue).where(sql`true`);
   await db.delete(judges).where(sql`true`);
+  // Sweep rows outlive their teams (no FK from sweep -> team), so a leftover
+  // `running` sweep or a recent `finishedAt` would suppress the next drain.
+  await db.delete(cheatCheckSweepItems).where(sql`true`);
+  await db.delete(cheatCheckSweeps).where(sql`true`);
   await db.delete(teams).where(sql`true`);
+}
+
+/**
+ * `maybeTriggerSweepOnDrain` is fired without being awaited so it can't delay a
+ * judge's mark, so the sweep row lands a tick or two after the mutation
+ * resolves. Poll for it rather than racing it.
+ */
+async function waitFor<T>(
+  read: () => Promise<T | undefined>,
+  message: string,
+): Promise<T> {
+  for (let i = 0; i < 50; i++) {
+    const value = await read();
+    if (value !== undefined) return value;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error(message);
+}
+
+/** Give the un-awaited drain hook a chance to run before asserting it didn't. */
+async function settleDrainHook() {
+  await new Promise((resolve) => setTimeout(resolve, 100));
 }
 
 // The triggers can't be expressed in Drizzle's schema DSL, so pushSchema
@@ -118,7 +165,82 @@ describe("auth gating", () => {
     const j = await makeJudge();
     await expect(j.caller.judging.me.getCurrentAssignment()).resolves.toEqual({
       currentTeamId: null,
+      team: null,
+      assignedAt: null,
+      judge: { type: "organizer", track: null },
+      canManage: false,
     });
+  });
+});
+
+/* ---------- reads for the judge screen and control room ---------- */
+
+describe("getCurrentAssignment / getQueue", () => {
+  test("a held team comes back with its details and assignment time", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 3 });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    const current = await j.caller.judging.me.getCurrentAssignment();
+    expect(current.currentTeamId).toBe(teamId);
+    expect(current.team?.name).toBe(`team-${teamId}`);
+    expect(current.assignedAt).toBeInstanceOf(Date);
+  });
+
+  test("getQueue lists queued teams, who holds them, and the totals", async () => {
+    const org = await makeOrganizer();
+    const held = await makeTeam();
+    const waiting = await makeTeam();
+    await makeTeam({ submissionStatus: "draft" });
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 2 });
+
+    const j = await makeJudge();
+    const { team } = await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId: team.id, score: 70 });
+    await j.caller.judging.me.getNextTeam();
+
+    const q = await org.caller.judging.admin.getQueue();
+    expect(q.submittedTeams).toBe(2);
+    expect(q.regularMarks).toBe(1);
+    expect(q.teams.map((t) => t.teamId).sort()).toEqual([held, waiting].sort());
+    const holder = q.teams.find((t) => t.currentJudgeId === j.session.user.id);
+    expect(holder).toBeDefined();
+    expect(holder?.assignedAt).toBeInstanceOf(Date);
+  });
+
+  test("only an organizer account can manage, not every organizer judge", async () => {
+    const org = await makeOrganizer();
+    await db
+      .insert(judges)
+      .values({ id: org.session.user.id, type: "organizer" });
+    const asOrganizer = await org.caller.judging.me.getCurrentAssignment();
+    expect(asOrganizer.canManage).toBe(true);
+
+    const j = await makeJudge({ type: "organizer" });
+    const asJudge = await j.caller.judging.me.getCurrentAssignment();
+    expect(asJudge.canManage).toBe(false);
+  });
+
+  test("judge-facing team data never includes the join code", async () => {
+    const org = await makeOrganizer();
+    await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 3 });
+
+    const j = await makeJudge();
+    const { team } = await j.caller.judging.me.getNextTeam();
+    expect(team).not.toHaveProperty("joinCode");
+    const current = await j.caller.judging.me.getCurrentAssignment();
+    expect(current.team).not.toHaveProperty("joinCode");
+    await j.caller.judging.me.submitTeamMark({ teamId: team.id, score: 60 });
+    const [mark] = await j.caller.judging.me.getSubmittedTeamMarks();
+    expect(mark?.team).not.toHaveProperty("joinCode");
+  });
+
+  test("getQueue is organizer-only", async () => {
+    const j = await makeJudge();
+    await expect(j.caller.judging.admin.getQueue()).rejects.toThrow();
   });
 });
 
@@ -323,6 +445,164 @@ describe("submitTeamMark", () => {
     expect(row?.seenJudges).toBe(1);
     expect(row?.status).toBe("waiting");
     expect(row?.currentJudgeId).toBeNull();
+  });
+});
+
+/* ---------- cheat-check sweep on queue drain ---------- */
+
+describe("cheat check sweep trigger", () => {
+  /** A team that is submitted but has no repo/DevPost links to scrape. */
+  async function makeUnsubmittableTeam() {
+    const id = faker.string.alphanumeric(6);
+    await db.insert(teams).values({
+      joinCode: faker.string.fromCharacters(
+        "ABCDEFGHJKLMNPQRSTUVWXYZ23456789",
+        6,
+      ),
+      id,
+      name: `team-${id}`,
+      devpostUrl: null,
+      githubUrl: null,
+      submissionStatus: "submitted",
+    });
+    return id;
+  }
+
+  test("draining the queue starts exactly one sweep with an item per eligible team", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    const otherTeamId = await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 1 });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 70 });
+
+    // Queue still has the second team, so no sweep yet.
+    await settleDrainHook();
+    expect(await db.query.cheatCheckSweeps.findMany({})).toHaveLength(0);
+
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({
+      teamId: otherTeamId,
+      score: 90,
+    });
+
+    const sweep = await waitFor(
+      async () => (await db.query.cheatCheckSweeps.findMany({}))[0],
+      "expected a sweep after the queue drained",
+    );
+    expect(sweep.status).toBe("running");
+    expect(sweep.triggeredBy).toBe("queue_drain");
+    expect(sweep.totalTeams).toBe(2);
+
+    const items = await db.query.cheatCheckSweepItems.findMany({});
+    expect(items).toHaveLength(2);
+    expect(items.map((i) => i.teamId).sort()).toEqual(
+      [teamId, otherTeamId].sort(),
+    );
+    expect(items.every((i) => i.status === "pending")).toBe(true);
+  });
+
+  test("teams without a repo or DevPost link get no sweep item", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    const linkless = await makeUnsubmittableTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 1 });
+
+    const j = await makeJudge();
+    // Both teams are queued (loadQueue only looks at submission status), so
+    // both must be marked before the queue drains.
+    for (let i = 0; i < 2; i++) {
+      const { team } = await j.caller.judging.me.getNextTeam();
+      await j.caller.judging.me.submitTeamMark({ teamId: team.id, score: 70 });
+    }
+
+    const sweep = await waitFor(
+      async () => (await db.query.cheatCheckSweeps.findMany({}))[0],
+      "expected a sweep after the queue drained",
+    );
+    expect(sweep.totalTeams).toBe(1);
+
+    const items = await db.query.cheatCheckSweepItems.findMany({});
+    expect(items.map((i) => i.teamId)).toEqual([teamId]);
+    expect(items.map((i) => i.teamId)).not.toContain(linkless);
+  });
+
+  test("a sweep that finished recently suppresses the next drain", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 1 });
+
+    // A sweep that completed a minute ago, well inside the 30 minute cooldown.
+    await db.insert(cheatCheckSweeps).values({
+      triggeredBy: "manual",
+      status: "completed",
+      finishedAt: new Date(Date.now() - 60_000),
+    });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 70 });
+
+    await settleDrainHook();
+    const sweeps = await db.query.cheatCheckSweeps.findMany({});
+    expect(sweeps).toHaveLength(1);
+    expect(sweeps[0]?.triggeredBy).toBe("manual");
+    expect(await db.query.cheatCheckSweepItems.findMany({})).toHaveLength(0);
+  });
+
+  test("an already-running sweep is not duplicated by a drain", async () => {
+    const org = await makeOrganizer();
+    const teamId = await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 1 });
+
+    await db
+      .insert(cheatCheckSweeps)
+      .values({ triggeredBy: "manual", status: "running" });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 70 });
+
+    await settleDrainHook();
+    expect(await db.query.cheatCheckSweeps.findMany({})).toHaveLength(1);
+  });
+
+  test("the partial unique index permits only one running sweep", async () => {
+    await db
+      .insert(cheatCheckSweeps)
+      .values({ triggeredBy: "manual", status: "running" });
+
+    await expect(
+      db
+        .insert(cheatCheckSweeps)
+        .values({ triggeredBy: "queue_drain", status: "running" }),
+    ).rejects.toThrow();
+
+    // A finished sweep alongside a running one is fine — the index is partial.
+    await expect(
+      db
+        .insert(cheatCheckSweeps)
+        .values({ triggeredBy: "manual", status: "completed" }),
+    ).resolves.toBeDefined();
+  });
+
+  test("a drain with no eligible teams completes the sweep immediately", async () => {
+    const org = await makeOrganizer();
+    const linkless = await makeUnsubmittableTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 1 });
+
+    const j = await makeJudge();
+    await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({ teamId: linkless, score: 70 });
+
+    const sweep = await waitFor(
+      async () => (await db.query.cheatCheckSweeps.findMany({}))[0],
+      "expected a sweep after the queue drained",
+    );
+    expect(sweep.status).toBe("completed");
+    expect(sweep.totalTeams).toBe(0);
   });
 });
 
@@ -576,6 +856,87 @@ describe("addJudges", () => {
   });
 });
 
+/* ---------- addJudgeByEmail (control room form) ---------- */
+
+describe("addJudgeByEmail", () => {
+  test("finds the account case-insensitively and makes it an organizer judge", async () => {
+    const org = await makeOrganizer();
+    const user = await mockSession(db);
+    const email = user.user.email;
+    assertDefined(email, "mock user should have an email");
+
+    const added = await org.caller.judging.admin.addJudgeByEmail({
+      email: `  ${email.toUpperCase()}  `,
+    });
+    expect(added.id).toBe(user.user.id);
+    expect(added.type).toBe("organizer");
+
+    const row = await db.query.judges.findFirst({
+      where: eq(judges.id, user.user.id),
+    });
+    expect(row?.type).toBe("organizer");
+  });
+
+  test("upserts: re-adding by email switches the judge to sponsored", async () => {
+    const org = await makeOrganizer();
+    const user = await mockSession(db);
+    const email = user.user.email;
+    assertDefined(email, "mock user should have an email");
+
+    await org.caller.judging.admin.addJudgeByEmail({ email });
+    const updated = await org.caller.judging.admin.addJudgeByEmail({
+      email,
+      type: "sponsored",
+      track: ["Best Domain"],
+    });
+    expect(updated.type).toBe("sponsored");
+    expect(updated.track).toEqual(["Best Domain"]);
+
+    const rows = await db.query.judges.findMany({
+      where: eq(judges.id, user.user.id),
+    });
+    expect(rows).toHaveLength(1);
+  });
+
+  test("an unknown email is a friendly NOT_FOUND and writes nothing", async () => {
+    const org = await makeOrganizer();
+
+    await expect(
+      org.caller.judging.admin.addJudgeByEmail({
+        email: "nobody-here@example.com",
+      }),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "No Hack Western account with that email.",
+    });
+    expect(await db.query.judges.findMany({})).toHaveLength(0);
+  });
+
+  test("rejects a sponsored judge with no tracks", async () => {
+    const org = await makeOrganizer();
+    const user = await mockSession(db);
+    const email = user.user.email;
+    assertDefined(email, "mock user should have an email");
+
+    await expect(
+      org.caller.judging.admin.addJudgeByEmail({ email, type: "sponsored" }),
+    ).rejects.toThrow();
+    expect(await db.query.judges.findMany({})).toHaveLength(0);
+  });
+
+  test("rejects non-organizer callers", async () => {
+    const session = await mockSession(db);
+    const caller = createCaller(createInnerTRPCContext({ session }));
+    const target = await mockSession(db);
+    const email = target.user.email;
+    assertDefined(email, "mock user should have an email");
+
+    await expect(
+      caller.judging.admin.addJudgeByEmail({ email }),
+    ).rejects.toThrow();
+  });
+});
+
 /* ---------- getLatestRanking (normalization) ---------- */
 
 describe("getLatestRanking", () => {
@@ -626,5 +987,89 @@ describe("getLatestRanking", () => {
     const top = ranking[0];
     assertDefined(top, "expected at least one ranking row");
     expect(top.team_id).toBe(t1);
+  });
+});
+
+/* ---------- stat maintenance across judge reassignment ---------- */
+
+/**
+ * These bypass the router deliberately. Reassignment can't happen through the
+ * application, so the point is that the aggregates survive it when it arrives
+ * from somewhere else — an admin fixing data by hand, most likely.
+ */
+describe("team_mark stat maintenance", () => {
+  test("reassigning judge_id moves the mark between both judges' aggregates", async () => {
+    const teamId = await makeTeam();
+    const a = await makeJudge();
+    const b = await makeJudge();
+    await db
+      .insert(teamMarks)
+      .values({ teamId, judgeId: a.session.user.id, score: 40 });
+
+    await db
+      .update(teamMarks)
+      .set({ judgeId: b.session.user.id })
+      .where(eq(teamMarks.teamId, teamId));
+
+    const rowA = await db.query.judges.findFirst({
+      where: eq(judges.id, a.session.user.id),
+    });
+    const rowB = await db.query.judges.findFirst({
+      where: eq(judges.id, b.session.user.id),
+    });
+    // A is emptied out, B gains the mark whole — counts included.
+    expect(rowA?.marksCount).toBe(0);
+    expect(rowA?.marksSum).toBe(0);
+    expect(rowA?.marksSquaredSum).toBe(0);
+    expect(rowB?.marksCount).toBe(1);
+    expect(rowB?.marksSum).toBe(40);
+    expect(rowB?.marksSquaredSum).toBe(1600);
+  });
+
+  test("reassigning judge_id and score together stays consistent", async () => {
+    const teamId = await makeTeam();
+    const a = await makeJudge();
+    const b = await makeJudge();
+    await db
+      .insert(teamMarks)
+      .values({ teamId, judgeId: a.session.user.id, score: 40 });
+
+    await db
+      .update(teamMarks)
+      .set({ judgeId: b.session.user.id, score: 90 })
+      .where(eq(teamMarks.teamId, teamId));
+
+    const rowA = await db.query.judges.findFirst({
+      where: eq(judges.id, a.session.user.id),
+    });
+    const rowB = await db.query.judges.findFirst({
+      where: eq(judges.id, b.session.user.id),
+    });
+    // A loses the old score, B gains the new one — not a delta between them.
+    expect(rowA?.marksCount).toBe(0);
+    expect(rowA?.marksSum).toBe(0);
+    expect(rowB?.marksCount).toBe(1);
+    expect(rowB?.marksSum).toBe(90);
+    expect(rowB?.marksSquaredSum).toBe(8100);
+  });
+
+  test("editing only the score is still a delta on one judge", async () => {
+    const teamId = await makeTeam();
+    const j = await makeJudge();
+    await db
+      .insert(teamMarks)
+      .values({ teamId, judgeId: j.session.user.id, score: 40 });
+
+    await db
+      .update(teamMarks)
+      .set({ score: 90 })
+      .where(eq(teamMarks.teamId, teamId));
+
+    const row = await db.query.judges.findFirst({
+      where: eq(judges.id, j.session.user.id),
+    });
+    expect(row?.marksCount).toBe(1);
+    expect(row?.marksSum).toBe(90);
+    expect(row?.marksSquaredSum).toBe(8100);
   });
 });

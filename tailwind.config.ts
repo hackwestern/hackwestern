@@ -34,16 +34,10 @@ const config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         githubbg: "#1b1f23",
-        beige: "var(--beige)",
-        coral: "var(--coral)",
         lilac: "var(--lilac)",
-        salmon: "var(--salmon)",
-        "faint-lilac": "var(--faint-lilac)",
         "border-light": "var(--border-light)",
 
         emphasis: "var(--emphasis)",
-        active: "var(--active)",
-        tinted: "var(--tinted)",
 
         heavy: tokens.colors.text.heavy,
         medium: tokens.colors.text.medium,
@@ -51,8 +45,12 @@ const config = {
 
         offwhite: tokens.colors.bg.light,
         highlight: tokens.colors.bg.highlight,
+        "promo-sheet": tokens.colors.bg.promoSheet,
+
+        dashboard: tokens.dashboardColors,
 
         green: tokens.colors.greens["green-primary"],
+        "green-dark": tokens.colors.greens["green-dark"],
 
         primary: {
           "50": "hsl(var(--primary-50))",
@@ -68,6 +66,7 @@ const config = {
           foreground: "hsl(var(--primary-foreground))",
         },
         gray: {
+          "0": tokens.colors.grays["white-0"],
           "1": tokens.colors.grays["gray-1"],
           "2": tokens.colors.grays["gray-2"],
           "3": tokens.colors.grays["gray-3"],
@@ -93,13 +92,20 @@ const config = {
         "button-secondary": "rgb(244, 242, 247)",
         "button-secondary-hover": "rgb(248, 247, 249)",
         "button-secondary-active": "rgb(253, 252, 253)",
+
+        "button-primary": tokens.colors.buttonPrimary.bg,
+        "button-primary-border": tokens.colors.buttonPrimary.border,
+        "button-primary-hover": tokens.colors.buttonPrimary.bgHover,
+        "button-primary-hover-border": tokens.colors.buttonPrimary.borderHover,
+        "button-primary-active": tokens.colors.buttonPrimary.bgActive,
+        "button-primary-active-border":
+          tokens.colors.buttonPrimary.borderActive,
         violet: {
           "100": "hsl(var(--violet-100))",
           "200": "hsl(var(--violet-200))",
           "300": "hsl(var(--violet-300))",
           "400": "hsl(var(--violet-400))",
           "500": "hsl(var(--violet-500))",
-          "600": "hsl(var(--violet-600))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -120,7 +126,6 @@ const config = {
         },
         card: {
           DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -138,12 +143,29 @@ const config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
         "hw-gradient-radius": "60vw",
+        "dashboard-xs": tokens.dashboardRadius.xs,
+        "dashboard-sm": tokens.dashboardRadius.sm,
+        "dashboard-md": tokens.dashboardRadius.md,
+        "dashboard-lg": tokens.dashboardRadius.lg,
+        "dashboard-2xl": tokens.dashboardRadius["2xl"],
+        "dashboard-iconBadge": tokens.dashboardRadius.iconBadge,
       },
       boxShadow: {
-        "button-primary": tokens.shadows.button,
-        "button-primary-active": tokens.shadows.activeButton,
-        "button-secondary": tokens.shadows.secondary,
-        "button-icon": tokens.shadows.icon,
+        "primary-btn": tokens.shadows.button,
+        "primary-btn-hover": tokens.shadows.buttonHover,
+        "primary-btn-active": tokens.shadows.activeButton,
+        "primary-btn-2": tokens.shadows.primary2,
+        "secondary-btn": tokens.shadows.secondary,
+        "icon-btn": tokens.shadows.icon,
+        "dashboard-card": tokens.dashboardShadows.card,
+        "dashboard-primary-btn": tokens.dashboardShadows.primaryButton,
+        "dashboard-secondary-btn": tokens.dashboardShadows.secondaryButton,
+      },
+      backdropBlur: {
+        "dashboard-input": tokens.dashboardBlur.input,
+      },
+      opacity: {
+        "dashboard-disabled": tokens.dashboardOpacity.disabled,
       },
       fontFamily: {
         primary: [tokens.fonts.primary],
@@ -214,9 +236,65 @@ const config = {
           "80%": { transform: "translateY(-10px)" },
           "100%": { transform: "translateY(0)" },
         },
+        "team-marquee": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
+        "team-glow": {
+          "0%": { opacity: "0" },
+          "15%": { opacity: "0.35" },
+          "100%": { opacity: "0" },
+        },
+        // Same number of drop-shadows at both ends so the filter interpolates.
+        "glow-pulse": {
+          "0%, 100%": {
+            filter:
+              "drop-shadow(0 0 0 rgb(255 214 90 / 0)) drop-shadow(0 0 0 rgb(255 214 90 / 0))",
+          },
+          "50%": {
+            filter:
+              "drop-shadow(0 0 1.5px rgb(255 214 90)) drop-shadow(0 0 6px rgb(255 214 90))",
+          },
+        },
+        // Where it starts, holds and ends come from --pop-from/-mid/-to, so
+        // the same pop can rise above an item or sink below an edge.
+        "pop-arrow": {
+          "0%": {
+            opacity: "0",
+            transform: "translate(-50%, var(--pop-from)) scale(0.9)",
+          },
+          "16%, 64%": {
+            opacity: "1",
+            transform: "translate(-50%, var(--pop-mid)) scale(1)",
+          },
+          "100%": {
+            opacity: "0",
+            transform: "translate(-50%, var(--pop-to)) scale(0.96)",
+          },
+        },
+        "flag-wave": {
+          "0%, 100%": { transform: "skewY(0deg) scaleX(1)" },
+          "50%": { transform: "skewY(-5deg) scaleX(0.94)" },
+        },
+        // A quick wiggle, then a long rest, so it reads as an occasional nudge.
+        wiggle: {
+          "0%, 16%, 100%": { transform: "rotate(0deg)" },
+          "2%": { transform: "rotate(-8deg)" },
+          "4%": { transform: "rotate(8deg)" },
+          "6%": { transform: "rotate(-6deg)" },
+          "8%": { transform: "rotate(6deg)" },
+          "10%": { transform: "rotate(-3deg)" },
+          "12%": { transform: "rotate(3deg)" },
+        },
       },
       animation: {
+        "pop-arrow": "pop-arrow 1.2s ease-out forwards",
+        "flag-wave": "flag-wave 2.4s ease-in-out infinite",
         "bounce-jump": "bounce-jump 0.6s ease-in-out",
+        "team-marquee": "team-marquee 80s linear infinite",
+        "team-glow": "team-glow 2.5s ease-out forwards",
+        "glow-pulse": "glow-pulse 2.8s ease-in-out infinite",
+        wiggle: "wiggle 3.5s ease-in-out infinite",
       },
     },
   },

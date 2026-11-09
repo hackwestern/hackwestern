@@ -13,6 +13,7 @@ import type { z } from "zod";
 import { agreementsSaveSchema } from "~/schemas/application";
 import { Checkbox } from "~/components/ui/checkbox";
 import Link from "next/link";
+import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 const StyledLink = ({ url, text }: { url: string; text: string }) => {
   return (
@@ -29,19 +30,10 @@ const StyledLink = ({ url, text }: { url: string; text: string }) => {
 
 export function AgreementsForm() {
   const utils = api.useUtils();
-  const { data: defaultValues } = api.application.get.useQuery({
-    fields: [
-      "status",
-      "agreeCodeOfConduct",
-      "agreeShareWithMLH",
-      "agreeShareWithSponsors",
-      "agreeWillBe18",
-      "agreeEmailsFromMLH",
-    ],
-  });
+  const { data: defaultValues } = api.application.get.useQuery();
 
   const status = defaultValues?.status ?? "NOT_STARTED";
-  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+  const canEdit = useCanEditApplication(status);
 
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
@@ -147,7 +139,7 @@ export function AgreementsForm() {
                 />
               </FormControl>
               <FormLabel className="text-sm text-slate-500">
-                I will be at least 18 years old on November 21st, 2025
+                I will be at least 18 years old on November 20th, 2026
               </FormLabel>
             </FormItem>
           )}

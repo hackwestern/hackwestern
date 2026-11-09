@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, describe, expect, test } from "vitest";
+import { beforeEach, afterEach, describe, expect, test, vi } from "vitest";
 import { faker } from "@faker-js/faker";
 import { type Session } from "next-auth";
 import { eq } from "drizzle-orm";
@@ -11,6 +11,11 @@ import { ReviewSeeder } from "~/server/db/seed/reviewSeeder";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { GITHUB_URL, LINKEDIN_URL } from "~/utils/urls";
 import { createEmptyReview } from "~/server/api/routers/review";
+import * as dateModule from "~/lib/date";
+
+// application.save refuses writes once applications close. Pin "before the
+// deadline" so the tests that seed through save keep passing after Oct 18.
+vi.spyOn(dateModule, "isPastDeadline").mockReturnValue(false);
 
 const session = await mockOrganizerSession(db);
 const ctx = createInnerTRPCContext({ session });
@@ -182,6 +187,22 @@ describe("review.getReviewCounts", () => {
     expect(result.length).toBe(1);
     expect(result[0]?.reviewerId).toBe(organizerSession.user.id);
     expect(result[0]?.reviewCount).toBe(1);
+  });
+
+  test("shows the reviewer's email when they have no name", async () => {
+    await db
+      .update(users)
+      .set({ name: null })
+      .where(eq(users.id, organizerSession.user.id));
+    await db.insert(applications).values(application);
+    await db.insert(reviews).values(review);
+
+    const result = await filterBasedOnSession();
+    const reviewer = await db.query.users.findFirst({
+      where: eq(users.id, organizerSession.user.id),
+    });
+
+    expect(result[0]?.reviewerName).toBe(reviewer?.email);
   });
 
   test("ignores incomplete reviews", async () => {
@@ -420,13 +441,13 @@ describe("review.getNextId", () => {
       .where(eq(reviews.reviewerUserId, newOrganizerSession.user.id));
     await db.delete(users).where(eq(users.id, newOrganizerSession.user.id));
   });
-  test("Throws NOT_FOUND when no application matches", async () => {
+  test("Returns null when no application matches", async () => {
     await db.insert(applications).values(app);
     await db.insert(reviews).values(review);
 
     await expect(
       organizerCaller.review.getNextId({ skipId: hackerSession.user.id }),
-    ).rejects.toThrowError("NOT_FOUND");
+    ).resolves.toBeNull();
   });
 });
 

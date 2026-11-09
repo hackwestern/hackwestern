@@ -6,11 +6,12 @@ import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { type ApplyStepFull, applySteps } from "~/constants/apply";
 import { cn } from "~/lib/utils";
-import { applicationSubmitSchema } from "~/schemas/application";
+import {
+  applicationSubmitSchema,
+  isValidYearOfStudy,
+} from "~/schemas/application";
 import { api } from "~/utils/api";
-import { AvatarDisplay } from "../avatar-display";
-import { colors } from "~/constants/avatar";
-import { type CanvasPaths } from "~/types/canvas";
+import { getHorse, realmLabel } from "~/constants/realms";
 import { QUESTION1, QUESTION2, QUESTION3 } from "./application-form";
 import React from "react";
 
@@ -22,13 +23,18 @@ type ReviewSectionProps = {
 
 function ReviewSection({ step, error, className }: ReviewSectionProps) {
   return (
-    <div className={cn("py-4", className)}>
+    <div className={cn("py-4 pr-2", className)}>
       <Separator />
       <div className="flex justify-between pt-4">
         <h2 className="font-jetbrains-mono text-base uppercase text-medium">
           {step.label}
         </h2>
-        <Button asChild variant="secondary" className="gap-2">
+        <Button
+          asChild
+          variant="primary"
+          size="sm"
+          className="gap-2 font-figtree"
+        >
           <Link href={{ pathname: "/apply", query: { step: step.step } }}>
             <PencilLine className="w-4" />
             Edit
@@ -56,10 +62,10 @@ function ReviewSectionInfo({ step, error }: ReviewSectionProps) {
       return <AgreementsReview step={step} error={error} />;
     case "optional":
       return <OptionalReview step={step} error={error} />;
-    case "character":
-      return <AvatarReview step={step} error={error} />;
-    case "canvas":
-      return <CanvasReview step={step} error={error} />;
+    case "logistics":
+      return <LogisticsReview step={step} error={error} />;
+    case "realm":
+      return <RealmReview step={step} error={error} />;
     default:
       return <></>;
   }
@@ -129,9 +135,7 @@ function ReviewField({ value, label, error }: ReviewFieldProps) {
 }
 
 function BasicsReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: ["firstName", "lastName", "phoneNumber", "age"],
-  });
+  const { data } = api.application.get.useQuery();
 
   const nameErrors: string[] = [];
   if (!data?.firstName) nameErrors.push("First name is required");
@@ -154,26 +158,28 @@ function BasicsReview({ error }: ReviewSectionProps) {
 }
 
 function InfoReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: [
-      "school",
-      "yearOfStudy",
-      "major",
-      "attendedBefore",
-      "numOfHackathons",
-    ],
-  });
+  const { data } = api.application.get.useQuery();
   return (
     <>
       <ReviewField
         label="Which school do you attend?"
-        value={data?.school}
-        error={!data?.school ? ["School is required"] : []}
+        value={
+          data?.school === "Other"
+            ? (data?.schoolOther ?? "Other")
+            : data?.school
+        }
+        error={
+          !data?.school
+            ? ["School is required"]
+            : (error?.schoolOther?._errors ?? [])
+        }
       />
       <ReviewField
         label="Which year are you in?"
         value={data?.yearOfStudy}
-        error={!data?.yearOfStudy ? ["Year is required"] : []}
+        error={
+          !isValidYearOfStudy(data?.yearOfStudy) ? ["Year is required"] : []
+        }
       />
       <ReviewField
         label="What is your major?"
@@ -195,9 +201,7 @@ function InfoReview({ error }: ReviewSectionProps) {
 }
 
 function ApplicationReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: ["question1", "question2", "question3"],
-  });
+  const { data } = api.application.get.useQuery();
   return (
     <>
       <ReviewField
@@ -226,11 +230,14 @@ function ApplicationReview({ error }: ReviewSectionProps) {
 }
 
 function LinksReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: ["githubLink", "linkedInLink", "otherLink", "resumeLink"],
-  });
+  const { data } = api.application.get.useQuery();
   return (
     <>
+      <ReviewField
+        label="Devpost"
+        value={data?.devpostLink}
+        error={error?.devpostLink?._errors}
+      />
       <ReviewField
         label="Github"
         value={data?.githubLink}
@@ -256,15 +263,7 @@ function LinksReview({ error }: ReviewSectionProps) {
 }
 
 function AgreementsReview({ error }: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: [
-      "agreeCodeOfConduct",
-      "agreeShareWithMLH",
-      "agreeShareWithSponsors",
-      "agreeWillBe18",
-      "agreeEmailsFromMLH",
-    ],
-  });
+  const { data } = api.application.get.useQuery();
   return (
     <>
       <ReviewField
@@ -283,7 +282,7 @@ function AgreementsReview({ error }: ReviewSectionProps) {
         error={error?.agreeShareWithSponsors?._errors}
       />
       <ReviewField
-        label="I will be at least 18 years old on November 21st, 2025"
+        label="I will be at least 18 years old on November 20th, 2026"
         value={data?.agreeWillBe18}
         error={error?.agreeWillBe18?._errors}
       />
@@ -297,9 +296,7 @@ function AgreementsReview({ error }: ReviewSectionProps) {
 }
 
 function OptionalReview({}: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: ["underrepGroup", "gender", "ethnicity", "sexualOrientation"],
-  });
+  const { data } = api.application.get.useQuery();
   return (
     <>
       <ReviewField
@@ -326,85 +323,82 @@ function OptionalReview({}: ReviewSectionProps) {
   );
 }
 
-function AvatarReview({}: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({
-    fields: [
-      "avatarColour",
-      "avatarFace",
-      "avatarLeftHand",
-      "avatarRightHand",
-      "avatarHat",
-    ],
-  });
-
-  const selectedColor = colors.find(
-    (c) => c.name === (data?.avatarColour ?? "green"),
-  );
-
+function LogisticsReview({ error }: ReviewSectionProps) {
+  const { data } = api.application.get.useQuery();
   return (
-    <div className="space-y-2">
-      <Label>Your Avatar</Label>
-      <div
-        className="mx-auto -mt-4 flex h-80 w-80 scale-90 flex-col justify-center rounded-2xl p-4 pt-8"
-        style={{
-          background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
-        }}
-      >
-        <div className="flex items-center justify-center">
-          <AvatarDisplay
-            avatarColour={data?.avatarColour}
-            avatarFace={data?.avatarFace}
-            avatarLeftHand={data?.avatarLeftHand}
-            avatarRightHand={data?.avatarRightHand}
-            avatarHat={data?.avatarHat}
-          />
-        </div>
-      </div>
-    </div>
+    <>
+      <ReviewField
+        label="Shirt size"
+        value={data?.shirtSize}
+        error={error?.shirtSize?._errors}
+      />
+      <ReviewField
+        label="Dietary restrictions"
+        value={
+          data?.dietaryRestrictions === "Other"
+            ? (data?.dietaryRestrictionsOther ?? "Other")
+            : data?.dietaryRestrictions
+        }
+        error={
+          error?.dietaryRestrictions?._errors ??
+          error?.dietaryRestrictionsOther?._errors
+        }
+      />
+      <ReviewField
+        label="Emergency contact name"
+        value={data?.emergencyContactName}
+        error={error?.emergencyContactName?._errors}
+      />
+      <ReviewField
+        label="Emergency contact relationship"
+        value={data?.emergencyContactRelationship}
+        error={error?.emergencyContactRelationship?._errors}
+      />
+      <ReviewField
+        label="Emergency contact phone number"
+        value={data?.emergencyContactPhoneNumber}
+        error={error?.emergencyContactPhoneNumber?._errors}
+      />
+    </>
   );
 }
 
-function CanvasReview({}: ReviewSectionProps) {
-  const { data } = api.application.get.useQuery({ fields: ["canvasData"] });
+function formatHorseName(
+  first: string | null | undefined,
+  last: string | null | undefined,
+): string {
+  const name = `${first ?? ""} ${last ?? ""}`.trim();
+  return name.length > 0 ? name : "(no name yet)";
+}
 
-  // reuse shared canvas types
-  type CanvasData = {
-    paths: CanvasPaths;
-    timestamp: number;
-    version: string;
-  };
-
-  const canvasData = data?.canvasData as CanvasData | null | undefined;
-  const pathStrings =
-    canvasData?.paths?.map((path) =>
-      path.reduce((acc, point, index) => {
-        if (index === 0) return `M ${point[0]} ${point[1]}`;
-        return `${acc} L ${point[0]} ${point[1]}`;
-      }, ""),
-    ) ?? [];
+/* eslint-disable @next/next/no-img-element */
+function RealmReview({}: ReviewSectionProps) {
+  const { data } = api.application.get.useQuery();
+  const horse = getHorse(data?.horseId);
 
   return (
     <div className="space-y-2">
-      <Label>Your Drawing</Label>
-      {pathStrings.length > 0 ? (
-        <div className="h-64 w-64 overflow-hidden rounded-lg border-2 border-gray-300 bg-white lg:h-72 lg:w-72">
-          <svg className="h-full w-full">
-            {pathStrings.map((pathString, pathIndex) => (
-              <path
-                key={pathIndex}
-                d={pathString}
-                stroke="#a16bc7"
-                strokeWidth="4"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))}
-          </svg>
+      <Label>Your Companion</Label>
+      <div className="flex items-center gap-4 rounded-lg bg-highlight/40 p-4">
+        {horse && (
+          <img
+            src={horse.asset}
+            alt=""
+            className="h-24 w-24 shrink-0 object-contain"
+            draggable={false}
+          />
+        )}
+        <div className="flex flex-col">
+          <p className="font-figtree text-md-p font-semibold text-heavy">
+            {formatHorseName(data?.horseFirstName, data?.horseLastName)}
+          </p>
+          <p className="font-figtree text-sm-p text-medium">
+            {data?.realm
+              ? `${realmLabel[data.realm]} realm`
+              : "(no realm chosen)"}
+          </p>
         </div>
-      ) : (
-        <p className="text-sm text-medium">(no drawing)</p>
-      )}
+      </div>
     </div>
   );
 }
@@ -412,44 +406,11 @@ function CanvasReview({}: ReviewSectionProps) {
 const reviewSteps = applySteps.slice(0, -1);
 
 export function ReviewForm() {
-  const { data } = api.application.get.useQuery({
-    // fields required by applicationSubmitSchema
-    fields: [
-      "firstName",
-      "lastName",
-      "phoneNumber",
-      "countryOfResidence",
-      "age",
-      "school",
-      "major",
-      "attendedBefore",
-      "numOfHackathons",
-      "yearOfStudy",
-      "question1",
-      "question2",
-      "question3",
-      "resumeLink",
-      "githubLink",
-      "linkedInLink",
-      "otherLink",
-      "agreeCodeOfConduct",
-      "agreeShareWithMLH",
-      "agreeShareWithSponsors",
-      "agreeWillBe18",
-      "agreeEmailsFromMLH",
-      "shirtSize",
-      "dietaryRestrictions",
-      "dietaryRestrictionsOther",
-      "emergencyContactName",
-      "emergencyContactRelationship",
-      "emergencyContactPhoneNumber",
-      "transportationMethod",
-    ],
-  });
+  const { data } = api.application.get.useQuery();
   const result = applicationSubmitSchema.safeParse(data);
   const error = result.error?.format();
   return (
-    <div className="overflow-auto">
+    <div className="overflow-auto py-1 pl-1 pr-1">
       {reviewSteps.map((step, idx) => (
         <ReviewSection step={step} key={idx} error={error} />
       ))}

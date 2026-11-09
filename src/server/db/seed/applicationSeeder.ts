@@ -1,7 +1,6 @@
 import { faker } from "@faker-js/faker";
 import {
   applications,
-  avatarColour,
   countrySelection,
   dietaryRestrictions,
   emergencyContactRelationship,
@@ -12,12 +11,15 @@ import {
   sexualOrientation,
   shirtSize,
   transportationMethod,
-  yearOfStudy,
 } from "../schema";
 import { USERS } from "./userSeeder";
 import { type UserPartial, type Seeder } from "./helpers";
 import type { z } from "zod";
-import { applicationSubmitSchema } from "~/schemas/application";
+import {
+  applicationSubmitSchema,
+  YEAR_OF_STUDY_OPTIONS,
+} from "~/schemas/application";
+import { horses } from "~/constants/realms";
 
 const schools = [
   "Western University",
@@ -48,6 +50,8 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       agreeShareWithSponsors: true,
       school: "Western University",
       phoneNumber: "519-936-5950",
+      dietaryRestrictionsOther: "",
+      dietaryRestrictions: "None",
     };
   }
 
@@ -56,12 +60,14 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       dietaryRestrictions.enumValues as [string, ...string[]],
     ) as (typeof dietaryRestrictions.enumValues)[number];
 
+    const horse = faker.helpers.arrayElement(horses);
+    const schoolFake = faker.helpers.arrayElement(schools);
+
     const application = {
-      avatarColour: faker.helpers.arrayElement(avatarColour.enumValues),
-      avatarFace: faker.number.int({ min: 1, max: 5 }),
-      avatarLeftHand: faker.number.int({ min: 1, max: 5 }),
-      avatarRightHand: faker.number.int({ min: 1, max: 5 }),
-      avatarHat: faker.number.int({ min: 1, max: 5 }),
+      realm: horse.realm,
+      horseId: horse.id,
+      horseFirstName: faker.person.firstName(),
+      horseLastName: faker.person.lastName(),
 
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
@@ -71,8 +77,9 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
         countrySelection.enumValues,
       ),
 
-      school: faker.helpers.arrayElement(schools),
-      yearOfStudy: faker.helpers.arrayElement(yearOfStudy.enumValues),
+      school: schoolFake,
+      schoolOther: schoolFake == "Other" ? "Other University" : null,
+      yearOfStudy: faker.helpers.arrayElement(YEAR_OF_STUDY_OPTIONS),
       major: faker.helpers.arrayElement(major.enumValues),
 
       shirtSize: faker.helpers.arrayElement(
@@ -115,9 +122,10 @@ export class ApplicationSeeder implements Seeder<typeof applications> {
       ) as (typeof emergencyContactRelationship.enumValues)[number],
       emergencyContactPhoneNumber: "519-936-5950",
 
-      transportationMethod: faker.helpers.arrayElement(
-        transportationMethod.enumValues as [string, ...string[]],
-      ) as (typeof transportationMethod.enumValues)[number],
+      transportationMethod: null,
+      travelReimbursement: null,
+      travelFrom: null,
+      enrollmentConfirmedAt: null,
     };
 
     const isComplete = applicationSubmitSchema.safeParse(application).success;

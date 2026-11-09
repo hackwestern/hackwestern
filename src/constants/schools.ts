@@ -7,5 +7,13 @@ export const schools = [
   "University of Toronto Mississauga",
   "University of Toronto Scarborough",
   "Wilfrid Laurier University",
+  "Carleton University",
+  "University of Ottawa",
+  "Queen's University",
+  "Brock University",
+  "University of Windsor",
+  "University of Michigan",
+  "Toronto Metropolitan University",
+  "Ontario Tech University",
   "Other",
 ] as const;

@@ -15,6 +15,10 @@ import { TRPCError } from "@trpc/server";
 import { authOptions } from "~/server/auth";
 import { type AdapterUser } from "next-auth/adapters";
 import { resetTemplate, verifyTemplate } from "./email-templates";
+import {
+  addVerifiedRegistrantToList,
+  normalizeAuthEmail,
+} from "~/server/subscribers";
 
 const TOKEN_EXPIRY = 1000 * 60 * 11; // 11 minutes
 const passwordSchema = z
@@ -64,10 +68,12 @@ export const authRouter = createTRPCRouter({
   reset: publicProcedure
     .input(z.object({ email: z.string() }))
     .mutation(async ({ input }) => {
-      // Fetch user by email
+      // Fetch user by email. Stored emails are canonical (trim+lowercase), so
+      // the lookup must canonicalize too or "Forgot password" tells anyone who
+      // types a different casing that their account doesn't exist.
       const user = await db.query.users.findFirst({
         columns: { id: true, name: true },
-        where: eq(users.email, input.email),
+        where: eq(users.email, normalizeAuthEmail(input.email)),
       });
 
       if (!user) {
@@ -129,8 +135,13 @@ export const authRouter = createTRPCRouter({
     .input(createInputSchema)
     .mutation(async ({ input }) => {
       try {
+        // Canonicalize once and use it for the lookup AND the insert. The HW12
+        // user table had 7 people with two accounts each because signup stored
+        // the raw string (mobile keyboards autocapitalize) while login matched
+        // exactly — "account doesn't exist" at login, so they registered again.
+        const email = normalizeAuthEmail(input.email);
         const user = await db.query.users.findFirst({
-          where: eq(users.email, input.email),
+          where: eq(users.email, email),
         });
 
         if (user) {
@@ -153,7 +164,7 @@ export const authRouter = createTRPCRouter({
         }
 
         const createdUser = await adapter.createUser({
-          email: input.email,
+          email,
           emailVerified: null,
           id: "",
         });
@@ -272,16 +283,23 @@ export const authRouter = createTRPCRouter({
         });
       }
 
-      await db
+      const verified = await db
         .update(users)
         .set({
           emailVerified: new Date(),
         })
-        .where(eq(users.id, token.identifier));
+        .where(eq(users.id, token.identifier))
+        .returning({ email: users.email });
 
       await db
         .delete(verificationTokens)
         .where(eq(verificationTokens.token, input.token));
+
+      // Verified registrants join the marketing list. Awaited (serverless —
+      // fire-and-forget dies with the response), best-effort inside.
+      if (verified[0]?.email) {
+        await addVerifiedRegistrantToList(verified[0].email);
+      }
 
       return {
         success: true,
@@ -360,16 +378,24 @@ export const authRouter = createTRPCRouter({
         });
       }
 
-      await db
+      const verified = await db
         .update(users)
         .set({
           emailVerified: new Date(),
         })
-        .where(eq(users.id, token.userId));
+        .where(eq(users.id, token.userId))
+        .returning({ email: users.email });
 
       await db
         .delete(verificationTokens)
         .where(eq(verificationTokens.token, input.token));
+
+      // Second site that sets emailVerified (a delivered reset email proves
+      // mailbox ownership), so it files the registrant the same way verify
+      // does. Idempotent under addnoforce, safe on repeat clicks.
+      if (verified[0]?.email) {
+        await addVerifiedRegistrantToList(verified[0].email);
+      }
 
       return {
         success: true,

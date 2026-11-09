@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 import { createCsvFile } from "~/utils/csv";
+import { admittedStatuses } from "~/lib/admission";
 
 export default async function handler(
   req: NextApiRequest,
@@ -57,14 +58,15 @@ async function GET(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-function getMlhApplications() {
-  return db.query.applications.findMany({
+async function getMlhApplications() {
+  const applications = await db.query.applications.findMany({
     columns: {
       firstName: true,
       lastName: true,
       age: true,
       phoneNumber: true,
       school: true,
+      schoolOther: true,
       yearOfStudy: true,
       countryOfResidence: true,
       agreeCodeOfConduct: true,
@@ -78,8 +80,20 @@ function getMlhApplications() {
         },
       },
     },
-    where: ({ status }, { eq }) => eq(status, "ACCEPTED"),
+    // Admitted hackers: once they RSVP they're CONFIRMED, and after RSVP
+    // closes an unanswered ACCEPTED no longer counts (lib/admission).
+    where: ({ status }, { inArray }) =>
+      inArray(status, [...admittedStatuses()]),
   });
+
+  // Same columns as before: "school" carries the typed name instead of "Other".
+  return applications.map(({ schoolOther, ...application }) => ({
+    ...application,
+    school:
+      application.school === "Other" && schoolOther?.trim()
+        ? schoolOther.trim()
+        : application.school,
+  }));
 }
 
 function getApplications() {

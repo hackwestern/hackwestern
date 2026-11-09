@@ -212,17 +212,8 @@ export const reviewRouter = createTRPCRouter({
           )
           .limit(1);
 
-        const appAwaitingReview = appAwaitingReviews[0];
-
-        // If there are no applications awaiting review, return
-        if (!appAwaitingReview) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "There are no applications matching this query.",
-          });
-        }
-
-        return appAwaitingReview?.userId;
+        // null = the queue is empty, so the client can tell "all done" apart from an error
+        return appAwaitingReviews[0]?.userId ?? null;
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -274,7 +265,8 @@ export const reviewRouter = createTRPCRouter({
       const reviewCounts = await db
         .select({
           reviewerId: reviews.reviewerUserId,
-          reviewerName: users.name,
+          // Email + password sign-ups have no name, so fall back to the email
+          reviewerName: sql<string>`coalesce(${users.name}, ${users.email})`,
           reviewCount: count(reviews.reviewerUserId).mapWith(Number),
         })
         .from(reviews)
@@ -285,7 +277,7 @@ export const reviewRouter = createTRPCRouter({
             eq(reviews.completed, true),
           ),
         )
-        .groupBy(reviews.reviewerUserId, users.name)
+        .groupBy(reviews.reviewerUserId, users.name, users.email)
         .orderBy(desc(count(reviews.reviewerUserId)));
 
       return reviewCounts;

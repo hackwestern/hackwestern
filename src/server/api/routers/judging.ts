@@ -6,7 +6,7 @@ import {
   protectedJudgeProcedure,
   protectedOrganizerProcedure,
 } from "~/server/api/trpc";
-import { db } from "~/server/db";
+import { db, extractRows } from "~/server/db";
 import {
   judges,
   judgingQueue,
@@ -15,8 +15,10 @@ import {
   teams,
   users,
 } from "~/server/db/schema";
+import { maybeTriggerSweepOnDrain } from "~/server/api/utils/cheat-check-sweep";
 import {
   type AddJudgeInput,
+  addJudgeByEmailSchema,
   addJudgesSchema,
   assignJudgeForTeamSchema,
   deleteTeamMarkSchema,
@@ -51,12 +53,6 @@ const withErrorHandling = async <T>(
     });
   }
 };
-
-function extractRows<T>(result: unknown): T[] {
-  return Array.isArray(result)
-    ? (result as T[])
-    : ((result as { rows?: T[] }).rows ?? []);
-}
 
 async function getCurrentHold(judgeId: string): Promise<QueueRow | undefined> {
   return db.query.judgingQueue.findFirst({
@@ -463,11 +459,70 @@ async function getAllJudges() {
   }));
 }
 
+/**
+ * The queue for the organizer control room: every queued team with its
+ * progress and current judge (if held), plus the totals behind the progress
+ * tiles. Read-only.
+ */
+async function getQueueState() {
+  const [rows, submitted, regularMarks] = await Promise.all([
+    db
+      .select({
+        teamId: judgingQueue.teamId,
+        teamName: teams.name,
+        tracks: teams.tracks,
+        seenJudges: judgingQueue.seenJudges,
+        roundsRemaining: judgingQueue.roundsRemaining,
+        status: judgingQueue.status,
+        currentJudgeId: judgingQueue.currentJudgeId,
+        currentJudgeName: users.name,
+        assignedAt: judgingQueue.assignedAt,
+      })
+      .from(judgingQueue)
+      .innerJoin(teams, eq(teams.id, judgingQueue.teamId))
+      .leftJoin(users, eq(users.id, judgingQueue.currentJudgeId))
+      .orderBy(desc(judgingQueue.roundsRemaining), judgingQueue.enqueuedAt),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(teams)
+      .where(inArray(teams.submissionStatus, ["submitted", "late"])),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(teamMarks)
+      .where(eq(teamMarks.roundType, "regular")),
+  ]);
+  return {
+    teams: rows,
+    submittedTeams: submitted[0]?.n ?? 0,
+    regularMarks: regularMarks[0]?.n ?? 0,
+  };
+}
+
+/**
+ * What a judge sees of a team. Never the whole row: it carries the team's
+ * join code, which only its members should have.
+ */
+const JUDGE_TEAM_COLUMNS = {
+  id: true,
+  name: true,
+  tracks: true,
+  devpostUrl: true,
+  githubUrl: true,
+} as const;
+
+const toJudgeTeam = (t: typeof teams.$inferSelect) => ({
+  id: t.id,
+  name: t.name,
+  tracks: t.tracks,
+  devpostUrl: t.devpostUrl,
+  githubUrl: t.githubUrl,
+});
+
 /** A judge's own submitted marks, most recent first. Read-only. */
 async function getSubmittedMarks(judgeId: string) {
   return db.query.teamMarks.findMany({
     where: eq(teamMarks.judgeId, judgeId),
-    with: { team: true },
+    with: { team: { columns: JUDGE_TEAM_COLUMNS } },
     orderBy: [desc(teamMarks.createdAt)],
   });
 }
@@ -488,15 +543,38 @@ export const judgingRouter = createTRPCRouter({
             message: "No teams are currently available to judge.",
           });
         }
-        return { team };
+        return { team: toJudgeTeam(team) };
       }, "Failed to get next team");
     }),
 
-    /** This judge's current hold, if any (snapshot read). */
+    /**
+     * This judge's current hold, if any (snapshot read), with the team and
+     * when it was assigned so a reloaded page can show the card and its timer.
+     */
     getCurrentAssignment: protectedJudgeProcedure.query(async ({ ctx }) => {
       return withErrorHandling(async () => {
-        const hold = await getCurrentHold(ctx.session.user.id);
-        return { currentTeamId: hold?.teamId ?? null };
+        const [hold, account] = await Promise.all([
+          getCurrentHold(ctx.session.user.id),
+          db.query.users.findFirst({
+            where: eq(users.id, ctx.session.user.id),
+            columns: { type: true },
+          }),
+        ]);
+        const team = hold
+          ? await db.query.teams.findFirst({
+              where: eq(teams.id, hold.teamId),
+              columns: JUDGE_TEAM_COLUMNS,
+            })
+          : undefined;
+        return {
+          currentTeamId: hold?.teamId ?? null,
+          team: team ?? null,
+          assignedAt: hold?.assignedAt ?? null,
+          judge: { type: ctx.judge.type, track: ctx.judge.track },
+          // An organizer-type judge isn't necessarily an organizer account;
+          // only accounts can open the control room.
+          canManage: account?.type === "organizer",
+        };
       }, "Failed to get current assignment");
     }),
 
@@ -514,6 +592,15 @@ export const judgingRouter = createTRPCRouter({
             input.score,
             roundType,
           );
+
+          // `submitMark` has committed, so `trg_team_mark_autoqueue` has
+          // already removed the team from the queue if it was fully judged —
+          // only now is the queue count meaningful. Awaited on purpose: Vercel
+          // freezes the instance once the response flushes, so a fire-and-
+          // forget chain silently dies after ~one query in production. The
+          // non-drain cost is a single COUNT; the drain itself costs ~2s once
+          // per queue-drain. The hook never throws, so it can't fail the mark.
+          await maybeTriggerSweepOnDrain();
         }, "Failed to submit team mark");
       }),
 
@@ -567,6 +654,10 @@ export const judgingRouter = createTRPCRouter({
       return withErrorHandling(() => getRanking(), "Failed to get ranking");
     }),
 
+    getQueue: protectedOrganizerProcedure.query(async () => {
+      return withErrorHandling(() => getQueueState(), "Failed to get queue");
+    }),
+
     getAllJudges: protectedOrganizerProcedure.query(async () => {
       return withErrorHandling(() => getAllJudges(), "Failed to get judges");
     }),
@@ -578,6 +669,28 @@ export const judgingRouter = createTRPCRouter({
           () => addJudges(input),
           "Failed to add judges",
         );
+      }),
+
+    /** Control-room form: promote (or update) one judge by account email. */
+    addJudgeByEmail: protectedOrganizerProcedure
+      .input(addJudgeByEmailSchema)
+      .mutation(async ({ input }) => {
+        return withErrorHandling(async () => {
+          const user = await db.query.users.findFirst({
+            where: sql`lower(${users.email}) = ${input.email}`,
+            columns: { id: true, name: true },
+          });
+          if (!user) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "No Hack Western account with that email.",
+            });
+          }
+          const [judge] = await addJudges([
+            { id: user.id, type: input.type, track: input.track },
+          ]);
+          return { ...judge!, name: user.name };
+        }, "Failed to add judge");
       }),
 
     deleteTeamMark: protectedOrganizerProcedure

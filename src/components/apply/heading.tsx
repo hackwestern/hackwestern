@@ -34,11 +34,11 @@ export default function ApplyHeading({
         variants={slideX}
         className="mb-2"
       >
-        <h1 className="font-dico mb-2 text-2xl font-medium text-heavy">
+        <h1 className="mb-2 font-primary text-2xl font-bold text-heavy">
           {heading}
         </h1>
         {subheading && (
-          <h2 className="font-secondary text-sm text-medium">{subheading}</h2>
+          <h2 className="font-figtree text-sm text-medium">{subheading}</h2>
         )}
       </motion.div>
     </AnimatePresence>

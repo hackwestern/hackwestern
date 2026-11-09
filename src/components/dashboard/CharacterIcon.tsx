@@ -4,53 +4,45 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "~/components/ui/popover";
-import { colors } from "~/constants/avatar";
+import { getHorse } from "~/constants/realms";
 import { api } from "~/utils/api";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import Image from "next/image";
 
+const FALLBACK_HORSE_ASSET = "/apply/realm/safari-1.png";
+
 export default function CharacterIcon() {
   const { data: applicationData } = api.application.get.useQuery({
-    fields: ["firstName", "avatarColour"],
+    fields: ["firstName", "horseId"],
   });
   const name = applicationData?.firstName ?? "Username";
 
-  const bodyColor =
-    colors.find((c) => c.name === applicationData?.avatarColour)?.body ?? "002";
-
-  const selectedColor = colors.find(
-    (c) => c.name === (applicationData?.avatarColour ?? "green"),
-  );
+  const horseAsset =
+    getHorse(applicationData?.horseId)?.asset ?? FALLBACK_HORSE_ASSET;
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <button
-          className="relative h-8 w-8 overflow-hidden rounded-full p-2 transition-all hover:ring-2 hover:ring-heavy/70 lg:h-10 lg:w-10"
-          style={{
-            background: `linear-gradient(135deg, ${selectedColor?.bg ?? "#F1FDE0"} 30%, ${selectedColor?.gradient ?? "#A7FB73"} 95%)`,
-          }}
+          className="relative h-8 w-8 overflow-hidden rounded-full bg-white p-1 transition-all hover:ring-2 hover:ring-heavy/70 lg:h-10 lg:w-10"
+          aria-label="Account menu"
         >
-          {applicationData?.avatarColour ? (
-            <Image
-              src={`/apply/avatar/body/${bodyColor}.webp`}
-              alt="Character"
-              width={32}
-              height={32}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span className="text-sm">🎨</span>
-          )}
+          <Image
+            src={horseAsset}
+            alt="Your horse companion"
+            width={32}
+            height={32}
+            className="h-full w-full object-contain"
+          />
         </button>
       </PopoverTrigger>
       <PopoverContent className="mr-4 mt-2 w-48 bg-offwhite p-4 font-secondary">
         <div className="rounded-md">
-          <h3 className="mb-3 text-sm font-medium text-medium">
+          <h3 className="mb-3 text-sm font-medium text-gray-6">
             {name == "Username" ? "Hello, hacker" : `Hi, ${name}`}!
           </h3>
-          <div className="mb-4 h-px w-full bg-violet-200" />
+          <div className="mb-4 h-px w-full bg-gray-2" />
 
           <div className="mb-3 font-secondary text-heavy">
             <Link href="/dashboard">Home</Link>

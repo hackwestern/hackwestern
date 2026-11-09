@@ -89,8 +89,169 @@
     {
       "idx": 12,
       "version": "7",
-      "when": 1794257539955,
-      "tag": "0012_organizer_clock",
+      "when": 1787929742907,
+      "tag": "0012_married_vision",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788080333798,
+      "tag": "0013_apply_judging_triggers",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788080707170,
+      "tag": "0014_team_join_codes",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1788120097873,
+      "tag": "0015_cheat_check_sweep",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790852811333,
+      "tag": "0016_add_realm_and_horse_companion",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790915036365,
+      "tag": "0017_chief_ben_grimm",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790916186409,
+      "tag": "0018_windy_shard",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790918712074,
+      "tag": "0019_bent_madame_hydra",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791043453222,
+      "tag": "0020_bouncy_amazoness",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791049193983,
+      "tag": "0021_peaceful_peter_parker",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791049653787,
+      "tag": "0022_user_created_at_from_application",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791051486270,
+      "tag": "0023_stats_application_view",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791053062209,
+      "tag": "0024_email_reminder_sent",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791058966822,
+      "tag": "0025_reopen_invalid_year_of_study",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791064513883,
+      "tag": "0026_stats_application_view_more",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791087446633,
+      "tag": "0027_school_other",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791087463400,
+      "tag": "0028_reopen_us_other_school",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791092776577,
+      "tag": "0029_stats_application_school_other",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791159517571,
+      "tag": "0030_stats_list_member",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792086599857,
+      "tag": "0031_rsvp_travel",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792791886451,
+      "tag": "0032_rsvp_enrollment",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793316144975,
+      "tag": "0033_team_finder_card",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793934743357,
+      "tag": "0034_hacker_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1794260956927,
+      "tag": "0035_organizer_clock",
       "breakpoints": true
     }
   ]

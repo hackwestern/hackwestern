@@ -1,6 +1,5 @@
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ClipboardEvent } from "react";
 import { useForm } from "react-hook-form";
 import {
   Form,
@@ -12,36 +11,36 @@ import {
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
 import { useAutoSave } from "~/hooks/use-auto-save";
 import { linksSaveSchema } from "~/schemas/application";
 import {
+  DEVPOST_URL,
+  GITHUB_URL,
+  LINKEDIN_URL,
+  ensureUrlHasProtocol,
+  getDevpostUsername,
   getGithubUsername,
   getLinkedinUsername,
-  ensureUrlHasProtocol,
 } from "~/utils/urls";
+import { useCanEditApplication } from "~/hooks/use-can-edit-application";
+
+function withPrefix(prefix: string, username?: string | null) {
+  return username ? `${prefix}${username}` : username;
+}
 
 export function LinksForm() {
   const utils = api.useUtils();
-  const { data: defaultValues } = api.application.get.useQuery({
-    fields: [
-      "status",
-      "devpostLink",
-      "githubLink",
-      "linkedInLink",
-      "otherLink",
-      "resumeLink",
-    ],
-  });
+  const { data: defaultValues } = api.application.get.useQuery();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [resumeName, setResumeName] = useState<string | null>(null);
 
   const status = defaultValues?.status ?? "NOT_STARTED";
-  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+  const canEdit = useCanEditApplication(status);
 
   // If the application already has a resumeLink when the component mounts,
   // derive a display name from the URL so the original filename shows.
@@ -65,12 +64,30 @@ export function LinksForm() {
     resolver: zodResolver(linksSaveSchema),
   });
 
-  useAutoSave(form, onSubmit, defaultValues);
+  // The server stores and returns just the username for these three; the
+  // form shows and accepts the whole link.
+  const formDefaults = useMemo(
+    () =>
+      defaultValues && {
+        ...defaultValues,
+        devpostLink: withPrefix(DEVPOST_URL, defaultValues.devpostLink),
+        githubLink: withPrefix(GITHUB_URL, defaultValues.githubLink),
+        linkedInLink: withPrefix(LINKEDIN_URL, defaultValues.linkedInLink),
+      },
+    [defaultValues],
+  );
+
+  useAutoSave(form, onSubmit, formDefaults);
 
   function onSubmit(data: z.infer<typeof linksSaveSchema>) {
-    // Normalize resume and other links so they validate as URLs (prepend https:// if missing)
+    // Normalize usernames so pasted full URLs don't get double-prefixed
+    // on save (backend prepends the URL prefix), and normalize resume
+    // and other links so they validate as URLs (prepend https:// if missing)
     const normalizedData = {
       ...data,
+      devpostLink: data.devpostLink && getDevpostUsername(data.devpostLink),
+      githubLink: data.githubLink && getGithubUsername(data.githubLink),
+      linkedInLink: data.linkedInLink && getLinkedinUsername(data.linkedInLink),
       resumeLink: ensureUrlHasProtocol(data.resumeLink),
       otherLink: ensureUrlHasProtocol(data.otherLink),
     } as z.infer<typeof linksSaveSchema>;
@@ -78,24 +95,6 @@ export function LinksForm() {
     mutate({
       ...normalizedData,
     });
-  }
-
-  function onGithubPaste(e: ClipboardEvent<HTMLInputElement>) {
-    e.preventDefault();
-    const pastedText = e.clipboardData.getData("text");
-    const githubUsername = getGithubUsername(pastedText);
-
-    form.setValue("githubLink", githubUsername);
-    return form.handleSubmit(onSubmit)();
-  }
-
-  function onLinkedinPaste(e: ClipboardEvent<HTMLInputElement>) {
-    e.preventDefault();
-    const pastedText = e.clipboardData.getData("text");
-    const linkedinUsername = getLinkedinUsername(pastedText);
-
-    form.setValue("linkedInLink", linkedinUsername);
-    return form.handleSubmit(onSubmit)();
   }
 
   function fileNameFromUrl(url: string) {
@@ -164,19 +163,29 @@ export function LinksForm() {
           name="devpostLink"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Devpost</FormLabel>
+              <FormLabel>Devpost *</FormLabel>
               <FormControl>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>devpost.com/</span>
-                  <Input
-                    {...field}
-                    value={field.value ?? ""}
-                    placeholder="hacker"
-                    variant="primary"
-                    disabled={!canEdit}
-                  />
-                </div>
+                <Input
+                  {...field}
+                  value={field.value ?? ""}
+                  placeholder="https://devpost.com/hacker"
+                  variant="primary"
+                  disabled={!canEdit}
+                />
               </FormControl>
+              <FormDescription className="text-gray-4">
+                You&apos;ll need a Devpost account to submit your hack.
+                Don&apos;t have one?{" "}
+                <a
+                  href="https://devpost.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-600 underline hover:text-primary-500"
+                >
+                  Create one on Devpost
+                </a>
+                .
+              </FormDescription>
             </FormItem>
           )}
         />
@@ -185,19 +194,15 @@ export function LinksForm() {
           name="githubLink"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Github</FormLabel>
+              <FormLabel>Github *</FormLabel>
               <FormControl>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>github.com/</span>
-                  <Input
-                    onPaste={onGithubPaste}
-                    {...field}
-                    value={field.value ?? ""}
-                    placeholder="hacker"
-                    variant="primary"
-                    disabled={!canEdit}
-                  />
-                </div>
+                <Input
+                  {...field}
+                  value={field.value ?? ""}
+                  placeholder="https://github.com/hacker"
+                  variant="primary"
+                  disabled={!canEdit}
+                />
               </FormControl>
             </FormItem>
           )}
@@ -207,19 +212,15 @@ export function LinksForm() {
           name="linkedInLink"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>LinkedIn</FormLabel>
+              <FormLabel>LinkedIn *</FormLabel>
               <FormControl>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="w-32">linkedin.com/in/</span>
-                  <Input
-                    onPaste={onLinkedinPaste}
-                    {...field}
-                    value={field.value ?? ""}
-                    placeholder="hacker"
-                    variant="primary"
-                    disabled={!canEdit}
-                  />
-                </div>
+                <Input
+                  {...field}
+                  value={field.value ?? ""}
+                  placeholder="https://linkedin.com/in/hacker"
+                  variant="primary"
+                  disabled={!canEdit}
+                />
               </FormControl>
             </FormItem>
           )}
@@ -229,7 +230,7 @@ export function LinksForm() {
           name="otherLink"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Personal Portfolio</FormLabel>
+              <FormLabel>Personal Portfolio (optional)</FormLabel>
               <FormControl>
                 <Input
                   {...field}
@@ -247,7 +248,7 @@ export function LinksForm() {
           name="resumeLink"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Resume</FormLabel>
+              <FormLabel>Resume *</FormLabel>
               <FormControl>
                 <div className="flex flex-col gap-2">
                   {field.value ? (
@@ -256,7 +257,7 @@ export function LinksForm() {
                         href={field.value}
                         target="_blank"
                         rel="noreferrer"
-                        className="max-w-64 overflow-hidden text-ellipsis whitespace-nowrap underline underline-offset-2"
+                        className="max-w-64 overflow-hidden text-ellipsis whitespace-nowrap text-gray-6 underline decoration-gray-4 underline-offset-2 visited:text-gray-6 hover:text-gray-7"
                       >
                         {resumeName ?? fileNameFromUrl(field.value)}
                       </a>
@@ -264,7 +265,7 @@ export function LinksForm() {
                         <button
                           type="button"
                           onClick={clearResume}
-                          className="text-xl text-muted-foreground hover:text-foreground"
+                          className="text-xl text-gray-5 hover:text-gray-7"
                           aria-label="Remove resume"
                         >
                           ×
@@ -284,17 +285,16 @@ export function LinksForm() {
                       <div className="flex items-center gap-3">
                         <Button
                           type="button"
-                          variant="outline"
+                          variant="primary"
+                          size="sm"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={!canEdit || uploading}
                           aria-label="Choose resume file"
-                          className="-py-4 px-2"
+                          className="gap-2 font-figtree"
                         >
-                          <span className="text-medium">
-                            {uploading ? "Uploading…" : "Choose file"}
-                          </span>
+                          {uploading ? "Uploading…" : "Choose file"}
                         </Button>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-gray-5">
                           PDF or DOC/DOCX, max 3 MB
                         </span>
                       </div>
@@ -302,7 +302,9 @@ export function LinksForm() {
                   )}
                 </div>
               </FormControl>
-              <FormDescription>Upload your resume</FormDescription>
+              <FormDescription className="text-gray-4">
+                Upload your resume
+              </FormDescription>
             </FormItem>
           )}
         />

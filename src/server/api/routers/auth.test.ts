@@ -4,7 +4,7 @@ import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { eq } from "drizzle-orm";
-import { mockSession } from "~/server/auth";
+import { authOptions, mockSession } from "~/server/auth";
 import {
   resetPasswordTokens,
   users,
@@ -12,6 +12,14 @@ import {
 } from "~/server/db/schema";
 import { randomBytes } from "crypto";
 import * as mailModule from "~/server/mail-mailjet";
+import * as contactsModule from "~/server/mailjet-contacts";
+import { normalizeEmail } from "~/server/subscribers";
+import { env } from "~/env";
+
+// Mock the contact-list write so tests never touch the real Mailjet list.
+const manageContactSpy = vi
+  .spyOn(contactsModule, "manageContact")
+  .mockResolvedValue({ ok: true });
 
 const session = await mockSession(db);
 
@@ -36,13 +44,16 @@ describe.sequential("auth.reset", async () => {
         error: null,
       });
 
-    // insert fake user
+    // Insert the fake user CANONICAL (trim+lowercase) — that is the only form
+    // a real row can have, since auth.create normalizes on write. Calling
+    // reset with faker's raw (often mixed-case) email then exercises the
+    // lookup-side normalization.
     await db
       .insert(users)
       .values({
         id: fakeUserId,
         name: faker.person.fullName(),
-        email: fakeEmail,
+        email: fakeEmail.toLowerCase(),
         emailVerified: faker.date.anytime(),
         image: faker.image.avatar(),
       })
@@ -61,7 +72,7 @@ describe.sequential("auth.reset", async () => {
       await db
         .delete(resetPasswordTokens)
         .where(eq(resetPasswordTokens.userId, fakeUserId));
-      await db.delete(users).where(eq(users.email, fakeEmail));
+      await db.delete(users).where(eq(users.email, fakeEmail.toLowerCase()));
     }
   });
 });
@@ -88,11 +99,13 @@ describe.sequential("auth.create", () => {
 
       expect(createdUser.success).toBe(true);
 
+      // Stored canonical: trim+lowercase, whatever casing was typed. (faker
+      // emails are often mixed-case, so this also exercises the normalization.)
       const dbUser = await db.query.users.findFirst({
-        where: eq(users.email, fakeUser.email),
+        where: eq(users.email, fakeUser.email.toLowerCase()),
       });
 
-      expect(dbUser?.email).toBe(fakeUser.email);
+      expect(dbUser?.email).toBe(fakeUser.email.toLowerCase());
     } finally {
       sendEmailSpy.mockRestore();
     }
@@ -102,6 +115,25 @@ describe.sequential("auth.create", () => {
     await expect(caller.auth.create(fakeUser)).rejects.toThrowError(
       /already exists/i,
     );
+  });
+
+  // The HW12 failure mode: same mailbox, different casing, second account
+  // created. 7 of 2,278 HW12 users hit this — one was ACCEPTED on one account
+  // with a duplicate still in PENDING_REVIEW.
+  test("rejects a duplicate that differs only in casing", async () => {
+    const swapped =
+      fakeUser.email === fakeUser.email.toLowerCase()
+        ? fakeUser.email.toUpperCase()
+        : fakeUser.email.toLowerCase();
+    await expect(
+      caller.auth.create({ ...fakeUser, email: swapped }),
+    ).rejects.toThrowError(/already exists/i);
+  });
+
+  test("rejects a duplicate with surrounding whitespace", async () => {
+    await expect(
+      caller.auth.create({ ...fakeUser, email: ` ${fakeUser.email} ` }),
+    ).rejects.toThrowError();
   });
 });
 
@@ -161,6 +193,73 @@ describe("auth.verify", () => {
     const result = await caller.auth.verify({ token: successToken });
 
     expect(result.success).toBe(true);
+  });
+
+  // Every registrant joins the marketing list at email verification — decided
+  // 2026-09-06, consent = CASL implied (inquiry). Gated on verification, not
+  // raw signup, so typo'd addresses never reach the list and feed its bounce
+  // rate. Normalized, because managecontact on the raw gmail form would file a
+  // second contact for the same mailbox.
+  test("files the verified registrant into the Mailjet contact list, normalized", async () => {
+    manageContactSpy.mockClear();
+    const fakeId = faker.string.uuid();
+    const token = randomBytes(20).toString("hex");
+
+    await db.insert(users).values({
+      id: fakeId,
+      name: faker.person.fullName(),
+      email: "list.reg.test+hw13@gmail.com",
+      emailVerified: null,
+      image: faker.image.avatar(),
+    });
+    await db.insert(verificationTokens).values({
+      identifier: fakeId,
+      token,
+      expires: new Date(Date.now() + 1000 * 60 * 60),
+    });
+
+    try {
+      await caller.auth.verify({ token });
+
+      expect(manageContactSpy).toHaveBeenCalledTimes(1);
+      const [listId, email, , action] = manageContactSpy.mock.calls[0] ?? [];
+      expect(listId).toBe(env.MAILJET_CONTACT_LIST_ID);
+      expect(email).toBe(normalizeEmail("list.reg.test+hw13@gmail.com"));
+      // Default action. addforce would reset IsUnsubscribed and resurrect opt-outs.
+      expect(action).toBeUndefined();
+    } finally {
+      await db.delete(users).where(eq(users.id, fakeId));
+    }
+  });
+
+  // The verification is already committed; a Mailjet outage must not undo it
+  // from the user's point of view.
+  test("still succeeds when the Mailjet list write fails", async () => {
+    manageContactSpy.mockClear();
+    manageContactSpy.mockResolvedValueOnce({ ok: false, error: "boom" });
+    const fakeId = faker.string.uuid();
+    const token = randomBytes(20).toString("hex");
+
+    await db.insert(users).values({
+      id: fakeId,
+      name: faker.person.fullName(),
+      email: faker.internet.email(),
+      emailVerified: null,
+      image: faker.image.avatar(),
+    });
+    await db.insert(verificationTokens).values({
+      identifier: fakeId,
+      token,
+      expires: new Date(Date.now() + 1000 * 60 * 60),
+    });
+
+    try {
+      await expect(caller.auth.verify({ token })).resolves.toEqual({
+        success: true,
+      });
+    } finally {
+      await db.delete(users).where(eq(users.id, fakeId));
+    }
   });
 });
 
@@ -266,6 +365,65 @@ describe("auth.checkValidToken", () => {
     const result = await caller.auth.checkValidToken({ token: "valid-token" });
 
     expect(result.success).toBe(true);
+  });
+
+  // checkValidToken is the second site that sets emailVerified (a delivered
+  // reset email proves mailbox ownership), so it files the registrant into the
+  // marketing list the same way auth.verify does.
+  test("files the verified registrant into the Mailjet contact list", async () => {
+    manageContactSpy.mockClear();
+    const fakeId = faker.string.uuid();
+    const token = randomBytes(20).toString("hex");
+
+    await db.insert(users).values({
+      id: fakeId,
+      name: faker.person.fullName(),
+      email: faker.internet.email().toLowerCase(),
+      emailVerified: null,
+      image: faker.image.avatar(),
+    });
+    await db.insert(resetPasswordTokens).values({
+      userId: fakeId,
+      token,
+      expires: new Date(Date.now() + 1000 * 60 * 60),
+    });
+
+    try {
+      await caller.auth.checkValidToken({ token });
+
+      expect(manageContactSpy).toHaveBeenCalledTimes(1);
+      const [listId] = manageContactSpy.mock.calls[0] ?? [];
+      expect(listId).toBe(env.MAILJET_CONTACT_LIST_ID);
+    } finally {
+      await db
+        .delete(resetPasswordTokens)
+        .where(eq(resetPasswordTokens.userId, fakeId));
+      await db.delete(users).where(eq(users.id, fakeId));
+    }
+  });
+});
+
+// OAuth sign-ins (GitHub/Google/Discord) create the user through next-auth's
+// own flow and never touch auth.verify, so the createUser event is what files
+// them into the marketing list. The credentials path bypasses events entirely
+// (auth.create calls adapter.createUser directly) and joins at verification.
+describe("authOptions.events.createUser", () => {
+  test("files an OAuth-created user into the Mailjet contact list, normalized", async () => {
+    manageContactSpy.mockClear();
+
+    await authOptions.events?.createUser?.({
+      user: {
+        id: faker.string.uuid(),
+        email: "oauth.reg.test+hw13@gmail.com",
+      },
+    });
+
+    expect(manageContactSpy).toHaveBeenCalledTimes(1);
+    const [listId, email, , action] = manageContactSpy.mock.calls[0] ?? [];
+    expect(listId).toBe(env.MAILJET_CONTACT_LIST_ID);
+    expect(email).toBe(normalizeEmail("oauth.reg.test+hw13@gmail.com"));
+    // Default action. addforce would reset IsUnsubscribed and resurrect opt-outs.
+    expect(action).toBeUndefined();
   });
 });
 

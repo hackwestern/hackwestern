@@ -12,23 +12,11 @@ html {
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
 
-    --beige: #f7f3ef;
     --lilac: #e1c8fa;
-    --salmon: #ffd2b4;
-    --coral: #ffb6a1;
-    --faint-lilac: #f6f3f9;
 
-    --heavy: #3d214c;
-    --medium: #776780;
-    --light: #bbb3c0;
     --emphasis: #a16bc7;
-    --active: #f0e9f7;
 
-    --offwhite: #fafafb; /* bg-white */
-    --highlight: #f5f2f6;
-    --tinted: #eee2fb;
     --border-light: #fffefe;
 
     --primary-50: 260, 100%, 99%;
@@ -51,13 +39,13 @@ html {
     --violet-500: 247, 14%, 52%;
     --violet-600: 247, 15%, 34%;
 
-    --secondary: #625679;
+    --secondary: 260.6, 16.9%, 40.6%;
 
     --muted: var(--violet-200);
     --muted-foreground: var(--violet-400);
 
     --accent: var(--violet-300);
-    --accent-foreground: var(--violet-800);
+    --accent-foreground: var(--primary-800);
 
     --destructive: 0 84.2% 60.2%;
     --destructive-dark: 0 72.2% 50.6%;
@@ -85,7 +73,6 @@ html {
     --foreground: 210 40% 98%;
 
     --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
 
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
@@ -94,7 +81,6 @@ html {
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
@@ -137,11 +123,6 @@ html {
       height: 100%;
       overflow-x: hidden;
     }
-
-    /* Allow focus rings to overflow into padding */
-    .form-input-mobile {
-      box-sizing: border-box;
-    }
   }
 }
 
@@ -171,62 +152,71 @@ html {
     @apply font-cossetteTexte text-sm-sub font-normal uppercase leading-normal tracking-subtitle text-black;
   }
   .button-lg {
-    @apply font-pix32 text-lg-b font-normal leading-default tracking-default text-black;
+    @apply font-figtree text-lg-b font-normal leading-default tracking-default text-black;
   }
   .button-sm {
-    @apply font-pix32 text-sm-b font-normal leading-none tracking-default text-black;
+    @apply font-figtree text-sm-b font-normal leading-none tracking-default text-black;
+  }
+
+  .dashboard-display {
+    @apply font-figtree text-[32px] font-bold leading-[1.2] text-dashboard-text-heavy md:text-[48px];
+  }
+  .dashboard-section-label {
+    @apply font-figtree text-base font-semibold leading-default text-dashboard-text-heavy;
+  }
+  .dashboard-h1 {
+    @apply font-figtree text-[28px] font-bold leading-[1.2] text-dashboard-text-heavy md:text-[32px];
+  }
+
+  .window-traffic-light {
+    @apply relative size-[13px] rounded-full transition-[transform,filter] duration-100;
+    box-shadow:
+      inset 0 1px 2px rgb(0 0 0 / 25%),
+      0 1px 1px rgb(0 0 0 / 18%);
+  }
+
+  .window-traffic-light::before {
+    @apply pointer-events-none absolute left-[3px] right-[3px] top-px h-[5px] rounded-full;
+    background: linear-gradient(
+      180deg,
+      rgb(255 255 255 / 90%),
+      rgb(255 255 255 / 15%)
+    );
+    content: "";
+  }
+
+  .window-traffic-light:hover {
+    @apply scale-110 brightness-110;
+  }
+
+  .window-traffic-light:active {
+    @apply scale-95;
+  }
+
+  .window-traffic-light:focus-visible {
+    @apply outline-none ring-2 ring-[#43484f]/50;
+  }
+
+  .window-traffic-light:disabled {
+    @apply cursor-default opacity-50;
+  }
+
+  .window-traffic-light-red {
+    @apply border border-[#c93a2b];
+    background: radial-gradient(circle at 50% 30%, #ff8a80, #ec4c3c 70%);
+  }
+
+  .window-traffic-light-yellow {
+    @apply border border-[#cf9325];
+    background: radial-gradient(circle at 50% 30%, #ffe082, #f5b731 70%);
+  }
+
+  .window-traffic-light-green {
+    @apply border border-[#43a12f];
+    background: radial-gradient(circle at 50% 30%, #b9f6a5, #56c93f 70%);
   }
 }
 @layer utilities {
-  @keyframes cloud-scroll-left {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(-100vw);
-    }
-  }
-
-  @keyframes cloud-scroll-right {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(100vw);
-    }
-  }
-
-  @keyframes cloud-scroll-right-from-left {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(calc(100vw + 12vw));
-    }
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .cloud-scroll-left {
-      animation: cloud-scroll-left 95s linear 5s infinite;
-    }
-
-    .cloud-scroll-right {
-      animation: cloud-scroll-right 70s linear 5s infinite;
-    }
-
-    .cloud-scroll-right-from-left {
-      animation: cloud-scroll-right-from-left 70s linear 5s infinite;
-    }
-
-    .cloud-scroll-right-slow {
-      animation: cloud-scroll-right 95s linear 5s infinite;
-    }
-  }
-
-  .cloud-scroll-right-from-left-copy {
-    right: calc(100vw + 12vw);
-  }
-
   @supports (-moz-appearance: none) {
     .scrollbar {
       scrollbar-width: thin;
@@ -242,20 +232,16 @@ html {
   .scrollbar::-webkit-scrollbar {
     width: 4px;
     height: 4px;
-    scrollbar-width: none;
-    scrollbar-color: none;
   }
 
   .custom-scroll::-webkit-scrollbar {
     width: 8px;
     height: 8px;
-    scrollbar-width: none;
-    scrollbar-color: none;
   }
 
   .scrollbar::-webkit-scrollbar-track {
     border-radius: 100vh;
-    background: #d19aee1a;
+    background: transparent;
   }
 
   .scrollbar::-webkit-scrollbar-thumb {
@@ -269,28 +255,48 @@ html {
   }
 }
 
-@layer utilities {
-  @supports (-moz-appearance: none) {
-    .scrollbar {
-      scrollbar-width: thin;
-      scrollbar-color: #d19aee transparent;
-    }
-  }
+/*
+ * Portaled dropdown content stays monochrome gray and never picks up the
+ * realm tint. These overrides beat the tint vars so the Select menu looks
+ * the same on every background.
+ */
+html[data-apply-tint] [role="listbox"],
+html[data-apply-tint] [data-radix-popper-content-wrapper] [role="listbox"] {
+  background-color: #ffffff !important;
+  color: #323232 !important;
+  border-color: #bdbdbd !important;
+}
 
-  .scrollbar::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-    scrollbar-width: none;
-    scrollbar-color: none;
-  }
+html[data-apply-tint] [role="option"] {
+  color: #323232 !important;
+}
 
-  .scrollbar::-webkit-scrollbar-track {
-    border-radius: 100vh;
-    background: transparent;
-  }
+html[data-apply-tint] [role="option"][data-highlighted],
+html[data-apply-tint] [role="option"][data-state="checked"] {
+  background-color: #dedede !important;
+  color: #262626 !important;
+}
 
-  .scrollbar::-webkit-scrollbar-thumb {
-    background: #d19aee;
-    border-radius: 100vh;
-  }
+/*
+ * Faint realm tint for the application window and everything in it. A
+ * little of the sidebar color (--realm-tint, set by /apply) is mixed into
+ * the window's grey and into the white form fields. Select dropdowns are
+ * portaled outside the window, so they match on the html attribute alone.
+ */
+html[data-apply-tint="on"] {
+  --realm-surface: color-mix(in srgb, var(--realm-tint) 15%, #f4f5f8);
+  --realm-field: color-mix(in srgb, var(--realm-tint) 15%, white);
+}
+
+html[data-apply-tint="on"]
+  .realm-tinted
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]),
+    textarea,
+    button[role="combobox"],
+    [role="radio"]:not([data-state="checked"])
+  ),
+html[data-apply-tint="on"] [role="listbox"] {
+  background-color: var(--realm-field);
+  transition: background-color 0.7s ease-in-out;
 }

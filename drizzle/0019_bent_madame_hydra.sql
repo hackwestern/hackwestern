@@ -1,0 +1,1 @@
+ALTER TYPE "public"."dietary_restrictions" ADD VALUE 'None' BEFORE 'Vegetarian';

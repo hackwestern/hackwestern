@@ -6,6 +6,7 @@ import * as contactsModule from "~/server/mailjet-contacts";
 import { env } from "~/env";
 import {
   normalizeEmail,
+  normalizeAuthEmail,
   isSchoolEmail,
   generateUnsubscribeToken,
   editionFromSource,
@@ -29,6 +30,22 @@ describe("normalizeEmail", () => {
   });
   test("leaves non-gmail local part intact", () => {
     expect(normalizeEmail("john.doe@outlook.com")).toBe("john.doe@outlook.com");
+  });
+});
+
+describe("normalizeAuthEmail", () => {
+  test("trims and lowercases", () => {
+    expect(normalizeAuthEmail("  Luka@UWO.ca ")).toBe("luka@uwo.ca");
+  });
+
+  // The deliberate difference from normalizeEmail: an auth identity keeps its
+  // gmail dots and plus tags. Stripping them is right for a mailing list, wrong
+  // for a login credential.
+  test("does NOT strip gmail dots or plus tags", () => {
+    expect(normalizeAuthEmail("A.rjun+hw@gmail.com")).toBe(
+      "a.rjun+hw@gmail.com",
+    );
+    expect(normalizeEmail("A.rjun+hw@gmail.com")).toBe("arjun@gmail.com");
   });
 });
 

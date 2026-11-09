@@ -7,6 +7,8 @@ import {
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import { applications, dayOfRegistrations } from "~/server/db/schema";
+import { isAdmittedStatus } from "~/lib/admission";
+import { resolveScannedUserId } from "~/server/api/utils/hacker-id";
 
 const ACCEPTED_STATUSES = ["CONFIRMED"] as const;
 
@@ -54,8 +56,9 @@ export const checkInRouter = createTRPCRouter({
   signInHacker: protectedOrganizerProcedure
     .input(z.object({ userId: z.string() }))
     .mutation(async ({ input }) => {
+      const userId = await resolveScannedUserId(input.userId);
       const existing = await db.query.dayOfRegistrations.findFirst({
-        where: eq(dayOfRegistrations.userId, input.userId),
+        where: eq(dayOfRegistrations.userId, userId),
         columns: { signedInAt: true },
       });
 
@@ -72,14 +75,14 @@ export const checkInRouter = createTRPCRouter({
         const [updated] = await db
           .update(dayOfRegistrations)
           .set({ signedInAt: now, approved: true })
-          .where(eq(dayOfRegistrations.userId, input.userId))
+          .where(eq(dayOfRegistrations.userId, userId))
           .returning();
         return updated;
       }
 
       const [created] = await db
         .insert(dayOfRegistrations)
-        .values({ userId: input.userId, signedInAt: now, approved: true })
+        .values({ userId, signedInAt: now, approved: true })
         .returning();
 
       return created;
@@ -91,9 +94,10 @@ export const checkInRouter = createTRPCRouter({
   checkIsHackerApproved: protectedOrganizerProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
+      const userId = await resolveScannedUserId(input.userId);
       const [application, dayOf] = await Promise.all([
         db.query.applications.findFirst({
-          where: eq(applications.userId, input.userId),
+          where: eq(applications.userId, userId),
           columns: {
             userId: true,
             status: true,
@@ -102,7 +106,7 @@ export const checkInRouter = createTRPCRouter({
           },
         }),
         db.query.dayOfRegistrations.findFirst({
-          where: eq(dayOfRegistrations.userId, input.userId),
+          where: eq(dayOfRegistrations.userId, userId),
           columns: { approved: true, signedInAt: true },
         }),
       ]);
@@ -114,8 +118,9 @@ export const checkInRouter = createTRPCRouter({
         });
       }
 
-      const isAccepted =
-        application.status === "ACCEPTED" || application.status === "CONFIRMED";
+      // Same rule as hacker passes (lib/admission): once RSVP closes, only
+      // hackers who confirmed get in.
+      const isAccepted = isAdmittedStatus(application.status);
 
       return {
         userId: application.userId,

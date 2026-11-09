@@ -7,6 +7,7 @@ import { useToast } from "~/hooks/use-toast";
 import { usePendingNavigation } from "~/hooks/use-pending-navigation";
 import { applySteps, type ApplyStep } from "~/constants/apply";
 import { applicationSubmitSchema } from "~/schemas/application";
+import { useCanEditApplication } from "~/hooks/use-can-edit-application";
 
 type ApplyNavigationProps = {
   step: ApplyStep | null;
@@ -41,7 +42,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
 
   const { data: applicationData } = api.application.get.useQuery();
   const status = applicationData?.status ?? "NOT_STARTED";
-  const canEdit = status == "NOT_STARTED" || status == "IN_PROGRESS";
+  const canEdit = useCanEditApplication(status);
 
   const { pending, navigate } = usePendingNavigation();
 
@@ -106,9 +107,8 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
       return;
     }
 
-    submitMutation
-      .mutateAsync()
-      .then(() => {
+    submitMutation.mutate(undefined, {
+      onSuccess: () => {
         toast({
           title: "Application Submitted",
           description: "Your application was submitted successfully.",
@@ -116,15 +116,21 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
           duration: 4000,
         });
         navigate("/dashboard");
-      })
-      .catch((e) => {
+      },
+      onError: (e) => {
         toast({
           title: "Error Submitting Application",
-          description: JSON.stringify(e),
+          // Our own errors (missing fields etc.) are written for applicants;
+          // a server or network failure gets a generic line instead.
+          description:
+            !e.data || e.data.code === "INTERNAL_SERVER_ERROR"
+              ? "Something went wrong. Please try again in a moment."
+              : e.message,
           variant: "destructive",
           duration: 4000,
         });
-      });
+      },
+    });
   };
 
   return (
@@ -135,7 +141,7 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
           {!step || previousStep ? (
             <Button
               variant="secondary"
-              className="h-10 border-gray-300 px-4 text-gray-700 hover:bg-gray-50"
+              className="h-10 border-gray-300 px-4 font-figtree text-gray-700 hover:bg-gray-50"
               onClick={() => navigate(`/apply?step=${previousStep ?? step}`)}
               disabled={pending}
               aria-busy={pending}
@@ -196,25 +202,25 @@ export function ApplyNavigation({ step }: ApplyNavigationProps) {
 
       {/* Desktop Layout */}
       <div className="hidden w-full justify-between py-3 md:flex">
-        <SavedIndicator />
-        <div className="ml-auto flex items-center gap-12">
+        <div className="ml-auto flex items-center gap-3">
           {!step ||
             (previousStep && (
               <Button
-                variant="tertiary"
-                className="h-6 w-16 text-base font-medium text-heavy"
+                variant="primary-2"
+                className="w-28"
                 onClick={() => navigate(`/apply?step=${previousStep}`)}
                 disabled={pending}
                 aria-busy={pending}
               >
-                <div className="flex items-center gap-2 pr-2">
+                <div className="flex items-center gap-2">
                   <Image
                     src="/shared/arrow-left.svg"
                     alt="Left Arrow"
                     width={12}
                     height={12}
+                    className="brightness-0 invert"
                   />
-                  <div className="text-sm">Back</div>
+                  Back
                 </div>
               </Button>
             ))}

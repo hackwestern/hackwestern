@@ -14,7 +14,7 @@ function GoogleAuthButton({
       onClick={() => {
         void signIn("google", { callbackUrl: redirect });
       }}
-      variant="secondary"
+      variant="primary"
       size="lg"
       full
     >
@@ -25,7 +25,9 @@ function GoogleAuthButton({
           width={20}
           height={20}
         />
-        <span>Sign {register ? "up" : "in"} with Google</span>
+        <span className="font-figtree">
+          Sign {register ? "up" : "in"} with Google
+        </span>
       </div>
     </Button>
   );

@@ -84,13 +84,6 @@ export const SPONSOR_TIERS: SponsorTier[] = [
           "The intelligent terminal. Become a command line power user on day one. Warp combines AI and your dev team's knowledge in one fast, intuitive terminal.",
       },
       {
-        name: "Morrissette Institute for Entrepreneurship",
-        logo: "/shared/sponsors/morrissette.png",
-        link: "https://entrepreneurship.uwo.ca/",
-        description:
-          "Morrissette Institute for Entrepreneurship supports entrepreneurship and innovation at Western University and beyond. They have supported hundreds of entrepreneurs navigate the complexities of starting and growing a business by connecting them with the right resources to succeed. If you're a Western student, check out their programs and resources today! https://entrepreneurship.uwo.ca/for-students/",
-      },
-      {
         name: "Leuchtturm1917",
         logo: "/shared/sponsors/leuchtturm.png",
         link: "https://www.leuchtturm1917.ca/",

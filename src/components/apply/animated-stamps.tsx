@@ -106,44 +106,59 @@ export function MobileStampGroup() {
           </motion.div>
         )}
 
-        <div className="scale-[0.8]">
-          <motion.div key="mobile-school" layout {...itemAnim}>
-            <SchoolStamp type={data?.school} />
-          </motion.div>
-        </div>
+        <motion.div
+          key="mobile-school"
+          layout
+          {...itemAnim}
+          className="scale-[0.8]"
+        >
+          <SchoolStamp type={data?.school} />
+        </motion.div>
 
-        <div className="scale-[0.8]">
-          <motion.div key="mobile-major" layout {...itemAnim}>
-            <MajorStamp type={data?.major} />
-          </motion.div>
-        </div>
+        <motion.div
+          key="mobile-major"
+          layout
+          {...itemAnim}
+          className="scale-[0.8]"
+        >
+          <MajorStamp type={data?.major} />
+        </motion.div>
 
         {data?.attendedBefore !== undefined &&
           data?.attendedBefore !== null && (
-            <div className="scale-[0.8]">
-              <motion.div key="mobile-hw" layout {...itemAnim}>
-                <HWStamp
-                  returning={data?.attendedBefore ? "returnee" : "newcomer"}
-                />
-              </motion.div>
-            </div>
+            <motion.div
+              key="mobile-hw"
+              layout
+              {...itemAnim}
+              className="scale-[0.8]"
+            >
+              <HWStamp
+                returning={data?.attendedBefore ? "returnee" : "newcomer"}
+              />
+            </motion.div>
           )}
 
-        <div className="scale-[0.8]">
-          <motion.div key="mobile-hacker" layout {...itemAnim}>
-            <HackerStamp numHackathons={data?.numOfHackathons} />
-          </motion.div>
-        </div>
+        <motion.div
+          key="mobile-hacker"
+          layout
+          {...itemAnim}
+          className="scale-[0.8]"
+        >
+          <HackerStamp numHackathons={data?.numOfHackathons} />
+        </motion.div>
 
         {data?.githubLink &&
           data?.linkedInLink &&
           data?.otherLink &&
           data?.resumeLink && (
-            <div className="scale-[0.8]">
-              <motion.div key="mobile-links" layout {...itemAnim}>
-                <LinksStamp />
-              </motion.div>
-            </div>
+            <motion.div
+              key="mobile-links"
+              layout
+              {...itemAnim}
+              className="scale-[0.8]"
+            >
+              <LinksStamp />
+            </motion.div>
           )}
       </AnimatePresence>
     </motion.div>

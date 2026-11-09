@@ -94,7 +94,7 @@ export default function SEO({
         <link rel="icon" href="/favicon.ico" />
         <link rel="canonical" href={canonicalUrl} />
         {noindex && <meta name="robots" content="noindex, nofollow" />}
-        <meta name="theme-color" content="#7C3AED" />
+        <meta name="theme-color" content="#7C3AED" key="theme-color" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
       </Head>
     </>

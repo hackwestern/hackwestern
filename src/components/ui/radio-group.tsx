@@ -27,7 +27,7 @@ const RadioGroupItem = React.forwardRef<
     <RadioGroupPrimitive.Item
       ref={ref}
       className={cn(
-        "aspect-square h-4 w-4 rounded-full border border-primary text-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "aspect-square h-4 w-4 rounded-full border border-gray-4 text-gray-6 ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
       {...props}
@@ -60,7 +60,7 @@ const RadioButtonItem = React.forwardRef<
     <RadioGroupPrimitive.Item
       ref={ref}
       className={cn(
-        "group inline-flex min-w-full cursor-pointer items-center gap-3 whitespace-nowrap rounded-lg border border-primary-200 px-3 py-2 text-sm font-medium text-violet-500 ring-offset-background transition-colors hover:bg-primary-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=checked]:bg-primary-200 data-[state=checked]:text-primary-600 lg:min-w-24",
+        "group inline-flex min-w-full cursor-pointer items-center gap-3 whitespace-nowrap rounded-lg border border-gray-2 bg-white px-3 py-2 text-sm font-medium text-gray-6 ring-offset-background transition-colors hover:bg-gray-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=checked]:bg-gray-1 data-[state=checked]:text-gray-7 lg:min-w-24",
         className,
       )}
       value={value}
@@ -68,14 +68,14 @@ const RadioButtonItem = React.forwardRef<
     >
       <div
         className={cn(
-          "flex aspect-square h-4 w-4 items-center justify-center rounded-full border border-primary-200 ring-offset-background group-focus:outline-none group-disabled:cursor-not-allowed group-disabled:opacity-50",
+          "flex aspect-square h-4 w-4 items-center justify-center rounded-full border border-gray-2 ring-offset-background group-focus:outline-none group-disabled:cursor-not-allowed group-disabled:opacity-50",
         )}
       >
         <RadioGroupPrimitive.Indicator className="flex items-center justify-center">
-          <Circle className="h-4 w-4 rounded-full border-[5px] border-primary-600 fill-primary-50 text-primary-50" />
+          <Circle className="h-4 w-4 rounded-full border-[5px] border-gray-6 fill-gray-0 text-gray-0" />
         </RadioGroupPrimitive.Indicator>
       </div>
-      <Label className="cursor-pointer text-sm text-violet-500 group-data-[state=checked]:text-primary-600">
+      <Label className="cursor-pointer text-sm text-gray-6 group-data-[state=checked]:text-gray-7">
         {label}
       </Label>
     </RadioGroupPrimitive.Item>

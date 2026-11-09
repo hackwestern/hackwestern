@@ -1,0 +1,1 @@
+ALTER TABLE "application" ADD COLUMN "enrollment_confirmed_at" timestamp (3);

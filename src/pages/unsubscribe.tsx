@@ -62,7 +62,7 @@ export default function Unsubscribe({ status }: Props) {
       <main className="flex min-h-screen flex-col items-center justify-center bg-offwhite px-6 text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/shared/emailbanner.png"
+          src="/shared/emailbanner-hw13.jpg"
           alt="Hack Western"
           className="mb-8 w-full max-w-md rounded-lg"
         />

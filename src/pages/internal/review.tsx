@@ -4,7 +4,7 @@ import { Button } from "~/components/ui/button";
 import { Slider } from "~/components/ui/slider";
 import { api } from "~/utils/api";
 import Link from "next/link";
-import { disabledRedirect } from "~/utils/redirect";
+import { authRedirectOrganizer } from "~/utils/redirect";
 import type { z } from "zod";
 import { reviewSaveSchema } from "~/schemas/review";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,9 +27,7 @@ import { SavedIndicator } from "~/components/apply/saved-indicator";
 import { Textarea } from "~/components/ui/textarea";
 import { useToast } from "~/hooks/use-toast";
 import { useSession } from "next-auth/react";
-import { AvatarDisplay } from "~/components/apply/avatar-display";
-import { colors } from "~/constants/avatar";
-import type { CanvasPaths } from "~/types/canvas";
+import { getHorse, realmLabel } from "~/constants/realms";
 import {
   QUESTION1,
   QUESTION2,
@@ -97,7 +95,7 @@ const Review = () => {
     <>
       <SEO title="Application Review" noindex />
       <InternalNavbar></InternalNavbar>
-      <main className=" font-figtreen flex flex-col items-center bg-primary-50 font-secondary">
+      <main className="flex flex-col items-center bg-primary-50 font-figtree">
         <div className="relative z-[100] w-full items-center md:flex">
           <div
             id="left-panel"
@@ -129,6 +127,16 @@ const Review = () => {
                         <TooltipTrigger>🤑</TooltipTrigger>
                         <TooltipContent>They have tooltips!</TooltipContent>
                       </Tooltip>
+                    </li>
+                    <li>
+                      <a
+                        href="https://claude.ai/code/artifact/089e47c8-6398-4ac6-b9aa-cb957cb87de4"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-600 underline underline-offset-2"
+                      >
+                        Reviewer guide + scoring rubric
+                      </a>
                     </li>
                   </ul>
                 </div>
@@ -177,6 +185,10 @@ const Review = () => {
                                   <ul className="max-w-96 list-disc px-3">
                                     <li>Very lame</li>
                                     <li>Same projects as everyone else</li>
+                                    <li>
+                                      Generic answers that could come from
+                                      anyone
+                                    </li>
                                   </ul>
                                 </TooltipContent>
                               </Tooltip>
@@ -190,7 +202,10 @@ const Review = () => {
                                 <TooltipTrigger>🤩</TooltipTrigger>
                                 <TooltipContent>
                                   <ul className="max-w-96 list-disc px-3">
-                                    <li>Novel: ideas are unique!</li>
+                                    <li>
+                                      Novel: unique ideas in their projects and
+                                      their answers!
+                                    </li>
                                     <li>
                                       Creative: out-of-the-box thinking,
                                       creative problem solving techniques
@@ -369,7 +384,7 @@ const Review = () => {
           >
             <div className="z-10 my-8 flex h-[90vh] flex-col items-center justify-center overflow-auto overflow-auto rounded-xl border border-primary-300 bg-primary-100 pl-8 text-sm md:my-auto md:max-w-[800px]">
               {applicationData ? (
-                <div className="custom-scroll z-50 flex h-[90vh] flex-col overflow-auto rounded-[10px] rounded-lg px-2 py-4 font-secondary">
+                <div className="custom-scroll z-50 flex h-[90vh] flex-col overflow-auto rounded-[10px] rounded-lg px-2 py-4">
                   <Tooltip>
                     <TooltipTrigger>
                       <div className="mt-4 text-base">{`${applicationData?.firstName} ${applicationData?.lastName}`}</div>
@@ -380,112 +395,54 @@ const Review = () => {
                   </Tooltip>
 
                   <div className="flex flex-col justify-center md:ml-8 md:flex-row">
-                    {/* Avatar Section */}
-                    {applicationData && (
-                      <div className="ml-8 mt-4 space-y-2 md:ml-0">
-                        <div className="flex h-64 w-64 justify-center">
-                          <div
-                            className="flex h-64 w-64 flex-col justify-center rounded-2xl p-4 pt-8"
-                            style={{
-                              background: `linear-gradient(135deg, ${
-                                colors.find(
-                                  (c) =>
-                                    c.name ===
-                                    (applicationData.avatarColour ?? "green"),
-                                )?.bg ?? "#F1FDE0"
-                              } 30%, ${
-                                colors.find(
-                                  (c) =>
-                                    c.name ===
-                                    (applicationData.avatarColour ?? "green"),
-                                )?.gradient ?? "#A7FB73"
-                              } 95%)`,
-                            }}
-                          >
-                            <div className="mt-10 flex scale-75 items-center justify-center">
-                              <AvatarDisplay
-                                avatarColour={applicationData.avatarColour}
-                                avatarFace={applicationData.avatarFace}
-                                avatarLeftHand={applicationData.avatarLeftHand}
-                                avatarRightHand={
-                                  applicationData.avatarRightHand
-                                }
-                                avatarHat={applicationData.avatarHat}
-                                size="lg"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Canvas Section */}
+                    {/* Horse companion (replaces the HW12 canvas drawing) */}
                     {applicationData &&
                       (() => {
-                        type CanvasData = {
-                          paths: CanvasPaths;
-                          timestamp: number;
-                          version: string;
-                        };
-
-                        const canvasData = applicationData.canvasData as
-                          | CanvasData
-                          | null
-                          | undefined;
-                        const pathStrings =
-                          canvasData?.paths?.map((path) =>
-                            path.reduce((acc, point, index) => {
-                              if (index === 0)
-                                return `M ${point[0]} ${point[1]}`;
-                              return `${acc} L ${point[0]} ${point[1]}`;
-                            }, ""),
-                          ) ?? [];
-
-                        // Get the stroke color based on avatar color (same logic as SimpleCanvas)
-                        const selectedColour = colors.find(
-                          (color) =>
-                            color.name === applicationData.avatarColour,
-                        )?.value;
-                        const strokeColour = selectedColour
-                          ? selectedColour + "dd"
-                          : "#a16bc7";
-
+                        const horse = getHorse(applicationData.horseId);
+                        const name = [
+                          applicationData.horseFirstName,
+                          applicationData.horseLastName,
+                        ]
+                          .filter(Boolean)
+                          .join(" ");
                         return (
-                          <div className="-ml-4 mt-4 space-y-2 md:ml-0">
-                            {pathStrings.length > 0 ? (
-                              <div className="flex justify-center">
-                                <div className="-mt-8 h-80 w-80 scale-[0.78] overflow-hidden rounded-lg border-2 border-primary-300 bg-white">
-                                  <svg className="h-full w-full">
-                                    {pathStrings.map(
-                                      (pathString, pathIndex) => (
-                                        <path
-                                          key={pathIndex}
-                                          d={pathString}
-                                          stroke={strokeColour}
-                                          strokeWidth="4"
-                                          fill="none"
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                        />
-                                      ),
-                                    )}
-                                  </svg>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="flex justify-center">
+                          <div className="ml-8 mt-4 md:ml-4">
+                            <div className="flex h-64 w-64 flex-col items-center justify-center gap-2 rounded-2xl border border-primary-300 bg-white p-4">
+                              {horse ? (
+                                <>
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={horse.asset}
+                                    alt={`${realmLabel[horse.realm]} horse`}
+                                    className="max-h-40 w-auto max-w-full object-contain"
+                                    draggable={false}
+                                  />
+                                  <p className="text-center text-base">
+                                    {name || "(no name yet)"}
+                                  </p>
+                                  <p className="text-sm text-primary-600">
+                                    {realmLabel[horse.realm]} realm
+                                  </p>
+                                </>
+                              ) : (
                                 <p className="text-sm text-primary-600">
-                                  (no drawing)
+                                  (no horse picked)
                                 </p>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         );
                       })()}
                   </div>
 
                   <div className="flex justify-center text-center">
-                    {["githubLink", "linkedInLink", "otherLink", "resumeLink"]
+                    {[
+                      "githubLink",
+                      "linkedInLink",
+                      "devpostLink",
+                      "otherLink",
+                      "resumeLink",
+                    ]
                       .map((link) => link as keyof typeof applicationData)
                       .map((link) => {
                         if (applicationData?.[link]) {
@@ -531,6 +488,8 @@ const linkName = (link: string) => {
       return "GitHub";
     case "linkedInLink":
       return "LinkedIn";
+    case "devpostLink":
+      return "Devpost";
     case "otherLink":
       return "Other";
     case "resumeLink":
@@ -559,4 +518,5 @@ const postfix = (num: number) => {
 };
 
 export default Review;
-export const getServerSideProps = disabledRedirect;
+// Open on every environment, organizers only (the review APIs check too).
+export const getServerSideProps = authRedirectOrganizer;

@@ -14,7 +14,7 @@ function GithubAuthButton({
       onClick={() => {
         void signIn("github", { callbackUrl: redirect });
       }}
-      variant="secondary"
+      variant="primary"
       size="lg"
       full
     >
@@ -25,7 +25,9 @@ function GithubAuthButton({
           width={20}
           height={20}
         />
-        <span>Sign {register ? "up" : "in"} with Github</span>
+        <span className="font-figtree">
+          Sign {register ? "up" : "in"} with Github
+        </span>
       </div>
     </Button>
   );

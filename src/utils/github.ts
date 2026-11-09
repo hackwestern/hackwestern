@@ -12,11 +12,65 @@ function getHeaders(): HeadersInit {
   };
 }
 
+/**
+ * Thrown when GitHub turns us away for rate-limiting rather than for something
+ * wrong with the request. Callers that run many repos in a row (the cheat-check
+ * sweep) treat this differently from a real failure: it doesn't consume the
+ * team's retry budget, and it pauses the whole run until `resetAt`.
+ */
+export class GithubRateLimitError extends Error {
+  readonly resetAt: Date;
+
+  constructor(message: string, resetAt: Date) {
+    super(message);
+    this.name = "GithubRateLimitError";
+    this.resetAt = resetAt;
+  }
+}
+
+/**
+ * Reads the reset time out of a rate-limited response. GitHub signals it either
+ * as `retry-after` (delta seconds, used for secondary limits) or
+ * `x-ratelimit-reset` (unix seconds, used for the primary limit). Falls back to
+ * a minute out when neither is present or parseable.
+ */
+function parseRateLimitReset(res: Response): Date {
+  const retryAfter = Number(res.headers.get("retry-after"));
+  if (Number.isFinite(retryAfter) && retryAfter > 0) {
+    return new Date(Date.now() + retryAfter * 1000);
+  }
+
+  const reset = Number(res.headers.get("x-ratelimit-reset"));
+  if (Number.isFinite(reset) && reset > 0) {
+    return new Date(reset * 1000);
+  }
+
+  return new Date(Date.now() + 60_000);
+}
+
+/**
+ * A 403/429 is rate-limiting only when GitHub says so — a 403 on a private repo
+ * is an ordinary permission failure and must not pause the sweep.
+ */
+function isRateLimited(res: Response): boolean {
+  if (res.status !== 403 && res.status !== 429) return false;
+  return (
+    res.headers.get("x-ratelimit-remaining") === "0" ||
+    res.headers.has("retry-after")
+  );
+}
+
 async function githubFetch(path: string): Promise<unknown> {
   const res = await fetch(`${GITHUB_API_BASE}${path}`, {
     headers: getHeaders(),
   });
   if (!res.ok) {
+    if (isRateLimited(res)) {
+      throw new GithubRateLimitError(
+        `GitHub rate limit hit (${res.status}) for ${path}`,
+        parseRateLimitReset(res),
+      );
+    }
     throw new Error(
       `GitHub API error ${res.status} for ${path}: ${await res.text()}`,
     );

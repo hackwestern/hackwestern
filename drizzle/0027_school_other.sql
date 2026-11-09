@@ -1,0 +1,1 @@
+ALTER TABLE "application" ADD COLUMN "school_other" varchar(255);

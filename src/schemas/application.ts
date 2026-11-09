@@ -14,7 +14,6 @@ import {
   shirtSize,
   dietaryRestrictions,
   emergencyContactRelationship,
-  transportationMethod,
 } from "~/server/db/schema";
 
 // Save schema
@@ -24,6 +23,10 @@ export const applicationSaveSchema = createInsertSchema(applications)
     updatedAt: true,
     status: true,
     userId: true,
+    transportationMethod: true,
+    travelReimbursement: true,
+    travelFrom: true,
+    enrollmentConfirmedAt: true,
   })
   .extend({
     devpostLink: z.string().nullish(),
@@ -55,11 +58,38 @@ export const personaSaveSchema = applicationSaveSchema.pick({
   avatarHat: true,
 });
 
+export const HORSE_NAME_MAX_LENGTH = 24;
+
+export const realmSaveSchema = applicationSaveSchema
+  .pick({
+    realm: true,
+    horseId: true,
+    horseFirstName: true,
+    horseLastName: true,
+  })
+  .extend({
+    horseFirstName: z
+      .string()
+      .trim()
+      .max(HORSE_NAME_MAX_LENGTH, {
+        message: `Keep it under ${HORSE_NAME_MAX_LENGTH} characters.`,
+      })
+      .nullish(),
+    horseLastName: z
+      .string()
+      .trim()
+      .max(HORSE_NAME_MAX_LENGTH, {
+        message: `Keep it under ${HORSE_NAME_MAX_LENGTH} characters.`,
+      })
+      .nullish(),
+  });
+
 export const infoSaveSchema = z.object({
   school: z.preprocess(
     (val) => (val === "" ? undefined : val),
     z.enum(schools).optional(),
   ),
+  schoolOther: z.string().max(255).nullish(),
   yearOfStudy: z.preprocess(
     (val) => (val === "" ? undefined : val),
     z.enum(yearOfStudy.enumValues).optional(),
@@ -85,6 +115,32 @@ export const agreementsSaveSchema = applicationSaveSchema.pick({
   agreeWillBe18: true,
   agreeEmailsFromMLH: true,
 });
+
+export const logisticsSaveSchema = applicationSaveSchema
+  .pick({
+    shirtSize: true,
+    dietaryRestrictions: true,
+    dietaryRestrictionsOther: true,
+    emergencyContactName: true,
+    emergencyContactRelationship: true,
+    emergencyContactPhoneNumber: true,
+  })
+  .extend({
+    // Allow empty-string selections (unselected dropdowns/radios) to be
+    // treated as undefined so partial autosaves don't fail validation.
+    shirtSize: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(shirtSize.enumValues).optional(),
+    ),
+    dietaryRestrictions: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(dietaryRestrictions.enumValues).optional(),
+    ),
+    emergencyContactRelationship: z.preprocess(
+      (val) => (val === "" ? undefined : val),
+      z.enum(emergencyContactRelationship.enumValues).optional(),
+    ),
+  });
 
 export const underrepGroupAnswers = [
   "Yes",
@@ -139,6 +195,20 @@ const tooFewWords = `Response must be at least ${MIN_WORDS} words`;
 const tooManyWords = `Response must be fewer than ${MAX_WORDS} words`;
 
 // Submission schema with data validation
+// The years an applicant can pick. The year_of_study enum also has "N/A" and
+// "Prefer not to answer"; they stay valid in the database (an HW13 application
+// was submitted with one) but can't be chosen or submitted anymore.
+export const YEAR_OF_STUDY_OPTIONS = [
+  "1st",
+  "2nd",
+  "3rd",
+  "4th",
+  "5th+",
+] as const;
+
+export const isValidYearOfStudy = (value: unknown) =>
+  (YEAR_OF_STUDY_OPTIONS as readonly unknown[]).includes(value);
+
 export const applicationSubmitSchema = z
   .object({
     firstName: z.string().min(1),
@@ -147,7 +217,8 @@ export const applicationSubmitSchema = z
     countryOfResidence: z.enum(countrySelection.enumValues),
     age: z.number().min(18).max(99),
     school: z.enum(schools),
-    yearOfStudy: z.enum(yearOfStudy.enumValues),
+    schoolOther: z.string().max(255).nullish(),
+    yearOfStudy: z.enum(YEAR_OF_STUDY_OPTIONS),
     major: z.enum(major.enumValues),
     attendedBefore: z.boolean(),
     numOfHackathons: z.enum(numOfHackathons.enumValues),
@@ -167,14 +238,10 @@ export const applicationSubmitSchema = z
       .refine((value) => minWordCount(value, MIN_WORDS), tooFewWords)
       .refine((value) => maxWordCount(value, MAX_WORDS), tooManyWords),
     resumeLink: z.preprocess((v) => (!v ? undefined : v), z.string().url()),
-    githubLink: z.preprocess(
-      (v) => (!v ? undefined : v),
-      z.string().optional(),
-    ),
-    linkedInLink: z.preprocess(
-      (v) => (!v ? undefined : v),
-      z.string().optional(),
-    ),
+    // Required for the cheat check; only the portfolio (otherLink) is optional.
+    devpostLink: z.string().min(1, "Add your Devpost profile"),
+    githubLink: z.string().min(1, "Add your GitHub profile"),
+    linkedInLink: z.string().min(1, "Add your LinkedIn profile"),
     otherLink: z.preprocess(
       (v) => (!v ? undefined : v),
       z.string().url().optional(),
@@ -203,8 +270,12 @@ export const applicationSubmitSchema = z
 
     // RSVP fields
     shirtSize: z.enum(shirtSize.enumValues),
-    dietaryRestrictions: z.enum(dietaryRestrictions.enumValues),
-    dietaryRestrictionsOther: z.string().nullable(),
+    dietaryRestrictions: z.preprocess(
+      (v) => (!v ? undefined : v),
+      z.enum(dietaryRestrictions.enumValues),
+    ),
+
+    dietaryRestrictionsOther: z.string().max(255).nullish(),
     emergencyContactName: z.string().min(1),
     emergencyContactRelationship: z.enum(
       emergencyContactRelationship.enumValues,
@@ -213,10 +284,19 @@ export const applicationSubmitSchema = z
       .string()
       .min(1)
       .regex(phoneRegex, "Invalid phone number"),
-    transportationMethod: z.enum(transportationMethod.enumValues),
   })
   .superRefine((data, ctx) => {
-    if (data.dietaryRestrictions == "Other" && !data.dietaryRestrictionsOther) {
+    if (data.school === "Other" && !data.schoolOther?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Please tell us which school you attend",
+        path: ["schoolOther"],
+      });
+    }
+    if (
+      data.dietaryRestrictions === "Other" &&
+      !data.dietaryRestrictionsOther?.trim()
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Please specify your dietary restriction",

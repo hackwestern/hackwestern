@@ -2,6 +2,7 @@ import { afterEach, assert, describe, expect, test, vi } from "vitest";
 import { faker } from "@faker-js/faker";
 import { type Session } from "next-auth";
 import * as mailModule from "~/server/mail-mailjet";
+import * as dateModule from "~/lib/date";
 
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -29,6 +30,13 @@ vi.spyOn(mailModule, "sendViaMailjet").mockResolvedValue({
   data: { delivered: [], queued: [], bounced: [] },
   error: null,
 });
+
+// save and submit refuse writes once applications close. Pin "before the
+// deadline" so these tests keep passing after Oct 18; the deadline tests below
+// flip it for a single call.
+const pastDeadline = vi
+  .spyOn(dateModule, "isPastDeadline")
+  .mockReturnValue(false);
 
 const session = await mockSession(db);
 const organizerSession = await mockOrganizerSession(db);
@@ -62,6 +70,11 @@ describe("application.get", async () => {
       devpostLink: application?.devpostLink?.substring(DEVPOST_URL.length),
       githubLink: application?.githubLink?.substring(GITHUB_URL.length),
       linkedInLink: application?.linkedInLink?.substring(LINKEDIN_URL.length),
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -114,6 +127,11 @@ describe("application.getById", async () => {
 
       githubLink: application?.githubLink,
       linkedInLink: application?.linkedInLink,
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -199,6 +217,11 @@ describe.sequential("application.save", async () => {
       ...application,
       dietaryRestrictionsOther: application.dietaryRestrictionsOther ?? null,
 
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -234,6 +257,11 @@ describe.sequential("application.save", async () => {
       dietaryRestrictionsOther:
         updatedApplication.dietaryRestrictionsOther ?? null,
 
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -250,6 +278,23 @@ describe.sequential("application.save", async () => {
     expect(got).toEqual(want);
   });
 
+  test("doesn't save school Other until a school name is typed", async () => {
+    for (const schoolOther of [null, "", "   "]) {
+      await caller.application.save({ school: "Other", schoolOther });
+      const result = await caller.application.get();
+      expect(result?.school).toBeNull();
+      expect(result?.schoolOther).toBeNull();
+    }
+
+    await caller.application.save({
+      school: "Other",
+      schoolOther: "Livingstone College",
+    });
+    const result = await caller.application.get();
+    expect(result?.school).toBe("Other");
+    expect(result?.schoolOther).toBe("Livingstone College");
+  });
+
   test("complete application changes status to PENDING_REVIEW", async () => {
     const completeApplication = createCompleteSaveInput(session);
     applicationSubmitSchema.parse(completeApplication);
@@ -260,6 +305,11 @@ describe.sequential("application.save", async () => {
         completeApplication.dietaryRestrictionsOther ?? null,
 
       status: "PENDING_REVIEW",
+      avatarColour: null,
+      avatarFace: null,
+      avatarLeftHand: null,
+      avatarRightHand: null,
+      avatarHat: null,
       canvasData: {
         paths: [],
         timestamp: 0,
@@ -278,6 +328,119 @@ describe.sequential("application.save", async () => {
     const { createdAt: _createdAt, updatedAt: _updatedAt, ...got } = result;
 
     expect(got).toEqual(want);
+  });
+
+  test("submits when dietaryRestrictionsOther was never filled in", async () => {
+    // Picking "None" leaves the Other text box untouched, so the column stays
+    // null — the submit schema must accept that.
+    const { dietaryRestrictionsOther: _other, ...completeApplication } =
+      createCompleteSaveInput(session);
+
+    await caller.application.save(completeApplication);
+    const saved = await caller.application.get();
+    assert(!!saved);
+    expect(saved.dietaryRestrictionsOther).toBeNull();
+    expect(applicationSubmitSchema.safeParse(saved).success).toBe(true);
+
+    await caller.application.submit();
+    const result = await caller.application.get();
+    expect(result?.status).toBe("PENDING_REVIEW");
+  });
+
+  test("Devpost, GitHub and LinkedIn are required, portfolio isn't", async () => {
+    const complete = createCompleteSaveInput(session);
+
+    // The form's check (review step) flags each missing link on its own...
+    for (const link of ["devpostLink", "githubLink", "linkedInLink"] as const) {
+      const result = applicationSubmitSchema.safeParse({
+        ...complete,
+        [link]: "",
+      });
+      expect(result.success).toBe(false);
+      expect(result.error?.format()[link]?._errors.length).toBeGreaterThan(0);
+    }
+    expect(
+      applicationSubmitSchema.safeParse({ ...complete, otherLink: "" }).success,
+    ).toBe(true);
+
+    // ...and the server refuses the same application.
+    await caller.application.save({ ...complete, githubLink: "" });
+    await expect(caller.application.submit()).rejects.toThrowError(
+      "GitHub link",
+    );
+    const result = await caller.application.get();
+    expect(result?.status).toBe("IN_PROGRESS");
+  });
+
+  test("won't submit Other without the school's name", async () => {
+    await caller.application.save({
+      ...createCompleteSaveInput(session),
+      school: "Other",
+      schoolOther: null,
+    });
+
+    await expect(caller.application.submit()).rejects.toThrowError(
+      "Your application isn't complete yet",
+    );
+    const result = await caller.application.get();
+    expect(result?.status).toBe("IN_PROGRESS");
+  });
+
+  test("submits Other with the school's name", async () => {
+    await caller.application.save({
+      ...createCompleteSaveInput(session),
+      school: "Other",
+      schoolOther: "University of Illinois Urbana-Champaign",
+    });
+
+    await caller.application.submit();
+    const result = await caller.application.get();
+    expect(result?.status).toBe("PENDING_REVIEW");
+    expect(result?.schoolOther).toBe("University of Illinois Urbana-Champaign");
+  });
+});
+
+describe.sequential("application deadline", async () => {
+  afterEach(async () => {
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, session.user.id));
+  });
+
+  test("save is refused after the deadline and writes nothing", async () => {
+    pastDeadline.mockReturnValueOnce(true);
+
+    await expect(
+      caller.application.save(createRandomSaveInput(session)),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.application.get()).resolves.toBeNull();
+  });
+
+  test("submit is refused after the deadline and the application stays in progress", async () => {
+    await caller.application.save(createCompleteSaveInput(session));
+    pastDeadline.mockReturnValueOnce(true);
+
+    await expect(caller.application.submit()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    const result = await caller.application.get();
+    expect(result?.status).toBe("IN_PROGRESS");
+  });
+
+  test("save is refused once the application is submitted and changes nothing", async () => {
+    await caller.application.save(createCompleteSaveInput(session));
+    await caller.application.submit();
+    const before = await caller.application.get();
+
+    await expect(
+      caller.application.save({
+        ...createCompleteSaveInput(session),
+        firstName: "Changed",
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    const after = await caller.application.get();
+    expect(after?.status).toBe("PENDING_REVIEW");
+    expect(after?.firstName).toBe(before?.firstName);
   });
 });
 

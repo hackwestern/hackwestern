@@ -116,16 +116,7 @@ export function AvatarForm({
   previewHeight?: number | null;
 }) {
   const utils = api.useUtils();
-  const { data: defaultValues } = api.application.get.useQuery({
-    fields: [
-      "status",
-      "avatarColour",
-      "avatarFace",
-      "avatarLeftHand",
-      "avatarRightHand",
-      "avatarHat",
-    ],
-  });
+  const { data: defaultValues } = api.application.get.useQuery();
   const { mutate } = api.application.save.useMutation({
     onSuccess: () => {
       return utils.application.get.invalidate();

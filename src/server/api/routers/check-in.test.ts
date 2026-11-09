@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { RSVP_DEADLINE } from "~/lib/date";
 import { eq } from "drizzle-orm";
 import { db } from "~/server/db";
 import { createCaller } from "~/server/api/root";
@@ -6,6 +7,7 @@ import { createInnerTRPCContext } from "~/server/api/trpc";
 import { applications, dayOfRegistrations, users } from "~/server/db/schema";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
 import { TRPCError } from "@trpc/server";
+import { getOrCreateHackerId } from "~/server/api/utils/hacker-id";
 
 const organizerSession = await mockOrganizerSession(db);
 const organizerCtx = createInnerTRPCContext({ session: organizerSession });
@@ -149,6 +151,14 @@ describe("checkIn.signInHacker", () => {
     expect(result?.signedInAt).toBeInstanceOf(Date);
   });
 
+  test("accepts a scanned hacker ID", async () => {
+    const hackerId = await getOrCreateHackerId(hackerSession.user.id);
+    const result = await organizerCaller.checkIn.signInHacker({
+      userId: hackerId,
+    });
+    expect(result?.userId).toBe(hackerSession.user.id);
+  });
+
   test("throws CONFLICT if hacker is already signed in", async () => {
     await organizerCaller.checkIn.signInHacker({
       userId: hackerSession.user.id,
@@ -201,6 +211,7 @@ describe("checkIn.checkIsHackerApproved", () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     await db
       .delete(dayOfRegistrations)
       .where(eq(dayOfRegistrations.userId, hackerSession.user.id));
@@ -210,8 +221,27 @@ describe("checkIn.checkIsHackerApproved", () => {
     await db.delete(users).where(eq(users.id, hackerSession.user.id));
   });
 
-  test("returns isApproved=true for ACCEPTED status", async () => {
+  test("returns isApproved=true for ACCEPTED status while RSVP is open", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(RSVP_DEADLINE.getTime() - 1000);
     await insertTestApplication(hackerSession.user.id, { status: "ACCEPTED" });
+    const result = await organizerCaller.checkIn.checkIsHackerApproved({
+      userId: hackerSession.user.id,
+    });
+    expect(result.isApproved).toBe(true);
+  });
+
+  test("returns isApproved=false for ACCEPTED once RSVP closes (never confirmed)", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(RSVP_DEADLINE.getTime() + 1000);
+    await insertTestApplication(hackerSession.user.id, { status: "ACCEPTED" });
+    const result = await organizerCaller.checkIn.checkIsHackerApproved({
+      userId: hackerSession.user.id,
+    });
+    expect(result.isApproved).toBe(false);
+  });
+
+  test("returns isApproved=true for CONFIRMED after RSVP closes", async () => {
+    vi.spyOn(Date, "now").mockReturnValue(RSVP_DEADLINE.getTime() + 1000);
+    await insertTestApplication(hackerSession.user.id, { status: "CONFIRMED" });
     const result = await organizerCaller.checkIn.checkIsHackerApproved({
       userId: hackerSession.user.id,
     });
@@ -223,6 +253,16 @@ describe("checkIn.checkIsHackerApproved", () => {
     const result = await organizerCaller.checkIn.checkIsHackerApproved({
       userId: hackerSession.user.id,
     });
+    expect(result.isApproved).toBe(true);
+  });
+
+  test("looks a hacker up by their hacker ID", async () => {
+    await insertTestApplication(hackerSession.user.id, { status: "CONFIRMED" });
+    const hackerId = await getOrCreateHackerId(hackerSession.user.id);
+    const result = await organizerCaller.checkIn.checkIsHackerApproved({
+      userId: hackerId,
+    });
+    expect(result.userId).toBe(hackerSession.user.id);
     expect(result.isApproved).toBe(true);
   });
 
