@@ -120,8 +120,8 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Autodesk",
     href: "https://www.autodesk.com/",
-    // A centered row of four, wordmarks on one baseline.
-    left: 12.85,
+    // A centered row of five, wordmarks on one baseline.
+    left: 4.2,
     top: 114.27,
     width: 10.84,
     height: 8.2,
@@ -130,16 +130,25 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Accenture",
     href: "https://www.accenture.com/",
-    left: 34.0,
+    left: 25.35,
     top: 117.68,
     width: 13.45,
     height: 4.72,
     overlaySrc: "/shared/sponsors/accenture.svg",
   },
   {
+    name: "uBit",
+    href: "https://www.ubit.foundation/",
+    left: 49.11,
+    top: 114.2,
+    width: 6.99,
+    height: 8.2,
+    overlaySrc: "/shared/sponsors/ubit.png",
+  },
+  {
     name: "OpenAI",
     href: "https://openai.com/",
-    left: 57.76,
+    left: 66.41,
     top: 119.65,
     width: 9.77,
     height: 3.53,
@@ -148,7 +157,7 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "PCBWay",
     href: "https://www.pcbway.com/",
-    left: 77.84,
+    left: 86.49,
     top: 120.12,
     width: 9.51,
     height: 3.53,
