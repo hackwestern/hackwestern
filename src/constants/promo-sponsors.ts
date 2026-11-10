@@ -120,8 +120,9 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Autodesk",
     href: "https://www.autodesk.com/",
-    // Two centered rows of three, wordmarks on one baseline per row.
-    left: 24.15,
+    // Two centered rows (four, then three), wordmarks on one baseline per
+    // row.
+    left: 12.98,
     top: 114.27,
     width: 10.84,
     height: 8.2,
@@ -130,16 +131,25 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Accenture",
     href: "https://www.accenture.com/",
-    left: 45.3,
+    left: 34.13,
     top: 117.68,
     width: 13.45,
     height: 4.72,
     overlaySrc: "/shared/sponsors/accenture.svg",
   },
   {
+    name: "Shopify",
+    href: "https://www.shopify.com/",
+    left: 57.89,
+    top: 118.72,
+    width: 12.03,
+    height: 4.6,
+    overlaySrc: "/shared/sponsors/shopify.svg",
+  },
+  {
     name: "uBit",
     href: "https://www.ubit.foundation/",
-    left: 69.06,
+    left: 80.23,
     top: 114.2,
     width: 6.99,
     height: 8.2,
