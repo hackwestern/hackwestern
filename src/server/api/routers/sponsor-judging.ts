@@ -56,6 +56,11 @@ export function normalizeHwContact(val: string | undefined): string {
   return trimmed.length > 0 ? trimmed : "—";
 }
 
+/** Optional free-text cell (e.g. workshop fields). Empty stays empty — no TBD. */
+export function normalizeOptionalText(val: string | undefined): string {
+  return String(val ?? "").trim();
+}
+
 // HW team contacts, copied once into the judging spreadsheet. This tab is
 // the source of truth — edit names/phones here manually; nothing syncs
 // from the external sheet. Layout: header row 1 (Name | Phone Number),
@@ -402,10 +407,12 @@ async function ensureSponsorInfoTab(
     tabName = newProps?.title ?? SPONSOR_INFO_TAB;
     sheetId = newProps?.sheetId ?? null;
 
-    // Header row with 5 columns: Sponsor Name, Status, Judging Room Number, Booth Location, HW Contact
+    // Header row with 7 columns:
+    // Sponsor Name, Status, Judging Room Number, Booth Location, HW Contact,
+    // Workshop Location, Workshop Time (workshop columns are optional).
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `'${tabName}'!A1:E1`,
+      range: `'${tabName}'!A1:G1`,
       valueInputOption: "RAW",
       requestBody: {
         majorDimension: "ROWS",
@@ -416,10 +423,49 @@ async function ensureSponsorInfoTab(
             "Judging Room Number",
             "Booth Location",
             "HW Contact",
+            "Workshop Location",
+            "Workshop Time",
           ],
         ],
       },
     });
+  } else {
+    // Existing tab: make sure the workshop headers exist (cols F & G).
+    try {
+      const headerRes = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `'${tabName}'!A1:G1`,
+      });
+      const headerRow = (headerRes.data.values?.[0] ?? []) as string[];
+      const lower = headerRow.map((c) =>
+        String(c ?? "")
+          .trim()
+          .toLowerCase(),
+      );
+      const hasWorkshopLocation = lower.some(
+        (c) => c.includes("workshop") && c.includes("location"),
+      );
+      const hasWorkshopTime = lower.some(
+        (c) => c.includes("workshop") && c.includes("time"),
+      );
+      if (!hasWorkshopLocation || !hasWorkshopTime) {
+        const values = [...headerRow];
+        while (values.length < 5) values.push("");
+        if (!hasWorkshopLocation) values[5] = "Workshop Location";
+        if (!hasWorkshopTime) values[6] = "Workshop Time";
+        await sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: `'${tabName}'!A1:G1`,
+          valueInputOption: "RAW",
+          requestBody: {
+            majorDimension: "ROWS",
+            values: [values],
+          },
+        });
+      }
+    } catch (e) {
+      console.warn("Could not ensure workshop header columns:", e);
+    }
   }
 
   // Ensure dropdown data validation:
@@ -491,6 +537,57 @@ export interface SponsorInfoRecord {
   roomNumber: string;
   boothLocation: string;
   hwContact: string;
+  /** Empty string when the sponsor has no workshop listed. */
+  workshopLocation: string;
+  /** Empty string when the sponsor has no workshop listed. */
+  workshopTime: string;
+}
+
+/**
+ * Map sponsor-info header labels to column indexes. Defaults match the
+ * canonical A–G layout when a header is missing.
+ */
+export function parseSponsorInfoColumns(headerRow: readonly unknown[]): {
+  nameCol: number;
+  statusCol: number;
+  roomCol: number;
+  boothCol: number;
+  hwContactCol: number;
+  workshopLocationCol: number;
+  workshopTimeCol: number;
+} {
+  let nameCol = 0;
+  let statusCol = 1;
+  let roomCol = 2;
+  let boothCol = 3;
+  let hwContactCol = 4;
+  let workshopLocationCol = 5;
+  let workshopTimeCol = 6;
+
+  headerRow.forEach((raw, idx) => {
+    const str = String(raw ?? "")
+      .trim()
+      .toLowerCase();
+    if (!str) return;
+    if (str.includes("sponsor") || str.includes("company")) nameCol = idx;
+    else if (str.includes("status")) statusCol = idx;
+    else if (str.includes("room")) roomCol = idx;
+    else if (str.includes("booth")) boothCol = idx;
+    else if (str.includes("workshop") && str.includes("time"))
+      workshopTimeCol = idx;
+    else if (str.includes("workshop")) workshopLocationCol = idx;
+    else if (str.includes("contact") || str.includes("hw")) hwContactCol = idx;
+  });
+
+  return {
+    nameCol,
+    statusCol,
+    roomCol,
+    boothCol,
+    hwContactCol,
+    workshopLocationCol,
+    workshopTimeCol,
+  };
 }
 
 async function fetchAllSponsorInfo(
@@ -504,17 +601,13 @@ async function fetchAllSponsorInfo(
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `'${tabName}'!A1:E`,
+      range: `'${tabName}'!A1:G`,
     });
 
     const rows = res.data.values ?? [];
     if (rows.length === 0) return map;
 
-    let nameCol = 0;
-    let statusCol = 1;
-    let roomCol = 2;
-    let boothCol = 3;
-    let hwContactCol = 4;
+    let cols = parseSponsorInfoColumns([]);
 
     let dataStartIndex = 0;
     for (let i = 0; i < Math.min(rows.length, 3); i++) {
@@ -530,22 +623,14 @@ async function fetchAllSponsorInfo(
       });
       if (hasHeader) {
         dataStartIndex = i + 1;
-        row.forEach((c, idx) => {
-          const str = String(c).trim().toLowerCase();
-          if (str.includes("sponsor") || str.includes("company")) nameCol = idx;
-          else if (str.includes("status")) statusCol = idx;
-          else if (str.includes("room")) roomCol = idx;
-          else if (str.includes("booth")) boothCol = idx;
-          else if (str.includes("contact") || str.includes("hw"))
-            hwContactCol = idx;
-        });
+        cols = parseSponsorInfoColumns(row);
         break;
       }
     }
 
     for (let i = dataStartIndex; i < rows.length; i++) {
       const row = rows[i];
-      const name = cell(row, nameCol);
+      const name = cell(row, cols.nameCol);
       if (!name) continue;
 
       const lower = name.toLowerCase();
@@ -559,10 +644,14 @@ async function fetchAllSponsorInfo(
 
       if (!map.has(lower)) {
         map.set(lower, {
-          status: normalizeSponsorStatus(cell(row, statusCol)),
-          roomNumber: normalizeRoomNumber(cell(row, roomCol)),
-          boothLocation: normalizeBoothLocation(cell(row, boothCol)),
-          hwContact: normalizeHwContact(cell(row, hwContactCol)),
+          status: normalizeSponsorStatus(cell(row, cols.statusCol)),
+          roomNumber: normalizeRoomNumber(cell(row, cols.roomCol)),
+          boothLocation: normalizeBoothLocation(cell(row, cols.boothCol)),
+          hwContact: normalizeHwContact(cell(row, cols.hwContactCol)),
+          workshopLocation: normalizeOptionalText(
+            cell(row, cols.workshopLocationCol),
+          ),
+          workshopTime: normalizeOptionalText(cell(row, cols.workshopTimeCol)),
         });
       }
     }
@@ -718,6 +807,9 @@ export const sponsorJudgingRouter = createTRPCRouter({
           companyContact: masterRow?.companyContact ?? "—",
           roomNumber: info?.roomNumber ?? "TBD",
           boothLocation: info?.boothLocation ?? "TBD",
+          // Empty string when blank so the portal can omit the workshop card.
+          workshopLocation: info?.workshopLocation ?? null,
+          workshopTime: info?.workshopTime ?? null,
           picksCount: picks.length,
         };
       } catch (error) {

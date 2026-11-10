@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { ArrowRight, MapPin, Phone, Presentation } from "lucide-react";
+import { ArrowRight, Clock, MapPin, Phone, Presentation } from "lucide-react";
 import SEO from "~/components/seo";
 import { api } from "~/utils/api";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -66,6 +66,10 @@ export default function SponsorHubPage() {
     data?.hwContact && data.hwContact !== "—" ? data.hwContact : null;
   const hwContactPhone = data?.hwContactPhone ?? null;
   const picksCount = data?.picksCount ?? 0;
+  const workshopLocation = data?.workshopLocation ?? null;
+  const workshopTime = data?.workshopTime ?? null;
+  // Not every sponsor runs a workshop — omit the card entirely when blank.
+  const hasWorkshop = Boolean(workshopLocation) || Boolean(workshopTime);
 
   return (
     <Shell>
@@ -172,6 +176,42 @@ export default function SponsorHubPage() {
               </span>
             </DashboardPanel>
           </div>
+
+          {/* Workshop — only when the sheet has data for this sponsor */}
+          {hasWorkshop && (
+            <DashboardPanel className="gap-2 p-4 sm:p-5">
+              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
+                <Clock
+                  aria-hidden="true"
+                  className="size-4"
+                  strokeWidth={1.67}
+                />
+                Workshop
+              </span>
+              <div className="flex flex-col gap-1.5">
+                {workshopLocation && (
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-dashboard-text-light">
+                      Location
+                    </span>
+                    <span className="text-xl font-semibold text-dashboard-text-heavy">
+                      {workshopLocation}
+                    </span>
+                  </div>
+                )}
+                {workshopTime && (
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-dashboard-text-light">
+                      Time
+                    </span>
+                    <span className="text-xl font-semibold text-dashboard-text-heavy">
+                      {workshopTime}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </DashboardPanel>
+          )}
 
           {/* HW contact */}
           <DashboardPanel className="flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
