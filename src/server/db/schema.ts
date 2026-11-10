@@ -328,7 +328,17 @@ export const emailSubscribers = pgTable("email_subscriber", {
     .notNull(),
 });
 
-export const userType = pgEnum("user_type", ["hacker", "organizer", "sponsor"]);
+/**
+ * `judge` is for public/guest judges: limited accounts that only judge, as
+ * opposed to organizers. Being in the `judge` table is separate from this;
+ * organizer accounts can be judges too.
+ */
+export const userType = pgEnum("user_type", [
+  "hacker",
+  "organizer",
+  "sponsor",
+  "judge",
+]);
 
 export const users = pgTable(
   "user",
@@ -834,6 +844,18 @@ export const judgingQueue = pgTable(
   ],
 );
 
+/**
+ * The rubric behind a mark: each category rated 1-5 (matching the judge
+ * screen's rubric), plus free-text notes.
+ */
+export type ScoreBreakdown = {
+  idea: number;
+  technical: number;
+  design: number;
+  pitch: number;
+  notes?: string | null;
+};
+
 export const teamMarks = pgTable(
   "team_mark",
   {
@@ -845,6 +867,9 @@ export const teamMarks = pgTable(
       .notNull()
       .references(() => judges.id),
     score: real("score").notNull(),
+    // Per-category rubric ratings behind `score`, plus the judge's notes.
+    // Null when the judge used the single slider instead of the rubric.
+    scoreBreakdown: jsonb("score_breakdown").$type<ScoreBreakdown>(),
     roundType: roundTypeEnum("round_type").default("regular").notNull(),
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
@@ -891,6 +916,36 @@ export const judgingSkipsRelations = relations(judgingSkips, ({ one }) => ({
   judge: one(judges, {
     fields: [judgingSkips.judgeId],
     references: [judges.id],
+  }),
+}));
+
+/**
+ * Which teams are in which track: one row per (team, track). Lets a track
+ * list its teams without scanning `team.tracks`. Backfilled from
+ * `team.tracks` by migration 0034; the array stays until its readers move
+ * over to this table.
+ */
+export const teamTracks = pgTable(
+  "team_track",
+  {
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    track: trackEnum("track").notNull(),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.teamId, t.track] }),
+    index("team_track_track_idx").on(t.track),
+  ],
+);
+
+export const teamTracksRelations = relations(teamTracks, ({ one }) => ({
+  team: one(teams, {
+    fields: [teamTracks.teamId],
+    references: [teams.id],
   }),
 }));
 
@@ -980,6 +1035,7 @@ export const teamsRelations = relations(teams, ({ many, one }) => ({
     references: [judgingTables.id],
   }),
   judgingAssignments: many(judgingAssignments),
+  trackEntries: many(teamTracks),
 }));
 
 // ---------------------------------------------------------------------------
