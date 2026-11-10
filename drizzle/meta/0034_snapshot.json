@@ -1,5 +1,5 @@
 {
-  "id": "4c6cf1ea-903d-471c-a552-8634c6cdc9e6",
+  "id": "b965f1de-9c6e-4c02-ad9c-4ab542bfddd2",
   "prevId": "780bb394-ea52-4dcb-a85b-756f5628a679",
   "version": "7",
   "dialect": "postgresql",
@@ -2535,6 +2535,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "score_breakdown": {
+          "name": "score_breakdown",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
         "round_type": {
           "name": "round_type",
           "type": "round_type",
@@ -2612,6 +2618,77 @@
         }
       },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.team_track": {
+      "name": "team_track",
+      "schema": "",
+      "columns": {
+        "team_id": {
+          "name": "team_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "track": {
+          "name": "track",
+          "type": "track",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "team_track_track_idx": {
+          "name": "team_track_track_idx",
+          "columns": [
+            {
+              "expression": "track",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "team_track_team_id_team_id_fk": {
+          "name": "team_track_team_id_team_id_fk",
+          "tableFrom": "team_track",
+          "tableTo": "team",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "team_track_team_id_track_pk": {
+          "name": "team_track_team_id_track_pk",
+          "columns": [
+            "team_id",
+            "track"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -3207,7 +3284,8 @@
       "values": [
         "hacker",
         "organizer",
-        "sponsor"
+        "sponsor",
+        "judge"
       ]
     },
     "public.year_of_study": {
