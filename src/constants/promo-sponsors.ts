@@ -21,7 +21,7 @@ export const PROMO_SPONSORS_IMAGE = {
   width: 1067,
   height: 795,
   // Image pixels of room below the image for the overlay-only rows.
-  extraHeight: 214,
+  extraHeight: 320,
 };
 
 export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
@@ -120,8 +120,8 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Autodesk",
     href: "https://www.autodesk.com/",
-    // A centered row of five, wordmarks on one baseline.
-    left: 4.2,
+    // Two centered rows of three, wordmarks on one baseline per row.
+    left: 24.15,
     top: 114.27,
     width: 10.84,
     height: 8.2,
@@ -130,7 +130,7 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Accenture",
     href: "https://www.accenture.com/",
-    left: 25.35,
+    left: 45.3,
     top: 117.68,
     width: 13.45,
     height: 4.72,
@@ -139,7 +139,7 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "uBit",
     href: "https://www.ubit.foundation/",
-    left: 49.11,
+    left: 69.06,
     top: 114.2,
     width: 6.99,
     height: 8.2,
@@ -148,8 +148,8 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "OpenAI",
     href: "https://openai.com/",
-    left: 66.41,
-    top: 119.65,
+    left: 26.94,
+    top: 131.65,
     width: 9.77,
     height: 3.53,
     overlaySrc: "/shared/sponsors/openai.svg",
@@ -157,10 +157,19 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "PCBWay",
     href: "https://www.pcbway.com/",
-    left: 86.49,
-    top: 120.12,
+    left: 47.02,
+    top: 132.12,
     width: 9.51,
     height: 3.53,
     overlaySrc: "/shared/sponsors/pcbway.png",
+  },
+  {
+    name: "Summerfresh",
+    href: "https://www.summerfresh.com/",
+    left: 66.84,
+    top: 128.5,
+    width: 6.41,
+    height: 8.6,
+    overlaySrc: "/shared/sponsors/summerfresh-seal.png",
   },
 ];
