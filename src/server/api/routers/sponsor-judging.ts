@@ -4,6 +4,27 @@ import { eq, count } from "drizzle-orm";
 import { z } from "zod";
 
 import { env } from "~/env";
+import {
+  COFFEE_CHAT_ROOMS,
+  COFFEE_CHAT_SLOTS,
+  COFFEE_CHAT_TAB,
+  coffeeChatBlocksFor,
+  coffeeChatColorFor,
+  coffeeChatSlotKeyOf,
+  diffCoffeeChatGrid,
+  findCoffeeChatConflicts,
+  formatCoffeeChatTime,
+  hexColorToRgb01,
+  isBookedBy,
+  isCoffeeChatSlot,
+  isPureCancellation,
+  mergeCoffeeChatBookings,
+  normalizeCoffeeChatMinutes,
+  parseCoffeeChatGrid,
+  sortCoffeeChatSlots,
+  type CoffeeChatBooking,
+  type CoffeeChatCellChange,
+} from "~/lib/coffee-chats";
 import { db } from "~/server/db";
 import { sponsorJudgingSponsors, teams, users } from "~/server/db/schema";
 import {
@@ -58,7 +79,9 @@ export function normalizeHwContact(val: string | undefined): string {
 
 /** Optional free-text cell (e.g. workshop fields). Empty stays empty — no TBD. */
 export function normalizeOptionalText(val: string | undefined): string {
-  return String(val ?? "").trim();
+  return String(val ?? "")
+    .replace(/\p{Cf}/gu, "")
+    .trim();
 }
 
 // HW team contacts, copied once into the judging spreadsheet. This tab is
@@ -354,24 +377,6 @@ function parseTeamIds(cell: string | undefined): string[] {
     .filter((id) => id.length > 0);
 }
 
-async function findSponsorInfoTabTitle(
-  sheets: SheetsClient,
-  spreadsheetId: string,
-): Promise<string | null> {
-  try {
-    const meta = await sheets.spreadsheets.get({
-      spreadsheetId,
-      fields: "sheets.properties(sheetId,title)",
-    });
-    const found = meta.data.sheets?.find(
-      (s) => s.properties?.title?.trim().toLowerCase() === "sponsor info",
-    );
-    return found?.properties?.title ?? null;
-  } catch {
-    return null;
-  }
-}
-
 async function ensureSponsorInfoTab(
   sheets: SheetsClient,
   spreadsheetId: string,
@@ -407,12 +412,14 @@ async function ensureSponsorInfoTab(
     tabName = newProps?.title ?? SPONSOR_INFO_TAB;
     sheetId = newProps?.sheetId ?? null;
 
-    // Header row with 7 columns:
+    // Header row with 8 columns:
     // Sponsor Name, Status, Judging Room Number, Booth Location, HW Contact,
-    // Workshop Location, Workshop Time (workshop columns are optional).
+    // Workshop Location, Workshop Time (workshop columns are optional), and
+    // Coffee Chat Max Minutes (sponsor's total coffee-chat allowance; empty
+    // or zero disables coffee-chat booking for that sponsor).
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `'${tabName}'!A1:G1`,
+      range: `'${tabName}'!A1:H1`,
       valueInputOption: "RAW",
       requestBody: {
         majorDimension: "ROWS",
@@ -425,20 +432,23 @@ async function ensureSponsorInfoTab(
             "HW Contact",
             "Workshop Location",
             "Workshop Time",
+            "Coffee Chat Max Minutes",
           ],
         ],
       },
     });
   } else {
-    // Existing tab: make sure the workshop headers exist (cols F & G).
+    // Existing tab: make sure the workshop headers (cols F & G) and the
+    // coffee-chat allowance header (col H) exist.
     try {
       const headerRes = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `'${tabName}'!A1:G1`,
+        range: `'${tabName}'!A1:H1`,
       });
       const headerRow = (headerRes.data.values?.[0] ?? []) as string[];
       const lower = headerRow.map((c) =>
         String(c ?? "")
+          .replace(/\p{Cf}/gu, "")
           .trim()
           .toLowerCase(),
       );
@@ -448,14 +458,18 @@ async function ensureSponsorInfoTab(
       const hasWorkshopTime = lower.some(
         (c) => c.includes("workshop") && c.includes("time"),
       );
-      if (!hasWorkshopLocation || !hasWorkshopTime) {
+      const hasCoffeeMinutes = lower.some(
+        (c) => c.includes("coffee") || (c.includes("max") && c.includes("minute")),
+      );
+      if (!hasWorkshopLocation || !hasWorkshopTime || !hasCoffeeMinutes) {
         const values = [...headerRow];
-        while (values.length < 5) values.push("");
+        while (values.length < 7) values.push("");
         if (!hasWorkshopLocation) values[5] = "Workshop Location";
         if (!hasWorkshopTime) values[6] = "Workshop Time";
+        if (!hasCoffeeMinutes) values[7] = "Coffee Chat Max Minutes";
         await sheets.spreadsheets.values.update({
           spreadsheetId,
-          range: `'${tabName}'!A1:G1`,
+          range: `'${tabName}'!A1:H1`,
           valueInputOption: "RAW",
           requestBody: {
             majorDimension: "ROWS",
@@ -464,7 +478,7 @@ async function ensureSponsorInfoTab(
         });
       }
     } catch (e) {
-      console.warn("Could not ensure workshop header columns:", e);
+      console.warn("Could not ensure sponsor info header columns:", e);
     }
   }
 
@@ -541,11 +555,13 @@ export interface SponsorInfoRecord {
   workshopLocation: string;
   /** Empty string when the sponsor has no workshop listed. */
   workshopTime: string;
+  /** Coffee-chat allowance in minutes; 0 = no coffee chats. */
+  maxCoffeeChatMinutes: number;
 }
 
 /**
  * Map sponsor-info header labels to column indexes. Defaults match the
- * canonical A–G layout when a header is missing.
+ * canonical A–H layout when a header is missing.
  */
 export function parseSponsorInfoColumns(headerRow: readonly unknown[]): {
   nameCol: number;
@@ -555,6 +571,7 @@ export function parseSponsorInfoColumns(headerRow: readonly unknown[]): {
   hwContactCol: number;
   workshopLocationCol: number;
   workshopTimeCol: number;
+  maxMinutesCol: number;
 } {
   let nameCol = 0;
   let statusCol = 1;
@@ -563,9 +580,11 @@ export function parseSponsorInfoColumns(headerRow: readonly unknown[]): {
   let hwContactCol = 4;
   let workshopLocationCol = 5;
   let workshopTimeCol = 6;
+  let maxMinutesCol = 7;
 
   headerRow.forEach((raw, idx) => {
     const str = String(raw ?? "")
+      .replace(/\p{Cf}/gu, "")
       .trim()
       .toLowerCase();
     if (!str) return;
@@ -576,6 +595,8 @@ export function parseSponsorInfoColumns(headerRow: readonly unknown[]): {
     else if (str.includes("workshop") && str.includes("time"))
       workshopTimeCol = idx;
     else if (str.includes("workshop")) workshopLocationCol = idx;
+    else if (str.includes("coffee") || str.includes("minutes"))
+      maxMinutesCol = idx;
     else if (str.includes("contact") || str.includes("hw")) hwContactCol = idx;
   });
 
@@ -587,6 +608,7 @@ export function parseSponsorInfoColumns(headerRow: readonly unknown[]): {
     hwContactCol,
     workshopLocationCol,
     workshopTimeCol,
+    maxMinutesCol,
   };
 }
 
@@ -601,7 +623,7 @@ async function fetchAllSponsorInfo(
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `'${tabName}'!A1:G`,
+      range: `'${tabName}'!A1:L`,
     });
 
     const rows = res.data.values ?? [];
@@ -652,6 +674,9 @@ async function fetchAllSponsorInfo(
             cell(row, cols.workshopLocationCol),
           ),
           workshopTime: normalizeOptionalText(cell(row, cols.workshopTimeCol)),
+          maxCoffeeChatMinutes: normalizeCoffeeChatMinutes(
+            cell(row, cols.maxMinutesCol),
+          ),
         });
       }
     }
@@ -739,6 +764,330 @@ async function fetchHwContactNames(
 }
 
 /**
+ * Coffee chats tab ("Coffee Chats"): the visual booking grid with rooms
+ * across the top and time running down. Column A holds every 15-minute
+ * slot start from 10:00 to 15:45, the header row holds the three room
+ * labels in B-D, and one cell per room × slot holds that booking's sponsor
+ * name shaded with their palette color, so organizers can see booking
+ * progress at a glance. Sponsors only write through this router, keyed off
+ * their private UUID — the sheet stores just their name.
+ */
+const COFFEE_CHAT_HEADER_BG: sheets_v4.Schema$Color = {
+  red: 0.949,
+  green: 0.957,
+  blue: 0.965,
+};
+
+const COFFEE_CHAT_HEADER_TEXT: sheets_v4.Schema$Color = {
+  red: 0.216,
+  green: 0.253,
+  blue: 0.318,
+};
+
+const COFFEE_CHAT_WHITE: sheets_v4.Schema$Color = { red: 1, green: 1, blue: 1 };
+
+/**
+ * Shared tab lookup: case-insensitive title match against the spreadsheet.
+ * Returns the actual title (tab names can differ in case) or null.
+ */
+async function findTabTitle(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+  titleLower: string,
+): Promise<string | null> {
+  try {
+    const meta = await sheets.spreadsheets.get({
+      spreadsheetId,
+      fields: "sheets.properties(sheetId,title)",
+    });
+    const found = meta.data.sheets?.find(
+      (s) => s.properties?.title?.trim().toLowerCase() === titleLower,
+    );
+    return found?.properties?.title ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function findSponsorInfoTabTitle(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+): Promise<string | null> {
+  return findTabTitle(sheets, spreadsheetId, "sponsor info");
+}
+
+function findCoffeeChatTabTitle(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+): Promise<string | null> {
+  return findTabTitle(sheets, spreadsheetId, COFFEE_CHAT_TAB.toLowerCase());
+}
+
+/**
+ * Cell data for one slot in the grid: cleared, or a shaded booking cell
+ * showing the sponsor name.
+ */
+function coffeeChatGridCell(
+  sponsor: string | undefined,
+): sheets_v4.Schema$CellData {
+  if (!sponsor) {
+    // Values must still be written so updateCells clears stale names.
+    return { userEnteredValue: { stringValue: "" } };
+  }
+  return {
+    userEnteredValue: { stringValue: sponsor },
+    userEnteredFormat: {
+      backgroundColor: hexColorToRgb01(coffeeChatColorFor(sponsor)),
+      textFormat: { bold: true, foregroundColor: COFFEE_CHAT_WHITE },
+    },
+  };
+}
+
+/**
+ * Header styling shared by the corner cell, room labels across the top,
+ * and the time labels down column A.
+ */
+function headerCell(label: string): sheets_v4.Schema$CellData {
+  return {
+    userEnteredValue: { stringValue: label },
+    userEnteredFormat: {
+      backgroundColor: COFFEE_CHAT_HEADER_BG,
+      textFormat: { bold: true, foregroundColor: COFFEE_CHAT_HEADER_TEXT },
+    },
+  };
+}
+
+/** Slot start label in column A (styled like the header row). */
+function timeLabelCell(time: string): sheets_v4.Schema$CellData {
+  return headerCell(time);
+}
+
+/** Build the 25-row × 4-column grid (header + one row per time slot). */
+function buildCoffeeChatGridRows(
+  bookings: readonly CoffeeChatBooking[],
+): sheets_v4.Schema$RowData[] {
+  const bySlot = new Map<string, string>();
+  for (const booking of bookings) {
+    bySlot.set(coffeeChatSlotKeyOf(booking), booking.sponsor);
+  }
+
+  // Header row: corner label + the three room labels across the top.
+  const headerRow: sheets_v4.Schema$RowData = {
+    values: [
+      headerCell("Time"),
+      ...COFFEE_CHAT_ROOMS.map((room) => headerCell(room.label)),
+    ],
+  };
+
+  // One row per slot start time (spelled "3:00 PM" for readability),
+  // rooms across.
+  const timeRows: sheets_v4.Schema$RowData[] = COFFEE_CHAT_SLOTS.map(
+    (time) => ({
+      values: [
+        timeLabelCell(formatCoffeeChatTime(time)),
+        ...COFFEE_CHAT_ROOMS.map((room) =>
+          coffeeChatGridCell(
+            bySlot.get(coffeeChatSlotKeyOf({ room: room.id, time })),
+          ),
+        ),
+      ],
+    }),
+  );
+
+  return [headerRow, ...timeRows];
+}
+
+/**
+ * Read the Coffee Chats grid; missing tab or malformed content parses to
+ * "everything free" rather than breaking the sponsor portal.
+ */
+async function fetchCoffeeChatGrid(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+): Promise<CoffeeChatBooking[]> {
+  try {
+    const tabName = await findCoffeeChatTabTitle(sheets, spreadsheetId);
+    if (!tabName) return [];
+
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      // Room columns B-D across the top; times stack down column A.
+      range: `'${tabName}'!A1:D`,
+    });
+    const rows = (res.data.values ?? []).map((row) =>
+      (row ?? []).map((value) => (value == null ? undefined : String(value))),
+    );
+    return parseCoffeeChatGrid(rows);
+  } catch (error) {
+    console.warn("Could not read coffee chats tab:", error);
+    return [];
+  }
+}
+
+/**
+ * Replace the entire grid (used when the tab is brand new): header with
+ * every slot label, three labelled room rows, and the current bookings.
+ */
+async function writeCoffeeChatGridFull(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+  sheetId: number,
+  bookings: readonly CoffeeChatBooking[],
+): Promise<void> {
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          updateCells: {
+            start: { sheetId, rowIndex: 0, columnIndex: 0 },
+            fields: "*",
+            rows: buildCoffeeChatGridRows(bookings),
+          },
+        },
+      ],
+    },
+  });
+}
+
+/**
+ * Write only the cells that differ. Keeps concurrent sponsors' saves from
+ * clobbering each other and preserves organizer-drawn cells that aren't
+ * bookable slots.
+ */
+async function writeCoffeeChatGridDiff(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+  sheetId: number,
+  changes: readonly CoffeeChatCellChange[],
+): Promise<void> {
+  if (changes.length === 0) return;
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: changes.map(({ roomIndex, slotIndex, sponsor }) => ({
+        updateCells: {
+          start: {
+            sheetId,
+            // Header row is 0; slot times run down from row 1.
+            rowIndex: 1 + slotIndex,
+            // Time label column is 0; rooms run across from column 1.
+            columnIndex: 1 + roomIndex,
+          },
+          fields: "userEnteredValue,userEnteredFormat",
+          rows: [{ values: [coffeeChatGridCell(sponsor || undefined)] }],
+        },
+      })),
+    },
+  });
+}
+
+/**
+ * Make sure the Coffee Chats tab exists with the canonical grid shape
+ * (frozen header/label, sized columns). Returns whether the tab is new or
+ * unused, which tells the caller to seed the full grid layout.
+ */
+async function ensureCoffeeChatTab(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+): Promise<{ sheetId: number; created: boolean }> {
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId,
+    fields: "sheets.properties(sheetId,title)",
+  });
+  const found = meta.data.sheets?.find(
+    (s) => s.properties?.title?.trim().toLowerCase() === COFFEE_CHAT_TAB.toLowerCase(),
+  );
+
+  let sheetId = found?.properties?.sheetId ?? null;
+  let created = false;
+
+  if (sheetId === null) {
+    const addRes = await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [{ addSheet: { properties: { title: COFFEE_CHAT_TAB } } }],
+      },
+    });
+    sheetId = addRes.data.replies?.[0]?.addSheet?.properties?.sheetId ?? null;
+    created = true;
+  } else {
+    // A tab that exists but was never seeded (created by hand?) still needs
+    // its header row. Empty means column B (first room label) is missing.
+    try {
+      const head = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `'${found!.properties!.title}'!A1:B1`,
+      });
+      created = !head.data.values?.[0]?.[1];
+    } catch {
+      created = true;
+    }
+  }
+
+  if (sheetId === null) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: `Could not find or create the "${COFFEE_CHAT_TAB}" tab`,
+    });
+  }
+
+  // Freeze the header row + time label column and size the grid columns
+  // (narrow time column, wider room columns so names fit). Only worth
+  // running right after creation/seeding.
+  if (created) {
+    try {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+          requests: [
+            {
+              updateSheetProperties: {
+                properties: {
+                  sheetId,
+                  gridProperties: { frozenRowCount: 1, frozenColumnCount: 1 },
+                },
+                fields:
+                  "gridProperties.frozenRowCount,gridProperties.frozenColumnCount",
+              },
+            },
+            {
+              updateDimensionProperties: {
+                properties: { pixelSize: 70 },
+                fields: "pixelSize",
+                range: {
+                  sheetId,
+                  dimension: "COLUMNS",
+                  startIndex: 0,
+                  endIndex: 1,
+                },
+              },
+            },
+            {
+              updateDimensionProperties: {
+                properties: { pixelSize: 160 },
+                fields: "pixelSize",
+                range: {
+                  sheetId,
+                  dimension: "COLUMNS",
+                  startIndex: 1,
+                  endIndex: 1 + COFFEE_CHAT_ROOMS.length,
+                },
+              },
+            },
+          ],
+        },
+      });
+    } catch (e) {
+      console.warn("Could not format coffee chats tab:", e);
+    }
+  }
+
+  return { sheetId, created };
+}
+
+/**
  * Resolve a sponsor UUID or name to its registered name. UUIDs must exist in
  * the sponsor_judging_sponsor table; names are used as-is (organizers may
  * look up picks before a mapping row exists).
@@ -767,6 +1116,9 @@ export const sponsorJudgingRouter = createTRPCRouter({
    * from the master sheet and their room number and booth location
    * from the "sponsor info" tab. The HW contact name is matched against
    * the HW contacts sheet to attach a phone number when one is listed.
+   * Also returns their coffee-chat allowance ("Coffee Chat Max Minutes"
+   * on the sponsor info tab; 0 = disabled) plus how many slots they have
+   * already booked on the Coffee Chats grid.
    * Does NOT expose amount or status.
    */
   getSponsorPortalInfo: publicProcedure
@@ -780,10 +1132,16 @@ export const sponsorJudgingRouter = createTRPCRouter({
           Promise.resolve(getSpreadsheetId()),
         ]);
 
-        const [sponsorInfoMap, picksMap, contactPhones] = await Promise.all([
+        const [
+          sponsorInfoMap,
+          picksMap,
+          contactPhones,
+          coffeeChatGrid,
+        ] = await Promise.all([
           fetchAllSponsorInfo(sheets, spreadsheetId),
           fetchAllChosenTeams(sheets, spreadsheetId),
           fetchHwContactPhones(),
+          fetchCoffeeChatGrid(sheets, spreadsheetId),
         ]);
 
         const masterRow = master.find(
@@ -800,6 +1158,11 @@ export const sponsorJudgingRouter = createTRPCRouter({
             : (masterRow?.hwContact ?? "—") || "—";
         const hwContactPhones = lookupHwContactPhones(hwContact, contactPhones);
 
+        const maxCoffeeChatMinutes = info?.maxCoffeeChatMinutes ?? 0;
+        const coffeeChatBookedCount = coffeeChatGrid.filter(
+          (booking) => isBookedBy(booking, sponsorName),
+        ).length;
+
         return {
           sponsorName,
           hwContact,
@@ -811,6 +1174,11 @@ export const sponsorJudgingRouter = createTRPCRouter({
           workshopLocation: info?.workshopLocation ?? null,
           workshopTime: info?.workshopTime ?? null,
           picksCount: picks.length,
+          // Coffee chats: 0 minutes means the sponsor never sees the booking
+          // link at all.
+          maxCoffeeChatMinutes,
+          maxCoffeeChatBlocks: coffeeChatBlocksFor(maxCoffeeChatMinutes),
+          coffeeChatBookedCount,
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -962,6 +1330,168 @@ export const sponsorJudgingRouter = createTRPCRouter({
             error instanceof Error
               ? error.message
               : "Failed to update sponsor's chosen teams",
+        });
+      }
+    }),
+
+  /**
+   * Coffee-chat booking board for the sponsor portal. Public (queries are
+   * keyed by the sponsor's private UUID, like the picks endpoints).
+   * Returns the sponsor's allowance (from "Coffee Chat Max Minutes" on the
+   * sponsor info tab), the slots they have already booked, and every slot
+   * that is held by someone else so the grid can shade them.
+   */
+  getCoffeeChatSchedule: publicProcedure
+    .input(z.object({ sponsor: z.string().min(1) }))
+    .query(async ({ input }) => {
+      try {
+        const sponsorName = await resolveSponsorName(input.sponsor);
+        const sheets = await getSheetsClient();
+        const spreadsheetId = getSpreadsheetId();
+
+        const [sponsorInfoMap, grid] = await Promise.all([
+          fetchAllSponsorInfo(sheets, spreadsheetId),
+          fetchCoffeeChatGrid(sheets, spreadsheetId),
+        ]);
+
+        const maxCoffeeChatMinutes =
+          sponsorInfoMap.get(sponsorName.toLowerCase())?.maxCoffeeChatMinutes ??
+          0;
+
+        return {
+          sponsorName,
+          maxCoffeeChatMinutes,
+          maxBlocks: coffeeChatBlocksFor(maxCoffeeChatMinutes),
+          myBooked: sortCoffeeChatSlots(
+            grid.filter((booking) => isBookedBy(booking, sponsorName)),
+          ).map(({ room, time }) => ({ room, time })),
+          othersBooked: sortCoffeeChatSlots(
+            grid.filter((booking) => !isBookedBy(booking, sponsorName)),
+          ),
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to load the coffee chat schedule",
+        });
+      }
+    }),
+
+  /**
+   * Save the sponsor's coffee-chat booking (their full desired final state,
+   * so re-saving with fewer slots cancels the rest). Public, keyed by the
+   * private UUID. Validates every slot is real, free of other sponsors'
+   * bookings, and within the sponsor's allowance — except a pure
+   * cancellation, which stays allowed if their allowance was reduced after
+   * they booked. Rewrites the visual grid with shading.
+   */
+  setCoffeeChatBooking: publicProcedure
+    .input(
+      z.object({
+        sponsorId: z.string().uuid(),
+        slots: z
+          .array(
+            z.object({
+              room: z.number().int().min(1).max(COFFEE_CHAT_ROOMS.length),
+              time: z.string().regex(/^\d{1,2}:\d{2}$/),
+            }),
+          )
+          .max(200),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const sponsorName = await resolveSponsorName(input.sponsorId);
+
+        // Deduplicate while rejecting anything that isn't a real slot.
+        const requested = sortCoffeeChatSlots(
+          (() => {
+            const unique = new Map<string, { room: number; time: string }>();
+            for (const slot of input.slots) {
+              if (!isCoffeeChatSlot(slot)) {
+                throw new TRPCError({
+                  code: "BAD_REQUEST",
+                  message: `Not a bookable slot: Room ${slot.room} at ${slot.time}`,
+                });
+              }
+              unique.set(coffeeChatSlotKeyOf(slot), slot);
+            }
+            return [...unique.values()];
+          })(),
+        );
+
+        const sheets = await getSheetsClient();
+        const spreadsheetId = getSpreadsheetId();
+
+        const [sponsorInfoMap, grid] = await Promise.all([
+          fetchAllSponsorInfo(sheets, spreadsheetId),
+          fetchCoffeeChatGrid(sheets, spreadsheetId),
+        ]);
+        const maxCoffeeChatMinutes =
+          sponsorInfoMap.get(sponsorName.toLowerCase())?.maxCoffeeChatMinutes ??
+          0;
+        const maxBlocks = coffeeChatBlocksFor(maxCoffeeChatMinutes);
+
+        const conflicts = findCoffeeChatConflicts(requested, grid, sponsorName);
+        if (conflicts.length > 0) {
+          const conflict = conflicts[0]!;
+          const roomLabel =
+            COFFEE_CHAT_ROOMS.find((room) => room.id === conflict.room)
+              ?.label ?? `Room ${conflict.room}`;
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: `${roomLabel} at ${conflict.time} was just booked. Pick a different slot.`,
+          });
+        }
+
+        if (
+          requested.length > maxBlocks &&
+          !isPureCancellation(requested, grid, sponsorName)
+        ) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              maxBlocks === 0
+                ? "Coffee chats aren't enabled for your sponsorship yet."
+                : `Your package includes ${maxCoffeeChatMinutes} minutes — that's ${maxBlocks} × 15-minute blocks. Remove some slots to save.`,
+          });
+        }
+
+        const merged = mergeCoffeeChatBookings(grid, sponsorName, requested);
+        const { sheetId, created } = await ensureCoffeeChatTab(
+          sheets,
+          spreadsheetId,
+        );
+        // New/never-seeded tab: lay out the full grid. Otherwise write only
+        // changed cells so concurrent saves and organizer edits survive.
+        if (created) {
+          await writeCoffeeChatGridFull(sheets, spreadsheetId, sheetId, merged);
+        } else {
+          await writeCoffeeChatGridDiff(
+            sheets,
+            spreadsheetId,
+            sheetId,
+            diffCoffeeChatGrid(grid, merged),
+          );
+        }
+
+        return {
+          sponsorName,
+          bookedCount: requested.length,
+          myBooked: requested.map(({ room, time }) => ({ room, time })),
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to save coffee chat booking",
         });
       }
     }),

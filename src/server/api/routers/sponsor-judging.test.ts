@@ -103,7 +103,7 @@ describe("normalizeOptionalText", () => {
 });
 
 describe("parseSponsorInfoColumns", () => {
-  test("canonical A–G header maps workshop columns", () => {
+  test("canonical A–H header maps workshop + coffee chat columns", () => {
     const cols = parseSponsorInfoColumns([
       "Sponsor Name",
       "Status",
@@ -112,6 +112,7 @@ describe("parseSponsorInfoColumns", () => {
       "HW Contact",
       "Workshop Location",
       "Workshop Time",
+      "Coffee Chat Max Minutes",
     ]);
     expect(cols).toEqual({
       nameCol: 0,
@@ -121,6 +122,7 @@ describe("parseSponsorInfoColumns", () => {
       hwContactCol: 4,
       workshopLocationCol: 5,
       workshopTimeCol: 6,
+      maxMinutesCol: 7,
     });
   });
 
@@ -133,6 +135,7 @@ describe("parseSponsorInfoColumns", () => {
       hwContactCol: 4,
       workshopLocationCol: 5,
       workshopTimeCol: 6,
+      maxMinutesCol: 7,
     });
   });
 
@@ -149,5 +152,15 @@ describe("parseSponsorInfoColumns", () => {
     expect(cols.hwContactCol).toBe(4);
     expect(cols.workshopTimeCol).toBe(5);
     expect(cols.workshopLocationCol).toBe(6);
+    expect(cols.maxMinutesCol).toBe(7);
+  });
+
+  test("maps a coffee chat allowance header wherever it sits", () => {
+    const cols = parseSponsorInfoColumns([
+      "Company Name",
+      "Coffee Chat Max Minutes",
+      "Status",
+    ]);
+    expect(cols.maxMinutesCol).toBe(1);
   });
 });

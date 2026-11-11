@@ -1,6 +1,13 @@
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { ArrowRight, Clock, MapPin, Phone, Presentation } from "lucide-react";
+import {
+  ArrowRight,
+  Clock,
+  Coffee,
+  MapPin,
+  Phone,
+  Presentation,
+} from "lucide-react";
 import SEO from "~/components/seo";
 import { api } from "~/utils/api";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -71,6 +78,12 @@ export default function SponsorHubPage() {
   // Not every sponsor runs a workshop — omit the card entirely when blank.
   const hasWorkshop = Boolean(workshopLocation) || Boolean(workshopTime);
 
+  // Coffee chats: the sheet's "Coffee Chat Max Minutes" is the allowance in
+  // minutes (empty/invalid = 0, so no link at all); blocks are 15 minutes.
+  const maxCoffeeChatBlocks = data?.maxCoffeeChatBlocks ?? 0;
+  const coffeeChatBookedCount = data?.coffeeChatBookedCount ?? 0;
+  const hasCoffeeChats = maxCoffeeChatBlocks > 0;
+
   return (
     <Shell>
       <div className="flex flex-col gap-5">
@@ -130,6 +143,52 @@ export default function SponsorHubPage() {
             </DashboardButton>
           </div>
         </DashboardPanel>
+
+        {/* Coffee chats CTA — hidden entirely when the sponsor has no allowance */}
+        {hasCoffeeChats && (
+          <DashboardPanel>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-1">
+                  <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
+                    <Coffee
+                      aria-hidden="true"
+                      className="size-4"
+                      strokeWidth={1.67}
+                    />
+                    Coffee chats
+                  </span>
+                  <h2 className="m-0 text-xl font-semibold text-dashboard-text-heavy">
+                    Book time with hackers
+                  </h2>
+                </div>
+
+                {coffeeChatBookedCount > 0 ? (
+                  <span className="inline-flex items-center whitespace-nowrap rounded-dashboard-sm bg-dashboard-bg-highlight px-2 py-1 font-figtree text-xs font-medium leading-5 text-dashboard-text-heavy">
+                    {coffeeChatBookedCount} booked
+                  </span>
+                ) : (
+                  <DashboardTag>Pending</DashboardTag>
+                )}
+              </div>
+
+              <p className="m-0 text-base font-medium leading-relaxed text-dashboard-text-medium">
+                Reserve up to {maxCoffeeChatBlocks} × 15-minute slots across
+                our three coffee chat rooms, Saturday 10:00 AM &ndash; 4:00
+                PM. You can change them any time.
+              </p>
+
+              <DashboardButton asChild className="mt-1 md:w-full">
+                <Link href={`/sponsors/${id}/coffee-chats`}>
+                  {coffeeChatBookedCount > 0
+                    ? "View & edit your bookings"
+                    : "Schedule coffee chats"}
+                  <ArrowRight />
+                </Link>
+              </DashboardButton>
+            </div>
+          </DashboardPanel>
+        )}
 
         {/* Event details */}
         <div className="flex flex-col gap-3">
