@@ -377,6 +377,14 @@ export const users = pgTable(
     // hacker's QR and typed into Devpost; user.id stays internal.
     hackerId: varchar("hacker_id", { length: 64 }).unique(),
 
+    // Live-site checklist steps the hacker has done that we can't derive from
+    // their application: "slack", "devpost", "wallet", "hide-checklist"
+    // (see src/lib/onboarding.ts).
+    onboardingSteps: text("onboarding_steps")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+
     scavengerHuntEarned: integer("scavenger_hunt_earned").default(0),
     scavengerHuntBalance: integer("scavenger_hunt_balance").default(0),
 

@@ -4,6 +4,7 @@ import { Lock } from "lucide-react";
 import { SidebarIcon } from "./icons";
 import { NotificationBadge } from "~/components/internals/notification-badge";
 import { cn } from "~/lib/utils";
+import { api } from "~/utils/api";
 import * as tokens from "~/lib/tokens";
 import {
   CONTACT_US_STEP,
@@ -24,7 +25,7 @@ export const SectionLink = ({
   tab,
   name,
   locked = false,
-  badge,
+  badge: badgeProp,
   href,
 }: {
   tab: string;
@@ -39,6 +40,19 @@ export const SectionLink = ({
     href !== undefined
       ? pathname?.startsWith(href) === true
       : pathname === "/live" && (searchParams.get("tab") ?? "home") === tab;
+
+  // Home shows how many checklist steps are left (nothing once it's done or
+  // hidden, or for people who don't have a checklist)
+  const { data: checklist } = api.onboarding.get.useQuery(undefined, {
+    enabled: tab === "home" && badgeProp === undefined && !locked,
+  });
+  // `enabled` only stops the fetch; every link shares this query's cached
+  // data, so only Home may read it
+  const badge =
+    badgeProp ??
+    (tab === "home" && checklist?.eligible && !checklist.hidden
+      ? checklist.stepsLeft
+      : undefined);
 
   if (locked) {
     return (

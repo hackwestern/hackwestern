@@ -14,6 +14,8 @@ import {
 } from "~/components/internals/activity-card";
 import { ExternalLink } from "lucide-react";
 import AllScans from "~/components/live/all-scans";
+import { HackerChecklist } from "~/components/live/hacker-checklist";
+import { cn } from "~/lib/utils";
 
 // Format text: replace underscores with spaces and capitalize each word
 const formatTitle = (text: string | null | undefined): string => {
@@ -58,6 +60,15 @@ const HackerHome = () => {
       { enabled: !!session?.user?.id },
     );
   const isApproved = isAdmittedStatus(application?.status);
+
+  // Onboarding checklist for accepted hackers. Required: the rest of Home is
+  // locked until they've RSVPed.
+  const { data: onboarding } = api.onboarding.get.useQuery(undefined, {
+    enabled: !!session?.user?.id,
+  });
+  const checklist = onboarding?.eligible ? onboarding : null;
+  const locked =
+    !!checklist && !checklist.steps.find((s) => s.id === "rsvp")?.done;
 
   useEffect(() => {
     if (session?.user?.id && isApproved) {
@@ -143,142 +154,151 @@ const HackerHome = () => {
         : "You haven't scanned any activities yet!";
 
   return (
-    <div className="flex w-full flex-col gap-6 lg:flex-row lg:gap-8">
-      {/* Left Column */}
-      <div className="flex w-full flex-col gap-6 lg:w-1/2">
-        <DashboardPanel title="Devpost Link">
-          <a
-            href="https://hack-western-12.devpost.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex cursor-pixel-hover items-center justify-between gap-3 rounded-dashboard-lg border border-dashboard-border-faint p-3 text-base font-medium text-dashboard-text-heavy transition-colors hover:bg-dashboard-bg-highlight"
-          >
-            hack-western-12.devpost.com
-            <ExternalLink
-              aria-hidden="true"
-              className="size-5 shrink-0 text-dashboard-text-light"
-            />
-          </a>
-        </DashboardPanel>
+    <div className="flex w-full flex-col gap-6">
+      {checklist && !checklist.hidden && <HackerChecklist data={checklist} />}
+      <div
+        aria-disabled={locked || undefined}
+        className={cn(
+          "flex w-full flex-col gap-6 lg:flex-row lg:gap-8",
+          locked && "pointer-events-none select-none opacity-45",
+        )}
+      >
+        {/* Left Column */}
+        <div className="flex w-full flex-col gap-6 lg:w-1/2">
+          <DashboardPanel title="Devpost Link">
+            <a
+              href="https://hack-western-12.devpost.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex cursor-pixel-hover items-center justify-between gap-3 rounded-dashboard-lg border border-dashboard-border-faint p-3 text-base font-medium text-dashboard-text-heavy transition-colors hover:bg-dashboard-bg-highlight"
+            >
+              hack-western-12.devpost.com
+              <ExternalLink
+                aria-hidden="true"
+                className="size-5 shrink-0 text-dashboard-text-light"
+              />
+            </a>
+          </DashboardPanel>
 
-        <DashboardPanel title="Scan History">
-          <div className="flex flex-wrap gap-2">
-            {tabs.map(([key, label]) => (
-              <DashboardChip
-                key={key}
-                selected={activeTab === key}
-                onClick={() => setActiveTab(key)}
-              >
-                {label}
-              </DashboardChip>
-            ))}
-          </div>
-
-          {scansLoading ? (
-            <p className="text-sm text-dashboard-text-light">Loading...</p>
-          ) : filteredScans && filteredScans.length > 0 ? (
-            <div className="flex flex-col gap-3">
-              {filteredScans.map((scan) => {
-                const time = scan.createdAt
-                  ? new Date(scan.createdAt).toLocaleString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })
-                  : "Unknown time";
-                return (
-                  <ActivityCard
-                    key={scan.id}
-                    kind={activityKindFromCode(scan.itemCode)}
-                    title={formatTitle(scan.itemDescription ?? scan.itemCode)}
-                    meta={`${time} · ${scan.points > 0 ? "+" : ""}${scan.points} pts`}
-                  />
-                );
-              })}
+          <DashboardPanel title="Scan History">
+            <div className="flex flex-wrap gap-2">
+              {tabs.map(([key, label]) => (
+                <DashboardChip
+                  key={key}
+                  selected={activeTab === key}
+                  onClick={() => setActiveTab(key)}
+                >
+                  {label}
+                </DashboardChip>
+              ))}
             </div>
-          ) : (
-            <p className="rounded-dashboard-lg bg-dashboard-bg-inset p-4 text-sm italic text-dashboard-text-light">
-              {emptyMessage}
-            </p>
-          )}
-        </DashboardPanel>
-      </div>
 
-      {/* Right Column - Your Hacker Pass */}
-      <div className="flex w-full flex-col gap-6 pb-4 lg:w-1/2">
-        <DashboardPanel title="Your Points">
-          {pointsLoading ? (
-            <p className="text-sm text-dashboard-text-light">Loading...</p>
-          ) : (
-            <div className="flex flex-col gap-2 rounded-dashboard-lg bg-dashboard-bg-inset p-4">
-              <div className="flex items-baseline justify-between">
-                <p className="text-sm text-dashboard-text-light">
-                  Current Balance:
-                </p>
-                <p className="text-2xl font-bold text-dashboard-action-primary">
-                  {pointsData?.balance ?? 0}
-                </p>
+            {scansLoading ? (
+              <p className="text-sm text-dashboard-text-light">Loading...</p>
+            ) : filteredScans && filteredScans.length > 0 ? (
+              <div className="flex flex-col gap-3">
+                {filteredScans.map((scan) => {
+                  const time = scan.createdAt
+                    ? new Date(scan.createdAt).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })
+                    : "Unknown time";
+                  return (
+                    <ActivityCard
+                      key={scan.id}
+                      kind={activityKindFromCode(scan.itemCode)}
+                      title={formatTitle(scan.itemDescription ?? scan.itemCode)}
+                      meta={`${time} · ${scan.points > 0 ? "+" : ""}${scan.points} pts`}
+                    />
+                  );
+                })}
               </div>
-              {pointsData?.earned !== null &&
-                pointsData?.earned !== undefined && (
-                  <div className="flex items-baseline justify-between border-t border-dashboard-border-subtle pt-2">
-                    <p className="text-xs text-dashboard-text-light">
-                      Total Earned:
+            ) : (
+              <p className="rounded-dashboard-lg bg-dashboard-bg-inset p-4 text-sm italic text-dashboard-text-light">
+                {emptyMessage}
+              </p>
+            )}
+          </DashboardPanel>
+        </div>
+
+        {/* Right Column - Your Hacker Pass */}
+        <div className="flex w-full flex-col gap-6 pb-4 lg:w-1/2">
+          <DashboardPanel title="Your Points">
+            {pointsLoading ? (
+              <p className="text-sm text-dashboard-text-light">Loading...</p>
+            ) : (
+              <div className="flex flex-col gap-2 rounded-dashboard-lg bg-dashboard-bg-inset p-4">
+                <div className="flex items-baseline justify-between">
+                  <p className="text-sm text-dashboard-text-light">
+                    Current Balance:
+                  </p>
+                  <p className="text-2xl font-bold text-dashboard-action-primary">
+                    {pointsData?.balance ?? 0}
+                  </p>
+                </div>
+                {pointsData?.earned !== null &&
+                  pointsData?.earned !== undefined && (
+                    <div className="flex items-baseline justify-between border-t border-dashboard-border-subtle pt-2">
+                      <p className="text-xs text-dashboard-text-light">
+                        Total Earned:
+                      </p>
+                      <p className="text-sm font-medium text-dashboard-text-medium">
+                        {pointsData.earned} pts
+                      </p>
+                    </div>
+                  )}
+              </div>
+            )}
+          </DashboardPanel>
+
+          <DashboardPanel title="Your Hacker Pass:">
+            <div className="flex justify-center">
+              <div className="rounded-dashboard-lg border border-dashboard-border-subtle bg-dashboard-bg-surface p-6">
+                {applicationLoading ? (
+                  <div className="flex h-[300px] w-[300px] items-center justify-center bg-dashboard-bg-inset">
+                    <p className="text-sm text-dashboard-text-light">
+                      Loading QR code...
                     </p>
-                    <p className="text-sm font-medium text-dashboard-text-medium">
-                      {pointsData.earned} pts
+                  </div>
+                ) : !isApproved ? (
+                  <div className="flex h-[300px] w-[300px] flex-col items-center justify-center gap-2 bg-dashboard-bg-inset p-6 text-center">
+                    <p className="text-sm font-semibold text-dashboard-text-heavy">
+                      Hacker pass unavailable
+                    </p>
+                    <p className="text-xs text-dashboard-text-light">
+                      Your hacker pass will appear here once your application
+                      has been accepted.
+                    </p>
+                  </div>
+                ) : qrCodeUrl ? (
+                  <Image
+                    src={qrCodeUrl}
+                    alt="Your Hacker Pass QR Code"
+                    width={300}
+                    height={300}
+                    className="h-auto w-full"
+                  />
+                ) : (
+                  <div className="flex h-[300px] w-[300px] items-center justify-center bg-dashboard-bg-inset">
+                    <p className="text-sm text-dashboard-text-light">
+                      Loading QR code...
                     </p>
                   </div>
                 )}
+              </div>
             </div>
-          )}
-        </DashboardPanel>
 
-        <DashboardPanel title="Your Hacker Pass:">
-          <div className="flex justify-center">
-            <div className="rounded-dashboard-lg border border-dashboard-border-subtle bg-dashboard-bg-surface p-6">
-              {applicationLoading ? (
-                <div className="flex h-[300px] w-[300px] items-center justify-center bg-dashboard-bg-inset">
-                  <p className="text-sm text-dashboard-text-light">
-                    Loading QR code...
-                  </p>
-                </div>
-              ) : !isApproved ? (
-                <div className="flex h-[300px] w-[300px] flex-col items-center justify-center gap-2 bg-dashboard-bg-inset p-6 text-center">
-                  <p className="text-sm font-semibold text-dashboard-text-heavy">
-                    Hacker pass unavailable
-                  </p>
-                  <p className="text-xs text-dashboard-text-light">
-                    Your hacker pass will appear here once your application has
-                    been accepted.
-                  </p>
-                </div>
-              ) : qrCodeUrl ? (
-                <Image
-                  src={qrCodeUrl}
-                  alt="Your Hacker Pass QR Code"
-                  width={300}
-                  height={300}
-                  className="h-auto w-full"
-                />
-              ) : (
-                <div className="flex h-[300px] w-[300px] items-center justify-center bg-dashboard-bg-inset">
-                  <p className="text-sm text-dashboard-text-light">
-                    Loading QR code...
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {isApproved && (
-            <div className="flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
-              <AddToWallet walletType="APPLE" />
-              <AddToWallet walletType="GOOGLE" />
-            </div>
-          )}
-        </DashboardPanel>
+            {isApproved && (
+              <div className="flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
+                <AddToWallet walletType="APPLE" />
+                <AddToWallet walletType="GOOGLE" />
+              </div>
+            )}
+          </DashboardPanel>
+        </div>
       </div>
     </div>
   );
