@@ -354,21 +354,13 @@ describe("isPureCancellation", () => {
 
   test("subset of own bookings only", () => {
     expect(
-      isPureCancellation(
-        [{ room: 1, time: "10:15" }],
-        existing,
-        "Acme Co",
-      ),
+      isPureCancellation([{ room: 1, time: "10:15" }], existing, "Acme Co"),
     ).toBe(true);
     expect(
       isPureCancellation([{ room: 2, time: "10:00" }], existing, "Acme Co"),
     ).toBe(false);
     expect(
-      isPureCancellation(
-        [{ room: 3, time: "10:00" }],
-        existing,
-        "Acme Co",
-      ),
+      isPureCancellation([{ room: 3, time: "10:00" }], existing, "Acme Co"),
     ).toBe(false);
   });
 
@@ -408,12 +400,11 @@ describe("mergeCoffeeChatBookings", () => {
 
 describe("isBookedBy", () => {
   test("case- and invisible-char-insensitive", () => {
-    expect(isBookedBy({ room: 1, time: "10:00", sponsor: "Acme Co" }, "acme  co")).toBe(true);
     expect(
-      isBookedBy(
-        { room: 1, time: "10:00", sponsor: "Acme Co" },
-        "Beta Corp",
-      ),
+      isBookedBy({ room: 1, time: "10:00", sponsor: "Acme Co" }, "acme  co"),
+    ).toBe(true);
+    expect(
+      isBookedBy({ room: 1, time: "10:00", sponsor: "Acme Co" }, "Beta Corp"),
     ).toBe(false);
   });
 });

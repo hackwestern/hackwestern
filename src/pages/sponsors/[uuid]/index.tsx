@@ -173,9 +173,9 @@ export default function SponsorHubPage() {
               </div>
 
               <p className="m-0 text-base font-medium leading-relaxed text-dashboard-text-medium">
-                Reserve up to {maxCoffeeChatBlocks} × 15-minute slots across
-                our three coffee chat rooms, Saturday 10:00 AM &ndash; 4:00
-                PM. You can change them any time.
+                Reserve up to {maxCoffeeChatBlocks} × 15-minute slots across our
+                three coffee chat rooms, Saturday 10:00 AM &ndash; 4:00 PM. You
+                can change them any time.
               </p>
 
               <DashboardButton asChild className="mt-1 md:w-full">

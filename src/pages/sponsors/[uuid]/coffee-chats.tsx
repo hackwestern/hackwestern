@@ -54,7 +54,9 @@ export default function SponsorCoffeeChatsPage() {
     if (!data || seededFor === uuid) return;
     setSeededFor(uuid);
     setSelected(
-      data.myBooked.map(({ room, time }) => coffeeChatSlotKeyOf({ room, time })),
+      data.myBooked.map(({ room, time }) =>
+        coffeeChatSlotKeyOf({ room, time }),
+      ),
     );
   }, [data, seededFor, uuid]);
 
@@ -127,9 +129,9 @@ export default function SponsorCoffeeChatsPage() {
         <DashboardPanel className="text-center">
           <h1 className="dashboard-h1 m-0">Link not recognised</h1>
           <p className="mb-0 mt-2 text-base leading-relaxed text-dashboard-text-medium">
-            This private link isn&apos;t valid. If you believe this is an
-            error, please reach out to your Hack Western organizer contact
-            for assistance.
+            This private link isn&apos;t valid. If you believe this is an error,
+            please reach out to your Hack Western organizer contact for
+            assistance.
           </p>
         </DashboardPanel>
       </Shell>
@@ -154,9 +156,9 @@ export default function SponsorCoffeeChatsPage() {
           <DashboardPanel className="gap-2 text-center">
             <h1 className="dashboard-h1 m-0">Coffee chats unavailable</h1>
             <p className="mb-3 mt-2 text-base leading-relaxed text-dashboard-text-medium">
-              Your sponsor package doesn&apos;t include coffee chat time
-              right now. If you were expecting slots, ask your Hack Western
-              contact to add your allowance to the sponsor info sheet.
+              Your sponsor package doesn&apos;t include coffee chat time right
+              now. If you were expecting slots, ask your Hack Western contact to
+              add your allowance to the sponsor info sheet.
             </p>
             <DashboardButton asChild className="mx-auto md:w-auto">
               <Link href={`/sponsors/${uuid}`}>Back to sponsor hub</Link>
@@ -219,8 +221,8 @@ export default function SponsorCoffeeChatsPage() {
             {COFFEE_CHAT_DAY_LABEL}, {COFFEE_CHAT_WINDOW_LABEL}.
           </p>
           <p className="m-0 text-sm font-medium text-dashboard-text-light">
-            Tap slots to add or remove them, then save. Slots shaded by
-            another sponsor are already taken.
+            Tap slots to add or remove them, then save. Slots shaded by another
+            sponsor are already taken.
           </p>
         </div>
 
@@ -252,7 +254,10 @@ export default function SponsorCoffeeChatsPage() {
                     </span>
                     <div className="grid grid-cols-4 gap-2">
                       {group.slots.map((time) => {
-                        const key = coffeeChatSlotKeyOf({ room: room.id, time });
+                        const key = coffeeChatSlotKeyOf({
+                          room: room.id,
+                          time,
+                        });
                         const taken = takenByOthers.get(key) ?? null;
                         const on = selected.includes(key);
                         return (
@@ -265,8 +270,7 @@ export default function SponsorCoffeeChatsPage() {
                             style={
                               taken
                                 ? {
-                                    backgroundColor:
-                                      coffeeChatColorFor(taken),
+                                    backgroundColor: coffeeChatColorFor(taken),
                                     color: "#ffffff",
                                   }
                                 : undefined
@@ -319,8 +323,8 @@ export default function SponsorCoffeeChatsPage() {
 
         {overMax && (
           <p className="m-0 rounded-dashboard-md border border-dashboard-border-subtle bg-dashboard-bg-highlight px-4 py-3 text-sm font-medium leading-relaxed text-dashboard-text-heavy">
-            You&apos;ve picked {selected.length} blocks but your package
-            covers {maxBlocks}. Remove some slots before saving.
+            You&apos;ve picked {selected.length} blocks but your package covers{" "}
+            {maxBlocks}. Remove some slots before saving.
           </p>
         )}
       </div>

@@ -59,7 +59,9 @@ export function isCoffeeChatSlot(slot: CoffeeChatSlot): boolean {
 /** Order index of a slot for stable sorting (rooms before times). */
 export function coffeeChatSlotOrder(slot: CoffeeChatSlot): number {
   const timeIndex = COFFEE_CHAT_SLOTS.indexOf(slot.time);
-  const roomIndex = COFFEE_CHAT_ROOMS.findIndex((room) => room.id === slot.room);
+  const roomIndex = COFFEE_CHAT_ROOMS.findIndex(
+    (room) => room.id === slot.room,
+  );
   if (timeIndex === -1 || roomIndex === -1) return Number.MAX_SAFE_INTEGER;
   return roomIndex * COFFEE_CHAT_SLOTS.length + timeIndex;
 }
@@ -95,9 +97,7 @@ export function normalizeCoffeeChatMinutes(
 
 /** How many 15-minute blocks the sponsor's allowance covers. */
 export function coffeeChatBlocksFor(maxMinutes: number): number {
-  return maxMinutes > 0
-    ? Math.floor(maxMinutes / COFFEE_CHAT_SLOT_MINUTES)
-    : 0;
+  return maxMinutes > 0 ? Math.floor(maxMinutes / COFFEE_CHAT_SLOT_MINUTES) : 0;
 }
 
 /**
@@ -290,12 +290,10 @@ export function findCoffeeChatConflicts(
   for (const booking of existing) {
     holders.set(coffeeChatSlotKeyOf(booking), booking);
   }
-  return requested.filter(
-    (slot) => {
-      const booking = holders.get(coffeeChatSlotKeyOf(slot));
-      return Boolean(booking && !isBookedBy(booking, sponsorName));
-    },
-  );
+  return requested.filter((slot) => {
+    const booking = holders.get(coffeeChatSlotKeyOf(slot));
+    return Boolean(booking && !isBookedBy(booking, sponsorName));
+  });
 }
 
 /**
@@ -311,11 +309,9 @@ export function isPureCancellation(
   const mine = new Set(
     existing
       .filter((b) => isBookedBy(b, sponsorName))
-      .map(b => coffeeChatSlotKeyOf(b)),
+      .map((b) => coffeeChatSlotKeyOf(b)),
   );
-  return requested.every((slot) =>
-    mine.has(coffeeChatSlotKeyOf(slot)),
-  );
+  return requested.every((slot) => mine.has(coffeeChatSlotKeyOf(slot)));
 }
 
 /**
