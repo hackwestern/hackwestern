@@ -1,6 +1,6 @@
 // TEMPORARY: put this at pages/dev/table-map.tsx while reviewing the map, then delete it.
 import { TableMapDemo } from "~/components/judging/map/map-demo";
-import { disabledRedirect } from "~/utils/redirect";
+import { authRedirectOrganizer } from "~/utils/redirect";
 
 export default function TableMapPreviewPage() {
   return (
@@ -12,5 +12,5 @@ export default function TableMapPreviewPage() {
   );
 }
 
-// Locked on production (hackwestern.com), open on preview and local builds.
-export const getServerSideProps = disabledRedirect;
+// Organizers only. Everyone else is sent away, signed in or not.
+export const getServerSideProps = authRedirectOrganizer;
