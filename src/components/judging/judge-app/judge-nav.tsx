@@ -53,7 +53,10 @@ export function JudgeNav({ active, onChange, disabled = [] }: JudgeNavProps) {
                 >
                   {tab.label}
                   {locked && (
-                    <span className="sr-only"> (choose a team to judge first)</span>
+                    <span className="sr-only">
+                      {" "}
+                      (choose a team to judge first)
+                    </span>
                   )}
                 </button>
               </li>

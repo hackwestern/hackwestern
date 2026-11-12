@@ -40,7 +40,7 @@ export function JudgeWrongTable({
         >
           Expected
         </span>
-        <span className="text-4xl font-bold leading-none tabular-nums text-dashboard-text-heavy">
+        <span className="text-4xl font-bold tabular-nums leading-none text-dashboard-text-heavy">
           {expected ?? "–"}
         </span>
       </section>

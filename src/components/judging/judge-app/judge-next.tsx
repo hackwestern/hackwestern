@@ -156,7 +156,7 @@ export function JudgeNext({
         >
           Next table
         </span>
-        <span className="text-6xl font-bold leading-none tabular-nums text-dashboard-text-heavy">
+        <span className="text-6xl font-bold tabular-nums leading-none text-dashboard-text-heavy">
           {table ?? "–"}
         </span>
         <span className="mt-2 text-base font-medium text-dashboard-text-heavy">

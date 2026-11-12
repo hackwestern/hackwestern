@@ -361,7 +361,9 @@ export function JudgeRoster() {
                       key={track}
                       type="button"
                       aria-pressed={tracks.includes(track)}
-                      className={tracks.includes(track) ? BTN_DARK : BTN_OUTLINE}
+                      className={
+                        tracks.includes(track) ? BTN_DARK : BTN_OUTLINE
+                      }
                       onClick={() => {
                         toggleTrack(track);
                         setFormError(null);

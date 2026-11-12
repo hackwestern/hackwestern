@@ -34,7 +34,7 @@ const STALE_ASSIGNMENT_MINUTES = 15;
 
 type QueueRow = typeof judgingQueue.$inferSelect;
 type ScoreBreakdown = NonNullable<
-  typeof teamMarks.$inferInsert["scoreBreakdown"]
+  (typeof teamMarks.$inferInsert)["scoreBreakdown"]
 >;
 
 /**
@@ -402,10 +402,7 @@ async function deleteMark(teamMarkId: number): Promise<void> {
  * so they're never reassigned it, releases the hold, and returns the team to
  * `waiting` WITHOUT counting it as judged (no round consumed).
  */
-async function skipCurrent(
-  judgeId: string,
-  released = false,
-): Promise<string> {
+async function skipCurrent(judgeId: string, released = false): Promise<string> {
   return db.transaction(async (tx) => {
     const held = await tx.query.judgingQueue.findFirst({
       where: eq(judgingQueue.currentJudgeId, judgeId),

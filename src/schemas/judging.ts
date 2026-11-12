@@ -5,7 +5,7 @@ import { judgeTypeEnum, judges, trackEnum } from "~/server/db/schema";
 
 export const SCORE_MIN = 0;
 export const SCORE_MAX = 100;
- 
+
 export const scoreBreakdownSchema = z.object({
   idea: z.number().min(SCORE_MIN).max(SCORE_MAX),
   technical: z.number().min(SCORE_MIN).max(SCORE_MAX),
