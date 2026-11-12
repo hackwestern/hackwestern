@@ -338,7 +338,7 @@ export const getServerSideProps = async (
       });
       if (user?.type === "organizer") {
         return {
-          redirect: { destination: "/internal/dashboard", permanent: false },
+          redirect: { destination: "/internal", permanent: false },
         };
       }
 

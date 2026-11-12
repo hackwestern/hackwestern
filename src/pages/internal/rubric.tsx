@@ -8,7 +8,7 @@ export default function RubricBuilderPage() {
     <>
       <SEO title="Rubric builder" noindex />
       <InternalNavbar />
-      <main className="min-h-screen bg-offwhite px-4 pb-12 pt-8 sm:px-5">
+      <main className="min-h-screen bg-offwhite px-4 pb-12 pt-8 font-figtree sm:px-5">
         <div className="mx-auto max-w-[1280px]">
           {/* UI only for now: swap console.log for a tRPC mutation later. */}
           <RubricBuilder onSave={(rubric) => console.log("rubric", rubric)} />
