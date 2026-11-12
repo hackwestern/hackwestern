@@ -5,10 +5,7 @@ import { z } from "zod";
 import { db } from "~/server/db";
 import { teams, users } from "~/server/db/schema";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import {
-  MAX_SPONSOR_PICKS,
-  MIN_SPONSOR_PICKS,
-} from "~/lib/sponsor-picks";
+import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "~/lib/sponsor-picks";
 import {
   SHEET_TAB,
   fetchColumnA,

@@ -4,7 +4,10 @@ import { z } from "zod";
 
 import { db } from "~/server/db";
 import { sponsorJudgingSponsors } from "~/server/db/schema";
-import { createTRPCRouter, protectedOrganizerProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedOrganizerProcedure,
+} from "~/server/api/trpc";
 import {
   cell,
   fetchAllChosenTeams,

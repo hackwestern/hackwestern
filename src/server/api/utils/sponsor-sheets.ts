@@ -4,7 +4,10 @@ import { eq } from "drizzle-orm";
 
 import { env } from "~/env";
 import { normalizeCoffeeChatMinutes } from "~/lib/coffee-chats";
-import { SPONSOR_STATUS_VALUES, type SponsorStatus } from "~/lib/sponsor-status";
+import {
+  SPONSOR_STATUS_VALUES,
+  type SponsorStatus,
+} from "~/lib/sponsor-status";
 import { db } from "~/server/db";
 import { sponsorJudgingSponsors } from "~/server/db/schema";
 
@@ -22,7 +25,6 @@ const HEADER_ROW = 2;
 // data from row 2. Used for the HW Contact dropdown on the sponsor info
 // tab and for phone lookup on the sponsor portal.
 export const HW_CONTACTS_TAB = "HW Contacts";
-
 
 function normalizeSponsorStatus(val: string | undefined): SponsorStatus {
   if (!val) return "Not arrived";

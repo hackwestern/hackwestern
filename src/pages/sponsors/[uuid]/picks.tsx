@@ -8,12 +8,8 @@ import { uuidRegex } from "~/utils/urls";
 import { api } from "~/utils/api";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
-import {
-  MAX_SPONSOR_PICKS,
-  MIN_SPONSOR_PICKS,
-} from "~/lib/sponsor-picks";
+import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "~/lib/sponsor-picks";
 import { cn } from "~/lib/utils";
-
 
 type PickableTeam = {
   id: string;
@@ -149,7 +145,8 @@ export default function SponsorPicksPage() {
               : "text-dashboard-text-light",
           )}
         >
-          {selected.length} of {MAX_SPONSOR_PICKS} selected · min {MIN_SPONSOR_PICKS}
+          {selected.length} of {MAX_SPONSOR_PICKS} selected · min{" "}
+          {MIN_SPONSOR_PICKS}
         </span>
       }
     >
@@ -175,8 +172,9 @@ export default function SponsorPicksPage() {
           )}
           <h1 className="dashboard-h1 m-0">Pick your top teams</h1>
           <p className="mb-0 mt-1 text-base font-medium leading-relaxed text-dashboard-text-medium">
-            Choose between {MIN_SPONSOR_PICKS} and {MAX_SPONSOR_PICKS} teams. You can come back
-            and change your picks any time before judging closes.
+            Choose between {MIN_SPONSOR_PICKS} and {MAX_SPONSOR_PICKS} teams.
+            You can come back and change your picks any time before judging
+            closes.
           </p>
         </div>
 
@@ -288,8 +286,8 @@ export default function SponsorPicksPage() {
 
         {atMax && (
           <p className="m-0 rounded-dashboard-md border border-dashboard-border-subtle bg-dashboard-bg-highlight px-4 py-3 text-sm font-medium leading-relaxed text-dashboard-text-heavy">
-            That&apos;s the max of {MAX_SPONSOR_PICKS}. Deselect a team to swap in a
-            different one.
+            That&apos;s the max of {MAX_SPONSOR_PICKS}. Deselect a team to swap
+            in a different one.
           </p>
         )}
       </div>
@@ -301,7 +299,8 @@ export default function SponsorPicksPage() {
             <span
               className={cn(
                 "text-base font-semibold tabular-nums text-dashboard-text-heavy",
-                selected.length < MIN_SPONSOR_PICKS && "text-dashboard-status-warning",
+                selected.length < MIN_SPONSOR_PICKS &&
+                  "text-dashboard-status-warning",
               )}
             >
               {selected.length} / {MAX_SPONSOR_PICKS}
