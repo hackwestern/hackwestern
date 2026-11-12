@@ -1,0 +1,13 @@
+name = "hw-events"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hw-events"
+# Fill in after `npx wrangler d1 create hw-events`:
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# Secrets (set with `npx wrangler secret put <NAME>`):
+#   INGEST_TOKEN  Bearer token the Next.js app sends (EVENTS_INGEST_TOKEN)
+#   READ_TOKEN    Bearer token for GET /export (used by build-traffic-profile)

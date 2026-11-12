@@ -16,6 +16,7 @@ import { db } from "~/server/db";
 import { eq } from "drizzle-orm";
 import { judges, users } from "~/server/db/schema";
 import { getServerAuthSession } from "~/server/auth";
+import { hashUser, recordEvent } from "~/server/events";
 
 /**
  * 1. CONTEXT
@@ -112,7 +113,27 @@ export const createTRPCRouter = t.router;
  * guarantee that a user querying is authorized, but you can still access user session data if they
  * are logged in.
  */
-export const publicProcedure = t.procedure;
+
+/**
+ * Reports call metadata (procedure, status, duration, hashed user) for traffic
+ * profiling. Sits first in every chain so auth failures are recorded too.
+ * No-ops unless event logging is configured; never affects the request.
+ */
+const eventLogger = t.middleware(async ({ ctx, path, type, next }) => {
+  const startedAt = Date.now();
+  const result = await next();
+  recordEvent({
+    ts: startedAt,
+    procedure: path,
+    type,
+    status: result.ok ? "OK" : result.error.code,
+    durationMs: Date.now() - startedAt,
+    userHash: hashUser(ctx.session?.user?.id),
+  });
+  return result;
+});
+
+export const publicProcedure = t.procedure.use(eventLogger);
 
 /**
  * Protected (authenticated) procedure
@@ -122,7 +143,7 @@ export const publicProcedure = t.procedure;
  *
  * @see https://trpc.io/docs/procedures
  */
-export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+export const protectedProcedure = publicProcedure.use(({ ctx, next }) => {
   if (!ctx.session || !ctx.session.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
