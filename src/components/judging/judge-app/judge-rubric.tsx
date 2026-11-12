@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { type TeamLinks } from "~/server/api/utils/judge-data";
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { JudgeTeamLinks } from "./judge-team-links";
+import { JudgeTeamLinks } from "~/components/judging/judge-app/judge-team-links";
 import { JudgeConfirm } from "~/components/judging/shared/judge-confirm";
 import {
   card,
@@ -15,6 +15,7 @@ import {
   type Rubric,
   RubricScorer,
   hasGuide,
+  requiredCount,
   scoreRubric,
 } from "~/components/judging/shared/rubric-scorer";
 
@@ -129,14 +130,13 @@ export function JudgeRubric({
     }
     setSaveState("saving");
     const timer = setTimeout(
-      () =>
-        setSaveState(writeDraft(key, { ratings, notes }) ? "saved" : "error"),
+      () => setSaveState(writeDraft(key, { ratings, notes }) ? "saved" : "error"),
       500,
     );
     return () => clearTimeout(timer);
   }, [ratings, notes, key]);
 
-  const count = rubric.criteria.length;
+  const count = requiredCount(rubric);
   const result = scoreRubric(rubric, ratings);
   const complete = count > 0 && result.rated === count;
 
@@ -192,7 +192,9 @@ export function JudgeRubric({
             onClick={() => setGuideOpen((o) => !o)}
             className={`${touch} self-end`}
           >
-            {guideOpen ? "Hide descriptions" : "Show descriptions"}
+            {guideOpen
+              ? "Hide descriptions"
+              : "Show descriptions"}
           </DashboardButton>
         )}
         <RubricScorer
@@ -245,11 +247,7 @@ export function JudgeRubric({
       )}
       <JudgeConfirm
         open={confirmAbsent}
-        title={
-          table !== null
-            ? `Mark table ${table} as not here?`
-            : "Mark this team as not here?"
-        }
+        title={table !== null ? `Mark table ${table} as not here?` : "Mark this team as not here?"}
         description="No score will be saved. You won't be given this team again."
         confirmLabel="Team not here"
         cancelLabel="Keep scoring"

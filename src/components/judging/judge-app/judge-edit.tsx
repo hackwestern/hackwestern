@@ -1,4 +1,4 @@
-import { JudgeTeamLinks } from "./judge-team-links";
+import { JudgeTeamLinks } from "~/components/judging/judge-app/judge-team-links";
 import { type TeamLinks } from "~/server/api/utils/judge-data";
 import { useState } from "react";
 
@@ -15,6 +15,7 @@ import {
   type Rubric,
   RubricScorer,
   hasGuide,
+  requiredCount,
   scoreRubric,
 } from "~/components/judging/shared/rubric-scorer";
 
@@ -56,7 +57,7 @@ export function JudgeEdit({
   const [notes, setNotes] = useState(team.notes);
   const [guideOpen, setGuideOpen] = useState(false);
 
-  const count = rubric.criteria.length;
+  const count = requiredCount(rubric);
   const result = scoreRubric(rubric, ratings);
   const complete = count > 0 && result.rated === count;
 
@@ -91,7 +92,9 @@ export function JudgeEdit({
             onClick={() => setGuideOpen((o) => !o)}
             className={`${touch} self-end`}
           >
-            {guideOpen ? "Hide descriptions" : "Show descriptions"}
+            {guideOpen
+              ? "Hide descriptions"
+              : "Show descriptions"}
           </DashboardButton>
         )}
         <RubricScorer

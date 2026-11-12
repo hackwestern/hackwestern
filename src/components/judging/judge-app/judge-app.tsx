@@ -47,8 +47,12 @@ const RUBRIC = DEFAULT_RUBRIC;
 // the judge set (team_mark.score_breakdown), next to the overall 0-100 score.
 // Ratings are stored by criterion id: { ratings: { technical: 80, ... }, notes }.
 const toBreakdown = (ratings: Ratings, notes: string) => ({
+  // An unrated optional (bonus) criterion is left out, not saved as 0.
   ratings: Object.fromEntries(
-    RUBRIC.criteria.map((c) => [c.id, ratings[c.id] ?? 0]),
+    RUBRIC.criteria.flatMap((c) => {
+      const r = ratings[c.id];
+      return r === undefined ? [] : [[c.id, r] as const];
+    }),
   ),
   ...(notes ? { notes } : {}),
 });
@@ -169,9 +173,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     notes: m.scoreBreakdown?.notes ?? "",
   }));
   const editingTeam =
-    editingId !== null
-      ? results.find((r) => r.markId === editingId)
-      : undefined;
+    editingId !== null ? results.find((r) => r.markId === editingId) : undefined;
 
   const started = startedLocal || held !== null || results.length > 0;
   let phase: NextPhase;
@@ -330,9 +332,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       await startTeam.mutateAsync();
     } catch (error) {
       if (errorCode(error) === "CONFLICT") {
-        setNextError(
-          "That team was given to someone else. Finding you another.",
-        );
+        setNextError("That team was given to someone else. Finding you another.");
         await utils.judging.me.getCurrentAssignment.invalidate();
         return;
       }
@@ -342,8 +342,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   };
 
   const editing = tab === "score" && editingTeam !== undefined && !finished;
-  const scoringPage =
-    tab === "score" && ((scoring && held !== null) || editing);
+  const scoringPage = tab === "score" && ((scoring && held !== null) || editing);
 
   let header: ReactNode = null;
   if (tab === "map") {
@@ -385,37 +384,36 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   } else if (tab === "score") {
     // The Score tab is locked until a team is chosen or opened for edit, so the
     // last message is only a fallback.
-    body =
-      editingTeam && !finished ? (
-        <JudgeEdit
-          key={editingTeam.markId}
-          team={editingTeam}
-          rubric={RUBRIC}
-          links={initial.linksByTeam[editingTeam.teamId]}
-          saving={edit.isPending}
-          error={editError}
-          onSave={saveEdit}
-          onCancel={closeEdit}
-        />
-      ) : scoring && held && !finished ? (
-        <JudgeRubric
-          key={held.id}
-          judgeKey={judgeKey}
-          teamId={held.id}
-          teamName={held.name}
-          table={heldTable}
-          rubric={RUBRIC}
-          links={initial.linksByTeam[held.id]}
-          busy={sending}
-          error={scoreError}
-          onSubmit={submitScore}
-          onAbsent={teamNotHere}
-        />
-      ) : (
-        <p className="px-1 text-base font-medium text-dashboard-text-light">
-          Choose a team to judge on the Next tab first.
-        </p>
-      );
+    body = editingTeam && !finished ? (
+      <JudgeEdit
+        key={editingTeam.markId}
+        team={editingTeam}
+        rubric={RUBRIC}
+        links={initial.linksByTeam[editingTeam.teamId]}
+        saving={edit.isPending}
+        error={editError}
+        onSave={saveEdit}
+        onCancel={closeEdit}
+      />
+    ) : scoring && held && !finished ? (
+      <JudgeRubric
+        key={held.id}
+        judgeKey={judgeKey}
+        teamId={held.id}
+        teamName={held.name}
+        table={heldTable}
+        rubric={RUBRIC}
+        links={initial.linksByTeam[held.id]}
+        busy={sending}
+        error={scoreError}
+        onSubmit={submitScore}
+        onAbsent={teamNotHere}
+      />
+    ) : (
+      <p className="px-1 text-base font-medium text-dashboard-text-light">
+        Choose a team to judge on the Next tab first.
+      </p>
+    );
   } else if (tab === "teams") {
     body = (
       <JudgeTeams
@@ -466,11 +464,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col">
-            <VenueMap
-              tables={[]}
-              current={heldTable ?? undefined}
-              variant="page"
-            />
+            <VenueMap tables={[]} current={heldTable ?? undefined} variant="page" />
           </div>
         )}
       </>
@@ -517,9 +511,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         <JudgeNav
           active={tab}
           onChange={changeTab}
-          disabled={
-            !(scoring && held && !finished) && !editing ? ["score"] : []
-          }
+          disabled={!(scoring && held && !finished) && !editing ? ["score"] : []}
         />
         <JudgeConfirm
           open={confirmFinish}
