@@ -78,6 +78,10 @@ export default function SponsorHubPage() {
   // Not every sponsor runs a workshop — omit the card entirely when blank.
   const hasWorkshop = Boolean(workshopLocation) || Boolean(workshopTime);
 
+  // Unassigned booth/room ("TBD" from the sheet) hides the card entirely.
+  const hasBoothLocation = boothLocation !== "TBD";
+  const hasJudgingRoom = roomNumber !== "TBD";
+
   // Coffee chats: the sheet's "Coffee Chat Max Minutes" is the allowance in
   // minutes (empty/invalid = 0, so no link at all); blocks are 15 minutes.
   const maxCoffeeChatBlocks = data?.maxCoffeeChatBlocks ?? 0;
@@ -106,43 +110,46 @@ export default function SponsorHubPage() {
           </div>
         </section>
 
-        {/* Judging CTA */}
-        <DashboardPanel>
-          <div className="flex flex-col gap-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex flex-col gap-1">
-                <span className="dashboard-section-label text-dashboard-text-light">
-                  Judging
-                </span>
-                <h2 className="m-0 text-xl font-semibold text-dashboard-text-heavy">
-                  Pick your top teams
-                </h2>
+        {/* Judging CTA — hidden entirely when no judging room is assigned */}
+        {hasJudgingRoom && (
+          <DashboardPanel>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-1">
+                  <span className="dashboard-section-label text-dashboard-text-light">
+                    Judging
+                  </span>
+                  <h2 className="m-0 text-xl font-semibold text-dashboard-text-heavy">
+                    Pick your top teams
+                  </h2>
+                </div>
+
+                {picksCount > 0 ? (
+                  <span className="inline-flex items-center whitespace-nowrap rounded-dashboard-sm bg-dashboard-bg-highlight px-2 py-1 font-figtree text-xs font-medium leading-5 text-dashboard-text-heavy">
+                    {picksCount} picked
+                  </span>
+                ) : (
+                  <DashboardTag>Pending</DashboardTag>
+                )}
               </div>
 
-              {picksCount > 0 ? (
-                <span className="inline-flex items-center whitespace-nowrap rounded-dashboard-sm bg-dashboard-bg-highlight px-2 py-1 font-figtree text-xs font-medium leading-5 text-dashboard-text-heavy">
-                  {picksCount} picked
-                </span>
-              ) : (
-                <DashboardTag>Pending</DashboardTag>
-              )}
+              <p className="m-0 text-base font-medium leading-relaxed text-dashboard-text-medium">
+                Select between 5 and 10 teams for your sponsored awards. You
+                can update and save your selections anytime before judging
+                closes.
+              </p>
+
+              <DashboardButton asChild className="mt-1 md:w-full">
+                <Link href={`/sponsors/${id}/picks`}>
+                  {picksCount > 0
+                    ? "Review & edit your picks"
+                    : "Select top teams"}
+                  <ArrowRight />
+                </Link>
+              </DashboardButton>
             </div>
-
-            <p className="m-0 text-base font-medium leading-relaxed text-dashboard-text-medium">
-              Select between 5 and 10 teams for your sponsored awards. You can
-              update and save your selections anytime before judging closes.
-            </p>
-
-            <DashboardButton asChild className="mt-1 md:w-full">
-              <Link href={`/sponsors/${id}/picks`}>
-                {picksCount > 0
-                  ? "Review & edit your picks"
-                  : "Select top teams"}
-                <ArrowRight />
-              </Link>
-            </DashboardButton>
-          </div>
-        </DashboardPanel>
+          </DashboardPanel>
+        )}
 
         {/* Coffee chats CTA — hidden entirely when the sponsor has no allowance */}
         {hasCoffeeChats && (
@@ -197,43 +204,43 @@ export default function SponsorHubPage() {
           </h2>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <DashboardPanel className="gap-2 p-4 sm:p-5">
-              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
-                <MapPin
-                  aria-hidden="true"
-                  className="size-4"
-                  strokeWidth={1.67}
-                />
-                Booth location
-              </span>
-              <span className="text-xl font-semibold text-dashboard-text-heavy">
-                {boothLocation}
-              </span>
-              <span className="text-sm font-medium text-dashboard-text-light">
-                {boothLocation === "TBD"
-                  ? "Check in with your organizer on arrival"
-                  : "Your assigned sponsor booth table"}
-              </span>
-            </DashboardPanel>
+            {hasBoothLocation && (
+              <DashboardPanel className="gap-2 p-4 sm:p-5">
+                <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
+                  <MapPin
+                    aria-hidden="true"
+                    className="size-4"
+                    strokeWidth={1.67}
+                  />
+                  Booth location
+                </span>
+                <span className="text-xl font-semibold text-dashboard-text-heavy">
+                  {boothLocation}
+                </span>
+                <span className="text-sm font-medium text-dashboard-text-light">
+                  Your assigned sponsor booth table
+                </span>
+              </DashboardPanel>
+            )}
 
-            <DashboardPanel className="gap-2 p-4 sm:p-5">
-              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
-                <Presentation
-                  aria-hidden="true"
-                  className="size-4"
-                  strokeWidth={1.67}
-                />
-                Judging room
-              </span>
-              <span className="text-xl font-semibold text-dashboard-text-heavy">
-                {roomNumber === "TBD" ? "TBD" : `Room ${roomNumber}`}
-              </span>
-              <span className="text-sm font-medium text-dashboard-text-light">
-                {roomNumber === "TBD"
-                  ? "Room assignment will be confirmed before judging"
-                  : "Head here when judging deliberations start"}
-              </span>
-            </DashboardPanel>
+            {hasJudgingRoom && (
+              <DashboardPanel className="gap-2 p-4 sm:p-5">
+                <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
+                  <Presentation
+                    aria-hidden="true"
+                    className="size-4"
+                    strokeWidth={1.67}
+                  />
+                  Judging room
+                </span>
+                <span className="text-xl font-semibold text-dashboard-text-heavy">
+                  Room {roomNumber}
+                </span>
+                <span className="text-sm font-medium text-dashboard-text-light">
+                  Head here when judging deliberations start
+                </span>
+              </DashboardPanel>
+            )}
           </div>
 
           {/* Workshop — only when the sheet has data for this sponsor */}
