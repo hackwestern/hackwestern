@@ -1,7 +1,15 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "~/components/ui/data-table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/components/ui/table";
+import { Search } from "lucide-react";
+import { cn } from "~/lib/utils";
 
 export type ScanRow = {
   id: string;
@@ -13,122 +21,170 @@ export type ScanRow = {
   createdAt: Date | null;
 };
 
-export const scansColumns: ColumnDef<ScanRow>[] = [
+type ScanTextField = {
+  [K in keyof ScanRow]: ScanRow[K] extends string ? K : never;
+}[keyof ScanRow];
+
+const SCAN_COLUMNS: {
+  key: ScanTextField;
+  header: string;
+  width: string;
+  emphasis?: boolean;
+}[] = [
   {
-    accessorKey: "hackerName",
-    header: () => (
-      <div
-        className="font-secondary text-xs font-medium uppercase tracking-wider"
-        style={{ color: "#dcd8de" }}
-      >
-        HACKER NAME
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="font-secondary text-sm font-bold text-heavy">
-        {row.getValue("hackerName")}
-      </div>
-    ),
+    key: "hackerName",
+    header: "Hacker Name",
+    width: "w-[144px]",
+    emphasis: true,
   },
-  {
-    accessorKey: "event",
-    header: () => (
-      <div
-        className="font-secondary text-xs font-medium uppercase tracking-wider"
-        style={{ color: "#dcd8de" }}
-      >
-        EVENT
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="font-secondary text-sm font-bold text-heavy">
-        {row.getValue("event")}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "scanner",
-    header: () => (
-      <div
-        className="font-secondary text-xs font-medium uppercase tracking-wider"
-        style={{ color: "#dcd8de" }}
-      >
-        SCANNER
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="font-secondary text-sm text-heavy">
-        {row.getValue("scanner")}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "day",
-    header: () => (
-      <div
-        className="font-secondary text-xs font-medium uppercase tracking-wider"
-        style={{ color: "#dcd8de" }}
-      >
-        DAY
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="font-secondary text-sm text-heavy">
-        {row.getValue("day")}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "time",
-    header: () => (
-      <div
-        className="font-secondary text-xs font-medium uppercase tracking-wider"
-        style={{ color: "#dcd8de" }}
-      >
-        TIME
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="font-secondary text-sm text-heavy">
-        {row.getValue("time")}
-      </div>
-    ),
-  },
+  { key: "event", header: "Event", width: "w-[144px]", emphasis: true },
+  { key: "scanner", header: "Scanner", width: "w-[144px]" },
+  { key: "day", header: "Day", width: "w-[84px]" },
+  { key: "time", header: "Time", width: "w-[124px]" },
 ];
 
-interface ScansTableProps {
-  scans: ScanRow[];
-  isLoading?: boolean;
+export interface ScanFilter {
+  value: string;
+  label: string;
 }
 
-export function ScansTable({ scans, isLoading }: ScansTableProps) {
-  if (isLoading) {
-    return (
-      <div className="rounded-lg bg-white p-8 shadow-md">
-        <div className="text-center font-secondary text-medium">
-          Loading scans...
-        </div>
-      </div>
-    );
-  }
+type FilterProps =
+  | {
+      filters: ScanFilter[];
+      activeFilter: string;
+      onFilterChange: (value: string) => void;
+    }
+  | {
+      filters?: undefined;
+      activeFilter?: undefined;
+      onFilterChange?: undefined;
+    };
 
-  if (scans.length === 0) {
-    return (
-      <div className="rounded-lg bg-white p-8 shadow-md">
-        <div className="text-center font-secondary text-medium">
-          No scans found
-        </div>
-      </div>
-    );
-  }
+type SearchProps =
+  | { search: string; onSearchChange: (value: string) => void }
+  | { search?: undefined; onSearchChange?: undefined };
+
+type ScansTableProps = {
+  scans: ScanRow[];
+  isLoading?: boolean;
+} & FilterProps &
+  SearchProps;
+
+export function ScansTable({
+  scans,
+  isLoading = false,
+  filters,
+  activeFilter,
+  onFilterChange,
+  search,
+  onSearchChange,
+}: ScansTableProps) {
+  const showFilters =
+    filters !== undefined && filters.length > 0 && onFilterChange !== undefined;
+  const showSearch = search !== undefined && onSearchChange !== undefined;
 
   return (
-    <div className="overflow-hidden rounded-lg bg-white">
-      <div className="overflow-x-auto">
-        <div className="[&_table]:cursor-default [&_table]:border-0 [&_table]:outline-none [&_table]:ring-0 [&_tbody_tr:nth-child(odd)]:bg-[#f5f2f6] [&_tbody_tr]:border-0 [&_td]:cursor-default [&_td]:border-0 [&_th]:cursor-default [&_th]:border-0 [&_thead]:bg-white [&_thead_tr]:border-0 [&_tr]:cursor-default [&_tr]:border-0">
-          <DataTable columns={scansColumns} data={scans} />
+    <div className="flex w-full flex-col gap-6 font-figtree">
+      {(showFilters || showSearch) && (
+        <div className="flex flex-col-reverse gap-4 md:flex-row md:items-center md:justify-between">
+          {showFilters && (
+            <div
+              role="group"
+              aria-label="Filter scans"
+              className="flex flex-wrap items-center gap-x-[60px] gap-y-2"
+            >
+              {filters.map((filter) => {
+                const isActive = filter.value === activeFilter;
+                return (
+                  <button
+                    key={filter.value}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => onFilterChange(filter.value)}
+                    className={cn(
+                      "rounded-dashboard-xs text-sm leading-default transition-colors",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                      isActive
+                        ? "cursor-pixel-default font-bold text-dashboard-text-heavy"
+                        : "cursor-pixel-hover font-medium text-dashboard-text-light hover:text-dashboard-text-medium",
+                    )}
+                  >
+                    {filter.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {showSearch && (
+            <div className="relative w-full md:ml-auto md:w-[276px]">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 z-10 size-3.5 -translate-y-1/2 text-dashboard-text-disabled"
+              />
+              <input
+                type="search"
+                aria-label="Search scans"
+                value={search}
+                onChange={(event) => onSearchChange(event.target.value)}
+                placeholder="Search by name, activity, scanner"
+                className={cn(
+                  "w-full rounded-dashboard-sm bg-dashboard-bg-surface py-2 pl-[34px] pr-1 text-sm font-medium leading-default text-dashboard-text-heavy backdrop-blur-dashboard-input",
+                  "placeholder:text-dashboard-text-placeholder focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                )}
+              />
+            </div>
+          )}
         </div>
-      </div>
+      )}
+
+      {isLoading || scans.length === 0 ? (
+        <p className="rounded-dashboard-sm bg-dashboard-bg-inset p-5 text-sm font-medium italic leading-default text-dashboard-text-medium">
+          {isLoading ? "Loading scans..." : "No scans found"}
+        </p>
+      ) : (
+        <div className="w-full overflow-x-auto">
+          <Table className="w-full min-w-[620px] font-figtree leading-default">
+            <TableHeader className="[&_tr]:border-dashboard-border-faint">
+              <TableRow className="hover:bg-transparent">
+                {SCAN_COLUMNS.map((column) => (
+                  <TableHead
+                    key={column.key}
+                    className={cn(
+                      "h-auto px-3 py-2 text-left text-xs font-semibold uppercase text-dashboard-text-light",
+                      column.width,
+                    )}
+                  >
+                    {column.header}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {scans.map((scan) => (
+                <TableRow
+                  key={scan.id}
+                  className="border-0 odd:bg-dashboard-bg-highlightSubtle hover:bg-dashboard-bg-highlight"
+                >
+                  {SCAN_COLUMNS.map((column) => (
+                    <TableCell
+                      key={column.key}
+                      className={cn(
+                        "px-3 py-3 text-sm font-medium",
+                        column.emphasis
+                          ? "text-dashboard-text-heavy"
+                          : "text-dashboard-text-light",
+                      )}
+                    >
+                      {scan[column.key]}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

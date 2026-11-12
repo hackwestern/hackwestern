@@ -21,7 +21,7 @@ export const PROMO_SPONSORS_IMAGE = {
   width: 1067,
   height: 795,
   // Image pixels of room below the image for the overlay-only rows.
-  extraHeight: 214,
+  extraHeight: 320,
 };
 
 export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
@@ -120,8 +120,9 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Autodesk",
     href: "https://www.autodesk.com/",
-    // A centered row of four, wordmarks on one baseline.
-    left: 12.85,
+    // Two centered rows (four, then three), wordmarks on one baseline per
+    // row.
+    left: 12.98,
     top: 114.27,
     width: 10.84,
     height: 8.2,
@@ -130,17 +131,35 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Accenture",
     href: "https://www.accenture.com/",
-    left: 34.0,
+    left: 34.13,
     top: 117.68,
     width: 13.45,
     height: 4.72,
     overlaySrc: "/shared/sponsors/accenture.svg",
   },
   {
+    name: "Shopify",
+    href: "https://www.shopify.com/",
+    left: 57.89,
+    top: 118.72,
+    width: 12.03,
+    height: 4.6,
+    overlaySrc: "/shared/sponsors/shopify.svg",
+  },
+  {
+    name: "uBit",
+    href: "https://www.ubit.foundation/",
+    left: 80.23,
+    top: 114.2,
+    width: 6.99,
+    height: 8.2,
+    overlaySrc: "/shared/sponsors/ubit.png",
+  },
+  {
     name: "OpenAI",
     href: "https://openai.com/",
-    left: 57.76,
-    top: 119.65,
+    left: 26.94,
+    top: 131.65,
     width: 9.77,
     height: 3.53,
     overlaySrc: "/shared/sponsors/openai.svg",
@@ -148,10 +167,19 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "PCBWay",
     href: "https://www.pcbway.com/",
-    left: 77.84,
-    top: 120.12,
+    left: 47.02,
+    top: 132.12,
     width: 9.51,
     height: 3.53,
     overlaySrc: "/shared/sponsors/pcbway.png",
+  },
+  {
+    name: "Summerfresh",
+    href: "https://www.summerfresh.com/",
+    left: 66.84,
+    top: 128.5,
+    width: 6.41,
+    height: 8.6,
+    overlaySrc: "/shared/sponsors/summerfresh-seal.png",
   },
 ];
