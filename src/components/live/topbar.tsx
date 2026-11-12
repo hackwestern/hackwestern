@@ -9,7 +9,6 @@ import {
 import { Button } from "../ui/button";
 import { Menu } from "lucide-react";
 import { SectionLink, IconlessLink } from "./navlinks";
-import { signOut } from "next-auth/react";
 import { formatTitle } from "~/utils/format";
 import { useState } from "react";
 
