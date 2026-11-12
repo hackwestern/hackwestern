@@ -8,8 +8,7 @@ import {
   writeProgress,
 } from "~/components/judging/judge-app/judge-offline";
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { card } from "~/components/judging/shared/judge-ui";
-import { JudgeEdit } from "~/components/judging/dashboard/judge-edit";
+import { JudgeEdit } from "../dashboard/judge-edit";
 import {
   JudgeNav,
   type JudgeTab,
@@ -37,7 +36,7 @@ const PLACEHOLDER = {
   label: "Judge 12",
   tables: [41, 42, 43, 44, 45, 46],
   // Tables already judged when the page opens. The next is tables[done].
-  done: 1,
+  done: 3,
   // How many judges a table has had. Placeholder for every table.
   impromptu: { judgesSoFar: 1, judgesNeeded: 3 },
   // The rubric this judge scores with. Will come from the backend.
@@ -284,7 +283,8 @@ export function JudgeApp({ judgeKey = "demo" }: JudgeAppProps) {
   } else if (wrongTable) {
     header = <HeaderRow left="Wrong table?" />;
   } else if (tab === "map") {
-    header = <HeaderRow left="Floor map" />;
+    // The map page has no header: the map fills the whole screen height.
+    header = null;
   } else if (tab === "teams") {
     header = <HeaderRow left="Review" />;
   } else if (!scoringPage) {
@@ -330,6 +330,7 @@ export function JudgeApp({ judgeKey = "demo" }: JudgeAppProps) {
           currentIndex={done}
           override={override}
           onJudge={judgeThisTeam}
+          onOpenMap={() => changeTab("map")}
           onReview={reviewAll}
           onWrongTable={() => setNextView("wrong-table")}
           onImpromptu={() => setNextView("impromptu")}
@@ -374,18 +375,7 @@ export function JudgeApp({ judgeKey = "demo" }: JudgeAppProps) {
       />
     );
   } else {
-    body = (
-      <>
-        <section aria-label="Floor map" className={`${card} p-3.5`}>
-          <VenueMap tables={tables} current={currentTable} />
-        </section>
-        {currentTable === undefined && (
-          <p className="m-0 px-1 text-base font-medium text-dashboard-text-light">
-            Start judging on the Next tab to see your next table here.
-          </p>
-        )}
-      </>
-    );
+    body = <VenueMap tables={tables} current={currentTable} variant="page" />;
   }
 
   // Each section opens at the top and fades in, instead of snapping.
@@ -394,19 +384,33 @@ export function JudgeApp({ judgeKey = "demo" }: JudgeAppProps) {
     window.scrollTo({ top: 0 });
   }, [sectionKey]);
 
+  const mapPage = tab === "map";
+
   return (
     <div className="min-h-dvh bg-dashboard-bg-page font-figtree text-dashboard-text-heavy">
-      <div className="mx-auto flex min-h-dvh w-full flex-col sm:max-w-md sm:border-x sm:border-dashboard-border-subtle">
+      <div
+        className={`mx-auto flex w-full flex-col sm:max-w-md sm:border-x sm:border-dashboard-border-subtle ${
+          mapPage ? "h-dvh" : "min-h-dvh"
+        }`}
+      >
         {header}
         <main
-          className={`flex flex-1 flex-col gap-3 px-5 pb-5 ${
-            scoringPage || editing ? "pt-4" : "pt-3"
-          }`}
+          className={
+            mapPage
+              ? "flex min-h-0 flex-1 flex-col"
+              : `flex flex-1 flex-col gap-3 px-5 pb-5 ${
+                  scoringPage || editing ? "pt-4" : "pt-3"
+                }`
+          }
         >
-          <JudgeOfflineBanner online={online} pending={pending} />
+          <div className={mapPage ? "px-3 pt-2 empty:hidden" : "contents"}>
+            <JudgeOfflineBanner online={online} pending={pending} />
+          </div>
           <div
             key={sectionKey}
-            className="flex flex-col gap-3 duration-200 animate-in fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none"
+            className={`flex flex-col duration-200 animate-in fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none ${
+              mapPage ? "min-h-0 flex-1" : "gap-3"
+            }`}
           >
             {body}
           </div>

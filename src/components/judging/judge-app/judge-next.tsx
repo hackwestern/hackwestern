@@ -11,6 +11,8 @@ interface JudgeNextProps {
   currentIndex: number;
   /** Start scoring the table shown. */
   onJudge: () => void;
+  /** Called when the map is tapped, to open the map page. */
+  onOpenMap: () => void;
   /** Opens the full list of judged teams. */
   onReview: () => void;
   /** Set when the judge said they are at a different table than expected. */
@@ -27,6 +29,7 @@ export function JudgeNext({
   currentIndex,
   override,
   onJudge,
+  onOpenMap,
   onReview,
   onWrongTable,
   onImpromptu,
@@ -119,7 +122,7 @@ export function JudgeNext({
       </section>
 
       <section aria-label="Floor map" className={`${card} p-3.5`}>
-        <VenueMap tables={tables} current={table} />
+        <VenueMap tables={tables} current={table} onOpen={onOpenMap} />
       </section>
 
       {/* Placeholder clock: static until the pitch timer is wired up. */}

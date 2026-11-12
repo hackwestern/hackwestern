@@ -38,7 +38,7 @@ export function TableMapPrintSheet({
         </DashboardButton>
       </div>
 
-      <TableMap tables={tables} tracks={tracks} labels trackCodes showPath teams={{}} />
+      <TableMap tables={tables} tracks={tracks} labels trackCodes showPath teams={{}} pannable={false} fullscreenable={false} />
 
       <section aria-label="Tracks" className="break-inside-avoid">
         <h2 className="m-0 mb-1 text-base font-bold">Tracks</h2>

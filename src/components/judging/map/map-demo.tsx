@@ -72,7 +72,6 @@ export function TableMapDemo() {
         mineLabel="Your other tables"
         showTrackColors={false}
         searchable
-        zoomable
         listToggle
       />
     );
