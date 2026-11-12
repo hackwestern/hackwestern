@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { JudgeConfirm } from "../shared/judge-confirm";
 import { card, field, touch } from "~/components/judging/shared/judge-ui";
 import {
   type Ratings,
@@ -121,8 +122,9 @@ export function JudgeRubric({
     onSubmit({ table, ratings, score: result.score, notes: notes.trim() });
   };
 
+  const [confirmAbsent, setConfirmAbsent] = useState(false);
   const absent = () => {
-    if (!window.confirm(`Mark table ${table} as not here?`)) return;
+    setConfirmAbsent(false);
     clearDraft(table);
     onAbsent(table);
   };
@@ -187,7 +189,7 @@ export function JudgeRubric({
         <DashboardButton
           type="button"
           variant="outline"
-          onClick={absent}
+          onClick={() => setConfirmAbsent(true)}
           className={`${touch} px-4`}
         >
           Team not here
@@ -206,6 +208,15 @@ export function JudgeRubric({
           Score all {count} criteria to continue.
         </p>
       )}
+      <JudgeConfirm
+        open={confirmAbsent}
+        title={`Mark table ${table} as not here?`}
+        description="No score will be saved for this team."
+        confirmLabel="Team not here"
+        cancelLabel="Keep scoring"
+        onConfirm={absent}
+        onCancel={() => setConfirmAbsent(false)}
+      />
     </>
   );
 }

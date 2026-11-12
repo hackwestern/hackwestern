@@ -8,7 +8,8 @@ import {
   writeProgress,
 } from "~/components/judging/judge-app/judge-offline";
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { JudgeEdit } from "../dashboard/judge-edit";
+import { JudgeConfirm } from "~/components/judging/shared/judge-confirm";
+import { JudgeEdit } from "~/components/judging/dashboard/judge-edit";
 import {
   JudgeNav,
   type JudgeTab,
@@ -247,13 +248,9 @@ export function JudgeApp({ judgeKey = "demo" }: JudgeAppProps) {
     finishTable();
   };
 
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
   const submitAll = () => {
-    if (
-      !window.confirm(
-        `Submit ${results.length} score${results.length === 1 ? "" : "s"}? You can't change them after.`,
-      )
-    )
-      return;
+    setConfirmSubmit(false);
     // Saved on the phone first, then sent when there is a connection.
     submit({ judge: label, results });
   };
@@ -371,7 +368,7 @@ export function JudgeApp({ judgeKey = "demo" }: JudgeAppProps) {
         results={results}
         status={submitStatus}
         onEdit={editTeam}
-        onSubmit={submitAll}
+        onSubmit={() => setConfirmSubmit(true)}
       />
     );
   } else {
@@ -419,6 +416,15 @@ export function JudgeApp({ judgeKey = "demo" }: JudgeAppProps) {
           active={tab}
           onChange={changeTab}
           disabled={judging === null && !editing ? ["score"] : []}
+        />
+        <JudgeConfirm
+          open={confirmSubmit}
+          title={`Submit ${results.length} score${results.length === 1 ? "" : "s"}?`}
+          description="You can't change them after."
+          confirmLabel="Submit scores"
+          cancelLabel="Not yet"
+          onConfirm={submitAll}
+          onCancel={() => setConfirmSubmit(false)}
         />
       </div>
     </div>

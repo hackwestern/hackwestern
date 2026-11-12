@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { JudgeConfirm } from "~/components/judging/shared/judge-confirm";
 import { card, field, touch } from "~/components/judging/shared/judge-ui";
 import { type JudgedTeam } from "~/components/judging/judge-app/judge-teams";
 import {
@@ -42,8 +43,9 @@ export function JudgeEdit({ team, rubric, onSave, onCancel }: JudgeEditProps) {
     });
   };
 
+  const [confirmAbsent, setConfirmAbsent] = useState(false);
   const markAbsent = () => {
-    if (!window.confirm(`Mark table ${team.table} as not here?`)) return;
+    setConfirmAbsent(false);
     onSave({ ...team, absent: true, ratings: {}, score: null, notes: "" });
   };
 
@@ -108,7 +110,7 @@ export function JudgeEdit({ team, rubric, onSave, onCancel }: JudgeEditProps) {
           <DashboardButton
             type="button"
             variant="outline"
-            onClick={markAbsent}
+            onClick={() => setConfirmAbsent(true)}
             className={`${touch} px-4`}
           >
             Not here
@@ -128,6 +130,15 @@ export function JudgeEdit({ team, rubric, onSave, onCancel }: JudgeEditProps) {
           Score all {count} criteria to save.
         </p>
       )}
+      <JudgeConfirm
+        open={confirmAbsent}
+        title={`Mark table ${team.table} as not here?`}
+        description="The score and notes you gave this team will be removed."
+        confirmLabel="Team not here"
+        cancelLabel="Keep score"
+        onConfirm={markAbsent}
+        onCancel={() => setConfirmAbsent(false)}
+      />
     </>
   );
 }
