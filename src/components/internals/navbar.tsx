@@ -22,6 +22,9 @@ export function InternalNavbar() {
         <Button className="text-primary-600" variant={"link"} asChild>
           <Link href="/internal/review">Applicant Review</Link>
         </Button> */}
+        <Button className="text-primary-600" variant={"link"} asChild>
+          <Link href="/internal/clock">Clock</Link>
+        </Button>
         {/* Bulk status tool (#558) is hard-disabled (#798); hidden until it's back.
         <Button className="text-primary-600" variant={"link"} asChild>
           <Link href="/internal/adjust-status">Status Adjustment</Link>
