@@ -1,4 +1,4 @@
-CREATE TABLE "clock" (
+CREATE TABLE IF NOT EXISTS "clock" (
 	"id" integer PRIMARY KEY DEFAULT 1 NOT NULL,
 	"ends_at" timestamp (3) with time zone,
 	"paused_remaining_ms" integer,
