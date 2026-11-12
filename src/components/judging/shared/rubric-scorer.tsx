@@ -30,19 +30,22 @@ export const DEFAULT_RUBRIC: Rubric = {
     {
       id: "technical",
       name: "Technical",
-      description: "How hard was this to build, and how well was it built? Look for real engineering under the hood, like ML, hardware, custom algorithms or several connected systems. The team should be able to explain how it works and show the core features running live.",
+      description:
+        "How hard was this to build, and how well was it built? Look for real engineering under the hood, like ML, hardware, custom algorithms or several connected systems. The team should be able to explain how it works and show the core features running live.",
       weight: 1,
     },
     {
       id: "originality",
       name: "Originality & Creativity",
-      description: "How new is the idea? Score higher for projects judges haven't seen before, or ones that take on a familiar problem from an unexpected angle. Bold, risky ideas count for more than safe copies of existing apps.",
+      description:
+        "How new is the idea? Score higher for projects judges haven't seen before, or ones that take on a familiar problem from an unexpected angle. Bold, risky ideas count for more than safe copies of existing apps.",
       weight: 1,
     },
     {
       id: "impact",
       name: "Impact & Usefulness",
-      description: "Does it solve a real problem for real people? The team should be able to say who would use it and why it's better than what exists today. Projects that could keep going after the weekend score higher.",
+      description:
+        "Does it solve a real problem for real people? The team should be able to say who would use it and why it's better than what exists today. Projects that could keep going after the weekend score higher.",
       weight: 1,
     },
   ],
@@ -60,7 +63,6 @@ export const ratingOf = (c: RubricCriterion, ratings: Ratings) => {
   const r = ratings[c.id];
   return r !== undefined && r >= RUBRIC_MIN && r <= RUBRIC_MAX ? r : undefined;
 };
-
 
 /**
  * Turns ratings into the 0–100 score the backend stores: the weighted average

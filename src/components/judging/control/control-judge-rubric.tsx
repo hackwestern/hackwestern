@@ -79,9 +79,7 @@ export function RubricBuilder({ rubric = DEFAULT_RUBRIC }: Props) {
                   onClick={() => setGuideOpen((o) => !o)}
                   className="min-h-11 self-end"
                 >
-                  {guideOpen
-                    ? "Hide descriptions"
-                    : "Show descriptions"}
+                  {guideOpen ? "Hide descriptions" : "Show descriptions"}
                 </DashboardButton>
               )}
               <RubricScorer
