@@ -26,7 +26,8 @@ const ROLES: { id: Role; label: string; shows: string; where: string }[] = [
   {
     id: "sponsor",
     label: "Sponsor",
-    shows: "Only their own track's block is coloured. Every other table stays plain.",
+    shows:
+      "Only their own track's block is coloured. Every other table stays plain.",
     where: "Sponsor view.",
   },
   {
@@ -38,7 +39,8 @@ const ROLES: { id: Role; label: string; shows: string; where: string }[] = [
   {
     id: "print",
     label: "Door printout",
-    shows: "Every table numbered with its track letter, readable in black and white.",
+    shows:
+      "Every table numbered with its track letter, readable in black and white.",
     where: "Printed backup for the door.",
   },
 ];

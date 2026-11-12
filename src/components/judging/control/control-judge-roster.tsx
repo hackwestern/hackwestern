@@ -69,7 +69,11 @@ export const STARTER_ROSTER: RosterJudge[] = [
     harshness: null,
     status: "not-opened",
     lastActive: null,
-    link: { token: "a1b2c3d4e5f60718", createdAt: minutesAgo(90), revoked: false },
+    link: {
+      token: "a1b2c3d4e5f60718",
+      createdAt: minutesAgo(90),
+      revoked: false,
+    },
   },
   {
     id: "j3",
@@ -169,7 +173,9 @@ export function JudgeRoster({ initial = STARTER_ROSTER }: Props) {
   }, [judges, filter, query]);
 
   const updateJudge = (id: string, patch: Partial<RosterJudge>) =>
-    setJudges((list) => list.map((j) => (j.id === id ? { ...j, ...patch } : j)));
+    setJudges((list) =>
+      list.map((j) => (j.id === id ? { ...j, ...patch } : j)),
+    );
 
   async function copyLink(j: RosterJudge) {
     if (!j.link || j.link.revoked) return;

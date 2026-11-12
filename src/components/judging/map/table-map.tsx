@@ -211,7 +211,11 @@ export function TableMap({
   }, [fill, rotated, size.w, size.h, focus]);
   const panBy = (dx: number, dy: number) =>
     setCam((c) =>
-      limit({ ...c, cx: c.cx - dx / (fit * c.zoom), cy: c.cy - dy / (fit * c.zoom) }),
+      limit({
+        ...c,
+        cx: c.cx - dx / (fit * c.zoom),
+        cy: c.cy - dy / (fit * c.zoom),
+      }),
     );
   /** Zoom by `factor`, keeping the map point under (sx, sy) where it is. */
   const zoomAt = (sx: number, sy: number, factor: number) =>
@@ -254,7 +258,11 @@ export function TableMap({
       if (!(full || e.ctrlKey || e.metaKey)) return;
       e.preventDefault();
       const r = el.getBoundingClientRect();
-      zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0025));
+      zoomAt(
+        e.clientX - r.left,
+        e.clientY - r.top,
+        Math.exp(-e.deltaY * 0.0025),
+      );
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
@@ -359,47 +367,60 @@ export function TableMap({
       }`;
   const legend = (
     <ul className={legendClass}>
-          {focusTable && (
-            <li className="flex items-center gap-2">
-              <span
-                aria-hidden
-                className="inline-block h-3 w-4 rounded-dashboard-xs bg-dashboard-text-heavy ring-2 ring-dashboard-action-primary ring-offset-1"
+      {focusTable && (
+        <li className="flex items-center gap-2">
+          <span
+            aria-hidden
+            className="inline-block h-3 w-4 rounded-dashboard-xs bg-dashboard-text-heavy ring-2 ring-dashboard-action-primary ring-offset-1"
+          />
+          {focusLabel}
+        </li>
+      )}
+      {mine.length > 0 && (
+        <li className="flex items-center gap-2">
+          <span
+            aria-hidden
+            className="inline-block h-3 w-4 rounded-dashboard-xs border-2 border-dashboard-action-primary"
+          />
+          {mineLabel}
+        </li>
+      )}
+      {judgesScored && (
+        <li className="flex items-center gap-2">
+          <span aria-hidden className="font-mono">
+            ●●○
+          </span>
+          Judges who have scored it, out of {JUDGES_PER_TABLE}
+        </li>
+      )}
+      {showPath && (
+        <li className="flex items-center gap-2">
+          <span
+            aria-hidden
+            className="inline-block w-4 border-t border-dashed border-dashboard-text-light"
+          />
+          Snake path, in table order
+        </li>
+      )}
+      {showTrackLegend &&
+        coloured.map((t) => (
+          <li key={t.id} className="flex items-center gap-2">
+            <svg aria-hidden width={16} height={12} viewBox="0 0 16 12">
+              <rect
+                x={0.5}
+                y={0.5}
+                width={15}
+                height={11}
+                rx={2}
+                strokeWidth={1}
+                className={`${t.fill} ${t.stroke}`}
               />
-              {focusLabel}
-            </li>
-          )}
-          {mine.length > 0 && (
-            <li className="flex items-center gap-2">
-              <span
-                aria-hidden
-                className="inline-block h-3 w-4 rounded-dashboard-xs border-2 border-dashboard-action-primary"
-              />
-              {mineLabel}
-            </li>
-          )}
-          {judgesScored && (
-            <li className="flex items-center gap-2">
-              <span aria-hidden className="font-mono">●●○</span>
-              Judges who have scored it, out of {JUDGES_PER_TABLE}
-            </li>
-          )}
-          {showPath && (
-            <li className="flex items-center gap-2">
-              <span aria-hidden className="inline-block w-4 border-t border-dashed border-dashboard-text-light" />
-              Snake path, in table order
-            </li>
-          )}
-          {showTrackLegend &&
-            coloured.map((t) => (
-              <li key={t.id} className="flex items-center gap-2">
-                <svg aria-hidden width={16} height={12} viewBox="0 0 16 12">
-                  <rect x={0.5} y={0.5} width={15} height={11} rx={2} strokeWidth={1} className={`${t.fill} ${t.stroke}`} />
-                </svg>
-                {t.name} · tables {t.from}–{t.to}
-                {highlightTrack === t.id ? " (yours)" : ""}
-              </li>
-            ))}
-        </ul>
+            </svg>
+            {t.name} · tables {t.from}–{t.to}
+            {highlightTrack === t.id ? " (yours)" : ""}
+          </li>
+        ))}
+    </ul>
   );
 
   return (
@@ -448,10 +469,16 @@ export function TableMap({
           )}
           {listToggle && (
             <div role="group" aria-label="Map or list" className="flex gap-2">
-              <DashboardChip selected={view === "map"} onClick={() => setView("map")}>
+              <DashboardChip
+                selected={view === "map"}
+                onClick={() => setView("map")}
+              >
                 Map
               </DashboardChip>
-              <DashboardChip selected={view === "list"} onClick={() => setView("list")}>
+              <DashboardChip
+                selected={view === "list"}
+                onClick={() => setView("list")}
+              >
                 List
               </DashboardChip>
             </div>
@@ -460,7 +487,10 @@ export function TableMap({
       )}
 
       {searching && (
-        <p role="status" className="m-0 text-sm text-dashboard-text-light print:hidden">
+        <p
+          role="status"
+          className="m-0 text-sm text-dashboard-text-light print:hidden"
+        >
           {matches.length === 0
             ? "No team or table matches."
             : matches.length === 1 && matches[0]
@@ -477,7 +507,10 @@ export function TableMap({
         <div className="flex flex-wrap items-center gap-2 print:hidden">
           {pannable && (
             <>
-              <DashboardChip selected={false} onClick={() => zoomCentre(1 / 1.4)}>
+              <DashboardChip
+                selected={false}
+                onClick={() => zoomCentre(1 / 1.4)}
+              >
                 Zoom out −
               </DashboardChip>
               <DashboardChip selected={false} onClick={() => zoomCentre(1.4)}>
@@ -579,7 +612,8 @@ export function TableMap({
                         : `${track?.fill ?? "fill-dashboard-bg-surface"} ${
                             mineSet.has(t.n)
                               ? "stroke-dashboard-action-primary"
-                              : (track?.stroke ?? "stroke-dashboard-border-default")
+                              : (track?.stroke ??
+                                "stroke-dashboard-border-default")
                           }`
                     }
                   />
@@ -769,19 +803,29 @@ export function TableList({
     {
       key: "none",
       title: tracks.length > 0 ? "Other tables" : "All tables",
-      rows: shown.filter((t) => !tracks.some((track) => track.id === t.trackId)),
+      rows: shown.filter(
+        (t) => !tracks.some((track) => track.id === t.trackId),
+      ),
     },
   ].filter((g) => g.rows.length > 0);
 
   if (groups.length === 0) {
-    return <p className="m-0 text-sm text-dashboard-text-light">Nothing to list.</p>;
+    return (
+      <p className="m-0 text-sm text-dashboard-text-light">Nothing to list.</p>
+    );
   }
 
   return (
     <div className="flex flex-col gap-3">
       {groups.map((g) => (
-        <section key={g.key} aria-label={g.title} className="flex flex-col gap-1">
-          <h3 className="m-0 text-sm font-semibold text-dashboard-text-light">{g.title}</h3>
+        <section
+          key={g.key}
+          aria-label={g.title}
+          className="flex flex-col gap-1"
+        >
+          <h3 className="m-0 text-sm font-semibold text-dashboard-text-light">
+            {g.title}
+          </h3>
           <ul className="m-0 flex list-none flex-col p-0">
             {g.rows.map((t) => {
               const count = judgesScored?.[t.n];
@@ -789,7 +833,9 @@ export function TableList({
                 <li
                   key={t.n}
                   className={`flex items-baseline gap-3 border-b border-dashboard-border-subtle py-1.5 text-base ${
-                    t.n === focus ? "font-bold text-dashboard-text-heavy" : "text-dashboard-text-heavy"
+                    t.n === focus
+                      ? "font-bold text-dashboard-text-heavy"
+                      : "text-dashboard-text-heavy"
                   }`}
                 >
                   <span className="w-10 tabular-nums">{t.n}</span>

@@ -27,7 +27,7 @@ function PitchTimer({ assignedAt }: { assignedAt: Date }) {
     <div
       role="timer"
       aria-label="Pitch time"
-      className={`flex min-w-28 shrink-0 flex-col items-end gap-0.5 rounded-dashboard-xl px-2.5 py-2 ${
+      className={`rounded-dashboard-xl flex min-w-28 shrink-0 flex-col items-end gap-0.5 px-2.5 py-2 ${
         over
           ? "bg-dashboard-status-iconBadge text-dashboard-text-warning"
           : "bg-dashboard-bg-inset text-dashboard-text-heavy"

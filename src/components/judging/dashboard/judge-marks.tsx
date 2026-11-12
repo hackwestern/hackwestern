@@ -74,7 +74,10 @@ function MarkEditor({ mark, onDone }: { mark: Mark; onDone: () => void }) {
         </p>
       )}
       {edit.error && (
-        <p role="alert" className="w-full text-sm font-semibold text-destructive">
+        <p
+          role="alert"
+          className="w-full text-sm font-semibold text-destructive"
+        >
           {friendlyError(edit.error)}
         </p>
       )}
@@ -111,7 +114,7 @@ export function JudgeMarks({ marks }: { marks: Mark[] }) {
           {marks.map((mark) => (
             <li
               key={mark.id}
-              className="flex flex-col gap-2 rounded-dashboard-xl border border-dashboard-border-subtle bg-dashboard-bg-surface px-3.5 py-2"
+              className="rounded-dashboard-xl flex flex-col gap-2 border border-dashboard-border-subtle bg-dashboard-bg-surface px-3.5 py-2"
             >
               <div className="flex items-center justify-between gap-3">
                 <span className="min-w-0 truncate text-base font-semibold text-dashboard-text-heavy">

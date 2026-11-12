@@ -43,11 +43,51 @@ export interface MapTable {
 
 /** Placeholder tracks. Needs a categorical colour set in the design tokens. */
 export const TRACKS: MapTrack[] = [
-  { id: "a", name: "General", code: "A", from: 1, to: 28, fill: "fill-blue-1", stroke: "stroke-blue-4" },
-  { id: "b", name: "Track B", code: "B", from: 29, to: 42, fill: "fill-blue-3", stroke: "stroke-blue-6" },
-  { id: "c", name: "Track C", code: "C", from: 43, to: 54, fill: "fill-gray-1", stroke: "stroke-gray-4" },
-  { id: "d", name: "Track D", code: "D", from: 55, to: 62, fill: "fill-gray-2", stroke: "stroke-gray-5" },
-  { id: "e", name: "Track E", code: "E", from: 63, to: 70, fill: "fill-dashboard-bg-highlight", stroke: "stroke-dashboard-action-primary" },
+  {
+    id: "a",
+    name: "General",
+    code: "A",
+    from: 1,
+    to: 28,
+    fill: "fill-blue-1",
+    stroke: "stroke-blue-4",
+  },
+  {
+    id: "b",
+    name: "Track B",
+    code: "B",
+    from: 29,
+    to: 42,
+    fill: "fill-blue-3",
+    stroke: "stroke-blue-6",
+  },
+  {
+    id: "c",
+    name: "Track C",
+    code: "C",
+    from: 43,
+    to: 54,
+    fill: "fill-gray-1",
+    stroke: "stroke-gray-4",
+  },
+  {
+    id: "d",
+    name: "Track D",
+    code: "D",
+    from: 55,
+    to: 62,
+    fill: "fill-gray-2",
+    stroke: "stroke-gray-5",
+  },
+  {
+    id: "e",
+    name: "Track E",
+    code: "E",
+    from: 63,
+    to: 70,
+    fill: "fill-dashboard-bg-highlight",
+    stroke: "stroke-dashboard-action-primary",
+  },
 ];
 
 export const trackOf = (tracks: MapTrack[], n: number) =>
@@ -81,8 +121,30 @@ export function mapBounds(tables: MapTable[]) {
   return { width, height };
 }
 
-const FIRST = ["Pixel", "Cloud", "Byte", "Maple", "Signal", "Lumen", "Orbit", "Copper", "Nimbus", "Delta"];
-const SECOND = ["Pirates", "Labs", "Garden", "Forge", "Studio", "Works", "Lane", "Club", "Press", "Crew"];
+const FIRST = [
+  "Pixel",
+  "Cloud",
+  "Byte",
+  "Maple",
+  "Signal",
+  "Lumen",
+  "Orbit",
+  "Copper",
+  "Nimbus",
+  "Delta",
+];
+const SECOND = [
+  "Pirates",
+  "Labs",
+  "Garden",
+  "Forge",
+  "Studio",
+  "Works",
+  "Lane",
+  "Club",
+  "Press",
+  "Crew",
+];
 
 /** Placeholder team names by table, until teams come from the database. */
 export const PLACEHOLDER_TEAMS: Record<number, string> = Object.fromEntries(
@@ -93,6 +155,10 @@ export const PLACEHOLDER_TEAMS: Record<number, string> = Object.fromEntries(
 );
 
 /** Placeholder: how many judges have scored each table (organizer view). */
-export const PLACEHOLDER_JUDGES_SCORED: Record<number, number> = Object.fromEntries(
-  Array.from({ length: TABLE_COUNT }, (_, i) => [i + 1, (i * 7) % (JUDGES_PER_TABLE + 1)]),
-);
+export const PLACEHOLDER_JUDGES_SCORED: Record<number, number> =
+  Object.fromEntries(
+    Array.from({ length: TABLE_COUNT }, (_, i) => [
+      i + 1,
+      (i * 7) % (JUDGES_PER_TABLE + 1),
+    ]),
+  );

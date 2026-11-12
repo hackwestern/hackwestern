@@ -106,7 +106,8 @@ export function JudgeRubric({
     }
     setSaveState("saving");
     const timer = setTimeout(
-      () => setSaveState(writeDraft(table, { ratings, notes }) ? "saved" : "error"),
+      () =>
+        setSaveState(writeDraft(table, { ratings, notes }) ? "saved" : "error"),
       500,
     );
     return () => clearTimeout(timer);

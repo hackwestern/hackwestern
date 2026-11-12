@@ -26,19 +26,30 @@ export function TableMapPrintSheet({
 }: TableMapPrintSheetProps) {
   return (
     <div className="flex flex-col gap-4 font-figtree text-dashboard-text-heavy [-webkit-print-color-adjust:exact] [print-color-adjust:exact]">
-      <style>{"@media print { @page { size: landscape; margin: 12mm; } }"}</style>
+      <style>
+        {"@media print { @page { size: landscape; margin: 12mm; } }"}
+      </style>
       <div className="flex items-center justify-between gap-3">
         <h1 className="m-0 text-2xl font-bold">{title}</h1>
         <DashboardButton
           type="button"
           onClick={() => window.print()}
-          className="w-auto print:hidden md:w-auto"
+          className="w-auto md:w-auto print:hidden"
         >
           Print map
         </DashboardButton>
       </div>
 
-      <TableMap tables={tables} tracks={tracks} labels trackCodes showPath teams={{}} pannable={false} fullscreenable={false} />
+      <TableMap
+        tables={tables}
+        tracks={tracks}
+        labels
+        trackCodes
+        showPath
+        teams={{}}
+        pannable={false}
+        fullscreenable={false}
+      />
 
       <section aria-label="Tracks" className="break-inside-avoid">
         <h2 className="m-0 mb-1 text-base font-bold">Tracks</h2>

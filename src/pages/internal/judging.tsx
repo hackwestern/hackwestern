@@ -8,7 +8,11 @@ import { ControlProgress } from "~/components/judging/control/control-progress";
 import { ControlQueue } from "~/components/judging/control/control-queue";
 import { ControlQueueTable } from "~/components/judging/control/control-queue-table";
 import { ControlRanking } from "~/components/judging/control/control-ranking";
-import { MUTED, errorText, useNow } from "~/components/judging/control/control-shared";
+import {
+  MUTED,
+  errorText,
+  useNow,
+} from "~/components/judging/control/control-shared";
 import { ControlSponsorTracks } from "~/components/judging/control/control-sponsor-tracks";
 import { api } from "~/utils/api";
 import { authRedirectOrganizer } from "~/utils/redirect";

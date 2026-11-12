@@ -194,13 +194,13 @@ interface JudgeOfflineBannerProps {
 }
 
 /** Tells the judge when scores are only on their phone, and when they send. */
-export function JudgeOfflineBanner({ online, pending }: JudgeOfflineBannerProps) {
+export function JudgeOfflineBanner({
+  online,
+  pending,
+}: JudgeOfflineBannerProps) {
   if (!online) {
     return (
-      <p
-        role="status"
-        className={warningBanner}
-      >
+      <p role="status" className={warningBanner}>
         You&apos;re offline. Scores save on this phone and send when you&apos;re
         back online.
       </p>
@@ -208,10 +208,7 @@ export function JudgeOfflineBanner({ online, pending }: JudgeOfflineBannerProps)
   }
   if (pending > 0) {
     return (
-      <p
-        role="status"
-        className={infoBanner}
-      >
+      <p role="status" className={infoBanner}>
         Sending your scores…
       </p>
     );

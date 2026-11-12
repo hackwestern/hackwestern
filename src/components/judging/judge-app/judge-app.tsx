@@ -132,10 +132,16 @@ export function JudgeApp({ judgeKey = "demo" }: JudgeAppProps) {
   useEffect(() => {
     resultsRef.current = results;
   });
-  const { online, pending, submit } = useOutbox(judgeKey, sendScores, (item) => {
-    // Only counts as sent if nothing changed while it was on its way.
-    setSent(JSON.stringify(item.results) === JSON.stringify(resultsRef.current));
-  });
+  const { online, pending, submit } = useOutbox(
+    judgeKey,
+    sendScores,
+    (item) => {
+      // Only counts as sent if nothing changed while it was on its way.
+      setSent(
+        JSON.stringify(item.results) === JSON.stringify(resultsRef.current),
+      );
+    },
+  );
   let submitStatus: SubmitStatus = "open";
   if (pending > 0) submitStatus = online ? "sending" : "waiting";
   else if (sent) submitStatus = "sent";
