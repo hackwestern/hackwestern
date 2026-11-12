@@ -134,9 +134,8 @@ export default function SponsorHubPage() {
               </div>
 
               <p className="m-0 text-base font-medium leading-relaxed text-dashboard-text-medium">
-                Select between 5 and 10 teams for your sponsored awards. You
-                can update and save your selections anytime before judging
-                closes.
+                Select between 5 and 10 teams for your sponsored awards. You can
+                update and save your selections anytime before judging closes.
               </p>
 
               <DashboardButton asChild className="mt-1 md:w-full">
