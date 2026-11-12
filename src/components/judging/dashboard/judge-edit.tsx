@@ -84,9 +84,7 @@ export function JudgeEdit({
             onClick={() => setGuideOpen((o) => !o)}
             className={`${touch} self-end`}
           >
-            {guideOpen
-              ? "Hide descriptions"
-              : "Show descriptions"}
+            {guideOpen ? "Hide descriptions" : "Show descriptions"}
           </DashboardButton>
         )}
         <RubricScorer
