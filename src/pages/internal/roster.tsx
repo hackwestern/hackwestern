@@ -8,7 +8,7 @@ export default function JudgesPage() {
     <>
       <SEO title="Judges" noindex />
       <InternalNavbar />
-      <main className="min-h-screen bg-offwhite px-4 pb-12 pt-8 sm:px-5">
+      <main className="min-h-screen bg-offwhite px-4 pb-12 pt-8 font-figtree sm:px-5">
         <div className="mx-auto max-w-[1100px]">
           <JudgeRoster />
         </div>

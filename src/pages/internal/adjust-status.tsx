@@ -139,7 +139,7 @@ export default function AdjustStatus() {
     <>
       <SEO title="Adjust Status" noindex />
       <InternalNavbar></InternalNavbar>
-      <div className="bg-hw-radial-gradient m-auto flex min-h-screen flex-col items-center justify-start py-8">
+      <div className="bg-hw-radial-gradient m-auto flex min-h-screen flex-col items-center justify-start py-8 font-figtree">
         <div className="z-10 w-full max-w-3xl rounded-lg bg-background/90 p-6 shadow-md backdrop-blur-sm">
           <h1 className="font-dico mb-2 text-3xl text-heavy">Adjust Status</h1>
           <p className="mb-6 text-sm text-medium">
@@ -148,7 +148,7 @@ export default function AdjustStatus() {
           </p>
 
           <div className="mb-6">
-            <h2 className="mb-2 font-secondary text-medium">
+            <h2 className="mb-2 font-figtree text-medium">
               Upload CSV of Emails
             </h2>
             <Input
@@ -189,9 +189,7 @@ export default function AdjustStatus() {
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-2 font-secondary text-medium">
-              Add Single Email
-            </h2>
+            <h2 className="mb-2 font-figtree text-medium">Add Single Email</h2>
             <div className="flex gap-2">
               <Input
                 type="email"
@@ -213,9 +211,7 @@ export default function AdjustStatus() {
           </div>
 
           <div className="mb-6">
-            <h2 className="mb-2 font-secondary text-medium">
-              Select New Status
-            </h2>
+            <h2 className="mb-2 font-figtree text-medium">Select New Status</h2>
             <Select
               value={status}
               onValueChange={(v) => setStatus(v as Status)}
