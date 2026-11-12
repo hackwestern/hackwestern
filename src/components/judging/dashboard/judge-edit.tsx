@@ -85,8 +85,8 @@ export function JudgeEdit({
             className={`${touch} self-end`}
           >
             {guideOpen
-              ? "Hide what the points mean"
-              : "What do the points mean?"}
+              ? "Hide descriptions"
+              : "Show descriptions"}
           </DashboardButton>
         )}
         <RubricScorer

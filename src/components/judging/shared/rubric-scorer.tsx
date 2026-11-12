@@ -3,7 +3,6 @@ import { focusRing } from "~/components/judging/shared/judge-ui";
 /** Every criterion is scored on the same slider, from 0 to 100. */
 export const RUBRIC_MIN = 0;
 export const RUBRIC_MAX = 100;
-const RUBRIC_MID = 50;
 
 export interface RubricCriterion {
   id: string;
@@ -12,10 +11,6 @@ export interface RubricCriterion {
   description: string;
   /** Relative importance. Ignored unless the rubric is weighted. */
   weight: number;
-  /** Optional anchors for "What do the points mean?" (at 0, 50 and 100). */
-  low: string;
-  mid: string;
-  high: string;
 }
 
 export interface Rubric {
@@ -33,43 +28,29 @@ export const DEFAULT_RUBRIC: Rubric = {
   weighted: false,
   criteria: [
     {
-      id: "idea",
-      name: "Idea",
-      description: "",
-      weight: 1,
-      low: "seen it many times",
-      mid: "fresh angle on a known problem",
-      high: "new and clearly useful",
-    },
-    {
       id: "technical",
       name: "Technical",
-      description: "",
+      description: "How hard was this to build, and how well was it built? Look for real engineering under the hood, like ML, hardware, custom algorithms or several connected systems. The team should be able to explain how it works and show the core features running live.",
       weight: 1,
-      low: "mostly slides",
-      mid: "core feature works live",
-      high: "hard problem, works end to end",
     },
     {
-      id: "design",
-      name: "Design",
-      description: "",
+      id: "originality",
+      name: "Originality & Creativity",
+      description: "How new is the idea? Score higher for projects judges haven't seen before, or ones that take on a familiar problem from an unexpected angle. Bold, risky ideas count for more than safe copies of existing apps.",
       weight: 1,
-      low: "hard to follow",
-      mid: "clear enough to use",
-      high: "polished and intuitive",
     },
     {
-      id: "pitch",
-      name: "Pitch",
-      description: "",
+      id: "impact",
+      name: "Impact & Usefulness",
+      description: "Does it solve a real problem for real people? The team should be able to say who would use it and why it's better than what exists today. Projects that could keep going after the weekend score higher.",
       weight: 1,
-      low: "unclear what it does",
-      mid: "clear demo",
-      high: "compelling, handled questions",
     },
   ],
 };
+
+/** The toggle only appears when at least one criterion has a description. */
+export const hasGuide = (rubric: Rubric) =>
+  rubric.criteria.some((c) => c.description.trim());
 
 export const effectiveWeight = (rubric: Rubric, c: RubricCriterion) =>
   rubric.weighted && c.weight > 0 ? c.weight : 1;
@@ -80,8 +61,6 @@ export const ratingOf = (c: RubricCriterion, ratings: Ratings) => {
   return r !== undefined && r >= RUBRIC_MIN && r <= RUBRIC_MAX ? r : undefined;
 };
 
-export const hasGuide = (rubric: Rubric) =>
-  rubric.criteria.some((c) => c.low || c.mid || c.high);
 
 /**
  * Turns ratings into the 0–100 score the backend stores: the weighted average
@@ -112,6 +91,7 @@ interface RubricScorerProps {
   rubric: Rubric;
   ratings: Ratings;
   onRate: (criterionId: string, value: number) => void;
+  /** When true, each criterion's description shows beside its name. */
   guideOpen: boolean;
   /** Show the number beside each slider. On by default; the judge app turns it off. */
   showValues?: boolean;
@@ -126,7 +106,7 @@ export function RubricScorer({
   showValues = true,
 }: RubricScorerProps) {
   return (
-    <div className="flex flex-col gap-3">
+    <div id="rubric-guide" className="flex flex-col gap-3">
       {rubric.criteria.map((c) => {
         const current = ratingOf(c, ratings);
         const labelId = `rubric-${c.id}`;
@@ -146,7 +126,7 @@ export function RubricScorer({
                 >
                   {c.name.trim() || "Untitled criterion"}
                 </span>
-                {c.description.trim() && (
+                {guideOpen && c.description.trim() && (
                   <span className="text-xs leading-snug text-dashboard-text-light">
                     {c.description}
                   </span>
@@ -186,30 +166,6 @@ export function RubricScorer({
           </div>
         );
       })}
-      {guideOpen && (
-        <dl
-          id="rubric-guide"
-          className="flex flex-col gap-2 text-xs leading-snug text-dashboard-text-light"
-        >
-          {rubric.criteria.map((c) => {
-            const parts: [number, string][] = [
-              [RUBRIC_MIN, c.low],
-              [RUBRIC_MID, c.mid],
-              [RUBRIC_MAX, c.high],
-            ];
-            const shown = parts.filter(([, text]) => text.trim());
-            if (shown.length === 0) return null;
-            return (
-              <div key={c.id} className="flex flex-col gap-px">
-                <dt className="font-semibold text-dashboard-text-heavy">
-                  {c.name}
-                </dt>
-                <dd>{shown.map(([p, text]) => `${p} ${text}`).join(" · ")}</dd>
-              </div>
-            );
-          })}
-        </dl>
-      )}
     </div>
   );
 }

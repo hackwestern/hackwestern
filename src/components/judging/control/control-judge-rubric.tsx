@@ -80,8 +80,8 @@ export function RubricBuilder({ rubric = DEFAULT_RUBRIC }: Props) {
                   className="min-h-11 self-end"
                 >
                   {guideOpen
-                    ? "Hide what the points mean"
-                    : "What do the points mean?"}
+                    ? "Hide descriptions"
+                    : "Show descriptions"}
                 </DashboardButton>
               )}
               <RubricScorer
