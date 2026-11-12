@@ -10,7 +10,6 @@ const envMock = vi.hoisted(() => ({
 }));
 vi.mock("~/env", () => envMock);
 
-
 function run(method: string, authorization?: string) {
   const res = {
     statusCode: 0,
