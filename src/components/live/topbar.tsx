@@ -1,103 +1,57 @@
-import { useRouter, useSearchParams } from "next/navigation";
-import { Horsey } from "./icons";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTrigger,
-} from "../ui/drawer";
-import { Button } from "../ui/button";
-import { Menu } from "lucide-react";
-import { SectionLink, IconlessLink } from "./navlinks";
-import { formatTitle } from "~/utils/format";
 import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "../ui/sheet";
+import { LogoutButton, SidebarNav } from "./sidebar";
 
-const Topbar = () => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const tab = searchParams.get("tab") ?? "home";
-  const title = formatTitle(tab);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-
-  const sectionLinks: [string, string][] = [
-    ["home", "Home"],
-    ["schedule", "Schedule"],
-    ["map", "Map"],
-    ["menu", "Menu"],
-    ["mentors", "Mentors"],
-    ["sponsors", "Sponsors"],
-  ];
-
-  const logisticsLinks: [string, string][] = [
-    ["event-logistics", "Event Logistics"],
-    ["contact-us", "Contact Us"],
-    ["faq", "FAQ"],
-  ];
-
-  const handleLinkClick = (href: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDrawerOpen(false);
-    requestAnimationFrame(() => {
-      void router.push(href);
-    });
-  };
-
-  const getLogisticsHref = (tab: string): string => {
-    if (tab === "contact-us" || tab === "faq") {
-      const step = tab === "contact-us" ? "6" : "7";
-      return `live/?tab=event-logistics&step=${step}`;
-    }
-    if (tab === "event-logistics") {
-      return `live/?tab=event-logistics&step=1`;
-    }
-    return `live/?tab=${tab}`;
-  };
+const Topbar = ({
+  title = "",
+  isOrganizer = false,
+}: {
+  title?: string;
+  isOrganizer?: boolean;
+}) => {
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="flex justify-between border border-[#ebdff7] bg-highlight p-3 md:hidden">
-      <Horsey />
-      <div className="font-dico flex flex-col justify-center text-2xl text-heavy">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-dashboard-border-default bg-dashboard-bg-nav px-6 py-2 md:hidden">
+      <Link href="/" aria-label="Hack Western home" className="px-2">
+        <Image src="/shared/horse.svg" alt="" width={26} height={38} />
+      </Link>
+      <span className="font-figtree text-base font-semibold leading-default text-dashboard-text-heavy">
         {title}
-      </div>
-      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <div className="flex items-center gap-2">
-          <DrawerTrigger asChild>
-            <Button className="rounded-2xl p-2.5">
-              <Menu strokeWidth={2.5} className="size-6 text-slate-800" />
-            </Button>
-          </DrawerTrigger>
-        </div>
-        <DrawerContent>
-          <DrawerHeader>
-            {sectionLinks.map((s) => (
-              <div
-                key={s[0]}
-                onClick={(e) => handleLinkClick(`live/?tab=${s[0]}`, e)}
-              >
-                <SectionLink tab={s[0]} name={s[1]} />
-              </div>
-            ))}
-            <hr className="border-[#ebdff7]" />
-            {logisticsLinks.map((s) => (
-              <div
-                key={s[0]}
-                onClick={(e) => handleLinkClick(getLogisticsHref(s[0]), e)}
-              >
-                <IconlessLink tab={s[0]} name={s[1]} />
-              </div>
-            ))}
-            {/*<Button
-              onClick={logout}
-              variant="ghost"
-              className="mt-4 w-full border border-light text-base text-medium"
-            >
-              Logout
-            </Button>*/}
-          </DrawerHeader>
-        </DrawerContent>
-      </Drawer>
-    </div>
+      </span>
+      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+        <SheetTrigger
+          aria-label="Open menu"
+          className="flex h-10 w-10 cursor-pixel-hover items-center justify-end text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+        >
+          <Menu className="size-6" />
+        </SheetTrigger>
+        <SheetContent
+          side="right"
+          className="flex w-full flex-col justify-between gap-6 overflow-y-auto border-0 bg-dashboard-bg-surface px-6 pb-6 pt-16 font-figtree sm:max-w-none"
+          closeClassName="right-6 top-5 opacity-100 text-dashboard-text-heavy data-[state=open]:bg-transparent focus:ring-dashboard-action-primary"
+          closeIconClassName="size-6"
+          // Otherwise the search box gets focus and opens its empty results dropdown
+          onOpenAutoFocus={(event) => event.preventDefault()}
+        >
+          <SheetTitle className="sr-only">Menu</SheetTitle>
+          {/* Close the menu when any link inside it is followed */}
+          <div
+            onClick={(event) => {
+              if ((event.target as HTMLElement).closest("a")) {
+                setMenuOpen(false);
+              }
+            }}
+          >
+            <SidebarNav isOrganizer={isOrganizer} />
+          </div>
+          <LogoutButton />
+        </SheetContent>
+      </Sheet>
+    </header>
   );
 };
 
