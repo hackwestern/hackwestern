@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import handler from "~/pages/api/docs/app";
 
 const envMock = vi.hoisted(() => ({
   env: {
@@ -9,7 +10,6 @@ const envMock = vi.hoisted(() => ({
 }));
 vi.mock("~/env", () => envMock);
 
-import handler from "./app";
 
 function run(method: string, authorization?: string) {
   const res = {
