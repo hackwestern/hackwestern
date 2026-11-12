@@ -459,7 +459,8 @@ async function ensureSponsorInfoTab(
         (c) => c.includes("workshop") && c.includes("time"),
       );
       const hasCoffeeMinutes = lower.some(
-        (c) => c.includes("coffee") || (c.includes("max") && c.includes("minute")),
+        (c) =>
+          c.includes("coffee") || (c.includes("max") && c.includes("minute")),
       );
       if (!hasWorkshopLocation || !hasWorkshopTime || !hasCoffeeMinutes) {
         const values = [...headerRow];
@@ -997,7 +998,9 @@ async function ensureCoffeeChatTab(
     fields: "sheets.properties(sheetId,title)",
   });
   const found = meta.data.sheets?.find(
-    (s) => s.properties?.title?.trim().toLowerCase() === COFFEE_CHAT_TAB.toLowerCase(),
+    (s) =>
+      s.properties?.title?.trim().toLowerCase() ===
+      COFFEE_CHAT_TAB.toLowerCase(),
   );
 
   let sheetId = found?.properties?.sheetId ?? null;
@@ -1132,17 +1135,13 @@ export const sponsorJudgingRouter = createTRPCRouter({
           Promise.resolve(getSpreadsheetId()),
         ]);
 
-        const [
-          sponsorInfoMap,
-          picksMap,
-          contactPhones,
-          coffeeChatGrid,
-        ] = await Promise.all([
-          fetchAllSponsorInfo(sheets, spreadsheetId),
-          fetchAllChosenTeams(sheets, spreadsheetId),
-          fetchHwContactPhones(),
-          fetchCoffeeChatGrid(sheets, spreadsheetId),
-        ]);
+        const [sponsorInfoMap, picksMap, contactPhones, coffeeChatGrid] =
+          await Promise.all([
+            fetchAllSponsorInfo(sheets, spreadsheetId),
+            fetchAllChosenTeams(sheets, spreadsheetId),
+            fetchHwContactPhones(),
+            fetchCoffeeChatGrid(sheets, spreadsheetId),
+          ]);
 
         const masterRow = master.find(
           (m) => m.name.toLowerCase() === sponsorName.toLowerCase(),
@@ -1159,8 +1158,8 @@ export const sponsorJudgingRouter = createTRPCRouter({
         const hwContactPhones = lookupHwContactPhones(hwContact, contactPhones);
 
         const maxCoffeeChatMinutes = info?.maxCoffeeChatMinutes ?? 0;
-        const coffeeChatBookedCount = coffeeChatGrid.filter(
-          (booking) => isBookedBy(booking, sponsorName),
+        const coffeeChatBookedCount = coffeeChatGrid.filter((booking) =>
+          isBookedBy(booking, sponsorName),
         ).length;
 
         return {
