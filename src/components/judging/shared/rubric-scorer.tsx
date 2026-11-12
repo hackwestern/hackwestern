@@ -71,7 +71,6 @@ export const ratingOf = (c: RubricCriterion, ratings: Ratings) => {
   return r !== undefined && r >= RUBRIC_MIN && r <= RUBRIC_MAX ? r : undefined;
 };
 
-
 /**
  * Turns ratings into the 0-100 score the backend stores: the weighted average
  * of the criterion ratings (a plain average when the rubric isn't weighted).

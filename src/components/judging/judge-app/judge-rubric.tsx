@@ -124,7 +124,8 @@ export function JudgeRubric({
     }
     setSaveState("saving");
     const timer = setTimeout(
-      () => setSaveState(writeDraft(key, { ratings, notes }) ? "saved" : "error"),
+      () =>
+        setSaveState(writeDraft(key, { ratings, notes }) ? "saved" : "error"),
       500,
     );
     return () => clearTimeout(timer);
@@ -184,9 +185,7 @@ export function JudgeRubric({
             onClick={() => setGuideOpen((o) => !o)}
             className={`${touch} self-end`}
           >
-            {guideOpen
-              ? "Hide descriptions"
-              : "Show descriptions"}
+            {guideOpen ? "Hide descriptions" : "Show descriptions"}
           </DashboardButton>
         )}
         <RubricScorer
@@ -239,7 +238,11 @@ export function JudgeRubric({
       )}
       <JudgeConfirm
         open={confirmAbsent}
-        title={table !== null ? `Mark table ${table} as not here?` : "Mark this team as not here?"}
+        title={
+          table !== null
+            ? `Mark table ${table} as not here?`
+            : "Mark this team as not here?"
+        }
         description="No score will be saved. You won't be given this team again."
         confirmLabel="Team not here"
         cancelLabel="Keep scoring"
