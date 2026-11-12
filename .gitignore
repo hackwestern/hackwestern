@@ -67,3 +67,7 @@ google-wallet-credentials.json
 docs/internal/
 k6/smoke.generated.js
 traffic-profile.json
+
+# Cloudflare worker local secrets
+.dev.vars
+.wrangler/

@@ -1,8 +1,8 @@
 /**
  * Builds `traffic-profile.json` from the request events stored in D1.
  *
- *   EVENTS_INGEST_URL=https://hw-events.<acct>.workers.dev \
- *   EVENTS_READ_TOKEN=... npm run profile:build
+ *   EVENTS_INGEST_URL=https://hw-network-requests.<acct>.workers.dev \
+ *   EVENTS_READ_TOKEN=... npm run network:profile
  *   npm run k6:generate -- --profile traffic-profile.json
  *
  * Output:

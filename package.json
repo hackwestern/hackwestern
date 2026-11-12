@@ -23,9 +23,16 @@
     "lint": "next lint",
     "scan": "next dev --turbopack && npx react-scan@latest localhost:3000",
     "start": "next start",
+    
     "map:generate": "tsx scripts/generate-app-map.ts",
     "k6:generate": "tsx scripts/generate-k6.ts",
-    "profile:build": "tsx scripts/build-traffic-profile.ts"
+    "network:dev": "npx wrangler dev -c workers/hw-events/wrangler.toml",
+    "network:deploy": "npx wrangler deploy -c workers/hw-events/wrangler.toml",
+    "network:tail": "npx wrangler tail -c workers/hw-events/wrangler.toml",
+    "network:migrate": "npx wrangler d1 execute hw-network-requests -c workers/hw-events/wrangler.toml --remote --file=workers/hw-events/schema.sql",
+    "network:migrate:local": "npx wrangler d1 execute hw-network-requests -c workers/hw-events/wrangler.toml --local --file=workers/hw-events/schema.sql",
+    "network:query": "npx wrangler d1 execute hw-network-requests -c workers/hw-events/wrangler.toml --remote --command",
+    "network:profile": "dotenv -- tsx scripts/build-traffic-profile.ts"
   },
   "dependencies": {
     "@auth/core": "^0.34.2",
