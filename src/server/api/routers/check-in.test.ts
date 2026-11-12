@@ -134,12 +134,16 @@ describe("checkIn.signInHacker", () => {
 
   beforeEach(async () => {
     hackerSession = await mockSession(db);
+    await insertTestApplication(hackerSession.user.id, { status: "CONFIRMED" });
   });
 
   afterEach(async () => {
     await db
       .delete(dayOfRegistrations)
       .where(eq(dayOfRegistrations.userId, hackerSession.user.id));
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, hackerSession.user.id));
     await db.delete(users).where(eq(users.id, hackerSession.user.id));
   });
 
@@ -184,6 +188,30 @@ describe("checkIn.signInHacker", () => {
     });
     expect(result?.signedInAt).toBeInstanceOf(Date);
     expect(result?.approved).toBe(true);
+  });
+
+  test("throws FORBIDDEN for a hacker who isn't confirmed", async () => {
+    await db
+      .update(applications)
+      .set({ status: "DECLINED" })
+      .where(eq(applications.userId, hackerSession.user.id));
+    await expect(
+      organizerCaller.checkIn.signInHacker({ userId: hackerSession.user.id }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(
+      await db.query.dayOfRegistrations.findFirst({
+        where: eq(dayOfRegistrations.userId, hackerSession.user.id),
+      }),
+    ).toBeUndefined();
+  });
+
+  test("throws FORBIDDEN for an account with no application", async () => {
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, hackerSession.user.id));
+    await expect(
+      organizerCaller.checkIn.signInHacker({ userId: hackerSession.user.id }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   test("throws FORBIDDEN for non-organizer", async () => {
