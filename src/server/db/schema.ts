@@ -866,10 +866,8 @@ export const judgingQueue = pgTable(
  * screen's rubric), plus free-text notes.
  */
 export type ScoreBreakdown = {
-  idea: number;
-  technical: number;
-  design: number;
-  pitch: number;
+  /** 0–100 slider value per rubric criterion id, e.g. { technical: 80 }. */
+  ratings: Record<string, number>;
   notes?: string | null;
 };
 

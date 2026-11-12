@@ -1,3 +1,4 @@
+import { useRouter } from "next/router";
 import { type ReactNode, useEffect, useState } from "react";
 
 import {
@@ -24,8 +25,13 @@ import {
   type JudgedTeam,
   JudgeTeams,
 } from "~/components/judging/judge-app/judge-teams";
+import { JudgeCalibration } from "~/components/judging/judge-app/judge-calibration";
 import { VenueMap } from "~/components/judging/judge-app/judge-map";
-import { errorCode, friendlyError } from "~/components/judging/shared/judge-ui";
+import {
+  errorCode,
+  focusRing,
+  friendlyError,
+} from "~/components/judging/shared/judge-ui";
 import {
   DEFAULT_RUBRIC,
   type Ratings,
@@ -39,24 +45,20 @@ const RUBRIC = DEFAULT_RUBRIC;
 
 // Each rubric category is stored on the mark as the same 0-100 slider value
 // the judge set (team_mark.score_breakdown), next to the overall 0-100 score.
+// Ratings are stored by criterion id: { ratings: { technical: 80, ... }, notes }.
 const toBreakdown = (ratings: Ratings, notes: string) => ({
-  idea: ratings.idea ?? 0,
-  technical: ratings.technical ?? 0,
-  design: ratings.design ?? 0,
-  pitch: ratings.pitch ?? 0,
+  ratings: Object.fromEntries(
+    RUBRIC.criteria.map((c) => [c.id, ratings[c.id] ?? 0]),
+  ),
   ...(notes ? { notes } : {}),
 });
 
 function fromBreakdown(
-  b: { idea: number; technical: number; design: number; pitch: number } | null,
+  b: { ratings?: Record<string, number> } | null,
 ): Ratings {
-  if (!b) return {};
-  return {
-    idea: b.idea,
-    technical: b.technical,
-    design: b.design,
-    pitch: b.pitch,
-  };
+  // Marks saved before ratings were keyed by criterion have no `ratings`; the
+  // sliders start empty for those.
+  return b?.ratings ? { ...b.ratings } : {};
 }
 
 // Finishing is remembered on this device, per judge. The server doesn't know
@@ -123,6 +125,29 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
 
   const online = useOnline();
   const utils = api.useUtils();
+  const router = useRouter();
+
+  // Organizers can swap the map for a calibration summary. Everyone else only
+  // ever sees the map.
+  const [mapView, setMapView] = useState<"map" | "calibration">("map");
+  const [refreshing, setRefreshing] = useState(false);
+  const calibration = initial.isOrganizer ? initial.calibration : null;
+  const showCalibration = calibration !== null && mapView === "calibration";
+
+  // Re-runs getServerSideProps for the page, which reloads the numbers. The
+  // component keeps its state.
+  const refreshCalibration = async () => {
+    setRefreshing(true);
+    try {
+      await router.replace(router.asPath, undefined, { scroll: false });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+  const changeMapView = (view: "map" | "calibration") => {
+    setMapView(view);
+    if (view === "calibration") void refreshCalibration();
+  };
   const assignment = api.judging.me.getCurrentAssignment.useQuery();
   const marksQuery = api.judging.me.getSubmittedTeamMarks.useQuery();
   const getNext = api.judging.me.getNextTeam.useMutation();
@@ -144,9 +169,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     notes: m.scoreBreakdown?.notes ?? "",
   }));
   const editingTeam =
-    editingId !== null
-      ? results.find((r) => r.markId === editingId)
-      : undefined;
+    editingId !== null ? results.find((r) => r.markId === editingId) : undefined;
 
   const started = startedLocal || held !== null || results.length > 0;
   let phase: NextPhase;
@@ -305,9 +328,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       await startTeam.mutateAsync();
     } catch (error) {
       if (errorCode(error) === "CONFLICT") {
-        setNextError(
-          "That team was given to someone else. Finding you another.",
-        );
+        setNextError("That team was given to someone else. Finding you another.");
         await utils.judging.me.getCurrentAssignment.invalidate();
         return;
       }
@@ -317,8 +338,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   };
 
   const editing = tab === "score" && editingTeam !== undefined && !finished;
-  const scoringPage =
-    tab === "score" && ((scoring && held !== null) || editing);
+  const scoringPage = tab === "score" && ((scoring && held !== null) || editing);
 
   let header: ReactNode = null;
   if (tab === "map") {
@@ -360,35 +380,34 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   } else if (tab === "score") {
     // The Score tab is locked until a team is chosen or opened for edit, so the
     // last message is only a fallback.
-    body =
-      editingTeam && !finished ? (
-        <JudgeEdit
-          key={editingTeam.markId}
-          team={editingTeam}
-          rubric={RUBRIC}
-          saving={edit.isPending}
-          error={editError}
-          onSave={saveEdit}
-          onCancel={closeEdit}
-        />
-      ) : scoring && held && !finished ? (
-        <JudgeRubric
-          key={held.id}
-          judgeKey={judgeKey}
-          teamId={held.id}
-          teamName={held.name}
-          table={heldTable}
-          rubric={RUBRIC}
-          busy={sending}
-          error={scoreError}
-          onSubmit={submitScore}
-          onAbsent={teamNotHere}
-        />
-      ) : (
-        <p className="px-1 text-base font-medium text-dashboard-text-light">
-          Choose a team to judge on the Next tab first.
-        </p>
-      );
+    body = editingTeam && !finished ? (
+      <JudgeEdit
+        key={editingTeam.markId}
+        team={editingTeam}
+        rubric={RUBRIC}
+        saving={edit.isPending}
+        error={editError}
+        onSave={saveEdit}
+        onCancel={closeEdit}
+      />
+    ) : scoring && held && !finished ? (
+      <JudgeRubric
+        key={held.id}
+        judgeKey={judgeKey}
+        teamId={held.id}
+        teamName={held.name}
+        table={heldTable}
+        rubric={RUBRIC}
+        busy={sending}
+        error={scoreError}
+        onSubmit={submitScore}
+        onAbsent={teamNotHere}
+      />
+    ) : (
+      <p className="px-1 text-base font-medium text-dashboard-text-light">
+        Choose a team to judge on the Next tab first.
+      </p>
+    );
   } else if (tab === "teams") {
     body = (
       <JudgeTeams
@@ -402,7 +421,47 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     );
   } else {
     body = (
-      <VenueMap tables={[]} current={heldTable ?? undefined} variant="page" />
+      <>
+        {calibration && (
+          <div
+            role="group"
+            aria-label="Map view"
+            className="flex shrink-0 gap-2 px-3 pb-2 pt-2"
+          >
+            {(["map", "calibration"] as const).map((view) => (
+              <button
+                key={view}
+                type="button"
+                aria-pressed={mapView === view}
+                onClick={() => changeMapView(view)}
+                className={`min-h-11 flex-1 rounded-dashboard-lg border px-3 text-base font-semibold ${focusRing} ${
+                  mapView === view
+                    ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
+                    : "border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-heavy"
+                }`}
+              >
+                {view === "map" ? "Map" : "Calibration"}
+              </button>
+            ))}
+          </div>
+        )}
+        {showCalibration ? (
+          // The toggle stays put; the summary scrolls under it.
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <JudgeCalibration
+              data={calibration}
+              rubric={RUBRIC}
+              tableByTeam={initial.tableByTeam}
+              refreshing={refreshing}
+              onRefresh={() => void refreshCalibration()}
+            />
+          </div>
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <VenueMap tables={[]} current={heldTable ?? undefined} variant="page" />
+          </div>
+        )}
+      </>
     );
   }
 
@@ -446,9 +505,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         <JudgeNav
           active={tab}
           onChange={changeTab}
-          disabled={
-            !(scoring && held && !finished) && !editing ? ["score"] : []
-          }
+          disabled={!(scoring && held && !finished) && !editing ? ["score"] : []}
         />
         <JudgeConfirm
           open={confirmFinish}
