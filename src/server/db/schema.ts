@@ -373,6 +373,10 @@ export const users = pgTable(
       onDelete: "set null",
     }),
 
+    // Public, human-readable ID (e.g. "brave-otter-kite"). Printed under the
+    // hacker's QR and typed into Devpost; user.id stays internal.
+    hackerId: varchar("hacker_id", { length: 64 }).unique(),
+
     scavengerHuntEarned: integer("scavenger_hunt_earned").default(0),
     scavengerHuntBalance: integer("scavenger_hunt_balance").default(0),
 

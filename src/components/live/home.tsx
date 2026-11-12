@@ -5,6 +5,7 @@ import * as QRCode from "qrcode";
 import { useSession, signIn } from "next-auth/react";
 import { api } from "~/utils/api";
 import { isAdmittedStatus } from "~/lib/admission";
+import AllScans from "~/components/live/all-scans";
 
 // Format text: replace underscores with spaces and capitalize each word
 const formatTitle = (text: string | null | undefined): string => {
@@ -16,7 +17,10 @@ const formatTitle = (text: string | null | undefined): string => {
     .join(" ");
 };
 
-const Home = () => {
+const Home = ({ isOrganizer = false }: { isOrganizer?: boolean }) =>
+  isOrganizer ? <AllScans /> : <HackerHome />;
+
+const HackerHome = () => {
   const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState<
     "all" | "activities" | "meals" | "redemptions"

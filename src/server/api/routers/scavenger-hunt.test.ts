@@ -19,6 +19,7 @@ import { mockSession, mockOrganizerSession } from "~/server/auth";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { faker } from "@faker-js/faker";
 import { TRPCError } from "@trpc/server";
+import { getOrCreateHackerId } from "~/server/api/utils/hacker-id";
 
 // ---- helpers ----
 const insertTestItem = async (
@@ -257,6 +258,23 @@ describe("scavengerHuntRouter basic endpoints", () => {
         where: eq(users.id, session.user.id),
       });
       expect(updatedUser?.scavengerHuntBalance).toBe(testItem.points);
+    });
+
+    test("scans by hacker ID (the value on printed QRs)", async () => {
+      const hackerId = await getOrCreateHackerId(session.user.id);
+      const scanResult = await organizerCaller.scavengerHunt.scan({
+        userId: hackerId,
+        itemCode: testItem.code,
+      });
+      expect(scanResult.success).toBe(true);
+
+      const scan = await db.query.scavengerHuntScans.findFirst({
+        where: and(
+          eq(scavengerHuntScans.userId, session.user.id),
+          eq(scavengerHuntScans.itemId, testItem.id),
+        ),
+      });
+      expect(scan).toBeDefined();
     });
 
     test("throws error if scanning same item twice", async () => {

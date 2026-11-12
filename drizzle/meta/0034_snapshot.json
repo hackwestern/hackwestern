@@ -1,5 +1,5 @@
 {
-  "id": "7d33cfec-0914-410b-ba6d-96bce40937b7",
+  "id": "37ef74e3-bf69-41c2-9547-4245cee076d4",
   "prevId": "780bb394-ea52-4dcb-a85b-756f5628a679",
   "version": "7",
   "dialect": "postgresql",
@@ -1088,12 +1088,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": 0
-        },
-        "harshness": {
-          "name": "harshness",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {},
@@ -1109,176 +1103,6 @@
             "id"
           ],
           "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.judging_assignment": {
-      "name": "judging_assignment",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "judge_id": {
-          "name": "judge_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "team_id": {
-          "name": "team_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "position": {
-          "name": "position",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "judging_assignment_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'assigned'"
-        },
-        "assigned_by": {
-          "name": "assigned_by",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "assigned_at": {
-          "name": "assigned_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "started_at": {
-          "name": "started_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "completed_at": {
-          "name": "completed_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "judging_assignment_judge_position_idx": {
-          "name": "judging_assignment_judge_position_idx",
-          "columns": [
-            {
-              "expression": "judge_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "position",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"judging_assignment\".\"status\" <> 'cancelled'",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "judging_assignment_judge_team_idx": {
-          "name": "judging_assignment_judge_team_idx",
-          "columns": [
-            {
-              "expression": "judge_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "team_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"judging_assignment\".\"status\" <> 'cancelled'",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "judging_assignment_team_idx": {
-          "name": "judging_assignment_team_idx",
-          "columns": [
-            {
-              "expression": "team_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "judging_assignment_judge_id_judge_id_fk": {
-          "name": "judging_assignment_judge_id_judge_id_fk",
-          "tableFrom": "judging_assignment",
-          "tableTo": "judge",
-          "columnsFrom": [
-            "judge_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "judging_assignment_team_id_team_id_fk": {
-          "name": "judging_assignment_team_id_team_id_fk",
-          "tableFrom": "judging_assignment",
-          "tableTo": "team",
-          "columnsFrom": [
-            "team_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "judging_assignment_assigned_by_user_id_fk": {
-          "name": "judging_assignment_assigned_by_user_id_fk",
-          "tableFrom": "judging_assignment",
-          "tableTo": "user",
-          "columnsFrom": [
-            "assigned_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -1475,67 +1299,6 @@
         }
       },
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.judging_table": {
-      "name": "judging_table",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "number": {
-          "name": "number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "zone": {
-          "name": "zone",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "status": {
-          "name": "status",
-          "type": "judging_table_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'empty'"
-        },
-        "status_updated_at": {
-          "name": "status_updated_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "judging_table_number_unique": {
-          "name": "judging_table_number_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "number"
-          ]
-        }
-      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -2550,12 +2313,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "score_breakdown": {
-          "name": "score_breakdown",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
         "round_type": {
           "name": "round_type",
           "type": "round_type",
@@ -2638,77 +2395,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.team_track": {
-      "name": "team_track",
-      "schema": "",
-      "columns": {
-        "team_id": {
-          "name": "team_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "track": {
-          "name": "track",
-          "type": "track",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "team_track_track_idx": {
-          "name": "team_track_track_idx",
-          "columns": [
-            {
-              "expression": "track",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "team_track_team_id_team_id_fk": {
-          "name": "team_track_team_id_team_id_fk",
-          "tableFrom": "team_track",
-          "tableTo": "team",
-          "columnsFrom": [
-            "team_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "team_track_team_id_track_pk": {
-          "name": "team_track_team_id_track_pk",
-          "columns": [
-            "team_id",
-            "track"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.team": {
       "name": "team",
       "schema": "",
@@ -2781,12 +2467,6 @@
           "type": "varchar(6)",
           "primaryKey": false,
           "notNull": true
-        },
-        "judging_table_id": {
-          "name": "judging_table_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
@@ -2806,21 +2486,7 @@
           "with": {}
         }
       },
-      "foreignKeys": {
-        "team_judging_table_id_judging_table_id_fk": {
-          "name": "team_judging_table_id_judging_table_id_fk",
-          "tableFrom": "team",
-          "tableTo": "judging_table",
-          "columnsFrom": [
-            "judging_table_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "team_joinCode_unique": {
@@ -2828,13 +2494,6 @@
           "nullsNotDistinct": false,
           "columns": [
             "joinCode"
-          ]
-        },
-        "team_judging_table_id_unique": {
-          "name": "team_judging_table_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "judging_table_id"
           ]
         }
       },
@@ -2894,6 +2553,12 @@
         "team_id": {
           "name": "team_id",
           "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hacker_id": {
+          "name": "hacker_id",
+          "type": "varchar(64)",
           "primaryKey": false,
           "notNull": false
         },
@@ -2988,6 +2653,13 @@
           "nullsNotDistinct": false,
           "columns": [
             "email"
+          ]
+        },
+        "user_hacker_id_unique": {
+          "name": "user_hacker_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "hacker_id"
           ]
         }
       },
@@ -3163,33 +2835,12 @@
         "sponsored"
       ]
     },
-    "public.judging_assignment_status": {
-      "name": "judging_assignment_status",
-      "schema": "public",
-      "values": [
-        "assigned",
-        "in_progress",
-        "done",
-        "team_absent",
-        "cancelled"
-      ]
-    },
     "public.judging_queue_status": {
       "name": "judging_queue_status",
       "schema": "public",
       "values": [
         "waiting",
         "assigned"
-      ]
-    },
-    "public.judging_table_status": {
-      "name": "judging_table_status",
-      "schema": "public",
-      "values": [
-        "empty",
-        "waiting",
-        "being_judged",
-        "finished"
       ]
     },
     "public.major": {
@@ -3309,8 +2960,7 @@
       "values": [
         "hacker",
         "organizer",
-        "sponsor",
-        "judge"
+        "sponsor"
       ]
     },
     "public.year_of_study": {

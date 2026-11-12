@@ -95,11 +95,49 @@ describe("sendViaMailjet", () => {
     expect(res.error?.message).toContain("401");
   });
 
-  test("network throw is caught", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
-    const res = await sendViaMailjet(BASE, CREDS);
+  test("network throw is caught after 3 tries", async () => {
+    vi.useFakeTimers();
+    const fetch = vi.fn().mockRejectedValue(new Error("down"));
+    vi.stubGlobal("fetch", fetch);
+    const pending = sendViaMailjet(BASE, CREDS);
+    await vi.runAllTimersAsync();
+    const res = await pending;
+    vi.useRealTimers();
+    expect(fetch).toHaveBeenCalledTimes(3);
     expect(res.data).toBeNull();
     expect(res.error?.message).toBe("down");
+  });
+
+  test("a dropped connection is retried and then succeeds", async () => {
+    vi.useFakeTimers();
+    const fetch = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            Messages: [
+              { Status: "success", To: [{ Email: "user@example.com" }] },
+            ],
+          }),
+      } as Response);
+    vi.stubGlobal("fetch", fetch);
+    const pending = sendViaMailjet(BASE, CREDS);
+    await vi.runAllTimersAsync();
+    const res = await pending;
+    vi.useRealTimers();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(res.error).toBeNull();
+    expect(res.data?.delivered).toEqual(["user@example.com"]);
+  });
+
+  test("an HTTP error is not retried", async () => {
+    stubFetch("Server Error", false, 500);
+    const res = await sendViaMailjet(BASE, CREDS);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+    expect(res.error?.message).toContain("500");
   });
 
   test("sends Basic auth + a v3.1 payload with from/replyTo/headers/text", async () => {

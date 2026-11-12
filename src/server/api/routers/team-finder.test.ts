@@ -516,7 +516,7 @@ describe("teamFinder", () => {
         await db.insert(teamFinderReports).values({
           reporterId: session.user.id,
           cardId: await seedCard(await seedOther()),
-          createdAt: new Date(new Date().getTime() - 25 * 60 * 60 * 1000),
+          createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
         });
       }
       const card = await seedCard(await seedOther());
