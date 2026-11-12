@@ -1,4 +1,5 @@
 CREATE TYPE "public"."judging_assignment_status" AS ENUM('assigned', 'in_progress', 'done', 'team_absent', 'cancelled');--> statement-breakpoint
+CREATE TYPE "public"."judging_table_status" AS ENUM('empty', 'waiting', 'being_judged', 'finished');--> statement-breakpoint
 ALTER TYPE "public"."user_type" ADD VALUE 'judge';--> statement-breakpoint
 CREATE TABLE "judging_assignment" (
 	"id" serial PRIMARY KEY NOT NULL,
@@ -17,6 +18,8 @@ CREATE TABLE "judging_table" (
 	"number" integer NOT NULL,
 	"zone" varchar(64) NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
+	"status" "judging_table_status" DEFAULT 'empty' NOT NULL,
+	"status_updated_at" timestamp (3) DEFAULT now() NOT NULL,
 	CONSTRAINT "judging_table_number_unique" UNIQUE("number")
 );
 --> statement-breakpoint

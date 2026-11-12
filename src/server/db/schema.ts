@@ -201,6 +201,19 @@ export const judgingAssignmentStatusEnum = pgEnum("judging_assignment_status", [
 ]);
 
 /**
+ * Live judging state of a physical table, for the organizer table map.
+ * `empty`: no team seated. `waiting`: team seated with stops still to come.
+ * `being_judged`: a judge is there now. `finished`: every stop is done,
+ * absent or cancelled. Switched-off tables use `judging_table.is_active`.
+ */
+export const judgingTableStatusEnum = pgEnum("judging_table_status", [
+  "empty",
+  "waiting",
+  "being_judged",
+  "finished",
+]);
+
+/**
  * The lifecycle of an automated cheat-check sweep across every eligible team.
  */
 export const cheatSweepStatusEnum = pgEnum("cheat_sweep_status", [
@@ -959,6 +972,14 @@ export const judgingTables = pgTable("judging_table", {
   number: integer("number").notNull().unique(),
   zone: varchar("zone", { length: 64 }).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
+  // Kept in step with seating and judging_assignment changes by the engine.
+  status: judgingTableStatusEnum("status").default("empty").notNull(),
+  statusUpdatedAt: timestamp("status_updated_at", {
+    mode: "date",
+    precision: 3,
+  })
+    .defaultNow()
+    .notNull(),
 });
 
 export const judgingTablesRelations = relations(judgingTables, ({ one }) => ({

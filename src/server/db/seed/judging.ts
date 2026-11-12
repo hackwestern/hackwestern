@@ -241,6 +241,11 @@ async function seedJudging(args: Args): Promise<void> {
         .set({ judgingTableId: tables[i]!.id })
         .where(eq(teams.id, teamId));
     }
+    // Every table now has a team and no stops yet, so all are waiting.
+    await tx
+      .update(judgingTables)
+      .set({ status: "waiting", statusUpdatedAt: new Date() })
+      .where(sql`true`);
   });
 }
 

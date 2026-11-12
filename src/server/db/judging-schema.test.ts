@@ -103,6 +103,26 @@ describe("team_mark.score_breakdown", () => {
   });
 });
 
+describe("judging_table.status", () => {
+  test("starts empty and stores each live state", async () => {
+    const [table] = await db
+      .insert(judgingTables)
+      .values({ number: 1, zone: "Main gym" })
+      .returning();
+    expect(table?.status).toBe("empty");
+    expect(table?.statusUpdatedAt).toBeInstanceOf(Date);
+
+    for (const status of ["waiting", "being_judged", "finished"] as const) {
+      const [row] = await db
+        .update(judgingTables)
+        .set({ status })
+        .where(eq(judgingTables.id, table!.id))
+        .returning();
+      expect(row?.status).toBe(status);
+    }
+  });
+});
+
 describe("user_type judge", () => {
   test("accounts can be created as public judges", async () => {
     const session = await mockSession(db);

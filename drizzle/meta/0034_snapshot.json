@@ -1,5 +1,5 @@
 {
-  "id": "b965f1de-9c6e-4c02-ad9c-4ab542bfddd2",
+  "id": "7d33cfec-0914-410b-ba6d-96bce40937b7",
   "prevId": "780bb394-ea52-4dcb-a85b-756f5628a679",
   "version": "7",
   "dialect": "postgresql",
@@ -1507,6 +1507,21 @@
           "primaryKey": false,
           "notNull": true,
           "default": true
+        },
+        "status": {
+          "name": "status",
+          "type": "judging_table_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'empty'"
+        },
+        "status_updated_at": {
+          "name": "status_updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -3165,6 +3180,16 @@
       "values": [
         "waiting",
         "assigned"
+      ]
+    },
+    "public.judging_table_status": {
+      "name": "judging_table_status",
+      "schema": "public",
+      "values": [
+        "empty",
+        "waiting",
+        "being_judged",
+        "finished"
       ]
     },
     "public.major": {
