@@ -9,13 +9,11 @@ import {
   Presentation,
 } from "lucide-react";
 import SEO from "~/components/seo";
+import { uuidRegex } from "~/utils/urls";
 import { api } from "~/utils/api";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
-
-const uuidRegex =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function SponsorHubPage() {
   const router = useRouter();
@@ -23,7 +21,7 @@ export default function SponsorHubPage() {
   const id = typeof rawId === "string" ? rawId : "";
   const validUuid = uuidRegex.test(id);
 
-  const sponsorQ = api.sponsorJudging.getSponsorPortalInfo.useQuery(
+  const sponsorQ = api.sponsorPortal.getSponsorPortalInfo.useQuery(
     { sponsor: id },
     {
       enabled: validUuid,

@@ -4,21 +4,11 @@ import { InternalNavbar } from "~/components/internals/navbar";
 import { api } from "~/utils/api";
 import { authRedirectOrganizer } from "~/utils/redirect";
 import { CopyIcon, CheckIcon, ExternalLinkIcon } from "@radix-ui/react-icons";
+import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
 
-export type SponsorStatus =
-  | "Not arrived"
-  | "Checked in"
-  | "Booth set up"
-  | "Workshop live"
-  | "Left";
+type SponsorStatus = (typeof SPONSOR_STATUS_VALUES)[number];
 
-const STATUS_FLOW: SponsorStatus[] = [
-  "Not arrived",
-  "Checked in",
-  "Booth set up",
-  "Workshop live",
-  "Left",
-];
+const STATUS_FLOW = SPONSOR_STATUS_VALUES;
 
 const STATUS_CONFIG: Record<
   SponsorStatus,
@@ -217,15 +207,15 @@ export default function SponsorJudgingBoard() {
   const [syncNote, setSyncNote] = useState<string | null>(null);
 
   const utils = api.useUtils();
-  const sponsorsQ = api.sponsorJudging.getSponsors.useQuery(undefined, {
+  const sponsorsQ = api.sponsorDashboard.getSponsors.useQuery(undefined, {
     refetchInterval: 30000,
   });
 
-  const updateStatus = api.sponsorJudging.setSponsorStatus.useMutation({
+  const updateStatus = api.sponsorDashboard.setSponsorStatus.useMutation({
     onMutate: async ({ sponsorName, status }) => {
-      await utils.sponsorJudging.getSponsors.cancel();
-      const prev = utils.sponsorJudging.getSponsors.getData();
-      utils.sponsorJudging.getSponsors.setData(undefined, (old) => {
+      await utils.sponsorDashboard.getSponsors.cancel();
+      const prev = utils.sponsorDashboard.getSponsors.getData();
+      utils.sponsorDashboard.getSponsors.setData(undefined, (old) => {
         if (!old) return old;
         return old.map((s) =>
           s.name.toLowerCase() === sponsorName.toLowerCase()
@@ -237,21 +227,21 @@ export default function SponsorJudgingBoard() {
     },
     onError: (err, _vars, context) => {
       if (context?.prev) {
-        utils.sponsorJudging.getSponsors.setData(undefined, context.prev);
+        utils.sponsorDashboard.getSponsors.setData(undefined, context.prev);
       }
       setSyncNote(`Failed to update status: ${err.message}`);
     },
     onSettled: async () => {
-      await utils.sponsorJudging.getSponsors.invalidate();
+      await utils.sponsorDashboard.getSponsors.invalidate();
     },
   });
 
-  const sync = api.sponsorJudging.syncSponsors.useMutation({
+  const sync = api.sponsorDashboard.syncSponsors.useMutation({
     onSuccess: async (registered) => {
       setSyncNote(
         `Synced ${registered.length} sponsor(s) from the master sheet.`,
       );
-      await utils.sponsorJudging.getSponsors.invalidate();
+      await utils.sponsorDashboard.getSponsors.invalidate();
     },
     onError: (error) => setSyncNote(`Sync failed: ${error.message}`),
     onSettled: () => setSyncing(false),
@@ -494,7 +484,7 @@ export default function SponsorJudgingBoard() {
                     <div className="flex flex-wrap items-center justify-between gap-2 border-y border-slate-100 py-2.5">
                       <StatusPicker
                         sponsorName={sponsor.name}
-                        currentStatus={sponsor.status as SponsorStatus}
+                        currentStatus={sponsor.status}
                         onStatusChange={(status) =>
                           updateStatus.mutate({
                             sponsorName: sponsor.name,
@@ -618,7 +608,7 @@ export default function SponsorJudgingBoard() {
                     <td className="px-4 py-3">
                       <StatusPicker
                         sponsorName={sponsor.name}
-                        currentStatus={sponsor.status as SponsorStatus}
+                        currentStatus={sponsor.status}
                         onStatusChange={(status) =>
                           updateStatus.mutate({
                             sponsorName: sponsor.name,

@@ -1,12 +1,14 @@
 import { describe, expect, test } from "vitest";
 
 import {
-  lookupHwContactPhones,
   normalizeOptionalText,
+  parseSponsorInfoColumns,
+} from "~/server/api/utils/sponsor-sheets";
+import {
+  lookupHwContactPhones,
   normalizePersonName,
   normalizePhoneNumber,
-  parseSponsorInfoColumns,
-} from "./sponsor-judging";
+} from "~/server/api/utils/sponsor-hw-contacts";
 
 function phoneMap(entries: [string, string][]) {
   return new Map(entries.map(([n, p]) => [normalizePersonName(n), p]));

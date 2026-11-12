@@ -61,3 +61,7 @@ export function ensureUrlHasProtocol(text?: string | null) {
   if (/^https?:\/\//i.test(text)) return text;
   return `https://${text}`;
 }
+
+/** Matches a lowercase/uppercase UUID v4-style string (private sponsor links). */
+export const uuidRegex =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

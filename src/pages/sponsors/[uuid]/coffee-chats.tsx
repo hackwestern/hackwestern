@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, Check, Coffee } from "lucide-react";
 
 import SEO from "~/components/seo";
+import { uuidRegex } from "~/utils/urls";
 import { api } from "~/utils/api";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
@@ -19,9 +20,6 @@ import {
   groupCoffeeChatSlotsByHour,
 } from "~/lib/coffee-chats";
 import { cn } from "~/lib/utils";
-
-const uuidRegex =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const HOUR_SLOTS = groupCoffeeChatSlotsByHour(COFFEE_CHAT_SLOTS);
 
@@ -43,7 +41,7 @@ export default function SponsorCoffeeChatsPage() {
   const [seededFor, setSeededFor] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  const scheduleQ = api.sponsorJudging.getCoffeeChatSchedule.useQuery(
+  const scheduleQ = api.sponsorPortal.getCoffeeChatSchedule.useQuery(
     { sponsor: uuid },
     { enabled: validUuid, refetchOnWindowFocus: false },
   );
@@ -60,7 +58,7 @@ export default function SponsorCoffeeChatsPage() {
     );
   }, [data, seededFor, uuid]);
 
-  const save = api.sponsorJudging.setCoffeeChatBooking.useMutation();
+  const save = api.sponsorPortal.setCoffeeChatBooking.useMutation();
 
   // Other sponsors' bookings, keyed like selected for chip shading.
   const takenByOthers = useMemo(() => {
@@ -96,7 +94,7 @@ export default function SponsorCoffeeChatsPage() {
         onSuccess: () => {
           setSaved(true);
           // Refresh others' bookings so the grid shows the latest state.
-          void utils.sponsorJudging.getCoffeeChatSchedule
+          void utils.sponsorPortal.getCoffeeChatSchedule
             .invalidate()
             .catch(() => undefined);
         },

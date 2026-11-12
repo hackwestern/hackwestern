@@ -4,16 +4,16 @@ import Link from "next/link";
 import { ArrowLeft, Check, Search, X } from "lucide-react";
 
 import SEO from "~/components/seo";
+import { uuidRegex } from "~/utils/urls";
 import { api } from "~/utils/api";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
+import {
+  MAX_SPONSOR_PICKS,
+  MIN_SPONSOR_PICKS,
+} from "~/lib/sponsor-picks";
 import { cn } from "~/lib/utils";
 
-const MIN_PICKS = 5;
-const MAX_PICKS = 10;
-
-const uuidRegex =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type PickableTeam = {
   id: string;
@@ -62,10 +62,14 @@ export default function SponsorPicksPage() {
 
   const save = api.sponsorJudging.setChosenTeams.useMutation();
 
-  // Fetch all teams from the database
-  const teamsQ = api.sponsorJudging.listAllTeams.useQuery(undefined, {
-    refetchOnWindowFocus: false,
-  });
+  // Fetch all teams from the database (gated on this sponsor's private UUID)
+  const teamsQ = api.sponsorJudging.listAllTeams.useQuery(
+    { sponsor: uuid },
+    {
+      enabled: validUuid,
+      refetchOnWindowFocus: false,
+    },
+  );
   const allTeams = useMemo<PickableTeam[]>(
     () => teamsQ.data ?? [],
     [teamsQ.data],
@@ -79,7 +83,7 @@ export default function SponsorPicksPage() {
     );
   }, [query, allTeams]);
 
-  const atMax = selected.length >= MAX_PICKS;
+  const atMax = selected.length >= MAX_SPONSOR_PICKS;
 
   function toggle(teamId: string) {
     setSaved(false);
@@ -87,13 +91,13 @@ export default function SponsorPicksPage() {
       if (current.includes(teamId)) {
         return current.filter((id) => id !== teamId);
       }
-      if (current.length >= MAX_PICKS) return current;
+      if (current.length >= MAX_SPONSOR_PICKS) return current;
       return [...current, teamId];
     });
   }
 
   function savePicks() {
-    if (selected.length < MIN_PICKS) return;
+    if (selected.length < MIN_SPONSOR_PICKS) return;
     save.mutate(
       { sponsorId: uuid, teamIds: selected },
       { onSuccess: () => setSaved(true) },
@@ -132,7 +136,7 @@ export default function SponsorPicksPage() {
     );
   }
 
-  const canSave = selected.length >= MIN_PICKS && !save.isPending;
+  const canSave = selected.length >= MIN_SPONSOR_PICKS && !save.isPending;
 
   return (
     <Shell
@@ -145,7 +149,7 @@ export default function SponsorPicksPage() {
               : "text-dashboard-text-light",
           )}
         >
-          {selected.length} of {MAX_PICKS} selected · min {MIN_PICKS}
+          {selected.length} of {MAX_SPONSOR_PICKS} selected · min {MIN_SPONSOR_PICKS}
         </span>
       }
     >
@@ -171,7 +175,7 @@ export default function SponsorPicksPage() {
           )}
           <h1 className="dashboard-h1 m-0">Pick your top teams</h1>
           <p className="mb-0 mt-1 text-base font-medium leading-relaxed text-dashboard-text-medium">
-            Choose between {MIN_PICKS} and {MAX_PICKS} teams. You can come back
+            Choose between {MIN_SPONSOR_PICKS} and {MAX_SPONSOR_PICKS} teams. You can come back
             and change your picks any time before judging closes.
           </p>
         </div>
@@ -284,7 +288,7 @@ export default function SponsorPicksPage() {
 
         {atMax && (
           <p className="m-0 rounded-dashboard-md border border-dashboard-border-subtle bg-dashboard-bg-highlight px-4 py-3 text-sm font-medium leading-relaxed text-dashboard-text-heavy">
-            That&apos;s the max of {MAX_PICKS}. Deselect a team to swap in a
+            That&apos;s the max of {MAX_SPONSOR_PICKS}. Deselect a team to swap in a
             different one.
           </p>
         )}
@@ -297,13 +301,13 @@ export default function SponsorPicksPage() {
             <span
               className={cn(
                 "text-base font-semibold tabular-nums text-dashboard-text-heavy",
-                selected.length < MIN_PICKS && "text-dashboard-status-warning",
+                selected.length < MIN_SPONSOR_PICKS && "text-dashboard-status-warning",
               )}
             >
-              {selected.length} / {MAX_PICKS}
+              {selected.length} / {MAX_SPONSOR_PICKS}
             </span>
             <span className="text-xs font-medium text-dashboard-text-light">
-              pick at least {MIN_PICKS}
+              pick at least {MIN_SPONSOR_PICKS}
             </span>
           </span>
           <DashboardButton

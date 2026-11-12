@@ -79,7 +79,7 @@ export const env = createEnv({
     // comma-separated chosen team ids in column B)
     SPONSOR_JUDGING_SHEET: z.string().optional(),
     // Master sponsor sheet (source of truth for sponsor names). Column A is
-    // "Company Name"; sponsorJudging.syncSponsors reads it to seed private links
+    // "Company Name"; sponsorDashboard.syncSponsors reads it to seed private links
     SPONSOR_MASTER_SHEET: z.string().optional(),
     // Tab on the master sponsor sheet holding the acquired-sponsors table
     // (default "HW 13 Sponsors"; header row is found by scanning for

@@ -346,8 +346,6 @@ export type CoffeeChatCellChange = {
   sponsor: string;
 };
 
-export const COFFEE_CHAT_EMPTY_CELL = "";
-
 /**
  * Only the cells that actually differ between the current grid and the
  * next grid. Writing per-cell lets two sponsors book simultaneously in
