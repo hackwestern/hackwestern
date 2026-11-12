@@ -5,49 +5,45 @@ import {
   fullWidth,
   infoBanner,
   warningBanner,
-} from "../shared/judge-ui";
-import { type Ratings } from "../shared/rubric-scorer";
+} from "~/components/judging/shared/judge-ui";
+import { type Ratings } from "~/components/judging/shared/rubric-scorer";
 
-/** One team this judge has scored or marked absent. */
+/** One team this judge has scored. */
 export interface JudgedTeam {
-  table: number;
+  markId: number;
+  teamId: string;
+  /** null when the team isn't seated at a table. */
+  table: number | null;
   teamName: string;
-  absent: boolean;
-  /** Slider values by criterion id. Empty when absent. */
+  /** Slider values by criterion id (0-100). Empty until the mark is edited with the rubric. */
   ratings: Ratings;
-  /** 0–100, the weighted average of the ratings. null when absent. */
-  score: number | null;
+  /** 0-100, as stored on the mark. */
+  score: number;
   notes: string;
 }
 
-/**
- * Where the final submit stands. Once it leaves "open", scores are locked.
- * - sending: saved on the device, being sent now
- * - waiting: saved on the device, waiting for a connection
- * - sent: the server has them
- */
-export type SubmitStatus = "open" | "sending" | "waiting" | "sent";
-
-const SUBMIT_LABEL: Record<SubmitStatus, string> = {
-  open: "Submit scores",
-  sending: "Sending…",
-  waiting: "Waiting for connection",
-  sent: "Submitted",
-};
-
 interface JudgeTeamsProps {
   results: JudgedTeam[];
-  status: SubmitStatus;
-  onEdit: (table: number) => void;
-  onSubmit: () => void;
+  /** True once the judge has finished: scores are locked. */
+  finished: boolean;
+  /** Finishing is in progress. */
+  finishing: boolean;
+  error: string | null;
+  onEdit: (markId: number) => void;
+  onFinish: () => void;
 }
 
-/** The "My teams" tab: review every score, change any of them, then submit. */
+/**
+ * The "My teams" tab: every score the judge has submitted. Tap one to change
+ * it, until the judge taps "Finish judging".
+ */
 export function JudgeTeams({
   results,
-  status,
+  finished,
+  finishing,
+  error,
   onEdit,
-  onSubmit,
+  onFinish,
 }: JudgeTeamsProps) {
   if (results.length === 0) {
     return (
@@ -57,28 +53,17 @@ export function JudgeTeams({
     );
   }
 
-  const locked = status !== "open";
-
   return (
     <>
-      {status === "sent" ? (
+      {finished ? (
         <p role="status" className={infoBanner}>
-          Scores submitted. Thank you!
-        </p>
-      ) : status === "sending" ? (
-        <p role="status" className={infoBanner}>
-          Sending your scores…
-        </p>
-      ) : status === "waiting" ? (
-        <p role="status" className={warningBanner}>
-          Saved on this phone. Your scores send when you&apos;re back online.
+          You&apos;ve finished judging. Your scores are locked. Thank you!
         </p>
       ) : (
         <p className="m-0 px-1 text-sm text-dashboard-text-light">
           Tap a team to change its score.
         </p>
       )}
-
       <section
         aria-label="Teams you've judged"
         className={`${card} overflow-hidden`}
@@ -86,23 +71,21 @@ export function JudgeTeams({
         <ul className="m-0 list-none p-0">
           {results.map((r, i) => (
             <li
-              key={r.table}
+              key={r.markId}
               className={i > 0 ? "border-t border-dashboard-border-subtle" : ""}
             >
               <button
                 type="button"
-                disabled={locked}
-                onClick={() => onEdit(r.table)}
-                aria-label={`${r.table} ${r.teamName}, ${
-                  r.absent ? "absent" : `score ${r.score}`
-                }. Edit.`}
+                disabled={finished}
+                onClick={() => onEdit(r.markId)}
+                aria-label={`${r.table ?? "No table"} ${r.teamName}, score ${r.score}.${finished ? "" : " Edit."}`}
                 className={`flex min-h-14 w-full cursor-pixel-hover items-center justify-between gap-3 px-4 text-left text-base font-medium text-dashboard-text-heavy enabled:hover:bg-dashboard-bg-highlight ${focusRing}`}
               >
                 <span className="min-w-0 truncate">
-                  {r.table} · {r.teamName}
+                  {r.table ?? "–"} · {r.teamName}
                 </span>
                 <span className="shrink-0 font-semibold tabular-nums">
-                  {r.absent ? "absent" : r.score}
+                  {r.score}
                 </span>
               </button>
             </li>
@@ -110,14 +93,21 @@ export function JudgeTeams({
         </ul>
       </section>
 
-      <DashboardButton
-        type="button"
-        disabled={locked}
-        onClick={onSubmit}
-        className={`${fullWidth} disabled:opacity-dashboard-disabled`}
-      >
-        {SUBMIT_LABEL[status]}
-      </DashboardButton>
+      {error && (
+        <p role="alert" className={warningBanner}>
+          {error}
+        </p>
+      )}
+      {!finished && (
+        <DashboardButton
+          type="button"
+          disabled={finishing}
+          onClick={onFinish}
+          className={`${fullWidth} disabled:opacity-dashboard-disabled`}
+        >
+          {finishing ? "Finishing…" : "Finish judging"}
+        </DashboardButton>
+      )}
     </>
   );
 }

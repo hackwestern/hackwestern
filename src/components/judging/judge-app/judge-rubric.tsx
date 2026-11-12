@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { JudgeConfirm } from "../shared/judge-confirm";
-import { card, field, touch } from "~/components/judging/shared/judge-ui";
+import { JudgeConfirm } from "~/components/judging/shared/judge-confirm";
+import {
+  card,
+  field,
+  touch,
+  warningBanner,
+} from "~/components/judging/shared/judge-ui";
 import {
   type Ratings,
   type Rubric,
@@ -12,19 +17,19 @@ import {
 } from "~/components/judging/shared/rubric-scorer";
 
 // ---- Draft autosave ---------------------------------------------------------
-// Until the backend exists, drafts are kept in this browser so a refresh or a
-// dropped connection doesn't lose a judge's scores. Storage can throw (private
-// mode, blocked site data), so every call is guarded.
+// Drafts are kept in this browser until the score reaches the server, so a
+// refresh or a dropped connection doesn't lose a judge's answers. Storage can
+// throw (private mode, blocked site data), so every call is guarded.
 interface Draft {
   ratings: Ratings;
   notes: string;
 }
 
-const draftKey = (table: number) => `hw13-judge-draft-${table}`;
+const draftKey = (key: string) => `hw13-judge-draft-${key}`;
 
-function readDraft(table: number): Draft {
+function readDraft(key: string): Draft {
   try {
-    const raw = localStorage.getItem(draftKey(table));
+    const raw = localStorage.getItem(draftKey(key));
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<Draft>;
       return {
@@ -41,18 +46,18 @@ function readDraft(table: number): Draft {
   return { ratings: {}, notes: "" };
 }
 
-function writeDraft(table: number, draft: Draft): boolean {
+function writeDraft(key: string, draft: Draft): boolean {
   try {
-    localStorage.setItem(draftKey(table), JSON.stringify(draft));
+    localStorage.setItem(draftKey(key), JSON.stringify(draft));
     return true;
   } catch {
     return false;
   }
 }
 
-function clearDraft(table: number) {
+function clearDraft(key: string) {
   try {
-    localStorage.removeItem(draftKey(table));
+    localStorage.removeItem(draftKey(key));
   } catch {
     // Nothing to clear.
   }
@@ -67,7 +72,6 @@ const SAVE_LABEL: Record<SaveState, string> = {
 };
 
 export interface ScoreSubmission {
-  table: number;
   ratings: Ratings;
   /** 0–100, the same number the backend stores for a mark. */
   score: number;
@@ -75,23 +79,37 @@ export interface ScoreSubmission {
 }
 
 interface JudgeRubricProps {
-  table: number;
-  /** True when the judge typed in this table, on top of the assigned ones. */
-  adHoc: boolean;
+  /** Keeps drafts apart per judge on a shared phone. */
+  judgeKey: string;
+  teamId: string;
+  teamName: string;
+  /** null when the team isn't seated at a table. */
+  table: number | null;
   rubric: Rubric;
-  onSubmit: (submission: ScoreSubmission) => void;
-  onAbsent: (table: number) => void;
+  /** Sending to the server. */
+  busy: boolean;
+  /** Why the last send failed, if it did. */
+  error: string | null;
+  /** Resolves true once the server has the score. */
+  onSubmit: (submission: ScoreSubmission) => Promise<boolean>;
+  /** Resolves true once the team is skipped. */
+  onAbsent: () => Promise<boolean>;
 }
 
-/** The Score page: rubric, notes and the two ways to finish a table. Key it by table. */
+/** The Score page: rubric, notes and the two ways to finish a team. Key it by team. */
 export function JudgeRubric({
+  judgeKey,
+  teamId,
+  teamName,
   table,
-  adHoc,
   rubric,
+  busy,
+  error,
   onSubmit,
   onAbsent,
 }: JudgeRubricProps) {
-  const [initial] = useState(() => readDraft(table));
+  const key = `${judgeKey}-${teamId}`;
+  const [initial] = useState(() => readDraft(key));
   const [ratings, setRatings] = useState<Ratings>(initial.ratings);
   const [notes, setNotes] = useState(initial.notes);
   const [guideOpen, setGuideOpen] = useState(false);
@@ -106,35 +124,40 @@ export function JudgeRubric({
     }
     setSaveState("saving");
     const timer = setTimeout(
-      () => setSaveState(writeDraft(table, { ratings, notes }) ? "saved" : "error"),
+      () => setSaveState(writeDraft(key, { ratings, notes }) ? "saved" : "error"),
       500,
     );
     return () => clearTimeout(timer);
-  }, [ratings, notes, table]);
+  }, [ratings, notes, key]);
 
   const count = rubric.criteria.length;
   const result = scoreRubric(rubric, ratings);
   const complete = count > 0 && result.rated === count;
 
-  const submit = () => {
-    if (!complete) return;
-    clearDraft(table);
-    onSubmit({ table, ratings, score: result.score, notes: notes.trim() });
+  // The draft stays on the phone until the server has the score.
+  const submit = async () => {
+    if (!complete || busy) return;
+    const ok = await onSubmit({
+      ratings,
+      score: result.score,
+      notes: notes.trim(),
+    });
+    if (ok) clearDraft(key);
   };
 
   const [confirmAbsent, setConfirmAbsent] = useState(false);
-  const absent = () => {
+  const absent = async () => {
     setConfirmAbsent(false);
-    clearDraft(table);
-    onAbsent(table);
+    const ok = await onAbsent();
+    if (ok) clearDraft(key);
   };
 
   return (
     <>
       <div className="flex items-center justify-between gap-3">
-        <h1 className="m-0 text-base font-medium text-dashboard-text-light">
-          Table {table}
-          {adHoc ? " · ad hoc" : ""}
+        <h1 className="m-0 min-w-0 truncate text-base font-medium text-dashboard-text-light">
+          {table !== null ? `Table ${table} · ` : ""}
+          {teamName}
         </h1>
         <span
           aria-live="polite"
@@ -189,6 +212,7 @@ export function JudgeRubric({
         <DashboardButton
           type="button"
           variant="outline"
+          disabled={busy}
           onClick={() => setConfirmAbsent(true)}
           className={`${touch} px-4`}
         >
@@ -196,13 +220,18 @@ export function JudgeRubric({
         </DashboardButton>
         <DashboardButton
           type="button"
-          disabled={!complete}
-          onClick={submit}
+          disabled={!complete || busy}
+          onClick={() => void submit()}
           className="h-11 w-auto flex-1 disabled:opacity-dashboard-disabled md:w-auto"
         >
-          Next team
+          {busy ? "Sending…" : "Next team"}
         </DashboardButton>
       </div>
+      {error && (
+        <p role="alert" className={warningBanner}>
+          {error}
+        </p>
+      )}
       {!complete && (
         <p className="m-0 px-1 text-sm text-dashboard-text-light">
           Score all {count} criteria to continue.
@@ -210,11 +239,11 @@ export function JudgeRubric({
       )}
       <JudgeConfirm
         open={confirmAbsent}
-        title={`Mark table ${table} as not here?`}
-        description="No score will be saved for this team."
+        title={table !== null ? `Mark table ${table} as not here?` : "Mark this team as not here?"}
+        description="No score will be saved. You won't be given this team again."
         confirmLabel="Team not here"
         cancelLabel="Keep scoring"
-        onConfirm={absent}
+        onConfirm={() => void absent()}
         onCancel={() => setConfirmAbsent(false)}
       />
     </>

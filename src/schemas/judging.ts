@@ -5,16 +5,26 @@ import { judgeTypeEnum, judges, trackEnum } from "~/server/db/schema";
 
 export const SCORE_MIN = 0;
 export const SCORE_MAX = 100;
+ 
+export const scoreBreakdownSchema = z.object({
+  idea: z.number().min(SCORE_MIN).max(SCORE_MAX),
+  technical: z.number().min(SCORE_MIN).max(SCORE_MAX),
+  design: z.number().min(SCORE_MIN).max(SCORE_MAX),
+  pitch: z.number().min(SCORE_MIN).max(SCORE_MAX),
+  notes: z.string().max(2000).optional(),
+});
 
 // judge inputs
 export const submitTeamMarkSchema = z.object({
   teamId: z.string().min(1),
   score: z.number().min(SCORE_MIN).max(SCORE_MAX),
+  breakdown: scoreBreakdownSchema.optional(),
 });
 
 export const editTeamMarkSchema = z.object({
   teamMarkId: z.number().int().positive(),
   score: z.number().min(SCORE_MIN).max(SCORE_MAX),
+  breakdown: scoreBreakdownSchema.optional(),
 });
 
 // organizer inputs

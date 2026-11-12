@@ -1,42 +1,63 @@
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { VenueMap } from "~/components/judging/judge-app/judge-map";
-import { card, fullWidth, touch } from "~/components/judging/shared/judge-ui";
+import {
+  card,
+  fullWidth,
+  warningBanner,
+} from "~/components/judging/shared/judge-ui";
+
+export type NextPhase = "loading" | "welcome" | "team" | "none" | "finished";
 
 interface JudgeNextProps {
-  started: boolean;
+  phase: NextPhase;
+  /** The team the server gave this judge (phase "team"). */
+  teamName: string | null;
+  /** Its table, or null when the team isn't seated yet. */
+  table: number | null;
+  /** How many teams this judge has scored. */
+  judged: number;
+  /** Finding the next team. */
+  busy: boolean;
+  error: string | null;
   onStart: () => void;
-  /** Table numbers this judge covers, in order. */
-  tables: number[];
-  /** Index into `tables` of the table to visit next. */
-  currentIndex: number;
-  /** Start scoring the table shown. */
   onJudge: () => void;
-  /** Called when the map is tapped, to open the map page. */
   onOpenMap: () => void;
-  /** Opens the full list of judged teams. */
   onReview: () => void;
-  /** Set when the judge said they are at a different table than expected. */
-  override: number | null;
-  onWrongTable: () => void;
-  onImpromptu: () => void;
+  onCheckAgain: () => void;
 }
 
-/** The "Next" tab: a welcome first, then the next table once judging starts. */
+/** The "Next" tab: a welcome first, then the team the server picked. */
 export function JudgeNext({
-  started,
+  phase,
+  teamName,
+  table,
+  judged,
+  busy,
+  error,
   onStart,
-  tables,
-  currentIndex,
-  override,
   onJudge,
   onOpenMap,
   onReview,
-  onWrongTable,
-  onImpromptu,
+  onCheckAgain,
 }: JudgeNextProps) {
-  if (!started) {
-    const first = tables[0];
-    const last = tables[tables.length - 1];
+  const errorBanner = error ? (
+    <p role="alert" className={warningBanner}>
+      {error}
+    </p>
+  ) : null;
+
+  if (phase === "loading") {
+    return (
+      <p
+        role="status"
+        className="px-1 text-base font-medium text-dashboard-text-light"
+      >
+        Finding your next team…
+      </p>
+    );
+  }
+
+  if (phase === "welcome") {
     return (
       <>
         <section className={`${card} flex flex-col gap-1.5 p-4`}>
@@ -44,55 +65,80 @@ export function JudgeNext({
             Welcome, judge
           </h1>
           <p className="text-base font-medium text-dashboard-text-light">
-            No account needed
+            Start judging to get your first team.
           </p>
         </section>
-        <section
-          className={`${card} flex items-baseline justify-between gap-3 px-4 py-3.5`}
+        {errorBanner}
+        <DashboardButton
+          type="button"
+          disabled={busy}
+          onClick={onStart}
+          className={fullWidth}
         >
-          <span className="text-base font-medium text-dashboard-text-heavy">
-            Your tables
-          </span>
-          <span className="text-xl font-semibold tabular-nums text-dashboard-text-heavy">
-            {first === undefined
-              ? "None yet"
-              : first === last
-                ? first
-                : `${first}–${last}`}
-          </span>
-        </section>
-        <DashboardButton type="button" onClick={onStart} className={fullWidth}>
-          Start judging
+          {busy ? "Finding a team…" : "Start judging"}
         </DashboardButton>
       </>
     );
   }
 
-  const expected = tables[currentIndex];
-  const table = override ?? expected;
-
-  // Every assigned table is done. Another team can still be judged by number.
-  if (table === undefined) {
+  if (phase === "finished") {
     return (
       <>
         <section className={`${card} flex flex-col gap-1.5 p-4`}>
           <h1 className="text-3xl font-bold leading-tight text-dashboard-text-heavy">
-            All done
+            You&apos;re done judging
           </h1>
           <p className="text-base font-medium text-dashboard-text-light">
-            You&apos;ve judged all your tables. Thank you!
+            {judged > 0
+              ? `Thank you! Your ${judged} score${judged === 1 ? " is" : "s are"} submitted and locked.`
+              : "Thank you!"}
           </p>
         </section>
-        <DashboardButton type="button" onClick={onReview} className={fullWidth}>
-          Review all teams
-        </DashboardButton>
+        {judged > 0 && (
+          <DashboardButton
+            type="button"
+            variant="outline"
+            onClick={onReview}
+            className={fullWidth}
+          >
+            Review all teams
+          </DashboardButton>
+        )}
+      </>
+    );
+  }
+
+  if (phase === "none") {
+    return (
+      <>
+        <section className={`${card} flex flex-col gap-1.5 p-4`}>
+          <h1 className="text-3xl font-bold leading-tight text-dashboard-text-heavy">
+            {judged > 0 ? "All done for now" : "No teams yet"}
+          </h1>
+          <p className="text-base font-medium text-dashboard-text-light">
+            {judged > 0
+              ? `You've judged ${judged}. No other team is waiting for you right now.`
+              : "No team is waiting for you right now."}
+          </p>
+        </section>
+        {errorBanner}
+        {judged > 0 && (
+          <DashboardButton
+            type="button"
+            onClick={onReview}
+            className={fullWidth}
+          >
+            Review all teams
+          </DashboardButton>
+        )}
         <DashboardButton
           type="button"
           variant="outline"
-          onClick={onImpromptu}
+          disabled={busy}
+          onClick={onCheckAgain}
           className={fullWidth}
         >
-          Judge another team
+          {busy ? "Checking…" : "Check again"}
         </DashboardButton>
       </>
     );
@@ -113,17 +159,18 @@ export function JudgeNext({
         <span className="text-6xl font-bold leading-none tabular-nums text-dashboard-text-heavy">
           {table ?? "–"}
         </span>
-        {/* Placeholder directions. */}
         <span className="mt-2 text-base font-medium text-dashboard-text-heavy">
-          {override !== null && override !== expected
-            ? `Changed from ${expected ?? "–"}`
-            : "Row 2 · walk right"}
+          {table === null
+            ? `${teamName ?? "This team"} has no table yet. Ask an organizer.`
+            : teamName}
         </span>
       </section>
 
-      <section aria-label="Floor map" className={`${card} p-3.5`}>
-        <VenueMap tables={tables} current={table} onOpen={onOpenMap} />
-      </section>
+      {table !== null && (
+        <section aria-label="Floor map" className={`${card} p-3.5`}>
+          <VenueMap tables={[]} current={table} onOpen={onOpenMap} />
+        </section>
+      )}
 
       {/* Placeholder clock: static until the pitch timer is wired up. */}
       <section
@@ -141,24 +188,6 @@ export function JudgeNext({
       <DashboardButton type="button" onClick={onJudge} className={fullWidth}>
         Judge this team
       </DashboardButton>
-      <div className="flex flex-wrap gap-2">
-        <DashboardButton
-          type="button"
-          variant="outline"
-          onClick={onWrongTable}
-          className={touch}
-        >
-          Wrong table?
-        </DashboardButton>
-        <DashboardButton
-          type="button"
-          variant="outline"
-          onClick={onImpromptu}
-          className={touch}
-        >
-          Judge another team
-        </DashboardButton>
-      </div>
     </>
   );
 }

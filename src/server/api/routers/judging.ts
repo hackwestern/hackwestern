@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { z } from "zod";
 
 import {
   createTRPCRouter,
@@ -9,8 +10,10 @@ import {
 import { db, extractRows } from "~/server/db";
 import {
   judges,
+  judgingAssignments,
   judgingQueue,
   judgingSkips,
+  judgingTables,
   teamMarks,
   teams,
   users,
@@ -30,6 +33,9 @@ import {
 const STALE_ASSIGNMENT_MINUTES = 15;
 
 type QueueRow = typeof judgingQueue.$inferSelect;
+type ScoreBreakdown = NonNullable<
+  typeof teamMarks.$inferInsert["scoreBreakdown"]
+>;
 
 /**
  * Wrap a procedure body so any unexpected error becomes a clean
@@ -53,6 +59,99 @@ const withErrorHandling = async <T>(
     });
   }
 };
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Sets a team's table to waiting / being_judged / finished from what is true
+ * now: a stop in progress means being_judged; still queued, or never marked,
+ * means waiting; otherwise every round is in and the table is finished. Only
+ * writes when the status changes. Call it inside the transaction that changed
+ * the team's queue row, marks or assignments.
+ */
+async function syncTableStatus(tx: Tx, teamId: string): Promise<void> {
+  const team = await tx.query.teams.findFirst({
+    where: eq(teams.id, teamId),
+    columns: { judgingTableId: true },
+  });
+  if (!team?.judgingTableId) return;
+
+  const result = await tx.execute(sql`
+    SELECT
+      EXISTS (SELECT 1 FROM judging_assignment a WHERE a.team_id = ${teamId} AND a.status = 'in_progress') AS in_progress,
+      EXISTS (SELECT 1 FROM judging_queue q WHERE q.team_id = ${teamId}) AS queued,
+      EXISTS (SELECT 1 FROM team_mark m WHERE m.team_id = ${teamId}) AS marked
+  `);
+  const live = extractRows<{
+    in_progress: boolean;
+    queued: boolean;
+    marked: boolean;
+  }>(result)[0];
+  const status = live?.in_progress
+    ? "being_judged"
+    : live?.queued || !live?.marked
+      ? "waiting"
+      : "finished";
+
+  await tx
+    .update(judgingTables)
+    .set({ status, statusUpdatedAt: new Date() })
+    .where(
+      and(
+        eq(judgingTables.id, team.judgingTableId),
+        ne(judgingTables.status, status),
+      ),
+    );
+}
+
+/**
+ * Makes sure this judge has an open stop (judging_assignment) for the team
+ * they now hold, closes other judges' open stops on it (the hold moved), and
+ * refreshes the table. Safe to call again for a stop that already exists.
+ */
+async function openAssignment(
+  tx: Tx,
+  judgeId: string,
+  teamId: string,
+): Promise<void> {
+  await tx
+    .update(judgingAssignments)
+    .set({ status: "cancelled" })
+    .where(
+      and(
+        eq(judgingAssignments.teamId, teamId),
+        ne(judgingAssignments.judgeId, judgeId),
+        inArray(judgingAssignments.status, ["assigned", "in_progress"]),
+      ),
+    );
+
+  const existing = await tx.query.judgingAssignments.findFirst({
+    where: and(
+      eq(judgingAssignments.judgeId, judgeId),
+      eq(judgingAssignments.teamId, teamId),
+      ne(judgingAssignments.status, "cancelled"),
+    ),
+    columns: { id: true },
+  });
+  if (!existing) {
+    const [row] = await tx
+      .select({
+        next: sql<number>`coalesce(max(${judgingAssignments.position}), 0) + 1`,
+      })
+      .from(judgingAssignments)
+      .where(
+        and(
+          eq(judgingAssignments.judgeId, judgeId),
+          ne(judgingAssignments.status, "cancelled"),
+        ),
+      );
+    await tx
+      .insert(judgingAssignments)
+      .values({ judgeId, teamId, position: row?.next ?? 1 })
+      .onConflictDoNothing();
+  }
+  await syncTableStatus(tx, teamId);
+}
 
 async function getCurrentHold(judgeId: string): Promise<QueueRow | undefined> {
   return db.query.judgingQueue.findFirst({
@@ -85,6 +184,7 @@ async function pickNextTeam(
       where: eq(judgingQueue.currentJudgeId, judgeId),
     });
     if (held) {
+      await openAssignment(tx, judgeId, held.teamId);
       return (await tx.query.teams.findFirst({
         where: eq(teams.id, held.teamId),
       }))!;
@@ -135,6 +235,7 @@ async function pickNextTeam(
         assignedAt: new Date(),
       })
       .where(eq(judgingQueue.teamId, String(teamId)));
+    await openAssignment(tx, judgeId, String(teamId));
 
     return (await tx.query.teams.findFirst({
       where: eq(teams.id, String(teamId)),
@@ -154,6 +255,7 @@ async function submitMark(
   teamId: string,
   score: number,
   roundType: "regular" | "sponsored",
+  scoreBreakdown?: ScoreBreakdown,
 ): Promise<void> {
   return db.transaction(async (tx) => {
     const row = await tx.query.judgingQueue.findFirst({
@@ -165,18 +267,80 @@ async function submitMark(
         message: "You are not currently assigned to this team.",
       });
     }
-    await tx.insert(teamMarks).values({ teamId, judgeId, score, roundType });
+    await tx
+      .insert(teamMarks)
+      .values({ teamId, judgeId, score, roundType, scoreBreakdown });
+
+    // The stop is done. The autoqueue trigger has already run, so the table
+    // sees the team's queue row as it is now.
+    await tx
+      .update(judgingAssignments)
+      .set({
+        status: "done",
+        startedAt: sql`coalesce(${judgingAssignments.startedAt}, now())`,
+        completedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(judgingAssignments.judgeId, judgeId),
+          eq(judgingAssignments.teamId, teamId),
+          inArray(judgingAssignments.status, ["assigned", "in_progress"]),
+        ),
+      );
+    await syncTableStatus(tx, teamId);
   });
 }
 
+/**
+ * === TRANSACTION ===
+ * The judge pressed "Judge this team": mark their stop in progress, stamp
+ * started_at the first time, and show the table as being judged. Repeating it
+ * changes nothing.
+ */
+async function startTeam(judgeId: string): Promise<void> {
+  return db.transaction(async (tx) => {
+    const held = await tx.query.judgingQueue.findFirst({
+      where: eq(judgingQueue.currentJudgeId, judgeId),
+    });
+    if (!held) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "You have no team assigned to start.",
+      });
+    }
+    await openAssignment(tx, judgeId, held.teamId);
+    await tx
+      .update(judgingAssignments)
+      .set({
+        status: "in_progress",
+        startedAt: sql`coalesce(${judgingAssignments.startedAt}, now())`,
+      })
+      .where(
+        and(
+          eq(judgingAssignments.judgeId, judgeId),
+          eq(judgingAssignments.teamId, held.teamId),
+          inArray(judgingAssignments.status, ["assigned", "in_progress"]),
+        ),
+      );
+    await syncTableStatus(tx, held.teamId);
+  });
+}
+
+/**
+ * Edits UPDATE the existing row, never insert a second one: the stats trigger
+ * swaps old score for new on UPDATE, whereas a second INSERT would burn a
+ * queue round (`trg_team_mark_autoqueue`) and double-count the judge.
+ * `scoreBreakdown` is only overwritten when the caller sends one.
+ */
 async function editMark(
   judgeId: string,
   teamMarkId: number,
   score: number,
+  scoreBreakdown?: ScoreBreakdown,
 ): Promise<void> {
   const updated = await db
     .update(teamMarks)
-    .set({ score })
+    .set(scoreBreakdown ? { score, scoreBreakdown } : { score })
     .where(and(eq(teamMarks.id, teamMarkId), eq(teamMarks.judgeId, judgeId)))
     .returning({ id: teamMarks.id });
   if (updated.length === 0) {
@@ -228,6 +392,7 @@ async function deleteMark(teamMarkId: number): Promise<void> {
           roundsRemaining: sql`${judgingQueue.roundsRemaining} + 1`,
         },
       });
+    await syncTableStatus(tx, deleted.teamId);
   });
 }
 
@@ -237,7 +402,10 @@ async function deleteMark(teamMarkId: number): Promise<void> {
  * so they're never reassigned it, releases the hold, and returns the team to
  * `waiting` WITHOUT counting it as judged (no round consumed).
  */
-async function skipCurrent(judgeId: string): Promise<string> {
+async function skipCurrent(
+  judgeId: string,
+  released = false,
+): Promise<string> {
   return db.transaction(async (tx) => {
     const held = await tx.query.judgingQueue.findFirst({
       where: eq(judgingQueue.currentJudgeId, judgeId),
@@ -256,6 +424,23 @@ async function skipCurrent(judgeId: string): Promise<string> {
       .update(judgingQueue)
       .set({ currentJudgeId: null, status: "waiting" })
       .where(eq(judgingQueue.teamId, held.teamId));
+
+    // "Team not here" closes the stop as team_absent. A judge who finished and
+    // only let go of the team they held cancels it instead.
+    await tx
+      .update(judgingAssignments)
+      .set({
+        status: released ? "cancelled" : "team_absent",
+        completedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(judgingAssignments.judgeId, judgeId),
+          eq(judgingAssignments.teamId, held.teamId),
+          inArray(judgingAssignments.status, ["assigned", "in_progress"]),
+        ),
+      );
+    await syncTableStatus(tx, held.teamId);
     return held.teamId;
   });
 }
@@ -304,6 +489,21 @@ async function forceAssign(judgeId: string, teamId: string): Promise<void> {
         assignedAt: new Date(),
       })
       .where(eq(judgingQueue.teamId, teamId));
+
+    // The judge's earlier open stops end (their old team was released).
+    const previous = await tx
+      .update(judgingAssignments)
+      .set({ status: "cancelled" })
+      .where(
+        and(
+          eq(judgingAssignments.judgeId, judgeId),
+          ne(judgingAssignments.teamId, teamId),
+          inArray(judgingAssignments.status, ["assigned", "in_progress"]),
+        ),
+      )
+      .returning({ teamId: judgingAssignments.teamId });
+    for (const p of previous) await syncTableStatus(tx, p.teamId);
+    await openAssignment(tx, judgeId, teamId);
   });
 }
 
@@ -389,6 +589,8 @@ async function getRanking() {
  * Promote one or more existing users to judges (or update their type/tracks
  * if they already are). The PK is the user id, so this upserts on conflict.
  * Sponsored judges carry the tracks they cover; organizer judges have none.
+ * Plain accounts (`hacker`) also become `judge` users; organizers and sponsors
+ * keep their type.
  * All-or-nothing: if any user id is unknown, nothing is written.
  */
 async function addJudges(
@@ -422,6 +624,18 @@ async function addJudges(
         .returning();
       rows.push(row!);
     }
+
+    // Judges are their own account type. Only plain accounts are switched:
+    // an organizer or sponsor who judges keeps their type (and their pages).
+    await tx
+      .update(users)
+      .set({ type: "judge" })
+      .where(
+        and(
+          inArray(users.id, ids),
+          or(eq(users.type, "hacker"), isNull(users.type)),
+        ),
+      );
     return rows;
   });
 }
@@ -591,6 +805,7 @@ export const judgingRouter = createTRPCRouter({
             input.teamId,
             input.score,
             roundType,
+            input.breakdown,
           );
 
           // `submitMark` has committed, so `trg_team_mark_autoqueue` has
@@ -608,7 +823,12 @@ export const judgingRouter = createTRPCRouter({
       .input(editTeamMarkSchema)
       .mutation(async ({ ctx, input }) => {
         return withErrorHandling(async () => {
-          await editMark(ctx.session.user.id, input.teamMarkId, input.score);
+          await editMark(
+            ctx.session.user.id,
+            input.teamMarkId,
+            input.score,
+            input.breakdown,
+          );
         }, "Failed to edit team mark");
       }),
 
@@ -619,11 +839,21 @@ export const judgingRouter = createTRPCRouter({
       );
     }),
 
-    skipAssignment: protectedJudgeProcedure.mutation(async ({ ctx }) => {
+    /** "Judge this team": the stop goes in progress and the table is being judged. */
+    startTeam: protectedJudgeProcedure.mutation(async ({ ctx }) => {
       return withErrorHandling(async () => {
-        await skipCurrent(ctx.session.user.id);
-      }, "Failed to skip assignment");
+        await startTeam(ctx.session.user.id);
+      }, "Failed to start team");
     }),
+
+    /** `released: true` = the judge finished and is only letting the team go. */
+    skipAssignment: protectedJudgeProcedure
+      .input(z.object({ released: z.boolean().optional() }).optional())
+      .mutation(async ({ ctx, input }) => {
+        return withErrorHandling(async () => {
+          await skipCurrent(ctx.session.user.id, input?.released ?? false);
+        }, "Failed to skip assignment");
+      }),
   }),
 
   admin: createTRPCRouter({

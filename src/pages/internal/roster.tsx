@@ -10,7 +10,6 @@ export default function JudgesPage() {
       <InternalNavbar />
       <main className="min-h-screen bg-offwhite px-4 pb-12 pt-8 sm:px-5">
         <div className="mx-auto max-w-[1100px]">
-          {/* UI only for now: data is mock and nothing is saved. */}
           <JudgeRoster />
         </div>
       </main>

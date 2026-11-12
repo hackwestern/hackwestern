@@ -6,9 +6,19 @@ import { JudgeApp } from "~/components/judging/judge-app/judge-app";
 import SEO from "~/components/seo";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
+import {
+  type JudgeInitialData,
+  loadJudgeData,
+} from "~/server/api/utils/judge-data";
 
-export default function JudgePage({ judgeId }: { judgeId: string | null }) {
-  if (!judgeId) {
+export default function JudgePage({
+  judgeId,
+  initial,
+}: {
+  judgeId: string | null;
+  initial: JudgeInitialData | null;
+}) {
+  if (!judgeId || !initial) {
     return (
       <>
         <SEO title="Judging" noindex />
@@ -30,7 +40,7 @@ export default function JudgePage({ judgeId }: { judgeId: string | null }) {
     <>
       <SEO title="Judging" noindex />
       {/* judgeId keeps saved progress separate per judge on a shared phone. */}
-      <JudgeApp judgeKey={judgeId} />
+      <JudgeApp judgeKey={judgeId} initial={initial} />
     </>
   );
 }
@@ -59,5 +69,7 @@ export const getServerSideProps = async (context: GetServerSidePropsContext) => 
     columns: { id: true },
   });
 
-  return { props: { judgeId: judge?.id ?? null } };
+  if (!judge) return { props: { judgeId: null, initial: null } };
+
+  return { props: { judgeId: judge.id, initial: await loadJudgeData() } };
 };

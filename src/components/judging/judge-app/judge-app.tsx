@@ -1,21 +1,21 @@
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import {
   JudgeOfflineBanner,
-  readProgress,
-  sendScores,
-  useOutbox,
-  writeProgress,
+  useOnline,
 } from "~/components/judging/judge-app/judge-offline";
-import { DashboardButton } from "~/components/internals/dashboard-button";
-import { JudgeConfirm } from "~/components/judging/shared/judge-confirm";
-import { JudgeEdit } from "~/components/judging/dashboard/judge-edit";
+import {
+  type EditedScore,
+  JudgeEdit,
+} from "~/components/judging/dashboard/judge-edit";
 import {
   JudgeNav,
   type JudgeTab,
 } from "~/components/judging/judge-app/judge-nav";
-import { JudgeNext } from "~/components/judging/judge-app/judge-next";
-import { JudgeImpromptu } from "~/components/judging/judge-app/judge-impromptu";
+import {
+  JudgeNext,
+  type NextPhase,
+} from "~/components/judging/judge-app/judge-next";
 import {
   JudgeRubric,
   type ScoreSubmission,
@@ -23,53 +23,64 @@ import {
 import {
   type JudgedTeam,
   JudgeTeams,
-  type SubmitStatus,
 } from "~/components/judging/judge-app/judge-teams";
-import { JudgeWrongTable } from "~/components/judging/judge-app/judge-wrong-table";
-import { DEFAULT_RUBRIC } from "~/components/judging/shared/rubric-scorer";
 import { VenueMap } from "~/components/judging/judge-app/judge-map";
+import {
+  errorCode,
+  friendlyError,
+} from "~/components/judging/shared/judge-ui";
+import {
+  DEFAULT_RUBRIC,
+  type Ratings,
+} from "~/components/judging/shared/rubric-scorer";
+import { JudgeConfirm } from "~/components/judging/shared/judge-confirm";
+import { type JudgeInitialData } from "~/server/api/utils/judge-data";
+import { api } from "~/utils/api";
 
-// Placeholder team name until teams come from the database.
-const TEAM_NAME = "Team";
+// The rubric every judge scores with, until rubrics come from the backend.
+const RUBRIC = DEFAULT_RUBRIC;
 
-// Placeholder data until the backend exists.
-const PLACEHOLDER = {
-  label: "Judge 12",
-  tables: [41, 42, 43, 44, 45, 46],
-  // Tables already judged when the page opens. The next is tables[done].
-  done: 3,
-  // How many judges a table has had. Placeholder for every table.
-  impromptu: { judgesSoFar: 1, judgesNeeded: 3 },
-  // The rubric this judge scores with. Will come from the backend.
-  rubric: DEFAULT_RUBRIC,
-  // Teams judged so far. These match the first three tables above.
-  results: [
-    {
-      table: 41,
-      teamName: TEAM_NAME,
-      absent: false,
-      ratings: { idea: 70, technical: 60, design: 60, pitch: 66 },
-      score: 64,
-      notes: "",
-    },
-    {
-      table: 42,
-      teamName: TEAM_NAME,
-      absent: true,
-      ratings: {},
-      score: null,
-      notes: "",
-    },
-    {
-      table: 43,
-      teamName: TEAM_NAME,
-      absent: false,
-      ratings: { idea: 75, technical: 70, design: 72, pitch: 71 },
-      score: 72,
-      notes: "Great live demo.",
-    },
-  ] satisfies JudgedTeam[],
-};
+// Each rubric category is stored on the mark as the same 0-100 slider value
+// the judge set (team_mark.score_breakdown), next to the overall 0-100 score.
+const toBreakdown = (ratings: Ratings, notes: string) => ({
+  idea: ratings.idea ?? 0,
+  technical: ratings.technical ?? 0,
+  design: ratings.design ?? 0,
+  pitch: ratings.pitch ?? 0,
+  ...(notes ? { notes } : {}),
+});
+
+function fromBreakdown(
+  b: { idea: number; technical: number; design: number; pitch: number } | null,
+): Ratings {
+  if (!b) return {};
+  return {
+    idea: b.idea,
+    technical: b.technical,
+    design: b.design,
+    pitch: b.pitch,
+  };
+}
+
+// Finishing is remembered on this device, per judge. The server doesn't know
+// about it yet, so it locks this app, not the judging router.
+const finishedKey = (judgeKey: string) => `hw13-judge-finished-${judgeKey}`;
+
+function readFinished(judgeKey: string): boolean {
+  try {
+    return localStorage.getItem(finishedKey(judgeKey)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeFinished(judgeKey: string) {
+  try {
+    localStorage.setItem(finishedKey(judgeKey), "1");
+  } catch {
+    // Not remembered after a reload: storage is blocked.
+  }
+}
 
 function HeaderRow({ left, right }: { left: string; right?: ReactNode }) {
   return (
@@ -81,219 +92,246 @@ function HeaderRow({ left, right }: { left: string; right?: ReactNode }) {
 }
 
 interface JudgeAppProps {
-  /** Keeps this judge's saved progress apart from other judges' on a shared phone, e.g. the signed-in user's id. */
-  judgeKey?: string;
+  /** Keeps this judge's drafts apart from other judges' on a shared phone, e.g. the signed-in user's id. */
+  judgeKey: string;
+  /** Loaded by the page: which table each team is at. */
+  initial: JudgeInitialData;
 }
 
-/** Mobile shell for judging. Judges are signed-in users. */
-export function JudgeApp({ judgeKey = "demo" }: JudgeAppProps) {
+/** Mobile shell for judging. Judges are signed-in users; the server picks each team. */
+export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   const [tab, setTab] = useState<JudgeTab>("next");
-  const [started, setStarted] = useState(false);
-  // Tables already judged, so the next one is tables[done].
-  const [done, setDone] = useState(PLACEHOLDER.done);
-  // Sub-screens: "Wrong table?" and "Judge another team" live under Next, and
-  // editing a judged team under My teams.
-  const [nextView, setNextView] = useState<
-    "main" | "wrong-table" | "impromptu"
-  >("main");
-  const [editingTable, setEditingTable] = useState<number | null>(null);
-  // Set when the judge says they are at a different table than expected.
-  const [override, setOverride] = useState<number | null>(null);
-  // The team being judged right now. Null until the judge picks one with
-  // "Judge this team" or "Judge another team"; the Score tab stays locked until
-  // then. adHoc means the table was typed in, on top of the assigned ones.
-  const [judging, setJudging] = useState<{
-    table: number;
-    adHoc: boolean;
-  } | null>(null);
-  // Everything scored or marked absent, waiting for the final submit.
-  const [results, setResults] = useState<JudgedTeam[]>(PLACEHOLDER.results);
-  // True once the server has the latest results.
-  const [sent, setSent] = useState(false);
+  // True once the judge has pressed "Start judging" on this device.
+  const [startedLocal, setStartedLocal] = useState(false);
+  // The judge pressed "Judge this team" for the team they hold.
+  const [scoring, setScoring] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
-  // Offline support. Progress and unsent scores live on the phone, so a reload
-  // or a dead connection doesn't lose them.
+  const [findingNext, setFindingNext] = useState(false);
+  const [nextError, setNextError] = useState<string | null>(null);
+  const [scoreError, setScoreError] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+
+  // Finish judging: locks the scores in this app.
+  const [finished, setFinished] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [confirmFinish, setConfirmFinish] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+  const [finishError, setFinishError] = useState<string | null>(null);
   useEffect(() => {
-    const saved = readProgress(judgeKey);
-    if (saved) {
-      setDone(saved.done);
-      setStarted(saved.started);
-      setResults(saved.results);
-      setSent(saved.sent);
-    }
+    setFinished(readFinished(judgeKey));
     setHydrated(true);
   }, [judgeKey]);
-  useEffect(() => {
-    if (hydrated) writeProgress(judgeKey, { done, started, results, sent });
-  }, [hydrated, judgeKey, done, started, results, sent]);
 
-  const resultsRef = useRef(results);
-  useEffect(() => {
-    resultsRef.current = results;
-  });
-  const { online, pending, submit } = useOutbox(judgeKey, sendScores, (item) => {
-    // Only counts as sent if nothing changed while it was on its way.
-    setSent(JSON.stringify(item.results) === JSON.stringify(resultsRef.current));
-  });
-  let submitStatus: SubmitStatus = "open";
-  if (pending > 0) submitStatus = online ? "sending" : "waiting";
-  else if (sent) submitStatus = "sent";
+  const online = useOnline();
+  const utils = api.useUtils();
+  const assignment = api.judging.me.getCurrentAssignment.useQuery();
+  const marksQuery = api.judging.me.getSubmittedTeamMarks.useQuery();
+  const getNext = api.judging.me.getNextTeam.useMutation();
+  const submit = api.judging.me.submitTeamMark.useMutation();
+  const edit = api.judging.me.editTeamMark.useMutation();
+  const startTeam = api.judging.me.startTeam.useMutation();
+  const skip = api.judging.me.skipAssignment.useMutation();
 
-  const { label, tables, impromptu, rubric } = PLACEHOLDER;
-  const expected = tables[done];
-  const currentTable = started ? (override ?? expected) : undefined;
-  const adHoc = judging?.adHoc ?? false;
+  const held = assignment.data?.team ?? null;
+  const heldTable = held ? (initial.tableByTeam[held.id] ?? null) : null;
+
+  const results: JudgedTeam[] = (marksQuery.data ?? []).map((m) => ({
+    markId: m.id,
+    teamId: m.teamId,
+    table: initial.tableByTeam[m.teamId] ?? null,
+    teamName: m.team.name,
+    ratings: fromBreakdown(m.scoreBreakdown),
+    score: Math.round(m.score),
+    notes: m.scoreBreakdown?.notes ?? "",
+  }));
   const editingTeam =
-    editingTable !== null
-      ? results.find((r) => r.table === editingTable)
-      : undefined;
+    editingId !== null ? results.find((r) => r.markId === editingId) : undefined;
+
+  const started = startedLocal || held !== null || results.length > 0;
+  let phase: NextPhase;
+  if (!hydrated || assignment.isLoading || (findingNext && !held)) {
+    phase = "loading";
+  } else if (finished) phase = "finished";
+  else if (held) phase = "team";
+  else if (!started) phase = "welcome";
+  else phase = "none";
+
+  // Asks the server for the next team. A CONFLICT means nothing is waiting.
+  const fetchNext = async () => {
+    setNextError(null);
+    setFindingNext(true);
+    try {
+      await getNext.mutateAsync();
+    } catch (error) {
+      if (errorCode(error) !== "CONFLICT") setNextError(friendlyError(error));
+    } finally {
+      await utils.judging.me.getCurrentAssignment.invalidate();
+      setFindingNext(false);
+    }
+  };
+
+  const start = async () => {
+    setStartedLocal(true);
+    await fetchNext();
+  };
+
+  // After a score or a skip: refresh, go to Next, and fetch the next team.
+  const finishTeam = async () => {
+    setFindingNext(true);
+    setScoring(false);
+    setTab("next");
+    await Promise.all([
+      marksQuery.refetch(),
+      utils.judging.me.getCurrentAssignment.invalidate(),
+    ]);
+    await fetchNext();
+  };
+
+  const submitScore = async (s: ScoreSubmission): Promise<boolean> => {
+    if (!held) return false;
+    setScoreError(null);
+    setSending(true);
+    try {
+      await submit.mutateAsync({
+        teamId: held.id,
+        score: s.score,
+        breakdown: toBreakdown(s.ratings, s.notes),
+      });
+    } catch (error) {
+      setScoreError(
+        friendlyError(
+          error,
+          "You're no longer assigned to this team. Go back to the Next tab.",
+        ),
+      );
+      if (errorCode(error) === "CONFLICT") {
+        await utils.judging.me.getCurrentAssignment.invalidate();
+      }
+      setSending(false);
+      return false;
+    }
+    setSending(false);
+    await finishTeam();
+    return true;
+  };
+
+  const teamNotHere = async (): Promise<boolean> => {
+    setScoreError(null);
+    setSending(true);
+    try {
+      await skip.mutateAsync({});
+    } catch (error) {
+      setScoreError(friendlyError(error));
+      setSending(false);
+      return false;
+    }
+    setSending(false);
+    await finishTeam();
+    return true;
+  };
+
+  const saveEdit = async (u: EditedScore): Promise<boolean> => {
+    if (editingId === null || finished) return false;
+    setEditError(null);
+    try {
+      await edit.mutateAsync({
+        teamMarkId: editingId,
+        score: u.score,
+        breakdown: toBreakdown(u.ratings, u.notes),
+      });
+      await marksQuery.refetch();
+    } catch (error) {
+      setEditError(friendlyError(error));
+      return false;
+    }
+    closeEdit();
+    return true;
+  };
 
   // Tapping a tab always lands on that tab's main screen.
   // Score keeps whatever is open there (a team being judged or edited).
   const changeTab = (next: JudgeTab) => {
     setTab(next);
-    setNextView("main");
-    if (next !== "score") setEditingTable(null);
+    if (next !== "score") setEditingId(null);
   };
 
-  // "Review all teams": jump to the full list.
   const reviewAll = () => {
     setTab("teams");
-    setNextView("main");
-    setEditingTable(null);
+    setEditingId(null);
   };
 
-  // Tapping a judged team opens it on the Score page.
-  const editTeam = (table: number) => {
-    setEditingTable(table);
+  const editTeam = (markId: number) => {
+    if (finished) return;
+    setEditError(null);
+    setEditingId(markId);
     setTab("score");
-    setNextView("main");
   };
 
-  // Leaving an edit goes back to the list it came from.
   const closeEdit = () => {
-    setEditingTable(null);
+    setEditingId(null);
     setTab("teams");
   };
 
-  // "Judge this team": score the table the Next page is showing.
-  const judgeThisTeam = () => {
-    if (currentTable === undefined) return;
-    setJudging({ table: currentTable, adHoc: false });
-    setTab("score");
-  };
-
-  // "Judge another team": score a table the judge typed in.
-  const judgeAnotherTeam = (table: number) => {
-    setJudging({ table, adHoc: true });
-    setNextView("main");
-    setTab("score");
-  };
-
-  const useTable = (actual: number) => {
-    // Overrides are only logged for now. They will go to the backend later.
-    console.log("[judge app] table override", {
-      judge: label,
-      expected,
-      actual,
-    });
-    setOverride(actual);
-    setNextView("main");
-  };
-
-  // Adds a result, or replaces the one for the same table. Any change after a
-  // submit means there is something new to submit.
-  const recordResult = (team: JudgedTeam) => {
-    setResults((list) =>
-      list.some((r) => r.table === team.table)
-        ? list.map((r) => (r.table === team.table ? team : r))
-        : [...list, team],
-    );
-    setSent(false);
-  };
-
-  // After a table is scored or marked absent: move on and show what's next.
-  const finishTable = () => {
-    if (!adHoc) {
-      setDone((d) => d + 1);
-      setOverride(null);
+  // Releases the team the judge is holding (so another judge can have it),
+  // then locks the app. A CONFLICT just means they held nothing.
+  const finishJudging = async () => {
+    setConfirmFinish(false);
+    setFinishError(null);
+    setFinishing(true);
+    try {
+      await skip.mutateAsync({ released: true });
+    } catch (error) {
+      if (errorCode(error) !== "CONFLICT") {
+        setFinishError(friendlyError(error));
+        setFinishing(false);
+        return;
+      }
     }
-    setJudging(null);
-    setNextView("main");
-    setTab("next");
+    await utils.judging.me.getCurrentAssignment.invalidate();
+    writeFinished(judgeKey);
+    setFinished(true);
+    setScoring(false);
+    setFinishing(false);
   };
 
-  const submitScore = (submission: ScoreSubmission) => {
-    recordResult({
-      table: submission.table,
-      teamName: TEAM_NAME,
-      absent: false,
-      ratings: submission.ratings,
-      score: submission.score,
-      notes: submission.notes,
-    });
-    finishTable();
+  // Tells the server this stop has started (it stamps started_at and shows the
+  // table as being judged). If the team was given to someone else meanwhile, go
+  // back and fetch another. Any other failure (like being offline) doesn't
+  // block scoring: the stop is closed when the score is submitted.
+  const judgeThisTeam = async () => {
+    setScoreError(null);
+    try {
+      await startTeam.mutateAsync();
+    } catch (error) {
+      if (errorCode(error) === "CONFLICT") {
+        setNextError("That team was given to someone else. Finding you another.");
+        await utils.judging.me.getCurrentAssignment.invalidate();
+        return;
+      }
+    }
+    setScoring(true);
+    setTab("score");
   };
 
-  const markAbsent = (table: number) => {
-    recordResult({
-      table,
-      teamName: TEAM_NAME,
-      absent: true,
-      ratings: {},
-      score: null,
-      notes: "",
-    });
-    finishTable();
-  };
-
-  const [confirmSubmit, setConfirmSubmit] = useState(false);
-  const submitAll = () => {
-    setConfirmSubmit(false);
-    // Saved on the phone first, then sent when there is a connection.
-    submit({ judge: label, results });
-  };
-
-  const impromptuOpen = tab === "next" && nextView === "impromptu";
-  const wrongTable = tab === "next" && nextView === "wrong-table";
-  const editing = tab === "score" && editingTeam !== undefined;
-  const scoringPage = tab === "score" && (judging !== null || editing);
+  const editing = tab === "score" && editingTeam !== undefined && !finished;
+  const scoringPage = tab === "score" && ((scoring && held !== null) || editing);
 
   let header: ReactNode = null;
-  if (impromptuOpen) {
-    header = (
-      <HeaderRow
-        left="Judge another team"
-        right={
-          <DashboardButton
-            type="button"
-            variant="outline"
-            onClick={() => setNextView("main")}
-            className="min-h-11"
-          >
-            Cancel
-          </DashboardButton>
-        }
-      />
-    );
-  } else if (wrongTable) {
-    header = <HeaderRow left="Wrong table?" />;
-  } else if (tab === "map") {
+  if (tab === "map") {
     // The map page has no header: the map fills the whole screen height.
     header = null;
   } else if (tab === "teams") {
     header = <HeaderRow left="Review" />;
   } else if (!scoringPage) {
-    // The Score page draws its own header row (table and save status).
+    // The Score page draws its own header row (team and save status).
     header = (
       <HeaderRow
-        left={started ? label : "Judge"}
+        left="Judge"
         right={
-          started ? (
-            <span className="tabular-nums">
-              {Math.min(done + 1, tables.length)} of {tables.length}
-            </span>
+          results.length > 0 ? (
+            <span className="tabular-nums">{results.length} judged</span>
           ) : undefined
         }
       />
@@ -302,60 +340,46 @@ export function JudgeApp({ judgeKey = "demo" }: JudgeAppProps) {
 
   let body: ReactNode;
   if (tab === "next") {
-    if (nextView === "wrong-table") {
-      body = (
-        <JudgeWrongTable
-          expected={expected}
-          onBack={() => setNextView("main")}
-          onUse={useTable}
-        />
-      );
-    } else if (nextView === "impromptu") {
-      body = (
-        <JudgeImpromptu
-          judgesSoFar={impromptu.judgesSoFar}
-          judgesNeeded={impromptu.judgesNeeded}
-          onScore={judgeAnotherTeam}
-        />
-      );
-    } else {
-      body = (
-        <JudgeNext
-          started={started}
-          onStart={() => setStarted(true)}
-          tables={tables}
-          currentIndex={done}
-          override={override}
-          onJudge={judgeThisTeam}
-          onOpenMap={() => changeTab("map")}
-          onReview={reviewAll}
-          onWrongTable={() => setNextView("wrong-table")}
-          onImpromptu={() => setNextView("impromptu")}
-        />
-      );
-    }
+    body = (
+      <JudgeNext
+        phase={phase}
+        teamName={held?.name ?? null}
+        table={heldTable}
+        judged={results.length}
+        busy={findingNext}
+        error={nextError}
+        onStart={() => void start()}
+        onJudge={() => void judgeThisTeam()}
+        onOpenMap={() => changeTab("map")}
+        onReview={reviewAll}
+        onCheckAgain={() => void fetchNext()}
+      />
+    );
   } else if (tab === "score") {
     // The Score tab is locked until a team is chosen or opened for edit, so the
     // last message is only a fallback.
-    body = editingTeam ? (
+    body = editingTeam && !finished ? (
       <JudgeEdit
-        key={editingTeam.table}
+        key={editingTeam.markId}
         team={editingTeam}
-        rubric={rubric}
-        onSave={(updated) => {
-          recordResult(updated);
-          closeEdit();
-        }}
+        rubric={RUBRIC}
+        saving={edit.isPending}
+        error={editError}
+        onSave={saveEdit}
         onCancel={closeEdit}
       />
-    ) : judging ? (
+    ) : scoring && held && !finished ? (
       <JudgeRubric
-        key={`${judging.table}-${judging.adHoc}`}
-        table={judging.table}
-        adHoc={judging.adHoc}
-        rubric={rubric}
+        key={held.id}
+        judgeKey={judgeKey}
+        teamId={held.id}
+        teamName={held.name}
+        table={heldTable}
+        rubric={RUBRIC}
+        busy={sending}
+        error={scoreError}
         onSubmit={submitScore}
-        onAbsent={markAbsent}
+        onAbsent={teamNotHere}
       />
     ) : (
       <p className="px-1 text-base font-medium text-dashboard-text-light">
@@ -366,17 +390,21 @@ export function JudgeApp({ judgeKey = "demo" }: JudgeAppProps) {
     body = (
       <JudgeTeams
         results={results}
-        status={submitStatus}
+        finished={finished}
+        finishing={finishing}
+        error={finishError}
         onEdit={editTeam}
-        onSubmit={() => setConfirmSubmit(true)}
+        onFinish={() => setConfirmFinish(true)}
       />
     );
   } else {
-    body = <VenueMap tables={tables} current={currentTable} variant="page" />;
+    body = (
+      <VenueMap tables={[]} current={heldTable ?? undefined} variant="page" />
+    );
   }
 
   // Each section opens at the top and fades in, instead of snapping.
-  const sectionKey = `${tab}:${nextView}:${started}:${editingTable ?? ""}:${judging?.table ?? ""}`;
+  const sectionKey = `${tab}:${phase}:${editingId ?? ""}:${scoring}`;
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [sectionKey]);
@@ -401,7 +429,7 @@ export function JudgeApp({ judgeKey = "demo" }: JudgeAppProps) {
           }
         >
           <div className={mapPage ? "px-3 pt-2 empty:hidden" : "contents"}>
-            <JudgeOfflineBanner online={online} pending={pending} />
+            <JudgeOfflineBanner online={online} />
           </div>
           <div
             key={sectionKey}
@@ -415,16 +443,16 @@ export function JudgeApp({ judgeKey = "demo" }: JudgeAppProps) {
         <JudgeNav
           active={tab}
           onChange={changeTab}
-          disabled={judging === null && !editing ? ["score"] : []}
+          disabled={!(scoring && held && !finished) && !editing ? ["score"] : []}
         />
         <JudgeConfirm
-          open={confirmSubmit}
-          title={`Submit ${results.length} score${results.length === 1 ? "" : "s"}?`}
-          description="You can't change them after."
-          confirmLabel="Submit scores"
+          open={confirmFinish}
+          title="Finish judging?"
+          description="You won't be able to change your scores after."
+          confirmLabel="Finish judging"
           cancelLabel="Not yet"
-          onConfirm={submitAll}
-          onCancel={() => setConfirmSubmit(false)}
+          onConfirm={() => void finishJudging()}
+          onCancel={() => setConfirmFinish(false)}
         />
       </div>
     </div>

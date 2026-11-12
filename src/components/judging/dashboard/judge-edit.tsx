@@ -1,8 +1,12 @@
 import { useState } from "react";
 
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { JudgeConfirm } from "~/components/judging/shared/judge-confirm";
-import { card, field, touch } from "~/components/judging/shared/judge-ui";
+import {
+  card,
+  field,
+  touch,
+  warningBanner,
+} from "~/components/judging/shared/judge-ui";
 import { type JudgedTeam } from "~/components/judging/judge-app/judge-teams";
 import {
   type Ratings,
@@ -12,18 +16,37 @@ import {
   scoreRubric,
 } from "~/components/judging/shared/rubric-scorer";
 
+export interface EditedScore {
+  ratings: Ratings;
+  score: number;
+  notes: string;
+}
+
 interface JudgeEditProps {
   team: JudgedTeam;
   rubric: Rubric;
-  onSave: (updated: JudgedTeam) => void;
+  /** Saving to the server. */
+  saving: boolean;
+  /** Why the last save failed, if it did. */
+  error: string | null;
+  /** Resolves true once the server has the change. */
+  onSave: (updated: EditedScore) => Promise<boolean>;
   onCancel: () => void;
 }
 
 /**
- * Change the score and notes for a team already judged. Nothing is final until
- * "Submit scores" on the My teams list. Key it by table.
+ * Change the score and notes for a team already judged. Saving updates the
+ * mark on the server. A mark scored without the rubric starts with empty
+ * sliders, so all of them need rating again. Key it by mark.
  */
-export function JudgeEdit({ team, rubric, onSave, onCancel }: JudgeEditProps) {
+export function JudgeEdit({
+  team,
+  rubric,
+  saving,
+  error,
+  onSave,
+  onCancel,
+}: JudgeEditProps) {
   const [ratings, setRatings] = useState<Ratings>(team.ratings);
   const [notes, setNotes] = useState(team.notes);
   const [guideOpen, setGuideOpen] = useState(false);
@@ -33,30 +56,18 @@ export function JudgeEdit({ team, rubric, onSave, onCancel }: JudgeEditProps) {
   const complete = count > 0 && result.rated === count;
 
   const save = () => {
-    if (!complete) return;
-    onSave({
-      ...team,
-      absent: false,
-      ratings,
-      score: result.score,
-      notes: notes.trim(),
-    });
-  };
-
-  const [confirmAbsent, setConfirmAbsent] = useState(false);
-  const markAbsent = () => {
-    setConfirmAbsent(false);
-    onSave({ ...team, absent: true, ratings: {}, score: null, notes: "" });
+    if (!complete || saving) return;
+    void onSave({ ratings, score: result.score, notes: notes.trim() });
   };
 
   return (
     <>
       <div className="flex items-baseline justify-between gap-3">
         <h1 className="m-0 min-w-0 truncate text-base font-medium text-dashboard-text-light">
-          {team.table} · {team.teamName}
+          {team.table ?? "–"} · {team.teamName}
         </h1>
         <span className="shrink-0 text-sm font-semibold tabular-nums text-dashboard-text-light">
-          {team.absent ? "Marked absent" : `Now ${team.score}`}
+          Now {team.score}
         </span>
       </div>
 
@@ -101,44 +112,31 @@ export function JudgeEdit({ team, rubric, onSave, onCancel }: JudgeEditProps) {
         <DashboardButton
           type="button"
           variant="outline"
+          disabled={saving}
           onClick={onCancel}
           className={`${touch} px-4`}
         >
           Cancel
         </DashboardButton>
-        {!team.absent && (
-          <DashboardButton
-            type="button"
-            variant="outline"
-            onClick={() => setConfirmAbsent(true)}
-            className={`${touch} px-4`}
-          >
-            Not here
-          </DashboardButton>
-        )}
         <DashboardButton
           type="button"
-          disabled={!complete}
+          disabled={!complete || saving}
           onClick={save}
           className="h-11 w-auto flex-1 disabled:opacity-dashboard-disabled md:w-auto"
         >
-          Save
+          {saving ? "Saving…" : "Save"}
         </DashboardButton>
       </div>
+      {error && (
+        <p role="alert" className={warningBanner}>
+          {error}
+        </p>
+      )}
       {!complete && (
         <p className="m-0 px-1 text-sm text-dashboard-text-light">
           Score all {count} criteria to save.
         </p>
       )}
-      <JudgeConfirm
-        open={confirmAbsent}
-        title={`Mark table ${team.table} as not here?`}
-        description="The score and notes you gave this team will be removed."
-        confirmLabel="Team not here"
-        cancelLabel="Keep score"
-        onConfirm={markAbsent}
-        onCancel={() => setConfirmAbsent(false)}
-      />
     </>
   );
 }
