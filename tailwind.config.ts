@@ -34,16 +34,10 @@ const config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         githubbg: "#1b1f23",
-        beige: "var(--beige)",
-        coral: "var(--coral)",
         lilac: "var(--lilac)",
-        salmon: "var(--salmon)",
-        "faint-lilac": "var(--faint-lilac)",
         "border-light": "var(--border-light)",
 
         emphasis: "var(--emphasis)",
-        active: "var(--active)",
-        tinted: "var(--tinted)",
 
         heavy: tokens.colors.text.heavy,
         medium: tokens.colors.text.medium,
@@ -52,6 +46,8 @@ const config = {
         offwhite: tokens.colors.bg.light,
         highlight: tokens.colors.bg.highlight,
         "promo-sheet": tokens.colors.bg.promoSheet,
+
+        dashboard: tokens.dashboardColors,
 
         green: tokens.colors.greens["green-primary"],
         "green-dark": tokens.colors.greens["green-dark"],
@@ -110,7 +106,6 @@ const config = {
           "300": "hsl(var(--violet-300))",
           "400": "hsl(var(--violet-400))",
           "500": "hsl(var(--violet-500))",
-          "600": "hsl(var(--violet-600))",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -131,7 +126,6 @@ const config = {
         },
         card: {
           DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -149,6 +143,10 @@ const config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
         "hw-gradient-radius": "60vw",
+        "dashboard-xs": tokens.dashboardRadius.xs,
+        "dashboard-sm": tokens.dashboardRadius.sm,
+        "dashboard-md": tokens.dashboardRadius.md,
+        "dashboard-lg": tokens.dashboardRadius.lg,
       },
       boxShadow: {
         "primary-btn": tokens.shadows.button,
@@ -157,6 +155,15 @@ const config = {
         "primary-btn-2": tokens.shadows.primary2,
         "secondary-btn": tokens.shadows.secondary,
         "icon-btn": tokens.shadows.icon,
+        "dashboard-card": tokens.dashboardShadows.card,
+        "dashboard-primary-btn": tokens.dashboardShadows.primaryButton,
+        "dashboard-secondary-btn": tokens.dashboardShadows.secondaryButton,
+      },
+      backdropBlur: {
+        "dashboard-input": tokens.dashboardBlur.input,
+      },
+      opacity: {
+        "dashboard-disabled": tokens.dashboardOpacity.disabled,
       },
       fontFamily: {
         primary: [tokens.fonts.primary],

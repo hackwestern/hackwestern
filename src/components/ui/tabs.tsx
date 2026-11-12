@@ -12,7 +12,7 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-12  w-fit items-center justify-center rounded-lg bg-highlight p-1 font-secondary",
+      "inline-flex w-fit items-center rounded-dashboard-lg border border-dashboard-border-faint bg-dashboard-bg-nav",
       className,
     )}
     {...props}
@@ -27,7 +27,12 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-2 py-1 text-base font-medium text-medium transition-[color,box-shadow] focus-visible:border-ring focus-visible:outline-1 focus-visible:outline-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:shadow-sm dark:text-muted-foreground dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 dark:data-[state=active]:text-heavy [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+      cn(
+        "inline-flex cursor-pixel-hover items-center justify-center whitespace-nowrap rounded-dashboard-lg px-4 py-[11px] font-figtree text-base font-medium leading-default text-dashboard-text-heavy transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary disabled:pointer-events-none disabled:opacity-dashboard-disabled",
+        "data-[state=active]:bg-dashboard-action-primary data-[state=active]:text-dashboard-text-inverse data-[state=inactive]:hover:bg-dashboard-bg-navSelected",
+        "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+      ),
       className,
     )}
     {...props}
@@ -42,7 +47,7 @@ const TabsContent = React.forwardRef<
   <TabsPrimitive.Content
     ref={ref}
     className={cn(
-      "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      "mt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
       className,
     )}
     {...props}
