@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 
+import { type TeamLinks } from "~/server/api/utils/judge-data";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { JudgeTeamLinks } from "./judge-team-links";
 import { JudgeConfirm } from "~/components/judging/shared/judge-confirm";
 import {
   card,
@@ -86,6 +88,8 @@ interface JudgeRubricProps {
   /** null when the team isn't seated at a table. */
   table: number | null;
   rubric: Rubric;
+  /** GitHub and Devpost links, if the team added any. */
+  links?: TeamLinks;
   /** Sending to the server. */
   busy: boolean;
   /** Why the last send failed, if it did. */
@@ -103,6 +107,7 @@ export function JudgeRubric({
   teamName,
   table,
   rubric,
+  links,
   busy,
   error,
   onSubmit,
@@ -124,8 +129,7 @@ export function JudgeRubric({
     }
     setSaveState("saving");
     const timer = setTimeout(
-      () =>
-        setSaveState(writeDraft(key, { ratings, notes }) ? "saved" : "error"),
+      () => setSaveState(writeDraft(key, { ratings, notes }) ? "saved" : "error"),
       500,
     );
     return () => clearTimeout(timer);
@@ -172,6 +176,8 @@ export function JudgeRubric({
         </span>
       </div>
 
+      <JudgeTeamLinks links={links} />
+
       <section
         aria-label="Score this team"
         className={`${card} flex flex-col gap-3 px-3.5 py-3`}
@@ -185,7 +191,9 @@ export function JudgeRubric({
             onClick={() => setGuideOpen((o) => !o)}
             className={`${touch} self-end`}
           >
-            {guideOpen ? "Hide descriptions" : "Show descriptions"}
+            {guideOpen
+              ? "Hide descriptions"
+              : "Show descriptions"}
           </DashboardButton>
         )}
         <RubricScorer
@@ -238,11 +246,7 @@ export function JudgeRubric({
       )}
       <JudgeConfirm
         open={confirmAbsent}
-        title={
-          table !== null
-            ? `Mark table ${table} as not here?`
-            : "Mark this team as not here?"
-        }
+        title={table !== null ? `Mark table ${table} as not here?` : "Mark this team as not here?"}
         description="No score will be saved. You won't be given this team again."
         confirmLabel="Team not here"
         cancelLabel="Keep scoring"

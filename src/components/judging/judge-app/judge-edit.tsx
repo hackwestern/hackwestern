@@ -1,3 +1,5 @@
+import { JudgeTeamLinks } from "./judge-team-links";
+import { type TeamLinks } from "~/server/api/utils/judge-data";
 import { useState } from "react";
 
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -25,6 +27,8 @@ export interface EditedScore {
 interface JudgeEditProps {
   team: JudgedTeam;
   rubric: Rubric;
+  /** GitHub and Devpost links, if the team added any. */
+  links?: TeamLinks;
   /** Saving to the server. */
   saving: boolean;
   /** Why the last save failed, if it did. */
@@ -42,6 +46,7 @@ interface JudgeEditProps {
 export function JudgeEdit({
   team,
   rubric,
+  links,
   saving,
   error,
   onSave,
@@ -71,6 +76,8 @@ export function JudgeEdit({
         </span>
       </div>
 
+      <JudgeTeamLinks links={links} />
+
       <section
         aria-label="Change score"
         className={`${card} flex flex-col gap-3 px-3.5 py-3`}
@@ -84,7 +91,9 @@ export function JudgeEdit({
             onClick={() => setGuideOpen((o) => !o)}
             className={`${touch} self-end`}
           >
-            {guideOpen ? "Hide descriptions" : "Show descriptions"}
+            {guideOpen
+              ? "Hide descriptions"
+              : "Show descriptions"}
           </DashboardButton>
         )}
         <RubricScorer

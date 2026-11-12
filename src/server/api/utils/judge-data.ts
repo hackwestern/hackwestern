@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, or } from "drizzle-orm";
 
 import {
   type CalibrationData,
@@ -12,11 +12,32 @@ export interface JudgeTableRow {
   zone: string;
 }
 
+export interface TeamLinks {
+  /** http(s) links only; null when the team didn't add one. */
+  github: string | null;
+  devpost: string | null;
+}
+
+/** Team-submitted URLs are untrusted, so only http(s) ones become buttons. */
+function safeHttpUrl(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "https:" || url.protocol === "http:"
+      ? url.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export interface JudgeInitialData {
   /** Every active table, for the map. */
   tables: JudgeTableRow[];
   /** Team id -> table number, for every team seated at a table. */
   tableByTeam: Record<string, number>;
+  /** Team id -> GitHub and Devpost links, for teams that added at least one. */
+  linksByTeam: Record<string, TeamLinks>;
   /** True for organizer accounts. Only they get the calibration view. */
   isOrganizer: boolean;
   /** The viewer's marks against the organizer average. Null for everyone else. */
@@ -31,7 +52,7 @@ export interface JudgeInitialData {
  * A snapshot from page load; the page re-runs it to refresh.
  */
 export async function loadJudgeData(userId: string): Promise<JudgeInitialData> {
-  const [tables, seated, user] = await Promise.all([
+  const [tables, seated, linked, user] = await Promise.all([
     db.query.judgingTables.findMany({
       where: (t, { eq }) => eq(t.isActive, true),
       columns: { number: true, zone: true },
@@ -41,6 +62,10 @@ export async function loadJudgeData(userId: string): Promise<JudgeInitialData> {
       where: (t, { isNotNull }) => isNotNull(t.judgingTableId),
       columns: { id: true },
       with: { judgingTable: { columns: { number: true } } },
+    }),
+    db.query.teams.findMany({
+      where: or(isNotNull(teams.githubUrl), isNotNull(teams.devpostUrl)),
+      columns: { id: true, githubUrl: true, devpostUrl: true },
     }),
     db.query.users.findFirst({
       where: (u, { eq }) => eq(u.id, userId),
@@ -53,10 +78,18 @@ export async function loadJudgeData(userId: string): Promise<JudgeInitialData> {
     if (t.judgingTable) tableByTeam[t.id] = t.judgingTable.number;
   }
 
+  const linksByTeam: Record<string, TeamLinks> = {};
+  for (const t of linked) {
+    const github = safeHttpUrl(t.githubUrl);
+    const devpost = safeHttpUrl(t.devpostUrl);
+    if (github || devpost) linksByTeam[t.id] = { github, devpost };
+  }
+
   const isOrganizer = user?.type === "organizer";
   return {
     tables,
     tableByTeam,
+    linksByTeam,
     isOrganizer,
     calibration: isOrganizer ? await loadCalibration(userId) : null,
   };
