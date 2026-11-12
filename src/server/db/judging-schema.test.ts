@@ -77,10 +77,11 @@ describe("team_mark.score_breakdown", () => {
     await db.insert(judges).values({ id: session.user.id });
     const teamId = await makeTeam();
     const breakdown: ScoreBreakdown = {
-      idea: 4,
-      technical: 5,
-      design: 3,
-      pitch: 4,
+      ratings: {
+        technical: 85,
+        originality: 70,
+        impact: 60,
+      },
       notes: "Great live demo; auth was mocked.",
     };
 
@@ -89,7 +90,7 @@ describe("team_mark.score_breakdown", () => {
       .values({
         teamId,
         judgeId: session.user.id,
-        score: 80,
+        score: 72,
         scoreBreakdown: breakdown,
       })
       .returning();
