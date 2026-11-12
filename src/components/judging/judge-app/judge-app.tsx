@@ -26,7 +26,7 @@ import {
   JudgeTeams,
 } from "~/components/judging/judge-app/judge-teams";
 import { JudgeComparison } from "~/components/judging/judge-app/judge-comparison";
-import { JudgeFinal } from "./judge-final";
+import { JudgeFinal } from "~/components/judging/judge-app/judge-final";
 import { JudgeRescore } from "~/components/judging/judge-app/judge-rescore";
 import { VenueMap } from "~/components/judging/judge-app/judge-map";
 import {
@@ -228,9 +228,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     // Oldest first: marks are numbered in the order they were saved.
     .sort((a, b) => a.markId - b.markId);
   const editingTeam =
-    editingId !== null
-      ? results.find((r) => r.markId === editingId)
-      : undefined;
+    editingId !== null ? results.find((r) => r.markId === editingId) : undefined;
 
   const started = startedLocal || held !== null || results.length > 0;
   let phase: NextPhase;
@@ -420,9 +418,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       await startTeam.mutateAsync();
     } catch (error) {
       if (errorCode(error) === "CONFLICT") {
-        setNextError(
-          "That team was given to someone else. Finding you another.",
-        );
+        setNextError("That team was given to someone else. Finding you another.");
         await utils.judging.me.getCurrentAssignment.invalidate();
         return;
       }
