@@ -1,11 +1,7 @@
 import { useState } from "react";
 
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import {
-  card,
-  focusRing,
-  touch,
-} from "~/components/judging/shared/judge-ui";
+import { card, focusRing, touch } from "~/components/judging/shared/judge-ui";
 import { DEFAULT_RUBRIC } from "~/components/judging/shared/rubric-scorer";
 import { SearchAutocomplete } from "~/components/internals/search-autocomplete";
 import {
@@ -89,7 +85,11 @@ function RoundCard({ title, round }: { title: string; round: RoundSummary }) {
                     Overall
                   </th>
                   {RUBRIC.criteria.map((c) => (
-                    <th key={c.id} scope="col" className="px-2 py-1.5 font-semibold">
+                    <th
+                      key={c.id}
+                      scope="col"
+                      className="px-2 py-1.5 font-semibold"
+                    >
                       {c.name}
                     </th>
                   ))}

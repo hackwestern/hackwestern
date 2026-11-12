@@ -29,10 +29,7 @@ import { JudgeComparison } from "~/components/judging/judge-app/judge-comparison
 import { JudgeFinal } from "~/components/judging/judge-app/judge-final";
 import { JudgeRescore } from "~/components/judging/judge-app/judge-rescore";
 import { VenueMap } from "~/components/judging/judge-app/judge-map";
-import {
-  errorCode,
-  friendlyError,
-} from "~/components/judging/shared/judge-ui";
+import { errorCode, friendlyError } from "~/components/judging/shared/judge-ui";
 import {
   DEFAULT_RUBRIC,
   type Ratings,
@@ -216,19 +213,22 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   const held = assignment.data?.team ?? null;
   const heldTable = held ? (initial.tableByTeam[held.id] ?? null) : null;
 
-  const results: JudgedTeam[] = (marksQuery.data ?? []).map((m) => ({
-    markId: m.id,
-    teamId: m.teamId,
-    table: initial.tableByTeam[m.teamId] ?? null,
-    teamName: m.team.name,
-    ratings: fromBreakdown(m.scoreBreakdown),
-    score: Math.round(m.score),
-    notes: m.scoreBreakdown?.notes ?? "",
-  }))
+  const results: JudgedTeam[] = (marksQuery.data ?? [])
+    .map((m) => ({
+      markId: m.id,
+      teamId: m.teamId,
+      table: initial.tableByTeam[m.teamId] ?? null,
+      teamName: m.team.name,
+      ratings: fromBreakdown(m.scoreBreakdown),
+      score: Math.round(m.score),
+      notes: m.scoreBreakdown?.notes ?? "",
+    }))
     // Oldest first: marks are numbered in the order they were saved.
     .sort((a, b) => a.markId - b.markId);
   const editingTeam =
-    editingId !== null ? results.find((r) => r.markId === editingId) : undefined;
+    editingId !== null
+      ? results.find((r) => r.markId === editingId)
+      : undefined;
 
   const started = startedLocal || held !== null || results.length > 0;
   let phase: NextPhase;
@@ -418,7 +418,9 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       await startTeam.mutateAsync();
     } catch (error) {
       if (errorCode(error) === "CONFLICT") {
-        setNextError("That team was given to someone else. Finding you another.");
+        setNextError(
+          "That team was given to someone else. Finding you another.",
+        );
         await utils.judging.me.getCurrentAssignment.invalidate();
         return;
       }
@@ -439,7 +441,11 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     header = (
       <HeaderRow
         left={
-          stage === "submitted" ? "Results" : stage === "final" ? "Submit" : "Review"
+          stage === "submitted"
+            ? "Results"
+            : stage === "final"
+              ? "Submit"
+              : "Review"
         }
       />
     );
@@ -490,36 +496,37 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   } else if (tab === "score") {
     // The Score tab is locked until a team is chosen or opened for edit, so the
     // last message is only a fallback.
-    body = editingTeam && canEdit ? (
-      <JudgeEdit
-        key={editingTeam.markId}
-        team={editingTeam}
-        rubric={RUBRIC}
-        mode="rescore"
-        links={initial.linksByTeam[editingTeam.teamId]}
-        saving={edit.isPending}
-        error={editError}
-        onSave={saveEdit}
-        onCancel={closeEdit}
-      />
-    ) : scoring && held && canScoreNew ? (
-      <JudgeRubric
-        key={held.id}
-        judgeKey={judgeKey}
-        teamId={held.id}
-        teamName={held.name}
-        table={heldTable}
-        rubric={RUBRIC}
-        busy={sending}
-        error={scoreError}
-        onSubmit={submitScore}
-        onAbsent={teamNotHere}
-      />
-    ) : (
-      <p className="px-1 text-base font-medium text-dashboard-text-light">
-        Choose a team to judge on the Next tab first.
-      </p>
-    );
+    body =
+      editingTeam && canEdit ? (
+        <JudgeEdit
+          key={editingTeam.markId}
+          team={editingTeam}
+          rubric={RUBRIC}
+          mode="rescore"
+          links={initial.linksByTeam[editingTeam.teamId]}
+          saving={edit.isPending}
+          error={editError}
+          onSave={saveEdit}
+          onCancel={closeEdit}
+        />
+      ) : scoring && held && canScoreNew ? (
+        <JudgeRubric
+          key={held.id}
+          judgeKey={judgeKey}
+          teamId={held.id}
+          teamName={held.name}
+          table={heldTable}
+          rubric={RUBRIC}
+          busy={sending}
+          error={scoreError}
+          onSubmit={submitScore}
+          onAbsent={teamNotHere}
+        />
+      ) : (
+        <p className="px-1 text-base font-medium text-dashboard-text-light">
+          Choose a team to judge on the Next tab first.
+        </p>
+      );
   } else if (tab === "teams") {
     body =
       stage === "submitted" ? (
@@ -597,11 +604,15 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         <JudgeNav
           active={tab}
           onChange={changeTab}
-          disabled={!(scoring && held && canScoreNew) && !editing ? ["score"] : []}
+          disabled={
+            !(scoring && held && canScoreNew) && !editing ? ["score"] : []
+          }
         />
         <JudgeConfirm
           open={confirm !== null}
-          title={confirm === "submit" ? "Submit your scores?" : "Start re-scoring?"}
+          title={
+            confirm === "submit" ? "Submit your scores?" : "Start re-scoring?"
+          }
           description={
             confirm === "submit"
               ? "You won't be able to change your scores after. You'll then see how they compare with the other judges."
@@ -609,7 +620,9 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
           }
           confirmLabel={confirm === "submit" ? "Submit" : "Start re-scoring"}
           cancelLabel="Not yet"
-          onConfirm={() => (confirm === "submit" ? submitAll() : void startRescore())}
+          onConfirm={() =>
+            confirm === "submit" ? submitAll() : void startRescore()
+          }
           onCancel={() => setConfirm(null)}
         />
       </div>

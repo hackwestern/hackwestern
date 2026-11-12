@@ -5,9 +5,7 @@ import {
   infoBanner,
   touch,
 } from "~/components/judging/shared/judge-ui";
-import {
-  type Rubric,
-} from "~/components/judging/shared/rubric-scorer";
+import { type Rubric } from "~/components/judging/shared/rubric-scorer";
 import {
   type ComparisonData,
   type ComparisonTeam,
@@ -75,7 +73,9 @@ function CompareRow({ label, mine, average, comparable, strong }: RowProps) {
             big ? "text-dashboard-text-warning" : "text-dashboard-text-active"
           }`}
           aria-label={
-            comparable && diff !== undefined ? gapWords(diff) : "no comparison yet"
+            comparable && diff !== undefined
+              ? gapWords(diff)
+              : "no comparison yet"
           }
         >
           {comparable && diff !== undefined ? signed(diff) : "–"}
@@ -138,7 +138,9 @@ function TeamCard({
 
 /** Your average gap per criterion, over the teams where other judges have marked too. */
 function biasLines(data: ComparisonData, rubric: Rubric) {
-  const compared = data.teams.flatMap((t) => (t.others ? [{ ...t, others: t.others }] : []));
+  const compared = data.teams.flatMap((t) =>
+    t.others ? [{ ...t, others: t.others }] : [],
+  );
   const lines: { id: string; label: string; avg: number; n: number }[] = [];
 
   const overall = compared.map((t) => t.mine.score - t.others.score);

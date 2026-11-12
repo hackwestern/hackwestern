@@ -75,12 +75,18 @@ export function JudgeTeams({
             return (
               <li
                 key={r.markId}
-                className={i > 0 ? "border-t border-dashboard-border-subtle" : ""}
+                className={
+                  i > 0 ? "border-t border-dashboard-border-subtle" : ""
+                }
               >
                 <div
                   role="group"
                   aria-label={`${r.table ?? "No table"} ${r.teamName}, score ${r.score}.${
-                    rescoring ? (done ? " Re-scored." : " Not re-scored yet.") : ""
+                    rescoring
+                      ? done
+                        ? " Re-scored."
+                        : " Not re-scored yet."
+                      : ""
                   }`}
                   className="flex min-h-14 w-full items-center justify-between gap-3 px-4 text-base font-medium text-dashboard-text-heavy"
                 >
@@ -93,7 +99,9 @@ export function JudgeTeams({
                         {done ? "Re-scored" : "To do"}
                       </span>
                     )}
-                    <span className="font-semibold tabular-nums">{r.score}</span>
+                    <span className="font-semibold tabular-nums">
+                      {r.score}
+                    </span>
                   </span>
                 </div>
               </li>

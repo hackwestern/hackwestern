@@ -52,7 +52,9 @@ export default function JudgePage({
  * check, since organizers and sponsors can judge too. The judging procedures
  * still do the real check on the server.
  */
-export const getServerSideProps = async (context: GetServerSidePropsContext) => {
+export const getServerSideProps = async (
+  context: GetServerSidePropsContext,
+) => {
   const session = await getServerSession(context.req, context.res, authOptions);
 
   if (!session) {
@@ -74,10 +76,7 @@ export const getServerSideProps = async (context: GetServerSidePropsContext) => 
   return {
     props: {
       judgeId: judge.id,
-      initial: await loadJudgeData(
-        judge.id,
-        context.query.compare === "1",
-      ),
+      initial: await loadJudgeData(judge.id, context.query.compare === "1"),
     },
   };
 };

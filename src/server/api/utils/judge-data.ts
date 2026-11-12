@@ -87,7 +87,8 @@ export async function loadJudgeData(
   for (const t of linked) {
     const github = safeHttpUrl(t.githubUrl);
     const devpost = safeHttpUrl(t.devpostUrl);
-    if (github !== null || devpost !== null) linksByTeam[t.id] = { github, devpost };
+    if (github !== null || devpost !== null)
+      linksByTeam[t.id] = { github, devpost };
   }
 
   // Sponsored judges are compared with other sponsored judges, since the two
