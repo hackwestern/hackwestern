@@ -5,8 +5,260 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1794003265440,
-      "tag": "0000_far_black_bolt",
+      "when": 1774920762186,
+      "tag": "0000_outgoing_overlord",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776089618243,
+      "tag": "0001_polite_paibok",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776868787944,
+      "tag": "0002_light_spiral",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778719885056,
+      "tag": "0003_sparkling_alex_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778849249645,
+      "tag": "0004_damp_mach_iv",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778872777366,
+      "tag": "0005_aberrant_kat_farrell",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780512407546,
+      "tag": "0006_dapper_terrax",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782227542782,
+      "tag": "0007_unique_tyger_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782342279804,
+      "tag": "0008_striped_stature",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785416111843,
+      "tag": "0009_graceful_gideon",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785438778394,
+      "tag": "0010_preregistration_unsubscribe",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1787159787435,
+      "tag": "0011_wealthy_terrax",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1787929742907,
+      "tag": "0012_married_vision",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788080333798,
+      "tag": "0013_apply_judging_triggers",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788080707170,
+      "tag": "0014_team_join_codes",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1788120097873,
+      "tag": "0015_cheat_check_sweep",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790852811333,
+      "tag": "0016_add_realm_and_horse_companion",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790915036365,
+      "tag": "0017_chief_ben_grimm",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790916186409,
+      "tag": "0018_windy_shard",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790918712074,
+      "tag": "0019_bent_madame_hydra",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791043453222,
+      "tag": "0020_bouncy_amazoness",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791049193983,
+      "tag": "0021_peaceful_peter_parker",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791049653787,
+      "tag": "0022_user_created_at_from_application",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791051486270,
+      "tag": "0023_stats_application_view",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791053062209,
+      "tag": "0024_email_reminder_sent",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791058966822,
+      "tag": "0025_reopen_invalid_year_of_study",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791064513883,
+      "tag": "0026_stats_application_view_more",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791087446633,
+      "tag": "0027_school_other",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791087463400,
+      "tag": "0028_reopen_us_other_school",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1791092776577,
+      "tag": "0029_stats_application_school_other",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1791159517571,
+      "tag": "0030_stats_list_member",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1792086599857,
+      "tag": "0031_rsvp_travel",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792791886451,
+      "tag": "0032_rsvp_enrollment",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793316144975,
+      "tag": "0033_team_finder_card",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793934743357,
+      "tag": "0034_hacker_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1794444018111,
+      "tag": "0035_judging_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1794498116778,
+      "tag": "0036_curious_overlord",
       "breakpoints": true
     }
   ]

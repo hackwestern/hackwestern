@@ -188,6 +188,32 @@ export const judgingQueueStatusEnum = pgEnum("judging_queue_status", [
 export const roundTypeEnum = pgEnum("round_type", ["regular", "sponsored"]);
 
 /**
+ * Where one stop on a judge's list stands. `assigned` -> `in_progress` ->
+ * `done` (score submitted) or `team_absent` (nobody at the table).
+ * `cancelled` is an organizer removing the pairing before it happened.
+ */
+export const judgingAssignmentStatusEnum = pgEnum("judging_assignment_status", [
+  "assigned",
+  "in_progress",
+  "done",
+  "team_absent",
+  "cancelled",
+]);
+
+/**
+ * Live judging state of a physical table, for the organizer table map.
+ * `empty`: no team seated. `waiting`: team seated with stops still to come.
+ * `being_judged`: a judge is there now. `finished`: every stop is done,
+ * absent or cancelled. Switched-off tables use `judging_table.is_active`.
+ */
+export const judgingTableStatusEnum = pgEnum("judging_table_status", [
+  "empty",
+  "waiting",
+  "being_judged",
+  "finished",
+]);
+
+/**
  * The lifecycle of an automated cheat-check sweep across every eligible team.
  */
 export const cheatSweepStatusEnum = pgEnum("cheat_sweep_status", [
@@ -268,6 +294,10 @@ export const teams = pgTable(
       .defaultNow()
       .notNull(),
     joinCode: varchar("joinCode", { length: 6 }).notNull().unique(),
+    // The physical table the team is seated at for judging. One team per table.
+    judgingTableId: integer("judging_table_id")
+      .unique()
+      .references(() => judgingTables.id, { onDelete: "set null" }),
   },
   (t) => [index("team_created_at_idx").on(t.createdAt)],
 );
@@ -311,7 +341,30 @@ export const emailSubscribers = pgTable("email_subscriber", {
     .notNull(),
 });
 
-export const userType = pgEnum("user_type", ["hacker", "organizer", "sponsor"]);
+/**
+ * `judge` is for public/guest judges: limited accounts that only judge, as
+ * opposed to organizers. Being in the `judge` table is separate from this;
+ * organizer accounts can be judges too.
+ */
+export const userType = pgEnum("user_type", [
+  "hacker",
+  "organizer",
+  "sponsor",
+  "judge",
+]);
+
+// Sponsor judging: maps a private UUID (handed to a sponsor as their URL) to
+// the sponsor's name as spelled in the master sheet. The judging Google Sheet
+// itself keeps storing the name in column A; the UUID never appears there.
+export const sponsorJudgingSponsors = pgTable("sponsor_judging_sponsor", {
+  id: uuid("id").defaultRandom().notNull().primaryKey(),
+  // Must match the "Company Name" spelling in the master sheet, since this is
+  // what the judging sheet rows are keyed on.
+  name: varchar("name", { length: 255 }).notNull().unique(),
+  createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
 
 export const users = pgTable(
   "user",
@@ -776,6 +829,8 @@ export const judges = pgTable("judge", {
   marksCount: integer("marks_count").default(0).notNull(),
   marksSum: real("marks_sum").default(0).notNull(),
   marksSquaredSum: real("marks_squared_sum").default(0).notNull(),
+  // Calibration rating for score normalization; null until set.
+  harshness: real("harshness"),
 });
 
 export const judgesRelations = relations(judges, ({ one, many }) => ({
@@ -785,6 +840,7 @@ export const judgesRelations = relations(judges, ({ one, many }) => ({
   }),
   marks: many(teamMarks),
   skips: many(judgingSkips),
+  assignments: many(judgingAssignments),
 }));
 
 export const judgingQueue = pgTable(
@@ -818,6 +874,18 @@ export const judgingQueue = pgTable(
   ],
 );
 
+/**
+ * The rubric behind a mark: each category rated 1-5 (matching the judge
+ * screen's rubric), plus free-text notes.
+ */
+export type ScoreBreakdown = {
+  idea: number;
+  technical: number;
+  design: number;
+  pitch: number;
+  notes?: string | null;
+};
+
 export const teamMarks = pgTable(
   "team_mark",
   {
@@ -829,6 +897,9 @@ export const teamMarks = pgTable(
       .notNull()
       .references(() => judges.id),
     score: real("score").notNull(),
+    // Per-category rubric ratings behind `score`, plus the judge's notes.
+    // Null when the judge used the single slider instead of the rubric.
+    scoreBreakdown: jsonb("score_breakdown").$type<ScoreBreakdown>(),
     roundType: roundTypeEnum("round_type").default("regular").notNull(),
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
@@ -878,11 +949,131 @@ export const judgingSkipsRelations = relations(judgingSkips, ({ one }) => ({
   }),
 }));
 
+/**
+ * Which teams are in which track: one row per (team, track). Lets a track
+ * list its teams without scanning `team.tracks`. Backfilled from
+ * `team.tracks` by migration 0034; the array stays until its readers move
+ * over to this table.
+ */
+export const teamTracks = pgTable(
+  "team_track",
+  {
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    track: trackEnum("track").notNull(),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.teamId, t.track] }),
+    index("team_track_track_idx").on(t.track),
+  ],
+);
+
+export const teamTracksRelations = relations(teamTracks, ({ one }) => ({
+  team: one(teams, {
+    fields: [teamTracks.teamId],
+    references: [teams.id],
+  }),
+}));
+
+/**
+ * A physical table in the judging hall. Organizers enter these before the
+ * event, then seat each team at one (`team.judging_table_id`). Inactive
+ * tables (broken, unused) can't be seated.
+ */
+export const judgingTables = pgTable("judging_table", {
+  id: serial("id").primaryKey(),
+  number: integer("number").notNull().unique(),
+  zone: varchar("zone", { length: 64 }).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  // Kept in step with seating and judging_assignment changes by the engine.
+  status: judgingTableStatusEnum("status").default("empty").notNull(),
+  statusUpdatedAt: timestamp("status_updated_at", {
+    mode: "date",
+    precision: 3,
+  })
+    .defaultNow()
+    .notNull(),
+});
+
+export const judgingTablesRelations = relations(judgingTables, ({ one }) => ({
+  team: one(teams, {
+    fields: [judgingTables.id],
+    references: [teams.judgingTableId],
+  }),
+}));
+
+/**
+ * One stop on a judge's list, paired by hand by an organizer and live as
+ * soon as it's created. The judge finds the team at its seated table.
+ * Cancelled rows are kept for history and ignored by the unique indexes, so
+ * a judge can be re-paired with a team or reuse a position.
+ */
+export const judgingAssignments = pgTable(
+  "judging_assignment",
+  {
+    id: serial("id").primaryKey(),
+    judgeId: varchar("judge_id", { length: 255 })
+      .notNull()
+      .references(() => judges.id, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 255 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+    status: judgingAssignmentStatusEnum("status").default("assigned").notNull(),
+    assignedBy: varchar("assigned_by", { length: 255 }).references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
+    assignedAt: timestamp("assigned_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    startedAt: timestamp("started_at", { mode: "date", precision: 3 }),
+    completedAt: timestamp("completed_at", { mode: "date", precision: 3 }),
+  },
+  (t) => [
+    uniqueIndex("judging_assignment_judge_position_idx")
+      .on(t.judgeId, t.position)
+      .where(sql`${t.status} <> 'cancelled'`),
+    uniqueIndex("judging_assignment_judge_team_idx")
+      .on(t.judgeId, t.teamId)
+      .where(sql`${t.status} <> 'cancelled'`),
+    index("judging_assignment_team_idx").on(t.teamId),
+  ],
+);
+
+export const judgingAssignmentsRelations = relations(
+  judgingAssignments,
+  ({ one }) => ({
+    judge: one(judges, {
+      fields: [judgingAssignments.judgeId],
+      references: [judges.id],
+    }),
+    team: one(teams, {
+      fields: [judgingAssignments.teamId],
+      references: [teams.id],
+    }),
+    assigner: one(users, {
+      fields: [judgingAssignments.assignedBy],
+      references: [users.id],
+    }),
+  }),
+);
+
 export const teamsRelations = relations(teams, ({ many, one }) => ({
   members: many(users),
   marks: many(teamMarks),
   skips: many(judgingSkips),
   checkResults: many(teamCheckResults),
+  judgingTable: one(judgingTables, {
+    fields: [teams.judgingTableId],
+    references: [judgingTables.id],
+  }),
+  judgingAssignments: many(judgingAssignments),
+  trackEntries: many(teamTracks),
 }));
 
 // ---------------------------------------------------------------------------
@@ -1137,16 +1328,3 @@ export const scavengerHuntRedemptions = pgTable(
   },
   (t) => [index("redemption_user_idx").on(t.userId)],
 );
-
-// Sponsor judging: maps a private UUID (handed to a sponsor as their URL) to
-// the sponsor's name as spelled in the master sheet. The judging Google Sheet
-// itself keeps storing the name in column A; the UUID never appears there.
-export const sponsorJudgingSponsors = pgTable("sponsor_judging_sponsor", {
-  id: uuid("id").defaultRandom().notNull().primaryKey(),
-  // Must match the "Company Name" spelling in the master sheet, since this is
-  // what the judging sheet rows are keyed on.
-  name: varchar("name", { length: 255 }).notNull().unique(),
-  createdAt: timestamp("created_at", { mode: "date", precision: 3 })
-    .defaultNow()
-    .notNull(),
-});
