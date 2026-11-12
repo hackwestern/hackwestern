@@ -82,7 +82,7 @@ export async function loadJudgeData(userId: string): Promise<JudgeInitialData> {
   for (const t of linked) {
     const github = safeHttpUrl(t.githubUrl);
     const devpost = safeHttpUrl(t.devpostUrl);
-    if (github || devpost) linksByTeam[t.id] = { github, devpost };
+    if (github !== null || devpost !== null) linksByTeam[t.id] = { github, devpost };
   }
 
   const isOrganizer = user?.type === "organizer";
