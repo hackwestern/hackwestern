@@ -296,6 +296,34 @@ export const preregistrations = pgTable("preregistration", {
   bouncedAt: timestamp("bounced_at", { mode: "date", precision: 3 }),
 });
 
+/**
+ * The single shared event clock (always exactly one row, id = 1). Organizers
+ * start/pause/resume/reset it; every client polls it and renders the countdown
+ * locally from `endsAt`.
+ *
+ * State, derived from the two nullable columns:
+ *   idle    = endsAt null, pausedRemainingMs null
+ *   running = endsAt set
+ *   paused  = pausedRemainingMs set
+ */
+export const clock = pgTable("clock", {
+  id: integer("id").primaryKey().default(1),
+  endsAt: timestamp("ends_at", {
+    mode: "date",
+    precision: 3,
+    withTimezone: true,
+  }),
+  pausedRemainingMs: integer("paused_remaining_ms"),
+  durationMs: integer("duration_ms").notNull().default(300000),
+  updatedAt: timestamp("updated_at", {
+    mode: "date",
+    precision: 3,
+    withTimezone: true,
+  })
+    .defaultNow()
+    .notNull(),
+});
+
 export const emailSubscribers = pgTable("email_subscriber", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 320 }).unique().notNull(),

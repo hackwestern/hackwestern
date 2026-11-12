@@ -20,6 +20,9 @@ export function InternalNavbar() {
         </Button>
         {/* Bulk status tool (#558) is hard-disabled (#798); hidden until it's back.
         <Button className="text-primary-600" variant={"link"} asChild>
+          <Link href="/internal/clock">Clock</Link>
+        </Button>
+        <Button className="text-primary-600" variant={"link"} asChild>
           <Link href="/internal/adjust-status">Status Adjustment</Link>
         </Button> */}
         {/* Hidden while organizers are reviewing; bring back closer to the event.
