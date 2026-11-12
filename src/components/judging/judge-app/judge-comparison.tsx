@@ -5,11 +5,13 @@ import {
   infoBanner,
   touch,
 } from "~/components/judging/shared/judge-ui";
-import { type Rubric } from "~/components/judging/shared/rubric-scorer";
 import {
-  type CalibrationData,
-  type CalibrationTeam,
-} from "~/server/api/utils/judge-calibration";
+  type Rubric,
+} from "~/components/judging/shared/rubric-scorer";
+import {
+  type ComparisonData,
+  type ComparisonTeam,
+} from "~/server/api/utils/judge-comparison";
 
 /** A gap this big or more gets the warning colour. Words carry it too, not just colour. */
 const BIG_GAP = 15;
@@ -73,9 +75,7 @@ function CompareRow({ label, mine, average, comparable, strong }: RowProps) {
             big ? "text-dashboard-text-warning" : "text-dashboard-text-active"
           }`}
           aria-label={
-            comparable && diff !== undefined
-              ? gapWords(diff)
-              : "no comparison yet"
+            comparable && diff !== undefined ? gapWords(diff) : "no comparison yet"
           }
         >
           {comparable && diff !== undefined ? signed(diff) : "–"}
@@ -86,29 +86,34 @@ function CompareRow({ label, mine, average, comparable, strong }: RowProps) {
 }
 
 function TeamCard({
+  rank,
   team,
   table,
   rubric,
 }: {
-  team: CalibrationTeam;
+  rank: number;
+  team: ComparisonTeam;
   table: number | null;
   rubric: Rubric;
 }) {
   const comparable = team.others !== null;
   return (
     <section
-      aria-label={`${team.teamName} calibration`}
+      aria-label={`${team.teamName} comparison`}
       className={`${card} flex flex-col gap-2 px-3.5 py-3`}
     >
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="m-0 min-w-0 truncate text-lg font-semibold text-dashboard-text-heavy">
+          <span className="mr-2 tabular-nums text-dashboard-text-light">
+            #{rank}
+          </span>
           {team.teamName}
         </h2>
         <span className="shrink-0 text-xs font-medium text-dashboard-text-light">
           {table !== null ? `Table ${table} · ` : ""}
           {comparable
-            ? `${team.otherCount} other ${team.otherCount === 1 ? "organizer" : "organizers"}`
-            : "No other organizers yet"}
+            ? `${team.otherCount} other ${team.otherCount === 1 ? "judge" : "judges"}`
+            : "No other judges yet"}
         </span>
       </div>
       <CompareRow
@@ -131,11 +136,9 @@ function TeamCard({
   );
 }
 
-/** Your average gap per criterion, over the teams where other organizers have marked too. */
-function biasLines(data: CalibrationData, rubric: Rubric) {
-  const compared = data.teams.flatMap((t) =>
-    t.others ? [{ ...t, others: t.others }] : [],
-  );
+/** Your average gap per criterion, over the teams where other judges have marked too. */
+function biasLines(data: ComparisonData, rubric: Rubric) {
+  const compared = data.teams.flatMap((t) => (t.others ? [{ ...t, others: t.others }] : []));
   const lines: { id: string; label: string; avg: number; n: number }[] = [];
 
   const overall = compared.map((t) => t.mine.score - t.others.score);
@@ -165,8 +168,9 @@ function biasLines(data: CalibrationData, rubric: Rubric) {
   return lines;
 }
 
-interface JudgeCalibrationProps {
-  data: CalibrationData;
+interface JudgeComparisonProps {
+  /** Null while the numbers are loading after submitting. */
+  data: ComparisonData | null;
   rubric: Rubric;
   /** Team id -> table number. */
   tableByTeam: Record<string, number>;
@@ -175,33 +179,42 @@ interface JudgeCalibrationProps {
 }
 
 /**
- * Organizer-only summary that replaces the map: for each team you marked, your
- * score on every criterion next to the average of the other organizers who judged it.
+ * The results, shown only after the judge has submitted: every team they scored,
+ * ranked by their own score, next to the average of the other judges.
  */
-export function JudgeCalibration({
+export function JudgeComparison({
   data,
   rubric,
   tableByTeam,
   refreshing,
   onRefresh,
-}: JudgeCalibrationProps) {
+}: JudgeComparisonProps) {
+  if (data === null) {
+    return (
+      <p role="status" className={infoBanner}>
+        Submitted. Loading how your scores compare…
+      </p>
+    );
+  }
+
   const bias = biasLines(data, rubric);
+  const ranked = [...data.teams].sort((a, b) => b.mine.score - a.mine.score);
 
   return (
-    <div className="flex flex-col gap-3 px-3 pb-5 pt-2">
+    <div className="flex flex-col gap-3">
       <p className={infoBanner}>
-        {data.otherOrganizerCount === 0
-          ? "No other organizers have judged yet, so there is nothing to compare with."
-          : `Your scores against the average of the other ${
-              data.otherOrganizerCount === 1
-                ? "organizer"
-                : `${data.otherOrganizerCount} organizers`
-            } who judged. A plus means you scored higher than they did.`}
+        {data.otherJudgeCount === 0
+          ? "Submitted. No other judges have scored yet, so there is nothing to compare with. Check back with Refresh."
+          : `Submitted. Your scores are locked. Your teams, best first, against the average of the other ${
+              data.otherJudgeCount === 1
+                ? "judge"
+                : `${data.otherJudgeCount} judges`
+            } who scored them. A plus means you scored higher than they did.`}
       </p>
 
-      {data.teams.length === 0 ? (
+      {ranked.length === 0 ? (
         <p className="m-0 text-base font-medium text-dashboard-text-light">
-          Nothing to compare yet. Score a team and it will show up here.
+          Nothing to compare.
         </p>
       ) : (
         <>
@@ -231,9 +244,10 @@ export function JudgeCalibration({
               ))}
             </section>
           )}
-          {data.teams.map((t) => (
+          {ranked.map((t, i) => (
             <TeamCard
               key={t.teamId}
+              rank={i + 1}
               team={t}
               table={tableByTeam[t.teamId] ?? null}
               rubric={rubric}
@@ -249,7 +263,7 @@ export function JudgeCalibration({
         onClick={onRefresh}
         className={`${touch} ${fullWidth}`}
       >
-        {refreshing ? "Refreshing…" : "Refresh"}
+        {refreshing ? "Refreshing\u2026" : "Refresh"}
       </DashboardButton>
     </div>
   );

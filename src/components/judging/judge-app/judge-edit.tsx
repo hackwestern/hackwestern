@@ -15,7 +15,6 @@ import {
   type Rubric,
   RubricScorer,
   hasGuide,
-  requiredCount,
   scoreRubric,
 } from "~/components/judging/shared/rubric-scorer";
 
@@ -28,7 +27,9 @@ export interface EditedScore {
 interface JudgeEditProps {
   team: JudgedTeam;
   rubric: Rubric;
-  /** GitHub and Devpost links, if the team added any. */
+  /** "rescore": the second pass, with links and the first score shown. */
+  mode?: "edit" | "rescore";
+  /** GitHub and Devpost links, shown while re-scoring. */
   links?: TeamLinks;
   /** Saving to the server. */
   saving: boolean;
@@ -47,6 +48,7 @@ interface JudgeEditProps {
 export function JudgeEdit({
   team,
   rubric,
+  mode = "edit",
   links,
   saving,
   error,
@@ -57,7 +59,7 @@ export function JudgeEdit({
   const [notes, setNotes] = useState(team.notes);
   const [guideOpen, setGuideOpen] = useState(false);
 
-  const count = requiredCount(rubric);
+  const count = rubric.criteria.length;
   const result = scoreRubric(rubric, ratings);
   const complete = count > 0 && result.rated === count;
 
@@ -73,14 +75,21 @@ export function JudgeEdit({
           {team.table ?? "–"} · {team.teamName}
         </h1>
         <span className="shrink-0 text-sm font-semibold tabular-nums text-dashboard-text-light">
-          Now {team.score}
+          {mode === "rescore" ? "First review" : "Now"} {team.score}
         </span>
       </div>
 
-      <JudgeTeamLinks links={links} />
+      {mode === "rescore" && (
+        <>
+          <p className="m-0 px-1 text-sm text-dashboard-text-light">
+            Open the links, then rethink each score. Save even if nothing changes.
+          </p>
+          <JudgeTeamLinks links={links} />
+        </>
+      )}
 
       <section
-        aria-label="Change score"
+        aria-label={mode === "rescore" ? "Re-score this team" : "Change score"}
         className={`${card} flex flex-col gap-3 px-3.5 py-3`}
       >
         {hasGuide(rubric) && (
@@ -124,7 +133,7 @@ export function JudgeEdit({
           onClick={onCancel}
           className={`${touch} px-4`}
         >
-          Cancel
+          {mode === "rescore" ? "Back" : "Cancel"}
         </DashboardButton>
         <DashboardButton
           type="button"
@@ -132,7 +141,11 @@ export function JudgeEdit({
           onClick={save}
           className="h-11 w-auto flex-1 disabled:opacity-dashboard-disabled md:w-auto"
         >
-          {saving ? "Saving…" : "Save"}
+          {saving
+            ? "Saving…"
+            : mode === "rescore"
+              ? "Save and continue"
+              : "Save"}
         </DashboardButton>
       </div>
       {error && (

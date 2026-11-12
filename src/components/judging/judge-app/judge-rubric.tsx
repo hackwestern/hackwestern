@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { type TeamLinks } from "~/server/api/utils/judge-data";
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { JudgeTeamLinks } from "~/components/judging/judge-app/judge-team-links";
 import { JudgeConfirm } from "~/components/judging/shared/judge-confirm";
 import {
   card,
@@ -15,7 +13,6 @@ import {
   type Rubric,
   RubricScorer,
   hasGuide,
-  requiredCount,
   scoreRubric,
 } from "~/components/judging/shared/rubric-scorer";
 
@@ -89,8 +86,6 @@ interface JudgeRubricProps {
   /** null when the team isn't seated at a table. */
   table: number | null;
   rubric: Rubric;
-  /** GitHub and Devpost links, if the team added any. */
-  links?: TeamLinks;
   /** Sending to the server. */
   busy: boolean;
   /** Why the last send failed, if it did. */
@@ -108,7 +103,6 @@ export function JudgeRubric({
   teamName,
   table,
   rubric,
-  links,
   busy,
   error,
   onSubmit,
@@ -136,7 +130,7 @@ export function JudgeRubric({
     return () => clearTimeout(timer);
   }, [ratings, notes, key]);
 
-  const count = requiredCount(rubric);
+  const count = rubric.criteria.length;
   const result = scoreRubric(rubric, ratings);
   const complete = count > 0 && result.rated === count;
 
@@ -176,8 +170,6 @@ export function JudgeRubric({
           {SAVE_LABEL[saveState]}
         </span>
       </div>
-
-      <JudgeTeamLinks links={links} />
 
       <section
         aria-label="Score this team"

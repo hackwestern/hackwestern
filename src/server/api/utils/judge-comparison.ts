@@ -1,10 +1,10 @@
-// src/server/api/utils/judge-calibration.ts
+// src/server/api/utils/judge-comparison.ts
 //
-// Pure maths for the organizer calibration view. No database access, so it can
+// Pure maths for the comparison view. No database access, so it can
 // be tested on its own. judge-data.ts loads the rows and calls this.
 
 /** One organizer's mark on one team, as read from team_mark. */
-export interface CalibrationRow {
+export interface ComparisonRow {
   teamId: string;
   judgeId: string;
   score: number;
@@ -12,7 +12,7 @@ export interface CalibrationRow {
   breakdown: unknown;
 }
 
-export interface CalibrationTeam {
+export interface ComparisonTeam {
   teamId: string;
   teamName: string;
   /** The viewer's overall score and ratings. */
@@ -22,15 +22,15 @@ export interface CalibrationTeam {
    * left out). Null when nobody else has marked it yet.
    */
   others: { score: number; ratings: Record<string, number> } | null;
-  /** How many other organizers marked this team. */
+  /** How many other judges marked this team. */
   otherCount: number;
 }
 
-export interface CalibrationData {
-  /** Other organizers (not the viewer) with at least one mark. */
-  otherOrganizerCount: number;
+export interface ComparisonData {
+  /** Other judges (not the viewer) with at least one mark in the same round. */
+  otherJudgeCount: number;
   /** Only the teams the viewer has marked, in the order they were marked. */
-  teams: CalibrationTeam[];
+  teams: ComparisonTeam[];
 }
 
 /** Pulls the 0-100 ratings out of a stored breakdown. Anything else is ignored. */
@@ -49,18 +49,18 @@ const mean = (values: number[]) =>
   values.reduce((sum, v) => sum + v, 0) / values.length;
 
 /**
- * Compares the viewer's marks with the average of the other organizers' marks.
+ * Compares the viewer's marks with the average of the other judges' marks.
  *
- * `rows` must hold regular-round marks from organizers only, oldest first (the
+ * `rows` must hold marks from one round type (regular or sponsored), oldest first (the
  * viewer's team order follows it). Averages are per criterion and only count
  * marks that rated that criterion.
  */
-export function buildCalibration(
-  rows: CalibrationRow[],
+export function buildComparison(
+  rows: ComparisonRow[],
   viewerId: string,
   teamNames: Record<string, string>,
-): CalibrationData {
-  const othersByTeam = new Map<string, CalibrationRow[]>();
+): ComparisonData {
+  const othersByTeam = new Map<string, ComparisonRow[]>();
   for (const r of rows) {
     if (r.judgeId === viewerId) continue;
     const list = othersByTeam.get(r.teamId);
@@ -68,12 +68,12 @@ export function buildCalibration(
     else othersByTeam.set(r.teamId, [r]);
   }
 
-  const teams: CalibrationTeam[] = [];
+  const teams: ComparisonTeam[] = [];
   for (const row of rows) {
     if (row.judgeId !== viewerId) continue;
     const others = othersByTeam.get(row.teamId) ?? [];
 
-    let average: CalibrationTeam["others"] = null;
+    let average: ComparisonTeam["others"] = null;
     if (others.length > 0) {
       const perCriterion = new Map<string, number[]>();
       for (const m of others) {
@@ -98,7 +98,7 @@ export function buildCalibration(
   }
 
   return {
-    otherOrganizerCount: new Set(
+    otherJudgeCount: new Set(
       rows.filter((r) => r.judgeId !== viewerId).map((r) => r.judgeId),
     ).size,
     teams,

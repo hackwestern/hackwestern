@@ -1,11 +1,11 @@
-import { and, asc, eq, inArray, isNotNull, or } from "drizzle-orm";
+import { asc, eq, inArray, isNotNull, or } from "drizzle-orm";
 
 import {
-  type CalibrationData,
-  buildCalibration,
-} from "~/server/api/utils/judge-calibration";
+  type ComparisonData,
+  buildComparison,
+} from "~/server/api/utils/judge-comparison";
 import { db } from "~/server/db";
-import { teamMarks, teams, users } from "~/server/db/schema";
+import { teamMarks, teams } from "~/server/db/schema";
 
 export interface JudgeTableRow {
   number: number;
@@ -38,21 +38,26 @@ export interface JudgeInitialData {
   tableByTeam: Record<string, number>;
   /** Team id -> GitHub and Devpost links, for teams that added at least one. */
   linksByTeam: Record<string, TeamLinks>;
-  /** True for organizer accounts. Only they get the calibration view. */
-  isOrganizer: boolean;
-  /** The viewer's marks against the organizer average. Null for everyone else. */
-  calibration: CalibrationData | null;
+  /**
+   * The viewer's marks against the other judges' average. Null until asked
+   * for (the page is loaded with ?compare=1), so the numbers are not sent while
+   * a judge is still scoring.
+   */
+  comparison: ComparisonData | null;
 }
 
 /**
  * Read-only data for the judge page, loaded straight from the db in
  * getServerSideProps (no extra tRPC procedures). The judging router does all
  * the reading and writing of marks; this only supplies what it can't:
- * which table each team is at, and the organizer calibration numbers.
+ * which table each team is at, and the judge comparison numbers.
  * A snapshot from page load; the page re-runs it to refresh.
  */
-export async function loadJudgeData(userId: string): Promise<JudgeInitialData> {
-  const [tables, seated, linked, user] = await Promise.all([
+export async function loadJudgeData(
+  userId: string,
+  withComparison: boolean,
+): Promise<JudgeInitialData> {
+  const [tables, seated, linked, judge] = await Promise.all([
     db.query.judgingTables.findMany({
       where: (t, { eq }) => eq(t.isActive, true),
       columns: { number: true, zone: true },
@@ -67,8 +72,8 @@ export async function loadJudgeData(userId: string): Promise<JudgeInitialData> {
       where: or(isNotNull(teams.githubUrl), isNotNull(teams.devpostUrl)),
       columns: { id: true, githubUrl: true, devpostUrl: true },
     }),
-    db.query.users.findFirst({
-      where: (u, { eq }) => eq(u.id, userId),
+    db.query.judges.findFirst({
+      where: (j, { eq }) => eq(j.id, userId),
       columns: { type: true },
     }),
   ]);
@@ -82,26 +87,29 @@ export async function loadJudgeData(userId: string): Promise<JudgeInitialData> {
   for (const t of linked) {
     const github = safeHttpUrl(t.githubUrl);
     const devpost = safeHttpUrl(t.devpostUrl);
-    if (github !== null || devpost !== null)
-      linksByTeam[t.id] = { github, devpost };
+    if (github !== null || devpost !== null) linksByTeam[t.id] = { github, devpost };
   }
 
-  const isOrganizer = user?.type === "organizer";
+  // Sponsored judges are compared with other sponsored judges, since the two
+  // rounds are ranked apart.
+  const roundType = judge?.type === "sponsored" ? "sponsored" : "regular";
   return {
     tables,
     tableByTeam,
     linksByTeam,
-    isOrganizer,
-    calibration: isOrganizer ? await loadCalibration(userId) : null,
+    comparison: withComparison ? await loadComparison(userId, roundType) : null,
   };
 }
 
 /**
- * Regular-round marks from every organizer account (users.type = organizer),
- * compared team by team with the viewer's own marks. Oldest mark first, so the
- * viewer's list reads in the order they judged.
+ * Every judge's marks in the viewer's round, compared team by team with the
+ * viewer's own. Oldest mark first, so the viewer's list reads in the order they
+ * judged.
  */
-async function loadCalibration(viewerId: string): Promise<CalibrationData> {
+async function loadComparison(
+  viewerId: string,
+  roundType: "regular" | "sponsored",
+): Promise<ComparisonData> {
   const rows = await db
     .select({
       teamId: teamMarks.teamId,
@@ -110,8 +118,7 @@ async function loadCalibration(viewerId: string): Promise<CalibrationData> {
       breakdown: teamMarks.scoreBreakdown,
     })
     .from(teamMarks)
-    .innerJoin(users, eq(users.id, teamMarks.judgeId))
-    .where(and(eq(users.type, "organizer"), eq(teamMarks.roundType, "regular")))
+    .where(eq(teamMarks.roundType, roundType))
     .orderBy(asc(teamMarks.createdAt), asc(teamMarks.id));
 
   const mineIds = [
@@ -126,5 +133,5 @@ async function loadCalibration(viewerId: string): Promise<CalibrationData> {
       : [];
   const teamNames = Object.fromEntries(named.map((t) => [t.id, t.name]));
 
-  return buildCalibration(rows, viewerId, teamNames);
+  return buildComparison(rows, viewerId, teamNames);
 }

@@ -8,7 +8,6 @@ import {
   type Rubric,
   RubricScorer,
   hasGuide,
-  requiredCount,
   scoreRubric,
 } from "~/components/judging/shared/rubric-scorer";
 import { CARD, MUTED } from "./control-shared";
@@ -27,7 +26,7 @@ export function RubricBuilder({ rubric = DEFAULT_RUBRIC }: Props) {
   const [ratings, setRatings] = useState<Ratings>({});
   const [guideOpen, setGuideOpen] = useState(false);
 
-  const count = requiredCount(rubric);
+  const count = rubric.criteria.length;
   const result = scoreRubric(rubric, ratings);
   const complete = count > 0 && result.rated === count;
 

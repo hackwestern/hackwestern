@@ -11,11 +11,6 @@ export interface RubricCriterion {
   description: string;
   /** Relative importance. Ignored unless the rubric is weighted. */
   weight: number;
-  /**
-   * Optional extra credit. Judges may leave it unrated, and it only counts
-   * toward the score when it raises the average.
-   */
-  bonus?: boolean;
 }
 
 export interface Rubric {
@@ -27,52 +22,41 @@ export interface Rubric {
 
 export type Ratings = Record<string, number | undefined>;
 
-/** The default rubric: four required criteria plus an optional bonus, equal weight. */
+/** The default rubric: four criteria, equal weight. */
 export const DEFAULT_RUBRIC: Rubric = {
   title: "General judging rubric",
   weighted: false,
   criteria: [
     {
-      id: "creativity",
-      name: "Creativity",
-      description: "How creative is this project?",
+      id: "innovation",
+      name: "Innovation & Creativity",
+      description:
+        "How unique or original is the project idea? Does it present a new solution to a problem or use technology in an unexpected way?",
       weight: 1,
     },
     {
       id: "technical",
-      name: "Technical Difficulty",
+      name: "Technical Complexity",
       description:
-        "Simpler and less technical projects (no-code tools and mockups allowed!) will not be penalized.",
+        "How technically challenging is the project? Did the team push the boundaries with complex algorithms, integrations, or hardware?",
       weight: 1,
     },
     {
-      id: "learning",
-      name: "Demonstrates Learning",
+      id: "completeness",
+      name: "Completeness",
       description:
-        "Has your team demonstrated growth or a journey to learn a new skill?",
+        "Does the project work as intended? Are there any major bugs or broken features?",
       weight: 1,
     },
     {
-      id: "usefulness",
-      name: "Usefulness",
+      id: "design",
+      name: "Design",
       description:
-        "Would this be something that could be used in the real world? Does this solve the problem it's trying to solve?",
+        "How user-friendly and visually appealing is the project? Is the interface intuitive and easy to navigate?",
       weight: 1,
-    },
-    {
-      id: "polish",
-      name: "Polish",
-      description:
-        "How is the presentation of the project? Is there a video? Does the team present the project well?",
-      weight: 1,
-      bonus: true,
     },
   ],
 };
-
-/** How many criteria a judge has to rate before submitting. Bonus ones are optional. */
-export const requiredCount = (rubric: Rubric) =>
-  rubric.criteria.filter((c) => !c.bonus).length;
 
 /** The toggle only appears when at least one criterion has a description. */
 export const hasGuide = (rubric: Rubric) =>
@@ -90,10 +74,8 @@ export const ratingOf = (c: RubricCriterion, ratings: Ratings) => {
 
 /**
  * Turns ratings into the 0-100 score the backend stores: the weighted average
- * of the required criteria (a plain average when the rubric isn't weighted).
- * A bonus criterion that was rated is added to that average only if doing so
- * raises it, so a low bonus rating never hurts a team. `rated` counts required
- * criteria only; it only means something once all of them have been rated.
+ * of the criterion ratings (a plain average when the rubric isn't weighted).
+ * It only means something once every criterion has been rated.
  */
 export function scoreRubric(
   rubric: Rubric,
@@ -102,41 +84,47 @@ export function scoreRubric(
   let rated = 0;
   let part = 0;
   let totalWeight = 0;
-  let bonusPart = 0;
-  let bonusWeight = 0;
 
   for (const c of rubric.criteria) {
     const rating = ratingOf(c, ratings);
-    const weight = effectiveWeight(rubric, c);
-
-    if (c.bonus) {
-      if (rating !== undefined) {
-        bonusPart += weight * rating;
-        bonusWeight += weight;
-      }
-      continue;
-    }
-
     if (rating !== undefined) rated += 1;
+    const weight = effectiveWeight(rubric, c);
     totalWeight += weight;
     part += weight * (rating ?? RUBRIC_MIN);
   }
 
-  const base = totalWeight > 0 ? part / totalWeight : 0;
-  const withBonus =
-    totalWeight > 0 && bonusWeight > 0
-      ? (part + bonusPart) / (totalWeight + bonusWeight)
-      : base;
-
-  const score = Math.round(Math.max(base, withBonus));
+  const score = totalWeight > 0 ? Math.round(part / totalWeight) : 0;
   return { score, label: String(score), rated };
 }
+
+const THUMB_PX = 24;
+
+/**
+ * How far the blue fill reaches. The thumb centre travels from half a thumb in
+ * to half a thumb short of the end, so the fill follows it instead of the raw
+ * percentage.
+ */
+const fillWidth = (value: number) => {
+  const pct = (value - RUBRIC_MIN) / (RUBRIC_MAX - RUBRIC_MIN);
+  return `calc(${pct * 100}% + ${(0.5 - pct) * THUMB_PX}px)`;
+};
+
+/**
+ * Hand-drawn range input parts: a clear track and a round blue thumb (WebKit and
+ * Firefox). The pixel cursor is set on the thumb and track as well, because
+ * browsers draw those as separate parts that don't always inherit it.
+ */
+const SLIDER_PARTS = [
+  "[&::-webkit-slider-runnable-track]:h-6 [&::-webkit-slider-runnable-track]:cursor-pixel-hover [&::-webkit-slider-runnable-track]:bg-transparent",
+  "[&::-webkit-slider-thumb]:cursor-pixel-hover [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:size-6 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-0 [&::-webkit-slider-thumb]:bg-dashboard-action-primary [&::-webkit-slider-thumb]:shadow-dashboard-card",
+  "[&::-moz-range-track]:h-6 [&::-moz-range-track]:cursor-pixel-hover [&::-moz-range-track]:bg-transparent",
+  "[&::-moz-range-thumb]:size-6 [&::-moz-range-thumb]:cursor-pixel-hover [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-dashboard-action-primary",
+].join(" ");
 
 interface RubricScorerProps {
   rubric: Rubric;
   ratings: Ratings;
-  /** `undefined` clears a rating. Only optional (bonus) criteria offer that. */
-  onRate: (criterionId: string, value: number | undefined) => void;
+  onRate: (criterionId: string, value: number) => void;
   /** When true, each criterion's description shows beside its name. */
   guideOpen: boolean;
   /** Show the number beside each slider. On by default; the judge app turns it off. */
@@ -171,11 +159,6 @@ export function RubricScorer({
                   className="text-base font-semibold text-dashboard-text-heavy"
                 >
                   {c.name.trim() || "Untitled criterion"}
-                  {c.bonus && (
-                    <span className="ml-2 text-xs font-semibold uppercase tracking-wide text-dashboard-text-light">
-                      Bonus · optional
-                    </span>
-                  )}
                 </span>
                 {guideOpen && c.description.trim() && (
                   <span className="text-xs leading-snug text-dashboard-text-light">
@@ -197,32 +180,38 @@ export function RubricScorer({
               )}
             </div>
             {/* Sliders start at 0 but stay dimmed, and don't count as scored,
-                until the judge actually touches them. */}
-            <input
-              type="range"
-              min={RUBRIC_MIN}
-              max={RUBRIC_MAX}
-              step={1}
-              value={current ?? RUBRIC_MIN}
-              aria-labelledby={labelId}
-              aria-valuetext={
-                current === undefined ? "Not scored yet" : String(current)
-              }
-              onChange={(e) => onRate(c.id, Number(e.target.value))}
-              onPointerUp={(e) => onRate(c.id, Number(e.currentTarget.value))}
-              className={`h-11 w-full cursor-pixel-hover accent-dashboard-action-primary ${
+                until the judge actually touches them. Safari ignores
+                accent-color on range inputs, so the track, fill and thumb are
+                drawn by hand and look the same in every browser. */}
+            <div
+              className={`relative flex h-11 items-center ${
                 current === undefined ? "opacity-dashboard-disabled" : ""
-              } ${focusRing}`}
-            />
-            {c.bonus && current !== undefined && (
-              <button
-                type="button"
-                onClick={() => onRate(c.id, undefined)}
-                className={`min-h-11 self-end px-2 text-sm font-semibold text-dashboard-text-medium hover:text-dashboard-text-light ${focusRing}`}
-              >
-                Clear bonus
-              </button>
-            )}
+              }`}
+            >
+              <div
+                aria-hidden="true"
+                className="absolute inset-x-0 h-2 rounded-full bg-dashboard-border-default"
+              />
+              <div
+                aria-hidden="true"
+                className="absolute left-0 h-2 rounded-full bg-dashboard-action-primary"
+                style={{ width: fillWidth(current ?? RUBRIC_MIN) }}
+              />
+              <input
+                type="range"
+                min={RUBRIC_MIN}
+                max={RUBRIC_MAX}
+                step={1}
+                value={current ?? RUBRIC_MIN}
+                aria-labelledby={labelId}
+                aria-valuetext={
+                  current === undefined ? "Not scored yet" : String(current)
+                }
+                onChange={(e) => onRate(c.id, Number(e.target.value))}
+                onPointerUp={(e) => onRate(c.id, Number(e.currentTarget.value))}
+                className={`relative m-0 h-11 w-full cursor-pixel-hover appearance-none bg-transparent ${SLIDER_PARTS} ${focusRing}`}
+              />
+            </div>
           </div>
         );
       })}

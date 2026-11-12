@@ -1,9 +1,7 @@
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import {
   card,
-  focusRing,
   fullWidth,
-  infoBanner,
   warningBanner,
 } from "~/components/judging/shared/judge-ui";
 import { type Ratings } from "~/components/judging/shared/rubric-scorer";
@@ -24,26 +22,31 @@ export interface JudgedTeam {
 
 interface JudgeTeamsProps {
   results: JudgedTeam[];
-  /** True once the judge has finished: scores are locked. */
-  finished: boolean;
-  /** Finishing is in progress. */
-  finishing: boolean;
+  /** "first": first review. "rescore": the second pass. */
+  stage: "first" | "rescore";
+  /** Team ids already re-scored. */
+  rescored: string[];
+  /** Moving on to re-scoring is in progress. */
+  starting: boolean;
   error: string | null;
-  onEdit: (markId: number) => void;
-  onFinish: () => void;
+  onStartRescore: () => void;
+  onContinueRescore: () => void;
 }
 
 /**
- * The "My teams" tab: every score the judge has submitted. Tap one to change
- * it, until the judge taps "Finish judging".
+ * The "My teams" tab during judging: every score the judge has submitted, read
+ * only. First review ends with "Start re-scoring". Once the judge is re-scoring,
+ * each row shows whether it has been done. After that this tab becomes the
+ * final review and the results (see JudgeFinal and JudgeComparison).
  */
 export function JudgeTeams({
   results,
-  finished,
-  finishing,
+  stage,
+  rescored,
+  starting,
   error,
-  onEdit,
-  onFinish,
+  onStartRescore,
+  onContinueRescore,
 }: JudgeTeamsProps) {
   if (results.length === 0) {
     return (
@@ -53,43 +56,49 @@ export function JudgeTeams({
     );
   }
 
+  const rescoring = stage === "rescore";
+
   return (
     <>
-      {finished ? (
-        <p role="status" className={infoBanner}>
-          You&apos;ve finished judging. Your scores are locked. Thank you!
-        </p>
-      ) : (
-        <p className="m-0 px-1 text-sm text-dashboard-text-light">
-          Tap a team to change its score.
-        </p>
-      )}
+      <p className="m-0 px-1 text-sm text-dashboard-text-light">
+        {rescoring
+          ? "Re-score every team, in the order you scored them."
+          : "Your scores so far. They can't be changed until re-scoring."}
+      </p>
       <section
         aria-label="Teams you've judged"
         className={`${card} overflow-hidden`}
       >
         <ul className="m-0 list-none p-0">
-          {results.map((r, i) => (
-            <li
-              key={r.markId}
-              className={i > 0 ? "border-t border-dashboard-border-subtle" : ""}
-            >
-              <button
-                type="button"
-                disabled={finished}
-                onClick={() => onEdit(r.markId)}
-                aria-label={`${r.table ?? "No table"} ${r.teamName}, score ${r.score}.${finished ? "" : " Edit."}`}
-                className={`flex min-h-14 w-full cursor-pixel-hover items-center justify-between gap-3 px-4 text-left text-base font-medium text-dashboard-text-heavy enabled:hover:bg-dashboard-bg-highlight ${focusRing}`}
+          {results.map((r, i) => {
+            const done = rescored.includes(r.teamId);
+            return (
+              <li
+                key={r.markId}
+                className={i > 0 ? "border-t border-dashboard-border-subtle" : ""}
               >
-                <span className="min-w-0 truncate">
-                  {r.table ?? "–"} · {r.teamName}
-                </span>
-                <span className="shrink-0 font-semibold tabular-nums">
-                  {r.score}
-                </span>
-              </button>
-            </li>
-          ))}
+                <div
+                  role="group"
+                  aria-label={`${r.table ?? "No table"} ${r.teamName}, score ${r.score}.${
+                    rescoring ? (done ? " Re-scored." : " Not re-scored yet.") : ""
+                  }`}
+                  className="flex min-h-14 w-full items-center justify-between gap-3 px-4 text-base font-medium text-dashboard-text-heavy"
+                >
+                  <span className="min-w-0 truncate">
+                    {r.table ?? "–"} · {r.teamName}
+                  </span>
+                  <span className="flex shrink-0 items-baseline gap-2">
+                    {rescoring && (
+                      <span className="text-xs font-semibold text-dashboard-text-light">
+                        {done ? "Re-scored" : "To do"}
+                      </span>
+                    )}
+                    <span className="font-semibold tabular-nums">{r.score}</span>
+                  </span>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
@@ -98,14 +107,22 @@ export function JudgeTeams({
           {error}
         </p>
       )}
-      {!finished && (
+      {rescoring ? (
         <DashboardButton
           type="button"
-          disabled={finishing}
-          onClick={onFinish}
+          onClick={onContinueRescore}
+          className={fullWidth}
+        >
+          Continue re-scoring
+        </DashboardButton>
+      ) : (
+        <DashboardButton
+          type="button"
+          disabled={starting}
+          onClick={onStartRescore}
           className={`${fullWidth} disabled:opacity-dashboard-disabled`}
         >
-          {finishing ? "Finishing…" : "Finish judging"}
+          {starting ? "Starting…" : "Start re-scoring"}
         </DashboardButton>
       )}
     </>

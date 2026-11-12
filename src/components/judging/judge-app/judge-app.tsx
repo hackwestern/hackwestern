@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import {
   JudgeOfflineBanner,
@@ -25,11 +25,12 @@ import {
   type JudgedTeam,
   JudgeTeams,
 } from "~/components/judging/judge-app/judge-teams";
-import { JudgeCalibration } from "~/components/judging/judge-app/judge-calibration";
+import { JudgeComparison } from "~/components/judging/judge-app/judge-comparison";
+import { JudgeFinal } from "./judge-final";
+import { JudgeRescore } from "~/components/judging/judge-app/judge-rescore";
 import { VenueMap } from "~/components/judging/judge-app/judge-map";
 import {
   errorCode,
-  focusRing,
   friendlyError,
 } from "~/components/judging/shared/judge-ui";
 import {
@@ -47,12 +48,8 @@ const RUBRIC = DEFAULT_RUBRIC;
 // the judge set (team_mark.score_breakdown), next to the overall 0-100 score.
 // Ratings are stored by criterion id: { ratings: { technical: 80, ... }, notes }.
 const toBreakdown = (ratings: Ratings, notes: string) => ({
-  // An unrated optional (bonus) criterion is left out, not saved as 0.
   ratings: Object.fromEntries(
-    RUBRIC.criteria.flatMap((c) => {
-      const r = ratings[c.id];
-      return r === undefined ? [] : [[c.id, r] as const];
-    }),
+    RUBRIC.criteria.map((c) => [c.id, ratings[c.id] ?? 0]),
   ),
   ...(notes ? { notes } : {}),
 });
@@ -65,21 +62,59 @@ function fromBreakdown(
   return b?.ratings ? { ...b.ratings } : {};
 }
 
-// Finishing is remembered on this device, per judge. The server doesn't know
-// about it yet, so it locks this app, not the judging router.
-const finishedKey = (judgeKey: string) => `hw13-judge-finished-${judgeKey}`;
+// Where the judge is in the flow. It is remembered on this device, per judge.
+// The server doesn't know about it yet, so it guides this app, not the judging
+// router.
+//   first     score each assigned team (no project links)
+//   rescore   go back through every review, with the links
+//   final     review the final scores and submit
+//   submitted scores locked; the comparison with other judges is shown
+type Stage = "first" | "rescore" | "final" | "submitted";
+const STAGES: readonly string[] = ["first", "rescore", "final", "submitted"];
 
-function readFinished(judgeKey: string): boolean {
+const stageKey = (judgeKey: string) => `hw13-judge-stage-${judgeKey}`;
+const rescoredKey = (judgeKey: string) => `hw13-judge-rescored-${judgeKey}`;
+
+function readStage(judgeKey: string): Stage {
   try {
-    return localStorage.getItem(finishedKey(judgeKey)) === "1";
+    const stored = localStorage.getItem(stageKey(judgeKey));
+    if (stored && STAGES.includes(stored)) return stored as Stage;
+    // Called "compare" before the final submit step existed.
+    if (stored === "compare") return "final";
+    // Judges who tapped Finish judging before stages existed.
+    if (localStorage.getItem(`hw13-judge-finished-${judgeKey}`) === "1") {
+      return "submitted";
+    }
   } catch {
-    return false;
+    // Storage is blocked: start from the first review.
+  }
+  return "first";
+}
+
+function writeStage(judgeKey: string, stage: Stage) {
+  try {
+    localStorage.setItem(stageKey(judgeKey), stage);
+  } catch {
+    // Not remembered after a reload: storage is blocked.
   }
 }
 
-function writeFinished(judgeKey: string) {
+function readRescored(judgeKey: string): string[] {
   try {
-    localStorage.setItem(finishedKey(judgeKey), "1");
+    const parsed: unknown = JSON.parse(
+      localStorage.getItem(rescoredKey(judgeKey)) ?? "[]",
+    );
+    return Array.isArray(parsed)
+      ? parsed.filter((id): id is string => typeof id === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeRescored(judgeKey: string, ids: string[]) {
+  try {
+    localStorage.setItem(rescoredKey(judgeKey), JSON.stringify(ids));
   } catch {
     // Not remembered after a reload: storage is blocked.
   }
@@ -116,42 +151,60 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   const [editError, setEditError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
-  // Finish judging: locks the scores in this app.
-  const [finished, setFinished] = useState(false);
+  // Which step of judging this judge is on, and which teams they re-scored.
+  const [stage, setStage] = useState<Stage>("first");
+  const [rescored, setRescored] = useState<string[]>([]);
   const [hydrated, setHydrated] = useState(false);
-  const [confirmFinish, setConfirmFinish] = useState(false);
+  const [confirm, setConfirm] = useState<"rescore" | "submit" | null>(null);
   const [finishing, setFinishing] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
   useEffect(() => {
-    setFinished(readFinished(judgeKey));
+    setStage(readStage(judgeKey));
+    setRescored(readRescored(judgeKey));
     setHydrated(true);
   }, [judgeKey]);
+  const finished = stage === "submitted";
+  const canScoreNew = stage === "first";
+  // Scores can only be changed by re-scoring, never from My teams.
+  const canEdit = stage === "rescore";
+
+  const changeStage = (next: Stage) => {
+    setStage(next);
+    writeStage(judgeKey, next);
+  };
 
   const online = useOnline();
   const utils = api.useUtils();
   const router = useRouter();
 
-  // Organizers can swap the map for a calibration summary. Everyone else only
-  // ever sees the map.
-  const [mapView, setMapView] = useState<"map" | "calibration">("map");
-  const [refreshing, setRefreshing] = useState(false);
-  const calibration = initial.isOrganizer ? initial.calibration : null;
-  const showCalibration = calibration !== null && mapView === "calibration";
-
-  // Re-runs getServerSideProps for the page, which reloads the numbers. The
+  // The comparison with the other judges is only loaded after submitting: the
+  // page is reloaded with ?compare=1, which re-runs getServerSideProps. The
   // component keeps its state.
-  const refreshCalibration = async () => {
+  const [refreshing, setRefreshing] = useState(false);
+  const loadComparison = async () => {
     setRefreshing(true);
     try {
-      await router.replace(router.asPath, undefined, { scroll: false });
+      await router.replace(
+        { pathname: router.pathname, query: { ...router.query, compare: "1" } },
+        undefined,
+        { scroll: false },
+      );
     } finally {
       setRefreshing(false);
     }
   };
-  const changeMapView = (view: "map" | "calibration") => {
-    setMapView(view);
-    if (view === "calibration") void refreshCalibration();
-  };
+  // A judge who already submitted and reloads the page gets the numbers again.
+  const comparisonRequested = useRef(false);
+  useEffect(() => {
+    if (!hydrated || stage !== "submitted") return;
+    if (initial.comparison !== null || comparisonRequested.current) return;
+    comparisonRequested.current = true;
+    void router.replace(
+      { pathname: router.pathname, query: { ...router.query, compare: "1" } },
+      undefined,
+      { scroll: false },
+    );
+  }, [hydrated, stage, initial.comparison, router]);
   const assignment = api.judging.me.getCurrentAssignment.useQuery();
   const marksQuery = api.judging.me.getSubmittedTeamMarks.useQuery();
   const getNext = api.judging.me.getNextTeam.useMutation();
@@ -171,7 +224,9 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     ratings: fromBreakdown(m.scoreBreakdown),
     score: Math.round(m.score),
     notes: m.scoreBreakdown?.notes ?? "",
-  }));
+  }))
+    // Oldest first: marks are numbered in the order they were saved.
+    .sort((a, b) => a.markId - b.markId);
   const editingTeam =
     editingId !== null ? results.find((r) => r.markId === editingId) : undefined;
 
@@ -259,7 +314,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   };
 
   const saveEdit = async (u: EditedScore): Promise<boolean> => {
-    if (editingId === null || finished) return false;
+    if (editingId === null || !canEdit) return false;
     setEditError(null);
     try {
       await edit.mutateAsync({
@@ -272,7 +327,19 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       setEditError(friendlyError(error));
       return false;
     }
-    closeEdit();
+
+    if (editingTeam) {
+      // Count this team as re-scored, then go straight to the next one. After
+      // the last team, move on to the comparison.
+      const next = rescored.includes(editingTeam.teamId)
+        ? rescored
+        : [...rescored, editingTeam.teamId];
+      setRescored(next);
+      writeRescored(judgeKey, next);
+      const nextTeam = results.find((r) => !next.includes(r.teamId));
+      if (nextTeam) setEditingId(nextTeam.markId);
+      else goFinal();
+    }
     return true;
   };
 
@@ -289,7 +356,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   };
 
   const editTeam = (markId: number) => {
-    if (finished) return;
+    if (!canEdit) return;
     setEditError(null);
     setEditingId(markId);
     setTab("score");
@@ -297,13 +364,21 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
 
   const closeEdit = () => {
     setEditingId(null);
+    setTab("next");
+  };
+
+  // Moves on to the final review, where the judge submits.
+  const goFinal = () => {
+    changeStage("final");
+    setEditingId(null);
     setTab("teams");
   };
 
-  // Releases the team the judge is holding (so another judge can have it),
-  // then locks the app. A CONFLICT just means they held nothing.
-  const finishJudging = async () => {
-    setConfirmFinish(false);
+  // First review is over: releases the team the judge is holding (so another
+  // judge can have it), then starts the second pass. A CONFLICT just means they
+  // held nothing.
+  const startRescore = async () => {
+    setConfirm(null);
     setFinishError(null);
     setFinishing(true);
     try {
@@ -316,10 +391,21 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       }
     }
     await utils.judging.me.getCurrentAssignment.invalidate();
-    writeFinished(judgeKey);
-    setFinished(true);
     setScoring(false);
     setFinishing(false);
+    if (results.length === 0) {
+      goFinal();
+      return;
+    }
+    changeStage("rescore");
+    setTab("next");
+  };
+
+  // Locks the scores in this app. Moving to "submitted" also loads the
+  // comparison with the other judges (see the effect above).
+  const submitAll = () => {
+    setConfirm(null);
+    changeStage("submitted");
   };
 
   // Tells the server this stop has started (it stamps started_at and shows the
@@ -341,15 +427,22 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     setTab("score");
   };
 
-  const editing = tab === "score" && editingTeam !== undefined && !finished;
-  const scoringPage = tab === "score" && ((scoring && held !== null) || editing);
+  const editing = tab === "score" && editingTeam !== undefined && canEdit;
+  const scoringPage =
+    tab === "score" && ((scoring && held !== null && canScoreNew) || editing);
 
   let header: ReactNode = null;
   if (tab === "map") {
     // The map page has no header: the map fills the whole screen height.
     header = null;
   } else if (tab === "teams") {
-    header = <HeaderRow left="Review" />;
+    header = (
+      <HeaderRow
+        left={
+          stage === "submitted" ? "Results" : stage === "final" ? "Submit" : "Review"
+        }
+      />
+    );
   } else if (!scoringPage) {
     // The Score page draws its own header row (team and save status).
     header = (
@@ -365,7 +458,20 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   }
 
   let body: ReactNode;
-  if (tab === "next") {
+  const allRescored =
+    results.length > 0 && results.every((r) => rescored.includes(r.teamId));
+
+  if (tab === "next" && (stage === "rescore" || stage === "final")) {
+    body = (
+      <JudgeRescore
+        results={results}
+        rescored={rescored}
+        allDone={stage === "final" || allRescored}
+        onStart={editTeam}
+        onFinal={goFinal}
+      />
+    );
+  } else if (tab === "next") {
     body = (
       <JudgeNext
         phase={phase}
@@ -384,18 +490,19 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   } else if (tab === "score") {
     // The Score tab is locked until a team is chosen or opened for edit, so the
     // last message is only a fallback.
-    body = editingTeam && !finished ? (
+    body = editingTeam && canEdit ? (
       <JudgeEdit
         key={editingTeam.markId}
         team={editingTeam}
         rubric={RUBRIC}
+        mode="rescore"
         links={initial.linksByTeam[editingTeam.teamId]}
         saving={edit.isPending}
         error={editError}
         onSave={saveEdit}
         onCancel={closeEdit}
       />
-    ) : scoring && held && !finished ? (
+    ) : scoring && held && canScoreNew ? (
       <JudgeRubric
         key={held.id}
         judgeKey={judgeKey}
@@ -403,7 +510,6 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         teamName={held.name}
         table={heldTable}
         rubric={RUBRIC}
-        links={initial.linksByTeam[held.id]}
         busy={sending}
         error={scoreError}
         onSubmit={submitScore}
@@ -415,59 +521,39 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       </p>
     );
   } else if (tab === "teams") {
-    body = (
-      <JudgeTeams
-        results={results}
-        finished={finished}
-        finishing={finishing}
-        error={finishError}
-        onEdit={editTeam}
-        onFinish={() => setConfirmFinish(true)}
-      />
-    );
+    body =
+      stage === "submitted" ? (
+        <JudgeComparison
+          data={initial.comparison}
+          rubric={RUBRIC}
+          tableByTeam={initial.tableByTeam}
+          refreshing={refreshing}
+          onRefresh={() => void loadComparison()}
+        />
+      ) : stage === "final" ? (
+        <JudgeFinal
+          results={results}
+          error={finishError}
+          onSubmit={() => setConfirm("submit")}
+        />
+      ) : (
+        <JudgeTeams
+          results={results}
+          stage={stage}
+          rescored={rescored}
+          starting={finishing}
+          error={finishError}
+          onStartRescore={() => setConfirm("rescore")}
+          onContinueRescore={() => {
+            const next = results.find((r) => !rescored.includes(r.teamId));
+            if (next) editTeam(next.markId);
+            else goFinal();
+          }}
+        />
+      );
   } else {
     body = (
-      <>
-        {calibration && (
-          <div
-            role="group"
-            aria-label="Map view"
-            className="flex shrink-0 gap-2 px-3 pb-2 pt-2"
-          >
-            {(["map", "calibration"] as const).map((view) => (
-              <button
-                key={view}
-                type="button"
-                aria-pressed={mapView === view}
-                onClick={() => changeMapView(view)}
-                className={`min-h-11 flex-1 rounded-dashboard-lg border px-3 text-base font-semibold ${focusRing} ${
-                  mapView === view
-                    ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
-                    : "border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-heavy"
-                }`}
-              >
-                {view === "map" ? "Map" : "Calibration"}
-              </button>
-            ))}
-          </div>
-        )}
-        {showCalibration ? (
-          // The toggle stays put; the summary scrolls under it.
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            <JudgeCalibration
-              data={calibration}
-              rubric={RUBRIC}
-              tableByTeam={initial.tableByTeam}
-              refreshing={refreshing}
-              onRefresh={() => void refreshCalibration()}
-            />
-          </div>
-        ) : (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <VenueMap tables={[]} current={heldTable ?? undefined} variant="page" />
-          </div>
-        )}
-      </>
+      <VenueMap tables={[]} current={heldTable ?? undefined} variant="page" />
     );
   }
 
@@ -511,16 +597,20 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         <JudgeNav
           active={tab}
           onChange={changeTab}
-          disabled={!(scoring && held && !finished) && !editing ? ["score"] : []}
+          disabled={!(scoring && held && canScoreNew) && !editing ? ["score"] : []}
         />
         <JudgeConfirm
-          open={confirmFinish}
-          title="Finish judging?"
-          description="You won't be able to change your scores after."
-          confirmLabel="Finish judging"
+          open={confirm !== null}
+          title={confirm === "submit" ? "Submit your scores?" : "Start re-scoring?"}
+          description={
+            confirm === "submit"
+              ? "You won't be able to change your scores after. You'll then see how they compare with the other judges."
+              : "You won't be given any more teams. Next you'll go back through every team you scored."
+          }
+          confirmLabel={confirm === "submit" ? "Submit" : "Start re-scoring"}
           cancelLabel="Not yet"
-          onConfirm={() => void finishJudging()}
-          onCancel={() => setConfirmFinish(false)}
+          onConfirm={() => (confirm === "submit" ? submitAll() : void startRescore())}
+          onCancel={() => setConfirm(null)}
         />
       </div>
     </div>
