@@ -1,4 +1,4 @@
-// Clickable regions over /landing/home/sponsors-hw13-v3.png (1067x795, drawn
+// Clickable regions over /landing/home/sponsors-hw13-v4.png (1067x795, drawn
 // at 2x as 2134x1590 so it stays sharp on retina), as percentages of the
 // image so they track it at any rendered size. Logos added after the image
 // was flattened are overlays, on its empty lower part or below it (top >
@@ -17,7 +17,7 @@ export type PromoSponsorLink = {
 export const PROMO_SPONSORS_IMAGE = {
   // Give a changed image a new filename: Cloudflare caches www images for a
   // day, so an in-place edit shows the old picture under the new overlays.
-  src: "/landing/home/sponsors-hw13-v3.png",
+  src: "/landing/home/sponsors-hw13-v4.png",
   width: 1067,
   height: 795,
   // Image pixels of room below the image for the overlay-only rows.
