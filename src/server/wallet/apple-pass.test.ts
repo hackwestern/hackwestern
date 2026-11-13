@@ -6,7 +6,6 @@ import { beforeAll, describe, expect, test } from "vitest";
 import { buildApplePass, type PassCertificates } from "./apple-pass";
 
 const holder = {
-  userId: "user-1",
   hackerId: "brave-otter-kite",
   name: "Jessica Wang",
   school: "Western University",
@@ -59,6 +58,9 @@ describe("buildApplePass", () => {
     const pass = buildApplePass(holder, certificates);
     const json = JSON.parse(unzip(pass, "pass.json").toString()) as {
       barcodes: { message: string }[];
+      serialNumber: string;
+      relevantDate?: string;
+      locations?: { latitude: number; longitude: number }[];
       backgroundColor: string;
       eventTicket?: unknown;
     };
@@ -67,6 +69,11 @@ describe("buildApplePass", () => {
     ) as Record<string, string>;
 
     expect(json.barcodes[0]?.message).toBe("brave-otter-kite");
+    expect(json.serialNumber).toBe("brave-otter-kite");
+    expect(json.locations).toHaveLength(2);
+    expect(new Date(json.relevantDate ?? "").toISOString()).toBe(
+      "2026-11-20T22:00:00.000Z",
+    );
     expect(json.backgroundColor).toBe("rgb(21, 71, 96)");
     expect(json.eventTicket).toBeDefined();
     expect(Object.keys(manifest)).toEqual(

@@ -49,11 +49,13 @@ async function get() {
   const res = {
     statusCode: 0,
     headers: {} as Record<string, string>,
+    body: undefined as unknown,
     status(code: number) {
       this.statusCode = code;
       return this;
     },
-    send() {
+    send(body?: unknown) {
+      this.body = body;
       return this;
     },
     setHeader(name: string, value: string) {
@@ -96,6 +98,17 @@ describe("GET /api/wallet/apple", () => {
   test("refuses a hacker with no application", async () => {
     await signIn();
     expect((await get()).statusCode).toBe(403);
+  });
+
+  test("says so plainly when signing fails", async () => {
+    await signIn("CONFIRMED");
+    vi.mocked(buildApplePass).mockImplementationOnce(() => {
+      throw new Error("bad certificate");
+    });
+    const res = await get();
+
+    expect(res.statusCode).toBe(500);
+    expect(String(res.body)).toContain("couldn't make your pass");
   });
 
   test("gives a confirmed hacker a pass with their hacker ID", async () => {

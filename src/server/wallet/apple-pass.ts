@@ -12,7 +12,6 @@ const TEAL = "rgb(21, 71, 96)"; // top of the HW13 banner
 const CREAM = "rgb(250, 244, 230)";
 
 export type PassHolder = {
-  userId: string;
   hackerId: string;
   name: string;
   school: string | null;
@@ -43,7 +42,8 @@ export function buildApplePass(
     formatVersion: 1,
     passTypeIdentifier: PASS_TYPE_ID,
     teamIdentifier: TEAM_ID,
-    serialNumber: holder.userId,
+    // The hacker ID, not the user ID: the pass file is readable by its holder.
+    serialNumber: holder.hackerId,
     organizationName: "Hack Western",
     description: "Hack Western 13 pass",
     logoText: "Hack Western 13",
@@ -54,6 +54,23 @@ export function buildApplePass(
 
   // eventTicket is the pass type that shows a banner (strip) image.
   pass.type = "eventTicket";
+  // Check-in opens Friday 5 PM Eastern; iPhones surface the pass around then.
+  pass.setRelevantDate(new Date("2026-11-20T17:00:00-05:00"));
+  // ...and when the phone is near the venue or the ceremony hall.
+  pass.setLocations(
+    {
+      // Schmeichel Building (main venue)
+      latitude: 43.0073719,
+      longitude: -81.2762316,
+      relevantText: "Welcome to Hack Western 13",
+    },
+    {
+      // Richard Ivey Building (opening and closing ceremonies)
+      latitude: 43.0044245,
+      longitude: -81.278588,
+      relevantText: "Hack Western 13 ceremonies are here",
+    },
+  );
   pass.headerFields.push({ key: "dates", label: "DATES", value: "Nov 20–22" });
   pass.secondaryFields.push({
     key: "name",

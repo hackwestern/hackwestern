@@ -62,21 +62,30 @@ export default async function handler(
       ? application.schoolOther
       : application?.school;
 
-  const pass = buildApplePass(
-    {
-      userId,
-      hackerId,
-      name: appName !== "" ? appName : (user?.name ?? "Hacker"),
-      school: school ?? null,
-      role: (user?.type ?? "hacker").toUpperCase(),
-    },
-    {
-      wwdr: pem(env.APPLE_WWDR_CERT),
-      signerCert: pem(env.APPLE_SIGNER_CERT),
-      signerKey: pem(env.APPLE_SIGNER_KEY),
-      signerKeyPassphrase: env.APPLE_CERT_PASS,
-    },
-  );
+  let pass: Buffer;
+  try {
+    pass = buildApplePass(
+      {
+        hackerId,
+        name: appName !== "" ? appName : (user?.name ?? "Hacker"),
+        school: school ?? null,
+        role: (user?.type ?? "hacker").toUpperCase(),
+      },
+      {
+        wwdr: pem(env.APPLE_WWDR_CERT),
+        signerCert: pem(env.APPLE_SIGNER_CERT),
+        signerKey: pem(env.APPLE_SIGNER_KEY),
+        signerKeyPassphrase: env.APPLE_CERT_PASS,
+      },
+    );
+  } catch (error) {
+    console.error("Apple Wallet pass signing failed:", error);
+    return res
+      .status(500)
+      .send(
+        "We couldn't make your pass right now. Go back and use the QR code on the page, or ask an organizer.",
+      );
+  }
 
   res.setHeader("Content-Type", "application/vnd.apple.pkpass");
   res.setHeader(
