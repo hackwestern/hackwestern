@@ -197,6 +197,12 @@ export default async function handler(
       days.push(currentDay);
     }
 
+    // Cached at the edge so a busy schedule page does not hit the Sheets API
+    // once per visitor (limit: 60 reads a minute). Edits show within a minute.
+    res.setHeader(
+      "Cache-Control",
+      "public, s-maxage=60, stale-while-revalidate=600",
+    );
     return res.status(200).json(days);
   } catch (error) {
     console.error("Error fetching schedule:", error);
