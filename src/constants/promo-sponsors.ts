@@ -120,8 +120,7 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Autodesk",
     href: "https://www.autodesk.com/",
-    // Two centered rows (four, then three), wordmarks on one baseline per
-    // row.
+    // Two centered rows of four, wordmarks on one baseline per row.
     left: 12.98,
     top: 114.27,
     width: 10.84,
@@ -158,7 +157,7 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "OpenAI",
     href: "https://openai.com/",
-    left: 26.94,
+    left: 13.29,
     top: 131.65,
     width: 9.77,
     height: 3.53,
@@ -167,7 +166,7 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "PCBWay",
     href: "https://www.pcbway.com/",
-    left: 47.02,
+    left: 33.37,
     top: 132.12,
     width: 9.51,
     height: 3.53,
@@ -176,10 +175,19 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Summerfresh",
     href: "https://www.summerfresh.com/",
-    left: 66.84,
+    left: 53.19,
     top: 128.5,
     width: 6.41,
     height: 8.6,
     overlaySrc: "/shared/sponsors/summerfresh-seal.png",
+  },
+  {
+    name: "DoorDash",
+    href: "https://www.doordash.com/",
+    left: 69.91,
+    top: 132.25,
+    width: 17,
+    height: 2.7,
+    overlaySrc: "/shared/sponsors/doordash.svg",
   },
 ];
