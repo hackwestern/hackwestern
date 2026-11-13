@@ -19,6 +19,15 @@ import { env } from "~/env";
 import { r2Client, R2_BUCKET, R2_PUBLIC_BASE_URL } from "~/server/storage/r2";
 import { ListObjectsV2Command, PutObjectCommand } from "@aws-sdk/client-s3";
 import { isUserApprovedForEvent } from "~/server/api/utils/approval";
+import { getOrCreateHackerId } from "~/server/api/utils/hacker-id";
+
+// Google fetches pass images by URL. Previews serve their own copy so a pass
+// can be checked before the images are on the live site.
+const WALLET_IMAGE_BASE =
+  process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}/wallet`
+    : "https://www.hackwestern.com/wallet";
+const TEAL = "#154760"; // same as the Apple pass
 
 type User = {
   id: string;
@@ -62,8 +71,9 @@ export const qrRouter = createTRPCRouter({
           });
         }
 
-        // #2 Generate QR code directly as base64
-        const PERSONAL_URL = `${ctx.session.user.id}`;
+        // #2 Generate QR code directly as base64. The QR holds the hacker ID,
+        // the same value as the printed badge and the Apple pass.
+        const PERSONAL_URL = await getOrCreateHackerId(user.id);
         console.log("Generating QR code...");
         const qrBase64 = await QRCode.toDataURL(PERSONAL_URL, {
           width: 500,
@@ -179,25 +189,39 @@ async function generateGooglePass(
     });
   }
 
-  const classId = `${issuerId}.hackwestern12_generic_v3`;
+  const application = await db.query.applications.findFirst({
+    where: eq(applications.userId, user.id),
+    columns: {
+      firstName: true,
+      lastName: true,
+      school: true,
+      schoolOther: true,
+    },
+  });
+  const appName = [application?.firstName, application?.lastName]
+    .filter(Boolean)
+    .join(" ");
+  const school =
+    application?.school === "Other"
+      ? application.schoolOther
+      : application?.school;
+
+  const logo = {
+    sourceUri: { uri: `${WALLET_IMAGE_BASE}/google-logo.png` },
+    contentDescription: {
+      defaultValue: { language: "en-US", value: "Hack Western Logo" },
+    },
+  };
+
+  const classId = `${issuerId}.hackwestern13_generic`;
 
   // Create or update the Generic Class
   const genericClass = {
     id: classId,
     issuerName: "Hack Western",
     reviewStatus: "UNDER_REVIEW",
-    hexBackgroundColor: "#EBDFF7",
-    logo: {
-      sourceUri: {
-        uri: "https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg",
-      },
-      contentDescription: {
-        defaultValue: {
-          language: "en-US",
-          value: "Hack Western Logo",
-        },
-      },
-    },
+    hexBackgroundColor: TEAL,
+    logo,
     classTemplateInfo: {
       cardTemplateOverride: {
         cardRowTemplateInfos: [
@@ -207,7 +231,7 @@ async function generateGooglePass(
                 firstValue: {
                   fields: [
                     {
-                      fieldPath: "object.textModulesData['email']",
+                      fieldPath: "object.textModulesData['school']",
                     },
                   ],
                 },
@@ -216,7 +240,7 @@ async function generateGooglePass(
                 firstValue: {
                   fields: [
                     {
-                      fieldPath: "object.textModulesData['role']",
+                      fieldPath: "object.textModulesData['dates']",
                     },
                   ],
                 },
@@ -258,7 +282,9 @@ async function generateGooglePass(
   }
 
   // Create the Generic Object (individual pass)
-  const objectId = `${issuerId}.${user.id.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
+  // Keyed by hacker ID: last year's objects (keyed by user ID) belong to the
+  // old class and can't be moved to this one.
+  const objectId = `${issuerId}.hw13_${personalUrl}`;
 
   const genericObject = {
     id: objectId,
@@ -274,17 +300,25 @@ async function generateGooglePass(
     header: {
       defaultValue: {
         language: "en-US",
-        value: user.name ?? "Attendee",
+        value: appName !== "" ? appName : (user.name ?? "Attendee"),
       },
     },
-    // Removed subheader to avoid duplicate role display
+    subheader: {
+      defaultValue: {
+        language: "en-US",
+        value: user.type
+          ? user.type.charAt(0).toUpperCase() + user.type.slice(1)
+          : "Hacker",
+      },
+    },
     barcode: {
       type: "QR_CODE",
       value: personalUrl,
+      alternateText: personalUrl,
     },
     heroImage: {
       sourceUri: {
-        uri: "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/banner.png",
+        uri: `${WALLET_IMAGE_BASE}/google-hero.png`,
       },
       contentDescription: {
         defaultValue: {
@@ -293,32 +327,12 @@ async function generateGooglePass(
         },
       },
     },
-    logo: {
-      sourceUri: {
-        uri: "https://pub-3e4bb0fc196e4177a8039cf97986b109.r2.dev/logo.png",
-      },
-      contentDescription: {
-        defaultValue: {
-          language: "en-US",
-          value: "Hack Western Logo",
-        },
-      },
-    },
+    logo,
     textModulesData: [
-      {
-        header: "Email",
-        body: user.email,
-        id: "email",
-      },
-      {
-        header: "Role",
-        body: user.type
-          ? user.type.charAt(0).toUpperCase() + user.type.slice(1)
-          : "Hacker",
-        id: "role",
-      },
+      ...(school ? [{ header: "School", body: school, id: "school" }] : []),
+      { header: "Dates", body: "Nov 20–22", id: "dates" },
     ],
-    hexBackgroundColor: "#EBDFF7",
+    hexBackgroundColor: TEAL,
   };
 
   try {
