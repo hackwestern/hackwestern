@@ -122,7 +122,7 @@ describe("GET /api/wallet/apple", () => {
     expect(vi.mocked(buildApplePass).mock.calls[0]?.[0]).toMatchObject({
       hackerId,
       name: "Jessica Wang",
-      school: "Western University",
+      email: expect.stringContaining("@"),
     });
   });
 });

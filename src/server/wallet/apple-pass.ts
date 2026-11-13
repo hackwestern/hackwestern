@@ -14,7 +14,7 @@ const CREAM = "rgb(250, 244, 230)";
 export type PassHolder = {
   hackerId: string;
   name: string;
-  school: string | null;
+  email: string | null;
   role: string;
 };
 
@@ -77,11 +77,11 @@ export function buildApplePass(
     label: holder.role,
     value: holder.name,
   });
-  if (holder.school) {
+  if (holder.email) {
     pass.auxiliaryFields.push({
-      key: "school",
-      label: "SCHOOL",
-      value: holder.school,
+      key: "email",
+      label: "EMAIL",
+      value: holder.email,
     });
   }
   pass.backFields.push(

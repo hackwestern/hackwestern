@@ -8,7 +8,7 @@ import { buildApplePass, type PassCertificates } from "./apple-pass";
 const holder = {
   hackerId: "brave-otter-kite",
   name: "Jessica Wang",
-  school: "Western University",
+  email: "jessica@example.com",
   role: "HACKER",
 };
 

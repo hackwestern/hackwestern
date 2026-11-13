@@ -40,16 +40,11 @@ export default async function handler(
   const [user, application] = await Promise.all([
     db.query.users.findFirst({
       where: eq(users.id, userId),
-      columns: { name: true, type: true },
+      columns: { name: true, type: true, email: true },
     }),
     db.query.applications.findFirst({
       where: eq(applications.userId, userId),
-      columns: {
-        firstName: true,
-        lastName: true,
-        school: true,
-        schoolOther: true,
-      },
+      columns: { firstName: true, lastName: true },
     }),
   ]);
   const hackerId = await getOrCreateHackerId(userId);
@@ -57,10 +52,6 @@ export default async function handler(
   const appName = [application?.firstName, application?.lastName]
     .filter(Boolean)
     .join(" ");
-  const school =
-    application?.school === "Other"
-      ? application.schoolOther
-      : application?.school;
 
   let pass: Buffer;
   try {
@@ -68,7 +59,7 @@ export default async function handler(
       {
         hackerId,
         name: appName !== "" ? appName : (user?.name ?? "Hacker"),
-        school: school ?? null,
+        email: user?.email ?? null,
         role: (user?.type ?? "hacker").toUpperCase(),
       },
       {
