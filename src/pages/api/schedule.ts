@@ -7,9 +7,9 @@ import type {
 } from "~/types/schedule";
 
 // Google Sheets API v4 configuration
-const SPREADSHEET_ID = "1_dZgkfkhmR-LdqvAplInEOxZJGu7gSsE9FlAiWD64Bk";
-const SHEET_NAME = "Sheet1";
-const RANGE = "A:J";
+const SPREADSHEET_ID = "1JRfqib3Mqp2iriKS3rxZBbQyGpZovkagBwEEbcopJCM";
+const SHEET_NAME = "hackwestern-schedule-v2";
+const RANGE = "A:L";
 
 interface GoogleSheetsCell {
   formattedValue?: string;
@@ -69,6 +69,8 @@ function parseScheduleEvent(event: ScheduleEvent): ParsedScheduleEvent {
     sponsorBooth: parseEventText(event["Spon Booth"]) ?? undefined,
     scavengerHunt: parseEventText(event["Scavenger Hunt"]) ?? undefined,
     other: parseEventText(event.Other) ?? undefined,
+    other2: parseEventText(event["Other 2"]) ?? undefined,
+    other3: parseEventText(event["Other 3"]) ?? undefined,
   };
 }
 
@@ -82,7 +84,7 @@ export default async function handler(
 
   try {
     const apiKey = env.GOOGLE_SHEETS_API_KEY;
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?includeGridData=true&ranges=${SHEET_NAME}!${RANGE}&key=${apiKey}`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?includeGridData=true&ranges=${encodeURIComponent(`'${SHEET_NAME}'!${RANGE}`)}&key=${apiKey}`;
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -149,6 +151,8 @@ export default async function handler(
         "Spon Booth": getCellValue(7),
         "Scavenger Hunt": getCellValue(8),
         Other: getCellValue(9),
+        "Other 2": getCellValue(10),
+        "Other 3": getCellValue(11),
       };
 
       events.push(event);
