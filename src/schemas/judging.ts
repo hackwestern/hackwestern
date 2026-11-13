@@ -6,15 +6,28 @@ import { judgeTypeEnum, judges, trackEnum } from "~/server/db/schema";
 export const SCORE_MIN = 0;
 export const SCORE_MAX = 100;
 
+export type ScoreBreakdown = {
+  /** 0–100 slider value per rubric criterion id, e.g. { technical: 80 }. */
+  ratings: Record<string, number>;
+  notes?: string | null;
+};
+
+export const scoreBreakdownSchema = z.object({
+  ratings: z.record(z.string().max(64), z.number().int().min(0).max(100)),
+  notes: z.string().max(2000).optional(),
+});
+
 // judge inputs
 export const submitTeamMarkSchema = z.object({
   teamId: z.string().min(1),
   score: z.number().min(SCORE_MIN).max(SCORE_MAX),
+  breakdown: scoreBreakdownSchema.optional(),
 });
 
 export const editTeamMarkSchema = z.object({
   teamMarkId: z.number().int().positive(),
   score: z.number().min(SCORE_MIN).max(SCORE_MAX),
+  breakdown: scoreBreakdownSchema.optional(),
 });
 
 // organizer inputs
