@@ -10,6 +10,9 @@ import type {
 const SPREADSHEET_ID = "1JRfqib3Mqp2iriKS3rxZBbQyGpZovkagBwEEbcopJCM";
 const SHEET_NAME = "hackwestern-schedule-v2";
 const RANGE = "A:L";
+// Only cell text and merges; without this the response includes every
+// cell's formatting (about 19 MB).
+const FIELDS = "sheets(data(rowData(values(formattedValue))),merges)";
 
 interface GoogleSheetsCell {
   formattedValue?: string;
@@ -84,7 +87,7 @@ export default async function handler(
 
   try {
     const apiKey = env.GOOGLE_SHEETS_API_KEY;
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?includeGridData=true&ranges=${encodeURIComponent(`'${SHEET_NAME}'!${RANGE}`)}&key=${apiKey}`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?includeGridData=true&fields=${FIELDS}&ranges=${encodeURIComponent(`'${SHEET_NAME}'!${RANGE}`)}&key=${apiKey}`;
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -104,7 +107,7 @@ export default async function handler(
     const mergeMap = new Map<string, { value: string; endRow: number }>();
     for (const merge of merges) {
       const value =
-        rowData[merge.startRowIndex]?.values[merge.startColumnIndex];
+        rowData[merge.startRowIndex]?.values?.[merge.startColumnIndex];
       const cellValue =
         value?.formattedValue ?? value?.effectiveValue?.stringValue ?? "";
 
