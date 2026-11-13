@@ -162,8 +162,9 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   }, [judgeKey]);
   const finished = stage === "submitted";
   const canScoreNew = stage === "first";
-  // Scores can only be changed by re-scoring, never from My teams.
-  const canEdit = stage === "rescore";
+  // Scores can only be changed while re-scoring or on the final overview
+  // before submitting, never from My teams during the first pass.
+  const canEdit = stage === "rescore" || stage === "final";
 
   const changeStage = (next: Stage) => {
     setStage(next);
@@ -328,6 +329,13 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       return false;
     }
 
+    if (stage === "final") {
+      // A last change from the final overview: go back to it.
+      setEditingId(null);
+      setTab("teams");
+      return true;
+    }
+
     if (editingTeam) {
       // Count this team as re-scored, then go straight to the next one. After
       // the last team, move on to the comparison.
@@ -364,7 +372,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
 
   const closeEdit = () => {
     setEditingId(null);
-    setTab("next");
+    setTab(stage === "final" ? "teams" : "next");
   };
 
   // Moves on to the final review, where the judge submits.
@@ -502,7 +510,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
           key={editingTeam.markId}
           team={editingTeam}
           rubric={RUBRIC}
-          mode="rescore"
+          mode={stage === "final" ? "edit" : "rescore"}
           links={initial.linksByTeam[editingTeam.teamId]}
           saving={edit.isPending}
           error={editError}
@@ -541,6 +549,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         <JudgeFinal
           results={results}
           error={finishError}
+          onEdit={editTeam}
           onSubmit={() => setConfirm("submit")}
         />
       ) : (

@@ -3,6 +3,7 @@ import {
   card,
   fullWidth,
   infoBanner,
+  touch,
   warningBanner,
 } from "~/components/judging/shared/judge-ui";
 import { type JudgedTeam } from "~/components/judging/judge-app/judge-teams";
@@ -10,23 +11,31 @@ import { type JudgedTeam } from "~/components/judging/judge-app/judge-teams";
 interface JudgeFinalProps {
   results: JudgedTeam[];
   error: string | null;
+  /** Opens this mark for one more change; saving comes back here. */
+  onEdit: (markId: number) => void;
   onSubmit: () => void;
 }
 
 /**
  * The last step before the results: the judge's own re-scored teams, best
- * first, and the Submit button. How the scores compare with the other judges is
- * only shown after submitting.
+ * first, each still editable, and the Submit button. How the scores compare
+ * with the other judges is only shown after submitting.
  */
-export function JudgeFinal({ results, error, onSubmit }: JudgeFinalProps) {
+export function JudgeFinal({
+  results,
+  error,
+  onEdit,
+  onSubmit,
+}: JudgeFinalProps) {
   const ranked = [...results].sort((a, b) => b.score - a.score);
 
   return (
     <>
       <p className={infoBanner}>
-        Your final scores, best first. Submit when you&apos;re happy with them.
-        After you submit, you&apos;ll see how they compare with the other
-        judges, and you won&apos;t be able to change them.
+        Your final scores, best first. Tap Edit to change any of them, and
+        submit when you&apos;re happy. After you submit, you&apos;ll see how
+        they compare with the other judges, and you won&apos;t be able to change
+        them.
       </p>
       <section
         aria-label="Your final scores"
@@ -46,8 +55,17 @@ export function JudgeFinal({ results, error, onSubmit }: JudgeFinalProps) {
                 </span>
                 {r.table ?? "–"} · {r.teamName}
               </span>
-              <span className="shrink-0 font-semibold tabular-nums">
-                {r.score}
+              <span className="flex shrink-0 items-center gap-1">
+                <span className="font-semibold tabular-nums">{r.score}</span>
+                <DashboardButton
+                  type="button"
+                  variant="tertiary"
+                  aria-label={`Edit score for ${r.teamName}`}
+                  onClick={() => onEdit(r.markId)}
+                  className={`${touch} px-2`}
+                >
+                  Edit
+                </DashboardButton>
               </span>
             </li>
           ))}

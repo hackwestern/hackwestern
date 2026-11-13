@@ -80,14 +80,11 @@ export function JudgeEdit({
       </div>
 
       {mode === "rescore" && (
-        <>
-          <p className="m-0 px-1 text-sm text-dashboard-text-light">
-            Open the links, then rethink each score. Save even if nothing
-            changes.
-          </p>
-          <JudgeTeamLinks links={links} />
-        </>
+        <p className="m-0 px-1 text-sm text-dashboard-text-light">
+          Open the links, then rethink each score. Save even if nothing changes.
+        </p>
       )}
+      {links && <JudgeTeamLinks links={links} />}
 
       <section
         aria-label={mode === "rescore" ? "Re-score this team" : "Change score"}
