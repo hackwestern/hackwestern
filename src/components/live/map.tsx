@@ -94,7 +94,7 @@ const Map = () => {
     <div className="flex flex-col gap-6 pb-16 font-figtree">
       <DashboardPanel title="Venue">
         <p className="text-base font-medium text-dashboard-text-medium">
-          This year&apos;s venue will be at the Morrissette Institute for
+          This year&apos;s event will be at the Morrissette Institute for
           Entrepreneurship!
         </p>
         <p className="text-base font-medium text-dashboard-text-medium">
