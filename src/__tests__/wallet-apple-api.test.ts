@@ -58,6 +58,11 @@ async function get() {
       this.body = body;
       return this;
     },
+    redirect(code: number, url: string) {
+      this.statusCode = code;
+      this.headers.Location = url;
+      return this;
+    },
     setHeader(name: string, value: string) {
       this.headers[name] = value;
       return this;
@@ -74,9 +79,12 @@ const hackerIdOf = async (userId: string) =>
   (await db.query.users.findFirst({ where: eq(users.id, userId) }))?.hackerId;
 
 describe("GET /api/wallet/apple", () => {
-  test("rejects signed-out users", async () => {
+  test("sends signed-out users to log in", async () => {
     vi.mocked(getServerAuthSession).mockResolvedValue(null);
-    expect((await get()).statusCode).toBe(401);
+    const res = await get();
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.Location).toBe("/login?callbackUrl=/live");
+    expect(buildApplePass).not.toHaveBeenCalled();
   });
 
   test.each([
