@@ -27,7 +27,8 @@ describe("buildChecklist", () => {
     const c = buildChecklist({ status: "ACCEPTED", recorded: [], now: OPEN })!;
     expect(done(c)).toEqual(["accepted"]);
     expect(c.currentId).toBe("rsvp");
-    expect(c.stepsLeft).toBe(4);
+    // accepted done; RSVP, Slack and Devpost left (wallet step is hidden)
+    expect(c.stepsLeft).toBe(3);
     expect(c.rsvpDueInDays).toBe(9);
     expect(c.allDone).toBe(false);
   });
@@ -54,9 +55,16 @@ describe("buildChecklist", () => {
       recorded: ["wallet", "slack"],
       now: OPEN,
     })!;
-    expect(done(c)).toEqual(["accepted", "rsvp", "slack", "wallet"]);
+    expect(done(c)).toEqual(["accepted", "rsvp", "slack"]);
     expect(c.currentId).toBe("devpost");
     expect(c.stepsLeft).toBe(1);
+  });
+
+  test("the wallet step is hidden for now and doesn't count", () => {
+    const c = buildChecklist({ status: "CONFIRMED", recorded: [], now: OPEN })!;
+    expect(c.steps.map((s) => s.id)).not.toContain("wallet");
+    expect(c.steps).toHaveLength(4);
+    expect(c.stepsLeft).toBe(2);
   });
 
   test("all done, and hidden only when the hide row exists", () => {

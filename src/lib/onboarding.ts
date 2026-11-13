@@ -8,14 +8,18 @@ import { RSVP_DEADLINE } from "~/lib/date";
 // "hide-checklist" is stored the same way, once everything is done.
 // Pure (no DB) so the server router and the UI share it.
 
-export const STEP_ORDER = [
-  "accepted",
-  "rsvp",
-  "slack",
-  "devpost",
-  "wallet",
-] as const;
-export type StepId = (typeof STEP_ORDER)[number];
+const ALL_STEPS = ["accepted", "rsvp", "slack", "devpost", "wallet"] as const;
+export type StepId = (typeof ALL_STEPS)[number];
+
+// TODO: the wallet step is hidden for now (the UI, copy and server support
+// are all still here). Set this to true to bring it back.
+const WALLET_STEP_ENABLED = false;
+
+// The steps hackers see, in order. Everything (progress bar, "N steps left",
+// the Home badge, all done) counts only these.
+export const STEP_ORDER: readonly StepId[] = ALL_STEPS.filter(
+  (id) => id !== "wallet" || WALLET_STEP_ENABLED,
+);
 
 export const RECORDED_STEPS = ["slack", "devpost", "wallet"] as const;
 export type RecordedStepId = (typeof RECORDED_STEPS)[number];
@@ -65,7 +69,10 @@ export function buildChecklist({
     wallet: stored.has("wallet"),
   };
 
-  const steps = STEP_ORDER.map((id) => ({ id, done: done[id] }));
+  const steps: ChecklistStep[] = STEP_ORDER.map((id) => ({
+    id,
+    done: done[id],
+  }));
   const stepsLeft = steps.filter((s) => !s.done).length;
   const msLeft = RSVP_DEADLINE.getTime() - now;
 
