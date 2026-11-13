@@ -191,20 +191,11 @@ async function generateGooglePass(
 
   const application = await db.query.applications.findFirst({
     where: eq(applications.userId, user.id),
-    columns: {
-      firstName: true,
-      lastName: true,
-      school: true,
-      schoolOther: true,
-    },
+    columns: { firstName: true, lastName: true },
   });
   const appName = [application?.firstName, application?.lastName]
     .filter(Boolean)
     .join(" ");
-  const school =
-    application?.school === "Other"
-      ? application.schoolOther
-      : application?.school;
 
   const logo = {
     sourceUri: { uri: `${WALLET_IMAGE_BASE}/google-logo.png` },
@@ -231,7 +222,7 @@ async function generateGooglePass(
                 firstValue: {
                   fields: [
                     {
-                      fieldPath: "object.textModulesData['school']",
+                      fieldPath: "object.textModulesData['email']",
                     },
                   ],
                 },
@@ -329,7 +320,7 @@ async function generateGooglePass(
     },
     logo,
     textModulesData: [
-      ...(school ? [{ header: "School", body: school, id: "school" }] : []),
+      { header: "Email", body: user.email, id: "email" },
       { header: "Dates", body: "Nov 20–22", id: "dates" },
     ],
     hexBackgroundColor: TEAL,
