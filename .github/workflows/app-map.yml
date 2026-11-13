@@ -1,0 +1,83 @@
+name: App map and k6 smoke
+
+# Regenerates src/generated/app.json whenever main changes and commits it back
+# if the API surface changed. Then runs a small k6 smoke test generated from it.
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      # The bot's own commit; without this the workflow would retrigger itself.
+      - "src/generated/app.json"
+  workflow_dispatch:
+
+concurrency:
+  group: app-map
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  map:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # PAT so the push can get past branch protection (same as prettier.yml).
+          token: ${{ secrets.PAT }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+      - name: Generate app map
+        run: npm run map:generate
+      - name: Commit if changed
+        run: |
+          git config user.email 'app-map-hackwestern[bot]@users.noreply.github.com'
+          git config user.name 'app-map-hackwestern[bot]'
+          git add src/generated/app.json
+          if git diff --cached --quiet; then
+            echo "app.json unchanged"
+          else
+            git commit -m "chore: regenerate app.json [skip ci]"
+            git push
+          fi
+
+  k6-smoke:
+    needs: map
+    runs-on: ubuntu-latest
+    # Runs against the Dev environment only. Set K6_BASE_URL as a variable on
+    # the "Dev" GitHub environment (e.g. the dev/preview deployment URL).
+    # The job is skipped, never pointed at production, when it is unset.
+    environment: Dev
+    steps:
+      - name: Check target
+        id: target
+        run: |
+          if [ -z "${{ vars.K6_BASE_URL }}" ]; then
+            echo "K6_BASE_URL is not set on the Dev environment; skipping."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.target.outputs.run == 'true'
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        if: steps.target.outputs.run == 'true'
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+        if: steps.target.outputs.run == 'true'
+      - name: Generate k6 script
+        if: steps.target.outputs.run == 'true'
+        run: npm run k6:generate
+      - uses: grafana/setup-k6-action@v1
+        if: steps.target.outputs.run == 'true'
+      - name: Run k6 smoke
+        if: steps.target.outputs.run == 'true'
+        run: k6 run -e BASE_URL="${{ vars.K6_BASE_URL }}" k6/smoke.generated.js

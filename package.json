@@ -22,7 +22,17 @@
     "dev:prod": "dotenv -e .env.prod next dev --turbopack",
     "lint": "next lint",
     "scan": "next dev --turbopack && npx react-scan@latest localhost:3000",
-    "start": "next start"
+    "start": "next start",
+    
+    "map:generate": "tsx scripts/generate-app-map.ts",
+    "k6:generate": "tsx scripts/generate-k6.ts",
+    "network:dev": "npx wrangler dev -c workers/hw-events/wrangler.toml",
+    "network:deploy": "npx wrangler deploy -c workers/hw-events/wrangler.toml",
+    "network:tail": "npx wrangler tail -c workers/hw-events/wrangler.toml",
+    "network:migrate": "npx wrangler d1 execute hw-network-requests -c workers/hw-events/wrangler.toml --remote --file=workers/hw-events/schema.sql",
+    "network:migrate:local": "npx wrangler d1 execute hw-network-requests -c workers/hw-events/wrangler.toml --local --file=workers/hw-events/schema.sql",
+    "network:query": "npx wrangler d1 execute hw-network-requests -c workers/hw-events/wrangler.toml --remote --command",
+    "network:profile": "dotenv -- tsx scripts/build-traffic-profile.ts"
   },
   "dependencies": {
     "@auth/core": "^0.34.2",
@@ -54,6 +64,7 @@
     "@trpc/react-query": "next",
     "@trpc/server": "next",
     "@types/bcrypt": "^5.0.2",
+    "@vercel/functions": "^3.11.1",
     "@vercel/speed-insights": "^1.2.0",
     "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",
@@ -116,9 +127,11 @@
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.11",
     "tailwindcss": "^3.4.1",
+    "ts-morph": "^28.0.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
-    "vitest": "^3.0.9"
+    "vitest": "^3.0.9",
+    "zod-to-json-schema": "^3.25.2"
   },
   "ct3aMetadata": {
     "initVersion": "7.30.1"
