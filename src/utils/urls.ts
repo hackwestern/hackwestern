@@ -1,6 +1,9 @@
 export const GITHUB_URL = "https://github.com/";
 export const LINKEDIN_URL = "https://linkedin.com/in/";
 export const DEVPOST_URL = "https://devpost.com/";
+export const HW13_DEVPOST_URL = "https://hack-western-13.devpost.com/";
+export const SLACK_INVITE_URL =
+  "https://join.slack.com/t/hackwestern13/shared_invite/zt-4embehlhz-Wtujof05FnR~6ee14wct0w";
 
 export function getGithubUsername(text: string) {
   try {

@@ -3,7 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { env } from "~/env";
-import { DEVPOST_URL } from "~/utils/urls";
+import { HW13_DEVPOST_URL, SLACK_INVITE_URL } from "~/utils/urls";
 import { db } from "~/server/db";
 import { applications, users } from "~/server/db/schema";
 import {
@@ -54,9 +54,9 @@ export const onboardingRouter = createTRPCRouter({
       eligible: true as const,
       ...checklist,
       links: {
-        // TODO: generic placeholders until we have the real links
-        slack: env.ONBOARDING_SLACK_URL ?? "https://slack.com",
-        devpost: env.ONBOARDING_DEVPOST_URL ?? DEVPOST_URL,
+        // The env vars override these (e.g. if the Slack invite expires)
+        slack: env.ONBOARDING_SLACK_URL ?? SLACK_INVITE_URL,
+        devpost: env.ONBOARDING_DEVPOST_URL ?? HW13_DEVPOST_URL,
       },
     };
   }),

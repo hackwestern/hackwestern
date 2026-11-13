@@ -16,6 +16,7 @@ import { ExternalLink } from "lucide-react";
 import AllScans from "~/components/live/all-scans";
 import { HackerChecklist } from "~/components/live/hacker-checklist";
 import { cn } from "~/lib/utils";
+import { HW13_DEVPOST_URL } from "~/utils/urls";
 
 // Format text: replace underscores with spaces and capitalize each word
 const formatTitle = (text: string | null | undefined): string => {
@@ -167,12 +168,12 @@ const HackerHome = () => {
         <div className="flex w-full flex-col gap-6 lg:w-1/2">
           <DashboardPanel title="Devpost Link">
             <a
-              href="https://hack-western-12.devpost.com/"
+              href={HW13_DEVPOST_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="flex cursor-pixel-hover items-center justify-between gap-3 rounded-dashboard-lg border border-dashboard-border-faint p-3 text-base font-medium text-dashboard-text-heavy transition-colors hover:bg-dashboard-bg-highlight"
             >
-              hack-western-12.devpost.com
+              hack-western-13.devpost.com
               <ExternalLink
                 aria-hidden="true"
                 className="size-5 shrink-0 text-dashboard-text-light"
