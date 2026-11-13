@@ -33,51 +33,27 @@ export const allMeals: AllMealData = {
     lunch: [],
     dinner: [
       {
-        name: "Jerk Chicken",
-        vendor: "Rose's Tree of Life",
+        // UNVERIFIED allergens: guessed (fried-rice style bowl; soy sauce)
+        name: "Rice Bowls",
+        vendor: "Mr. & Mrs. Bao",
         allergens: {
-          Halal: true,
+          Halal: null,
           Meat: true,
-          Eggs: false,
+          Eggs: true,
           Nuts: false,
-          Pork: false,
+          Pork: true,
           Beef: false,
-          Gluten: false,
-        },
-      },
-      {
-        name: "Curry Vegetables",
-        vendor: "Rose's Tree of Life",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
-        },
-      },
-      {
-        name: "Rice & Peas",
-        vendor: "Rose's Tree of Life",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
+          Gluten: true,
         },
       },
     ],
     "midnight snack": [
       {
+        // UNVERIFIED allergens: guessed
         name: "Mango Green Tea with Coconut Jelly",
-        vendor: "CoCo",
+        vendor: "Chatime",
         allergens: {
-          Halal: true,
+          Halal: null,
           Meat: false,
           Eggs: false,
           Nuts: false,
@@ -87,10 +63,11 @@ export const allMeals: AllMealData = {
         },
       },
       {
+        // UNVERIFIED allergens: guessed
         name: "Pearl Milk Tea",
-        vendor: "CoCo",
+        vendor: "Chatime",
         allergens: {
-          Halal: true,
+          Halal: null,
           Meat: false,
           Eggs: false,
           Nuts: false,
@@ -105,109 +82,29 @@ export const allMeals: AllMealData = {
   saturday: {
     breakfast: [
       {
-        name: "Bakery Goods",
-        vendor: "Costco",
+        // UNVERIFIED allergens: guessed (eggs, bacon/sausage, toast)
+        name: "Breakfast Platter",
+        vendor: "Black Walnut",
         allergens: {
           Halal: null,
-          Meat: null,
-          Eggs: null,
-          Nuts: null,
-          Pork: null,
-          Beef: null,
-          Gluten: null,
+          Meat: true,
+          Eggs: true,
+          Nuts: "May Contain",
+          Pork: true,
+          Beef: false,
+          Gluten: true,
         },
       },
     ],
     lunch: [
       {
-        name: "Chicken Alfredo Pasta",
-        vendor: "Aunty's Kitchen",
+        // UNVERIFIED allergens: guessed (Summerfresh salads often have nuts/seeds)
+        name: "Salad",
+        vendor: "Summerfresh",
         allergens: {
-          Halal: true,
-          Meat: true,
-          Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: true,
-        },
-      },
-      {
-        name: "Spinach Mushroom Alfredo Pasta",
-        vendor: "Aunty's Kitchen",
-        allergens: {
-          Halal: true,
+          Halal: null,
           Meat: false,
           Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: true,
-        },
-      },
-    ],
-    dinner: [
-      {
-        name: "White Rice",
-        vendor: "Aunty's Kitchen",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
-        },
-      },
-      {
-        name: "Naan",
-        vendor: "Aunty's Kitchen",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: true,
-        },
-      },
-      {
-        name: "Butter Chicken",
-        vendor: "Aunty's Kitchen",
-        allergens: {
-          Halal: true,
-          Meat: true,
-          Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
-        },
-      },
-      {
-        name: "Chickpea Curry",
-        vendor: "Aunty's Kitchen",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
-        },
-      },
-    ],
-    "midnight snack": [
-      {
-        name: "Gluten Free Cookie",
-        vendor: "Craig's Cookies",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: true,
           Nuts: "May Contain",
           Pork: false,
           Beef: false,
@@ -215,36 +112,43 @@ export const allMeals: AllMealData = {
         },
       },
       {
-        name: "Classic Cookie",
-        vendor: "Craig's Cookies",
+        // UNVERIFIED allergens: guessed
+        name: "Hot Dog Bar",
+        vendor: "Frank & Furter's",
         allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: true,
+          Halal: null,
+          Meat: true,
+          Eggs: false,
           Nuts: false,
-          Pork: false,
-          Beef: false,
+          Pork: true,
+          Beef: true,
           Gluten: true,
         },
       },
+    ],
+    dinner: [
       {
-        name: "Mars",
-        vendor: "Craig's Cookies",
+        // UNVERIFIED allergens: guessed (corn tortillas)
+        name: "Tacos",
+        vendor: "The Mule",
         allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: true,
+          Halal: null,
+          Meat: true,
+          Eggs: false,
           Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: true,
+          Pork: true,
+          Beef: true,
+          Gluten: false,
         },
       },
+    ],
+    "midnight snack": [
       {
-        name: "Brownie",
-        vendor: "Craig's Cookies",
+        // UNVERIFIED allergens: guessed; dish name also guessed
+        name: "Fritters",
+        vendor: "The Fritter Shop",
         allergens: {
-          Halal: true,
+          Halal: null,
           Meat: false,
           Eggs: true,
           Nuts: false,
@@ -259,44 +163,33 @@ export const allMeals: AllMealData = {
   sunday: {
     breakfast: [
       {
-        name: "Bakery Goods",
-        vendor: "Tims",
+        // UNVERIFIED allergens: guessed
+        name: "Baked Goods",
+        vendor: "Daniel's Baked Goods",
         allergens: {
           Halal: null,
-          Meat: null,
-          Eggs: null,
-          Nuts: null,
-          Pork: null,
-          Beef: null,
-          Gluten: null,
+          Meat: false,
+          Eggs: true,
+          Nuts: "May Contain",
+          Pork: false,
+          Beef: false,
+          Gluten: true,
         },
       },
     ],
     lunch: [
       {
-        name: "Chicken Shawarma",
-        vendor: "Sultan's",
+        // UNVERIFIED allergens: guessed (pork, mayo, baguette)
+        name: "Banh Mi",
+        vendor: "Thy's",
         allergens: {
-          Halal: true,
+          Halal: null,
           Meat: true,
-          Eggs: false,
+          Eggs: true,
           Nuts: false,
-          Pork: false,
+          Pork: true,
           Beef: false,
-          Gluten: false,
-        },
-      },
-      {
-        name: "Falafel Shawarma",
-        vendor: "Sultan's",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
+          Gluten: true,
         },
       },
     ],
