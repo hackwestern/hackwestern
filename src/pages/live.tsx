@@ -16,6 +16,7 @@ import Topbar from "~/components/live/topbar";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
 import { formatTitle } from "~/utils/format";
+import { liveAccessRedirect } from "~/lib/live-access";
 import { disabledRedirect } from "~/utils/redirect";
 
 const Live = ({ isOrganizer }: { isOrganizer: boolean }) => {
@@ -89,17 +90,28 @@ export const getServerSideProps = async (
   const disabled = await disabledRedirect();
   if ("redirect" in disabled) return disabled;
 
-  // Any signed-in user can open /live. Navigation between tabs is shallow, so
-  // this only runs on a full page load. TODO: tighten before launch.
+  // Organizers and admitted hackers only. Navigation between tabs is shallow,
+  // so this only runs on a full page load.
   const session = await getServerSession(context.req, context.res, authOptions);
-  if (!session) {
-    return { redirect: { destination: "/login", permanent: false } };
-  }
+  const user = session
+    ? await db.query.users.findFirst({
+        where: (users, { eq }) => eq(users.id, session.user.id),
+        columns: { type: true },
+      })
+    : undefined;
+  const application =
+    session && user?.type === "hacker"
+      ? await db.query.applications.findFirst({
+          where: (applications, { eq }) =>
+            eq(applications.userId, session.user.id),
+          columns: { status: true },
+        })
+      : undefined;
 
-  const user = await db.query.users.findFirst({
-    where: (users, { eq }) => eq(users.id, session.user.id),
-    columns: { type: true },
-  });
+  const destination = liveAccessRedirect(
+    session ? { type: user?.type ?? null, status: application?.status } : null,
+  );
+  if (destination) return { redirect: { destination, permanent: false } };
 
   return { props: { isOrganizer: user?.type === "organizer" } };
 };
