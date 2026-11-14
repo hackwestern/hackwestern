@@ -290,7 +290,16 @@ export default function SponsorCoffeeChatsPage() {
                                   strokeWidth={2.5}
                                 />
                               )}
-                              {formatCoffeeChatTime(time)}
+                              {/* The hour heading already says AM/PM, so the
+                                  chip shows "10:45" to fit 4 across on a phone;
+                                  screen readers still hear "10:45 AM". */}
+                              {formatCoffeeChatTime(time).replace(
+                                / (AM|PM)$/,
+                                "",
+                              )}
+                              <span className="sr-only">
+                                {formatCoffeeChatTime(time).slice(-3)}
+                              </span>
                             </span>
                             <span
                               className={cn(

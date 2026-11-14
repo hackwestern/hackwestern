@@ -267,6 +267,13 @@
       "when": 1794696076855,
       "tag": "0037_sponsor_judging_sponsor",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1794700152066,
+      "tag": "0038_sponsor_interest",
+      "breakpoints": true
     }
   ]
 }

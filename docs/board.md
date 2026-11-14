@@ -20,14 +20,14 @@ Checks: `npm test` (vitest), `npm run lint`, `npm run build`. Screenshots at 375
 - [ ] T11 Sponsor "Interested hackers" page with shortlist toggle (writes to sponsor-owned sheet column) · owns: src/pages/sponsors/[uuid]/hackers.tsx, src/server/api/routers/sponsor-shortlist.ts · check: build passes; toggling writes only that sponsor's column (test with mocked Sheets); screenshot at 375px · deps: T10 · build: main · verify: code-reviewer + design-reviewer
 
 ## Ready
-- [ ] T04 `SheetEditButton` component (opens the sheet in a new tab, "Edit in Google Sheets", read-only note) · owns: src/components/sponsors/sheet-edit-button.tsx · check: `npm run lint` passes; renders an `<a target="_blank" rel="noopener">` with the sheet URL · deps: none · build: main · verify: accessibility-tester
-- [ ] T07 Coffee chat time grid fits a phone · owns: src/pages/sponsors/[uuid]/coffee-chats.tsx · check: screenshot at 360px shows no clipped or overflowing time chips · deps: none · build: main · verify: design-reviewer
-- [ ] T12 Sponsor judging shortlist goes up to 20 teams · owns: src/lib/sponsor-picks.ts · check: `MAX_SPONSOR_PICKS` is 20; `npm test` and `npm run build` pass; picks page lets you select a 20th team and blocks a 21st · deps: none · build: main · verify: code-reviewer
-- [ ] T08 `sponsor_interest` table (user_id, sponsor_id, rank) and migration 0038 · owns: src/server/db/schema.ts (new table only), drizzle/ · check: migrates on a fresh DB and on a DB at main's 0037; `drizzle-kit generate` reports no changes · deps: none · build: main · verify: code-reviewer
 
 ## In progress
 
 ## Review
+- [ ] T12 Sponsor judging shortlist goes up to 20 teams · owns: src/lib/sponsor-picks.ts · check: `MAX_SPONSOR_PICKS` is 20; `npm test` and `npm run build` pass; picks page lets you select a 20th team and blocks a 21st · deps: none · build: main · verify: code-reviewer · result: cap 20, sponsor home text now reads the constants
+- [ ] T04 `SheetEditButton` component (opens the sheet in a new tab, "Edit in Google Sheets", read-only note) · owns: src/components/sponsors/sheet-edit-button.tsx · check: `npm run lint` passes; renders an `<a target="_blank" rel="noopener">` with the sheet URL · deps: none · build: main · verify: accessibility-tester · result: organizer-only, 44px tap target on phones
+- [ ] T07 Coffee chat time grid fits a phone · owns: src/pages/sponsors/[uuid]/coffee-chats.tsx · check: screenshot at 360px shows no clipped or overflowing time chips · deps: none · build: main · verify: design-reviewer · result: 0 of 72 chips overflow at 360 and 375px (2 still clip at 320px); chips show 10:45, screen readers hear 10:45 AM
+- [ ] T08 `sponsor_interest` table (user_id, sponsor_id, rank) and migration 0038 · owns: src/server/db/schema.ts (new table only), drizzle/ · check: migrates on a fresh DB and on a DB at main's 0037; `drizzle-kit generate` reports no changes · deps: none · build: main · verify: code-reviewer · result: 0038 migrates on a DB at 0037 and a fresh DB; no drift
 
 ## Done
 

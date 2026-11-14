@@ -14,6 +14,7 @@ import { api } from "~/utils/api";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
+import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "~/lib/sponsor-picks";
 
 export default function SponsorHubPage() {
   const router = useRouter();
@@ -132,8 +133,9 @@ export default function SponsorHubPage() {
               </div>
 
               <p className="m-0 text-base font-medium leading-relaxed text-dashboard-text-medium">
-                Select between 5 and 10 teams for your sponsored awards. You can
-                update and save your selections anytime before judging closes.
+                Select between {MIN_SPONSOR_PICKS} and {MAX_SPONSOR_PICKS} teams
+                for your sponsored awards. You can update and save your
+                selections anytime before judging closes.
               </p>
 
               <DashboardButton asChild className="mt-1 md:w-full">

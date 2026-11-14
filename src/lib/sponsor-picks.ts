@@ -4,4 +4,4 @@
  * validation can never drift apart. Dependency-free.
  */
 export const MIN_SPONSOR_PICKS = 5;
-export const MAX_SPONSOR_PICKS = 10;
+export const MAX_SPONSOR_PICKS = 20;
