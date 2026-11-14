@@ -257,15 +257,15 @@
     {
       "idx": 36,
       "version": "7",
-      "when": 1794498116778,
-      "tag": "0036_curious_overlord",
+      "when": 1794550010005,
+      "tag": "0036_onboarding_steps",
       "breakpoints": true
     },
     {
       "idx": 37,
       "version": "7",
-      "when": 1794669411921,
-      "tag": "0037_confused_victor_mancha",
+      "when": 1794696076855,
+      "tag": "0037_sponsor_judging_sponsor",
       "breakpoints": true
     }
   ]

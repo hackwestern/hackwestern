@@ -1,5 +1,5 @@
 {
-  "id": "78caf960-e319-448b-a75f-2710408ffe09",
+  "id": "54966ec1-9c97-4cca-afc0-c2cbe9621b52",
   "prevId": "56e199d0-d793-4f35-949b-259dbe8a91f8",
   "version": "7",
   "dialect": "postgresql",
@@ -2148,47 +2148,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.sponsor_judging_sponsor": {
-      "name": "sponsor_judging_sponsor",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "name": {
-          "name": "name",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "sponsor_judging_sponsor_name_unique": {
-          "name": "sponsor_judging_sponsor_name_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.team_check_result": {
       "name": "team_check_result",
       "schema": "",
@@ -2943,6 +2902,13 @@
           "type": "varchar(64)",
           "primaryKey": false,
           "notNull": false
+        },
+        "onboarding_steps": {
+          "name": "onboarding_steps",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
         },
         "scavenger_hunt_earned": {
           "name": "scavenger_hunt_earned",

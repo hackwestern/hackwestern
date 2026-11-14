@@ -45,7 +45,7 @@ export const sponsorPortalRouter = createTRPCRouter({
    * Does NOT expose amount or status.
    */
   getSponsorPortalInfo: publicProcedure
-    .input(z.object({ sponsor: z.string().min(1) }))
+    .input(z.object({ sponsor: z.string().uuid() }))
     .query(async ({ input }) => {
       try {
         const sponsorName = await resolveSponsorName(input.sponsor);
@@ -108,7 +108,7 @@ export const sponsorPortalRouter = createTRPCRouter({
    * that is held by someone else so the grid can shade them.
    */
   getCoffeeChatSchedule: publicProcedure
-    .input(z.object({ sponsor: z.string().min(1) }))
+    .input(z.object({ sponsor: z.string().uuid() }))
     .query(async ({ input }) => {
       try {
         const sponsorName = await resolveSponsorName(input.sponsor);
