@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { ArrowLeft, Check, Search, X } from "lucide-react";
+import { ArrowLeft, Check, ExternalLink, Search, X } from "lucide-react";
 
 import SEO from "~/components/seo";
 import { uuidRegex } from "~/utils/urls";
@@ -14,7 +14,10 @@ import { cn } from "~/lib/utils";
 type PickableTeam = {
   id: string;
   name: string;
-  members: string;
+  members: string[];
+  tracks: string[];
+  devpostUrl: string | null;
+  githubUrl: string | null;
 };
 
 const CARD =
@@ -67,15 +70,18 @@ export default function SponsorPicksPage() {
     },
   );
   const allTeams = useMemo<PickableTeam[]>(
-    () => teamsQ.data ?? [],
+    () => teamsQ.data?.teams ?? [],
     [teamsQ.data],
   );
+  const sponsorTrack = teamsQ.data?.sponsorTrack ?? null;
 
   const visibleTeams = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return allTeams;
     return allTeams.filter((team) =>
-      `${team.name} ${team.members}`.toLowerCase().includes(q),
+      `${team.name} ${team.members.join(" ")} ${team.tracks.join(" ")}`
+        .toLowerCase()
+        .includes(q),
     );
   }, [query, allTeams]);
 
@@ -110,7 +116,7 @@ export default function SponsorPicksPage() {
           {[0, 1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="h-16 w-full animate-pulse rounded-dashboard-2xl bg-dashboard-bg-surface shadow-dashboard-card"
+              className="h-24 w-full animate-pulse rounded-dashboard-2xl bg-dashboard-bg-surface shadow-dashboard-card"
             />
           ))}
         </div>
@@ -170,6 +176,11 @@ export default function SponsorPicksPage() {
               {existingQ.data.sponsorName}
             </DashboardTag>
           )}
+          {sponsorTrack && (
+            <DashboardTag className="self-start border border-dashboard-action-primary bg-dashboard-bg-highlight text-dashboard-text-heavy">
+              Showing teams in {sponsorTrack}
+            </DashboardTag>
+          )}
           <h1 className="dashboard-h1 m-0">Pick your top teams</h1>
           <p className="mb-0 mt-1 text-base font-medium leading-relaxed text-dashboard-text-medium">
             Choose between {MIN_SPONSOR_PICKS} and {MAX_SPONSOR_PICKS} teams.
@@ -227,7 +238,7 @@ export default function SponsorPicksPage() {
             <>
               {[0, 1, 2, 3, 4].map((i) => (
                 <li key={i}>
-                  <div className="h-16 w-full animate-pulse rounded-dashboard-2xl bg-dashboard-bg-surface shadow-dashboard-card" />
+                  <div className="h-24 w-full animate-pulse rounded-dashboard-2xl bg-dashboard-bg-surface shadow-dashboard-card" />
                 </li>
               ))}
             </>
@@ -236,8 +247,9 @@ export default function SponsorPicksPage() {
             visibleTeams.map((team) => {
               const on = selected.includes(team.id);
               const disabled = !on && atMax;
+              const hasLinks = Boolean(team.devpostUrl ?? team.githubUrl);
               return (
-                <li key={team.id}>
+                <li key={team.id} className="relative">
                   <button
                     type="button"
                     aria-pressed={on}
@@ -259,16 +271,67 @@ export default function SponsorPicksPage() {
                       >
                         {on && <Check className="size-4" strokeWidth={2.5} />}
                       </span>
-                      <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
+                      <span
+                        className={cn(
+                          "flex min-w-0 flex-1 flex-col gap-0.5 text-left",
+                          hasLinks && "pr-14",
+                        )}
+                      >
                         <span className="truncate text-base font-semibold text-dashboard-text-heavy">
                           {team.name}
                         </span>
                         <span className="truncate text-sm font-medium text-dashboard-text-light">
-                          {team.members}
+                          {team.members.length > 0
+                            ? team.members.join(", ")
+                            : "No members listed"}
                         </span>
+                        {team.tracks.length > 0 && (
+                          <span className="flex flex-wrap gap-1.5 pt-0.5">
+                            {team.tracks.map((track) => (
+                              <DashboardTag key={track}>{track}</DashboardTag>
+                            ))}
+                          </span>
+                        )}
                       </span>
                     </span>
                   </button>
+                  {/* Sibling overlay so link taps never toggle the pick. */}
+                  {hasLinks && (
+                    <span className="absolute right-3 top-3.5 z-10 flex items-center gap-1.5">
+                      {team.devpostUrl && (
+                        <a
+                          href={team.devpostUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`Open ${team.name} on Devpost`}
+                          className="inline-flex items-center gap-1 rounded-dashboard-sm bg-dashboard-bg-nav px-2 py-1 text-xs font-semibold text-dashboard-text-medium transition-colors hover:text-dashboard-text-heavy"
+                        >
+                          Devpost
+                          <ExternalLink
+                            aria-hidden="true"
+                            className="size-3"
+                            strokeWidth={1.67}
+                          />
+                        </a>
+                      )}
+                      {team.githubUrl && (
+                        <a
+                          href={team.githubUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={`Open ${team.name} on GitHub`}
+                          className="inline-flex items-center gap-1 rounded-dashboard-sm bg-dashboard-bg-nav px-2 py-1 text-xs font-semibold text-dashboard-text-medium transition-colors hover:text-dashboard-text-heavy"
+                        >
+                          GitHub
+                          <ExternalLink
+                            aria-hidden="true"
+                            className="size-3"
+                            strokeWidth={1.67}
+                          />
+                        </a>
+                      )}
+                    </span>
+                  )}
                 </li>
               );
             })}
@@ -279,7 +342,9 @@ export default function SponsorPicksPage() {
           )}
           {!teamsQ.isLoading && allTeams.length === 0 && !query && (
             <li className="rounded-dashboard-lg bg-dashboard-bg-inset p-5 text-center text-sm font-medium italic text-dashboard-text-medium">
-              No teams have been created yet.
+              {sponsorTrack
+                ? `No submitted teams in ${sponsorTrack} yet.`
+                : "No teams have submitted yet."}
             </li>
           )}
         </ul>

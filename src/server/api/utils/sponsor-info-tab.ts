@@ -1,10 +1,23 @@
 import { type sheets_v4 } from "googleapis";
 
 import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
+import { TRACK_VALUES } from "~/lib/sponsor-track";
 import { type SheetsClient } from "~/server/api/utils/sponsor-sheets";
 import { fetchHwContactNames } from "~/server/api/utils/sponsor-hw-contacts";
 
 const SPONSOR_INFO_TAB = "sponsor info";
+
+/** 1-based column number -> A1-notation letters (1 -> "A", 9 -> "I"). */
+function columnLetter(columnNumber: number): string {
+  let n = columnNumber;
+  let letters = "";
+  while (n > 0) {
+    const remainder = (n - 1) % 26;
+    letters = String.fromCharCode(65 + remainder) + letters;
+    n = Math.floor((n - 1) / 26);
+  }
+  return letters;
+}
 
 export async function ensureSponsorInfoTab(
   sheets: SheetsClient,
@@ -41,14 +54,16 @@ export async function ensureSponsorInfoTab(
     tabName = newProps?.title ?? SPONSOR_INFO_TAB;
     sheetId = newProps?.sheetId ?? null;
 
-    // Header row with 8 columns:
+    // Header row with 9 columns:
     // Sponsor Name, Status, Judging Room Number, Booth Location, HW Contact,
-    // Workshop Location, Workshop Time (workshop columns are optional), and
+    // Workshop Location, Workshop Time (workshop columns are optional),
     // Coffee Chat Max Minutes (sponsor's total coffee-chat allowance; empty
-    // or zero disables coffee-chat booking for that sponsor).
+    // or zero disables coffee-chat booking for that sponsor), and Sponsor
+    // Track (which judging track the sponsor is shortlisting teams from;
+    // empty = the sponsor sees every submitted team).
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `'${tabName}'!A1:H1`,
+      range: `'${tabName}'!A1:I1`,
       valueInputOption: "RAW",
       requestBody: {
         majorDimension: "ROWS",
@@ -62,17 +77,19 @@ export async function ensureSponsorInfoTab(
             "Workshop Location",
             "Workshop Time",
             "Coffee Chat Max Minutes",
+            "Sponsor Track",
           ],
         ],
       },
     });
   } else {
-    // Existing tab: make sure the workshop headers (cols F & G) and the
-    // coffee-chat allowance header (col H) exist.
+    // Existing tab: make sure the workshop headers (cols F & G), the
+    // coffee-chat allowance header (col H), and the sponsor track header
+    // (col I) exist.
     try {
       const headerRes = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `'${tabName}'!A1:H1`,
+        range: `'${tabName}'!A1:I1`,
       });
       const headerRow = (headerRes.data.values?.[0] ?? []) as string[];
       const lower = headerRow.map((c) =>
@@ -91,6 +108,7 @@ export async function ensureSponsorInfoTab(
         (c) =>
           c.includes("coffee") || (c.includes("max") && c.includes("minute")),
       );
+      const hasTrack = lower.some((c) => c.includes("track"));
       if (!hasWorkshopLocation || !hasWorkshopTime || !hasCoffeeMinutes) {
         const values = [...headerRow];
         while (values.length < 7) values.push("");
@@ -99,7 +117,28 @@ export async function ensureSponsorInfoTab(
         if (!hasCoffeeMinutes) values[7] = "Coffee Chat Max Minutes";
         await sheets.spreadsheets.values.update({
           spreadsheetId,
-          range: `'${tabName}'!A1:H1`,
+          range: `'${tabName}'!A1:I1`,
+          valueInputOption: "RAW",
+          requestBody: {
+            majorDimension: "ROWS",
+            values: [values],
+          },
+        });
+      }
+      if (!hasTrack) {
+        // Append at the end so an organizer-added extra column is never
+        // overwritten; with the canonical A–H layout this lands on col I.
+        const fresh = await sheets.spreadsheets.values.get({
+          spreadsheetId,
+          range: `'${tabName}'!A1:Z1`,
+        });
+        const current = ((fresh.data.values?.[0] ?? []) as string[]).slice();
+        const values = [...current];
+        while (values.length < 8) values.push("");
+        values.push("Sponsor Track");
+        await sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: `'${tabName}'!A1:${columnLetter(values.length)}1`,
           valueInputOption: "RAW",
           requestBody: {
             majorDimension: "ROWS",
@@ -115,6 +154,7 @@ export async function ensureSponsorInfoTab(
   // Ensure dropdown data validation:
   // - Column B (Status): Not arrived, Checked in, Booth set up, Workshop live, Left
   // - Column E (HW Contact): names from the "HW Contacts" tab
+  // - Column I (Sponsor Track): the judging tracks
   if (sheetId !== null) {
     const hwContactNames = await fetchHwContactNames(sheets, spreadsheetId);
     try {
@@ -131,6 +171,26 @@ export async function ensureSponsorInfoTab(
               condition: {
                 type: "ONE_OF_LIST",
                 values: SPONSOR_STATUS_VALUES.map((val) => ({
+                  userEnteredValue: val,
+                })),
+              },
+              strict: true,
+              showCustomUi: true,
+            },
+          },
+        },
+        {
+          setDataValidation: {
+            range: {
+              sheetId,
+              startRowIndex: 1, // row 2 down
+              startColumnIndex: 8, // Column I (Sponsor Track)
+              endColumnIndex: 9,
+            },
+            rule: {
+              condition: {
+                type: "ONE_OF_LIST",
+                values: TRACK_VALUES.map((val) => ({
                   userEnteredValue: val,
                 })),
               },

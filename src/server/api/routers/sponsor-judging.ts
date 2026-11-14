@@ -1,13 +1,15 @@
 import { TRPCError } from "@trpc/server";
-import { eq, count } from "drizzle-orm";
+import { and, arrayOverlaps, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "~/server/db";
-import { teams, users } from "~/server/db/schema";
+import { applications, teams, users } from "~/server/db/schema";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "~/lib/sponsor-picks";
+import { type TrackValue } from "~/lib/sponsor-track";
 import {
   SHEET_TAB,
+  fetchAllSponsorInfo,
   fetchColumnA,
   findSponsorRows,
   getJudgingSheetId,
@@ -16,6 +18,12 @@ import {
   parseTeamIds,
   resolveSponsorName,
 } from "~/server/api/utils/sponsor-sheets";
+
+/** Submission link trimmed, or null when blank. */
+function normalizeSubmissionUrl(url: string | null): string | null {
+  const trimmed = url?.trim();
+  return trimmed ? trimmed : null;
+}
 
 export const sponsorJudgingRouter = createTRPCRouter({
   /**
@@ -172,34 +180,108 @@ export const sponsorJudgingRouter = createTRPCRouter({
     }),
 
   /**
-   * List all teams from the teams table. Public but gated: the caller must
-   * present a registered sponsor UUID (the private link), so the team
+   * List the teams a sponsor can shortlist. Public but gated: the caller
+   * must present a registered sponsor UUID (the private link), so the team
    * roster isn't enumerable by anyone. Used by the sponsor picks page.
-   * Returns each team's id, name, and member count. No track filtering —
-   * that will be added later.
+   *
+   * Only submitted teams are returned ("submitted" or "late"; drafts have no
+   * devpost/github and aren't judgeable). Each team carries its id, name,
+   * submission links, tracks, and member names.
+   *
+   * Track filtering: the sponsor's track comes from the "Sponsor Track"
+   * column on the sponsor info tab. A sponsor with a track set only sees
+   * teams in that track (overlap on the teams.tracks array, same filter the
+   * judging engine uses); no track set falls back to every submitted team.
+   * Sheets being unconfigured also falls back to no filter, matching the
+   * pre-track behavior, with a console warning.
    */
   listAllTeams: publicProcedure
     .input(z.object({ sponsor: z.string().uuid() }))
     .query(async ({ input }) => {
-      // Existence check only; throws NOT_FOUND for an unregistered UUID.
-      await resolveSponsorName(input.sponsor);
+      const sponsorName = await resolveSponsorName(input.sponsor);
 
-      const allTeams = await db
+      let sponsorTrack: TrackValue | null = null;
+      try {
+        const sheets = await getSheetsClient();
+        const spreadsheetId = getSpreadsheetId();
+        const sponsorInfoMap = await fetchAllSponsorInfo(sheets, spreadsheetId);
+        sponsorTrack =
+          sponsorInfoMap.get(sponsorName.toLowerCase())?.track ?? null;
+      } catch (error) {
+        console.warn("Could not resolve sponsor track:", error);
+      }
+
+      const submittedTeams = await db
         .select({
           id: teams.id,
           name: teams.name,
-          memberCount: count(users.id),
+          devpostUrl: teams.devpostUrl,
+          githubUrl: teams.githubUrl,
+          tracks: teams.tracks,
         })
         .from(teams)
-        .leftJoin(users, eq(users.teamId, teams.id))
-        .groupBy(teams.id, teams.name)
+        .where(
+          and(
+            inArray(teams.submissionStatus, ["submitted", "late"]),
+            ...(sponsorTrack
+              ? [arrayOverlaps(teams.tracks, [sponsorTrack])]
+              : []),
+          ),
+        )
         .orderBy(teams.name);
 
-      return allTeams.map((team) => ({
-        id: team.id,
-        name: team.name,
-        members:
-          team.memberCount === 1 ? "1 member" : `${team.memberCount} members`,
-      }));
+      if (submittedTeams.length === 0) {
+        return { sponsorName, sponsorTrack, teams: [] };
+      }
+
+      const members = await db
+        .select({
+          teamId: users.teamId,
+          userName: users.name,
+          firstName: applications.firstName,
+          lastName: applications.lastName,
+        })
+        .from(users)
+        .leftJoin(applications, eq(applications.userId, users.id))
+        .where(
+          inArray(
+            users.teamId,
+            submittedTeams.map((team) => team.id),
+          ),
+        );
+
+      const membersByTeam = new Map<string, string[]>();
+      for (const member of members) {
+        if (!member.teamId) continue;
+        // The application's first/last name is what the hacker typed; fall
+        // back to the auth display name when the application name is blank.
+        const applicationName = [member.firstName, member.lastName]
+          .filter((part): part is string => Boolean(part?.trim()))
+          .map((part) => part.trim())
+          .join(" ");
+        const fullName =
+          applicationName.length > 0
+            ? applicationName
+            : (member.userName?.trim() ?? "");
+        if (!fullName) continue;
+        const names = membersByTeam.get(member.teamId) ?? [];
+        names.push(fullName);
+        membersByTeam.set(member.teamId, names);
+      }
+
+      return {
+        sponsorName,
+        sponsorTrack,
+        teams: submittedTeams.map((team) => ({
+          id: team.id,
+          name: team.name,
+          devpostUrl: normalizeSubmissionUrl(team.devpostUrl),
+          githubUrl: normalizeSubmissionUrl(team.githubUrl),
+          tracks: team.tracks ?? [],
+          members: (membersByTeam.get(team.id) ?? []).sort((a, b) =>
+            a.localeCompare(b),
+          ),
+        })),
+      };
     }),
 });

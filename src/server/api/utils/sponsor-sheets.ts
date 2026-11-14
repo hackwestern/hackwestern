@@ -8,6 +8,7 @@ import {
   SPONSOR_STATUS_VALUES,
   type SponsorStatus,
 } from "~/lib/sponsor-status";
+import { normalizeSponsorTrack, type TrackValue } from "~/lib/sponsor-track";
 import { db } from "~/server/db";
 import { sponsorJudgingSponsors } from "~/server/db/schema";
 
@@ -266,11 +267,17 @@ export interface SponsorInfoRecord {
   workshopTime: string;
   /** Coffee-chat allowance in minutes; 0 = no coffee chats. */
   maxCoffeeChatMinutes: number;
+  /**
+   * Judging track the sponsor shortlists teams from ("Sponsor Track"
+   * column). Null when the cell is empty or unrecognized — the sponsor
+   * then sees every submitted team.
+   */
+  track: TrackValue | null;
 }
 
 /**
  * Map sponsor-info header labels to column indexes. Defaults match the
- * canonical A–H layout when a header is missing.
+ * canonical A–I layout when a header is missing.
  */
 export function parseSponsorInfoColumns(headerRow: readonly unknown[]): {
   nameCol: number;
@@ -281,6 +288,7 @@ export function parseSponsorInfoColumns(headerRow: readonly unknown[]): {
   workshopLocationCol: number;
   workshopTimeCol: number;
   maxMinutesCol: number;
+  trackCol: number;
 } {
   let nameCol = 0;
   let statusCol = 1;
@@ -290,6 +298,7 @@ export function parseSponsorInfoColumns(headerRow: readonly unknown[]): {
   let workshopLocationCol = 5;
   let workshopTimeCol = 6;
   let maxMinutesCol = 7;
+  let trackCol = 8;
 
   headerRow.forEach((raw, idx) => {
     const str = String(raw ?? "")
@@ -297,7 +306,10 @@ export function parseSponsorInfoColumns(headerRow: readonly unknown[]): {
       .trim()
       .toLowerCase();
     if (!str) return;
-    if (str.includes("sponsor") || str.includes("company")) nameCol = idx;
+    // "Sponsor Track" also contains "sponsor", so the track check must come
+    // first or it would steal the name column.
+    if (str.includes("track")) trackCol = idx;
+    else if (str.includes("sponsor") || str.includes("company")) nameCol = idx;
     else if (str.includes("status")) statusCol = idx;
     else if (str.includes("room")) roomCol = idx;
     else if (str.includes("booth")) boothCol = idx;
@@ -318,6 +330,7 @@ export function parseSponsorInfoColumns(headerRow: readonly unknown[]): {
     workshopLocationCol,
     workshopTimeCol,
     maxMinutesCol,
+    trackCol,
   };
 }
 
@@ -416,6 +429,7 @@ export async function fetchAllSponsorInfo(
           maxCoffeeChatMinutes: normalizeCoffeeChatMinutes(
             cell(row, cols.maxMinutesCol),
           ),
+          track: normalizeSponsorTrack(cell(row, cols.trackCol)),
         });
       }
     }

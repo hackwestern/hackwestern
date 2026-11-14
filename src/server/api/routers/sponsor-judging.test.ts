@@ -125,6 +125,7 @@ describe("parseSponsorInfoColumns", () => {
       workshopLocationCol: 5,
       workshopTimeCol: 6,
       maxMinutesCol: 7,
+      trackCol: 8,
     });
   });
 
@@ -138,6 +139,7 @@ describe("parseSponsorInfoColumns", () => {
       workshopLocationCol: 5,
       workshopTimeCol: 6,
       maxMinutesCol: 7,
+      trackCol: 8,
     });
   });
 
@@ -164,5 +166,27 @@ describe("parseSponsorInfoColumns", () => {
       "Status",
     ]);
     expect(cols.maxMinutesCol).toBe(1);
+  });
+
+  test("canonical A–I header maps the sponsor track column", () => {
+    const cols = parseSponsorInfoColumns([
+      "Sponsor Name",
+      "Status",
+      "Judging Room Number",
+      "Booth Location",
+      "HW Contact",
+      "Workshop Location",
+      "Workshop Time",
+      "Coffee Chat Max Minutes",
+      "Sponsor Track",
+    ]);
+    expect(cols.trackCol).toBe(8);
+    expect(cols.nameCol).toBe(0);
+  });
+
+  test("Sponsor Track header does not steal the name column", () => {
+    const cols = parseSponsorInfoColumns(["Company Name", "Sponsor Track"]);
+    expect(cols.nameCol).toBe(0);
+    expect(cols.trackCol).toBe(1);
   });
 });
