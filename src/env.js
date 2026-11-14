@@ -73,6 +73,10 @@ export const env = createEnv({
     // ISO 8601 datetime the team finder opens for hackers; unset = when RSVP
     // closes. Only for smoke testing on Vercel Preview, never production.
     TEAM_FINDER_OPENS_AT: z.string().datetime({ offset: true }).optional(),
+    // Where the live-site checklist sends hackers to join Slack / Devpost.
+    // Unset = that step's button is disabled.
+    ONBOARDING_SLACK_URL: z.string().url().optional(),
+    ONBOARDING_DEVPOST_URL: z.string().url().optional(),
     // Google Sheets API key for fetching schedule data
     GOOGLE_SHEETS_API_KEY: z.string().optional(),
     GITHUB_TOKEN: z.string().optional(),
@@ -148,6 +152,8 @@ export const env = createEnv({
     TEAM_FINDER_R2_SECRET_ACCESS_KEY:
       process.env.TEAM_FINDER_R2_SECRET_ACCESS_KEY,
     TEAM_FINDER_OPENS_AT: process.env.TEAM_FINDER_OPENS_AT,
+    ONBOARDING_SLACK_URL: process.env.ONBOARDING_SLACK_URL,
+    ONBOARDING_DEVPOST_URL: process.env.ONBOARDING_DEVPOST_URL,
     GOOGLE_SHEETS_API_KEY: process.env.GOOGLE_SHEETS_API_KEY,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     HACK_START: process.env.HACK_START,
