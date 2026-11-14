@@ -137,7 +137,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
   setSponsorStatus: protectedOrganizerProcedure
     .input(
       z.object({
-        sponsorName: z.string().min(1),
+        sponsorName: z.string().trim().min(1).max(255),
         status: z.enum(SPONSOR_STATUS_VALUES),
       }),
     )
@@ -180,6 +180,24 @@ export const sponsorDashboardRouter = createTRPCRouter({
             },
           });
         } else {
+          // No status row yet. Only add one for a real sponsor (on the master
+          // sheet or registered), spelled as it is there, so a mistyped name
+          // returns an error instead of creating a duplicate sponsor row.
+          const [master, registered] = await Promise.all([
+            fetchMasterSponsors(),
+            db.query.sponsorJudgingSponsors.findMany(),
+          ]);
+          const canonicalName = [
+            ...master.map((sponsor) => sponsor.name),
+            ...registered.map((row) => row.name),
+          ].find((name) => name.trim().toLowerCase() === target);
+          if (!canonicalName) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: `Sponsor not found: ${input.sponsorName}`,
+            });
+          }
+
           await sheets.spreadsheets.values.append({
             spreadsheetId,
             range: `'${tab}'!A:E`,
@@ -187,7 +205,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
             insertDataOption: "INSERT_ROWS",
             requestBody: {
               majorDimension: "ROWS",
-              values: [[input.sponsorName, input.status, "TBD", "TBD", "—"]],
+              values: [[canonicalName, input.status, "TBD", "TBD", "—"]],
             },
           });
         }
