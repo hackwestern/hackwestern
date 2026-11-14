@@ -1,32 +1,13 @@
 import { signOut } from "next-auth/react";
-import { useRouter } from "next/router";
-import { authRedirectHacker } from "~/utils/redirect";
-import { api } from "~/utils/api";
+import { useEffect } from "react";
 
+// Visiting /logout signs you out and sends you to the homepage.
 const Logout = () => {
-  const router = useRouter();
+  useEffect(() => {
+    void signOut({ callbackUrl: "/" });
+  }, []);
 
-  const { data: application } = api.application.get.useQuery({
-    fields: ["firstName"],
-  });
-  const name = application?.firstName;
-
-  const logout = () => {
-    signOut()
-      .then(() => {
-        void router.push("/login");
-      })
-      .catch((e) => console.error(e));
-  };
-  return (
-    <div className="font-secondary font-semibold text-heavy">
-      Hi there{name ? `, ${name}` : ""}! |{" "}
-      <button className="hover:underline" onClick={() => logout()}>
-        Sign Out
-      </button>
-    </div>
-  );
+  return null;
 };
 
 export default Logout;
-export const getServerSideProps = authRedirectHacker;

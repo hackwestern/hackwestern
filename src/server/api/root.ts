@@ -13,6 +13,7 @@ import { teamFinderRouter } from "./routers/team-finder";
 import { sponsorJudgingRouter } from "./routers/sponsor-judging";
 import { sponsorDashboardRouter } from "./routers/sponsor-dashboard";
 import { sponsorPortalRouter } from "./routers/sponsor-portal";
+import { onboardingRouter } from "./routers/onboarding";
 
 /**
  * This is the primary router for your server.
@@ -34,6 +35,7 @@ export const appRouter = createTRPCRouter({
   sponsorJudging: sponsorJudgingRouter,
   sponsorDashboard: sponsorDashboardRouter,
   sponsorPortal: sponsorPortalRouter,
+  onboarding: onboardingRouter,
 });
 
 // export type definition of API
