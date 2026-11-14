@@ -70,6 +70,7 @@ export const MentorsList: Mentor[] = [
     name: "Keerthana Bhukya",
     skills: ["LLMs & RAG", "Python", "Next.js", "FastAPI", "AWS"],
     tags: ["Software Engineering", "Product Management", "AI"],
+    linkedin: "https://www.linkedin.com/in/keerthanabhukya/",
   },
   {
     name: "Shivansh Kushwaha",
@@ -82,6 +83,7 @@ export const MentorsList: Mentor[] = [
     name: "Eric Liu",
     skills: ["Real-time backends", "TypeScript", "AI agents", "WebSockets"],
     tags: ["Software Engineering", "AI"],
+    linkedin: "https://www.linkedin.com/in/eric-liu-b0694442a/",
   },
   {
     // UNVERIFIED: very short answers
@@ -136,6 +138,7 @@ export const MentorsList: Mentor[] = [
     name: "Anmol Kumari",
     skills: ["Python", "Data & AI", "FastAPI", "Agents", "Azure"],
     tags: ["Software Engineering", "AI"],
+    linkedin: "https://www.linkedin.com/in/anmol-kumari-429988119/",
   },
   {
     name: "Alan Lu",
@@ -159,9 +162,10 @@ export const MentorsList: Mentor[] = [
     linkedin: "https://www.linkedin.com/in/davidmakesmoves/",
   },
   {
-    name: "Ali",
+    name: "Ali Mohammed-Ali",
     skills: ["C++", "Python", "Swift", "OpenCV", "Arduino"],
     tags: ["Software Engineering", "Design", "Hardware", "AI"],
+    linkedin: "https://www.linkedin.com/in/am-uwo/",
   },
   {
     name: "Vidhi Kalal",
