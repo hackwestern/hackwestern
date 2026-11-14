@@ -366,6 +366,30 @@ export const sponsorJudgingSponsors = pgTable("sponsor_judging_sponsor", {
     .notNull(),
 });
 
+// A hacker's interest ranking of the sponsors (1 = most interested). Feeds each
+// sponsor's coffee-chat shortlist. One row per (hacker, sponsor), and a hacker
+// can't give two sponsors the same rank.
+export const sponsorInterests = pgTable(
+  "sponsor_interest",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    rank: smallint("rank").notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.sponsorId] }),
+    uniqueIndex("sponsor_interest_user_rank_idx").on(t.userId, t.rank),
+    index("sponsor_interest_sponsor_idx").on(t.sponsorId),
+  ],
+);
+
 export const users = pgTable(
   "user",
   {
