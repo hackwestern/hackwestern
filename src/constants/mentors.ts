@@ -70,6 +70,7 @@ export const MentorsList: Mentor[] = [
     name: "Keerthana Bhukya",
     skills: ["LLMs & RAG", "Python", "Next.js", "FastAPI", "AWS"],
     tags: ["Software Engineering", "Product Management", "AI"],
+    image: "/landing/mentors/keerthanab.webp",
     linkedin: "https://www.linkedin.com/in/keerthanabhukya/",
   },
   {
@@ -83,6 +84,7 @@ export const MentorsList: Mentor[] = [
     name: "Eric Liu",
     skills: ["Real-time backends", "TypeScript", "AI agents", "WebSockets"],
     tags: ["Software Engineering", "AI"],
+    image: "/landing/mentors/ericl.webp",
     linkedin: "https://www.linkedin.com/in/eric-liu-b0694442a/",
   },
   {
@@ -138,6 +140,7 @@ export const MentorsList: Mentor[] = [
     name: "Anmol Kumari",
     skills: ["Python", "Data & AI", "FastAPI", "Agents", "Azure"],
     tags: ["Software Engineering", "AI"],
+    image: "/landing/mentors/anmolk.webp",
     linkedin: "https://www.linkedin.com/in/anmol-kumari-429988119/",
   },
   {
@@ -165,6 +168,7 @@ export const MentorsList: Mentor[] = [
     name: "Ali Mohammed-Ali",
     skills: ["C++", "Python", "Swift", "OpenCV", "Arduino"],
     tags: ["Software Engineering", "Design", "Hardware", "AI"],
+    image: "/landing/mentors/alim.webp",
     linkedin: "https://www.linkedin.com/in/am-uwo/",
   },
   {
