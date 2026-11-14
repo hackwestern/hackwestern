@@ -25,7 +25,9 @@ export default async function handler(
 
   const session = await getServerAuthSession({ req, res });
   if (!session) {
-    return res.status(401).send("Log in to get your Hack Western pass.");
+    // Signed out (or the session expired): log in, then land back on the page
+    // with the wallet buttons.
+    return res.redirect(302, "/login?callbackUrl=/live");
   }
   const userId = session.user.id;
 
