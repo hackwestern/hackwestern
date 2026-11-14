@@ -59,6 +59,7 @@ export const SectionLink = ({
   return (
     <Link
       href={href ?? `/live?tab=${tab}`}
+      shallow
       aria-current={isActive ? "page" : undefined}
       className={navLinkClass(isActive)}
       style={tokens.dashboardTypography.body}
@@ -96,6 +97,7 @@ export const IconlessLink = ({ tab, name }: { tab: string; name: string }) => {
   return (
     <Link
       href={`/live?tab=event-logistics&step=${step}`}
+      shallow
       aria-current={isActive ? "page" : undefined}
       className={navLinkClass(isActive)}
       style={tokens.dashboardTypography.body}
