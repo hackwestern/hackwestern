@@ -43,15 +43,16 @@ const Schedule = () => {
     <div className="mb-4 flex h-fit w-full flex-col px-3 py-4 sm:mb-8 sm:p-10">
       {/* Single scrollable container for both headers and schedule */}
       <div className="max-h-[calc(100vh-160px)] w-full overflow-x-auto overflow-y-auto pb-10 sm:pb-20">
-        <div className="min-w-[900px] sm:min-w-[1000px]">
+        <div className="min-w-[1090px] sm:min-w-[1210px]">
           {/* Sticky category headers */}
           <div className="sticky top-0 z-[60] mb-4 border-b border-gray-200 py-2 backdrop-blur-sm sm:mb-6 sm:border-b-2 sm:py-3">
-            <div className="grid grid-cols-[60px_repeat(9,1fr)] items-center gap-1 sm:grid-cols-[70px_repeat(9,1fr)] sm:gap-2">
+            <div className="grid grid-cols-[60px_repeat(11,1fr)] items-center gap-1 sm:grid-cols-[70px_repeat(11,1fr)] sm:gap-2">
               <div className="font-jetbrains-mono text-[10px] font-semibold text-gray-500 sm:text-xs"></div>
               {categoryLabels.map((label, i) => (
                 <div
                   key={i}
-                  className="whitespace-pre-line text-center text-[10px] font-semibold leading-tight text-gray-700 sm:text-xs"
+                  // The sheet has three "Other" columns under one label
+                  className={`whitespace-pre-line text-center text-[10px] font-semibold leading-tight text-gray-700 sm:text-xs ${i === categoryLabels.length - 1 ? "col-span-3" : ""}`}
                 >
                   {label}
                 </div>

@@ -7,9 +7,12 @@ import type {
 } from "~/types/schedule";
 
 // Google Sheets API v4 configuration
-const SPREADSHEET_ID = "1_dZgkfkhmR-LdqvAplInEOxZJGu7gSsE9FlAiWD64Bk";
-const SHEET_NAME = "Sheet1";
-const RANGE = "A:J";
+const SPREADSHEET_ID = "1JRfqib3Mqp2iriKS3rxZBbQyGpZovkagBwEEbcopJCM";
+const SHEET_NAME = "hackwestern-schedule-v2";
+const RANGE = "A:L";
+// Only cell text and merges; without this the response includes every
+// cell's formatting (about 19 MB).
+const FIELDS = "sheets(data(rowData(values(formattedValue))),merges)";
 
 interface GoogleSheetsCell {
   formattedValue?: string;
@@ -69,6 +72,8 @@ function parseScheduleEvent(event: ScheduleEvent): ParsedScheduleEvent {
     sponsorBooth: parseEventText(event["Spon Booth"]) ?? undefined,
     scavengerHunt: parseEventText(event["Scavenger Hunt"]) ?? undefined,
     other: parseEventText(event.Other) ?? undefined,
+    other2: parseEventText(event["Other 2"]) ?? undefined,
+    other3: parseEventText(event["Other 3"]) ?? undefined,
   };
 }
 
@@ -82,7 +87,7 @@ export default async function handler(
 
   try {
     const apiKey = env.GOOGLE_SHEETS_API_KEY;
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?includeGridData=true&ranges=${SHEET_NAME}!${RANGE}&key=${apiKey}`;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?includeGridData=true&fields=${FIELDS}&ranges=${encodeURIComponent(`'${SHEET_NAME}'!${RANGE}`)}&key=${apiKey}`;
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -102,7 +107,7 @@ export default async function handler(
     const mergeMap = new Map<string, { value: string; endRow: number }>();
     for (const merge of merges) {
       const value =
-        rowData[merge.startRowIndex]?.values[merge.startColumnIndex];
+        rowData[merge.startRowIndex]?.values?.[merge.startColumnIndex];
       const cellValue =
         value?.formattedValue ?? value?.effectiveValue?.stringValue ?? "";
 
@@ -149,6 +154,8 @@ export default async function handler(
         "Spon Booth": getCellValue(7),
         "Scavenger Hunt": getCellValue(8),
         Other: getCellValue(9),
+        "Other 2": getCellValue(10),
+        "Other 3": getCellValue(11),
       };
 
       events.push(event);
@@ -190,6 +197,12 @@ export default async function handler(
       days.push(currentDay);
     }
 
+    // Cached at the edge so a busy schedule page does not hit the Sheets API
+    // once per visitor (limit: 60 reads a minute). Edits show within a minute.
+    res.setHeader(
+      "Cache-Control",
+      "public, s-maxage=60, stale-while-revalidate=600",
+    );
     return res.status(200).json(days);
   } catch (error) {
     console.error("Error fetching schedule:", error);

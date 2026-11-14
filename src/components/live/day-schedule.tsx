@@ -336,6 +336,8 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
               { key: "sponsorBooth", type: "booth" },
               { key: "scavengerHunt", type: "scavenger" },
               { key: "other", type: "other" },
+              { key: "other2", type: "other" },
+              { key: "other3", type: "other" },
             ];
 
             // Group consecutive columns with the same event
@@ -396,7 +398,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                   className="grid gap-1.5 border-t border-gray-200 pt-1 sm:gap-2"
                   style={{
                     minHeight: `${height}px`,
-                    gridTemplateColumns: `60px repeat(9, 1fr)`,
+                    gridTemplateColumns: `60px repeat(11, 1fr)`,
                   }}
                 >
                   {/* Time label */}
@@ -427,13 +429,13 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                 {isLargeGap && (
                   <div
                     key={`gap-${idx}`}
-                    className="grid grid-cols-[60px_repeat(9,1fr)] gap-1.5 rounded-md border border-dashed border-gray-300 bg-gray-50 sm:gap-2"
+                    className="grid grid-cols-[60px_repeat(11,1fr)] gap-1.5 rounded-md border border-dashed border-gray-300 bg-gray-50 sm:gap-2"
                     style={{ minHeight: "40px" }}
                   >
                     <div className="flex items-center justify-center text-xs font-medium text-gray-400">
                       ⋯
                     </div>
-                    {Array(9)
+                    {Array(11)
                       .fill(null)
                       .map((_, colIdx) => (
                         <div
