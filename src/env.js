@@ -92,6 +92,11 @@ export const env = createEnv({
     // Dedicated service account for sponsor judging Sheets access
     SPONSOR_SHEETS_CLIENT_EMAIL: z.string().optional(),
     SPONSOR_SHEETS_PRIVATE_KEY: z.string().optional(),
+    // Run-of-show sheet (sponsor schedule). Its own service account so it can
+    // differ from the sponsor judging one; falls back to SPONSOR_SHEETS_*.
+    RUN_OF_SHOW_SHEET: z.string().optional(),
+    RUN_OF_SHOW_SHEETS_CLIENT_EMAIL: z.string().optional(),
+    RUN_OF_SHOW_SHEETS_PRIVATE_KEY: z.string().optional(),
     GITHUB_TOKEN: z.string().optional(),
     // ISO 8601 datetime strings for the hacking window used in commit-timing cheat checks
     HACK_START: z.string().datetime().optional(),
@@ -173,6 +178,9 @@ export const env = createEnv({
     SPONSOR_MASTER_SHEET_TAB: process.env.SPONSOR_MASTER_SHEET_TAB,
     SPONSOR_SHEETS_CLIENT_EMAIL: process.env.SPONSOR_SHEETS_CLIENT_EMAIL,
     SPONSOR_SHEETS_PRIVATE_KEY: process.env.SPONSOR_SHEETS_PRIVATE_KEY,
+    RUN_OF_SHOW_SHEET: process.env.RUN_OF_SHOW_SHEET,
+    RUN_OF_SHOW_SHEETS_CLIENT_EMAIL: process.env.RUN_OF_SHOW_SHEETS_CLIENT_EMAIL,
+    RUN_OF_SHOW_SHEETS_PRIVATE_KEY: process.env.RUN_OF_SHOW_SHEETS_PRIVATE_KEY,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     HACK_START: process.env.HACK_START,
     HACK_END: process.env.HACK_END,
