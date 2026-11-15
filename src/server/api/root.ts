@@ -13,6 +13,7 @@ import { teamFinderRouter } from "./routers/team-finder";
 import { sponsorJudgingRouter } from "./routers/sponsor-judging";
 import { sponsorDashboardRouter } from "./routers/sponsor-dashboard";
 import { sponsorPortalRouter } from "./routers/sponsor-portal";
+import { sponsorScheduleRouter } from "./routers/sponsor-schedule";
 import { onboardingRouter } from "./routers/onboarding";
 
 /**
@@ -35,6 +36,7 @@ export const appRouter = createTRPCRouter({
   sponsorJudging: sponsorJudgingRouter,
   sponsorDashboard: sponsorDashboardRouter,
   sponsorPortal: sponsorPortalRouter,
+  sponsorSchedule: sponsorScheduleRouter,
   onboarding: onboardingRouter,
 });
 
