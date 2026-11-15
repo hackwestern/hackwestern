@@ -54,3 +54,9 @@
 - **Decision:** Keep one owner per fact: the sheet owns setup (schedule, windows, formats, rooms), the app owns bookings and hacker responses and mirrors them to the sheet. Organizers change bookings with Cancel/Move buttons on the organizer page (T26), not by editing the sheet.
 - **Why:** 6 days to the event and ~72 chats; two-way sync risks conflicting edits and lets the sheet bypass the room and double-booking rules.
 - **Alternatives:** full two-way sync; sheet "action columns" the app reads back and validates (possible later).
+
+## 2026-11-15 — Sponsor help requests go to Slack; first reaction or reply claims them
+- **Decision:** Sponsors get a "Need help" button (quick reason + optional note). The site stores the request (one open per sponsor), posts it in the sponsor team Slack channel with a group mention, and the first person to react or reply in the thread claims it; the sponsor's page shows who is coming. Unclaimed requests are re-pinged in the thread at 3 and 6 minutes. Re-pings run when the sponsor's page polls the status, not on a cron. Organizers get a backup queue on /internal/sponsor-schedule. Separate SPONSOR_HELP_SLACK_* env vars, since the sponsor team may use a different workspace from the hacker coffee chat bot.
+- **Why:** Jazz wants one person to own every ping, visibly. Reactions are the lowest-effort way to say "I've got it" on a phone. Polling-driven re-pings avoid needing Vercel cron (minute-level cron isn't on every plan).
+- **Alternatives:** a Slack button "I've got it" (needs interactivity, more taps than an emoji); SMS/phone call (cost, setup); claiming on the site instead of Slack (team lives in Slack during the event).
+- **Design:** all new UI uses the blue dashboard-* system from /live (src/lib/tokens.ts).
