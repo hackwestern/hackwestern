@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import Image from "next/image";
-import { Button } from "../ui/button";
 import { api } from "~/utils/api";
 
 const AddToWallet = ({
@@ -50,8 +49,9 @@ const AddToWallet = ({
               typeof data.googleWalletUrl === "string"
             ) {
               setGoogleWalletUrl(data.googleWalletUrl);
-              // Redirect to Google Wallet
-              window.open(data.googleWalletUrl, "_blank");
+              // Go to Google Wallet in this tab. A new tab opened here, after
+              // the server call, gets blocked as a popup and nothing happens.
+              window.location.href = data.googleWalletUrl;
             }
           },
           onError: (err) => {
@@ -170,10 +170,13 @@ const AddToWallet = ({
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <Button
+      {/* Plain button: the badge artwork is the whole button, so both badges
+          sit at the same height with no site button chrome behind them. */}
+      <button
+        type="button"
         onClick={handleGeneratePass}
         disabled={isLoading}
-        className={`h-auto w-[130px] p-0 transition-opacity sm:w-[160px] md:w-[180px] ${
+        className={`rounded-full transition-opacity hover:opacity-90 ${
           isLoading ? "cursor-not-allowed opacity-40" : ""
         }`}
       >
@@ -188,11 +191,11 @@ const AddToWallet = ({
               ? "Add to Google Wallet"
               : "Add to Apple Wallet"
           }
-          width={180}
-          height={60}
-          className="h-auto w-full object-contain"
+          width={walletType === "GOOGLE" ? 174 : 152}
+          height={48}
+          className="h-12 w-auto"
         />
-      </Button>
+      </button>
 
       {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
 
