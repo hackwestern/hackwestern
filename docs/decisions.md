@@ -60,3 +60,8 @@
 - **Why:** Jazz wants one person to own every ping, visibly. Reactions are the lowest-effort way to say "I've got it" on a phone. Polling-driven re-pings avoid needing Vercel cron (minute-level cron isn't on every plan).
 - **Alternatives:** a Slack button "I've got it" (needs interactivity, more taps than an emoji); SMS/phone call (cost, setup); claiming on the site instead of Slack (team lives in Slack during the event).
 - **Design:** all new UI uses the blue dashboard-* system from /live (src/lib/tokens.ts).
+
+## 2026-11-15 — Sponsors offer coffee chats by scanning a hacker's badge
+- **Decision:** A sponsor offers a coffee chat by scanning the hacker's badge or /live QR (it holds the hacker's user id) on `/sponsors/[uuid]/scan`, then picking a start time (earliest open one preselected). The hacker still accepts or declines on /live, so they stay in control of their schedule. The hacker no longer has to be on the sponsor's interested list to be offered a chat; meeting in person is the signal. Scanning shows only the hacker's first name; resume and links still need agreeShareWithSponsors.
+- **Why:** Jazz: offering should be as simple as scanning the badge. Sponsors meet hackers at the booth, not from a list.
+- **Alternatives:** pick from the interested-hackers list (kept as a browse page, T11, not the way to offer); scanning books the chat instantly with no accept step (rejected for now: a hacker can't refuse a time that clashes with their team's plans).
