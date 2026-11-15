@@ -10,8 +10,15 @@ Run the board (`docs/board.md`). Round 1 = verify the 11 tasks in **Review** wit
 - T09 hacker sponsor-interest form (deps T08)
 Then T15 → T16 → T17/T18/T19/T20 → T22/T23 → T26, then T11.
 
+Sponsor help ("Need help" → Slack ping, first reaction or reply claims it), added 2026-11-15:
+T27 (deps T13) → T28 → T29 and T30 in parallel → T31, T32. Runbook: docs/runbooks/slack-sponsor-help.md. T33 (Slack setup) is Jazz's.
+
+## Design rule (all UI)
+Use the blue dashboard design system the /live site uses: `dashboard-*` tokens from src/lib/tokens.ts (primary #0b6bc4, page #f3f7fc, nav #dbe7f5) and the components in src/components/internals/dashboard-*. Match src/pages/live.tsx. Don't use the older raw `text-heavy` / `primary-300` classes that live.tsx still has in places. Give design-reviewer this rule when checking UI cards.
+
 ## Blocked
 - T24: Jazz creates the Slack app (docs/runbooks/slack-coffee-chat-bot.md). T22/T23 must skip silently with no SLACK_BOT_TOKEN.
+- T33: Jazz sets up the sponsor help bot in the sponsor team's Slack (docs/runbooks/slack-sponsor-help.md). Open question: is the sponsor team on the same workspace as hackers? If yes, one app can do both.
 
 ## Done this session (2026-11-14)
 - Live sheet connected: service account `hw-run-of-show@hackwestern-sheets.iam.gserviceaccount.com` (Viewer on the run-of-show sheet), key in `.env` as RUN_OF_SHOW_SHEETS_*; RUN_OF_SHOW_SHEET set. Same three vars still need adding in **Vercel** before deploy.
