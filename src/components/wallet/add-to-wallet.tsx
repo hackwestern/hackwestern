@@ -23,6 +23,11 @@ const AddToWallet = ({
     setLoading(true);
     setError(null);
 
+    // Open the Google Wallet tab now, during the click. A tab opened later,
+    // once the server replies, gets blocked as a popup and nothing happens.
+    const walletTab =
+      walletType === "GOOGLE" ? window.open("", "_blank") : null;
+
     try {
       generatePass.mutate(
         { walletType },
@@ -31,6 +36,7 @@ const AddToWallet = ({
             console.log("Pass generated:", data);
 
             if (!data) {
+              walletTab?.close();
               setError("No data received from server");
               return;
             }
@@ -49,12 +55,17 @@ const AddToWallet = ({
               typeof data.googleWalletUrl === "string"
             ) {
               setGoogleWalletUrl(data.googleWalletUrl);
-              // Go to Google Wallet in this tab. A new tab opened here, after
-              // the server call, gets blocked as a popup and nothing happens.
-              window.location.href = data.googleWalletUrl;
+              if (walletTab) {
+                walletTab.opener = null;
+                walletTab.location.href = data.googleWalletUrl;
+              } else {
+                // The browser refused the new tab: use this one.
+                window.location.href = data.googleWalletUrl;
+              }
             }
           },
           onError: (err) => {
+            walletTab?.close();
             console.error("Failed to generate pass:", err);
 
             // Check if it's a NOT_FOUND error (pass doesn't exist in R2)
