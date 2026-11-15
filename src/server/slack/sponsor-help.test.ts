@@ -10,7 +10,10 @@ vi.mock("~/env", async (importOriginal) => {
   return {
     env: new Proxy(env, {
       get(target, prop) {
-        if (typeof prop === "string" && prop.startsWith("SPONSOR_HELP_SLACK_")) {
+        if (
+          typeof prop === "string" &&
+          (prop.startsWith("SPONSOR_HELP_SLACK_") || prop.startsWith("SLACK_"))
+        ) {
           return slackEnv.values[prop];
         }
         return target[prop];
@@ -25,6 +28,7 @@ import {
   postSponsorHelpRequest,
   repingSponsorHelp,
   slackDisplayName,
+  sponsorHelpSigningSecret,
   sponsorHelpSlackEnabled,
 } from "./sponsor-help";
 
@@ -109,6 +113,43 @@ describe("postSponsorHelpRequest", () => {
     await expect(postSponsorHelpRequest(details)).resolves.toBeNull();
     fetchMock.mockRejectedValueOnce(new Error("offline"));
     await expect(postSponsorHelpRequest(details)).resolves.toBeNull();
+  });
+});
+
+describe("shared Slack app fallback", () => {
+  test("uses SLACK_BOT_TOKEN when the help token is unset", async () => {
+    slackEnv.values.SPONSOR_HELP_SLACK_BOT_TOKEN = undefined;
+    slackEnv.values.SLACK_BOT_TOKEN = "xoxb-shared";
+    expect(sponsorHelpSlackEnabled()).toBe(true);
+    fetchMock.mockResolvedValueOnce(slackOk({ channel: "C123", ts: "1.2" }));
+    await postSponsorHelpRequest(details);
+    expect(
+      (calls()[0]!.init.headers as Record<string, string>).Authorization,
+    ).toBe("Bearer xoxb-shared");
+  });
+
+  test("the help token wins over the shared one", async () => {
+    slackEnv.values.SLACK_BOT_TOKEN = "xoxb-shared";
+    fetchMock.mockResolvedValueOnce(slackOk({ channel: "C123", ts: "1.2" }));
+    await postSponsorHelpRequest(details);
+    expect(
+      (calls()[0]!.init.headers as Record<string, string>).Authorization,
+    ).toBe("Bearer xoxb-test");
+  });
+
+  test("signing secret falls back to SLACK_SIGNING_SECRET", () => {
+    expect(sponsorHelpSigningSecret()).toBeNull();
+    slackEnv.values.SLACK_SIGNING_SECRET = "shared-secret";
+    expect(sponsorHelpSigningSecret()).toBe("shared-secret");
+    slackEnv.values.SPONSOR_HELP_SLACK_SIGNING_SECRET = "help-secret";
+    expect(sponsorHelpSigningSecret()).toBe("help-secret");
+  });
+
+  test("neither token set: skipped silently", async () => {
+    slackEnv.values.SPONSOR_HELP_SLACK_BOT_TOKEN = undefined;
+    expect(sponsorHelpSlackEnabled()).toBe(false);
+    await expect(postSponsorHelpRequest(details)).resolves.toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 

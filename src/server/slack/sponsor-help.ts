@@ -1,6 +1,7 @@
 // Slack side of sponsor help requests (docs/runbooks/slack-sponsor-help.md).
 // Plain fetch against the Slack Web API. Every function is a silent no-op
-// when SPONSOR_HELP_SLACK_BOT_TOKEN is unset, and never throws: Slack being
+// when no bot token is set (SPONSOR_HELP_SLACK_BOT_TOKEN, else the shared
+// SLACK_BOT_TOKEN), and never throws: Slack being
 // down must not stop a sponsor from asking for help (the organizer queue on
 // /internal/sponsor-schedule is the backup).
 
@@ -23,8 +24,17 @@ export type SponsorHelpDetails = {
   location: string | null;
 };
 
+// Hackers and the sponsor team share one Slack app, so the shared SLACK_*
+// values are the default; SPONSOR_HELP_SLACK_* override them.
 function token(): string | null {
-  return env.SPONSOR_HELP_SLACK_BOT_TOKEN ?? null;
+  return env.SPONSOR_HELP_SLACK_BOT_TOKEN ?? env.SLACK_BOT_TOKEN ?? null;
+}
+
+/** Secret for verifying Slack's request signatures; null when unset. */
+export function sponsorHelpSigningSecret(): string | null {
+  return (
+    env.SPONSOR_HELP_SLACK_SIGNING_SECRET ?? env.SLACK_SIGNING_SECRET ?? null
+  );
 }
 
 function mention(): string {
