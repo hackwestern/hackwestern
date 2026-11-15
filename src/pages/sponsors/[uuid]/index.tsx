@@ -15,6 +15,7 @@ import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "~/lib/sponsor-picks";
+import { scheduleCopy } from "~/content/sponsor-schedule";
 
 export default function SponsorHubPage() {
   const router = useRouter();
@@ -195,6 +196,25 @@ export default function SponsorHubPage() {
             </div>
           </DashboardPanel>
         )}
+
+        {/* Schedule + where is everyone (from the run-of-show sheet) */}
+        <nav
+          aria-label={scheduleCopy.hubLinks.label}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+        >
+          <DashboardButton variant="outline" asChild className="h-11 w-full">
+            <Link href={`/sponsors/${id}/schedule`}>
+              <Clock aria-hidden />
+              {scheduleCopy.hubLinks.schedule}
+            </Link>
+          </DashboardButton>
+          <DashboardButton variant="outline" asChild className="h-11 w-full">
+            <Link href={`/sponsors/${id}/where`}>
+              <MapPin aria-hidden />
+              {scheduleCopy.hubLinks.where}
+            </Link>
+          </DashboardButton>
+        </nav>
 
         {/* Event details */}
         <div className="flex flex-col gap-3">

@@ -117,3 +117,19 @@ export function compareRunOfShow(
   const d = RUN_OF_SHOW_DAYS.indexOf(a.day) - RUN_OF_SHOW_DAYS.indexOf(b.day);
   return d !== 0 ? d : a.start.localeCompare(b.start);
 }
+
+/**
+ * The part of a multi-sponsor location that belongs to one sponsor, e.g.
+ * ("Scotiabank: Rm 2110, Canada Life: Rm 2230", "Scotiabank") -> "Rm 2110".
+ * Returns the whole location when it isn't split by sponsor.
+ */
+export function locationFor(location: string, sponsor: string): string {
+  const norm = (v: string) => v.toLowerCase().replace(/\s+/g, "");
+  for (const part of location.split(/[,\n]/)) {
+    const [who, ...rest] = part.split(":");
+    if (rest.length > 0 && norm(who ?? "") === norm(sponsor)) {
+      return rest.join(":").trim();
+    }
+  }
+  return location;
+}

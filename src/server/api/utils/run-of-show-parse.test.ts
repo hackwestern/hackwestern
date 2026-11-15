@@ -137,6 +137,19 @@ describe("sponsor matching", () => {
     expect(named.items.find((i) => i.title === "Dinner")?.sponsors).toEqual([]);
     expect(named.coffeeChats.map((c) => c.sponsor)).toEqual(["StarTech", "Sun Life", "Canada Life", "Scotiabank"]);
   });
+
+  test("matches sponsors named only in the location (Sunday judging rooms)", () => {
+    const judging = {
+      ...parsed.items[0]!,
+      title: "Sponsor Track Judging",
+      location: "Scotiabank: Rm 2110, Canada Life: Rm 2230",
+    };
+    const named = applySponsorNames(
+      { ...parsed, coffeeChats: [], items: [judging] },
+      names,
+    );
+    expect(named.items[0]?.sponsors.sort()).toEqual(["Canada Life", "Scotiabank"]);
+  });
 });
 
 const COFFEE: string[][] = [

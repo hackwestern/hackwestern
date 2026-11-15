@@ -68,7 +68,16 @@ export const sponsorScheduleRouter = createTRPCRouter({
         readAt: sheet.readAt,
         items: sheet.items.filter(
           (item) =>
-            ALL_HANDS_COLUMNS.has(item.column) || item.sponsors.includes(name),
+            ALL_HANDS_COLUMNS.has(item.column) ||
+            item.sponsors.includes(name) ||
+            // Sponsor Bay hours apply to every sponsor.
+            item.column === "spon-booth" ||
+            // Events for all sponsors ("Sponsor Judging Workshop", "Sponsor
+            // Track Shortlisting"). Other companies' workshops (MLH, QNX) are
+            // left out even when that company isn't a registered sponsor.
+            (item.column === "sponsor-workshop" &&
+              item.sponsors.length === 0 &&
+              /^sponsor\b/i.test(item.title)),
         ),
         coffeeChat: sheet.coffeeChats.find((c) => c.sponsor === name) ?? null,
       };
