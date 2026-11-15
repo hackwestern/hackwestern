@@ -274,6 +274,13 @@
       "when": 1794700152066,
       "tag": "0038_sponsor_interest",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1794713783587,
+      "tag": "0039_coffee_chat",
+      "breakpoints": true
     }
   ]
 }
