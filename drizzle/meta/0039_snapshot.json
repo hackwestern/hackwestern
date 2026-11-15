@@ -1,5 +1,5 @@
 {
-  "id": "9e4db415-a347-460f-832c-a3c40b3a74d2",
+  "id": "afe97862-0c0b-467e-9425-0e41a089d248",
   "prevId": "d890b94d-aded-4e77-91b8-d7e2912c851d",
   "version": "7",
   "dialect": "postgresql",
@@ -762,6 +762,13 @@
           "type": "varchar(5)",
           "primaryKey": false,
           "notNull": true
+        },
+        "duration_minutes": {
+          "name": "duration_minutes",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 15
         },
         "status": {
           "name": "status",

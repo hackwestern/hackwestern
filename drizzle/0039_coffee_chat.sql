@@ -5,6 +5,7 @@ CREATE TABLE "coffee_chat" (
 	"user_id" varchar(255) NOT NULL,
 	"room" smallint NOT NULL,
 	"slot_time" varchar(5) NOT NULL,
+	"duration_minutes" smallint DEFAULT 15 NOT NULL,
 	"status" "coffee_chat_status" DEFAULT 'pending' NOT NULL,
 	"rep_name" varchar(255),
 	"created_at" timestamp (3) DEFAULT now() NOT NULL,

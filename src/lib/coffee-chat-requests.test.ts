@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   coffeeChatExpiresAt,
+  coffeeChatParallelChats,
   coffeeChatSeats,
   coffeeChatStartsAt,
+  coffeeChatsOverlap,
   effectiveCoffeeChatStatus,
   isActiveCoffeeChat,
+  parseCoffeeChatDuration,
+  parseCoffeeChatGroupSize,
+  parseSheetTime,
 } from "./coffee-chat-requests";
 
 describe("coffeeChatStartsAt", () => {
@@ -14,9 +19,15 @@ describe("coffeeChatStartsAt", () => {
     );
   });
 
-  it("rejects times that aren't slots", () => {
+  it("allows a 9:00 AM start (StarTech's window)", () => {
+    expect(coffeeChatStartsAt("09:00").toISOString()).toBe(
+      "2026-11-21T14:00:00.000Z",
+    );
+  });
+
+  it("rejects times off the 15-minute grid", () => {
     expect(() => coffeeChatStartsAt("10:07")).toThrow();
-    expect(() => coffeeChatStartsAt("16:00")).toThrow();
+    expect(() => coffeeChatStartsAt("9:00")).toThrow();
   });
 });
 
@@ -58,18 +69,51 @@ describe("expiry", () => {
   });
 });
 
-describe("coffeeChatSeats", () => {
-  it("is reps capped by room capacity", () => {
-    expect(coffeeChatSeats(3, 2)).toBe(2);
-    expect(coffeeChatSeats(2, 5)).toBe(2);
+describe("seats (room fits 6 people)", () => {
+  it("1-on-1s: one per rep, at most 3 at once", () => {
+    expect(coffeeChatParallelChats(2, 1)).toBe(2);
+    expect(coffeeChatSeats(3, 1)).toBe(3);
+    expect(coffeeChatSeats(4, 1)).toBe(3);
   });
 
-  it("uses reps when capacity is unknown", () => {
-    expect(coffeeChatSeats(4, null)).toBe(4);
+  it("groups of 3: one group at once (3 hackers + rep = 4 people)", () => {
+    expect(coffeeChatParallelChats(3, 3)).toBe(1);
+    expect(coffeeChatSeats(3, 3)).toBe(3);
   });
 
-  it("never goes below zero", () => {
-    expect(coffeeChatSeats(3, 0)).toBe(0);
-    expect(coffeeChatSeats(-1, 4)).toBe(0);
+  it("no reps, no seats", () => {
+    expect(coffeeChatSeats(0, 1)).toBe(0);
+    expect(coffeeChatSeats(-1, 3)).toBe(0);
+  });
+});
+
+describe("reading the Coffee Chats tab", () => {
+  it("parses sheet times", () => {
+    expect(parseSheetTime("9:00 AM")).toBe("09:00");
+    expect(parseSheetTime("1:00 PM")).toBe("13:00");
+    expect(parseSheetTime("12:00 PM")).toBe("12:00");
+    expect(parseSheetTime("")).toBeNull();
+    expect(parseSheetTime("10:10 AM")).toBeNull();
+  });
+
+  it("reads chat length from FORMAT", () => {
+    expect(parseCoffeeChatDuration("Individual (15 mins)")).toBe(15);
+    expect(parseCoffeeChatDuration("Groups (30 mins with 3 people)")).toBe(30);
+    expect(parseCoffeeChatDuration(undefined)).toBe(15);
+  });
+
+  it("reads group size from FORMAT", () => {
+    expect(parseCoffeeChatGroupSize("Groups (30 mins with 3 people)")).toBe(3);
+    expect(parseCoffeeChatGroupSize("Individual (15 mins)")).toBe(1);
+    expect(parseCoffeeChatGroupSize("")).toBe(1);
+  });
+});
+
+describe("coffeeChatsOverlap", () => {
+  it("a 30-min chat blocks the next 15-min slot", () => {
+    const long = { slotTime: "10:00", durationMinutes: 30 };
+    expect(coffeeChatsOverlap(long, { slotTime: "10:15", durationMinutes: 15 })).toBe(true);
+    expect(coffeeChatsOverlap(long, { slotTime: "10:30", durationMinutes: 15 })).toBe(false);
+    expect(coffeeChatsOverlap({ slotTime: "09:45", durationMinutes: 30 }, long)).toBe(true);
   });
 });

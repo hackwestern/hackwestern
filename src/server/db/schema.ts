@@ -361,9 +361,9 @@ export const sponsorJudgingSponsors = pgTable("sponsor_judging_sponsor", {
   // Must match the "Company Name" spelling in the master sheet, since this is
   // what the judging sheet rows are keyed on.
   name: varchar("name", { length: 255 }).notNull().unique(),
-  // Reps the sponsor is sending to coffee chats = chats they can run at once
-  // in a slot (capped by room capacity from the run-of-show sheet). Set by
-  // the sponsor on their page.
+  // Reps the sponsor is sending to coffee chats = 1-on-1 chats they run at
+  // once (each rep with one hacker, same room). Set by the sponsor on their
+  // page.
   coffeeChatReps: smallint("coffee_chat_reps").default(1).notNull(),
   createdAt: timestamp("created_at", { mode: "date", precision: 3 })
     .defaultNow()
@@ -390,10 +390,15 @@ export const coffeeChats = pgTable(
     userId: varchar("user_id", { length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    // Room id from COFFEE_CHAT_ROOMS (1-3) and slot start "HH:MM" from
-    // COFFEE_CHAT_SLOTS, same spelling as the sheet grid.
+    // Room id from COFFEE_CHAT_ROOMS (1-3), assigned by organizers. Chats are
+    // always 1-on-1; a sponsor's reps run several at once in the same room.
     room: smallint("room").notNull(),
+    // Saturday start time "HH:MM" on the 15-minute grid, and length (15 or
+    // 30, from the sponsor's FORMAT in the Coffee Chats sheet tab). A 30-min
+    // chat blocks the hacker for two grid slots; overlap is checked when the
+    // request is made (the unique index below only catches equal starts).
     slotTime: varchar("slot_time", { length: 5 }).notNull(),
+    durationMinutes: smallint("duration_minutes").default(15).notNull(),
     status: coffeeChatStatusEnum("status").default("pending").notNull(),
     repName: varchar("rep_name", { length: 255 }),
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
