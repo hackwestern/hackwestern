@@ -42,5 +42,5 @@ Checks: `npm test` (vitest), `npm run lint`, `npm run build`. Screenshots at 375
 ## Done
 
 ## Blocked
-- [ ] T22 Slack DM to the hacker with Accept/Decline buttons · **blocked on:** finding the team's existing Slack bot and its token (not in the hackwestern repo or org) · deps: T16 · build: main · verify: code-reviewer
+- [ ] T22 Slack DM to the hacker with Accept/Decline buttons · **blocked on:** Luka (owns the HW Slack bot): how to send a DM through it (bot token or an endpoint), and whether it can handle button clicks · deps: T16 · build: main · verify: code-reviewer
 - [ ] T01 Run-of-show row types and column map · owns: src/lib/run-of-show.ts (+ test with fixture rows) · check: `npm test run-of-show` parses fixture rows from the real header row · deps: none · **blocked on:** the sheet shared with the `SPONSOR_SHEETS_CLIENT_EMAIL` service account, and the tab names and header rows · build: main · verify: code-reviewer
