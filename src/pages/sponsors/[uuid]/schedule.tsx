@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import { CoffeeChatSummary } from "~/components/sponsors/coffee-chat-summary";
 import { DayPicker } from "~/components/sponsors/day-picker";
+import { RepCount } from "~/components/sponsors/rep-count";
 import { ScheduleList } from "~/components/sponsors/schedule-list";
 import {
   InvalidLink,
@@ -67,7 +68,10 @@ export default function SponsorSchedulePage() {
         intro={copy.intro}
       />
       {shownDay === "Saturday" && (
-        <CoffeeChatSummary setup={data.coffeeChat} />
+        <>
+          <CoffeeChatSummary setup={data.coffeeChat} />
+          <RepCount sponsor={id} groupSize={data.coffeeChat?.groupSize ?? 1} />
+        </>
       )}
       <DayPicker value={shownDay} onChange={setDay} />
       <ScheduleList
