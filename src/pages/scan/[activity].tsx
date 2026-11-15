@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/router";
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
+import { TRPCClientError } from "@trpc/client";
 import { api } from "~/utils/api";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import jsQR from "jsqr";
@@ -55,8 +57,6 @@ const ScanActivityPage = () => {
   const [status, setStatus] = useState<"scanning" | "success" | "error">(
     "scanning",
   );
-  const [scannedName, setScannedName] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [_testMode, _setTestMode] = useState(false);
@@ -65,6 +65,8 @@ const ScanActivityPage = () => {
   );
   const activityTypeRef = useRef(activityType);
   activityTypeRef.current = activityType;
+  // The camera keeps running after a scan, so ignore the same QR for a few seconds
+  const lastScanRef = useRef<{ value: string; at: number } | null>(null);
   const [_testUserId, _setTestUserId] = useState("");
 
   // tRPC mutations and queries
@@ -251,9 +253,6 @@ const ScanActivityPage = () => {
       const errorMessage =
         error instanceof Error ? error.message : "Unable to access camera";
       setCameraError(errorMessage);
-      setErrorMessage(
-        `Unable to access camera: ${errorMessage}. Please check permissions.`,
-      );
     }
   };
 
@@ -300,29 +299,16 @@ const ScanActivityPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameraActive, status, itemLoading, itemData]); // handleQRCodeDetected and scanQRCode are stable functions
 
-  // Stop camera when scan is successful
-  useEffect(() => {
-    if (status === "success") {
-      // Stop scanning interval
-      if (scanIntervalRef.current) {
-        clearInterval(scanIntervalRef.current);
-        scanIntervalRef.current = null;
-      }
-
-      // Stop camera stream
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
-        setCameraActive(false);
-      }
-    }
-  }, [status]);
-
   const handleQRCodeDetected = (qrData: string) => {
     // Prevent multiple scans from being processed at the same time
     if (isProcessingRef.current) {
       return;
     }
+    const last = lastScanRef.current;
+    if (last && last.value === qrData && Date.now() - last.at < 5000) {
+      return;
+    }
+    lastScanRef.current = { value: qrData, at: Date.now() };
 
     // QR code should contain userId
     // For now, we'll assume it's a simple userId string
@@ -339,7 +325,25 @@ const ScanActivityPage = () => {
     }
   };
 
-  // Process scan: call backend API to record the scan
+  // Look up a hacker's name for the toast, falling back to their ID
+  const fetchUserName = async (userId: string) => {
+    try {
+      const userResponse = await fetch(
+        `/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`,
+      );
+      if (!userResponse.ok) return userId;
+      const userData = (await userResponse.json()) as {
+        name?: string;
+        email?: string;
+      };
+      return userData?.name ?? userData?.email ?? userId;
+    } catch (userError) {
+      console.error("Error fetching user info:", userError);
+      return userId;
+    }
+  };
+
+  // Process scan: call backend API to record the scan, then show a toast
   const processScan = async (userId: string) => {
     // Prevent multiple scans from being processed at the same time
     if (isProcessingRef.current) {
@@ -347,305 +351,56 @@ const ScanActivityPage = () => {
     }
     isProcessingRef.current = true;
 
-    // Pause scanning while this scan is processed. The camera stays on so
-    // scanning can resume after an error; success navigates away, which
-    // stops it.
+    // Pause scanning while this one is processed (the camera stays on)
     if (scanIntervalRef.current) {
       clearInterval(scanIntervalRef.current);
       scanIntervalRef.current = null;
     }
 
     try {
-      // Validate that we have an item
-      if (!itemId && !itemCode) {
-        setErrorMessage("No activity selected");
-        setStatus("error");
-        setTimeout(() => {
-          setStatus("scanning");
-          setErrorMessage(null);
-          isProcessingRef.current = false;
-        }, 3000);
-        return;
+      if (!itemData) {
+        throw new Error("Item not found. Please check the activity.");
       }
-
-      // If itemData is loaded and doesn't match, or if itemLoading is false and itemData is null, item doesn't exist
-      if (!itemLoading && !itemData) {
-        setErrorMessage("Item not found. Please check the activity.");
-        setStatus("error");
-        setTimeout(() => {
-          setStatus("scanning");
-          setErrorMessage(null);
-          isProcessingRef.current = false;
-        }, 3000);
-        return;
-      }
-
-      // If we're still loading item data, wait a bit
-      if (itemLoading) {
-        setErrorMessage("Loading item details...");
-        setStatus("error");
-        setTimeout(() => {
-          setStatus("scanning");
-          setErrorMessage(null);
-          isProcessingRef.current = false;
-        }, 2000);
-        return;
-      }
-
-      // Call the scan mutation with itemId (preferred) or itemCode
-      try {
-        await scanMutation.mutateAsync({
-          userId,
-          itemId: itemData?.id,
-          itemCode: itemData?.code,
-          activityType: isWinnable ? activityTypeRef.current : undefined,
-        });
-      } catch (scanError: unknown) {
-        // Check if it's an "already scanned" error before re-throwing
-        let message = "";
-        let errorCode = "";
-
-        if (scanError && typeof scanError === "object") {
-          if ("message" in scanError) {
-            message = String(scanError.message);
-          } else if (
-            "data" in scanError &&
-            typeof scanError.data === "object" &&
-            scanError.data &&
-            "message" in scanError.data
-          ) {
-            message = String(scanError.data.message);
-          } else if (
-            "shape" in scanError &&
-            typeof scanError.shape === "object" &&
-            scanError.shape &&
-            "message" in scanError.shape
-          ) {
-            message = String(scanError.shape.message);
-          }
-
-          if ("code" in scanError) {
-            errorCode = String(scanError.code);
-          } else if (
-            "data" in scanError &&
-            typeof scanError.data === "object" &&
-            scanError.data &&
-            "code" in scanError.data
-          ) {
-            errorCode = String(scanError.data.code);
-          }
-        }
-
-        const isAlreadyScannedError =
-          message &&
-          (message.includes("already scanned") ||
-            message.includes("Item already scanned") ||
-            (errorCode === "BAD_REQUEST" &&
-              message.toLowerCase().includes("scan")));
-
-        if (isAlreadyScannedError) {
-          // Fetch user info to display their name
-          let userName = userId;
-          try {
-            // Directly query the database since getUserById might not be available
-            const userResponse = await fetch(
-              `/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`,
-            );
-            if (userResponse.ok) {
-              const userData = (await userResponse.json()) as {
-                name?: string;
-                email?: string;
-              };
-              userName = userData?.name ?? userData?.email ?? userId;
-            }
-          } catch (userError) {
-            // If we can't get user info, just use userId
-            console.error(
-              "Error fetching user info for already scanned:",
-              userError,
-            );
-          }
-
-          // Navigate to already-scanned page with activity name and user name
-          const activityName =
-            itemData?.description ?? activityParam ?? "Activity";
-          void router.push({
-            pathname: "/scan/already-scanned",
-            query: {
-              activity: activityName,
-              user: userName,
-            },
-          });
-          isProcessingRef.current = false; // Reset flag before navigation
-          return; // Exit early, don't throw error and don't continue to success
-        }
-
-        // Re-throw if it's not an "already scanned" error
-        throw scanError;
-      }
-
-      // Only execute success flow if mutation succeeded (no error thrown)
-      // Fetch user info to display their name
-      let userName = userId;
-      try {
-        // Fetch user data via API
-        const userResponse = await fetch(
-          `/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`,
-        );
-        if (userResponse.ok) {
-          const userData = (await userResponse.json()) as {
-            name?: string;
-            email?: string;
-          };
-          userName = userData?.name ?? userData?.email ?? userId;
-        }
-        setScannedName(userName);
-      } catch (userError) {
-        // If we can't get user info, just use userId
-        console.error("Error fetching user info:", userError);
-        setScannedName(userId);
-      }
-
-      // Set success status
-      setStatus("success");
-
-      // Navigate to success page with activity name, user name, and activity param for redirect
-      const activityName = itemData?.description ?? activityParam ?? "Activity";
-      void router.push({
-        pathname: "/scan/success",
-        query: {
-          activity: activityName,
-          user: userName,
-          activityParam: activityParam ?? "",
-        },
+      await scanMutation.mutateAsync({
+        userId,
+        itemId: itemData.id,
+        itemCode: itemData.code,
+        activityType: isWinnable ? activityTypeRef.current : undefined,
       });
-      return; // Exit early after successful navigation
-
-      // The useEffect will automatically resume scanning when status changes back to "scanning"
+      const userName = await fetchUserName(userId);
+      setStatus("success");
+      toast(
+        <span>
+          <span className="font-semibold">{userName}</span> scanned successfully
+        </span>,
+      );
     } catch (error: unknown) {
-      // Extract error message from various possible error formats FIRST
-      // to check if it's "already scanned" before logging
-      let message = "";
-      let errorCode = "";
-      if (error && typeof error === "object") {
-        // Try different possible error message locations
-        if ("message" in error) {
-          message = String(error.message);
-        } else if (
-          "data" in error &&
-          typeof error.data === "object" &&
-          error.data &&
-          "message" in error.data
-        ) {
-          message = String(error.data.message);
-        } else if (
-          "shape" in error &&
-          typeof error.shape === "object" &&
-          error.shape &&
-          "message" in error.shape
-        ) {
-          message = String(error.shape.message);
-        }
-
-        // Also check for error code
-        if ("code" in error) {
-          errorCode = String(error.code);
-        } else if (
-          "data" in error &&
-          typeof error.data === "object" &&
-          error.data &&
-          "code" in error.data
-        ) {
-          errorCode = String(error.data.code);
-        }
-      }
-
-      // Check if it's an "already scanned" error BEFORE logging
-      // The error message should be "Item already scanned" or contain "already scanned"
-      const isAlreadyScannedError =
-        message &&
-        (message.includes("already scanned") ||
-          message.includes("Item already scanned") ||
-          (errorCode === "BAD_REQUEST" &&
-            message.toLowerCase().includes("scan")));
-
-      if (isAlreadyScannedError) {
-        // Don't log "already scanned" errors - just navigate silently
-        // Fetch user info to display their name
-        let userName = userId;
-        try {
-          // Fetch user data via API
-          const userResponse = await fetch(
-            `/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`,
-          );
-          if (userResponse.ok) {
-            const userData = (await userResponse.json()) as {
-              name?: string;
-              email?: string;
-            };
-            userName = userData?.name ?? userData?.email ?? userId;
-          }
-        } catch (userError) {
-          // If we can't get user info, just use userId
-          console.error(
-            "Error fetching user info for already scanned:",
-            userError,
-          );
-        }
-
-        // Navigate to already-scanned page with activity name, user name, and activity param for redirect
-        const activityName =
-          itemData?.description ?? activityParam ?? "Activity";
-        void router.push({
-          pathname: "/scan/already-scanned",
-          query: {
-            activity: activityName,
-            user: userName,
-            activityParam: activityParam ?? "",
-          },
-        });
-        return; // Exit early, don't set error state
-      }
-
-      // Handle other errors - only log if not "already scanned"
-      console.error("Error processing scan:", error);
-      let errorMsg = "Failed to process scan. Please try again.";
-
-      if (message?.includes("not found")) {
-        errorMsg = message;
-        setErrorMessage(errorMsg);
-      } else if (
-        message &&
-        (message.includes("UNAUTHORIZED") ||
-          message.includes("FORBIDDEN") ||
-          message.includes("not an organizer"))
-      ) {
-        errorMsg =
-          "Authentication required. Please log in as an organizer to scan. (This is normal for testing - you can still use test mode to see how it works!)";
-        setErrorMessage(errorMsg);
-      } else if (message) {
-        errorMsg = message;
-        setErrorMessage(errorMsg);
-      } else {
-        setErrorMessage(errorMsg);
-      }
-
+      const message = error instanceof Error ? error.message : "";
       setStatus("error");
-
-      // Reset after error (the useEffect will handle restarting scanning)
-      setTimeout(() => {
-        setStatus("scanning");
-        setErrorMessage(null);
-        isProcessingRef.current = false; // Reset processing flag
-      }, 3000);
-    } finally {
-      // Reset processing flag if we didn't navigate away
-      // (navigation happens in try/catch blocks, so this is a safety net)
-      if (status !== "success") {
-        // Only reset if we're not navigating (navigation will unmount component)
-        // Actually, we don't need this since navigation unmounts the component
+      if (message.includes("already scanned")) {
+        const userName = await fetchUserName(userId);
+        toast.error(
+          <span>
+            <span className="font-semibold">{userName}</span> was already
+            scanned
+          </span>,
+        );
+      } else if (/UNAUTHORIZED|FORBIDDEN|not an organizer/.test(message)) {
+        toast.error("Log in as an organizer to scan.");
+      } else {
+        // Server errors (like an unapproved hacker) are expected, so only log unexpected ones
+        if (!(error instanceof TRPCClientError)) {
+          console.error("Error processing scan:", error);
+        }
+        toast.error(message || "Failed to process scan. Please try again.");
       }
     }
+
+    // Resume scanning shortly after (the useEffect restarts it when status changes back to "scanning")
+    setTimeout(() => {
+      setStatus("scanning");
+      isProcessingRef.current = false;
+    }, 1500);
   };
 
   // Navigation is now handled directly in processScan after setting success status
@@ -812,20 +567,6 @@ const ScanActivityPage = () => {
           </div>
         )} */}
       </div>
-
-      {/* Success Overlay */}
-      {status === "success" && scannedName && (
-        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-white px-4 py-3 font-secondary text-heavy opacity-100 shadow-lg transition-opacity duration-300">
-          {scannedName} scanned successfully
-        </div>
-      )}
-
-      {/* Error Overlay - only show for non-"already scanned" errors */}
-      {status === "error" && errorMessage && (
-        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-red-100 px-4 py-3 font-secondary text-red-700 opacity-100 shadow-lg transition-opacity duration-300">
-          {errorMessage}
-        </div>
-      )}
     </div>
   );
 };

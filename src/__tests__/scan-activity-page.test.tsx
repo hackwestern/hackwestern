@@ -103,7 +103,7 @@ describe("scan page", () => {
     expect(mutateAsync).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(3000); // error message clears
+      await vi.advanceTimersByTimeAsync(5000); // the same QR is ignored for 5 seconds
     });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(500); // next frame scanned
