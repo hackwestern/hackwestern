@@ -29,6 +29,9 @@ Checks: `npm test` (vitest), `npm run lint`, `npm run build`. Screenshots at 375
 - [ ] T20 One-way mirror of chats to the Coffee Chats sheet tab · owns: src/server/api/utils/coffee-chat-sheet-mirror.ts (+ test) · check: test with mocked Sheets: create, accept, decline, expire each update the right row; sheet failure never blocks the hacker or sponsor action · deps: T16, T01 · build: main · verify: code-reviewer
 - [ ] T21 Room capacities from the run-of-show sheet · owns: src/server/api/utils/run-of-show-sheet.ts (capacity reader only) · check: test parses capacities from fixture rows · deps: T02 · build: main · verify: code-reviewer
 
+- [ ] T22 Slack DM sender: find hacker by email, DM sponsor/room/time with Accept/Decline buttons; skipped when SLACK_BOT_TOKEN is unset · owns: src/server/slack/coffee-chat-dm.ts (+ test), src/env.js (SLACK_* only) · check: test with mocked Slack API: one DM per request, no DM and no error when token missing or email not found · deps: T15 · build: main · verify: code-reviewer
+- [ ] T23 Slack button endpoint `/api/slack/interactions` · owns: src/pages/api/slack/interactions.ts (+ test) · check: tests: bad or stale signature -> 401; a click only changes the chat of the hacker matched to the clicking Slack user; reuses T16 respond rules · deps: T16, T22 · build: main · verify: code-reviewer
+
 ## Ready
 
 ## In progress
@@ -42,5 +45,5 @@ Checks: `npm test` (vitest), `npm run lint`, `npm run build`. Screenshots at 375
 ## Done
 
 ## Blocked
-- [ ] T22 Slack DM to the hacker with Accept/Decline buttons · **blocked on:** Luka (owns the HW Slack bot): how to send a DM through it (bot token or an endpoint), and whether it can handle button clicks · deps: T16 · build: main · verify: code-reviewer
+- [ ] T24 Create and install the HW13 Coffee Chats Slack app (docs/runbooks/slack-coffee-chat-bot.md), add SLACK_BOT_TOKEN and SLACK_SIGNING_SECRET to Vercel · **owner: Jazz** (account step, can't be done by an agent) · check: `curl -H "Authorization: Bearer $SLACK_BOT_TOKEN" https://slack.com/api/auth.test` returns ok:true · deps: none
 - [ ] T01 Run-of-show row types and column map · owns: src/lib/run-of-show.ts (+ test with fixture rows) · check: `npm test run-of-show` parses fixture rows from the real header row · deps: none · **blocked on:** the sheet shared with the `SPONSOR_SHEETS_CLIENT_EMAIL` service account, and the tab names and header rows · build: main · verify: code-reviewer
