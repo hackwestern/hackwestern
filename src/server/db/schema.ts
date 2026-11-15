@@ -440,6 +440,55 @@ export const sponsorInterests = pgTable(
   ],
 );
 
+export const sponsorHelpStatusEnum = pgEnum("sponsor_help_status", [
+  "open",
+  "claimed",
+  "resolved",
+  "cancelled",
+]);
+
+// A sponsor's "Need help" request. Posted to the sponsor team's Slack
+// channel; the first reaction or thread reply claims it. Rules in
+// src/lib/sponsor-help.ts, runbook docs/runbooks/slack-sponsor-help.md.
+export const sponsorHelpRequests = pgTable(
+  "sponsor_help_request",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    // One of SPONSOR_HELP_REASONS (varchar so the list can change without a
+    // migration).
+    reason: varchar("reason", { length: 32 }).notNull(),
+    note: varchar("note", { length: 500 }),
+    // Booth location from the sponsor info sheet when the request was made,
+    // shown in the Slack post. Null when the sheet had none.
+    location: varchar("location", { length: 255 }),
+    status: sponsorHelpStatusEnum("status").default("open").notNull(),
+    // The bot's Slack post; null when Slack is off or the post failed.
+    slackChannel: varchar("slack_channel", { length: 64 }),
+    slackTs: varchar("slack_ts", { length: 32 }),
+    claimedBySlackId: varchar("claimed_by_slack_id", { length: 64 }),
+    claimedByName: varchar("claimed_by_name", { length: 255 }),
+    // Re-pings sent in the Slack thread (0-2), see SPONSOR_HELP_REPING_MINUTES.
+    pingCount: smallint("ping_count").default(0).notNull(),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    claimedAt: timestamp("claimed_at", { mode: "date", precision: 3 }),
+    // When it was resolved or cancelled.
+    resolvedAt: timestamp("resolved_at", { mode: "date", precision: 3 }),
+  },
+  (t) => [
+    // One live (open or claimed) request per sponsor.
+    uniqueIndex("sponsor_help_request_sponsor_active_idx")
+      .on(t.sponsorId)
+      .where(sql`${t.status} in ('open', 'claimed')`),
+    index("sponsor_help_request_slack_idx").on(t.slackChannel, t.slackTs),
+    index("sponsor_help_request_status_idx").on(t.status),
+  ],
+);
+
 export const users = pgTable(
   "user",
   {
