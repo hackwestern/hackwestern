@@ -276,7 +276,12 @@ export function applySponsorNames(
   return {
     items: parsed.items.map((item) => ({
       ...item,
-      sponsors: matchSponsors(item.title, sponsorNames),
+      // Title and location: Sunday judging names each sponsor's room only in
+      // the location ("Scotiabank: Rm 2110, Canada Life: Rm 2230").
+      sponsors: matchSponsors(
+        `${item.title} ${item.location ?? ""}`,
+        sponsorNames,
+      ),
     })),
     tasks: parsed.tasks,
     coffeeChats: parsed.coffeeChats.map((setup) => {
