@@ -134,6 +134,7 @@ export const MentorsList: Mentor[] = [
     name: "Jaemin Han",
     skills: ["ML engineering", "Python", "PyTorch", "Pitching"],
     tags: ["Software Engineering", "AI"],
+    linkedin: "https://www.linkedin.com/in/hanjaemin/",
     image: "/landing/mentors/jaeminh.webp",
   },
   {
