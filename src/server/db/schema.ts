@@ -361,10 +361,55 @@ export const sponsorJudgingSponsors = pgTable("sponsor_judging_sponsor", {
   // Must match the "Company Name" spelling in the master sheet, since this is
   // what the judging sheet rows are keyed on.
   name: varchar("name", { length: 255 }).notNull().unique(),
+  // Reps the sponsor is sending to coffee chats = chats they can run at once
+  // in a slot (capped by room capacity from the run-of-show sheet). Set by
+  // the sponsor on their page.
+  coffeeChatReps: smallint("coffee_chat_reps").default(1).notNull(),
   createdAt: timestamp("created_at", { mode: "date", precision: 3 })
     .defaultNow()
     .notNull(),
 });
+
+export const coffeeChatStatusEnum = pgEnum("coffee_chat_status", [
+  "pending",
+  "accepted",
+  "declined",
+  "expired",
+]);
+
+// A sponsor's coffee chat request to one hacker, in one room at one
+// Saturday slot. The DB is the source of truth; the Coffee Chats sheet tab
+// is a one-way mirror. See src/lib/coffee-chat-requests.ts for the rules.
+export const coffeeChats = pgTable(
+  "coffee_chat",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // Room id from COFFEE_CHAT_ROOMS (1-3) and slot start "HH:MM" from
+    // COFFEE_CHAT_SLOTS, same spelling as the sheet grid.
+    room: smallint("room").notNull(),
+    slotTime: varchar("slot_time", { length: 5 }).notNull(),
+    status: coffeeChatStatusEnum("status").default("pending").notNull(),
+    repName: varchar("rep_name", { length: 255 }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    respondedAt: timestamp("responded_at", { mode: "date", precision: 3 }),
+  },
+  (t) => [
+    // A hacker can't hold two live (pending or accepted) chats in one slot.
+    uniqueIndex("coffee_chat_user_slot_active_idx")
+      .on(t.userId, t.slotTime)
+      .where(sql`${t.status} in ('pending', 'accepted')`),
+    index("coffee_chat_sponsor_slot_idx").on(t.sponsorId, t.slotTime),
+    index("coffee_chat_user_idx").on(t.userId),
+  ],
+);
 
 // A hacker's interest ranking of the sponsors (1 = most interested). Feeds each
 // sponsor's coffee-chat shortlist. One row per (hacker, sponsor), and a hacker
