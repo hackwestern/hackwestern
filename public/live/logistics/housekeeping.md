@@ -13,7 +13,7 @@ We will have dedicated sleeping rooms offering a limited amount of air mattresse
 
 Sleeping Rooms (open from 10pm):
 - Men’s and all genders - Alumni Commons **2110**
-- [Waiting on confirmation] - Room **2235**
+- Women’s - Room **2235**
 
 # 🚗 Parking  
 Parking will be available for free after 4pm on Friday and all weekend in the **Social Science**, **Springett**, and **Alumni/Thomson** parking lots on a first-come first-serve basis. We recommend **Springett**. Parking during other hours incurs a $1.50/30 min fee. Additional free weekend parking is available around campus during the weekend, visit <https://uwo.ca/parking/find/map.html> for more information.
