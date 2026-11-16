@@ -463,10 +463,9 @@ export default function SponsorJudgingBoard() {
                     {/* Top: Name & Badges */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex flex-col">
-                        <h2
-                          className="m-0 max-w-[150px] truncate text-[17px] font-bold leading-snug text-[#0b2238]"
-                          title={sponsor.name}
-                        >
+                        <h2 className="m-0 max-w-[150px] truncate text-[17px] font-bold leading-snug text-[#0b2238]">
+                          {sponsor.name}
+                        </h2>
                         {!sponsor.onMasterSheet && (
                           <span className="inline-self-start mt-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                             not on master sheet
