@@ -85,3 +85,8 @@
 - **Decision:** Sponsors see only their own schedule and rooms; the sponsor team sees every company on /internal/sponsor-schedule. The server trims shared rooms and other sponsors' names from a sponsor's schedule.
 - **Why:** Jazz: sponsors don't need it; it's for the sponsor team.
 - **Alternatives:** keep it for sponsors (earlier decision today, now reversed).
+
+## 2026-11-16 — Sponsor shortlist lives on the coffee chats page
+- **Decision:** Sponsors shortlist interested hackers on /sponsors/[uuid]/coffee-chats (new `sponsor_shortlist` table). The old /hackers page redirects there. The interested list now returns each hacker's user id so the sponsor can shortlist them, but only for admitted hackers who agreed to share and ranked that sponsor. That's the same id the /live QR shows anyone who scans it. No emails. Chat partners get a full profile only if they agreed to share; otherwise the sponsor sees a first name.
+- **Why:** Jazz wants one page where sponsors see who's interested, pick their shortlist and follow their chats. Organizers read the shortlist (`sponsorShortlist.forSponsor`) to assign chats.
+- **Alternatives:** keep it keyed by hackerId (can be unset); keep a separate read-only page (two places for the same people).

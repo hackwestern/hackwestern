@@ -17,9 +17,13 @@ import {
  *
  * Privacy: only admitted hackers who agreed to share their profile with
  * sponsors (applications.agreeShareWithSponsors) are ever returned, and only
- * for the sponsor they ranked. The internal user id is never returned.
+ * for the sponsor they ranked. The user id is returned so the sponsor can
+ * shortlist them (T45); it is the same id the /live QR code shows any
+ * sponsor who scans it. No email or other contact detail is returned.
  */
 export type ShortlistedHacker = {
+  /** Internal user id, used to add or remove the hacker from the shortlist. */
+  userId: string;
   /** Public, human-readable id printed on the badge (may be unset). */
   hackerId: string | null;
   name: string;
@@ -65,10 +69,22 @@ function displayName(
 
 export async function sponsorShortlist(
   sponsorId: string,
-  { now = Date.now(), limit = COFFEE_CHAT_SHORTLIST_SIZE } = {},
+  {
+    now = Date.now(),
+    limit = COFFEE_CHAT_SHORTLIST_SIZE,
+    userIds,
+  }: {
+    now?: number;
+    /** null for no cap. */
+    limit?: number | null;
+    /** Only these hackers (still subject to every rule above). */
+    userIds?: readonly string[];
+  } = {},
 ): Promise<ShortlistedHacker[]> {
-  const rows = await db
+  if (userIds?.length === 0) return [];
+  const query = db
     .select({
+      userId: users.id,
       hackerId: users.hackerId,
       firstName: applications.firstName,
       lastName: applications.lastName,
@@ -89,16 +105,18 @@ export async function sponsorShortlist(
         eq(sponsorInterests.sponsorId, sponsorId),
         eq(applications.agreeShareWithSponsors, true),
         inArray(applications.status, [...admittedStatuses(now)]),
+        userIds ? inArray(users.id, [...userIds]) : undefined,
       ),
     )
     .orderBy(
       asc(sponsorInterests.rank),
       asc(sponsorInterests.updatedAt),
       asc(users.id),
-    )
-    .limit(limit);
+    );
+  const rows = await (limit === null ? query : query.limit(limit));
 
   return rows.map((r) => ({
+    userId: r.userId,
     hackerId: r.hackerId,
     name: displayName(r.firstName, r.lastName, r.accountName),
     team: r.team,
