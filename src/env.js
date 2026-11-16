@@ -87,7 +87,7 @@ export const env = createEnv({
     CHEAT_SWEEP_SECRET: z.string().optional(),
     // Bearer token guarding /api/docs/app (the generated API map). Unset
     // disables the endpoint (503).
-    APP_MAP_TOKEN: z.string().optional(),
+    HW_NETWORK_REQUESTS_APP_MAP_TOKEN: z.string().optional(),
     // Cloudflare Worker that stores request events in D1 (see
     // workers/hw-network-requests). Leave either unset to disable event logging.
     HW_NETWORK_REQUESTS_INGEST_URL: z.string().url().optional(),
@@ -164,7 +164,8 @@ export const env = createEnv({
     HACK_END: process.env.HACK_END,
     PROJECT_SUBMISSION_DEADLINE: process.env.PROJECT_SUBMISSION_DEADLINE,
     CHEAT_SWEEP_SECRET: process.env.CHEAT_SWEEP_SECRET,
-    APP_MAP_TOKEN: process.env.APP_MAP_TOKEN,
+    HW_NETWORK_REQUESTS_APP_MAP_TOKEN:
+      process.env.HW_NETWORK_REQUESTS_APP_MAP_TOKEN,
     HW_NETWORK_REQUESTS_INGEST_URL: process.env.HW_NETWORK_REQUESTS_INGEST_URL,
     HW_NETWORK_REQUESTS_INGEST_TOKEN:
       process.env.HW_NETWORK_REQUESTS_INGEST_TOKEN,

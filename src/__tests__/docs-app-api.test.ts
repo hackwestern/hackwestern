@@ -4,7 +4,7 @@ import handler from "~/pages/api/docs/app";
 
 const envMock = vi.hoisted(() => ({
   env: {
-    APP_MAP_TOKEN: "secret-token" as string | undefined,
+    HW_NETWORK_REQUESTS_APP_MAP_TOKEN: "secret-token" as string | undefined,
     NEXTAUTH_URL: "http://x",
   },
 }));
@@ -36,14 +36,14 @@ function run(method: string, authorization?: string) {
 
 describe("GET /api/docs/app", () => {
   beforeEach(() => {
-    envMock.env.APP_MAP_TOKEN = "secret-token";
+    envMock.env.HW_NETWORK_REQUESTS_APP_MAP_TOKEN = "secret-token";
   });
 
   it("rejects non-GET", () => {
     expect(run("POST", "Bearer secret-token").statusCode).toBe(405);
   });
   it("is disabled (503) when no token is configured", () => {
-    envMock.env.APP_MAP_TOKEN = undefined;
+    envMock.env.HW_NETWORK_REQUESTS_APP_MAP_TOKEN = undefined;
     expect(run("GET", "Bearer anything").statusCode).toBe(503);
   });
   it("rejects missing and wrong tokens", () => {

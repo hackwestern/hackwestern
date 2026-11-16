@@ -16,7 +16,14 @@ const files = fs.existsSync(dir)
   ? fs
       .readdirSync(dir)
       .filter((f) => f.endsWith(".sqlite") && f !== "metadata.sqlite")
-      .map((f) => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs }))
+      .map((f) => {
+        const file = path.join(dir, f);
+        // Recent writes sit in the -wal file until a checkpoint.
+        const wal = fs.existsSync(`${file}-wal`)
+          ? fs.statSync(`${file}-wal`).mtimeMs
+          : 0;
+        return { f, t: Math.max(fs.statSync(file).mtimeMs, wal) };
+      })
       .sort((a, b) => b.t - a.t)
   : [];
 if (!files[0]) {

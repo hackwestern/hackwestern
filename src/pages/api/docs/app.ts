@@ -1,7 +1,7 @@
 /**
  * Serves the generated API/page map (`src/generated/app.json`).
  *
- * Not public: callers must send `Authorization: Bearer <APP_MAP_TOKEN>`. The
+ * Not public: callers must send `Authorization: Bearer <HW_NETWORK_REQUESTS_APP_MAP_TOKEN>`. The
  * file lives under `src/`, not `public/`, so it is only reachable through here.
  * Regenerate with `npm run load-tester:generate-app-json` (CI does this on every push to main).
  */
@@ -15,9 +15,12 @@ const digest = (value: string) => createHash("sha256").update(value).digest();
 function isAuthorized(req: NextApiRequest): boolean {
   const header = req.headers.authorization ?? "";
   const match = /^Bearer (.+)$/.exec(header);
-  if (!match || !env.APP_MAP_TOKEN) return false;
+  if (!match || !env.HW_NETWORK_REQUESTS_APP_MAP_TOKEN) return false;
   // Hash first so the comparison is constant-time regardless of length.
-  return timingSafeEqual(digest(match[1]!), digest(env.APP_MAP_TOKEN));
+  return timingSafeEqual(
+    digest(match[1]!),
+    digest(env.HW_NETWORK_REQUESTS_APP_MAP_TOKEN),
+  );
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -25,7 +28,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  if (!env.APP_MAP_TOKEN) {
+  if (!env.HW_NETWORK_REQUESTS_APP_MAP_TOKEN) {
     return res.status(503).json({ message: "App map is not configured" });
   }
 
