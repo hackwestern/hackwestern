@@ -119,12 +119,13 @@ export const NOTIFY_TIMEOUT_MS = 2500;
 /**
  * Tell everyone who needs to know about a chat change. Await it after the DB
  * commit, before responding. Runs every channel at once and resolves when
- * all have settled or after NOTIFY_TIMEOUT_MS, whichever comes first. Never
+ * all have settled or after `timeoutMs`, whichever comes first. Never
  * rejects: channel failures are logged.
  */
 export async function notifyCoffeeChat(
   event: CoffeeChatEvent,
   chat: { id: string },
+  timeoutMs: number = NOTIFY_TIMEOUT_MS,
 ): Promise<void> {
   // Loaded once, and only by channels that need it.
   let notice: Promise<CoffeeChatNotice | null> | undefined;
@@ -146,10 +147,10 @@ export async function notifyCoffeeChat(
   const cap = new Promise<void>((resolve) => {
     timer = setTimeout(() => {
       console.error(
-        `coffee chat notifications (${event}) still running after ${NOTIFY_TIMEOUT_MS} ms; not waiting`,
+        `coffee chat notifications (${event}) still running after ${timeoutMs} ms; not waiting`,
       );
       resolve();
-    }, NOTIFY_TIMEOUT_MS);
+    }, timeoutMs);
   });
   await Promise.race([all, cap]);
   clearTimeout(timer);

@@ -33,6 +33,9 @@ vi.mock("~/env", async (importOriginal) => {
     env: {
       ...original.env,
       MAILJET_API_KEY: "test-key",
+      // Safe dummy so modules that read it at import load with no .env.
+      R2_PUBLIC_BASE_URL:
+        original.env.R2_PUBLIC_BASE_URL ?? "http://localhost:3024",
       MAILJET_SECRET_KEY: "test-secret",
     },
   };

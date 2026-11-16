@@ -147,6 +147,9 @@ export async function writeCoffeeChatBookings(
   return rows.length;
 }
 
+/** Longest one write may take before the queue moves on. */
+export const MIRROR_TIMEOUT_MS = 5000;
+
 let lastLoggedError: string | null = null;
 let queue: Promise<unknown> = Promise.resolve();
 
@@ -159,9 +162,21 @@ export function mirrorCoffeeChats(
   deps: { sheet?: () => Promise<BookingsSheet>; now?: () => Date } = {},
 ): Promise<void> {
   const run = async () => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      const sheet = await (deps.sheet ?? googleBookingsSheet)();
-      await writeCoffeeChatBookings(sheet, deps.now?.() ?? new Date());
+      const write = (async () => {
+        const sheet = await (deps.sheet ?? googleBookingsSheet)();
+        await writeCoffeeChatBookings(sheet, deps.now?.() ?? new Date());
+      })();
+      // A hung Google call must not stall every later write in the queue.
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`timed out after ${MIRROR_TIMEOUT_MS} ms`)),
+          MIRROR_TIMEOUT_MS,
+        );
+      });
+      void write.catch(() => undefined); // a late failure after the timeout
+      await Promise.race([write, timeout]);
       lastLoggedError = null;
     } catch (error) {
       // The message only: never the request, headers, or credentials.
@@ -172,6 +187,8 @@ export function mirrorCoffeeChats(
           `coffee chat sheet mirror failed (the run-of-show service account needs Editor on the sheet): ${message}`,
         );
       }
+    } finally {
+      clearTimeout(timer);
     }
   };
   const next = queue.then(run);
