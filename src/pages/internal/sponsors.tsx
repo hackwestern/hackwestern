@@ -467,8 +467,6 @@ export default function SponsorJudgingBoard() {
                           className="m-0 max-w-[150px] truncate text-[17px] font-bold leading-snug text-[#0b2238]"
                           title={sponsor.name}
                         >
-                          {sponsor.name}
-                        </h2>
                         {!sponsor.onMasterSheet && (
                           <span className="inline-self-start mt-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                             not on master sheet
