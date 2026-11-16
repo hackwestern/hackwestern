@@ -56,6 +56,35 @@ export const coffeeChatCopy = {
     },
   },
 
+  // /live: the hacker's own requests.
+  live: {
+    heading: "Coffee chat requests",
+    intro: "Sponsors who met you want to chat. Accept to save your spot.",
+    from: (sponsor: string) => `${sponsor} wants to chat`,
+    when: (time: string, minutes: number) =>
+      `Saturday ${time} · ${minutes} min`,
+    roomTbd: "Room to be announced",
+    rep: (name: string) => `With ${name}`,
+    answerBy: (time: string) => `Reply by ${time}`,
+    accept: "Accept",
+    decline: "Decline",
+    declineAccepted: "Can't make it",
+    saving: "Saving…",
+    accepted: (sponsor: string, time: string) =>
+      `You're chatting with ${sponsor} at ${time}.`,
+    declined: (sponsor: string) => `You declined ${sponsor}'s chat.`,
+    error: "Couldn't save your answer. Try again.",
+    toast: (sponsor: string) => `${sponsor} wants to chat with you`,
+    toastAction: "View",
+    status: {
+      pending: "Needs a reply",
+      accepted: "Accepted",
+      declined: "Declined",
+      expired: "Expired",
+      cancelled: "Cancelled",
+    },
+  },
+
   // Messages the server sends back; the UI shows them as-is.
   errors: {
     unknownSponsor: "This private link isn't valid.",
