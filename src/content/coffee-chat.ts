@@ -112,6 +112,8 @@ export const coffeeChatCopy = {
       `Cancel ${hacker}'s chat with ${sponsor} at ${time}?`,
     moveRoom: "Move room",
     moveTo: "Move to",
+    moveHint: (sponsor: string, time: string) =>
+      `Moves every ${sponsor} chat at ${time} to the new room.`,
     move: "Move",
     close: "Close",
     roomTbd: "Room to be assigned",

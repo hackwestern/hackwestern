@@ -18,6 +18,7 @@ import {
   MAX_COFFEE_CHAT_REPS,
   MIN_COFFEE_CHAT_REPS,
 } from "~/lib/coffee-chat-requests";
+import { coffeeChatCopy } from "~/content/coffee-chat";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
   fetchAllChosenTeams,
@@ -279,7 +280,7 @@ export const sponsorPortalRouter = createTRPCRouter({
       if (!row) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Unknown sponsor id",
+          message: coffeeChatCopy.errors.unknownSponsor,
         });
       }
       return { reps: row.coffeeChatReps };
@@ -310,7 +311,7 @@ export const sponsorPortalRouter = createTRPCRouter({
       if (!row) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Unknown sponsor id",
+          message: coffeeChatCopy.errors.unknownSponsor,
         });
       }
       return { reps: row.reps };
