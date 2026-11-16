@@ -4,9 +4,11 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { ScanLine } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { CeremonyOrder } from "~/components/sponsors/ceremony-order";
 import { CoffeeChatSummary } from "~/components/sponsors/coffee-chat-summary";
 import { DayPicker } from "~/components/sponsors/day-picker";
 import { SponsorHelp } from "~/components/sponsors/help-button";
+import { NextEventCard } from "~/components/sponsors/next-event-card";
 import { RepCount } from "~/components/sponsors/rep-count";
 import {
   DayGrid,
@@ -22,11 +24,13 @@ import {
 } from "~/components/sponsors/schedule-states";
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { useNow } from "~/components/sponsors/use-now";
+import { WorkshopDetails } from "~/components/sponsors/workshop-details";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import { RUN_OF_SHOW_DAYS, type RunOfShowDay } from "~/lib/run-of-show";
 import { defaultRunOfShowDay } from "~/lib/run-of-show-time";
 import { fetchScheduleData } from "~/lib/schedule";
+import { nextOwnEvent } from "~/lib/sponsor-next-event";
 import { buildSponsorTimeline } from "~/lib/sponsor-timeline";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
@@ -87,6 +91,13 @@ export default function SponsorSchedulePage() {
     sponsorName: data.sponsorName,
     showHackathon,
   });
+  const nextEvent = nextOwnEvent({
+    sponsorName: data.sponsorName,
+    items: data.items,
+    ceremonies: data.ceremonies,
+    coffeeChat: data.coffeeChat,
+    now,
+  });
 
   return shell(
     <>
@@ -95,6 +106,7 @@ export default function SponsorSchedulePage() {
         title={copy.title(data.sponsorName)}
         intro={copy.intro}
       />
+      <NextEventCard event={nextEvent} />
       <SponsorHelp sponsor={id} />
       {shownDay === "Saturday" && (
         <>
@@ -129,6 +141,8 @@ export default function SponsorSchedulePage() {
         now={now}
         sponsorName={data.sponsorName}
       />
+      <WorkshopDetails workshops={data.workshops} />
+      <CeremonyOrder segments={data.ceremonies} items={data.items} />
       <ReadAt iso={data.readAt} />
     </>,
   );

@@ -65,6 +65,7 @@ function mockSlack(answers: Record<string, unknown> = {}) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe("sendCoffeeChatDm (T22)", () => {
@@ -191,20 +192,19 @@ describe("notifyCoffeeChat Slack channel", () => {
     return { chat: chat!, email: `${id}@example.com` };
   }
 
-  test("one DM per offer, none for other events", async () => {
+  test("one DM per offer, none for answers", async () => {
     const slack = mockSlack();
     vi.stubGlobal("fetch", slack.fn);
     const { chat, email } = await makeChat();
 
+    // Timers frozen so the Slack timeout and the cap can never fire under
+    // load; the mocked Slack answers at once, so nothing waits on the clock.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     await notifyCoffeeChat("offered", { id: chat.id });
-    for (const event of [
-      "accepted",
-      "declined",
-      "cancelled",
-      "roomMoved",
-    ] as const) {
+    for (const event of ["accepted", "declined"] as const) {
       await notifyCoffeeChat(event, { id: chat.id });
     }
+    vi.useRealTimers();
 
     const posts = slack.calls.filter((c) => c.method === "chat.postMessage");
     expect(posts).toHaveLength(1);
