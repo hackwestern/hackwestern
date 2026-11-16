@@ -107,6 +107,19 @@ export const env = createEnv({
     // Bearer token for /api/cheat-check/sweep, which the sweep worker also uses
     // to re-invoke itself. Leave unset to disable automated sweeps entirely.
     CHEAT_SWEEP_SECRET: z.string().optional(),
+    // The Hack Western Slack app (hackers and the sponsor team share one
+    // workspace and one app). Unset = Slack features are skipped.
+    SLACK_BOT_TOKEN: z.string().optional(),
+    SLACK_SIGNING_SECRET: z.string().optional(),
+    // Sponsor help requests (docs/runbooks/slack-sponsor-help.md). The token
+    // and signing secret override SLACK_* only if help ever needs its own
+    // app. No token or no channel = Slack is skipped; requests still show on
+    // /internal/sponsor-schedule.
+    SPONSOR_HELP_SLACK_BOT_TOKEN: z.string().optional(),
+    SPONSOR_HELP_SLACK_SIGNING_SECRET: z.string().optional(),
+    SPONSOR_HELP_SLACK_CHANNEL: z.string().optional(),
+    // Who to ping, e.g. <!subteam^S0123ABCD> or <!here>.
+    SPONSOR_HELP_SLACK_MENTION: z.string().optional(),
   },
 
   /**
@@ -186,6 +199,13 @@ export const env = createEnv({
     HACK_END: process.env.HACK_END,
     PROJECT_SUBMISSION_DEADLINE: process.env.PROJECT_SUBMISSION_DEADLINE,
     CHEAT_SWEEP_SECRET: process.env.CHEAT_SWEEP_SECRET,
+    SLACK_BOT_TOKEN: process.env.SLACK_BOT_TOKEN,
+    SLACK_SIGNING_SECRET: process.env.SLACK_SIGNING_SECRET,
+    SPONSOR_HELP_SLACK_BOT_TOKEN: process.env.SPONSOR_HELP_SLACK_BOT_TOKEN,
+    SPONSOR_HELP_SLACK_SIGNING_SECRET:
+      process.env.SPONSOR_HELP_SLACK_SIGNING_SECRET,
+    SPONSOR_HELP_SLACK_CHANNEL: process.env.SPONSOR_HELP_SLACK_CHANNEL,
+    SPONSOR_HELP_SLACK_MENTION: process.env.SPONSOR_HELP_SLACK_MENTION,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

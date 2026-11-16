@@ -17,6 +17,7 @@ import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "~/lib/sponsor-picks";
 import { scheduleCopy } from "~/content/sponsor-schedule";
+import { SponsorHelp } from "~/components/sponsors/help-button";
 import { sponsorHackersCopy } from "~/content/sponsor-hackers";
 
 export default function SponsorHubPage() {
@@ -111,6 +112,9 @@ export default function SponsorHubPage() {
             </p>
           </div>
         </section>
+
+        {/* Need help: pings the sponsor team in Slack */}
+        <SponsorHelp sponsor={id} />
 
         {/* Judging CTA — hidden entirely when no judging room is assigned */}
         {hasJudgingRoom && (
