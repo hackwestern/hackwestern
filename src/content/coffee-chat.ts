@@ -56,32 +56,106 @@ export const coffeeChatCopy = {
     },
   },
 
-  // /live: the hacker's own requests.
+  // /live: the toast for a new request and the home summary card.
   live: {
-    heading: "Coffee chat requests",
-    intro: "Sponsors who met you want to chat. Accept to save your spot.",
-    from: (sponsor: string) => `${sponsor} wants to chat`,
-    when: (time: string, minutes: number) =>
-      `Saturday ${time} · ${minutes} min`,
-    roomTbd: "Room to be announced",
-    rep: (name: string) => `With ${name}`,
-    answerBy: (time: string) => `Reply by ${time}`,
-    accept: "Accept",
-    decline: "Decline",
-    declineAccepted: "Can't make it",
-    saving: "Saving…",
-    accepted: (sponsor: string, time: string) =>
-      `You're chatting with ${sponsor} at ${time}.`,
-    declined: (sponsor: string) => `You declined ${sponsor}'s chat.`,
-    error: "Couldn't save your answer. Try again.",
     toast: (sponsor: string) => `${sponsor} wants to chat with you`,
     toastAction: "View",
+    // Home summary card; the full list is the Coffee chats tab.
+    summary: (pending: number, upcoming: number) =>
+      [
+        pending > 0 ? `${pending} waiting for your answer` : null,
+        upcoming > 0 ? `${upcoming} upcoming` : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    viewAll: "View coffee chats",
+  },
+
+  // /live?tab=coffee-chats: every chat the hacker has, grouped (T36).
+  page: {
+    navName: "Coffee chats",
+    navBadge: (n: number) =>
+      `${n} ${n === 1 ? "chat" : "chats"} waiting for your answer`,
+    intro:
+      "Sponsors who meet you can offer a short chat on Saturday. Answer here before the reply-by time.",
+    codeHeading: "Your hacker code",
+    codeHint: "Sponsors can scan your badge or type this code.",
+    noCode:
+      "Your hacker code shows up here once you confirm your spot. Until then, sponsors can scan the QR code on your badge.",
+    copy: "Copy",
+    copyLabel: "Copy your hacker code",
+    copied: "Copied",
+    codeCopied: "Hacker code copied.",
+    copyFailed: "Couldn't copy. Select the code and copy it yourself.",
+    groups: {
+      pending: "Waiting for your answer",
+      upcoming: "Upcoming",
+      past: "Past & closed",
+    },
+    pendingEmpty: "Nothing waiting for an answer.",
+    upcomingEmpty: "No accepted chats yet.",
+    empty:
+      "No coffee chats yet. When a sponsor offers you one, it shows up here.",
+    loading: "Loading your coffee chats…",
+    loadError: "Couldn't load your coffee chats.",
+    retry: "Try again",
+    when: (day: string, time: string, minutes: number) =>
+      `${day} ${time}, ${minutes} min`,
+    roomTbd: "Room to be announced",
+    rep: (name: string) => `With ${name}`,
+    replyBy: (time: string) => `Reply by ${time}`,
+    timeLeft: (
+      t:
+        | { days: number }
+        | { hours: number; minutes: number }
+        | { underAMinute: true },
+    ) =>
+      "underAMinute" in t
+        ? "Less than a minute left"
+        : "days" in t
+          ? `${t.days} days left`
+          : t.hours === 0
+            ? `${t.minutes} min left`
+            : t.minutes === 0
+              ? `${t.hours} h left`
+              : `${t.hours} h ${t.minutes} min left`,
+    beAt: (room: string, time: string) => `Be at ${room} at ${time}`,
+    beAtNoRoom: (time: string) =>
+      `Be there at ${time}. We'll post the room before then.`,
+    mapLink: "Find it on the map",
+    accept: "Accept",
+    acceptLabel: (sponsor: string) => `Accept coffee chat with ${sponsor}`,
+    decline: "Decline",
+    declineLabel: (sponsor: string) => `Decline coffee chat with ${sponsor}`,
+    confirmDecline: (sponsor: string) =>
+      `Decline ${sponsor}'s chat? The time goes to another hacker.`,
+    confirmYes: "Yes, decline",
+    confirmYesLabel: (sponsor: string) =>
+      `Yes, decline coffee chat with ${sponsor}`,
+    keep: "Keep",
+    keepLabel: (sponsor: string) => `Keep coffee chat with ${sponsor}`,
+    cantMake: "Can't make it",
+    cantMakeLabel: (sponsor: string) =>
+      `Can't make it to coffee chat with ${sponsor}`,
+    confirmCantMake: (sponsor: string) =>
+      `Cancel your chat with ${sponsor}? Your spot goes to another hacker.`,
+    confirmCantMakeYes: "Yes, cancel",
+    confirmCantMakeYesLabel: (sponsor: string) =>
+      `Yes, cancel coffee chat with ${sponsor}`,
+    saving: "Saving…",
+    accepted: (sponsor: string, time: string) =>
+      `Accepted. You're chatting with ${sponsor} at ${time}.`,
+    declined: (sponsor: string) => `Declined ${sponsor}'s chat.`,
+    closedError:
+      "This request can't be answered anymore. It may have expired or been cancelled. Your list is updated.",
+    error: "Couldn't save your answer. Check your connection and try again.",
     status: {
-      pending: "Needs a reply",
+      pending: "Needs your answer",
       accepted: "Accepted",
       declined: "Declined",
       expired: "Expired",
       cancelled: "Cancelled",
+      finished: "Done",
     },
   },
 

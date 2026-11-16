@@ -26,12 +26,15 @@ export const SectionLink = ({
   name,
   locked = false,
   badge: badgeProp,
+  badgeLabel,
   href,
 }: {
   tab: string;
   name: string;
   locked?: boolean; // Locked pages (before RSVP) show a lock and can't be opened
   badge?: number;
+  /** Screen reader text for the badge, e.g. "2 chats waiting". */
+  badgeLabel?: string;
   href?: string;
 }) => {
   const searchParams = useSearchParams();
@@ -94,9 +97,18 @@ export const SectionLink = ({
         )}
       />
       {name}
-      {badge !== undefined && badge > 0 && (
-        <NotificationBadge count={badge} className="ml-auto" />
-      )}
+      {badge !== undefined &&
+        badge > 0 &&
+        (badgeLabel ? (
+          <span className="ml-auto flex">
+            <span aria-hidden="true" className="flex">
+              <NotificationBadge count={badge} />
+            </span>
+            <span className="sr-only">{badgeLabel}</span>
+          </span>
+        ) : (
+          <NotificationBadge count={badge} className="ml-auto" />
+        ))}
     </Link>
   );
 };

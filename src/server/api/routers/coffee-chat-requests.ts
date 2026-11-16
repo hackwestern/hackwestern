@@ -531,6 +531,19 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
   }),
 
   /**
+   * The signed-in user's own hacker ID ("brave-otter-kite"), for sponsors
+   * to type in. Null until one is issued (confirmed hackers get one with
+   * their badge or wallet pass). Reads only the caller's row; never creates.
+   */
+  myHackerId: protectedProcedure.query(async ({ ctx }) => {
+    const [row] = await db
+      .select({ hackerId: users.hackerId })
+      .from(users)
+      .where(eq(users.id, ctx.session.user.id));
+    return { hackerId: row?.hackerId ?? null };
+  }),
+
+  /**
    * Accept or decline one of your own requests. Someone else's chat is a
    * 404. Accepting needs a pending request before its cutoff; declining
    * frees the seat (also after accepting, until the chat starts).

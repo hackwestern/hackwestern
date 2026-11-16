@@ -1002,3 +1002,39 @@ describe("coffeeChatRequests.hackerByCode (typed or scanned code)", () => {
     ).toBe("BAD_REQUEST");
   });
 });
+
+describe("coffeeChatRequests.myHackerId (T36)", () => {
+  test("returns only the caller's own code, null when none, 401 signed out", async () => {
+    const me = await makeHacker();
+    const other = await makeHacker();
+    await db
+      .update(users)
+      .set({ hackerId: "merry-moose-lamp-t36" })
+      .where(eq(users.id, me));
+    await db
+      .update(users)
+      .set({ hackerId: "quiet-heron-kite-t36" })
+      .where(eq(users.id, other));
+    const noCode = await makeHacker();
+
+    expect(await hackerCaller(me).coffeeChatRequests.myHackerId()).toEqual({
+      hackerId: "merry-moose-lamp-t36",
+    });
+    expect(await hackerCaller(other).coffeeChatRequests.myHackerId()).toEqual({
+      hackerId: "quiet-heron-kite-t36",
+    });
+    // No code yet: null, and reading it doesn't issue one.
+    expect(await hackerCaller(noCode).coffeeChatRequests.myHackerId()).toEqual({
+      hackerId: null,
+    });
+    const [row] = await db
+      .select({ hackerId: users.hackerId })
+      .from(users)
+      .where(eq(users.id, noCode));
+    expect(row?.hackerId).toBeNull();
+
+    expect((await codeOf(caller.coffeeChatRequests.myHackerId())).code).toBe(
+      "UNAUTHORIZED",
+    );
+  });
+});
