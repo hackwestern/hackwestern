@@ -7,6 +7,7 @@ import {
   MapPin,
   Phone,
   Presentation,
+  Users,
 } from "lucide-react";
 import SEO from "~/components/seo";
 import { uuidRegex } from "~/utils/urls";
@@ -17,6 +18,7 @@ import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "~/lib/sponsor-picks";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import { SponsorHelp } from "~/components/sponsors/help-button";
+import { sponsorHackersCopy } from "~/content/sponsor-hackers";
 
 export default function SponsorHubPage() {
   const router = useRouter();
@@ -216,6 +218,16 @@ export default function SponsorHubPage() {
             <Link href={`/sponsors/${id}/where`}>
               <MapPin aria-hidden />
               {scheduleCopy.hubLinks.where}
+            </Link>
+          </DashboardButton>
+          <DashboardButton
+            variant="outline"
+            asChild
+            className="h-11 w-full sm:col-span-2"
+          >
+            <Link href={`/sponsors/${id}/hackers`}>
+              <Users aria-hidden />
+              {sponsorHackersCopy.hubLink}
             </Link>
           </DashboardButton>
         </nav>
