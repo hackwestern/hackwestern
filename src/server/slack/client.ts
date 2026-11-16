@@ -31,6 +31,7 @@ export async function slackApi<T extends SlackResponse = SlackResponse>(
   method: string,
   args: Record<string, unknown>,
   fetchImpl: typeof fetch = fetch,
+  timeoutMs: number = SLACK_TIMEOUT_MS,
 ): Promise<T> {
   const body = new URLSearchParams();
   for (const [key, value] of Object.entries(args)) {
@@ -44,7 +45,7 @@ export async function slackApi<T extends SlackResponse = SlackResponse>(
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: body.toString(),
-    signal: AbortSignal.timeout(SLACK_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!response.ok) throw new SlackApiError(method, `http_${response.status}`);
   const data = (await response.json()) as T;

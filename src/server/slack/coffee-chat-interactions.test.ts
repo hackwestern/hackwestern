@@ -20,12 +20,22 @@ import { slackSignature } from "~/server/slack/verify";
 
 const SECRET = "test-signing-secret";
 
+// The sheet mirror, made to hang for the slow-path test.
+const mirror = vi.hoisted(() => ({ hang: false }));
+vi.mock("~/server/api/utils/coffee-chat-sheet-mirror", () => ({
+  mirrorCoffeeChats: () =>
+    mirror.hang ? new Promise(() => undefined) : Promise.resolve(),
+}));
+
 vi.mock("~/env", async (importOriginal) => {
   const original = await importOriginal<typeof Env>();
   return {
     env: {
       ...original.env,
       MAILJET_API_KEY: undefined,
+      // Safe dummy so modules that read it at import load with no .env.
+      R2_PUBLIC_BASE_URL:
+        original.env.R2_PUBLIC_BASE_URL ?? "http://localhost:3024",
       SLACK_BOT_TOKEN: "xoxb-test",
       SLACK_SIGNING_SECRET: "test-signing-secret",
     },
@@ -383,5 +393,40 @@ describe("the Next.js route", () => {
       res as unknown as NextApiResponse,
     );
     expect(res.statusCode).toBe(405);
+  });
+
+  test("answers Slack well within 3 s even when every call is slow", async () => {
+    const kim = await makeHacker();
+    const chatId = await makeChat(kim.id);
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    // users.info answers after 400 ms; response_url never answers (only
+    // the abort signal ends it); the sheet mirror hangs.
+    mirror.hang = true;
+    const slow = (async (url: string | URL | Request, init?: RequestInit) => {
+      if (String(url) === "https://slack.com/api/users.info") {
+        await new Promise((r) => setTimeout(r, 400));
+        return new Response(
+          JSON.stringify({ ok: true, user: { profile: { email: kim.email } } }),
+        );
+      }
+      return new Promise<Response>((_, reject) =>
+        init?.signal?.addEventListener("abort", () =>
+          reject(new Error("aborted")),
+        ),
+      );
+    }) as typeof fetch;
+
+    const started = performance.now();
+    const result = await handleSlackInteractionRequest(
+      signedRequest(clickPayload("U1", chatId, "coffee_chat_accept")),
+      { fetch: slow },
+    );
+    const elapsed = performance.now() - started;
+
+    expect(result).toEqual({ status: 200, outcome: "accepted" });
+    expect(await statusOf(chatId)).toBe("accepted");
+    expect(elapsed).toBeLessThan(2500);
+    mirror.hang = false;
+    log.mockRestore();
   });
 });

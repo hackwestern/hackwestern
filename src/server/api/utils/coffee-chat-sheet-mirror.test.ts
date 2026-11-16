@@ -15,6 +15,7 @@ import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 import {
   BOOKINGS_TAB,
+  MIRROR_TIMEOUT_MS,
   mirrorCoffeeChats,
 } from "~/server/api/utils/coffee-chat-sheet-mirror";
 import { db } from "~/server/db";
@@ -99,6 +100,9 @@ vi.mock("~/env", async (importOriginal) => {
     env: {
       ...original.env,
       MAILJET_API_KEY: undefined,
+      // Safe dummy so modules that read it at import load with no .env.
+      R2_PUBLIC_BASE_URL:
+        original.env.R2_PUBLIC_BASE_URL ?? "http://localhost:3024",
       SLACK_BOT_TOKEN: undefined,
       RUN_OF_SHOW_SHEET: "sheet-id",
       RUN_OF_SHOW_SHEETS_CLIENT_EMAIL: "bot@example.iam.gserviceaccount.com",
@@ -324,5 +328,34 @@ describe("coffee chat sheet mirror (T20)", () => {
     for (const range of sheet.ranges) {
       expect(range.startsWith(`'${BOOKINGS_TAB}'!`)).toBe(true);
     }
+  });
+
+  test("a hung Sheets call times out so later writes still run", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.useRealTimers();
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    vi.setSystemTime(new Date("2026-11-21T08:00:00-05:00"));
+
+    let done = false;
+    const hung = mirrorCoffeeChats({
+      sheet: () => new Promise(() => undefined),
+    }).then(() => (done = true));
+    await vi.advanceTimersByTimeAsync(MIRROR_TIMEOUT_MS - 1);
+    expect(done).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    await hung;
+    expect(done).toBe(true);
+    expect(String(log.mock.calls.at(-1)?.[0])).toContain(
+      `timed out after ${MIRROR_TIMEOUT_MS} ms`,
+    );
+
+    vi.useRealTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-21T08:00:00-05:00"));
+    // The queue moved on: the next write goes through.
+    sheet.grid.length = 0;
+    await mirrorCoffeeChats();
+    expect(sheet.grid[0]?.[0]).toBe("Chat ID");
+    log.mockRestore();
   });
 });
