@@ -73,7 +73,7 @@ describe("sendCoffeeChatDm (T22)", () => {
 
     expect(
       await sendCoffeeChatDm(CHAT, { token: "xoxb-t", fetch: slack.fn }),
-    ).toBe(true);
+    ).toBe("sent");
 
     expect(slack.calls.map((c) => c.method)).toEqual([
       "users.lookupByEmail",
@@ -105,9 +105,9 @@ describe("sendCoffeeChatDm (T22)", () => {
     const slack = mockSlack();
     expect(
       await sendCoffeeChatDm(CHAT, { token: undefined, fetch: slack.fn }),
-    ).toBe(false);
+    ).toBe("skipped-no-token");
     expect(await sendCoffeeChatDm(CHAT, { token: "", fetch: slack.fn })).toBe(
-      false,
+      "skipped-no-token",
     );
     expect(slack.calls).toHaveLength(0);
   });
@@ -118,7 +118,7 @@ describe("sendCoffeeChatDm (T22)", () => {
     });
     expect(
       await sendCoffeeChatDm(CHAT, { token: "xoxb-t", fetch: slack.fn }),
-    ).toBe(false);
+    ).toBe("not-found");
     expect(slack.calls.map((c) => c.method)).toEqual(["users.lookupByEmail"]);
   });
 
@@ -129,17 +129,23 @@ describe("sendCoffeeChatDm (T22)", () => {
         { ...CHAT, admitted: false },
         { token: "xoxb-t", fetch: slack.fn },
       ),
-    ).toBe(false);
+    ).toBe("not-found");
     expect(slack.calls).toHaveLength(0);
   });
 
-  test("other Slack errors throw (the notifier logs them)", async () => {
+  test("other Slack errors come back as failed and are logged", async () => {
     const slack = mockSlack({
       "chat.postMessage": { ok: false, error: "channel_not_found" },
     });
-    await expect(
-      sendCoffeeChatDm(CHAT, { token: "xoxb-t", fetch: slack.fn }),
-    ).rejects.toThrow("Slack chat.postMessage failed: channel_not_found");
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    expect(
+      await sendCoffeeChatDm(CHAT, { token: "xoxb-t", fetch: slack.fn }),
+    ).toBe("failed");
+    expect(log).toHaveBeenCalledWith(
+      "coffee chat slack DM failed:",
+      "Slack chat.postMessage failed: channel_not_found",
+    );
+    log.mockRestore();
   });
 
   test("says room TBA and escapes the sponsor name", async () => {

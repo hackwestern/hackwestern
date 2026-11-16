@@ -1,7 +1,7 @@
 # HW13 Slack app (one app for coffee chats and sponsor help)
 
 Hackers and the sponsor team are in the same Slack workspace, so one app does both jobs:
-- DMs hackers coffee chat offers with Accept / Decline buttons (details: slack-coffee-chat-bot.md)
+- DMs hackers coffee chat offers with Accept / Decline buttons (details: slack-coffee-chat-bot.md); the email goes out only if the DM can't be sent (no token, no Slack account for that email, or a Slack error)
 - Posts sponsor help requests in the sponsor team channel; the first emoji or thread reply claims it (details: slack-sponsor-help.md)
 
 ## Create it (about 10 minutes)

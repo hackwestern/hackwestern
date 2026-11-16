@@ -37,6 +37,8 @@ vi.mock("~/env", async (importOriginal) => {
       R2_PUBLIC_BASE_URL:
         original.env.R2_PUBLIC_BASE_URL ?? "http://localhost:3024",
       MAILJET_SECRET_KEY: "test-secret",
+      // Never a real Slack call: no token means the DM is skipped.
+      SLACK_BOT_TOKEN: undefined,
     },
   };
 });

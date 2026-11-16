@@ -11,13 +11,17 @@ import {
   sponsorJudgingSponsors,
   users,
 } from "~/server/db/schema";
-import { sendCoffeeChatDm } from "~/server/slack/coffee-chat-dm";
+import {
+  sendCoffeeChatDm,
+  type CoffeeChatDmResult,
+} from "~/server/slack/coffee-chat-dm";
 
 /**
  * Coffee chat notifications. The router calls notifyCoffeeChat after the DB
  * write has committed; each channel (email, Slack DM, sheet mirror) runs on
  * its own and a failure is logged, never thrown, so a notification can't
- * fail or hold up the sponsor's or hacker's action.
+ * fail or hold up the sponsor's or hacker's action. The hacker hears by
+ * Slack first; the email goes out only if the DM wasn't sent.
  */
 
 export type CoffeeChatEvent =
@@ -89,21 +93,48 @@ export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+/**
+ * Longest the Slack attempt may take, so the email fallback still has time
+ * inside NOTIFY_TIMEOUT_MS.
+ */
+export const SLACK_TIMEOUT_MS = 1200;
+
+/** The DM result, or "failed" if Slack hasn't answered in time. */
+async function dmWithTimeout(
+  notice: CoffeeChatNotice,
+): Promise<CoffeeChatDmResult> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<CoffeeChatDmResult>((resolve) => {
+    timer = setTimeout(() => {
+      console.error(
+        `coffee chat slack DM still running after ${SLACK_TIMEOUT_MS} ms; falling back to email`,
+      );
+      resolve("failed");
+    }, SLACK_TIMEOUT_MS);
+  });
+  const result = await Promise.race([sendCoffeeChatDm(notice), timeout]);
+  clearTimeout(timer);
+  return result;
+}
+
 type Channel = (
   event: CoffeeChatEvent,
   load: () => Promise<CoffeeChatNotice | null>,
+  dm: () => Promise<CoffeeChatDmResult | null>,
 ) => Promise<unknown>;
 
 const channels: Record<string, Channel> = {
-  email: async (event, load) => {
+  // Waits for the Slack attempt, then sends only if the DM wasn't sent.
+  email: async (event, load, dm) => {
     if (event !== "offered") return;
     const notice = await load();
-    if (notice) await sendCoffeeChatOfferEmail(notice);
+    if (!notice) return;
+    if ((await dm()) === "sent") return;
+    await sendCoffeeChatOfferEmail(notice);
   },
-  slack: async (event, load) => {
+  slack: async (event, _load, dm) => {
     if (event !== "offered") return;
-    const notice = await load();
-    if (notice) await sendCoffeeChatDm(notice);
+    await dm();
   },
   // Every change rewrites the bookings tab; logs its own failures.
   sheet: () => mirrorCoffeeChats(),
@@ -130,9 +161,13 @@ export async function notifyCoffeeChat(
   // Loaded once, and only by channels that need it.
   let notice: Promise<CoffeeChatNotice | null> | undefined;
   const load = () => (notice ??= loadCoffeeChatNotice(chat.id));
+  // One Slack attempt, shared by the slack and email channels.
+  let dmResult: Promise<CoffeeChatDmResult | null> | undefined;
+  const dm = () =>
+    (dmResult ??= load().then((n) => (n ? dmWithTimeout(n) : null)));
   const names = Object.keys(channels);
   const all = Promise.allSettled(
-    names.map((name) => channels[name]!(event, load)),
+    names.map((name) => channels[name]!(event, load, dm)),
   ).then((results) =>
     results.forEach((result, i) => {
       if (result.status === "rejected") {
