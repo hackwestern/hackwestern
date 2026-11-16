@@ -66,6 +66,46 @@ export type CoffeeChatSetup = {
   room: string | null;
 };
 
+export const CEREMONIES = ["opening", "closing"] as const;
+export type CeremonyKind = (typeof CEREMONIES)[number];
+
+/**
+ * One speaker slot from the "Opening + Closing Ceremonies" tab, e.g.
+ * "Canada Life (1 min)" / "Rob Craig, Manager Emerging Talent and Programs".
+ */
+export type CeremonySegment = {
+  ceremony: CeremonyKind;
+  /** 1-based running order within its ceremony (sheet row order by default). */
+  order: number;
+  /** 24h "HH:MM" when the sheet gives a time; null otherwise. */
+  start: string | null;
+  durationMinutes: number | null;
+  /** Topic when given, otherwise the company name. */
+  title: string;
+  /** Registered sponsor name when one matches, else the sheet's company text. */
+  sponsor: string | null;
+  speakers: string[];
+};
+
+/** A sponsor's view of a segment: `yours` marks their own slot. */
+export type SponsorCeremonySegment = CeremonySegment & { yours: boolean };
+
+/**
+ * One row of the "Workshops" tab, with time and room filled in from the
+ * workshop's block on the RUN OF SHOW tab when the Workshops tab has none.
+ */
+export type WorkshopInfo = {
+  title: string;
+  sponsor: string | null;
+  /** Who runs it. Empty until the sheet lists them. */
+  runners: string[];
+  day: RunOfShowDay | null;
+  /** 24h "HH:MM". */
+  start: string | null;
+  room: string | null;
+  description: string | null;
+};
+
 /** sponsorSchedule.get: what one sponsor sees (UUID link). */
 export type SponsorSchedule = {
   sponsorName: string;
@@ -74,6 +114,10 @@ export type SponsorSchedule = {
   /** All-hands items (big events, food) plus this sponsor's own items. */
   items: RunOfShowItem[];
   coffeeChat: CoffeeChatSetup | null;
+  /** Both ceremonies' full running order; this sponsor's slots flagged. */
+  ceremonies: SponsorCeremonySegment[];
+  /** Only this sponsor's workshops. */
+  workshops: WorkshopInfo[];
 };
 
 /** One company in the "Where is everyone" view. */
@@ -99,6 +143,8 @@ export type OrganizerRunOfShow = {
   items: RunOfShowItem[];
   tasks: RunOfShowTask[];
   coffeeChats: CoffeeChatSetup[];
+  ceremonies: CeremonySegment[];
+  workshops: WorkshopInfo[];
 };
 
 /** "13:30" -> "1:30 PM". */

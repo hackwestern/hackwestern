@@ -99,6 +99,14 @@ export const sponsorScheduleRouter = createTRPCRouter({
               : item,
           ),
         coffeeChat: sheet.coffeeChats.find((c) => c.sponsor === name) ?? null,
+        // The full running order is public at the ceremony itself; who else
+        // speaks helps a sponsor know when to be ready.
+        ceremonies: sheet.ceremonies.map((segment) => ({
+          ...segment,
+          yours: segment.sponsor === name,
+        })),
+        // Rooms of other sponsors' workshops are not sent.
+        workshops: sheet.workshops.filter((w) => w.sponsor === name),
       };
     }),
 
@@ -130,6 +138,8 @@ export const sponsorScheduleRouter = createTRPCRouter({
         items: sheet.items,
         tasks: sheet.tasks,
         coffeeChats: sheet.coffeeChats,
+        ceremonies: sheet.ceremonies,
+        workshops: sheet.workshops,
       };
     },
   ),

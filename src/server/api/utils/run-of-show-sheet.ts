@@ -1,8 +1,10 @@
 import { google, type sheets_v4 } from "googleapis";
 import { env } from "~/env";
 import {
+  parseCeremoniesTab,
   parseCoffeeChatsTab,
   parseRunOfShowTab,
+  parseWorkshopsTab,
   type ParsedRunOfShow,
   type SheetGrid,
   type SheetMerge,
@@ -62,6 +64,8 @@ export async function getRunOfShowSheetsClient() {
 
 export const RUN_OF_SHOW_TAB = "RUN OF SHOW";
 export const COFFEE_CHATS_TAB = "Coffee Chats";
+export const CEREMONIES_TAB = "Opening + Closing Ceremonies";
+export const WORKSHOPS_TAB = "Workshops";
 
 /** One read of the sheet, parsed. Sponsor names are matched per request. */
 export type RunOfShowSnapshot = ParsedRunOfShow & { readAt: string };
@@ -92,24 +96,68 @@ function mergesOf(sheet: SheetData | undefined): SheetMerge[] {
   }));
 }
 
-/** Read both tabs (cells + merges) in one request and parse them. Uncached. */
+/**
+ * Read every tab (cells + merges) in one request and parse them. Uncached.
+ * RUN OF SHOW and Coffee Chats are required; the ceremonies and workshops
+ * tabs are optional (missing or unreadable -> empty lists).
+ */
+const REQUIRED_RANGES = [
+  `'${RUN_OF_SHOW_TAB}'!A1:J200`,
+  `'${COFFEE_CHATS_TAB}'!A1:Z100`,
+];
+const OPTIONAL_RANGES = [
+  `'${CEREMONIES_TAB}'!A1:J100`,
+  `'${WORKSHOPS_TAB}'!A1:J100`,
+];
+const SHEET_FIELDS =
+  "sheets(properties(title),merges,data(startRow,startColumn,rowData(values(formattedValue))))";
+
+/** The Sheets API rejects the whole request when a range names a missing tab. */
+export function isMissingRangeError(error: unknown): boolean {
+  const e = error as { code?: unknown; status?: unknown; message?: unknown };
+  const status = e?.code ?? e?.status;
+  return (
+    (status === 400 || status === "400") &&
+    /unable to parse range/i.test(String(e?.message ?? ""))
+  );
+}
+
 export async function fetchRunOfShow(): Promise<RunOfShowSnapshot> {
   const sheets = await getRunOfShowSheetsClient();
-  const res = await sheets.spreadsheets.get({
-    spreadsheetId: runOfShowSpreadsheetId(),
-    ranges: [`'${RUN_OF_SHOW_TAB}'!A1:J200`, `'${COFFEE_CHATS_TAB}'!A1:Z100`],
-    fields:
-      "sheets(properties(title),merges,data(startRow,startColumn,rowData(values(formattedValue))))",
-  });
+  const read = (ranges: string[]) =>
+    sheets.spreadsheets.get({
+      spreadsheetId: runOfShowSpreadsheetId(),
+      ranges,
+      fields: SHEET_FIELDS,
+    });
+  // One request normally. If an optional tab was renamed or deleted, read
+  // just the required tabs; their own absence still fails below.
+  const res = await read([...REQUIRED_RANGES, ...OPTIONAL_RANGES]).catch(
+    (error: unknown) => {
+      if (!isMissingRangeError(error)) throw error;
+      return read(REQUIRED_RANGES);
+    },
+  );
+  const find = (title: string) =>
+    res.data.sheets?.find((s) => s.properties?.title === title);
   const byTitle = (title: string) => {
-    const sheet = res.data.sheets?.find((s) => s.properties?.title === title);
+    const sheet = find(title);
     if (!sheet) throw new Error(`Run-of-show sheet has no "${title}" tab`);
     return sheet;
   };
   const ros = byTitle(RUN_OF_SHOW_TAB);
   const { items, tasks } = parseRunOfShowTab(gridOf(ros), mergesOf(ros));
   const coffeeChats = parseCoffeeChatsTab(gridOf(byTitle(COFFEE_CHATS_TAB)));
-  return { readAt: new Date().toISOString(), items, tasks, coffeeChats };
+  const ceremonies = parseCeremoniesTab(gridOf(find(CEREMONIES_TAB)));
+  const workshops = parseWorkshopsTab(gridOf(find(WORKSHOPS_TAB)));
+  return {
+    readAt: new Date().toISOString(),
+    items,
+    tasks,
+    coffeeChats,
+    ceremonies,
+    workshops,
+  };
 }
 
 export const RUN_OF_SHOW_CACHE_MS = 60_000;
