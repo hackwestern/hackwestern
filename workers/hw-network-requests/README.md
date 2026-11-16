@@ -12,12 +12,17 @@ The worker reads the same name the app does. The worker only accepts writes
 
 ## Deploy (CI/CD, not npm scripts)
 
-Prod operations are meant to run from the pipeline, not by hand:
+`.github/workflows/deploy-load-tester-worker.yml` deploys on push:
 
-- create the D1 once: `npx wrangler d1 create hw-network-requests` (paste the id into `wrangler.toml`)
-- apply `schema.sql` to the remote D1
-- upload the `HW_NETWORK_REQUESTS_INGEST_TOKEN` worker secret
-- `wrangler deploy -c workers/hw-network-requests/wrangler.toml` (prints the URL)
+- `main` -> prod worker `hw-network-requests` + D1 (GitHub env `Production`)
+- `dev` -> `hw-network-requests-dev` + its own D1 (GitHub env `Dev`; wrangler
+  creates the D1 on the first deploy, see `[env.dev]` in `wrangler.toml`)
+
+Each run deploys, applies `schema.sql` (idempotent) and uploads the
+`HW_NETWORK_REQUESTS_INGEST_TOKEN` worker secret. Each GitHub environment needs
+`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and
+`HW_NETWORK_REQUESTS_INGEST_TOKEN`. Wrangler prints a harmless "multiple
+environments" warning on prod deploys.
 
 Vercel does not read `.env`: set `HW_NETWORK_REQUESTS_INGEST_URL` and
 `HW_NETWORK_REQUESTS_INGEST_TOKEN` there. Local: `npm run load-tester:dev`
