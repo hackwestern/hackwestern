@@ -1,6 +1,7 @@
 import { Readable } from "node:stream";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import type * as EnvModule from "~/env";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 const slackEnv = vi.hoisted(() => ({
@@ -8,7 +9,7 @@ const slackEnv = vi.hoisted(() => ({
 }));
 
 vi.mock("~/env", async (importOriginal) => {
-  const original = await importOriginal<typeof import("~/env")>();
+  const original = await importOriginal<typeof EnvModule>();
   const env = original.env as Record<string | symbol, unknown>;
   return {
     env: new Proxy(env, {
@@ -35,7 +36,7 @@ import { handleSlackEvent, slackSignature } from "./sponsor-help-events";
 
 const SECRET = "test-signing-secret";
 const BOT_USER = "UBOT";
-const fetchMock = vi.fn();
+const fetchMock = vi.fn<(url: string, init: RequestInit) => Promise<Response>>();
 
 function signed(payload: unknown, opts: { secret?: string; age?: number } = {}) {
   const rawBody = JSON.stringify(payload);
@@ -75,7 +76,7 @@ const reply = (extra: Record<string, unknown>) =>
   });
 
 function slackApiCalls(method: string) {
-  return fetchMock.mock.calls.filter(([url]: [string]) =>
+  return fetchMock.mock.calls.filter(([url]) =>
     url.endsWith(`/${method}`),
   );
 }
@@ -102,8 +103,8 @@ beforeEach(async () => {
     SLACK_BOT_TOKEN: "xoxb-shared",
     SPONSOR_HELP_SLACK_CHANNEL: "C123",
   };
-  await db.delete(sponsorHelpRequests);
-  await db.delete(sponsorJudgingSponsors);
+  await db.delete(sponsorHelpRequests).where(sql`true`);
+  await db.delete(sponsorJudgingSponsors).where(sql`true`);
   const [s] = await db
     .insert(sponsorJudgingSponsors)
     .values({ name: "Scotiabank" })
@@ -189,7 +190,7 @@ describe("claiming", () => {
     expect(row?.claimedAt).toBeInstanceOf(Date);
     const posts = slackApiCalls("chat.postMessage");
     expect(posts).toHaveLength(1);
-    expect(String((posts[0] as [string, RequestInit])[1].body)).toContain(
+    expect(String(posts[0]![1].body)).toContain(
       '"thread_ts":"111.222"',
     );
     expect(slackApiCalls("chat.update")).toHaveLength(1);
