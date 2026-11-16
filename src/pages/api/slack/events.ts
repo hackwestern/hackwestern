@@ -31,6 +31,10 @@ export default async function handler(
     rawBody: await readRawBody(req),
     timestamp: header(req, "x-slack-request-timestamp"),
     signature: header(req, "x-slack-signature"),
+    retryNum: header(req, "x-slack-retry-num"),
   });
-  return res.status(result.status).json(result.body);
+  // Ack first (Slack wants a reply within 3 seconds), then finish the
+  // claim's Slack follow-up before the function returns.
+  res.status(result.status).json(result.body);
+  if (result.after) await result.after();
 }

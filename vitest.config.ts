@@ -8,6 +8,12 @@ export default defineConfig({
     environment: "node",
     setupFiles: ["dotenv/config", "./vitest.setup.ts"],
     reporters: "verbose",
+    // src/server/storage/r2.ts reads this at import, and the root router
+    // imports it. A dummy keeps router tests loadable without a .env.
+    env: {
+      R2_PUBLIC_BASE_URL:
+        process.env.R2_PUBLIC_BASE_URL ?? "http://localhost:3000",
+    },
   },
   resolve: {
     alias: {

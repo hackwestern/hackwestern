@@ -7,6 +7,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 
+import { sponsorHelpCopy } from "~/content/sponsor-help";
 import type { SponsorHelpReason } from "~/lib/sponsor-help";
 import { db } from "~/server/db";
 import {
@@ -74,6 +75,8 @@ type SlackPayload = {
 export type SlackEventResult = {
   status: number;
   body: Record<string, unknown> | string;
+  /** Work to run after the response is sent. */
+  after?: () => Promise<void>;
 };
 
 /**
@@ -116,62 +119,68 @@ export function claimTarget(
 
 /**
  * Claim the open help request behind `ref` for `userId`. First claim wins:
- * the UPDATE only matches while the request is still open. Returns whether
- * this call claimed it.
+ * one UPDATE that only matches while the request is still open, done before
+ * any Slack call so the ack goes back fast. Returns the Slack follow-up
+ * (claimer's name, "on it" reply, message edit) to run after the response,
+ * or null when this event didn't claim anything.
  */
 export async function claimSponsorHelp(
   ref: SlackMessageRef,
   userId: string,
-): Promise<boolean> {
-  const target = and(
-    eq(sponsorHelpRequests.slackChannel, ref.channel),
-    eq(sponsorHelpRequests.slackTs, ref.ts),
-  );
-  const open = await db.query.sponsorHelpRequests.findFirst({
-    where: and(target, eq(sponsorHelpRequests.status, "open")),
-    columns: { id: true },
-  });
-  // Unrelated message, or already claimed/closed: nothing to do.
-  if (!open) return false;
-
-  const name = (await slackDisplayName(userId)) ?? null;
+): Promise<(() => Promise<void>) | null> {
   const [claimed] = await db
     .update(sponsorHelpRequests)
     .set({
       status: "claimed",
       claimedBySlackId: userId,
-      claimedByName: name,
       claimedAt: new Date(),
     })
     .where(
-      and(eq(sponsorHelpRequests.id, open.id), eq(sponsorHelpRequests.status, "open")),
+      and(
+        eq(sponsorHelpRequests.slackChannel, ref.channel),
+        eq(sponsorHelpRequests.slackTs, ref.ts),
+        eq(sponsorHelpRequests.status, "open"),
+      ),
     )
     .returning();
-  if (!claimed) return false;
+  // Unrelated message, or already claimed/closed: nothing to do.
+  if (!claimed) return null;
 
-  const sponsor = await db.query.sponsorJudgingSponsors.findFirst({
-    where: eq(sponsorJudgingSponsors.id, claimed.sponsorId),
-    columns: { name: true },
-  });
-  await postSponsorHelpClaimed(ref, userId);
-  await markSponsorHelpMessage(
-    ref,
-    {
-      sponsorName: sponsor?.name ?? "",
-      reason: claimed.reason as SponsorHelpReason,
-      note: claimed.note,
-      location: claimed.location,
-    },
-    { kind: "claimed", name: name ?? `<@${userId}>` },
-  );
-  return true;
+  return async () => {
+    const name =
+      (await slackDisplayName(userId)) ?? sponsorHelpCopy.status.claimedSomeone;
+    await db
+      .update(sponsorHelpRequests)
+      .set({ claimedByName: name })
+      .where(eq(sponsorHelpRequests.id, claimed.id));
+    const sponsor = await db.query.sponsorJudgingSponsors.findFirst({
+      where: eq(sponsorJudgingSponsors.id, claimed.sponsorId),
+      columns: { name: true },
+    });
+    await postSponsorHelpClaimed(ref, userId);
+    await markSponsorHelpMessage(
+      ref,
+      {
+        sponsorName: sponsor?.name ?? "",
+        reason: claimed.reason as SponsorHelpReason,
+        note: claimed.note,
+        location: claimed.location,
+      },
+      { kind: "claimed", name },
+    );
+  };
 }
 
-/** Handle one Events API request. Framework-free so it can be tested. */
+/**
+ * Handle one Events API request. Framework-free so it can be tested. The
+ * caller sends the response first, then awaits `after` (Slack follow-up).
+ */
 export async function handleSlackEvent(p: {
   rawBody: string;
   timestamp: string | undefined;
   signature: string | undefined;
+  /** X-Slack-Retry-Num: Slack re-sending an event it thinks we missed. */
+  retryNum?: string;
   now?: Date;
 }): Promise<SlackEventResult> {
   const secret = sponsorHelpSigningSecret();
@@ -188,6 +197,9 @@ export async function handleSlackEvent(p: {
     return { status: 401, body: { error: "invalid signature" } };
   }
 
+  // The first delivery already did (or is doing) the work.
+  if (p.retryNum !== undefined) return { status: 200, body: { ok: true } };
+
   let payload: SlackPayload;
   try {
     payload = JSON.parse(p.rawBody) as SlackPayload;
@@ -199,11 +211,18 @@ export async function handleSlackEvent(p: {
     return { status: 200, body: { challenge: payload.challenge ?? "" } };
   }
 
+  let after: (() => Promise<void>) | undefined;
   if (payload.type === "event_callback") {
     const target = claimTarget(payload);
     if (target) {
       try {
-        await claimSponsorHelp(target.ref, target.userId);
+        const followUp = await claimSponsorHelp(target.ref, target.userId);
+        if (followUp) {
+          after = () =>
+            followUp().catch((error) =>
+              console.error("sponsor help claim follow-up failed", error),
+            );
+        }
       } catch (error) {
         // Ack anyway: a retry from Slack wouldn't help a DB error.
         console.error("sponsor help claim failed", error);
@@ -212,5 +231,5 @@ export async function handleSlackEvent(p: {
   }
 
   // Everything else (other event types, other features' events) is acked.
-  return { status: 200, body: { ok: true } };
+  return { status: 200, body: { ok: true }, after };
 }
