@@ -101,7 +101,7 @@ export function claimTarget(
   if (event.type === "message") {
     // Only plain replies by a person in a thread. Bot posts, edits, joins
     // etc. all carry a subtype or bot_id.
-    if (event.bot_id || event.subtype) return null;
+    if (event.bot_id !== undefined || event.subtype !== undefined) return null;
     if (!event.channel || !event.thread_ts || event.thread_ts === event.ts) {
       return null;
     }

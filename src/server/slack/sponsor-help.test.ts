@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import type * as EnvModule from "~/env";
 
 const slackEnv = vi.hoisted(() => ({
   values: {} as Record<string, string | undefined>,
 }));
 
 vi.mock("~/env", async (importOriginal) => {
-  const original = await importOriginal<typeof import("~/env")>();
+  const original = await importOriginal<typeof EnvModule>();
   const env = original.env as Record<string | symbol, unknown>;
   return {
     env: new Proxy(env, {
@@ -39,7 +40,7 @@ const details = {
   location: "Rm 2110",
 };
 
-const fetchMock = vi.fn();
+const fetchMock = vi.fn<(url: string, init: RequestInit) => Promise<Response>>();
 
 function slackOk(extra: Record<string, unknown> = {}) {
   return new Response(JSON.stringify({ ok: true, ...extra }), { status: 200 });
@@ -47,7 +48,7 @@ function slackOk(extra: Record<string, unknown> = {}) {
 
 type Call = { url: string; body: Record<string, unknown>; init: RequestInit };
 function calls(): Call[] {
-  return fetchMock.mock.calls.map(([url, init]: [string, RequestInit]) => {
+  return fetchMock.mock.calls.map(([url, init]) => {
     const raw = String(init.body);
     const body = raw.startsWith("{")
       ? (JSON.parse(raw) as Record<string, unknown>)

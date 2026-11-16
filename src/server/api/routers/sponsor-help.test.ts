@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
+import type * as SponsorSheets from "~/server/api/utils/sponsor-sheets";
+import { eq, sql } from "drizzle-orm";
 
 const slack = vi.hoisted(() => ({
   postSponsorHelpRequest: vi.fn(),
@@ -13,7 +14,7 @@ vi.mock("~/server/slack/sponsor-help", () => slack);
 // Never hit the real sponsor sheet for the booth location.
 vi.mock("~/server/api/utils/sponsor-sheets", async (importOriginal) => {
   const original =
-    await importOriginal<typeof import("~/server/api/utils/sponsor-sheets")>();
+    await importOriginal<typeof SponsorSheets>();
   return {
     ...original,
     getSheetsClient: vi.fn().mockRejectedValue(new Error("no sheet in tests")),
@@ -47,8 +48,8 @@ beforeEach(async () => {
   });
   slack.repingSponsorHelp.mockResolvedValue(true);
   slack.markSponsorHelpMessage.mockResolvedValue(undefined);
-  await db.delete(sponsorHelpRequests);
-  await db.delete(sponsorJudgingSponsors);
+  await db.delete(sponsorHelpRequests).where(sql`true`);
+  await db.delete(sponsorJudgingSponsors).where(sql`true`);
   const [s] = await db
     .insert(sponsorJudgingSponsors)
     .values({ name: "Scotiabank" })

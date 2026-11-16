@@ -129,7 +129,7 @@ export async function repingSponsorHelp(
     text: copy.reping({
       mention: mention(),
       step,
-      minutes: SPONSOR_HELP_REPING_MINUTES[step - 1],
+      minutes: SPONSOR_HELP_REPING_MINUTES[step === 1 ? 0 : 1],
     }),
   });
   return res !== null;
