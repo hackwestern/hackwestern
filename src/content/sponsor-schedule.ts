@@ -3,6 +3,20 @@
 
 export const scheduleCopy = {
   brand: "Hack Western 13",
+  /** The live "Happening now" banner (organizer page and sponsor page). */
+  happening: {
+    heading: "Happening now",
+    now: (time: string) => `Happening now · ${time}`,
+    nothing: "Nothing scheduled right now",
+    notStarted: (when: string) => `Hack Western starts ${when}`,
+    over: "Event over",
+    upNext: (titles: string, when: string) => `Up next: ${titles} at ${when}`,
+    more: (n: number) => `+${n} more`,
+    tasksLabel: "Team tasks now",
+    task: (task: string, owner: string | null) =>
+      owner ? `${task} (${owner})` : `${task} (no owner)`,
+    inRoom: (title: string, room: string) => `${title} · ${room}`,
+  },
   back: "Back to your portal",
   readAt: (time: string) => `Updated from the run of show at ${time}`,
   loadError:
@@ -45,7 +59,7 @@ export const scheduleCopy = {
     gridLabel: (day: string) => `${day} schedule, scrolls sideways`,
     timeHeader: "Time",
     runOfShow: "Run of show",
-    teamTask: "Team task",
+    teamTask: "Team tasks",
     srTask: "Team task",
     openDetails: "Show details",
     details: {
@@ -196,11 +210,9 @@ export const scheduleCopy = {
       "Live from the run-of-show sheet. Sponsors see their own items and the main events, never team tasks.",
     tabs: {
       schedule: "Schedule",
-      tasks: "Team tasks",
       coffee: "Coffee chats",
       where: "Where is everyone",
     },
-    noTasks: "No team tasks this day.",
     emptyDay: "Nothing on the run of show this day.",
     ceremoniesHeading: "Ceremony speakers",
     workshopsHeading: "Workshops",

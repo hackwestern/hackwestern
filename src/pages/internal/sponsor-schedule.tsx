@@ -17,6 +17,7 @@ import {
   useShowHackathon,
 } from "~/components/sponsors/day-grid";
 import { DayPicker } from "~/components/sponsors/day-picker";
+import { HappeningNowBanner } from "~/components/sponsors/happening-now";
 import { HelpQueue } from "~/components/sponsors/help-queue";
 import {
   LoadError,
@@ -26,18 +27,13 @@ import {
 } from "~/components/sponsors/schedule-states";
 import { SheetEditButton } from "~/components/sponsors/sheet-edit-button";
 import { SponsorMap } from "~/components/sponsors/sponsor-map";
-import { TaskRemindersPanel } from "~/components/sponsors/task-reminders-panel";
+import { TaskPingsSection } from "~/components/sponsors/task-reminders-panel";
 import { useNow } from "~/components/sponsors/use-now";
 import { WorkshopsTable } from "~/components/sponsors/workshop-details";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import { sponsorHelpCopy } from "~/content/sponsor-help";
-import {
-  compareRunOfShow,
-  formatClock,
-  type OrganizerRunOfShow,
-  type RunOfShowDay,
-} from "~/lib/run-of-show";
+import { formatClock, type RunOfShowDay } from "~/lib/run-of-show";
 import { defaultRunOfShowDay } from "~/lib/run-of-show-time";
 import { fetchScheduleData } from "~/lib/schedule";
 import { buildOrganizerTimeline, taskEntries } from "~/lib/sponsor-timeline";
@@ -88,6 +84,13 @@ export default function OrganizerRunOfShowPage() {
             title={copy.title}
             intro={copy.intro}
           />
+          {q.data && (
+            <HappeningNowBanner
+              items={q.data.items}
+              tasks={q.data.tasks}
+              now={now}
+            />
+          )}
           <div className="flex gap-2 overflow-x-auto pb-1">
             {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
               <DashboardChip
@@ -143,10 +146,9 @@ export default function OrganizerRunOfShowPage() {
                     items={q.data.items}
                   />
                   <WorkshopsTable workshops={q.data.workshops} />
+                  <TaskPingsSection />
                 </>
               )}
-              {tab === "tasks" && <TaskRemindersPanel />}
-              {tab === "tasks" && <Tasks data={q.data} day={shownDay} />}
               {tab === "coffee" && (
                 <CoffeeChatBoard
                   list={
@@ -198,35 +200,6 @@ function WhereIsEveryone({
       <CompanyLocationsView data={q.data} day={day} now={now} />
       <ReadAt iso={q.data.readAt} />
     </>
-  );
-}
-
-function Tasks({ data, day }: { data: OrganizerRunOfShow; day: RunOfShowDay }) {
-  const tasks = data.tasks.filter((t) => t.day === day).sort(compareRunOfShow);
-  if (tasks.length === 0) {
-    return (
-      <DashboardPanel>
-        <p className="m-0 text-dashboard-text-medium">{copy.noTasks}</p>
-      </DashboardPanel>
-    );
-  }
-  return (
-    <ol className="m-0 flex list-none flex-col gap-2 p-0">
-      {tasks.map((t, i) => (
-        <li
-          key={`${t.start}-${i}`}
-          className="grid grid-cols-[4.75rem_1fr] gap-3 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card"
-        >
-          <span className="text-sm font-semibold">{formatClock(t.start)}</span>
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="whitespace-pre-line break-words">{t.task}</span>
-            <span className="text-sm text-dashboard-text-light">
-              {t.owner ? copy.owner(t.owner) : copy.unowned}
-            </span>
-          </div>
-        </li>
-      ))}
-    </ol>
   );
 }
 
