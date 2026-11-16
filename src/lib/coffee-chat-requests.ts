@@ -23,6 +23,7 @@ export const COFFEE_CHAT_STATUSES = [
   "accepted",
   "declined",
   "expired",
+  "cancelled",
 ] as const;
 export type CoffeeChatStatus = (typeof COFFEE_CHAT_STATUSES)[number];
 
@@ -111,7 +112,9 @@ export function coffeeChatStartsAt(slotTime: string): Date {
   if (coffeeChatMinutesOf(slotTime) === null) {
     throw new Error(`Not a coffee chat time: ${slotTime}`);
   }
-  return new Date(`${COFFEE_CHAT_DATE}T${slotTime}:00${COFFEE_CHAT_UTC_OFFSET}`);
+  return new Date(
+    `${COFFEE_CHAT_DATE}T${slotTime}:00${COFFEE_CHAT_UTC_OFFSET}`,
+  );
 }
 
 /** The moment a pending request for this slot stops being answerable. */
@@ -130,7 +133,9 @@ export function coffeeChatsOverlap(
   const aStart = coffeeChatMinutesOf(a.slotTime);
   const bStart = coffeeChatMinutesOf(b.slotTime);
   if (aStart === null || bStart === null) return false;
-  return aStart < bStart + b.durationMinutes && bStart < aStart + a.durationMinutes;
+  return (
+    aStart < bStart + b.durationMinutes && bStart < aStart + a.durationMinutes
+  );
 }
 
 /**
@@ -166,7 +171,10 @@ export function coffeeChatParallelChats(
   roomPeople: number = COFFEE_CHAT_ROOM_PEOPLE,
 ): number {
   const perChat = Math.max(1, Math.floor(groupSize)) + 1;
-  return Math.max(0, Math.min(Math.floor(reps), Math.floor(roomPeople / perChat)));
+  return Math.max(
+    0,
+    Math.min(Math.floor(reps), Math.floor(roomPeople / perChat)),
+  );
 }
 
 /** Hacker seats a sponsor has at one start time. */
@@ -175,5 +183,8 @@ export function coffeeChatSeats(
   groupSize: number,
   roomPeople: number = COFFEE_CHAT_ROOM_PEOPLE,
 ): number {
-  return coffeeChatParallelChats(reps, groupSize, roomPeople) * Math.max(1, Math.floor(groupSize));
+  return (
+    coffeeChatParallelChats(reps, groupSize, roomPeople) *
+    Math.max(1, Math.floor(groupSize))
+  );
 }
