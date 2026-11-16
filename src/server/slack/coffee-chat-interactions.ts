@@ -9,7 +9,11 @@ import { loadCoffeeChatNotice } from "~/server/api/utils/coffee-chat-notify";
 import { respondToCoffeeChat } from "~/server/api/utils/coffee-chat-respond";
 import { db } from "~/server/db";
 import { users } from "~/server/db/schema";
-import { slackApi, type SlackResponse } from "~/server/slack/client";
+import {
+  SLACK_TIMEOUT_MS,
+  slackApi,
+  type SlackResponse,
+} from "~/server/slack/client";
 import {
   COFFEE_CHAT_ACCEPT_ACTION,
   COFFEE_CHAT_DECLINE_ACTION,
@@ -87,6 +91,7 @@ async function reply(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(message),
+    signal: AbortSignal.timeout(SLACK_TIMEOUT_MS),
   });
   if (!response.ok) {
     console.error(`Slack response_url update failed: ${response.status}`);

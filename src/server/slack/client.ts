@@ -19,6 +19,9 @@ export class SlackApiError extends Error {
   }
 }
 
+/** Per-request cap, inside the notifier's overall cap. */
+export const SLACK_TIMEOUT_MS = 2000;
+
 /**
  * Call one Slack method. Resolves with the body when `ok`, otherwise throws
  * a SlackApiError carrying Slack's error code (e.g. "users_not_found").
@@ -41,6 +44,7 @@ export async function slackApi<T extends SlackResponse = SlackResponse>(
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: body.toString(),
+    signal: AbortSignal.timeout(SLACK_TIMEOUT_MS),
   });
   if (!response.ok) throw new SlackApiError(method, `http_${response.status}`);
   const data = (await response.json()) as T;

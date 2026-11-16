@@ -14,7 +14,10 @@ import type * as RunOfShowSheet from "~/server/api/utils/run-of-show-sheet";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 import { coffeeChatOfferEmail } from "~/server/api/utils/coffee-chat-email";
-import { notifyCoffeeChat } from "~/server/api/utils/coffee-chat-notify";
+import {
+  NOTIFY_TIMEOUT_MS,
+  notifyCoffeeChat,
+} from "~/server/api/utils/coffee-chat-notify";
 import { db } from "~/server/db";
 import {
   applications,
@@ -218,6 +221,44 @@ describe("coffee chat offer email (T17)", () => {
     expect(offer.status).toBe("pending");
     await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
     expect(send.mock.calls[0]![0].to).toBe(`${hacker}@example.com`);
+  });
+
+  test("a hanging channel holds the offer up no longer than the cap", async () => {
+    const sponsor = await makeSponsor();
+    const hacker = await makeHacker();
+    const caller = createCaller(createInnerTRPCContext({ session: null }));
+    // Mailjet never answers.
+    let mailjetCalled!: () => void;
+    const called = new Promise<void>((resolve) => (mailjetCalled = resolve));
+    send.mockImplementationOnce(() => {
+      mailjetCalled();
+      return new Promise(() => undefined);
+    });
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.useRealTimers();
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    vi.setSystemTime(new Date("2026-11-21T08:00:00-05:00"));
+    let settledAt: number | null = null;
+
+    const offer = caller.coffeeChatRequests
+      .offer({ sponsor: sponsor.id, userId: hacker, slotTime: "10:30" })
+      .finally(() => (settledAt = Date.now()));
+    // The DB work runs on real I/O; the cap timer starts before Mailjet.
+    await called;
+    const start = Date.now();
+    for (let t = 0; settledAt === null && t < NOTIFY_TIMEOUT_MS * 3; t += 100) {
+      await vi.advanceTimersByTimeAsync(100);
+    }
+
+    expect((await offer).status).toBe("pending");
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(settledAt).not.toBeNull();
+    expect(settledAt! - start).toBeGreaterThan(0);
+    expect(settledAt! - start).toBeLessThanOrEqual(NOTIFY_TIMEOUT_MS + 100);
+    log.mockRestore();
+    vi.useRealTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-21T08:00:00-05:00"));
   });
 
   test("escapes the sponsor name in the HTML", () => {

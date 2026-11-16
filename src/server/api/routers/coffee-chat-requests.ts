@@ -384,8 +384,8 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
             .returning();
           return row!;
         });
-        // After the commit; never awaited, never throws.
-        void notifyCoffeeChat("offered", { id: chat.id });
+        // After the commit; capped in time, never throws.
+        await notifyCoffeeChat("offered", { id: chat.id });
 
         return {
           chatId: chat.id,
@@ -504,7 +504,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           .where(eq(coffeeChats.id, chat.id));
         return { chatId: chat.id, status: "cancelled" as const };
       });
-      void notifyCoffeeChat("cancelled", { id: result.chatId });
+      await notifyCoffeeChat("cancelled", { id: result.chatId });
       return result;
     }),
 
@@ -543,7 +543,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           .where(eq(coffeeChats.id, chat.id));
         return { chatId: chat.id, room };
       });
-      void notifyCoffeeChat("roomMoved", { id: result.chatId });
+      await notifyCoffeeChat("roomMoved", { id: result.chatId });
       return result;
     }),
 });
