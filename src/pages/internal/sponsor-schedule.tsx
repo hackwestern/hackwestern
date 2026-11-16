@@ -18,6 +18,7 @@ import {
   ScheduleSkeleton,
 } from "~/components/sponsors/schedule-states";
 import { SheetEditButton } from "~/components/sponsors/sheet-edit-button";
+import { SponsorMap } from "~/components/sponsors/sponsor-map";
 import { useNow } from "~/components/sponsors/use-now";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { scheduleCopy } from "~/content/sponsor-schedule";
@@ -56,7 +57,11 @@ export default function OrganizerRunOfShowPage() {
       <InternalNavbar />
       <div className="min-h-screen bg-dashboard-bg-page px-4 pb-12 pt-6 font-figtree font-medium leading-default text-dashboard-text-heavy sm:px-5">
         <div className="mx-auto flex w-full max-w-[880px] flex-col gap-5">
-          <PageIntro eyebrow={copy.title} title={copy.title} intro={copy.intro} />
+          <PageIntro
+            eyebrow={copy.title}
+            title={copy.title}
+            intro={copy.intro}
+          />
           <div className="flex gap-2 overflow-x-auto pb-1">
             {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
               <DashboardChip
@@ -120,11 +125,20 @@ function WhereIsEveryone({
     refetchInterval: 60_000,
     retry: 1,
   });
+  // Watcher names for the map; the map still works without them.
+  const rooms = api.coffeeChatRequests.organizerRooms.useQuery(undefined, {
+    refetchInterval: 60_000,
+    retry: 1,
+  });
   if (q.isLoading) return <ScheduleSkeleton />;
   if (!q.data) return <LoadError onRetry={() => void q.refetch()} />;
+  const watchers = Object.fromEntries(
+    (rooms.data?.sponsors ?? []).map((s) => [s.sponsor, s.watcher]),
+  );
   return (
     <>
       <DayPicker value={day} onChange={onDay} />
+      <SponsorMap data={q.data} watchers={watchers} day={day} now={now} />
       <CompanyLocationsView data={q.data} day={day} now={now} />
       <ReadAt iso={q.data.readAt} />
     </>
