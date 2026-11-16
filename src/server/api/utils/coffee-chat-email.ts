@@ -3,6 +3,10 @@ import { env } from "~/env";
 import { formatCoffeeChatTime } from "~/lib/coffee-chats";
 import type { CoffeeChatNotice } from "~/server/api/utils/coffee-chat-notify";
 import { sendViaMailjet } from "~/server/mail-mailjet";
+import {
+  coffeeChatChangeText,
+  type CoffeeChatChangeEvent,
+} from "~/server/api/utils/coffee-chat-change-text";
 
 /**
  * The email a hacker gets when a sponsor offers them a coffee chat (T17).
@@ -63,6 +67,50 @@ export function coffeeChatOfferEmail(chat: OfferDetails) {
   ].join("")}</div></div>`;
 
   return { subject, html, text };
+}
+
+export function coffeeChatChangeEmail(
+  event: CoffeeChatChangeEvent,
+  chat: OfferDetails,
+) {
+  const change = coffeeChatNotifyCopy.change;
+  const subject = change.emailSubject[event](chat.sponsorName);
+  const line = coffeeChatChangeText(event, chat);
+  const text = [
+    copy.greeting(chat.hackerFirstName),
+    "",
+    line,
+    "",
+    `${change.emailAction}: ${LIVE_URL}`,
+    "",
+    copy.signoff,
+    "",
+  ].join("\n");
+  const p = (inner: string) =>
+    `<p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#0b2238">${inner}</p>`;
+  const html = `<div style="background-color:#f3f7fc;padding:24px 0"><div style="margin:0 auto;max-width:560px;background:#ffffff;border-radius:12px;padding:32px">${[
+    p(escapeHtml(copy.greeting(chat.hackerFirstName))),
+    p(escapeHtml(line)),
+    `<p style="margin:0 0 24px"><a href="${LIVE_URL}" style="display:inline-block;background:#0b6bc4;color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;padding:12px 20px;border-radius:8px">${escapeHtml(change.emailAction)}</a></p>`,
+    p(escapeHtml(copy.signoff)),
+  ].join("")}</div></div>`;
+  return { subject, html, text };
+}
+
+/** Same skips and errors as sendCoffeeChatOfferEmail. */
+export async function sendCoffeeChatChangeEmail(
+  event: CoffeeChatChangeEvent,
+  chat: CoffeeChatNotice,
+): Promise<boolean> {
+  if (!chat.admitted || !chat.hackerEmail) return false;
+  if (!env.MAILJET_API_KEY || !env.MAILJET_SECRET_KEY) return false;
+  const { subject, html, text } = coffeeChatChangeEmail(event, chat);
+  const { error } = await sendViaMailjet(
+    { from: copy.from, to: chat.hackerEmail, subject, html, text },
+    { apiKey: env.MAILJET_API_KEY, secretKey: env.MAILJET_SECRET_KEY },
+  );
+  if (error) throw new Error(`Mailjet send failed: ${error.message}`);
+  return true;
 }
 
 /**
