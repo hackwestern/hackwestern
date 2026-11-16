@@ -1,5 +1,5 @@
 {
-  "id": "f9f607ee-ae68-492b-9418-80a18ab5cd59",
+  "id": "4185b74e-3f16-4388-b87e-685e7ea00381",
   "prevId": "afe97862-0c0b-467e-9425-0e41a089d248",
   "version": "7",
   "dialect": "postgresql",
@@ -753,9 +753,9 @@
         },
         "room": {
           "name": "room",
-          "type": "smallint",
+          "type": "varchar(64)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "slot_time": {
           "name": "slot_time",
@@ -2312,175 +2312,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.sponsor_help_request": {
-      "name": "sponsor_help_request",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "sponsor_id": {
-          "name": "sponsor_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reason": {
-          "name": "reason",
-          "type": "varchar(32)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "note": {
-          "name": "note",
-          "type": "varchar(500)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "location": {
-          "name": "location",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "sponsor_help_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'open'"
-        },
-        "slack_channel": {
-          "name": "slack_channel",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "slack_ts": {
-          "name": "slack_ts",
-          "type": "varchar(32)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "claimed_by_slack_id": {
-          "name": "claimed_by_slack_id",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "claimed_by_name": {
-          "name": "claimed_by_name",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "ping_count": {
-          "name": "ping_count",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "claimed_at": {
-          "name": "claimed_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "resolved_at": {
-          "name": "resolved_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "sponsor_help_request_sponsor_active_idx": {
-          "name": "sponsor_help_request_sponsor_active_idx",
-          "columns": [
-            {
-              "expression": "sponsor_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"sponsor_help_request\".\"status\" in ('open', 'claimed')",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "sponsor_help_request_slack_idx": {
-          "name": "sponsor_help_request_slack_idx",
-          "columns": [
-            {
-              "expression": "slack_channel",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "slack_ts",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "sponsor_help_request_status_idx": {
-          "name": "sponsor_help_request_status_idx",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "sponsor_help_request_sponsor_id_sponsor_judging_sponsor_id_fk": {
-          "name": "sponsor_help_request_sponsor_id_sponsor_judging_sponsor_id_fk",
-          "tableFrom": "sponsor_help_request",
-          "tableTo": "sponsor_judging_sponsor",
-          "columnsFrom": [
-            "sponsor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.sponsor_interest": {
       "name": "sponsor_interest",
       "schema": "",
@@ -3608,7 +3439,8 @@
         "pending",
         "accepted",
         "declined",
-        "expired"
+        "expired",
+        "cancelled"
       ]
     },
     "public.country": {
@@ -3784,16 +3616,6 @@
         "M",
         "L",
         "XL"
-      ]
-    },
-    "public.sponsor_help_status": {
-      "name": "sponsor_help_status",
-      "schema": "public",
-      "values": [
-        "open",
-        "claimed",
-        "resolved",
-        "cancelled"
       ]
     },
     "public.submission_status": {

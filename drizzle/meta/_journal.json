@@ -285,8 +285,15 @@
     {
       "idx": 40,
       "version": "7",
-      "when": 1794786799560,
-      "tag": "0040_sponsor_help",
+      "when": 1794787071639,
+      "tag": "0040_coffee_chat_room_label_and_cancel",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1794788517386,
+      "tag": "0041_sponsor_help",
       "breakpoints": true
     }
   ]
