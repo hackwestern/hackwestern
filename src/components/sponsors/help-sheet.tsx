@@ -33,6 +33,7 @@ export function HelpSheet({
   const [triedEmpty, setTriedEmpty] = useState(false);
   const noteId = useId();
   const hintId = useId();
+  const reasonErrorId = useId();
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,12 +44,12 @@ export function HelpSheet({
     onSubmit(reason, note);
   };
 
-  const message = error ?? (triedEmpty && !reason ? copy.pickReason : null);
+  const reasonMissing = triedEmpty && !reason;
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 motion-reduce:animate-none" />
         <Dialog.Content
           className={cn(
             "fixed z-50 flex max-h-[90dvh] w-full flex-col gap-5 overflow-y-auto bg-dashboard-bg-surface p-6 font-figtree font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card focus:outline-none",
@@ -74,7 +75,11 @@ export function HelpSheet({
           </div>
 
           <form onSubmit={submit} className="flex flex-col gap-5" noValidate>
-            <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
+            <fieldset
+              className="m-0 flex flex-col gap-2 border-0 p-0"
+              aria-describedby={reasonMissing ? reasonErrorId : undefined}
+              aria-invalid={reasonMissing || undefined}
+            >
               <legend className="mb-2 p-0 text-sm font-semibold text-dashboard-text-light">
                 {copy.reasonLegend}
               </legend>
@@ -100,6 +105,15 @@ export function HelpSheet({
                   {sponsorHelpCopy.reasons[r]}
                 </label>
               ))}
+              {reasonMissing && (
+                <p
+                  id={reasonErrorId}
+                  role="alert"
+                  className="m-0 text-sm text-dashboard-text-warning"
+                >
+                  {copy.pickReason}
+                </p>
+              )}
             </fieldset>
 
             <div className="flex flex-col gap-2">
@@ -119,13 +133,13 @@ export function HelpSheet({
                 onChange={(e) => setNote(e.target.value)}
                 placeholder={copy.notePlaceholder}
                 rows={3}
-                className="w-full resize-none rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface px-3 py-2.5 text-base text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+                className="w-full resize-none rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-surface px-3 py-2.5 text-base text-dashboard-text-heavy placeholder:text-dashboard-text-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
               />
             </div>
 
-            {message && (
+            {error && (
               <p role="alert" className="m-0 text-sm text-dashboard-text-warning">
-                {message}
+                {error}
               </p>
             )}
 

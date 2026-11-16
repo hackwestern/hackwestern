@@ -50,10 +50,7 @@ export default function OrganizerRunOfShowPage() {
       <div className="min-h-screen bg-dashboard-bg-page px-4 pb-12 pt-6 font-figtree font-medium leading-default text-dashboard-text-heavy sm:px-5">
         <div className="mx-auto flex w-full max-w-[880px] flex-col gap-5">
           <PageIntro eyebrow={copy.title} title={copy.title} intro={copy.intro} />
-          <div
-            role="tablist"
-            className="flex gap-2 overflow-x-auto pb-1"
-          >
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
               <DashboardChip
                 key={t}
