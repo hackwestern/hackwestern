@@ -10,7 +10,6 @@ const SCAN_FILTERS = [
 ] as const;
 type ScanFilterValue = (typeof SCAN_FILTERS)[number]["value"];
 
-
 const AllScans = () => {
   const [filter, setFilter] = useState<ScanFilterValue>("all");
   const [search, setSearch] = useState("");
