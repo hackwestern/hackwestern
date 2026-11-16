@@ -39,7 +39,8 @@ function saveToasted(userId: string, ids: Set<string>) {
   }
 }
 
-// Coffee chat requests on /live: a toast once per new request (on any tab)
+// Coffee chat requests on /live: a toast once per new request (on any tab),
+// up until the hacker answers,
 // whose "View" opens the Coffee chats tab, and on the home tab a compact
 // summary linking there. The full list and answering live in coffee-chats.tsx.
 export default function CoffeeChatRequests({
@@ -55,20 +56,41 @@ export default function CoffeeChatRequests({
   });
   const now = useNow(30_000);
   const toasted = useRef<{ userId: string; ids: Set<string> } | null>(null);
+  // Toasts open on this page load, so each closes once it's answered.
+  const open = useRef(new Set<string>());
   const userId = session?.user?.id;
 
-  // Toast each pending request once, ever (remembered across reloads).
+  // Toast each pending request once, ever (remembered across reloads). The
+  // toast has no timeout: it stays until the request stops waiting for an
+  // answer. Answering in the Coffee chats tab closes it right away; each
+  // refetch closes toasts for chats answered elsewhere or expired.
   useEffect(() => {
     if (!q.data || !userId) return;
     if (toasted.current?.userId !== userId) {
+      for (const id of open.current) toast.dismiss(coffeeChatToastId(id));
+      open.current.clear();
       toasted.current = { userId, ids: readToasted(userId) };
     }
     const seen = toasted.current.ids;
+    const waiting = new Set(
+      q.data
+        .filter(
+          (chat) => chat.status === "pending" && now < new Date(chat.expiresAt),
+        )
+        .map((chat) => chat.chatId),
+    );
+    for (const id of open.current) {
+      if (waiting.has(id)) continue;
+      toast.dismiss(coffeeChatToastId(id));
+      open.current.delete(id);
+    }
     let changed = false;
     for (const chat of q.data) {
-      if (chat.status !== "pending" || seen.has(chat.chatId)) continue;
+      if (!waiting.has(chat.chatId) || seen.has(chat.chatId)) continue;
       seen.add(chat.chatId);
       changed = true;
+      open.current.add(chat.chatId);
+      // One toast per chat (fixed id).
       toast(copy.toast(chat.sponsorName), {
         id: coffeeChatToastId(chat.chatId),
         description: page.when(
@@ -76,20 +98,23 @@ export default function CoffeeChatRequests({
           clockOf(chat.startsAt),
           chat.durationMinutes,
         ),
-        duration: 8000,
+        duration: Infinity,
         action: {
           label: copy.toastAction,
-          onClick: () =>
+          onClick: (event) => {
+            // Opening the tab isn't an answer: keep the toast up.
+            event.preventDefault();
             void router.push(
               `/live?tab=coffee-chats&chat=${encodeURIComponent(chat.chatId)}`,
               undefined,
               { shallow: true },
-            ),
+            );
+          },
         },
       });
     }
     if (changed) saveToasted(userId, seen);
-  }, [q.data, userId, router]);
+  }, [q.data, userId, router, now]);
 
   const groups = groupChats(q.data ?? [], now);
   const pending = groups.pending.length;
