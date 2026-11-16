@@ -745,3 +745,86 @@ describe("coffeeChatRequests organizer actions (T26)", () => {
     ).toBe("NOT_FOUND");
   });
 });
+
+describe("coffeeChatRequests.sponsorChats (T19)", () => {
+  test("bad UUID 400, unknown UUID 404", async () => {
+    expect(
+      (await codeOf(caller.coffeeChatRequests.sponsorChats({ sponsor: "x" })))
+        .code,
+    ).toBe("BAD_REQUEST");
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.sponsorChats({
+            sponsor: "00000000-0000-4000-8000-000000000000",
+          }),
+        )
+      ).code,
+    ).toBe("NOT_FOUND");
+  });
+
+  test("lists only this sponsor's chats with first name, rep and effective status", async () => {
+    const sponsor = await makeSponsor(3);
+    const other = await makeSponsor(3);
+    const [a, b, c, d] = [
+      await makeHacker({ firstName: "Ana" }),
+      await makeHacker({ firstName: "Ben" }),
+      await makeHacker({ firstName: "Cy" }),
+      await makeHacker({ firstName: "Di" }),
+    ];
+    const pending = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: a,
+      slotTime: "11:00",
+      repName: "Sam",
+    });
+    const accepted = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: b,
+      slotTime: "10:00",
+    });
+    const declined = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: c,
+      slotTime: "10:00",
+    });
+    await caller.coffeeChatRequests.offer({
+      sponsor: other,
+      userId: d,
+      slotTime: "10:00",
+    });
+    await hackerCaller(b).coffeeChatRequests.respond({
+      chatId: accepted.chatId,
+      answer: "accept",
+    });
+    await hackerCaller(c).coffeeChatRequests.respond({
+      chatId: declined.chatId,
+      answer: "decline",
+    });
+
+    const result = await caller.coffeeChatRequests.sponsorChats({ sponsor });
+    expect(result.chats.map((chat) => [chat.firstName, chat.status])).toEqual([
+      ["Ben", "accepted"],
+      ["Cy", "declined"],
+      ["Ana", "pending"],
+    ]);
+    expect(result.chats[2]).toMatchObject({
+      chatId: pending.chatId,
+      slotTime: "11:00",
+      repName: "Sam",
+      room: setups.find((s) => s.sponsor === result.sponsorName)!.room,
+    });
+    expect(JSON.stringify(result)).not.toContain("Secretlastname");
+
+    // Past the 11:00 chat's cutoff (10:40), the unanswered one is expired.
+    vi.setSystemTime(new Date("2026-11-21T10:45:00-05:00"));
+    try {
+      const later = await caller.coffeeChatRequests.sponsorChats({ sponsor });
+      expect(
+        later.chats.find((chat) => chat.chatId === pending.chatId),
+      ).toMatchObject({ status: "expired" });
+    } finally {
+      vi.setSystemTime(new Date("2026-11-21T08:00:00-05:00"));
+    }
+  });
+});

@@ -222,6 +222,19 @@ export type MyCoffeeChat = {
   expiresAt: string;
 };
 
+/** One of a sponsor's own chats, as /sponsors/[uuid]/coffee-chats shows it. */
+export type SponsorCoffeeChat = {
+  chatId: string;
+  firstName: string;
+  slotTime: string;
+  durationMinutes: number;
+  room: string | null;
+  repName: string | null;
+  /** Effective status: an unanswered request past its cutoff is "expired". */
+  status: CoffeeChatStatus;
+  startsAt: string;
+};
+
 /** One booked chat on the organizer page. */
 export type OrganizerCoffeeChat = {
   chatId: string;
@@ -402,6 +415,47 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         throw error;
       }
     }),
+  /**
+   * The sponsor's own chats, earliest first, with expiry computed now.
+   * Public (sponsor UUID). Only each hacker's first name, as on scan.
+   */
+  sponsorChats: publicProcedure
+    .input(z.object({ sponsor: sponsorInput }))
+    .query(async ({ input }) => {
+      const now = new Date();
+      const sponsor = await findSponsor(db, input.sponsor);
+      const rows = await db
+        .select({
+          chatId: coffeeChats.id,
+          firstName: applications.firstName,
+          userName: users.name,
+          slotTime: coffeeChats.slotTime,
+          durationMinutes: coffeeChats.durationMinutes,
+          room: coffeeChats.room,
+          repName: coffeeChats.repName,
+          status: coffeeChats.status,
+        })
+        .from(coffeeChats)
+        .innerJoin(users, eq(users.id, coffeeChats.userId))
+        .leftJoin(applications, eq(applications.userId, coffeeChats.userId))
+        .where(eq(coffeeChats.sponsorId, sponsor.id))
+        .orderBy(asc(coffeeChats.slotTime), asc(coffeeChats.createdAt));
+      const chats: SponsorCoffeeChat[] = rows.map(
+        ({ firstName, userName, ...row }) => {
+          const { status, startsAt } = coffeeChatTimes(row, now);
+          return {
+            ...row,
+            firstName: firstName?.trim()
+              ? firstName.trim()
+              : (userName?.trim().split(/\s+/)[0] ?? ""),
+            status,
+            startsAt,
+          };
+        },
+      );
+      return { sponsorName: sponsor.name, chats };
+    }),
+
   /**
    * The signed-in hacker's coffee chats, earliest first, with expiry
    * computed now (no background job).

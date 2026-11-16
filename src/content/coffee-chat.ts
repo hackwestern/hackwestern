@@ -29,6 +29,33 @@ export const coffeeChatCopy = {
     linksLabel: "Coffee chats",
   },
 
+  // /sponsors/[uuid]/coffee-chats: the sponsor's own chats.
+  sponsorList: {
+    seoTitle: "Your coffee chats",
+    eyebrow: "Coffee chats",
+    title: (sponsor: string) => `${sponsor} coffee chats`,
+    intro:
+      "Every chat you've offered, by start time. Hackers accept or decline on their live site; an unanswered offer expires 20 minutes before the chat.",
+    empty: "No chats yet. Scan a hacker's badge to offer one.",
+    scan: "Scan a badge",
+    refresh: "Refresh",
+    refreshing: "Refreshing…",
+    updated: "Chat list updated.",
+    minutes: (minutes: number) => `${minutes} min`,
+    rep: (name: string) => `With ${name}`,
+    noRep: "Any rep",
+    roomTbd: "Room to be assigned",
+    summary: (accepted: number, pending: number) =>
+      `${accepted} accepted · ${pending} waiting for a reply`,
+    status: {
+      pending: "Waiting",
+      accepted: "Accepted",
+      declined: "Declined",
+      expired: "Expired",
+      cancelled: "Cancelled",
+    },
+  },
+
   // Messages the server sends back; the UI shows them as-is.
   errors: {
     unknownSponsor: "This private link isn't valid.",
