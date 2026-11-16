@@ -75,8 +75,13 @@ export default function OrganizerRunOfShowPage() {
         <div
           className={cn(
             "mx-auto flex w-full flex-col gap-5",
-            // The day grid gets room for its columns; lists stay readable.
-            tab === "schedule" ? "max-w-[1280px]" : "max-w-[880px]",
+            // The day grid and the coffee chat table + side panel get room
+            // for their columns; lists stay readable.
+            tab === "schedule"
+              ? "max-w-[1280px]"
+              : tab === "coffee"
+                ? "max-w-[1440px]"
+                : "max-w-[880px]",
           )}
         >
           <PageIntro

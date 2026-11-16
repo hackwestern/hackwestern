@@ -308,6 +308,37 @@ export const coffeeChatCopy = {
       },
     },
 
+    // Side panel beside the board: the coffee chat rooms on the map and
+    // where every sponsor is, at the time picked in the table (T52).
+    side: {
+      label: "Map and where everyone is",
+      showing: (time: string) => `Showing ${time}`,
+      live: "Following the clock",
+      picked: "Picked in the table",
+      now: "Now",
+      nowLabel: "Show the current time",
+      pickRow: "Pick a time in the table to see that moment.",
+      rowLabel: (time: string) => `Show ${time} on the map`,
+      mapHeading: "Coffee chat rooms",
+      mapIntro: "Pick a room to find its sponsor in the table.",
+      free: "Free",
+      chatsAt: (n: number, time: string) =>
+        `${n} ${n === 1 ? "chat" : "chats"} at ${time}`,
+      breakdown: (accepted: number, pending: number) =>
+        `${accepted} accepted, ${pending} waiting`,
+      roomPin: (room: string, sponsor: string | null, line: string) =>
+        sponsor ? `${room}: ${sponsor}, ${line}` : `${room}: free`,
+      roomsList: "Coffee chat rooms at this time",
+      highlighting: (sponsor: string) => `Highlighting ${sponsor} in the table`,
+      clear: "Clear",
+      whereHeading: "Where is everyone",
+      whereAt: (time: string) => `At ${time}`,
+      whereEmpty: "No sponsor is on the run of show at this time.",
+      whereError: "Couldn't load where sponsors are.",
+      show: (section: string) => `Show ${section}`,
+      hide: (section: string) => `Hide ${section}`,
+    },
+
     // Organizers add a chat by hand (same rules as a sponsor's offer).
     add: {
       heading: "Add a chat",
