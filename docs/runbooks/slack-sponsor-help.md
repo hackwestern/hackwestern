@@ -55,3 +55,4 @@ settings:
 - First claim wins. The database update only succeeds while the request is still open, so two people reacting at once can't both claim it.
 - Re-pings are sent when the sponsor's page checks the status (it polls every 15 seconds while a request is open), so there is no scheduled job to run.
 - If `SPONSOR_HELP_SLACK_BOT_TOKEN` is missing, Slack is skipped. The request still shows on the organizer page.
+- Each ping carries the contact: sponsor name (from the private link, never typed), rep name, phone as a tap-to-call link, and where they are (what they typed, else the booth from the sponsor sheet, else "not given"). Rep name and phone are remembered on that device for next time.

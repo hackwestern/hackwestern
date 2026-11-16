@@ -3,6 +3,8 @@
 // reply claims it. See docs/runbooks/slack-sponsor-help.md and the
 // 2026-11-15 entry in docs/decisions.md.
 
+import { z } from "zod";
+
 export const SPONSOR_HELP_REASONS = [
   "swag",
   "tech",
@@ -87,4 +89,62 @@ export function isHelpVisibleToSponsor(
 export function normalizeHelpNote(note: string | null | undefined) {
   const trimmed = (note ?? "").trim();
   return trimmed === "" ? null : trimmed;
+}
+
+/** Contact details a sponsor gives with each request (shown in Slack). */
+export const SPONSOR_HELP_REP_NAME_MAX = 80;
+export const SPONSOR_HELP_PHONE_MIN = 7;
+export const SPONSOR_HELP_PHONE_MAX = 25;
+export const SPONSOR_HELP_PHONE_MIN_DIGITS = 7;
+export const SPONSOR_HELP_LOCATION_NOTE_MAX = 120;
+
+const PHONE_CHARS = /^[0-9+().\- ]+$/;
+
+/** How many digits a phone number has, ignoring + ( ) - . and spaces. */
+export function phoneDigitCount(phone: string): number {
+  return phone.replace(/\D/g, "").length;
+}
+
+/**
+ * Digits-only `tel:` target for a phone the sponsor typed. Keeps a leading +,
+ * and assumes North America (+1) for a bare 10-digit number, since the event
+ * is in London, Ontario.
+ */
+export function telHref(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (phone.trim().startsWith("+")) return `tel:+${digits}`;
+  if (digits.length === 10) return `tel:+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `tel:+${digits}`;
+  return `tel:${digits}`;
+}
+
+// Field schemas, shared by the router (the real check) and the sheet (to show
+// errors before sending). Messages are keys into sponsorHelpCopy.sheet.errors.
+export const helpRepNameSchema = z
+  .string()
+  .trim()
+  .min(1, "repNameMissing")
+  .max(SPONSOR_HELP_REP_NAME_MAX, "repNameTooLong");
+
+export const helpPhoneSchema = z
+  .string()
+  .trim()
+  .min(1, "phoneMissing")
+  .min(SPONSOR_HELP_PHONE_MIN, "phoneInvalid")
+  .max(SPONSOR_HELP_PHONE_MAX, "phoneInvalid")
+  .regex(PHONE_CHARS, "phoneInvalid")
+  .refine(
+    (p) => phoneDigitCount(p) >= SPONSOR_HELP_PHONE_MIN_DIGITS,
+    "phoneInvalid",
+  );
+
+export const helpLocationNoteSchema = z
+  .string()
+  .trim()
+  .max(SPONSOR_HELP_LOCATION_NOTE_MAX, "locationNoteTooLong")
+  .optional();
+
+/** localStorage key for the rep name and phone remembered on this device. */
+export function helpContactStorageKey(sponsorId: string): string {
+  return `hw13:sponsor-help-contact:${sponsorId.toLowerCase()}`;
 }
