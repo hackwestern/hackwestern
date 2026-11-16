@@ -33,6 +33,12 @@ export const scheduleCopy = {
       "Your workshops, coffee chats and booth hours, plus the main events and meals. Times are Eastern.",
   },
 
+  sheetEdit: {
+    readOnly: "Read-only here. Make changes in the sheet.",
+    button: "Edit in Google Sheets",
+    newTab: "(opens in a new tab)",
+  },
+
   coffeeChat: {
     heading: "Your coffee chats",
     notSetUp:

@@ -1,5 +1,6 @@
 import { ExternalLink, Lock } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { scheduleCopy } from "~/content/sponsor-schedule";
 import { cn } from "~/lib/utils";
 
 // The run-of-show sheet is the single source of truth (docs/decisions.md,
@@ -24,7 +25,7 @@ export function SheetEditButton({
     >
       <p className="m-0 flex items-center gap-1.5 text-sm text-dashboard-text-light">
         <Lock aria-hidden className="size-3.5 shrink-0" />
-        Read-only here. Make changes in the sheet.
+        {scheduleCopy.sheetEdit.readOnly}
       </p>
       <DashboardButton
         variant="outline"
@@ -32,9 +33,9 @@ export function SheetEditButton({
         className="h-11 w-full sm:h-10 sm:w-auto"
       >
         <a href={href} target="_blank" rel="noopener noreferrer">
-          Edit in Google Sheets
+          {scheduleCopy.sheetEdit.button}
           <ExternalLink aria-hidden />
-          <span className="sr-only">(opens in a new tab)</span>
+          <span className="sr-only">{scheduleCopy.sheetEdit.newTab}</span>
         </a>
       </DashboardButton>
     </div>
