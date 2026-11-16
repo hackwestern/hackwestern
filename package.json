@@ -25,6 +25,7 @@
     "start": "next start",
     "load-tester:generate-app-json": "tsx scripts/generate-app-map.ts",
     "load-tester:dev": "npx wrangler dev -c workers/hw-network-requests/wrangler.toml --env-file \"$PWD/.env\"",
+    "load-tester:migrate:new": "npx wrangler d1 migrations create hw-network-requests -c workers/hw-network-requests/wrangler.toml",
     "load-tester:migrate": "npx wrangler d1 migrations apply hw-network-requests -c workers/hw-network-requests/wrangler.toml --local",
     "load-tester:studio": "drizzle-kit studio --config workers/hw-network-requests/studio.config.ts"
   },

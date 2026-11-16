@@ -37,15 +37,17 @@ Vercel does not read `.env`: set `HW_NETWORK_REQUESTS_INGEST_URL` and
 
 ## Changing the schema
 
-Never edit an applied migration. Add the next numbered file:
+Never edit an applied migration; add the next numbered file.
 
 ```bash
-npx wrangler d1 migrations create hw-network-requests add_env_column -c workers/hw-network-requests/wrangler.toml
-# edit migrations/0002_add_env_column.sql, e.g. ALTER TABLE request_events ADD COLUMN env TEXT;
-npm run load-tester:migrate     # try it on the local D1
+npm run load-tester:migrate:new -- add_env_column   # creates migrations/0002_add_env_column.sql
+# edit it, e.g. ALTER TABLE request_events ADD COLUMN env TEXT;
+npm run load-tester:migrate                         # apply to the local D1
 ```
 
-CI applies it to dev when it reaches `dev` and to prod when it reaches `main`.
+Remote is automatic: merging to `dev` applies it to the dev D1, merging to
+`main` applies it to prod (the "Apply D1 migrations" step in CI). Each
+database records what it has run in its own `d1_migrations` table.
 
 The app skips logging entirely while `HW_NETWORK_REQUESTS_INGEST_URL` or
 `HW_NETWORK_REQUESTS_INGEST_TOKEN` is unset. `clock.get` (polled every 2s per client) is
