@@ -4,6 +4,9 @@ import { z } from "zod";
 
 import {
   dueHelpReping,
+  helpLocationNoteSchema,
+  helpPhoneSchema,
+  helpRepNameSchema,
   isHelpVisibleToSponsor,
   normalizeHelpNote,
   SPONSOR_HELP_NOTE_MAX,
@@ -42,6 +45,8 @@ export type SponsorHelpView = {
   id: string;
   reason: SponsorHelpReason;
   note: string | null;
+  /** Who pinged, so the card can say "Pinged as <rep>". */
+  repName: string | null;
   status: HelpRow["status"];
   claimedByName: string | null;
   createdAt: Date;
@@ -54,6 +59,7 @@ function toView(row: HelpRow): SponsorHelpView {
     id: row.id,
     reason: row.reason as SponsorHelpReason,
     note: row.note,
+    repName: row.repName,
     status: row.status,
     claimedByName: row.claimedByName,
     createdAt: row.createdAt,
@@ -94,6 +100,9 @@ function details(row: HelpRow, sponsorName: string): SponsorHelpDetails {
     reason: row.reason as SponsorHelpReason,
     note: row.note,
     location: row.location,
+    repName: row.repName,
+    phone: row.phone,
+    locationNote: row.locationNote,
   };
 }
 
@@ -107,7 +116,7 @@ function slackRef(row: HelpRow) {
  * Send the due re-ping, if any. The UPDATE only succeeds for the poll that
  * moves ping_count from n to n+1, so concurrent polls send it once.
  */
-async function sendDueReping(row: HelpRow, now: Date) {
+async function sendDueReping(row: HelpRow, sponsorName: string, now: Date) {
   const ref = slackRef(row);
   const step = dueHelpReping(row, now);
   if (!ref || !step) return;
@@ -123,7 +132,7 @@ async function sendDueReping(row: HelpRow, now: Date) {
     )
     .returning({ id: sponsorHelpRequests.id });
   if (!won) return;
-  if (await repingSponsorHelp(ref, step)) return;
+  if (await repingSponsorHelp(ref, step, details(row, sponsorName))) return;
   // Slack failed: give the step back so the next poll retries it.
   await db
     .update(sponsorHelpRequests)
@@ -155,7 +164,8 @@ async function markInSlack(
   outcome: SponsorHelpOutcome,
 ) {
   const ref = slackRef(row);
-  if (ref) await markSponsorHelpMessage(ref, details(row, sponsorName), outcome);
+  if (ref)
+    await markSponsorHelpMessage(ref, details(row, sponsorName), outcome);
 }
 
 function isUniqueViolation(error: unknown): boolean {
@@ -176,6 +186,9 @@ export const sponsorHelpRouter = createTRPCRouter({
       sponsorInput.extend({
         reason: z.enum(SPONSOR_HELP_REASONS),
         note: z.string().max(SPONSOR_HELP_NOTE_MAX).optional(),
+        repName: helpRepNameSchema,
+        phone: helpPhoneSchema,
+        locationNote: helpLocationNoteSchema,
       }),
     )
     .mutation(async ({ input }): Promise<SponsorHelpView> => {
@@ -204,6 +217,9 @@ export const sponsorHelpRouter = createTRPCRouter({
             reason: input.reason,
             note: normalizeHelpNote(input.note),
             location,
+            repName: input.repName,
+            phone: input.phone,
+            locationNote: normalizeHelpNote(input.locationNote),
           })
           .returning();
       } catch (error) {
@@ -240,7 +256,7 @@ export const sponsorHelpRouter = createTRPCRouter({
       });
       const now = new Date();
       if (!row || !isHelpVisibleToSponsor(row, now)) return null;
-      await sendDueReping(row, now);
+      await sendDueReping(row, sponsor.name, now);
       return toView(row);
     }),
 
@@ -275,6 +291,9 @@ export const sponsorHelpRouter = createTRPCRouter({
         reason: sponsorHelpRequests.reason,
         note: sponsorHelpRequests.note,
         location: sponsorHelpRequests.location,
+        repName: sponsorHelpRequests.repName,
+        phone: sponsorHelpRequests.phone,
+        locationNote: sponsorHelpRequests.locationNote,
         status: sponsorHelpRequests.status,
         claimedByName: sponsorHelpRequests.claimedByName,
         postedToSlack: sql<boolean>`${sponsorHelpRequests.slackTs} is not null`,
