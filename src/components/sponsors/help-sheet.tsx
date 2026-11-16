@@ -78,7 +78,6 @@ export function HelpSheet({
             <fieldset
               className="m-0 flex flex-col gap-2 border-0 p-0"
               aria-describedby={reasonMissing ? reasonErrorId : undefined}
-              aria-invalid={reasonMissing || undefined}
             >
               <legend className="mb-2 p-0 text-sm font-semibold text-dashboard-text-light">
                 {copy.reasonLegend}
@@ -100,6 +99,7 @@ export function HelpSheet({
                     value={r}
                     checked={reason === r}
                     onChange={() => setReason(r)}
+                    aria-invalid={reasonMissing || undefined}
                     className="size-4 accent-dashboard-action-primary"
                   />
                   {sponsorHelpCopy.reasons[r]}

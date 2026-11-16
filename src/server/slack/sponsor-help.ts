@@ -14,6 +14,9 @@ import {
 
 const copy = sponsorHelpCopy.slack;
 const SLACK_API = "https://slack.com/api";
+// Keep each call short: the events endpoint awaits these before answering
+// Slack, which wants a reply within 3 seconds.
+const SLACK_TIMEOUT_MS = 1500;
 
 export type SlackMessageRef = { channel: string; ts: string };
 
@@ -66,6 +69,7 @@ async function callSlack(
   try {
     const res = await fetch(`${SLACK_API}/${method}`, {
       method: "POST",
+      signal: AbortSignal.timeout(SLACK_TIMEOUT_MS),
       headers: {
         Authorization: `Bearer ${bot}`,
         "Content-Type": form

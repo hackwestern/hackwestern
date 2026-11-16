@@ -180,24 +180,44 @@ describe("url_verification", () => {
 });
 
 describe("claiming", () => {
-  // Like the route: respond, then run the Slack follow-up.
-  async function run(req: Parameters<typeof handleSlackEvent>[0]) {
-    const res = await handleSlackEvent(req);
-    await res.after?.();
-    return res;
-  }
+  const run = handleSlackEvent;
 
   test("claims in the database before any Slack call", async () => {
-    const res = await handleSlackEvent(signed(reaction("U1")));
+    let statusAtFirstCall: string | undefined;
+    fetchMock.mockImplementation(async () => {
+      statusAtFirstCall ??= (await request())?.status;
+      return new Response(JSON.stringify({ ok: true }));
+    });
+    const res = await run(signed(reaction("U1")));
     expect(res.status).toBe(200);
-    expect((await request())?.status).toBe("claimed");
-    expect(fetchMock).not.toHaveBeenCalled();
-    await res.after?.();
-    expect(slackApiCalls("users.info")).toHaveLength(1);
+    expect(statusAtFirstCall).toBe("claimed");
+  });
+
+  test("Slack down: still claimed, still 200, fallback name", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    fetchMock.mockRejectedValue(new Error("timeout"));
+    const res = await run(signed(reaction("U1")));
+    expect(res.status).toBe(200);
+    const row = await request();
+    expect(row?.status).toBe("claimed");
+    expect(row?.claimedByName).toBe("Someone from the sponsor team");
+  });
+
+  test("each Slack call has a timeout", async () => {
+    await run(signed(reaction("U1")));
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(0);
+    for (const [, init] of fetchMock.mock.calls) {
+      expect(init.signal).toBeInstanceOf(AbortSignal);
+    }
   });
 
   test("Slack retries are acked without reprocessing", async () => {
-    const res = await run({ ...signed(reaction("U1")), retryNum: "1" });
+    const res = await run({
+      rawBody: "not even json",
+      timestamp: undefined,
+      signature: undefined,
+      retryNum: "1",
+    });
     expect(res).toEqual({ status: 200, body: { ok: true } });
     expect((await request())?.status).toBe("open");
     expect(fetchMock).not.toHaveBeenCalled();
