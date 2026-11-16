@@ -375,6 +375,8 @@ export const coffeeChatStatusEnum = pgEnum("coffee_chat_status", [
   "accepted",
   "declined",
   "expired",
+  // An organizer called it off (Cancel on /internal/sponsor-schedule).
+  "cancelled",
 ]);
 
 // A sponsor's coffee chat request to one hacker, in one room at one
@@ -390,9 +392,11 @@ export const coffeeChats = pgTable(
     userId: varchar("user_id", { length: 255 })
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    // Room id from COFFEE_CHAT_ROOMS (1-3), assigned by organizers. Chats are
-    // always 1-on-1; a sponsor's reps run several at once in the same room.
-    room: smallint("room").notNull(),
+    // Room label as written in the sponsor's Coffee Chats sheet row (e.g.
+    // "Rm 2241"), copied when the chat is offered; null until organizers
+    // assign one. Organizers can move a chat with Move room. A sponsor's reps
+    // run several chats at once in the same room.
+    room: varchar("room", { length: 64 }),
     // Saturday start time "HH:MM" on the 15-minute grid, and length (15 or
     // 30, from the sponsor's FORMAT in the Coffee Chats sheet tab). A 30-min
     // chat blocks the hacker for two grid slots; overlap is checked when the
