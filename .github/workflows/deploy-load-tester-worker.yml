@@ -48,7 +48,6 @@ jobs:
       - name: Deploy worker
         run: $WRANGLER deploy
 
-      # schema.sql is idempotent (CREATE ... IF NOT EXISTS). Runs after the deploy
-      # so the dev D1 already exists (wrangler provisions it on first deploy).
+      # schema.sql is idempotent (CREATE ... IF NOT EXISTS).
       - name: Apply D1 schema
         run: $WRANGLER d1 execute $DB_NAME --remote --file=workers/hw-network-requests/schema.sql

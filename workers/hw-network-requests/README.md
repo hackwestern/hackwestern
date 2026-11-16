@@ -15,8 +15,8 @@ The worker reads the same name the app does. The worker only accepts writes
 `.github/workflows/deploy-load-tester-worker.yml` deploys on push:
 
 - `main` -> prod worker `hw-network-requests` + D1 (GitHub env `Production`)
-- `dev` -> `hw-network-requests-dev` + its own D1 (GitHub env `Dev`; wrangler
-  creates the D1 on the first deploy, see `[env.dev]` in `wrangler.toml`)
+- `dev` -> `hw-network-requests-dev` + its own D1 (GitHub env `Dev`; see
+  `[env.dev]` in `wrangler.toml`)
 
 Each run deploys and applies `schema.sql` (idempotent). Each GitHub environment
 needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The ingest token is
