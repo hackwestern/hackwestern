@@ -1,38 +1,37 @@
 # NEXT — sponsor dashboard (branch `sponsor-dashboard`, not pushed)
 
 ## Now
-Run the board (`docs/board.md`). Round 1 = verify the 11 tasks in **Review** with checker agents (code-reviewer / design-reviewer / accessibility-tester per card). Pass → Done. That unblocks the Backlog.
+Open the PR. Push `sponsor-dashboard` and open it **into `spon-judging`** (#1112, which it's built on); retarget to `main` once #1112 merges. Jazz to confirm before pushing.
 
-## Then (parallel, owns don't overlap)
-- T10 auto-shortlist query (deps T08)
-- T14 sponsor rep count (deps T13)
-- T21 Coffee Chats tab reader — mostly done already: `parseCoffeeChatsTab` in `src/server/api/utils/run-of-show-parse.ts` reads window/format/group size/room; card may just need its check run
-- T09 hacker sponsor-interest form (deps T08)
-Then T15 → T16 → T17/T18/T19/T20 → T22/T23 → T26, then T11.
+## State (2026-11-16)
+- Board: 45 Done, 1 Blocked (T33, Jazz's Slack steps). Backlog empty.
+- Checks on 613daf4: `tsc` clean; vitest 968 passed, 1 failed (Apple Wallet signing, fails on base too); `next build` compiled successfully (run in a separate worktree, never in the folder the dev server uses).
+- Migrations added: 0039 coffee_chat, 0040 room label/cancelled, 0041 sponsor_help, 0042 help contact, 0043 coffee_chat_room, 0044 coffee_chat_watcher, 0045 sponsor_shortlist.
 
-Sponsor help ("Need help" → Slack ping, first reaction or reply claims it), added 2026-11-15:
-T27 (deps T13) → T28 → T29 and T30 in parallel → T31, T32. Runbook: docs/runbooks/slack-sponsor-help.md. T33 (Slack setup) is Jazz's.
+## Not yet reviewed by a checker agent
+T38 (schedule grid), T39 (where-is-everyone move), T41-T46 (rooms, map, ad hoc, watcher, shortlist page, ceremonies). Run code-reviewer + accessibility-tester on `git diff 82bce81..sponsor-dashboard` before merging the PR.
 
-## Design rule (all UI)
-Use the blue dashboard design system the /live site uses: `dashboard-*` tokens from src/lib/tokens.ts (primary #0b6bc4, page #f3f7fc, nav #dbe7f5) and the components in src/components/internals/dashboard-*. Match src/pages/live.tsx. Don't use the older raw `text-heavy` / `primary-300` classes that live.tsx still has in places. Give design-reviewer this rule when checking UI cards.
+## Jazz (accounts / people)
+- Vercel: 7 vars added from `_local/vercel-env.txt`; then move that file to `_local/_to_delete/`.
+- Rotate Slack token + signing secret (they were pasted in chat), update Vercel.
+- Slack: `/invite @HW13 Bot` in the sponsor team channel; after deploy turn on Event Subscriptions (`/api/slack/events`; reaction_added, message.channels, message.groups). Runbook: docs/runbooks/slack-app.md.
+- Optional: service account `hw-run-of-show@...` Editor on the run-of-show sheet (Coffee Chat Bookings mirror).
+- Remove MAILJET_* from the Windows/shell environment (local tests could send real mail).
+- Move `Downloads\hackwestern-sheets-d3df24095154.json`.
+- Test the badge scanner on a real phone.
+- Clarify "status" in the spon team's list (assumed: existing sponsor status panel).
 
-## Blocked
-- T24: Jazz creates the Slack app (docs/runbooks/slack-coffee-chat-bot.md). T22/T23 must skip silently with no SLACK_BOT_TOKEN.
-- T33: Jazz sets up the sponsor help bot in the sponsor team's Slack (docs/runbooks/slack-sponsor-help.md). Open question: is the sponsor team on the same workspace as hackers? If yes, one app can do both.
-
-## Done this session (2026-11-14)
-- Live sheet connected: service account `hw-run-of-show@hackwestern-sheets.iam.gserviceaccount.com` (Viewer on the run-of-show sheet), key in `.env` as RUN_OF_SHOW_SHEETS_*; RUN_OF_SHOW_SHEET set. Same three vars still need adding in **Vercel** before deploy.
-- Coffee chat table + rules (0039), schedule / where-is-everyone / organizer pages (bd8ea9f). Screens in mocks/sponsor-schedule-v1, v2.
-- Not yet run: `npm run build` (run before opening a PR).
+## Ask the spon team
+- Coffee Chats rows for Scotiabank, Commure, CSE (blank = can't offer chats)
+- Canada Life: 3 chatting hours vs a 10-12 window
+- Ceremonies tab: add times (or order) per speaker
+- Workshops tab: add a Runner/Speaker column
+- Room for Sponsor Track Shortlisting
+- Check the map pin positions (src/lib/sponsor-map-rooms.ts)
 
 ## Local setup
 - Dev server: `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/hackwestern_spon R2_PUBLIC_BASE_URL=http://localhost:3013 NEXTAUTH_SECRET=local-dev-only-secret NEXTAUTH_URL=http://localhost:3013 SKIP_ENV_VALIDATION=1 npx next dev --turbopack -p 3013`
-- Local DB has test sponsors StarTech, Sun Life, Canada Life, Scotiabank, Commure, CSE.
-- Phone screenshots: body is the scroll box on mobile, so use a tall viewport, not fullPage.
-- Editing docs/board.md: write a small script file; inline `node -e` / python escaping has mangled regexes and newlines twice.
-
-## Ask the spon team
-- ROOM column in the Coffee Chats tab (rooms per sponsor)
-- Canada Life CHATTING HOURS 3 vs a 2-hour window
-- Scotiabank, Commure, CSE coffee chat rows are blank
-- Room for Sponsor Track Shortlisting
+- Local `.env` has RUN_OF_SHOW_* and GOOGLE_SHEETS_API_KEY (local key `hw-schedule-local`, restricted to Sheets API).
+- Demo data: sponsors (Sun Life has a real Coffee Chats row), demo hackers in `_local/demo-accounts.md` (codes demo-otter-kite, demo-maple-fox). Jazz's local account is an organizer; log in at /login (Google login can't work on localhost).
+- Worktrees (can be removed after the PR): hackwestern-sd-chat, -sd-help, -sd-hackers, -sd-notify, -sd-sched2. Extra local DBs: hackwestern_sd_*.
+- Editing docs/board.md: use a script file (CRLF); keep docs/decisions.md valid UTF-8.
