@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { disabledRedirect } from "~/utils/redirect";
 import { ArrowLeft, ArrowRight, ExternalLink, ScanLine } from "lucide-react";
 import Sidebar from "~/components/live/sidebar";
+import Topbar from "~/components/live/topbar";
 import { ActivityCard } from "~/components/internals/activity-card";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { ScansTable } from "~/components/scans/scans-table";
@@ -59,18 +60,26 @@ function DashboardDesignSystem() {
       <div className="flex flex-col gap-2">
         <h1 className="dashboard-display">Dashboard Design System</h1>
         <p className="max-w-[720px] text-base text-dashboard-text-medium">
-          Components for the hacker and organizer dashboard (/live, /scans,
-          /scan). Each section says when to use the component. For the HW13
-          hacker-site theme, see /design-system.
+          Components for the hacker and organizer dashboard (/live, /scan). Each
+          section says when to use the component. For the HW13 hacker-site
+          theme, see /design-system.
         </p>
       </div>
 
       <Showcase
         name="Sidebar"
         file="components/live/sidebar.tsx"
-        usage="The desktop navigation for every dashboard page. Render it once in the page layout. Its links (SectionLink in components/live/navlinks.tsx) take badge for outstanding to-dos (e.g. checklist steps left on Home) and locked for pages hackers can't open yet (before RSVP)."
+        usage="The desktop navigation for every dashboard page. Render it once in the page layout. Its links (SectionLink in components/live/navlinks.tsx) take badge for outstanding to-dos (e.g. checklist steps left on Home) and locked for pages hackers can't open yet (before RSVP). Organizers see the same links; on /live their Home shows All Scans."
       >
         <Sidebar />
+      </Showcase>
+
+      <Showcase
+        name="Mobile Nav"
+        file="components/live/topbar.tsx"
+        usage="The mobile replacement for the sidebar (below the md breakpoint), with the page title in the middle. The ☰ menu opens the same search and links as the sidebar, plus a Scan link (to the scanner) when isOrganizer is passed, since organizers scan from their phones. Only visible at phone width."
+      >
+        <Topbar title="All Scans" isOrganizer />
       </Showcase>
 
       <Showcase

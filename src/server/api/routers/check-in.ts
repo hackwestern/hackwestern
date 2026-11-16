@@ -8,6 +8,7 @@ import {
 import { db } from "~/server/db";
 import { applications, dayOfRegistrations } from "~/server/db/schema";
 import { isAdmittedStatus } from "~/lib/admission";
+import { isUserApprovedForEvent } from "~/server/api/utils/approval";
 import { resolveScannedUserId } from "~/server/api/utils/hacker-id";
 
 const ACCEPTED_STATUSES = ["CONFIRMED"] as const;
@@ -57,6 +58,16 @@ export const checkInRouter = createTRPCRouter({
     .input(z.object({ userId: z.string() }))
     .mutation(async ({ input }) => {
       const userId = await resolveScannedUserId(input.userId);
+
+      // Same rule as scanning: only admitted hackers can be signed in, so a
+      // walk-in can't be checked in from a QR code or a typed ID.
+      if (!(await isUserApprovedForEvent(userId))) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "This hacker has not been approved to attend.",
+        });
+      }
+
       const existing = await db.query.dayOfRegistrations.findFirst({
         where: eq(dayOfRegistrations.userId, userId),
         columns: { signedInAt: true },

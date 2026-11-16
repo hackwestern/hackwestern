@@ -7,8 +7,9 @@
  *
  * What it does, in order:
  *   1. Applies the judging triggers (idempotent — triggers.sql source of truth).
- *   2. Wipes the judging tables (team_mark, judging_skip, judging_queue,
- *      judge), ALL teams, and any judge accounts from a previous run.
+ *   2. Wipes the judging tables (judging_assignment, team_mark, judging_skip,
+ *      judging_queue, judge, judging_table), ALL teams, and any judge
+ *      accounts from a previous run.
  *   3. Inserts `--teams` submitted teams with sponsor-track coverage.
  *   4. Creates `--judges` judge accounts (`--sponsors` of them sponsored with
  *      a track). These are REAL credentials-provider accounts — humans can
@@ -21,6 +22,8 @@
  *      --emails a@x.com,b@y.com (for rehearsals where organizers use their
  *      own sign-ins).
  *   6. Loads the queue with `--rounds` rounds per team.
+ *   7. Creates one judging table per team (split across two zones) and seats
+ *      every team, so organizers can start pairing judges straight away.
  *
  * Flags: --teams N  --judges N  --sponsors N  --rounds N  --password STR
  *        --emails a@x,b@y  --yes (skip confirm)
@@ -28,13 +31,15 @@
 import * as p from "@clack/prompts";
 import bcrypt from "bcrypt";
 import { faker } from "@faker-js/faker";
-import { inArray, like, sql } from "drizzle-orm";
+import { eq, inArray, like, sql } from "drizzle-orm";
 
 import { conn, db } from "..";
 import {
   judges,
+  judgingAssignments,
   judgingQueue,
   judgingSkips,
+  judgingTables,
   teamMarks,
   teams,
   trackEnum,
@@ -119,11 +124,13 @@ async function seedJudging(args: Args): Promise<void> {
   await db.transaction(async (tx) => {
     // 2. Wipe judging state. Order respects FKs (marks/skips/queue -> judge,
     // teams). users.team_id is ON DELETE SET NULL, so deleting teams is safe.
+    await tx.delete(judgingAssignments).where(sql`true`);
     await tx.delete(teamMarks).where(sql`true`);
     await tx.delete(judgingSkips).where(sql`true`);
     await tx.delete(judgingQueue).where(sql`true`);
     await tx.delete(judges).where(sql`true`);
     await tx.delete(teams).where(sql`true`);
+    await tx.delete(judgingTables).where(sql`true`);
     await tx
       .delete(users)
       .where(like(users.email, `%@${JUDGING_SEED_EMAIL_DOMAIN}`));
@@ -216,6 +223,29 @@ async function seedJudging(args: Args): Promise<void> {
         roundsRemaining: args.rounds,
       })),
     );
+
+    // 7. One table per team, numbered from 1 and split across two zones,
+    // with each team seated at its own table.
+    const tables = await tx
+      .insert(judgingTables)
+      .values(
+        teamIds.map((_, i) => ({
+          number: i + 1,
+          zone: i < teamIds.length / 2 ? "Main gym" : "Side hall",
+        })),
+      )
+      .returning({ id: judgingTables.id });
+    for (const [i, teamId] of teamIds.entries()) {
+      await tx
+        .update(teams)
+        .set({ judgingTableId: tables[i]!.id })
+        .where(eq(teams.id, teamId));
+    }
+    // Every table now has a team and no stops yet, so all are waiting.
+    await tx
+      .update(judgingTables)
+      .set({ status: "waiting", statusUpdatedAt: new Date() })
+      .where(sql`true`);
   });
 }
 
@@ -236,8 +266,8 @@ try {
     // clack is TTY-only, so it's used solely for this interactive confirm.
     const ok = await p.confirm({
       message:
-        "This DELETES all rows in team, judge, judging_queue, judging_skip " +
-        "and team_mark. Continue?",
+        "This DELETES all rows in team, judge, judging_queue, judging_skip, " +
+        "team_mark, judging_table and judging_assignment. Continue?",
     });
     if (ok !== true) {
       console.log("Stopped.");
@@ -254,6 +284,7 @@ try {
       `Seeded in ${secs}s:`,
       `  ${args.teams} teams (submitted, sponsor tracks covered)`,
       `  ${args.judges} judges (${args.sponsors} sponsored), ${args.rounds} rounds/team queued`,
+      `  ${args.teams} judging tables, one team seated at each`,
       ...(args.emails.length > 0
         ? [`  promoted to judges: ${args.emails.join(", ")}`]
         : []),
