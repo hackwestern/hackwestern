@@ -1,5 +1,5 @@
--- D1 schema for the hw-events Worker. Apply with:
---   npx wrangler d1 execute hw-events --remote --file=schema.sql
+-- D1 schema for the hw-network-requests Worker. Apply with:
+--   npx wrangler d1 execute hw-network-requests --remote --file=schema.sql
 -- No retention: Hack Western runs once a year, so rows are kept indefinitely.
 
 CREATE TABLE IF NOT EXISTS request_events (

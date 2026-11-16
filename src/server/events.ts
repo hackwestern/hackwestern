@@ -2,11 +2,12 @@
  * Request-event logging for traffic profiling.
  *
  * Every tRPC call is reported (metadata only: no inputs, outputs, emails or
- * IPs) to a Cloudflare Worker that stores it in D1 (see workers/hw-events).
+ * IPs) to a Cloudflare Worker that stores it in D1 (see workers/hw-network-requests).
  * That keeps analytics writes off the main Neon database.
  *
  * - Fire and forget: failures are swallowed and never affect the request.
- * - Disabled unless EVENTS_INGEST_URL and EVENTS_INGEST_TOKEN are both set.
+ * - Disabled unless HW_NETWORK_REQUESTS_INGEST_URL and HW_NETWORK_REQUESTS_INGEST_TOKEN
+ *   are both set, and (outside Vercel) HW_NETWORK_REQUESTS_TRACK_LOCAL=true.
  * - High-frequency polling procedures (HOT_PROCEDURES, e.g. `clock.get` every
  *   2s per client) are not stored row-by-row. They are counted in memory per
  *   minute and flushed as one aggregate row, which keeps D1 writes tiny.
@@ -36,7 +37,11 @@ interface CountRow {
   phase: string;
 }
 
-const enabled = () => !!env.EVENTS_INGEST_URL && !!env.EVENTS_INGEST_TOKEN;
+const enabled = () =>
+  !!env.HW_NETWORK_REQUESTS_INGEST_URL &&
+  !!env.HW_NETWORK_REQUESTS_INGEST_TOKEN &&
+  // Deployed builds (VERCEL set) always track; local dev must opt in.
+  (!!process.env.VERCEL || env.HW_NETWORK_REQUESTS_TRACK_LOCAL === "true");
 
 export function currentPhase(now = Date.now()): string {
   const start = env.HACK_START ? Date.parse(env.HACK_START) : NaN;
@@ -54,11 +59,11 @@ export function hashUser(userId: string | undefined): string | null {
 }
 
 function send(body: { events?: RequestEvent[]; counts?: CountRow[] }) {
-  const request = fetch(`${env.EVENTS_INGEST_URL}/ingest`, {
+  const request = fetch(`${env.HW_NETWORK_REQUESTS_INGEST_URL}/ingest`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${env.EVENTS_INGEST_TOKEN}`,
+      authorization: `Bearer ${env.HW_NETWORK_REQUESTS_INGEST_TOKEN}`,
     },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(3000),

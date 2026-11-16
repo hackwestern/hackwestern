@@ -3,7 +3,7 @@
  *
  * Not public: callers must send `Authorization: Bearer <APP_MAP_TOKEN>`. The
  * file lives under `src/`, not `public/`, so it is only reachable through here.
- * Regenerate with `npm run map:generate` (CI does this on every push to main).
+ * Regenerate with `npm run load-tester:generate-app-json` (CI does this on every push to main).
  */
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { NextApiRequest, NextApiResponse } from "next";

@@ -23,16 +23,10 @@
     "lint": "next lint",
     "scan": "next dev --turbopack && npx react-scan@latest localhost:3000",
     "start": "next start",
-    
-    "map:generate": "tsx scripts/generate-app-map.ts",
-    "k6:generate": "tsx scripts/generate-k6.ts",
-    "network:dev": "npx wrangler dev -c workers/hw-events/wrangler.toml",
-    "network:deploy": "npx wrangler deploy -c workers/hw-events/wrangler.toml",
-    "network:tail": "npx wrangler tail -c workers/hw-events/wrangler.toml",
-    "network:migrate": "npx wrangler d1 execute hw-network-requests -c workers/hw-events/wrangler.toml --remote --file=workers/hw-events/schema.sql",
-    "network:migrate:local": "npx wrangler d1 execute hw-network-requests -c workers/hw-events/wrangler.toml --local --file=workers/hw-events/schema.sql",
-    "network:query": "npx wrangler d1 execute hw-network-requests -c workers/hw-events/wrangler.toml --remote --command",
-    "network:profile": "dotenv -- tsx scripts/build-traffic-profile.ts"
+    "load-tester:generate-app-json": "tsx scripts/generate-app-map.ts",
+    "load-tester:dev": "npx wrangler dev -c workers/hw-network-requests/wrangler.toml --env-file .env",
+    "load-tester:migrate": "npx wrangler d1 execute hw-network-requests -c workers/hw-network-requests/wrangler.toml --local --file=workers/hw-network-requests/schema.sql",
+    "load-tester:studio": "drizzle-kit studio --config workers/hw-network-requests/studio.config.ts"
   },
   "dependencies": {
     "@auth/core": "^0.34.2",
@@ -105,6 +99,7 @@
   "devDependencies": {
     "@clack/prompts": "^0.7.0",
     "@faker-js/faker": "^8.4.1",
+    "@libsql/client": "^0.18.0",
     "@types/eslint": "^8.56.2",
     "@types/formidable": "^3.4.5",
     "@types/node": "^20.11.20",

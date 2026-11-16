@@ -65,7 +65,6 @@ google-wallet-credentials.json
 
 # internal docs — public repo, keep operational details out of it
 docs/internal/
-k6/smoke.generated.js
 traffic-profile.json
 
 # Cloudflare worker local secrets

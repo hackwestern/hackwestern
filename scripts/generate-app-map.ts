@@ -2,8 +2,8 @@
  * Generates `src/generated/app.json`: a map of every page, REST route and
  * tRPC procedure, with auth level, input schema, output schema and errors.
  *
- *   npm run map:generate            # write the file
- *   npm run map:generate -- --check # exit 1 if the committed file is stale
+ *   npm run load-tester:generate-app-json            # write the file
+ *   npm run load-tester:generate-app-json -- --check # exit 1 if the committed file is stale
  *
  * Sources of truth:
  *  - tRPC paths / types / zod inputs: the live `appRouter` (runtime)
@@ -665,7 +665,9 @@ async function main() {
       ? fs.readFileSync(OUT_PATH, "utf8")
       : "";
     if (current !== json) {
-      console.error("app.json is out of date. Run: npm run map:generate");
+      console.error(
+        "app.json is out of date. Run: npm run load-tester:generate-app-json",
+      );
       process.exit(1);
     }
     console.log("app.json is up to date.");
