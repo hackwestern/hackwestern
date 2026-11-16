@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { LoadError } from "~/components/sponsors/schedule-states";
 import { coffeeChatCopy } from "~/content/coffee-chat";
@@ -37,15 +38,22 @@ export function CoffeeChatRooms() {
           <p className="m-0 text-dashboard-text-medium">{copy.empty}</p>
         </DashboardPanel>
       ) : (
-        <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2">
-          {q.data.sponsors.map((s) => (
-            <SponsorRoom
-              key={s.sponsorId ?? s.sponsor}
-              sponsor={s}
-              rooms={q.data.rooms}
-            />
-          ))}
-        </ul>
+        <>
+          <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2">
+            {q.data.sponsors.map((s) => (
+              <SponsorRoom
+                key={s.sponsorId ?? s.sponsor}
+                sponsor={s}
+                rooms={q.data.rooms}
+              />
+            ))}
+          </ul>
+          <datalist id="chat-watchers">
+            {q.data.watchers.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+        </>
       )}
     </section>
   );
@@ -129,6 +137,9 @@ function SponsorRoom({
           {copy.notRegistered}
         </p>
       )}
+      {s.sponsorId && (
+        <WatcherField sponsorId={s.sponsorId} watcher={s.watcher} />
+      )}
 
       <p aria-live="polite" className="m-0 text-sm empty:hidden">
         {assign.error ? (
@@ -140,5 +151,77 @@ function SponsorRoom({
         ) : null}
       </p>
     </li>
+  );
+}
+
+// Who on the sponsor team watches this sponsor's chats (free text, with
+// organizer names suggested). Sponsors see it as their contact for chats.
+function WatcherField({
+  sponsorId,
+  watcher,
+}: {
+  sponsorId: string;
+  watcher: string | null;
+}) {
+  const utils = api.useUtils();
+  const [value, setValue] = useState(watcher ?? "");
+  const [saved, setSaved] = useState(false);
+  const save = api.coffeeChatRequests.setCoffeeChatWatcher.useMutation({
+    onSuccess: async () => {
+      setSaved(true);
+      await utils.coffeeChatRequests.organizerRooms.invalidate();
+    },
+  });
+  const inputId = `watcher-${sponsorId}`;
+  const dirty = value.trim() !== (watcher ?? "");
+
+  return (
+    <form
+      className="flex flex-col gap-1 text-sm"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setSaved(false);
+        save.mutate({ sponsorId, watcher: value.trim() || null });
+      }}
+    >
+      <label htmlFor={inputId} className="text-dashboard-text-light">
+        {copy.watcher}
+      </label>
+      <div className="flex gap-2">
+        <input
+          id={inputId}
+          list="chat-watchers"
+          value={value}
+          maxLength={255}
+          placeholder={copy.watcherPlaceholder}
+          aria-describedby={`${inputId}-hint`}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setSaved(false);
+          }}
+          className={`${dashboardFieldClass} min-w-0 flex-1`}
+        />
+        <DashboardButton
+          type="submit"
+          variant="outline"
+          disabled={!dirty || save.isPending}
+          className="h-10"
+        >
+          {copy.watcherSave}
+        </DashboardButton>
+      </div>
+      <span id={`${inputId}-hint`} className="text-dashboard-text-light">
+        {copy.watcherHint}
+      </span>
+      <span aria-live="polite" className="empty:hidden">
+        {save.error ? (
+          <span className="text-dashboard-text-warning">
+            {save.error.message || copy.watcherError}
+          </span>
+        ) : saved && !dirty ? (
+          <span className="text-dashboard-text-light">{copy.watcherSaved}</span>
+        ) : null}
+      </span>
+    </form>
   );
 }

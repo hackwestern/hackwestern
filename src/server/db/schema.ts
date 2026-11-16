@@ -369,6 +369,10 @@ export const sponsorJudgingSponsors = pgTable("sponsor_judging_sponsor", {
   // /internal/sponsor-schedule. Null = unassigned; then the Coffee Chats
   // sheet's ROOM value (if any) applies.
   coffeeChatRoom: varchar("coffee_chat_room", { length: 64 }),
+  // Who on the sponsor team watches this sponsor's coffee chats (and so
+  // that room). Free-text name set by organizers; sponsors see it as their
+  // Hack Western contact for chats. Null = nobody yet.
+  coffeeChatWatcher: varchar("coffee_chat_watcher", { length: 255 }),
   createdAt: timestamp("created_at", { mode: "date", precision: 3 })
     .defaultNow()
     .notNull(),

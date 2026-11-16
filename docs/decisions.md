@@ -95,3 +95,8 @@
 - **Decision:** The Coffee chats tab has an "Add a chat" form: pick a sponsor, search admitted hackers by name, email or hacker ID, pick one of that sponsor's free times, optional rep name. It calls the same core as the sponsor's offer (capacity, overlap and room rules), the chat stays pending until the hacker accepts on /live, and the usual notification goes out.
 - **Why:** the sponsor team books chats for sponsors who are busy or hackers who ask at the desk, without bypassing the rules sponsors follow.
 - **Alternatives:** organizer-created chats auto-accepted (hacker never agrees); editing the sheet (no two-way sync).
+
+## 2026-11-16 - One sponsor-team watcher per sponsor's coffee chats
+- **Decision:** Organizers name who on the sponsor team watches each sponsor's coffee chats (and so that sponsor's room), next to the room in the Coffee chats tab. Stored as free text (`coffee_chat_watcher`), with organizer names suggested. Sponsors get the name as `watcherName` from `coffeeChatRequests.freeTimes` and `sponsorChats` ("Your Hack Western contact for chats").
+- **Why:** sponsors need one person to ask during chats, and the team needs to know who covers which room.
+- **Alternatives:** a user id foreign key to organizers (blocks volunteers without accounts); one watcher per room (sponsors move between rooms).
