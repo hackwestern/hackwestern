@@ -29,7 +29,6 @@ export const sponsorHelpCopy = {
     close: "Close",
     pickReason: "Pick a reason first.",
     error: "That didn't send. Try again, or call your Hack Western contact.",
-    alreadyOpen: "You already have a request open.",
   },
 
   status: {
@@ -37,6 +36,7 @@ export const sponsorHelpCopy = {
     openTitle: "Waiting for the sponsor team",
     openBody: "We've pinged them. This page updates when someone's on the way.",
     claimedTitle: (name: string) => `${name} is on the way`,
+    claimedSomeone: "Someone from the sponsor team",
     claimedBody: "Hang tight, they'll find you at your booth.",
     resolvedTitle: "All sorted",
     resolvedBody: "Thanks for letting us know. Tap Need help again anytime.",

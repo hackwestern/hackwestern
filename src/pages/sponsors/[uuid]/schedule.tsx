@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import { CoffeeChatSummary } from "~/components/sponsors/coffee-chat-summary";
 import { DayPicker } from "~/components/sponsors/day-picker";
+import { SponsorHelp } from "~/components/sponsors/help-button";
 import { ScheduleList } from "~/components/sponsors/schedule-list";
 import {
   InvalidLink,
@@ -66,6 +67,7 @@ export default function SponsorSchedulePage() {
         title={copy.title(data.sponsorName)}
         intro={copy.intro}
       />
+      <SponsorHelp sponsor={id} />
       {shownDay === "Saturday" && (
         <CoffeeChatSummary setup={data.coffeeChat} />
       )}
