@@ -122,7 +122,7 @@ export function TimelineKey({
           <li className="flex items-center gap-2">
             <span
               aria-hidden
-              className="size-4 rounded-dashboard-xs border-l-4 border-dashboard-text-active bg-dashboard-bg-highlight"
+              className="size-4 rounded-dashboard-xs border-l-4 border-dashboard-border-task bg-dashboard-bg-task"
             />
             {copy.teamTask}
           </li>
@@ -434,7 +434,7 @@ function GridBlock({
           "hover:shadow-dashboard-card motion-safe:transition-[box-shadow,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:hover:-translate-y-px",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
           isTask
-            ? "border-l-4 border-dashboard-text-active bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card"
+            ? "border-l-4 border-dashboard-border-task bg-dashboard-bg-task text-dashboard-text-task shadow-dashboard-card"
             : strong
               ? cn(
                   "border-l-4 border-dashboard-action-primary bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card",

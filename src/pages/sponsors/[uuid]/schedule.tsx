@@ -8,6 +8,7 @@ import { CeremonyOrder } from "~/components/sponsors/ceremony-order";
 import { CoffeeChatSummary } from "~/components/sponsors/coffee-chat-summary";
 import { DayPicker } from "~/components/sponsors/day-picker";
 import { SponsorHelp } from "~/components/sponsors/help-button";
+import { HappeningNowBanner } from "~/components/sponsors/happening-now";
 import { NextEventCard } from "~/components/sponsors/next-event-card";
 import { RepCount } from "~/components/sponsors/rep-count";
 import {
@@ -105,6 +106,11 @@ export default function SponsorSchedulePage() {
         eyebrow={copy.eyebrow}
         title={copy.title(data.sponsorName)}
         intro={copy.intro}
+      />
+      <HappeningNowBanner
+        items={data.items}
+        now={now}
+        sponsorName={data.sponsorName}
       />
       <NextEventCard event={nextEvent} />
       <SponsorHelp sponsor={id} />

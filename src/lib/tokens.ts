@@ -250,6 +250,7 @@ export const dashboardColors = {
     link: "#0b6bc4",
     active: "#08559c", // selected nav item
     warning: "#8a4300", // checklist due dates
+    task: "#5c3d00", // team task blocks on the run of show (on bg.task: 8.6:1)
   },
   bg: {
     page: "#f3f7fc",
@@ -261,6 +262,7 @@ export const dashboardColors = {
     highlightMedium: "rgba(225,239,251,0.7)",
     highlightSubtle: "rgba(225,239,251,0.4)", // table rows
     checklistCurrent: "#e4eefb", // current checklist step
+    task: "#ffefb8", // team task blocks: amber, apart from every event colour
   },
   action: {
     primary: "#0b6bc4", // primary buttons, selected filters, tags, progress
@@ -271,6 +273,7 @@ export const dashboardColors = {
     card: "#d6e3ef", // hacker checklist
     control: "#b9cbe0", // "Message on Slack" button
     outline: "#accae5", // outline button
+    task: "#c78a00", // team task block edge
     faint: "rgba(81,100,118,0.1)",
     muted: "rgba(81,100,118,0.2)",
     medium: "rgba(81,100,118,0.5)",
