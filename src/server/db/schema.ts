@@ -468,6 +468,12 @@ export const sponsorHelpRequests = pgTable(
     // Booth location from the sponsor info sheet when the request was made,
     // shown in the Slack post. Null when the sheet had none.
     location: varchar("location", { length: 255 }),
+    // Who to find and call, typed by the sponsor (0042). Required by the
+    // router for new requests; nullable so rows from before 0042 stay valid.
+    repName: varchar("rep_name", { length: 80 }),
+    phone: varchar("phone", { length: 32 }),
+    // Where they are right now, if they said. Slack falls back to `location`.
+    locationNote: varchar("location_note", { length: 120 }),
     status: sponsorHelpStatusEnum("status").default("open").notNull(),
     // The bot's Slack post; null when Slack is off or the post failed.
     slackChannel: varchar("slack_channel", { length: 64 }),

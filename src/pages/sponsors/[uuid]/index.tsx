@@ -114,7 +114,7 @@ export default function SponsorHubPage() {
         </section>
 
         {/* Need help: pings the sponsor team in Slack */}
-        <SponsorHelp sponsor={id} />
+        <SponsorHelp sponsor={id} boothLocation={boothLocation} />
 
         {/* Judging CTA — hidden entirely when no judging room is assigned */}
         {hasJudgingRoom && (

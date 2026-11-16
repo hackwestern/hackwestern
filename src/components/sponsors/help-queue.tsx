@@ -1,11 +1,15 @@
-import { CheckCircle2, MapPin } from "lucide-react";
+import { CheckCircle2, MapPin, Phone, User } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { formatHelpTime } from "~/components/sponsors/help-status";
 import { useNow } from "~/components/sponsors/use-now";
 import { sponsorHelpCopy } from "~/content/sponsor-help";
-import { SPONSOR_HELP_POLL_MS, type SponsorHelpReason } from "~/lib/sponsor-help";
+import {
+  SPONSOR_HELP_POLL_MS,
+  telHref,
+  type SponsorHelpReason,
+} from "~/lib/sponsor-help";
 import { api } from "~/utils/api";
 
 const copy = sponsorHelpCopy.organizer;
@@ -30,7 +34,7 @@ export function HelpQueue() {
         {[0, 1].map((i) => (
           <div
             key={i}
-            className="h-28 w-full motion-safe:animate-pulse rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card"
+            className="h-28 w-full rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card motion-safe:animate-pulse"
           />
         ))}
       </div>
@@ -39,7 +43,9 @@ export function HelpQueue() {
   if (!q.data) {
     return (
       <DashboardPanel className="text-center">
-        <p className="m-0 text-base text-dashboard-text-medium">{copy.loadError}</p>
+        <p className="m-0 text-base text-dashboard-text-medium">
+          {copy.loadError}
+        </p>
         <DashboardButton
           variant="outline"
           className="mx-auto h-11"
@@ -54,7 +60,10 @@ export function HelpQueue() {
     return (
       <DashboardPanel>
         <p className="m-0 flex items-center gap-2 text-dashboard-text-medium">
-          <CheckCircle2 aria-hidden className="size-5 text-dashboard-status-live" />
+          <CheckCircle2
+            aria-hidden
+            className="size-5 text-dashboard-status-live"
+          />
           {copy.empty}
         </p>
       </DashboardPanel>
@@ -66,7 +75,9 @@ export function HelpQueue() {
       {q.data.map((r) => {
         const minutes = Math.max(
           0,
-          Math.floor((now.getTime() - new Date(r.createdAt).getTime()) / 60_000),
+          Math.floor(
+            (now.getTime() - new Date(r.createdAt).getTime()) / 60_000,
+          ),
         );
         const resolving = resolve.isPending && resolve.variables?.id === r.id;
         const failed = resolve.isError && resolve.variables?.id === r.id;
@@ -89,11 +100,40 @@ export function HelpQueue() {
                       : copy.claimedUnknown}
                   </DashboardTag>
                 )}
-                {!r.postedToSlack && <DashboardTag>{copy.slackOff}</DashboardTag>}
+                {!r.postedToSlack && (
+                  <DashboardTag>{copy.slackOff}</DashboardTag>
+                )}
               </div>
               <p className="m-0 text-base">
-                {sponsorHelpCopy.reasons[r.reason as SponsorHelpReason] ?? r.reason}
+                {sponsorHelpCopy.reasons[r.reason as SponsorHelpReason] ??
+                  r.reason}
               </p>
+              {(r.repName ?? r.phone) && (
+                <p className="m-0 flex flex-wrap items-center gap-x-3 text-sm">
+                  {r.repName && (
+                    <span className="inline-flex items-center gap-1">
+                      <User
+                        aria-hidden
+                        className="size-3.5 text-dashboard-text-light"
+                      />
+                      {copy.rep(r.repName)}
+                    </span>
+                  )}
+                  {r.phone && (
+                    <a
+                      href={telHref(r.phone)}
+                      aria-label={copy.callLabel(
+                        r.repName ?? r.sponsorName,
+                        r.phone,
+                      )}
+                      className="inline-flex min-h-11 items-center gap-1 font-semibold text-dashboard-action-primary underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+                    >
+                      <Phone aria-hidden className="size-3.5" />
+                      {r.phone}
+                    </a>
+                  )}
+                </p>
+              )}
               {r.note && (
                 <p className="m-0 whitespace-pre-line break-words border-l-2 border-dashboard-border-default pl-3 text-sm text-dashboard-text-medium">
                   {r.note}
@@ -103,15 +143,25 @@ export function HelpQueue() {
                 <time dateTime={new Date(r.createdAt).toISOString()}>
                   {formatHelpTime(new Date(r.createdAt))} · {copy.age(minutes)}
                 </time>
-                {r.location && (
+                {r.locationNote ? (
                   <span className="inline-flex items-center gap-1">
                     <MapPin aria-hidden className="size-3.5" />
-                    {copy.location(r.location)}
+                    {copy.location(r.locationNote)}
                   </span>
+                ) : (
+                  r.location && (
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin aria-hidden className="size-3.5" />
+                      {copy.locationBooth(r.location)}
+                    </span>
+                  )
                 )}
               </p>
               {failed && (
-                <p role="alert" className="m-0 text-sm text-dashboard-text-warning">
+                <p
+                  role="alert"
+                  className="m-0 text-sm text-dashboard-text-warning"
+                >
                   {copy.resolveError}
                 </p>
               )}

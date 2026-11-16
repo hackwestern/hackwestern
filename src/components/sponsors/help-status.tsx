@@ -102,6 +102,11 @@ export const HelpStatus = forwardRef<
             <p className="m-0 mt-1 text-xs text-dashboard-text-light">
               {copy.sentAt(formatHelpTime(new Date(request.createdAt)))}
             </p>
+            {request.repName && (
+              <p className="m-0 text-xs text-dashboard-text-light">
+                {copy.pingedAs(request.repName)}
+              </p>
+            )}
           </div>
         </div>
 
@@ -116,7 +121,10 @@ export const HelpStatus = forwardRef<
               {cancelling ? copy.cancelling : copy.cancel}
             </DashboardButton>
             {cancelError && (
-              <p role="alert" className="m-0 text-sm text-dashboard-text-warning">
+              <p
+                role="alert"
+                className="m-0 text-sm text-dashboard-text-warning"
+              >
                 {copy.cancelError}
               </p>
             )}
