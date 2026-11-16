@@ -281,6 +281,20 @@
       "when": 1794714675737,
       "tag": "0039_coffee_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1794787071639,
+      "tag": "0040_coffee_chat_room_label_and_cancel",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1794788517386,
+      "tag": "0041_sponsor_help",
+      "breakpoints": true
     }
   ]
 }

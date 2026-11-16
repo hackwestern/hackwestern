@@ -1,0 +1,198 @@
+import {
+  COFFEE_CHAT_GRID_MINUTES,
+  coffeeChatExpiresAt,
+  coffeeChatMinutesOf,
+  coffeeChatSeats,
+  coffeeChatTimeOf,
+  coffeeChatsOverlap,
+} from "~/lib/coffee-chat-requests";
+import type { CoffeeChatSetup } from "~/lib/run-of-show";
+
+/**
+ * Capacity rules for offering a coffee chat (T15) and for organizer moves
+ * (T26). Pure: callers load the sponsor's setup from the Coffee Chats sheet
+ * tab and the chats that still hold a seat (isActiveCoffeeChat), then ask
+ * here. The server runs these inside a transaction that locks the sponsor
+ * and hacker rows, so two offers for the last seat can't both pass.
+ */
+
+export type ChatTime = { slotTime: string; durationMinutes: number };
+export type RoomChat = ChatTime & { sponsorId: string; room: string | null };
+
+export type OfferProblem =
+  | "notSetUp"
+  | "notInWindow"
+  | "tooLate"
+  | "full"
+  | "hackerBusy"
+  | "roomTaken";
+
+/**
+ * Start times a sponsor offers, earliest first: from the window start, one
+ * chat length apart, each ending by the window end. 15-min chats land on
+ * every quarter hour; 30-min groups on every half hour from the start.
+ */
+export function coffeeChatStartTimes(
+  setup: Pick<CoffeeChatSetup, "windowStart" | "windowEnd" | "durationMinutes">,
+): string[] {
+  const start = setup.windowStart
+    ? coffeeChatMinutesOf(setup.windowStart)
+    : null;
+  const end = setup.windowEnd ? coffeeChatMinutesOf(setup.windowEnd) : null;
+  if (start === null || end === null) return [];
+  const times: string[] = [];
+  for (
+    let t = start;
+    t + setup.durationMinutes <= end;
+    t += setup.durationMinutes
+  ) {
+    times.push(coffeeChatTimeOf(t));
+  }
+  return times;
+}
+
+/**
+ * Most hackers the sponsor has in their room at any moment of `slot`. Checks
+ * each quarter hour, so chats that start off the usual grid still count.
+ */
+export function seatsUsed(sponsorChats: ChatTime[], slot: ChatTime): number {
+  const start = coffeeChatMinutesOf(slot.slotTime);
+  if (start === null) return 0;
+  let most = 0;
+  for (
+    let t = start;
+    t < start + slot.durationMinutes;
+    t += COFFEE_CHAT_GRID_MINUTES
+  ) {
+    const tick = {
+      slotTime: coffeeChatTimeOf(t),
+      durationMinutes: COFFEE_CHAT_GRID_MINUTES,
+    };
+    most = Math.max(
+      most,
+      sponsorChats.filter((c) => coffeeChatsOverlap(c, tick)).length,
+    );
+  }
+  return most;
+}
+
+/** Seats left at `slot` for a sponsor with this many reps and group size. */
+export function seatsLeft(
+  sponsorChats: ChatTime[],
+  slot: ChatTime,
+  reps: number,
+  groupSize: number,
+): number {
+  return Math.max(
+    0,
+    coffeeChatSeats(reps, groupSize) - seatsUsed(sponsorChats, slot),
+  );
+}
+
+/** "Rm 2241", " rm  2241 " -> "rm 2241", for comparing room labels. */
+export function normalizeRoom(room: string | null | undefined): string {
+  return String(room ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+/**
+ * True when another sponsor holds a chat in `room` that overlaps `slot`.
+ * Rooms aren't shared between sponsors at the same time. No room yet (null)
+ * never clashes.
+ */
+export function roomTakenByOtherSponsor(
+  roomChats: RoomChat[],
+  sponsorId: string,
+  room: string | null,
+  slot: ChatTime,
+): boolean {
+  if (!normalizeRoom(room)) return false;
+  return roomChats.some(
+    (c) =>
+      c.sponsorId !== sponsorId &&
+      normalizeRoom(c.room) === normalizeRoom(room) &&
+      coffeeChatsOverlap(c, slot),
+  );
+}
+
+/** True when the hacker already has a live chat overlapping `slot`. */
+export function hackerBusy(hackerChats: ChatTime[], slot: ChatTime): boolean {
+  return hackerChats.some((c) => coffeeChatsOverlap(c, slot));
+}
+
+/**
+ * Why an offer can't be made, or null when it can. Checks, in order: the
+ * sponsor's window is set, the time is one of their start times, it isn't
+ * already past the reply cutoff, a seat is free, the hacker is free, and no
+ * other sponsor is in the room.
+ */
+export function offerProblem(input: {
+  setup: CoffeeChatSetup | null;
+  slotTime: string;
+  reps: number;
+  sponsorId: string;
+  sponsorChats: ChatTime[];
+  hackerChats: ChatTime[];
+  roomChats: RoomChat[];
+  now: Date;
+}): OfferProblem | null {
+  const { setup } = input;
+  if (!setup?.windowStart || !setup.windowEnd) return "notSetUp";
+  if (!coffeeChatStartTimes(setup).includes(input.slotTime))
+    return "notInWindow";
+  if (input.now >= coffeeChatExpiresAt(input.slotTime)) return "tooLate";
+  const slot = {
+    slotTime: input.slotTime,
+    durationMinutes: setup.durationMinutes,
+  };
+  if (seatsLeft(input.sponsorChats, slot, input.reps, setup.groupSize) < 1) {
+    return "full";
+  }
+  if (hackerBusy(input.hackerChats, slot)) return "hackerBusy";
+  if (
+    roomTakenByOtherSponsor(input.roomChats, input.sponsorId, setup.room, slot)
+  ) {
+    return "roomTaken";
+  }
+  return null;
+}
+
+/**
+ * Open start times for a sponsor, earliest first, with seats left. Leaves out
+ * times past the reply cutoff, and, when a hacker's chats are given, times
+ * that clash with them.
+ */
+export function freeStartTimes(input: {
+  setup: CoffeeChatSetup | null;
+  reps: number;
+  sponsorId: string;
+  sponsorChats: ChatTime[];
+  hackerChats?: ChatTime[];
+  roomChats: RoomChat[];
+  now: Date;
+}): { slotTime: string; seatsLeft: number }[] {
+  const { setup } = input;
+  if (!setup?.windowStart || !setup.windowEnd) return [];
+  return coffeeChatStartTimes(setup).flatMap((slotTime) => {
+    const slot = { slotTime, durationMinutes: setup.durationMinutes };
+    const left = seatsLeft(
+      input.sponsorChats,
+      slot,
+      input.reps,
+      setup.groupSize,
+    );
+    const open =
+      left > 0 &&
+      input.now < coffeeChatExpiresAt(slotTime) &&
+      !hackerBusy(input.hackerChats ?? [], slot) &&
+      !roomTakenByOtherSponsor(
+        input.roomChats,
+        input.sponsorId,
+        setup.room,
+        slot,
+      );
+    return open ? [{ slotTime, seatsLeft: left }] : [];
+  });
+}

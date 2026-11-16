@@ -66,6 +66,11 @@
 - **Why:** Jazz: offering should be as simple as scanning the badge. Sponsors meet hackers at the booth, not from a list.
 - **Alternatives:** pick from the interested-hackers list (kept as a browse page, T11, not the way to offer); scanning books the chat instantly with no accept step (rejected for now: a hacker can't refuse a time that clashes with their team's plans).
 
+## 2026-11-15 — Coffee chat room is the sheet's label; organizers cancel with a "cancelled" status
+- **Decision:** Migration 0040 makes `coffee_chat.room` a nullable text label copied from the sponsor's Coffee Chats row (e.g. "Rm 2241"; null until organizers fill the ROOM column) instead of a required 1-3 room id, and adds a `cancelled` status for organizer cancels (T26). Offers step through the sponsor's window one chat length apart (15-min 1-on-1s every quarter hour, 30-min groups every half hour), so a group's 3 hackers share one start time.
+- **Why:** the live sheet has no ROOM values yet, so a required room id would block every offer; a hacker whose chat an organizer cancelled shouldn't see "declined", which reads as their own answer.
+- **Alternatives:** keep the id and refuse offers until rooms are set (blocks the event if the column stays blank); store organizer cancels as "declined" (no migration, but misleading on /live and in the sheet mirror).
+
 ## 2026-11-15 — Sponsor rooms are not private between sponsors
 - **Decision:** Every sponsor can see every company's rooms and times (the Where is everyone page). The schedule page only trims shared locations to the sponsor's own room for readability; the API is not expected to hide other sponsors' rooms.
 - **Why:** Jazz asked that sponsors can see where each company is and in what room.

@@ -14,6 +14,8 @@ import { sponsorJudgingRouter } from "./routers/sponsor-judging";
 import { sponsorDashboardRouter } from "./routers/sponsor-dashboard";
 import { sponsorPortalRouter } from "./routers/sponsor-portal";
 import { sponsorScheduleRouter } from "./routers/sponsor-schedule";
+import { sponsorHelpRouter } from "./routers/sponsor-help";
+import { coffeeChatRequestsRouter } from "./routers/coffee-chat-requests";
 import { sponsorInterestRouter } from "./routers/sponsor-interest";
 import { sponsorShortlistRouter } from "./routers/sponsor-shortlist";
 import { onboardingRouter } from "./routers/onboarding";
@@ -39,6 +41,8 @@ export const appRouter = createTRPCRouter({
   sponsorDashboard: sponsorDashboardRouter,
   sponsorPortal: sponsorPortalRouter,
   sponsorSchedule: sponsorScheduleRouter,
+  sponsorHelp: sponsorHelpRouter,
+  coffeeChatRequests: coffeeChatRequestsRouter,
   sponsorInterest: sponsorInterestRouter,
   sponsorShortlist: sponsorShortlistRouter,
   onboarding: onboardingRouter,
