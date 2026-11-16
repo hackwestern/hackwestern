@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyAssignedRooms,
+  coffeeChatRoomClash,
+  coffeeChatRoomOf,
+  coffeeChatWindowsOverlap,
+  resolveCoffeeChatRoom,
   coffeeChatExpiresAt,
   coffeeChatParallelChats,
   coffeeChatSeats,
@@ -112,8 +117,64 @@ describe("reading the Coffee Chats tab", () => {
 describe("coffeeChatsOverlap", () => {
   it("a 30-min chat blocks the next 15-min slot", () => {
     const long = { slotTime: "10:00", durationMinutes: 30 };
-    expect(coffeeChatsOverlap(long, { slotTime: "10:15", durationMinutes: 15 })).toBe(true);
-    expect(coffeeChatsOverlap(long, { slotTime: "10:30", durationMinutes: 15 })).toBe(false);
-    expect(coffeeChatsOverlap({ slotTime: "09:45", durationMinutes: 30 }, long)).toBe(true);
+    expect(
+      coffeeChatsOverlap(long, { slotTime: "10:15", durationMinutes: 15 }),
+    ).toBe(true);
+    expect(
+      coffeeChatsOverlap(long, { slotTime: "10:30", durationMinutes: 15 }),
+    ).toBe(false);
+    expect(
+      coffeeChatsOverlap({ slotTime: "09:45", durationMinutes: 30 }, long),
+    ).toBe(true);
+  });
+});
+
+describe("coffee chat rooms (T41)", () => {
+  it("only 2241-2243, any spacing or case", () => {
+    expect(coffeeChatRoomOf(" rm  2242 ")).toBe("Rm 2242");
+    expect(coffeeChatRoomOf("Rm 2230")).toBeNull();
+    expect(coffeeChatRoomOf(null)).toBeNull();
+  });
+
+  it("assignment beats the sheet, which beats nothing", () => {
+    expect(resolveCoffeeChatRoom("Rm 2241", "Rm 2230")).toBe("Rm 2241");
+    expect(resolveCoffeeChatRoom(null, "Rm 2230")).toBe("Rm 2230");
+    expect(resolveCoffeeChatRoom(null, " ")).toBeNull();
+    expect(
+      applyAssignedRooms(
+        [
+          { sponsor: "A", room: "Rm 2230" },
+          { sponsor: "B", room: null },
+        ],
+        [{ name: "A", coffeeChatRoom: "Rm 2243" }],
+      ).map((s) => s.room),
+    ).toEqual(["Rm 2243", null]);
+  });
+
+  it("windows overlap only when they share time", () => {
+    const w = (windowStart: string | null, windowEnd: string | null) => ({
+      windowStart,
+      windowEnd,
+    });
+    expect(
+      coffeeChatWindowsOverlap(w("10:00", "11:00"), w("10:45", "12:00")),
+    ).toBe(true);
+    expect(
+      coffeeChatWindowsOverlap(w("10:00", "11:00"), w("11:00", "12:00")),
+    ).toBe(false);
+    expect(coffeeChatWindowsOverlap(w(null, null), w("10:00", "11:00"))).toBe(
+      false,
+    );
+  });
+
+  it("a clash is another sponsor in the same room at an overlapping time", () => {
+    const sponsors = [
+      { id: "a", room: "Rm 2241", windowStart: "10:00", windowEnd: "11:00" },
+      { id: "b", room: null, windowStart: "10:30", windowEnd: "11:30" },
+      { id: "c", room: "Rm 2242", windowStart: "10:30", windowEnd: "11:30" },
+    ];
+    expect(coffeeChatRoomClash("b", "rm 2241", sponsors)?.id).toBe("a");
+    expect(coffeeChatRoomClash("b", "Rm 2243", sponsors)).toBeNull();
+    expect(coffeeChatRoomClash("a", "Rm 2241", sponsors)).toBeNull();
   });
 });

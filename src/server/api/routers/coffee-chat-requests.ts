@@ -1,18 +1,32 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  ilike,
+  inArray,
+  isNotNull,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { z } from "zod";
 
 import { coffeeChatCopy } from "~/content/coffee-chat";
-import { isAdmittedStatus } from "~/lib/admission";
-import { COFFEE_CHAT_ROOMS } from "~/lib/coffee-chats";
+import { admittedStatuses, isAdmittedStatus } from "~/lib/admission";
 import {
   ACTIVE_COFFEE_CHAT_STATUSES,
+  applyAssignedRooms,
+  COFFEE_CHAT_ROOMS,
   coffeeChatExpiresAt,
+  coffeeChatRoomClash,
+  coffeeChatRoomOf,
   coffeeChatsOverlap,
   isActiveCoffeeChat,
+  resolveCoffeeChatRoom,
   type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
-import type { CoffeeChatSetup } from "~/lib/run-of-show";
+import { formatClock, type CoffeeChatSetup } from "~/lib/run-of-show";
 import {
   createTRPCRouter,
   protectedOrganizerProcedure,
@@ -58,6 +72,7 @@ async function findSponsor(conn: Db | Tx, id: string, lock = false) {
       id: sponsorJudgingSponsors.id,
       name: sponsorJudgingSponsors.name,
       reps: sponsorJudgingSponsors.coffeeChatReps,
+      watcher: sponsorJudgingSponsors.coffeeChatWatcher,
     })
     .from(sponsorJudgingSponsors)
     .where(eq(sponsorJudgingSponsors.id, id.toLowerCase()));
@@ -68,17 +83,30 @@ async function findSponsor(conn: Db | Tx, id: string, lock = false) {
   return sponsor;
 }
 
-/** Every sponsor's Coffee Chats row, with registered names matched. */
+/**
+ * Every sponsor's Coffee Chats row, with registered names matched and each
+ * sponsor's organizer-assigned room applied (assignment > sheet ROOM).
+ */
 export async function readCoffeeChatSetups(): Promise<CoffeeChatSetup[]> {
-  const names = await db
-    .select({ name: sponsorJudgingSponsors.name })
+  const sponsors = await db
+    .select({
+      name: sponsorJudgingSponsors.name,
+      coffeeChatRoom: sponsorJudgingSponsors.coffeeChatRoom,
+    })
     .from(sponsorJudgingSponsors);
+  return applyAssignedRooms(
+    await readSheetCoffeeChatSetups(sponsors.map((s) => s.name)),
+    sponsors,
+  );
+}
+
+/** The Coffee Chats tab as the sheet has it (no assignments applied). */
+async function readSheetCoffeeChatSetups(
+  sponsorNames: string[],
+): Promise<CoffeeChatSetup[]> {
   try {
     const snapshot = await getRunOfShow();
-    return applySponsorNames(
-      snapshot,
-      names.map((n) => n.name),
-    ).coffeeChats;
+    return applySponsorNames(snapshot, sponsorNames).coffeeChats;
   } catch (error) {
     console.error("run-of-show sheet read failed", error);
     throw new TRPCError({
@@ -273,7 +301,7 @@ export type OrganizerCoffeeChat = {
  * failed read still leaves the standard rooms.
  */
 async function knownRooms(): Promise<string[]> {
-  const rooms: string[] = COFFEE_CHAT_ROOMS.map((room) => room.label);
+  const rooms: string[] = [...COFFEE_CHAT_ROOMS];
   const setups = await readCoffeeChatSetups().catch(() => []);
   for (const { room } of setups) {
     if (room && !rooms.some((r) => normalizeRoom(r) === normalizeRoom(room))) {
@@ -306,6 +334,167 @@ async function lockActiveChat(tx: Tx, chatId: string, now: Date) {
     throw new TRPCError({ code: "CONFLICT", message: errors.alreadyOver });
   }
   return chat;
+}
+
+/**
+ * Move some of a sponsor's live chats into `room` (null = no room yet),
+ * with the same rules as offers: the rooms involved are locked (call after
+ * locking the sponsor row), and no other sponsor may have a chat in `room`
+ * overlapping any of them. Returns the ids whose room changed.
+ */
+async function moveChatsToRoom(
+  tx: Tx,
+  sponsorId: string,
+  moving: {
+    id: string;
+    room: string | null;
+    slotTime: string;
+    durationMinutes: number;
+  }[],
+  room: string | null,
+  now: Date,
+): Promise<string[]> {
+  await lockRooms(tx, [room, ...moving.map((c) => c.room)]);
+  const roomChats = await activeRoomChats(tx, now);
+  if (
+    moving.some((c) => roomTakenByOtherSponsor(roomChats, sponsorId, room, c))
+  ) {
+    throwProblem("roomTaken");
+  }
+  const changed = moving.filter((c) => c.room !== room).map((c) => c.id);
+  if (changed.length > 0) {
+    await tx
+      .update(coffeeChats)
+      .set({ room })
+      .where(inArray(coffeeChats.id, changed));
+  }
+  return changed;
+}
+
+/** ILIKE pattern for "contains text", with %, _ and \ taken literally. */
+function containsPattern(text: string): string {
+  return `%${text.replace(/[\\%_]/g, (c) => "\\" + c)}%`;
+}
+
+/** An admitted hacker found by an organizer's search. */
+export type OrganizerHackerMatch = {
+  userId: string;
+  name: string;
+  email: string;
+  /** Badge / wallet pass code ("brave-otter-kite"), once issued. */
+  hackerId: string | null;
+};
+
+/** One sponsor's coffee chat setup and room, on the organizer page. */
+export type OrganizerCoffeeChatRoom = {
+  /** Null when the sheet names a sponsor that isn't registered. */
+  sponsorId: string | null;
+  sponsor: string;
+  windowStart: string | null;
+  windowEnd: string | null;
+  durationMinutes: number;
+  groupSize: number;
+  hackers: number | null;
+  /** Organizer assignment (one of COFFEE_CHAT_ROOMS), or null. */
+  assignedRoom: string | null;
+  /** The sheet's ROOM value, used when nothing is assigned. */
+  sheetRoom: string | null;
+  /** Sponsor-team member watching this sponsor's chats (free text). */
+  watcher: string | null;
+};
+
+/**
+ * Offer a coffee chat: a pending request the hacker accepts or declines on
+ * /live, with every capacity, overlap and room rule. Shared by the
+ * sponsor's `offer` and the organizer's `organizerOffer`. Locks the sponsor
+ * and hacker rows so two offers for the last seat (or two sponsors for one
+ * hacker) can't both go through. Notifies the hacker after the commit.
+ */
+export async function createCoffeeChatOffer(input: {
+  sponsorId: string;
+  userId: string;
+  slotTime: string;
+  repName?: string;
+}): Promise<CoffeeChatOffer> {
+  const now = new Date();
+  const sponsor = await findSponsor(db, input.sponsorId);
+  const hacker = await findAdmittedHacker(input.userId, now);
+  const setup = await setupFor(sponsor.name);
+
+  try {
+    const chat = await db.transaction(async (tx) => {
+      // Lock order: sponsor, then hacker. Every writer uses this order.
+      const locked = await findSponsor(tx, sponsor.id, true);
+      await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, hacker.userId))
+        .for("update");
+
+      // Still admitted now that the hacker row is locked.
+      await findAdmittedHacker(hacker.userId, now, tx);
+
+      const sponsorChats = await activeChats(
+        tx,
+        eq(coffeeChats.sponsorId, sponsor.id),
+        now,
+      );
+      // The sponsor's room at this start (moved by organizers, or the
+      // sheet's), locked before checking who else is in it.
+      const room = setup
+        ? sponsorRoomAt(sponsorChats, setup.room, {
+            slotTime: input.slotTime,
+            durationMinutes: setup.durationMinutes,
+          })
+        : null;
+      await lockRooms(tx, [room]);
+      const [hackerChats, roomChats] = await Promise.all([
+        activeChats(tx, eq(coffeeChats.userId, hacker.userId), now),
+        activeRoomChats(tx, now),
+      ]);
+      const problem = offerProblem({
+        setup,
+        slotTime: input.slotTime,
+        reps: locked.reps,
+        sponsorId: sponsor.id,
+        sponsorChats,
+        hackerChats,
+        roomChats,
+        now,
+      });
+      if (problem) throwProblem(problem);
+
+      const [row] = await tx
+        .insert(coffeeChats)
+        .values({
+          sponsorId: sponsor.id,
+          userId: hacker.userId,
+          room,
+          slotTime: input.slotTime,
+          durationMinutes: setup!.durationMinutes,
+          repName: input.repName ? input.repName : null,
+        })
+        .returning();
+      return row!;
+    });
+    // After the commit; capped in time, never throws.
+    await notifyCoffeeChat("offered", { id: chat.id });
+
+    return {
+      chatId: chat.id,
+      firstName: hacker.firstName,
+      slotTime: chat.slotTime,
+      durationMinutes: chat.durationMinutes,
+      room: chat.room,
+      status: chat.status,
+      expiresAt: coffeeChatExpiresAt(chat.slotTime).toISOString(),
+    };
+  } catch (error) {
+    // The partial unique index: the hacker already has a live chat
+    // starting then (a race the row lock didn't cover).
+    if (isUniqueViolation(error)) throwProblem("hackerBusy");
+    throw error;
+  }
 }
 
 export const coffeeChatRequestsRouter = createTRPCRouter({
@@ -356,6 +545,8 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         durationMinutes: setup?.durationMinutes ?? 15,
         groupSize: setup?.groupSize ?? 1,
         reps: sponsor.reps,
+        /** "Your Hack Western contact for chats": set by organizers. */
+        watcherName: sponsor.watcher,
         times: freeStartTimes({
           setup,
           reps: sponsor.reps,
@@ -383,87 +574,9 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         repName: z.string().trim().max(255).optional(),
       }),
     )
-    .mutation(async ({ input }): Promise<CoffeeChatOffer> => {
-      const now = new Date();
-      const sponsor = await findSponsor(db, input.sponsor);
-      const hacker = await findAdmittedHacker(input.userId, now);
-      const setup = await setupFor(sponsor.name);
-
-      try {
-        const chat = await db.transaction(async (tx) => {
-          // Lock order: sponsor, then hacker. Every writer uses this order.
-          const locked = await findSponsor(tx, sponsor.id, true);
-          await tx
-            .select({ id: users.id })
-            .from(users)
-            .where(eq(users.id, hacker.userId))
-            .for("update");
-
-          // Still admitted now that the hacker row is locked.
-          await findAdmittedHacker(hacker.userId, now, tx);
-
-          const sponsorChats = await activeChats(
-            tx,
-            eq(coffeeChats.sponsorId, sponsor.id),
-            now,
-          );
-          // The sponsor's room at this start (moved by organizers, or the
-          // sheet's), locked before checking who else is in it.
-          const room = setup
-            ? sponsorRoomAt(sponsorChats, setup.room, {
-                slotTime: input.slotTime,
-                durationMinutes: setup.durationMinutes,
-              })
-            : null;
-          await lockRooms(tx, [room]);
-          const [hackerChats, roomChats] = await Promise.all([
-            activeChats(tx, eq(coffeeChats.userId, hacker.userId), now),
-            activeRoomChats(tx, now),
-          ]);
-          const problem = offerProblem({
-            setup,
-            slotTime: input.slotTime,
-            reps: locked.reps,
-            sponsorId: sponsor.id,
-            sponsorChats,
-            hackerChats,
-            roomChats,
-            now,
-          });
-          if (problem) throwProblem(problem);
-
-          const [row] = await tx
-            .insert(coffeeChats)
-            .values({
-              sponsorId: sponsor.id,
-              userId: hacker.userId,
-              room,
-              slotTime: input.slotTime,
-              durationMinutes: setup!.durationMinutes,
-              repName: input.repName ? input.repName : null,
-            })
-            .returning();
-          return row!;
-        });
-        // After the commit; capped in time, never throws.
-        await notifyCoffeeChat("offered", { id: chat.id });
-
-        return {
-          chatId: chat.id,
-          firstName: hacker.firstName,
-          slotTime: chat.slotTime,
-          durationMinutes: chat.durationMinutes,
-          room: chat.room,
-          status: chat.status,
-          expiresAt: coffeeChatExpiresAt(chat.slotTime).toISOString(),
-        };
-      } catch (error) {
-        // The partial unique index: the hacker already has a live chat
-        // starting then (a race the row lock didn't cover).
-        if (isUniqueViolation(error)) throwProblem("hackerBusy");
-        throw error;
-      }
-    }),
+    .mutation(({ input }) =>
+      createCoffeeChatOffer({ ...input, sponsorId: input.sponsor }),
+    ),
   /**
    * The sponsor's own chats, earliest first, with expiry computed now.
    * Public (sponsor UUID). Only each hacker's first name, as on scan.
@@ -502,7 +615,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           };
         },
       );
-      return { sponsorName: sponsor.name, chats };
+      return { sponsorName: sponsor.name, watcherName: sponsor.watcher, chats };
     }),
 
   /**
@@ -653,21 +766,8 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         const moving = (
           await activeChats(tx, eq(coffeeChats.sponsorId, chat.sponsorId), now)
         ).filter((c) => coffeeChatsOverlap(c, chat));
-        await lockRooms(tx, [room, ...moving.map((c) => c.room)]);
-        const roomChats = await activeRoomChats(tx, now);
-        if (
-          moving.some((c) =>
-            roomTakenByOtherSponsor(roomChats, chat.sponsorId, room, c),
-          )
-        ) {
-          throwProblem("roomTaken");
-        }
-        const chatIds = moving.map((c) => c.id);
-        await tx
-          .update(coffeeChats)
-          .set({ room })
-          .where(inArray(coffeeChats.id, chatIds));
-        return { room, chatIds };
+        await moveChatsToRoom(tx, chat.sponsorId, moving, room, now);
+        return { room, chatIds: moving.map((c) => c.id) };
       });
       // A move takes the sponsor's whole slot, so every moved chat is notified
       // (in parallel, each under the same time cap).
@@ -676,4 +776,261 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       );
       return result;
     }),
+
+  /**
+   * Every sponsor's Saturday coffee chat window, format and room, for the
+   * organizer's room assignment. Registered sponsors without a sheet row
+   * are listed too (no window yet). Organizers only.
+   */
+  organizerRooms: protectedOrganizerProcedure.query(async () => {
+    const sponsors = await db
+      .select({
+        id: sponsorJudgingSponsors.id,
+        name: sponsorJudgingSponsors.name,
+        coffeeChatRoom: sponsorJudgingSponsors.coffeeChatRoom,
+        watcher: sponsorJudgingSponsors.coffeeChatWatcher,
+      })
+      .from(sponsorJudgingSponsors)
+      .orderBy(asc(sponsorJudgingSponsors.name));
+    const setups = await readSheetCoffeeChatSetups(sponsors.map((s) => s.name));
+    const rows: OrganizerCoffeeChatRoom[] = sponsors.map((s) => {
+      const setup = setups.find((c) => c.sponsor === s.name);
+      return {
+        sponsorId: s.id,
+        sponsor: s.name,
+        windowStart: setup?.windowStart ?? null,
+        windowEnd: setup?.windowEnd ?? null,
+        durationMinutes: setup?.durationMinutes ?? 15,
+        groupSize: setup?.groupSize ?? 1,
+        hackers: setup?.hackers ?? null,
+        assignedRoom: s.coffeeChatRoom,
+        sheetRoom: setup?.room ?? null,
+        watcher: s.watcher,
+      };
+    });
+    for (const setup of setups) {
+      if (sponsors.some((s) => s.name === setup.sponsor)) continue;
+      rows.push({
+        sponsorId: null,
+        sponsor: setup.sponsor,
+        windowStart: setup.windowStart,
+        windowEnd: setup.windowEnd,
+        durationMinutes: setup.durationMinutes,
+        groupSize: setup.groupSize,
+        hackers: setup.hackers,
+        assignedRoom: null,
+        sheetRoom: setup.room,
+        watcher: null,
+      });
+    }
+    // Organizer names, suggested for the watcher field (free text).
+    const organizers = await db
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.type, "organizer"))
+      .orderBy(asc(users.name));
+    const watchers = [
+      ...new Set(
+        organizers
+          .map((o) => o.name?.trim() ?? "")
+          .filter((name) => name.length > 0),
+      ),
+    ];
+    return { rooms: [...COFFEE_CHAT_ROOMS], sponsors: rows, watchers };
+  }),
+
+  /**
+   * Assign a sponsor's Saturday coffee chat room (one of 2241-2243), or
+   * clear it (null: back to the sheet's ROOM, if any). Refused when another
+   * sponsor has that room with an overlapping window. The sponsor's live
+   * chats move with it, under the same rules as Move room, and each moved
+   * hacker is told. Organizers only.
+   */
+  assignCoffeeChatRoom: protectedOrganizerProcedure
+    .input(
+      z.object({
+        sponsorId: sponsorInput,
+        room: z.string().trim().min(1).max(64).nullable(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const now = new Date();
+      const room = input.room === null ? null : coffeeChatRoomOf(input.room);
+      if (input.room !== null && !room) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: errors.unknownRoom,
+        });
+      }
+      const names = await db
+        .select({ name: sponsorJudgingSponsors.name })
+        .from(sponsorJudgingSponsors);
+      const setups = await readSheetCoffeeChatSetups(names.map((s) => s.name));
+
+      const result = await db.transaction(async (tx) => {
+        // Lock order as everywhere: sponsor row, then rooms.
+        const sponsor = await findSponsor(tx, input.sponsorId, true);
+        // Live chats follow the sponsor's room (assignment, else sheet).
+        const sheetRoom =
+          setups.find((c) => c.sponsor === sponsor.name)?.room ?? null;
+        const target = resolveCoffeeChatRoom(room, sheetRoom);
+        const moving = await activeChats(
+          tx,
+          eq(coffeeChats.sponsorId, sponsor.id),
+          now,
+        );
+        // Every room involved, locked once in sorted order (no deadlocks).
+        await lockRooms(tx, [room, target, ...moving.map((c) => c.room)]);
+        const sponsors = await tx
+          .select({
+            id: sponsorJudgingSponsors.id,
+            name: sponsorJudgingSponsors.name,
+            assigned: sponsorJudgingSponsors.coffeeChatRoom,
+          })
+          .from(sponsorJudgingSponsors);
+        // Other sponsors count with their effective room (assignment, else
+        // the sheet's ROOM).
+        const windows = sponsors.map(({ assigned, ...s }) => {
+          const setup = setups.find((c) => c.sponsor === s.name);
+          return {
+            ...s,
+            room: resolveCoffeeChatRoom(assigned, setup?.room),
+            windowStart: setup?.windowStart ?? null,
+            windowEnd: setup?.windowEnd ?? null,
+          };
+        });
+        const clash = room
+          ? coffeeChatRoomClash(sponsor.id, room, windows)
+          : null;
+        if (clash) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: errors.roomClash(
+              room!,
+              clash.name,
+              formatClock(clash.windowStart!),
+              formatClock(clash.windowEnd!),
+            ),
+          });
+        }
+        await tx
+          .update(sponsorJudgingSponsors)
+          .set({ coffeeChatRoom: room })
+          .where(eq(sponsorJudgingSponsors.id, sponsor.id));
+        const chatIds = await moveChatsToRoom(
+          tx,
+          sponsor.id,
+          moving,
+          target,
+          now,
+        );
+        return { sponsorId: sponsor.id, room, chatIds };
+      });
+      await Promise.all(
+        result.chatIds.map((id) => notifyCoffeeChat("roomMoved", { id })),
+      );
+      return result;
+    }),
+  /**
+   * Who on the sponsor team watches a sponsor's coffee chats (and so their
+   * room): a name, or null to clear. Sponsors see it as their Hack Western
+   * contact for chats. Organizers only.
+   */
+  setCoffeeChatWatcher: protectedOrganizerProcedure
+    .input(
+      z.object({
+        sponsorId: sponsorInput,
+        watcher: z.string().trim().max(255).nullable(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const watcher = input.watcher ? input.watcher : null;
+      const [row] = await db
+        .update(sponsorJudgingSponsors)
+        .set({ coffeeChatWatcher: watcher })
+        .where(eq(sponsorJudgingSponsors.id, input.sponsorId.toLowerCase()))
+        .returning({ id: sponsorJudgingSponsors.id });
+      if (!row) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: errors.unknownSponsor,
+        });
+      }
+      return { sponsorId: row.id, watcher };
+    }),
+
+  /**
+   * Admitted hackers matching a name, email or hacker ID, for adding a
+   * chat by hand. Organizers only (emails stay off sponsor pages).
+   */
+  searchHackers: protectedOrganizerProcedure
+    .input(z.object({ query: z.string().trim().min(2).max(100) }))
+    .query(async ({ input }): Promise<OrganizerHackerMatch[]> => {
+      const like = containsPattern(input.query);
+      // Hacker IDs are words joined by dashes ("brave otter" -> "brave-otter").
+      const codeLike = containsPattern(
+        input.query.toLowerCase().replace(/\s+/g, "-"),
+      );
+      const rows = await db
+        .select({
+          userId: users.id,
+          name: users.name,
+          email: users.email,
+          hackerId: users.hackerId,
+          firstName: applications.firstName,
+          lastName: applications.lastName,
+          status: applications.status,
+        })
+        .from(users)
+        .innerJoin(applications, eq(applications.userId, users.id))
+        .where(
+          and(
+            eq(users.type, "hacker"),
+            inArray(applications.status, [...admittedStatuses()]),
+            or(
+              ilike(users.name, like),
+              ilike(users.email, like),
+              ilike(users.hackerId, codeLike),
+              ilike(
+                sql`coalesce(${applications.firstName}, '') || ' ' || coalesce(${applications.lastName}, '')`,
+                like,
+              ),
+            ),
+          ),
+        )
+        .orderBy(asc(applications.firstName), asc(users.email))
+        .limit(10);
+      return rows.map((r) => {
+        const fromApplication = [r.firstName, r.lastName]
+          .map((part) => part?.trim() ?? "")
+          .filter(Boolean)
+          .join(" ");
+        return {
+          userId: r.userId,
+          // First non-blank of: application name, account name, email.
+          name:
+            [fromApplication, r.name?.trim() ?? ""].find(
+              (name) => name.length > 0,
+            ) ?? r.email,
+          email: r.email,
+          hackerId: r.hackerId,
+        };
+      });
+    }),
+
+  /**
+   * Add a coffee chat by hand for any sponsor: same rules as the sponsor's
+   * offer (capacity, overlaps, rooms), still pending so the hacker accepts
+   * on /live, and the same notification. Organizers only.
+   */
+  organizerOffer: protectedOrganizerProcedure
+    .input(
+      z.object({
+        sponsorId: sponsorInput,
+        userId: userIdInput,
+        slotTime: slotTimeInput,
+        repName: z.string().trim().max(255).optional(),
+      }),
+    )
+    .mutation(({ input }) => createCoffeeChatOffer(input)),
 });
