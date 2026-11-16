@@ -3,6 +3,7 @@
 Hackers and the sponsor team are in the same Slack workspace, so one app does both jobs:
 - DMs hackers coffee chat offers with Accept / Decline buttons (details: slack-coffee-chat-bot.md); the email goes out only if the DM can't be sent (no token, no Slack account for that email, or a Slack error)
 - Posts sponsor help requests in the sponsor team channel; the first emoji or thread reply claims it (details: slack-sponsor-help.md)
+- Run-of-show task reminders use the same bot: at each task's start time it DMs the task's owner, and posts tasks with no owner (or an owner not matched on Slack) in the sponsor team channel. Owner emails are set on the Team tasks tab of /internal/sponsor-schedule
 
 ## Create it (about 10 minutes)
 1. https://api.slack.com/apps → **Create New App** → **From a manifest** → HW13 workspace → **YAML** tab → paste the manifest below → **Next** → **Create**.

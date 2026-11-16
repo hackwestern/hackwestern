@@ -19,6 +19,7 @@ import { coffeeChatRequestsRouter } from "./routers/coffee-chat-requests";
 import { sponsorInterestRouter } from "./routers/sponsor-interest";
 import { sponsorShortlistRouter } from "./routers/sponsor-shortlist";
 import { onboardingRouter } from "./routers/onboarding";
+import { taskRemindersRouter } from "./routers/task-reminders";
 
 /**
  * This is the primary router for your server.
@@ -46,6 +47,7 @@ export const appRouter = createTRPCRouter({
   sponsorInterest: sponsorInterestRouter,
   sponsorShortlist: sponsorShortlistRouter,
   onboarding: onboardingRouter,
+  taskReminders: taskRemindersRouter,
 });
 
 // export type definition of API
