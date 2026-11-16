@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
@@ -27,9 +28,9 @@ const time = (d: Date) =>
   );
 
 // Slack reminders for team tasks (T49): owners get a DM at each task's start
-// time, unowned tasks go to the sponsor team channel. Lives on the Team
-// tasks tab; the sync itself runs after each sheet read.
-export function TaskRemindersPanel() {
+// time, unowned tasks go to the sponsor team channel. The sync itself runs
+// after each sheet read.
+function TaskRemindersPanel() {
   const now = useNow(30_000);
   const utils = api.useUtils();
   const status = api.taskReminders.status.useQuery(undefined, {
@@ -338,5 +339,50 @@ function OwnerRow({ owner }: { owner: TaskOwnerRow }) {
         </DashboardTag>
       </td>
     </tr>
+  );
+}
+
+const OPEN_KEY = "hw-sponsor-schedule-task-pings-open";
+
+// "Task pings" under the Schedule grid: collapsed by default, and it
+// remembers being opened. The panel (and its queries) only mounts when open.
+export function TaskPingsSection() {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  useEffect(() => {
+    try {
+      setOpen(window.localStorage.getItem(OPEN_KEY) === "1");
+    } catch {
+      // Storage blocked: stays collapsed.
+    }
+  }, []);
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    try {
+      window.localStorage.setItem(OPEN_KEY, next ? "1" : "0");
+    } catch {
+      // Storage blocked: the choice lasts for this visit only.
+    }
+  };
+  return (
+    <section className="flex flex-col gap-3">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-dashboard-lg bg-dashboard-bg-surface px-4 text-left text-base font-semibold text-dashboard-text-heavy shadow-dashboard-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+      >
+        {copy.sectionTitle}
+        <ChevronDown
+          aria-hidden
+          className={`size-5 shrink-0 text-dashboard-text-light motion-safe:transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      <div id={panelId} hidden={!open}>
+        {open && <TaskRemindersPanel />}
+      </div>
+    </section>
   );
 }

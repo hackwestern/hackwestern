@@ -1,8 +1,8 @@
 /**
  * Copy for run-of-show task reminders (T49): the Slack message at each
  * task's start time (a DM to its owner, or a sponsor team channel post when
- * nobody owns it on Slack), and the "Slack reminders" panel on the organizer
- * Team tasks tab.
+ * nobody owns it on Slack), and the "Slack reminders" panel in the organizer
+ * Schedule tab's "Task pings" section.
  */
 export const taskRemindersCopy = {
   slack: {
@@ -15,6 +15,8 @@ export const taskRemindersCopy = {
   },
 
   panel: {
+    /** Collapsible section on the Schedule tab that holds the panel. */
+    sectionTitle: "Task pings",
     heading: "Slack reminders",
     intro:
       "At each task's start time its owner gets a Slack DM. Tasks with no owner on Slack go to the sponsor team channel. Reminders follow the sheet: change a task there and its reminder moves too.",
