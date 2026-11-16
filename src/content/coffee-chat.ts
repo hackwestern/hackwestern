@@ -19,6 +19,16 @@ export const coffeeChatCopy = {
     error: "Couldn't save. Try again.",
   },
 
+  // Sponsor hub and schedule links to the scanner and the chat list.
+  hub: {
+    eyebrow: "Coffee chats",
+    heading: "Meet hackers for a coffee chat",
+    body: "Scan a hacker's badge to offer them a chat at one of your open times. They accept or decline on their live site.",
+    scan: "Scan a badge",
+    list: "Your coffee chats",
+    linksLabel: "Coffee chats",
+  },
+
   // Messages the server sends back; the UI shows them as-is.
   errors: {
     unknownSponsor: "This private link isn't valid.",
