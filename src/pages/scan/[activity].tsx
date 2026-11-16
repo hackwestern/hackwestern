@@ -2,10 +2,13 @@
 
 import { useRouter } from "next/router";
 import { useState, useEffect, useRef } from "react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { TRPCClientError } from "@trpc/client";
 import { api } from "~/utils/api";
+import { DashboardButton } from "~/components/internals/dashboard-button";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { cn } from "~/lib/utils";
 import jsQR from "jsqr";
 import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
@@ -305,7 +308,7 @@ const ScanActivityPage = () => {
       return;
     }
     const last = lastScanRef.current;
-    if (last && last.value === qrData && Date.now() - last.at < 5000) {
+    if (last && last.value === qrData && Date.now() - last.at < 3000) {
       return;
     }
     lastScanRef.current = { value: qrData, at: Date.now() };
@@ -406,47 +409,32 @@ const ScanActivityPage = () => {
   // Navigation is now handled directly in processScan after setting success status
 
   return (
-    <div
-      className="flex min-h-screen w-full flex-col"
-      style={{ backgroundColor: "#f5f2f6" }}
-    >
+    <div className="flex h-dvh w-full flex-col bg-dashboard-bg-nav font-figtree">
       {/* Top Bar */}
-      <header className="w-full space-y-2 p-4">
-        <button
+      <header
+        className={cn(
+          "flex flex-col items-start gap-3 px-6 pb-6 pt-5",
+          itemLoading && "invisible",
+        )}
+      >
+        <DashboardButton
+          variant="tertiary"
+          className="font-semibold text-dashboard-text-heavy md:text-[16px]"
           onClick={() => {
             void router.push("/scavenger");
           }}
-          className="font-secondary text-heavy transition-colors hover:text-emphasis"
         >
+          <ArrowLeft />
           Back
-        </button>
-        <div className="space-y-1">
-          <h1 className="font-dico text-left text-3xl font-medium capitalize text-heavy">
-            {activityName}
-          </h1>
-          {itemLoading && (
-            <p className="font-secondary text-sm text-medium">
-              Loading item details...
-            </p>
-          )}
-          {itemData && (
-            <div className="space-y-1">
-              {itemData.description && (
-                <p className="font-secondary text-sm text-medium">
-                  {itemData.description}
-                </p>
-              )}
-              <p className="font-secondary text-sm font-medium text-heavy">
-                Points: {itemData.points}
-              </p>
-            </div>
-          )}
-          {!itemLoading && !itemData && (itemId ?? itemCode) && (
-            <p className="font-secondary text-sm text-red-600">
-              Item not found
-            </p>
-          )}
-        </div>
+        </DashboardButton>
+        <h1 className="text-[32px] font-bold leading-[1.2] text-dashboard-text-heavy">
+          {activityName}
+        </h1>
+        {!itemLoading && !itemData && (itemId ?? itemCode) && (
+          <p className="text-sm font-medium text-dashboard-status-warning">
+            Item not found
+          </p>
+        )}
         {isWinnable && (
           <Tabs
             value={activityType}
@@ -462,8 +450,13 @@ const ScanActivityPage = () => {
         )}
       </header>
 
-      {/* Camera View or Test Mode - Takes up rest of screen */}
-      <div className="relative flex w-full flex-1 items-center justify-center bg-gray-300">
+      {/* Camera View - Takes up rest of screen */}
+      <div
+        className={cn(
+          "relative flex w-full flex-1 items-center justify-center overflow-hidden rounded-t-[10px] border border-dashboard-border-subtle bg-dashboard-bg-surface shadow-dashboard-card",
+          itemLoading && "invisible",
+        )}
+      >
         {/* Video element for camera. Pinned to the box so it fills it: as a plain
             flex child it kept the camera's own shape and left grey bars. */}
         <video
@@ -479,21 +472,18 @@ const ScanActivityPage = () => {
 
         {/* Scanner frame overlay - Always show since test mode is disabled */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="aspect-square w-[88%] rounded-lg border-2 border-white md:w-[60%] lg:w-[50%]" />
+          <div className="aspect-square w-[87%] max-w-[340px] border-2 border-white" />
         </div>
 
         {/* Camera Error / Start Camera Button */}
         {!cameraActive && cameraError && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-300 p-6">
-            <p className="mb-4 text-center font-secondary text-heavy">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-dashboard-bg-inset p-6">
+            <p className="text-center text-base font-medium text-dashboard-text-medium">
               {cameraError}
             </p>
-            <button
-              onClick={startCamera}
-              className="rounded-lg bg-white px-6 py-3 font-secondary font-medium text-heavy shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
-            >
+            <DashboardButton onClick={startCamera}>
               Start Camera
-            </button>
+            </DashboardButton>
           </div>
         )}
 

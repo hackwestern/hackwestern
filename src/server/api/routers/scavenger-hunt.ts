@@ -1,5 +1,17 @@
 import { alias } from "drizzle-orm/pg-core";
-import { eq, ne, and, sql, or, isNull, isNotNull, gt, desc } from "drizzle-orm";
+import {
+  eq,
+  ne,
+  and,
+  sql,
+  or,
+  isNull,
+  isNotNull,
+  gt,
+  desc,
+  ilike,
+  count,
+} from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -717,11 +729,14 @@ export const scavengerHuntRouter = createTRPCRouter({
           ])
           .optional()
           .default("all"),
+        search: z.string().trim().max(100).optional().default(""),
+        page: z.number().int().min(1).optional().default(1),
+        pageSize: z.number().int().min(1).max(100).optional().default(25),
       }),
     )
     .query(async ({ input }) => {
       try {
-        const { filter } = input;
+        const { filter, search, page, pageSize } = input;
 
         // Create alias for scanner user table
         const scannerUsers = alias(users, "scanner");
@@ -739,39 +754,73 @@ export const scavengerHuntRouter = createTRPCRouter({
         } else if (filter !== "all") {
           conditions.push(eq(scavengerHuntItems.type, FILTER_TYPES[filter]));
         }
+        if (search) {
+          const pattern = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
+          conditions.push(
+            or(
+              ilike(users.name, pattern),
+              ilike(users.email, pattern),
+              ilike(scavengerHuntItems.description, pattern),
+              ilike(scannerUsers.name, pattern),
+            )!,
+          );
+        }
         const where = conditions.length ? and(...conditions) : undefined;
 
-        // Get all matching scans with user, item, and scanner info using joins
-        const allScans = await db
-          .select({
-            userId: scavengerHuntScans.userId,
-            itemId: scavengerHuntScans.itemId,
-            scannerId: scavengerHuntScans.scannerId,
-            createdAt: scavengerHuntScans.createdAt,
-            userName: users.name,
-            userEmail: users.email,
-            itemCode: scavengerHuntItems.code,
-            itemDescription: scavengerHuntItems.description,
-            itemType: scavengerHuntItems.type,
-            activityType: scavengerHuntScans.activityType,
-            scannerName: scannerUsers.name,
-            scannerEmail: scannerUsers.email,
-          })
-          .from(scavengerHuntScans)
-          .innerJoin(users, eq(scavengerHuntScans.userId, users.id))
-          .innerJoin(
-            scavengerHuntItems,
-            eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
-          )
-          .leftJoin(
-            scannerUsers,
-            eq(scavengerHuntScans.scannerId, scannerUsers.id),
-          )
-          .where(where)
-          .orderBy(desc(scavengerHuntScans.createdAt));
+        // Get one page of scans with user, item, and scanner info using joins
+        const [pageScans, [totals]] = await Promise.all([
+          db
+            .select({
+              userId: scavengerHuntScans.userId,
+              itemId: scavengerHuntScans.itemId,
+              scannerId: scavengerHuntScans.scannerId,
+              createdAt: scavengerHuntScans.createdAt,
+              userName: users.name,
+              userEmail: users.email,
+              itemCode: scavengerHuntItems.code,
+              itemDescription: scavengerHuntItems.description,
+              itemType: scavengerHuntItems.type,
+              activityType: scavengerHuntScans.activityType,
+              scannerName: scannerUsers.name,
+              scannerEmail: scannerUsers.email,
+            })
+            .from(scavengerHuntScans)
+            .innerJoin(users, eq(scavengerHuntScans.userId, users.id))
+            .innerJoin(
+              scavengerHuntItems,
+              eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+            )
+            .leftJoin(
+              scannerUsers,
+              eq(scavengerHuntScans.scannerId, scannerUsers.id),
+            )
+            .where(where)
+            .orderBy(
+              desc(scavengerHuntScans.createdAt),
+              scavengerHuntScans.userId,
+              scavengerHuntScans.itemId,
+            )
+            .limit(pageSize)
+            .offset((page - 1) * pageSize),
+          db
+            .select({ total: count() })
+            .from(scavengerHuntScans)
+            .innerJoin(users, eq(scavengerHuntScans.userId, users.id))
+            .innerJoin(
+              scavengerHuntItems,
+              eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+            )
+            .leftJoin(
+              scannerUsers,
+              eq(scavengerHuntScans.scannerId, scannerUsers.id),
+            )
+            .where(where),
+        ]);
+
+        const total = totals?.total ?? 0;
 
         // Format the data for display
-        return allScans.map((scan) => ({
+        const scans = pageScans.map((scan) => ({
           id: `${scan.userId}-${scan.itemId}-${scan.activityType}`,
           hackerName: scan.userName ?? scan.userEmail ?? scan.userId,
           event: `${scan.itemDescription ?? scan.itemCode ?? "Unknown"}${scan.activityType === "win" ? " (Win)" : ""}`,
@@ -797,6 +846,14 @@ export const scavengerHuntRouter = createTRPCRouter({
             : "N/A",
           createdAt: scan.createdAt,
         }));
+
+        return {
+          scans,
+          total,
+          page,
+          pageSize,
+          pageCount: Math.max(1, Math.ceil(total / pageSize)),
+        };
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",

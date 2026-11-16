@@ -28,3 +28,8 @@ export function formatRsvpDeadline() {
     });
   return `${fmt({ weekday: "long", month: "long", day: "numeric" })} at ${fmt({ hour: "numeric", minute: "2-digit" })} ET`;
 }
+
+export const formatEventTime = (
+  date: Date,
+  options: Intl.DateTimeFormatOptions,
+) => date.toLocaleString("en-US", { timeZone: "America/Toronto", ...options });

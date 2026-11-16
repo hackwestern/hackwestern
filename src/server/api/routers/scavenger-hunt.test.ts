@@ -866,8 +866,9 @@ describe("scavengerHuntRouter scan endpoints", () => {
     });
 
     test("returns empty array when no scans exist", async () => {
-      const scans = await organizerCaller.scavengerHunt.getAllScans({});
-      expect(scans).toEqual([]);
+      const result = await organizerCaller.scavengerHunt.getAllScans({});
+      expect(result.scans).toEqual([]);
+      expect(result.total).toBe(0);
     });
 
     test("throws error if user is not an organizer", async () => {
