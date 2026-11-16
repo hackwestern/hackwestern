@@ -1,0 +1,140 @@
+/**
+ * "Your next event" for the sponsor schedule: the sponsor's next own item
+ * from now, including their ceremony speaking slots and coffee chat window.
+ * Pure, so it's unit tested.
+ */
+import {
+  locationFor,
+  type CeremonyKind,
+  type CoffeeChatSetup,
+  type RunOfShowDay,
+  type RunOfShowItem,
+  type SponsorCeremonySegment,
+} from "~/lib/run-of-show";
+import { runOfShowInstant } from "~/lib/run-of-show-time";
+import { isOwnItem } from "~/lib/sponsor-timeline";
+
+export type NextEvent = {
+  /** "item": a run-of-show block; the others get their title from copy. */
+  kind: "item" | "ceremony" | "coffee";
+  title: string;
+  ceremony?: CeremonyKind;
+  day: RunOfShowDay;
+  start: string;
+  location: string | null;
+  /** True when it has started and not ended. */
+  now: boolean;
+  /** Whole minutes until it starts (0 when it's on now). */
+  minutesUntil: number;
+};
+
+const CEREMONY_TITLE: Record<CeremonyKind, RegExp> = {
+  opening: /opening\s+ceremony/i,
+  closing: /closing\s+ceremony/i,
+};
+
+/** The ceremony's own block in RUN OF SHOW (big event column). */
+export function ceremonyItem(
+  items: RunOfShowItem[],
+  ceremony: CeremonyKind,
+): RunOfShowItem | undefined {
+  return items.find(
+    (i) => i.column === "big-event" && CEREMONY_TITLE[ceremony].test(i.title),
+  );
+}
+
+function addMinutes(time: string, minutes: number): string {
+  const [h, m] = time.split(":").map(Number) as [number, number];
+  const total = Math.min(h * 60 + m + minutes, 24 * 60);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
+type Candidate = Omit<NextEvent, "now" | "minutesUntil"> & {
+  end: string;
+  /** Sponsor Bay hours: long, so only shown when nothing else is coming. */
+  background?: boolean;
+};
+
+export function nextOwnEvent({
+  sponsorName,
+  items,
+  ceremonies,
+  coffeeChat,
+  now,
+}: {
+  sponsorName: string;
+  items: RunOfShowItem[];
+  ceremonies: SponsorCeremonySegment[];
+  coffeeChat: CoffeeChatSetup | null;
+  now: Date;
+}): NextEvent | null {
+  const candidates: Candidate[] = items
+    .filter((i) => isOwnItem(i, sponsorName))
+    .map((i) => ({
+      kind: "item",
+      title: i.title,
+      day: i.day,
+      start: i.start,
+      end: i.end,
+      location: i.location ? locationFor(i.location, sponsorName) : null,
+      background: i.column === "spon-booth",
+    }));
+
+  for (const segment of ceremonies) {
+    if (!segment.yours) continue;
+    const block = ceremonyItem(items, segment.ceremony);
+    if (!block) continue;
+    const start = segment.start ?? block.start;
+    candidates.push({
+      kind: "ceremony",
+      title: segment.title,
+      ceremony: segment.ceremony,
+      day: block.day,
+      start,
+      end:
+        segment.start && segment.durationMinutes
+          ? addMinutes(start, segment.durationMinutes)
+          : block.end,
+      location: block.location,
+    });
+  }
+
+  // The Coffee Chats tab window, unless RUN OF SHOW already has a block.
+  const hasCoffeeBlock = items.some(
+    (i) => i.column === "coffee-chats" && i.sponsors.includes(sponsorName),
+  );
+  if (coffeeChat?.windowStart && coffeeChat.windowEnd && !hasCoffeeBlock) {
+    candidates.push({
+      kind: "coffee",
+      title: "",
+      day: "Saturday",
+      start: coffeeChat.windowStart,
+      end: coffeeChat.windowEnd,
+      location: coffeeChat.room,
+    });
+  }
+
+  const upcoming = candidates
+    .map((c) => ({
+      c,
+      start: runOfShowInstant(c.day, c.start).getTime(),
+      end: runOfShowInstant(c.day, c.end).getTime(),
+    }))
+    .filter((x) => x.end > now.getTime())
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+  const t = now.getTime();
+  const next =
+    upcoming.find((x) => !(x.c.background && x.start <= t)) ?? upcoming[0];
+  if (!next) return null;
+  const { kind, title, ceremony, day, start, location } = next.c;
+  return {
+    kind,
+    title,
+    ...(ceremony ? { ceremony } : {}),
+    day,
+    start,
+    location,
+    now: next.start <= now.getTime(),
+    minutesUntil: Math.max(0, Math.ceil((next.start - now.getTime()) / 60_000)),
+  };
+}

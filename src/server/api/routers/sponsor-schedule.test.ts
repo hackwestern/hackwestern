@@ -56,6 +56,26 @@ vi.mock("~/server/api/utils/run-of-show-sheet", () => {
           },
         ],
         coffeeChats: [],
+        ceremonies: [
+          {
+            ceremony: "opening", order: 1, start: null, durationMinutes: 1,
+            title: alphaName, sponsor: alphaName, speakers: ["Ana Alpha"],
+          },
+          {
+            ceremony: "opening", order: 2, start: null, durationMinutes: 3,
+            title: betaName, sponsor: betaName, speakers: [],
+          },
+        ],
+        workshops: [
+          {
+            title: `${alphaName}: Intro talk`, sponsor: null, runners: [],
+            day: null, start: null, room: null, description: "Alpha's talk",
+          },
+          {
+            title: `${betaName}: Panel`, sponsor: null, runners: ["Bo Beta"],
+            day: null, start: null, room: null, description: "Beta's panel",
+          },
+        ],
       }),
   };
 });
@@ -142,5 +162,26 @@ describe("sponsorSchedule.organizer", () => {
     await expect(publicCaller.sponsorSchedule.organizer()).rejects.toMatchObject(
       { code: "UNAUTHORIZED" },
     );
+  });
+});
+
+describe("sponsorSchedule.get ceremonies and workshops", () => {
+  test("full running order with only this sponsor's slots flagged", async () => {
+    const result = await publicCaller.sponsorSchedule.get({ sponsor: alphaId });
+    expect(
+      result.ceremonies.map((c) => `${c.order} ${c.sponsor} ${c.yours}`),
+    ).toEqual([`1 ${alphaName} true`, `2 ${betaName} false`]);
+  });
+
+  test("only this sponsor's workshops, with time and room from RUN OF SHOW", async () => {
+    const result = await publicCaller.sponsorSchedule.get({ sponsor: alphaId });
+    expect(result.workshops).toEqual([
+      {
+        title: `${alphaName}: Intro talk`, sponsor: alphaName, runners: [],
+        day: "Saturday", start: "10:00", room: "Rm 101",
+        description: "Alpha's talk",
+      },
+    ]);
+    expect(JSON.stringify(result.workshops)).not.toContain(betaName);
   });
 });

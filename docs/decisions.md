@@ -81,7 +81,7 @@
 - **Why:** hackers live in Slack during the event; one notification per offer, no duplicates; /live shows a toast and the chat either way.
 - **Alternatives:** both always (duplicates); email only (slower to notice, no buttons).
 
-## 2026-11-15 — Where is everyone is organizer-only
+## 2026-11-15 â€” Where is everyone is organizer-only
 - **Decision:** Sponsors see only their own schedule and rooms; the sponsor team sees every company on /internal/sponsor-schedule. The server trims shared rooms and other sponsors' names from a sponsor's schedule.
 - **Why:** Jazz: sponsors don't need it; it's for the sponsor team.
 - **Alternatives:** keep it for sponsors (earlier decision today, now reversed).
@@ -90,3 +90,17 @@
 - **Decision:** Sponsors shortlist interested hackers on /sponsors/[uuid]/coffee-chats (new `sponsor_shortlist` table). The old /hackers page redirects there. The interested list now returns each hacker's user id so the sponsor can shortlist them, but only for admitted hackers who agreed to share and ranked that sponsor. That's the same id the /live QR shows anyone who scans it. No emails. Chat partners get a full profile only if they agreed to share; otherwise the sponsor sees a first name.
 - **Why:** Jazz wants one page where sponsors see who's interested, pick their shortlist and follow their chats. Organizers read the shortlist (`sponsorShortlist.forSponsor`) to assign chats.
 - **Alternatives:** keep it keyed by hackerId (can be unset); keep a separate read-only page (two places for the same people).
+## 2026-11-16 - Coffee chat rooms 2241-2243 are assigned on the site
+- **Decision:** Organizers give each sponsor a Saturday coffee chat room (Rm 2241, 2242 or 2243) in the Coffee chats tab of /internal/sponsor-schedule, stored on the sponsor (`coffee_chat_room`). The sheet's ROOM column is only a fallback when nothing is assigned. Two sponsors can't share a room in overlapping windows; changing a room moves that sponsor's live chats under the Move room rules and tells each hacker.
+- **Why:** the sponsor team decides rooms during the event and needs the change to reach offers, free times, cards and hackers at once, without a sheet round trip.
+- **Alternatives:** keep rooms in the sheet only (no clash check, no moving booked chats); per-slot rooms only (Move room still exists for one-off changes).
+
+## 2026-11-16 - Organizers can add coffee chats ad hoc
+- **Decision:** The Coffee chats tab has an "Add a chat" form: pick a sponsor, search admitted hackers by name, email or hacker ID, pick one of that sponsor's free times, optional rep name. It calls the same core as the sponsor's offer (capacity, overlap and room rules), the chat stays pending until the hacker accepts on /live, and the usual notification goes out.
+- **Why:** the sponsor team books chats for sponsors who are busy or hackers who ask at the desk, without bypassing the rules sponsors follow.
+- **Alternatives:** organizer-created chats auto-accepted (hacker never agrees); editing the sheet (no two-way sync).
+
+## 2026-11-16 - One sponsor-team watcher per sponsor's coffee chats
+- **Decision:** Organizers name who on the sponsor team watches each sponsor's coffee chats (and so that sponsor's room), next to the room in the Coffee chats tab. Stored as free text (`coffee_chat_watcher`), with organizer names suggested. Sponsors get the name as `watcherName` from `coffeeChatRequests.freeTimes` and `sponsorChats` ("Your Hack Western contact for chats").
+- **Why:** sponsors need one person to ask during chats, and the team needs to know who covers which room.
+- **Alternatives:** a user id foreign key to organizers (blocks volunteers without accounts); one watcher per room (sponsors move between rooms).

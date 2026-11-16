@@ -50,6 +50,95 @@ const COFFEE_CHAT_UTC_OFFSET = "-05:00";
 /** People a coffee chat room fits at once (rooms 2241-2243). */
 export const COFFEE_CHAT_ROOM_PEOPLE = 6;
 
+/**
+ * Saturday coffee chat rooms organizers assign sponsors to (same labels as
+ * migration 0040). Docs/decisions.md 2026-11-15.
+ */
+export const COFFEE_CHAT_ROOMS = ["Rm 2241", "Rm 2242", "Rm 2243"] as const;
+export type CoffeeChatRoom = (typeof COFFEE_CHAT_ROOMS)[number];
+
+/** "rm 2241", " Rm  2241 " -> "Rm 2241"; null when not a coffee chat room. */
+export function coffeeChatRoomOf(
+  room: string | null | undefined,
+): CoffeeChatRoom | null {
+  const key = String(room ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+  return COFFEE_CHAT_ROOMS.find((r) => r.toLowerCase() === key) ?? null;
+}
+
+/**
+ * A sponsor's coffee chat room: the organizer's assignment, else the
+ * Coffee Chats sheet's ROOM value, else null ("Room to be assigned").
+ */
+export function resolveCoffeeChatRoom(
+  assigned: string | null | undefined,
+  sheetRoom: string | null | undefined,
+): string | null {
+  return assigned?.trim() ? assigned : sheetRoom?.trim() ? sheetRoom : null;
+}
+
+/**
+ * Sheet setups with each sponsor's organizer-assigned room applied (by
+ * sponsor name), so offers, free times and schedules all agree.
+ */
+export function applyAssignedRooms<
+  T extends { sponsor: string; room: string | null },
+>(
+  setups: T[],
+  sponsors: { name: string; coffeeChatRoom: string | null }[],
+): T[] {
+  const assigned = new Map(sponsors.map((s) => [s.name, s.coffeeChatRoom]));
+  return setups.map((s) => ({
+    ...s,
+    room: resolveCoffeeChatRoom(assigned.get(s.sponsor), s.room),
+  }));
+}
+
+/** True when two Saturday windows ("HH:MM"-"HH:MM") overlap. */
+export function coffeeChatWindowsOverlap(
+  a: { windowStart: string | null; windowEnd: string | null },
+  b: { windowStart: string | null; windowEnd: string | null },
+): boolean {
+  const [aStart, aEnd, bStart, bEnd] = [
+    a.windowStart,
+    a.windowEnd,
+    b.windowStart,
+    b.windowEnd,
+  ].map((t) => (t ? coffeeChatMinutesOf(t) : null));
+  if (aStart == null || aEnd == null || bStart == null || bEnd == null) {
+    return false;
+  }
+  return aStart < bEnd && bStart < aEnd;
+}
+
+/**
+ * The first other sponsor already assigned `room` whose coffee chat window
+ * overlaps this sponsor's, or null. Sponsors without a window never clash.
+ */
+export function coffeeChatRoomClash<
+  S extends {
+    id: string;
+    room: string | null;
+    windowStart: string | null;
+    windowEnd: string | null;
+  },
+>(sponsorId: string, room: string, sponsors: S[]): S | null {
+  const me = sponsors.find((s) => s.id === sponsorId);
+  if (!me) return null;
+  const key = coffeeChatRoomOf(room);
+  return (
+    sponsors.find(
+      (s) =>
+        s.id !== sponsorId &&
+        key !== null &&
+        coffeeChatRoomOf(s.room) === key &&
+        coffeeChatWindowsOverlap(s, me),
+    ) ?? null
+  );
+}
+
 export const COFFEE_CHAT_GRID_MINUTES = 15;
 export const COFFEE_CHAT_DURATIONS = [15, 30] as const;
 export type CoffeeChatDuration = (typeof COFFEE_CHAT_DURATIONS)[number];

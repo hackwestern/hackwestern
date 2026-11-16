@@ -5,6 +5,9 @@ import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { InternalNavbar } from "~/components/internals/navbar";
+import { AddCoffeeChat } from "~/components/sponsors/add-coffee-chat";
+import { CoffeeChatRooms } from "~/components/sponsors/coffee-chat-rooms";
+import { CeremonyOrder } from "~/components/sponsors/ceremony-order";
 import { CompanyLocationsView } from "~/components/sponsors/company-locations";
 import { DayPicker } from "~/components/sponsors/day-picker";
 import { HelpQueue } from "~/components/sponsors/help-queue";
@@ -16,7 +19,9 @@ import {
   ScheduleSkeleton,
 } from "~/components/sponsors/schedule-states";
 import { SheetEditButton } from "~/components/sponsors/sheet-edit-button";
+import { SponsorMap } from "~/components/sponsors/sponsor-map";
 import { useNow } from "~/components/sponsors/use-now";
+import { WorkshopsTable } from "~/components/sponsors/workshop-details";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import { sponsorHelpCopy } from "~/content/sponsor-help";
@@ -54,7 +59,11 @@ export default function OrganizerRunOfShowPage() {
       <InternalNavbar />
       <div className="min-h-screen bg-dashboard-bg-page px-4 pb-12 pt-6 font-figtree font-medium leading-default text-dashboard-text-heavy sm:px-5">
         <div className="mx-auto flex w-full max-w-[880px] flex-col gap-5">
-          <PageIntro eyebrow={copy.title} title={copy.title} intro={copy.intro} />
+          <PageIntro
+            eyebrow={copy.title}
+            title={copy.title}
+            intro={copy.intro}
+          />
           <div className="flex gap-2 overflow-x-auto pb-1">
             {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
               <DashboardChip
@@ -82,15 +91,23 @@ export default function OrganizerRunOfShowPage() {
                 <DayPicker value={shownDay} onChange={setDay} />
               )}
               {tab === "schedule" && (
-                <ScheduleList
-                  items={q.data.items.filter((i) => i.day === shownDay)}
-                  now={now}
-                />
+                <>
+                  <ScheduleList
+                    items={q.data.items.filter((i) => i.day === shownDay)}
+                    now={now}
+                  />
+                  <CeremonyOrder
+                    segments={q.data.ceremonies}
+                    items={q.data.items}
+                  />
+                  <WorkshopsTable workshops={q.data.workshops} />
+                </>
               )}
               {tab === "tasks" && <Tasks data={q.data} day={shownDay} />}
               {tab === "coffee" && (
                 <>
-                  <CoffeeSetups data={q.data} />
+                  <CoffeeChatRooms />
+                  <AddCoffeeChat />
                   <BookedChats />
                 </>
               )}
@@ -117,11 +134,20 @@ function WhereIsEveryone({
     refetchInterval: 60_000,
     retry: 1,
   });
+  // Watcher names for the map; the map still works without them.
+  const rooms = api.coffeeChatRequests.organizerRooms.useQuery(undefined, {
+    refetchInterval: 60_000,
+    retry: 1,
+  });
   if (q.isLoading) return <ScheduleSkeleton />;
   if (!q.data) return <LoadError onRetry={() => void q.refetch()} />;
+  const watchers = Object.fromEntries(
+    (rooms.data?.sponsors ?? []).map((s) => [s.sponsor, s.watcher]),
+  );
   return (
     <>
       <DayPicker value={day} onChange={onDay} />
+      <SponsorMap data={q.data} watchers={watchers} day={day} now={now} />
       <CompanyLocationsView data={q.data} day={day} now={now} />
       <ReadAt iso={q.data.readAt} />
     </>
@@ -154,43 +180,6 @@ function Tasks({ data, day }: { data: OrganizerRunOfShow; day: RunOfShowDay }) {
         </li>
       ))}
     </ol>
-  );
-}
-
-function CoffeeSetups({ data }: { data: OrganizerRunOfShow }) {
-  const t = copy.coffeeTable;
-  const cc = scheduleCopy.coffeeChat;
-  return (
-    <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2">
-      {data.coffeeChats.map((s) => (
-        <li
-          key={s.sponsor}
-          className="flex flex-col gap-2 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card"
-        >
-          <h2 className="m-0 text-lg font-semibold">{s.sponsor}</h2>
-          {!s.windowStart || !s.windowEnd ? (
-            <p className="m-0 text-sm text-dashboard-text-light">
-              {t.notSetUp}
-            </p>
-          ) : (
-            <dl className="m-0 grid grid-cols-[5.5rem_1fr] gap-x-3 gap-y-1 text-sm">
-              <dt className="text-dashboard-text-light">{t.window}</dt>
-              <dd className="m-0">
-                {formatClock(s.windowStart)} – {formatClock(s.windowEnd)}
-              </dd>
-              <dt className="text-dashboard-text-light">{t.format}</dt>
-              <dd className="m-0">
-                {cc.format(s.durationMinutes, s.groupSize)}
-              </dd>
-              <dt className="text-dashboard-text-light">{t.hackers}</dt>
-              <dd className="m-0">{s.hackers ?? "–"}</dd>
-              <dt className="text-dashboard-text-light">{t.room}</dt>
-              <dd className="m-0">{s.room ?? cc.roomTbd}</dd>
-            </dl>
-          )}
-        </li>
-      ))}
-    </ul>
   );
 }
 

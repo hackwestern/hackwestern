@@ -177,17 +177,12 @@ describe("coffee chat offer email (T17)", () => {
     expect(send).not.toHaveBeenCalled();
   });
 
-  test("no email for answers, cancels, or room moves", async () => {
+  test("no email for answers", async () => {
     const sponsor = await makeSponsor();
     const hacker = await makeHacker();
     const chat = await makeChat(sponsor.id, hacker);
 
-    for (const event of [
-      "accepted",
-      "declined",
-      "cancelled",
-      "roomMoved",
-    ] as const) {
+    for (const event of ["accepted", "declined"] as const) {
       await notifyCoffeeChat(event, { id: chat.id });
     }
 

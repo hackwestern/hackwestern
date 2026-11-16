@@ -1,5 +1,5 @@
 {
-  "id": "9f6d199d-da52-45f4-8b6e-6ecc9cdfb77e",
+  "id": "d057c8ee-6c2e-4163-a4b9-f8e2baafdfea",
   "prevId": "4948c9bc-95d0-4757-a702-72b00fb93737",
   "version": "7",
   "dialect": "postgresql",
@@ -2633,6 +2633,12 @@
           "notNull": true,
           "default": 1
         },
+        "coffee_chat_room": {
+          "name": "coffee_chat_room",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp (3)",
@@ -2653,73 +2659,6 @@
           ]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.sponsor_shortlist": {
-      "name": "sponsor_shortlist",
-      "schema": "",
-      "columns": {
-        "sponsor_id": {
-          "name": "sponsor_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "sponsor_shortlist_sponsor_id_sponsor_judging_sponsor_id_fk": {
-          "name": "sponsor_shortlist_sponsor_id_sponsor_judging_sponsor_id_fk",
-          "tableFrom": "sponsor_shortlist",
-          "tableTo": "sponsor_judging_sponsor",
-          "columnsFrom": [
-            "sponsor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "sponsor_shortlist_user_id_user_id_fk": {
-          "name": "sponsor_shortlist_user_id_user_id_fk",
-          "tableFrom": "sponsor_shortlist",
-          "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "sponsor_shortlist_sponsor_id_user_id_pk": {
-          "name": "sponsor_shortlist_sponsor_id_user_id_pk",
-          "columns": [
-            "sponsor_id",
-            "user_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

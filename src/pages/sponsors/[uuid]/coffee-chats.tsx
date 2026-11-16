@@ -120,7 +120,7 @@ export default function SponsorCoffeeChatsPage() {
   }
   if (!q.data) return shell(<LoadError onRetry={() => void q.refetch()} />);
 
-  const { sponsorName, chats } = q.data;
+  const { sponsorName, watcherName, chats } = q.data;
   const groups = groupByTime(chats);
   const partners = new Map(
     (partnersQ.data ?? []).map((p) => [p.chatId, p] as const),
@@ -165,6 +165,12 @@ export default function SponsorCoffeeChatsPage() {
           </>
         )}
       </p>
+
+      {watcherName && (
+        <p className="m-0 text-sm text-dashboard-text-medium">
+          {coffeeChatCopy.watcher.line(watcherName)}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <DashboardButton asChild className="md:h-11 md:w-full">
