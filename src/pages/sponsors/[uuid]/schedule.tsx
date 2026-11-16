@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
+import { ScanLine } from "lucide-react";
+import { DashboardButton } from "~/components/internals/dashboard-button";
 import { CoffeeChatSummary } from "~/components/sponsors/coffee-chat-summary";
 import { DayPicker } from "~/components/sponsors/day-picker";
 import { RepCount } from "~/components/sponsors/rep-count";
@@ -13,6 +16,7 @@ import {
 } from "~/components/sponsors/schedule-states";
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { useNow } from "~/components/sponsors/use-now";
+import { coffeeChatCopy } from "~/content/coffee-chat";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import { RUN_OF_SHOW_DAYS, type RunOfShowDay } from "~/lib/run-of-show";
 import { defaultRunOfShowDay } from "~/lib/run-of-show-time";
@@ -71,6 +75,22 @@ export default function SponsorSchedulePage() {
         <>
           <CoffeeChatSummary setup={data.coffeeChat} />
           <RepCount sponsor={id} groupSize={data.coffeeChat?.groupSize ?? 1} />
+          <nav
+            aria-label={coffeeChatCopy.hub.linksLabel}
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+          >
+            <DashboardButton asChild className="md:h-11 md:w-full">
+              <Link href={`/sponsors/${id}/scan`}>
+                <ScanLine aria-hidden />
+                {coffeeChatCopy.hub.scan}
+              </Link>
+            </DashboardButton>
+            <DashboardButton variant="outline" asChild className="h-11 w-full">
+              <Link href={`/sponsors/${id}/coffee-chats`}>
+                {coffeeChatCopy.hub.list}
+              </Link>
+            </DashboardButton>
+          </nav>
         </>
       )}
       <DayPicker value={shownDay} onChange={setDay} />
