@@ -63,16 +63,11 @@ export async function fetchHackerInterestRows(
   }
 
   const sheets = await getSheetsClient();
-  const configuredTab = env.HACKER_INTEREST_FORM_TAB ?? "Form responses 1";
-  const tabName = await findTabTitle(
-    sheets,
-    spreadsheetId,
-    configuredTab.trim().toLowerCase(),
-  );
+  const tabName = await findTabTitle(sheets, spreadsheetId, "form responses 1");
   if (!tabName) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message: `Interest form tab "${configuredTab}" was not found`,
+      message: 'Interest form tab "Form responses 1" was not found',
     });
   }
 

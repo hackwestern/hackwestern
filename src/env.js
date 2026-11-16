@@ -104,8 +104,6 @@ export const env = createEnv({
     CHEAT_SWEEP_SECRET: z.string().optional(),
     // Hacker interest form Google Sheet ID
     HACKER_INTEREST_FORM: z.string().optional(),
-    // Optional tab override for local/demo interest-form data
-    HACKER_INTEREST_FORM_TAB: z.string().optional(),
   },
 
   /**
@@ -183,7 +181,6 @@ export const env = createEnv({
     PROJECT_SUBMISSION_DEADLINE: process.env.PROJECT_SUBMISSION_DEADLINE,
     CHEAT_SWEEP_SECRET: process.env.CHEAT_SWEEP_SECRET,
     HACKER_INTEREST_FORM: process.env.HACKER_INTEREST_FORM,
-    HACKER_INTEREST_FORM_TAB: process.env.HACKER_INTEREST_FORM_TAB,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
