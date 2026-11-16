@@ -72,6 +72,7 @@ async function findSponsor(conn: Db | Tx, id: string, lock = false) {
       id: sponsorJudgingSponsors.id,
       name: sponsorJudgingSponsors.name,
       reps: sponsorJudgingSponsors.coffeeChatReps,
+      watcher: sponsorJudgingSponsors.coffeeChatWatcher,
     })
     .from(sponsorJudgingSponsors)
     .where(eq(sponsorJudgingSponsors.id, id.toLowerCase()));
@@ -398,6 +399,8 @@ export type OrganizerCoffeeChatRoom = {
   assignedRoom: string | null;
   /** The sheet's ROOM value, used when nothing is assigned. */
   sheetRoom: string | null;
+  /** Sponsor-team member watching this sponsor's chats (free text). */
+  watcher: string | null;
 };
 
 /**
@@ -542,6 +545,8 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         durationMinutes: setup?.durationMinutes ?? 15,
         groupSize: setup?.groupSize ?? 1,
         reps: sponsor.reps,
+        /** "Your Hack Western contact for chats": set by organizers. */
+        watcherName: sponsor.watcher,
         times: freeStartTimes({
           setup,
           reps: sponsor.reps,
@@ -610,7 +615,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           };
         },
       );
-      return { sponsorName: sponsor.name, chats };
+      return { sponsorName: sponsor.name, watcherName: sponsor.watcher, chats };
     }),
 
   /**
@@ -783,6 +788,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         id: sponsorJudgingSponsors.id,
         name: sponsorJudgingSponsors.name,
         coffeeChatRoom: sponsorJudgingSponsors.coffeeChatRoom,
+        watcher: sponsorJudgingSponsors.coffeeChatWatcher,
       })
       .from(sponsorJudgingSponsors)
       .orderBy(asc(sponsorJudgingSponsors.name));
@@ -799,6 +805,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         hackers: setup?.hackers ?? null,
         assignedRoom: s.coffeeChatRoom,
         sheetRoom: setup?.room ?? null,
+        watcher: s.watcher,
       };
     });
     for (const setup of setups) {
@@ -813,9 +820,23 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         hackers: setup.hackers,
         assignedRoom: null,
         sheetRoom: setup.room,
+        watcher: null,
       });
     }
-    return { rooms: [...COFFEE_CHAT_ROOMS], sponsors: rows };
+    // Organizer names, suggested for the watcher field (free text).
+    const organizers = await db
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.type, "organizer"))
+      .orderBy(asc(users.name));
+    const watchers = [
+      ...new Set(
+        organizers
+          .map((o) => o.name?.trim() ?? "")
+          .filter((name) => name.length > 0),
+      ),
+    ];
+    return { rooms: [...COFFEE_CHAT_ROOMS], sponsors: rows, watchers };
   }),
 
   /**
@@ -910,6 +931,34 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       );
       return result;
     }),
+  /**
+   * Who on the sponsor team watches a sponsor's coffee chats (and so their
+   * room): a name, or null to clear. Sponsors see it as their Hack Western
+   * contact for chats. Organizers only.
+   */
+  setCoffeeChatWatcher: protectedOrganizerProcedure
+    .input(
+      z.object({
+        sponsorId: sponsorInput,
+        watcher: z.string().trim().max(255).nullable(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const watcher = input.watcher ? input.watcher : null;
+      const [row] = await db
+        .update(sponsorJudgingSponsors)
+        .set({ coffeeChatWatcher: watcher })
+        .where(eq(sponsorJudgingSponsors.id, input.sponsorId.toLowerCase()))
+        .returning({ id: sponsorJudgingSponsors.id });
+      if (!row) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: errors.unknownSponsor,
+        });
+      }
+      return { sponsorId: row.id, watcher };
+    }),
+
   /**
    * Admitted hackers matching a name, email or hacker ID, for adding a
    * chat by hand. Organizers only (emails stay off sponsor pages).

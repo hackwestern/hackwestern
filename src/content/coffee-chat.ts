@@ -179,6 +179,11 @@ export const coffeeChatCopy = {
       "Couldn't read the run-of-show sheet. Try again in a minute.",
   },
 
+  // Shown to sponsors (freeTimes / sponsorChats `watcherName`).
+  watcher: {
+    line: (name: string) => `Your Hack Western contact for chats: ${name}`,
+  },
+
   organizer: {
     heading: "Booked chats",
     empty: "No coffee chats booked yet.",
@@ -221,6 +226,13 @@ export const coffeeChatCopy = {
       notRegistered: "Not registered on the site, so no room can be saved.",
       saved: "Saved",
       saveError: "Couldn't save the room.",
+      watcher: "Watched by",
+      watcherHint:
+        "Sponsor team member who watches this sponsor's chats and room.",
+      watcherPlaceholder: "Name",
+      watcherSave: "Save",
+      watcherSaved: "Saved",
+      watcherError: "Couldn't save who's watching.",
     },
 
     // Organizers add a chat by hand (same rules as a sponsor's offer).

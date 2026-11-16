@@ -1370,3 +1370,68 @@ describe("coffeeChatRequests organizer ad hoc chats (T43)", () => {
     ).toBe("UNAUTHORIZED");
   });
 });
+
+describe("coffeeChatRequests.setCoffeeChatWatcher (T44)", () => {
+  test("organizers set who watches; sponsors see the name", async () => {
+    const orgId = `watch-organizer-${++n}`;
+    await db.insert(users).values({
+      id: orgId,
+      email: `${orgId}@example.com`,
+      name: "Watcher Wendy",
+      type: "organizer",
+    });
+    const org = hackerCaller(orgId);
+    const sponsor = await makeSponsor(1);
+
+    expect(
+      (await caller.coffeeChatRequests.freeTimes({ sponsor })).watcherName,
+    ).toBeNull();
+    await expect(
+      org.coffeeChatRequests.setCoffeeChatWatcher({
+        sponsorId: sponsor,
+        watcher: "  Wendy  ",
+      }),
+    ).resolves.toEqual({ sponsorId: sponsor, watcher: "Wendy" });
+    expect(
+      (await caller.coffeeChatRequests.freeTimes({ sponsor })).watcherName,
+    ).toBe("Wendy");
+    expect(
+      (await caller.coffeeChatRequests.sponsorChats({ sponsor })).watcherName,
+    ).toBe("Wendy");
+    const rooms = await org.coffeeChatRequests.organizerRooms();
+    expect(rooms.sponsors.find((s) => s.sponsorId === sponsor)?.watcher).toBe(
+      "Wendy",
+    );
+    expect(rooms.watchers).toContain("Watcher Wendy");
+
+    // Blank clears it.
+    await org.coffeeChatRequests.setCoffeeChatWatcher({
+      sponsorId: sponsor,
+      watcher: " ",
+    });
+    expect(
+      (await caller.coffeeChatRequests.freeTimes({ sponsor })).watcherName,
+    ).toBeNull();
+
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.setCoffeeChatWatcher({
+            sponsorId: sponsor,
+            watcher: "Me",
+          }),
+        )
+      ).code,
+    ).toBe("UNAUTHORIZED");
+    expect(
+      (
+        await codeOf(
+          org.coffeeChatRequests.setCoffeeChatWatcher({
+            sponsorId: "00000000-0000-4000-8000-000000000000",
+            watcher: "Wendy",
+          }),
+        )
+      ).code,
+    ).toBe("NOT_FOUND");
+  });
+});
