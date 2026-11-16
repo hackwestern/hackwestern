@@ -3,7 +3,7 @@
 ## Running when the last session ended (merge these first)
 - T47 run-of-show hour grid + clickable events + Team tasks column with owners (worktree hackwestern-sd-sched2, branch sd-grid2)
 - T48 organizer coffee chats as a sponsor x time table (hackwestern-sd-chat, branch sd-chat-table)
-- T49 Slack DM task reminders 10 min before, synced from the sheet; no-owner tasks go to the spon-team channel (hackwestern-sd-notify, branch sd-task-reminders; its migration needs renumbering at merge)
+- T49 Slack task pings AT the task's start time: DM the owner; no owner / owner not on Slack -> general message in the spon-team channel; synced from the sheet (hackwestern-sd-notify, branch sd-task-reminders; its migration needs renumbering at merge)
 After merging: load `_local/task-owners.md` owner emails into the local DB (task_owner_contact).
 
 ## Next to build: T50 (small)
