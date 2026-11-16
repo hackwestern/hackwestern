@@ -1,6 +1,18 @@
 # NEXT — sponsor dashboard (branch `sponsor-dashboard`, not pushed)
 
-## Now
+## Running when the last session ended (merge these first)
+- T47 run-of-show hour grid + clickable events + Team tasks column with owners (worktree hackwestern-sd-sched2, branch sd-grid2)
+- T48 organizer coffee chats as a sponsor x time table (hackwestern-sd-chat, branch sd-chat-table)
+- T49 Slack DM task reminders 10 min before, synced from the sheet; no-owner tasks go to the spon-team channel (hackwestern-sd-notify, branch sd-task-reminders; its migration needs renumbering at merge)
+After merging: load `_local/task-owners.md` owner emails into the local DB (task_owner_contact).
+
+## Next to build: T50 sponsor owners
+- One owner per sponsor (rename T44 "watcher" to Owner), list in `_local/task-owners.md` (Canada Life: Noah, Manulife: Caroline, QNX: Noah, Scotiabank: Caroline, Sun Life: Daniel; StarTech/Commure/CSE unknown).
+- Sponsor dashboard shows "Your Hack Western contact: <owner>".
+- Help pings: owner known and matched on Slack → @mention + DM the owner, plus the channel post as backup. No owner / not matched → spon-team channel only with @here (today's behaviour).
+- Ask Jazz: are Manulife and QNX sponsors needing dashboard links (not in the sponsor table)?
+
+## Then
 Open the PR. Push `sponsor-dashboard` and open it **into `spon-judging`** (#1112, which it's built on); retarget to `main` once #1112 merges. Jazz to confirm before pushing.
 
 ## State (2026-11-16)
