@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { asc } from "drizzle-orm";
 import { z } from "zod";
 
+import { applyAssignedRooms } from "~/lib/coffee-chat-requests";
 import {
   locationFor,
   type CompanyLocations,
@@ -29,6 +30,7 @@ async function registeredSponsors() {
     .select({
       id: sponsorJudgingSponsors.id,
       name: sponsorJudgingSponsors.name,
+      coffeeChatRoom: sponsorJudgingSponsors.coffeeChatRoom,
     })
     .from(sponsorJudgingSponsors)
     .orderBy(asc(sponsorJudgingSponsors.name));
@@ -45,13 +47,23 @@ function findSponsor(
   return sponsor;
 }
 
-/** The parsed sheet with sponsor names matched. Fails closed. */
-async function readSheet(sponsorNames: string[]) {
+/**
+ * The parsed sheet with sponsor names matched and organizer-assigned
+ * coffee chat rooms applied (assignment > sheet ROOM). Fails closed.
+ */
+async function readSheet(
+  sponsors: { name: string; coffeeChatRoom: string | null }[],
+) {
   try {
     const snapshot = await getRunOfShow();
+    const sheet = applySponsorNames(
+      snapshot,
+      sponsors.map((s) => s.name),
+    );
     return {
       readAt: snapshot.readAt,
-      ...applySponsorNames(snapshot, sponsorNames),
+      ...sheet,
+      coffeeChats: applyAssignedRooms(sheet.coffeeChats, sponsors),
     };
   } catch (error) {
     console.error("run-of-show sheet read failed", error);
@@ -69,7 +81,7 @@ export const sponsorScheduleRouter = createTRPCRouter({
     .query(async ({ input }): Promise<SponsorSchedule> => {
       const sponsors = await registeredSponsors();
       const { name } = findSponsor(sponsors, input.sponsor);
-      const sheet = await readSheet(sponsors.map((s) => s.name));
+      const sheet = await readSheet(sponsors);
       return {
         sponsorName: name,
         readAt: sheet.readAt,
@@ -106,7 +118,7 @@ export const sponsorScheduleRouter = createTRPCRouter({
   organizerCompanies: protectedOrganizerProcedure.query(
     async (): Promise<CompanyLocations> => {
       const sponsors = await registeredSponsors();
-      const sheet = await readSheet(sponsors.map((s) => s.name));
+      const sheet = await readSheet(sponsors);
       return {
         readAt: sheet.readAt,
         sponsorBay: sheet.items.filter((item) => item.column === "spon-booth"),
@@ -123,7 +135,7 @@ export const sponsorScheduleRouter = createTRPCRouter({
   organizer: protectedOrganizerProcedure.query(
     async (): Promise<OrganizerRunOfShow> => {
       const sponsors = await registeredSponsors();
-      const sheet = await readSheet(sponsors.map((s) => s.name));
+      const sheet = await readSheet(sponsors);
       return {
         readAt: sheet.readAt,
         sheetUrl: runOfShowSheetUrl(),

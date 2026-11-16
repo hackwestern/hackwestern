@@ -170,6 +170,8 @@ export const coffeeChatCopy = {
     hackerBusy: "This hacker already has a chat at that time.",
     roomTaken: "Another sponsor is using that room then.",
     unknownRoom: "That room isn't on the run of show.",
+    roomClash: (room: string, sponsor: string, start: string, end: string) =>
+      `${sponsor} already has ${room} from ${start} to ${end}, which overlaps this window.`,
     chatNotFound: "That coffee chat doesn't exist.",
     notPending: "This request can't be answered anymore.",
     alreadyOver: "This chat can't be changed anymore.",
@@ -202,5 +204,23 @@ export const coffeeChatCopy = {
       last ? `${first} ${last}` : first,
     when: (time: string, minutes: number) => `${time} · ${minutes} min`,
     actionError: "Couldn't update the chat.",
+
+    // Saturday room assignment (rooms 2241-2243), one card per sponsor.
+    rooms: {
+      heading: "Rooms",
+      intro:
+        "Give each sponsor a coffee chat room. Sponsors in the same room can't overlap. Changing a room moves that sponsor's booked chats and tells each hacker.",
+      empty: "No sponsors yet.",
+      window: "Window",
+      format: "Format",
+      hackers: "Hackers",
+      room: "Room",
+      unassigned: "Not assigned",
+      sheetRoom: (room: string) => `Sheet says ${room}`,
+      notSetUp: "No coffee chat window in the sheet yet.",
+      notRegistered: "Not registered on the site, so no room can be saved.",
+      saved: "Saved",
+      saveError: "Couldn't save the room.",
+    },
   },
 } as const;

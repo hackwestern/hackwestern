@@ -302,6 +302,13 @@
       "when": 1794790128086,
       "tag": "0042_sponsor_help_contact",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1794797522116,
+      "tag": "0043_coffee_chat_room",
+      "breakpoints": true
     }
   ]
 }

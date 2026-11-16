@@ -365,6 +365,10 @@ export const sponsorJudgingSponsors = pgTable("sponsor_judging_sponsor", {
   // once (each rep with one hacker, same room). Set by the sponsor on their
   // page.
   coffeeChatReps: smallint("coffee_chat_reps").default(1).notNull(),
+  // Saturday coffee chat room ("Rm 2241"-"Rm 2243"), set by organizers on
+  // /internal/sponsor-schedule. Null = unassigned; then the Coffee Chats
+  // sheet's ROOM value (if any) applies.
+  coffeeChatRoom: varchar("coffee_chat_room", { length: 64 }),
   createdAt: timestamp("created_at", { mode: "date", precision: 3 })
     .defaultNow()
     .notNull(),
