@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 
 import type { CoffeeChatSetup } from "~/lib/run-of-show";
@@ -950,5 +951,54 @@ describe("coffee chat rooms: lock and moving a sponsor's slot", () => {
         )
       ).code,
     ).toBe("CONFLICT");
+  });
+});
+
+describe("coffeeChatRequests.hackerByCode (typed or scanned code)", () => {
+  test("finds a hacker by hacker ID (any case/spacing) or user id, first name only", async () => {
+    const sponsor = await makeSponsor(1);
+    const id = await makeHacker({ firstName: "Robin" });
+    const hackerId = "brave-otter-kite";
+    await db.update(users).set({ hackerId }).where(eq(users.id, id));
+
+    for (const code of [
+      hackerId,
+      ` ${hackerId.toUpperCase().replace(/-/g, " ")} `,
+      id,
+    ]) {
+      const found = await caller.coffeeChatRequests.hackerByCode({
+        sponsor,
+        code,
+      });
+      expect(found).toEqual({ userId: id, firstName: "Robin", links: null });
+    }
+  });
+
+  test("same 404 for unknown codes and non-admitted hackers; bad UUID 400", async () => {
+    const sponsor = await makeSponsor(1);
+    const pendingApp = await makeHacker({ status: "PENDING_REVIEW" });
+    await db
+      .update(users)
+      .set({ hackerId: "calm-panda-lamp" })
+      .where(eq(users.id, pendingApp));
+    for (const code of [
+      "calm-panda-lamp",
+      "nobody-here-atall",
+      pendingApp,
+      "zzz",
+    ]) {
+      const error = await codeOf(
+        caller.coffeeChatRequests.hackerByCode({ sponsor, code }),
+      );
+      expect(error.code).toBe("NOT_FOUND");
+      expect(error.message).toBe("That badge isn't a Hack Western hacker.");
+    }
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.hackerByCode({ sponsor: "x", code: "a" }),
+        )
+      ).code,
+    ).toBe("BAD_REQUEST");
   });
 });

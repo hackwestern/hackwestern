@@ -15,17 +15,24 @@ export const sponsorScanCopy = {
     scanning: "Looking for a QR code",
     denied: {
       title: "Camera blocked",
-      body: "Allow camera access for this site in your browser settings, then try again.",
+      body: "Allow camera access for this site in your browser settings and try again, or type their hacker code below.",
     },
     unavailable: {
       title: "No camera found",
-      body: "This device doesn't have a camera we can use. Open this link on your phone instead.",
+      body: "This device doesn't have a camera we can use. Type their hacker code below, or open this link on your phone.",
     },
     error: {
       title: "Camera didn't start",
-      body: "Something went wrong opening the camera. Try again.",
+      body: "Something went wrong opening the camera. Try again, or type their hacker code below.",
     },
     retry: "Try again",
+  },
+
+  manual: {
+    label: "Type their hacker code",
+    hint: "The three words on their badge or wallet pass, like brave-otter-kite.",
+    submit: "Look up",
+    empty: "Type a hacker code first.",
   },
 
   lookingUp: "Checking the badge…",

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Clock, Coffee, MapPin, UserRound } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
+import { useNow } from "~/components/sponsors/use-now";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { formatClock } from "~/lib/run-of-show";
 import { cn } from "~/lib/utils";
@@ -13,12 +14,15 @@ import { api } from "~/utils/api";
 
 const copy = coffeeChatCopy.live;
 
-/** Chat ids already toasted, so a reload doesn't toast them again. */
-const TOASTED_KEY = "hw-coffee-chat-toasted";
+/**
+ * Chat ids already toasted, per signed-in user, so a reload doesn't toast
+ * them again (and a shared device doesn't hide another hacker's toasts).
+ */
+const toastedKey = (userId: string) => `hw-coffee-chat-toasted:${userId}`;
 
-function readToasted(): Set<string> {
+function readToasted(userId: string): Set<string> {
   try {
-    const raw = window.localStorage.getItem(TOASTED_KEY);
+    const raw = window.localStorage.getItem(toastedKey(userId));
     const ids: unknown = raw ? JSON.parse(raw) : [];
     return new Set(Array.isArray(ids) ? ids.map(String) : []);
   } catch {
@@ -26,9 +30,9 @@ function readToasted(): Set<string> {
   }
 }
 
-function saveToasted(ids: Set<string>) {
+function saveToasted(userId: string, ids: Set<string>) {
   try {
-    window.localStorage.setItem(TOASTED_KEY, JSON.stringify([...ids]));
+    window.localStorage.setItem(toastedKey(userId), JSON.stringify([...ids]));
   } catch {
     // Private mode or blocked storage: the in-memory set still dedupes.
   }
@@ -60,13 +64,29 @@ export default function CoffeeChatRequests({
   const [announcement, setAnnouncement] = useState("");
   const [errorFor, setErrorFor] = useState<string | null>(null);
   const headings = useRef(new Map<string, HTMLHeadingElement>());
-  const toasted = useRef<Set<string> | null>(null);
+  const toasted = useRef<{ userId: string; ids: Set<string> } | null>(null);
+  const userId = session?.user?.id;
+  // Clear, then set, so the same message twice is read out twice.
+  const announceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (announceTimer.current) clearTimeout(announceTimer.current);
+    },
+    [],
+  );
+  const announce = (message: string) => {
+    if (announceTimer.current) clearTimeout(announceTimer.current);
+    setAnnouncement("");
+    announceTimer.current = setTimeout(() => setAnnouncement(message), 100);
+  };
 
   // Toast each pending request once, ever (remembered across reloads).
   useEffect(() => {
-    if (!q.data) return;
-    toasted.current ??= readToasted();
-    const seen = toasted.current;
+    if (!q.data || !userId) return;
+    if (toasted.current?.userId !== userId) {
+      toasted.current = { userId, ids: readToasted(userId) };
+    }
+    const seen = toasted.current.ids;
     let changed = false;
     for (const chat of q.data) {
       if (chat.status !== "pending" || seen.has(chat.chatId)) continue;
@@ -92,8 +112,8 @@ export default function CoffeeChatRequests({
         },
       });
     }
-    if (changed) saveToasted(seen);
-  }, [q.data, router, showCards]);
+    if (changed) saveToasted(userId, seen);
+  }, [q.data, userId, router, showCards]);
 
   const respond = api.coffeeChatRequests.respond.useMutation({
     onSuccess: async (result, { answer }) => {
@@ -101,7 +121,7 @@ export default function CoffeeChatRequests({
       const chat = q.data?.find((c) => c.chatId === result.chatId);
       await utils.coffeeChatRequests.mine.invalidate();
       if (chat) {
-        setAnnouncement(
+        announce(
           answer === "accept"
             ? copy.accepted(chat.sponsorName, formatClock(chat.slotTime))
             : copy.declined(chat.sponsorName),
@@ -112,7 +132,7 @@ export default function CoffeeChatRequests({
     },
     onError: async (_error, { chatId }) => {
       setErrorFor(chatId);
-      setAnnouncement(copy.error);
+      announce(copy.error);
       await utils.coffeeChatRequests.mine.invalidate();
     },
   });
@@ -180,7 +200,8 @@ function ChatCard({
 }) {
   const pending = chat.status === "pending";
   // Declining an accepted chat works until it starts.
-  const started = Date.now() >= Date.parse(chat.startsAt);
+  const now = useNow(30_000);
+  const started = now.getTime() >= Date.parse(chat.startsAt);
   const answer = (value: "accept" | "decline") => {
     if (!busy) onAnswer(value);
   };

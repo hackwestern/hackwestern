@@ -1,7 +1,12 @@
 import * as QRCode from "qrcode";
 import { describe, expect, test } from "vitest";
 
-import { cameraErrorStatus, decodeQrFrame } from "./use-qr-scanner";
+import {
+  badgeCodeOf,
+  cameraErrorStatus,
+  decodeQrFrame,
+  typedBadgeCodeOf,
+} from "./use-qr-scanner";
 
 /** A QR code as an RGBA frame, like a canvas would hand jsQR. */
 function qrFrame(text: string, scale = 6, quiet = 4) {
@@ -45,5 +50,20 @@ describe("cameraErrorStatus", () => {
     expect(cameraErrorStatus({ name: "NotFoundError" })).toBe("unavailable");
     expect(cameraErrorStatus({ name: "AbortError" })).toBe("error");
     expect(cameraErrorStatus(null)).toBe("error");
+  });
+});
+
+describe("badge codes", () => {
+  test("scanned: 1-255 chars, no whitespace", () => {
+    expect(badgeCodeOf(" brave-otter-kite ")).toBe("brave-otter-kite");
+    expect(badgeCodeOf("cm3hackerid0001")).toBe("cm3hackerid0001");
+    expect(badgeCodeOf("")).toBeNull();
+    expect(badgeCodeOf("https://example.com/a b")).toBeNull();
+    expect(badgeCodeOf("x".repeat(256))).toBeNull();
+  });
+
+  test("typed: spaces between words become dashes", () => {
+    expect(typedBadgeCodeOf("  Brave otter   kite ")).toBe("Brave-otter-kite");
+    expect(typedBadgeCodeOf("   ")).toBeNull();
   });
 });

@@ -29,6 +29,23 @@ export function decodeQrFrame(
   return text ? text : null;
 }
 
+/**
+ * A scanned code worth looking up: 1-255 characters, no whitespace (a user
+ * id or a hacker ID like "brave-otter-kite"). Anything else is null, so a
+ * random QR never reaches the server.
+ */
+export function badgeCodeOf(text: string): string | null {
+  const code = text.trim();
+  return code.length >= 1 && code.length <= 255 && !/\s/.test(code)
+    ? code
+    : null;
+}
+
+/** A typed code: "Brave otter  kite" -> "Brave-otter-kite", then as scanned. */
+export function typedBadgeCodeOf(text: string): string | null {
+  return badgeCodeOf(text.trim().replace(/\s+/g, "-"));
+}
+
 /** Map a getUserMedia failure to what the person can do about it. */
 export function cameraErrorStatus(error: unknown): QrScannerStatus {
   const name = (error as { name?: unknown } | null)?.name;
