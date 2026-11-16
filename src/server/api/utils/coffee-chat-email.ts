@@ -1,0 +1,85 @@
+import { LIVE_URL, coffeeChatNotifyCopy } from "~/content/coffee-chat-notify";
+import { env } from "~/env";
+import { formatCoffeeChatTime } from "~/lib/coffee-chats";
+import type { CoffeeChatNotice } from "~/server/api/utils/coffee-chat-notify";
+import { sendViaMailjet } from "~/server/mail-mailjet";
+
+/**
+ * The email a hacker gets when a sponsor offers them a coffee chat (T17).
+ * One per offer, only to admitted hackers; they answer on /live.
+ */
+
+const copy = coffeeChatNotifyCopy.email;
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+type OfferDetails = Pick<
+  CoffeeChatNotice,
+  "sponsorName" | "hackerFirstName" | "slotTime" | "durationMinutes" | "room"
+>;
+
+export function coffeeChatOfferEmail(chat: OfferDetails) {
+  const when = coffeeChatNotifyCopy.when(
+    formatCoffeeChatTime(chat.slotTime),
+    chat.durationMinutes,
+  );
+  const where = chat.room ?? coffeeChatNotifyCopy.roomTba;
+  const subject = copy.subject(chat.sponsorName);
+
+  const text = [
+    copy.greeting(chat.hackerFirstName),
+    "",
+    copy.intro(chat.sponsorName),
+    "",
+    `${copy.whenLabel}: ${when}`,
+    `${copy.whereLabel}: ${where}`,
+    "",
+    `${copy.action}: ${LIVE_URL}`,
+    "",
+    copy.deadline,
+    "",
+    copy.signoff,
+    "",
+  ].join("\n");
+
+  const p = (inner: string) =>
+    `<p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#0b2238">${inner}</p>`;
+  const html = `<div style="background-color:#f3f7fc;padding:24px 0"><div style="margin:0 auto;max-width:560px;background:#ffffff;border-radius:12px;padding:32px">${[
+    p(escapeHtml(copy.greeting(chat.hackerFirstName))),
+    p(escapeHtml(copy.intro(chat.sponsorName))),
+    p(
+      `<strong>${escapeHtml(copy.whenLabel)}:</strong> ${escapeHtml(when)}<br><strong>${escapeHtml(copy.whereLabel)}:</strong> ${escapeHtml(where)}`,
+    ),
+    `<p style="margin:0 0 24px"><a href="${LIVE_URL}" style="display:inline-block;background:#0b6bc4;color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;padding:12px 20px;border-radius:8px">${escapeHtml(copy.action)}</a></p>`,
+    p(escapeHtml(copy.deadline)),
+    p(escapeHtml(copy.signoff)),
+  ].join("")}</div></div>`;
+
+  return { subject, html, text };
+}
+
+/**
+ * Send the offer email. Skipped (returns false) for anyone not admitted,
+ * with no email address, or when Mailjet isn't configured. Throws when
+ * Mailjet rejects the send, so the caller logs it.
+ */
+export async function sendCoffeeChatOfferEmail(
+  chat: CoffeeChatNotice,
+): Promise<boolean> {
+  if (!chat.admitted || !chat.hackerEmail) return false;
+  if (!env.MAILJET_API_KEY || !env.MAILJET_SECRET_KEY) return false;
+  const { subject, html, text } = coffeeChatOfferEmail(chat);
+  const { error } = await sendViaMailjet(
+    { from: copy.from, to: chat.hackerEmail, subject, html, text },
+    { apiKey: env.MAILJET_API_KEY, secretKey: env.MAILJET_SECRET_KEY },
+  );
+  if (error) throw new Error(`Mailjet send failed: ${error.message}`);
+  return true;
+}

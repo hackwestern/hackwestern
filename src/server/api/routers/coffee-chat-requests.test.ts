@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 
 import type { CoffeeChatSetup } from "~/lib/run-of-show";
+import type * as Notify from "~/server/api/utils/coffee-chat-notify";
 import type * as RunOfShowSheet from "~/server/api/utils/run-of-show-sheet";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -11,6 +12,13 @@ import {
   sponsorJudgingSponsors,
   users,
 } from "~/server/db/schema";
+
+// Notifications (email, Slack, sheet) have their own tests; never send
+// real ones from here, even when the shell has Mailjet keys set.
+vi.mock("~/server/api/utils/coffee-chat-notify", async (importOriginal) => ({
+  ...(await importOriginal<typeof Notify>()),
+  notifyCoffeeChat: vi.fn(async () => undefined),
+}));
 
 // The Coffee Chats sheet tab, per test sponsor name.
 const setups: CoffeeChatSetup[] = [];
