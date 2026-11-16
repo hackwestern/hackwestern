@@ -1,8 +1,14 @@
 import { eq } from "drizzle-orm";
 
 import { isAdmittedStatus } from "~/lib/admission";
-import type { CoffeeChatStatus } from "~/lib/coffee-chat-requests";
-import { sendCoffeeChatOfferEmail } from "~/server/api/utils/coffee-chat-email";
+import {
+  effectiveCoffeeChatStatus,
+  type CoffeeChatStatus,
+} from "~/lib/coffee-chat-requests";
+import {
+  sendCoffeeChatChangeEmail,
+  sendCoffeeChatOfferEmail,
+} from "~/server/api/utils/coffee-chat-email";
 import { mirrorCoffeeChats } from "~/server/api/utils/coffee-chat-sheet-mirror";
 import { db } from "~/server/db";
 import {
@@ -102,6 +108,7 @@ export const SLACK_TIMEOUT_MS = 1200;
 /** The DM result, or "failed" if Slack hasn't answered in time. */
 async function dmWithTimeout(
   notice: CoffeeChatNotice,
+  event: CoffeeChatEvent,
 ): Promise<CoffeeChatDmResult> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<CoffeeChatDmResult>((resolve) => {
@@ -112,9 +119,37 @@ async function dmWithTimeout(
       resolve("failed");
     }, SLACK_TIMEOUT_MS);
   });
-  const result = await Promise.race([sendCoffeeChatDm(notice), timeout]);
+  const result = await Promise.race([
+    sendCoffeeChatDm(notice, {}, dmEvent(event)),
+    timeout,
+  ]);
   clearTimeout(timer);
   return result;
+}
+
+/** Events the hacker hears about by Slack, then email. */
+const hackerEvents = new Set<CoffeeChatEvent>([
+  "offered",
+  "cancelled",
+  "roomMoved",
+]);
+
+function dmEvent(event: CoffeeChatEvent) {
+  return event === "cancelled" || event === "roomMoved" ? event : "offered";
+}
+
+/**
+ * Whether the hacker is told. A cancel notice needs the chat to be cancelled
+ * now (the router only cancels pending or accepted chats); a room move only
+ * matters while the chat is pending or accepted, never declined or expired.
+ */
+function hackerHears(event: CoffeeChatEvent, notice: CoffeeChatNotice) {
+  if (event === "cancelled") return notice.status === "cancelled";
+  if (event === "roomMoved") {
+    const status = effectiveCoffeeChatStatus(notice);
+    return status === "pending" || status === "accepted";
+  }
+  return true;
 }
 
 type Channel = (
@@ -126,14 +161,18 @@ type Channel = (
 const channels: Record<string, Channel> = {
   // Waits for the Slack attempt, then sends only if the DM wasn't sent.
   email: async (event, load, dm) => {
-    if (event !== "offered") return;
+    if (!hackerEvents.has(event)) return;
     const notice = await load();
-    if (!notice) return;
+    if (!notice || !hackerHears(event, notice)) return;
     if ((await dm()) === "sent") return;
-    await sendCoffeeChatOfferEmail(notice);
+    if (event === "cancelled" || event === "roomMoved") {
+      await sendCoffeeChatChangeEmail(event, notice);
+    } else {
+      await sendCoffeeChatOfferEmail(notice);
+    }
   },
   slack: async (event, _load, dm) => {
-    if (event !== "offered") return;
+    if (!hackerEvents.has(event)) return;
     await dm();
   },
   // Every change rewrites the bookings tab; logs its own failures.
@@ -164,7 +203,9 @@ export async function notifyCoffeeChat(
   // One Slack attempt, shared by the slack and email channels.
   let dmResult: Promise<CoffeeChatDmResult | null> | undefined;
   const dm = () =>
-    (dmResult ??= load().then((n) => (n ? dmWithTimeout(n) : null)));
+    (dmResult ??= load().then((n) =>
+      n && hackerHears(event, n) ? dmWithTimeout(n, event) : null,
+    ));
   const names = Object.keys(channels);
   const all = Promise.allSettled(
     names.map((name) => channels[name]!(event, load, dm)),
