@@ -1,10 +1,8 @@
 # NEXT — sponsor dashboard (branch `sponsor-dashboard`, not pushed)
 
-## Running when the last session ended (merge these first)
-- T47 MERGED 2026-11-16 (hour grid, clickable details, tasks column). Known: at 1280 the Saturday grid scrolls sideways under the pinned tasks column; fix in T51.
-- T48 MERGED 2026-11-16 (sponsor x time table, organizerChatBoard).
-- T49 Slack task pings AT the task's start time: DM the owner; no owner / owner not on Slack -> general message in the spon-team channel; synced from the sheet (hackwestern-sd-notify, branch sd-task-reminders; its migration needs renumbering at merge)
-After merging: load `_local/task-owners.md` owner emails into the local DB (task_owner_contact).
+## Merged 2026-11-16
+T47 (hour grid + tasks column), T48 (coffee chat table), T49 (Slack task pings at start time; migration 0046). Local DB migrated to 0046; the five task owners from `_local/task-owners.md` are loaded into task_owner_contact locally. On the real site, enter them once in the organizer Team tasks tab after deploy.
+Checks on 0ca39a4: tsc clean; vitest 1015 passed, 1 failed (Apple Wallet). Run `next build` in a spare worktree before the PR.
 
 ## Next to build: T50 (small)
 - Jazz decided (2026-11-16): NO per-sponsor owner/rep. Help pings stay channel-only (@here in the spon-team channel); no DMs to a sponsor owner.
