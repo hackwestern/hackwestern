@@ -25,11 +25,9 @@ import {
   roomTakenByOtherSponsor,
   type OfferProblem,
 } from "~/server/api/utils/coffee-chat-capacity";
-import {
-  answeredStatus,
-  coffeeChatTimes,
-} from "~/server/api/utils/coffee-chat-expiry";
+import { coffeeChatTimes } from "~/server/api/utils/coffee-chat-expiry";
 import { notifyCoffeeChat } from "~/server/api/utils/coffee-chat-notify";
+import { respondToCoffeeChat } from "~/server/api/utils/coffee-chat-respond";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { db } from "~/server/db";
@@ -443,46 +441,9 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         answer: z.enum(["accept", "decline"]),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      const now = new Date();
-      const result = await db.transaction(async (tx) => {
-        const [chat] = await tx
-          .select({
-            id: coffeeChats.id,
-            status: coffeeChats.status,
-            slotTime: coffeeChats.slotTime,
-          })
-          .from(coffeeChats)
-          .where(
-            and(
-              eq(coffeeChats.id, input.chatId),
-              eq(coffeeChats.userId, ctx.session.user.id),
-            ),
-          )
-          .for("update");
-        if (!chat) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: errors.chatNotFound,
-          });
-        }
-        const next = answeredStatus(chat, input.answer, now);
-        if (!next) {
-          throw new TRPCError({ code: "CONFLICT", message: errors.notPending });
-        }
-        await tx
-          .update(coffeeChats)
-          .set({ status: next, respondedAt: now })
-          .where(eq(coffeeChats.id, chat.id));
-        return {
-          chatId: chat.id,
-          ...coffeeChatTimes({ ...chat, status: next }, now),
-        };
-      });
-      const event = result.status === "accepted" ? "accepted" : "declined";
-      void notifyCoffeeChat(event, { id: result.chatId });
-      return result;
-    }),
+    .mutation(({ ctx, input }) =>
+      respondToCoffeeChat(ctx.session.user.id, input),
+    ),
   /** Every booked chat plus the rooms chats can move to. Organizers only. */
   organizerChats: protectedOrganizerProcedure.query(async () => {
     const now = new Date();
