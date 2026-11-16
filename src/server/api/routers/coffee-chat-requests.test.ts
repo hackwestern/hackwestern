@@ -1,0 +1,471 @@
+import { TRPCError } from "@trpc/server";
+import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
+
+import type { CoffeeChatSetup } from "~/lib/run-of-show";
+import type * as RunOfShowSheet from "~/server/api/utils/run-of-show-sheet";
+import { createCaller } from "~/server/api/root";
+import { createInnerTRPCContext } from "~/server/api/trpc";
+import { db } from "~/server/db";
+import {
+  applications,
+  sponsorJudgingSponsors,
+  users,
+} from "~/server/db/schema";
+
+// The Coffee Chats sheet tab, per test sponsor name.
+const setups: CoffeeChatSetup[] = [];
+vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => {
+  const original = await importOriginal<typeof RunOfShowSheet>();
+  return {
+    ...original,
+    getRunOfShow: vi.fn(async () => ({
+      readAt: new Date().toISOString(),
+      items: [],
+      tasks: [],
+      coffeeChats: setups,
+    })),
+  };
+});
+
+const caller = createCaller(createInnerTRPCContext({ session: null }));
+
+// Saturday morning before chats start (only Date is faked, so PGlite's
+// timers keep working).
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-21T08:00:00-05:00"));
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
+
+let n = 0;
+async function makeSponsor(reps: number, setup: Partial<CoffeeChatSetup> = {}) {
+  const name = `Offer Sponsor ${++n}`;
+  const [row] = await db
+    .insert(sponsorJudgingSponsors)
+    .values({ name, coffeeChatReps: reps })
+    .returning();
+  setups.push({
+    sponsor: name,
+    windowStart: "10:00",
+    windowEnd: "12:00",
+    durationMinutes: 15,
+    groupSize: 1,
+    slots: null,
+    hackers: null,
+    format: "Individual (15 mins)",
+    room: `Rm ${2240 + n}`,
+    ...setup,
+  });
+  return row!.id;
+}
+
+async function makeHacker(
+  opts: {
+    status?: (typeof applications.$inferInsert)["status"];
+    type?: "hacker" | "organizer";
+    share?: boolean;
+    firstName?: string;
+  } = {},
+) {
+  const id = `hacker-${++n}`;
+  await db.insert(users).values({
+    id,
+    email: `${id}@example.com`,
+    name: `${opts.firstName ?? "Alex"} Secretlastname`,
+    type: opts.type ?? "hacker",
+  });
+  await db.insert(applications).values({
+    userId: id,
+    status: opts.status ?? "CONFIRMED",
+    firstName: opts.firstName ?? "Alex",
+    lastName: "Secretlastname",
+    githubLink: "https://github.com/alex",
+    linkedInLink: "https://linkedin.com/in/alex",
+    devpostLink: "https://devpost.com/alex",
+    resumeLink: "https://example.com/resume.pdf",
+    agreeShareWithSponsors: opts.share ?? false,
+  });
+  return id;
+}
+
+async function codeOf(promise: Promise<unknown>) {
+  const error = await promise.then(
+    () => null,
+    (e: unknown) => e,
+  );
+  expect(error).toBeInstanceOf(TRPCError);
+  return error as TRPCError;
+}
+
+describe("coffeeChatRequests: sponsor UUID", () => {
+  test("a bad UUID is a 400 on every sponsor procedure", async () => {
+    const hacker = await makeHacker();
+    for (const sponsor of ["StarTech", "not-a-uuid", ""]) {
+      expect(
+        (
+          await codeOf(
+            caller.coffeeChatRequests.hacker({ sponsor, userId: hacker }),
+          )
+        ).code,
+      ).toBe("BAD_REQUEST");
+      expect(
+        (await codeOf(caller.coffeeChatRequests.freeTimes({ sponsor }))).code,
+      ).toBe("BAD_REQUEST");
+      expect(
+        (
+          await codeOf(
+            caller.coffeeChatRequests.offer({
+              sponsor,
+              userId: hacker,
+              slotTime: "10:00",
+            }),
+          )
+        ).code,
+      ).toBe("BAD_REQUEST");
+    }
+  });
+
+  test("an unknown UUID is a 404", async () => {
+    const hacker = await makeHacker();
+    const error = await codeOf(
+      caller.coffeeChatRequests.offer({
+        sponsor: "00000000-0000-4000-8000-000000000000",
+        userId: hacker,
+        slotTime: "10:00",
+      }),
+    );
+    expect(error.code).toBe("NOT_FOUND");
+  });
+});
+
+describe("coffeeChatRequests: scanned badge", () => {
+  test("anything but an admitted hacker is a 404 that names no one", async () => {
+    const sponsor = await makeSponsor(1);
+    const ids = [
+      "no-such-user",
+      await makeHacker({ status: "REJECTED", firstName: "Rejected" }),
+      await makeHacker({ status: "WAITLISTED", firstName: "Waitlisted" }),
+      await makeHacker({ type: "organizer", firstName: "Organizer" }),
+    ];
+    // A hacker account with no application at all.
+    await db.insert(users).values({
+      id: "no-app",
+      email: "no-app@example.com",
+      name: "Noapp Person",
+    });
+    ids.push("no-app");
+
+    for (const userId of ids) {
+      for (const call of [
+        caller.coffeeChatRequests.hacker({ sponsor, userId }),
+        caller.coffeeChatRequests.freeTimes({ sponsor, userId }),
+        caller.coffeeChatRequests.offer({ sponsor, userId, slotTime: "10:00" }),
+      ]) {
+        const error = await codeOf(call);
+        expect(error.code).toBe("NOT_FOUND");
+        expect(error.message).not.toMatch(
+          /Rejected|Waitlisted|Organizer|Noapp|Secretlastname/,
+        );
+      }
+    }
+  });
+
+  test("reveals only the first name; links only with consent", async () => {
+    const sponsor = await makeSponsor(1);
+    const quiet = await makeHacker({ firstName: "Quinn" });
+    const sharer = await makeHacker({ firstName: "Sam", share: true });
+
+    await expect(
+      caller.coffeeChatRequests.hacker({ sponsor, userId: quiet }),
+    ).resolves.toEqual({ userId: quiet, firstName: "Quinn", links: null });
+    await expect(
+      caller.coffeeChatRequests.hacker({ sponsor, userId: sharer }),
+    ).resolves.toEqual({
+      userId: sharer,
+      firstName: "Sam",
+      links: {
+        resume: "https://example.com/resume.pdf",
+        github: "https://github.com/alex",
+        linkedIn: "https://linkedin.com/in/alex",
+        devpost: "https://devpost.com/alex",
+      },
+    });
+
+    const offer = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: quiet,
+      slotTime: "10:00",
+    });
+    expect(offer).toMatchObject({
+      firstName: "Quinn",
+      slotTime: "10:00",
+      durationMinutes: 15,
+      status: "pending",
+    });
+    expect(JSON.stringify(offer)).not.toMatch(/Secretlastname|@example\.com/);
+  });
+});
+
+describe("coffeeChatRequests.offer: rules", () => {
+  test("seats used never pass coffeeChatSeats(reps, group size)", async () => {
+    // 2 reps of 1-on-1s: 2 seats per start time.
+    const sponsor = await makeSponsor(2);
+    const [a, b, c] = [
+      await makeHacker(),
+      await makeHacker(),
+      await makeHacker(),
+    ];
+    await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: a,
+      slotTime: "10:00",
+    });
+    await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: b,
+      slotTime: "10:00",
+    });
+    const error = await codeOf(
+      caller.coffeeChatRequests.offer({
+        sponsor,
+        userId: c,
+        slotTime: "10:00",
+      }),
+    );
+    expect(error.code).toBe("CONFLICT");
+
+    // 10 reps still cap at 3 parallel 1-on-1s: the room fits 6 people.
+    const big = await makeSponsor(10);
+    const hackers = [];
+    for (let i = 0; i < 4; i++) hackers.push(await makeHacker());
+    for (const userId of hackers.slice(0, 3)) {
+      await caller.coffeeChatRequests.offer({
+        sponsor: big,
+        userId,
+        slotTime: "10:00",
+      });
+    }
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.offer({
+            sponsor: big,
+            userId: hackers[3]!,
+            slotTime: "10:00",
+          }),
+        )
+      ).code,
+    ).toBe("CONFLICT");
+  });
+
+  test("groups of 3: three hackers share one 30-min start", async () => {
+    const sponsor = await makeSponsor(4, {
+      durationMinutes: 30,
+      groupSize: 3,
+      format: "Groups (30 mins with 3 people)",
+    });
+    const hackers = [];
+    for (let i = 0; i < 4; i++) hackers.push(await makeHacker());
+    for (const userId of hackers.slice(0, 3)) {
+      const offer = await caller.coffeeChatRequests.offer({
+        sponsor,
+        userId,
+        slotTime: "10:30",
+      });
+      expect(offer.durationMinutes).toBe(30);
+    }
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.offer({
+            sponsor,
+            userId: hackers[3]!,
+            slotTime: "10:30",
+          }),
+        )
+      ).code,
+    ).toBe("CONFLICT");
+    // Off the half-hour grid for 30-min groups.
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.offer({
+            sponsor,
+            userId: hackers[3]!,
+            slotTime: "10:15",
+          }),
+        )
+      ).code,
+    ).toBe("BAD_REQUEST");
+  });
+
+  test("start must be inside the sponsor's window", async () => {
+    const sponsor = await makeSponsor(1);
+    const userId = await makeHacker();
+    for (const slotTime of ["09:45", "12:00", "11:50", "10:10", "25:00"]) {
+      expect(
+        (
+          await codeOf(
+            caller.coffeeChatRequests.offer({ sponsor, userId, slotTime }),
+          )
+        ).code,
+      ).toBe("BAD_REQUEST");
+    }
+    const notSetUp = await makeSponsor(1, {
+      windowStart: null,
+      windowEnd: null,
+    });
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.offer({
+            sponsor: notSetUp,
+            userId,
+            slotTime: "10:00",
+          }),
+        )
+      ).code,
+    ).toBe("BAD_REQUEST");
+  });
+
+  test("a hacker is never double booked (30-min overlaps)", async () => {
+    const groupSponsor = await makeSponsor(1, {
+      durationMinutes: 30,
+      groupSize: 3,
+      format: "Groups (30 mins with 3 people)",
+    });
+    const quickSponsor = await makeSponsor(3);
+    const userId = await makeHacker();
+    await caller.coffeeChatRequests.offer({
+      sponsor: groupSponsor,
+      userId,
+      slotTime: "10:00",
+    });
+    for (const slotTime of ["10:00", "10:15"]) {
+      const error = await codeOf(
+        caller.coffeeChatRequests.offer({
+          sponsor: quickSponsor,
+          userId,
+          slotTime,
+        }),
+      );
+      expect(error.code).toBe("CONFLICT");
+    }
+    await expect(
+      caller.coffeeChatRequests.offer({
+        sponsor: quickSponsor,
+        userId,
+        slotTime: "10:30",
+      }),
+    ).resolves.toMatchObject({ slotTime: "10:30" });
+  });
+
+  test("two concurrent offers for the last seat: exactly one succeeds", async () => {
+    const sponsor = await makeSponsor(1);
+    const [a, b] = [await makeHacker(), await makeHacker()];
+    const results = await Promise.allSettled([
+      caller.coffeeChatRequests.offer({
+        sponsor,
+        userId: a,
+        slotTime: "11:00",
+      }),
+      caller.coffeeChatRequests.offer({
+        sponsor,
+        userId: b,
+        slotTime: "11:00",
+      }),
+    ]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const rejected = results.find((r) => r.status === "rejected");
+    expect(rejected?.status === "rejected" && rejected.reason).toMatchObject({
+      code: "CONFLICT",
+    });
+  });
+
+  test("too close to the start (past the reply cutoff) is refused", async () => {
+    const sponsor = await makeSponsor(1);
+    const userId = await makeHacker();
+    vi.setSystemTime(new Date("2026-11-21T09:41:00-05:00"));
+    try {
+      expect(
+        (
+          await codeOf(
+            caller.coffeeChatRequests.offer({
+              sponsor,
+              userId,
+              slotTime: "10:00",
+            }),
+          )
+        ).code,
+      ).toBe("CONFLICT");
+    } finally {
+      vi.setSystemTime(new Date("2026-11-21T08:00:00-05:00"));
+    }
+  });
+
+  test("another sponsor in the same room at that time blocks the offer", async () => {
+    const first = await makeSponsor(1, { room: "Rm Shared" });
+    const second = await makeSponsor(1, { room: "rm  shared" });
+    await caller.coffeeChatRequests.offer({
+      sponsor: first,
+      userId: await makeHacker(),
+      slotTime: "10:00",
+    });
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.offer({
+            sponsor: second,
+            userId: await makeHacker(),
+            slotTime: "10:00",
+          }),
+        )
+      ).code,
+    ).toBe("CONFLICT");
+  });
+
+  test("room comes from the sheet row and may be unassigned", async () => {
+    const sponsor = await makeSponsor(1, { room: null });
+    const offer = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: await makeHacker(),
+      slotTime: "10:00",
+    });
+    expect(offer.room).toBeNull();
+  });
+});
+
+describe("coffeeChatRequests.freeTimes", () => {
+  test("open start times, earliest first, minus full and clashing ones", async () => {
+    const sponsor = await makeSponsor(1, { windowEnd: "11:00" });
+    const other = await makeSponsor(1);
+    const taken = await makeHacker();
+    const busy = await makeHacker();
+    await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: taken,
+      slotTime: "10:15",
+    });
+    await caller.coffeeChatRequests.offer({
+      sponsor: other,
+      userId: busy,
+      slotTime: "10:30",
+    });
+
+    const all = await caller.coffeeChatRequests.freeTimes({ sponsor });
+    expect(all.times.map((t) => t.slotTime)).toEqual([
+      "10:00",
+      "10:30",
+      "10:45",
+    ]);
+    expect(all).toMatchObject({ durationMinutes: 15, groupSize: 1, reps: 1 });
+
+    const forBusy = await caller.coffeeChatRequests.freeTimes({
+      sponsor,
+      userId: busy,
+    });
+    expect(forBusy.times.map((t) => t.slotTime)).toEqual(["10:00", "10:45"]);
+  });
+});
