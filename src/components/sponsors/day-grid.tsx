@@ -1,31 +1,48 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { MapPin } from "lucide-react";
 import { DashboardCheckbox } from "~/components/internals/dashboard-checkbox";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
+import {
+  EventDetails,
+  type GridMode,
+} from "~/components/sponsors/event-details";
 import { scheduleCopy } from "~/content/sponsor-schedule";
-import { locationFor, type RunOfShowDay } from "~/lib/run-of-show";
+import {
+  locationFor,
+  type RunOfShowDay,
+  type RunOfShowTask,
+  type WorkshopInfo,
+} from "~/lib/run-of-show";
 import { RUN_OF_SHOW_DATES } from "~/lib/run-of-show-time";
 import {
   axisOffset,
+  blockTextLayout,
   buildAxis,
+  columnMinWidth,
   formatMinutes,
+  GRID_SIZES,
   layoutGrid,
   minutesIntoDay,
   type GridColumn,
+  type LaidOutEntry,
   type TimelineEntry,
 } from "~/lib/sponsor-timeline";
 import { cn } from "~/lib/utils";
 
 const copy = scheduleCopy.timeline;
 
-// Same rhythm as the /live schedule grid: a 56px row per half hour, long
-// empty stretches folded into one dashed row.
-const SLOT_HEIGHT = 56;
-const GAP_HEIGHT = 40;
-// Columns keep a readable width; on phones the grid scrolls sideways inside
-// its own box (time column pinned), never the page.
+// Same rhythm as the /live schedule grid: a fixed row per half hour (tall
+// enough for two lines of title and a location), long empty stretches
+// folded into one dashed row. Each column keeps a readable width per lane;
+// on phones the grid scrolls inside its own box (time column and headers
+// pinned), never the page.
+const SLOT_HEIGHT = GRID_SIZES.slot;
+const GAP_HEIGHT = GRID_SIZES.gap;
 const TIME_WIDTH = 64;
-const COLUMN_MIN = 128;
+// On wide screens the Team tasks column stays pinned on the right, beside
+// whatever part of the day the event columns are scrolled to.
+const PINNED_TASKS =
+  "lg:sticky lg:right-0 lg:border-l-2 lg:border-dashboard-border-default bg-dashboard-bg-surface";
 
 const STORAGE_KEY = "hw-sponsor-schedule-show-hackathon";
 
@@ -50,7 +67,7 @@ export function useShowHackathon(): [boolean, (show: boolean) => void] {
   return [show, update];
 }
 
-// The sponsor's own blocks are coloured by sheet column, like /live's blocks,
+// Full-strength blocks are coloured by sheet column, like /live's blocks,
 // in dashboard tints. Hackathon events are all one muted grey.
 const COLUMN_TINT: Record<GridColumn, string> = {
   "big-event": "bg-dashboard-schedule-blue",
@@ -59,6 +76,7 @@ const COLUMN_TINT: Record<GridColumn, string> = {
   "spon-booth": "bg-dashboard-schedule-green",
   "coffee-chats": "bg-dashboard-schedule-orange",
   other: "bg-dashboard-schedule-blue",
+  tasks: "bg-dashboard-bg-highlight",
 };
 
 // Main events, meals and the Sponsor Bay (a place itself) with no room just
@@ -73,9 +91,11 @@ const NO_ROOM_NEEDED = new Set<TimelineEntry["category"]>([
 export function TimelineKey({
   showHackathon,
   onShowHackathonChange,
+  mode = "sponsor",
 }: {
   showHackathon: boolean;
   onShowHackathonChange: (show: boolean) => void;
+  mode?: GridMode;
 }) {
   const toggleId = useId();
   return (
@@ -89,7 +109,7 @@ export function TimelineKey({
             aria-hidden
             className="size-4 rounded-dashboard-xs border-l-4 border-dashboard-action-primary bg-dashboard-schedule-pink"
           />
-          {copy.yours}
+          {mode === "organizer" ? copy.runOfShow : copy.yours}
         </li>
         <li className="flex items-center gap-2">
           <span
@@ -98,6 +118,15 @@ export function TimelineKey({
           />
           {copy.hackathon}
         </li>
+        {mode === "organizer" && (
+          <li className="flex items-center gap-2">
+            <span
+              aria-hidden
+              className="size-4 rounded-dashboard-xs border-l-4 border-dashboard-text-active bg-dashboard-bg-highlight"
+            />
+            {copy.teamTask}
+          </li>
+        )}
       </ul>
       <label
         htmlFor={toggleId}
@@ -116,23 +145,37 @@ export function TimelineKey({
 
 // One day laid out like the run-of-show sheet and the /live schedule: a time
 // column (30-minute rows, Eastern), one column per sheet category, each item
-// a block spanning its start to end, and a line at the current time. The
-// sponsor's items are full strength with "You"/"Now" tags; hackathon events
-// are greyed out.
+// a block spanning its start to end, and a line at the current time. Every
+// block opens a details panel with its full text.
+//  - sponsor: the sponsor's items full strength with "You"/"Now" tags;
+//    hackathon events greyed out.
+//  - organizer: every run-of-show item full strength, /live events greyed
+//    out, and a "Team tasks" column (task entries) on the right.
 export function DayGrid({
   day,
   entries,
   now,
+  mode = "sponsor",
   sponsorName,
+  workshops = [],
+  tasks = [],
   emptyText = scheduleCopy.emptyDay,
 }: {
   day: RunOfShowDay;
   entries: readonly TimelineEntry[];
   now: Date;
-  sponsorName: string;
+  mode?: GridMode;
+  /** Sponsor view: whose items get the "You" tag and their own room. */
+  sponsorName?: string;
+  /** Workshops-tab rows, for runners and descriptions in the details. */
+  workshops?: readonly WorkshopInfo[];
+  /** Organizer view: team tasks listed in an event's details. */
+  tasks?: readonly RunOfShowTask[];
   emptyText?: string;
 }) {
   const headingId = useId();
+  const [selected, setSelected] = useState<TimelineEntry | null>(null);
+  const opener = useRef<HTMLButtonElement | null>(null);
   const date = Number(RUN_OF_SHOW_DATES[day].slice(8));
   const rows = buildAxis(entries);
   const columns = layoutGrid(entries);
@@ -147,8 +190,19 @@ export function DayGrid({
     nowMinute >= 0 && rows.length > 0
       ? axisOffset(rows, nowMinute, SLOT_HEIGHT, GAP_HEIGHT)
       : null;
-  const template = `${TIME_WIDTH}px repeat(${columns.length}, minmax(${COLUMN_MIN}px, 1fr))`;
-  const minWidth = TIME_WIDTH + columns.length * COLUMN_MIN;
+  const widths = columns.map((c) =>
+    columnMinWidth(
+      c.entries,
+      c.column === "tasks" ? GRID_SIZES.taskLane : GRID_SIZES.lane,
+    ),
+  );
+  const template = `${TIME_WIDTH}px ${widths.map((w) => `minmax(${w}px, 1fr)`).join(" ")}`;
+  const minWidth = TIME_WIDTH + widths.reduce((a, b) => a + b, 0);
+
+  const open = (entry: TimelineEntry, button: HTMLButtonElement) => {
+    opener.current = button;
+    setSelected(entry);
+  };
 
   return (
     <section
@@ -171,7 +225,7 @@ export function DayGrid({
           role="region"
           aria-label={copy.gridLabel(day)}
           tabIndex={0}
-          className="max-h-[80vh] overflow-auto rounded-dashboard-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+          className="max-h-[80vh] overflow-auto overscroll-x-contain rounded-dashboard-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
         >
           <div style={{ minWidth }}>
             {/* Column headers, pinned while the grid scrolls. */}
@@ -180,13 +234,16 @@ export function DayGrid({
               className="sticky top-0 z-40 grid border-b-2 border-dashboard-border-default bg-dashboard-bg-surface"
               style={{ gridTemplateColumns: template }}
             >
-              <span className="sticky left-0 z-10 bg-dashboard-bg-surface py-2 text-[11px] font-semibold uppercase tracking-wide text-dashboard-text-light">
+              <span className="sticky left-0 z-10 bg-dashboard-bg-surface py-2 text-xs font-semibold uppercase tracking-wide text-dashboard-text-light">
                 {copy.timeHeader}
               </span>
               {columns.map(({ column }) => (
                 <span
                   key={column}
-                  className="px-1 py-2 text-center text-[11px] font-semibold uppercase leading-tight tracking-wide text-dashboard-text-medium"
+                  className={cn(
+                    "px-1 py-2 text-center text-xs font-semibold uppercase leading-tight tracking-wide text-dashboard-text-medium",
+                    column === "tasks" && PINNED_TASKS,
+                  )}
                 >
                   {copy.columns[column]}
                 </span>
@@ -230,7 +287,7 @@ export function DayGrid({
                   row.type === "slot" ? (
                     <span
                       key={`time-${row.minute}`}
-                      className="absolute left-0 border-t border-dashboard-border-subtle pr-2 pt-1 text-[11px] leading-tight text-dashboard-text-light sm:text-xs"
+                      className="absolute left-0 border-t border-dashboard-border-subtle pr-2 pt-1 text-xs leading-tight text-dashboard-text-light"
                       style={{ top: y(row.minute), width: TIME_WIDTH }}
                     >
                       {formatMinutes(row.minute)}
@@ -243,7 +300,10 @@ export function DayGrid({
                 <ol
                   key={column}
                   aria-label={copy.columns[column]}
-                  className="relative m-0 list-none border-l border-dashboard-border-subtle p-0"
+                  className={cn(
+                    "relative m-0 list-none border-l border-dashboard-border-subtle p-0",
+                    column === "tasks" && cn(PINNED_TASKS, "z-30"),
+                  )}
                 >
                   {laid.map((entry) => (
                     <GridBlock
@@ -251,9 +311,14 @@ export function DayGrid({
                       entry={entry}
                       column={column}
                       top={y(entry.start)}
-                      height={Math.max(y(entry.end) - y(entry.start), 28)}
+                      height={Math.max(
+                        y(entry.end) - y(entry.start),
+                        GRID_SIZES.minBlock,
+                      )}
                       nowMinute={nowMinute}
+                      mode={mode}
                       sponsorName={sponsorName}
+                      onOpen={open}
                     />
                   ))}
                 </ol>
@@ -269,7 +334,7 @@ export function DayGrid({
                     className="sticky left-0 shrink-0 bg-dashboard-bg-surface"
                     style={{ width: TIME_WIDTH }}
                   >
-                    <span className="rounded-dashboard-xs bg-dashboard-action-primary px-1.5 py-0.5 text-[10px] font-bold text-dashboard-text-inverse sm:text-[11px]">
+                    <span className="rounded-dashboard-xs bg-dashboard-action-primary px-1.5 py-0.5 text-[11px] font-bold text-dashboard-text-inverse">
                       {formatMinutes(Math.floor(nowMinute))}
                     </span>
                   </span>
@@ -280,6 +345,23 @@ export function DayGrid({
           </div>
         </div>
       )}
+
+      <EventDetails
+        entry={selected}
+        day={day}
+        mode={mode}
+        sponsorName={sponsorName}
+        workshops={workshops}
+        tasks={tasks}
+        entries={entries}
+        onClose={() => setSelected(null)}
+        onCloseAutoFocus={(event) => {
+          // Back to the block that opened the panel (Radix only does this
+          // for its own Trigger).
+          event.preventDefault();
+          opener.current?.focus();
+        }}
+      />
     </section>
   );
 }
@@ -290,30 +372,52 @@ function GridBlock({
   top,
   height,
   nowMinute,
+  mode,
   sponsorName,
+  onOpen,
 }: {
-  entry: TimelineEntry & { lane: number; lanes: number };
+  entry: LaidOutEntry;
   column: GridColumn;
   top: number;
   height: number;
   nowMinute: number;
-  sponsorName: string;
+  mode: GridMode;
+  sponsorName?: string;
+  onOpen: (entry: TimelineEntry, button: HTMLButtonElement) => void;
 }) {
-  const yours = entry.kind === "yours";
-  const live = yours && nowMinute >= entry.start && nowMinute < entry.end;
-  const mine = yours && (entry.item?.sponsors.includes(sponsorName) ?? false);
-  const location = entry.location
-    ? mine
-      ? locationFor(entry.location, sponsorName)
-      : entry.location
-    : yours && !NO_ROOM_NEEDED.has(entry.category)
-      ? scheduleCopy.noLocation
-      : null;
+  const isTask = entry.kind === "task";
+  const strong = entry.kind !== "hackathon";
+  const live =
+    entry.kind === "yours" && nowMinute >= entry.start && nowMinute < entry.end;
+  const mine =
+    mode === "sponsor" &&
+    entry.kind === "yours" &&
+    !!sponsorName &&
+    (entry.item?.sponsors.includes(sponsorName) ?? false);
+  const location = isTask
+    ? null
+    : entry.location
+      ? mine && sponsorName
+        ? locationFor(entry.location, sponsorName)
+        : entry.location
+      : entry.kind === "yours" && !NO_ROOM_NEEDED.has(entry.category)
+        ? scheduleCopy.noLocation
+        : null;
+  // Tasks always show their owner chip; events show the location when
+  // there's room for it under at least two lines of title.
+  const layout = blockTextLayout(height, isTask || !!location);
+  const titleLines = isTask
+    ? Math.max(1, layout.titleLines - (layout.showLocation ? 0 : 1))
+    : layout.titleLines;
+  const owner = entry.task?.owner ?? null;
+  const srPrefix = isTask
+    ? `${copy.srTask}, ${formatMinutes(entry.start)}: `
+    : `${entry.kind === "hackathon" ? copy.srHackathon : mode === "organizer" ? copy.runOfShow : copy.srYours}, ${copy.categories[entry.category]}, ${copy.srTime(formatMinutes(entry.start), formatMinutes(entry.end))}: `;
 
   return (
     <li
       aria-current={live ? "time" : undefined}
-      className={cn("absolute p-1", yours ? "z-20" : "z-10")}
+      className={cn("absolute p-1", strong ? "z-20" : "z-10")}
       style={{
         top,
         height,
@@ -321,19 +425,26 @@ function GridBlock({
         width: `${100 / entry.lanes}%`,
       }}
     >
-      <div
+      <button
+        type="button"
+        onClick={(e) => onOpen(entry, e.currentTarget)}
+        aria-haspopup="dialog"
         className={cn(
-          "relative flex h-full flex-col gap-0.5 overflow-hidden rounded-dashboard-sm p-1.5 sm:p-2",
-          yours
-            ? cn(
-                "border-l-4 border-dashboard-action-primary bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card",
-                live && "ring-2 ring-dashboard-action-primary",
-              )
-            : "border border-dashed border-dashboard-border-control bg-dashboard-bg-inset text-dashboard-text-light",
+          "relative flex h-full w-full cursor-pointer flex-col items-stretch gap-0.5 overflow-hidden rounded-dashboard-sm p-1.5 text-left",
+          "hover:shadow-dashboard-card motion-safe:transition-[box-shadow,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:hover:-translate-y-px",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
+          isTask
+            ? "border-l-4 border-dashboard-text-active bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card"
+            : strong
+              ? cn(
+                  "border-l-4 border-dashboard-action-primary bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card",
+                  live && "ring-2 ring-dashboard-action-primary",
+                )
+              : "border border-dashed border-dashboard-border-control bg-dashboard-bg-inset text-dashboard-text-light",
         )}
       >
         {/* Tint over white so the block stays opaque over the rules. */}
-        {yours && (
+        {strong && (
           <span
             aria-hidden
             className={cn(
@@ -342,17 +453,20 @@ function GridBlock({
             )}
           />
         )}
-        <p
+        <span
           className={cn(
-            "relative m-0 break-words text-xs leading-tight sm:text-[13px]",
-            yours ? "font-semibold" : "font-medium",
+            "relative m-0 overflow-hidden break-words text-[13px] leading-4",
+            strong ? "font-semibold" : "font-medium",
           )}
+          style={{
+            display: "-webkit-box",
+            WebkitBoxOrient: "vertical",
+            WebkitLineClamp: titleLines,
+          }}
         >
-          <span className="sr-only">
-            {`${yours ? copy.srYours : copy.srHackathon}, ${copy.categories[entry.category]}, ${copy.srTime(formatMinutes(entry.start), formatMinutes(entry.end))}: `}
-          </span>
+          <span className="sr-only">{srPrefix}</span>
           {(mine || live) && (
-            <span className="mr-1 inline-flex gap-1 align-middle">
+            <span className="mr-1 inline-flex gap-1 align-top">
               {live && (
                 <DashboardTag className="bg-dashboard-action-primary px-1.5 py-0 leading-4 text-dashboard-text-inverse">
                   {scheduleCopy.now}
@@ -366,19 +480,38 @@ function GridBlock({
             </span>
           )}
           {entry.title}
-        </p>
-        {location && (
-          <p
-            className={cn(
-              "relative m-0 flex items-start gap-1 text-[11px] leading-tight sm:text-xs",
-              yours && "text-dashboard-text-medium",
-            )}
-          >
-            <MapPin aria-hidden className="mt-px size-3 shrink-0" />
-            <span className="break-words">{location}</span>
-          </p>
+        </span>
+        {isTask ? (
+          <span className="relative flex">
+            <DashboardTag
+              className={cn(
+                "max-w-full truncate px-1.5 py-0 leading-4",
+                owner
+                  ? "bg-dashboard-bg-surface text-dashboard-text-heavy"
+                  : "bg-dashboard-bg-inset text-dashboard-text-light",
+              )}
+            >
+              {owner
+                ? scheduleCopy.organizer.owner(owner)
+                : scheduleCopy.organizer.unowned}
+            </DashboardTag>
+          </span>
+        ) : (
+          location &&
+          layout.showLocation && (
+            <span
+              className={cn(
+                "relative m-0 flex min-w-0 items-start gap-1 text-xs leading-4",
+                strong && "text-dashboard-text-medium",
+              )}
+            >
+              <MapPin aria-hidden className="mt-0.5 size-3 shrink-0" />
+              <span className="truncate">{location}</span>
+            </span>
+          )
         )}
-      </div>
+        <span className="sr-only">{`. ${copy.openDetails}`}</span>
+      </button>
     </li>
   );
 }

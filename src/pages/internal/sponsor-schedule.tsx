@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import SEO from "~/components/seo";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardChip } from "~/components/internals/dashboard-chip";
@@ -9,9 +10,13 @@ import { AddCoffeeChat } from "~/components/sponsors/add-coffee-chat";
 import { CoffeeChatRooms } from "~/components/sponsors/coffee-chat-rooms";
 import { CeremonyOrder } from "~/components/sponsors/ceremony-order";
 import { CompanyLocationsView } from "~/components/sponsors/company-locations";
+import {
+  DayGrid,
+  TimelineKey,
+  useShowHackathon,
+} from "~/components/sponsors/day-grid";
 import { DayPicker } from "~/components/sponsors/day-picker";
 import { HelpQueue } from "~/components/sponsors/help-queue";
-import { ScheduleList } from "~/components/sponsors/schedule-list";
 import {
   LoadError,
   PageIntro,
@@ -32,7 +37,10 @@ import {
   type RunOfShowDay,
 } from "~/lib/run-of-show";
 import { defaultRunOfShowDay } from "~/lib/run-of-show-time";
+import { fetchScheduleData } from "~/lib/schedule";
+import { buildOrganizerTimeline, taskEntries } from "~/lib/sponsor-timeline";
 import type { OrganizerCoffeeChat } from "~/server/api/routers/coffee-chat-requests";
+import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { authRedirectOrganizer } from "~/utils/redirect";
 
@@ -51,6 +59,14 @@ export default function OrganizerRunOfShowPage() {
     refetchInterval: 60_000,
     retry: 1,
   });
+  // The public /live schedule, muted behind the run of show (same toggle
+  // as the sponsor view). If it fails the run of show still shows.
+  const live = useQuery({
+    queryKey: ["live-schedule"],
+    queryFn: fetchScheduleData,
+    refetchInterval: 60_000,
+  });
+  const [showHackathon, setShowHackathon] = useShowHackathon();
   const shownDay = day ?? defaultRunOfShowDay(now);
 
   return (
@@ -58,7 +74,13 @@ export default function OrganizerRunOfShowPage() {
       <SEO title={copy.seoTitle} noindex />
       <InternalNavbar />
       <div className="min-h-screen bg-dashboard-bg-page px-4 pb-12 pt-6 font-figtree font-medium leading-default text-dashboard-text-heavy sm:px-5">
-        <div className="mx-auto flex w-full max-w-[880px] flex-col gap-5">
+        <div
+          className={cn(
+            "mx-auto flex w-full flex-col gap-5",
+            // The day grid gets room for its columns; lists stay readable.
+            tab === "schedule" ? "max-w-[1280px]" : "max-w-[880px]",
+          )}
+        >
           <PageIntro
             eyebrow={copy.title}
             title={copy.title}
@@ -92,9 +114,27 @@ export default function OrganizerRunOfShowPage() {
               )}
               {tab === "schedule" && (
                 <>
-                  <ScheduleList
-                    items={q.data.items.filter((i) => i.day === shownDay)}
+                  <TimelineKey
+                    mode="organizer"
+                    showHackathon={showHackathon}
+                    onShowHackathonChange={setShowHackathon}
+                  />
+                  <DayGrid
+                    mode="organizer"
+                    day={shownDay}
                     now={now}
+                    entries={[
+                      ...buildOrganizerTimeline({
+                        day: shownDay,
+                        items: q.data.items,
+                        live: live.data,
+                        showHackathon,
+                      }),
+                      ...taskEntries(shownDay, q.data.tasks),
+                    ]}
+                    workshops={q.data.workshops}
+                    tasks={q.data.tasks}
+                    emptyText={copy.emptyDay}
                   />
                   <CeremonyOrder
                     segments={q.data.ceremonies}

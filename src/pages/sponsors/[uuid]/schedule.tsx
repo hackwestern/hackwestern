@@ -140,6 +140,7 @@ export default function SponsorSchedulePage() {
         entries={entries}
         now={now}
         sponsorName={data.sponsorName}
+        workshops={data.workshops}
       />
       <WorkshopDetails workshops={data.workshops} />
       <CeremonyOrder segments={data.ceremonies} items={data.items} />
