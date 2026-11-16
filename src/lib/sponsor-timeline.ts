@@ -8,6 +8,7 @@ import {
   type RunOfShowColumn,
   type RunOfShowDay,
   type RunOfShowItem,
+  type RunOfShowTask,
 } from "~/lib/run-of-show";
 import { runOfShowInstant } from "~/lib/run-of-show-time";
 import { getTimeInMinutes } from "~/lib/schedule";
@@ -34,9 +35,13 @@ export type LiveCategory = (typeof LIVE_COLUMNS)[number]["category"];
 
 export type TimelineEntry = {
   id: string;
-  /** "yours": the sponsor's own item. "hackathon": everyone's event. */
-  kind: "yours" | "hackathon";
-  category: RunOfShowColumn | LiveCategory;
+  /**
+   * "yours": a run-of-show item shown full strength (the sponsor's own, or
+   * every item in the organizer view). "hackathon": everyone's event, muted.
+   * "task": a team task (organizer view only).
+   */
+  kind: "yours" | "hackathon" | "task";
+  category: RunOfShowColumn | LiveCategory | "task";
   title: string;
   location: string | null;
   /** Minutes after the day's midnight (Eastern). Past 1440 = after midnight. */
@@ -44,6 +49,8 @@ export type TimelineEntry = {
   end: number;
   /** The run-of-show item behind a "yours" entry. */
   item?: RunOfShowItem;
+  /** The team task behind a "task" entry (organizer view only). */
+  task?: RunOfShowTask;
 };
 
 /** Run-of-show columns every sponsor gets whoever they are. */
@@ -316,6 +323,7 @@ export const GRID_COLUMNS = [
   "spon-booth",
   "coffee-chats",
   "other",
+  "tasks",
 ] as const;
 export type GridColumn = (typeof GRID_COLUMNS)[number];
 
@@ -333,6 +341,7 @@ const LIVE_TO_GRID: Record<LiveCategory, GridColumn> = {
 export function gridColumnOf(
   entry: Pick<TimelineEntry, "category">,
 ): GridColumn {
+  if (entry.category === "task") return "tasks";
   return (GRID_COLUMNS as readonly string[]).includes(entry.category)
     ? (entry.category as GridColumn)
     : LIVE_TO_GRID[entry.category as LiveCategory];
@@ -352,5 +361,172 @@ export function layoutGrid(
         .filter((e) => gridColumnOf(e) === column)
         .sort((a, b) => a.start - b.start),
     ),
-  })).filter((c) => c.column !== "other" || c.entries.length > 0);
+  })).filter(
+    (c) =>
+      (c.column !== "other" && c.column !== "tasks") || c.entries.length > 0,
+  );
+}
+
+/**
+ * One day of the organizer run of show: every run-of-show item at full
+ * strength, plus (when shown) the /live events that aren't already on the
+ * run of show, muted like the sponsor view.
+ */
+export function buildOrganizerTimeline({
+  day,
+  items,
+  live,
+  showHackathon,
+}: {
+  day: RunOfShowDay;
+  items: readonly RunOfShowItem[];
+  live: readonly DaySchedule[] | undefined;
+  showHackathon: boolean;
+}): TimelineEntry[] {
+  const runOfShow = items
+    .filter((i) => i.day === day)
+    .map((i) => fromRunOfShow(i, "yours"));
+  const hackathon = showHackathon
+    ? liveDayEntries(live?.find((d) => d.day === day)).filter(
+        (e) => !runOfShow.some((r) => isSameEvent(r, e)),
+      )
+    : [];
+  return [...runOfShow, ...hackathon].sort(
+    (a, b) =>
+      a.start - b.start ||
+      (a.kind === b.kind ? 0 : a.kind === "yours" ? -1 : 1) ||
+      a.title.localeCompare(b.title),
+  );
+}
+
+/**
+ * Team tasks (sheet Task/Owner) whose start time falls inside the entry,
+ * in time order. A task listed before the entry's start but within it
+ * once read as after midnight (e.g. "00:30" in a 23:00-01:00 event) counts.
+ */
+export function tasksInEntry<T extends { day: RunOfShowDay; start: string }>(
+  entry: Pick<TimelineEntry, "start" | "end">,
+  day: RunOfShowDay,
+  tasks: readonly T[],
+): T[] {
+  const at = (t: T) => {
+    const m = hhmmToMinutes(t.start);
+    return m < entry.start && m + 1440 < entry.end ? m + 1440 : m;
+  };
+  return tasks
+    .filter((t) => {
+      if (t.day !== day) return false;
+      const m = at(t);
+      return m >= entry.start && m < entry.end;
+    })
+    .sort((a, b) => at(a) - at(b));
+}
+
+/**
+ * The Workshops-tab row behind a grid entry: same title (one contains the
+ * other), and the same day and start when the workshop lists them.
+ */
+export function workshopForEntry<
+  W extends { title: string; day: RunOfShowDay | null; start: string | null },
+>(
+  entry: Pick<TimelineEntry, "title" | "start" | "end">,
+  day: RunOfShowDay,
+  workshops: readonly W[],
+): W | null {
+  const matches = workshops.filter((w) => {
+    if (w.day && w.day !== day) return false;
+    const start = w.start ? hhmmToMinutes(w.start) : null;
+    if (start !== null && (start < entry.start || start >= entry.end)) {
+      return false;
+    }
+    return isSameEvent(entry, {
+      title: w.title,
+      start: entry.start,
+      end: entry.end,
+    });
+  });
+  return matches[0] ?? null;
+}
+
+/** Grid sizes shared by the block layout and the grid itself. */
+export const GRID_SIZES = {
+  /** Pixels per 30-minute row. */
+  slot: 72,
+  /** Pixels per folded gap row. */
+  gap: 40,
+  /** Shortest block, so even a 15-minute item shows a line of title. */
+  minBlock: 36,
+  /** Block chrome: outer padding (4px each side) + inner (6px each side). */
+  chrome: 20,
+  /** One line of block text (13px type on a 16px line). */
+  line: 16,
+  /** Readable width for one lane of a column. */
+  lane: 136,
+  /** Narrower lanes for compact team-task blocks. */
+  taskLane: 120,
+  /** No column narrower than this, whatever its lanes. */
+  column: 160,
+} as const;
+
+/**
+ * How much text a block of `height` px fits: title lines (clamped with an
+ * ellipsis past that) and whether the location line fits underneath. The
+ * title always gets at least one line; the location only shows when the
+ * title still gets two.
+ */
+export function blockTextLayout(
+  height: number,
+  hasLocation: boolean,
+): { titleLines: number; showLocation: boolean } {
+  const lines = Math.floor((height - GRID_SIZES.chrome) / GRID_SIZES.line);
+  if (hasLocation && lines >= 3) {
+    return { titleLines: lines - 1, showLocation: true };
+  }
+  return { titleLines: Math.max(1, lines), showLocation: false };
+}
+
+/** Min width of a grid column: wide enough for each lane to stay readable. */
+export function columnMinWidth(
+  entries: readonly { lanes: number }[],
+  lane: number = GRID_SIZES.lane,
+): number {
+  const lanes = Math.max(1, ...entries.map((e) => e.lanes));
+  return Math.max(GRID_SIZES.column, lanes * lane);
+}
+
+/**
+ * Team tasks for the organizer grid's "Team tasks" column. A task has only a
+ * start, so it fills its half-hour row (start to start + 30 min); tasks at
+ * the same time share the row side by side.
+ */
+export function taskEntries(
+  day: RunOfShowDay,
+  tasks: readonly RunOfShowTask[],
+): TimelineEntry[] {
+  return tasks
+    .filter((t) => t.day === day)
+    .map((t, i) => {
+      const start = hhmmToMinutes(t.start);
+      return {
+        id: `task-${day}-${t.start}-${i}`,
+        kind: "task" as const,
+        category: "task" as const,
+        title: t.task,
+        location: null,
+        start,
+        end: start + SLOT,
+        task: t,
+      };
+    })
+    .sort((a, b) => a.start - b.start || a.title.localeCompare(b.title));
+}
+
+/** Events (not tasks) running at `minute`, in time order. */
+export function entriesAt(
+  minute: number,
+  entries: readonly TimelineEntry[],
+): TimelineEntry[] {
+  return entries
+    .filter((e) => e.kind !== "task" && e.start <= minute && minute < e.end)
+    .sort((a, b) => a.start - b.start || a.title.localeCompare(b.title));
 }
