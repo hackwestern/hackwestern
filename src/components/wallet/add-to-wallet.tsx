@@ -5,9 +5,12 @@ import { api } from "~/utils/api";
 const AddToWallet = ({
   walletType,
   className,
+  onAdded,
 }: {
   walletType: "GOOGLE" | "APPLE";
   className?: string;
+  /** Called once the pass was generated, or if generating it failed */
+  onAdded?: () => void;
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,13 +23,22 @@ const AddToWallet = ({
   const isLoading = generatePass.isPending || loading;
 
   const handleGeneratePass = async () => {
+    if (walletType === "APPLE") {
+      // A real file response (not a blob) is what iPhone Safari hands to Wallet.
+      // The page stays put while Wallet opens, so just block repeat taps briefly.
+      setLoading(true);
+      window.location.href = "/api/wallet/apple";
+      onAdded?.();
+      setTimeout(() => setLoading(false), 4000);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     // Open the Google Wallet tab now, during the click. A tab opened later,
     // once the server replies, gets blocked as a popup and nothing happens.
-    const walletTab =
-      walletType === "GOOGLE" ? window.open("", "_blank") : null;
+    const walletTab = window.open("", "_blank");
 
     try {
       generatePass.mutate(
@@ -49,6 +61,7 @@ const AddToWallet = ({
               // store raw pkpass only if needed later in UI
               setPkpassSrc(data.pkpass);
               void handleDownloadPkpass(data.pkpass);
+              onAdded?.();
             } else if (
               data.walletType === "GOOGLE" &&
               "googleWalletUrl" in data &&
@@ -62,11 +75,15 @@ const AddToWallet = ({
                 // The browser refused the new tab: use this one.
                 window.location.href = data.googleWalletUrl;
               }
+              onAdded?.();
             }
           },
           onError: (err) => {
             walletTab?.close();
             console.error("Failed to generate pass:", err);
+
+            // Don't block the onboarding checklist on a pass we couldn't make
+            onAdded?.();
 
             // Check if it's a NOT_FOUND error (pass doesn't exist in R2)
             const isNotFound =
@@ -80,9 +97,7 @@ const AddToWallet = ({
 
             if (isNotFound) {
               setError(
-                walletType === "APPLE"
-                  ? "Your wallet pass hasn't been generated yet. Please contact an organizer to generate passes for accepted attendees."
-                  : "Your wallet pass hasn't been generated yet. Please contact an organizer to generate passes for accepted attendees.",
+                "There was an error generating your wallet pass. Please contact an organizer!",
               );
             } else {
               const errorMessage =
@@ -181,15 +196,15 @@ const AddToWallet = ({
 
   return (
     <div className="flex flex-col items-center gap-2">
-      {/* Plain button: the badge artwork is the whole button, so both badges
-          sit at the same height with no site button chrome behind them. */}
+      {/* Plain button: the badge SVGs are the whole button. The shared
+          Button's pill background and shadow showed around the Apple one. */}
       <button
         type="button"
         onClick={handleGeneratePass}
         disabled={isLoading}
-        className={`rounded-full transition-opacity hover:opacity-90 ${
+        className={`block cursor-pixel-hover rounded-full transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
           isLoading ? "cursor-not-allowed opacity-40" : ""
-        }`}
+        } ${className ?? ""}`}
       >
         <Image
           src={
@@ -202,8 +217,8 @@ const AddToWallet = ({
               ? "Add to Google Wallet"
               : "Add to Apple Wallet"
           }
-          width={walletType === "GOOGLE" ? 174 : 152}
-          height={48}
+          width={180}
+          height={60}
           className="h-12 w-auto"
         />
       </button>

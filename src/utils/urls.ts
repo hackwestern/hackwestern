@@ -1,6 +1,7 @@
 export const GITHUB_URL = "https://github.com/";
 export const LINKEDIN_URL = "https://linkedin.com/in/";
 export const DEVPOST_URL = "https://devpost.com/";
+export const HW13_DEVPOST_URL = "https://hack-western-13.devpost.com/";
 
 export function getGithubUsername(text: string) {
   try {
@@ -61,3 +62,7 @@ export function ensureUrlHasProtocol(text?: string | null) {
   if (/^https?:\/\//i.test(text)) return text;
   return `https://${text}`;
 }
+
+/** Matches a lowercase/uppercase UUID v4-style string (private sponsor links). */
+export const uuidRegex =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

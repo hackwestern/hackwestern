@@ -353,6 +353,19 @@ export const userType = pgEnum("user_type", [
   "judge",
 ]);
 
+// Sponsor judging: maps a private UUID (handed to a sponsor as their URL) to
+// the sponsor's name as spelled in the master sheet. The judging Google Sheet
+// itself keeps storing the name in column A; the UUID never appears there.
+export const sponsorJudgingSponsors = pgTable("sponsor_judging_sponsor", {
+  id: uuid("id").defaultRandom().notNull().primaryKey(),
+  // Must match the "Company Name" spelling in the master sheet, since this is
+  // what the judging sheet rows are keyed on.
+  name: varchar("name", { length: 255 }).notNull().unique(),
+  createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
+
 export const users = pgTable(
   "user",
   {
@@ -376,6 +389,14 @@ export const users = pgTable(
     // Public, human-readable ID (e.g. "brave-otter-kite"). Printed under the
     // hacker's QR and typed into Devpost; user.id stays internal.
     hackerId: varchar("hacker_id", { length: 64 }).unique(),
+
+    // Live-site checklist steps the hacker has done that we can't derive from
+    // their application: "slack", "devpost", "wallet", "hide-checklist"
+    // (see src/lib/onboarding.ts).
+    onboardingSteps: text("onboarding_steps")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
 
     scavengerHuntEarned: integer("scavenger_hunt_earned").default(0),
     scavengerHuntBalance: integer("scavenger_hunt_balance").default(0),
