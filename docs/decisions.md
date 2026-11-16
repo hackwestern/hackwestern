@@ -80,3 +80,8 @@
 - **Decision:** An offer DMs the hacker on Slack first (1.2 s limit). The email goes out only if the DM wasn't sent (no bot token, no Slack account for their email, or a Slack error or timeout). The sheet mirror still runs alongside, all inside the 2.5 s cap.
 - **Why:** hackers live in Slack during the event; one notification per offer, no duplicates; /live shows a toast and the chat either way.
 - **Alternatives:** both always (duplicates); email only (slower to notice, no buttons).
+
+## 2026-11-15 — Where is everyone is organizer-only
+- **Decision:** Sponsors see only their own schedule and rooms; the sponsor team sees every company on /internal/sponsor-schedule. The server trims shared rooms and other sponsors' names from a sponsor's schedule.
+- **Why:** Jazz: sponsors don't need it; it's for the sponsor team.
+- **Alternatives:** keep it for sponsors (earlier decision today, now reversed).
