@@ -74,6 +74,61 @@ export const scheduleCopy = {
     newTab: "(opens in a new tab)",
   },
 
+  nextEvent: {
+    heading: "Your next event",
+    none: "Nothing else scheduled",
+    noneBody: "That's everything on your schedule. Thanks for coming to Hack Western!",
+    now: "Now",
+    countdown: (minutes: number) => {
+      if (minutes >= 24 * 60) {
+        const d = Math.floor(minutes / (24 * 60));
+        const h = Math.floor((minutes % (24 * 60)) / 60);
+        return h > 0 ? `in ${d} d ${h} h` : `in ${d} d`;
+      }
+      if (minutes >= 60) {
+        const h = Math.floor(minutes / 60);
+        const m = minutes % 60;
+        return m > 0 ? `in ${h} h ${m} min` : `in ${h} h`;
+      }
+      return `in ${Math.max(1, minutes)} min`;
+    },
+    when: (day: string, time: string) => `${day} at ${time}`,
+    ceremonyTitle: (ceremony: "opening" | "closing") =>
+      ceremony === "opening"
+        ? "You speak at the opening ceremony"
+        : "You speak at the closing ceremony",
+    coffeeTitle: "Your coffee chats",
+    labels: { when: "When", room: "Room" },
+  },
+
+  ceremonies: {
+    heading: (ceremony: "opening" | "closing") =>
+      ceremony === "opening"
+        ? "Opening ceremony running order"
+        : "Closing ceremony running order",
+    when: (day: string, time: string, place: string | null) =>
+      place ? `${day} ${time} · ${place}` : `${day} ${time}`,
+    duration: (minutes: number) => `${minutes} min`,
+    speakersTbd: "Speaker to be confirmed",
+    speakersLabel: "Speakers",
+    youreOnAt: (time: string, minutes: number | null) =>
+      minutes ? `You're on at ${time}, ${minutes} min` : `You're on at ${time}`,
+    youreSlot: (order: number, total: number, minutes: number | null) =>
+      minutes
+        ? `You're #${order} of ${total}, ${minutes} min`
+        : `You're #${order} of ${total}`,
+    srOrder: (order: number) => `Slot ${order}`,
+  },
+
+  workshops: {
+    heading: "Your workshops",
+    runBy: "Run by",
+    runnersTbd: "Not listed yet. Tell your Hack Western contact who's running it.",
+    when: "When",
+    room: "Room",
+    timeTbd: "Time to be confirmed",
+  },
+
   coffeeChat: {
     heading: "Your coffee chats",
     notSetUp:
@@ -120,6 +175,16 @@ export const scheduleCopy = {
       where: "Where is everyone",
     },
     noTasks: "No team tasks this day.",
+    ceremoniesHeading: "Ceremony speakers",
+    workshopsHeading: "Workshops",
+    workshopTable: {
+      workshop: "Workshop",
+      sponsor: "Sponsor",
+      runners: "Run by",
+      when: "When",
+      room: "Room",
+      none: "–",
+    },
     owner: (owner: string) => `Owner: ${owner}`,
     unowned: "No owner",
     coffeeTable: {

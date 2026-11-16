@@ -5,6 +5,7 @@ import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { InternalNavbar } from "~/components/internals/navbar";
+import { CeremonyOrder } from "~/components/sponsors/ceremony-order";
 import { CompanyLocationsView } from "~/components/sponsors/company-locations";
 import { DayPicker } from "~/components/sponsors/day-picker";
 import { HelpQueue } from "~/components/sponsors/help-queue";
@@ -17,6 +18,7 @@ import {
 } from "~/components/sponsors/schedule-states";
 import { SheetEditButton } from "~/components/sponsors/sheet-edit-button";
 import { useNow } from "~/components/sponsors/use-now";
+import { WorkshopsTable } from "~/components/sponsors/workshop-details";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import { sponsorHelpCopy } from "~/content/sponsor-help";
@@ -82,10 +84,17 @@ export default function OrganizerRunOfShowPage() {
                 <DayPicker value={shownDay} onChange={setDay} />
               )}
               {tab === "schedule" && (
-                <ScheduleList
-                  items={q.data.items.filter((i) => i.day === shownDay)}
-                  now={now}
-                />
+                <>
+                  <ScheduleList
+                    items={q.data.items.filter((i) => i.day === shownDay)}
+                    now={now}
+                  />
+                  <CeremonyOrder
+                    segments={q.data.ceremonies}
+                    items={q.data.items}
+                  />
+                  <WorkshopsTable workshops={q.data.workshops} />
+                </>
               )}
               {tab === "tasks" && <Tasks data={q.data} day={shownDay} />}
               {tab === "coffee" && (
