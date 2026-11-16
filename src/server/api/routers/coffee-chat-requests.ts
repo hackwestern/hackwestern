@@ -31,6 +31,7 @@ import {
   answeredStatus,
   coffeeChatTimes,
 } from "~/server/api/utils/coffee-chat-expiry";
+import { resolveScannedUserId } from "~/server/api/utils/hacker-id";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { db } from "~/server/db";
@@ -319,6 +320,18 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
     .query(async ({ input }) => {
       await findSponsor(db, input.sponsor);
       return findAdmittedHacker(input.userId);
+    }),
+
+  /**
+   * Same as `hacker`, for whatever a sponsor scanned or typed: the hacker
+   * ID on badges and wallet passes ("brave-otter-kite", any case or
+   * spacing) or the user id in the /live QR. Same rules and errors.
+   */
+  hackerByCode: publicProcedure
+    .input(z.object({ sponsor: sponsorInput, code: userIdInput }))
+    .query(async ({ input }) => {
+      await findSponsor(db, input.sponsor);
+      return findAdmittedHacker(await resolveScannedUserId(input.code));
     }),
 
   /**

@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   CameraOff,
+  Check,
   CircleCheck,
   Clock,
   Coffee,
@@ -13,7 +14,12 @@ import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { sponsorScanCopy } from "~/content/sponsor-scan";
 import { formatClock } from "~/lib/run-of-show";
-import { useQrScanner, type QrScannerStatus } from "~/lib/use-qr-scanner";
+import {
+  badgeCodeOf,
+  typedBadgeCodeOf,
+  useQrScanner,
+  type QrScannerStatus,
+} from "~/lib/use-qr-scanner";
 import { cn } from "~/lib/utils";
 import type { CoffeeChatOffer } from "~/server/api/routers/coffee-chat-requests";
 import { api } from "~/utils/api";
@@ -22,18 +28,39 @@ const copy = sponsorScanCopy;
 
 type Phase =
   | { kind: "scan" }
-  | { kind: "hacker"; userId: string }
+  | { kind: "hacker"; code: string }
+  | { kind: "notHacker" }
   | { kind: "sent"; offer: CoffeeChatOffer };
 
 const enterMotion =
   "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-200";
 
-// Scan a hacker's badge (or /live QR, which holds their user id), then offer
-// them a coffee chat at one of the sponsor's open start times.
+/**
+ * One persistent live region. Each message is cleared first, so the same
+ * message twice in a row is still read out.
+ */
+function useAnnouncer() {
+  const [message, setMessage] = useState("");
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+  const announce = useCallback((next: string) => {
+    if (timer.current) clearTimeout(timer.current);
+    setMessage("");
+    timer.current = setTimeout(() => setMessage(next), 100);
+  }, []);
+  return { message, announce };
+}
+
+// Scan a hacker's badge, wallet pass or /live QR (or type their hacker
+// code), then offer them a coffee chat at one of the sponsor's open times.
 export function BadgeScanner({ sponsor }: { sponsor: string }) {
   const [phase, setPhase] = useState<Phase>({ kind: "scan" });
-  // One persistent live region; each step writes what changed into it.
-  const [announcement, setAnnouncement] = useState("");
+  const { message, announce } = useAnnouncer();
   // The sponsor's own name sticks between scans.
   const [repName, setRepName] = useState("");
   // Each step's heading takes focus so keyboard and screen reader users
@@ -43,35 +70,47 @@ export function BadgeScanner({ sponsor }: { sponsor: string }) {
   useEffect(() => {
     if (focusKey > 0) headingRef.current?.focus();
   }, [focusKey]);
+  const focusHeading = useCallback(() => setFocusKey((k) => k + 1), []);
 
-  const go = (next: Phase, message: string) => {
+  const go = (next: Phase, text?: string) => {
     setPhase(next);
-    setAnnouncement(message);
-    setFocusKey((k) => k + 1);
+    if (text) announce(text);
+    focusHeading();
   };
-  const scanNext = () => go({ kind: "scan" }, copy.camera.scanning);
+  // The camera panel announces its own status.
+  const scanNext = () => go({ kind: "scan" });
+  const lookUp = (code: string | null) =>
+    code
+      ? go({ kind: "hacker", code }, copy.lookingUp)
+      : go({ kind: "notHacker" }, copy.notHacker.title);
 
   return (
     <div className="flex flex-col gap-4">
       <p role="status" className="sr-only">
-        {announcement}
+        {message}
       </p>
       {phase.kind === "scan" && (
         <CameraPanel
           headingRef={headingRef}
-          onScan={(userId) => go({ kind: "hacker", userId }, copy.lookingUp)}
+          announce={announce}
+          onFocusHeading={focusHeading}
+          onScan={(text) => lookUp(badgeCodeOf(text))}
+          onTyped={(text) => lookUp(typedBadgeCodeOf(text))}
         />
+      )}
+      {phase.kind === "notHacker" && (
+        <NotHackerPanel headingRef={headingRef} onScanNext={scanNext} />
       )}
       {phase.kind === "hacker" && (
         <OfferStep
-          key={phase.userId}
+          key={phase.code}
           sponsor={sponsor}
-          userId={phase.userId}
+          code={phase.code}
           repName={repName}
           onRepName={setRepName}
           headingRef={headingRef}
-          announce={setAnnouncement}
-          onFocusHeading={() => setFocusKey((k) => k + 1)}
+          announce={announce}
+          onFocusHeading={focusHeading}
           onSent={(offer) =>
             go(
               { kind: "sent", offer },
@@ -119,10 +158,16 @@ function StepHeading({
 
 function CameraPanel({
   headingRef,
+  announce,
+  onFocusHeading,
   onScan,
+  onTyped,
 }: {
   headingRef: HeadingRef;
-  onScan: (userId: string) => void;
+  announce: (message: string) => void;
+  onFocusHeading: () => void;
+  onScan: (text: string) => void;
+  onTyped: (text: string) => void;
 }) {
   const [active, setActive] = useState(true);
   const { videoRef, status, retry } = useQrScanner({
@@ -134,6 +179,18 @@ function CameraPanel({
   });
   const failed =
     status === "denied" || status === "unavailable" || status === "error";
+
+  // Say what the camera is doing; on failure, also move focus to the
+  // heading that explains it.
+  useEffect(() => {
+    if (status === "starting") announce(copy.camera.starting);
+    else if (status === "scanning") announce(copy.camera.scanning);
+    else if (failed) {
+      const problem = cameraProblem(status);
+      announce(`${problem.title}. ${problem.body}`);
+      onFocusHeading();
+    }
+  }, [status, failed, announce, onFocusHeading]);
 
   return (
     <DashboardPanel className={cn("gap-4 p-4 sm:p-6", enterMotion)}>
@@ -158,33 +215,102 @@ function CameraPanel({
           )}
         </div>
       ) : (
-        <>
-          <div className="relative mx-auto aspect-square w-full max-w-[420px] overflow-hidden rounded-dashboard-lg bg-dashboard-text-heavy">
-            <video
-              ref={videoRef}
-              aria-label={copy.camera.label}
-              muted
-              playsInline
-              className="size-full object-cover"
-            />
-            {/* Aiming frame */}
-            <div
+        <div className="relative mx-auto aspect-square w-full max-w-[420px] overflow-hidden rounded-dashboard-lg bg-dashboard-text-heavy">
+          <video
+            ref={videoRef}
+            aria-label={copy.camera.label}
+            muted
+            playsInline
+            className="size-full object-cover"
+          />
+          {/* Aiming frame */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-[14%] rounded-dashboard-lg border-2 border-dashboard-text-inverse/80"
+          />
+          <p
+            aria-hidden
+            className="absolute inset-x-0 bottom-3 m-0 flex items-center justify-center gap-2 text-sm font-semibold text-dashboard-text-inverse"
+          >
+            <ScanLine
               aria-hidden
-              className="pointer-events-none absolute inset-[14%] rounded-dashboard-lg border-2 border-white/80 shadow-[0_0_0_9999px_rgba(11,43,74,0.35)]"
+              className="size-4 motion-safe:animate-pulse"
             />
-            <p className="absolute inset-x-0 bottom-3 m-0 flex items-center justify-center gap-2 text-sm font-semibold text-white">
-              <ScanLine
-                aria-hidden
-                className="size-4 motion-safe:animate-pulse"
-              />
-              {status === "scanning"
-                ? copy.camera.scanning
-                : copy.camera.starting}
-            </p>
-          </div>
-        </>
+            {status === "scanning"
+              ? copy.camera.scanning
+              : copy.camera.starting}
+          </p>
+        </div>
       )}
+      <ManualEntry onSubmit={onTyped} />
     </DashboardPanel>
+  );
+}
+
+/** The no-camera path: type the hacker code from their badge or pass. */
+function ManualEntry({ onSubmit }: { onSubmit: (text: string) => void }) {
+  const [value, setValue] = useState("");
+  const [empty, setEmpty] = useState(false);
+  return (
+    <form
+      className="flex flex-col gap-1.5 border-t border-dashboard-border-subtle pt-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!value.trim()) {
+          setEmpty(true);
+          return;
+        }
+        onSubmit(value);
+      }}
+    >
+      <label
+        htmlFor="hacker-code"
+        className="text-sm font-semibold text-dashboard-text-heavy"
+      >
+        {copy.manual.label}
+      </label>
+      <p
+        id="hacker-code-hint"
+        className="m-0 text-sm text-dashboard-text-light"
+      >
+        {copy.manual.hint}
+      </p>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input
+          id="hacker-code"
+          type="text"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          maxLength={255}
+          value={value}
+          onChange={(event) => {
+            setValue(event.target.value);
+            setEmpty(false);
+          }}
+          aria-describedby={
+            empty ? "hacker-code-hint hacker-code-error" : "hacker-code-hint"
+          }
+          aria-invalid={empty || undefined}
+          className="h-11 w-full min-w-0 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-base text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary sm:flex-1"
+        />
+        <DashboardButton
+          type="submit"
+          variant="outline"
+          className="h-11 w-full sm:w-auto"
+        >
+          {copy.manual.submit}
+        </DashboardButton>
+      </div>
+      {empty && (
+        <p
+          id="hacker-code-error"
+          className="m-0 text-sm font-semibold text-dashboard-text-warning"
+        >
+          {copy.manual.empty}
+        </p>
+      )}
+    </form>
   );
 }
 
@@ -194,9 +320,37 @@ function cameraProblem(status: QrScannerStatus) {
   return copy.camera.error;
 }
 
+function NotHackerPanel({
+  headingRef,
+  title = copy.notHacker.title,
+  body = copy.notHacker.body,
+  onScanNext,
+}: {
+  headingRef: HeadingRef;
+  title?: string;
+  body?: string;
+  onScanNext: () => void;
+}) {
+  return (
+    <DashboardPanel className={cn("gap-4", enterMotion)}>
+      <div className="flex items-center gap-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-inset">
+          <UserX aria-hidden className="size-5 text-dashboard-text-warning" />
+        </span>
+        <StepHeading headingRef={headingRef}>{title}</StepHeading>
+      </div>
+      <p className="m-0 text-base text-dashboard-text-medium">{body}</p>
+      <DashboardButton className="md:w-full" onClick={onScanNext}>
+        <ScanLine aria-hidden />
+        {copy.scanNext}
+      </DashboardButton>
+    </DashboardPanel>
+  );
+}
+
 function OfferStep({
   sponsor,
-  userId,
+  code,
   repName,
   onRepName,
   headingRef,
@@ -206,7 +360,7 @@ function OfferStep({
   onScanNext,
 }: {
   sponsor: string;
-  userId: string;
+  code: string;
   repName: string;
   onRepName: (name: string) => void;
   headingRef: HeadingRef;
@@ -215,12 +369,12 @@ function OfferStep({
   onSent: (offer: CoffeeChatOffer) => void;
   onScanNext: () => void;
 }) {
-  const hackerQ = api.coffeeChatRequests.hacker.useQuery(
-    { sponsor, userId },
+  const hackerQ = api.coffeeChatRequests.hackerByCode.useQuery(
+    { sponsor, code },
     { retry: false, refetchOnWindowFocus: false },
   );
   const timesQ = api.coffeeChatRequests.freeTimes.useQuery(
-    { sponsor, userId },
+    { sponsor, userId: hackerQ.data?.userId },
     { enabled: hackerQ.isSuccess, retry: false, refetchOnWindowFocus: false },
   );
   const [picked, setPicked] = useState<string | null>(null);
@@ -284,25 +438,16 @@ function OfferStep({
   if (hackerQ.isError || !hackerQ.data) {
     const notHacker = hackerQ.error?.data?.code === "NOT_FOUND";
     return (
-      <DashboardPanel className={cn("gap-4", enterMotion)}>
-        <div className="flex items-center gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-inset">
-            <UserX aria-hidden className="size-5 text-dashboard-text-warning" />
-          </span>
-          <StepHeading headingRef={headingRef}>
-            {notHacker ? copy.notHacker.title : copy.camera.error.title}
-          </StepHeading>
-        </div>
-        <p className="m-0 text-base text-dashboard-text-medium">
-          {notHacker
+      <NotHackerPanel
+        headingRef={headingRef}
+        title={notHacker ? copy.notHacker.title : copy.camera.error.title}
+        body={
+          notHacker
             ? copy.notHacker.body
-            : (hackerQ.error?.message ?? copy.card.offerError)}
-        </p>
-        <DashboardButton className="md:w-full" onClick={onScanNext}>
-          <ScanLine aria-hidden />
-          {copy.scanNext}
-        </DashboardButton>
-      </DashboardPanel>
+            : (hackerQ.error?.message ?? copy.card.offerError)
+        }
+        onScanNext={onScanNext}
+      />
     );
   }
 
@@ -331,13 +476,6 @@ function OfferStep({
             <span className="inline-flex items-center gap-1.5">
               <Clock aria-hidden className="size-4 text-dashboard-text-light" />
               {copy.card.timesHint(free.durationMinutes)}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <MapPin
-                aria-hidden
-                className="size-4 text-dashboard-text-light"
-              />
-              {free.room ? copy.card.room(free.room) : copy.card.roomTbd}
             </span>
           </p>
         )}
@@ -377,7 +515,7 @@ function OfferStep({
                   <label
                     key={t.slotTime}
                     className={cn(
-                      "flex min-h-11 cursor-pixel-hover flex-col justify-center rounded-dashboard-lg border px-3 py-2 transition-colors",
+                      "flex min-h-11 cursor-pointer flex-col justify-center rounded-dashboard-lg border px-3 py-2 transition-colors",
                       "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-dashboard-action-primary has-[:focus-visible]:ring-offset-2",
                       checked
                         ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
@@ -392,7 +530,10 @@ function OfferStep({
                       onChange={() => setPicked(t.slotTime)}
                       className="sr-only"
                     />
-                    <span className="text-base font-semibold">
+                    <span className="flex items-center gap-1.5 text-base font-semibold">
+                      {checked && (
+                        <Check aria-hidden className="size-4 shrink-0" />
+                      )}
                       {formatClock(t.slotTime)}
                     </span>
                     <span
@@ -404,6 +545,17 @@ function OfferStep({
                       )}
                     >
                       {copy.card.seatsLeft(t.seatsLeft)}
+                    </span>
+                    <span
+                      className={cn(
+                        "flex items-center gap-1 text-xs",
+                        checked
+                          ? "text-dashboard-text-inverse/90"
+                          : "text-dashboard-text-light",
+                      )}
+                    >
+                      <MapPin aria-hidden className="size-3 shrink-0" />
+                      {t.room ? copy.card.room(t.room) : copy.card.roomTbd}
                     </span>
                   </label>
                 );

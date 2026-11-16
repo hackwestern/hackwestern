@@ -109,53 +109,6 @@ export const sponsorPortalRouter = createTRPCRouter({
     }),
 
   /**
-   * Coffee-chat booking board for the sponsor portal. Public (queries are
-   * keyed by the sponsor's private UUID, like the picks endpoints).
-   * Returns the sponsor's allowance (from "Coffee Chat Max Minutes" on the
-   * sponsor info tab), the slots they have already booked, and every slot
-   * that is held by someone else so the grid can shade them.
-   */
-  getCoffeeChatSchedule: publicProcedure
-    .input(z.object({ sponsor: z.string().uuid() }))
-    .query(async ({ input }) => {
-      try {
-        const sponsorName = await resolveSponsorName(input.sponsor);
-        const sheets = await getSheetsClient();
-        const spreadsheetId = getSpreadsheetId();
-
-        const [sponsorInfoMap, grid] = await Promise.all([
-          fetchAllSponsorInfo(sheets, spreadsheetId),
-          fetchCoffeeChatGrid(sheets, spreadsheetId),
-        ]);
-
-        const maxCoffeeChatMinutes =
-          sponsorInfoMap.get(sponsorName.toLowerCase())?.maxCoffeeChatMinutes ??
-          0;
-
-        return {
-          sponsorName,
-          maxCoffeeChatMinutes,
-          maxBlocks: coffeeChatBlocksFor(maxCoffeeChatMinutes),
-          myBooked: sortCoffeeChatSlots(
-            grid.filter((booking) => isBookedBy(booking, sponsorName)),
-          ).map(({ room, time }) => ({ room, time })),
-          othersBooked: sortCoffeeChatSlots(
-            grid.filter((booking) => !isBookedBy(booking, sponsorName)),
-          ),
-        };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error
-              ? error.message
-              : "Failed to load the coffee chat schedule",
-        });
-      }
-    }),
-
-  /**
    * Save the sponsor's coffee-chat booking (their full desired final state,
    * so re-saving with fewer slots cancels the rest). Public, keyed by the
    * private UUID. Validates every slot is real, free of other sponsors'
