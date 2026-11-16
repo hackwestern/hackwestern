@@ -170,11 +170,18 @@ export const coffeeChatCopy = {
     hackerBusy: "This hacker already has a chat at that time.",
     roomTaken: "Another sponsor is using that room then.",
     unknownRoom: "That room isn't on the run of show.",
+    roomClash: (room: string, sponsor: string, start: string, end: string) =>
+      `${sponsor} already has ${room} from ${start} to ${end}, which overlaps this window.`,
     chatNotFound: "That coffee chat doesn't exist.",
     notPending: "This request can't be answered anymore.",
     alreadyOver: "This chat can't be changed anymore.",
     sheetUnavailable:
       "Couldn't read the run-of-show sheet. Try again in a minute.",
+  },
+
+  // Shown to sponsors (freeTimes / sponsorChats `watcherName`).
+  watcher: {
+    line: (name: string) => `Your Hack Western contact for chats: ${name}`,
   },
 
   organizer: {
@@ -202,5 +209,56 @@ export const coffeeChatCopy = {
       last ? `${first} ${last}` : first,
     when: (time: string, minutes: number) => `${time} · ${minutes} min`,
     actionError: "Couldn't update the chat.",
+
+    // Saturday room assignment (rooms 2241-2243), one card per sponsor.
+    rooms: {
+      heading: "Rooms",
+      intro:
+        "Give each sponsor a coffee chat room. Sponsors in the same room can't overlap. Changing a room moves that sponsor's booked chats and tells each hacker.",
+      empty: "No sponsors yet.",
+      window: "Window",
+      format: "Format",
+      hackers: "Hackers",
+      room: "Room",
+      unassigned: "Not assigned",
+      sheetRoom: (room: string) => `Sheet says ${room}`,
+      notSetUp: "No coffee chat window in the sheet yet.",
+      notRegistered: "Not registered on the site, so no room can be saved.",
+      saved: "Saved",
+      saveError: "Couldn't save the room.",
+      watcher: "Watched by",
+      watcherHint:
+        "Sponsor team member who watches this sponsor's chats and room.",
+      watcherPlaceholder: "Name",
+      watcherSave: "Save",
+      watcherSaved: "Saved",
+      watcherError: "Couldn't save who's watching.",
+    },
+
+    // Organizers add a chat by hand (same rules as a sponsor's offer).
+    add: {
+      heading: "Add a chat",
+      intro:
+        "Book a hacker with a sponsor yourself. The hacker still accepts on /live and gets the usual message.",
+      sponsor: "Sponsor",
+      pickSponsor: "Pick a sponsor",
+      hacker: "Hacker",
+      hackerPlaceholder: "Name, email or hacker ID",
+      searching: "Searching…",
+      noMatches: "No admitted hacker matches that.",
+      typeMore: "Type at least 2 characters.",
+      change: "Change",
+      code: (code: string | null) => code ?? "No hacker ID yet",
+      time: "Start time",
+      pickTime: "Pick a time",
+      noTimes: "No open times left for this sponsor and hacker.",
+      timeOption: (time: string, seats: number, room: string | null) =>
+        `${time} · ${seats} ${seats === 1 ? "seat" : "seats"} left${room ? ` · ${room}` : ""}`,
+      rep: "Rep name (optional)",
+      submit: "Add chat",
+      added: (hacker: string, sponsor: string, time: string) =>
+        `Sent ${hacker} a request for ${sponsor} at ${time}.`,
+      addError: "Couldn't add the chat.",
+    },
   },
 } as const;
