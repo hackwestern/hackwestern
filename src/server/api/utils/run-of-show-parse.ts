@@ -12,11 +12,15 @@ import {
   RUN_OF_SHOW_COLUMNS,
   RUN_OF_SHOW_DAYS,
   compareRunOfShow,
+  locationFor,
+  type CeremonyKind,
+  type CeremonySegment,
   type CoffeeChatSetup,
   type RunOfShowColumn,
   type RunOfShowDay,
   type RunOfShowItem,
   type RunOfShowTask,
+  type WorkshopInfo,
 } from "~/lib/run-of-show";
 
 /** Formatted cell text, row-major, 0-based from A1. Missing cells = "". */
@@ -35,6 +39,8 @@ export type ParsedRunOfShow = {
   items: RunOfShowItem[];
   tasks: RunOfShowTask[];
   coffeeChats: CoffeeChatSetup[];
+  ceremonies: CeremonySegment[];
+  workshops: WorkshopInfo[];
 };
 
 const SLOT_MINUTES = 30;
@@ -265,30 +271,317 @@ export function parseCoffeeChatsTab(grid: SheetGrid): CoffeeChatSetup[] {
   return setups;
 }
 
+/** Header text reduced to letters only: "Runner(s)" -> "runners", "#" -> "no". */
+function headerKey(text: string): string {
+  if (text.trim() === "#") return "no";
+  return text.toLowerCase().replace(/[^a-z]/g, "");
+}
+
+/** Index of the first header matching any alias; -1 when none does. */
+function findColumn(headers: string[], aliases: readonly string[]): number {
+  return headers.findIndex((h) => h !== "" && aliases.includes(h));
+}
+
+/** "7:42 PM", "7:42pm" or "19:42" -> "19:42" (any minute). Null otherwise. */
+export function parseClockTime(text: string): string | null {
+  const m = /^\s*(\d{1,2}):(\d{2})\s*(am|pm)?\s*$/i.exec(text);
+  if (!m) return null;
+  let hour = Number(m[1]);
+  const minute = Number(m[2]);
+  const suffix = m[3]?.toLowerCase();
+  if (minute > 59) return null;
+  if (suffix) {
+    if (hour < 1 || hour > 12) return null;
+    hour = (hour % 12) + (suffix === "pm" ? 12 : 0);
+  } else if (hour > 23) {
+    return null;
+  }
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+/** "3 mins", "(1 min)", "5" -> minutes. Null when there's no number. */
+function parseMinutes(text: string): number | null {
+  const m = /(\d+)\s*(?:min|$)/i.exec(text.trim());
+  return m ? Number(m[1]) : null;
+}
+
+/** One name per line or per ";". Commas stay: "Rob Craig, Manager ...". */
+function splitPeople(text: string): string[] {
+  return text
+    .split(/[\n;]/)
+    .map((p) => p.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+function asDayLoose(text: string): RunOfShowDay | null {
+  const t = text.trim().toLowerCase().slice(0, 3);
+  if (t.length < 3) return null;
+  return RUN_OF_SHOW_DAYS.find((d) => d.toLowerCase().startsWith(t)) ?? null;
+}
+
+/*
+ * "Opening + Closing Ceremonies" tab. Layout seen in the sheet export
+ * (2026-11-14):
+ *
+ *   Task | Who | Notes                        <- team checklist, ignored
+ *   Opening Speakers                          <- section title
+ *   Company | Speaker                         <- header
+ *   Canada Life (1 min) | Rob Craig, Manager Emerging Talent and Programs
+ *   Manulife (1 min) |                        <- speaker not confirmed yet
+ *   Closing Speakers
+ *   Company | Speaker
+ *   Scotiabank (1 mins) |
+ *
+ * Columns are found by header name, so organizers can add any of these
+ * (case and punctuation ignored):
+ *   Company / Sponsor          the company; "(N min)" in it is the duration
+ *   Speaker(s) / Presenter(s)  one person per line or per ";"
+ *   Order / # / Slot           running order (default: row order)
+ *   Time / Start / Start time  e.g. "7:42 PM"
+ *   Duration / Length / Mins   e.g. "3 mins"
+ *   Topic / Segment / Title    what the slot is (default: the company)
+ *   Ceremony                   "Opening"/"Closing", for one combined table
+ * A section title is a row whose only text mentions "opening" or "closing".
+ */
+const CEREMONY_HEADERS = {
+  sponsor: ["company", "sponsor", "companies", "sponsors"],
+  speakers: ["speaker", "speakers", "presenter", "presenters"],
+  order: ["order", "no", "slot", "runningorder"],
+  start: ["time", "start", "starttime", "timeest"],
+  duration: ["duration", "length", "mins", "minutes"],
+  title: ["topic", "segment", "title", "item"],
+  ceremony: ["ceremony"],
+} as const;
+
+const CEREMONY_ORDER: CeremonyKind[] = ["opening", "closing"];
+
+function ceremonyOf(text: string): CeremonyKind | null {
+  if (/opening/i.test(text)) return "opening";
+  if (/closing/i.test(text)) return "closing";
+  return null;
+}
+
+/** Parse the ceremonies tab. Never throws: an unknown layout is []. */
+export function parseCeremoniesTab(grid: SheetGrid): CeremonySegment[] {
+  const segments: CeremonySegment[] = [];
+  let section: CeremonyKind | null = null;
+  let cols: Record<keyof typeof CEREMONY_HEADERS, number> | null = null;
+  const count: Record<CeremonyKind, number> = { opening: 0, closing: 0 };
+
+  for (const gridRow of grid) {
+    const row = (gridRow ?? []).map((c) => String(c ?? "").trim());
+    const filled = row.filter(Boolean);
+    if (filled.length === 0) continue;
+
+    const keys = row.map(headerKey);
+    const sponsorCol = findColumn(keys, CEREMONY_HEADERS.sponsor);
+    const speakersCol = findColumn(keys, CEREMONY_HEADERS.speakers);
+    if (sponsorCol >= 0 && (speakersCol >= 0 || findColumn(keys, CEREMONY_HEADERS.title) >= 0)) {
+      cols = {
+        sponsor: sponsorCol,
+        speakers: speakersCol,
+        order: findColumn(keys, CEREMONY_HEADERS.order),
+        start: findColumn(keys, CEREMONY_HEADERS.start),
+        duration: findColumn(keys, CEREMONY_HEADERS.duration),
+        title: findColumn(keys, CEREMONY_HEADERS.title),
+        ceremony: findColumn(keys, CEREMONY_HEADERS.ceremony),
+      };
+      continue;
+    }
+    if (filled.length === 1 && ceremonyOf(filled[0]!)) {
+      section = ceremonyOf(filled[0]!);
+      continue;
+    }
+    if (!cols) continue;
+
+    const at = (c: number) => (c < 0 ? "" : (row[c] ?? ""));
+    const ceremony = ceremonyOf(at(cols.ceremony)) ?? section;
+    const company = at(cols.sponsor);
+    const topic = at(cols.title);
+    if (!ceremony || (!company && !topic)) continue;
+
+    const durationText = /\(([^)]*\d[^)]*)\)/.exec(company)?.[1] ?? "";
+    const sponsor = company.replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
+    const order = Number.parseInt(at(cols.order), 10);
+    count[ceremony] += 1;
+    segments.push({
+      ceremony,
+      order: Number.isFinite(order) ? order : count[ceremony],
+      start: parseClockTime(at(cols.start)),
+      durationMinutes:
+        parseMinutes(at(cols.duration)) ?? parseMinutes(durationText),
+      title: topic || sponsor,
+      sponsor: sponsor || null,
+      speakers: splitPeople(at(cols.speakers)),
+    });
+  }
+  return segments.sort(
+    (a, b) =>
+      CEREMONY_ORDER.indexOf(a.ceremony) - CEREMONY_ORDER.indexOf(b.ceremony) ||
+      a.order - b.order,
+  );
+}
+
+/*
+ * "Workshops" tab. Layout seen in the sheet export (2026-11-14):
+ *
+ *   Workshop | Description | Notes            <- header, row 1
+ *   Canada Life: Women in Technology Panel | Join a panel of ...
+ *   Scotiabank Workshop 1 |                   <- no description yet
+ *   (blank)
+ *   Notes | Noah will make sure hosts are there!   <- end of the list
+ *
+ * The tab has no runner, time or room columns yet. Columns are found by
+ * header name, so organizers can add any of these:
+ *   Workshop / Title / Session     the workshop (required)
+ *   Description / Abstract         shown to the sponsor
+ *   Sponsor / Company              default: matched from the title
+ *   Runner(s) / Host(s) / Speaker(s) / Presenter(s) / Facilitator(s) / Run by
+ *   Day                            "Saturday" / "Sat"
+ *   Time / Start                   e.g. "10:00 AM"
+ *   Room / Location
+ * Time and room missing here come from the workshop's block on RUN OF SHOW
+ * (attachWorkshopTimes).
+ */
+const WORKSHOP_HEADERS = {
+  title: ["workshop", "title", "session", "workshops", "name"],
+  description: ["description", "abstract", "blurb", "details"],
+  sponsor: ["sponsor", "company"],
+  runners: [
+    "runner", "runners", "runby", "host", "hosts", "hostedby", "speaker",
+    "speakers", "presenter", "presenters", "facilitator", "facilitators",
+    "lead", "leads",
+  ],
+  day: ["day"],
+  start: ["time", "start", "starttime", "timeest"],
+  room: ["room", "location"],
+} as const;
+
+/** Parse the Workshops tab. Never throws: an unknown layout is []. */
+export function parseWorkshopsTab(grid: SheetGrid): WorkshopInfo[] {
+  const headerRow = grid.findIndex(
+    (row) => findColumn((row ?? []).map((c) => headerKey(String(c ?? ""))), WORKSHOP_HEADERS.title) >= 0,
+  );
+  if (headerRow < 0) return [];
+  const keys = (grid[headerRow] ?? []).map((c) => headerKey(String(c ?? "")));
+  const col = (k: keyof typeof WORKSHOP_HEADERS) => findColumn(keys, WORKSHOP_HEADERS[k]);
+  const cols = {
+    title: col("title"),
+    description: col("description"),
+    sponsor: col("sponsor"),
+    runners: col("runners"),
+    day: col("day"),
+    start: col("start"),
+    room: col("room"),
+  };
+
+  const workshops: WorkshopInfo[] = [];
+  for (let r = headerRow + 1; r < grid.length; r++) {
+    const at = (c: number) => (c < 0 ? "" : cell(grid, r, c));
+    const title = at(cols.title).replace(/\s+/g, " ");
+    if (!title) continue;
+    if (headerKey(title) === "notes") break;
+    workshops.push({
+      title,
+      sponsor: at(cols.sponsor) || null,
+      runners: splitPeople(at(cols.runners)),
+      day: asDayLoose(at(cols.day)),
+      start: parseClockTime(at(cols.start)),
+      room: at(cols.room) || null,
+      description: at(cols.description) || null,
+    });
+  }
+  return workshops;
+}
+
+/** Longest registered name in `text`, or null. */
+function bestSponsor(text: string, sponsorNames: string[]): string | null {
+  const [match] = matchSponsors(text, sponsorNames).sort(
+    (a, b) => b.length - a.length,
+  );
+  return match ?? null;
+}
+
+function firstWord(text: string): string {
+  return norm(text.split(/[\s:]/)[0] ?? "");
+}
+
+/**
+ * Fill each workshop's missing day/start/room from its block in the RUN OF
+ * SHOW "Sponsor Workshop" column: a sponsor's Nth workshop row takes their
+ * Nth block in time order ("Scotiabank Workshop 2" -> the second). Blocks
+ * shared by several sponsors (judging) are skipped. A workshop without a
+ * sponsor matches blocks with none whose title starts with the same word
+ * ("MLH" -> "MLH Workshop").
+ */
+export function attachWorkshopTimes(
+  workshops: WorkshopInfo[],
+  items: RunOfShowItem[],
+): WorkshopInfo[] {
+  const blocks = items
+    .filter((i) => i.column === "sponsor-workshop" && i.sponsors.length <= 1)
+    .sort(compareRunOfShow);
+  const keyOfBlock = (i: RunOfShowItem) => i.sponsors[0] ?? firstWord(i.title);
+  const used = new Map<string, number>();
+  return workshops.map((w) => {
+    const key = w.sponsor ?? firstWord(w.title);
+    const nth = used.get(key) ?? 0;
+    used.set(key, nth + 1);
+    const block = blocks.filter((b) => keyOfBlock(b) === key)[nth];
+    if (!block) return w;
+    return {
+      ...w,
+      day: w.day ?? block.day,
+      start: w.start ?? block.start,
+      room:
+        w.room ??
+        (block.location && w.sponsor
+          ? locationFor(block.location, w.sponsor)
+          : block.location),
+    };
+  });
+}
+
 /**
  * Fill in `sponsors` on every item (from its title) and rename each Coffee
- * Chats row to its registered sponsor name when one matches.
+ * Chats row, ceremony slot and workshop to its registered sponsor name when
+ * one matches. Workshops also get their time and room from RUN OF SHOW.
  */
 export function applySponsorNames(
-  parsed: ParsedRunOfShow,
+  // Ceremonies and workshops are optional for callers that only need
+  // items and coffee chats (they come back empty).
+  parsed: Omit<ParsedRunOfShow, "ceremonies" | "workshops"> &
+    Partial<Pick<ParsedRunOfShow, "ceremonies" | "workshops">>,
   sponsorNames: string[],
 ): ParsedRunOfShow {
+  const items = parsed.items.map((item) => ({
+    ...item,
+    // Title and location: Sunday judging names each sponsor's room only in
+    // the location ("Scotiabank: Rm 2110, Canada Life: Rm 2230").
+    sponsors: matchSponsors(
+      `${item.title} ${item.location ?? ""}`,
+      sponsorNames,
+    ),
+  }));
+  const workshops = (parsed.workshops ?? []).map((w) => ({
+    ...w,
+    sponsor: w.sponsor
+      ? (bestSponsor(w.sponsor, sponsorNames) ?? w.sponsor)
+      : bestSponsor(w.title, sponsorNames),
+  }));
   return {
-    items: parsed.items.map((item) => ({
-      ...item,
-      // Title and location: Sunday judging names each sponsor's room only in
-      // the location ("Scotiabank: Rm 2110, Canada Life: Rm 2230").
-      sponsors: matchSponsors(
-        `${item.title} ${item.location ?? ""}`,
-        sponsorNames,
-      ),
-    })),
+    items,
     tasks: parsed.tasks,
     coffeeChats: parsed.coffeeChats.map((setup) => {
-      const [match] = matchSponsors(setup.sponsor, sponsorNames).sort(
-        (a, b) => b.length - a.length,
-      );
+      const match = bestSponsor(setup.sponsor, sponsorNames);
       return match ? { ...setup, sponsor: match } : setup;
     }),
+    ceremonies: (parsed.ceremonies ?? []).map((s) => ({
+      ...s,
+      sponsor: s.sponsor
+        ? (bestSponsor(s.sponsor, sponsorNames) ?? s.sponsor)
+        : null,
+    })),
+    workshops: attachWorkshopTimes(workshops, items),
   };
 }

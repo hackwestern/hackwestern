@@ -130,7 +130,7 @@ describe("sponsor matching", () => {
 
   test("applySponsorNames fills items and renames coffee chat rows", () => {
     const named = applySponsorNames(
-      { ...parsed, coffeeChats: parseCoffeeChatsTab(COFFEE) },
+      { ...parsed, coffeeChats: parseCoffeeChatsTab(COFFEE), ceremonies: [], workshops: [] },
       names,
     );
     expect(named.items.find((i) => i.title === "Sunlife Workshop")?.sponsors).toEqual(["Sun Life"]);
@@ -145,7 +145,7 @@ describe("sponsor matching", () => {
       location: "Scotiabank: Rm 2110, Canada Life: Rm 2230",
     };
     const named = applySponsorNames(
-      { ...parsed, coffeeChats: [], items: [judging] },
+      { ...parsed, coffeeChats: [], ceremonies: [], workshops: [], items: [judging] },
       names,
     );
     expect(named.items[0]?.sponsors.sort()).toEqual(["Canada Life", "Scotiabank"]);
