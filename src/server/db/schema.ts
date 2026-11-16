@@ -1497,3 +1497,73 @@ export const scavengerHuntRedemptions = pgTable(
   },
   (t) => [index("redemption_user_idx").on(t.userId)],
 );
+
+// ---------------------------------------------------------------------------
+// Run-of-show task reminders (T49)
+// ---------------------------------------------------------------------------
+
+// Who a sheet "Owner" name is on Slack. Organizers type the email on the
+// Team tasks tab; the Slack user id is looked up once (users.lookupByEmail)
+// and cached until the email changes.
+export const taskOwnerContacts = pgTable("task_owner_contact", {
+  // Owner name trimmed, spaces collapsed, lower-cased ("jazz gu").
+  ownerKey: varchar("owner_key", { length: 255 }).primaryKey(),
+  // Owner name as the sheet writes it, for display.
+  ownerName: varchar("owner_name", { length: 255 }).notNull(),
+  slackEmail: varchar("slack_email", { length: 255 }),
+  // Null until looked up, or when Slack has no account for the email.
+  slackUserId: varchar("slack_user_id", { length: 32 }),
+  // When the email was last looked up; null = not checked yet.
+  lookedUpAt: timestamp("looked_up_at", { mode: "date", precision: 3 }),
+  updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
+
+export const taskReminderStatusEnum = pgEnum("task_reminder_status", [
+  "scheduled",
+  "cancelled",
+  "failed",
+  "sent-window-passed",
+]);
+
+// One Slack scheduled message for a task, at its start time: a DM to the
+// owner, or a team channel post when nobody owns it on Slack (slackUserId
+// null).
+// Synced from the run-of-show sheet (src/server/api/utils/task-reminders.ts).
+export const taskReminders = pgTable(
+  "task_reminder",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    // sha256 of day + start + task + owner: a changed task is a new key.
+    taskKey: varchar("task_key", { length: 64 }).notNull(),
+    owner: varchar("owner", { length: 255 }).notNull(),
+    // Task text and Slack user, so a failure can be shown and an owner's new
+    // Slack account reschedules the DM.
+    task: text("task").notNull(),
+    slackUserId: varchar("slack_user_id", { length: 32 }),
+    postAt: timestamp("post_at", { mode: "date", precision: 3 }).notNull(),
+    // DM channel id from conversations.open.
+    slackChannel: varchar("slack_channel", { length: 32 }),
+    scheduledMessageId: varchar("scheduled_message_id", { length: 64 }),
+    status: taskReminderStatusEnum("status").notNull(),
+    error: varchar("error", { length: 255 }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("task_reminder_key_idx").on(t.taskKey),
+    index("task_reminder_status_idx").on(t.status),
+  ],
+);
+
+// One row ("run-of-show"): when reminders were last synced and the hash of
+// the tasks they were synced from. The automatic sync after a sheet read is
+// throttled with lastAttemptAt.
+export const taskReminderSync = pgTable("task_reminder_sync", {
+  id: varchar("id", { length: 32 }).primaryKey(),
+  tasksHash: varchar("tasks_hash", { length: 64 }),
+  lastSyncedAt: timestamp("last_synced_at", { mode: "date", precision: 3 }),
+  lastAttemptAt: timestamp("last_attempt_at", { mode: "date", precision: 3 }),
+});

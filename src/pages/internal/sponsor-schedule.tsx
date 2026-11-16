@@ -20,6 +20,7 @@ import {
 } from "~/components/sponsors/schedule-states";
 import { SheetEditButton } from "~/components/sponsors/sheet-edit-button";
 import { SponsorMap } from "~/components/sponsors/sponsor-map";
+import { TaskRemindersPanel } from "~/components/sponsors/task-reminders-panel";
 import { useNow } from "~/components/sponsors/use-now";
 import { WorkshopsTable } from "~/components/sponsors/workshop-details";
 import { coffeeChatCopy } from "~/content/coffee-chat";
@@ -103,6 +104,7 @@ export default function OrganizerRunOfShowPage() {
                   <WorkshopsTable workshops={q.data.workshops} />
                 </>
               )}
+              {tab === "tasks" && <TaskRemindersPanel />}
               {tab === "tasks" && <Tasks data={q.data} day={shownDay} />}
               {tab === "coffee" && (
                 <>

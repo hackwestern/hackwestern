@@ -104,3 +104,8 @@
 - **Decision:** Organizers name who on the sponsor team watches each sponsor's coffee chats (and so that sponsor's room), next to the room in the Coffee chats tab. Stored as free text (`coffee_chat_watcher`), with organizer names suggested. Sponsors get the name as `watcherName` from `coffeeChatRequests.freeTimes` and `sponsorChats` ("Your Hack Western contact for chats").
 - **Why:** sponsors need one person to ask during chats, and the team needs to know who covers which room.
 - **Alternatives:** a user id foreign key to organizers (blocks volunteers without accounts); one watcher per room (sponsors move between rooms).
+
+## 2026-11-16 — Task reminders: Slack scheduled DMs, synced from the sheet
+- **Decision:** Each run-of-show task's owner gets a Slack DM at the task's start time. A task with no owner, or an owner we can't match to a Slack user, goes to the sponsor team channel (`SPONSOR_HELP_SLACK_CHANNEL`) so someone can grab it. The site schedules each message in Slack (`chat.scheduleMessage`) and keeps them in step with the sheet: after each sheet read (at most every 3 minutes) and from the "Re-sync reminders" button on the Team tasks tab, new tasks are scheduled and changed or removed ones are deleted. Organizers match owner names to Slack emails on the same tab.
+- **Why:** no cron needed, and Slack delivers on time even if the site is idle. DMs only for owners, per Jazz; the channel is the fallback so unowned tasks still get noticed.
+- **Alternatives:** a Vercel cron that posts each task (another moving part, and it only fires when the cron runs); channel posts for every task (noisy, owners miss their own).
