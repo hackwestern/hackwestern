@@ -109,6 +109,19 @@ describe("sponsorInterest", () => {
     expect((await me.caller.sponsorInterest.get()).ranking).toEqual([]);
   });
 
+  test("concurrent saves both succeed and leave one whole ranking", async () => {
+    const me = await hacker();
+    const a = ["StarTech", "CSE", "Sun Life"];
+    const b = ["Commure", "Scotiabank"];
+    await Promise.all([
+      me.caller.sponsorInterest.save({ ranking: a }),
+      me.caller.sponsorInterest.save({ ranking: b }),
+      me.caller.sponsorInterest.save({ ranking: a }),
+    ]);
+    const names = (await rowsOf(me.id)).map((r) => r.name);
+    expect([a, b]).toContainEqual(names);
+  });
+
   test("the hacker API never exposes sponsor ids", async () => {
     const me = await hacker();
     const got = await me.caller.sponsorInterest.get();

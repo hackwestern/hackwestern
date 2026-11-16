@@ -26,4 +26,10 @@ export const sponsorInterestCopy = {
   notShared:
     "You didn't agree to share your profile with sponsors on your application, so sponsors won't see your name or links. Your ranking is still saved.",
   noSponsors: "The sponsor list isn't ready yet. Check back soon.",
+  loading: "Loading",
+  movedAnnouncement: (name: string, position: number, total: number) =>
+    `${name} moved to position ${position} of ${total}`,
+  addedAnnouncement: (name: string, position: number, total: number) =>
+    `${name} added at position ${position} of ${total}`,
+  removedAnnouncement: (name: string) => `${name} removed from your ranking`,
 } as const;
