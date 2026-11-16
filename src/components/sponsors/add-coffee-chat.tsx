@@ -9,7 +9,7 @@ import { api } from "~/utils/api";
 const copy = coffeeChatCopy.organizer.add;
 
 /** `value`, once it has stopped changing for `ms`. */
-function useDebounced<T>(value: T, ms: number): T {
+export function useDebounced<T>(value: T, ms: number): T {
   const [settled, setSettled] = useState(value);
   useEffect(() => {
     const id = setTimeout(() => setSettled(value), ms);
@@ -229,7 +229,7 @@ export function AddCoffeeChat() {
   );
 }
 
-function HackerMatches({
+export function HackerMatches({
   query,
   settled,
   loading,

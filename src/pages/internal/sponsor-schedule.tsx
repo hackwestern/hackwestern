@@ -6,6 +6,7 @@ import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { InternalNavbar } from "~/components/internals/navbar";
 import { AddCoffeeChat } from "~/components/sponsors/add-coffee-chat";
+import { CoffeeChatBoard } from "~/components/sponsors/coffee-chat-board";
 import { CoffeeChatRooms } from "~/components/sponsors/coffee-chat-rooms";
 import { CeremonyOrder } from "~/components/sponsors/ceremony-order";
 import { CompanyLocationsView } from "~/components/sponsors/company-locations";
@@ -105,11 +106,15 @@ export default function OrganizerRunOfShowPage() {
               )}
               {tab === "tasks" && <Tasks data={q.data} day={shownDay} />}
               {tab === "coffee" && (
-                <>
-                  <CoffeeChatRooms />
-                  <AddCoffeeChat />
-                  <BookedChats />
-                </>
+                <CoffeeChatBoard
+                  list={
+                    <>
+                      <CoffeeChatRooms />
+                      <AddCoffeeChat />
+                      <BookedChats />
+                    </>
+                  }
+                />
               )}
               <ReadAt iso={q.data.readAt} />
             </>

@@ -235,6 +235,79 @@ export const coffeeChatCopy = {
       watcherError: "Couldn't save who's watching.",
     },
 
+    // Saturday board: sponsors across, 15-minute slots down (T48).
+    board: {
+      heading: "Saturday coffee chats",
+      intro:
+        "Every sponsor side by side. Pick a cell to see its chats, cancel or move them, or add one.",
+      viewLabel: "View",
+      views: { table: "Table", list: "List" },
+      summaryLabel: "Today's totals",
+      totals: {
+        offered: "Offered",
+        accepted: "Accepted",
+        pending: "Waiting for reply",
+        seatsLeft: "Seats left today",
+        rooms: "Rooms in use",
+      },
+      noRooms: "None yet",
+      tableLabel: "Coffee chats by sponsor and time",
+      scrollHint: "Scroll sideways to see every sponsor.",
+      time: "Time",
+      now: "Now",
+      empty: "No sponsor has coffee chat times in the sheet yet.",
+      notSetUp: "Not set up",
+      notRegistered: "Not registered on the site",
+      format: (minutes: number, groupSize: number) =>
+        groupSize > 1
+          ? `Group of ${groupSize}, ${minutes} min`
+          : `1-on-1, ${minutes} min`,
+      reps: (n: number) => `${n} ${n === 1 ? "rep" : "reps"}`,
+      counts: (accepted: number, pending: number, total: number) =>
+        `${accepted} accepted · ${pending} waiting · ${total} total`,
+      room: "Room",
+      unassigned: "Unassigned",
+      sheetRoom: (room: string) => `Sheet: ${room}`,
+      watcher: "Watched by",
+      watcherSave: "Save",
+      watcherSaved: "Saved",
+      outside: "Outside window",
+      noStart: "No start time",
+      seatsLeft: (n: number) => `${n} ${n === 1 ? "seat" : "seats"} left`,
+      full: "Full",
+      closed: "Closed",
+      shortName: (first: string, last: string | null) =>
+        last?.trim() ? `${first} ${last.trim()[0]!.toUpperCase()}.` : first,
+      cellLabel: (sponsor: string, time: string) => `${sponsor}, ${time}`,
+      status: {
+        pending: "Pending",
+        accepted: "Accepted",
+        declined: "Declined",
+        expired: "Expired",
+        cancelled: "Cancelled",
+      },
+      panel: {
+        title: (sponsor: string, time: string) => `${sponsor} at ${time}`,
+        description: (format: string, room: string | null) =>
+          room ? `${format} · ${room}` : `${format} · Room to be assigned`,
+        close: "Close",
+        chats: "Chats here",
+        noChats: "No chats here yet.",
+        code: (code: string | null) => code ?? "No hacker ID yet",
+        rep: (rep: string | null) => (rep ? `Rep: ${rep}` : "No rep named"),
+        addHeading: "Add a chat here",
+        addIntro: (sponsor: string, time: string) =>
+          `Sends the hacker a request for ${sponsor} at ${time}. They accept on /live.`,
+        cantAdd: {
+          notRegistered:
+            "This sponsor isn't registered on the site, so chats can't be added.",
+          notOpen: "This isn't one of the sponsor's start times.",
+          full: "No seats left at this time.",
+          tooLate: "Too close to the start to send a request now.",
+        },
+      },
+    },
+
     // Organizers add a chat by hand (same rules as a sponsor's offer).
     add: {
       heading: "Add a chat",
