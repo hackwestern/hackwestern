@@ -5,6 +5,7 @@ import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { InternalNavbar } from "~/components/internals/navbar";
+import { CoffeeChatRooms } from "~/components/sponsors/coffee-chat-rooms";
 import { CompanyLocationsView } from "~/components/sponsors/company-locations";
 import { DayPicker } from "~/components/sponsors/day-picker";
 import { HelpQueue } from "~/components/sponsors/help-queue";
@@ -90,7 +91,7 @@ export default function OrganizerRunOfShowPage() {
               {tab === "tasks" && <Tasks data={q.data} day={shownDay} />}
               {tab === "coffee" && (
                 <>
-                  <CoffeeSetups data={q.data} />
+                  <CoffeeChatRooms />
                   <BookedChats />
                 </>
               )}
@@ -154,43 +155,6 @@ function Tasks({ data, day }: { data: OrganizerRunOfShow; day: RunOfShowDay }) {
         </li>
       ))}
     </ol>
-  );
-}
-
-function CoffeeSetups({ data }: { data: OrganizerRunOfShow }) {
-  const t = copy.coffeeTable;
-  const cc = scheduleCopy.coffeeChat;
-  return (
-    <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2">
-      {data.coffeeChats.map((s) => (
-        <li
-          key={s.sponsor}
-          className="flex flex-col gap-2 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card"
-        >
-          <h2 className="m-0 text-lg font-semibold">{s.sponsor}</h2>
-          {!s.windowStart || !s.windowEnd ? (
-            <p className="m-0 text-sm text-dashboard-text-light">
-              {t.notSetUp}
-            </p>
-          ) : (
-            <dl className="m-0 grid grid-cols-[5.5rem_1fr] gap-x-3 gap-y-1 text-sm">
-              <dt className="text-dashboard-text-light">{t.window}</dt>
-              <dd className="m-0">
-                {formatClock(s.windowStart)} – {formatClock(s.windowEnd)}
-              </dd>
-              <dt className="text-dashboard-text-light">{t.format}</dt>
-              <dd className="m-0">
-                {cc.format(s.durationMinutes, s.groupSize)}
-              </dd>
-              <dt className="text-dashboard-text-light">{t.hackers}</dt>
-              <dd className="m-0">{s.hackers ?? "–"}</dd>
-              <dt className="text-dashboard-text-light">{t.room}</dt>
-              <dd className="m-0">{s.room ?? cc.roomTbd}</dd>
-            </dl>
-          )}
-        </li>
-      ))}
-    </ul>
   );
 }
 

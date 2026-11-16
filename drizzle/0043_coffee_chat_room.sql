@@ -1,0 +1,1 @@
+ALTER TABLE "sponsor_judging_sponsor" ADD COLUMN "coffee_chat_room" varchar(64);

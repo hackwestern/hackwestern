@@ -85,3 +85,8 @@
 - **Decision:** Sponsors see only their own schedule and rooms; the sponsor team sees every company on /internal/sponsor-schedule. The server trims shared rooms and other sponsors' names from a sponsor's schedule.
 - **Why:** Jazz: sponsors don't need it; it's for the sponsor team.
 - **Alternatives:** keep it for sponsors (earlier decision today, now reversed).
+
+## 2026-11-16 - Coffee chat rooms 2241-2243 are assigned on the site
+- **Decision:** Organizers give each sponsor a Saturday coffee chat room (Rm 2241, 2242 or 2243) in the Coffee chats tab of /internal/sponsor-schedule, stored on the sponsor (`coffee_chat_room`). The sheet's ROOM column is only a fallback when nothing is assigned. Two sponsors can't share a room in overlapping windows; changing a room moves that sponsor's live chats under the Move room rules and tells each hacker.
+- **Why:** the sponsor team decides rooms during the event and needs the change to reach offers, free times, cards and hackers at once, without a sheet round trip.
+- **Alternatives:** keep rooms in the sheet only (no clash check, no moving booked chats); per-slot rooms only (Move room still exists for one-off changes).
