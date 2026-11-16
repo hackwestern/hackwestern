@@ -104,3 +104,8 @@
 - **Decision:** Organizers name who on the sponsor team watches each sponsor's coffee chats (and so that sponsor's room), next to the room in the Coffee chats tab. Stored as free text (`coffee_chat_watcher`), with organizer names suggested. Sponsors get the name as `watcherName` from `coffeeChatRequests.freeTimes` and `sponsorChats` ("Your Hack Western contact for chats").
 - **Why:** sponsors need one person to ask during chats, and the team needs to know who covers which room.
 - **Alternatives:** a user id foreign key to organizers (blocks volunteers without accounts); one watcher per room (sponsors move between rooms).
+
+## 2026-11-16 - Organizer coffee chats default to a sponsor x time table
+- **Decision:** The Coffee chats tab opens on a Saturday table: one column per sponsor with a Coffee Chats row (room, watcher, counts in the sticky header), one row per 15-minute slot, 30-minute chats spanning two rows. A cell opens a side panel with Cancel, Move room and "Add a chat here". One new query, `coffeeChatRequests.organizerChatBoard`, builds the board with the same seat rules as offers. The per-sponsor cards stay behind a "List" toggle.
+- **Why:** Jazz wants to see every sponsor across the day at once, not one sponsor at a time.
+- **Alternatives:** stitch the board on the client from organizerRooms + organizerChats (no seat counts, two queries); drop the list view (loses the general Add a chat form).

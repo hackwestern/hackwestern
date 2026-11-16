@@ -1435,3 +1435,70 @@ describe("coffeeChatRequests.setCoffeeChatWatcher (T44)", () => {
     ).toBe("NOT_FOUND");
   });
 });
+
+describe("coffeeChatRequests.organizerChatBoard (T48)", () => {
+  test("401 logged out, 403 for hackers", async () => {
+    expect(
+      (await codeOf(caller.coffeeChatRequests.organizerChatBoard())).code,
+    ).toBe("UNAUTHORIZED");
+    const hacker = hackerCaller(await makeHacker());
+    expect(
+      (await codeOf(hacker.coffeeChatRequests.organizerChatBoard())).code,
+    ).toBe("FORBIDDEN");
+  });
+
+  test("every sponsor by slot, with chats, hacker codes and seats", async () => {
+    const orgId = `board-organizer-${++n}`;
+    await db
+      .insert(users)
+      .values({ id: orgId, email: `${orgId}@example.com`, type: "organizer" });
+    const org = hackerCaller(orgId);
+    const sponsor = await makeSponsor(2, {
+      windowStart: "13:00",
+      windowEnd: "14:00",
+      durationMinutes: 30,
+      groupSize: 3,
+      room: null,
+    });
+    const hacker = await makeHacker({ firstName: "Boardy" });
+    await db
+      .update(users)
+      .set({ hackerId: `board-code-${n}` })
+      .where(eq(users.id, hacker));
+    const { chatId } = await org.coffeeChatRequests.organizerOffer({
+      sponsorId: sponsor,
+      userId: hacker,
+      slotTime: "13:30",
+      repName: "Riley",
+    });
+
+    const board = await org.coffeeChatRequests.organizerChatBoard();
+    const column = board.sponsors.find((s) => s.sponsorId === sponsor)!;
+    expect(column).toMatchObject({
+      setUp: true,
+      reps: 2,
+      durationMinutes: 30,
+      counts: { accepted: 0, pending: 1, total: 1 },
+    });
+    const cell = column.cells.find((c) => c.slotTime === "13:30")!;
+    expect(cell).toMatchObject({
+      kind: "open",
+      rows: 2,
+      chatIds: [chatId],
+      seats: 3,
+      seatsUsed: 1,
+      seatsLeft: 2,
+      offerable: true,
+    });
+    // The 13:45 row belongs to the 13:30 cell.
+    expect(column.cells.some((c) => c.slotTime === "13:45")).toBe(false);
+    expect(board.chats.find((c) => c.chatId === chatId)).toMatchObject({
+      firstName: "Boardy",
+      hackerId: `board-code-${n}`,
+      repName: "Riley",
+      status: "pending",
+    });
+    expect(board.slots).toContain("13:45");
+    expect(board.assignableRooms).toEqual(["Rm 2241", "Rm 2242", "Rm 2243"]);
+  });
+});
