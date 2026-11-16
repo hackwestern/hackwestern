@@ -4,10 +4,8 @@
 T47 (hour grid + tasks column), T48 (coffee chat table), T49 (Slack task pings at start time; migration 0046). Local DB migrated to 0046; the five task owners from `_local/task-owners.md` are loaded into task_owner_contact locally. On the real site, enter them once in the organizer Team tasks tab after deploy.
 Checks on 0ca39a4: tsc clean; vitest 1015 passed, 1 failed (Apple Wallet). Run `next build` in a spare worktree before the PR.
 
-## Running when this session ended
-- T52 coffee chats tab: map + Where is everyone beside the table (worktree hackwestern-sd-chat, branch sd-chat-map)
-- T53 team tasks in their own colour on the schedule, Team tasks tab removed, "Task pings" panel under the grid; T54 live "Happening now" banner (organizer top + sponsor schedule) (worktree hackwestern-sd-sched2, branch sd-task-color)
-Merge both into sponsor-dashboard first.
+## Merged 2026-11-16 (late)
+T52 (coffee chats: map + where beside the table), T53 (tasks amber on schedule, Team tasks tab removed, Task pings under grid), T54 (live Happening now banner). Nothing running.
 
 ## Then: T55 one sponsor home at /internal/sponsors (Jazz, 2026-11-16)
 - /internal/sponsors ("Sponsor dashboard", top-nav "Sponsors") gets tabs: Sponsors (existing list) | Run of show | Coffee chats | Help.
