@@ -195,7 +195,7 @@ export default function SponsorHubPage() {
           </div>
         </DashboardPanel>
 
-        {/* Schedule + where is everyone (from the run-of-show sheet) */}
+        {/* Schedule (from the run-of-show sheet) */}
         <nav
           aria-label={scheduleCopy.hubLinks.label}
           className="grid grid-cols-1 gap-3 sm:grid-cols-2"
@@ -207,16 +207,6 @@ export default function SponsorHubPage() {
             </Link>
           </DashboardButton>
           <DashboardButton variant="outline" asChild className="h-11 w-full">
-            <Link href={`/sponsors/${id}/where`}>
-              <MapPin aria-hidden />
-              {scheduleCopy.hubLinks.where}
-            </Link>
-          </DashboardButton>
-          <DashboardButton
-            variant="outline"
-            asChild
-            className="h-11 w-full sm:col-span-2"
-          >
             <Link href={`/sponsors/${id}/hackers`}>
               <Users aria-hidden />
               {sponsorHackersCopy.hubLink}
