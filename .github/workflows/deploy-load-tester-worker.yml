@@ -6,7 +6,10 @@ name: Deploy load-tester worker
 # environment). Each environment needs:
 #   secrets.CLOUDFLARE_API_TOKEN               Workers Scripts:Edit + D1:Edit
 #   secrets.CLOUDFLARE_ACCOUNT_ID
-#   secrets.HW_NETWORK_REQUESTS_INGEST_TOKEN   same value as in that Vercel env
+# The worker's HW_NETWORK_REQUESTS_INGEST_TOKEN secret is NOT set here. Set it
+# once per environment by hand (it persists across deploys):
+#   npx wrangler secret put HW_NETWORK_REQUESTS_INGEST_TOKEN -c workers/hw-network-requests/wrangler.toml [-e dev]
+# using the same value as in that Vercel env.
 on:
   push:
     branches:
@@ -49,16 +52,3 @@ jobs:
       # so the dev D1 already exists (wrangler provisions it on first deploy).
       - name: Apply D1 schema
         run: $WRANGLER d1 execute $DB_NAME --remote --file=workers/hw-network-requests/schema.sql
-
-      - name: Set ingest token secret
-        env:
-          INGEST_TOKEN: ${{ secrets.HW_NETWORK_REQUESTS_INGEST_TOKEN }}
-        run: |
-          if [ -z "$INGEST_TOKEN" ]; then
-            echo "::error::HW_NETWORK_REQUESTS_INGEST_TOKEN is not set on this GitHub environment"
-            exit 1
-          fi
-          f=$(mktemp)
-          jq -n --arg t "$INGEST_TOKEN" '{HW_NETWORK_REQUESTS_INGEST_TOKEN: $t}' > "$f"
-          $WRANGLER secret bulk "$f"
-          rm -f "$f"

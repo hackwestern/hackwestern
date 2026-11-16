@@ -18,11 +18,17 @@ The worker reads the same name the app does. The worker only accepts writes
 - `dev` -> `hw-network-requests-dev` + its own D1 (GitHub env `Dev`; wrangler
   creates the D1 on the first deploy, see `[env.dev]` in `wrangler.toml`)
 
-Each run deploys, applies `schema.sql` (idempotent) and uploads the
-`HW_NETWORK_REQUESTS_INGEST_TOKEN` worker secret. Each GitHub environment needs
-`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and
-`HW_NETWORK_REQUESTS_INGEST_TOKEN`. Wrangler prints a harmless "multiple
-environments" warning on prod deploys.
+Each run deploys and applies `schema.sql` (idempotent). Each GitHub environment
+needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The ingest token is
+not in GitHub: set it on the worker once per environment (it persists across
+deploys), using the same value as in Vercel:
+
+```bash
+npx wrangler secret put HW_NETWORK_REQUESTS_INGEST_TOKEN -c workers/hw-network-requests/wrangler.toml        # prod
+npx wrangler secret put HW_NETWORK_REQUESTS_INGEST_TOKEN -c workers/hw-network-requests/wrangler.toml -e dev # dev
+```
+
+Wrangler prints a harmless "multiple environments" warning on prod deploys.
 
 Vercel does not read `.env`: set `HW_NETWORK_REQUESTS_INGEST_URL` and
 `HW_NETWORK_REQUESTS_INGEST_TOKEN` there. Local: `npm run load-tester:dev`
