@@ -4,6 +4,16 @@
 T47 (hour grid + tasks column), T48 (coffee chat table), T49 (Slack task pings at start time; migration 0046). Local DB migrated to 0046; the five task owners from `_local/task-owners.md` are loaded into task_owner_contact locally. On the real site, enter them once in the organizer Team tasks tab after deploy.
 Checks on 0ca39a4: tsc clean; vitest 1015 passed, 1 failed (Apple Wallet). Run `next build` in a spare worktree before the PR.
 
+## Running when this session ended
+- T52 coffee chats tab: map + Where is everyone beside the table (worktree hackwestern-sd-chat, branch sd-chat-map)
+- T53 team tasks in their own colour on the schedule, Team tasks tab removed, "Task pings" panel under the grid; T54 live "Happening now" banner (organizer top + sponsor schedule) (worktree hackwestern-sd-sched2, branch sd-task-color)
+Merge both into sponsor-dashboard first.
+
+## Then: T55 one sponsor home at /internal/sponsors (Jazz, 2026-11-16)
+- /internal/sponsors ("Sponsor dashboard", top-nav "Sponsors") gets tabs: Sponsors (existing list) | Run of show | Coffee chats | Help.
+- /internal/sponsor-schedule redirects to the matching tab; remove the separate "Sponsor team" nav link.
+- Each sponsor row: room, chats accepted/pending, open help request, "View on schedule" link that opens Run of show filtered to that company (first step of the T51 company filter).
+
 ## Next to build: T50 (small)
 - Jazz decided (2026-11-16): NO per-sponsor owner/rep. Help pings stay channel-only (@here in the spon-team channel); no DMs to a sponsor owner.
 - Hide the T44 "Your Hack Western contact for chats: <name>" line from sponsors (coffee-chats page, freeTimes/sponsorChats `watcherName` not shown). Keep the watcher field organizer-only, or drop it if Jazz prefers.
