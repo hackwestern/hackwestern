@@ -469,3 +469,139 @@ describe("coffeeChatRequests.freeTimes", () => {
     expect(forBusy.times.map((t) => t.slotTime)).toEqual(["10:00", "10:45"]);
   });
 });
+
+function hackerCaller(userId: string) {
+  return createCaller(
+    createInnerTRPCContext({
+      session: {
+        user: { id: userId },
+        expires: new Date(Date.now() + 60_000).toISOString(),
+      },
+    }),
+  );
+}
+
+describe("coffeeChatRequests.respond / mine (T16)", () => {
+  test("only the hacker on the chat can respond", async () => {
+    const sponsor = await makeSponsor(1);
+    const owner = await makeHacker();
+    const stranger = await makeHacker();
+    const { chatId } = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: owner,
+      slotTime: "10:00",
+    });
+
+    for (const answer of ["accept", "decline"] as const) {
+      const error = await codeOf(
+        hackerCaller(stranger).coffeeChatRequests.respond({ chatId, answer }),
+      );
+      expect(error.code).toBe("NOT_FOUND");
+    }
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.respond({ chatId, answer: "accept" }),
+        )
+      ).code,
+    ).toBe("UNAUTHORIZED");
+    expect(await hackerCaller(stranger).coffeeChatRequests.mine()).toEqual([]);
+
+    await expect(
+      hackerCaller(owner).coffeeChatRequests.respond({
+        chatId,
+        answer: "accept",
+      }),
+    ).resolves.toMatchObject({ chatId, status: "accepted" });
+    const [mine] = await hackerCaller(owner).coffeeChatRequests.mine();
+    expect(mine).toMatchObject({
+      chatId,
+      slotTime: "10:00",
+      status: "accepted",
+      room: setups.at(-1)!.room,
+      sponsorName: setups.at(-1)!.sponsor,
+    });
+  });
+
+  test("declining frees the seat", async () => {
+    const sponsor = await makeSponsor(1);
+    const [first, second] = [await makeHacker(), await makeHacker()];
+    const { chatId } = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: first,
+      slotTime: "10:00",
+    });
+    expect(
+      (await caller.coffeeChatRequests.freeTimes({ sponsor })).times.map(
+        (t) => t.slotTime,
+      ),
+    ).not.toContain("10:00");
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.offer({
+            sponsor,
+            userId: second,
+            slotTime: "10:00",
+          }),
+        )
+      ).code,
+    ).toBe("CONFLICT");
+
+    await hackerCaller(first).coffeeChatRequests.respond({
+      chatId,
+      answer: "decline",
+    });
+
+    expect(
+      (await caller.coffeeChatRequests.freeTimes({ sponsor })).times[0],
+    ).toEqual({ slotTime: "10:00", seatsLeft: 1 });
+    await expect(
+      caller.coffeeChatRequests.offer({
+        sponsor,
+        userId: second,
+        slotTime: "10:00",
+      }),
+    ).resolves.toMatchObject({ status: "pending" });
+    // Declined is final: it can't be accepted afterwards.
+    expect(
+      (
+        await codeOf(
+          hackerCaller(first).coffeeChatRequests.respond({
+            chatId,
+            answer: "accept",
+          }),
+        )
+      ).code,
+    ).toBe("CONFLICT");
+  });
+
+  test("pending past slot start - 20 min reads as expired and can't be accepted", async () => {
+    const sponsor = await makeSponsor(1);
+    const userId = await makeHacker();
+    const { chatId, expiresAt } = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId,
+      slotTime: "10:00",
+    });
+    expect(expiresAt).toBe("2026-11-21T14:40:00.000Z");
+
+    vi.setSystemTime(new Date("2026-11-21T09:40:00-05:00"));
+    try {
+      const [mine] = await hackerCaller(userId).coffeeChatRequests.mine();
+      expect(mine).toMatchObject({ chatId, status: "expired" });
+      expect(
+        (
+          await codeOf(
+            hackerCaller(userId).coffeeChatRequests.respond({
+              chatId,
+              answer: "accept",
+            }),
+          )
+        ).code,
+      ).toBe("CONFLICT");
+    } finally {
+      vi.setSystemTime(new Date("2026-11-21T08:00:00-05:00"));
+    }
+  });
+});
