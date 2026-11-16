@@ -199,6 +199,28 @@ describe("sponsorHelp.status", () => {
     expect(slack.repingSponsorHelp).toHaveBeenCalledTimes(2);
   });
 
+  test("a failed re-ping is retried on the next poll", async () => {
+    const { id } = await publicCaller.sponsorHelp.request({
+      sponsor: sponsorId,
+      reason: "swag",
+    });
+    await ageRequest(id, 4);
+    slack.repingSponsorHelp.mockResolvedValueOnce(false);
+    await publicCaller.sponsorHelp.status({ sponsor: sponsorId });
+    expect(
+      (await db.query.sponsorHelpRequests.findFirst())?.pingCount,
+    ).toBe(0);
+    await publicCaller.sponsorHelp.status({ sponsor: sponsorId });
+    expect(slack.repingSponsorHelp).toHaveBeenCalledTimes(2);
+    expect(slack.repingSponsorHelp).toHaveBeenLastCalledWith(
+      { channel: "C123", ts: "111.222" },
+      1,
+    );
+    expect(
+      (await db.query.sponsorHelpRequests.findFirst())?.pingCount,
+    ).toBe(1);
+  });
+
   test("no re-ping once claimed, and the claimer's name shows", async () => {
     const { id } = await publicCaller.sponsorHelp.request({
       sponsor: sponsorId,

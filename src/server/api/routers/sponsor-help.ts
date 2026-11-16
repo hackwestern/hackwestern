@@ -123,7 +123,17 @@ async function sendDueReping(row: HelpRow, now: Date) {
     )
     .returning({ id: sponsorHelpRequests.id });
   if (!won) return;
-  await repingSponsorHelp(ref, step);
+  if (await repingSponsorHelp(ref, step)) return;
+  // Slack failed: give the step back so the next poll retries it.
+  await db
+    .update(sponsorHelpRequests)
+    .set({ pingCount: row.pingCount })
+    .where(
+      and(
+        eq(sponsorHelpRequests.id, row.id),
+        eq(sponsorHelpRequests.pingCount, step),
+      ),
+    );
 }
 
 /** Close a live request (sponsor cancel or organizer resolve). */

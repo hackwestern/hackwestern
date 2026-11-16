@@ -180,8 +180,44 @@ describe("url_verification", () => {
 });
 
 describe("claiming", () => {
-  test("first reaction claims it, posts 'on it' and edits the message", async () => {
+  // Like the route: respond, then run the Slack follow-up.
+  async function run(req: Parameters<typeof handleSlackEvent>[0]) {
+    const res = await handleSlackEvent(req);
+    await res.after?.();
+    return res;
+  }
+
+  test("claims in the database before any Slack call", async () => {
     const res = await handleSlackEvent(signed(reaction("U1")));
+    expect(res.status).toBe(200);
+    expect((await request())?.status).toBe("claimed");
+    expect(fetchMock).not.toHaveBeenCalled();
+    await res.after?.();
+    expect(slackApiCalls("users.info")).toHaveLength(1);
+  });
+
+  test("Slack retries are acked without reprocessing", async () => {
+    const res = await run({ ...signed(reaction("U1")), retryNum: "1" });
+    expect(res).toEqual({ status: 200, body: { ok: true } });
+    expect((await request())?.status).toBe("open");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("users.info failure stores the fallback name", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    fetchMock.mockImplementation(async (url: string) =>
+      url.endsWith("/users.info")
+        ? new Response(JSON.stringify({ ok: false, error: "user_not_found" }))
+        : new Response(JSON.stringify({ ok: true })),
+    );
+    await run(signed(reaction("U1")));
+    const row = await request();
+    expect(row?.status).toBe("claimed");
+    expect(row?.claimedByName).toBe("Someone from the sponsor team");
+  });
+
+  test("first reaction claims it, posts 'on it' and edits the message", async () => {
+    const res = await run(signed(reaction("U1")));
     expect(res.status).toBe(200);
     const row = await request();
     expect(row?.status).toBe("claimed");
@@ -197,14 +233,14 @@ describe("claiming", () => {
   });
 
   test("a thread reply from a person claims it", async () => {
-    await handleSlackEvent(signed(reply({})));
+    await run(signed(reply({})));
     expect((await request())?.claimedBySlackId).toBe("U2");
   });
 
   test("two claims at once: only the first wins", async () => {
     const [a, b] = await Promise.all([
-      handleSlackEvent(signed(reaction("U1"))),
-      handleSlackEvent(signed(reaction("U2"))),
+      run(signed(reaction("U1"))),
+      run(signed(reaction("U2"))),
     ]);
     expect(a.status).toBe(200);
     expect(b.status).toBe(200);
@@ -216,29 +252,29 @@ describe("claiming", () => {
 
     // A later reaction doesn't steal it.
     const first = row?.claimedBySlackId;
-    await handleSlackEvent(signed(reaction("U3")));
+    await run(signed(reaction("U3")));
     expect((await request())?.claimedBySlackId).toBe(first);
   });
 
   test("reaction on an unrelated message is ignored", async () => {
-    const res = await handleSlackEvent(signed(reaction("U1", "555.666")));
+    const res = await run(signed(reaction("U1", "555.666")));
     expect(res.status).toBe(200);
     expect((await request())?.status).toBe("open");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test("bot messages and the bot's own reactions are ignored", async () => {
-    await handleSlackEvent(signed(reply({ bot_id: "B1", subtype: "bot_message" })));
-    await handleSlackEvent(signed(reply({ bot_id: "B1" })));
-    await handleSlackEvent(signed(reply({ user: BOT_USER })));
-    await handleSlackEvent(signed(reaction(BOT_USER)));
+    await run(signed(reply({ bot_id: "B1", subtype: "bot_message" })));
+    await run(signed(reply({ bot_id: "B1" })));
+    await run(signed(reply({ user: BOT_USER })));
+    await run(signed(reaction(BOT_USER)));
     expect((await request())?.status).toBe("open");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test("edits and top-level channel messages don't claim", async () => {
-    await handleSlackEvent(signed(reply({ subtype: "message_changed" })));
-    await handleSlackEvent(signed(reply({ thread_ts: undefined })));
+    await run(signed(reply({ subtype: "message_changed" })));
+    await run(signed(reply({ thread_ts: undefined })));
     expect((await request())?.status).toBe("open");
   });
 
@@ -247,7 +283,7 @@ describe("claiming", () => {
       .update(sponsorHelpRequests)
       .set({ status: "cancelled" })
       .where(eq(sponsorHelpRequests.id, requestId));
-    await handleSlackEvent(signed(reaction("U1")));
+    await run(signed(reaction("U1")));
     expect((await request())?.status).toBe("cancelled");
   });
 
@@ -257,10 +293,10 @@ describe("claiming", () => {
       { type: "message", channel_type: "im", user: "U1", channel: "D1", ts: "1.1" },
       { type: "team_join", user: { id: "U9" } },
     ]) {
-      const res = await handleSlackEvent(signed(eventCallback(event)));
+      const res = await run(signed(eventCallback(event)));
       expect(res.status).toBe(200);
     }
-    expect((await handleSlackEvent(signed({ type: "app_rate_limited" }))).status)
+    expect((await run(signed({ type: "app_rate_limited" }))).status)
       .toBe(200);
     expect((await request())?.status).toBe("open");
     expect(fetchMock).not.toHaveBeenCalled();
