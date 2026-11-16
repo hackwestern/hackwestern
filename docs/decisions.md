@@ -109,3 +109,8 @@
 - **Decision:** The Coffee chats tab opens on a Saturday table: one column per sponsor with a Coffee Chats row (room, watcher, counts in the sticky header), one row per 15-minute slot, 30-minute chats spanning two rows. A cell opens a side panel with Cancel, Move room and "Add a chat here". One new query, `coffeeChatRequests.organizerChatBoard`, builds the board with the same seat rules as offers. The per-sponsor cards stay behind a "List" toggle.
 - **Why:** Jazz wants to see every sponsor across the day at once, not one sponsor at a time.
 - **Alternatives:** stitch the board on the client from organizerRooms + organizerChats (no seat counts, two queries); drop the list view (loses the general Add a chat form).
+
+## 2026-11-16 — Task reminders: Slack scheduled DMs, synced from the sheet
+- **Decision:** Each run-of-show task's owner gets a Slack DM at the task's start time. A task with no owner, or an owner we can't match to a Slack user, goes to the sponsor team channel (`SPONSOR_HELP_SLACK_CHANNEL`) so someone can grab it. The site schedules each message in Slack (`chat.scheduleMessage`) and keeps them in step with the sheet: after each sheet read (at most every 3 minutes) and from the "Re-sync reminders" button on the Team tasks tab, new tasks are scheduled and changed or removed ones are deleted. Organizers match owner names to Slack emails on the same tab.
+- **Why:** no cron needed, and Slack delivers on time even if the site is idle. DMs only for owners, per Jazz; the channel is the fallback so unowned tasks still get noticed.
+- **Alternatives:** a Vercel cron that posts each task (another moving part, and it only fires when the cron runs); channel posts for every task (noisy, owners miss their own).

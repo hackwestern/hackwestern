@@ -192,7 +192,25 @@ export function createCachedLoader<T>(
   };
 }
 
-const runOfShowCache = createCachedLoader(fetchRunOfShow, RUN_OF_SHOW_CACHE_MS);
+/**
+ * After a fresh read, keep the task reminders in step with the sheet (T49).
+ * Not awaited, so the request never waits; skipped when Slack isn't set up.
+ * Imported lazily: task-reminders imports this module.
+ */
+function afterRunOfShowFetch(snapshot: RunOfShowSnapshot): void {
+  if (!env.SLACK_BOT_TOKEN) return;
+  void import("~/server/api/utils/task-reminders")
+    .then((m) => m.maybeAutoSyncTaskReminders(snapshot))
+    .catch((error: unknown) =>
+      console.error("task reminders: automatic sync failed", error),
+    );
+}
+
+const runOfShowCache = createCachedLoader(async () => {
+  const snapshot = await fetchRunOfShow();
+  afterRunOfShowFetch(snapshot);
+  return snapshot;
+}, RUN_OF_SHOW_CACHE_MS);
 
 /** The parsed sheet, re-read at most once a minute. */
 export function getRunOfShow(): Promise<RunOfShowSnapshot> {
