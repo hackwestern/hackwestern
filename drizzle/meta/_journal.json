@@ -302,6 +302,13 @@
       "when": 1794790128086,
       "tag": "0042_sponsor_help_contact",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1794806300513,
+      "tag": "0043_sponsor_shortlist",
+      "breakpoints": true
     }
   ]
 }
