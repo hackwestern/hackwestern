@@ -75,8 +75,6 @@ type SlackPayload = {
 export type SlackEventResult = {
   status: number;
   body: Record<string, unknown> | string;
-  /** Work to run after the response is sent. */
-  after?: () => Promise<void>;
 };
 
 /**
@@ -120,9 +118,8 @@ export function claimTarget(
 /**
  * Claim the open help request behind `ref` for `userId`. First claim wins:
  * one UPDATE that only matches while the request is still open, done before
- * any Slack call so the ack goes back fast. Returns the Slack follow-up
- * (claimer's name, "on it" reply, message edit) to run after the response,
- * or null when this event didn't claim anything.
+ * any Slack call. Returns the Slack follow-up (claimer's name, "on it" reply,
+ * message edit), or null when this event didn't claim anything.
  */
 export async function claimSponsorHelp(
   ref: SlackMessageRef,
@@ -173,7 +170,9 @@ export async function claimSponsorHelp(
 
 /**
  * Handle one Events API request. Framework-free so it can be tested. The
- * caller sends the response first, then awaits `after` (Slack follow-up).
+ * Slack follow-up runs before responding (work after the response can be
+ * frozen on Vercel); each Slack call times out after 1.5s. Claiming first and
+ * ignoring retries keeps this idempotent even if Slack's 3s limit is hit.
  */
 export async function handleSlackEvent(p: {
   rawBody: string;
@@ -183,6 +182,9 @@ export async function handleSlackEvent(p: {
   retryNum?: string;
   now?: Date;
 }): Promise<SlackEventResult> {
+  // Slack re-sending an event: the first delivery already claimed it.
+  if (p.retryNum !== undefined) return { status: 200, body: { ok: true } };
+
   const secret = sponsorHelpSigningSecret();
   if (
     !secret ||
@@ -197,9 +199,6 @@ export async function handleSlackEvent(p: {
     return { status: 401, body: { error: "invalid signature" } };
   }
 
-  // The first delivery already did (or is doing) the work.
-  if (p.retryNum !== undefined) return { status: 200, body: { ok: true } };
-
   let payload: SlackPayload;
   try {
     payload = JSON.parse(p.rawBody) as SlackPayload;
@@ -211,18 +210,14 @@ export async function handleSlackEvent(p: {
     return { status: 200, body: { challenge: payload.challenge ?? "" } };
   }
 
-  let after: (() => Promise<void>) | undefined;
   if (payload.type === "event_callback") {
     const target = claimTarget(payload);
     if (target) {
       try {
         const followUp = await claimSponsorHelp(target.ref, target.userId);
-        if (followUp) {
-          after = () =>
-            followUp().catch((error) =>
-              console.error("sponsor help claim follow-up failed", error),
-            );
-        }
+        await followUp?.().catch((error) =>
+          console.error("sponsor help claim follow-up failed", error),
+        );
       } catch (error) {
         // Ack anyway: a retry from Slack wouldn't help a DB error.
         console.error("sponsor help claim failed", error);
@@ -231,5 +226,5 @@ export async function handleSlackEvent(p: {
   }
 
   // Everything else (other event types, other features' events) is acked.
-  return { status: 200, body: { ok: true }, after };
+  return { status: 200, body: { ok: true } };
 }
