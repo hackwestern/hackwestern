@@ -11,6 +11,25 @@ After merging: load `_local/task-owners.md` owner emails into the local DB (task
 - Hide the T44 "Your Hack Western contact for chats: <name>" line from sponsors (coffee-chats page, freeTimes/sponsorChats `watcherName` not shown). Keep the watcher field organizer-only, or drop it if Jazz prefers.
 - Log the decision in docs/decisions.md (keep it valid UTF-8).
 
+## Then build: T51 sponsor team command center (one screen) — Jazz, 2026-11-16
+Replace the organizer page's separate tabs (Schedule / Team tasks / Coffee chats / Where is everyone / Help) with ONE dashboard at /internal/sponsor-schedule, built on the merged T47 grid, T48 coffee chat board, T42 map and T49 task pings.
+- **Main area: one big hour-by-hour calendar** for the selected day (reuse day-grid.tsx). Layers drawn on the same timeline, each toggleable:
+  - Run of show events (sheet columns), clickable details (T47)
+  - Team tasks with owner chips (T47 tasks column), clickable
+  - Coffee chats: a column per room (Rm 2241/2242/2243) showing which sponsor is there + hacker chips/status per slot; click opens the T48 cell panel (cancel / move / add a chat here)
+  - Hackathon /live events (muted), as on the sponsor view
+- **Side panel (right on desktop, bottom sheet / collapsible on phone):**
+  - Layer toggles (events, tasks, coffee chats, hackathon events)
+  - **Filter by company**: multi-select sponsors; the calendar, coffee chats and map show only those companies (persist in localStorage)
+  - **Where is everyone now**: compact map (T42) + "right now" list per company, following the calendar's selected time (click a time row to scrub)
+  - **Tasks now / next** with owners and Slack ping status (T49)
+  - **Coffee chats summary**: offered / accepted / pending / seats left, rooms in use, link to the full T48 table (keep the table as a drill-down view)
+  - **Help queue**: open sponsor help pings with Resolve (from the old Help tab)
+  - Edit in Google Sheets button
+- Keep: day picker, now line, keyboard access, detail dialogs, organizer-only data, blue dashboard-* system, copy in src/content/.
+- Old tabs: remove from the UI (move components to keep reuse), keep URLs working via ?view= or redirects.
+- Suggest a quick mock first (mocks/organizer-dashboard-v1, 2 layout variants) and get Jazz's pick before building.
+
 ## Then
 Open the PR. Push `sponsor-dashboard` and open it **into `spon-judging`** (#1112, which it's built on); retarget to `main` once #1112 merges. Jazz to confirm before pushing.
 
