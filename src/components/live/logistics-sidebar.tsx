@@ -1,18 +1,18 @@
 import { LogisticsLink } from "./navlinks";
+import { logisticsSteps } from "~/constants/event-logistics";
 
+// "Overview" card beside the event logistics pages (Figma 1:3589)
 export const LogisticsSidebar = () => {
   return (
-    <div className="mx-12 hidden h-fit w-fit flex-col gap-4 rounded-2xl bg-highlight p-4 md:flex">
-      <h1 className="font-jetbrains-mono font-semibold text-heavy">OVERVIEW</h1>
-      <div className="flex flex-col gap-2">
-        <LogisticsLink step="1" name="Packing List" />
-        <LogisticsLink step="2" name="Communications" />
-        <LogisticsLink step="3" name="Housekeeping" />
-        <LogisticsLink step="4" name="Scavenger Hunt" />
-        <LogisticsLink step="5" name="Project Rules" />
-        <LogisticsLink step="6" name="Contact Us" />
-        <LogisticsLink step="7" name="FAQ" />
-      </div>
-    </div>
+    <aside className="hidden h-fit w-[255px] shrink-0 flex-col gap-3 rounded-[20px] border border-dashboard-bg-surface bg-dashboard-bg-surface px-4 pb-3 pt-6 font-figtree shadow-dashboard-card md:flex">
+      <h2 className="text-base font-semibold uppercase leading-default tracking-[-0.02em] text-dashboard-text-heavy">
+        Overview
+      </h2>
+      <nav className="flex flex-col">
+        {logisticsSteps.map((s, i) => (
+          <LogisticsLink key={s.slug} step={i + 1} />
+        ))}
+      </nav>
+    </aside>
   );
 };
