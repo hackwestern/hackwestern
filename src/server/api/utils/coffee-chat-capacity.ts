@@ -18,6 +18,8 @@ import type { CoffeeChatSetup } from "~/lib/run-of-show";
 
 export type ChatTime = { slotTime: string; durationMinutes: number };
 export type RoomChat = ChatTime & { sponsorId: string; room: string | null };
+/** A sponsor's own chat; `room` when known, to follow organizer moves. */
+export type SponsorChat = ChatTime & { room?: string | null };
 
 export type OfferProblem =
   | "notSetUp"
@@ -123,6 +125,22 @@ export function hackerBusy(hackerChats: ChatTime[], slot: ChatTime): boolean {
 }
 
 /**
+ * The sponsor's room at `slot`: where their live chats overlapping it are
+ * (an organizer may have moved that slot with Move room), else the room in
+ * their Coffee Chats sheet row.
+ */
+export function sponsorRoomAt(
+  sponsorChats: SponsorChat[],
+  sheetRoom: string | null,
+  slot: ChatTime,
+): string | null {
+  const moved = sponsorChats.find(
+    (c) => normalizeRoom(c.room) && coffeeChatsOverlap(c, slot),
+  );
+  return moved?.room ?? sheetRoom;
+}
+
+/**
  * Why an offer can't be made, or null when it can. Checks, in order: the
  * sponsor's window is set, the time is one of their start times, it isn't
  * already past the reply cutoff, a seat is free, the hacker is free, and no
@@ -133,7 +151,7 @@ export function offerProblem(input: {
   slotTime: string;
   reps: number;
   sponsorId: string;
-  sponsorChats: ChatTime[];
+  sponsorChats: SponsorChat[];
   hackerChats: ChatTime[];
   roomChats: RoomChat[];
   now: Date;
@@ -151,9 +169,8 @@ export function offerProblem(input: {
     return "full";
   }
   if (hackerBusy(input.hackerChats, slot)) return "hackerBusy";
-  if (
-    roomTakenByOtherSponsor(input.roomChats, input.sponsorId, setup.room, slot)
-  ) {
+  const room = sponsorRoomAt(input.sponsorChats, setup.room, slot);
+  if (roomTakenByOtherSponsor(input.roomChats, input.sponsorId, room, slot)) {
     return "roomTaken";
   }
   return null;
@@ -168,11 +185,11 @@ export function freeStartTimes(input: {
   setup: CoffeeChatSetup | null;
   reps: number;
   sponsorId: string;
-  sponsorChats: ChatTime[];
+  sponsorChats: SponsorChat[];
   hackerChats?: ChatTime[];
   roomChats: RoomChat[];
   now: Date;
-}): { slotTime: string; seatsLeft: number }[] {
+}): { slotTime: string; seatsLeft: number; room: string | null }[] {
   const { setup } = input;
   if (!setup?.windowStart || !setup.windowEnd) return [];
   return coffeeChatStartTimes(setup).flatMap((slotTime) => {
@@ -183,16 +200,12 @@ export function freeStartTimes(input: {
       input.reps,
       setup.groupSize,
     );
+    const room = sponsorRoomAt(input.sponsorChats, setup.room, slot);
     const open =
       left > 0 &&
       input.now < coffeeChatExpiresAt(slotTime) &&
       !hackerBusy(input.hackerChats ?? [], slot) &&
-      !roomTakenByOtherSponsor(
-        input.roomChats,
-        input.sponsorId,
-        setup.room,
-        slot,
-      );
-    return open ? [{ slotTime, seatsLeft: left }] : [];
+      !roomTakenByOtherSponsor(input.roomChats, input.sponsorId, room, slot);
+    return open ? [{ slotTime, seatsLeft: left, room }] : [];
   });
 }

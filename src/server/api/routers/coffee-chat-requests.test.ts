@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 
 import type { CoffeeChatSetup } from "~/lib/run-of-show";
@@ -563,7 +564,7 @@ describe("coffeeChatRequests.respond / mine (T16)", () => {
 
     expect(
       (await caller.coffeeChatRequests.freeTimes({ sponsor })).times[0],
-    ).toEqual({ slotTime: "10:00", seatsLeft: 1 });
+    ).toMatchObject({ slotTime: "10:00", seatsLeft: 1 });
     await expect(
       caller.coffeeChatRequests.offer({
         sponsor,
@@ -714,7 +715,7 @@ describe("coffeeChatRequests organizer actions (T26)", () => {
     // A free room works, matched to its listed spelling.
     await expect(
       organizer.coffeeChatRequests.moveRoom({ chatId, room: " rm 2243 " }),
-    ).resolves.toEqual({ chatId, room: "Rm 2243" });
+    ).resolves.toEqual({ chatIds: [chatId], room: "Rm 2243" });
 
     const { chats, rooms } =
       await organizer.coffeeChatRequests.organizerChats();
@@ -751,5 +752,297 @@ describe("coffeeChatRequests organizer actions (T26)", () => {
         )
       ).code,
     ).toBe("NOT_FOUND");
+  });
+});
+
+describe("coffeeChatRequests.sponsorChats (T19)", () => {
+  test("bad UUID 400, unknown UUID 404", async () => {
+    expect(
+      (await codeOf(caller.coffeeChatRequests.sponsorChats({ sponsor: "x" })))
+        .code,
+    ).toBe("BAD_REQUEST");
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.sponsorChats({
+            sponsor: "00000000-0000-4000-8000-000000000000",
+          }),
+        )
+      ).code,
+    ).toBe("NOT_FOUND");
+  });
+
+  test("lists only this sponsor's chats with first name, rep and effective status", async () => {
+    const sponsor = await makeSponsor(3);
+    const other = await makeSponsor(3);
+    const [a, b, c, d] = [
+      await makeHacker({ firstName: "Ana" }),
+      await makeHacker({ firstName: "Ben" }),
+      await makeHacker({ firstName: "Cy" }),
+      await makeHacker({ firstName: "Di" }),
+    ];
+    const pending = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: a,
+      slotTime: "11:00",
+      repName: "Sam",
+    });
+    const accepted = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: b,
+      slotTime: "10:00",
+    });
+    const declined = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: c,
+      slotTime: "10:00",
+    });
+    await caller.coffeeChatRequests.offer({
+      sponsor: other,
+      userId: d,
+      slotTime: "10:00",
+    });
+    await hackerCaller(b).coffeeChatRequests.respond({
+      chatId: accepted.chatId,
+      answer: "accept",
+    });
+    await hackerCaller(c).coffeeChatRequests.respond({
+      chatId: declined.chatId,
+      answer: "decline",
+    });
+
+    const result = await caller.coffeeChatRequests.sponsorChats({ sponsor });
+    expect(result.chats.map((chat) => [chat.firstName, chat.status])).toEqual([
+      ["Ben", "accepted"],
+      ["Cy", "declined"],
+      ["Ana", "pending"],
+    ]);
+    expect(result.chats[2]).toMatchObject({
+      chatId: pending.chatId,
+      slotTime: "11:00",
+      repName: "Sam",
+      room: setups.find((s) => s.sponsor === result.sponsorName)!.room,
+    });
+    expect(JSON.stringify(result)).not.toContain("Secretlastname");
+
+    // Past the 11:00 chat's cutoff (10:40), the unanswered one is expired.
+    vi.setSystemTime(new Date("2026-11-21T10:45:00-05:00"));
+    try {
+      const later = await caller.coffeeChatRequests.sponsorChats({ sponsor });
+      expect(
+        later.chats.find((chat) => chat.chatId === pending.chatId),
+      ).toMatchObject({ status: "expired" });
+    } finally {
+      vi.setSystemTime(new Date("2026-11-21T08:00:00-05:00"));
+    }
+  });
+});
+
+describe("coffee chat rooms: lock and moving a sponsor's slot", () => {
+  async function organizer() {
+    const id = `room-organizer-${++n}`;
+    await db
+      .insert(users)
+      .values({ id, email: `${id}@example.com`, type: "organizer" });
+    return hackerCaller(id);
+  }
+
+  test("two sponsors racing for one room at one time: exactly one wins", async () => {
+    // Sheet mistake: both sponsors listed in the same room. Their sponsor
+    // row locks don't cover each other; the room lock (and room check) does.
+    // PGlite runs one transaction at a time, so this is a sequential
+    // simulation of the race.
+    const first = await makeSponsor(1, { room: "Rm Race" });
+    const second = await makeSponsor(1, { room: "rm race" });
+    const results = await Promise.allSettled([
+      caller.coffeeChatRequests.offer({
+        sponsor: first,
+        userId: await makeHacker(),
+        slotTime: "10:00",
+      }),
+      caller.coffeeChatRequests.offer({
+        sponsor: second,
+        userId: await makeHacker(),
+        slotTime: "10:00",
+      }),
+    ]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const rejected = results.find((r) => r.status === "rejected");
+    expect(rejected?.status === "rejected" && rejected.reason).toMatchObject({
+      code: "CONFLICT",
+    });
+  });
+
+  test("move room moves every chat of the sponsor at that slot, and later offers follow", async () => {
+    const org = await organizer();
+    const sponsor = await makeSponsor(3, { room: "Rm Move A" });
+    const other = await makeSponsor(1, { room: "Rm Move B" });
+    const at10 = [
+      await caller.coffeeChatRequests.offer({
+        sponsor,
+        userId: await makeHacker(),
+        slotTime: "10:00",
+      }),
+      await caller.coffeeChatRequests.offer({
+        sponsor,
+        userId: await makeHacker(),
+        slotTime: "10:00",
+      }),
+    ];
+    const at1015 = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: await makeHacker(),
+      slotTime: "10:15",
+    });
+
+    // Rm Move B is the other sponsor's room, free at 10:00.
+    const moved = await org.coffeeChatRequests.moveRoom({
+      chatId: at10[0]!.chatId,
+      room: "Rm Move B",
+    });
+    expect(moved.room).toBe("Rm Move B");
+    expect([...moved.chatIds].sort()).toEqual(at10.map((o) => o.chatId).sort());
+
+    const { chats } = await org.coffeeChatRequests.organizerChats();
+    const roomOf = (id: string) => chats.find((c) => c.chatId === id)?.room;
+    expect(at10.map((o) => roomOf(o.chatId))).toEqual([
+      "Rm Move B",
+      "Rm Move B",
+    ]);
+    expect(roomOf(at1015.chatId)).toBe("Rm Move A");
+
+    // A later offer at 10:00 joins the moved room, not the sheet room.
+    const third = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: await makeHacker(),
+      slotTime: "10:00",
+    });
+    expect(third.room).toBe("Rm Move B");
+    const free = await caller.coffeeChatRequests.freeTimes({ sponsor });
+    expect(free.times.find((t) => t.slotTime === "10:15")).toMatchObject({
+      room: "Rm Move A",
+    });
+
+    // The other sponsor can't use their room at 10:00 now, but can at 10:30.
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.offer({
+            sponsor: other,
+            userId: await makeHacker(),
+            slotTime: "10:00",
+          }),
+        )
+      ).code,
+    ).toBe("CONFLICT");
+    await expect(
+      caller.coffeeChatRequests.offer({
+        sponsor: other,
+        userId: await makeHacker(),
+        slotTime: "10:30",
+      }),
+    ).resolves.toMatchObject({ room: "Rm Move B" });
+
+    // Moving the 10:30 slot of the sponsor into Rm Move B is refused.
+    const at1030 = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: await makeHacker(),
+      slotTime: "10:30",
+    });
+    expect(
+      (
+        await codeOf(
+          org.coffeeChatRequests.moveRoom({
+            chatId: at1030.chatId,
+            room: "Rm Move B",
+          }),
+        )
+      ).code,
+    ).toBe("CONFLICT");
+  });
+});
+
+describe("coffeeChatRequests.hackerByCode (typed or scanned code)", () => {
+  test("finds a hacker by hacker ID (any case/spacing) or user id, first name only", async () => {
+    const sponsor = await makeSponsor(1);
+    const id = await makeHacker({ firstName: "Robin" });
+    const hackerId = "brave-otter-kite";
+    await db.update(users).set({ hackerId }).where(eq(users.id, id));
+
+    for (const code of [
+      hackerId,
+      ` ${hackerId.toUpperCase().replace(/-/g, " ")} `,
+      id,
+    ]) {
+      const found = await caller.coffeeChatRequests.hackerByCode({
+        sponsor,
+        code,
+      });
+      expect(found).toEqual({ userId: id, firstName: "Robin", links: null });
+    }
+  });
+
+  test("same 404 for unknown codes and non-admitted hackers; bad UUID 400", async () => {
+    const sponsor = await makeSponsor(1);
+    const pendingApp = await makeHacker({ status: "PENDING_REVIEW" });
+    await db
+      .update(users)
+      .set({ hackerId: "calm-panda-lamp" })
+      .where(eq(users.id, pendingApp));
+    for (const code of [
+      "calm-panda-lamp",
+      "nobody-here-atall",
+      pendingApp,
+      "zzz",
+    ]) {
+      const error = await codeOf(
+        caller.coffeeChatRequests.hackerByCode({ sponsor, code }),
+      );
+      expect(error.code).toBe("NOT_FOUND");
+      expect(error.message).toBe("That badge isn't a Hack Western hacker.");
+    }
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.hackerByCode({ sponsor: "x", code: "a" }),
+        )
+      ).code,
+    ).toBe("BAD_REQUEST");
+  });
+});
+
+describe("coffeeChatRequests.myHackerId (T36)", () => {
+  test("returns only the caller's own code, null when none, 401 signed out", async () => {
+    const me = await makeHacker();
+    const other = await makeHacker();
+    await db
+      .update(users)
+      .set({ hackerId: "merry-moose-lamp-t36" })
+      .where(eq(users.id, me));
+    await db
+      .update(users)
+      .set({ hackerId: "quiet-heron-kite-t36" })
+      .where(eq(users.id, other));
+    const noCode = await makeHacker();
+
+    expect(await hackerCaller(me).coffeeChatRequests.myHackerId()).toEqual({
+      hackerId: "merry-moose-lamp-t36",
+    });
+    expect(await hackerCaller(other).coffeeChatRequests.myHackerId()).toEqual({
+      hackerId: "quiet-heron-kite-t36",
+    });
+    // No code yet: null, and reading it doesn't issue one.
+    expect(await hackerCaller(noCode).coffeeChatRequests.myHackerId()).toEqual({
+      hackerId: null,
+    });
+    const [row] = await db
+      .select({ hackerId: users.hackerId })
+      .from(users)
+      .where(eq(users.id, noCode));
+    expect(row?.hackerId).toBeNull();
+
+    expect((await codeOf(caller.coffeeChatRequests.myHackerId())).code).toBe(
+      "UNAUTHORIZED",
+    );
   });
 });

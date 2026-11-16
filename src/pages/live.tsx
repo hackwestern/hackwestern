@@ -11,6 +11,8 @@ import Mentors from "~/components/live/mentors";
 import Sponsors from "~/components/live/sponsors";
 import EventLogistics from "~/components/live/event-logistics";
 import ContactUs from "~/components/live/contact-us";
+import CoffeeChatRequests from "~/components/live/coffee-chat-requests";
+import CoffeeChats from "~/components/live/coffee-chats";
 import Sidebar from "~/components/live/sidebar";
 import Topbar from "~/components/live/topbar";
 import { authOptions } from "~/server/auth";
@@ -45,6 +47,7 @@ const Live = ({ isOrganizer }: { isOrganizer: boolean }) => {
           >
             {isGreeting ? `Hi, ${firstName}!` : pageTitle}
           </h1>
+          {!isOrganizer && <CoffeeChatRequests showSummary={tab === "home"} />}
           <TabComponent tab={tab} isOrganizer={isOrganizer} />
         </main>
       </div>
@@ -76,6 +79,8 @@ const TabComponent = ({
       return <EventLogistics />;
     case "contact-us":
       return <ContactUs />;
+    case "coffee-chats":
+      return isOrganizer ? <Home isOrganizer /> : <CoffeeChats />;
     default:
       return <Home isOrganizer={isOrganizer} />;
   }

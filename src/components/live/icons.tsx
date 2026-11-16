@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Calendar,
+  Coffee,
   Gavel,
   GraduationCap,
   Handshake,
@@ -389,6 +390,7 @@ const SIDEBAR_ICONS: Record<string, LucideIcon> = {
   menu: Utensils,
   mentors: GraduationCap,
   sponsors: Handshake,
+  "coffee-chats": Coffee,
   scan: ScanLine,
   judge: Gavel,
 };
