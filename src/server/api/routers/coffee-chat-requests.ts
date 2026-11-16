@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, inArray, isNotNull, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
 import { coffeeChatCopy } from "~/content/coffee-chat";
@@ -8,6 +8,7 @@ import { COFFEE_CHAT_ROOMS } from "~/lib/coffee-chats";
 import {
   ACTIVE_COFFEE_CHAT_STATUSES,
   coffeeChatExpiresAt,
+  coffeeChatsOverlap,
   isActiveCoffeeChat,
   type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
@@ -23,6 +24,7 @@ import {
   normalizeRoom,
   offerProblem,
   roomTakenByOtherSponsor,
+  sponsorRoomAt,
   type OfferProblem,
 } from "~/server/api/utils/coffee-chat-capacity";
 import {
@@ -96,8 +98,12 @@ async function setupFor(sponsorName: string) {
  * An admitted hacker (accepted or confirmed, per src/lib/admission.ts), or
  * 404 with no hint of who the id belongs to.
  */
-async function findAdmittedHacker(userId: string, now = new Date()) {
-  const [row] = await db
+async function findAdmittedHacker(
+  userId: string,
+  now = new Date(),
+  conn: Db | Tx = db,
+) {
+  const [row] = await conn
     .select({
       id: users.id,
       type: users.type,
@@ -160,12 +166,25 @@ async function activeChats(conn: Db | Tx, where: SQL, now: Date) {
   return rows.filter((c) => isActiveCoffeeChat(c, now));
 }
 
-/** Active chats in a room (any sponsor); none when the room is unknown. */
-async function activeRoomChats(conn: Db | Tx, room: string | null, now: Date) {
-  if (!room) return [];
-  // Rooms are compared normalized in coffee-chat-capacity, so load every
-  // active chat that has a room; there are only ever a few dozen.
+/**
+ * Every active chat that has a room (any sponsor). Rooms are compared
+ * normalized in coffee-chat-capacity; there are only ever a few dozen.
+ */
+async function activeRoomChats(conn: Db | Tx, now: Date) {
   return activeChats(conn, isNotNull(coffeeChats.room), now);
+}
+
+/**
+ * Lock rooms for the rest of the transaction, so two sponsors can't both
+ * claim one room at the same time (their sponsor-row locks don't cover
+ * each other). Taken after any row locks, in sorted order, so two writers
+ * that need two rooms can't deadlock.
+ */
+async function lockRooms(tx: Tx, rooms: (string | null | undefined)[]) {
+  const keys = [...new Set(rooms.map(normalizeRoom).filter(Boolean))].sort();
+  for (const key of keys) {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${key}))`);
+  }
 }
 
 const problemMessage: Record<OfferProblem, string> = {
@@ -318,7 +337,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         input.userId
           ? activeChats(db, eq(coffeeChats.userId, input.userId), now)
           : Promise.resolve([]),
-        activeRoomChats(db, setup?.room ?? null, now),
+        activeRoomChats(db, now),
       ]);
       return {
         room: setup?.room ?? null,
@@ -368,10 +387,26 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
             .where(eq(users.id, hacker.userId))
             .for("update");
 
-          const [sponsorChats, hackerChats, roomChats] = await Promise.all([
-            activeChats(tx, eq(coffeeChats.sponsorId, sponsor.id), now),
+          // Still admitted now that the hacker row is locked.
+          await findAdmittedHacker(hacker.userId, now, tx);
+
+          const sponsorChats = await activeChats(
+            tx,
+            eq(coffeeChats.sponsorId, sponsor.id),
+            now,
+          );
+          // The sponsor's room at this start (moved by organizers, or the
+          // sheet's), locked before checking who else is in it.
+          const room = setup
+            ? sponsorRoomAt(sponsorChats, setup.room, {
+                slotTime: input.slotTime,
+                durationMinutes: setup.durationMinutes,
+              })
+            : null;
+          await lockRooms(tx, [room]);
+          const [hackerChats, roomChats] = await Promise.all([
             activeChats(tx, eq(coffeeChats.userId, hacker.userId), now),
-            activeRoomChats(tx, setup?.room ?? null, now),
+            activeRoomChats(tx, now),
           ]);
           const problem = offerProblem({
             setup,
@@ -390,7 +425,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
             .values({
               sponsorId: sponsor.id,
               userId: hacker.userId,
-              room: setup!.room,
+              room,
               slotTime: input.slotTime,
               durationMinutes: setup!.durationMinutes,
               repName: input.repName ? input.repName : null,
@@ -594,9 +629,11 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
     }),
 
   /**
-   * Move a booked chat to another room. Same rules as offering: the room
-   * must be a known coffee chat room and no other sponsor may be in it at
-   * an overlapping time. Organizers only.
+   * Move a sponsor's room for one slot: the chosen chat and every other live
+   * chat of that sponsor overlapping it move together, so a sponsor is never
+   * in two rooms at once, and later offers at that start use the new room.
+   * Same rules as offering: a known coffee chat room, and no other sponsor
+   * in it at an overlapping time. Organizers only.
    */
   moveRoom: protectedOrganizerProcedure
     .input(
@@ -618,15 +655,24 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       }
       return db.transaction(async (tx) => {
         const chat = await lockActiveChat(tx, input.chatId, now);
-        const roomChats = await activeRoomChats(tx, room, now);
-        if (roomTakenByOtherSponsor(roomChats, chat.sponsorId, room, chat)) {
+        const moving = (
+          await activeChats(tx, eq(coffeeChats.sponsorId, chat.sponsorId), now)
+        ).filter((c) => coffeeChatsOverlap(c, chat));
+        await lockRooms(tx, [room, ...moving.map((c) => c.room)]);
+        const roomChats = await activeRoomChats(tx, now);
+        if (
+          moving.some((c) =>
+            roomTakenByOtherSponsor(roomChats, chat.sponsorId, room, c),
+          )
+        ) {
           throwProblem("roomTaken");
         }
+        const chatIds = moving.map((c) => c.id);
         await tx
           .update(coffeeChats)
           .set({ room })
-          .where(eq(coffeeChats.id, chat.id));
-        return { chatId: chat.id, room };
+          .where(inArray(coffeeChats.id, chatIds));
+        return { room, chatIds };
       });
     }),
 });
