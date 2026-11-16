@@ -110,9 +110,17 @@ const channels: Record<string, Channel> = {
 };
 
 /**
- * Tell everyone who needs to know about a chat change. Call after the DB
- * commit and don't await it (`void notifyCoffeeChat(...)`); the returned
- * promise never rejects, so tests can await it.
+ * Longest a notification may hold up the action that triggered it. On
+ * Vercel, work after the response is sent can be frozen, so callers await
+ * notifyCoffeeChat; this cap keeps a slow channel from slowing the action.
+ */
+export const NOTIFY_TIMEOUT_MS = 2500;
+
+/**
+ * Tell everyone who needs to know about a chat change. Await it after the DB
+ * commit, before responding. Runs every channel at once and resolves when
+ * all have settled or after NOTIFY_TIMEOUT_MS, whichever comes first. Never
+ * rejects: channel failures are logged.
  */
 export async function notifyCoffeeChat(
   event: CoffeeChatEvent,
@@ -121,14 +129,28 @@ export async function notifyCoffeeChat(
   // Loaded once, and only by channels that need it.
   let notice: Promise<CoffeeChatNotice | null> | undefined;
   const load = () => (notice ??= loadCoffeeChatNotice(chat.id));
-  await Promise.all(
-    Object.entries(channels).map(([name, send]) =>
-      send(event, load).catch((error: unknown) => {
+  const names = Object.keys(channels);
+  const all = Promise.allSettled(
+    names.map((name) => channels[name]!(event, load)),
+  ).then((results) =>
+    results.forEach((result, i) => {
+      if (result.status === "rejected") {
         console.error(
-          `coffee chat ${name} notification failed (${event}):`,
-          errorMessage(error),
+          `coffee chat ${names[i]} notification failed (${event}):`,
+          errorMessage(result.reason),
         );
-      }),
-    ),
+      }
+    }),
   );
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const cap = new Promise<void>((resolve) => {
+    timer = setTimeout(() => {
+      console.error(
+        `coffee chat notifications (${event}) still running after ${NOTIFY_TIMEOUT_MS} ms; not waiting`,
+      );
+      resolve();
+    }, NOTIFY_TIMEOUT_MS);
+  });
+  await Promise.race([all, cap]);
+  clearTimeout(timer);
 }

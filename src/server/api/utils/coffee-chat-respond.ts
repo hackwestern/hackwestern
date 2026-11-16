@@ -56,8 +56,8 @@ export async function respondToCoffeeChat(
       ...coffeeChatTimes({ ...chat, status: next }, now),
     };
   });
-  // After the commit; never awaited, never throws.
+  // After the commit; capped in time, never throws.
   const event = result.status === "accepted" ? "accepted" : "declined";
-  void notifyCoffeeChat(event, { id: result.chatId });
+  await notifyCoffeeChat(event, { id: result.chatId });
   return result;
 }
