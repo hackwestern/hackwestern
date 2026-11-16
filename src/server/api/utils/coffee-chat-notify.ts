@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { isAdmittedStatus } from "~/lib/admission";
 import type { CoffeeChatStatus } from "~/lib/coffee-chat-requests";
 import { sendCoffeeChatOfferEmail } from "~/server/api/utils/coffee-chat-email";
+import { mirrorCoffeeChats } from "~/server/api/utils/coffee-chat-sheet-mirror";
 import { db } from "~/server/db";
 import {
   applications,
@@ -104,6 +105,8 @@ const channels: Record<string, Channel> = {
     const notice = await load();
     if (notice) await sendCoffeeChatDm(notice);
   },
+  // Every change rewrites the bookings tab; logs its own failures.
+  sheet: () => mirrorCoffeeChats(),
 };
 
 /**

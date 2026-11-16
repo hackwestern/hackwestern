@@ -445,7 +445,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const now = new Date();
-      return db.transaction(async (tx) => {
+      const result = await db.transaction(async (tx) => {
         const [chat] = await tx
           .select({
             id: coffeeChats.id,
@@ -479,6 +479,9 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           ...coffeeChatTimes({ ...chat, status: next }, now),
         };
       });
+      const event = result.status === "accepted" ? "accepted" : "declined";
+      void notifyCoffeeChat(event, { id: result.chatId });
+      return result;
     }),
   /** Every booked chat plus the rooms chats can move to. Organizers only. */
   organizerChats: protectedOrganizerProcedure.query(async () => {
@@ -532,7 +535,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
     .input(z.object({ chatId: z.string().uuid() }))
     .mutation(async ({ input }) => {
       const now = new Date();
-      return db.transaction(async (tx) => {
+      const result = await db.transaction(async (tx) => {
         const chat = await lockActiveChat(tx, input.chatId, now);
         await tx
           .update(coffeeChats)
@@ -540,6 +543,8 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           .where(eq(coffeeChats.id, chat.id));
         return { chatId: chat.id, status: "cancelled" as const };
       });
+      void notifyCoffeeChat("cancelled", { id: result.chatId });
+      return result;
     }),
 
   /**
@@ -565,7 +570,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           message: errors.unknownRoom,
         });
       }
-      return db.transaction(async (tx) => {
+      const result = await db.transaction(async (tx) => {
         const chat = await lockActiveChat(tx, input.chatId, now);
         const roomChats = await activeRoomChats(tx, room, now);
         if (roomTakenByOtherSponsor(roomChats, chat.sponsorId, room, chat)) {
@@ -577,5 +582,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           .where(eq(coffeeChats.id, chat.id));
         return { chatId: chat.id, room };
       });
+      void notifyCoffeeChat("roomMoved", { id: result.chatId });
+      return result;
     }),
 });
