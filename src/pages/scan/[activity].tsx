@@ -3,6 +3,7 @@
 import { useRouter } from "next/router";
 import { useState, useEffect, useRef } from "react";
 import { api } from "~/utils/api";
+import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import jsQR from "jsqr";
 import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
@@ -59,6 +60,11 @@ const ScanActivityPage = () => {
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [_testMode, _setTestMode] = useState(false);
+  const [activityType, setActivityType] = useState<"attendance" | "win">(
+    "attendance",
+  );
+  const activityTypeRef = useRef(activityType);
+  activityTypeRef.current = activityType;
   const [_testUserId, _setTestUserId] = useState("");
 
   // tRPC mutations and queries
@@ -82,6 +88,7 @@ const ScanActivityPage = () => {
   const itemLoading = loadingById ?? loadingByCode;
 
   const activityName = itemData?.description ?? itemData?.code ?? "Activity";
+  const isWinnable = itemData?.winPoints != null;
 
   // QR Code scanning using camera stream
   const scanQRCode = async (): Promise<string | null> => {
@@ -391,6 +398,7 @@ const ScanActivityPage = () => {
           userId,
           itemId: itemData?.id,
           itemCode: itemData?.code,
+          activityType: isWinnable ? activityTypeRef.current : undefined,
         });
       } catch (scanError: unknown) {
         // Check if it's an "already scanned" error before re-throwing
@@ -684,6 +692,19 @@ const ScanActivityPage = () => {
             </p>
           )}
         </div>
+        {isWinnable && (
+          <Tabs
+            value={activityType}
+            onValueChange={(value) =>
+              setActivityType(value as "attendance" | "win")
+            }
+          >
+            <TabsList aria-label="What to scan for" className="border-2">
+              <TabsTrigger value="attendance">Attendance</TabsTrigger>
+              <TabsTrigger value="win">Win</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
       </header>
 
       {/* Camera View or Test Mode - Takes up rest of screen */}

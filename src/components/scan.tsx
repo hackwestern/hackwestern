@@ -9,6 +9,8 @@ interface Activity {
   description: string | null;
   points: number;
   code: string;
+  type: string;
+  winPoints: number | null;
 }
 
 interface Category {
@@ -21,7 +23,7 @@ const Scan = () => {
   const { data: items, isLoading } =
     api.scavengerHunt.getAllScavengerHuntItems.useQuery();
 
-  // Categorize items by suffix
+  // Categorize items by type
   const categorizeItems = (items: Activity[] | undefined): Category[] => {
     if (!items) return [];
 
@@ -30,26 +32,23 @@ const Scan = () => {
       { title: "Regular Workshops", items: [] },
       { title: "Sponsor Workshops", items: [] },
       { title: "Non-Winnable Activities", items: [] },
-      { title: "Winnable Activities (Attendance)", items: [] },
-      { title: "Winnable Activities (Win)", items: [] },
+      { title: "Winnable Activities", items: [] },
       { title: "Bonus", items: [] },
     ];
 
     items.forEach((item) => {
-      if (item.code.endsWith("_meal")) {
+      if (item.type === "meal") {
         categories[0]!.items.push(item);
-      } else if (item.code.endsWith("_ws")) {
+      } else if (item.type === "workshop") {
         categories[1]!.items.push(item);
-      } else if (item.code.endsWith("_sw")) {
+      } else if (item.type === "sponsor_workshop") {
         categories[2]!.items.push(item);
-      } else if (item.code.endsWith("_act")) {
+      } else if (item.type === "activity" && item.winPoints === null) {
         categories[3]!.items.push(item);
-      } else if (item.code.endsWith("_att")) {
+      } else if (item.type === "activity") {
         categories[4]!.items.push(item);
-      } else if (item.code.endsWith("_win")) {
+      } else if (item.type === "bonus") {
         categories[5]!.items.push(item);
-      } else if (item.code.endsWith("_bonus")) {
-        categories[6]!.items.push(item);
       }
     });
 
