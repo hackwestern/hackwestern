@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, inArray, isNotNull, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, type SQL } from "drizzle-orm";
 import { z } from "zod";
 
 import { coffeeChatCopy } from "~/content/coffee-chat";
@@ -11,12 +11,20 @@ import {
   type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
 import type { CoffeeChatSetup } from "~/lib/run-of-show";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 import {
   freeStartTimes,
   offerProblem,
   type OfferProblem,
 } from "~/server/api/utils/coffee-chat-capacity";
+import {
+  answeredStatus,
+  coffeeChatTimes,
+} from "~/server/api/utils/coffee-chat-expiry";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { db } from "~/server/db";
@@ -195,6 +203,21 @@ export type CoffeeChatOffer = {
   expiresAt: string;
 };
 
+/** A hacker's own chat, as /live shows it. */
+export type MyCoffeeChat = {
+  chatId: string;
+  sponsorName: string;
+  slotTime: string;
+  durationMinutes: number;
+  room: string | null;
+  repName: string | null;
+  /** Effective status: an unanswered request past its cutoff is "expired". */
+  status: CoffeeChatStatus;
+  startsAt: string;
+  /** ISO time a pending request stops being answerable. */
+  expiresAt: string;
+};
+
 export const coffeeChatRequestsRouter = createTRPCRouter({
   /**
    * Who a scanned badge belongs to, for the sponsor's offer card. Public
@@ -321,6 +344,79 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         throw error;
       }
     }),
-});
+  /**
+   * The signed-in hacker's coffee chats, earliest first, with expiry
+   * computed now (no background job).
+   */
+  mine: protectedProcedure.query(async ({ ctx }): Promise<MyCoffeeChat[]> => {
+    const now = new Date();
+    const rows = await db
+      .select({
+        chatId: coffeeChats.id,
+        sponsorName: sponsorJudgingSponsors.name,
+        slotTime: coffeeChats.slotTime,
+        durationMinutes: coffeeChats.durationMinutes,
+        room: coffeeChats.room,
+        repName: coffeeChats.repName,
+        status: coffeeChats.status,
+      })
+      .from(coffeeChats)
+      .innerJoin(
+        sponsorJudgingSponsors,
+        eq(sponsorJudgingSponsors.id, coffeeChats.sponsorId),
+      )
+      .where(eq(coffeeChats.userId, ctx.session.user.id))
+      .orderBy(asc(coffeeChats.slotTime), asc(coffeeChats.createdAt));
+    return rows.map((row) => ({ ...row, ...coffeeChatTimes(row, now) }));
+  }),
 
-export { activeChats, activeRoomChats, findSponsor };
+  /**
+   * Accept or decline one of your own requests. Someone else's chat is a
+   * 404. Accepting needs a pending request before its cutoff; declining
+   * frees the seat (also after accepting, until the chat starts).
+   */
+  respond: protectedProcedure
+    .input(
+      z.object({
+        chatId: z.string().uuid(),
+        answer: z.enum(["accept", "decline"]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const now = new Date();
+      return db.transaction(async (tx) => {
+        const [chat] = await tx
+          .select({
+            id: coffeeChats.id,
+            status: coffeeChats.status,
+            slotTime: coffeeChats.slotTime,
+          })
+          .from(coffeeChats)
+          .where(
+            and(
+              eq(coffeeChats.id, input.chatId),
+              eq(coffeeChats.userId, ctx.session.user.id),
+            ),
+          )
+          .for("update");
+        if (!chat) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: errors.chatNotFound,
+          });
+        }
+        const next = answeredStatus(chat, input.answer, now);
+        if (!next) {
+          throw new TRPCError({ code: "CONFLICT", message: errors.notPending });
+        }
+        await tx
+          .update(coffeeChats)
+          .set({ status: next, respondedAt: now })
+          .where(eq(coffeeChats.id, chat.id));
+        return {
+          chatId: chat.id,
+          ...coffeeChatTimes({ ...chat, status: next }, now),
+        };
+      });
+    }),
+});
