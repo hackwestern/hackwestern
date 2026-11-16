@@ -103,7 +103,7 @@ const SponsorCard = ({
 const Sponsors = () => {
   return (
     <div className="h-full overflow-auto p-8 md:p-12">
-      <SponsorInterest className="mx-auto mb-12 max-w-2xl" />
+      <SponsorInterest className="-mx-4 mb-12 sm:mx-auto sm:max-w-2xl" />
       {/* Thank you text */}
       <div className="mb-12 text-center">
         <p className="font-secondary text-medium md:text-lg">

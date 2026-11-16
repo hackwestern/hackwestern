@@ -87,7 +87,7 @@ export default function SponsorInterest({ className }: { className?: string }) {
     status = data.sharesWithSponsors ? copy.saved : copy.savedNotShared;
 
   return (
-    <DashboardPanel className={cn("gap-5 p-5 md:p-6", className)}>
+    <DashboardPanel className={cn("gap-5 p-4 md:p-6", className)}>
       <div className="flex flex-col gap-1.5">
         <span className="dashboard-section-label text-dashboard-text-light">
           {copy.eyebrow}
