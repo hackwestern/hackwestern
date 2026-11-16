@@ -111,3 +111,41 @@ export function mapRoomFor(
     rooms.find((r) => r.aliases?.some((alias) => text.includes(alias))) ?? null
   );
 }
+
+/** A crop of a floor plan, in percent of the image (like room pins). */
+export type SponsorMapFocus = {
+  floor: SponsorMapFloorId;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+/**
+ * The part of floor 2 the Coffee chats tab zooms into: the coffee chat
+ * rooms (2241-2243) with the rooms around them. Approximate: adjust here.
+ */
+export const COFFEE_CHAT_MAP_FOCUS: SponsorMapFocus = {
+  floor: "floor2",
+  // Narrow on purpose: the three rooms are ~2.5% apart, and each pin is a
+  // two-line card. At this zoom they sit ~55px apart in a 345px panel.
+  x: 20,
+  y: 36,
+  width: 20,
+  height: 20,
+};
+
+/**
+ * True when a pin sits inside a focus crop, clear of its edges, so it can
+ * be drawn there without being cut off.
+ */
+export function inFocus(room: SponsorMapRoom, focus: SponsorMapFocus): boolean {
+  const margin = 1.5;
+  return (
+    room.floor === focus.floor &&
+    room.x >= focus.x + margin &&
+    room.x <= focus.x + focus.width - margin &&
+    room.y >= focus.y + margin &&
+    room.y <= focus.y + focus.height - margin
+  );
+}

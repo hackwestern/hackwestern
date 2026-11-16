@@ -147,16 +147,22 @@ export function SponsorMap({
   );
 }
 
-function Pin({
+/**
+ * A room pin. `muted` draws it smaller and quiet, for rooms that are context
+ * rather than the point (the Coffee chats tab's non-coffee rooms).
+ */
+export function Pin({
   room,
   count,
   selected,
   onPick,
+  muted = false,
 }: {
   room: SponsorMapRoom;
   count: number;
   selected: boolean;
   onPick: () => void;
+  muted?: boolean;
 }) {
   return (
     <button
@@ -166,10 +172,14 @@ function Pin({
       aria-label={copy.pin(room.label, count)}
       style={{ left: `${room.x}%`, top: `${room.y}%` }}
       className={cn(
-        "absolute flex h-7 -translate-x-1/2 -translate-y-1/2 items-center gap-1 whitespace-nowrap rounded-full border px-2 text-xs font-semibold shadow-dashboard-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
-        count > 0
-          ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
-          : "border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-light",
+        "absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 whitespace-nowrap rounded-full border font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
+        muted
+          ? "h-6 border-dashboard-border-subtle bg-dashboard-bg-inset px-1.5 text-xs text-dashboard-text-light"
+          : "h-7 px-2 text-xs shadow-dashboard-card",
+        !muted &&
+          (count > 0
+            ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
+            : "border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-light"),
         selected && "ring-2 ring-dashboard-text-heavy ring-offset-2",
       )}
     >
@@ -207,7 +217,7 @@ function Entries({ entries }: { entries: SponsorMapEntry[] }) {
   );
 }
 
-function RoomDetails({
+export function RoomDetails({
   room,
   entries,
 }: {

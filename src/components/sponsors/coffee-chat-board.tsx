@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -9,9 +9,11 @@ import {
   useDebounced,
 } from "~/components/sponsors/add-coffee-chat";
 import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-rooms";
+import { CoffeeChatSidePanel } from "~/components/sponsors/coffee-chat-side-panel";
 import { LoadError } from "~/components/sponsors/schedule-states";
 import { useNow } from "~/components/sponsors/use-now";
 import { coffeeChatCopy } from "~/content/coffee-chat";
+import { boardTimeAt } from "~/lib/coffee-chat-map";
 import {
   COFFEE_CHAT_GRID_MINUTES,
   coffeeChatExpiresAt,
@@ -30,37 +32,86 @@ import { api } from "~/utils/api";
 
 const copy = coffeeChatCopy.organizer.board;
 const booked = coffeeChatCopy.organizer;
+const side = coffeeChatCopy.organizer.side;
 
 type Selected = { sponsor: string; slotTime: string };
 
 // Organizer Coffee chats tab: a sponsor x time table by default, with the
-// per-sponsor list (rooms, add a chat, booked chats) one toggle away.
+// per-sponsor list (rooms, add a chat, booked chats) one toggle away. A side
+// panel (below on phones) shows the coffee chat rooms on the map and where
+// everyone is at the time picked in the table (T52).
 export function CoffeeChatBoard({ list }: { list: ReactNode }) {
   const [view, setView] = useState<"table" | "list">("table");
+  const now = useNow(30_000);
+  // null = follow the clock.
+  const [picked, setPicked] = useState<string | null>(null);
+  const [focusSponsor, setFocusSponsor] = useState<string | null>(null);
+  const board = api.coffeeChatRequests.organizerChatBoard.useQuery(undefined, {
+    refetchInterval: 30_000,
+    retry: 1,
+  });
+  const companies = api.sponsorSchedule.organizerCompanies.useQuery(undefined, {
+    refetchInterval: 60_000,
+    retry: 1,
+  });
+  const time = picked ?? boardTimeAt(board.data?.slots ?? [], now);
+
   return (
-    <section aria-labelledby="chat-board" className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h2 id="chat-board" className="m-0 text-lg font-semibold">
-            {copy.heading}
-          </h2>
-          <p className="m-0 text-sm text-dashboard-text-medium">{copy.intro}</p>
+    <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,400px)] lg:items-start">
+      <section
+        aria-labelledby="chat-board"
+        className="flex min-w-0 flex-col gap-4"
+      >
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex min-w-0 flex-col gap-1">
+            <h2 id="chat-board" className="m-0 text-lg font-semibold">
+              {copy.heading}
+            </h2>
+            <p className="m-0 text-sm text-dashboard-text-medium">
+              {copy.intro}
+            </p>
+          </div>
+          <div role="group" aria-label={copy.viewLabel} className="flex gap-2">
+            {(["table", "list"] as const).map((v) => (
+              <DashboardChip
+                key={v}
+                selected={view === v}
+                onClick={() => setView(v)}
+                className="min-h-11"
+              >
+                {copy.views[v]}
+              </DashboardChip>
+            ))}
+          </div>
         </div>
-        <div role="group" aria-label={copy.viewLabel} className="flex gap-2">
-          {(["table", "list"] as const).map((v) => (
-            <DashboardChip
-              key={v}
-              selected={view === v}
-              onClick={() => setView(v)}
-              className="min-h-11"
-            >
-              {copy.views[v]}
-            </DashboardChip>
-          ))}
+        {view === "list" ? (
+          list
+        ) : (
+          <Board
+            time={time}
+            onPickTime={setPicked}
+            focusSponsor={focusSponsor}
+          />
+        )}
+      </section>
+      {board.data && time && (
+        <div className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:p-1">
+          <CoffeeChatSidePanel
+            board={board.data}
+            companies={{
+              data: companies.data,
+              isLoading: companies.isLoading,
+              refetch: () => void companies.refetch(),
+            }}
+            time={time}
+            live={picked === null}
+            onNow={() => setPicked(null)}
+            focusSponsor={focusSponsor}
+            onFocusSponsor={setFocusSponsor}
+          />
         </div>
-      </div>
-      {view === "list" ? list : <Board />}
-    </section>
+      )}
+    </div>
   );
 }
 
@@ -92,13 +143,41 @@ function isNowRow(slotTime: string, now: Date): boolean {
   return t >= start && t < start + COFFEE_CHAT_GRID_MINUTES * 60_000;
 }
 
-function Board() {
+function Board({
+  time,
+  onPickTime,
+  focusSponsor,
+}: {
+  /** Row shown in the side panel ("HH:MM"). */
+  time: string | null;
+  onPickTime: (time: string) => void;
+  /** Sponsor picked on the map: their column is highlighted. */
+  focusSponsor: string | null;
+}) {
   const now = useNow(30_000);
   const q = api.coffeeChatRequests.organizerChatBoard.useQuery(undefined, {
     refetchInterval: 30_000,
     retry: 1,
   });
   const [selected, setSelected] = useState<Selected | null>(null);
+  const region = useRef<HTMLDivElement>(null);
+  // Scroll the table (not the page) sideways to a sponsor picked on the map.
+  useEffect(() => {
+    const box = region.current;
+    if (!focusSponsor || !box) return;
+    const th = box.querySelector<HTMLElement>(
+      `[data-sponsor="${CSS.escape(focusSponsor)}"]`,
+    );
+    if (!th) return;
+    const timeCol = box.querySelector<HTMLElement>("thead th");
+    const left =
+      box.scrollLeft +
+      th.getBoundingClientRect().left -
+      box.getBoundingClientRect().left -
+      (timeCol?.offsetWidth ?? 0);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    box.scrollTo({ left, behavior: reduce.matches ? "auto" : "smooth" });
+  }, [focusSponsor]);
   // The cell that opened the panel, focused again when it closes (no
   // Dialog.Trigger, so Radix can't). Found by key: refetches re-render cells.
   const opener = useRef<string | null>(null);
@@ -144,9 +223,10 @@ function Board() {
       <p className="m-0 text-xs text-dashboard-text-light md:hidden">
         {copy.scrollHint}
       </p>
-      {/* Full width on large screens; scrolls inside itself, never the page. */}
-      <div className="lg:relative lg:left-1/2 lg:w-[calc(100vw-2.5rem)] lg:max-w-[1440px] lg:-translate-x-1/2">
+      {/* Scrolls inside itself, never the page. */}
+      <div className="min-w-0">
         <div
+          ref={region}
           role="region"
           aria-label={copy.tableLabel}
           tabIndex={0}
@@ -167,6 +247,7 @@ function Board() {
                     key={s.sponsor}
                     sponsor={s}
                     rooms={board.assignableRooms}
+                    focused={s.sponsor === focusSponsor}
                   />
                 ))}
               </tr>
@@ -174,25 +255,36 @@ function Board() {
             <tbody>
               {board.slots.map((slot) => {
                 const nowRow = isNowRow(slot, now);
+                const shown = slot === time;
                 return (
                   <tr key={slot}>
                     <th
                       scope="row"
                       className={cn(
-                        "sticky left-0 z-10 border-b border-r border-dashboard-border-subtle px-3 py-2 text-left align-top text-xs font-semibold",
-                        nowRow
-                          ? "bg-dashboard-bg-highlight text-dashboard-text-active"
-                          : "bg-dashboard-bg-surface text-dashboard-text-medium",
+                        "sticky left-0 z-10 border-b border-r border-dashboard-border-subtle p-0 text-left align-top text-xs font-semibold",
+                        shown
+                          ? "bg-dashboard-bg-navSelected text-dashboard-text-heavy shadow-[inset_3px_0_0_theme(colors.dashboard.action.primary)]"
+                          : nowRow
+                            ? "bg-dashboard-bg-highlight text-dashboard-text-active"
+                            : "bg-dashboard-bg-surface text-dashboard-text-medium",
                       )}
                     >
-                      <span className="whitespace-nowrap">
-                        {formatClock(slot)}
-                      </span>
-                      {nowRow && (
-                        <span className="mt-1 block w-fit rounded-dashboard-sm bg-dashboard-action-primary px-1.5 py-0.5 text-xs text-dashboard-text-inverse">
-                          {copy.now}
+                      <button
+                        type="button"
+                        aria-pressed={shown}
+                        aria-label={side.rowLabel(formatClock(slot))}
+                        onClick={() => onPickTime(slot)}
+                        className="flex h-full min-h-14 w-full flex-col items-start px-3 py-2 text-left hover:bg-dashboard-bg-highlightSubtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary"
+                      >
+                        <span className="whitespace-nowrap">
+                          {formatClock(slot)}
                         </span>
-                      )}
+                        {nowRow && (
+                          <span className="mt-1 block w-fit rounded-dashboard-sm bg-dashboard-action-primary px-1.5 py-0.5 text-xs text-dashboard-text-inverse">
+                            {copy.now}
+                          </span>
+                        )}
+                      </button>
                     </th>
                     {board.sponsors.map((s, i) => {
                       const cell = cellAt[i]!.get(slot);
@@ -207,6 +299,8 @@ function Board() {
                             return c ? [c] : [];
                           })}
                           nowRow={nowRow}
+                          shown={shown}
+                          focused={s.sponsor === focusSponsor}
                           cellId={cellKey({
                             sponsor: s.sponsor,
                             slotTime: cell.slotTime,
@@ -323,14 +417,22 @@ function Summary({
 function SponsorHeader({
   sponsor: s,
   rooms,
+  focused,
 }: {
   sponsor: BoardSponsor;
   rooms: string[];
+  focused: boolean;
 }) {
   return (
     <th
       scope="col"
-      className="sticky top-0 z-20 w-56 min-w-56 border-b border-r border-dashboard-border-subtle bg-dashboard-bg-surface px-3 py-3 text-left align-top font-medium"
+      data-sponsor={s.sponsor}
+      className={cn(
+        "sticky top-0 z-20 w-56 min-w-56 border-b border-r border-dashboard-border-subtle px-3 py-3 text-left align-top font-medium",
+        focused
+          ? "bg-dashboard-bg-highlight shadow-[inset_0_3px_0_theme(colors.dashboard.action.primary)]"
+          : "bg-dashboard-bg-surface",
+      )}
     >
       <div className="flex flex-col gap-1.5">
         <span className="break-words text-sm font-semibold text-dashboard-text-heavy">
@@ -500,6 +602,8 @@ function BoardCellView({
   cell,
   chats,
   nowRow,
+  shown,
+  focused,
   cellId,
   onOpen,
 }: {
@@ -507,6 +611,10 @@ function BoardCellView({
   cell: BoardCell;
   chats: BoardChat[];
   nowRow: boolean;
+  /** This row is the time shown in the side panel. */
+  shown: boolean;
+  /** This column's sponsor was picked on the map. */
+  focused: boolean;
   cellId: string;
   onOpen: () => void;
 }) {
@@ -515,6 +623,9 @@ function BoardCellView({
   const base = cn(
     "border-b border-r border-dashboard-border-subtle p-0 align-top",
     nowRow && "border-t-2 border-t-dashboard-action-primary",
+    open && (focused || shown) && "bg-dashboard-bg-highlightSubtle",
+    focused &&
+      "shadow-[inset_2px_0_0_theme(colors.dashboard.action.primary),inset_-2px_0_0_theme(colors.dashboard.action.primary)]",
   );
 
   // Outside the window with nothing in it: muted, not a button.
