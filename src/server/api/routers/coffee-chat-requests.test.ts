@@ -605,3 +605,143 @@ describe("coffeeChatRequests.respond / mine (T16)", () => {
     }
   });
 });
+
+describe("coffeeChatRequests organizer actions (T26)", () => {
+  async function organizerCaller() {
+    const id = `organizer-${++n}`;
+    await db
+      .insert(users)
+      .values({ id, email: `${id}@example.com`, type: "organizer" });
+    return hackerCaller(id);
+  }
+
+  test("logged out is a 401; hackers are a 403", async () => {
+    const chatId = "00000000-0000-4000-8000-000000000000";
+    for (const call of [
+      caller.coffeeChatRequests.organizerChats(),
+      caller.coffeeChatRequests.cancel({ chatId }),
+      caller.coffeeChatRequests.moveRoom({ chatId, room: "Rm 2241" }),
+    ]) {
+      expect((await codeOf(call)).code).toBe("UNAUTHORIZED");
+    }
+    const hacker = hackerCaller(await makeHacker());
+    expect(
+      (await codeOf(hacker.coffeeChatRequests.cancel({ chatId }))).code,
+    ).toBe("FORBIDDEN");
+  });
+
+  test("cancel frees the seat, once", async () => {
+    const organizer = await organizerCaller();
+    const sponsor = await makeSponsor(1);
+    const [a, b] = [await makeHacker(), await makeHacker()];
+    const { chatId } = await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: a,
+      slotTime: "10:00",
+    });
+    await hackerCaller(a).coffeeChatRequests.respond({
+      chatId,
+      answer: "accept",
+    });
+
+    await expect(
+      organizer.coffeeChatRequests.cancel({ chatId }),
+    ).resolves.toEqual({ chatId, status: "cancelled" });
+    const [mine] = await hackerCaller(a).coffeeChatRequests.mine();
+    expect(mine?.status).toBe("cancelled");
+    await expect(
+      caller.coffeeChatRequests.offer({
+        sponsor,
+        userId: b,
+        slotTime: "10:00",
+      }),
+    ).resolves.toMatchObject({ status: "pending" });
+
+    expect(
+      (await codeOf(organizer.coffeeChatRequests.cancel({ chatId }))).code,
+    ).toBe("CONFLICT");
+    expect(
+      (
+        await codeOf(
+          hackerCaller(a).coffeeChatRequests.respond({
+            chatId,
+            answer: "decline",
+          }),
+        )
+      ).code,
+    ).toBe("CONFLICT");
+  });
+
+  test("move room follows the same room rules as offers", async () => {
+    const organizer = await organizerCaller();
+    const mover = await makeSponsor(1, { room: "Rm 2241" });
+    const neighbour = await makeSponsor(1, { room: "Rm 2242" });
+    const { chatId } = await caller.coffeeChatRequests.offer({
+      sponsor: mover,
+      userId: await makeHacker(),
+      slotTime: "10:00",
+    });
+    await caller.coffeeChatRequests.offer({
+      sponsor: neighbour,
+      userId: await makeHacker(),
+      slotTime: "10:00",
+    });
+
+    // Another sponsor is in Rm 2242 at 10:00.
+    expect(
+      (
+        await codeOf(
+          organizer.coffeeChatRequests.moveRoom({ chatId, room: "Rm 2242" }),
+        )
+      ).code,
+    ).toBe("CONFLICT");
+    // Not a coffee chat room.
+    expect(
+      (
+        await codeOf(
+          organizer.coffeeChatRequests.moveRoom({ chatId, room: "Rm 9999" }),
+        )
+      ).code,
+    ).toBe("BAD_REQUEST");
+    // A free room works, matched to its listed spelling.
+    await expect(
+      organizer.coffeeChatRequests.moveRoom({ chatId, room: " rm 2243 " }),
+    ).resolves.toEqual({ chatId, room: "Rm 2243" });
+
+    const { chats, rooms } =
+      await organizer.coffeeChatRequests.organizerChats();
+    expect(rooms).toEqual(
+      expect.arrayContaining(["Rm 2241", "Rm 2242", "Rm 2243"]),
+    );
+    const moved = chats.find((c) => c.chatId === chatId);
+    expect(moved).toMatchObject({
+      room: "Rm 2243",
+      status: "pending",
+      firstName: "Alex",
+      lastName: "Secretlastname",
+    });
+
+    // A cancelled chat can't be moved.
+    await organizer.coffeeChatRequests.cancel({ chatId });
+    expect(
+      (
+        await codeOf(
+          organizer.coffeeChatRequests.moveRoom({ chatId, room: "Rm 2241" }),
+        )
+      ).code,
+    ).toBe("CONFLICT");
+  });
+
+  test("unknown chat is a 404", async () => {
+    const organizer = await organizerCaller();
+    expect(
+      (
+        await codeOf(
+          organizer.coffeeChatRequests.cancel({
+            chatId: "00000000-0000-4000-8000-000000000000",
+          }),
+        )
+      ).code,
+    ).toBe("NOT_FOUND");
+  });
+});

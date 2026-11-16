@@ -41,6 +41,7 @@ export const coffeeChatCopy = {
     heading: "Booked chats",
     empty: "No coffee chats booked yet.",
     cancel: "Cancel",
+    confirmCancel: "Cancel chat",
     cancelConfirm: (hacker: string, sponsor: string, time: string) =>
       `Cancel ${hacker}'s chat with ${sponsor} at ${time}?`,
     moveRoom: "Move room",

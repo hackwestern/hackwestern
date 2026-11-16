@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { isAdmittedStatus } from "~/lib/admission";
+import { COFFEE_CHAT_ROOMS } from "~/lib/coffee-chats";
 import {
   ACTIVE_COFFEE_CHAT_STATUSES,
   coffeeChatExpiresAt,
@@ -13,12 +14,15 @@ import {
 import type { CoffeeChatSetup } from "~/lib/run-of-show";
 import {
   createTRPCRouter,
+  protectedOrganizerProcedure,
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
 import {
   freeStartTimes,
+  normalizeRoom,
   offerProblem,
+  roomTakenByOtherSponsor,
   type OfferProblem,
 } from "~/server/api/utils/coffee-chat-capacity";
 import {
@@ -217,6 +221,60 @@ export type MyCoffeeChat = {
   /** ISO time a pending request stops being answerable. */
   expiresAt: string;
 };
+
+/** One booked chat on the organizer page. */
+export type OrganizerCoffeeChat = {
+  chatId: string;
+  sponsorName: string;
+  firstName: string;
+  lastName: string | null;
+  slotTime: string;
+  durationMinutes: number;
+  room: string | null;
+  status: CoffeeChatStatus;
+  startsAt: string;
+};
+
+/**
+ * Rooms an organizer can move a chat to: the coffee chat rooms plus any
+ * room named in the Coffee Chats tab. The sheet is optional here, so a
+ * failed read still leaves the standard rooms.
+ */
+async function knownRooms(): Promise<string[]> {
+  const rooms: string[] = COFFEE_CHAT_ROOMS.map((room) => room.label);
+  const setups = await readCoffeeChatSetups().catch(() => []);
+  for (const { room } of setups) {
+    if (room && !rooms.some((r) => normalizeRoom(r) === normalizeRoom(room))) {
+      rooms.push(room);
+    }
+  }
+  return rooms;
+}
+
+/**
+ * Lock a chat for an organizer change: its sponsor row first (same order as
+ * offers), then the chat. 404 when missing; 409 once it no longer holds a
+ * seat (declined, expired, cancelled).
+ */
+async function lockActiveChat(tx: Tx, chatId: string, now: Date) {
+  const [found] = await tx
+    .select({ sponsorId: coffeeChats.sponsorId })
+    .from(coffeeChats)
+    .where(eq(coffeeChats.id, chatId));
+  if (!found) {
+    throw new TRPCError({ code: "NOT_FOUND", message: errors.chatNotFound });
+  }
+  await findSponsor(tx, found.sponsorId, true);
+  const [chat] = await tx
+    .select()
+    .from(coffeeChats)
+    .where(eq(coffeeChats.id, chatId))
+    .for("update");
+  if (!chat || !isActiveCoffeeChat(chat, now)) {
+    throw new TRPCError({ code: "CONFLICT", message: errors.alreadyOver });
+  }
+  return chat;
+}
 
 export const coffeeChatRequestsRouter = createTRPCRouter({
   /**
@@ -417,6 +475,104 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           chatId: chat.id,
           ...coffeeChatTimes({ ...chat, status: next }, now),
         };
+      });
+    }),
+  /** Every booked chat plus the rooms chats can move to. Organizers only. */
+  organizerChats: protectedOrganizerProcedure.query(async () => {
+    const now = new Date();
+    const [rows, rooms] = await Promise.all([
+      db
+        .select({
+          chatId: coffeeChats.id,
+          sponsorName: sponsorJudgingSponsors.name,
+          firstName: applications.firstName,
+          lastName: applications.lastName,
+          userName: users.name,
+          slotTime: coffeeChats.slotTime,
+          durationMinutes: coffeeChats.durationMinutes,
+          room: coffeeChats.room,
+          status: coffeeChats.status,
+        })
+        .from(coffeeChats)
+        .innerJoin(
+          sponsorJudgingSponsors,
+          eq(sponsorJudgingSponsors.id, coffeeChats.sponsorId),
+        )
+        .innerJoin(users, eq(users.id, coffeeChats.userId))
+        .leftJoin(applications, eq(applications.userId, coffeeChats.userId))
+        .orderBy(
+          asc(coffeeChats.slotTime),
+          asc(sponsorJudgingSponsors.name),
+          asc(coffeeChats.createdAt),
+        ),
+      knownRooms(),
+    ]);
+    const chats: OrganizerCoffeeChat[] = rows.map(
+      ({ userName, firstName, ...row }) => {
+        const { status, startsAt } = coffeeChatTimes(row, now);
+        return {
+          ...row,
+          firstName: firstName?.trim() ? firstName : (userName ?? ""),
+          status,
+          startsAt,
+        };
+      },
+    );
+    return { chats, rooms };
+  }),
+
+  /**
+   * Cancel a booked chat (pending or accepted); frees its seat. Organizers
+   * only, instead of editing the sheet (no two-way sync).
+   */
+  cancel: protectedOrganizerProcedure
+    .input(z.object({ chatId: z.string().uuid() }))
+    .mutation(async ({ input }) => {
+      const now = new Date();
+      return db.transaction(async (tx) => {
+        const chat = await lockActiveChat(tx, input.chatId, now);
+        await tx
+          .update(coffeeChats)
+          .set({ status: "cancelled" })
+          .where(eq(coffeeChats.id, chat.id));
+        return { chatId: chat.id, status: "cancelled" as const };
+      });
+    }),
+
+  /**
+   * Move a booked chat to another room. Same rules as offering: the room
+   * must be a known coffee chat room and no other sponsor may be in it at
+   * an overlapping time. Organizers only.
+   */
+  moveRoom: protectedOrganizerProcedure
+    .input(
+      z.object({
+        chatId: z.string().uuid(),
+        room: z.string().trim().min(1).max(64),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const now = new Date();
+      const room = (await knownRooms()).find(
+        (known) => normalizeRoom(known) === normalizeRoom(input.room),
+      );
+      if (!room) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: errors.unknownRoom,
+        });
+      }
+      return db.transaction(async (tx) => {
+        const chat = await lockActiveChat(tx, input.chatId, now);
+        const roomChats = await activeRoomChats(tx, room, now);
+        if (roomTakenByOtherSponsor(roomChats, chat.sponsorId, room, chat)) {
+          throwProblem("roomTaken");
+        }
+        await tx
+          .update(coffeeChats)
+          .set({ room })
+          .where(eq(coffeeChats.id, chat.id));
+        return { chatId: chat.id, room };
       });
     }),
 });
