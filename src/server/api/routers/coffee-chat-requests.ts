@@ -29,6 +29,7 @@ import {
   answeredStatus,
   coffeeChatTimes,
 } from "~/server/api/utils/coffee-chat-expiry";
+import { notifyCoffeeChat } from "~/server/api/utils/coffee-chat-notify";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { db } from "~/server/db";
@@ -385,6 +386,8 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
             .returning();
           return row!;
         });
+        // After the commit; never awaited, never throws.
+        void notifyCoffeeChat("offered", { id: chat.id });
 
         return {
           chatId: chat.id,
