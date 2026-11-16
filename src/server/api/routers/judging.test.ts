@@ -198,7 +198,7 @@ describe("getCurrentAssignment / getQueue", () => {
 
     const j = await makeJudge();
     const { team } = await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId: team.id, score: 70 });
+    await j.caller.judging.me.submitTeamMark({ teamId: team.id, score: 7 });
     await j.caller.judging.me.getNextTeam();
 
     const q = await org.caller.judging.admin.getQueue();
@@ -233,7 +233,7 @@ describe("getCurrentAssignment / getQueue", () => {
     expect(team).not.toHaveProperty("joinCode");
     const current = await j.caller.judging.me.getCurrentAssignment();
     expect(current.team).not.toHaveProperty("joinCode");
-    await j.caller.judging.me.submitTeamMark({ teamId: team.id, score: 60 });
+    await j.caller.judging.me.submitTeamMark({ teamId: team.id, score: 6 });
     const [mark] = await j.caller.judging.me.getSubmittedTeamMarks();
     expect(mark?.team).not.toHaveProperty("joinCode");
   });
@@ -271,7 +271,7 @@ describe("loadQueue / purgeQueue", () => {
     // Submit a real mark so we can assert it survives the purge.
     const j = await makeJudge();
     await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId, score: 75 });
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 7.5 });
 
     await org.caller.judging.admin.purgeQueue();
 
@@ -321,7 +321,7 @@ describe("getNextTeam", () => {
 
     const j = await makeJudge();
     await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId, score: 80 });
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 8 });
     // No other eligible team -> 409 rather than a null team.
     await expect(j.caller.judging.me.getNextTeam()).rejects.toThrow(
       /no teams are currently available/i,
@@ -393,7 +393,7 @@ describe("submitTeamMark", () => {
     const j = await makeJudge();
     // never called getNextTeam
     await expect(
-      j.caller.judging.me.submitTeamMark({ teamId, score: 50 }),
+      j.caller.judging.me.submitTeamMark({ teamId, score: 5 }),
     ).rejects.toThrow(/not currently assigned/i);
   });
 
@@ -404,14 +404,14 @@ describe("submitTeamMark", () => {
 
     const j = await makeJudge();
     await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId, score: 80 });
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 8 });
 
     const row = await db.query.judges.findFirst({
       where: eq(judges.id, j.session.user.id),
     });
     expect(row?.marksCount).toBe(1);
-    expect(row?.marksSum).toBe(80);
-    expect(row?.marksSquaredSum).toBe(6400);
+    expect(row?.marksSum).toBe(8);
+    expect(row?.marksSquaredSum).toBe(64);
   });
 
   test("auto-queue trigger removes a team after its last round", async () => {
@@ -421,7 +421,7 @@ describe("submitTeamMark", () => {
 
     const j = await makeJudge();
     await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId, score: 70 });
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 7 });
 
     const row = await db.query.judgingQueue.findFirst({
       where: eq(judgingQueue.teamId, teamId),
@@ -436,7 +436,7 @@ describe("submitTeamMark", () => {
 
     const j = await makeJudge();
     await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId, score: 70 });
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 7 });
 
     const row = await db.query.judgingQueue.findFirst({
       where: eq(judgingQueue.teamId, teamId),
@@ -476,7 +476,7 @@ describe("cheat check sweep trigger", () => {
 
     const j = await makeJudge();
     await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId, score: 70 });
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 7 });
 
     // Queue still has the second team, so no sweep yet.
     await settleDrainHook();
@@ -485,7 +485,7 @@ describe("cheat check sweep trigger", () => {
     await j.caller.judging.me.getNextTeam();
     await j.caller.judging.me.submitTeamMark({
       teamId: otherTeamId,
-      score: 90,
+      score: 9,
     });
 
     const sweep = await waitFor(
@@ -515,7 +515,7 @@ describe("cheat check sweep trigger", () => {
     // both must be marked before the queue drains.
     for (let i = 0; i < 2; i++) {
       const { team } = await j.caller.judging.me.getNextTeam();
-      await j.caller.judging.me.submitTeamMark({ teamId: team.id, score: 70 });
+      await j.caller.judging.me.submitTeamMark({ teamId: team.id, score: 7 });
     }
 
     const sweep = await waitFor(
@@ -543,7 +543,7 @@ describe("cheat check sweep trigger", () => {
 
     const j = await makeJudge();
     await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId, score: 70 });
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 7 });
 
     await settleDrainHook();
     const sweeps = await db.query.cheatCheckSweeps.findMany({});
@@ -563,7 +563,7 @@ describe("cheat check sweep trigger", () => {
 
     const j = await makeJudge();
     await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId, score: 70 });
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 7 });
 
     await settleDrainHook();
     expect(await db.query.cheatCheckSweeps.findMany({})).toHaveLength(1);
@@ -595,7 +595,7 @@ describe("cheat check sweep trigger", () => {
 
     const j = await makeJudge();
     await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId: linkless, score: 70 });
+    await j.caller.judging.me.submitTeamMark({ teamId: linkless, score: 7 });
 
     const sweep = await waitFor(
       async () => (await db.query.cheatCheckSweeps.findMany({}))[0],
@@ -616,20 +616,20 @@ describe("editTeamMark / deleteTeamMark", () => {
 
     const j = await makeJudge();
     await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId, score: 50 });
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 5 });
 
     const marks = await j.caller.judging.me.getSubmittedTeamMarks();
     expect(marks).toHaveLength(1);
     const mark = marks[0];
     assertDefined(mark, "expected a submitted mark to edit");
-    await j.caller.judging.me.editTeamMark({ teamMarkId: mark.id, score: 90 });
+    await j.caller.judging.me.editTeamMark({ teamMarkId: mark.id, score: 9 });
 
     const row = await db.query.judges.findFirst({
       where: eq(judges.id, j.session.user.id),
     });
     expect(row?.marksCount).toBe(1); // unchanged
-    expect(row?.marksSum).toBe(90); // 50 -> 90
-    expect(row?.marksSquaredSum).toBe(8100);
+    expect(row?.marksSum).toBe(9); // 5 -> 9
+    expect(row?.marksSquaredSum).toBe(81);
   });
 
   test("deleteTeamMark removes the mark and reverses the aggregates", async () => {
@@ -639,7 +639,7 @@ describe("editTeamMark / deleteTeamMark", () => {
 
     const j = await makeJudge();
     await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId, score: 60 });
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 6 });
     const marks = await j.caller.judging.me.getSubmittedTeamMarks();
     const mark = marks[0];
     assertDefined(mark, "expected a submitted mark to delete");
@@ -664,7 +664,7 @@ describe("editTeamMark / deleteTeamMark", () => {
 
     const j = await makeJudge();
     await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId, score: 60 });
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 6 });
 
     // Trigger removed it from the queue (quota met).
     let row = await db.query.judgingQueue.findFirst({
@@ -694,7 +694,7 @@ describe("editTeamMark / deleteTeamMark", () => {
 
     const j = await makeJudge();
     await j.caller.judging.me.getNextTeam();
-    await j.caller.judging.me.submitTeamMark({ teamId, score: 60 });
+    await j.caller.judging.me.submitTeamMark({ teamId, score: 6 });
 
     // Still queued: seen 1, rounds 2.
     let row = await db.query.judgingQueue.findFirst({
@@ -952,8 +952,8 @@ describe("getLatestRanking", () => {
 
     // Each judge scores both teams. The z-score normalization recenters by
     // the judge's mean and divides by their (population) std dev:
-    //   harsh:    t1=40, t2=20  -> mean 30, sigma 10 -> z = +1, -1
-    //   generous: t1=90, t2=70  -> mean 80, sigma 10 -> z = +1, -1
+    //   harsh:    t1=4, t2=2  -> mean 3, sigma 1 -> z = +1, -1
+    //   generous: t1=9, t2=7  -> mean 8, sigma 1 -> z = +1, -1
     //   t1 normalized = avg(+1, +1) = +1 ; t2 = avg(-1, -1) = -1
     const scoreBoth = async (
       judge: Awaited<ReturnType<typeof makeJudge>>,
@@ -970,8 +970,8 @@ describe("getLatestRanking", () => {
       }
     };
 
-    await scoreBoth(harsh, 40, 20);
-    await scoreBoth(generous, 90, 70);
+    await scoreBoth(harsh, 4, 2);
+    await scoreBoth(generous, 9, 7);
 
     const ranking = await org.caller.judging.admin.getLatestRanking();
     const byTeam = new Map(
@@ -1004,7 +1004,7 @@ describe("team_mark stat maintenance", () => {
     const b = await makeJudge();
     await db
       .insert(teamMarks)
-      .values({ teamId, judgeId: a.session.user.id, score: 40 });
+      .values({ teamId, judgeId: a.session.user.id, score: 4 });
 
     await db
       .update(teamMarks)
@@ -1022,8 +1022,8 @@ describe("team_mark stat maintenance", () => {
     expect(rowA?.marksSum).toBe(0);
     expect(rowA?.marksSquaredSum).toBe(0);
     expect(rowB?.marksCount).toBe(1);
-    expect(rowB?.marksSum).toBe(40);
-    expect(rowB?.marksSquaredSum).toBe(1600);
+    expect(rowB?.marksSum).toBe(4);
+    expect(rowB?.marksSquaredSum).toBe(16);
   });
 
   test("reassigning judge_id and score together stays consistent", async () => {
@@ -1032,11 +1032,11 @@ describe("team_mark stat maintenance", () => {
     const b = await makeJudge();
     await db
       .insert(teamMarks)
-      .values({ teamId, judgeId: a.session.user.id, score: 40 });
+      .values({ teamId, judgeId: a.session.user.id, score: 4 });
 
     await db
       .update(teamMarks)
-      .set({ judgeId: b.session.user.id, score: 90 })
+      .set({ judgeId: b.session.user.id, score: 9 })
       .where(eq(teamMarks.teamId, teamId));
 
     const rowA = await db.query.judges.findFirst({
@@ -1049,8 +1049,8 @@ describe("team_mark stat maintenance", () => {
     expect(rowA?.marksCount).toBe(0);
     expect(rowA?.marksSum).toBe(0);
     expect(rowB?.marksCount).toBe(1);
-    expect(rowB?.marksSum).toBe(90);
-    expect(rowB?.marksSquaredSum).toBe(8100);
+    expect(rowB?.marksSum).toBe(9);
+    expect(rowB?.marksSquaredSum).toBe(81);
   });
 
   test("editing only the score is still a delta on one judge", async () => {
@@ -1058,18 +1058,18 @@ describe("team_mark stat maintenance", () => {
     const j = await makeJudge();
     await db
       .insert(teamMarks)
-      .values({ teamId, judgeId: j.session.user.id, score: 40 });
+      .values({ teamId, judgeId: j.session.user.id, score: 4 });
 
     await db
       .update(teamMarks)
-      .set({ score: 90 })
+      .set({ score: 9 })
       .where(eq(teamMarks.teamId, teamId));
 
     const row = await db.query.judges.findFirst({
       where: eq(judges.id, j.session.user.id),
     });
     expect(row?.marksCount).toBe(1);
-    expect(row?.marksSum).toBe(90);
-    expect(row?.marksSquaredSum).toBe(8100);
+    expect(row?.marksSum).toBe(9);
+    expect(row?.marksSquaredSum).toBe(81);
   });
 });
