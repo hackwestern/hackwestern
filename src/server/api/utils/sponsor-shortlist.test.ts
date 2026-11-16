@@ -145,13 +145,14 @@ describe("sponsorShortlist", () => {
     );
   });
 
-  test("returns hackerId, name, team, resume, GitHub, LinkedIn, Devpost (no user id)", async () => {
+  test("returns hackerId, name, team, resume, GitHub, LinkedIn, Devpost (no email)", async () => {
     const s = await sponsor();
     const h = await hacker({ first: "Alex", team: "Byte Club" });
     await rank(h.id, s, 1);
 
     const [row] = await sponsorShortlist(s, { now: NOW });
     expect(row).toEqual({
+      userId: h.id,
       hackerId: h.hackerId,
       name: "Alex Tester",
       team: "Byte Club",
@@ -161,7 +162,8 @@ describe("sponsorShortlist", () => {
       linkedIn: "https://linkedin.com/in/someone",
       devpost: "https://devpost.com/someone",
     });
-    expect(JSON.stringify(row)).not.toContain(h.id);
+    // Contact details never reach the sponsor.
+    expect(JSON.stringify(row)).not.toContain("@");
   });
 
   test("a hacker with no team has team null", async () => {

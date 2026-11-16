@@ -8,7 +8,6 @@ import {
   Phone,
   Presentation,
   ScanLine,
-  Users,
 } from "lucide-react";
 import SEO from "~/components/seo";
 import { uuidRegex } from "~/utils/urls";
@@ -20,7 +19,6 @@ import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "~/lib/sponsor-picks";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import { SponsorHelp } from "~/components/sponsors/help-button";
-import { sponsorHackersCopy } from "~/content/sponsor-hackers";
 
 export default function SponsorHubPage() {
   const router = useRouter();
@@ -204,12 +202,6 @@ export default function SponsorHubPage() {
             <Link href={`/sponsors/${id}/schedule`}>
               <Clock aria-hidden />
               {scheduleCopy.hubLinks.schedule}
-            </Link>
-          </DashboardButton>
-          <DashboardButton variant="outline" asChild className="h-11 w-full">
-            <Link href={`/sponsors/${id}/hackers`}>
-              <Users aria-hidden />
-              {sponsorHackersCopy.hubLink}
             </Link>
           </DashboardButton>
         </nav>

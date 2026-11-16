@@ -452,6 +452,26 @@ export const sponsorInterests = pgTable(
   ],
 );
 
+// A sponsor's coffee chat shortlist: hackers they picked from their
+// "Interested hackers" list on /sponsors/[uuid]/coffee-chats. Organizers
+// use it to set up chats. Only admitted hackers who agreed to share with
+// sponsors and ranked this sponsor can be added (sponsorShortlist router).
+export const sponsorShortlists = pgTable(
+  "sponsor_shortlist",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.sponsorId, t.userId] })],
+);
+
 export const sponsorHelpStatusEnum = pgEnum("sponsor_help_status", [
   "open",
   "claimed",
