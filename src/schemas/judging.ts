@@ -4,17 +4,23 @@ import { z } from "zod";
 import { judgeTypeEnum, judges, trackEnum } from "~/server/db/schema";
 
 export const SCORE_MIN = 0;
-export const SCORE_MAX = 100;
+export const SCORE_MAX = 10;
 
 export type ScoreBreakdown = {
-  /** 0–100 slider value per rubric criterion id, e.g. { technical: 80 }. */
+  /** 0–10 slider value (half steps) per rubric criterion id, e.g. { technical: 7.5 }. */
   ratings: Record<string, number>;
   notes?: string | null;
+  /** The judge's "super like" for this team. */
+  superLike?: boolean;
 };
 
 export const scoreBreakdownSchema = z.object({
-  ratings: z.record(z.string().max(64), z.number().int().min(0).max(100)),
+  ratings: z.record(
+    z.string().max(64),
+    z.number().min(SCORE_MIN).max(SCORE_MAX).multipleOf(0.5),
+  ),
   notes: z.string().max(2000).optional(),
+  superLike: z.boolean().optional(),
 });
 
 // judge inputs

@@ -1,11 +1,17 @@
-import { asc, eq, inArray, isNotNull, or } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, or } from "drizzle-orm";
 
 import {
   type ComparisonData,
   buildComparison,
 } from "~/server/api/utils/judge-comparison";
 import { db } from "~/server/db";
-import { teamMarks, teams } from "~/server/db/schema";
+import {
+  judgingAssignments,
+  judgingQueue,
+  judgingSkips,
+  teamMarks,
+  teams,
+} from "~/server/db/schema";
 
 export interface JudgeTableRow {
   number: number;
@@ -31,7 +37,22 @@ function safeHttpUrl(value: string | null): string | null {
   }
 }
 
+/** A team the judge is lined up to see, for the list before Start judging. */
+export interface QueueTeam {
+  id: string;
+  name: string;
+  /** Member names; empty strings are left out. */
+  members: string[];
+}
+
 export interface JudgeInitialData {
+  /**
+   * Teams lined up for this judge: their organizer-made stops if they have
+   * any, otherwise the teams waiting in the queue that they haven't seen, in
+   * the order the queue hands them out. The server still picks each team, so
+   * this is a preview, not a promise.
+   */
+  queueTeams: QueueTeam[];
   /** Every active table, for the map. */
   tables: JudgeTableRow[];
   /** Team id -> table number, for every team seated at a table. */
@@ -95,11 +116,82 @@ export async function loadJudgeData(
   // rounds are ranked apart.
   const roundType = judge?.type === "sponsored" ? "sponsored" : "regular";
   return {
+    queueTeams: await loadQueueTeams(userId),
     tables,
     tableByTeam,
     linksByTeam,
     comparison: withComparison ? await loadComparison(userId, roundType) : null,
   };
+}
+
+const QUEUE_PREVIEW_LIMIT = 50;
+
+// NOTE: follows the order of pickNextTeam in routers/judging.ts (Kevin Li's
+// queue engine, which MAY BE REPLACED). Update this together with it.
+async function loadQueueTeams(judgeId: string): Promise<QueueTeam[]> {
+  const stops = await db
+    .select({ teamId: judgingAssignments.teamId })
+    .from(judgingAssignments)
+    .where(
+      and(
+        eq(judgingAssignments.judgeId, judgeId),
+        inArray(judgingAssignments.status, ["assigned", "in_progress"]),
+      ),
+    )
+    .orderBy(asc(judgingAssignments.position));
+
+  let ids = stops.map((s) => s.teamId);
+  if (ids.length === 0) {
+    const [waiting, marked, skipped] = await Promise.all([
+      db
+        .select({ teamId: judgingQueue.teamId })
+        .from(judgingQueue)
+        .where(
+          and(
+            gt(judgingQueue.roundsRemaining, 0),
+            eq(judgingQueue.status, "waiting"),
+          ),
+        )
+        .orderBy(
+          desc(judgingQueue.roundsRemaining),
+          asc(judgingQueue.enqueuedAt),
+        ),
+      db
+        .select({ teamId: teamMarks.teamId })
+        .from(teamMarks)
+        .where(eq(teamMarks.judgeId, judgeId)),
+      db
+        .select({ teamId: judgingSkips.teamId })
+        .from(judgingSkips)
+        .where(eq(judgingSkips.judgeId, judgeId)),
+    ]);
+    const seen = new Set([...marked, ...skipped].map((r) => r.teamId));
+    ids = waiting
+      .map((w) => w.teamId)
+      .filter((id) => !seen.has(id))
+      .slice(0, QUEUE_PREVIEW_LIMIT);
+  }
+  if (ids.length === 0) return [];
+
+  const rows = await db.query.teams.findMany({
+    where: inArray(teams.id, ids),
+    columns: { id: true, name: true },
+    with: { members: { columns: { name: true } } },
+  });
+  const byId = new Map(rows.map((t) => [t.id, t]));
+  return ids.flatMap((id) => {
+    const t = byId.get(id);
+    if (!t) return [];
+    return [
+      {
+        id: t.id,
+        name: t.name,
+        members: t.members
+          .map((m) => m.name?.trim() ?? "")
+          .filter((n) => n !== ""),
+      },
+    ];
+  });
 }
 
 /**

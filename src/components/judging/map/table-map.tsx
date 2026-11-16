@@ -44,6 +44,9 @@ export interface TableMapProps {
   /** Other tables to mark, e.g. a judge's remaining tables. */
   mine?: number[];
   mineLabel?: string;
+  /** Tables already done, e.g. ones a judge has scored. Drawn grey. */
+  seen?: number[];
+  seenLabel?: string;
   /** A sponsor's track: only its block is coloured; the rest stay plain. */
   highlightTrack?: string;
   /** Colour tables by track and list the tracks. Off for hackers and judges. */
@@ -89,6 +92,8 @@ export function TableMap({
   focus,
   focusLabel = "Your table",
   mine = [],
+  seen = [],
+  seenLabel = "Already judged",
   mineLabel = "Your other tables",
   highlightTrack,
   showTrackColors = true,
@@ -153,6 +158,7 @@ export function TableMap({
       : [];
   const searching = q !== "";
   const mineSet = new Set(mine);
+  const seenSet = new Set(seen);
 
   const focusTable = shown.find((t) => t.n === focus);
   const target = matches.length === 1 ? matches[0] : focusTable;
@@ -385,6 +391,15 @@ export function TableMap({
           {mineLabel}
         </li>
       )}
+      {seen.length > 0 && (
+        <li className="flex items-center gap-2">
+          <span
+            aria-hidden
+            className="inline-block h-3 w-4 rounded-dashboard-xs border border-dashboard-border-default bg-dashboard-border-default"
+          />
+          {seenLabel}
+        </li>
+      )}
       {judgesScored && (
         <li className="flex items-center gap-2">
           <span aria-hidden className="font-mono">
@@ -609,12 +624,14 @@ export function TableMap({
                     className={
                       isFocus
                         ? "fill-dashboard-text-heavy stroke-dashboard-text-heavy"
-                        : `${track?.fill ?? "fill-dashboard-bg-surface"} ${
-                            mineSet.has(t.n)
-                              ? "stroke-dashboard-action-primary"
-                              : (track?.stroke ??
-                                "stroke-dashboard-border-default")
-                          }`
+                        : seenSet.has(t.n)
+                          ? "fill-dashboard-border-default stroke-dashboard-border-default"
+                          : `${track?.fill ?? "fill-dashboard-bg-surface"} ${
+                              mineSet.has(t.n)
+                                ? "stroke-dashboard-action-primary"
+                                : (track?.stroke ??
+                                  "stroke-dashboard-border-default")
+                            }`
                     }
                   />
                 </g>
@@ -652,7 +669,9 @@ export function TableMap({
                       className={
                         isFocus
                           ? "fill-dashboard-text-inverse"
-                          : "fill-dashboard-text-heavy"
+                          : seenSet.has(t.n)
+                            ? "fill-dashboard-text-disabled"
+                            : "fill-dashboard-text-heavy"
                       }
                     >
                       {t.n}

@@ -15,6 +15,8 @@ import {
   hasGuide,
   scoreRubric,
 } from "~/components/judging/shared/rubric-scorer";
+import { SuperLikeToggle } from "~/components/judging/shared/super-like";
+import { JudgeQuestionBank } from "~/components/judging/judge-app/judge-question-bank";
 
 // ---- Draft autosave ---------------------------------------------------------
 // Drafts are kept in this browser until the score reaches the server, so a
@@ -23,6 +25,7 @@ import {
 interface Draft {
   ratings: Ratings;
   notes: string;
+  superLike: boolean;
 }
 
 const draftKey = (key: string) => `hw13-judge-draft-${key}`;
@@ -38,12 +41,13 @@ function readDraft(key: string): Draft {
             ? parsed.ratings
             : {},
         notes: typeof parsed.notes === "string" ? parsed.notes : "",
+        superLike: parsed.superLike === true,
       };
     }
   } catch {
     // Unreadable draft: start fresh.
   }
-  return { ratings: {}, notes: "" };
+  return { ratings: {}, notes: "", superLike: false };
 }
 
 function writeDraft(key: string, draft: Draft): boolean {
@@ -73,9 +77,10 @@ const SAVE_LABEL: Record<SaveState, string> = {
 
 export interface ScoreSubmission {
   ratings: Ratings;
-  /** 0–100, the same number the backend stores for a mark. */
+  /** 0–10, the same number the backend stores for a mark. */
   score: number;
   notes: string;
+  superLike: boolean;
 }
 
 interface JudgeRubricProps {
@@ -112,6 +117,7 @@ export function JudgeRubric({
   const [initial] = useState(() => readDraft(key));
   const [ratings, setRatings] = useState<Ratings>(initial.ratings);
   const [notes, setNotes] = useState(initial.notes);
+  const [superLike, setSuperLike] = useState(initial.superLike);
   const [guideOpen, setGuideOpen] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const mounted = useRef(false);
@@ -125,11 +131,13 @@ export function JudgeRubric({
     setSaveState("saving");
     const timer = setTimeout(
       () =>
-        setSaveState(writeDraft(key, { ratings, notes }) ? "saved" : "error"),
+        setSaveState(
+          writeDraft(key, { ratings, notes, superLike }) ? "saved" : "error",
+        ),
       500,
     );
     return () => clearTimeout(timer);
-  }, [ratings, notes, key]);
+  }, [ratings, notes, superLike, key]);
 
   const count = rubric.criteria.length;
   const result = scoreRubric(rubric, ratings);
@@ -142,6 +150,7 @@ export function JudgeRubric({
       ratings,
       score: result.score,
       notes: notes.trim(),
+      superLike,
     });
     if (ok) clearDraft(key);
   };
@@ -156,10 +165,9 @@ export function JudgeRubric({
   return (
     <>
       <div className="flex items-center justify-between gap-3">
-        <h1 className="m-0 min-w-0 truncate text-base font-medium text-dashboard-text-light">
-          {table !== null ? `Table ${table} · ` : ""}
-          {teamName}
-        </h1>
+        <span className="text-sm font-medium text-dashboard-text-light">
+          {table !== null ? `Table ${table}` : "No table yet"}
+        </span>
         <span
           aria-live="polite"
           className={`rounded-full border px-3 py-1 text-sm font-semibold ${
@@ -170,6 +178,17 @@ export function JudgeRubric({
         >
           {SAVE_LABEL[saveState]}
         </span>
+      </div>
+
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="m-0 min-w-0 break-words text-2xl font-bold leading-tight text-dashboard-text-heavy">
+          {teamName}
+        </h1>
+        <SuperLikeToggle
+          on={superLike}
+          onChange={setSuperLike}
+          teamName={teamName}
+        />
       </div>
 
       <section
@@ -193,7 +212,6 @@ export function JudgeRubric({
           ratings={ratings}
           onRate={(id, value) => setRatings((r) => ({ ...r, [id]: value }))}
           guideOpen={guideOpen}
-          showValues={false}
         />
       </section>
 
@@ -206,6 +224,8 @@ export function JudgeRubric({
         onChange={(e) => setNotes(e.target.value)}
         className={`${field} py-3`}
       />
+
+      <JudgeQuestionBank />
 
       <div className="flex gap-2">
         <DashboardButton

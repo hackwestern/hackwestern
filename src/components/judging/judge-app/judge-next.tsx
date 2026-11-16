@@ -1,12 +1,20 @@
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { VenueMap } from "~/components/judging/judge-app/judge-map";
+import { walkHint } from "~/components/judging/judge-app/judge-directions";
+import { type ReactNode } from "react";
 import {
   card,
   fullWidth,
   warningBanner,
 } from "~/components/judging/shared/judge-ui";
 
-export type NextPhase = "loading" | "welcome" | "team" | "none" | "finished";
+export type NextPhase =
+  | "loading"
+  | "welcome"
+  | "team"
+  | "none"
+  | "rescoreReady"
+  | "finished";
 
 interface JudgeNextProps {
   phase: NextPhase;
@@ -14,6 +22,12 @@ interface JudgeNextProps {
   teamName: string | null;
   /** Its table, or null when the team isn't seated yet. */
   table: number | null;
+  /** The other tables in this judge's queue, marked on the map. */
+  tables: number[];
+  /** The table the judge just finished, where the walk hint starts. Null for their first team. */
+  fromTable: number | null;
+  /** Tables this judge has already scored, greyed on the map. */
+  seen: number[];
   /** How many teams this judge has scored. */
   judged: number;
   /** Finding the next team. */
@@ -24,6 +38,12 @@ interface JudgeNextProps {
   onOpenMap: () => void;
   onReview: () => void;
   onCheckAgain: () => void;
+  /** Starts the second pass (phase "rescoreReady"). */
+  onStartRescore: () => void;
+  /** Starting the second pass is in progress. */
+  starting: boolean;
+  /** Shown on the welcome screen above Start judging: the teams lined up. */
+  queueList?: ReactNode;
 }
 
 /** The "Next" tab: a welcome first, then the team the server picked. */
@@ -31,6 +51,9 @@ export function JudgeNext({
   phase,
   teamName,
   table,
+  tables,
+  fromTable,
+  seen,
   judged,
   busy,
   error,
@@ -39,6 +62,9 @@ export function JudgeNext({
   onOpenMap,
   onReview,
   onCheckAgain,
+  onStartRescore,
+  starting,
+  queueList,
 }: JudgeNextProps) {
   const errorBanner = error ? (
     <p role="alert" className={warningBanner}>
@@ -68,6 +94,7 @@ export function JudgeNext({
             Start judging to get your first team.
           </p>
         </section>
+        {queueList}
         {errorBanner}
         <DashboardButton
           type="button"
@@ -108,6 +135,33 @@ export function JudgeNext({
     );
   }
 
+  if (phase === "rescoreReady") {
+    return (
+      <>
+        <section className={`${card} flex flex-col gap-1.5 p-4`}>
+          <h1 className="text-3xl font-bold leading-tight text-dashboard-text-heavy">
+            Time for re-scoring
+          </h1>
+          <p className="text-base font-medium text-dashboard-text-light">
+            You&apos;ve judged all {judged} {judged === 1 ? "team" : "teams"} in
+            your queue. Now go back through each one, this time with their
+            GitHub and Devpost, and settle on your final scores. Once every team
+            is re-scored, you can submit.
+          </p>
+        </section>
+        {errorBanner}
+        <DashboardButton
+          type="button"
+          disabled={starting}
+          onClick={onStartRescore}
+          className={`${fullWidth} disabled:opacity-dashboard-disabled`}
+        >
+          {starting ? "Starting…" : "Start re-scoring"}
+        </DashboardButton>
+      </>
+    );
+  }
+
   if (phase === "none") {
     return (
       <>
@@ -117,20 +171,11 @@ export function JudgeNext({
           </h1>
           <p className="text-base font-medium text-dashboard-text-light">
             {judged > 0
-              ? `You've judged ${judged}. No other team is waiting for you right now.`
+              ? `You've judged ${judged}. Other judges are still finishing teams in your queue. Check again in a minute.`
               : "No team is waiting for you right now."}
           </p>
         </section>
         {errorBanner}
-        {judged > 0 && (
-          <DashboardButton
-            type="button"
-            onClick={onReview}
-            className={fullWidth}
-          >
-            Review all teams
-          </DashboardButton>
-        )}
         <DashboardButton
           type="button"
           variant="outline"
@@ -144,18 +189,27 @@ export function JudgeNext({
     );
   }
 
+  const hint = table !== null ? walkHint(fromTable, table) : null;
+
   return (
     <>
       <section
         aria-labelledby="next-table-label"
         className={`${card} flex flex-col gap-2 p-4`}
       >
-        <span
-          id="next-table-label"
-          className="text-base font-medium text-dashboard-text-light"
-        >
-          Next table
-        </span>
+        <div className="flex items-center justify-between gap-3">
+          <span
+            id="next-table-label"
+            className="text-base font-medium text-dashboard-text-light"
+          >
+            Next table
+          </span>
+          {hint && (
+            <span className="rounded-full bg-dashboard-bg-highlight px-3 py-1 text-sm font-semibold text-dashboard-text-active">
+              {hint}
+            </span>
+          )}
+        </div>
         <span className="text-6xl font-bold tabular-nums leading-none text-dashboard-text-heavy">
           {table ?? "–"}
         </span>
@@ -168,7 +222,12 @@ export function JudgeNext({
 
       {table !== null && (
         <section aria-label="Floor map" className={`${card} p-3.5`}>
-          <VenueMap tables={[]} current={table} onOpen={onOpenMap} />
+          <VenueMap
+            tables={tables}
+            current={table}
+            seen={seen}
+            onOpen={onOpenMap}
+          />
         </section>
       )}
 

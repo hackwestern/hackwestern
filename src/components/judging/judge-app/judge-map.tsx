@@ -5,6 +5,8 @@ interface VenueMapProps {
   tables: number[];
   /** The table to go to now. */
   current: number | undefined;
+  /** Tables this judge has already scored, drawn grey. */
+  seen?: number[];
   /**
    * "preview": a still picture for the home page. No buttons, and a tap opens
    * the map page. "page": the map page itself, filling the screen height.
@@ -21,6 +23,7 @@ interface VenueMapProps {
 export function VenueMap({
   tables,
   current,
+  seen = [],
   variant = "preview",
   onOpen,
 }: VenueMapProps) {
@@ -30,7 +33,8 @@ export function VenueMap({
         focus={current}
         focusLabel="Next table"
         mine={tables}
-        mineLabel="Your other tables"
+        mineLabel={current === undefined ? "Your tables" : "Your other tables"}
+        seen={seen}
         showTrackColors={false}
         fill
         fitButton
@@ -45,7 +49,8 @@ export function VenueMap({
       focus={current}
       focusLabel="Next table"
       mine={tables}
-      mineLabel="Your other tables"
+      mineLabel={current === undefined ? "Your tables" : "Your other tables"}
+      seen={seen}
       showTrackColors={false}
       pannable={false}
       fullscreenable={false}

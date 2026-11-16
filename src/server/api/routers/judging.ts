@@ -160,6 +160,50 @@ async function getCurrentHold(judgeId: string): Promise<QueueRow | undefined> {
 }
 
 /**
+ * NOTE: copies pickNextTeam's rules for which teams count (see the MAY BE
+ * REPLACED note there). Change both together.
+ *
+ * How many teams this judge could still be given: teams with rounds left that
+ * they haven't scored or skipped (track-matched for sponsored judges),
+ * including ones another judge is holding right now, plus the team they hold.
+ * Zero means their queue is finished.
+ */
+async function countRemaining(
+  judgeId: string,
+  isSponsored: boolean,
+  judgeTracks: string[] | null,
+): Promise<number> {
+  if (isSponsored && (!judgeTracks || judgeTracks.length === 0)) return 0;
+  const trackFilter =
+    isSponsored && judgeTracks && judgeTracks.length > 0
+      ? sql`AND t.tracks && ARRAY[${sql.join(
+          judgeTracks.map((t) => sql`${t}`),
+          sql`, `,
+        )}]::track[]`
+      : sql``;
+  const result = await db.execute<{ remaining: number }>(sql`
+    SELECT COUNT(*)::int AS remaining
+    FROM judging_queue q
+    JOIN team t ON t.id = q.team_id
+    WHERE (q.rounds_remaining > 0 OR q.current_judge_id = ${judgeId})
+      AND NOT EXISTS (
+        SELECT 1 FROM team_mark m WHERE m.team_id = q.team_id AND m.judge_id = ${judgeId}
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM judging_skip s WHERE s.team_id = q.team_id AND s.judge_id = ${judgeId}
+      )
+      ${trackFilter}
+  `);
+  return Number(extractRows<{ remaining: number }>(result)[0]?.remaining ?? 0);
+}
+
+// NOTE: MAY BE REPLACED. pickNextTeam and the priority queue behind it
+// (judging_queue + the trg_team_mark_* triggers) are Kevin Li's queue engine
+// (#627). It may be replaced by a new engine (e.g. a fixed set of teams per
+// judge). If it is, update countRemaining above to match, and the judge
+// app's queue preview (judge-queue-list.tsx) and loadQueueTeams
+// (judge-data.ts), which copy its rules.
+/**
  * === TRANSACTION ===
  * Assign the next eligible team to a judge. The whole pick-and-claim runs
  * in one transaction with `FOR UPDATE SKIP LOCKED` on the queue row, so two
@@ -756,6 +800,19 @@ export const judgingRouter = createTRPCRouter({
         }
         return { team: toJudgeTeam(team) };
       }, "Failed to get next team");
+    }),
+
+    /** Teams this judge could still be given; 0 once their queue is finished. */
+    getRemainingCount: protectedJudgeProcedure.query(async ({ ctx }) => {
+      return withErrorHandling(
+        () =>
+          countRemaining(
+            ctx.session.user.id,
+            ctx.judge.type === "sponsored",
+            ctx.judge.track,
+          ),
+        "Failed to count remaining teams",
+      );
     }),
 
     /**

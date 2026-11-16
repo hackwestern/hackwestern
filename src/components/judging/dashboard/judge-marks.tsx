@@ -35,7 +35,10 @@ function MarkEditor({ mark, onDone }: { mark: Mark; onDone: () => void }) {
       onSubmit={(e) => {
         e.preventDefault();
         if (valid) {
-          edit.mutate({ teamMarkId: mark.id, score: Math.round(parsed) });
+          edit.mutate({
+            teamMarkId: mark.id,
+            score: Math.round(parsed * 2) / 2,
+          });
         }
       }}
     >
@@ -45,7 +48,8 @@ function MarkEditor({ mark, onDone }: { mark: Mark; onDone: () => void }) {
       <input
         id={inputId}
         type="number"
-        inputMode="numeric"
+        inputMode="decimal"
+        step={0.5}
         min={SCORE_MIN}
         max={SCORE_MAX}
         value={value}
@@ -70,7 +74,7 @@ function MarkEditor({ mark, onDone }: { mark: Mark; onDone: () => void }) {
       </DashboardButton>
       {!valid && (
         <p className="w-full text-xs text-dashboard-text-light">
-          Enter a score from 0 to 100.
+          Enter a score from {SCORE_MIN} to {SCORE_MAX}.
         </p>
       )}
       {edit.error && (

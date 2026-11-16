@@ -102,7 +102,7 @@ export function RubricBuilder({ rubric = DEFAULT_RUBRIC }: Props) {
             </button>
             <p className={`m-0 px-1 text-[13px] ${MUTED}`}>
               {complete
-                ? `Saved as ${result.score} out of 100.`
+                ? `Saved as ${result.label} out of 10.`
                 : "Drag the sliders to try it. Nothing here is saved."}
             </p>
           </div>

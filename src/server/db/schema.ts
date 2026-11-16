@@ -883,13 +883,15 @@ export const judgingQueue = pgTable(
 );
 
 /**
- * The rubric behind a mark: each category rated 1-5 (matching the judge
- * screen's rubric), plus free-text notes.
+ * The rubric behind a mark: each category rated 0-10 in half steps (matching
+ * the judge screen's rubric), free-text notes and the judge's super like.
  */
 export type ScoreBreakdown = {
-  /** 0–100 slider value per rubric criterion id, e.g. { technical: 80 }. */
+  /** 0–10 slider value per rubric criterion id, e.g. { technical: 7.5 }. */
   ratings: Record<string, number>;
   notes?: string | null;
+  /** The judge's "super like" for this team. */
+  superLike?: boolean;
 };
 
 export const teamMarks = pgTable(

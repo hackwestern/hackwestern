@@ -1,20 +1,52 @@
+import { type ReactNode, useState } from "react";
+import { ChevronRight } from "lucide-react";
+
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import {
   card,
   fullWidth,
+  focusRing,
   infoBanner,
   touch,
 } from "~/components/judging/shared/judge-ui";
+
+/** The chevron beside Overall that opens and closes the per-criterion rows. */
+function BreakdownToggle({
+  open,
+  onToggle,
+  controls,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  controls: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-expanded={open}
+      aria-controls={controls}
+      aria-label={open ? "Hide breakdown" : "Show breakdown"}
+      onClick={onToggle}
+      className={`-my-2 -ml-2 inline-flex size-9 shrink-0 cursor-pixel-hover items-center justify-center rounded-full text-dashboard-text-light hover:bg-dashboard-bg-highlight ${focusRing}`}
+    >
+      <ChevronRight
+        aria-hidden="true"
+        className={`size-5 transition-transform ${open ? "rotate-90" : ""}`}
+      />
+    </button>
+  );
+}
 import { type Rubric } from "~/components/judging/shared/rubric-scorer";
+import { SuperLikeMark } from "~/components/judging/shared/super-like";
 import {
   type ComparisonData,
   type ComparisonTeam,
 } from "~/server/api/utils/judge-comparison";
 
 /** A gap this big or more gets the warning colour. Words carry it too, not just colour. */
-const BIG_GAP = 15;
+const BIG_GAP = 1.5;
 
-const round = (n: number) => Math.round(n);
+const round = (n: number) => Math.round(n * 10) / 10;
 
 /** "+7", "−3" or "0". Rounds first, so 0.4 reads as 0. */
 function signed(diff: number): string {
@@ -37,9 +69,18 @@ interface RowProps {
   /** False when only the viewer has marked this team, so there is nothing to compare. */
   comparable: boolean;
   strong?: boolean;
+  /** Shown right before the label, e.g. the breakdown toggle. */
+  toggle?: ReactNode;
 }
 
-function CompareRow({ label, mine, average, comparable, strong }: RowProps) {
+function CompareRow({
+  label,
+  mine,
+  average,
+  comparable,
+  strong,
+  toggle,
+}: RowProps) {
   const hasBoth = mine !== undefined && average !== undefined;
   const diff = hasBoth ? mine - average : undefined;
   const big = comparable && diff !== undefined && Math.abs(diff) >= BIG_GAP;
@@ -47,12 +88,13 @@ function CompareRow({ label, mine, average, comparable, strong }: RowProps) {
   return (
     <div className="flex items-baseline justify-between gap-3">
       <span
-        className={
+        className={`flex items-center gap-1 ${
           strong
             ? "text-base font-semibold text-dashboard-text-heavy"
             : "text-sm font-medium text-dashboard-text-heavy"
-        }
+        }`}
       >
+        {toggle}
         {label}
       </span>
       <span className="flex items-baseline gap-3 tabular-nums">
@@ -97,6 +139,8 @@ function TeamCard({
   rubric: Rubric;
 }) {
   const comparable = team.others !== null;
+  const [open, setOpen] = useState(false);
+  const breakdownId = `breakdown-${team.teamId}`;
   return (
     <section
       aria-label={`${team.teamName} comparison`}
@@ -107,7 +151,7 @@ function TeamCard({
           <span className="mr-2 tabular-nums text-dashboard-text-light">
             #{rank}
           </span>
-          {team.teamName}
+          <SuperLikeMark on={team.superLike} /> {team.teamName}
         </h2>
         <span className="shrink-0 text-xs font-medium text-dashboard-text-light">
           {table !== null ? `Table ${table} · ` : ""}
@@ -122,17 +166,55 @@ function TeamCard({
         mine={team.mine.score}
         average={team.others?.score}
         comparable={comparable}
+        toggle={
+          <BreakdownToggle
+            open={open}
+            onToggle={() => setOpen((o) => !o)}
+            controls={breakdownId}
+          />
+        }
       />
-      {rubric.criteria.map((c) => (
-        <CompareRow
-          key={c.id}
-          label={c.name}
-          mine={team.mine.ratings[c.id]}
-          average={team.others?.ratings[c.id]}
-          comparable={comparable}
-        />
-      ))}
+      {open && (
+        <div
+          id={breakdownId}
+          className="ml-1 flex flex-col gap-2 border-l-2 border-dashboard-border-subtle pl-4"
+        >
+          {rubric.criteria.map((c) => (
+            <CompareRow
+              key={c.id}
+              label={c.name}
+              mine={team.mine.ratings[c.id]}
+              average={team.others?.ratings[c.id]}
+              comparable={comparable}
+            />
+          ))}
+        </div>
+      )}
     </section>
+  );
+}
+
+/** One line of "Your average gap". */
+function BiasRow({
+  line,
+  toggle,
+}: {
+  line: { label: string; avg: number; n: number };
+  toggle?: ReactNode;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 text-sm">
+      <span className="flex items-center gap-1 font-medium text-dashboard-text-heavy">
+        {toggle}
+        {line.label}
+      </span>
+      <span className="tabular-nums text-dashboard-text-light">
+        <span className="font-semibold text-dashboard-text-active">
+          {signed(line.avg)}
+        </span>{" "}
+        over {line.n} {line.n === 1 ? "team" : "teams"}
+      </span>
+    </div>
   );
 }
 
@@ -191,6 +273,7 @@ export function JudgeComparison({
   refreshing,
   onRefresh,
 }: JudgeComparisonProps) {
+  const [biasOpen, setBiasOpen] = useState(false);
   if (data === null) {
     return (
       <p role="status" className={infoBanner}>
@@ -228,22 +311,35 @@ export function JudgeComparison({
               <h2 className="m-0 text-base font-semibold text-dashboard-text-heavy">
                 Your average gap
               </h2>
-              {bias.map((b) => (
+              {bias
+                .filter((b) => b.id === "overall")
+                .map((b) => (
+                  <BiasRow
+                    key={b.id}
+                    line={b}
+                    toggle={
+                      bias.length > 1 ? (
+                        <BreakdownToggle
+                          open={biasOpen}
+                          onToggle={() => setBiasOpen((o) => !o)}
+                          controls="bias-breakdown"
+                        />
+                      ) : undefined
+                    }
+                  />
+                ))}
+              {biasOpen && (
                 <div
-                  key={b.id}
-                  className="flex items-baseline justify-between gap-3 text-sm"
+                  id="bias-breakdown"
+                  className="ml-1 flex flex-col gap-1.5 border-l-2 border-dashboard-border-subtle pl-4"
                 >
-                  <span className="font-medium text-dashboard-text-heavy">
-                    {b.label}
-                  </span>
-                  <span className="tabular-nums text-dashboard-text-light">
-                    <span className="font-semibold text-dashboard-text-active">
-                      {signed(b.avg)}
-                    </span>{" "}
-                    over {b.n} {b.n === 1 ? "team" : "teams"}
-                  </span>
+                  {bias
+                    .filter((b) => b.id !== "overall")
+                    .map((b) => (
+                      <BiasRow key={b.id} line={b} />
+                    ))}
                 </div>
-              ))}
+              )}
             </section>
           )}
           {ranked.map((t, i) => (

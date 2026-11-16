@@ -27,11 +27,16 @@ import {
 } from "~/components/judging/judge-app/judge-teams";
 import { JudgeComparison } from "~/components/judging/judge-app/judge-comparison";
 import { JudgeFinal } from "~/components/judging/judge-app/judge-final";
+import {
+  JudgeQueueList,
+  useQueueLineup,
+} from "~/components/judging/judge-app/judge-queue-list";
 import { JudgeRescore } from "~/components/judging/judge-app/judge-rescore";
 import { VenueMap } from "~/components/judging/judge-app/judge-map";
 import { errorCode, friendlyError } from "~/components/judging/shared/judge-ui";
 import {
   DEFAULT_RUBRIC,
+  RUBRIC_MIN,
   type Ratings,
 } from "~/components/judging/shared/rubric-scorer";
 import { JudgeConfirm } from "~/components/judging/shared/judge-confirm";
@@ -41,14 +46,16 @@ import { api } from "~/utils/api";
 // The rubric every judge scores with, until rubrics come from the backend.
 const RUBRIC = DEFAULT_RUBRIC;
 
-// Each rubric category is stored on the mark as the same 0-100 slider value
-// the judge set (team_mark.score_breakdown), next to the overall 0-100 score.
-// Ratings are stored by criterion id: { ratings: { technical: 80, ... }, notes }.
-const toBreakdown = (ratings: Ratings, notes: string) => ({
+// Each rubric category is stored on the mark as the same 0-10 slider value
+// the judge set (team_mark.score_breakdown), next to the overall 0-10 score.
+// Ratings are stored by criterion id:
+// { ratings: { technical: 7.5, ... }, notes, superLike }.
+const toBreakdown = (ratings: Ratings, notes: string, superLike: boolean) => ({
   ratings: Object.fromEntries(
-    RUBRIC.criteria.map((c) => [c.id, ratings[c.id] ?? 0]),
+    RUBRIC.criteria.map((c) => [c.id, ratings[c.id] ?? RUBRIC_MIN]),
   ),
   ...(notes ? { notes } : {}),
+  superLike,
 });
 
 function fromBreakdown(
@@ -162,9 +169,8 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   }, [judgeKey]);
   const finished = stage === "submitted";
   const canScoreNew = stage === "first";
-  // Scores can only be changed while re-scoring or on the final overview
-  // before submitting, never from My teams during the first pass.
-  const canEdit = stage === "rescore" || stage === "final";
+  // Any score can be opened and changed from My teams until the judge submits.
+  const canEdit = stage !== "submitted";
 
   const changeStage = (next: Stage) => {
     setStage(next);
@@ -205,6 +211,8 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   }, [hydrated, stage, initial.comparison, router]);
   const assignment = api.judging.me.getCurrentAssignment.useQuery();
   const marksQuery = api.judging.me.getSubmittedTeamMarks.useQuery();
+  // Re-scoring only opens once nothing is left in this judge's queue.
+  const remainingQuery = api.judging.me.getRemainingCount.useQuery();
   const getNext = api.judging.me.getNextTeam.useMutation();
   const submit = api.judging.me.submitTeamMark.useMutation();
   const edit = api.judging.me.editTeamMark.useMutation();
@@ -221,8 +229,9 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       table: initial.tableByTeam[m.teamId] ?? null,
       teamName: m.team.name,
       ratings: fromBreakdown(m.scoreBreakdown),
-      score: Math.round(m.score),
+      score: m.score,
       notes: m.scoreBreakdown?.notes ?? "",
+      superLike: m.scoreBreakdown?.superLike === true,
     }))
     // Oldest first: marks are numbered in the order they were saved.
     .sort((a, b) => a.markId - b.markId);
@@ -231,13 +240,42 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       ? results.find((r) => r.markId === editingId)
       : undefined;
 
+  const allRescored =
+    results.length > 0 && results.every((r) => rescored.includes(r.teamId));
+
+  // This judge's queue (kept on the device for now), and the tables it covers
+  // for the map: every queued team not judged yet.
+  const queue = useQueueLineup(judgeKey, initial.queueTeams);
+  const judgedIds = new Set(results.map((r) => r.teamId));
+  const queueTables = [
+    ...new Set(
+      queue.teams
+        .filter((t) => !judgedIds.has(t.id))
+        .map((t) => initial.tableByTeam[t.id])
+        .filter((n): n is number => n !== undefined && n !== heldTable),
+    ),
+  ];
+
+  // Tables this judge has already scored, greyed on the map.
+  const seenTables = [
+    ...new Set(
+      results
+        .map((r) => r.table)
+        .filter((n): n is number => n !== null && n !== heldTable),
+    ),
+  ];
+
   const started = startedLocal || held !== null || results.length > 0;
+  // Nothing is left in this judge's queue: time to re-score.
+  const queueDone =
+    stage === "first" && results.length > 0 && remainingQuery.data === 0;
   let phase: NextPhase;
   if (!hydrated || assignment.isLoading || (findingNext && !held)) {
     phase = "loading";
   } else if (finished) phase = "finished";
   else if (held) phase = "team";
   else if (!started) phase = "welcome";
+  else if (queueDone) phase = "rescoreReady";
   else phase = "none";
 
   // Asks the server for the next team. A CONFLICT means nothing is waiting.
@@ -269,6 +307,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       utils.judging.me.getCurrentAssignment.invalidate(),
     ]);
     await fetchNext();
+    await remainingQuery.refetch();
   };
 
   const submitScore = async (s: ScoreSubmission): Promise<boolean> => {
@@ -279,7 +318,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       await submit.mutateAsync({
         teamId: held.id,
         score: s.score,
-        breakdown: toBreakdown(s.ratings, s.notes),
+        breakdown: toBreakdown(s.ratings, s.notes, s.superLike),
       });
     } catch (error) {
       setScoreError(
@@ -321,7 +360,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       await edit.mutateAsync({
         teamMarkId: editingId,
         score: u.score,
-        breakdown: toBreakdown(u.ratings, u.notes),
+        breakdown: toBreakdown(u.ratings, u.notes, u.superLike),
       });
       await marksQuery.refetch();
     } catch (error) {
@@ -329,8 +368,8 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       return false;
     }
 
-    if (stage === "final") {
-      // A last change from the final overview: go back to it.
+    if (stage !== "rescore") {
+      // A change from My teams or the final overview: go back to the list.
       setEditingId(null);
       setTab("teams");
       return true;
@@ -372,7 +411,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
 
   const closeEdit = () => {
     setEditingId(null);
-    setTab(stage === "final" ? "teams" : "next");
+    setTab(stage === "rescore" ? "next" : "teams");
   };
 
   // Moves on to the final review, where the judge submits.
@@ -406,7 +445,11 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       return;
     }
     changeStage("rescore");
-    setTab("next");
+    // Straight into the first team still to re-score: the "Time for
+    // re-scoring" card already explained what happens next.
+    const first = results.find((r) => !rescored.includes(r.teamId));
+    if (first) editTeam(first.markId);
+    else setTab("next");
   };
 
   // Locks the scores in this app. Moving to "submitted" also loads the
@@ -472,8 +515,6 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   }
 
   let body: ReactNode;
-  const allRescored =
-    results.length > 0 && results.every((r) => rescored.includes(r.teamId));
 
   if (tab === "next" && (stage === "rescore" || stage === "final")) {
     body = (
@@ -493,12 +534,20 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         table={heldTable}
         judged={results.length}
         busy={findingNext}
-        error={nextError}
+        error={nextError ?? finishError}
+        tables={queueTables}
+        fromTable={results.at(-1)?.table ?? null}
+        seen={seenTables}
         onStart={() => void start()}
         onJudge={() => void judgeThisTeam()}
         onOpenMap={() => changeTab("map")}
         onReview={reviewAll}
         onCheckAgain={() => void fetchNext()}
+        onStartRescore={() => void startRescore()}
+        starting={finishing}
+        queueList={
+          <JudgeQueueList queue={queue} tableByTeam={initial.tableByTeam} />
+        }
       />
     );
   } else if (tab === "score") {
@@ -510,8 +559,13 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
           key={editingTeam.markId}
           team={editingTeam}
           rubric={RUBRIC}
-          mode={stage === "final" ? "edit" : "rescore"}
-          links={initial.linksByTeam[editingTeam.teamId]}
+          mode={stage === "rescore" ? "rescore" : "edit"}
+          links={
+            // Project links stay hidden until re-scoring.
+            stage === "first"
+              ? undefined
+              : initial.linksByTeam[editingTeam.teamId]
+          }
           saving={edit.isPending}
           error={editError}
           onSave={saveEdit}
@@ -557,19 +611,20 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
           results={results}
           stage={stage}
           rescored={rescored}
-          starting={finishing}
+          canSubmit={stage === "rescore" && allRescored}
           error={finishError}
-          onStartRescore={() => setConfirm("rescore")}
-          onContinueRescore={() => {
-            const next = results.find((r) => !rescored.includes(r.teamId));
-            if (next) editTeam(next.markId);
-            else goFinal();
-          }}
+          onEdit={editTeam}
+          onSubmit={() => setConfirm("submit")}
         />
       );
   } else {
     body = (
-      <VenueMap tables={[]} current={heldTable ?? undefined} variant="page" />
+      <VenueMap
+        tables={queueTables}
+        current={heldTable ?? undefined}
+        seen={seenTables}
+        variant="page"
+      />
     );
   }
 
@@ -613,9 +668,12 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         <JudgeNav
           active={tab}
           onChange={changeTab}
-          disabled={
-            !(scoring && held && canScoreNew) && !editing ? ["score"] : []
-          }
+          disabled={{
+            ...(!(scoring && held && canScoreNew) && !editing
+              ? { score: "choose a team to judge first" }
+              : {}),
+          }}
+          labels={{ teams: stage === "submitted" ? "Results" : "My teams" }}
         />
         <JudgeConfirm
           open={confirm !== null}

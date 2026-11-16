@@ -1,10 +1,16 @@
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import {
   card,
+  focusRing,
   fullWidth,
+  infoBanner,
   warningBanner,
 } from "~/components/judging/shared/judge-ui";
-import { type Ratings } from "~/components/judging/shared/rubric-scorer";
+import {
+  type Ratings,
+  formatScore,
+} from "~/components/judging/shared/rubric-scorer";
+import { SuperLikeMark } from "~/components/judging/shared/super-like";
 
 /** One team this judge has scored. */
 export interface JudgedTeam {
@@ -13,11 +19,13 @@ export interface JudgedTeam {
   /** null when the team isn't seated at a table. */
   table: number | null;
   teamName: string;
-  /** Slider values by criterion id (0-100). Empty until the mark is edited with the rubric. */
+  /** Slider values by criterion id (0-10). Empty until the mark is edited with the rubric. */
   ratings: Ratings;
-  /** 0-100, as stored on the mark. */
+  /** 0-10, as stored on the mark. */
   score: number;
   notes: string;
+  /** The judge gave this team a super like. */
+  superLike: boolean;
 }
 
 interface JudgeTeamsProps {
@@ -26,27 +34,28 @@ interface JudgeTeamsProps {
   stage: "first" | "rescore";
   /** Team ids already re-scored. */
   rescored: string[];
-  /** Moving on to re-scoring is in progress. */
-  starting: boolean;
+  /** Every team is re-scored, so the scores can be submitted. */
+  canSubmit: boolean;
   error: string | null;
-  onStartRescore: () => void;
-  onContinueRescore: () => void;
+  /** Opens this mark to change it. */
+  onEdit: (markId: number) => void;
+  onSubmit: () => void;
 }
 
 /**
- * The "My teams" tab during judging: every score the judge has submitted, read
- * only. First review ends with "Start re-scoring". Once the judge is re-scoring,
- * each row shows whether it has been done. After that this tab becomes the
- * final review and the results (see JudgeFinal and JudgeComparison).
+ * The "My teams" tab during judging: every score the judge has submitted. Tap a
+ * team to change it. While re-scoring, each row shows whether it has been done.
+ * Submit stays disabled until every team is re-scored. Re-scoring itself starts
+ * from the Next tab. After submitting, this tab shows the results.
  */
 export function JudgeTeams({
   results,
   stage,
   rescored,
-  starting,
+  canSubmit,
   error,
-  onStartRescore,
-  onContinueRescore,
+  onEdit,
+  onSubmit,
 }: JudgeTeamsProps) {
   if (results.length === 0) {
     return (
@@ -63,7 +72,7 @@ export function JudgeTeams({
       <p className="m-0 px-1 text-sm text-dashboard-text-light">
         {rescoring
           ? "Re-score every team, in the order you scored them."
-          : "Your scores so far. They can't be changed until re-scoring."}
+          : "Your scores so far. Tap a team to change its score."}
       </p>
       <section
         aria-label="Teams you've judged"
@@ -79,19 +88,21 @@ export function JudgeTeams({
                   i > 0 ? "border-t border-dashboard-border-subtle" : ""
                 }
               >
-                <div
-                  role="group"
-                  aria-label={`${r.table ?? "No table"} ${r.teamName}, score ${r.score}.${
+                <button
+                  type="button"
+                  onClick={() => onEdit(r.markId)}
+                  aria-label={`Edit ${r.table ?? "No table"} ${r.teamName}, score ${formatScore(r.score)}.${r.superLike ? " Super liked." : ""}${
                     rescoring
                       ? done
                         ? " Re-scored."
                         : " Not re-scored yet."
                       : ""
                   }`}
-                  className="flex min-h-14 w-full items-center justify-between gap-3 px-4 text-base font-medium text-dashboard-text-heavy"
+                  className={`flex min-h-14 w-full cursor-pixel-hover items-center justify-between gap-3 px-4 text-left text-base font-medium text-dashboard-text-heavy hover:bg-dashboard-bg-highlightSubtle ${focusRing}`}
                 >
                   <span className="min-w-0 truncate">
-                    {r.table ?? "–"} · {r.teamName}
+                    <SuperLikeMark on={r.superLike} /> {r.table ?? "–"} ·{" "}
+                    {r.teamName}
                   </span>
                   <span className="flex shrink-0 items-baseline gap-2">
                     {rescoring && (
@@ -100,10 +111,10 @@ export function JudgeTeams({
                       </span>
                     )}
                     <span className="font-semibold tabular-nums">
-                      {r.score}
+                      {formatScore(r.score)}
                     </span>
                   </span>
-                </div>
+                </button>
               </li>
             );
           })}
@@ -115,24 +126,21 @@ export function JudgeTeams({
           {error}
         </p>
       )}
-      {rescoring ? (
-        <DashboardButton
-          type="button"
-          onClick={onContinueRescore}
-          className={fullWidth}
-        >
-          Continue re-scoring
-        </DashboardButton>
-      ) : (
-        <DashboardButton
-          type="button"
-          disabled={starting}
-          onClick={onStartRescore}
-          className={`${fullWidth} disabled:opacity-dashboard-disabled`}
-        >
-          {starting ? "Starting…" : "Start re-scoring"}
-        </DashboardButton>
+      {!canSubmit && (
+        <p className={infoBanner}>
+          {rescoring
+            ? "Re-score every team to submit. Continue from the Next tab."
+            : "Finish your queue and re-score every team to submit."}
+        </p>
       )}
+      <DashboardButton
+        type="button"
+        disabled={!canSubmit}
+        onClick={onSubmit}
+        className={`${fullWidth} disabled:opacity-dashboard-disabled`}
+      >
+        Submit
+      </DashboardButton>
     </>
   );
 }

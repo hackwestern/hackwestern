@@ -1,8 +1,12 @@
 import { focusRing } from "~/components/judging/shared/judge-ui";
 
-/** Every criterion is scored on the same slider, from 0 to 100. */
+/** Every criterion is scored on the same slider, from 0 to 10 in half steps. */
 export const RUBRIC_MIN = 0;
-export const RUBRIC_MAX = 100;
+export const RUBRIC_MAX = 10;
+export const RUBRIC_STEP = 0.5;
+
+/** Scores read with at most one decimal: 7, 7.5, 7.3. */
+export const formatScore = (n: number) => String(Math.round(n * 10) / 10);
 
 export interface RubricCriterion {
   id: string;
@@ -65,14 +69,14 @@ export const hasGuide = (rubric: Rubric) =>
 export const effectiveWeight = (rubric: Rubric, c: RubricCriterion) =>
   rubric.weighted && c.weight > 0 ? c.weight : 1;
 
-/** A rating only counts while it is on the 0–100 slider. */
+/** A rating only counts while it is on the 0–10 slider. */
 export const ratingOf = (c: RubricCriterion, ratings: Ratings) => {
   const r = ratings[c.id];
   return r !== undefined && r >= RUBRIC_MIN && r <= RUBRIC_MAX ? r : undefined;
 };
 
 /**
- * Turns ratings into the 0-100 score the backend stores: the weighted average
+ * Turns ratings into the 0-10 score the backend stores: the weighted average
  * of the criterion ratings (a plain average when the rubric isn't weighted).
  * It only means something once every criterion has been rated.
  */
@@ -92,8 +96,10 @@ export function scoreRubric(
     part += weight * (rating ?? RUBRIC_MIN);
   }
 
-  const score = totalWeight > 0 ? Math.round(part / totalWeight) : 0;
-  return { score, label: String(score), rated };
+  // Kept to two decimals: half-point ratings averaged over a few criteria.
+  const score =
+    totalWeight > 0 ? Math.round((part / totalWeight) * 100) / 100 : 0;
+  return { score, label: formatScore(score), rated };
 }
 
 const THUMB_PX = 24;
@@ -126,7 +132,7 @@ interface RubricScorerProps {
   onRate: (criterionId: string, value: number) => void;
   /** When true, each criterion's description shows beside its name. */
   guideOpen: boolean;
-  /** Show the number beside each slider. On by default; the judge app turns it off. */
+  /** Show the score to the right of each slider. On by default. */
   showValues?: boolean;
 }
 
@@ -165,51 +171,69 @@ export function RubricScorer({
                   </span>
                 )}
               </div>
-              {showValues && (
-                <output
-                  aria-hidden="true"
-                  className={`min-w-[3ch] text-right text-2xl font-semibold tabular-nums leading-none ${
-                    current === undefined
-                      ? "text-dashboard-text-disabled"
-                      : "text-dashboard-text-active"
-                  }`}
-                >
-                  {current ?? RUBRIC_MIN}
-                </output>
-              )}
             </div>
             {/* Sliders start at 0 but stay dimmed, and don't count as scored,
                 until the judge actually touches them. Safari ignores
                 accent-color on range inputs, so the track, fill and thumb are
                 drawn by hand and look the same in every browser. */}
-            <div
-              className={`relative flex h-11 items-center ${
-                current === undefined ? "opacity-dashboard-disabled" : ""
-              }`}
-            >
-              <div
+            <div className="flex items-center gap-2">
+              <span
                 aria-hidden="true"
-                className="absolute inset-x-0 h-2 rounded-full bg-dashboard-border-default"
-              />
+                className="w-[2ch] shrink-0 text-right text-sm font-semibold tabular-nums text-dashboard-text-light"
+              >
+                {RUBRIC_MIN}
+              </span>
               <div
+                className={`relative flex h-11 min-w-0 flex-1 items-center ${
+                  current === undefined ? "opacity-dashboard-disabled" : ""
+                }`}
+              >
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-x-0 h-2 rounded-full bg-dashboard-border-default"
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute left-0 h-2 rounded-full bg-dashboard-action-primary"
+                  style={{ width: fillWidth(current ?? RUBRIC_MIN) }}
+                />
+                <input
+                  type="range"
+                  min={RUBRIC_MIN}
+                  max={RUBRIC_MAX}
+                  step={RUBRIC_STEP}
+                  value={current ?? RUBRIC_MIN}
+                  aria-labelledby={labelId}
+                  aria-valuetext={
+                    current === undefined
+                      ? "Not scored yet"
+                      : `${formatScore(current)} out of ${RUBRIC_MAX}`
+                  }
+                  onChange={(e) => onRate(c.id, Number(e.target.value))}
+                  onPointerUp={(e) =>
+                    onRate(c.id, Number(e.currentTarget.value))
+                  }
+                  className={`relative m-0 h-11 w-full cursor-pixel-hover appearance-none bg-transparent ${SLIDER_PARTS} ${focusRing}`}
+                />
+              </div>
+              <span
                 aria-hidden="true"
-                className="absolute left-0 h-2 rounded-full bg-dashboard-action-primary"
-                style={{ width: fillWidth(current ?? RUBRIC_MIN) }}
-              />
-              <input
-                type="range"
-                min={RUBRIC_MIN}
-                max={RUBRIC_MAX}
-                step={1}
-                value={current ?? RUBRIC_MIN}
-                aria-labelledby={labelId}
-                aria-valuetext={
-                  current === undefined ? "Not scored yet" : String(current)
-                }
-                onChange={(e) => onRate(c.id, Number(e.target.value))}
-                onPointerUp={(e) => onRate(c.id, Number(e.currentTarget.value))}
-                className={`relative m-0 h-11 w-full cursor-pixel-hover appearance-none bg-transparent ${SLIDER_PARTS} ${focusRing}`}
-              />
+                className="w-[2ch] shrink-0 text-sm font-semibold tabular-nums text-dashboard-text-light"
+              >
+                {RUBRIC_MAX}
+              </span>
+              {showValues && (
+                <output
+                  aria-hidden="true"
+                  className={`min-w-[3.5ch] shrink-0 rounded-dashboard-md px-1.5 py-0.5 text-center text-base font-bold tabular-nums ${
+                    current === undefined
+                      ? "bg-dashboard-bg-inset text-dashboard-text-disabled"
+                      : "bg-dashboard-bg-highlight text-dashboard-text-active"
+                  }`}
+                >
+                  {current === undefined ? "–" : formatScore(current)}
+                </output>
+              )}
             </div>
           </div>
         );

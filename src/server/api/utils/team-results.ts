@@ -22,7 +22,7 @@ export interface MarkRow {
   judgeType: "organizer" | "sponsored";
   roundType: "regular" | "sponsored";
   score: number;
-  /** team_mark.score_breakdown, { ratings: { [criterionId]: 0-100 }, notes? }. */
+  /** team_mark.score_breakdown, { ratings: { [criterionId]: 0-10 }, notes? }. */
   breakdown: unknown;
   notes: string;
 }

@@ -8,7 +8,7 @@ export interface ComparisonRow {
   teamId: string;
   judgeId: string;
   score: number;
-  /** team_mark.score_breakdown, which is { ratings: { [criterionId]: 0-100 }, notes? }. */
+  /** team_mark.score_breakdown, which is { ratings: { [criterionId]: 0-10 }, notes? }. */
   breakdown: unknown;
 }
 
@@ -17,6 +17,8 @@ export interface ComparisonTeam {
   teamName: string;
   /** The viewer's overall score and ratings. */
   mine: { score: number; ratings: Record<string, number> };
+  /** The viewer gave this team a super like. */
+  superLike: boolean;
   /**
    * The average across the OTHER organizers who marked this team (the viewer is
    * left out). Null when nobody else has marked it yet.
@@ -33,7 +35,7 @@ export interface ComparisonData {
   teams: ComparisonTeam[];
 }
 
-/** Pulls the 0-100 ratings out of a stored breakdown. Anything else is ignored. */
+/** Pulls the 0-10 ratings out of a stored breakdown. Anything else is ignored. */
 export function ratingsOf(breakdown: unknown): Record<string, number> {
   const out: Record<string, number> = {};
   if (!breakdown || typeof breakdown !== "object") return out;
@@ -92,6 +94,10 @@ export function buildComparison(
       teamId: row.teamId,
       teamName: teamNames[row.teamId] ?? "Unknown team",
       mine: { score: row.score, ratings: ratingsOf(row.breakdown) },
+      superLike:
+        !!row.breakdown &&
+        typeof row.breakdown === "object" &&
+        (row.breakdown as { superLike?: unknown }).superLike === true,
       others: average,
       otherCount: new Set(others.map((m) => m.judgeId)).size,
     });

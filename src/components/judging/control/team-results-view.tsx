@@ -13,7 +13,7 @@ const RUBRIC = DEFAULT_RUBRIC;
 
 const one = (n: number) => n.toFixed(1);
 
-/** The average, plus a bar for each criterion out of 100. */
+/** The average, plus a bar for each criterion out of 10. */
 function RoundCard({ title, round }: { title: string; round: RoundSummary }) {
   return (
     <section
@@ -63,7 +63,7 @@ function RoundCard({ title, round }: { title: string; round: RoundSummary }) {
                   >
                     <div
                       className="h-full rounded-full bg-dashboard-action-primary"
-                      style={{ width: `${value ?? 0}%` }}
+                      style={{ width: `${((value ?? 0) / 10) * 100}%` }}
                     />
                   </div>
                 </li>
@@ -108,7 +108,7 @@ function RoundCard({ title, round }: { title: string; round: RoundSummary }) {
                       {m.judgeName}
                     </th>
                     <td className="px-2 py-1.5 font-semibold tabular-nums">
-                      {Math.round(m.score)}
+                      {one(m.score)}
                     </td>
                     {RUBRIC.criteria.map((c) => (
                       <td key={c.id} className="px-2 py-1.5 tabular-nums">

@@ -12,12 +12,19 @@ export type JudgeTab = (typeof JUDGE_TABS)[number]["id"];
 interface JudgeNavProps {
   active: JudgeTab;
   onChange: (tab: JudgeTab) => void;
-  /** Tabs that can't be opened yet, e.g. Score until a team is chosen. */
-  disabled?: JudgeTab[];
+  /** Tabs that can't be opened yet, with why (read out to screen readers). */
+  disabled?: Partial<Record<JudgeTab, string>>;
+  /** Tab names that change with the stage, e.g. My teams becomes Submit. */
+  labels?: Partial<Record<JudgeTab, string>>;
 }
 
 /** Bottom tab bar. Sticks to the bottom of the phone screen. */
-export function JudgeNav({ active, onChange, disabled = [] }: JudgeNavProps) {
+export function JudgeNav({
+  active,
+  onChange,
+  disabled = {},
+  labels = {},
+}: JudgeNavProps) {
   const activeIndex = JUDGE_TABS.findIndex((tab) => tab.id === active);
 
   return (
@@ -35,7 +42,8 @@ export function JudgeNav({ active, onChange, disabled = [] }: JudgeNavProps) {
         <ul className="relative m-0 grid list-none grid-cols-4 p-0">
           {JUDGE_TABS.map((tab) => {
             const on = active === tab.id;
-            const locked = disabled.includes(tab.id);
+            const reason = disabled[tab.id];
+            const locked = reason !== undefined;
             return (
               <li key={tab.id}>
                 <button
@@ -51,13 +59,8 @@ export function JudgeNav({ active, onChange, disabled = [] }: JudgeNavProps) {
                         : "cursor-pixel-hover text-dashboard-text-light hover:bg-dashboard-bg-navSelected/40"
                   } ${focusRing}`}
                 >
-                  {tab.label}
-                  {locked && (
-                    <span className="sr-only">
-                      {" "}
-                      (choose a team to judge first)
-                    </span>
-                  )}
+                  {labels[tab.id] ?? tab.label}
+                  {locked && <span className="sr-only"> ({reason})</span>}
                 </button>
               </li>
             );

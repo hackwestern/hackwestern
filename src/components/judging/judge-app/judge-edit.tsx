@@ -16,12 +16,15 @@ import {
   RubricScorer,
   hasGuide,
   scoreRubric,
+  formatScore,
 } from "~/components/judging/shared/rubric-scorer";
+import { SuperLikeToggle } from "~/components/judging/shared/super-like";
 
 export interface EditedScore {
   ratings: Ratings;
   score: number;
   notes: string;
+  superLike: boolean;
 }
 
 interface JudgeEditProps {
@@ -57,6 +60,7 @@ export function JudgeEdit({
 }: JudgeEditProps) {
   const [ratings, setRatings] = useState<Ratings>(team.ratings);
   const [notes, setNotes] = useState(team.notes);
+  const [superLike, setSuperLike] = useState(team.superLike);
   const [guideOpen, setGuideOpen] = useState(false);
 
   const count = rubric.criteria.length;
@@ -65,18 +69,35 @@ export function JudgeEdit({
 
   const save = () => {
     if (!complete || saving) return;
-    void onSave({ ratings, score: result.score, notes: notes.trim() });
+    void onSave({
+      ratings,
+      score: result.score,
+      notes: notes.trim(),
+      superLike,
+    });
   };
 
   return (
     <>
       <div className="flex items-baseline justify-between gap-3">
-        <h1 className="m-0 min-w-0 truncate text-base font-medium text-dashboard-text-light">
-          {team.table ?? "–"} · {team.teamName}
-        </h1>
-        <span className="shrink-0 text-sm font-semibold tabular-nums text-dashboard-text-light">
-          {mode === "rescore" ? "First review" : "Now"} {team.score}
+        <span className="text-sm font-medium text-dashboard-text-light">
+          {team.table !== null ? `Table ${team.table}` : "No table yet"}
         </span>
+        <span className="shrink-0 text-sm font-semibold tabular-nums text-dashboard-text-light">
+          {mode === "rescore" ? "First review" : "Now"}{" "}
+          {formatScore(team.score)}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="m-0 min-w-0 break-words text-2xl font-bold leading-tight text-dashboard-text-heavy">
+          {team.teamName}
+        </h1>
+        <SuperLikeToggle
+          on={superLike}
+          onChange={setSuperLike}
+          teamName={team.teamName}
+        />
       </div>
 
       {mode === "rescore" && (
@@ -107,7 +128,6 @@ export function JudgeEdit({
           ratings={ratings}
           onRate={(id, value) => setRatings((r) => ({ ...r, [id]: value }))}
           guideOpen={guideOpen}
-          showValues={false}
         />
       </section>
 
