@@ -41,6 +41,7 @@ import {
   sponsorRoomAt,
   type OfferProblem,
 } from "~/server/api/utils/coffee-chat-capacity";
+import { buildChatBoard } from "~/server/api/utils/coffee-chat-board";
 import { coffeeChatTimes } from "~/server/api/utils/coffee-chat-expiry";
 import { notifyCoffeeChat } from "~/server/api/utils/coffee-chat-notify";
 import { respondToCoffeeChat } from "~/server/api/utils/coffee-chat-respond";
@@ -776,6 +777,73 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       );
       return result;
     }),
+
+  /**
+   * The Saturday board: every sponsor (setup, room, watcher, reps) by every
+   * 15-minute slot, with all chats and the seats used at each start time.
+   * Also the rooms chats can move to and watcher suggestions. Organizers
+   * only.
+   */
+  organizerChatBoard: protectedOrganizerProcedure.query(async () => {
+    const now = new Date();
+    const sponsors = await db
+      .select({
+        id: sponsorJudgingSponsors.id,
+        name: sponsorJudgingSponsors.name,
+        reps: sponsorJudgingSponsors.coffeeChatReps,
+        assignedRoom: sponsorJudgingSponsors.coffeeChatRoom,
+        watcher: sponsorJudgingSponsors.coffeeChatWatcher,
+      })
+      .from(sponsorJudgingSponsors);
+    const [setups, rows, rooms, organizers] = await Promise.all([
+      readSheetCoffeeChatSetups(sponsors.map((s) => s.name)),
+      db
+        .select({
+          chatId: coffeeChats.id,
+          sponsorId: coffeeChats.sponsorId,
+          firstName: applications.firstName,
+          lastName: applications.lastName,
+          userName: users.name,
+          hackerId: users.hackerId,
+          slotTime: coffeeChats.slotTime,
+          durationMinutes: coffeeChats.durationMinutes,
+          room: coffeeChats.room,
+          repName: coffeeChats.repName,
+          status: coffeeChats.status,
+        })
+        .from(coffeeChats)
+        .innerJoin(users, eq(users.id, coffeeChats.userId))
+        .leftJoin(applications, eq(applications.userId, coffeeChats.userId))
+        .orderBy(asc(coffeeChats.slotTime), asc(coffeeChats.createdAt)),
+      knownRooms(),
+      db
+        .select({ name: users.name })
+        .from(users)
+        .where(eq(users.type, "organizer"))
+        .orderBy(asc(users.name)),
+    ]);
+    const board = buildChatBoard({
+      sponsors,
+      setups,
+      chats: rows.map(({ userName, firstName, ...row }) => ({
+        ...row,
+        firstName: firstName?.trim() ? firstName : (userName ?? ""),
+      })),
+      now,
+    });
+    const watchers = [
+      ...new Set(
+        organizers.map((o) => o.name?.trim() ?? "").filter((n) => n.length > 0),
+      ),
+    ];
+    return {
+      ...board,
+      rooms,
+      assignableRooms: [...COFFEE_CHAT_ROOMS] as string[],
+      watchers,
+      readAt: now.toISOString(),
+    };
+  }),
 
   /**
    * Every sponsor's Saturday coffee chat window, format and room, for the

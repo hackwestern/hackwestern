@@ -1,0 +1,291 @@
+import {
+  COFFEE_CHAT_GRID_MINUTES,
+  coffeeChatExpiresAt,
+  coffeeChatMinutesOf,
+  coffeeChatSeats,
+  coffeeChatTimeOf,
+  effectiveCoffeeChatStatus,
+  isActiveCoffeeChat,
+  resolveCoffeeChatRoom,
+  type CoffeeChatStatus,
+} from "~/lib/coffee-chat-requests";
+import type { CoffeeChatSetup } from "~/lib/run-of-show";
+import {
+  coffeeChatStartTimes,
+  seatsUsed,
+} from "~/server/api/utils/coffee-chat-capacity";
+
+/**
+ * The organizer's Saturday coffee chat board (T48): one column per sponsor,
+ * one row per 15-minute grid slot. Pure: the router loads sponsors, the
+ * Coffee Chats sheet rows and every chat, then builds the board here with
+ * the same seat rules as offering (coffee-chat-capacity).
+ */
+
+/** A chat on the board, with its status as it reads right now. */
+export type BoardChat = {
+  chatId: string;
+  sponsorId: string;
+  firstName: string;
+  lastName: string | null;
+  /** Badge / wallet pass code, once issued. */
+  hackerId: string | null;
+  slotTime: string;
+  durationMinutes: number;
+  room: string | null;
+  repName: string | null;
+  status: CoffeeChatStatus;
+};
+
+/**
+ * One cell of a sponsor's column. `rows` grid slots tall: a 30-min chat
+ * start spans two rows. `kind`: "open" is a start time in the window, "gap"
+ * is inside the window but not a start time (e.g. the last 15 minutes of a
+ * window of 30-min groups), "out" is outside the window.
+ */
+export type BoardCell = {
+  slotTime: string;
+  rows: number;
+  kind: "open" | "gap" | "out";
+  /** Chats starting inside this cell, any status. */
+  chatIds: string[];
+  /** Seats a start time has (reps and room size); 0 unless "open". */
+  seats: number;
+  seatsUsed: number;
+  seatsLeft: number;
+  /** An organizer can still add a chat here right now. */
+  offerable: boolean;
+};
+
+export type BoardSponsor = {
+  /** Null when the sheet names a sponsor that isn't registered. */
+  sponsorId: string | null;
+  sponsor: string;
+  /** False when the sheet row has no window yet ("Not set up"). */
+  setUp: boolean;
+  windowStart: string | null;
+  windowEnd: string | null;
+  durationMinutes: number;
+  groupSize: number;
+  hackers: number | null;
+  reps: number;
+  assignedRoom: string | null;
+  sheetRoom: string | null;
+  /** Assignment, else the sheet's ROOM, else null. */
+  room: string | null;
+  watcher: string | null;
+  counts: { accepted: number; pending: number; total: number };
+  cells: BoardCell[];
+};
+
+export type ChatBoard = {
+  /** Every grid slot ("HH:MM"), earliest first: the table's rows. */
+  slots: string[];
+  sponsors: BoardSponsor[];
+  chats: BoardChat[];
+  totals: {
+    offered: number;
+    accepted: number;
+    pending: number;
+    /** Open seats at start times that can still be offered. */
+    seatsLeft: number;
+  };
+  roomsInUse: string[];
+};
+
+type BoardSponsorRow = {
+  id: string;
+  name: string;
+  reps: number;
+  assignedRoom: string | null;
+  watcher: string | null;
+};
+
+type BoardChatRow = Omit<BoardChat, "status"> & { status: CoffeeChatStatus };
+
+const GRID = COFFEE_CHAT_GRID_MINUTES;
+
+function windowOf(setup: CoffeeChatSetup | undefined) {
+  const start = setup?.windowStart
+    ? coffeeChatMinutesOf(setup.windowStart)
+    : null;
+  const end = setup?.windowEnd ? coffeeChatMinutesOf(setup.windowEnd) : null;
+  return start !== null && end !== null && start < end ? { start, end } : null;
+}
+
+/** Grid minutes from the earliest window start (or chat) to the latest end. */
+export function boardSlots(
+  windows: { start: number; end: number }[],
+  chats: { slotTime: string; durationMinutes: number }[],
+): number[] {
+  const spans = [
+    ...windows,
+    ...chats.flatMap((c) => {
+      const start = coffeeChatMinutesOf(c.slotTime);
+      return start === null ? [] : [{ start, end: start + c.durationMinutes }];
+    }),
+  ];
+  if (spans.length === 0) return [];
+  const first = Math.min(...spans.map((s) => s.start));
+  const last = Math.max(...spans.map((s) => s.end));
+  const slots: number[] = [];
+  for (let t = first; t < last; t += GRID) slots.push(t);
+  return slots;
+}
+
+/**
+ * One sponsor's cells down the board. Start times take one row per 15
+ * minutes of chat; anything else is one row. Seats count only chats that
+ * still hold one (pending in time, or accepted).
+ */
+export function boardCells(input: {
+  slots: number[];
+  setup: CoffeeChatSetup | undefined;
+  reps: number;
+  registered: boolean;
+  chats: BoardChatRow[];
+  now: Date;
+}): BoardCell[] {
+  const { setup, now } = input;
+  const window = windowOf(setup);
+  const duration = setup?.durationMinutes ?? 15;
+  const starts = new Set(
+    window && setup
+      ? coffeeChatStartTimes(setup).map((t) => coffeeChatMinutesOf(t)!)
+      : [],
+  );
+  const active = input.chats.filter((c) => isActiveCoffeeChat(c, now));
+  const seats = setup ? coffeeChatSeats(input.reps, setup.groupSize) : 0;
+  const last = input.slots[input.slots.length - 1];
+  const cells: BoardCell[] = [];
+
+  for (let i = 0; i < input.slots.length; ) {
+    const t = input.slots[i]!;
+    const open =
+      starts.has(t) && last !== undefined && t + duration <= last + GRID;
+    const rows = open ? duration / GRID : 1;
+    const kind: BoardCell["kind"] = open
+      ? "open"
+      : window && t >= window.start && t < window.end
+        ? "gap"
+        : "out";
+    const slotTime = coffeeChatTimeOf(t);
+    const chatIds = input.chats
+      .filter((c) => {
+        const start = coffeeChatMinutesOf(c.slotTime);
+        return start !== null && start >= t && start < t + rows * GRID;
+      })
+      .map((c) => c.chatId);
+    const used = open
+      ? seatsUsed(active, { slotTime, durationMinutes: duration })
+      : 0;
+    const left = open ? Math.max(0, seats - used) : 0;
+    cells.push({
+      slotTime,
+      rows,
+      kind,
+      chatIds,
+      seats: open ? seats : 0,
+      seatsUsed: used,
+      seatsLeft: left,
+      offerable:
+        open &&
+        input.registered &&
+        left > 0 &&
+        now < coffeeChatExpiresAt(slotTime),
+    });
+    i += rows;
+  }
+  return cells;
+}
+
+/**
+ * The whole board. Columns: every Coffee Chats sheet row (blank rows show
+ * as not set up), plus any registered sponsor with chats but no row, set
+ * up first, then by name.
+ */
+export function buildChatBoard(input: {
+  sponsors: BoardSponsorRow[];
+  setups: CoffeeChatSetup[];
+  chats: BoardChatRow[];
+  now: Date;
+}): ChatBoard {
+  const { now } = input;
+  const chats: BoardChat[] = input.chats.map((c) => ({
+    ...c,
+    status: effectiveCoffeeChatStatus(c, now),
+  }));
+  const byName = new Map(input.sponsors.map((s) => [s.name, s]));
+  const columns: { name: string; setup?: CoffeeChatSetup }[] = input.setups.map(
+    (setup) => ({ name: setup.sponsor, setup }),
+  );
+  for (const s of input.sponsors) {
+    if (columns.some((c) => c.name === s.name)) continue;
+    if (chats.some((c) => c.sponsorId === s.id)) columns.push({ name: s.name });
+  }
+
+  const slots = boardSlots(
+    columns.flatMap((c) => {
+      const w = windowOf(c.setup);
+      return w ? [w] : [];
+    }),
+    chats,
+  );
+
+  const sponsors: BoardSponsor[] = columns.map(({ name, setup }) => {
+    const row = byName.get(name);
+    const mine = row ? chats.filter((c) => c.sponsorId === row.id) : [];
+    const reps = row?.reps ?? 0;
+    return {
+      sponsorId: row?.id ?? null,
+      sponsor: name,
+      setUp: windowOf(setup) !== null,
+      windowStart: setup?.windowStart ?? null,
+      windowEnd: setup?.windowEnd ?? null,
+      durationMinutes: setup?.durationMinutes ?? 15,
+      groupSize: setup?.groupSize ?? 1,
+      hackers: setup?.hackers ?? null,
+      reps,
+      assignedRoom: row?.assignedRoom ?? null,
+      sheetRoom: setup?.room ?? null,
+      room: resolveCoffeeChatRoom(row?.assignedRoom, setup?.room),
+      watcher: row?.watcher ?? null,
+      counts: {
+        accepted: mine.filter((c) => c.status === "accepted").length,
+        pending: mine.filter((c) => c.status === "pending").length,
+        total: mine.length,
+      },
+      cells: boardCells({
+        slots,
+        setup,
+        reps,
+        registered: Boolean(row),
+        chats: mine,
+        now,
+      }),
+    };
+  });
+  sponsors.sort(
+    (a, b) =>
+      Number(b.setUp) - Number(a.setUp) || a.sponsor.localeCompare(b.sponsor),
+  );
+
+  const roomsInUse = [
+    ...new Set(sponsors.flatMap((s) => (s.setUp && s.room ? [s.room] : []))),
+  ].sort();
+
+  return {
+    slots: slots.map(coffeeChatTimeOf),
+    sponsors,
+    chats,
+    totals: {
+      offered: chats.length,
+      accepted: chats.filter((c) => c.status === "accepted").length,
+      pending: chats.filter((c) => c.status === "pending").length,
+      seatsLeft: sponsors
+        .flatMap((s) => s.cells)
+        .reduce((sum, c) => sum + (c.offerable ? c.seatsLeft : 0), 0),
+    },
+    roomsInUse,
+  };
+}
