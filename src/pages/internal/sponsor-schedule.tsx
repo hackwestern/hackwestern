@@ -5,6 +5,7 @@ import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { InternalNavbar } from "~/components/internals/navbar";
+import { AddCoffeeChat } from "~/components/sponsors/add-coffee-chat";
 import { CoffeeChatRooms } from "~/components/sponsors/coffee-chat-rooms";
 import { CompanyLocationsView } from "~/components/sponsors/company-locations";
 import { DayPicker } from "~/components/sponsors/day-picker";
@@ -92,6 +93,7 @@ export default function OrganizerRunOfShowPage() {
               {tab === "coffee" && (
                 <>
                   <CoffeeChatRooms />
+                  <AddCoffeeChat />
                   <BookedChats />
                 </>
               )}

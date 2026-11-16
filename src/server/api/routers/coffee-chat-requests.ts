@@ -1,9 +1,19 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  ilike,
+  inArray,
+  isNotNull,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { z } from "zod";
 
 import { coffeeChatCopy } from "~/content/coffee-chat";
-import { isAdmittedStatus } from "~/lib/admission";
+import { admittedStatuses, isAdmittedStatus } from "~/lib/admission";
 import {
   ACTIVE_COFFEE_CHAT_STATUSES,
   applyAssignedRooms,
@@ -360,6 +370,20 @@ async function moveChatsToRoom(
   return changed;
 }
 
+/** ILIKE pattern for "contains text", with %, _ and \ taken literally. */
+function containsPattern(text: string): string {
+  return `%${text.replace(/[\\%_]/g, (c) => "\\" + c)}%`;
+}
+
+/** An admitted hacker found by an organizer's search. */
+export type OrganizerHackerMatch = {
+  userId: string;
+  name: string;
+  email: string;
+  /** Badge / wallet pass code ("brave-otter-kite"), once issued. */
+  hackerId: string | null;
+};
+
 /** One sponsor's coffee chat setup and room, on the organizer page. */
 export type OrganizerCoffeeChatRoom = {
   /** Null when the sheet names a sponsor that isn't registered. */
@@ -375,6 +399,100 @@ export type OrganizerCoffeeChatRoom = {
   /** The sheet's ROOM value, used when nothing is assigned. */
   sheetRoom: string | null;
 };
+
+/**
+ * Offer a coffee chat: a pending request the hacker accepts or declines on
+ * /live, with every capacity, overlap and room rule. Shared by the
+ * sponsor's `offer` and the organizer's `organizerOffer`. Locks the sponsor
+ * and hacker rows so two offers for the last seat (or two sponsors for one
+ * hacker) can't both go through. Notifies the hacker after the commit.
+ */
+export async function createCoffeeChatOffer(input: {
+  sponsorId: string;
+  userId: string;
+  slotTime: string;
+  repName?: string;
+}): Promise<CoffeeChatOffer> {
+  const now = new Date();
+  const sponsor = await findSponsor(db, input.sponsorId);
+  const hacker = await findAdmittedHacker(input.userId, now);
+  const setup = await setupFor(sponsor.name);
+
+  try {
+    const chat = await db.transaction(async (tx) => {
+      // Lock order: sponsor, then hacker. Every writer uses this order.
+      const locked = await findSponsor(tx, sponsor.id, true);
+      await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, hacker.userId))
+        .for("update");
+
+      // Still admitted now that the hacker row is locked.
+      await findAdmittedHacker(hacker.userId, now, tx);
+
+      const sponsorChats = await activeChats(
+        tx,
+        eq(coffeeChats.sponsorId, sponsor.id),
+        now,
+      );
+      // The sponsor's room at this start (moved by organizers, or the
+      // sheet's), locked before checking who else is in it.
+      const room = setup
+        ? sponsorRoomAt(sponsorChats, setup.room, {
+            slotTime: input.slotTime,
+            durationMinutes: setup.durationMinutes,
+          })
+        : null;
+      await lockRooms(tx, [room]);
+      const [hackerChats, roomChats] = await Promise.all([
+        activeChats(tx, eq(coffeeChats.userId, hacker.userId), now),
+        activeRoomChats(tx, now),
+      ]);
+      const problem = offerProblem({
+        setup,
+        slotTime: input.slotTime,
+        reps: locked.reps,
+        sponsorId: sponsor.id,
+        sponsorChats,
+        hackerChats,
+        roomChats,
+        now,
+      });
+      if (problem) throwProblem(problem);
+
+      const [row] = await tx
+        .insert(coffeeChats)
+        .values({
+          sponsorId: sponsor.id,
+          userId: hacker.userId,
+          room,
+          slotTime: input.slotTime,
+          durationMinutes: setup!.durationMinutes,
+          repName: input.repName ? input.repName : null,
+        })
+        .returning();
+      return row!;
+    });
+    // After the commit; capped in time, never throws.
+    await notifyCoffeeChat("offered", { id: chat.id });
+
+    return {
+      chatId: chat.id,
+      firstName: hacker.firstName,
+      slotTime: chat.slotTime,
+      durationMinutes: chat.durationMinutes,
+      room: chat.room,
+      status: chat.status,
+      expiresAt: coffeeChatExpiresAt(chat.slotTime).toISOString(),
+    };
+  } catch (error) {
+    // The partial unique index: the hacker already has a live chat
+    // starting then (a race the row lock didn't cover).
+    if (isUniqueViolation(error)) throwProblem("hackerBusy");
+    throw error;
+  }
+}
 
 export const coffeeChatRequestsRouter = createTRPCRouter({
   /**
@@ -451,87 +569,9 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         repName: z.string().trim().max(255).optional(),
       }),
     )
-    .mutation(async ({ input }): Promise<CoffeeChatOffer> => {
-      const now = new Date();
-      const sponsor = await findSponsor(db, input.sponsor);
-      const hacker = await findAdmittedHacker(input.userId, now);
-      const setup = await setupFor(sponsor.name);
-
-      try {
-        const chat = await db.transaction(async (tx) => {
-          // Lock order: sponsor, then hacker. Every writer uses this order.
-          const locked = await findSponsor(tx, sponsor.id, true);
-          await tx
-            .select({ id: users.id })
-            .from(users)
-            .where(eq(users.id, hacker.userId))
-            .for("update");
-
-          // Still admitted now that the hacker row is locked.
-          await findAdmittedHacker(hacker.userId, now, tx);
-
-          const sponsorChats = await activeChats(
-            tx,
-            eq(coffeeChats.sponsorId, sponsor.id),
-            now,
-          );
-          // The sponsor's room at this start (moved by organizers, or the
-          // sheet's), locked before checking who else is in it.
-          const room = setup
-            ? sponsorRoomAt(sponsorChats, setup.room, {
-                slotTime: input.slotTime,
-                durationMinutes: setup.durationMinutes,
-              })
-            : null;
-          await lockRooms(tx, [room]);
-          const [hackerChats, roomChats] = await Promise.all([
-            activeChats(tx, eq(coffeeChats.userId, hacker.userId), now),
-            activeRoomChats(tx, now),
-          ]);
-          const problem = offerProblem({
-            setup,
-            slotTime: input.slotTime,
-            reps: locked.reps,
-            sponsorId: sponsor.id,
-            sponsorChats,
-            hackerChats,
-            roomChats,
-            now,
-          });
-          if (problem) throwProblem(problem);
-
-          const [row] = await tx
-            .insert(coffeeChats)
-            .values({
-              sponsorId: sponsor.id,
-              userId: hacker.userId,
-              room,
-              slotTime: input.slotTime,
-              durationMinutes: setup!.durationMinutes,
-              repName: input.repName ? input.repName : null,
-            })
-            .returning();
-          return row!;
-        });
-        // After the commit; capped in time, never throws.
-        await notifyCoffeeChat("offered", { id: chat.id });
-
-        return {
-          chatId: chat.id,
-          firstName: hacker.firstName,
-          slotTime: chat.slotTime,
-          durationMinutes: chat.durationMinutes,
-          room: chat.room,
-          status: chat.status,
-          expiresAt: coffeeChatExpiresAt(chat.slotTime).toISOString(),
-        };
-      } catch (error) {
-        // The partial unique index: the hacker already has a live chat
-        // starting then (a race the row lock didn't cover).
-        if (isUniqueViolation(error)) throwProblem("hackerBusy");
-        throw error;
-      }
-    }),
+    .mutation(({ input }) =>
+      createCoffeeChatOffer({ ...input, sponsorId: input.sponsor }),
+    ),
   /**
    * The sponsor's own chats, earliest first, with expiry computed now.
    * Public (sponsor UUID). Only each hacker's first name, as on scan.
@@ -870,4 +910,78 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       );
       return result;
     }),
+  /**
+   * Admitted hackers matching a name, email or hacker ID, for adding a
+   * chat by hand. Organizers only (emails stay off sponsor pages).
+   */
+  searchHackers: protectedOrganizerProcedure
+    .input(z.object({ query: z.string().trim().min(2).max(100) }))
+    .query(async ({ input }): Promise<OrganizerHackerMatch[]> => {
+      const like = containsPattern(input.query);
+      // Hacker IDs are words joined by dashes ("brave otter" -> "brave-otter").
+      const codeLike = containsPattern(
+        input.query.toLowerCase().replace(/\s+/g, "-"),
+      );
+      const rows = await db
+        .select({
+          userId: users.id,
+          name: users.name,
+          email: users.email,
+          hackerId: users.hackerId,
+          firstName: applications.firstName,
+          lastName: applications.lastName,
+          status: applications.status,
+        })
+        .from(users)
+        .innerJoin(applications, eq(applications.userId, users.id))
+        .where(
+          and(
+            eq(users.type, "hacker"),
+            inArray(applications.status, [...admittedStatuses()]),
+            or(
+              ilike(users.name, like),
+              ilike(users.email, like),
+              ilike(users.hackerId, codeLike),
+              ilike(
+                sql`coalesce(${applications.firstName}, '') || ' ' || coalesce(${applications.lastName}, '')`,
+                like,
+              ),
+            ),
+          ),
+        )
+        .orderBy(asc(applications.firstName), asc(users.email))
+        .limit(10);
+      return rows.map((r) => {
+        const fromApplication = [r.firstName, r.lastName]
+          .map((part) => part?.trim() ?? "")
+          .filter(Boolean)
+          .join(" ");
+        return {
+          userId: r.userId,
+          // First non-blank of: application name, account name, email.
+          name:
+            [fromApplication, r.name?.trim() ?? ""].find(
+              (name) => name.length > 0,
+            ) ?? r.email,
+          email: r.email,
+          hackerId: r.hackerId,
+        };
+      });
+    }),
+
+  /**
+   * Add a coffee chat by hand for any sponsor: same rules as the sponsor's
+   * offer (capacity, overlaps, rooms), still pending so the hacker accepts
+   * on /live, and the same notification. Organizers only.
+   */
+  organizerOffer: protectedOrganizerProcedure
+    .input(
+      z.object({
+        sponsorId: sponsorInput,
+        userId: userIdInput,
+        slotTime: slotTimeInput,
+        repName: z.string().trim().max(255).optional(),
+      }),
+    )
+    .mutation(({ input }) => createCoffeeChatOffer(input)),
 });

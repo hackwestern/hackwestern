@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import type { CoffeeChatSetup } from "~/lib/run-of-show";
 import type * as Notify from "~/server/api/utils/coffee-chat-notify";
 import type * as RunOfShowSheet from "~/server/api/utils/run-of-show-sheet";
+import { coffeeChatCopy } from "~/content/coffee-chat";
 import { createCaller } from "~/server/api/root";
 import { notifyCoffeeChat } from "~/server/api/utils/coffee-chat-notify";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -1248,5 +1249,124 @@ describe("coffeeChatRequests.assignCoffeeChatRoom (T41)", () => {
       }),
     );
     expect(clash.code).toBe("CONFLICT");
+  });
+});
+
+describe("coffeeChatRequests organizer ad hoc chats (T43)", () => {
+  async function organizer() {
+    const id = `adhoc-organizer-${++n}`;
+    await db
+      .insert(users)
+      .values({ id, email: `${id}@example.com`, type: "organizer" });
+    return hackerCaller(id);
+  }
+  const evening = { windowStart: "19:00", windowEnd: "20:00", room: null };
+
+  test("search finds admitted hackers by name, email or hacker ID", async () => {
+    const org = await organizer();
+    const hacker = await makeHacker({ firstName: "Zebulon" });
+    const code = `quiet-heron-${n}`;
+    await db.update(users).set({ hackerId: code }).where(eq(users.id, hacker));
+    const pending = await makeHacker({
+      firstName: "Zebulon",
+      status: "PENDING_REVIEW",
+    });
+
+    const byName = await org.coffeeChatRequests.searchHackers({
+      query: "zebulon secret",
+    });
+    expect(byName.map((h) => h.userId)).toEqual([hacker]);
+    expect(byName[0]).toMatchObject({
+      name: "Zebulon Secretlastname",
+      email: `${hacker}@example.com`,
+      hackerId: code,
+    });
+    expect(
+      (
+        await org.coffeeChatRequests.searchHackers({ query: `${hacker}@ex` })
+      ).map((h) => h.userId),
+    ).toEqual([hacker]);
+    expect(
+      (
+        await org.coffeeChatRequests.searchHackers({ query: "Quiet Heron" })
+      ).map((h) => h.userId),
+    ).toContain(hacker);
+    // Not admitted: never listed. Wildcards are literal.
+    expect(
+      (await org.coffeeChatRequests.searchHackers({ query: `${pending}@` }))
+        .length,
+    ).toBe(0);
+    expect(
+      (await org.coffeeChatRequests.searchHackers({ query: "%%" })).length,
+    ).toBe(0);
+
+    expect(
+      (await codeOf(caller.coffeeChatRequests.searchHackers({ query: "ze" })))
+        .code,
+    ).toBe("UNAUTHORIZED");
+    expect(
+      (
+        await codeOf(
+          hackerCaller(hacker).coffeeChatRequests.searchHackers({
+            query: "ze",
+          }),
+        )
+      ).code,
+    ).toBe("FORBIDDEN");
+  });
+
+  test("adds a pending chat with the sponsor offer's rules and notification", async () => {
+    const org = await organizer();
+    const sponsorId = await makeSponsor(1, evening);
+    const hacker = await makeHacker();
+    const notify = vi.mocked(notifyCoffeeChat);
+    notify.mockClear();
+
+    const chat = await org.coffeeChatRequests.organizerOffer({
+      sponsorId,
+      userId: hacker,
+      slotTime: "19:00",
+      repName: "Priya",
+    });
+    expect(chat).toMatchObject({ status: "pending", slotTime: "19:00" });
+    expect(notify.mock.calls).toEqual([["offered", { id: chat.chatId }]]);
+    const [mine] = await hackerCaller(hacker).coffeeChatRequests.mine();
+    expect(mine).toMatchObject({ chatId: chat.chatId, repName: "Priya" });
+
+    // Same rules as the sponsor's offer: one rep -> the slot is full,
+    // outside the window is refused, the hacker can't be double booked.
+    const other = await makeHacker();
+    const rule = (slotTime: string, userId = other) =>
+      codeOf(
+        org.coffeeChatRequests.organizerOffer({ sponsorId, userId, slotTime }),
+      );
+    expect((await rule("19:00")).message).toBe(coffeeChatCopy.errors.full);
+    expect((await rule("20:30")).message).toBe(
+      coffeeChatCopy.errors.notInWindow,
+    );
+    const second = await makeSponsor(1, evening);
+    expect(
+      (
+        await codeOf(
+          org.coffeeChatRequests.organizerOffer({
+            sponsorId: second,
+            userId: hacker,
+            slotTime: "19:00",
+          }),
+        )
+      ).message,
+    ).toBe(coffeeChatCopy.errors.hackerBusy);
+
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.organizerOffer({
+            sponsorId,
+            userId: other,
+            slotTime: "19:15",
+          }),
+        )
+      ).code,
+    ).toBe("UNAUTHORIZED");
   });
 });

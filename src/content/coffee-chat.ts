@@ -222,5 +222,31 @@ export const coffeeChatCopy = {
       saved: "Saved",
       saveError: "Couldn't save the room.",
     },
+
+    // Organizers add a chat by hand (same rules as a sponsor's offer).
+    add: {
+      heading: "Add a chat",
+      intro:
+        "Book a hacker with a sponsor yourself. The hacker still accepts on /live and gets the usual message.",
+      sponsor: "Sponsor",
+      pickSponsor: "Pick a sponsor",
+      hacker: "Hacker",
+      hackerPlaceholder: "Name, email or hacker ID",
+      searching: "Searching…",
+      noMatches: "No admitted hacker matches that.",
+      typeMore: "Type at least 2 characters.",
+      change: "Change",
+      code: (code: string | null) => code ?? "No hacker ID yet",
+      time: "Start time",
+      pickTime: "Pick a time",
+      noTimes: "No open times left for this sponsor and hacker.",
+      timeOption: (time: string, seats: number, room: string | null) =>
+        `${time} · ${seats} ${seats === 1 ? "seat" : "seats"} left${room ? ` · ${room}` : ""}`,
+      rep: "Rep name (optional)",
+      submit: "Add chat",
+      added: (hacker: string, sponsor: string, time: string) =>
+        `Sent ${hacker} a request for ${sponsor} at ${time}.`,
+      addError: "Couldn't add the chat.",
+    },
   },
 } as const;
