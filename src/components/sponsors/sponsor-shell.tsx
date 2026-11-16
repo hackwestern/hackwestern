@@ -4,21 +4,26 @@ import SEO from "~/components/seo";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 
 // Page frame for sponsor sub-pages: same look as the sponsor portal home
-// (phone-first, 640px column), with a way back to the portal.
+// (phone-first, 640px column), with a way back to the portal. `wide` gives
+// pages with a grid (the schedule) a wider column on big screens.
 export function SponsorShell({
   title,
   backHref,
+  wide = false,
   children,
 }: {
   title: string;
   backHref?: string;
+  wide?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <>
       <SEO title={title} noindex />
       <div className="min-h-screen bg-dashboard-bg-page px-4 pb-12 pt-6 font-figtree font-medium leading-default text-dashboard-text-heavy sm:px-5">
-        <div className="mx-auto flex w-full max-w-[640px] flex-col gap-5">
+        <div
+          className={`mx-auto flex w-full flex-col gap-5 ${wide ? "max-w-[1040px]" : "max-w-[640px]"}`}
+        >
           <header className="flex min-h-11 items-center justify-between gap-3">
             {backHref ? (
               <Link

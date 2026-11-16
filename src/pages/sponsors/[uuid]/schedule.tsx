@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { ScanLine } from "lucide-react";
@@ -7,7 +8,11 @@ import { CoffeeChatSummary } from "~/components/sponsors/coffee-chat-summary";
 import { DayPicker } from "~/components/sponsors/day-picker";
 import { SponsorHelp } from "~/components/sponsors/help-button";
 import { RepCount } from "~/components/sponsors/rep-count";
-import { ScheduleList } from "~/components/sponsors/schedule-list";
+import {
+  DayGrid,
+  TimelineKey,
+  useShowHackathon,
+} from "~/components/sponsors/day-grid";
 import {
   InvalidLink,
   LoadError,
@@ -21,13 +26,16 @@ import { coffeeChatCopy } from "~/content/coffee-chat";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import { RUN_OF_SHOW_DAYS, type RunOfShowDay } from "~/lib/run-of-show";
 import { defaultRunOfShowDay } from "~/lib/run-of-show-time";
+import { fetchScheduleData } from "~/lib/schedule";
+import { buildSponsorTimeline } from "~/lib/sponsor-timeline";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
 const copy = scheduleCopy.schedule;
 
 // A sponsor's own schedule from the run-of-show sheet (read-only; the sheet
-// is the source of truth). Refreshes every minute.
+// is the source of truth), laid over the hackathon's public schedule (the
+// one /live shows, from /api/schedule). Refreshes every minute.
 export default function SponsorSchedulePage() {
   const router = useRouter();
   const id = typeof router.query.uuid === "string" ? router.query.uuid : "";
@@ -39,9 +47,18 @@ export default function SponsorSchedulePage() {
     { sponsor: id },
     { enabled: validUuid, refetchInterval: 60_000, retry: 1 },
   );
+  // Public, cached at the edge. If it fails the run of show's own main
+  // events and meals still show.
+  const live = useQuery({
+    queryKey: ["live-schedule"],
+    queryFn: fetchScheduleData,
+    refetchInterval: 60_000,
+  });
+  const [showHackathon, setShowHackathon] = useShowHackathon();
 
   const shell = (children: React.ReactNode) => (
     <SponsorShell
+      wide
       title={copy.seoTitle}
       backHref={validUuid ? `/sponsors/${id}` : undefined}
     >
@@ -63,7 +80,13 @@ export default function SponsorSchedulePage() {
     (d) => d.toLowerCase() === String(router.query.day ?? "").toLowerCase(),
   );
   const shownDay = day ?? linkedDay ?? defaultRunOfShowDay(now);
-  const items = data.items.filter((i) => i.day === shownDay);
+  const entries = buildSponsorTimeline({
+    day: shownDay,
+    items: data.items,
+    live: live.data,
+    sponsorName: data.sponsorName,
+    showHackathon,
+  });
 
   return shell(
     <>
@@ -96,10 +119,15 @@ export default function SponsorSchedulePage() {
         </>
       )}
       <DayPicker value={shownDay} onChange={setDay} />
-      <ScheduleList
-        items={items}
+      <TimelineKey
+        showHackathon={showHackathon}
+        onShowHackathonChange={setShowHackathon}
+      />
+      <DayGrid
+        day={shownDay}
+        entries={entries}
         now={now}
-        highlightSponsor={data.sponsorName}
+        sponsorName={data.sponsorName}
       />
       <ReadAt iso={data.readAt} />
     </>,

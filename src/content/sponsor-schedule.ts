@@ -30,7 +30,43 @@ export const scheduleCopy = {
     eyebrow: "Schedule",
     title: (sponsor: string) => `${sponsor} at Hack Western`,
     intro:
-      "Your workshops, coffee chats and booth hours, plus the main events and meals. Times are Eastern.",
+      "Your workshops, coffee chats and booth hours, with the rest of the hackathon greyed out behind them. Times are Eastern.",
+  },
+
+  timeline: {
+    dayHeading: (day: string, date: number) => `${day}, November ${date}`,
+    legendLabel: "What the colours mean",
+    yours: "Yours",
+    hackathon: "Hackathon events",
+    showHackathon: "Show hackathon events",
+    srYours: "Yours",
+    srHackathon: "Hackathon event",
+    srTime: (start: string, end: string) => `${start} to ${end}`,
+    gap: (from: string, to: string) => `Nothing on from ${from} to ${to}`,
+    gridLabel: (day: string) => `${day} schedule, scrolls sideways`,
+    timeHeader: "Time",
+    columns: {
+      "big-event": "Main event",
+      "sponsor-workshop": "Workshops",
+      food: "Food",
+      "spon-booth": "Sponsor Bay",
+      "coffee-chats": "Coffee chats",
+      other: "Other events",
+    },
+    categories: {
+      "big-event": "Main event",
+      "sponsor-workshop": "Workshop",
+      food: "Food",
+      "spon-booth": "Sponsor Bay",
+      "coffee-chats": "Coffee chats",
+      main: "Main event",
+      sponsor: "Sponsor workshop",
+      workshop: "Workshop",
+      activity: "Activity",
+      booth: "Sponsor Bay",
+      scavenger: "Scavenger hunt",
+      other: "Other",
+    },
   },
 
   sheetEdit: {
@@ -51,7 +87,12 @@ export const scheduleCopy = {
     hackers: (n: number) => `${n} hackers`,
     room: (room: string) => room,
     roomTbd: "Room to be assigned",
-    labels: { when: "When", room: "Room", format: "Format", hackers: "Hackers" },
+    labels: {
+      when: "When",
+      room: "Room",
+      format: "Format",
+      hackers: "Hackers",
+    },
   },
 
   where: {
