@@ -8,6 +8,7 @@ import {
   roomTakenByOtherSponsor,
   seatsLeft,
   seatsUsed,
+  sponsorRoomAt,
 } from "~/server/api/utils/coffee-chat-capacity";
 
 const oneOnOne: CoffeeChatSetup = {
@@ -144,8 +145,8 @@ describe("freeStartTimes", () => {
         now: early,
       }),
     ).toEqual([
-      { slotTime: "10:15", seatsLeft: 1 },
-      { slotTime: "10:45", seatsLeft: 1 },
+      { slotTime: "10:15", seatsLeft: 1, room: "Rm 2241" },
+      { slotTime: "10:45", seatsLeft: 1, room: "Rm 2241" },
     ]);
   });
 
@@ -160,5 +161,15 @@ describe("freeStartTimes", () => {
         now: new Date("2026-11-21T09:56:00-05:00"),
       }).map((t) => t.slotTime),
     ).toEqual(["10:30", "10:45"]);
+  });
+});
+
+describe("sponsorRoomAt", () => {
+  test("a moved slot keeps its room; otherwise the sheet room", () => {
+    const chats = [{ ...chat("10:00"), room: "Rm 2243" }, chat("10:30")];
+    expect(sponsorRoomAt(chats, "Rm 2241", chat("10:00"))).toBe("Rm 2243");
+    expect(sponsorRoomAt(chats, "Rm 2241", chat("10:15"))).toBe("Rm 2241");
+    expect(sponsorRoomAt(chats, "Rm 2241", chat("10:30"))).toBe("Rm 2241");
+    expect(sponsorRoomAt([], null, chat("10:00"))).toBeNull();
   });
 });

@@ -278,36 +278,41 @@ function BookedChat({
       )}
 
       {active && mode === "move" && (
-        <div className="flex flex-wrap items-end gap-2">
-          <label htmlFor={selectId} className="flex flex-col gap-1 text-sm">
-            <span className="text-dashboard-text-light">{booked.moveTo}</span>
-            <select
-              id={selectId}
-              value={room}
-              onChange={(e) => setRoom(e.target.value)}
-              className="h-10 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+        <div className="flex flex-col gap-2">
+          <p className="m-0 text-sm">
+            {booked.moveHint(chat.sponsorName, time)}
+          </p>
+          <div className="flex flex-wrap items-end gap-2">
+            <label htmlFor={selectId} className="flex flex-col gap-1 text-sm">
+              <span className="text-dashboard-text-light">{booked.moveTo}</span>
+              <select
+                id={selectId}
+                value={room}
+                onChange={(e) => setRoom(e.target.value)}
+                className="h-10 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+              >
+                {otherRooms.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <DashboardButton
+              variant="outline"
+              disabled={!room || move.isPending}
+              onClick={() => move.mutate({ chatId: chat.chatId, room })}
             >
-              {otherRooms.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </label>
-          <DashboardButton
-            variant="outline"
-            disabled={!room || move.isPending}
-            onClick={() => move.mutate({ chatId: chat.chatId, room })}
-          >
-            {booked.move}
-          </DashboardButton>
-          <DashboardButton
-            variant="tertiary"
-            className="h-10"
-            onClick={() => setMode("idle")}
-          >
-            {booked.close}
-          </DashboardButton>
+              {booked.move}
+            </DashboardButton>
+            <DashboardButton
+              variant="tertiary"
+              className="h-10"
+              onClick={() => setMode("idle")}
+            >
+              {booked.close}
+            </DashboardButton>
+          </div>
         </div>
       )}
 
