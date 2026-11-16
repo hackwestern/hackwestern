@@ -1,5 +1,6 @@
--- D1 schema for the hw-network-requests Worker. Apply with:
---   npx wrangler d1 execute hw-network-requests --remote --file=schema.sql
+-- Initial D1 schema for the hw-network-requests Worker. Applied by wrangler's
+-- migration runner (`wrangler d1 migrations apply`); add changes as new numbered
+-- files (0002_*.sql, ...), never edit one that has already run.
 -- No retention: Hack Western runs once a year, so rows are kept indefinitely.
 
 CREATE TABLE IF NOT EXISTS request_events (

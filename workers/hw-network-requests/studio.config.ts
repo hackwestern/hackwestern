@@ -28,7 +28,7 @@ const files = fs.existsSync(dir)
   : [];
 if (!files[0]) {
   throw new Error(
-    "No local D1 file yet. Run `npm run load-tester:migrate-local` first.",
+    "No local D1 file yet. Run `npm run load-tester:migrate` first.",
   );
 }
 

@@ -48,6 +48,7 @@ jobs:
       - name: Deploy worker
         run: $WRANGLER deploy
 
-      # schema.sql is idempotent (CREATE ... IF NOT EXISTS).
-      - name: Apply D1 schema
-        run: $WRANGLER d1 execute $DB_NAME --remote --file=workers/hw-network-requests/schema.sql
+      # Runs only the migrations/*.sql files this database hasn't applied yet
+      # (tracked per database in its d1_migrations table).
+      - name: Apply D1 migrations
+        run: $WRANGLER d1 migrations apply $DB_NAME --remote
