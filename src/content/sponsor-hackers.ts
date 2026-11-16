@@ -1,17 +1,31 @@
-// User-facing copy for the sponsor "Interested hackers" page
-// (/sponsors/[uuid]/hackers) and its link on the sponsor hub. Keep wording
-// here, not in components.
+// User-facing copy for the "Interested hackers" section and shortlist on
+// the sponsor's coffee chats page (/sponsors/[uuid]/coffee-chats#interested;
+// the old /sponsors/[uuid]/hackers link redirects there). Keep wording here,
+// not in components.
 
 export const sponsorHackersCopy = {
-  hubLink: "Interested hackers",
-  seoTitle: "Interested hackers",
-  eyebrow: "Interested hackers",
-  title: (sponsor: string) => `Hackers who want to meet ${sponsor}`,
+  pageIntro:
+    "See who wants to meet you, shortlist the hackers you'd like to chat with, and follow the chats you've offered.",
+  chatsHeading: "Your chats",
+  heading: "Interested hackers",
   intro:
     "Hackers who put you on their list of sponsors to meet, top picks first. Only hackers who agreed to share their profile with sponsors are shown.",
-  offerHint:
-    "To offer a coffee chat, scan the hacker's badge when you meet them.",
-  count: (n: number) => (n === 1 ? "1 hacker" : `${n} hackers`),
+  shortlistHint:
+    "The Hack Western team uses your shortlist to set up coffee chats; you can also scan a badge anytime.",
+  shortlistCount: (picked: number, total: number) =>
+    `${picked} of ${total} shortlisted`,
+  filterLabel: "Show",
+  filterAll: "All",
+  filterShortlisted: "Shortlisted only",
+  noneShortlisted:
+    "You haven't shortlisted anyone yet. Tap Shortlist on a hacker to add them.",
+  shortlist: "Shortlist",
+  added: (name: string) => `${name} added to your shortlist.`,
+  removed: (name: string) => `${name} removed from your shortlist.`,
+  toggleError: (name: string) =>
+    `We couldn't update ${name} on your shortlist. Try again.`,
+  shortlistFull: (max: number) =>
+    `Your shortlist is full (${max} hackers). Remove someone to add another.`,
   empty:
     "No hackers yet. As hackers pick the sponsors they'd like to meet on the live site, they'll show up here.",
   noTeam: "No team yet",

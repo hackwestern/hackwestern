@@ -86,6 +86,10 @@
 - **Why:** Jazz: sponsors don't need it; it's for the sponsor team.
 - **Alternatives:** keep it for sponsors (earlier decision today, now reversed).
 
+## 2026-11-16 — Sponsor shortlist lives on the coffee chats page
+- **Decision:** Sponsors shortlist interested hackers on /sponsors/[uuid]/coffee-chats (new `sponsor_shortlist` table). The old /hackers page redirects there. The interested list now returns each hacker's user id so the sponsor can shortlist them, but only for admitted hackers who agreed to share and ranked that sponsor. That's the same id the /live QR shows anyone who scans it. No emails. Chat partners get a full profile only if they agreed to share; otherwise the sponsor sees a first name.
+- **Why:** Jazz wants one page where sponsors see who's interested, pick their shortlist and follow their chats. Organizers read the shortlist (`sponsorShortlist.forSponsor`) to assign chats.
+- **Alternatives:** keep it keyed by hackerId (can be unset); keep a separate read-only page (two places for the same people).
 ## 2026-11-16 - Coffee chat rooms 2241-2243 are assigned on the site
 - **Decision:** Organizers give each sponsor a Saturday coffee chat room (Rm 2241, 2242 or 2243) in the Coffee chats tab of /internal/sponsor-schedule, stored on the sponsor (`coffee_chat_room`). The sheet's ROOM column is only a fallback when nothing is assigned. Two sponsors can't share a room in overlapping windows; changing a room moves that sponsor's live chats under the Move room rules and tells each hacker.
 - **Why:** the sponsor team decides rooms during the event and needs the change to reach offers, free times, cards and hackers at once, without a sheet round trip.

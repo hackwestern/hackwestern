@@ -316,6 +316,13 @@
       "when": 1794806889933,
       "tag": "0044_coffee_chat_watcher",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1794808502473,
+      "tag": "0045_sponsor_shortlist",
+      "breakpoints": true
     }
   ]
 }
