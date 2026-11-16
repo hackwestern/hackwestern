@@ -12,7 +12,14 @@ const copy = sponsorHelpCopy;
 // "Need help?" for a sponsor page: the button and sheet when there's no
 // request, otherwise the status card. Polls every 15s while a request is
 // open or claimed (each poll also lets the server send a due Slack re-ping).
-export function SponsorHelp({ sponsor }: { sponsor: string }) {
+export function SponsorHelp({
+  sponsor,
+  boothLocation,
+}: {
+  sponsor: string;
+  /** Booth from the sponsor sheet; the sheet shows it as a placeholder. */
+  boothLocation?: string | null;
+}) {
   const utils = api.useUtils();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [dismissedId, setDismissedId] = useState<string | null>(null);
@@ -107,12 +114,21 @@ export function SponsorHelp({ sponsor }: { sponsor: string }) {
             {copy.buttonHint}
           </p>
           <HelpSheet
+            sponsor={sponsor}
+            boothLocation={boothLocation}
             open={sheetOpen}
             onOpenChange={setSheetOpen}
             sending={request.isPending}
             error={request.isError ? copy.sheet.error : null}
-            onSubmit={(reason, note) =>
-              request.mutate({ sponsor, reason, note: note || undefined })
+            onSubmit={(v) =>
+              request.mutate({
+                sponsor,
+                reason: v.reason,
+                note: v.note || undefined,
+                repName: v.repName,
+                phone: v.phone,
+                locationNote: v.locationNote || undefined,
+              })
             }
           />
         </>

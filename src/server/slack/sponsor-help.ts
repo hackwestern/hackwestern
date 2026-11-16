@@ -9,6 +9,7 @@ import { sponsorHelpCopy } from "~/content/sponsor-help";
 import { env } from "~/env";
 import {
   SPONSOR_HELP_REPING_MINUTES,
+  telHref,
   type SponsorHelpReason,
 } from "~/lib/sponsor-help";
 
@@ -24,8 +25,38 @@ export type SponsorHelpDetails = {
   sponsorName: string;
   reason: SponsorHelpReason;
   note: string | null;
+  /** Booth from the sponsor info sheet. */
   location: string | null;
+  /** Contact the sponsor typed. Null only on rows from before 0042. */
+  repName: string | null;
+  phone: string | null;
+  /** "Where are you right now?", if they said. */
+  locationNote: string | null;
 };
+
+/** Escape user text for Slack mrkdwn: &, < and > are control characters. */
+export function slackEscape(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+/** The fields every message shows, escaped and ready for mrkdwn. */
+function contactFields(details: SponsorHelpDetails) {
+  const phone = details.phone?.trim();
+  return {
+    sponsor: slackEscape(details.sponsorName),
+    rep: details.repName ? slackEscape(details.repName) : null,
+    // <tel:+15195550123|519-555-0123>: digits in the link, as typed in the label.
+    phone: phone ? `<${telHref(phone)}|${slackEscape(phone)}>` : null,
+    where: details.locationNote
+      ? { kind: "now" as const, text: slackEscape(details.locationNote) }
+      : details.location
+        ? { kind: "booth" as const, text: slackEscape(details.location) }
+        : { kind: "none" as const, text: "" },
+  };
+}
 
 // Hackers and the sponsor team share one Slack app, so the shared SLACK_*
 // values are the default; SPONSOR_HELP_SLACK_* override them.
@@ -97,10 +128,9 @@ async function callSlack(
 function requestText(details: SponsorHelpDetails): string {
   return copy.request({
     mention: mention(),
-    sponsor: details.sponsorName,
-    location: details.location,
+    ...contactFields(details),
     reason: sponsorHelpCopy.reasons[details.reason],
-    note: details.note,
+    note: details.note ? slackEscape(details.note) : null,
   });
 }
 
@@ -126,6 +156,7 @@ export async function postSponsorHelpRequest(
 export async function repingSponsorHelp(
   ref: SlackMessageRef,
   step: 1 | 2,
+  details: SponsorHelpDetails,
 ): Promise<boolean> {
   const res = await callSlack("chat.postMessage", {
     channel: ref.channel,
@@ -134,6 +165,7 @@ export async function repingSponsorHelp(
       mention: mention(),
       step,
       minutes: SPONSOR_HELP_REPING_MINUTES[step === 1 ? 0 : 1],
+      ...contactFields(details),
     }),
   });
   return res !== null;
@@ -179,7 +211,11 @@ export async function postSponsorHelpClaimed(
 export async function slackDisplayName(
   slackUserId: string,
 ): Promise<string | null> {
-  const res = await callSlack("users.info", { user: slackUserId }, { form: true });
+  const res = await callSlack(
+    "users.info",
+    { user: slackUserId },
+    { form: true },
+  );
   const user = res?.user as
     | {
         name?: string;

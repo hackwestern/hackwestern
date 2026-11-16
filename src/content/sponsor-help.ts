@@ -4,6 +4,21 @@
 
 import type { SponsorHelpReason } from "~/lib/sponsor-help";
 
+type SlackContact = {
+  sponsor: string;
+  rep: string | null;
+  phone: string | null;
+  where: { kind: "now" | "booth" | "none"; text: string };
+};
+
+const notGiven = "_not given_";
+
+function slackWhere(where: SlackContact["where"]): string {
+  if (where.kind === "now") return where.text;
+  if (where.kind === "booth") return `${where.text} (booth)`;
+  return notGiven;
+}
+
 export const sponsorHelpCopy = {
   reasons: {
     swag: "Out of swag or supplies",
@@ -21,8 +36,25 @@ export const sponsorHelpCopy = {
     description:
       "Pick one. We'll ping the Hack Western sponsor team and show you who's coming.",
     reasonLegend: "Reason",
+    contactLegend: "Who should we find?",
+    repNameLabel: "Your name",
+    repNamePlaceholder: "e.g. Priya Shah",
+    phoneLabel: "Phone number",
+    phoneHint: "So the sponsor team can call if they can't find you.",
+    phonePlaceholder: "e.g. 519-555-0123",
+    locationNoteLabel: "Where are you right now? (optional)",
+    locationNoteFallback: "e.g. Near the main stage",
+    remembered: "Saved on this device for next time.",
+    errors: {
+      repNameMissing: "Add your name so the team knows who to find.",
+      repNameTooLong: "Keep your name under 80 characters.",
+      phoneMissing: "Add a phone number the team can call.",
+      phoneInvalid:
+        "Enter a phone number with at least 7 digits, like 519-555-0123.",
+      locationNoteTooLong: "Keep this under 120 characters.",
+    },
     noteLabel: "Anything else? (optional)",
-    notePlaceholder: "e.g. We're at the table by the window",
+    notePlaceholder: "e.g. Blue shirts, size M",
     noteCount: (n: number, max: number) => `${n}/${max}`,
     submit: "Send for help",
     sending: "Sending…",
@@ -41,6 +73,7 @@ export const sponsorHelpCopy = {
     resolvedTitle: "All sorted",
     resolvedBody: "Thanks for letting us know. Tap Need help again anytime.",
     sentAt: (time: string) => `Sent at ${time}`,
+    pingedAs: (rep: string) => `Pinged as ${rep}`,
     cancel: "Cancel request",
     cancelling: "Cancelling…",
     dismiss: "Done",
@@ -53,9 +86,11 @@ export const sponsorHelpCopy = {
     open: "Waiting",
     claimed: (name: string) => `Claimed by ${name}`,
     claimedUnknown: "Claimed",
-    age: (minutes: number) =>
-      minutes < 1 ? "just now" : `${minutes} min ago`,
+    age: (minutes: number) => (minutes < 1 ? "just now" : `${minutes} min ago`),
     location: (where: string) => `At ${where}`,
+    locationBooth: (where: string) => `Booth: ${where}`,
+    rep: (name: string) => `Rep: ${name}`,
+    callLabel: (name: string, phone: string) => `Call ${name} at ${phone}`,
     resolve: "Resolve",
     resolving: "Resolving…",
     resolveError: "Couldn't resolve. Try again.",
@@ -64,28 +99,38 @@ export const sponsorHelpCopy = {
     slackOff: "Not posted to Slack",
   },
 
-  // Slack messages (mrkdwn). `mention` is SPONSOR_HELP_SLACK_MENTION.
+  // Slack messages (mrkdwn). `mention` is SPONSOR_HELP_SLACK_MENTION. Values
+  // arrive escaped; `phone` is already a <tel:...|...> link.
   slack: {
-    request: (p: {
-      mention: string;
-      sponsor: string;
-      location: string | null;
-      reason: string;
-      note: string | null;
-    }) =>
+    request: (
+      p: SlackContact & {
+        mention: string;
+        reason: string;
+        note: string | null;
+      },
+    ) =>
       [
-        `${p.mention ? `${p.mention} ` : ""}*${p.sponsor}* needs help${
-          p.location ? ` at ${p.location}` : ""
-        }: ${p.reason}.`,
-        p.note ? `> ${p.note.replace(/\n/g, "\n> ")}` : null,
+        `${p.mention ? `${p.mention} ` : ""}:raising_hand: *${p.sponsor}* needs help`,
+        `*Sponsor:* ${p.sponsor}`,
+        `*Rep:* ${p.rep ?? notGiven}`,
+        `*Phone:* ${p.phone ?? notGiven}`,
+        `*Where:* ${slackWhere(p.where)}`,
+        `*Reason:* ${p.reason}`,
+        p.note ? `*Note:*\n> ${p.note.replace(/\n/g, "\n> ")}` : null,
         "React or reply in the thread to claim it.",
       ]
         .filter(Boolean)
         .join("\n"),
-    reping: (p: { mention: string; step: 1 | 2; minutes: number }) =>
-      p.step === 1
-        ? `${p.mention ? `${p.mention} ` : ""}Still unclaimed after ${p.minutes} minutes. React or reply to take it.`
-        : `<!here> Still nobody after ${p.minutes} minutes. Can anyone take this?`,
+    // Repeats who to find and call, so whoever takes it needn't scroll up.
+    reping: (
+      p: SlackContact & { mention: string; step: 1 | 2; minutes: number },
+    ) =>
+      [
+        p.step === 1
+          ? `${p.mention ? `${p.mention} ` : ""}Still unclaimed after ${p.minutes} minutes. React or reply to take it.`
+          : `<!here> Still nobody after ${p.minutes} minutes. Can anyone take this?`,
+        `*${p.sponsor}* · ${p.rep ?? notGiven} · ${p.phone ?? notGiven} · ${slackWhere(p.where)}`,
+      ].join("\n"),
     claimedHeader: (name: string) => `:white_check_mark: Claimed by ${name}`,
     resolvedHeader: ":tada: Resolved",
     cancelledHeader: ":no_entry_sign: Cancelled by the sponsor",

@@ -162,6 +162,9 @@ export async function claimSponsorHelp(
         reason: claimed.reason as SponsorHelpReason,
         note: claimed.note,
         location: claimed.location,
+        repName: claimed.repName,
+        phone: claimed.phone,
+        locationNote: claimed.locationNote,
       },
       { kind: "claimed", name },
     );
