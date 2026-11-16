@@ -5,6 +5,7 @@ import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { InternalNavbar } from "~/components/internals/navbar";
+import { CompanyLocationsView } from "~/components/sponsors/company-locations";
 import { DayPicker } from "~/components/sponsors/day-picker";
 import { HelpQueue } from "~/components/sponsors/help-queue";
 import { ScheduleList } from "~/components/sponsors/schedule-list";
@@ -68,6 +69,8 @@ export default function OrganizerRunOfShowPage() {
           </div>
           {tab === "help" ? (
             <HelpQueue />
+          ) : tab === "where" ? (
+            <WhereIsEveryone day={shownDay} onDay={setDay} now={now} />
           ) : q.isLoading ? (
             <ScheduleSkeleton />
           ) : !q.data ? (
@@ -96,6 +99,31 @@ export default function OrganizerRunOfShowPage() {
           )}
         </div>
       </div>
+    </>
+  );
+}
+
+// Every company's rooms and times. Organizer-only: sponsors never see this.
+function WhereIsEveryone({
+  day,
+  onDay,
+  now,
+}: {
+  day: RunOfShowDay;
+  onDay: (day: RunOfShowDay) => void;
+  now: Date;
+}) {
+  const q = api.sponsorSchedule.organizerCompanies.useQuery(undefined, {
+    refetchInterval: 60_000,
+    retry: 1,
+  });
+  if (q.isLoading) return <ScheduleSkeleton />;
+  if (!q.data) return <LoadError onRetry={() => void q.refetch()} />;
+  return (
+    <>
+      <DayPicker value={day} onChange={onDay} />
+      <CompanyLocationsView data={q.data} day={day} now={now} />
+      <ReadAt iso={q.data.readAt} />
     </>
   );
 }

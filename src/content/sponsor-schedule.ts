@@ -22,7 +22,6 @@ export const scheduleCopy = {
   hubLinks: {
     label: "Event info",
     schedule: "Your schedule",
-    where: "Where is everyone",
   },
 
   schedule: {
@@ -59,7 +58,7 @@ export const scheduleCopy = {
     eyebrow: "Where is everyone",
     title: "Find any company",
     intro:
-      "Where each sponsor is during the event: workshops, coffee chat rooms and the Sponsor Bay.",
+      "Where each sponsor is during the event: workshops, coffee chat rooms and the Sponsor Bay. Sponsors only see their own rooms.",
     sponsorBay: "Sponsor Bay",
     sponsorBayHours: "Every company has a table here while it's open.",
     nothingListed: "Nothing on the run of show yet.",
@@ -73,7 +72,12 @@ export const scheduleCopy = {
     title: "Run of show",
     intro:
       "Live from the run-of-show sheet. Sponsors see their own items and the main events, never team tasks.",
-    tabs: { schedule: "Schedule", tasks: "Team tasks", coffee: "Coffee chats" },
+    tabs: {
+      schedule: "Schedule",
+      tasks: "Team tasks",
+      coffee: "Coffee chats",
+      where: "Where is everyone",
+    },
     noTasks: "No team tasks this day.",
     owner: (owner: string) => `Owner: ${owner}`,
     unowned: "No owner",
