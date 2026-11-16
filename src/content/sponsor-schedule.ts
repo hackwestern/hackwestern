@@ -44,6 +44,30 @@ export const scheduleCopy = {
     gap: (from: string, to: string) => `Nothing on from ${from} to ${to}`,
     gridLabel: (day: string) => `${day} schedule, scrolls sideways`,
     timeHeader: "Time",
+    runOfShow: "Run of show",
+    teamTask: "Team task",
+    srTask: "Team task",
+    openDetails: "Show details",
+    details: {
+      description: "Full details for this event",
+      taskDescription: "Full details for this team task",
+      close: "Close",
+      when: "When",
+      where: "Where",
+      sponsors: "Sponsors",
+      owner: "Owner",
+      runBy: "Run by",
+      about: "About this workshop",
+      tasks: "Team tasks during this event",
+      noTasks: "No team tasks during this event.",
+      happening: "Happening at this time",
+      nothingHappening: "No events at this time.",
+      hackathonNote: "From the public hackathon schedule.",
+      time: (day: string, date: number, start: string, end: string) =>
+        `${day}, November ${date} · ${start} to ${end}`,
+      taskTime: (day: string, date: number, start: string) =>
+        `${day}, November ${date} · ${start}`,
+    },
     columns: {
       "big-event": "Main event",
       "sponsor-workshop": "Workshops",
@@ -51,6 +75,7 @@ export const scheduleCopy = {
       "spon-booth": "Sponsor Bay",
       "coffee-chats": "Coffee chats",
       other: "Other events",
+      tasks: "Team tasks",
     },
     categories: {
       "big-event": "Main event",
@@ -65,6 +90,7 @@ export const scheduleCopy = {
       booth: "Sponsor Bay",
       scavenger: "Scavenger hunt",
       other: "Other",
+      task: "Team task",
     },
   },
 
@@ -175,6 +201,7 @@ export const scheduleCopy = {
       where: "Where is everyone",
     },
     noTasks: "No team tasks this day.",
+    emptyDay: "Nothing on the run of show this day.",
     ceremoniesHeading: "Ceremony speakers",
     workshopsHeading: "Workshops",
     workshopTable: {
