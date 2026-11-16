@@ -75,3 +75,8 @@
 - **Decision:** Every sponsor can see every company's rooms and times (the Where is everyone page). The schedule page only trims shared locations to the sponsor's own room for readability; the API is not expected to hide other sponsors' rooms.
 - **Why:** Jazz asked that sponsors can see where each company is and in what room.
 - **Alternatives:** server-side trimming of other sponsors' rooms (unneeded given the shared page).
+
+## 2026-11-15 — Coffee chat notifications: Slack first, email as fallback
+- **Decision:** An offer DMs the hacker on Slack first (1.2 s limit). The email goes out only if the DM wasn't sent (no bot token, no Slack account for their email, or a Slack error or timeout). The sheet mirror still runs alongside, all inside the 2.5 s cap.
+- **Why:** hackers live in Slack during the event; one notification per offer, no duplicates; /live shows a toast and the chat either way.
+- **Alternatives:** both always (duplicates); email only (slower to notice, no buttons).
