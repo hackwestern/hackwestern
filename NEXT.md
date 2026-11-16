@@ -6,11 +6,10 @@
 - T49 Slack DM task reminders 10 min before, synced from the sheet; no-owner tasks go to the spon-team channel (hackwestern-sd-notify, branch sd-task-reminders; its migration needs renumbering at merge)
 After merging: load `_local/task-owners.md` owner emails into the local DB (task_owner_contact).
 
-## Next to build: T50 sponsor owners
-- One owner per sponsor (rename T44 "watcher" to Owner), list in `_local/task-owners.md` (Canada Life: Noah, Manulife: Caroline, QNX: Noah, Scotiabank: Caroline, Sun Life: Daniel; StarTech/Commure/CSE unknown).
-- Sponsor dashboard shows "Your Hack Western contact: <owner>".
-- Help pings: owner known and matched on Slack → @mention + DM the owner, plus the channel post as backup. No owner / not matched → spon-team channel only with @here (today's behaviour).
-- Ask Jazz: are Manulife and QNX sponsors needing dashboard links (not in the sponsor table)?
+## Next to build: T50 (small)
+- Jazz decided (2026-11-16): NO per-sponsor owner/rep. Help pings stay channel-only (@here in the spon-team channel); no DMs to a sponsor owner.
+- Hide the T44 "Your Hack Western contact for chats: <name>" line from sponsors (coffee-chats page, freeTimes/sponsorChats `watcherName` not shown). Keep the watcher field organizer-only, or drop it if Jazz prefers.
+- Log the decision in docs/decisions.md (keep it valid UTF-8).
 
 ## Then
 Open the PR. Push `sponsor-dashboard` and open it **into `spon-judging`** (#1112, which it's built on); retarget to `main` once #1112 merges. Jazz to confirm before pushing.
