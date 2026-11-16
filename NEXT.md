@@ -1,8 +1,8 @@
 # NEXT — sponsor dashboard (branch `sponsor-dashboard`, not pushed)
 
 ## Running when the last session ended (merge these first)
-- T47 run-of-show hour grid + clickable events + Team tasks column with owners (worktree hackwestern-sd-sched2, branch sd-grid2)
-- T48 organizer coffee chats as a sponsor x time table (hackwestern-sd-chat, branch sd-chat-table)
+- T47 MERGED 2026-11-16 (hour grid, clickable details, tasks column). Known: at 1280 the Saturday grid scrolls sideways under the pinned tasks column; fix in T51.
+- T48 MERGED 2026-11-16 (sponsor x time table, organizerChatBoard).
 - T49 Slack task pings AT the task's start time: DM the owner; no owner / owner not on Slack -> general message in the spon-team channel; synced from the sheet (hackwestern-sd-notify, branch sd-task-reminders; its migration needs renumbering at merge)
 After merging: load `_local/task-owners.md` owner emails into the local DB (task_owner_contact).
 
