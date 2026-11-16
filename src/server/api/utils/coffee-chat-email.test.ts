@@ -1,4 +1,12 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest";
 
 import type { CoffeeChatSetup } from "~/lib/run-of-show";
 import type * as Env from "~/env";
@@ -83,7 +91,9 @@ async function makeSponsor(room: string | null = "Rm 2241") {
   return { id: row!.id, name };
 }
 
-async function makeHacker(status: "CONFIRMED" | "PENDING_REVIEW" = "CONFIRMED") {
+async function makeHacker(
+  status: "CONFIRMED" | "PENDING_REVIEW" = "CONFIRMED",
+) {
   const id = `email-hacker-${++n}`;
   await db.insert(users).values({
     id,
@@ -91,18 +101,16 @@ async function makeHacker(status: "CONFIRMED" | "PENDING_REVIEW" = "CONFIRMED") 
     name: "Sam Lastname",
     type: "hacker",
   });
-  await db
-    .insert(applications)
-    .values({
-      userId: id,
-      status,
-      firstName: "Sam",
-      lastName: "Lastname",
-      githubLink: "",
-      linkedInLink: "",
-      devpostLink: "",
-      resumeLink: "",
-    });
+  await db.insert(applications).values({
+    userId: id,
+    status,
+    firstName: "Sam",
+    lastName: "Lastname",
+    githubLink: "",
+    linkedInLink: "",
+    devpostLink: "",
+    resumeLink: "",
+  });
   return id;
 }
 

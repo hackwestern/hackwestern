@@ -10,6 +10,7 @@ import {
   sponsorJudgingSponsors,
   users,
 } from "~/server/db/schema";
+import { sendCoffeeChatDm } from "~/server/slack/coffee-chat-dm";
 
 /**
  * Coffee chat notifications. The router calls notifyCoffeeChat after the DB
@@ -97,6 +98,11 @@ const channels: Record<string, Channel> = {
     if (event !== "offered") return;
     const notice = await load();
     if (notice) await sendCoffeeChatOfferEmail(notice);
+  },
+  slack: async (event, load) => {
+    if (event !== "offered") return;
+    const notice = await load();
+    if (notice) await sendCoffeeChatDm(notice);
   },
 };
 
