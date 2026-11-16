@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Plus, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -9,10 +9,14 @@ import { api } from "~/utils/api";
 
 const iconButton = cn(
   "inline-flex size-11 shrink-0 cursor-pixel-hover items-center justify-center rounded-dashboard-md text-dashboard-text-medium transition-colors",
-  "hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+  "hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
   "disabled:pointer-events-none disabled:opacity-dashboard-disabled",
   "[&_svg]:size-4",
 );
+
+type Control = "up" | "down" | "remove";
+/** Where keyboard focus goes after the list re-renders. */
+type FocusTarget = { name: string; control: Control } | "heading" | null;
 
 function sameOrder(a: string[], b: string[]) {
   return a.length === b.length && a.every((v, i) => v === b[i]);
@@ -38,6 +42,23 @@ export default function SponsorInterest({ className }: { className?: string }) {
     if (q.data && ranking === null) setRanking(q.data.ranking);
   }, [q.data, ranking]);
 
+  // Keep keyboard focus on the item that just moved, was added, or sat next
+  // to the one removed (WCAG 2.4.3), and announce the change.
+  const listRef = useRef<HTMLElement>(null);
+  const [focusTarget, setFocusTarget] = useState<FocusTarget>(null);
+  const [announcement, setAnnouncement] = useState("");
+  useEffect(() => {
+    if (!focusTarget || !listRef.current) return;
+    const el =
+      focusTarget === "heading"
+        ? listRef.current.querySelector<HTMLElement>("h3")
+        : listRef.current.querySelector<HTMLElement>(
+            `[data-name="${CSS.escape(focusTarget.name)}"][data-control="${focusTarget.control}"]`,
+          );
+    el?.focus();
+    setFocusTarget(null);
+  }, [focusTarget, ranking]);
+
   if (q.isError) {
     return (
       <DashboardPanel className={className}>
@@ -50,12 +71,15 @@ export default function SponsorInterest({ className }: { className?: string }) {
   if (!q.data || ranking === null) {
     return q.isLoading && session?.user?.id ? (
       <div
+        role="status"
         aria-busy="true"
         className={cn(
           "h-64 w-full animate-pulse rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card",
           className,
         )}
-      />
+      >
+        <span className="sr-only">{copy.loading}</span>
+      </div>
     ) : null;
   }
   if (!q.data.canRank) return null;
@@ -66,18 +90,35 @@ export default function SponsorInterest({ className }: { className?: string }) {
 
   const move = (i: number, by: -1 | 1) => {
     const next = [...ranking];
-    const [item] = next.splice(i, 1);
-    next.splice(i + by, 0, item!);
+    const [name] = next.splice(i, 1);
+    const to = i + by;
+    next.splice(to, 0, name!);
     setRanking(next);
     save.reset();
+    // The pressed arrow is disabled at the top/bottom: use the other one.
+    let control: Control = by === -1 ? "up" : "down";
+    if (control === "up" && to === 0) control = "down";
+    if (control === "down" && to === next.length - 1) control = "up";
+    setFocusTarget({ name: name!, control });
+    setAnnouncement(copy.movedAnnouncement(name!, to + 1, next.length));
   };
   const remove = (name: string) => {
-    setRanking(ranking.filter((s) => s !== name));
+    const i = ranking.indexOf(name);
+    const next = ranking.filter((s) => s !== name);
+    setRanking(next);
     save.reset();
+    const neighbour = next[i] ?? next[i - 1];
+    setFocusTarget(
+      neighbour ? { name: neighbour, control: "remove" } : "heading",
+    );
+    setAnnouncement(copy.removedAnnouncement(name));
   };
   const add = (name: string) => {
-    setRanking([...ranking, name]);
+    const next = [...ranking, name];
+    setRanking(next);
     save.reset();
+    setFocusTarget({ name, control: next.length > 1 ? "up" : "remove" });
+    setAnnouncement(copy.addedAnnouncement(name, next.length, next.length));
   };
 
   let status: string | null = null;
@@ -104,6 +145,10 @@ export default function SponsorInterest({ className }: { className?: string }) {
         </p>
       )}
 
+      <p aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
+
       {data.sponsors.length === 0 ? (
         <p className="m-0 text-base text-dashboard-text-light">
           {copy.noSponsors}
@@ -111,12 +156,14 @@ export default function SponsorInterest({ className }: { className?: string }) {
       ) : (
         <>
           <section
+            ref={listRef}
             aria-labelledby="sponsor-interest-ranked"
             className="flex flex-col gap-2"
           >
             <h3
               id="sponsor-interest-ranked"
-              className="m-0 text-sm font-semibold text-dashboard-text-heavy"
+              tabIndex={-1}
+              className="m-0 text-sm font-semibold text-dashboard-text-heavy focus-visible:outline-none"
             >
               {copy.rankedHeading}
             </h3>
@@ -140,6 +187,8 @@ export default function SponsorInterest({ className }: { className?: string }) {
                     <button
                       type="button"
                       className={iconButton}
+                      data-name={name}
+                      data-control="up"
                       aria-label={copy.moveUpLabel(name)}
                       disabled={i === 0}
                       onClick={() => move(i, -1)}
@@ -149,6 +198,8 @@ export default function SponsorInterest({ className }: { className?: string }) {
                     <button
                       type="button"
                       className={iconButton}
+                      data-name={name}
+                      data-control="down"
                       aria-label={copy.moveDownLabel(name)}
                       disabled={i === ranking.length - 1}
                       onClick={() => move(i, 1)}
@@ -158,6 +209,8 @@ export default function SponsorInterest({ className }: { className?: string }) {
                     <button
                       type="button"
                       className={iconButton}
+                      data-name={name}
+                      data-control="remove"
                       aria-label={copy.removeLabel(name)}
                       onClick={() => remove(name)}
                     >
@@ -193,7 +246,7 @@ export default function SponsorInterest({ className }: { className?: string }) {
                       onClick={() => add(name)}
                       className={cn(
                         "flex min-h-11 w-full cursor-pixel-hover items-center justify-between gap-3 rounded-dashboard-md border border-dashboard-border-default bg-dashboard-bg-surface px-3 py-2 text-left font-figtree text-base font-medium text-dashboard-text-heavy transition-colors",
-                        "hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                        "hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
                       )}
                     >
                       <span className="min-w-0 break-words">{name}</span>

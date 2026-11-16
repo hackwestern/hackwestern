@@ -97,6 +97,15 @@ export const sponsorInterestRouter = createTRPCRouter({
       }
 
       await db.transaction(async (tx) => {
+        // Two saves at once (double tap, two tabs) would otherwise both
+        // delete, then both insert, and collide on (user_id, rank). Locking
+        // the hacker's application row runs them one after the other; the
+        // last one wins.
+        await tx
+          .select({ userId: applications.userId })
+          .from(applications)
+          .where(eq(applications.userId, userId))
+          .for("update");
         await tx
           .delete(sponsorInterests)
           .where(eq(sponsorInterests.userId, userId));
