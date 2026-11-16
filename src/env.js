@@ -102,6 +102,10 @@ export const env = createEnv({
     // Bearer token for /api/cheat-check/sweep, which the sweep worker also uses
     // to re-invoke itself. Leave unset to disable automated sweeps entirely.
     CHEAT_SWEEP_SECRET: z.string().optional(),
+    // Hacker interest form Google Sheet ID
+    HACKER_INTEREST_FORM: z.string().optional(),
+    // Optional tab override for local/demo interest-form data
+    HACKER_INTEREST_FORM_TAB: z.string().optional(),
   },
 
   /**
@@ -178,6 +182,8 @@ export const env = createEnv({
     HACK_END: process.env.HACK_END,
     PROJECT_SUBMISSION_DEADLINE: process.env.PROJECT_SUBMISSION_DEADLINE,
     CHEAT_SWEEP_SECRET: process.env.CHEAT_SWEEP_SECRET,
+    HACKER_INTEREST_FORM: process.env.HACKER_INTEREST_FORM,
+    HACKER_INTEREST_FORM_TAB: process.env.HACKER_INTEREST_FORM_TAB,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

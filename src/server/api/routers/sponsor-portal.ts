@@ -31,8 +31,85 @@ import {
   fetchHwContactPhones,
   lookupHwContactPhones,
 } from "~/server/api/utils/sponsor-hw-contacts";
+import { fetchHackerInterestRows } from "~/server/api/utils/hacker-interest";
+import { applications, reviews, users } from "~/server/db/schema";
+import { eq } from "drizzle-orm";
+import { db } from "~/server/db";
 
 export const sponsorPortalRouter = createTRPCRouter({
+  /**
+   * Return the highest-scoring applicants who selected this sponsor in the
+   * interest form. The private sponsor UUID gates access; the form supplies
+   * the contact links and the database supplies the application score.
+   */
+  getInterestedHackers: publicProcedure
+    .input(z.object({ sponsor: z.string().uuid() }))
+    .query(async ({ input }) => {
+      try {
+        const sponsorName = await resolveSponsorName(input.sponsor);
+        const interestRows = await fetchHackerInterestRows(sponsorName);
+        const interestedEmails = new Set(interestRows.map((row) => row.email));
+
+        const scoredRows = await db
+          .select({
+            email: users.email,
+            originalityRating: reviews.originalityRating,
+            technicalityRating: reviews.technicalityRating,
+            passionRating: reviews.passionRating,
+          })
+          .from(applications)
+          .innerJoin(users, eq(users.id, applications.userId))
+          .innerJoin(reviews, eq(reviews.applicantUserId, applications.userId))
+          .where(eq(reviews.completed, true));
+
+        const scores = new Map<string, number>();
+        const reviewCounts = new Map<string, number>();
+        for (const row of scoredRows) {
+          const email = row.email.trim().toLowerCase();
+          if (!interestedEmails.has(email)) continue;
+          scores.set(
+            email,
+            (scores.get(email) ?? 0) +
+              (row.originalityRating ?? 0) +
+              (row.technicalityRating ?? 0) +
+              (row.passionRating ?? 0),
+          );
+          reviewCounts.set(email, (reviewCounts.get(email) ?? 0) + 1);
+        }
+
+        const hackers = [
+          ...new Map(interestRows.map((row) => [row.email, row])).values(),
+        ]
+          .filter((row) => row.rank !== null && row.rank <= 3)
+          .filter((row) => scores.has(row.email))
+          .map((row) => ({
+            name: row.name.trim(),
+            resumeUrl: row.resumeUrl || null,
+            extraLink: row.extraLink || null,
+            score:
+              (scores.get(row.email) ?? 0) / (reviewCounts.get(row.email) ?? 1),
+          }))
+          .sort(
+            (a, b) =>
+              b.score - a.score ||
+              a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+          )
+          .slice(0, 40)
+          .map(({ score: _score, ...hacker }) => hacker);
+
+        return { sponsorName, hackers };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to load interested hackers",
+        });
+      }
+    }),
+
   /**
    * Get public sponsor portal info for /sponsors/[id]. Public.
    * Resolves the sponsor UUID to its name, then loads their HW contact

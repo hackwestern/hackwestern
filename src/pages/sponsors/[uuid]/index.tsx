@@ -194,6 +194,29 @@ export default function SponsorHubPage() {
           </DashboardPanel>
         )}
 
+        <DashboardPanel>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <span className="dashboard-section-label text-dashboard-text-light">
+                Recruiting
+              </span>
+              <h2 className="m-0 text-xl font-semibold text-dashboard-text-heavy">
+                Meet interested hackers
+              </h2>
+            </div>
+            <p className="m-0 text-base font-medium leading-relaxed text-dashboard-text-medium">
+              Browse the top hackers who ranked your company among their
+              interests.
+            </p>
+            <DashboardButton asChild className="mt-1 md:w-full">
+              <Link href={`/sponsors/${id}/hackers`}>
+                View interested hackers
+                <ArrowRight />
+              </Link>
+            </DashboardButton>
+          </div>
+        </DashboardPanel>
+
         {/* Event details */}
         <div className="flex flex-col gap-3">
           <h2 className="dashboard-section-label m-0 text-dashboard-text-light">
