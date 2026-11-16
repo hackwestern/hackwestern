@@ -37,6 +37,15 @@ vi.mock("~/server/api/utils/run-of-show-sheet", () => {
           item("food", "12:00", "Lunch"),
           item("sponsor-workshop", "10:00", `${alphaName} Workshop`, "Rm 101"),
           item("sponsor-workshop", "11:00", `${betaName} Workshop`, "Rm 202"),
+          {
+            ...item(
+              "sponsor-workshop",
+              "13:00",
+              "Shared Panel",
+              `${alphaName}: Rm 2110, ${betaName}: Rm 2230`,
+            ),
+            sponsors: [alphaName, betaName],
+          },
         ],
         tasks: [
           {
@@ -74,18 +83,12 @@ describe("sponsorSchedule input checks", () => {
     await expect(
       publicCaller.sponsorSchedule.get({ sponsor: "not-a-uuid" }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    await expect(
-      publicCaller.sponsorSchedule.companies({ sponsor: "not-a-uuid" }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
   test("unknown sponsor UUID is NOT_FOUND", async () => {
     const unknown = "00000000-0000-4000-8000-000000000000";
     await expect(
       publicCaller.sponsorSchedule.get({ sponsor: unknown }),
-    ).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await expect(
-      publicCaller.sponsorSchedule.companies({ sponsor: unknown }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });
@@ -109,14 +112,28 @@ describe("sponsorSchedule.get", () => {
   });
 });
 
+describe("sponsorSchedule.get shared rooms", () => {
+  test("trims a shared location to the sponsor's own room", async () => {
+    const result = await publicCaller.sponsorSchedule.get({ sponsor: alphaId });
+    const shared = result.items.find((i) => i.title === "Shared Panel");
+    expect(shared?.location).toBe("Rm 2110");
+    expect(shared?.sponsors).toEqual([alphaName]);
+    expect(JSON.stringify(result)).not.toContain(betaName + ": ");
+    expect(JSON.stringify(result)).not.toContain("Rm 2230");
+  });
+});
+
 describe("sponsorSchedule.companies", () => {
-  test("has no sheetUrl or tasks", async () => {
-    const result = await publicCaller.sponsorSchedule.companies({
-      sponsor: alphaId,
-    });
-    expect(result).not.toHaveProperty("sheetUrl");
-    expect(result).not.toHaveProperty("tasks");
-    expect(result.companies.map((c) => c.name)).toContain(alphaName);
+  test("no longer exists as a public procedure", () => {
+    expect(publicCaller.sponsorSchedule).not.toHaveProperty("companies");
+  });
+});
+
+describe("sponsorSchedule.organizerCompanies", () => {
+  test("rejects a logged-out caller", async () => {
+    await expect(
+      publicCaller.sponsorSchedule.organizerCompanies(),
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 });
 

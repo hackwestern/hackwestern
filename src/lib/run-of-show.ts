@@ -84,7 +84,7 @@ export type CompanyLocation = {
   coffeeChat: CoffeeChatSetup | null;
 };
 
-/** sponsorSchedule.companies: every sponsor's whereabouts. */
+/** sponsorSchedule.organizerCompanies: every sponsor's whereabouts. */
 export type CompanyLocations = {
   readAt: string;
   /** Sponsor Bay hours (booth column), shared by all companies. */

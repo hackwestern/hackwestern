@@ -11,7 +11,6 @@ import {
   type RunOfShowItem,
 } from "~/lib/run-of-show";
 import { isHappeningNow, runOfShowInstant } from "~/lib/run-of-show-time";
-import { cn } from "~/lib/utils";
 
 const copy = scheduleCopy.where;
 
@@ -52,12 +51,10 @@ export function CompanyLocationsView({
   data,
   day,
   now,
-  highlightSponsor,
 }: {
   data: CompanyLocations;
   day: RunOfShowDay;
   now: Date;
-  highlightSponsor?: string;
 }) {
   const eventStarted = now >= runOfShowInstant("Friday", "16:00");
   const nowRows = eventStarted
@@ -115,18 +112,13 @@ export function CompanyLocationsView({
             .filter((i) => i.day === day)
             .sort(compareRunOfShow);
           const cc = day === "Saturday" ? coffeeChatBlock(company) : null;
-          const mine = company.name === highlightSponsor;
           return (
             <li
               key={company.name}
-              className={cn(
-                "flex flex-col gap-3 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card",
-                mine && "ring-2 ring-dashboard-action-primary",
-              )}
+              className="flex flex-col gap-3 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card"
             >
               <div className="flex items-center justify-between gap-2">
                 <h2 className="m-0 text-lg font-semibold">{company.name}</h2>
-                {mine && <DashboardTag>{scheduleCopy.you}</DashboardTag>}
               </div>
               {items.length === 0 && !cc ? (
                 <p className="m-0 text-sm text-dashboard-text-light">

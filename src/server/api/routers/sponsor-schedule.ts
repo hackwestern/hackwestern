@@ -2,10 +2,11 @@ import { TRPCError } from "@trpc/server";
 import { asc } from "drizzle-orm";
 import { z } from "zod";
 
-import type {
-  CompanyLocations,
-  OrganizerRunOfShow,
-  SponsorSchedule,
+import {
+  locationFor,
+  type CompanyLocations,
+  type OrganizerRunOfShow,
+  type SponsorSchedule,
 } from "~/lib/run-of-show";
 import {
   createTRPCRouter,
@@ -25,7 +26,10 @@ const ALL_HANDS_COLUMNS = new Set(["big-event", "food"]);
 
 async function registeredSponsors() {
   return db
-    .select({ id: sponsorJudgingSponsors.id, name: sponsorJudgingSponsors.name })
+    .select({
+      id: sponsorJudgingSponsors.id,
+      name: sponsorJudgingSponsors.name,
+    })
     .from(sponsorJudgingSponsors)
     .orderBy(asc(sponsorJudgingSponsors.name));
 }
@@ -45,7 +49,10 @@ function findSponsor(
 async function readSheet(sponsorNames: string[]) {
   try {
     const snapshot = await getRunOfShow();
-    return { readAt: snapshot.readAt, ...applySponsorNames(snapshot, sponsorNames) };
+    return {
+      readAt: snapshot.readAt,
+      ...applySponsorNames(snapshot, sponsorNames),
+    };
   } catch (error) {
     console.error("run-of-show sheet read failed", error);
     throw new TRPCError({
@@ -66,29 +73,39 @@ export const sponsorScheduleRouter = createTRPCRouter({
       return {
         sponsorName: name,
         readAt: sheet.readAt,
-        items: sheet.items.filter(
-          (item) =>
-            ALL_HANDS_COLUMNS.has(item.column) ||
-            item.sponsors.includes(name) ||
-            // Sponsor Bay hours apply to every sponsor.
-            item.column === "spon-booth" ||
-            // Events for all sponsors ("Sponsor Judging Workshop", "Sponsor
-            // Track Shortlisting"). Other companies' workshops (MLH, QNX) are
-            // left out even when that company isn't a registered sponsor.
-            (item.column === "sponsor-workshop" &&
-              item.sponsors.length === 0 &&
-              /^sponsor\b/i.test(item.title)),
-        ),
+        items: sheet.items
+          .filter(
+            (item) =>
+              ALL_HANDS_COLUMNS.has(item.column) ||
+              item.sponsors.includes(name) ||
+              // Sponsor Bay hours apply to every sponsor.
+              item.column === "spon-booth" ||
+              // Events for all sponsors ("Sponsor Judging Workshop", "Sponsor
+              // Track Shortlisting"). Other companies' workshops (MLH, QNX) are
+              // left out even when that company isn't a registered sponsor.
+              (item.column === "sponsor-workshop" &&
+                item.sponsors.length === 0 &&
+                /^sponsor\b/i.test(item.title)),
+          )
+          // A shared room ("Scotiabank: Rm 2110, Canada Life: Rm 2230") is
+          // trimmed here so a sponsor never receives another sponsor's room.
+          .map((item) =>
+            item.sponsors.length > 1 && item.location
+              ? {
+                  ...item,
+                  location: locationFor(item.location, name),
+                  sponsors: item.sponsors.filter((n) => n === name),
+                }
+              : item,
+          ),
         coffeeChat: sheet.coffeeChats.find((c) => c.sponsor === name) ?? null,
       };
     }),
 
-  /** Where every company is. Public; the UUID only proves a sponsor asks. */
-  companies: publicProcedure
-    .input(z.object({ sponsor: z.string().uuid() }))
-    .query(async ({ input }): Promise<CompanyLocations> => {
+  /** Where every company is. Organizers only: sponsors never see this. */
+  organizerCompanies: protectedOrganizerProcedure.query(
+    async (): Promise<CompanyLocations> => {
       const sponsors = await registeredSponsors();
-      findSponsor(sponsors, input.sponsor);
       const sheet = await readSheet(sponsors.map((s) => s.name));
       return {
         readAt: sheet.readAt,
@@ -96,11 +113,11 @@ export const sponsorScheduleRouter = createTRPCRouter({
         companies: sponsors.map(({ name }) => ({
           name,
           items: sheet.items.filter((item) => item.sponsors.includes(name)),
-          coffeeChat:
-            sheet.coffeeChats.find((c) => c.sponsor === name) ?? null,
+          coffeeChat: sheet.coffeeChats.find((c) => c.sponsor === name) ?? null,
         })),
       };
-    }),
+    },
+  ),
 
   /** Everything, including team tasks and the sheet link. Organizers only. */
   organizer: protectedOrganizerProcedure.query(
