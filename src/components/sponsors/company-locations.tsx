@@ -11,6 +11,7 @@ import {
   type RunOfShowItem,
 } from "~/lib/run-of-show";
 import { isHappeningNow, runOfShowInstant } from "~/lib/run-of-show-time";
+import { cn } from "~/lib/utils";
 
 const copy = scheduleCopy.where;
 
@@ -43,8 +44,48 @@ export function whereNow(
   const cc = coffeeChatBlock(company);
   if (cc && isHappeningNow(cc, now)) return `${cc.title}, ${cc.location}`;
   const bay = sponsorBay.find((i) => isHappeningNow(i, now));
-  if (bay) return `${copy.sponsorBay}${bay.location ? `, ${bay.location}` : ""}`;
+  if (bay)
+    return `${copy.sponsorBay}${bay.location ? `, ${bay.location}` : ""}`;
   return null;
+}
+
+export type WhereRow = { name: string; place: string };
+
+/** Every company that is somewhere at `at`, with where. */
+export function whereRows(data: CompanyLocations, at: Date): WhereRow[] {
+  return data.companies
+    .map((c) => ({ name: c.name, place: whereNow(c, data.sponsorBay, at) }))
+    .filter((r): r is WhereRow => r.place !== null);
+}
+
+/** Company and place, one per line ("Right now" and the coffee side panel). */
+export function WhereList({
+  rows,
+  stacked = false,
+}: {
+  rows: WhereRow[];
+  /** Always put the place under the name (narrow side panel). */
+  stacked?: boolean;
+}) {
+  return (
+    <ul className="m-0 flex list-none flex-col gap-2 p-0">
+      {rows.map((r) => (
+        <li
+          key={r.name}
+          className={cn(
+            "flex flex-col gap-0.5 border-b border-dashboard-bg-nav pb-2 last:border-0 last:pb-0",
+            !stacked &&
+              "sm:flex-row sm:items-baseline sm:justify-between sm:gap-3",
+          )}
+        >
+          <span className="break-words font-semibold">{r.name}</span>
+          <span className="break-words text-sm text-dashboard-text-medium">
+            {r.place}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export function CompanyLocationsView({
@@ -57,30 +98,14 @@ export function CompanyLocationsView({
   now: Date;
 }) {
   const eventStarted = now >= runOfShowInstant("Friday", "16:00");
-  const nowRows = eventStarted
-    ? data.companies
-        .map((c) => ({ name: c.name, place: whereNow(c, data.sponsorBay, now) }))
-        .filter((r): r is { name: string; place: string } => r.place !== null)
-    : [];
+  const nowRows = eventStarted ? whereRows(data, now) : [];
   const bayToday = data.sponsorBay.filter((i) => i.day === day);
 
   return (
     <div className="flex flex-col gap-4">
       {nowRows.length > 0 && (
         <DashboardPanel title={copy.rightNow}>
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {nowRows.map((r) => (
-              <li
-                key={r.name}
-                className="flex flex-col gap-0.5 border-b border-dashboard-bg-nav pb-2 last:border-0 last:pb-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3"
-              >
-                <span className="font-semibold">{r.name}</span>
-                <span className="text-sm text-dashboard-text-medium">
-                  {r.place}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <WhereList rows={nowRows} />
         </DashboardPanel>
       )}
 
@@ -98,7 +123,9 @@ export function CompanyLocationsView({
               <li key={i.id} className="flex flex-wrap gap-x-2 text-base">
                 <span className="font-semibold">{timeRange(i)}</span>
                 {i.location && (
-                  <span className="text-dashboard-text-medium">{i.location}</span>
+                  <span className="text-dashboard-text-medium">
+                    {i.location}
+                  </span>
                 )}
               </li>
             ))}
@@ -170,7 +197,9 @@ function Stop({
 }) {
   return (
     <li className="flex gap-2.5" aria-current={live ? "time" : undefined}>
-      <span className="mt-0.5 flex shrink-0 text-dashboard-text-light">{icon}</span>
+      <span className="mt-0.5 flex shrink-0 text-dashboard-text-light">
+        {icon}
+      </span>
       <div className="flex min-w-0 flex-col">
         <span className="flex flex-wrap items-center gap-1.5 text-sm text-dashboard-text-medium">
           {when}
@@ -181,7 +210,9 @@ function Stop({
           )}
         </span>
         <span className="break-words font-semibold">{title}</span>
-        <span className="break-words text-sm text-dashboard-text-medium">{where}</span>
+        <span className="break-words text-sm text-dashboard-text-medium">
+          {where}
+        </span>
       </div>
     </li>
   );
