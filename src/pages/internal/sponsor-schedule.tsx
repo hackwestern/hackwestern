@@ -4,6 +4,7 @@ import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { InternalNavbar } from "~/components/internals/navbar";
 import { DayPicker } from "~/components/sponsors/day-picker";
+import { HelpQueue } from "~/components/sponsors/help-queue";
 import { ScheduleList } from "~/components/sponsors/schedule-list";
 import {
   LoadError,
@@ -14,6 +15,7 @@ import {
 import { SheetEditButton } from "~/components/sponsors/sheet-edit-button";
 import { useNow } from "~/components/sponsors/use-now";
 import { scheduleCopy } from "~/content/sponsor-schedule";
+import { sponsorHelpCopy } from "~/content/sponsor-help";
 import {
   compareRunOfShow,
   formatClock,
@@ -25,7 +27,9 @@ import { api } from "~/utils/api";
 import { authRedirectOrganizer } from "~/utils/redirect";
 
 const copy = scheduleCopy.organizer;
-type Tab = keyof typeof copy.tabs;
+// Sheet tabs plus the sponsor help queue, which doesn't need the sheet.
+const TAB_LABELS = { ...copy.tabs, help: sponsorHelpCopy.organizer.tab };
+type Tab = keyof typeof TAB_LABELS;
 
 // Organizer run of show: the whole sheet, read-only, with team tasks and the
 // coffee chat setup. Edits happen in the sheet (SheetEditButton).
@@ -46,28 +50,30 @@ export default function OrganizerRunOfShowPage() {
       <div className="min-h-screen bg-dashboard-bg-page px-4 pb-12 pt-6 font-figtree font-medium leading-default text-dashboard-text-heavy sm:px-5">
         <div className="mx-auto flex w-full max-w-[880px] flex-col gap-5">
           <PageIntro eyebrow={copy.title} title={copy.title} intro={copy.intro} />
-          {q.isLoading ? (
+          <div
+            role="tablist"
+            className="flex gap-2 overflow-x-auto pb-1"
+          >
+            {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
+              <DashboardChip
+                key={t}
+                selected={t === tab}
+                onClick={() => setTab(t)}
+                className="min-h-11"
+              >
+                {TAB_LABELS[t]}
+              </DashboardChip>
+            ))}
+          </div>
+          {tab === "help" ? (
+            <HelpQueue />
+          ) : q.isLoading ? (
             <ScheduleSkeleton />
           ) : !q.data ? (
             <LoadError onRetry={() => void q.refetch()} />
           ) : (
             <>
               <SheetEditButton href={q.data.sheetUrl} />
-              <div
-                role="tablist"
-                className="flex gap-2 overflow-x-auto pb-1"
-              >
-                {(Object.keys(copy.tabs) as Tab[]).map((t) => (
-                  <DashboardChip
-                    key={t}
-                    selected={t === tab}
-                    onClick={() => setTab(t)}
-                    className="min-h-11"
-                  >
-                    {copy.tabs[t]}
-                  </DashboardChip>
-                ))}
-              </div>
               {tab !== "coffee" && (
                 <DayPicker value={shownDay} onChange={setDay} />
               )}
