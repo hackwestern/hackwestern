@@ -26,6 +26,21 @@ export const coffeeChatNotifyCopy = {
     signoff: "The Hack Western 13 Team",
   },
 
+  /** Told to a hacker whose chat was cancelled or moved by the organizers. */
+  change: {
+    cancelled: (sponsor: string, time: string) =>
+      `Your coffee chat with ${sponsor} at ${time} was cancelled by the organizers.`,
+    roomMoved: (sponsor: string, time: string, room: string) =>
+      `Your coffee chat with ${sponsor} at ${time} is now in ${room}.`,
+    emailSubject: {
+      cancelled: (sponsor: string) =>
+        `Your coffee chat with ${sponsor} was cancelled`,
+      roomMoved: (sponsor: string) =>
+        `Your coffee chat with ${sponsor} moved rooms`,
+    },
+    emailAction: "See your coffee chats on your Live page",
+  },
+
   slack: {
     /** Notification preview text (also the fallback when blocks can't show). */
     text: (sponsor: string) => `${sponsor} wants to have a coffee chat`,

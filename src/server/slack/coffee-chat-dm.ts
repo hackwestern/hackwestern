@@ -1,6 +1,10 @@
 import { LIVE_URL, coffeeChatNotifyCopy } from "~/content/coffee-chat-notify";
 import { env } from "~/env";
 import { formatCoffeeChatTime } from "~/lib/coffee-chats";
+import {
+  coffeeChatChangeText,
+  type CoffeeChatChangeEvent,
+} from "~/server/api/utils/coffee-chat-change-text";
 import type { CoffeeChatNotice } from "~/server/api/utils/coffee-chat-notify";
 import {
   SlackApiError,
@@ -97,12 +101,13 @@ type OpenResponse = SlackResponse & { channel?: { id?: string } };
 export async function sendCoffeeChatDm(
   chat: CoffeeChatNotice,
   deps: { token?: string; fetch?: typeof fetch } = {},
+  event: "offered" | CoffeeChatChangeEvent = "offered",
 ): Promise<CoffeeChatDmResult> {
   const token = "token" in deps ? deps.token : env.SLACK_BOT_TOKEN;
   if (!token) return "skipped-no-token";
   if (!chat.admitted || !chat.hackerEmail) return "not-found";
   try {
-    return await deliverDm(token, chat, deps.fetch ?? fetch);
+    return await deliverDm(token, chat, deps.fetch ?? fetch, event);
   } catch (error) {
     console.error(
       "coffee chat slack DM failed:",
@@ -116,6 +121,7 @@ async function deliverDm(
   token: string,
   chat: CoffeeChatNotice,
   fetchImpl: typeof fetch,
+  event: "offered" | CoffeeChatChangeEvent,
 ): Promise<CoffeeChatDmResult> {
   if (!chat.hackerEmail) return "not-found";
 
@@ -148,7 +154,13 @@ async function deliverDm(
   await slackApi(
     token,
     "chat.postMessage",
-    { channel, ...coffeeChatDmMessage(chat) },
+    {
+      channel,
+      // The offer DM's ts isn't stored, so a change is a new plain DM.
+      ...(event === "offered"
+        ? coffeeChatDmMessage(chat)
+        : { text: coffeeChatChangeText(event, chat, escapeSlackText) }),
+    },
     fetchImpl,
   );
   return "sent";

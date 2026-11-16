@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import type * as Env from "~/env";
@@ -55,7 +56,9 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-async function makeChat() {
+async function makeChat(
+  status?: "pending" | "accepted" | "declined" | "cancelled",
+) {
   const id = `fallback-hacker-${Math.random().toString(36).slice(2)}`;
   const [sponsor] = await db
     .insert(sponsorJudgingSponsors)
@@ -80,6 +83,7 @@ async function makeChat() {
       userId: id,
       room: "Rm 2241",
       slotTime: "10:15",
+      ...(status ? { status } : {}),
     })
     .returning();
   return { chat: chat!, email: `${id}@example.com` };
@@ -111,12 +115,7 @@ describe("coffee chat offer: Slack first, email as fallback", () => {
 
   test("other events send neither a DM nor an email", async () => {
     const { chat } = await makeChat();
-    for (const event of [
-      "accepted",
-      "declined",
-      "cancelled",
-      "roomMoved",
-    ] as const) {
+    for (const event of ["accepted", "declined"] as const) {
       await notifyCoffeeChat(event, { id: chat.id });
     }
     expect(dm).not.toHaveBeenCalled();
@@ -149,5 +148,57 @@ describe("coffee chat offer: Slack first, email as fallback", () => {
     expect(send).toHaveBeenCalledTimes(1);
     expect(settledAt! - start).toBeLessThanOrEqual(NOTIFY_TIMEOUT_MS);
     log.mockRestore();
+  });
+});
+
+describe("coffee chat cancelled or moved: Slack first, email as fallback", () => {
+  test("cancel (the chat was pending or accepted), Slack sent: one DM, no email", async () => {
+    dm.mockResolvedValue("sent");
+    const { chat } = await makeChat("cancelled");
+    await notifyCoffeeChat("cancelled", { id: chat.id });
+    expect(dm).toHaveBeenCalledTimes(1);
+    expect(dm.mock.calls[0]![2]).toBe("cancelled");
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  test("cancel, Slack not found: one email with the notice and /live link", async () => {
+    dm.mockResolvedValue("not-found");
+    const { chat, email } = await makeChat("cancelled");
+    await notifyCoffeeChat("cancelled", { id: chat.id });
+    expect(send).toHaveBeenCalledTimes(1);
+    const mail = send.mock.calls[0]![0];
+    expect(mail.to).toBe(email);
+    expect(mail.text).toContain("was cancelled by the organizers.");
+    expect(mail.text).toContain("https://www.hackwestern.com/live");
+  });
+
+  test("a chat that was declined is never announced as cancelled or moved", async () => {
+    const { chat } = await makeChat("declined");
+    await notifyCoffeeChat("cancelled", { id: chat.id });
+    await notifyCoffeeChat("roomMoved", { id: chat.id });
+    expect(dm).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  test("room move of two chats: two notices naming the new room", async () => {
+    dm.mockResolvedValue("not-found");
+    const first = await makeChat("pending");
+    const second = await makeChat("accepted");
+    for (const { chat } of [first, second]) {
+      await db
+        .update(coffeeChats)
+        .set({ room: "Rm 9999" })
+        .where(eq(coffeeChats.id, chat.id));
+    }
+    await Promise.all(
+      [first, second].map(({ chat }) =>
+        notifyCoffeeChat("roomMoved", { id: chat.id }),
+      ),
+    );
+    expect(dm).toHaveBeenCalledTimes(2);
+    expect(send).toHaveBeenCalledTimes(2);
+    for (const [mail] of send.mock.calls) {
+      expect(mail.text).toContain("is now in Rm 9999.");
+    }
   });
 });
