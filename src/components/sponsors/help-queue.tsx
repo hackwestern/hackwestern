@@ -30,7 +30,7 @@ export function HelpQueue() {
         {[0, 1].map((i) => (
           <div
             key={i}
-            className="h-28 w-full animate-pulse rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card"
+            className="h-28 w-full motion-safe:animate-pulse rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card"
           />
         ))}
       </div>
@@ -121,9 +121,9 @@ export function HelpQueue() {
               className="h-11 w-full shrink-0 sm:w-auto"
               disabled={resolving}
               onClick={() => resolve.mutate({ id: r.id })}
-              aria-label={`${copy.resolve}: ${r.sponsorName}`}
             >
               {resolving ? copy.resolving : copy.resolve}
+              <span className="sr-only"> {r.sponsorName}</span>
             </DashboardButton>
           </li>
         );

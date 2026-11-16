@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LifeBuoy } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { HelpSheet } from "~/components/sponsors/help-sheet";
-import { HelpStatus } from "~/components/sponsors/help-status";
+import { HelpStatus, helpStatusText } from "~/components/sponsors/help-status";
 import { sponsorHelpCopy } from "~/content/sponsor-help";
 import { isActiveHelpStatus, SPONSOR_HELP_POLL_MS } from "~/lib/sponsor-help";
 import { api } from "~/utils/api";
@@ -16,6 +16,11 @@ export function SponsorHelp({ sponsor }: { sponsor: string }) {
   const utils = api.useUtils();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [dismissedId, setDismissedId] = useState<string | null>(null);
+  // Where focus goes once the swap between button and card has rendered, so
+  // it never drops to <body> when the focused control unmounts.
+  const [focusTo, setFocusTo] = useState<"status" | "trigger" | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
 
   const status = api.sponsorHelp.status.useQuery(
     { sponsor },
@@ -33,58 +38,85 @@ export function SponsorHelp({ sponsor }: { sponsor: string }) {
     onSuccess: (data) => {
       utils.sponsorHelp.status.setData({ sponsor }, data);
       setSheetOpen(false);
+      setFocusTo("status");
     },
     onError: (err) => {
       // Someone on the team already asked from another phone.
       if (err.data?.code === "CONFLICT") {
         setSheetOpen(false);
+        setFocusTo("status");
         void status.refetch();
       }
     },
   });
 
   const cancel = api.sponsorHelp.cancel.useMutation({
-    onSuccess: () => utils.sponsorHelp.status.setData({ sponsor }, null),
+    onSuccess: () => {
+      utils.sponsorHelp.status.setData({ sponsor }, null);
+      setFocusTo("trigger");
+    },
   });
 
-  const current = status.data;
-  if (current && current.id !== dismissedId) {
-    return (
-      <HelpStatus
-        request={current}
-        onCancel={() => cancel.mutate({ sponsor, id: current.id })}
-        cancelling={cancel.isPending}
-        cancelError={cancel.isError}
-        onDismiss={() => setDismissedId(current.id)}
-      />
-    );
-  }
+  const current =
+    status.data && status.data.id !== dismissedId ? status.data : null;
+  const text = current ? helpStatusText(current) : null;
+
+  useEffect(() => {
+    if (focusTo === "status" && current) {
+      statusRef.current?.focus();
+      setFocusTo(null);
+    } else if (focusTo === "trigger" && !current) {
+      triggerRef.current?.focus();
+      setFocusTo(null);
+    }
+  }, [focusTo, current]);
 
   return (
     <div className="flex flex-col gap-2">
-      <DashboardButton
-        className="md:h-11 md:w-full"
-        onClick={() => {
-          request.reset();
-          setSheetOpen(true);
-        }}
-        aria-haspopup="dialog"
-      >
-        <LifeBuoy aria-hidden />
-        {copy.button}
-      </DashboardButton>
-      <p className="m-0 text-center text-sm text-dashboard-text-light">
-        {copy.buttonHint}
+      {/* Always mounted so screen readers announce each change. */}
+      <p role="status" className="sr-only">
+        {text ? `${text.title}. ${text.body}` : ""}
       </p>
-      <HelpSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        sending={request.isPending}
-        error={request.isError ? copy.sheet.error : null}
-        onSubmit={(reason, note) =>
-          request.mutate({ sponsor, reason, note: note || undefined })
-        }
-      />
+      {current ? (
+        <HelpStatus
+          ref={statusRef}
+          request={current}
+          onCancel={() => cancel.mutate({ sponsor, id: current.id })}
+          cancelling={cancel.isPending}
+          cancelError={cancel.isError}
+          onDismiss={() => {
+            setDismissedId(current.id);
+            setFocusTo("trigger");
+          }}
+        />
+      ) : (
+        <>
+          <DashboardButton
+            ref={triggerRef}
+            className="md:h-11 md:w-full"
+            onClick={() => {
+              request.reset();
+              setSheetOpen(true);
+            }}
+            aria-haspopup="dialog"
+          >
+            <LifeBuoy aria-hidden />
+            {copy.button}
+          </DashboardButton>
+          <p className="m-0 text-center text-sm text-dashboard-text-light">
+            {copy.buttonHint}
+          </p>
+          <HelpSheet
+            open={sheetOpen}
+            onOpenChange={setSheetOpen}
+            sending={request.isPending}
+            error={request.isError ? copy.sheet.error : null}
+            onSubmit={(reason, note) =>
+              request.mutate({ sponsor, reason, note: note || undefined })
+            }
+          />
+        </>
+      )}
     </div>
   );
 }
