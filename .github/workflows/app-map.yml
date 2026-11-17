@@ -22,6 +22,8 @@ jobs:
   map:
     # Also guards manual runs: only ever regenerate and commit on main.
     if: github.ref == 'refs/heads/main'
+    # Pulls secrets.PAT from this environment first, then repo/org secrets.
+    environment: App Map Bot
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
