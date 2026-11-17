@@ -340,7 +340,6 @@ describe("scavengerHuntRouter basic endpoints", () => {
       }
     });
 
-    /*
     test("throws error if trying to scan soft-deleted item", async () => {
       // Soft delete the test item
       await db
@@ -360,7 +359,21 @@ describe("scavengerHuntRouter basic endpoints", () => {
         expect(trpcErr.code).toBe("NOT_FOUND");
         expect(trpcErr.message).toBe("Item not found");
       }
-    });*/
+    });
+
+    // deletedAt in the future means "scans close then" (#557), so it still scans.
+    test("scans an item whose close time is still in the future", async () => {
+      await db
+        .update(scavengerHuntItems)
+        .set({ deletedAt: new Date(Date.now() + 60 * 60 * 1000) })
+        .where(eq(scavengerHuntItems.id, testItem.id));
+
+      const scanResult = await organizerCaller.scavengerHunt.scan({
+        userId: session.user.id,
+        itemCode: testItem.code,
+      });
+      expect(scanResult.success).toBe(true);
+    });
 
     test("throws error if user not found", async () => {
       const nonExistentUserId = "non-existent-user-id";

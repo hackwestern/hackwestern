@@ -353,15 +353,20 @@ export const scavengerHuntRouter = createTRPCRouter({
         const userId = await resolveScannedUserId(input.userId);
         const scannerId = ctx.session.user.id; // Get the organizer who is scanning
 
-        // Check if item exists - prefer itemId over itemCode
+        // Check if item exists - prefer itemId over itemCode. Deleted items
+        // can't be scanned; a future deletedAt is a scheduled close.
+        const isOpen = or(
+          isNull(scavengerHuntItems.deletedAt),
+          gt(scavengerHuntItems.deletedAt, new Date()),
+        );
         let item;
         if (itemId) {
           item = await db.query.scavengerHuntItems.findFirst({
-            where: eq(scavengerHuntItems.id, itemId),
+            where: and(eq(scavengerHuntItems.id, itemId), isOpen),
           });
         } else if (itemCode) {
           item = await db.query.scavengerHuntItems.findFirst({
-            where: eq(scavengerHuntItems.code, itemCode),
+            where: and(eq(scavengerHuntItems.code, itemCode), isOpen),
           });
         } else {
           throw new TRPCError({
