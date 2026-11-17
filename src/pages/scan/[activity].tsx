@@ -340,16 +340,12 @@ const ScanActivityPage = () => {
     }
     isProcessingRef.current = true;
 
-    // Stop camera and scanning immediately when scan is detected
+    // Pause scanning while this scan is processed. The camera stays on so
+    // scanning can resume after an error; success navigates away, which
+    // stops it.
     if (scanIntervalRef.current) {
       clearInterval(scanIntervalRef.current);
       scanIntervalRef.current = null;
-    }
-
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-      setCameraActive(false);
     }
 
     try {
@@ -360,6 +356,7 @@ const ScanActivityPage = () => {
         setTimeout(() => {
           setStatus("scanning");
           setErrorMessage(null);
+          isProcessingRef.current = false;
         }, 3000);
         return;
       }
@@ -371,6 +368,7 @@ const ScanActivityPage = () => {
         setTimeout(() => {
           setStatus("scanning");
           setErrorMessage(null);
+          isProcessingRef.current = false;
         }, 3000);
         return;
       }
@@ -382,6 +380,7 @@ const ScanActivityPage = () => {
         setTimeout(() => {
           setStatus("scanning");
           setErrorMessage(null);
+          isProcessingRef.current = false;
         }, 2000);
         return;
       }
@@ -689,13 +688,14 @@ const ScanActivityPage = () => {
 
       {/* Camera View or Test Mode - Takes up rest of screen */}
       <div className="relative flex w-full flex-1 items-center justify-center bg-gray-300">
-        {/* Video element for camera - Always show since test mode is disabled */}
+        {/* Video element for camera. Pinned to the box so it fills it: as a plain
+            flex child it kept the camera's own shape and left grey bars. */}
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className={`h-full w-full object-cover ${cameraActive ? "opacity-100" : "opacity-0"}`}
+          className={`absolute inset-0 h-full w-full object-cover ${cameraActive ? "opacity-100" : "opacity-0"}`}
         />
 
         {/* Hidden canvas for QR code detection */}

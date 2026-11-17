@@ -11,6 +11,11 @@ const config = {
     reactCompiler: true,
   },
 
+  // The Apple Wallet route reads its pass images from disk at request time.
+  outputFileTracingIncludes: {
+    "/api/wallet/apple": ["./src/server/wallet/apple/**/*"],
+  },
+
   images: {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 31536000,

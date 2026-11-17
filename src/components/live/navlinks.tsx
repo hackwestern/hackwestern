@@ -1,10 +1,17 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Lock } from "lucide-react";
-import { SidebarIcon, LogisticsIcon } from "./icons";
+import { SidebarIcon } from "./icons";
 import { NotificationBadge } from "~/components/internals/notification-badge";
 import { cn } from "~/lib/utils";
+import { api } from "~/utils/api";
 import * as tokens from "~/lib/tokens";
+import {
+  CONTACT_US_STEP,
+  FAQ_STEP,
+  logisticsHref,
+  logisticsSteps,
+} from "~/constants/event-logistics";
 
 const navLinkClass = (isActive: boolean) =>
   cn(
@@ -18,7 +25,7 @@ export const SectionLink = ({
   tab,
   name,
   locked = false,
-  badge,
+  badge: badgeProp,
   href,
 }: {
   tab: string;
@@ -33,6 +40,19 @@ export const SectionLink = ({
     href !== undefined
       ? pathname?.startsWith(href) === true
       : pathname === "/live" && (searchParams.get("tab") ?? "home") === tab;
+
+  // Home shows how many checklist steps are left (nothing once it's done or
+  // hidden, or for people who don't have a checklist)
+  const { data: checklist } = api.onboarding.get.useQuery(undefined, {
+    enabled: tab === "home" && badgeProp === undefined && !locked,
+  });
+  // `enabled` only stops the fetch; every link shares this query's cached
+  // data, so only Home may read it
+  const badge =
+    badgeProp ??
+    (tab === "home" && checklist?.eligible && !checklist.hidden
+      ? checklist.stepsLeft
+      : undefined);
 
   if (locked) {
     return (
@@ -59,6 +79,7 @@ export const SectionLink = ({
   return (
     <Link
       href={href ?? `/live?tab=${tab}`}
+      shallow
       aria-current={isActive ? "page" : undefined}
       className={navLinkClass(isActive)}
       style={tokens.dashboardTypography.body}
@@ -84,18 +105,25 @@ export const IconlessLink = ({ tab, name }: { tab: string; name: string }) => {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const activeStep = searchParams.get("step");
-  const step = tab === "contact-us" ? "6" : tab === "faq" ? "7" : "1";
+  const step =
+    tab === "contact-us"
+      ? String(CONTACT_US_STEP)
+      : tab === "faq"
+        ? String(FAQ_STEP)
+        : "1";
 
   const isActive =
     pathname === "/live" &&
     searchParams.get("tab") === "event-logistics" &&
     (tab === "event-logistics"
-      ? activeStep !== "6" && activeStep !== "7"
+      ? activeStep !== String(CONTACT_US_STEP) &&
+        activeStep !== String(FAQ_STEP)
       : activeStep === step);
 
   return (
     <Link
       href={`/live?tab=event-logistics&step=${step}`}
+      shallow
       aria-current={isActive ? "page" : undefined}
       className={navLinkClass(isActive)}
       style={tokens.dashboardTypography.body}
@@ -105,23 +133,27 @@ export const IconlessLink = ({ tab, name }: { tab: string; name: string }) => {
   );
 };
 
-export const LogisticsLink = ({
-  step,
-  name,
-}: {
-  step: string;
-  name: string;
-}) => {
+// One row of the Overview card (Figma 1:3592). `step` is 1-based.
+export const LogisticsLink = ({ step }: { step: number }) => {
   const searchParams = useSearchParams();
-  const isActive = searchParams.get("step") === step;
+  const isActive = Number(searchParams.get("step") ?? "1") === step;
+  const { icon: Icon, navTitle } = logisticsSteps[step - 1]!;
 
   return (
     <Link
-      href={`live/?tab=event-logistics&step=${step}`}
-      className={`flex w-full items-center gap-3 px-4 py-2.5 font-secondary ${isActive ? "bg-primary-300 text-heavy" : "text-medium"} rounded-md transition-all hover:bg-primary-300`}
+      href={logisticsHref(step)}
+      shallow
+      aria-current={isActive ? "page" : undefined}
+      className={cn(
+        "flex w-full cursor-pixel-hover items-center gap-3 rounded-dashboard-sm px-4 py-3 leading-default transition-colors",
+        isActive
+          ? "bg-dashboard-bg-nav font-semibold text-dashboard-text-heavy"
+          : "font-medium text-dashboard-text-light hover:bg-dashboard-bg-highlight hover:text-dashboard-text-heavy",
+      )}
+      style={{ fontSize: "16px" }}
     >
-      <LogisticsIcon icon={step} selected={isActive} />
-      <div className="font-medium">{name}</div>
+      <Icon aria-hidden="true" className="size-5 shrink-0" strokeWidth={1.67} />
+      {navTitle}
     </Link>
   );
 };

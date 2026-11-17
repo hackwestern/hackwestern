@@ -1,4 +1,4 @@
-// Clickable regions over /landing/home/sponsors-hw13-v3.png (1067x795, drawn
+// Clickable regions over /landing/home/sponsors-hw13-v4.png (1067x795, drawn
 // at 2x as 2134x1590 so it stays sharp on retina), as percentages of the
 // image so they track it at any rendered size. Logos added after the image
 // was flattened are overlays, on its empty lower part or below it (top >
@@ -17,7 +17,7 @@ export type PromoSponsorLink = {
 export const PROMO_SPONSORS_IMAGE = {
   // Give a changed image a new filename: Cloudflare caches www images for a
   // day, so an in-place edit shows the old picture under the new overlays.
-  src: "/landing/home/sponsors-hw13-v3.png",
+  src: "/landing/home/sponsors-hw13-v4.png",
   width: 1067,
   height: 795,
   // Image pixels of room below the image for the overlay-only rows.
@@ -120,8 +120,7 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Autodesk",
     href: "https://www.autodesk.com/",
-    // Two centered rows (four, then three), wordmarks on one baseline per
-    // row.
+    // Two centered rows of four, wordmarks on one baseline per row.
     left: 12.98,
     top: 114.27,
     width: 10.84,
@@ -158,7 +157,7 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "OpenAI",
     href: "https://openai.com/",
-    left: 26.94,
+    left: 13.29,
     top: 131.65,
     width: 9.77,
     height: 3.53,
@@ -167,7 +166,7 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "PCBWay",
     href: "https://www.pcbway.com/",
-    left: 47.02,
+    left: 33.37,
     top: 132.12,
     width: 9.51,
     height: 3.53,
@@ -176,10 +175,19 @@ export const PROMO_SPONSOR_LINKS: readonly PromoSponsorLink[] = [
   {
     name: "Summerfresh",
     href: "https://www.summerfresh.com/",
-    left: 66.84,
+    left: 53.19,
     top: 128.5,
     width: 6.41,
     height: 8.6,
     overlaySrc: "/shared/sponsors/summerfresh-seal.png",
+  },
+  {
+    name: "DoorDash",
+    href: "https://www.doordash.com/",
+    left: 69.91,
+    top: 132.25,
+    width: 17,
+    height: 2.7,
+    overlaySrc: "/shared/sponsors/doordash.svg",
   },
 ];

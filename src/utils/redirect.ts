@@ -22,19 +22,21 @@ const authRedirect = async (
     };
   }
 
-  const user = await db.query.users.findFirst({
-    where: (users, { eq }) => eq(users.id, session.user.id),
-  });
+  // Only look the user up when a specific account type is required, so
+  // plain "signed in" gates don't pay for a database round trip.
+  if (userTypeTarget) {
+    const user = await db.query.users.findFirst({
+      where: (users, { eq }) => eq(users.id, session.user.id),
+    });
 
-  const userType = user?.type;
-
-  if (userTypeTarget && userType !== userTypeTarget) {
-    return {
-      redirect: {
-        destination,
-        permanent: false,
-      },
-    };
+    if (user?.type !== userTypeTarget) {
+      return {
+        redirect: {
+          destination,
+          permanent: false,
+        },
+      };
+    }
   }
 
   return {
