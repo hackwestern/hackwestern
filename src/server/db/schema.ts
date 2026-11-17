@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   uniqueIndex,
   serial,
@@ -1281,13 +1282,40 @@ export const cheatCheckSweepItemsRelations = relations(
 // Scavenger hunt
 // ---------------------------------------------------------------------------
 
-export const scavengerHuntItems = pgTable("scavenger_hunt_item", {
-  id: serial("id").primaryKey(),
-  code: varchar("code", { length: 12 }).unique().notNull(),
-  points: smallint("points").default(1).notNull(),
-  description: text("description"),
-  deletedAt: timestamp("deleted_at", { mode: "date", precision: 3 }),
-});
+export const scavengerHuntItemType = pgEnum("scavenger_hunt_item_type", [
+  "meal",
+  "workshop",
+  "sponsor_workshop",
+  "activity",
+  "bonus",
+]);
+
+export const scavengerHuntActivityType = pgEnum(
+  "scavenger_hunt_activity_type",
+  ["attendance", "win"],
+);
+
+export const scavengerHuntItems = pgTable(
+  "scavenger_hunt_item",
+  {
+    id: serial("id").primaryKey(),
+    code: varchar("code", { length: 12 }).unique().notNull(),
+    points: smallint("points").default(1).notNull(),
+    description: text("description"),
+    type: scavengerHuntItemType("type").notNull(),
+    winPoints: smallint("win_points"),
+    startsAt: timestamp("starts_at", { mode: "date", precision: 3 }).notNull(),
+    endsAt: timestamp("ends_at", { mode: "date", precision: 3 }).notNull(),
+    room: varchar("room", { length: 255 }),
+    deletedAt: timestamp("deleted_at", { mode: "date", precision: 3 }),
+  },
+  (t) => [
+    check(
+      "scavenger_hunt_item_win_points_activity_only",
+      sql`${t.winPoints} IS NULL OR ${t.type} = 'activity'`,
+    ),
+  ],
+);
 
 export const scavengerHuntScans = pgTable(
   "scavenger_hunt_scan",
@@ -1301,12 +1329,15 @@ export const scavengerHuntScans = pgTable(
     itemId: integer("item_id")
       .notNull()
       .references(() => scavengerHuntItems.id),
+    activityType: scavengerHuntActivityType("activity_type")
+      .default("attendance")
+      .notNull(),
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
       .notNull(),
   },
   (t) => [
-    primaryKey({ columns: [t.userId, t.itemId] }),
+    primaryKey({ columns: [t.userId, t.itemId, t.activityType] }),
     index("scan_user_idx").on(t.userId),
     index("scan_scanner_idx").on(t.scannerId),
   ],

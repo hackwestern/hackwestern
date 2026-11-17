@@ -92,3 +92,27 @@ DROP TRIGGER IF EXISTS trg_team_mark_autoqueue ON "team_mark";
 CREATE TRIGGER trg_team_mark_autoqueue
 AFTER INSERT ON "team_mark"
 FOR EACH ROW EXECUTE FUNCTION judging_autoqueue_on_mark();
+
+-- 3. Scavenger hunt points: when a scan is deleted, take its item's points back
+--    off the hacker's earned and balance totals. recordScan adds the points in
+--    application code when a scan is inserted. The balance can go below zero.
+--    Win scans refund the item's win_points, attendance scans its points.
+CREATE OR REPLACE FUNCTION scavenger_hunt_refund_scan_points() RETURNS trigger AS $$
+BEGIN
+  UPDATE "user" u SET
+    scavenger_hunt_earned = COALESCE(u.scavenger_hunt_earned, 0) - p.points,
+    scavenger_hunt_balance = COALESCE(u.scavenger_hunt_balance, 0) - p.points
+  FROM (
+    SELECT CASE WHEN OLD.activity_type = 'win' THEN COALESCE(i.win_points, 0) ELSE i.points END AS points
+    FROM scavenger_hunt_item i
+    WHERE i.id = OLD.item_id
+  ) p
+  WHERE u.id = OLD.user_id;
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_scavenger_hunt_scan_refund ON "scavenger_hunt_scan";
+CREATE TRIGGER trg_scavenger_hunt_scan_refund
+AFTER DELETE ON "scavenger_hunt_scan"
+FOR EACH ROW EXECUTE FUNCTION scavenger_hunt_refund_scan_points();

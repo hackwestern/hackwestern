@@ -31,6 +31,9 @@ const insertTestItem = async (
     .values({
       code: code,
       points: 25,
+      type: "activity",
+      startsAt: new Date("2026-11-21T14:00:00Z"),
+      endsAt: new Date("2026-11-21T15:00:00Z"),
       ...overrides,
     })
     .returning();
@@ -226,16 +229,16 @@ describe("scavengerHuntRouter basic endpoints", () => {
       // Create a fresh item for each test to avoid state pollution
       testItem = await insertTestItem({}, faker.string.alphanumeric(12));
 
+      // Clean up any existing scans for this user (first, because deleting a scan refunds its points)
+      await db
+        .delete(scavengerHuntScans)
+        .where(eq(scavengerHuntScans.userId, session.user.id));
+
       // Reset user's scavenger hunt balance and points
       await db
         .update(users)
         .set({ scavengerHuntBalance: 0, scavengerHuntEarned: 0 })
         .where(eq(users.id, session.user.id));
-
-      // Clean up any existing scans for this user
-      await db
-        .delete(scavengerHuntScans)
-        .where(eq(scavengerHuntScans.userId, session.user.id));
     });
 
     test("successfully scans and awards points", async () => {
