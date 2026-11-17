@@ -16,12 +16,16 @@ import Topbar from "~/components/live/topbar";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
 import { formatTitle } from "~/utils/format";
+import { SCHEDULE_ENABLED } from "~/constants/live";
 import { liveAccessRedirect } from "~/lib/live-access";
 import { disabledRedirect } from "~/utils/redirect";
 
 const Live = ({ isOrganizer }: { isOrganizer: boolean }) => {
   const searchParams = useSearchParams();
-  const tab = searchParams.get("tab") ?? "home";
+  const requestedTab = searchParams.get("tab") ?? "home";
+  // Direct links to a disabled tab land on Home
+  const tab =
+    requestedTab === "schedule" && !SCHEDULE_ENABLED ? "home" : requestedTab;
   const { data: session } = useSession();
 
   const firstName = session?.user?.name?.split(" ")[0];
