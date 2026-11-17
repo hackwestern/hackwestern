@@ -1,5 +1,5 @@
-# 🤙 Help Desk - Thames Room 3191
-*Available 24/7 for all general inquiries & misc. supplies*
+# 🤙 Help Desk - Room **1225**
+*Available 24/7 for all general inquiries & misc. supplies. Look for the small room with "Info Desk" above the door.*
 - Any questions you have about the weekend!
 - Toiletries: Toothbrushes & toothpaste, menstrual products, deodorant
 - Medical: Band-aids, Tylenol
@@ -11,13 +11,12 @@ Please present a valid form of photo ID for check-in. All hackers will receive a
 # 🛏️ Sleeping  
 We will have dedicated sleeping rooms offering a limited amount of air mattresses on a first-come first-serve basis. Toiletries will be available at the help desk. We will also have a limited amount of small pillows available.
 
-Sleeping Rooms:
-- Men’s - Somerville Room 3305
-- Women’s - Somerville Room 3355
-- All genders - Somerville Room 3305
+Sleeping Rooms (open from 10pm):
+- Men’s and all genders - Alumni Commons **2110**
+- Women’s - Room **2235**
 
 # 🚗 Parking  
-Parking will be available for free after 4pm on Friday and all weekend in the Social Science, Springett, and Alumni/Thomson parking lots on a first-come first-serve basis. Parking during other hours incurs a $1.50/30 min fee. Additional free weekend parking is available around campus during the weekend, visit <https://uwo.ca/parking/find/map.html> for more information.
+Parking will be available for free after 4pm on Friday and all weekend in the **Social Science**, **Springett**, and **Alumni/Thomson** parking lots on a first-come first-serve basis. We recommend **Springett**. Parking during other hours incurs a $1.50/30 min fee. Additional free weekend parking is available around campus during the weekend, visit <https://uwo.ca/parking/find/map.html> for more information.
 
 # 🙌 Mentorship  
 To ask for help from mentors, reach out in the **#ask-mentors** channel on Slack with your request and location in the building!

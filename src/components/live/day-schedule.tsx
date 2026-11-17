@@ -47,11 +47,11 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
       className={`rounded-lg border-2 p-1.5 sm:p-2.5 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 z-50 flex select-text flex-col justify-center shadow-sm transition-shadow hover:shadow-md`}
       style={{ height: `${height}px` }}
     >
-      <div className="select-text font-secondary text-[9px] font-semibold leading-tight sm:text-[11px]">
+      <div className="select-text font-figtree text-[9px] font-semibold leading-tight sm:text-[11px]">
         {event.title}
       </div>
       {event.location && (
-        <div className="mt-0.5 select-text font-secondary text-[8px] italic opacity-70 sm:text-[9px]">
+        <div className="mt-0.5 select-text font-figtree text-[8px] italic opacity-70 sm:text-[9px]">
           {event.location}
         </div>
       )}
@@ -275,7 +275,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
     <div className="w-full pb-3 sm:pb-4">
       <div className="rounded-sm px-3 py-4 sm:p-6">
         {/* Header with day name */}
-        <div className="sticky left-0 mb-3 mt-1 font-secondary text-lg font-bold text-heavy sm:mb-4 sm:mt-2 sm:text-2xl">
+        <div className="sticky left-0 mb-3 mt-1 font-figtree text-lg font-bold text-dashboard-text-heavy sm:mb-4 sm:mt-2 sm:text-2xl">
           {day}, November{" "}
           {day === "Friday" ? "21st" : day === "Saturday" ? "22nd" : "23rd"}
         </div>
@@ -292,7 +292,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
               }}
             >
               <div className="flex w-[80px] items-center justify-end pr-2">
-                <span className="font-jetbrains-mono bg-red-500 px-1.5 py-0.5 text-[8px] font-bold text-white sm:text-[10px]">
+                <span className="bg-red-500 px-1.5 py-0.5 font-figtree text-[8px] font-bold text-white sm:text-[10px]">
                   {formatCurrentTime()}
                 </span>
               </div>
@@ -336,6 +336,8 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
               { key: "sponsorBooth", type: "booth" },
               { key: "scavengerHunt", type: "scavenger" },
               { key: "other", type: "other" },
+              { key: "other2", type: "other" },
+              { key: "other3", type: "other" },
             ];
 
             // Group consecutive columns with the same event
@@ -396,11 +398,11 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                   className="grid gap-1.5 border-t border-gray-200 pt-1 sm:gap-2"
                   style={{
                     minHeight: `${height}px`,
-                    gridTemplateColumns: `60px repeat(9, 1fr)`,
+                    gridTemplateColumns: `60px repeat(11, 1fr)`,
                   }}
                 >
                   {/* Time label */}
-                  <div className="font-base flex items-start pt-1.5 font-secondary text-[10px] text-medium sm:pt-2 sm:text-xs">
+                  <div className="flex items-start pt-1.5 font-figtree text-[10px] font-medium text-dashboard-text-light sm:pt-2 sm:text-xs">
                     {event.time}
                   </div>
 
@@ -427,13 +429,13 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                 {isLargeGap && (
                   <div
                     key={`gap-${idx}`}
-                    className="grid grid-cols-[60px_repeat(9,1fr)] gap-1.5 rounded-md border border-dashed border-gray-300 bg-gray-50 sm:gap-2"
+                    className="grid grid-cols-[60px_repeat(11,1fr)] gap-1.5 rounded-md border border-dashed border-gray-300 bg-gray-50 sm:gap-2"
                     style={{ minHeight: "40px" }}
                   >
-                    <div className="flex items-center justify-center text-xs font-medium text-gray-400">
+                    <div className="flex items-center justify-center font-figtree text-xs font-medium text-dashboard-text-light">
                       ⋯
                     </div>
-                    {Array(9)
+                    {Array(11)
                       .fill(null)
                       .map((_, colIdx) => (
                         <div

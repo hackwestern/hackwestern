@@ -19,6 +19,7 @@ import {
 } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { isUserApprovedForEvent } from "~/server/api/utils/approval";
+import { resolveScannedUserId } from "~/server/api/utils/hacker-id";
 
 // Helper function to handle TRPC errors consistently
 const withErrorHandling = async <T>(
@@ -348,18 +349,24 @@ export const scavengerHuntRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       try {
-        const { userId, itemId, itemCode } = input;
+        const { itemId, itemCode } = input;
+        const userId = await resolveScannedUserId(input.userId);
         const scannerId = ctx.session.user.id; // Get the organizer who is scanning
 
-        // Check if item exists - prefer itemId over itemCode
+        // Check if item exists - prefer itemId over itemCode. Deleted items
+        // can't be scanned; a future deletedAt is a scheduled close.
+        const isOpen = or(
+          isNull(scavengerHuntItems.deletedAt),
+          gt(scavengerHuntItems.deletedAt, new Date()),
+        );
         let item;
         if (itemId) {
           item = await db.query.scavengerHuntItems.findFirst({
-            where: eq(scavengerHuntItems.id, itemId),
+            where: and(eq(scavengerHuntItems.id, itemId), isOpen),
           });
         } else if (itemCode) {
           item = await db.query.scavengerHuntItems.findFirst({
-            where: eq(scavengerHuntItems.code, itemCode),
+            where: and(eq(scavengerHuntItems.code, itemCode), isOpen),
           });
         } else {
           throw new TRPCError({
@@ -482,7 +489,8 @@ export const scavengerHuntRouter = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       return withErrorHandling(async () => {
-        const { userId, rewardId } = input;
+        const { rewardId } = input;
+        const userId = await resolveScannedUserId(input.userId);
 
         // Get user info before redemption (for return value and to verify user exists)
         const user = await db.query.users.findFirst({
@@ -636,7 +644,7 @@ export const scavengerHuntRouter = createTRPCRouter({
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
       try {
-        const { userId } = input;
+        const userId = await resolveScannedUserId(input.userId);
 
         const user = await db.query.users.findFirst({
           where: eq(users.id, userId),

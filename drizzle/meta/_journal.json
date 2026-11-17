@@ -239,6 +239,34 @@
       "when": 1793316144975,
       "tag": "0033_team_finder_card",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793934743357,
+      "tag": "0034_hacker_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1794444018111,
+      "tag": "0035_judging_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1794550010005,
+      "tag": "0036_onboarding_steps",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1794696076855,
+      "tag": "0037_sponsor_judging_sponsor",
+      "breakpoints": true
     }
   ]
 }

@@ -158,6 +158,16 @@ html {
     @apply font-figtree text-sm-b font-normal leading-none tracking-default text-black;
   }
 
+  .dashboard-display {
+    @apply font-figtree text-[32px] font-bold leading-[1.2] text-dashboard-text-heavy md:text-[48px];
+  }
+  .dashboard-section-label {
+    @apply font-figtree text-base font-semibold leading-default text-dashboard-text-heavy;
+  }
+  .dashboard-h1 {
+    @apply font-figtree text-[28px] font-bold leading-[1.2] text-dashboard-text-heavy md:text-[32px];
+  }
+
   .window-traffic-light {
     @apply relative size-[13px] rounded-full transition-[transform,filter] duration-100;
     box-shadow:

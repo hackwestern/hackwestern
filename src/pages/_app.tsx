@@ -9,7 +9,7 @@ import { api } from "~/utils/api";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import "~/styles/globals.css";
-import { Toaster } from "sonner";
+import { Toaster } from "~/components/ui/sonner";
 import { Toaster as CustomToaster } from "~/components/ui/toaster";
 import { TooltipProvider } from "~/components/ui/tooltip";
 import {
@@ -42,7 +42,7 @@ const pix32 = localFont({
 
 const figtree = Figtree({
   subsets: ["latin"],
-  weight: ["400", "600"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-figtree",
   fallback: ["Inter", "sans-serif"],
 });
@@ -83,7 +83,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
           <Component {...pageProps} />
         </TooltipProvider>
       </main>
-      <Toaster visibleToasts={1} style={{ zIndex: 90 }} />
+      <Toaster style={{ zIndex: 90 }} />
       <CustomToaster />
     </SessionProvider>
   );

@@ -25,14 +25,13 @@ const SponsorCard = ({
 
   const logoSize = 200 * scale;
   const maxHeight = 20 * scale;
-  const textSize =
-    scale > 1.5 ? "text-base" : scale > 1 ? "text-sm" : "text-sm";
+  const textSize = scale > 1.5 ? "text-base" : "text-sm";
 
   return (
     <div
-      className={`relative flex flex-col rounded-lg border transition-colors duration-300 ${
+      className={`relative flex flex-col rounded-dashboard-lg border font-figtree transition-colors duration-300 ${
         isExpanded
-          ? "border-primary-300 bg-white shadow-md"
+          ? "border-dashboard-border-subtle bg-dashboard-bg-surface shadow-dashboard-card"
           : "border-transparent bg-transparent"
       }`}
     >
@@ -42,7 +41,7 @@ const SponsorCard = ({
             e.stopPropagation();
             setIsExpanded(!isExpanded);
           }}
-          className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-md bg-white transition-all hover:bg-primary-50"
+          className="absolute right-2 top-2 z-10 flex h-8 w-8 cursor-pixel-hover items-center justify-center rounded-dashboard-sm bg-dashboard-bg-surface transition-colors hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
           aria-label={
             isExpanded ? "Collapse description" : "Expand description"
           }
@@ -51,7 +50,7 @@ const SponsorCard = ({
             animate={{ rotate: isExpanded ? 180 : 0 }}
             transition={{ duration: 0.3 }}
           >
-            <ChevronDown className="h-4 w-4 text-medium" />
+            <ChevronDown className="h-4 w-4 text-dashboard-text-light" />
           </motion.div>
         </button>
       )}
@@ -60,10 +59,10 @@ const SponsorCard = ({
           href={link}
           target="_blank"
           rel="noopener noreferrer"
-          className={`flex flex-1 items-center justify-center rounded-lg bg-white p-4 transition-all duration-300 ${
+          className={`flex flex-1 cursor-pixel-hover items-center justify-center rounded-dashboard-lg bg-dashboard-bg-surface p-4 transition-all duration-300 ${
             isExpanded
               ? "border border-transparent"
-              : "border border-gray-200 hover:border-primary-300 hover:shadow-md"
+              : "border border-dashboard-border-subtle hover:border-dashboard-border-outline hover:shadow-dashboard-card"
           }`}
         >
           <Image
@@ -85,9 +84,9 @@ const SponsorCard = ({
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="mx-8 border-t border-gray-100 py-4">
+            <div className="mx-8 border-t border-dashboard-border-faint py-4">
               <p
-                className={`whitespace-pre-line font-secondary ${textSize} leading-relaxed text-medium`}
+                className={`whitespace-pre-line ${textSize} font-medium leading-relaxed text-dashboard-text-medium`}
               >
                 {description}
               </p>
@@ -101,10 +100,10 @@ const SponsorCard = ({
 
 const Sponsors = () => {
   return (
-    <div className="h-full overflow-auto p-8 md:p-12">
+    <div className="h-full overflow-auto pb-16 font-figtree">
       {/* Thank you text */}
       <div className="mb-12 text-center">
-        <p className="font-secondary text-medium md:text-lg">
+        <p className="mx-auto max-w-2xl text-base font-medium leading-normal text-dashboard-text-medium md:text-lg">
           {SPONSOR_THANK_YOU_TEXT}
         </p>
       </div>
@@ -116,14 +115,14 @@ const Sponsors = () => {
           if (tierName === "Title Sponsor") {
             return {
               gridCols: "grid-cols-1 max-w-2xl mx-auto",
-              titleSize: "text-4xl md:text-5xl",
+              titleSize: "text-3xl md:text-[32px]",
               scale: 3.0,
             };
           }
           if (tierName === "Diamond Sponsors" || tierName === "Gold Sponsors") {
             return {
               gridCols: "grid-cols-1 max-w-2xl mx-auto",
-              titleSize: "text-3xl md:text-4xl",
+              titleSize: "text-2xl",
               scale: 2.16,
             };
           }
@@ -131,7 +130,7 @@ const Sponsors = () => {
           // Bronze and In-Kind use default
           return {
             gridCols: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-            titleSize: "text-2xl md:text-3xl",
+            titleSize: "text-xl",
             scale: 1,
           };
         };
@@ -141,7 +140,7 @@ const Sponsors = () => {
         return (
           <div key={tier.tier} className="mb-12">
             <h2
-              className={`mb-6 text-center font-secondary ${config.titleSize} font-semibold text-heavy`}
+              className={`mb-6 text-center ${config.titleSize} font-semibold leading-default text-dashboard-text-heavy`}
             >
               {tier.tier}
             </h2>

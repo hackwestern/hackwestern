@@ -147,6 +147,8 @@ const config = {
         "dashboard-sm": tokens.dashboardRadius.sm,
         "dashboard-md": tokens.dashboardRadius.md,
         "dashboard-lg": tokens.dashboardRadius.lg,
+        "dashboard-2xl": tokens.dashboardRadius["2xl"],
+        "dashboard-iconBadge": tokens.dashboardRadius.iconBadge,
       },
       boxShadow: {
         "primary-btn": tokens.shadows.button,

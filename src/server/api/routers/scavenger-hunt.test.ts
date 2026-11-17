@@ -19,6 +19,7 @@ import { mockSession, mockOrganizerSession } from "~/server/auth";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { faker } from "@faker-js/faker";
 import { TRPCError } from "@trpc/server";
+import { getOrCreateHackerId } from "~/server/api/utils/hacker-id";
 
 // ---- helpers ----
 const insertTestItem = async (
@@ -259,6 +260,23 @@ describe("scavengerHuntRouter basic endpoints", () => {
       expect(updatedUser?.scavengerHuntBalance).toBe(testItem.points);
     });
 
+    test("scans by hacker ID (the value on printed QRs)", async () => {
+      const hackerId = await getOrCreateHackerId(session.user.id);
+      const scanResult = await organizerCaller.scavengerHunt.scan({
+        userId: hackerId,
+        itemCode: testItem.code,
+      });
+      expect(scanResult.success).toBe(true);
+
+      const scan = await db.query.scavengerHuntScans.findFirst({
+        where: and(
+          eq(scavengerHuntScans.userId, session.user.id),
+          eq(scavengerHuntScans.itemId, testItem.id),
+        ),
+      });
+      expect(scan).toBeDefined();
+    });
+
     test("throws error if scanning same item twice", async () => {
       const firstScanResult = await organizerCaller.scavengerHunt.scan({
         userId: session.user.id,
@@ -322,7 +340,6 @@ describe("scavengerHuntRouter basic endpoints", () => {
       }
     });
 
-    /*
     test("throws error if trying to scan soft-deleted item", async () => {
       // Soft delete the test item
       await db
@@ -342,7 +359,21 @@ describe("scavengerHuntRouter basic endpoints", () => {
         expect(trpcErr.code).toBe("NOT_FOUND");
         expect(trpcErr.message).toBe("Item not found");
       }
-    });*/
+    });
+
+    // deletedAt in the future means "scans close then" (#557), so it still scans.
+    test("scans an item whose close time is still in the future", async () => {
+      await db
+        .update(scavengerHuntItems)
+        .set({ deletedAt: new Date(Date.now() + 60 * 60 * 1000) })
+        .where(eq(scavengerHuntItems.id, testItem.id));
+
+      const scanResult = await organizerCaller.scavengerHunt.scan({
+        userId: session.user.id,
+        itemCode: testItem.code,
+      });
+      expect(scanResult.success).toBe(true);
+    });
 
     test("throws error if user not found", async () => {
       const nonExistentUserId = "non-existent-user-id";

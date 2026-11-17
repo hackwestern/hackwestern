@@ -1,7 +1,9 @@
 name: After RSVP Closes
 
-# The morning after RSVP closes (Fri Nov 6, 11:59 PM ET), two independent jobs.
-# Clocks fall back Nov 1, so ET = UTC-5: Sat Nov 7, 9:00 AM ET = 14:00 UTC.
+# After RSVP closes (Fri Nov 6, 11:59 PM ET), two independent jobs on their own
+# schedules. Clocks fall back Nov 1, so ET = UTC-5:
+#   Sat Nov 7, 12:00 AM ET = 05:00 UTC  lapse
+#   Sat Nov 7,  8:00 AM ET = 13:00 UTC  team-matching
 #   lapse          applications still ACCEPTED (never RSVP'd) -> DECLINED
 #                  (scripts/lapse-unconfirmed.ts). Armed by LAPSE_LIVE.
 #                  Undo: scripts/revert-lapse.ts --at=<time the run printed>
@@ -23,7 +25,9 @@ name: After RSVP Closes
 
 on:
   schedule:
-    - cron: "0 14 7 11 *" # Nov 7, 9:00 AM ET
+    # Each job checks github.event.schedule, so keep these strings in sync with the jobs.
+    - cron: "0 5 7 11 *" # Nov 7, 12:00 AM ET: lapse
+    - cron: "0 13 7 11 *" # Nov 7, 8:00 AM ET: team-matching
   workflow_dispatch:
     inputs:
       which:
@@ -46,7 +50,7 @@ concurrency:
 
 jobs:
   lapse:
-    if: github.event_name == 'schedule' || inputs.which == 'lapse'
+    if: github.event.schedule == '0 5 7 11 *' || inputs.which == 'lapse'
     runs-on: ubuntu-latest
     environment: Production
     env:
@@ -90,7 +94,7 @@ jobs:
           cat out.log >> "$GITHUB_STEP_SUMMARY"
 
   team-matching:
-    if: github.event_name == 'schedule' || inputs.which == 'team-matching'
+    if: github.event.schedule == '0 13 7 11 *' || inputs.which == 'team-matching'
     runs-on: ubuntu-latest
     environment: Production
     env:

@@ -280,6 +280,7 @@ export const dashboardColors = {
     live: "#16803c", // live dot
     warning: "#a34a00", // steps-left badge
     iconBadge: "#fbdac4", // food menu icon background
+    iconBadgeIcon: "#cf6b28", // food menu icon stroke
   },
   schedule: {
     pink: "rgba(250,104,235,0.15)",
