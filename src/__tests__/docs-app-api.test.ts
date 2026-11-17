@@ -9,6 +9,10 @@ const envMock = vi.hoisted(() => ({
   },
 }));
 vi.mock("~/env", () => envMock);
+// The real file is generated in CI, so don't depend on its contents here.
+vi.mock("~/generated/app.json", () => ({
+  default: { trpc: [{ path: "post.getAll", type: "query" }], pages: [] },
+}));
 
 function run(method: string, authorization?: string) {
   const res = {
