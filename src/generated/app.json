@@ -247,46 +247,6 @@
     {
       "auth": "session",
       "dynamic": false,
-      "file": "src/pages/scan/already-scanned.tsx",
-      "hasGetServerSideProps": true,
-      "route": "/scan/already-scanned",
-      "serverGuards": [
-        "disabledRedirect"
-      ]
-    },
-    {
-      "auth": "session",
-      "dynamic": false,
-      "file": "src/pages/scan/scan.tsx",
-      "hasGetServerSideProps": true,
-      "route": "/scan/scan",
-      "serverGuards": [
-        "disabledRedirect"
-      ]
-    },
-    {
-      "auth": "session",
-      "dynamic": false,
-      "file": "src/pages/scan/scavenger.tsx",
-      "hasGetServerSideProps": true,
-      "route": "/scan/scavenger",
-      "serverGuards": [
-        "disabledRedirect"
-      ]
-    },
-    {
-      "auth": "session",
-      "dynamic": false,
-      "file": "src/pages/scan/success.tsx",
-      "hasGetServerSideProps": true,
-      "route": "/scan/success",
-      "serverGuards": [
-        "disabledRedirect"
-      ]
-    },
-    {
-      "auth": "session",
-      "dynamic": false,
       "file": "src/pages/scavenger.tsx",
       "hasGetServerSideProps": true,
       "route": "/scavenger",
@@ -9039,66 +8999,106 @@
               "bonus"
             ],
             "type": "string"
+          },
+          "page": {
+            "default": 1,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "pageSize": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "search": {
+            "default": "",
+            "maxLength": 100,
+            "type": "string"
           }
         },
         "type": "object"
       },
       "output": {
-        "items": {
-          "properties": {
-            "activityType": {
-              "enum": [
-                "attendance",
-                "win"
-              ]
-            },
-            "createdAt": {
-              "format": "date-time",
-              "type": "string",
-              "x-superjson": "Date"
-            },
-            "day": {
-              "type": "string"
-            },
-            "event": {
-              "type": "string"
-            },
-            "hackerName": {
-              "type": "string"
-            },
-            "id": {
-              "type": "string"
-            },
-            "scanner": {
-              "type": "string"
-            },
-            "time": {
-              "type": "string"
-            },
-            "type": {
-              "enum": [
-                "meal",
-                "workshop",
-                "sponsor_workshop",
-                "activity",
-                "bonus"
-              ]
-            }
+        "properties": {
+          "page": {
+            "type": "number"
           },
-          "required": [
-            "id",
-            "hackerName",
-            "event",
-            "type",
-            "activityType",
-            "scanner",
-            "day",
-            "time",
-            "createdAt"
-          ],
-          "type": "object"
+          "pageCount": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "scans": {
+            "items": {
+              "properties": {
+                "activityType": {
+                  "enum": [
+                    "attendance",
+                    "win"
+                  ]
+                },
+                "createdAt": {
+                  "format": "date-time",
+                  "type": "string",
+                  "x-superjson": "Date"
+                },
+                "day": {
+                  "type": "string"
+                },
+                "event": {
+                  "type": "string"
+                },
+                "hackerName": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "scanner": {
+                  "type": "string"
+                },
+                "time": {
+                  "type": "string"
+                },
+                "type": {
+                  "enum": [
+                    "meal",
+                    "workshop",
+                    "sponsor_workshop",
+                    "activity",
+                    "bonus"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "hackerName",
+                "event",
+                "type",
+                "activityType",
+                "scanner",
+                "day",
+                "time",
+                "createdAt"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "total": {
+            "type": "number"
+          }
         },
-        "type": "array"
+        "required": [
+          "scans",
+          "total",
+          "page",
+          "pageSize",
+          "pageCount"
+        ],
+        "type": "object"
       },
       "path": "scavengerHunt.getAllScans",
       "source": "src/server/api/routers/scavenger-hunt.ts",
