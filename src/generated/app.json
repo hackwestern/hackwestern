@@ -9046,6 +9046,12 @@
       "output": {
         "items": {
           "properties": {
+            "activityType": {
+              "enum": [
+                "attendance",
+                "win"
+              ]
+            },
             "createdAt": {
               "format": "date-time",
               "type": "string",
@@ -9068,12 +9074,23 @@
             },
             "time": {
               "type": "string"
+            },
+            "type": {
+              "enum": [
+                "meal",
+                "workshop",
+                "sponsor_workshop",
+                "activity",
+                "bonus"
+              ]
             }
           },
           "required": [
             "id",
             "hackerName",
             "event",
+            "type",
+            "activityType",
             "scanner",
             "day",
             "time",
@@ -9131,18 +9148,62 @@
                 }
               ]
             },
+            "endsAt": {
+              "format": "date-time",
+              "type": "string",
+              "x-superjson": "Date"
+            },
             "id": {
               "type": "number"
             },
             "points": {
               "type": "number"
+            },
+            "room": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "startsAt": {
+              "format": "date-time",
+              "type": "string",
+              "x-superjson": "Date"
+            },
+            "type": {
+              "enum": [
+                "meal",
+                "workshop",
+                "sponsor_workshop",
+                "activity",
+                "bonus"
+              ]
+            },
+            "winPoints": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "number"
+                }
+              ]
             }
           },
           "required": [
+            "type",
             "description",
             "code",
             "id",
             "points",
+            "winPoints",
+            "startsAt",
+            "endsAt",
+            "room",
             "deletedAt"
           ],
           "type": "object"
@@ -9536,6 +9597,15 @@
                 "itemId": {
                   "type": "number"
                 },
+                "itemType": {
+                  "enum": [
+                    "meal",
+                    "workshop",
+                    "sponsor_workshop",
+                    "activity",
+                    "bonus"
+                  ]
+                },
                 "points": {
                   "type": "number"
                 },
@@ -9548,6 +9618,7 @@
                 "type",
                 "itemId",
                 "itemCode",
+                "itemType",
                 "itemDescription",
                 "points",
                 "createdAt"
@@ -9570,6 +9641,9 @@
                 "itemDescription": {
                   "type": "string"
                 },
+                "itemType": {
+                  "type": "null"
+                },
                 "points": {
                   "type": "number"
                 },
@@ -9585,6 +9659,7 @@
                 "type",
                 "rewardId",
                 "itemCode",
+                "itemType",
                 "itemDescription",
                 "points",
                 "createdAt"
@@ -9653,18 +9728,62 @@
               }
             ]
           },
+          "endsAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
           "id": {
             "type": "number"
           },
           "points": {
             "type": "number"
+          },
+          "room": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "startsAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "type": {
+            "enum": [
+              "meal",
+              "workshop",
+              "sponsor_workshop",
+              "activity",
+              "bonus"
+            ]
+          },
+          "winPoints": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
           }
         },
         "required": [
+          "type",
           "description",
           "code",
           "id",
           "points",
+          "winPoints",
+          "startsAt",
+          "endsAt",
+          "room",
           "deletedAt"
         ],
         "type": "object"
@@ -9738,18 +9857,62 @@
               }
             ]
           },
+          "endsAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
           "id": {
             "type": "number"
           },
           "points": {
             "type": "number"
+          },
+          "room": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "startsAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "type": {
+            "enum": [
+              "meal",
+              "workshop",
+              "sponsor_workshop",
+              "activity",
+              "bonus"
+            ]
+          },
+          "winPoints": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
           }
         },
         "required": [
+          "type",
           "description",
           "code",
           "id",
           "points",
+          "winPoints",
+          "startsAt",
+          "endsAt",
+          "room",
           "deletedAt"
         ],
         "type": "object"
@@ -10058,6 +10221,12 @@
           "source": "handler"
         },
         {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "message": "This activity can't be won",
+          "source": "handler"
+        },
+        {
           "code": "FORBIDDEN",
           "httpStatus": 403,
           "message": "This hacker has not been approved to attend and cannot be scanned.",
@@ -10090,6 +10259,13 @@
       "input": {
         "additionalProperties": false,
         "properties": {
+          "activityType": {
+            "enum": [
+              "attendance",
+              "win"
+            ],
+            "type": "string"
+          },
           "itemCode": {
             "type": "string"
           },
