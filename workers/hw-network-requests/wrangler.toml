@@ -1,0 +1,25 @@
+name = "hw-network-requests"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hw-network-requests"
+# Fill in after `npx wrangler d1 create hw-network-requests`:
+database_id = "11b2c2bd-dec5-4bda-a32c-e3a24213f6ad"
+migrations_dir = "migrations"
+
+# Dev environment (deployed from the `dev` branch with `wrangler -e dev`): its
+# own worker and its own D1, so dev traffic never touches prod.
+[env.dev]
+name = "hw-network-requests-dev"
+
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "hw-network-requests-dev"
+# Created with `npx wrangler d1 create hw-network-requests-dev`.
+database_id = "7a1bb65b-a880-403b-b706-6660040385e1"
+migrations_dir = "migrations"
+
+# Secret (local: repo-root .env; deployed: set once per env with `wrangler secret put`):
+#   HW_NETWORK_REQUESTS_INGEST_TOKEN  Bearer token the Next.js app sends
