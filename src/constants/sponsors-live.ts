@@ -10,6 +10,7 @@ export type SponsorTier = {
   sponsors: Sponsor[];
 };
 
+// Same order as the homepage sponsor section (src/constants/promo-sponsors.ts).
 export const SPONSOR_TIERS: SponsorTier[] = [
   {
     tier: "Title Sponsor",
@@ -24,19 +25,7 @@ export const SPONSOR_TIERS: SponsorTier[] = [
     ],
   },
   {
-    tier: "Diamond Sponsors",
-    sponsors: [
-      {
-        name: "Sun Life",
-        logo: "/shared/sponsors/sunlife.png",
-        link: "https://www.sunlife.ca/",
-        description:
-          "Sun Life is a leading international financial services organization providing asset management, wealth, insurance, and health solutions to individual and institutional Clients. We're a global company with a passion for people, helping our Clients achieve lifetime financial security and live healthier lives. Through our ongoing commitment to digital leadership, we are adopting and experimenting with innovative technology to help drive Client impact. We are honoured to support Hack Western, and to support the next generation of digital leaders. sunlife.com",
-      },
-    ],
-  },
-  {
-    tier: "Gold Sponsors",
+    tier: "Sponsors",
     sponsors: [
       {
         name: "Canada Life",
@@ -45,63 +34,91 @@ export const SPONSOR_TIERS: SponsorTier[] = [
         description:
           "Canada Life is a leading insurance, wealth management and benefits provider focused on improving the financial, physical, and mental well-being of Canadians. For over 175 years, individuals, families and business owners across Canada have trusted us to provide sound guidance and deliver on the promises we've made. We proudly serve more than 14 million customer relationships from coast to coast. Canada Life is a subsidiary of Great-West Lifeco Inc. and a member of the Power Corporation of Canada group of companies. Visit canadalife.com to learn more.",
       },
-    ],
-  },
-  {
-    tier: "Bronze Sponsors",
-    sponsors: [
       {
-        name: "Procter & Gamble",
-        logo: "/shared/sponsors/pg.png",
-        link: "https://www.pg.ca/",
+        name: "QNX",
+        logo: "/shared/sponsors/qnx.png",
+        link: "https://qnx.software/en",
+      },
+      {
+        name: "Sun Life",
+        logo: "/shared/sponsors/sunlife-2026.png",
+        link: "https://www.sunlife.ca/",
         description:
-          "Procter & Gamble (P&G) is not just a leader in consumer goods; it's a tech-driven community that thrives on innovation and data analytics to enhance everyday products. With a commitment to digital transformation, P&G actively seeks bright minds to tackle complex challenges using cutting-edge technology, from AI and machine learning to cloud computing and IoT. As a hackathon participant, you'll have the opportunity to work on real-world projects that directly impact global brands and consumer experiences. Join us in shaping the future of consumer products and discover how your IT skills can drive meaningful change in a dynamic, purpose-driven company!",
+          "Sun Life is a leading international financial services organization providing asset management, wealth, insurance, and health solutions to individual and institutional Clients. We're a global company with a passion for people, helping our Clients achieve lifetime financial security and live healthier lives. Through our ongoing commitment to digital leadership, we are adopting and experimenting with innovative technology to help drive Client impact. We are honoured to support Hack Western, and to support the next generation of digital leaders. sunlife.com",
+      },
+      {
+        name: "Manulife",
+        logo: "/shared/sponsors/manulife.svg",
+        link: "https://www.manulife.ca/",
+        description:
+          "Manulife is a leading international financial services group that helps people make their decisions easier and lives better. We operate primarily as John Hancock in the United States and Manulife elsewhere. We provide financial advice, insurance, as well as wealth and asset management solutions for individuals, groups and institutions.",
+      },
+      {
+        name: "StarTech.com",
+        logo: "/shared/sponsors/startech.svg",
+        link: "https://www.startech.com/",
+      },
+      {
+        name: "CSE",
+        logo: "/shared/sponsors/cse-trimmed.png",
+        link: "https://www.cse-cst.gc.ca/",
+      },
+      {
+        name: "Commure",
+        logo: "/shared/sponsors/commure.svg",
+        link: "https://www.commure.com/",
+      },
+      {
+        name: "TinyFish",
+        logo: "/shared/sponsors/tinyfish.svg",
+        link: "https://www.tinyfish.ai/",
+      },
+      {
+        name: "Celsius",
+        logo: "/shared/sponsors/celsius.svg",
+        link: "https://www.celsius.com/",
+      },
+      {
+        name: "Autodesk",
+        logo: "/shared/sponsors/autodesk.svg",
+        link: "https://www.autodesk.com/",
       },
       {
         name: "Accenture",
-        logo: "/shared/sponsors/accenture.png",
+        logo: "/shared/sponsors/accenture.svg",
         link: "https://www.accenture.com/",
         description:
           "Accenture is a leading global professional services company that helps the world's leading organizations build their digital core, optimize their operations, accelerate revenue growth and enhance services—creating tangible value at speed and scale. We are a talent- and innovation-led company with 774,000 people serving clients in more than 120 countries. Technology is at the core of change today, and we are one of the world's leaders in helping drive that change, with strong ecosystem relationships. We combine our strength in technology and leadership in cloud, data and AI with unmatched industry experience, functional expertise and global delivery capability. Our broad range of services, solutions and assets across Strategy & Consulting, Technology, Operations, Industry X and Song, together with our culture of shared success and commitment to creating 360° value, enable us to help our clients reinvent and build trusted, lasting relationships.",
       },
       {
-        name: "Manulife",
-        logo: "/shared/sponsors/manulife.png",
-        link: "https://www.manulife.ca/",
-        description:
-          "Manulife is a leading international financial services group that helps people make their decisions easier and lives better. We operate primarily as John Hancock in the United States and Manulife elsewhere. We provide financial advice, insurance, as well as wealth and asset management solutions for individuals, groups and institutions.",
-      },
-    ],
-  },
-  {
-    tier: "In-Kind Sponsors",
-    sponsors: [
-      {
-        name: "Warp",
-        logo: "/shared/sponsors/warp.png",
-        link: "https://www.warp.dev/",
-        description:
-          "The intelligent terminal. Become a command line power user on day one. Warp combines AI and your dev team's knowledge in one fast, intuitive terminal.",
+        name: "Shopify",
+        logo: "/shared/sponsors/shopify.svg",
+        link: "https://www.shopify.com/",
       },
       {
-        name: "Leuchtturm1917",
-        logo: "/shared/sponsors/leuchtturm.png",
-        link: "https://www.leuchtturm1917.ca/",
+        name: "uBit",
+        logo: "/shared/sponsors/ubit.png",
+        link: "https://www.ubit.foundation/",
       },
       {
-        name: "Meta",
-        logo: "/shared/sponsors/meta.png",
-        link: "https://www.meta.com/",
+        name: "OpenAI",
+        logo: "/shared/sponsors/openai.svg",
+        link: "https://openai.com/",
       },
       {
-        name: "Western Technology Services",
-        logo: "/shared/sponsors/wts.png",
-        link: "https://wts.uwo.ca/index.html",
+        name: "PCBWay",
+        logo: "/shared/sponsors/pcbway.png",
+        link: "https://www.pcbway.com/",
       },
       {
-        name: "Awake Chocolate",
-        logo: "/shared/sponsors/awake.png",
-        link: "https://awakechocolate.com/",
+        name: "Summerfresh",
+        logo: "/shared/sponsors/summerfresh-seal.png",
+        link: "https://www.summerfresh.com/",
+      },
+      {
+        name: "DoorDash",
+        logo: "/shared/sponsors/doordash.svg",
+        link: "https://www.doordash.com/",
       },
     ],
   },

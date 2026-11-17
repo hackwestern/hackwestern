@@ -96,14 +96,14 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
     const currentDate = currentTime.getDate();
     const currentMonth = currentTime.getMonth(); // 0-indexed, November is 10
 
-    // November 21 = Friday, November 22 = Saturday, November 23 = Sunday
-    if (day === "Friday" && currentDate === 21 && currentMonth === 10) {
+    // November 20 = Friday, November 21 = Saturday, November 22 = Sunday
+    if (day === "Friday" && currentDate === 20 && currentMonth === 10) {
       return true;
     }
-    if (day === "Saturday" && currentDate === 22 && currentMonth === 10) {
+    if (day === "Saturday" && currentDate === 21 && currentMonth === 10) {
       return true;
     }
-    if (day === "Sunday" && currentDate === 23 && currentMonth === 10) {
+    if (day === "Sunday" && currentDate === 22 && currentMonth === 10) {
       return true;
     }
     return false;
@@ -277,7 +277,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
         {/* Header with day name */}
         <div className="sticky left-0 mb-3 mt-1 font-figtree text-lg font-bold text-dashboard-text-heavy sm:mb-4 sm:mt-2 sm:text-2xl">
           {day}, November{" "}
-          {day === "Friday" ? "21st" : day === "Saturday" ? "22nd" : "23rd"}
+          {day === "Friday" ? "20th" : day === "Saturday" ? "21st" : "22nd"}
         </div>
 
         {/* Timeline rows */}

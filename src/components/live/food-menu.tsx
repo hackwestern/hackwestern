@@ -110,6 +110,11 @@ const FoodMenu = () => {
                                 <p className="text-sm font-medium text-dashboard-text-light">
                                   {option.vendor}
                                 </p>
+                                {option.note && (
+                                  <p className="mt-1 text-sm text-dashboard-text-medium">
+                                    {option.note}
+                                  </p>
+                                )}
                               </div>
                               {hasAllergens && (
                                 <DashboardTag
