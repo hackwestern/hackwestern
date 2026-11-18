@@ -16,6 +16,9 @@ export const opsOwnerAliases: Record<string, string> = {
   Jess: "Jessica Xing",
   Jessica: "Jessica Wang",
   Lillian: "Lillian Wei",
+  // Luka (also spelled Luca) is Lucian Lavric on Slack.
+  Luka: "Lucian Lavric",
+  Luca: "Lucian Lavric",
 };
 
 /**
