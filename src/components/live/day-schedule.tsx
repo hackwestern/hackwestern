@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import type { ParsedScheduleEvent } from "~/types/schedule";
 import { getTimeInMinutes } from "~/lib/schedule";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "~/components/ui/dialog";
 
 interface EventBlockProps {
   event: {
@@ -17,9 +23,11 @@ interface EventBlockProps {
     | "scavenger"
     | "other";
   height: number;
+  /** e.g. "Saturday · 2:30 PM – 3:30 PM", shown in the details dialog */
+  when: string;
 }
 
-const EventBlock = ({ event, type, height }: EventBlockProps) => {
+const EventBlock = ({ event, type, height, when }: EventBlockProps) => {
   const colorMap = {
     main: "bg-violet-300 border-violet-400",
     sponsor: "bg-pink-200 border-pink-300",
@@ -42,9 +50,20 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
     other: "text-purple-900",
   };
 
-  // Long titles get cut to the lines that fit, with the full text on hover
-  const blockRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLDivElement>(null);
+  const typeLabel = {
+    main: "Main event",
+    sponsor: "Sponsor workshop",
+    workshop: "Workshop",
+    activity: "Activity",
+    food: "Food",
+    booth: "Sponsor booth",
+    scavenger: "Scavenger hunt",
+    other: "Other",
+  };
+
+  // Long titles get cut to the lines that fit; clicking opens the full details
+  const blockRef = useRef<HTMLButtonElement>(null);
+  const titleRef = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const block = blockRef.current;
     const title = titleRef.current;
@@ -69,26 +88,47 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
   }, [height, event.title, event.location]);
 
   return (
-    <div
-      ref={blockRef}
-      title={
-        event.location ? `${event.title} · ${event.location}` : event.title
-      }
-      className={`rounded-lg border-2 p-1.5 sm:px-2.5 lg:px-1.5 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 z-50 flex select-text flex-col justify-center overflow-hidden shadow-sm transition-shadow hover:shadow-md`}
-      style={{ height: `${height}px` }}
-    >
-      <div
-        ref={titleRef}
-        className="select-text overflow-hidden break-words font-figtree text-[9px] font-semibold leading-tight [-webkit-box-orient:vertical] [display:-webkit-box] sm:text-[11px]"
+    <Dialog>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          ref={blockRef}
+          className={`rounded-lg border-2 p-1.5 text-left sm:px-2.5 lg:px-1.5 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 z-50 flex cursor-pointer flex-col justify-center overflow-hidden shadow-sm transition-shadow hover:shadow-md`}
+          style={{ height: `${height}px` }}
+        >
+          <span
+            ref={titleRef}
+            className="overflow-hidden break-words font-figtree text-[9px] font-semibold leading-tight [-webkit-box-orient:vertical] [display:-webkit-box] sm:text-[11px]"
+          >
+            {event.title}
+          </span>
+          {event.location && (
+            <span className="mt-0.5 block break-words font-figtree text-[8px] italic opacity-70 sm:text-[9px]">
+              {event.location}
+            </span>
+          )}
+        </button>
+      </DialogTrigger>
+      <DialogContent
+        aria-describedby={undefined}
+        className="w-[calc(100%-2rem)] max-w-sm rounded-xl border-dashboard-border-card bg-dashboard-bg-surface font-figtree"
       >
-        {event.title}
-      </div>
-      {event.location && (
-        <div className="mt-0.5 select-text break-words font-figtree text-[8px] italic opacity-70 sm:text-[9px]">
-          {event.location}
+        <span
+          className={`w-fit rounded-full border px-2 py-0.5 text-xs font-medium ${colorMap[type]} ${textColorMap[type]}`}
+        >
+          {typeLabel[type]}
+        </span>
+        <DialogTitle className="whitespace-pre-line pr-6 text-xl leading-snug text-dashboard-text-heavy">
+          {event.title}
+        </DialogTitle>
+        <div className="space-y-1 text-sm text-dashboard-text-medium">
+          <p>{when}</p>
+          {event.location && (
+            <p className="whitespace-pre-line">{event.location}</p>
+          )}
         </div>
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -265,6 +305,24 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
       | { title: string; location: string }
       | undefined;
     return prevEvent?.title === currentEvent.title;
+  };
+
+  // "Saturday · 2:30 PM – 3:30 PM" for the details dialog
+  const getEventTimes = (
+    startIdx: number,
+    eventKey: keyof ParsedScheduleEvent,
+  ): string => {
+    const titleAt = (i: number) =>
+      (timeSlots[i]?.[eventKey] as { title: string } | undefined)?.title;
+    let endIdx = startIdx;
+    while (titleAt(endIdx + 1) === titleAt(startIdx)) endIdx++;
+    const lastMinutes = getTimeInMinutes(timeSlots[endIdx]!.time) + 30;
+    const endTime =
+      timeSlots[endIdx + 1]?.time ??
+      (lastMinutes >= 1440
+        ? "midnight"
+        : `${Math.floor(lastMinutes / 60) % 12 || 12}:${String(lastMinutes % 60).padStart(2, "0")} ${lastMinutes >= 720 ? "PM" : "AM"}`);
+    return `${day} · ${timeSlots[startIdx]!.time} – ${endTime}`;
   };
 
   // Helper function to calculate the height of a continuous event block
@@ -454,6 +512,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                             event={col.event}
                             type={col.type}
                             height={getEventHeight(idx, col.startKey)}
+                            when={getEventTimes(idx, col.startKey)}
                           />
                         )}
                     </div>
