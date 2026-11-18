@@ -117,6 +117,8 @@ export default function SponsorOrganizerHome() {
                 summaries={summaries}
                 summaryLoading={summary.isLoading}
                 summaryFailed={!summary.data && summary.isError}
+                round2Open={summary.data?.round2Open ?? false}
+                items={schedule.data?.items ?? null}
                 now={now}
               />
             ) : tab === "pings" ? (

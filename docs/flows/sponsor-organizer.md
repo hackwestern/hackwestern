@@ -13,6 +13,14 @@ The page has four tabs: Sponsors, Run of show, Coffee chats and Help. The tab is
 5. **Answer a help ping.** Click **Help** on the row, or open the Task pings tab when its count shows up (help requests are at the top; old `?tab=help` links land there). That sponsor's request is first and outlined. Call the rep, go to them, then **Resolve** (if Slack didn't already).
 6. **Go back.** Click the sponsor's name on a help card, or **Back to (sponsor)** in the bar. You land on their row on the Sponsors tab, scrolled into view and highlighted. **Show everyone** clears the filter instead.
 
+## The Sponsors tab by day
+
+Fri / Sat / Sun pills sit at the top of the Sponsors tab. It opens on today during the event and on Friday otherwise; `?day=sunday` opens a day directly.
+
+- **Friday:** who has arrived (their status), and whether they have their portal link. Press **Mark given** once you've handed it over; it turns into **Link given** (press again to undo).
+- **Saturday:** each sponsor's chat slots by room, booked/asked, e.g. `10:00 2/3`. Orange slots still need hackers.
+- **Sunday:** their judging room, whether they sent their round 1 shortlist and their round 2 top 5, and where they should be right now (their presentation room while their slots run, else the run of show).
+
 ## Old links
 
 `/internal/sponsor-schedule` still works and redirects to the matching tab. `?tab=where` and `#rooms` open Run of show at the rooms table.
