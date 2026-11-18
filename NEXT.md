@@ -1,12 +1,13 @@
 # NEXT — sponsor dashboard (branch `sponsor-dashboard`, not pushed)
 
-## Now (updated 2026-11-18 03:15)
-sd-judging-view and sd-sponsor-scoring are reviewed and merged (eaf937f); migration 0049 applied locally; tsc clean, vitest all pass except Apple Wallet.
-Two builds running in their own worktrees (started by a session that stopped at 02:50, resumed by subagents):
-1. `sd-presentations` (worktree `hackwestern-sd-presentations`, DB `hackwestern_sd_presentations`, port 3021): the Sunday judging rounds per `docs/flows/sponsor-judging.md` (Send shortlist, auto presentation schedule with no double booking, Notify hackers, round 2 top 5 from presenters, cheat check). Migration slot 0050.
-2. `sd-room-blocks` (worktree `hackwestern-sd-room-blocks`, DB `hackwestern_sd_blocks`, port 3022): room blocks per `docs/flows/coffee-chat-room-blocks.md`. Prefer no migration; 0051 if needed.
-Then: review each (code-reviewer + design-reviewer), merge with `--no-ff`, apply migrations to `hackwestern_spon`, run tsc + vitest.
-- `hackwestern-sd-tester` (branch `sd-tester-sponsor`, DB `hackwestern_sd_tester`) was created with no work and no note: ask Jazz what it was for.
+## Now (updated 2026-11-18 late)
+- MERGED 8abbe11: `sd-presentations` (Sunday judging rounds per docs/flows/sponsor-judging.md: Send shortlist, scheduler, Notify hackers with per-member claims, round 2 from presenters, /live panel, cheat check). Migration 0050 applied to `hackwestern_spon`. tsc clean; vitest 1295 pass, only Apple Wallet fails. Not seen in a browser (needs Lucas's sheet creds).
+  - Owner decisions pending: late shortlist (recommend: fill free gaps, don't move anyone), round 2 timing (recommend: wait for 11:30), add QNX as a sponsor, email members not on Slack (recommend: yes).
+- RUNNING `sd-room-blocks` (worktree `hackwestern-sd-room-blocks`, DB `hackwestern_sd_blocks`, port 3022): coffee chats v2 per `docs/flows/coffee-chat-room-blocks.md` in that worktree (sponsor requests 1-on-1 N reps or group M hackers, Ask for fewer, no room cap, one combined view, logos only, sheet Coffee Chats numbers). Migration slot 0051 (its journal lacks 0050: regenerate/renumber at merge).
+- RUNNING `sd-availability` (worktree `hackwestern-sd-availability`, port 3023): spon team availability timetable under Run of show + Organizers toggle on the schedule, from RUN OF SHOW columns J-P (SPON TEAM AVAILABILITY / NECESSARY SHIFTS blocks).
+- Waiting on Jazz: where the sponsor booth projector/screen setup info lives (not in the run-of-show sheet).
+- Optional polish offered: portal shows "Welcome, Sponsor!" for a few seconds until the sheet read finishes; could show name + logo from the DB right away.
+- `hackwestern-sd-tester` (branch `sd-tester-sponsor`) has no work and no note: ask Jazz.
 
 ## To build (queued, Jazz 2026-11-18)
 - **Hacker notification center on the live site.** Hackers see their coffee chat offers/updates and, if a sponsor shortlisted them, their judging presentation rooms + times. Unread count on the existing `NotificationBadge` in `src/components/live/navlinks.tsx`.
