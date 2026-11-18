@@ -4,23 +4,22 @@ import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { AddCoffeeChat } from "~/components/sponsors/add-coffee-chat";
 import { CoffeeChatBoard } from "~/components/sponsors/coffee-chat-board";
-import { CoffeeChatRooms } from "~/components/sponsors/coffee-chat-rooms";
 import { LoadError } from "~/components/sponsors/schedule-states";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { formatClock } from "~/lib/run-of-show";
 import type { OrganizerCoffeeChat } from "~/server/api/routers/coffee-chat-requests";
 import { api } from "~/utils/api";
 
-// Organizer Coffee chats tab: the rooms table and "By sponsor" board, with
-// the per-sponsor list (rooms, add a chat, booked chats) one toggle away.
-// `sponsor` (an id or name, from ?sponsor=) sets the sponsor filter.
+// Organizer Coffee chats tab: the colour-coded rooms table and "By sponsor"
+// board, with the list (add a chat, booked chats) one toggle away. Each
+// sponsor's room, watcher and totals live on the Sponsors tab's table.
+// `sponsor` (an id or name, from ?sponsor=) highlights that sponsor.
 export function CoffeeChatsTab({ sponsor }: { sponsor: string | null }) {
   return (
     <CoffeeChatBoard
       sponsor={sponsor}
       list={
         <>
-          <CoffeeChatRooms />
           <AddCoffeeChat />
           <BookedChats />
         </>

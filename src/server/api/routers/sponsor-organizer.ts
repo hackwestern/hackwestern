@@ -1,4 +1,4 @@
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 import { ACTIVE_COFFEE_CHAT_STATUSES } from "~/lib/coffee-chat-requests";
 import {
@@ -13,10 +13,12 @@ import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { db } from "~/server/db";
 import {
+  applications,
   coffeeChatHolds,
   coffeeChats,
   sponsorHelpRequests,
   sponsorJudgingSponsors,
+  users,
 } from "~/server/db/schema";
 
 /** Coffee Chats sheet rooms; [] when the sheet can't be read (rooms are optional here). */
@@ -46,19 +48,29 @@ export const sponsorOrganizerRouter = createTRPCRouter({
           id: sponsorJudgingSponsors.id,
           name: sponsorJudgingSponsors.name,
           coffeeChatRoom: sponsorJudgingSponsors.coffeeChatRoom,
+          coffeeChatReps: sponsorJudgingSponsors.coffeeChatReps,
+          coffeeChatWatcher: sponsorJudgingSponsors.coffeeChatWatcher,
         })
         .from(sponsorJudgingSponsors);
       const [setups, chats, help, holds] = await Promise.all([
         sheetRooms(sponsors.map((s) => s.name)),
         db
           .select({
+            chatId: coffeeChats.id,
             sponsorId: coffeeChats.sponsorId,
             room: coffeeChats.room,
             slotTime: coffeeChats.slotTime,
             durationMinutes: coffeeChats.durationMinutes,
             status: coffeeChats.status,
+            firstName: applications.firstName,
+            lastName: applications.lastName,
+            userName: users.name,
+            share: applications.agreeShareWithSponsors,
+            github: applications.githubLink,
           })
           .from(coffeeChats)
+          .innerJoin(users, eq(users.id, coffeeChats.userId))
+          .leftJoin(applications, eq(applications.userId, coffeeChats.userId))
           .where(inArray(coffeeChats.status, [...ACTIVE_COFFEE_CHAT_STATUSES])),
         db
           .select({
@@ -72,6 +84,7 @@ export const sponsorOrganizerRouter = createTRPCRouter({
           .where(inArray(sponsorHelpRequests.status, ["open", "claimed"])),
         db
           .select({
+            holdId: coffeeChatHolds.id,
             sponsorId: coffeeChatHolds.sponsorId,
             room: coffeeChatHolds.room,
             startTime: coffeeChatHolds.startTime,
@@ -82,7 +95,13 @@ export const sponsorOrganizerRouter = createTRPCRouter({
       return buildSponsorSummaries({
         sponsors,
         setups,
-        chats,
+        chats: chats.map(({ userName, firstName, ...c }) => ({
+          ...c,
+          // Application first name, else the account name's first word.
+          firstName: firstName?.trim()
+            ? firstName
+            : (userName?.trim().split(/\s+/)[0] ?? ""),
+        })),
         help,
         holds,
         now,

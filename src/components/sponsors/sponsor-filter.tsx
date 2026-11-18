@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { DashboardCheckbox } from "~/components/internals/dashboard-checkbox";
 import { hover } from "~/components/internals/interaction";
 import { coffeeChatCopy } from "~/content/coffee-chat";
+import { sponsorColor } from "~/lib/sponsor-colors";
 import { cn } from "~/lib/utils";
 
 const copy = coffeeChatCopy.organizer.sponsorFilter;
@@ -92,15 +93,25 @@ export function useSponsorSelection(
 /**
  * Sponsors as a light list of round checkboxes (native inputs, so Tab,
  * Space and screen readers work as usual) with All sponsors and Clear.
+ * With `colors`, each sponsor shows its colour dot; with `onHighlight`, the
+ * name is its own button that highlights the sponsor (aria-pressed) while
+ * the checkbox keeps showing or hiding them.
  */
 export function SponsorFilter({
   names,
   selection,
   className,
+  colors,
+  highlight = null,
+  onHighlight,
 }: {
   names: readonly string[];
   selection: SponsorSelection;
   className?: string;
+  /** Palette indexes by sponsor name (sponsorColorIndexes). */
+  colors?: ReadonlyMap<string, number>;
+  highlight?: string | null;
+  onHighlight?: (name: string) => void;
 }) {
   const labelId = useId();
   const shown = names.filter(selection.isShown).length;
@@ -145,11 +156,19 @@ export function SponsorFilter({
             name={name}
             checked={selection.isShown(name)}
             onToggle={() => selection.toggle(name)}
+            dot={colors ? sponsorColor(colors, name).dot : undefined}
+            highlighted={highlight === name}
+            onHighlight={onHighlight ? () => onHighlight(name) : undefined}
           />
         ))}
       </div>
       {shown === 0 && (
         <p className="m-0 text-sm text-dashboard-text-medium">{copy.none}</p>
+      )}
+      {onHighlight && (
+        <p className="m-0 text-xs text-dashboard-text-light">
+          {copy.highlightHint}
+        </p>
       )}
     </fieldset>
   );
@@ -163,12 +182,62 @@ function SponsorCheck({
   checked,
   onToggle,
   strong = false,
+  dot,
+  highlighted = false,
+  onHighlight,
 }: {
   name: string;
   checked: boolean;
   onToggle: () => void;
   strong?: boolean;
+  /** Colour dot classes (sponsor colour). */
+  dot?: string;
+  highlighted?: boolean;
+  onHighlight?: () => void;
 }) {
+  const swatch = dot ? (
+    <span
+      aria-hidden
+      className={cn("inline-block size-2.5 shrink-0 rounded-full", dot)}
+    />
+  ) : null;
+  if (onHighlight) {
+    // Checkbox and name are separate targets: tick = show/hide, name =
+    // highlight. Both keep the 44px touch height.
+    return (
+      <span className="flex min-h-11 min-w-0 max-w-full items-center rounded-dashboard-md md:min-h-9">
+        <label
+          className={cn(
+            "flex min-h-11 cursor-pixel-hover items-center rounded-dashboard-md md:min-h-9",
+            hover.highlight,
+          )}
+        >
+          <DashboardCheckbox
+            round
+            checked={checked}
+            onCheckedChange={onToggle}
+          />
+          <span className="sr-only">{copy.show(name)}</span>
+        </label>
+        <button
+          type="button"
+          aria-pressed={highlighted}
+          aria-label={copy.highlight(name)}
+          onClick={onHighlight}
+          className={cn(
+            "flex min-h-11 min-w-0 items-center gap-1.5 rounded-dashboard-md px-1.5 text-left text-sm text-dashboard-text-heavy md:min-h-9",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+            highlighted
+              ? "bg-dashboard-bg-navSelected font-semibold"
+              : hover.highlight,
+          )}
+        >
+          {swatch}
+          <span className="min-w-0 break-words">{name}</span>
+        </button>
+      </span>
+    );
+  }
   return (
     <label
       className={cn(
@@ -178,6 +247,7 @@ function SponsorCheck({
       )}
     >
       <DashboardCheckbox round checked={checked} onCheckedChange={onToggle} />
+      {swatch}
       <span className="min-w-0 break-words">{name}</span>
     </label>
   );

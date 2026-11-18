@@ -376,6 +376,10 @@ export const coffeeChatCopy = {
           ? `All ${total} sponsors`
           : `${shown} of ${total} sponsors`,
       none: "No sponsors picked. Pick one above, or All sponsors.",
+      show: (name: string) => `Show ${name}`,
+      highlight: (name: string) => `Highlight ${name} in the rooms table`,
+      highlightHint:
+        "Tick to show or hide a sponsor. Pick a name to highlight their rooms; Escape clears it.",
     },
 
     // Rooms down the side of a booking table: one column per room.
@@ -388,8 +392,8 @@ export const coffeeChatCopy = {
       time: "Time",
       legendLabel: "What the cells mean",
       legend: {
-        free: "Available: pick any available time to book",
-        booked: "Booked",
+        free: "Available: pick any grey time to book or hold",
+        booked: "Booked, in the sponsor's colour",
         full: "Full",
         over: "Over capacity",
         held: "Held, needs a hacker",
