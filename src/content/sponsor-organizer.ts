@@ -160,4 +160,55 @@ export const sponsorOrganizerCopy = {
     loadError:
       "Couldn't load coffee chats and help requests. They'll retry on their own.",
   },
+
+  /**
+   * Sunday sponsor track judging: rooms (Lucas's sheet, else the run-of-show
+   * list), picks and status. Rooms are filled in by the team in the sheets;
+   * the app never assigns one.
+   */
+  judging: {
+    heading: "Sponsor track judging",
+    when: (title: string, start: string, end: string) =>
+      `${title} · ${start}–${end}`,
+    noSlot: "No judging block on the run of show yet.",
+    summary: (withRoom: number, sponsors: number, enoughPicks: number) =>
+      `${withRoom} of ${sponsors} ${sponsors === 1 ? "sponsor has" : "sponsors have"} a room · ${enoughPicks} ${enoughPicks === 1 ? "has" : "have"} enough picks`,
+    tableLabel: "Judging rooms and picks by sponsor",
+    columns: {
+      sponsor: "Sponsor",
+      room: "Judging room",
+      picks: "Picks",
+      status: "Status",
+    },
+    source: {
+      "sponsor-sheet": "Sponsor sheet",
+      "run-of-show": "Run of show",
+    },
+    otherRoom: (room: string) => `Run of show says ${room}`,
+    missing: "Missing",
+    picks: (n: number, min: number, max: number) => `${n} of ${min}–${max}`,
+    picksUnknown: "—",
+    status: {
+      ready: "Ready",
+      "missing-room": "Missing room",
+      "too-few-picks": "Too few picks",
+      "picks-unknown": "Picks unavailable",
+      "not-registered": "Not registered",
+    },
+    sheetUnread:
+      "Couldn't read the judging sheet, so picks and sheet rooms are missing. It retries on its own.",
+    loading: "Loading judging rooms…",
+    empty: "No sponsors registered yet.",
+    // Sponsors tab
+    column: "Judging",
+    cell: (room: string | null, picks: number | null) =>
+      `${room ?? "Missing"}${picks === null ? "" : ` · ${picks} ${picks === 1 ? "pick" : "picks"}`}`,
+    missingRooms: (n: number) =>
+      n === 0
+        ? "All rooms set"
+        : n === 1
+          ? "1 missing room"
+          : `${n} missing rooms`,
+    detailLabel: "Judging",
+  },
 };
