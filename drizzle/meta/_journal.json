@@ -379,6 +379,13 @@
       "when": 1795028104016,
       "tag": "0056_notification_center",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1795029927287,
+      "tag": "0057_sponsor_portal_link_given",
+      "breakpoints": true
     }
   ]
 }

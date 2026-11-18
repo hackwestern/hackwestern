@@ -19,12 +19,18 @@ import { DashboardButton } from "~/components/internals/dashboard-button";
 import { hover, press } from "~/components/internals/interaction";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
-import {
-  WatcherInput,
-} from "~/components/sponsors/coffee-chat-fields";
+import { WatcherInput } from "~/components/sponsors/coffee-chat-fields";
 import { requestSummary } from "~/components/sponsors/chat-request-form";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
-import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
+import { DayPicker } from "~/components/sponsors/day-picker";
+import {
+  ChatSlotsCell,
+  LinkGivenToggle,
+  Round1Cell,
+  Round2Cell,
+  SponsorLogo,
+  WhereCell,
+} from "~/components/sponsors/organizer/day-cells";
 import { JudgingStatusPill } from "~/components/sponsors/organizer/judging-panel";
 import {
   addInFlight,
@@ -35,12 +41,18 @@ import {
 } from "~/components/sponsors/organizer/status-writes";
 import { sponsorOrganizerCopy } from "~/content/sponsor-organizer";
 import { COFFEE_CHAT_ROOMS } from "~/lib/coffee-chat-requests";
-import { formatClock } from "~/lib/run-of-show";
 import {
-  sponsorColor,
-  sponsorColorIndexes,
-  type SponsorColor,
-} from "~/lib/sponsor-colors";
+  formatClock,
+  type RunOfShowDay,
+  type RunOfShowItem,
+} from "~/lib/run-of-show";
+import {
+  hasArrived,
+  parseDayParam,
+  round1State,
+  slotTotals,
+  sponsorBoardDefaultDay,
+} from "~/lib/sponsor-day-board";
 import {
   MAX_SPONSOR_PICKS,
   MIN_SPONSOR_PICKS,
@@ -49,7 +61,6 @@ import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
 import {
   organizerHomeHref,
   sponsorRowId,
-  summaryTotals,
   type SponsorSummary,
 } from "~/lib/sponsor-organizer";
 import { cn } from "~/lib/utils";
@@ -65,6 +76,7 @@ import { api, type RouterOutputs } from "~/utils/api";
 
 const copy = sponsorOrganizerCopy.board;
 const judgingCopy = sponsorOrganizerCopy.judging;
+const dayCopy = sponsorOrganizerCopy.day;
 
 type SponsorStatus = (typeof SPONSOR_STATUS_VALUES)[number];
 type Sponsor = RouterOutputs["sponsorDashboard"]["getSponsors"][number];
@@ -304,17 +316,63 @@ function useTargetRow(ready: boolean): [string | null, () => void] {
 
 type Note = { tone: "ok" | "error"; text: string };
 
+/** A board row: the sheet's sponsor, or a registered one without it. */
+type BoardSponsor = Sponsor & { fromSheet: boolean };
+
+/** A registered sponsor's row when the sheet didn't load. */
+function withoutSheet(s: SponsorSummary): BoardSponsor {
+  return {
+    name: s.name,
+    tier: "",
+    amount: "",
+    companyContact: "",
+    hwContact: "",
+    notes: "",
+    sponsorId: s.sponsorId,
+    teamIds: [],
+    // Never shown: the status cell says the sheet didn't load.
+    status: "Not arrived",
+    roomNumber: "",
+    boothLocation: "",
+    onMasterSheet: true,
+    fromSheet: false,
+  };
+}
+
+/** One of the picked day's columns: a table cell and a phone card field. */
+type DayColumn = {
+  key: string;
+  header: string;
+  className?: string;
+  cell: (
+    sponsor: BoardSponsor,
+    summary: SponsorSummary | undefined,
+  ) => React.ReactNode;
+};
+
 export function SponsorsTab({
   summaries,
   summaryLoading,
   summaryFailed,
+  round2Open,
+  items,
   now,
 }: {
   summaries: ReadonlyMap<string, SponsorSummary>;
   summaryLoading: boolean;
   summaryFailed: boolean;
+  /** Organizers have opened round 2 (Sunday top 5). */
+  round2Open: boolean;
+  /** Run-of-show blocks for Sunday's "Where now"; null if not loaded. */
+  items: readonly RunOfShowItem[] | null;
   now: Date;
 }) {
+  const router = useRouter();
+  // The day the board shows: picked, else ?day=, else today (Friday
+  // outside the event). Only that day's columns and totals show.
+  const [pickedDay, setPickedDay] = useState<RunOfShowDay | null>(null);
+  const day =
+    pickedDay ?? parseDayParam(router.query.day) ?? sponsorBoardDefaultDay(now);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | SponsorStatus>(
     "ALL",
@@ -381,7 +439,63 @@ export function SponsorsTab({
       setNote({ tone: "error", text: copy.syncFailed(error.message) }),
   });
 
-  const sponsors = useMemo(() => sponsorsQ.data ?? [], [sponsorsQ.data]);
+  // Friday: "Link given" saves at once and shows straight away.
+  const [linkPending, setLinkPending] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
+  const setLinkGiven = api.sponsorOrganizer.setPortalLinkGiven.useMutation({
+    onMutate: async ({ sponsorId, given }) => {
+      setLinkPending((prev) => new Set(prev).add(sponsorId));
+      await utils.sponsorOrganizer.summary.cancel();
+      const prev = utils.sponsorOrganizer.summary.getData();
+      utils.sponsorOrganizer.summary.setData(undefined, (old) =>
+        old
+          ? {
+              ...old,
+              sponsors: old.sponsors.map((s) =>
+                s.sponsorId === sponsorId
+                  ? {
+                      ...s,
+                      linkGivenAt: given ? new Date().toISOString() : null,
+                    }
+                  : s,
+              ),
+            }
+          : old,
+      );
+      return { prev };
+    },
+    onError: (err, _input, context) => {
+      if (context?.prev) {
+        utils.sponsorOrganizer.summary.setData(undefined, context.prev);
+      }
+      setNote({ tone: "error", text: dayCopy.linkFailed(err.message) });
+    },
+    onSettled: async (_data, _err, { sponsorId }) => {
+      setLinkPending((prev) => {
+        const next = new Set(prev);
+        next.delete(sponsorId);
+        return next;
+      });
+      await utils.sponsorOrganizer.summary.invalidate();
+    },
+  });
+
+  // Without the sheet (down, or not set up locally) the board still lists
+  // every registered sponsor, so Saturday and Sunday (all from our
+  // database) keep working. Sheet-only fields then read as unknown.
+  const sheetDown = !sponsorsQ.data && !!sponsorsQ.error;
+  const sponsors = useMemo<BoardSponsor[]>(
+    () =>
+      sponsorsQ.data
+        ? sponsorsQ.data.map((s) => ({ ...s, fromSheet: true }))
+        : sheetDown
+          ? [...summaries.values()]
+              .map(withoutSheet)
+              .sort((a, b) => a.name.localeCompare(b.name))
+          : [],
+    [sponsorsQ.data, sheetDown, summaries],
+  );
 
   const countsByStatus = useMemo(() => {
     const counts = Object.fromEntries(STATUS_FLOW.map((s) => [s, 0])) as Record<
@@ -389,14 +503,16 @@ export function SponsorsTab({
       number
     >;
     for (const s of sponsors) {
-      if (s.status in counts) counts[s.status] += 1;
+      if (s.fromSheet && s.status in counts) counts[s.status] += 1;
     }
     return counts;
   }, [sponsors]);
 
+  // The status filter is a Friday tool (arrivals); other days show all.
+  const shownStatus = day === "Friday" ? statusFilter : "ALL";
   const filtered = useMemo(() => {
     return sponsors.filter((sponsor) => {
-      if (statusFilter !== "ALL" && sponsor.status !== statusFilter) {
+      if (shownStatus !== "ALL" && sponsor.status !== shownStatus) {
         return false;
       }
       if (!query.trim()) return true;
@@ -411,49 +527,106 @@ export function SponsorsTab({
         sponsor.notes.toLowerCase().includes(q)
       );
     });
-  }, [sponsors, statusFilter, query]);
+  }, [sponsors, shownStatus, query]);
 
-  const totals = summaryTotals(
-    filtered.flatMap((s) => {
-      const summary = s.sponsorId
-        ? summaries.get(s.sponsorId.toLowerCase())
-        : undefined;
-      return summary ? [summary] : [];
-    }),
-  );
   const updatedAt = sponsorsQ.dataUpdatedAt;
   const failed = sponsorsQ.error;
-  const stats = [
-    { label: copy.stats.total, value: sponsors.length, warn: false },
-    {
-      label: copy.stats.picks,
-      value: sponsors.filter((s) => s.teamIds.length > 0).length,
-      warn: false,
-    },
-    {
-      label: copy.stats.unregistered,
-      value: sponsors.filter((s) => !s.sponsorId).length,
-      warn: true,
-    },
-    {
-      label: copy.stats.offSheet,
-      value: sponsors.filter((s) => !s.onMasterSheet).length,
-      warn: true,
-    },
-  ];
+  const registered = [...summaries.values()];
+  const of = dayCopy.stats.of;
+  // Totals for the picked day only. `warn` turns a number orange while
+  // someone still needs to act.
+  type Stat = { label: string; value: string | number; warn: boolean };
+  const stats: Stat[] =
+    day === "Friday"
+      ? [
+          { label: copy.stats.total, value: sponsors.length, warn: false },
+          {
+            label: dayCopy.stats.Friday.arrived,
+            value: sheetDown
+              ? copy.none
+              : of(
+                  sponsors.filter((s) => hasArrived(s.status)).length,
+                  sponsors.length,
+                ),
+            warn: false,
+          },
+          {
+            label: dayCopy.stats.Friday.linkGiven,
+            value: of(
+              registered.filter((s) => s.linkGivenAt).length,
+              registered.length,
+            ),
+            warn: false,
+          },
+          {
+            label: copy.stats.unregistered,
+            value: sponsors.filter((s) => !s.sponsorId).length,
+            warn: true,
+          },
+        ]
+      : day === "Saturday"
+        ? (() => {
+            const t = slotTotals(registered.flatMap((s) => s.chatSlots));
+            return [
+              {
+                label: dayCopy.stats.Saturday.booked,
+                value: of(t.booked, t.needed),
+                warn: false,
+              },
+              {
+                label: dayCopy.stats.Saturday.openSlots,
+                value: t.open,
+                warn: true,
+              },
+              {
+                label: dayCopy.stats.Saturday.waiting,
+                value: registered.reduce((n, s) => n + s.pending, 0),
+                warn: false,
+              },
+              {
+                label: dayCopy.stats.openHelp,
+                value: registered.filter((s) => s.help?.status === "open")
+                  .length,
+                warn: true,
+              },
+            ];
+          })()
+        : [
+            {
+              label: dayCopy.stats.Sunday.shortlists,
+              value: of(
+                registered.filter((s) => round1State(s.sunday).kind === "sent")
+                  .length,
+                registered.length,
+              ),
+              warn: false,
+            },
+            {
+              label: dayCopy.stats.Sunday.topFive,
+              value: of(
+                registered.filter((s) => s.sunday.finalSubmittedAt).length,
+                registered.length,
+              ),
+              warn: false,
+            },
+            {
+              label: dayCopy.stats.Sunday.round2,
+              value: round2Open
+                ? dayCopy.stats.round2Open
+                : dayCopy.stats.round2Closed,
+              warn: false,
+            },
+            {
+              label: dayCopy.stats.Sunday.missingRooms,
+              value: registered.filter((s) => s.judging?.missingRoom).length,
+              warn: true,
+            },
+          ];
   const [target, clearTarget] = useTargetRow(sponsors.length > 0);
   const summaryOf = (sponsor: Sponsor) =>
     sponsor.sponsorId
       ? summaries.get(sponsor.sponsorId.toLowerCase())
       : undefined;
-  // Colours are assigned over every registered sponsor, the same set the
-  // Coffee chats tab uses, so a sponsor has one colour everywhere.
-  const colorIndexes = useMemo(
-    () => sponsorColorIndexes([...summaries.values()].map((s) => s.name)),
-    [summaries],
-  );
-  const colorOf = (sponsor: Sponsor) =>
-    sponsorColor(colorIndexes, sponsor.name);
   const rowKey = (sponsor: Sponsor) => sponsor.sponsorId ?? sponsor.name;
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const isOpen = (sponsor: Sponsor) =>
@@ -495,7 +668,8 @@ export function SponsorsTab({
     setStatusFilter("ALL");
   };
   const loading = sponsorsQ.isLoading;
-  const emptyState = loading ? null : failed ? null : sponsors.length === 0 ? (
+  const emptyState = loading ? null : failed &&
+    sponsors.length === 0 ? null : sponsors.length === 0 ? (
     <p className="m-0 text-dashboard-text-medium">{copy.empty}</p>
   ) : filtered.length === 0 ? (
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -506,14 +680,163 @@ export function SponsorsTab({
     </div>
   ) : null;
 
+  // The picked day's columns (after the sponsor). Each renders one cell for
+  // the table and one field on the phone card.
+  const muted = (text: string) => (
+    <span className="text-dashboard-text-light">{text}</span>
+  );
+  // Day fields that need the sponsor's private link (and its summary).
+  const registeredOnly = (
+    render: (summary: SponsorSummary, sponsor: Sponsor) => React.ReactNode,
+  ): DayColumn["cell"] => {
+    const cell: DayColumn["cell"] = (sponsor, summary) =>
+      summaryLoading && sponsor.sponsorId ? (
+        <CellSkeleton />
+      ) : summary ? (
+        render(summary, sponsor)
+      ) : (
+        muted(copy.notRegistered)
+      );
+    return cell;
+  };
+  const helpColumn: DayColumn = {
+    key: "help",
+    header: copy.chatColumns.help,
+    cell: (_sponsor, summary) => <HelpCell summary={summary} />,
+  };
+  const columns: DayColumn[] =
+    day === "Friday"
+      ? [
+          {
+            key: "status",
+            header: copy.columns.status,
+            cell: (sponsor) =>
+              sponsor.fromSheet
+                ? statusPicker(sponsor)
+                : muted(dayCopy.noSheet),
+          },
+          {
+            key: "link",
+            header: dayCopy.columns.link,
+            cell: (sponsor, summary) => (
+              <span className="flex flex-wrap items-center gap-1.5">
+                {summary && sponsor.sponsorId && (
+                  <LinkGivenToggle
+                    name={sponsor.name}
+                    given={summary.linkGivenAt !== null}
+                    pending={linkPending.has(sponsor.sponsorId)}
+                    onToggle={(given) =>
+                      setLinkGiven.mutate({
+                        sponsorId: sponsor.sponsorId!,
+                        given,
+                      })
+                    }
+                  />
+                )}
+                <CopyLinkButton
+                  sponsorId={sponsor.sponsorId}
+                  name={sponsor.name}
+                />
+              </span>
+            ),
+          },
+          {
+            key: "booth",
+            header: copy.columns.booth,
+            className: "text-dashboard-text-medium",
+            cell: (sponsor) =>
+              sponsor.fromSheet
+                ? sponsor.boothLocation || copy.boothTbd
+                : copy.none,
+          },
+          {
+            key: "hwContact",
+            header: copy.columns.hwContact,
+            className: "text-dashboard-text-medium",
+            cell: (sponsor) => sponsor.hwContact || copy.none,
+          },
+          helpColumn,
+        ]
+      : day === "Saturday"
+        ? [
+            {
+              key: "chatType",
+              header: copy.chatColumns.chatType,
+              className: "text-dashboard-text-medium",
+              cell: registeredOnly((summary) =>
+                summary.request.source !== "none"
+                  ? copy.chatType(
+                      requestSummary(summary.request),
+                      summary.request.durationMinutes,
+                    )
+                  : muted(requestSummary(summary.request)),
+              ),
+            },
+            {
+              key: "slots",
+              header: dayCopy.columns.slots,
+              cell: registeredOnly((summary) => (
+                <ChatSlotsCell summary={summary} />
+              )),
+            },
+            {
+              key: "chats",
+              header: copy.chatColumns.chats,
+              className: "whitespace-nowrap tabular-nums",
+              cell: registeredOnly((summary) =>
+                copy.chatsCell(summary.accepted, summary.pending),
+              ),
+            },
+            helpColumn,
+          ]
+        : [
+            {
+              key: "judging",
+              header: judgingCopy.columns.room,
+              cell: (_sponsor, summary) => <JudgingCell summary={summary} />,
+            },
+            {
+              key: "round1",
+              header: dayCopy.columns.round1,
+              cell: registeredOnly((summary) => (
+                <Round1Cell summary={summary} />
+              )),
+            },
+            {
+              key: "round2",
+              header: dayCopy.columns.round2,
+              cell: registeredOnly((summary) => (
+                <Round2Cell summary={summary} round2Open={round2Open} />
+              )),
+            },
+            {
+              key: "where",
+              header: dayCopy.columns.where,
+              cell: registeredOnly((summary) => (
+                <WhereCell summary={summary} items={items} now={now} />
+              )),
+            },
+            helpColumn,
+          ];
+
   return (
     <div className="flex flex-col gap-4 font-figtree text-dashboard-text-heavy">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-xs tabular-nums text-dashboard-text-light">
-          {updatedAt
-            ? copy.updatedAgo(ago(now.getTime() - updatedAt))
-            : copy.loading}
-        </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <DayPicker
+            value={day}
+            onChange={setPickedDay}
+            label={dayCopy.pickerLabel}
+            dayLabel={(d) => dayCopy.short[d] ?? d}
+          />
+          <span className="text-xs tabular-nums text-dashboard-text-light">
+            {updatedAt
+              ? copy.updatedAgo(ago(now.getTime() - updatedAt))
+              : failed
+                ? null
+                : copy.loading}
+          </span>
+        </div>
         <DashboardButton
           variant="outline"
           disabled={sync.isPending}
@@ -590,7 +913,7 @@ export function SponsorsTab({
             <dd
               className={cn(
                 "m-0 text-xl font-semibold tabular-nums",
-                stat.warn && stat.value > 0
+                stat.warn && typeof stat.value === "number" && stat.value > 0
                   ? "text-dashboard-text-warning"
                   : "text-dashboard-text-heavy",
               )}
@@ -639,60 +962,63 @@ export function SponsorsTab({
           )}
         </div>
 
-        {/* One row that scrolls sideways on phones, wraps on wider screens. */}
-        <div
-          role="group"
-          aria-label={copy.filtersLabel}
-          className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
-        >
-          {(["ALL", ...STATUS_FLOW] as const).map((status) => {
-            const active = statusFilter === status;
-            const count =
-              status === "ALL" ? sponsors.length : countsByStatus[status];
-            return (
-              <button
-                key={status}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setStatusFilter(status)}
-                className={cn(
-                  "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-sm font-semibold md:min-h-9",
-                  press,
-                  focusRing,
-                  active
-                    ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
-                    : cn(
-                        "border-dashboard-border-default bg-dashboard-bg-surface text-dashboard-text-heavy",
-                        hover.highlight,
-                      ),
-                )}
-              >
-                {status !== "ALL" && (
-                  <span
-                    aria-hidden
-                    className={cn(
-                      "size-2 rounded-full",
-                      active
-                        ? "bg-dashboard-text-inverse"
-                        : STATUS_STYLE[status].dot,
-                    )}
-                  />
-                )}
-                {status === "ALL" ? copy.all : status}
-                <span
+        {/* Friday only (arrivals). One row that scrolls sideways on
+            phones, wraps on wider screens. */}
+        {day === "Friday" && (
+          <div
+            role="group"
+            aria-label={copy.filtersLabel}
+            className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
+          >
+            {(["ALL", ...STATUS_FLOW] as const).map((status) => {
+              const active = statusFilter === status;
+              const count =
+                status === "ALL" ? sponsors.length : countsByStatus[status];
+              return (
+                <button
+                  key={status}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setStatusFilter(status)}
                   className={cn(
-                    "tabular-nums",
+                    "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-sm font-semibold md:min-h-9",
+                    press,
+                    focusRing,
                     active
-                      ? "text-dashboard-text-inverse"
-                      : "text-dashboard-text-light",
+                      ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
+                      : cn(
+                          "border-dashboard-border-default bg-dashboard-bg-surface text-dashboard-text-heavy",
+                          hover.highlight,
+                        ),
                   )}
                 >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                  {status !== "ALL" && (
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "size-2 rounded-full",
+                        active
+                          ? "bg-dashboard-text-inverse"
+                          : STATUS_STYLE[status].dot,
+                      )}
+                    />
+                  )}
+                  {status === "ALL" ? copy.all : status}
+                  <span
+                    className={cn(
+                      "tabular-nums",
+                      active
+                        ? "text-dashboard-text-inverse"
+                        : "text-dashboard-text-light",
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {loading && (
@@ -708,8 +1034,8 @@ export function SponsorsTab({
 
       {emptyState && <DashboardPanel>{emptyState}</DashboardPanel>}
 
-      {/* Phones (under 640px): one compact card per sponsor; tap to open
-          its chats and details. */}
+      {/* Phones (under 640px): one compact card per sponsor with the
+          picked day's fields; tap the name to open its chats and details. */}
       {filtered.length > 0 && (
         <ul className="m-0 flex list-none flex-col gap-3 p-0 sm:hidden">
           {filtered.map((sponsor) => {
@@ -734,50 +1060,21 @@ export function SponsorsTab({
                   aria-controls={panelId}
                   onClick={() => toggle(sponsor)}
                   className={cn(
-                    "-m-2 flex items-start justify-between gap-3 rounded-dashboard-md p-2 text-left",
+                    "-m-2 flex items-center justify-between gap-3 rounded-dashboard-md p-2 text-left",
                     press,
                     focusRing,
                   )}
                 >
-                  <span className="flex min-w-0 flex-col gap-1">
-                    <span className="flex min-w-0 items-center gap-2">
-                      <ColorDot name={sponsor.name} color={colorOf(sponsor)} />
-                      <span className="min-w-0 break-words text-base font-semibold leading-snug">
-                        {sponsor.name}
-                      </span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <SponsorLogo name={sponsor.name} />
+                    <span className="min-w-0 break-words text-base font-semibold leading-snug">
+                      {sponsor.name}
                     </span>
-                    <span className="text-sm text-dashboard-text-medium">
-                      {summary
-                        ? copy.chatsCell(summary.accepted, summary.pending)
-                        : copy.notRegistered}
-                    </span>
-                    {summary && summary.needsHacker > 0 && (
-                      <NeedsHackerPill n={summary.needsHacker} />
-                    )}
-                    {summary?.judging && (
-                      <span
-                        className={cn(
-                          "text-sm text-dashboard-text-medium",
-                          summary.judging.missingRoom &&
-                            "text-dashboard-text-warning",
-                        )}
-                      >
-                        {judgingCopy.labelled(
-                          judgingCopy.column,
-                          judgingCopy.cell(
-                            summary.judging.room,
-                            summary.judging.picks,
-                            summary.judging.room !== null ||
-                              summary.judging.missingRoom,
-                          ),
-                        )}
-                      </span>
-                    )}
                   </span>
                   <ChevronDown
                     aria-hidden
                     className={cn(
-                      "mt-1 size-5 shrink-0 text-dashboard-text-light transition-transform duration-150 ease-out motion-reduce:transition-none",
+                      "size-5 shrink-0 text-dashboard-text-light transition-transform duration-150 ease-out motion-reduce:transition-none",
                       open && "rotate-180",
                     )}
                   />
@@ -787,10 +1084,21 @@ export function SponsorsTab({
                       : copy.expand(sponsor.name)}
                   </span>
                 </button>
-                <div className="flex flex-wrap items-center gap-2">
-                  {statusPicker(sponsor)}
-                  {summary?.help && <HelpCell summary={summary} />}
-                </div>
+                <dl className="m-0 grid grid-cols-1 gap-2 text-sm">
+                  {columns.map((col) => (
+                    <div
+                      key={col.key}
+                      className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-center gap-2"
+                    >
+                      <dt className="text-xs text-dashboard-text-light">
+                        {col.header}
+                      </dt>
+                      <dd className="m-0 min-w-0">
+                        {col.cell(sponsor, summary)}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
                 {open && (
                   <div
                     id={panelId}
@@ -809,9 +1117,9 @@ export function SponsorsTab({
         </ul>
       )}
 
-      {/* 640px and up: one table, sponsor column pinned while it scrolls
-          sideways inside its own box. A row opens to that sponsor's chats,
-          holds and details; the totals row sums what the filter shows. */}
+      {/* 640px and up: one table with the picked day's columns, sponsor
+          column pinned while it scrolls sideways inside its own box. A row
+          opens to that sponsor's chats, holds and details. */}
       {filtered.length > 0 && (
         <div className="hidden overflow-x-auto rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card sm:block">
           <table className="w-full min-w-max border-separate border-spacing-0 text-left text-sm">
@@ -819,27 +1127,18 @@ export function SponsorsTab({
             <thead>
               <tr className="text-xs font-semibold text-dashboard-text-light">
                 {[
-                  copy.chatColumns.sponsor,
-                  copy.columns.status,
-                  copy.columns.booth,
-                  copy.columns.tier,
-                  copy.columns.hwContact,
-                  copy.chatColumns.chatType,
-                  copy.chatColumns.chatRoom,
-                  copy.chatColumns.chats,
-                  copy.chatColumns.needsHacker,
-                  judgingCopy.column,
-                  copy.chatColumns.help,
-                ].map((h, i) => (
+                  { key: "sponsor", header: copy.chatColumns.sponsor },
+                  ...columns,
+                ].map((col, i) => (
                   <th
-                    key={h}
+                    key={col.key}
                     scope="col"
                     className={cn(
                       "border-b border-dashboard-border-subtle bg-dashboard-bg-surface px-3 py-3 font-semibold",
                       i === 0 && "sticky left-0 z-10 min-w-56",
                     )}
                   >
-                    {h}
+                    {col.header}
                   </th>
                 ))}
               </tr>
@@ -888,78 +1187,19 @@ export function SponsorsTab({
                               )}
                             />
                           </DashboardButton>
-                          <SponsorName
-                            sponsor={sponsor}
-                            color={colorOf(sponsor)}
-                          />
+                          <SponsorName sponsor={sponsor} />
                         </span>
                       </th>
-                      <td className={cell}>{statusPicker(sponsor)}</td>
-                      <td className={cn(cell, "text-dashboard-text-medium")}>
-                        {sponsor.boothLocation || copy.boothTbd}
-                      </td>
-                      <td className={cn(cell, "text-dashboard-text-medium")}>
-                        {sponsor.tier || copy.none}
-                      </td>
-                      <td className={cn(cell, "text-dashboard-text-medium")}>
-                        {sponsor.hwContact || copy.none}
-                      </td>
-                      <td className={cn(cell, "text-dashboard-text-medium")}>
-                        {summaryLoading && sponsor.sponsorId ? (
-                          <CellSkeleton />
-                        ) : summary && summary.request.source !== "none" ? (
-                          copy.chatType(
-                            requestSummary(summary.request),
-                            summary.request.durationMinutes,
-                          )
-                        ) : (
-                          <span className="text-dashboard-text-light">
-                            {summary ? requestSummary(summary.request) : copy.none}
-                          </span>
-                        )}
-                      </td>
-                      <td className={cell}>
-                        {summary ? (
-                          summary.rooms.length > 0 ? (
-                            <span className="font-semibold">
-                              {summary.rooms.join(", ")}
-                            </span>
-                          ) : (
-                            <span className="text-dashboard-text-light">
-                              {copy.unassigned}
-                            </span>
-                          )
-                        ) : (
-                          copy.none
-                        )}
-                      </td>
-                      <td
-                        className={cn(cell, "whitespace-nowrap tabular-nums")}
-                      >
-                        {summary
-                          ? copy.chatsCell(summary.accepted, summary.pending)
-                          : copy.none}
-                      </td>
-                      <td className={cell}>
-                        {summary && summary.needsHacker > 0 ? (
-                          <NeedsHackerPill n={summary.needsHacker} />
-                        ) : (
-                          <span className="text-dashboard-text-light">
-                            {summary ? copy.needsHackerCell(0) : copy.none}
-                          </span>
-                        )}
-                      </td>
-                      <td className={cell}>
-                        <JudgingCell summary={summary} />
-                      </td>
-                      <td className={cell}>
-                        <HelpCell summary={summary} />
-                      </td>
+                      {columns.map((col) => (
+                        <td key={col.key} className={cn(cell, col.className)}>
+                          {col.cell(sponsor, summary)}
+                        </td>
+                      ))}
                     </tr>
                     {open && (
                       <tr id={panelId}>
                         <td
-                          colSpan={11}
+                          colSpan={columns.length + 1}
                           className={cn(
                             "border-b border-dashboard-border-subtle px-4 pb-4 pt-1",
                             row.targeted && "bg-dashboard-bg-highlight",
@@ -977,76 +1217,8 @@ export function SponsorsTab({
                 );
               })}
             </tbody>
-            <tfoot>
-              <tr className="font-semibold">
-                <th
-                  scope="row"
-                  colSpan={5}
-                  className="sticky left-0 bg-dashboard-bg-inset px-3 py-3 text-left"
-                >
-                  {copy.totalsLabel(filtered.length)}
-                </th>
-                <td
-                  colSpan={2}
-                  className="bg-dashboard-bg-inset px-3 py-3 tabular-nums"
-                >
-                  {copy.seatsLeft(totals.seatsLeft)}
-                </td>
-                <td className="whitespace-nowrap bg-dashboard-bg-inset px-3 py-3 tabular-nums">
-                  {copy.chatsCell(totals.accepted, totals.pending)}
-                </td>
-                <td
-                  className={cn(
-                    "bg-dashboard-bg-inset px-3 py-3 tabular-nums",
-                    totals.needsHacker > 0 && "text-dashboard-text-warning",
-                  )}
-                >
-                  {totals.needsHacker}
-                </td>
-                <td
-                  className={cn(
-                    "whitespace-nowrap bg-dashboard-bg-inset px-3 py-3 tabular-nums",
-                    totals.missingRooms > 0 && "text-dashboard-text-warning",
-                  )}
-                >
-                  {judgingCopy.missingRooms(totals.missingRooms)}
-                </td>
-                <td
-                  className={cn(
-                    "bg-dashboard-bg-inset px-3 py-3 tabular-nums",
-                    totals.openHelp > 0 && "text-dashboard-text-warning",
-                  )}
-                >
-                  {copy.openHelp(totals.openHelp)}
-                </td>
-              </tr>
-            </tfoot>
           </table>
         </div>
-      )}
-
-      {/* Phones: the totals as one line under the cards. */}
-      {filtered.length > 0 && (
-        <dl
-          aria-label={copy.totalsLabel(filtered.length)}
-          className="m-0 grid grid-cols-2 gap-2 rounded-dashboard-lg bg-dashboard-bg-inset p-3 text-sm sm:hidden"
-        >
-          <Detail label={copy.chatColumns.chats}>
-            {copy.chatsCell(totals.accepted, totals.pending)}
-          </Detail>
-          <Detail label={copy.seatsLabel}>
-            {copy.seatsLeft(totals.seatsLeft)}
-          </Detail>
-          <Detail label={copy.chatColumns.needsHacker}>
-            {totals.needsHacker}
-          </Detail>
-          <Detail label={copy.chatColumns.help}>
-            {copy.openHelp(totals.openHelp)}
-          </Detail>
-          <Detail label={judgingCopy.column}>
-            {judgingCopy.missingRooms(totals.missingRooms)}
-          </Detail>
-        </dl>
       )}
     </div>
   );
@@ -1082,23 +1254,14 @@ function Picks({ n, long = false }: { n: number; long?: boolean }) {
   );
 }
 
-function ColorDot({ name, color }: { name: string; color: SponsorColor }) {
-  return <SponsorBadge name={name} color={color} />;
-}
-
-// The sponsor's name and colour dot. Registered sponsors link to the
-// Coffee chats tab with their cells highlighted in the rooms table.
-function SponsorName({
-  sponsor,
-  color,
-}: {
-  sponsor: Sponsor;
-  color: SponsorColor;
-}) {
+// The sponsor's logo (when we have one) and name. Registered sponsors
+// link to the Coffee chats tab with their cells highlighted in the rooms
+// table.
+function SponsorName({ sponsor }: { sponsor: Sponsor }) {
   const name = (
     <span className="flex min-w-0 flex-col gap-1">
       <span className="flex min-w-0 items-center gap-2">
-        <ColorDot name={sponsor.name} color={color} />
+        <SponsorLogo name={sponsor.name} />
         <span className="break-words">{sponsor.name}</span>
       </span>
       {!sponsor.onMasterSheet && <NotOnMaster />}
