@@ -5,6 +5,10 @@ export const sponsorScanCopy = {
   seoTitle: "Scan a badge",
   eyebrow: "Coffee chats",
   title: "Scan a hacker's badge",
+  // When opened from a candidate's "Offer coffee chat" (?hacker=).
+  offerTitle: "Offer a coffee chat",
+  offerIntro:
+    "Pick an open time. They'll get your offer on their live site and accept or decline.",
   intro:
     "Point your camera at the QR code on a hacker's badge or their live site. They'll get your offer and accept or decline.",
 

@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import {
   cell,
@@ -7,6 +7,7 @@ import {
   getSheetsClient,
 } from "~/server/api/utils/sponsor-sheets";
 import { env } from "~/env";
+import { admittedStatuses } from "~/lib/admission";
 import { db } from "~/server/db";
 import { applications, reviews, users } from "~/server/db/schema";
 
@@ -139,12 +140,14 @@ export type RankedInterestRow = {
 /**
  * Hackers who put the sponsor in their top 3 on the interest form and have
  * at least one completed review, by average review score (ties by name),
- * capped at `limit`. One row per email (the first form response wins).
+ * capped at `limit` (null for no cap). One row per email (the first form
+ * response wins). Pass only admitted hackers' reviews, so the cap counts
+ * admitted hackers.
  */
 export function rankInterestRows(
   interestRows: readonly InterestRow[],
   scoredReviews: readonly ScoredReview[],
-  limit = INTERESTED_HACKER_LIMIT,
+  limit: number | null = INTERESTED_HACKER_LIMIT,
 ): RankedInterestRow[] {
   const interestedEmails = new Set(interestRows.map((row) => row.email));
   const scores = new Map<string, number>();
@@ -167,7 +170,7 @@ export function rankInterestRows(
     if (!firstByEmail.has(row.email)) firstByEmail.set(row.email, row);
   }
 
-  return [...firstByEmail.values()]
+  const ranked = [...firstByEmail.values()]
     .flatMap((row) =>
       row.rank !== null && row.rank <= 3 && scores.has(row.email)
         ? [
@@ -189,19 +192,18 @@ export function rankInterestRows(
         b.score - a.score ||
         a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
     )
-    .slice(0, limit)
     .map(({ score: _score, ...row }) => row);
+  return limit === null ? ranked : ranked.slice(0, limit);
 }
 
 /**
- * The sponsor's interested hackers from the interest form, best first.
- * Throws when the form isn't configured or can't be read.
+ * Completed reviews of admitted hackers (accepted or confirmed, per
+ * src/lib/admission.ts), with each applicant's email.
  */
-export async function fetchRankedInterestRows(
-  sponsorName: string,
-): Promise<RankedInterestRow[]> {
-  const interestRows = await fetchHackerInterestRows(sponsorName);
-  const scoredReviews = await db
+export async function fetchAdmittedScoredReviews(
+  now = Date.now(),
+): Promise<ScoredReview[]> {
+  return db
     .select({
       email: users.email,
       originalityRating: reviews.originalityRating,
@@ -211,6 +213,29 @@ export async function fetchRankedInterestRows(
     .from(applications)
     .innerJoin(users, eq(users.id, applications.userId))
     .innerJoin(reviews, eq(reviews.applicantUserId, applications.userId))
-    .where(eq(reviews.completed, true));
-  return rankInterestRows(interestRows, scoredReviews);
+    .where(
+      and(
+        eq(reviews.completed, true),
+        inArray(applications.status, [...admittedStatuses(now)]),
+      ),
+    );
+}
+
+/**
+ * The sponsor's interested admitted hackers from the interest form, best
+ * first, capped at `limit` (null for no cap) after leaving out anyone not
+ * admitted. Throws when the form isn't configured or can't be read.
+ */
+export async function fetchRankedInterestRows(
+  sponsorName: string,
+  {
+    limit = INTERESTED_HACKER_LIMIT,
+    now = Date.now(),
+  }: { limit?: number | null; now?: number } = {},
+): Promise<RankedInterestRow[]> {
+  const [interestRows, scoredReviews] = await Promise.all([
+    fetchHackerInterestRows(sponsorName),
+    fetchAdmittedScoredReviews(now),
+  ]);
+  return rankInterestRows(interestRows, scoredReviews, limit);
 }

@@ -45,9 +45,23 @@ describe("candidatesFromInterestForm", () => {
     );
     expect(list.map((h) => [h.userId, h.rank, h.pick])).toEqual([
       ["user-b", 1, 1],
-      // The row with no account is dropped but keeps its place in the ranking.
-      ["user-a", 3, 3],
+      // The row with no admitted account is dropped; ranks close up.
+      ["user-a", 2, 3],
     ]);
+  });
+
+  test("cuts to 40 after dropping rows with no admitted account", () => {
+    const rows = Array.from({ length: 45 }, (_, i) =>
+      ranked(`h${i}@x.ca`, `H${i}`),
+    );
+    // The top 5 aren't admitted (no profile comes back for them).
+    const profiles = rows
+      .slice(5)
+      .map((r, i) => profile(`user-${i + 5}`, r.email, true));
+    const list = candidatesFromInterestForm(rows, profiles);
+    expect(list).toHaveLength(40);
+    expect(list[0]).toMatchObject({ userId: "user-5", rank: 1 });
+    expect(list[39]).toMatchObject({ userId: "user-44", rank: 40 });
   });
 
   test("full profile for hackers who agreed to share", () => {
