@@ -181,6 +181,26 @@ export function locationFor(location: string, sponsor: string): string {
 }
 
 /**
+ * Every "name: room" part of a per-company location, in sheet order, e.g.
+ * "Scotiabank: Rm 2110, QNX: Rm 2235" -> [{ name: "Scotiabank", room:
+ * "Rm 2110" }, { name: "QNX", room: "Rm 2235" }]. Same split as locationFor;
+ * parts without a label or without a room are skipped. Organizer-only use:
+ * it lists every company's room.
+ */
+export function labelledLocations(
+  location: string,
+): { name: string; room: string }[] {
+  const out: { name: string; room: string }[] = [];
+  for (const part of location.split(/[,\n]/)) {
+    const [who, ...rest] = part.split(":");
+    const name = (who ?? "").trim();
+    const room = rest.join(":").trim();
+    if (rest.length > 0 && name && room) out.push({ name, room });
+  }
+  return out;
+}
+
+/**
  * What one sponsor may see of a location. A per-sponsor list ("Scotiabank:
  * Rm 2110, Canada Life: Rm 2230", two or more "name: room" parts) becomes
  * that sponsor's room only, or null when they aren't in it, so another

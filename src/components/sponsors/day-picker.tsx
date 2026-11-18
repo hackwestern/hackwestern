@@ -1,9 +1,12 @@
-import { DashboardChip } from "~/components/internals/dashboard-chip";
+import { hover, press } from "~/components/internals/interaction";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import { RUN_OF_SHOW_DAYS, type RunOfShowDay } from "~/lib/run-of-show";
+import { cn } from "~/lib/utils";
 
-// Friday / Saturday / Sunday switcher. Full-width thirds on phones so each
-// chip is a comfortable tap target; a slight press-in confirms the tap.
+// Friday / Saturday / Sunday as small segmented pills that sit in the
+// schedule card's header next to the day title (Jazz, 2026-11-18): 44px
+// tall for touch, 32px from sm up. Toggle buttons (aria-pressed) in a
+// labelled group, as before; a slight press-in confirms the tap.
 export function DayPicker({
   value,
   onChange,
@@ -17,18 +20,29 @@ export function DayPicker({
     <div
       role="group"
       aria-label={scheduleCopy.dayPicker}
-      className="grid grid-cols-3 gap-2 sm:flex"
+      className="inline-flex w-fit items-center gap-0.5 rounded-full bg-dashboard-bg-inset p-0.5"
     >
-      {days.map((day) => (
-        <DashboardChip
-          key={day}
-          selected={day === value}
-          onClick={() => onChange(day)}
-          className="min-h-11 justify-center motion-safe:transition-[color,background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.97] sm:min-w-24"
-        >
-          {day}
-        </DashboardChip>
-      ))}
+      {days.map((day) => {
+        const selected = day === value;
+        return (
+          <button
+            key={day}
+            type="button"
+            aria-pressed={selected}
+            onClick={() => onChange(day)}
+            className={cn(
+              "inline-flex h-11 cursor-pixel-hover items-center justify-center whitespace-nowrap rounded-full px-3 font-figtree text-sm font-semibold leading-none sm:h-8 sm:text-xs",
+              press,
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1",
+              selected
+                ? "bg-dashboard-action-primary text-dashboard-text-inverse"
+                : cn("text-dashboard-text-medium", hover.surface),
+            )}
+          >
+            {day}
+          </button>
+        );
+      })}
     </div>
   );
 }

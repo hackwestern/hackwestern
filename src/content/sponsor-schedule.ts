@@ -52,9 +52,6 @@ export const scheduleCopy = {
 
   timeline: {
     dayHeading: (day: string, date: number) => `${day}, November ${date}`,
-    legendLabel: "What the colours mean",
-    yours: "Yours",
-    hackathon: "Hackathon events",
     showHackathon: "Show hackathon events",
     srYours: "Yours",
     srHackathon: "Hackathon event",
@@ -63,7 +60,6 @@ export const scheduleCopy = {
     gridLabel: (day: string) => `${day} schedule, scrolls sideways`,
     timeHeader: "Time",
     runOfShow: "Run of show",
-    teamTask: "Team tasks",
     srTask: "Team task",
     openDetails: "Show details",
     details: {

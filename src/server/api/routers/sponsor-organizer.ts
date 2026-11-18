@@ -9,8 +9,21 @@ import {
   createTRPCRouter,
   protectedOrganizerProcedure,
 } from "~/server/api/trpc";
+import {
+  buildJudgingBoard,
+  pickCountFromChosenTeams,
+} from "~/lib/sponsor-judging-rooms";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
-import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
+import {
+  createCachedLoader,
+  getRunOfShow,
+} from "~/server/api/utils/run-of-show-sheet";
+import {
+  fetchAllChosenTeams,
+  fetchAllSponsorInfo,
+  getSheetsClient,
+  getSpreadsheetId,
+} from "~/server/api/utils/sponsor-sheets";
 import { db } from "~/server/db";
 import {
   applications,
@@ -21,14 +34,45 @@ import {
   users,
 } from "~/server/db/schema";
 
-/** Coffee Chats sheet rooms; [] when the sheet can't be read (rooms are optional here). */
-async function sheetRooms(sponsorNames: string[]) {
+/**
+ * The run of show with registered sponsor names applied (coffee chat rooms
+ * and the judging item); null when the sheet can't be read (optional here).
+ */
+async function runOfShowFor(sponsorNames: string[]) {
   try {
-    const snapshot = await getRunOfShow();
-    return applySponsorNames(snapshot, sponsorNames).coffeeChats;
+    return applySponsorNames(await getRunOfShow(), sponsorNames);
   } catch (error) {
     console.error("run-of-show sheet read failed (sponsor summary)", error);
-    return [];
+    return null;
+  }
+}
+
+/**
+ * Lucas's judging spreadsheet for the judging view: each sponsor's room
+ * (Sponsor Info tab) and chosen teams, one read of each. Cached for 30 s,
+ * since the summary polls every 15 s per organizer.
+ */
+const judgingSheetCache = createCachedLoader(async () => {
+  const sheets = await getSheetsClient();
+  const spreadsheetId = getSpreadsheetId();
+  const [info, chosen] = await Promise.all([
+    // Strict: a failed read must show as "couldn't read", not as no rooms.
+    fetchAllSponsorInfo(sheets, spreadsheetId, { strict: true }),
+    fetchAllChosenTeams(sheets, spreadsheetId),
+  ]);
+  return {
+    rooms: new Map([...info].map(([name, r]) => [name, r.roomNumber])),
+    pickCount: pickCountFromChosenTeams(chosen),
+  };
+}, 30_000);
+
+/** Null when the judging sheet can't be read (picks show as unknown). */
+async function judgingSheet() {
+  try {
+    return await judgingSheetCache.get();
+  } catch (error) {
+    console.error("judging sheet read failed (sponsor summary)", error);
+    return null;
   }
 }
 
@@ -37,8 +81,8 @@ async function sheetRooms(sponsorNames: string[]) {
 export const sponsorOrganizerRouter = createTRPCRouter({
   /**
    * Every registered sponsor's coffee chat room, accepted and pending chats,
-   * and live help request, plus help totals for the tab badge. Organizers
-   * only.
+   * and live help request, plus help totals for the tab badge, and the
+   * Sunday judging board (rooms, picks, status). Organizers only.
    */
   summary: protectedOrganizerProcedure.query(
     async (): Promise<SponsorSummaries> => {
@@ -52,8 +96,9 @@ export const sponsorOrganizerRouter = createTRPCRouter({
           coffeeChatWatcher: sponsorJudgingSponsors.coffeeChatWatcher,
         })
         .from(sponsorJudgingSponsors);
-      const [setups, chats, help, holds] = await Promise.all([
-        sheetRooms(sponsors.map((s) => s.name)),
+      const [runOfShow, sheet, chats, help, holds] = await Promise.all([
+        runOfShowFor(sponsors.map((s) => s.name)),
+        judgingSheet(),
         db
           .select({
             chatId: coffeeChats.id,
@@ -94,7 +139,7 @@ export const sponsorOrganizerRouter = createTRPCRouter({
       ]);
       return buildSponsorSummaries({
         sponsors,
-        setups,
+        setups: runOfShow?.coffeeChats ?? [],
         chats: chats.map(({ userName, firstName, ...c }) => ({
           ...c,
           // Application first name, else the account name's first word.
@@ -104,6 +149,12 @@ export const sponsorOrganizerRouter = createTRPCRouter({
         })),
         help,
         holds,
+        judging: buildJudgingBoard({
+          sponsors,
+          items: runOfShow?.items ?? [],
+          runOfShowRead: runOfShow !== null,
+          sheet,
+        }),
         now,
       });
     },

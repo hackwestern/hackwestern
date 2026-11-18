@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildJudgingBoard } from "~/lib/sponsor-judging-rooms";
 import { coffeeChatExpiresAt } from "./coffee-chat-requests";
 import {
   buildSponsorSummaries,
@@ -401,6 +402,7 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
       seatsLeft: 4,
       needsHacker: 1,
       openHelp: 1,
+      missingRooms: 0,
     });
     expect(summaryTotals([acme!])).toEqual({
       accepted: 1,
@@ -408,6 +410,7 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
       seatsLeft: 2,
       needsHacker: 0,
       openHelp: 0,
+      missingRooms: 0,
     });
     expect(summaryTotals([])).toEqual({
       accepted: 0,
@@ -415,6 +418,47 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
       seatsLeft: 0,
       needsHacker: 0,
       openHelp: 0,
+      missingRooms: 0,
     });
+  });
+
+  it("carries each sponsor's judging row and counts missing rooms", () => {
+    const judged = buildSponsorSummaries({
+      sponsors: [
+        { id: "a", name: "Acme", coffeeChatRoom: null },
+        { id: "b", name: "Bolt", coffeeChatRoom: null },
+      ],
+      setups: [],
+      chats: [],
+      help: [],
+      judging: buildJudgingBoard({
+        sponsors: [
+          { id: "a", name: "Acme" },
+          { id: "b", name: "Bolt" },
+        ],
+        items: [
+          {
+            id: "j",
+            day: "Sunday",
+            start: "10:00",
+            end: "11:30",
+            column: "big-event",
+            title: "Sponsor Track Judging",
+            location: "Acme: Rm 2110, QNX: Rm 2235",
+            sponsors: ["Acme"],
+          },
+        ],
+        // Read, but names no rooms: Bolt's room is missing, not unknown.
+        sheet: { rooms: new Map(), pickCount: () => null },
+      }),
+      now: new Date("2026-11-22T14:00:00Z"),
+    });
+    expect(judged.sponsors.map((s) => [s.name, s.judging?.room])).toEqual([
+      ["Acme", "Rm 2110"],
+      ["Bolt", null],
+    ]);
+    expect(judged.totals.missingRooms).toBe(1);
+    // QNX isn't registered: on the board, not a sponsor row.
+    expect(judged.judging?.rows.at(-1)?.status).toBe("not-registered");
   });
 });

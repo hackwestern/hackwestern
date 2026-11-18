@@ -25,6 +25,7 @@ import {
 } from "~/components/sponsors/coffee-chat-fields";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
+import { JudgingStatusPill } from "~/components/sponsors/organizer/judging-panel";
 import {
   addInFlight,
   removeInFlight,
@@ -40,6 +41,10 @@ import {
   sponsorColorIndexes,
   type SponsorColor,
 } from "~/lib/sponsor-colors";
+import {
+  MAX_SPONSOR_PICKS,
+  MIN_SPONSOR_PICKS,
+} from "~/lib/sponsor-judging-rooms";
 import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
 import {
   organizerHomeHref,
@@ -59,6 +64,7 @@ import { api, type RouterOutputs } from "~/utils/api";
 // compact card per sponsor under 640px.
 
 const copy = sponsorOrganizerCopy.board;
+const judgingCopy = sponsorOrganizerCopy.judging;
 
 type SponsorStatus = (typeof SPONSOR_STATUS_VALUES)[number];
 type Sponsor = RouterOutputs["sponsorDashboard"]["getSponsors"][number];
@@ -749,6 +755,25 @@ export function SponsorsTab({
                     {summary && summary.needsHacker > 0 && (
                       <NeedsHackerPill n={summary.needsHacker} />
                     )}
+                    {summary?.judging && (
+                      <span
+                        className={cn(
+                          "text-sm text-dashboard-text-medium",
+                          summary.judging.missingRoom &&
+                            "text-dashboard-text-warning",
+                        )}
+                      >
+                        {judgingCopy.labelled(
+                          judgingCopy.column,
+                          judgingCopy.cell(
+                            summary.judging.room,
+                            summary.judging.picks,
+                            summary.judging.room !== null ||
+                              summary.judging.missingRoom,
+                          ),
+                        )}
+                      </span>
+                    )}
                   </span>
                   <ChevronDown
                     aria-hidden
@@ -805,6 +830,7 @@ export function SponsorsTab({
                   copy.chatColumns.chatRoom,
                   copy.chatColumns.chats,
                   copy.chatColumns.needsHacker,
+                  judgingCopy.column,
                   copy.chatColumns.help,
                 ].map((h, i) => (
                   <th
@@ -927,13 +953,16 @@ export function SponsorsTab({
                         )}
                       </td>
                       <td className={cell}>
+                        <JudgingCell summary={summary} />
+                      </td>
+                      <td className={cell}>
                         <HelpCell summary={summary} />
                       </td>
                     </tr>
                     {open && (
                       <tr id={panelId}>
                         <td
-                          colSpan={10}
+                          colSpan={11}
                           className={cn(
                             "border-b border-dashboard-border-subtle px-4 pb-4 pt-1",
                             row.targeted && "bg-dashboard-bg-highlight",
@@ -980,6 +1009,14 @@ export function SponsorsTab({
                 </td>
                 <td
                   className={cn(
+                    "whitespace-nowrap bg-dashboard-bg-inset px-3 py-3 tabular-nums",
+                    totals.missingRooms > 0 && "text-dashboard-text-warning",
+                  )}
+                >
+                  {judgingCopy.missingRooms(totals.missingRooms)}
+                </td>
+                <td
+                  className={cn(
                     "bg-dashboard-bg-inset px-3 py-3 tabular-nums",
                     totals.openHelp > 0 && "text-dashboard-text-warning",
                   )}
@@ -1009,6 +1046,9 @@ export function SponsorsTab({
           </Detail>
           <Detail label={copy.chatColumns.help}>
             {copy.openHelp(totals.openHelp)}
+          </Detail>
+          <Detail label={judgingCopy.column}>
+            {judgingCopy.missingRooms(totals.missingRooms)}
           </Detail>
         </dl>
       )}
@@ -1113,6 +1153,66 @@ function HelpCell({ summary }: { summary: SponsorSummary | undefined }) {
       {help.status === "open"
         ? copy.helpOpen
         : (help.claimedByName ?? copy.helpClaimed)}
+    </span>
+  );
+}
+
+// Sunday judging: room (or Missing) and picks, warning text when a room
+// is missing or picks are short.
+function JudgingCell({ summary }: { summary: SponsorSummary | undefined }) {
+  const j = summary?.judging;
+  if (!summary || !j) return <span>{copy.none}</span>;
+  return (
+    <span className="flex flex-col whitespace-nowrap">
+      <span
+        className={cn(
+          "font-semibold",
+          j.missingRoom && "text-dashboard-text-warning",
+        )}
+      >
+        {j.room ??
+          (j.missingRoom ? judgingCopy.missing : judgingCopy.roomUnknown)}
+      </span>
+      <span
+        className={cn(
+          "text-xs tabular-nums text-dashboard-text-light",
+          j.tooFewPicks && "font-semibold text-dashboard-text-warning",
+        )}
+      >
+        {judgingCopy.columns.picks}{" "}
+        {j.picks === null
+          ? judgingCopy.picksUnknown
+          : judgingCopy.picks(j.picks, MIN_SPONSOR_PICKS, MAX_SPONSOR_PICKS)}
+      </span>
+    </span>
+  );
+}
+
+function JudgingDetail({
+  judging,
+}: {
+  judging: NonNullable<SponsorSummary["judging"]>;
+}) {
+  return (
+    <span className="flex flex-col items-start gap-1">
+      <span>
+        {(() => {
+          const value = judgingCopy.cell(
+            judging.room,
+            judging.picks,
+            judging.room !== null || judging.missingRoom,
+          );
+          return judging.source
+            ? judgingCopy.withSource(value, judgingCopy.source[judging.source])
+            : value;
+        })()}
+      </span>
+      {judging.otherRoom && (
+        <span className="text-xs font-medium text-dashboard-text-warning">
+          {judgingCopy.otherRoom(judging.otherRoom)}
+        </span>
+      )}
+      <JudgingStatusPill status={judging.status} />
     </span>
   );
 }
@@ -1259,6 +1359,11 @@ function SponsorDetails({
           <Detail label={copy.columns.picks}>
             <Picks n={sponsor.teamIds.length} long />
           </Detail>
+          {summary?.judging && (
+            <Detail label={judgingCopy.detailLabel}>
+              <JudgingDetail judging={summary.judging} />
+            </Detail>
+          )}
           <Detail label={copy.columns.page}>
             <CopyLinkButton sponsorId={sponsor.sponsorId} name={sponsor.name} />
           </Detail>

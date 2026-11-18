@@ -390,15 +390,6 @@ export const coffeeChatCopy = {
       jump: "Jump to rooms",
       tableLabel: "Coffee chat rooms by time",
       time: "Time",
-      legendLabel: "What the cells mean",
-      legend: {
-        free: "Free: pick it to book or hold",
-        booked: "Booked, in the sponsor's colour",
-        full: "Full",
-        over: "Over capacity",
-        held: "Held, needs a hacker",
-        dimmed: "Other sponsors (filtered out)",
-      },
       free: "Free",
       full: "Full",
       over: "Over",
@@ -416,8 +407,7 @@ export const coffeeChatCopy = {
       ) =>
         who
           ? `${room}, ${time}, ${who}, ${used} of ${capacity} booked`
-          : `${room}, ${time}, available`,
-      notToday: "Coffee chats run on Saturday. Pick Saturday to see the rooms.",
+          : `${room}, ${time}, free: pick to book or hold`,
       floorPlanAlt:
         "Floor 2 plan showing the coffee chat rooms, Rm 2241, Rm 2242 and Rm 2243.",
       empty: "No coffee chat times in the sheet yet.",

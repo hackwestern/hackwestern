@@ -2,7 +2,6 @@ import { SPONSOR_MAP_FLOORS } from "~/lib/sponsor-map-rooms";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { CeremonyOrder } from "~/components/sponsors/ceremony-order";
 import {
   CoffeeChatRoomTable,
@@ -10,10 +9,11 @@ import {
 } from "~/components/sponsors/coffee-chat-room-table";
 import {
   DayGrid,
-  TimelineKey,
+  HackathonToggle,
   useShowHackathon,
 } from "~/components/sponsors/day-grid";
 import { DayPicker } from "~/components/sponsors/day-picker";
+import { JudgingPanel } from "~/components/sponsors/organizer/judging-panel";
 import { ReadAt } from "~/components/sponsors/schedule-states";
 import { SheetEditButton } from "~/components/sponsors/sheet-edit-button";
 import {
@@ -24,12 +24,12 @@ import {
 import { WorkshopsTable } from "~/components/sponsors/workshop-details";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { scheduleCopy } from "~/content/sponsor-schedule";
-import { ROOM_CAPACITY } from "~/lib/coffee-chat-room-table";
 import { COFFEE_CHAT_DAY_LABEL } from "~/lib/coffee-chats";
 import type { RunOfShowDay } from "~/lib/run-of-show";
 import { defaultRunOfShowDay } from "~/lib/run-of-show-time";
 import { fetchScheduleData } from "~/lib/schedule";
 import { coffeeChatEntries } from "~/lib/schedule-bookings";
+import { JUDGING_DEFAULT_DAY } from "~/lib/sponsor-judging-rooms";
 import { sponsorNameForParam } from "~/lib/sponsor-organizer";
 import { buildOrganizerTimeline, taskEntries } from "~/lib/sponsor-timeline";
 import {
@@ -84,6 +84,15 @@ export function RunOfShowTab({
     refetchOnWindowFocus: true,
   });
   const board = useLiveChatBoard();
+  // Same query (and cache) as the page's sponsor summary: the Sunday
+  // judging board rides along with it.
+  const summary = api.sponsorOrganizer.summary.useQuery(undefined, {
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+  const judging = summary.data?.judging;
+  // Shown on the day the judging block falls on (Sunday without one).
+  const judgingDay = judging?.day ?? JUDGING_DEFAULT_DAY;
   const names = board.data?.sponsors.map((s) => s.sponsor) ?? NO_NAMES;
   const selection = useSponsorSelection(
     names,
@@ -93,17 +102,13 @@ export function RunOfShowTab({
   return (
     <>
       <SheetEditButton href={data.sheetUrl} />
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <DayPicker value={shownDay} onChange={setDay} />
-        <DashboardButton variant="link" asChild className="-mr-2">
-          <a href="#rooms">{roomCopy.jump}</a>
-        </DashboardButton>
-      </div>
-      <TimelineKey
-        mode="organizer"
-        showHackathon={showHackathon}
-        onShowHackathonChange={setShowHackathon}
-      />
+      {shownDay === COFFEE_CHAT_DAY_LABEL && (
+        <div className="flex justify-end">
+          <DashboardButton variant="link" asChild className="-mr-2">
+            <a href="#rooms">{roomCopy.jump}</a>
+          </DashboardButton>
+        </div>
+      )}
       {/* The run of show gets the full width so its columns fit without
           sideways scrolling; the live room map sits with the rooms below. */}
       <div className="min-w-0">
@@ -111,6 +116,13 @@ export function RunOfShowTab({
           mode="organizer"
           day={shownDay}
           now={now}
+          headerStart={<DayPicker value={shownDay} onChange={setDay} />}
+          headerEnd={
+            <HackathonToggle
+              showHackathon={showHackathon}
+              onShowHackathonChange={setShowHackathon}
+            />
+          }
           entries={[
             ...buildOrganizerTimeline({
               day: shownDay,
@@ -134,13 +146,23 @@ export function RunOfShowTab({
           emptyText={copy.emptyDay}
         />
       </div>
-      <RoomsSection
-        day={shownDay}
-        names={names}
-        selection={selection}
-        jump={jumpToRooms}
-        onJumped={onJumped}
-      />
+      {/* Coffee chats are Saturday only: other days have no rooms section. */}
+      {shownDay === COFFEE_CHAT_DAY_LABEL && (
+        <RoomsSection
+          names={names}
+          selection={selection}
+          jump={jumpToRooms}
+          onJumped={onJumped}
+        />
+      )}
+      {/* Not while loading: the day isn't known yet (no Sunday flash). */}
+      {!summary.isLoading && shownDay === judgingDay && (
+        <JudgingPanel
+          board={judging}
+          failed={summary.isError}
+          sheetUrl={data.sheetUrl}
+        />
+      )}
       {/* Only the picked day's ceremony and workshops (Jazz, 2026-11-18). */}
       <CeremonyOrder
         segments={ceremonySegmentsForDay(data.ceremonies, data.items, shownDay)}
@@ -154,15 +176,14 @@ export function RunOfShowTab({
 
 // The coffee chat rooms as a booking table, right under the run of show,
 // with the floor 2 plan beside it (it replaced the "Where is everyone"
-// tab, which now lands here: #rooms).
+// tab, which now lands here: #rooms). No heading or intro: the cells show
+// capacity as n/6 (Jazz, 2026-11-18).
 function RoomsSection({
-  day,
   names,
   selection,
   jump,
   onJumped,
 }: {
-  day: RunOfShowDay;
   names: readonly string[];
   selection: SponsorSelection;
   jump: boolean;
@@ -179,33 +200,15 @@ function RoomsSection({
   return (
     <section
       id="rooms"
-      aria-labelledby="rooms-heading"
+      aria-label={roomCopy.heading}
       className="flex scroll-mt-4 flex-col gap-3"
     >
-      <div className="flex flex-col gap-1">
-        <h2 id="rooms-heading" className="m-0 text-lg font-semibold">
-          {roomCopy.heading}
-        </h2>
-        <p className="m-0 text-sm text-dashboard-text-medium">
-          {roomCopy.intro(ROOM_CAPACITY)}
-        </p>
-      </div>
       {/* The room table with the live floor map beside it (below it on
           phones and tablets). */}
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
         <div className="flex min-w-0 flex-col gap-3">
-          {day !== COFFEE_CHAT_DAY_LABEL ? (
-            <DashboardPanel>
-              <p className="m-0 text-dashboard-text-medium">
-                {roomCopy.notToday}
-              </p>
-            </DashboardPanel>
-          ) : (
-            <>
-              <SponsorFilter names={names} selection={selection} />
-              <CoffeeChatRoomTable selection={selection} />
-            </>
-          )}
+          <SponsorFilter names={names} selection={selection} />
+          <CoffeeChatRoomTable selection={selection} />
         </div>
         {/* Just the floor plan for reference (Jazz, 2026-11-18): no pins,
             toggles or live state. */}
