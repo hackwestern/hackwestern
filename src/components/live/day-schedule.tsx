@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { ParsedScheduleEvent } from "~/types/schedule";
 import { getTimeInMinutes } from "~/lib/schedule";
 
@@ -24,7 +24,7 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
     main: "bg-violet-300 border-violet-400",
     sponsor: "bg-pink-200 border-pink-300",
     workshop: "bg-yellow-200 border-yellow-300",
-    activity: "bg-green-200 border-green-300",
+    activity: "bg-emerald-200 border-emerald-300",
     food: "bg-blue-200 border-blue-300",
     booth: "bg-pink-100 border-pink-200",
     scavenger: "bg-orange-100 border-orange-200",
@@ -35,23 +35,56 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
     main: "text-violet-900",
     sponsor: "text-pink-900",
     workshop: "text-yellow-900",
-    activity: "text-green-900",
+    activity: "text-emerald-900",
     food: "text-blue-900",
     booth: "text-pink-900",
     scavenger: "text-orange-900",
     other: "text-purple-900",
   };
 
+  // Long titles get cut to the lines that fit, with the full text on hover
+  const blockRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const block = blockRef.current;
+    const title = titleRef.current;
+    if (!block || !title) return;
+    const fit = () => {
+      const style = getComputedStyle(block);
+      const location = title.nextElementSibling as HTMLElement | null;
+      const room =
+        block.clientHeight -
+        parseFloat(style.paddingTop) -
+        parseFloat(style.paddingBottom) -
+        (location ? location.offsetHeight + 2 : 0);
+      const lineHeight = parseFloat(getComputedStyle(title).lineHeight);
+      title.style.webkitLineClamp = String(
+        Math.max(1, Math.floor(room / lineHeight)),
+      );
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(block);
+    return () => observer.disconnect();
+  }, [height, event.title, event.location]);
+
   return (
     <div
-      className={`rounded-lg border-2 p-1.5 sm:p-2.5 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 z-50 flex select-text flex-col justify-center shadow-sm transition-shadow hover:shadow-md`}
+      ref={blockRef}
+      title={
+        event.location ? `${event.title} · ${event.location}` : event.title
+      }
+      className={`rounded-lg border-2 p-1.5 sm:px-2.5 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 z-50 flex select-text flex-col justify-center overflow-hidden shadow-sm transition-shadow hover:shadow-md`}
       style={{ height: `${height}px` }}
     >
-      <div className="select-text font-figtree text-[9px] font-semibold leading-tight sm:text-[11px]">
+      <div
+        ref={titleRef}
+        className="select-text overflow-hidden break-words font-figtree text-[9px] font-semibold leading-tight [-webkit-box-orient:vertical] [display:-webkit-box] sm:text-[11px]"
+      >
         {event.title}
       </div>
       {event.location && (
-        <div className="mt-0.5 select-text font-figtree text-[8px] italic opacity-70 sm:text-[9px]">
+        <div className="mt-0.5 select-text break-words font-figtree text-[8px] italic opacity-70 sm:text-[9px]">
           {event.location}
         </div>
       )}
