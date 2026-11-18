@@ -99,11 +99,10 @@ export function ScoreControl({
               className={cn(
                 "min-h-11 rounded-dashboard-md border text-base font-semibold tabular-nums sm:min-h-10",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1",
+                // Only the chosen score stands out; the rest stay alike.
                 on
                   ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
-                  : value !== null && n < value
-                    ? "border-dashboard-border-subtle bg-dashboard-bg-highlight text-dashboard-text-active [@media(hover:hover)]:hover:border-dashboard-action-primary"
-                    : "border-dashboard-border-default bg-dashboard-bg-surface text-dashboard-text-medium [@media(hover:hover)]:hover:border-dashboard-border-strong [@media(hover:hover)]:hover:text-dashboard-text-heavy",
+                  : "border-dashboard-border-default bg-dashboard-bg-surface text-dashboard-text-medium [@media(hover:hover)]:hover:border-dashboard-border-strong [@media(hover:hover)]:hover:text-dashboard-text-heavy",
                 pressable,
               )}
             >
