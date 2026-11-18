@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { DoorOpen, ScanLine, TriangleAlert, Users } from "lucide-react";
+import { DoorOpen, ScanLine, Users } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { coffeeChatCopy } from "~/content/coffee-chat";
-import type { SponsorHoldView } from "~/lib/coffee-chat-holds";
+import type { BlockFormat, SponsorHoldView } from "~/lib/coffee-chat-holds";
 import { formatClock } from "~/lib/run-of-show";
 import { cn } from "~/lib/utils";
 
@@ -11,13 +11,14 @@ const copy = coffeeChatCopy.sponsorHolds;
 /** Full-width compact outline buttons (DashboardButton "small"). */
 const actionClass = "w-full";
 
-/** The scan page, opened on this hold's start time when it's still open. */
+/** The scan page, opened on this block's first open slot. */
 export function scanHrefForHold(sponsor: string, startTime: string): string {
   return `/sponsors/${sponsor}/scan?time=${encodeURIComponent(startTime)}`;
 }
 
-// "Pick from candidates" and "Scan a badge" for one hold. Candidates is a
-// button when the caller can switch tabs in place, else a link.
+// "Pick from candidates" and "Scan a badge" for a block's open slots (Scan
+// opens on the first one). Candidates is a button when the caller can
+// switch tabs in place, else a link.
 export function HoldActions({
   sponsor,
   hold,
@@ -61,15 +62,17 @@ export function HoldActions({
   );
 }
 
-// The sponsor's own room holds: room and time, and either "You still need
-// a hacker" (with ways to find one) or how many hackers are booked.
+// The sponsor's own room blocks: "Rm 2243 · 9:00–10:00 · 1 of 4 chats
+// filled" with their chat type, and ways to fill the open slots.
 export function SponsorHolds({
   sponsor,
   holds,
+  format,
   onPickCandidates,
 }: {
   sponsor: string;
   holds: SponsorHoldView[];
+  format: BlockFormat;
   onPickCandidates?: () => void;
 }) {
   if (holds.length === 0) return null;
@@ -82,7 +85,9 @@ export function SponsorHolds({
         >
           {copy.heading}
         </h2>
-        <p className="m-0 text-sm text-dashboard-text-medium">{copy.intro}</p>
+        <p className="m-0 text-sm text-dashboard-text-medium">
+          {copy.intro} {copy.chatType(format.groupSize, format.reps)}
+        </p>
       </div>
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {holds.map((h) => (
@@ -90,7 +95,7 @@ export function SponsorHolds({
             key={h.holdId}
             className={cn(
               "flex flex-col gap-3 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card",
-              h.needsHacker && "border-l-4 border-dashboard-status-warning",
+              h.needsHacker && "border-l-4 border-dashboard-border-strong",
             )}
           >
             <div className="flex flex-col gap-1">
@@ -103,23 +108,15 @@ export function SponsorHolds({
                   h.room,
                   formatClock(h.startTime),
                   formatClock(h.endTime),
+                  h.filled,
+                  h.total,
                 )}
               </p>
-              {h.needsHacker ? (
-                <p className="m-0 flex items-center gap-1.5 text-sm font-semibold text-dashboard-text-warning">
-                  <TriangleAlert aria-hidden className="size-4 shrink-0" />
-                  {copy.needsHacker}
-                </p>
-              ) : (
-                <p className="m-0 text-sm text-dashboard-text-medium">
-                  {copy.booked(h.chats)}
-                </p>
-              )}
             </div>
-            {h.needsHacker && (
+            {h.needsHacker && h.firstOpen && (
               <HoldActions
                 sponsor={sponsor}
-                hold={h}
+                hold={{ room: h.room, startTime: h.firstOpen }}
                 onPickCandidates={onPickCandidates}
               />
             )}

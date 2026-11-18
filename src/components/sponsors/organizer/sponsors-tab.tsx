@@ -20,7 +20,6 @@ import { hover, press } from "~/components/internals/interaction";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import {
-  SponsorRoomSelect,
   WatcherInput,
 } from "~/components/sponsors/coffee-chat-fields";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
@@ -477,7 +476,6 @@ export function SponsorsTab({
       clearTarget();
     }
   };
-  const chatRooms: readonly string[] = COFFEE_CHAT_ROOMS;
   const rowAttrs = (sponsor: Sponsor) => {
     const id = sponsor.sponsorId ? sponsorRowId(sponsor.sponsorId) : undefined;
     return { dataRow: id, targeted: !!id && id === target };
@@ -800,7 +798,6 @@ export function SponsorsTab({
                     <SponsorDetails
                       sponsor={sponsor}
                       summary={summary}
-                      rooms={chatRooms}
                       idPrefix="m"
                     />
                   </div>
@@ -971,7 +968,6 @@ export function SponsorsTab({
                           <SponsorDetails
                             sponsor={sponsor}
                             summary={summary}
-                            rooms={chatRooms}
                             idPrefix="d"
                           />
                         </td>
@@ -1235,12 +1231,10 @@ const detailCopy = copy.details;
 function SponsorDetails({
   sponsor,
   summary,
-  rooms,
   idPrefix,
 }: {
   sponsor: Sponsor;
   summary: SponsorSummary | undefined;
-  rooms: readonly string[];
   idPrefix: string;
 }) {
   // Help requests live on the Task pings tab (scrolled to help).
@@ -1265,13 +1259,6 @@ function SponsorDetails({
         ) : (
           <>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <SponsorRoomSelect
-                sponsorId={sponsor.sponsorId}
-                assignedRoom={summary.assignedRoom}
-                sheetRoom={summary.sheetRoom}
-                rooms={rooms}
-                idPrefix={`${idPrefix}-room`}
-              />
               <WatcherInput
                 key={summary.watcher ?? ""}
                 sponsorId={sponsor.sponsorId}

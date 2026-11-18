@@ -10,10 +10,9 @@ import {
   useDebounced,
 } from "~/components/sponsors/add-coffee-chat";
 import {
-  SponsorRoomSelect,
+  dashboardFieldClass,
   WatcherInput,
 } from "~/components/sponsors/coffee-chat-fields";
-import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-fields";
 import {
   CoffeeChatRoomTable,
   useLiveChatBoard,
@@ -26,13 +25,13 @@ import {
 import { LoadError } from "~/components/sponsors/schedule-states";
 import { useNow } from "~/components/sponsors/use-now";
 import { coffeeChatCopy } from "~/content/coffee-chat";
-import { ROOM_CAPACITY } from "~/lib/coffee-chat-room-table";
 import {
   COFFEE_CHAT_GRID_MINUTES,
   coffeeChatExpiresAt,
   coffeeChatStartsAt,
   type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
+import { holdCovers } from "~/lib/coffee-chat-holds";
 import { formatClock } from "~/lib/run-of-show";
 import { sponsorNameForParam } from "~/lib/sponsor-organizer";
 import { cn } from "~/lib/utils";
@@ -46,7 +45,6 @@ import { api } from "~/utils/api";
 
 const copy = coffeeChatCopy.organizer.board;
 const booked = coffeeChatCopy.organizer;
-const roomCopy = coffeeChatCopy.organizer.roomTable;
 
 type Selected = { sponsor: string; slotTime: string };
 
@@ -122,17 +120,15 @@ export function CoffeeChatBoard({
         {view === "list" ? (
           list
         ) : view === "rooms" ? (
-          <>
-            <p className="m-0 text-sm text-dashboard-text-medium">
-              {roomCopy.intro(ROOM_CAPACITY)}
-            </p>
-            <CoffeeChatRoomTable
-              selection={selection}
-              colors={colors}
-              highlight={highlight}
-              onClearHighlight={() => setHighlight(null)}
-            />
-          </>
+          <CoffeeChatRoomTable
+            selection={selection}
+            colors={colors}
+            highlight={highlight}
+            onHighlight={(name) =>
+              setHighlight((h) => (h === name ? null : name))
+            }
+            onClearHighlight={() => setHighlight(null)}
+          />
         ) : (
           <Board isShown={selection.isShown} />
         )}
@@ -238,11 +234,7 @@ function Board({ isShown }: { isShown: (sponsor: string) => boolean }) {
                   {copy.time}
                 </th>
                 {board.sponsors.map((s) => (
-                  <SponsorHeader
-                    key={s.sponsor}
-                    sponsor={s}
-                    rooms={board.assignableRooms}
-                  />
+                  <SponsorHeader key={s.sponsor} sponsor={s} />
                 ))}
               </tr>
             </thead>
@@ -326,6 +318,15 @@ function Board({ isShown }: { isShown: (sponsor: string) => boolean }) {
           return c ? [c] : [];
         })}
         rooms={board.rooms}
+        room={
+          panelSponsor && panelCell
+            ? (board.holds.find(
+                (h) =>
+                  h.sponsorId === panelSponsor.sponsorId &&
+                  holdCovers(h, panelCell),
+              )?.room ?? null)
+            : null
+        }
         now={now}
       />
     </>
@@ -333,13 +334,7 @@ function Board({ isShown }: { isShown: (sponsor: string) => boolean }) {
 }
 
 // Totals for the sponsors in the filter (every sponsor by default).
-function SponsorHeader({
-  sponsor: s,
-  rooms,
-}: {
-  sponsor: BoardSponsor;
-  rooms: string[];
-}) {
+function SponsorHeader({ sponsor: s }: { sponsor: BoardSponsor }) {
   return (
     <th
       scope="col"
@@ -363,15 +358,7 @@ function SponsorHeader({
           </span>
         )}
         {s.sponsorId ? (
-          <>
-            <SponsorRoomSelect
-              sponsorId={s.sponsorId}
-              assignedRoom={s.assignedRoom}
-              sheetRoom={s.sheetRoom}
-              rooms={rooms}
-            />
-            <WatcherInput sponsorId={s.sponsorId} watcher={s.watcher} />
-          </>
+          <WatcherInput sponsorId={s.sponsorId} watcher={s.watcher} />
         ) : (
           <span className="text-xs text-dashboard-text-light">
             {copy.notRegistered}
@@ -483,6 +470,7 @@ function CellPanel({
   cell,
   chats,
   rooms,
+  room,
   now,
 }: {
   open: boolean;
@@ -492,6 +480,8 @@ function CellPanel({
   cell: BoardCell | undefined;
   chats: BoardChat[];
   rooms: string[];
+  /** The room of the sponsor's block here, if any. */
+  room: string | null;
   now: Date;
 }) {
   const time = cell ? formatClock(cell.slotTime) : "";
@@ -521,7 +511,7 @@ function CellPanel({
                   <Dialog.Description className="m-0 text-sm text-dashboard-text-medium">
                     {copy.panel.description(
                       copy.format(sponsor.durationMinutes, sponsor.groupSize),
-                      sponsor.room,
+                      room,
                     )}
                     {cell.kind === "open" &&
                       ` · ${cell.seatsLeft > 0 ? copy.seatsLeft(cell.seatsLeft) : copy.full}`}

@@ -292,7 +292,7 @@ export const sponsorPortalRouter = createTRPCRouter({
   /**
    * Set how many reps the sponsor sends to coffee chats (1 to 10). Public:
    * the private UUID is the only key, so a sponsor can only change their own
-   * row. Parallel chats are capped by room size in coffeeChatSeats.
+   * row. Hackers per slot follow hackersPerSlot (chat type x reps).
    */
   setCoffeeChatReps: publicProcedure
     .input(

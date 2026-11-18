@@ -130,7 +130,7 @@ export default function SponsorCoffeeChatsPage() {
   }
   if (!q.data) return shell(<LoadError onRetry={() => void q.refetch()} />);
 
-  const { sponsorName, watcherName, chats, holds } = q.data;
+  const { sponsorName, watcherName, chats, holds, format } = q.data;
   const groups = groupByTime(chats);
   const partners = new Map(
     (partnersQ.data ?? []).map((p) => [p.chatId, p] as const),
@@ -233,10 +233,11 @@ export default function SponsorCoffeeChatsPage() {
         </button>
       </div>
 
-      {/* Rooms organizers held for this sponsor (only their own). */}
+      {/* This sponsor's own room blocks, with how full each is. */}
       <SponsorHolds
         sponsor={id}
         holds={holds}
+        format={format}
         onPickCandidates={() => {
           choose("candidates", true);
           tabRefs.current
