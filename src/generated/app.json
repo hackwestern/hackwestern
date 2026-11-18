@@ -117,6 +117,16 @@
       ]
     },
     {
+      "auth": "organizer",
+      "dynamic": false,
+      "file": "src/pages/internal/judging.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/internal/judging",
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
+    },
+    {
       "auth": "none-detected",
       "dynamic": false,
       "file": "src/pages/internal/login.tsx",
