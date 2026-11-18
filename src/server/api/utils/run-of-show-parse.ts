@@ -4,6 +4,7 @@
  * hands them here; the contract lives in src/lib/run-of-show.ts.
  */
 import {
+  coffeeChatMinutesOf,
   parseCoffeeChatDuration,
   parseCoffeeChatGroupSize,
   parseSheetTime,
@@ -238,6 +239,24 @@ function toHours(text: string): number | null {
 }
 
 /**
+ * Availability wins over chatting hours (Jazz, 2026-11-18): a sponsor can't
+ * chat longer than they're available, so "3" chatting hours in a 10-12
+ * window reads as 2. Hours shorter than the window are kept (StarTech chats
+ * 2 h inside 9-1).
+ */
+export function capToWindow(
+  hours: number | null,
+  start: string | null,
+  end: string | null,
+): number | null {
+  if (hours == null || !start || !end) return hours;
+  const from = coffeeChatMinutesOf(start);
+  const to = coffeeChatMinutesOf(end);
+  if (from == null || to == null || to <= from) return hours;
+  return Math.min(hours, (to - from) / 60);
+}
+
+/**
  * Parse the "Coffee Chats" tab (header in row 1, matched by name). Skips
  * blank names and the "Total" row. A row with only a name is a sponsor not
  * set up yet: windowStart/windowEnd null.
@@ -264,13 +283,19 @@ export function parseCoffeeChatsTab(grid: SheetGrid): CoffeeChatSetup[] {
     const sponsor = at(r, sponsorCol);
     if (!sponsor || norm(sponsor) === "total") continue;
     const format = at(r, cols.format) || null;
+    const windowStart = parseSheetTime(at(r, cols.start));
+    const windowEnd = parseSheetTime(at(r, cols.end));
     setups.push({
       sponsor,
-      windowStart: parseSheetTime(at(r, cols.start)),
-      windowEnd: parseSheetTime(at(r, cols.end)),
+      windowStart,
+      windowEnd,
       durationMinutes: parseCoffeeChatDuration(format),
       groupSize: parseCoffeeChatGroupSize(format),
-      chattingHours: toHours(at(r, cols.hours)),
+      chattingHours: capToWindow(
+        toHours(at(r, cols.hours)),
+        windowStart,
+        windowEnd,
+      ),
       slots: toCount(at(r, cols.slots)),
       hackers: toCount(at(r, cols.hackers)),
       format,

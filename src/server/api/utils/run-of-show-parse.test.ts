@@ -213,3 +213,20 @@ describe("parseCoffeeChatsTab", () => {
     expect(withRoom[0]).toMatchObject({ sponsor: "StarTech", room: "Rm 2241", windowStart: "09:00", windowEnd: null });
   });
 });
+
+describe("capToWindow (availability wins over chatting hours)", () => {
+  test("caps hours longer than the window", async () => {
+    const { capToWindow } = await import("./run-of-show-parse");
+    // Canada Life: 3 chatting hours in 10:00-12:00 reads as 2.
+    expect(capToWindow(3, "10:00", "12:00")).toBe(2);
+  });
+  test("keeps hours shorter than the window", async () => {
+    const { capToWindow } = await import("./run-of-show-parse");
+    // StarTech: 2 chatting hours inside 9:00-13:00.
+    expect(capToWindow(2, "09:00", "13:00")).toBe(2);
+  });
+  test("leaves hours alone without a window", async () => {
+    const { capToWindow } = await import("./run-of-show-parse");
+    expect(capToWindow(3, null, null)).toBe(3);
+  });
+});

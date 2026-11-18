@@ -96,8 +96,9 @@ describe("sheetMismatch (flagged quietly, never fixed)", () => {
     expect(sheetMismatch(row("StarTech"))).toEqual(["hackers", "hours"]);
     // 12 x 3 = 36 adds up; 3 h of 30-min chats = 6 slots, not 12.
     expect(sheetMismatch(row("Sunlife"))).toEqual(["hours"]);
-    // 4 x 3 = 12 adds up; 3 h of 30-min chats = 6 slots, not 4.
-    expect(sheetMismatch(row("Canada Life"))).toEqual(["hours"]);
+    // 4 x 3 = 12 adds up. Its 3 chatting hours are capped at the 10-12
+    // window (availability wins), and 2 h of 30-min chats = 4 slots.
+    expect(sheetMismatch(row("Canada Life"))).toEqual([]);
     expect(sheetMismatch(row("Scotiabank"))).toEqual([]);
   });
 });
