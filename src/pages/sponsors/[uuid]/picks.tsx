@@ -139,7 +139,7 @@ export default function SponsorJudgingPage() {
 
   return (
     <SponsorShell title={copy.seoTitle} backHref={`/sponsors/${uuid}`}>
-      <div className="flex flex-col gap-2">
+      <div data-tour="judging-intro" className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-1.5">
           <DashboardTag>{data.sponsorName}</DashboardTag>
           {data.sponsorTrack && (
@@ -178,6 +178,9 @@ export default function SponsorJudgingPage() {
                 type="button"
                 role="tab"
                 id={`step-${s}`}
+                data-tour={
+                  s === "shortlist" ? "judging-shortlist-tab" : undefined
+                }
                 aria-selected={on}
                 aria-controls={`panel-${s}`}
                 tabIndex={on ? 0 : -1}
@@ -294,8 +297,11 @@ export default function SponsorJudgingPage() {
               </Empty>
             ) : (
               <ul className="m-0 flex list-none flex-col gap-3 p-0">
-                {visible.map((team) => (
-                  <li key={team.id}>
+                {visible.map((team, i) => (
+                  <li
+                    key={team.id}
+                    data-tour={i === 0 ? "judging-first-project" : undefined}
+                  >
                     <ProjectCard
                       team={team}
                       review={reviews.get(team.id)}

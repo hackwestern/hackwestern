@@ -26,6 +26,7 @@ export function VenueMapButton({ className }: { className?: string }) {
       trigger={
         <button
           type="button"
+          data-tour="map"
           aria-label={copy.mapButtonLabel}
           className={cn(
             "inline-flex min-h-11 items-center gap-2 rounded-full bg-dashboard-action-primary px-4 text-sm font-semibold text-dashboard-text-inverse shadow-dashboard-primary-btn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
@@ -91,6 +92,7 @@ export function VenueMapDialog({
           <div
             role="group"
             aria-label={copy.map.floors}
+            data-tour="map-floors"
             className="inline-flex w-fit gap-1 rounded-full bg-dashboard-bg-inset p-1"
           >
             {SPONSOR_MAP_FLOORS.map((f) => (
@@ -149,7 +151,11 @@ export function VenueMapDialog({
             </h3>
             <ul className="m-0 grid list-none gap-x-6 gap-y-2 p-0 sm:grid-cols-2">
               {PLACES.map((p) => (
-                <li key={p.room} className="flex flex-col">
+                <li
+                  key={p.room}
+                  data-tour={`map-place-${p.room}`}
+                  className="flex flex-col"
+                >
                   <span className="text-sm font-semibold">{p.name}</span>
                   <span className="text-sm text-dashboard-text-light">
                     {p.where}

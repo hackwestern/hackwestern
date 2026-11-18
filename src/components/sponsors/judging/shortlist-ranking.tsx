@@ -139,7 +139,7 @@ export function ShortlistRanking({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div data-tour="judging-rank" className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2 className="m-0 text-xl font-semibold text-dashboard-text-heavy">
           {presented ? copy.round.presentedHeading : copy.shortlist.heading}

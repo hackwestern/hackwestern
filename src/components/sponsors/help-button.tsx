@@ -81,7 +81,7 @@ export function SponsorHelp({
   }, [focusTo, current]);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div data-tour="need-help" className="flex flex-col gap-2">
       {/* Always mounted so screen readers announce each change. */}
       <p role="status" className="sr-only">
         {text ? `${text.title}. ${text.body}` : ""}
