@@ -10,12 +10,15 @@ import {
 import {
   DayGrid,
   HackathonToggle,
+  OrganizersToggle,
   useShowHackathon,
+  useShowOrganizers,
 } from "~/components/sponsors/day-grid";
 import { DayPicker } from "~/components/sponsors/day-picker";
 import { JudgingPanel } from "~/components/sponsors/organizer/judging-panel";
 import { ReadAt } from "~/components/sponsors/schedule-states";
 import { SheetEditButton } from "~/components/sponsors/sheet-edit-button";
+import { SponAvailabilityTable } from "~/components/sponsors/organizer/spon-availability";
 import {
   SponsorFilter,
   type SponsorSelection,
@@ -77,6 +80,7 @@ export function RunOfShowTab({
     refetchInterval: 60_000,
   });
   const [showHackathon, setShowHackathon] = useShowHackathon();
+  const [showOrganizers, setShowOrganizers] = useShowOrganizers();
   // Booked coffee chats from the DB, live: new, moved and cancelled chats
   // show up without a reload.
   const chats = api.coffeeChatRequests.organizerChats.useQuery(undefined, {
@@ -118,11 +122,20 @@ export function RunOfShowTab({
           now={now}
           headerStart={<DayPicker value={shownDay} onChange={setDay} />}
           headerEnd={
-            <HackathonToggle
-              showHackathon={showHackathon}
-              onShowHackathonChange={setShowHackathon}
-            />
+            <div className="flex flex-wrap items-center gap-x-4">
+              {data.availability.organizers.length > 0 && (
+                <OrganizersToggle
+                  showOrganizers={showOrganizers}
+                  onShowOrganizersChange={setShowOrganizers}
+                />
+              )}
+              <HackathonToggle
+                showHackathon={showHackathon}
+                onShowHackathonChange={setShowHackathon}
+              />
+            </div>
           }
+          availability={showOrganizers ? data.availability : null}
           entries={[
             ...buildOrganizerTimeline({
               day: shownDay,
@@ -146,6 +159,13 @@ export function RunOfShowTab({
           emptyText={copy.emptyDay}
         />
       </div>
+      {/* The sponsor team's free hours for the same day (Jazz, 2026-11-18). */}
+      <SponAvailabilityTable
+        availability={data.availability}
+        day={shownDay}
+        items={data.items}
+      />
+
       {/* Coffee chats are Saturday only: other days have no rooms section. */}
       {shownDay === COFFEE_CHAT_DAY_LABEL && (
         <RoomsSection

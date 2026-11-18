@@ -17,6 +17,11 @@ import {
 import { RUN_OF_SHOW_DATES } from "~/lib/run-of-show-time";
 import { bookingCounts } from "~/lib/schedule-bookings";
 import {
+  availabilitySegments,
+  shortNames,
+  type SponAvailability,
+} from "~/lib/spon-availability";
+import {
   axisOffset,
   blockTextLayout,
   buildAxis,
@@ -27,6 +32,7 @@ import {
   isAlwaysShown,
   layoutGrid,
   minutesIntoDay,
+  type AxisRow,
   type GridColumn,
   type LaidOutEntry,
   type TimelineEntry,
@@ -54,6 +60,9 @@ const PINNED_TASKS =
 const FOCUS_GROWTH = 1.3;
 
 const STORAGE_KEY = "hw-sponsor-schedule-show-hackathon";
+const ORGANIZERS_STORAGE_KEY = "hw-sponsor-schedule-show-organizers";
+// The narrow "who's around" column (organizers only), right of the times.
+const ORGANIZERS_WIDTH = 92;
 
 // Hover styles use the [@media(hover:hover)]:hover: variant: only where
 // there is a real pointer, so a tap on a phone doesn't leave a block stuck
@@ -79,26 +88,36 @@ function useIsWide(): boolean {
   return wide;
 }
 
-/** "Show hackathon events", remembered on this device. */
-export function useShowHackathon(): [boolean, (show: boolean) => void] {
-  // Off by default (Jazz, 2026-11-17): food and ceremonies show anyway.
+/** An on/off switch remembered on this device; off by default. */
+function useStoredFlag(key: string): [boolean, (show: boolean) => void] {
   const [show, setShow] = useState(false);
   useEffect(() => {
     try {
-      if (window.localStorage.getItem(STORAGE_KEY) === "1") setShow(true);
+      if (window.localStorage.getItem(key) === "1") setShow(true);
     } catch {
       // Storage blocked: keep the default.
     }
-  }, []);
+  }, [key]);
   const update = (next: boolean) => {
     setShow(next);
     try {
-      window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+      window.localStorage.setItem(key, next ? "1" : "0");
     } catch {
       // Storage blocked: the choice lasts for this visit only.
     }
   };
   return [show, update];
+}
+
+/** "Show hackathon events", remembered on this device. */
+export function useShowHackathon(): [boolean, (show: boolean) => void] {
+  // Off by default (Jazz, 2026-11-17): food and ceremonies show anyway.
+  return useStoredFlag(STORAGE_KEY);
+}
+
+/** The organizer grid's "Organizers" column, remembered on this device. */
+export function useShowOrganizers(): [boolean, (show: boolean) => void] {
+  return useStoredFlag(ORGANIZERS_STORAGE_KEY);
 }
 
 // Full-strength blocks are coloured by sheet column, like /live's blocks,
@@ -149,6 +168,41 @@ export function HackathonToggle({
   showHackathon: boolean;
   onShowHackathonChange: (show: boolean) => void;
 }) {
+  return (
+    <GridToggle
+      label={copy.showHackathon}
+      checked={showHackathon}
+      onCheckedChange={onShowHackathonChange}
+    />
+  );
+}
+
+/** Organizer view: who on the sponsor team is around, beside the times. */
+export function OrganizersToggle({
+  showOrganizers,
+  onShowOrganizersChange,
+}: {
+  showOrganizers: boolean;
+  onShowOrganizersChange: (show: boolean) => void;
+}) {
+  return (
+    <GridToggle
+      label={copy.showOrganizers}
+      checked={showOrganizers}
+      onCheckedChange={onShowOrganizersChange}
+    />
+  );
+}
+
+function GridToggle({
+  label,
+  checked,
+  onCheckedChange,
+}: {
+  label: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) {
   const toggleId = useId();
   return (
     <label
@@ -157,10 +211,10 @@ export function HackathonToggle({
     >
       <DashboardCheckbox
         id={toggleId}
-        checked={showHackathon}
-        onCheckedChange={(v) => onShowHackathonChange(v === true)}
+        checked={checked}
+        onCheckedChange={(v) => onCheckedChange(v === true)}
       />
-      {copy.showHackathon}
+      {label}
     </label>
   );
 }
@@ -184,6 +238,7 @@ export function DayGrid({
   emptyText = scheduleCopy.emptyDay,
   headerStart,
   headerEnd,
+  availability = null,
 }: {
   day: RunOfShowDay;
   entries: readonly TimelineEntry[];
@@ -200,6 +255,11 @@ export function DayGrid({
   headerStart?: ReactNode;
   /** Right end of the header row, e.g. the hackathon events switch. */
   headerEnd?: ReactNode;
+  /**
+   * Organizer view with "Organizers" on: who on the sponsor team is around,
+   * as a narrow column right of the times. Null hides it.
+   */
+  availability?: SponAvailability | null;
 }) {
   const headingId = useId();
   const [selected, setSelected] = useState<TimelineEntry | null>(null);
@@ -246,10 +306,12 @@ export function DayGrid({
   const grow = (c: (typeof columns)[number]) =>
     c.column === focused ? FOCUS_GROWTH : 1;
   const widths = columns.map((c) => Math.round(floor(c) * grow(c)));
-  const template = `${TIME_WIDTH}px ${columns
+  const showOrganizers = !!availability && availability.organizers.length > 0;
+  const leadWidth = TIME_WIDTH + (showOrganizers ? ORGANIZERS_WIDTH : 0);
+  const template = `${TIME_WIDTH}px ${showOrganizers ? `${ORGANIZERS_WIDTH}px ` : ""}${columns
     .map((c, i) => `minmax(${widths[i]}px, ${share(c) * grow(c)}fr)`)
     .join(" ")}`;
-  const minWidth = TIME_WIDTH + widths.reduce((a, b) => a + b, 0);
+  const minWidth = leadWidth + widths.reduce((a, b) => a + b, 0);
   const label = (column: GridColumn) => copy.columns[column];
   const toggleFocus = (column: GridColumn) =>
     setFocusChoice((current) => (current === column ? null : column));
@@ -370,6 +432,11 @@ export function DayGrid({
               >
                 {copy.timeHeader}
               </span>
+              {showOrganizers && (
+                <span className="flex min-h-11 items-end border-l border-dashboard-border-subtle px-2 py-2 text-xs font-semibold uppercase leading-tight tracking-wide text-dashboard-text-medium">
+                  {copy.organizers.header}
+                </span>
+              )}
               {columns.map(({ column }) => {
                 const isFocused = focused === column;
                 const muted = focused !== null && !isFocused;
@@ -470,6 +537,15 @@ export function DayGrid({
                 )}
               </div>
 
+              {showOrganizers && availability && (
+                <OrganizersColumn
+                  availability={availability}
+                  day={day}
+                  rows={rows}
+                  y={y}
+                />
+              )}
+
               {columns.map(({ column, entries: laid }) => {
                 const muted = focused !== null && focused !== column;
                 return (
@@ -548,6 +624,110 @@ export function DayGrid({
         }}
       />
     </section>
+  );
+}
+
+/** Where the axis starts and ends, in minutes into the day. */
+function axisSpan(rows: readonly AxisRow[]): { from: number; to: number } {
+  const first = rows[0];
+  const last = rows[rows.length - 1];
+  if (!first || !last) return { from: 0, to: 0 };
+  return {
+    from: first.type === "slot" ? first.minute : first.from,
+    to: last.type === "slot" ? last.minute + 30 : last.to,
+  };
+}
+
+// Who on the sponsor team is around, in stretches where that doesn't
+// change: a green chip per person on site, a dashed chip per person on call
+// (remote), and a dashed "No one" box for gaps. Full names in the tooltip
+// and for screen readers.
+function OrganizersColumn({
+  availability,
+  day,
+  rows,
+  y,
+}: {
+  availability: SponAvailability;
+  day: RunOfShowDay;
+  rows: readonly AxisRow[];
+  y: (minute: number) => number;
+}) {
+  const org = copy.organizers;
+  const { from, to } = axisSpan(rows);
+  const segments = availabilitySegments(availability.organizers, day, from, to);
+  const short = shortNames(availability.organizers.map((o) => o.name));
+  return (
+    <ol
+      aria-label={org.header}
+      className="relative m-0 list-none border-l border-dashboard-border-subtle p-0"
+    >
+      {segments.map((segment) => {
+        const top = y(segment.start);
+        const height = y(segment.end) - top;
+        // A stretch folded into a gap row has no room to draw in.
+        if (height < 4) return null;
+        const nobody =
+          segment.present.length === 0 && segment.onCall.length === 0;
+        const present = segment.present.join(", ");
+        const onCall = segment.onCall.join(", ");
+        const tooltip = [present, onCall ? org.onCall(onCall) : ""]
+          .filter(Boolean)
+          .join("\n");
+        return (
+          <li
+            key={segment.start}
+            className="absolute inset-x-0 z-20 p-0.5"
+            style={{ top, height }}
+            title={tooltip || org.nobody}
+          >
+            <span className="sr-only">
+              {org.sr(
+                formatMinutes(segment.start),
+                formatMinutes(segment.end),
+                present,
+                onCall,
+              )}
+            </span>
+            <div
+              aria-hidden
+              className={cn(
+                "flex h-full flex-wrap gap-0.5 overflow-hidden rounded-dashboard-xs p-0.5",
+                nobody
+                  ? "content-center justify-center border border-dashed border-dashboard-border-control bg-dashboard-bg-inset"
+                  : // A quiet bar down the stretch, so it reads to its end.
+                    "content-start border-l-2 border-dashboard-schedule-green",
+              )}
+            >
+              {nobody ? (
+                <span className="text-xs text-dashboard-text-light">
+                  {org.nobody}
+                </span>
+              ) : (
+                <>
+                  {segment.present.map((name) => (
+                    <DashboardTag
+                      key={name}
+                      className="bg-dashboard-schedule-green px-1 py-0 leading-4 text-dashboard-text-heavy"
+                    >
+                      {short.get(name)}
+                    </DashboardTag>
+                  ))}
+                  {segment.onCall.map((name) => (
+                    <DashboardTag
+                      key={name}
+                      className="border border-dashed border-dashboard-border-control bg-dashboard-bg-surface px-1 py-0 leading-4 text-dashboard-text-medium"
+                    >
+                      {short.get(name)}
+                    </DashboardTag>
+                  ))}
+                </>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
