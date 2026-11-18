@@ -1,18 +1,30 @@
 # NEXT — sponsor dashboard (branch `sponsor-dashboard`, not pushed)
 
-## Now (updated 2026-11-18 late)
-- MERGED 8abbe11: `sd-presentations` (Sunday judging rounds per docs/flows/sponsor-judging.md: Send shortlist, scheduler, Notify hackers with per-member claims, round 2 from presenters, /live panel, cheat check). Migration 0050 applied to `hackwestern_spon`. tsc clean; vitest 1295 pass, only Apple Wallet fails. Not seen in a browser (needs Lucas's sheet creds).
-  - Owner decisions pending: late shortlist (recommend: fill free gaps, don't move anyone), round 2 timing (recommend: wait for 11:30), add QNX as a sponsor, email members not on Slack (recommend: yes).
-- RUNNING `sd-room-blocks` (worktree `hackwestern-sd-room-blocks`, DB `hackwestern_sd_blocks`, port 3022): coffee chats v2 per `docs/flows/coffee-chat-room-blocks.md` in that worktree (sponsor requests 1-on-1 N reps or group M hackers, Ask for fewer, no room cap, one combined view, logos only, sheet Coffee Chats numbers). Migration slot 0051 (its journal lacks 0050: regenerate/renumber at merge).
-- RUNNING `sd-availability` (worktree `hackwestern-sd-availability`, port 3023): spon team availability timetable under Run of show + Organizers toggle on the schedule, from RUN OF SHOW columns J-P (SPON TEAM AVAILABILITY / NECESSARY SHIFTS blocks).
-- RUNNING `ops-pings` (worktree `hackwestern-ops-pings`, DB `hackwestern_ops_pings`, port 3031), SEPARATE PR stacked on sponsor-dashboard: organizer run-of-show Slack pings from sheet 1lnRCD_q_EYaAcmL-IXkmuWZMNAiFIiU1Linbm8jHyAE ("Schedule View"). DM each owner 15 min before start and at end (title, where, notes/to-do) + post in OPS_PINGS_CHANNEL. Owners matched to Slack profile names of organizer-channel members; groups (Everyone, ALL OF SPON) channel-only; ambiguous names flagged. Needs Jazz: the organizer channel, SLACK_BOT_TOKEN scopes.
-- MERGED aaf8e97 `sd-judging-round2`: Open/Close round 2 (organizer button, server-enforced), email for members not on Slack, By hacker view with notice status, Final results with hackers. Migration 0052 applied to `hackwestern_spon` (journal idx 51 = tag 0052). tsc clean; vitest 1363 pass, only Apple Wallet fails.
-  - Open question: after round 2 opens, a sponsor with no slot can still rank from their shortlist (never locked out). OK?
-  - MERGE NOTE for sd-room-blocks: its migration was told to be 0051; main's journal already has idx 51 (tag 0052). Regenerate/renumber its migration as 0053 at merge.
-- Coffee chat page mockups: `mocks/sponsor-coffee-chats-v3/` a-candidate-list, b-rooms-first, c-pipeline (serve with `python -m http.server 3040 --bind 127.0.0.1` from the repo root). Waiting for Jazz's pick.
-- Waiting on Jazz: where the sponsor booth projector/screen setup info lives (not in the run-of-show sheet).
-- Optional polish offered: portal shows "Welcome, Sponsor!" for a few seconds until the sheet read finishes; could show name + logo from the DB right away.
-- `hackwestern-sd-tester` (branch `sd-tester-sponsor`) has no work and no note: ask Jazz.
+## Now: RESTART HERE (updated 2026-11-18, end of a very long session)
+Merged into `sponsor-dashboard` today: sd-presentations, sd-judging-round2, sd-availability, sd-room-blocks (coffee chats v2, 5f24f8c), plus portal work (map, important info, booth layout, logos, locked judging tile + `?preview=judging`, schedule order, minimize). Local DB `hackwestern_spon` at 53 migrations (0050, 0052, 0053 applied). Checks on 5f24f8c: tsc clean; vitest 1345 pass, only Apple Wallet fails. Dev server: see Local setup (port 3013).
+
+Builds that were still RUNNING when the session ended. Background agents die with the session: check each worktree, commit any WIP (plain message, no Claude attribution), then start a fresh subagent with the brief below.
+1. **ops-pings** (worktree `hackwestern-ops-pings`, branch `ops-pings`, DB `hackwestern_ops_pings`, port 3031): SEPARATE PR. Built through 2a99d8f; uncommitted review fixes were in progress. Still to do:
+   - Fix duplicate DMs: write each `ops_ping` row right after its own Slack call; session advisory lock held for the whole run; partial unique index on `ping_key` WHERE status='scheduled'; regenerate 0054 in place.
+   - Close-spelling guard: an exact app-organizer match beats a close Slack match; show "Close match: check".
+   - Midnight-crossing ranges get an end on the next day, or a Needs a look flag.
+   - Groups and aliases: WEB = Jasmine Gu + Luka (Lucian Lavric); Lillian = Lillian Wei; Jessica = Jessica Wang; Jess = Jessica Xing.
+   - After that: merge `sponsor-dashboard` into it and regenerate the 0054 snapshot so its prevId chains from 0053 (sd-room-blocks merged first), with `when` newest. Then review it.
+   - Owner rules: DMs only (no channel); start ping 10 min before, end ping at the cell's end (cell height); "Everyone" = no DMs; "ALL OF SPON" = DM Noah, Caroline, Daniel, Aniya, Alice; organizers = Slack names starting with "[ORGANIZER]"; flag anything unclear and never DM a guess.
+   - Open questions for Jazz: "All judges" / "assigned crew" groups? Ping off the "Setup:" time? Overnight captain shifts as tasks? Auto-sync?
+2. **sd-sponsor-tour** (worktree `hackwestern-sd-tour`, port 3033): an in-app guided tour for sponsors (Stepshots-style overlay on the live UI, "Step 2 of 5", Back/Next/Skip, first-visit prompt) plus "How to…" quick flows (offer a coffee chat, ask for help, find your way, judging on Sunday), opened from a "?" pill next to the Map pill. No commits yet when the session ended. Re-target the coffee chat steps to the v2 page now that it's merged. Copy goes in src/content; no third-party library.
+3. **Wireframes v1** (`mocks/wireframes-v1/`, brief `BRIEF.md`): 15 HTML files x 10 variants, plus `index.html`. Check which files exist; re-run the missing ones with the same brief. Files: sponsor-home, sponsor-schedule, sponsor-coffee-chats, sponsor-scan, sponsor-judging, venue-map, organizer-sponsors, organizer-run-of-show, organizer-coffee-chats, organizer-judging, organizer-pings, admin-web-team, hacker-notifications, components, sponsor-tour, index. View: `python -m http.server 3040 --bind 127.0.0.1` from the repo root, then http://127.0.0.1:3040/mocks/wireframes-v1/
+
+Then: the day-aware Sponsors tab (under To build), and the PRs (next section).
+
+Waiting on Jazz:
+- Coffee chat page mockup pick: `mocks/sponsor-coffee-chats-v3/` a, b or c.
+- After round 2 opens, can a sponsor with no slot still rank from their shortlist?
+- Lucas's sheet login (`SPONSOR_SHEETS_CLIENT_EMAIL`, `SPONSOR_SHEETS_PRIVATE_KEY`, `SPONSOR_JUDGING_SHEET`) so judging and the top-40 candidates work locally.
+- Sheet fixes she's making herself in the organizer run of show: G8 "Anson, Holia"; B14 "William, Jessica Wang".
+- Ask Lucas to add QNX, Accenture, Manulife and TinyFish as sponsors.
+- Noah's phone number (`src/content/sponsor-venue.ts`).
+- Availability guesses: "Before 2:30, After 3:30" read as PM; on-call counts as remote.
 
 ## When everything is merged: PRs (Jazz 2026-11-18)
 - **Strip Claude attribution** from the UNPUSHED commits only (214 on `sponsor-dashboard`, plus feature branches): back up first (`git branch backup/sponsor-dashboard-<date>`), then rewrite messages for `sponsor-dashboard --not --remotes` only (never touch commits already on origin: 553 pushed ones stay; rewriting shared history needs a team decision with Luka). No `Co-Authored-By: Claude` and no "Generated with Claude Code" in new commits or PR bodies (memory: no-claude-coauthor).

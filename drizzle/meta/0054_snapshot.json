@@ -1,6 +1,6 @@
 {
-  "id": "aa038523-b5fa-4ab9-a9ab-da2f43fe7491",
-  "prevId": "e2d8c3d4-d194-4614-930b-3ee5c2b62a7e",
+  "id": "aafb7985-220a-4626-82ac-4bac3012c496",
+  "prevId": "2f7514fe-66cb-417f-abce-d28ea64a0bec",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -846,6 +846,99 @@
             "id"
           ],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffee_chat_limit": {
+      "name": "coffee_chat_limit",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_time": {
+          "name": "start_time",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_time": {
+          "name": "end_time",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hackers": {
+          "name": "hackers",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "coffee_chat_limit_span_idx": {
+          "name": "coffee_chat_limit_span_idx",
+          "columns": [
+            {
+              "expression": "sponsor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "start_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "end_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffee_chat_limit_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "coffee_chat_limit_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "coffee_chat_limit",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -3011,6 +3104,18 @@
           "primaryKey": false,
           "notNull": true,
           "default": 1
+        },
+        "coffee_chat_style": {
+          "name": "coffee_chat_style",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coffee_chat_per_slot": {
+          "name": "coffee_chat_per_slot",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
         },
         "coffee_chat_room": {
           "name": "coffee_chat_room",

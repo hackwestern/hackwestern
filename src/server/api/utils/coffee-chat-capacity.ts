@@ -1,18 +1,18 @@
 import {
-  COFFEE_CHAT_GRID_MINUTES,
   coffeeChatExpiresAt,
-  coffeeChatMinutesOf,
-  coffeeChatSeats,
-  coffeeChatTimeOf,
   coffeeChatsOverlap,
 } from "~/lib/coffee-chat-requests";
 import {
+  chatsInSlot,
   coffeeChatOfferRoom,
   holdStartTimes,
-  ownHoldAt,
   type HoldSpan,
 } from "~/lib/coffee-chat-holds";
-import type { CoffeeChatSetup } from "~/lib/run-of-show";
+import {
+  askedAt,
+  type ChatRequest,
+  type SlotLimit,
+} from "~/lib/coffee-chat-request";
 
 /**
  * Capacity rules for offering a coffee chat (T15) and for organizer moves
@@ -28,7 +28,7 @@ export type RoomChat = ChatTime & { sponsorId: string; room: string | null };
 export type SponsorChat = ChatTime & { room?: string | null };
 
 export type OfferProblem =
-  | "notSetUp"
+  | "noBlock"
   | "notInWindow"
   | "tooLate"
   | "full"
@@ -36,64 +36,19 @@ export type OfferProblem =
   | "roomTaken";
 
 /**
- * Start times a sponsor offers, earliest first: from the window start, one
- * chat length apart, each ending by the window end. 15-min chats land on
- * every quarter hour; 30-min groups on every half hour from the start.
+ * Seats left at `slot`: hackers the sponsor asked for there (their
+ * request, lowered by any "Ask for fewer") minus hackers booked. No room
+ * capacity (docs/flows/coffee-chat-room-blocks.md v2).
  */
-export function coffeeChatStartTimes(
-  setup: Pick<CoffeeChatSetup, "windowStart" | "windowEnd" | "durationMinutes">,
-): string[] {
-  const start = setup.windowStart
-    ? coffeeChatMinutesOf(setup.windowStart)
-    : null;
-  const end = setup.windowEnd ? coffeeChatMinutesOf(setup.windowEnd) : null;
-  if (start === null || end === null) return [];
-  const times: string[] = [];
-  for (
-    let t = start;
-    t + setup.durationMinutes <= end;
-    t += setup.durationMinutes
-  ) {
-    times.push(coffeeChatTimeOf(t));
-  }
-  return times;
-}
-
-/**
- * Most hackers the sponsor has in their room at any moment of `slot`. Checks
- * each quarter hour, so chats that start off the usual grid still count.
- */
-export function seatsUsed(sponsorChats: ChatTime[], slot: ChatTime): number {
-  const start = coffeeChatMinutesOf(slot.slotTime);
-  if (start === null) return 0;
-  let most = 0;
-  for (
-    let t = start;
-    t < start + slot.durationMinutes;
-    t += COFFEE_CHAT_GRID_MINUTES
-  ) {
-    const tick = {
-      slotTime: coffeeChatTimeOf(t),
-      durationMinutes: COFFEE_CHAT_GRID_MINUTES,
-    };
-    most = Math.max(
-      most,
-      sponsorChats.filter((c) => coffeeChatsOverlap(c, tick)).length,
-    );
-  }
-  return most;
-}
-
-/** Seats left at `slot` for a sponsor with this many reps and group size. */
 export function seatsLeft(
   sponsorChats: ChatTime[],
   slot: ChatTime,
-  reps: number,
-  groupSize: number,
+  asked: number,
 ): number {
   return Math.max(
     0,
-    coffeeChatSeats(reps, groupSize) - seatsUsed(sponsorChats, slot),
+    asked -
+      chatsInSlot(sponsorChats, slot.slotTime, slot.durationMinutes).length,
   );
 }
 
@@ -131,62 +86,38 @@ export function hackerBusy(hackerChats: ChatTime[], slot: ChatTime): boolean {
 }
 
 /**
- * The sponsor's room at `slot`: where their live chats overlapping it are
- * (an organizer may have moved that slot with Move room), else the room in
- * their Coffee Chats sheet row.
- */
-export function sponsorRoomAt(
-  sponsorChats: SponsorChat[],
-  sheetRoom: string | null,
-  slot: ChatTime,
-): string | null {
-  const moved = sponsorChats.find(
-    (c) => normalizeRoom(c.room) && coffeeChatsOverlap(c, slot),
-  );
-  return moved?.room ?? sheetRoom;
-}
-
-/**
- * The room a chat at `slot` goes in, holds included: the sponsor's own hold
- * covering it, else sponsorRoomAt (moved chats, else the sponsor's room).
- * See coffeeChatOfferRoom for the full precedence.
+ * The room a chat at `slot` goes in: the sponsor's own block covering its
+ * start, else null (and then it can't be offered).
  */
 export function offerRoomAt(input: {
   sponsorId: string;
-  sponsorChats: SponsorChat[];
-  setupRoom: string | null;
   holds?: readonly HoldSpan[];
-  slot: ChatTime;
+  slot: Pick<ChatTime, "slotTime">;
 }): string | null {
-  const hold = ownHoldAt(input.holds ?? [], input.sponsorId, input.slot);
-  const moved = input.sponsorChats.find(
-    (c) => normalizeRoom(c.room) && coffeeChatsOverlap(c, input.slot),
-  );
-  return coffeeChatOfferRoom({
-    holdRoom: hold?.room,
-    movedRoom: moved?.room,
-    assignedRoom: input.setupRoom,
-  });
+  return coffeeChatOfferRoom(input.holds ?? [], input.sponsorId, input.slot);
 }
 
-/** Chat length and group size, with 1-on-1 15-min defaults (holds only). */
-function formatOf(setup: CoffeeChatSetup | null) {
-  return {
-    durationMinutes: setup?.durationMinutes ?? 15,
-    groupSize: setup?.groupSize ?? 1,
-  };
+/** The request and asks the offer rules read. */
+type Asks = {
+  sponsorId: string;
+  request: Pick<ChatRequest, "perSlot" | "durationMinutes">;
+  limits?: readonly SlotLimit[];
+};
+
+function askedFor(input: Asks, slotTime: string): number {
+  return askedAt(input.request, input.limits ?? [], input.sponsorId, slotTime)
+    .asked;
 }
 
 /**
- * Every start time the sponsor offers, earliest first: their sheet window's
- * start times plus those of their own room holds.
+ * Every start time the sponsor offers, earliest first: the slot starts of
+ * their own room blocks. The sheet window alone offers nothing.
  */
 export function offerStartTimes(
-  setup: CoffeeChatSetup | null,
+  durationMinutes: number,
   holds: readonly HoldSpan[] = [],
 ): string[] {
-  const { durationMinutes } = formatOf(setup);
-  const times = new Set(setup ? coffeeChatStartTimes(setup) : []);
+  const times = new Set<string>();
   for (const hold of holds) {
     for (const t of holdStartTimes(hold, durationMinutes)) times.add(t);
   }
@@ -194,41 +125,40 @@ export function offerStartTimes(
 }
 
 /**
- * Why an offer can't be made, or null when it can. Checks, in order: the
- * sponsor has a window or a room hold, the time is one of their start times
- * (window or hold), it isn't already past the reply cutoff, a seat is free,
- * the hacker is free, and no other sponsor is in the room (chats and holds,
- * passed in `roomChats`). `holds` are the sponsor's own holds.
+ * Why an offer can't be made, or null when it can. Checks, in order: one
+ * of the sponsor's own blocks (`holds`) covers the start, the time is one
+ * of that block's slot starts, it isn't past the reply cutoff, the slot
+ * still has hackers asked for, the hacker is free, and no other sponsor is
+ * in the room (chats and blocks, passed in `roomChats`).
  */
-export function offerProblem(input: {
-  setup: CoffeeChatSetup | null;
-  slotTime: string;
-  reps: number;
-  sponsorId: string;
-  sponsorChats: SponsorChat[];
-  hackerChats: ChatTime[];
-  roomChats: RoomChat[];
-  holds?: readonly HoldSpan[];
-  now: Date;
-}): OfferProblem | null {
-  const { setup } = input;
-  const starts = offerStartTimes(setup, input.holds);
-  if (starts.length === 0) return "notSetUp";
-  if (!starts.includes(input.slotTime)) return "notInWindow";
+export function offerProblem(
+  input: Asks & {
+    slotTime: string;
+    sponsorChats: SponsorChat[];
+    hackerChats: ChatTime[];
+    roomChats: RoomChat[];
+    holds?: readonly HoldSpan[];
+    now: Date;
+  },
+): OfferProblem | null {
+  const room = offerRoomAt({
+    sponsorId: input.sponsorId,
+    holds: input.holds,
+    slot: input,
+  });
+  if (!room) return "noBlock";
+  const { durationMinutes } = input.request;
+  if (!offerStartTimes(durationMinutes, input.holds).includes(input.slotTime)) {
+    return "notInWindow";
+  }
   if (input.now >= coffeeChatExpiresAt(input.slotTime)) return "tooLate";
-  const { durationMinutes, groupSize } = formatOf(setup);
   const slot = { slotTime: input.slotTime, durationMinutes };
-  if (seatsLeft(input.sponsorChats, slot, input.reps, groupSize) < 1) {
+  if (
+    seatsLeft(input.sponsorChats, slot, askedFor(input, input.slotTime)) < 1
+  ) {
     return "full";
   }
   if (hackerBusy(input.hackerChats, slot)) return "hackerBusy";
-  const room = offerRoomAt({
-    sponsorId: input.sponsorId,
-    sponsorChats: input.sponsorChats,
-    setupRoom: setup?.room ?? null,
-    holds: input.holds,
-    slot,
-  });
   if (roomTakenByOtherSponsor(input.roomChats, input.sponsorId, room, slot)) {
     return "roomTaken";
   }
@@ -236,33 +166,34 @@ export function offerProblem(input: {
 }
 
 /**
- * Open start times for a sponsor (window and own holds), earliest first,
- * with seats left. Leaves out times past the reply cutoff, and, when a
- * hacker's chats are given, times that clash with them.
+ * Open slot starts in the sponsor's own blocks, earliest first, with seats
+ * left. Leaves out times past the reply cutoff, and, when a hacker's chats
+ * are given, times that clash with them.
  */
-export function freeStartTimes(input: {
-  setup: CoffeeChatSetup | null;
-  reps: number;
-  sponsorId: string;
-  sponsorChats: SponsorChat[];
-  hackerChats?: ChatTime[];
-  roomChats: RoomChat[];
-  holds?: readonly HoldSpan[];
-  now: Date;
-}): { slotTime: string; seatsLeft: number; room: string | null }[] {
-  const { setup } = input;
-  const { durationMinutes, groupSize } = formatOf(setup);
-  return offerStartTimes(setup, input.holds).flatMap((slotTime) => {
+export function freeStartTimes(
+  input: Asks & {
+    sponsorChats: SponsorChat[];
+    hackerChats?: ChatTime[];
+    roomChats: RoomChat[];
+    holds?: readonly HoldSpan[];
+    now: Date;
+  },
+): { slotTime: string; seatsLeft: number; room: string | null }[] {
+  const { durationMinutes } = input.request;
+  return offerStartTimes(durationMinutes, input.holds).flatMap((slotTime) => {
     const slot = { slotTime, durationMinutes };
-    const left = seatsLeft(input.sponsorChats, slot, input.reps, groupSize);
+    const left = seatsLeft(
+      input.sponsorChats,
+      slot,
+      askedFor(input, slotTime),
+    );
     const room = offerRoomAt({
       sponsorId: input.sponsorId,
-      sponsorChats: input.sponsorChats,
-      setupRoom: setup?.room ?? null,
       holds: input.holds,
       slot,
     });
     const open =
+      room !== null &&
       left > 0 &&
       input.now < coffeeChatExpiresAt(slotTime) &&
       !hackerBusy(input.hackerChats ?? [], slot) &&

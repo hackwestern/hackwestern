@@ -14,11 +14,6 @@ import {
   mergeCoffeeChatBookings,
   sortCoffeeChatSlots,
 } from "~/lib/coffee-chats";
-import {
-  MAX_COFFEE_CHAT_REPS,
-  MIN_COFFEE_CHAT_REPS,
-} from "~/lib/coffee-chat-requests";
-import { coffeeChatCopy } from "~/content/coffee-chat";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
   fetchAllChosenTeams,
@@ -39,7 +34,7 @@ import {
 } from "~/server/api/utils/sponsor-hw-contacts";
 import { fetchRankedInterestRows } from "~/server/api/utils/hacker-interest";
 import { db } from "~/server/db";
-import { sponsorFinalPicks, sponsorJudgingSponsors } from "~/server/db/schema";
+import { sponsorFinalPicks } from "~/server/db/schema";
 
 export const sponsorPortalRouter = createTRPCRouter({
   /**
@@ -281,52 +276,5 @@ export const sponsorPortalRouter = createTRPCRouter({
               : "Failed to save coffee chat booking",
         });
       }
-    }),
-  /** Reps the sponsor is sending to coffee chats. Public (UUID). */
-  getCoffeeChatReps: publicProcedure
-    .input(z.object({ sponsor: z.string().uuid() }))
-    .query(async ({ input }) => {
-      const row = await db.query.sponsorJudgingSponsors.findFirst({
-        columns: { coffeeChatReps: true },
-        where: eq(sponsorJudgingSponsors.id, input.sponsor.toLowerCase()),
-      });
-      if (!row) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: coffeeChatCopy.errors.unknownSponsor,
-        });
-      }
-      return { reps: row.coffeeChatReps };
-    }),
-
-  /**
-   * Set how many reps the sponsor sends to coffee chats (1 to 10). Public:
-   * the private UUID is the only key, so a sponsor can only change their own
-   * row. Parallel chats are capped by room size in coffeeChatSeats.
-   */
-  setCoffeeChatReps: publicProcedure
-    .input(
-      z.object({
-        sponsor: z.string().uuid(),
-        reps: z
-          .number()
-          .int()
-          .min(MIN_COFFEE_CHAT_REPS)
-          .max(MAX_COFFEE_CHAT_REPS),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      const [row] = await db
-        .update(sponsorJudgingSponsors)
-        .set({ coffeeChatReps: input.reps })
-        .where(eq(sponsorJudgingSponsors.id, input.sponsor.toLowerCase()))
-        .returning({ reps: sponsorJudgingSponsors.coffeeChatReps });
-      if (!row) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: coffeeChatCopy.errors.unknownSponsor,
-        });
-      }
-      return { reps: row.reps };
     }),
 });

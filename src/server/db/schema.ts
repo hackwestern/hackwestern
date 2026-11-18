@@ -362,10 +362,13 @@ export const sponsorJudgingSponsors = pgTable("sponsor_judging_sponsor", {
   // Must match the "Company Name" spelling in the master sheet, since this is
   // what the judging sheet rows are keyed on.
   name: varchar("name", { length: 255 }).notNull().unique(),
-  // Reps the sponsor is sending to coffee chats = 1-on-1 chats they run at
-  // once (each rep with one hacker, same room). Set by the sponsor on their
-  // page.
+  // v1 rep count; no longer read (v2 uses coffee_chat_style/per_slot).
   coffeeChatReps: smallint("coffee_chat_reps").default(1).notNull(),
+  // The sponsor's coffee chat request (src/lib/coffee-chat-request.ts):
+  // "oneOnOne" (per_slot = reps) or "group" (per_slot = group size). Both
+  // null = not answered yet; then the Coffee Chats sheet row applies.
+  coffeeChatStyle: varchar("coffee_chat_style", { length: 16 }),
+  coffeeChatPerSlot: smallint("coffee_chat_per_slot"),
   // Saturday coffee chat room ("Rm 2241"-"Rm 2243"), set by organizers on
   // /internal/sponsor-schedule. Null = unassigned; then the Coffee Chats
   // sheet's ROOM value (if any) applies.
@@ -459,6 +462,33 @@ export const coffeeChatHolds = pgTable(
   (t) => [
     index("coffee_chat_hold_sponsor_idx").on(t.sponsorId),
     index("coffee_chat_hold_room_idx").on(t.room, t.startTime),
+  ],
+);
+
+// A sponsor's "Ask for fewer": at most `hackers` per coffee chat slot
+// starting from start_time (inclusive) to end_time (exclusive), e.g. a rep
+// leaves at 11. 0 = no chat then. The lowest ask covering a slot wins. See
+// src/lib/coffee-chat-request.ts.
+export const coffeeChatLimits = pgTable(
+  "coffee_chat_limit",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    startTime: varchar("start_time", { length: 5 }).notNull(),
+    endTime: varchar("end_time", { length: 5 }).notNull(),
+    hackers: smallint("hackers").notNull(),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex("coffee_chat_limit_span_idx").on(
+      t.sponsorId,
+      t.startTime,
+      t.endTime,
+    ),
   ],
 );
 
