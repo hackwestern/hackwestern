@@ -188,7 +188,7 @@ export const sponsorScoringRouter = createTRPCRouter({
       assertOpen();
       const sponsor = await findSponsor(input.sponsor);
       const track = await fetchSponsorTrack(sponsor.name);
-      const ok =await eligibleTeamIds(track, [input.teamId]);
+      const ok = await eligibleTeamIds(track, [input.teamId]);
       if (!ok.has(input.teamId)) {
         throw new TRPCError({ code: "NOT_FOUND", message: errors.notEligible });
       }
