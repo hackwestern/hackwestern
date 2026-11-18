@@ -1,13 +1,12 @@
 # NEXT — sponsor dashboard (branch `sponsor-dashboard`, not pushed)
 
-## Now
-Review and merge the two branches whose agents were running when the session ended, then build room blocks:
-1. `sd-judging-view` (worktree `hackwestern-sd-chat`): Sunday "Sponsor track judging" panel under the run of show (rooms per sponsor from Lucas's sheet > run-of-show list, missing rooms flagged; the team fills rooms into the sheet), Judging column in the Sponsors table, day picker as small pills in the schedule card header, schedule legend removed (keep "Show hackathon events" checkbox in the header), rooms section heading/intro/not-Saturday message removed, room table legend removed.
-   - DONE by its agent (not reviewed, not merged): commits f9736ca (judging), 5ea66c7 (test mock pass-through for a new 30 s cache), aa9cf5c (UI). Not seen in a browser yet. Open question: if the run-of-show sheet can't be read, sponsors without a room in Lucas's sheet show "Missing room" (should the panel say the sheet failed instead?).
-2. `sd-sponsor-scoring` (worktree `hackwestern-sd-help`): sponsor judging flow on `/sponsors/<id>/picks` (browse projects, score /10, Save to shortlist, rank and Submit top 5, also written to Lucas's sheet via setChosenTeams) and a new organizer tab "Sponsor judging" (`?tab=judging`). DONE by its agent (not reviewed, not merged): commits bd8bca1, 1e2eda5, 6ddf30f; screenshots in that worktree's mocks/sponsor-judging-v1/; 34 new tests; no project title/description/thumbnail in the teams table. Open questions: when should judging close? Is the portal tile condition right (prize track OR judging room OR existing picks)? Migration 0049: apply after review with `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/hackwestern_spon SKIP_ENV_VALIDATION=1 npm run db:migrate`.
-   - For each: check the branch's last commits (the agent may have finished), run code-reviewer (+ design-reviewer for UI; there is no design.md: use docs/redesign-brief.md, src/lib/tokens.ts, tailwind.config.ts), fix, merge with `--no-ff`, then `npx tsc --noEmit` and `SKIP_ENV_VALIDATION=1 npx vitest run` (only the Apple Wallet test fails, known).
-   - Both touch the organizer tabs / Sponsors table: expect conflicts in the tab list and docs/decisions.md (keep both sides).
-3. Build **room blocks** per `docs/flows/coffee-chat-room-blocks.md` (one concept: sponsor + room + time; slots show hackers booked / needed by chat type, e.g. 0/1 or 0/3; lengths 15 min to 1 hr 30; per-sponsor chat-type strip on the Coffee chats tab; no legend).
+## Now (updated 2026-11-18 03:15)
+sd-judging-view and sd-sponsor-scoring are reviewed and merged (eaf937f); migration 0049 applied locally; tsc clean, vitest all pass except Apple Wallet.
+Two builds running in their own worktrees (started by a session that stopped at 02:50, resumed by subagents):
+1. `sd-presentations` (worktree `hackwestern-sd-presentations`, DB `hackwestern_sd_presentations`, port 3021): the Sunday judging rounds per `docs/flows/sponsor-judging.md` (Send shortlist, auto presentation schedule with no double booking, Notify hackers, round 2 top 5 from presenters, cheat check). Migration slot 0050.
+2. `sd-room-blocks` (worktree `hackwestern-sd-room-blocks`, DB `hackwestern_sd_blocks`, port 3022): room blocks per `docs/flows/coffee-chat-room-blocks.md`. Prefer no migration; 0051 if needed.
+Then: review each (code-reviewer + design-reviewer), merge with `--no-ff`, apply migrations to `hackwestern_spon`, run tsc + vitest.
+- `hackwestern-sd-tester` (branch `sd-tester-sponsor`, DB `hackwestern_sd_tester`) was created with no work and no note: ask Jazz what it was for.
 
 ## Where things stand (2026-11-18)
 - Merged: Lucas's #1143 (top-40 candidates), schedule/organizer/sponsor redesigns, sponsor candidates + GitHub avatars, T55 one organizer home (tabs Sponsors | Run of show | Coffee chats | Task pings), room holds + combined Sponsors table + sponsor colours, automatic Slack owner matching + Task pings tab (help merged in), gentle column focus, floor 2 plan image instead of the live map, ceremony/workshop info by day, real sponsor logos (no circle).
