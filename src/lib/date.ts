@@ -33,3 +33,13 @@ export const formatEventTime = (
   date: Date,
   options: Intl.DateTimeFormatOptions,
 ) => date.toLocaleString("en-US", { timeZone: "America/Toronto", ...options });
+
+// The event weekend (Fri Nov 20 - Sun Nov 22, EST). Hacking itself runs
+// 9pm Fri to 9am Sun; this window covers the whole days so organizers are
+// warned for the full weekend.
+export const HACKATHON_START = new Date("2026-11-20T00:00:00-05:00");
+export const HACKATHON_END = new Date("2026-11-23T00:00:00-05:00");
+
+export function isDuringHackathon(now = Date.now()) {
+  return now >= HACKATHON_START.getTime() && now < HACKATHON_END.getTime();
+}
