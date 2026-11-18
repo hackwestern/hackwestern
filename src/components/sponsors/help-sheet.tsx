@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { hoverTint, pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorHelpCopy } from "~/content/sponsor-help";
 import {
   helpContactStorageKey,
@@ -167,7 +168,15 @@ export function HelpSheet({
           className={cn(
             "fixed z-50 flex max-h-[90dvh] w-full flex-col gap-5 overflow-y-auto bg-dashboard-bg-surface p-6 font-figtree font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card focus:outline-none",
             "inset-x-0 bottom-0 rounded-t-dashboard-2xl pb-[max(1.5rem,env(safe-area-inset-bottom))]",
-            "sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-w-[480px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-dashboard-2xl",
+            // Centered with margins, not translate, so the enter animation's
+            // transform can't knock it off centre.
+            "sm:inset-0 sm:m-auto sm:h-fit sm:max-w-[480px] sm:rounded-dashboard-2xl sm:pb-6",
+            // Phone: slides up like a sheet (iOS curve). Wider: a small
+            // scale + fade from the centre. Exits are quicker than entries.
+            "data-[state=open]:[animation-timing-function:cubic-bezier(0.32,0.72,0,1)] data-[state=closed]:duration-200 data-[state=open]:duration-300 data-[state=closed]:ease-out data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=closed]:slide-out-to-bottom-full data-[state=open]:slide-in-from-bottom-full",
+            "sm:data-[state=closed]:duration-150 sm:data-[state=open]:duration-200 sm:data-[state=closed]:fade-out-0 sm:data-[state=open]:fade-in-0 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:slide-out-to-bottom-2 sm:data-[state=open]:slide-in-from-bottom-2",
+            "motion-reduce:data-[state=closed]:animate-none motion-reduce:data-[state=open]:animate-none",
           )}
         >
           <div className="flex items-start justify-between gap-3">
@@ -181,7 +190,11 @@ export function HelpSheet({
             </div>
             <Dialog.Close
               aria-label={copy.close}
-              className="-mr-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+              className={cn(
+                "-mr-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                hoverTint,
+                pressable,
+              )}
             >
               <X aria-hidden className="size-5" />
             </Dialog.Close>
@@ -201,11 +214,12 @@ export function HelpSheet({
                 <label
                   key={r}
                   className={cn(
-                    "flex min-h-11 cursor-pixel-hover items-center gap-3 rounded-dashboard-lg border px-4 py-2.5 text-base transition-colors",
+                    "flex min-h-11 cursor-pixel-hover items-center gap-3 rounded-dashboard-lg border px-4 py-2.5 text-base",
+                    pressable,
                     "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-dashboard-action-primary has-[:focus-visible]:ring-offset-2",
                     reason === r
                       ? "border-dashboard-action-primary bg-dashboard-bg-highlight"
-                      : "border-dashboard-border-default bg-dashboard-bg-surface hover:bg-dashboard-bg-highlightSubtle",
+                      : "border-dashboard-border-default bg-dashboard-bg-surface [@media(hover:hover)]:hover:bg-dashboard-bg-highlightSubtle",
                   )}
                 >
                   <input
@@ -360,7 +374,7 @@ export function HelpSheet({
             <DashboardButton
               type="submit"
               disabled={sending}
-              className="md:h-11 md:w-full"
+              className={cn("md:h-11 md:w-full", pressable)}
             >
               {sending ? copy.sending : copy.submit}
             </DashboardButton>

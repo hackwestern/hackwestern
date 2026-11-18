@@ -12,8 +12,7 @@ import {
   TimerOff,
   UserRound,
 } from "lucide-react";
-import { DashboardButton } from "~/components/internals/dashboard-button";
-import { DashboardPanel } from "~/components/internals/dashboard-panel";
+import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { HackerLinks } from "~/components/sponsors/hacker-links";
 import { InterestedHackers } from "~/components/sponsors/interested-hackers";
 import {
@@ -22,7 +21,7 @@ import {
   PageIntro,
   ScheduleSkeleton,
 } from "~/components/sponsors/schedule-states";
-import { SponsorShell } from "~/components/sponsors/sponsor-shell";
+import { pressable, SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { sponsorHackersCopy } from "~/content/sponsor-hackers";
 import type { CoffeeChatStatus } from "~/lib/coffee-chat-requests";
@@ -34,6 +33,7 @@ import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
 const copy = coffeeChatCopy.sponsorList;
+const tabsCopy = sponsorHackersCopy.tabs;
 
 // Status chips: icon + word, so the status never rests on colour alone.
 const STATUS_STYLE: Record<
@@ -63,15 +63,22 @@ const STATUS_STYLE: Record<
   },
 };
 
-// The sponsor's coffee chats page: their chats (grouped by start time, with
-// each hacker's reply and, when the hacker agreed to share, their profile),
-// then the hackers who ranked them, which they can shortlist for the Hack
-// Western team to set up chats. Chats refresh every 30 seconds.
+type Tab = "chats" | "candidates";
+const TABS: Tab[] = ["chats", "candidates"];
+/** Old /hackers links and the Candidates tab share this hash. */
+const CANDIDATES_HASH = "#interested";
+
+// The sponsor's coffee chats page, phone first: three numbers, Scan a badge,
+// then a switch between Your chats (grouped by start time, with each
+// hacker's reply and, when the hacker agreed to share, their photo and
+// profile) and Candidates (the top-40 shortlist). Refreshes every 30s.
 export default function SponsorCoffeeChatsPage() {
   const router = useRouter();
   const id = typeof router.query.uuid === "string" ? router.query.uuid : "";
   const validUuid = uuidRegex.test(id);
   const [announcement, setAnnouncement] = useState("");
+  const [tab, setTab] = useState<Tab>("chats");
+  const tabRefs = useRef(new Map<Tab, HTMLButtonElement>());
 
   const q = api.coffeeChatRequests.sponsorChats.useQuery(
     { sponsor: id },
@@ -86,16 +93,18 @@ export default function SponsorCoffeeChatsPage() {
     { enabled: validUuid, refetchInterval: 60_000, retry: 1 },
   );
 
-  // Old /hackers links land on #interested. The section only exists once
-  // both lists have loaded, so scroll to it then (once).
-  const scrolled = useRef(false);
-  const interestedReady = !!interestedQ.data && !!q.data;
+  // Old /hackers links land on #interested: open the Candidates tab.
   useEffect(() => {
-    if (scrolled.current || !interestedReady) return;
-    if (window.location.hash !== "#interested") return;
-    scrolled.current = true;
-    document.getElementById("interested")?.scrollIntoView();
-  }, [interestedReady]);
+    if (window.location.hash === CANDIDATES_HASH) setTab("candidates");
+  }, []);
+
+  const choose = (next: Tab, focus = false) => {
+    setTab(next);
+    if (focus) tabRefs.current.get(next)?.focus();
+    // Keep the tab on reload and in shared links, without a history entry.
+    const url = `${window.location.pathname}${window.location.search}${next === "candidates" ? CANDIDATES_HASH : ""}`;
+    window.history.replaceState(window.history.state, "", url);
+  };
 
   const shell = (children: React.ReactNode) => (
     <SponsorShell
@@ -128,6 +137,8 @@ export default function SponsorCoffeeChatsPage() {
   const accepted = chats.filter((c) => c.status === "accepted").length;
   const pending = chats.filter((c) => c.status === "pending").length;
   const interested = interestedQ.data;
+  const shortlisted = interested?.hackers.filter((h) => h.shortlisted).length;
+  const fetching = q.isFetching || interestedQ.isFetching;
 
   const refresh = async () => {
     setAnnouncement("");
@@ -145,6 +156,11 @@ export default function SponsorCoffeeChatsPage() {
     requestAnimationFrame(() => setAnnouncement(message));
   };
 
+  const counts: Record<Tab, number | undefined> = {
+    chats: chats.length,
+    candidates: interested?.hackers.length,
+  };
+
   return shell(
     <>
       <PageIntro
@@ -153,69 +169,151 @@ export default function SponsorCoffeeChatsPage() {
         intro={sponsorHackersCopy.pageIntro}
       />
 
-      <p className="m-0 text-sm font-semibold text-dashboard-text-medium">
-        {copy.summary(accepted, pending)}
-        {interested && (
-          <>
-            {" · "}
-            {sponsorHackersCopy.shortlistCount(
-              interested.hackers.filter((h) => h.shortlisted).length,
-              interested.hackers.length,
-            )}
-          </>
+      {/* The numbers a rep checks between chats. */}
+      <dl
+        aria-label={sponsorHackersCopy.stats.label}
+        className="m-0 grid grid-cols-3 gap-2"
+      >
+        <Stat label={sponsorHackersCopy.stats.accepted} value={accepted} />
+        <Stat label={sponsorHackersCopy.stats.waiting} value={pending} />
+        {interested && shortlisted !== undefined && (
+          <Stat
+            label={sponsorHackersCopy.stats.shortlisted}
+            value={shortlisted}
+            of={sponsorHackersCopy.stats.of(interested.maxShortlist)}
+          />
         )}
+      </dl>
+      <p className="sr-only">
+        {copy.summary(accepted, pending)}
+        {interested &&
+          ` · ${sponsorHackersCopy.shortlistCount(shortlisted ?? 0, interested.hackers.length)}`}
       </p>
 
       {watcherName && (
-        <p className="m-0 text-sm text-dashboard-text-medium">
+        <p className="m-0 flex items-center gap-2 text-sm text-dashboard-text-medium">
+          <UserRound
+            aria-hidden
+            className="size-4 shrink-0 text-dashboard-text-light"
+          />
           {coffeeChatCopy.watcher.line(watcherName)}
         </p>
       )}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <DashboardButton asChild className="md:h-11 md:w-full">
-          <Link href={`/sponsors/${id}/scan`}>
-            <ScanLine aria-hidden />
-            {copy.scan}
-          </Link>
-        </DashboardButton>
-        <DashboardButton
-          variant="outline"
-          className="h-11 w-full"
-          aria-disabled={q.isFetching || undefined}
+      <div className="flex gap-2">
+        <Link
+          href={`/sponsors/${id}/scan`}
+          className={cn(
+            "inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-dashboard-lg bg-dashboard-action-primary px-4 text-base font-semibold text-dashboard-text-inverse shadow-dashboard-primary-btn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2 [@media(hover:hover)]:hover:bg-dashboard-text-active",
+            pressable,
+          )}
+        >
+          <ScanLine aria-hidden className="size-5" />
+          {copy.scan}
+        </Link>
+        <button
+          type="button"
+          aria-label={
+            fetching ? copy.refreshing : sponsorHackersCopy.refreshLabel
+          }
+          aria-disabled={fetching || undefined}
           onClick={() => {
-            if (!q.isFetching) void refresh();
+            if (!fetching) void refresh();
           }}
+          className={cn(
+            "inline-flex size-12 shrink-0 items-center justify-center rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
+            pressable,
+          )}
         >
           <RefreshCw
             aria-hidden
-            className={cn(q.isFetching && "motion-safe:animate-spin")}
+            className={cn("size-5", fetching && "motion-safe:animate-spin")}
           />
-          {q.isFetching ? copy.refreshing : copy.refresh}
-        </DashboardButton>
+        </button>
       </div>
 
-      <section aria-labelledby="chats-heading" className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1.5">
-          <h2
-            id="chats-heading"
-            className="m-0 text-xl font-semibold text-dashboard-text-heavy"
-          >
-            {sponsorHackersCopy.chatsHeading}
-          </h2>
-          <p className="m-0 text-base text-dashboard-text-medium">
-            {copy.intro}
-          </p>
+      {/* Your chats | Candidates. Sticks to the top so switching is always
+          one tap away on a long list. */}
+      <div className="sticky top-0 z-10 -mx-4 bg-dashboard-bg-page/95 px-4 py-2 backdrop-blur-sm sm:-mx-5 sm:px-5">
+        <div
+          role="tablist"
+          aria-label={tabsCopy.label}
+          className="grid grid-cols-2 gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1"
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+            event.preventDefault();
+            const at = TABS.indexOf(tab);
+            const next =
+              TABS[(at + (event.key === "ArrowRight" ? 1 : -1) + 2) % 2]!;
+            choose(next, true);
+          }}
+        >
+          {TABS.map((t) => {
+            const on = tab === t;
+            return (
+              <button
+                key={t}
+                ref={(el) => {
+                  if (el) tabRefs.current.set(t, el);
+                  else tabRefs.current.delete(t);
+                }}
+                type="button"
+                role="tab"
+                id={`tab-${t}`}
+                aria-selected={on}
+                aria-controls={`panel-${t}`}
+                tabIndex={on ? 0 : -1}
+                onClick={() => choose(t)}
+                className={cn(
+                  "inline-flex min-h-11 items-center justify-center gap-2 rounded-dashboard-md px-2 text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                  on
+                    ? "bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card"
+                    : "text-dashboard-text-medium [@media(hover:hover)]:hover:text-dashboard-text-heavy",
+                  pressable,
+                )}
+              >
+                {tabsCopy[t]}
+                {counts[t] !== undefined && (
+                  <span
+                    className={cn(
+                      "rounded-full px-2 text-xs tabular-nums leading-5",
+                      on
+                        ? "bg-dashboard-bg-highlight text-dashboard-text-active"
+                        : "bg-dashboard-bg-navSelected text-dashboard-text-medium",
+                    )}
+                  >
+                    {counts[t]}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
+      </div>
+
+      <section
+        id="panel-chats"
+        role="tabpanel"
+        aria-labelledby="tab-chats"
+        hidden={tab !== "chats"}
+        // .flex would beat the hidden attribute, so drop it when hidden.
+        className={tab === "chats" ? "flex flex-col gap-4" : undefined}
+      >
+        <p className="m-0 text-base text-dashboard-text-medium">{copy.intro}</p>
 
         {chats.length === 0 ? (
-          <DashboardPanel className="text-center">
-            <p className="m-0 text-base text-dashboard-text-medium">
+          <div className="flex flex-col items-center gap-3 rounded-dashboard-2xl bg-dashboard-bg-inset p-8 text-center">
+            <ScanLine
+              aria-hidden
+              className="size-6 text-dashboard-text-light"
+              strokeWidth={1.67}
+            />
+            <p className="m-0 max-w-[360px] text-base text-dashboard-text-medium">
               {copy.empty}
             </p>
-          </DashboardPanel>
+          </div>
         ) : (
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-6">
             {groups.map(([slotTime, group]) => (
               <section
                 key={slotTime}
@@ -224,7 +322,7 @@ export default function SponsorCoffeeChatsPage() {
               >
                 <h3
                   id={`time-${slotTime}`}
-                  className="m-0 flex items-baseline gap-2 text-lg font-semibold text-dashboard-text-heavy"
+                  className="m-0 flex items-baseline gap-2 text-lg font-semibold tabular-nums text-dashboard-text-heavy"
                 >
                   <span>{formatClock(slotTime)}</span>
                   <span className="text-sm font-medium text-dashboard-text-light">
@@ -247,12 +345,49 @@ export default function SponsorCoffeeChatsPage() {
         )}
       </section>
 
-      {interested ? (
-        <InterestedHackers sponsor={id} data={interested} announce={announce} />
-      ) : (
-        <LoadError onRetry={() => void interestedQ.refetch()} />
-      )}
+      <div
+        id="panel-candidates"
+        role="tabpanel"
+        aria-labelledby="tab-candidates"
+        hidden={tab !== "candidates"}
+      >
+        {interested ? (
+          <InterestedHackers
+            sponsor={id}
+            data={interested}
+            announce={announce}
+          />
+        ) : (
+          <LoadError onRetry={() => void interestedQ.refetch()} />
+        )}
+      </div>
     </>,
+  );
+}
+
+function Stat({
+  label,
+  value,
+  of,
+}: {
+  label: string;
+  value: number;
+  of?: string;
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5 rounded-dashboard-2xl bg-dashboard-bg-surface px-3 py-3 shadow-dashboard-card">
+      <dt className="truncate text-xs font-semibold text-dashboard-text-light">
+        {label}
+      </dt>
+      <dd className="m-0 flex items-baseline gap-1 text-2xl font-bold tabular-nums leading-default text-dashboard-text-heavy">
+        {value}
+        {of && (
+          <span className="truncate text-xs font-medium text-dashboard-text-light">
+            {of}
+          </span>
+        )}
+      </dd>
+    </div>
   );
 }
 
@@ -270,15 +405,21 @@ function ChatRow({
   return (
     <li
       className={cn(
-        "flex flex-col gap-2 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card",
+        "flex flex-col gap-3 rounded-dashboard-2xl bg-dashboard-bg-surface p-4 shadow-dashboard-card",
         over && "bg-dashboard-bg-highlightSubtle shadow-none",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-0.5">
+      <div className="flex items-start gap-3">
+        {/* A photo only for hackers who shared their profile. */}
+        <HackerAvatar
+          name={name}
+          github={partner?.shared ? partner.github : null}
+          className={cn(over && "opacity-60")}
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span
             className={cn(
-              "break-words text-lg font-semibold",
+              "break-words text-base font-semibold leading-snug",
               over ? "text-dashboard-text-light" : "text-dashboard-text-heavy",
             )}
           >
@@ -292,21 +433,27 @@ function ChatRow({
         </div>
         <span
           className={cn(
-            "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-semibold",
+            "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
             style.className,
           )}
         >
-          <Icon aria-hidden className="size-4" />
+          <Icon aria-hidden className="size-3.5" />
           {copy.status[chat.status]}
         </span>
       </div>
       <p className="m-0 flex flex-wrap gap-x-4 gap-y-1 text-sm text-dashboard-text-medium">
-        <span className="inline-flex items-center gap-1.5">
-          <MapPin aria-hidden className="size-4 text-dashboard-text-light" />
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+          <MapPin
+            aria-hidden
+            className="size-4 shrink-0 text-dashboard-text-light"
+          />
           {chat.room ?? copy.roomTbd}
         </span>
-        <span className="inline-flex items-center gap-1.5">
-          <UserRound aria-hidden className="size-4 text-dashboard-text-light" />
+        <span className="inline-flex min-w-0 items-center gap-1.5 break-words">
+          <UserRound
+            aria-hidden
+            className="size-4 shrink-0 text-dashboard-text-light"
+          />
           {chat.repName ? copy.rep(chat.repName) : copy.noRep}
         </span>
       </p>
