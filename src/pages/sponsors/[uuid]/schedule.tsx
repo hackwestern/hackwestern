@@ -22,7 +22,7 @@ import {
   ReadAt,
   ScheduleSkeleton,
 } from "~/components/sponsors/schedule-states";
-import { SponsorShell } from "~/components/sponsors/sponsor-shell";
+import { pressable, SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { useNow } from "~/components/sponsors/use-now";
 import { WorkshopDetails } from "~/components/sponsors/workshop-details";
 import { coffeeChatCopy } from "~/content/coffee-chat";
@@ -33,6 +33,7 @@ import { fetchScheduleData } from "~/lib/schedule";
 import { chatsForSponsor, coffeeChatEntries } from "~/lib/schedule-bookings";
 import { nextOwnEvent } from "~/lib/sponsor-next-event";
 import { buildSponsorTimeline } from "~/lib/sponsor-timeline";
+import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
@@ -147,13 +148,20 @@ export default function SponsorSchedulePage() {
             aria-label={coffeeChatCopy.hub.linksLabel}
             className="grid grid-cols-1 gap-3 sm:grid-cols-2"
           >
-            <DashboardButton asChild className="md:h-11 md:w-full">
+            <DashboardButton
+              asChild
+              className={cn("md:h-11 md:w-full", pressable)}
+            >
               <Link href={`/sponsors/${id}/scan`}>
                 <ScanLine aria-hidden />
                 {coffeeChatCopy.hub.scan}
               </Link>
             </DashboardButton>
-            <DashboardButton variant="outline" asChild className="h-11 w-full">
+            <DashboardButton
+              variant="outline"
+              asChild
+              className={cn("h-11 w-full", pressable)}
+            >
               <Link href={`/sponsors/${id}/coffee-chats`}>
                 {coffeeChatCopy.hub.list}
               </Link>
