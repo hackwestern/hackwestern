@@ -1,14 +1,16 @@
 import Image from "next/image";
 import { useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
-import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardChip } from "~/components/internals/dashboard-chip";
-import { WhereList, whereRows } from "~/components/sponsors/company-locations";
-import { LoadError } from "~/components/sponsors/schedule-states";
+import { useLiveChatBoard } from "~/components/sponsors/coffee-chat-room-table";
 import { Pin, RoomDetails } from "~/components/sponsors/sponsor-map";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { sponsorMapCopy } from "~/content/sponsor-map";
-import { coffeeRoomsAt, type CoffeeRoomAt } from "~/lib/coffee-chat-map";
+import {
+  boardTimeAt,
+  coffeeRoomsAt,
+  type CoffeeRoomAt,
+} from "~/lib/coffee-chat-map";
 import { coffeeChatStartsAt } from "~/lib/coffee-chat-requests";
 import { formatClock, type CompanyLocations } from "~/lib/run-of-show";
 import { roomsOnFloor, sponsorMapOccupancy } from "~/lib/sponsor-map";
@@ -20,126 +22,61 @@ import {
 } from "~/lib/sponsor-map-rooms";
 import { cn } from "~/lib/utils";
 import type { ChatBoard } from "~/server/api/utils/coffee-chat-board";
+import { api } from "~/utils/api";
 
 const copy = coffeeChatCopy.organizer.side;
 
-type Companies = {
-  data: CompanyLocations | undefined;
-  isLoading: boolean;
-  refetch: () => void;
-};
-
-// Beside the coffee chat table (below it on phones): the coffee chat rooms
-// on the floor plan and where every sponsor is, both at the time picked in
-// the table (now by default).
-export function CoffeeChatSidePanel({
-  board,
-  companies,
-  time,
-  live,
-  onNow,
-  focusSponsor,
-  onFocusSponsor,
-}: {
-  board: Pick<ChatBoard, "sponsors" | "chats"> & { assignableRooms: string[] };
-  companies: Companies;
-  /** "HH:MM" on Saturday. */
-  time: string;
-  /** True while following the clock (no row picked). */
-  live: boolean;
-  onNow: () => void;
-  focusSponsor: string | null;
-  onFocusSponsor: (sponsor: string | null) => void;
-}) {
+// Beside the run of show (below it on phones, folded): the coffee chat
+// rooms on the floor plan and which sponsor is in each, right now. No time
+// picking: it follows the clock and the live board polling.
+export function CoffeeChatLiveMap({ now }: { now: Date }) {
+  const board = useLiveChatBoard();
+  const companies = api.sponsorSchedule.organizerCompanies.useQuery(undefined, {
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+  const [focusSponsor, setFocusSponsor] = useState<string | null>(null);
+  if (!board.data) return null;
+  const slots = board.data.slots;
+  const time = boardTimeAt(slots, now);
+  if (!time) return null;
+  const first = slots[0]!;
+  const last = slots[slots.length - 1]!;
+  const running =
+    now >= coffeeChatStartsAt(first) &&
+    now.getTime() < coffeeChatStartsAt(last).getTime() + 15 * 60_000;
   const clock = formatClock(time);
-  const at = coffeeChatStartsAt(time);
-  const rooms = coffeeRoomsAt(board, board.assignableRooms, time);
+  const rooms = coffeeRoomsAt(board.data, board.data.assignableRooms, time);
 
   return (
     <aside aria-label={copy.label} className="flex min-w-0 flex-col gap-4">
-      <div className="flex items-center justify-between gap-3 rounded-dashboard-lg bg-dashboard-bg-surface px-4 py-3 shadow-dashboard-card">
-        <div className="flex min-w-0 flex-col">
-          <span className="text-xs font-semibold text-dashboard-text-light">
-            {live ? copy.live : copy.picked}
-          </span>
-          <span
-            aria-live="polite"
-            className="text-lg font-semibold text-dashboard-text-heavy"
-          >
-            {copy.showing(clock)}
-          </span>
-        </div>
-        <DashboardButton
-          variant="outline"
-          disabled={live}
-          aria-label={copy.nowLabel}
-          onClick={onNow}
-          className="h-10 shrink-0"
+      <Section id="live-map" title={copy.mapHeading}>
+        <p
+          aria-live="polite"
+          className="m-0 text-sm font-semibold text-dashboard-text-heavy"
         >
-          {copy.now}
-        </DashboardButton>
-      </div>
-      <p className="m-0 px-1 text-xs text-dashboard-text-light">
-        {copy.pickRow}
-      </p>
-
-      {focusSponsor && (
-        <div className="flex items-center justify-between gap-2 rounded-dashboard-lg bg-dashboard-bg-highlight px-4 py-2 text-sm text-dashboard-text-active">
-          <span className="min-w-0 break-words font-semibold">
-            {copy.highlighting(focusSponsor)}
-          </span>
-          <DashboardButton
-            variant="tertiary"
-            className="h-9 shrink-0"
-            onClick={() => onFocusSponsor(null)}
-          >
-            {copy.clear}
-          </DashboardButton>
-        </div>
-      )}
-
-      <Section id="side-map" title={copy.mapHeading} defaultOpen>
+          {running ? copy.nowAt(formatClock(time)) : copy.notToday}
+        </p>
         <p className="m-0 text-sm text-dashboard-text-medium">
-          {copy.mapIntro}
+          {copy.mapIntroLive}
         </p>
         <RoomsMap
-          board={board}
+          board={board.data}
           companies={companies.data}
-          rooms={rooms}
-          at={at}
+          rooms={running ? rooms : rooms.map(emptyRoom)}
+          at={now}
           clock={clock}
           focusSponsor={focusSponsor}
-          onFocusSponsor={onFocusSponsor}
+          onFocusSponsor={setFocusSponsor}
         />
-      </Section>
-
-      <Section id="side-where" title={copy.whereHeading}>
-        <p className="m-0 text-sm text-dashboard-text-light">
-          {copy.whereAt(clock)}
-        </p>
-        {companies.isLoading ? (
-          <div
-            aria-busy="true"
-            className="h-24 w-full rounded-dashboard-md bg-dashboard-bg-inset motion-safe:animate-pulse"
-          />
-        ) : !companies.data ? (
-          <LoadError onRetry={companies.refetch} />
-        ) : (
-          <WhereNow data={companies.data} at={at} />
-        )}
       </Section>
     </aside>
   );
 }
 
-function WhereNow({ data, at }: { data: CompanyLocations; at: Date }) {
-  const rows = whereRows(data, at);
-  if (rows.length === 0) {
-    return (
-      <p className="m-0 text-sm text-dashboard-text-light">{copy.whereEmpty}</p>
-    );
-  }
-  return <WhereList rows={rows} stacked />;
+function emptyRoom(room: CoffeeRoomAt): CoffeeRoomAt {
+  return { ...room, sponsor: null, accepted: 0, pending: 0 };
 }
 
 // A card on desktop; on phones the body folds away behind its heading.
@@ -340,7 +277,7 @@ function RoomsMap({
       {/* The same rooms in text, for screen readers and quick reading. */}
       <section aria-labelledby="side-rooms" className="flex flex-col gap-2">
         <h3 id="side-rooms" className="m-0 text-sm font-semibold">
-          {copy.roomsList}
+          {copy.roomsNow}
         </h3>
         <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
           {rooms.map((room) => (
