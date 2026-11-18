@@ -40,12 +40,12 @@ const Schedule = () => {
   ];
 
   return (
-    <div className="mb-4 flex h-fit w-full flex-col px-3 py-4 sm:mb-8 sm:p-10 lg:px-4">
+    <div className="mb-4 flex h-fit w-full flex-col sm:mb-8">
       {/* Single scrollable container for both headers and schedule */}
       <div className="max-h-[calc(100vh-160px)] w-full overflow-x-auto overflow-y-auto pb-10 sm:pb-20">
         <div className="min-w-[1000px] sm:min-w-[1100px] lg:min-w-[980px]">
           {/* Sticky category headers */}
-          <div className="sticky top-0 z-[60] mb-4 border-b border-gray-200 bg-dashboard-bg-page px-3 py-2 sm:mb-6 sm:border-b-2 sm:px-6 sm:py-3 lg:px-2">
+          <div className="sticky top-0 z-[60] mb-4 border-b border-gray-200 bg-dashboard-bg-page py-2 sm:mb-6 sm:border-b-2 sm:py-3">
             <div className="grid grid-cols-[60px_repeat(10,1fr)] items-center gap-1.5 sm:gap-2">
               <div className="font-figtree text-[10px] font-semibold text-dashboard-text-light sm:text-xs"></div>
               {categoryLabels.map((label, i) => (
