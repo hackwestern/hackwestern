@@ -22,9 +22,15 @@ describe("run of show times", () => {
   });
 
   it("opens on today during the event, Friday before it", () => {
-    expect(defaultRunOfShowDay(new Date("2026-11-14T12:00:00Z"))).toBe("Friday");
-    expect(defaultRunOfShowDay(new Date("2026-11-21T16:00:00Z"))).toBe("Saturday");
-    expect(defaultRunOfShowDay(new Date("2026-11-30T16:00:00Z"))).toBe("Sunday");
+    expect(defaultRunOfShowDay(new Date("2026-11-14T12:00:00Z"))).toBe(
+      "Friday",
+    );
+    expect(defaultRunOfShowDay(new Date("2026-11-21T16:00:00Z"))).toBe(
+      "Saturday",
+    );
+    expect(defaultRunOfShowDay(new Date("2026-11-30T16:00:00Z"))).toBe(
+      "Sunday",
+    );
   });
 });
 
@@ -35,5 +41,17 @@ describe("locationFor", () => {
     expect(locationFor(loc, "Scotiabank")).toBe("Rm 2110");
     expect(locationFor(loc, "canada life")).toBe("Rm 2230");
     expect(locationFor("Rm 1230", "Scotiabank")).toBe("Rm 1230");
+  });
+});
+
+describe("ownLocation", () => {
+  it("never hands a sponsor another sponsor's room", async () => {
+    const { ownLocation } = await import("./run-of-show");
+    const loc = "Scotiabank: Rm 2110, Canada Life: Rm 2230";
+    expect(ownLocation(loc, "Canada Life")).toBe("Rm 2230");
+    expect(ownLocation(loc, "QNX")).toBeNull();
+    expect(ownLocation("Rm 1230", "QNX")).toBe("Rm 1230");
+    // One labelled part is a place, not a per-sponsor list.
+    expect(ownLocation("SEB: 2nd floor", "QNX")).toBe("SEB: 2nd floor");
   });
 });

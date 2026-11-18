@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { applyAssignedRooms } from "~/lib/coffee-chat-requests";
 import {
-  locationFor,
+  ownLocation,
   type CompanyLocations,
   type OrganizerRunOfShow,
   type SponsorSchedule,
@@ -100,16 +100,16 @@ export const sponsorScheduleRouter = createTRPCRouter({
                 /^sponsor\b/i.test(item.title)),
           )
           // A shared room ("Scotiabank: Rm 2110, Canada Life: Rm 2230") is
-          // trimmed here so a sponsor never receives another sponsor's room.
-          .map((item) =>
-            item.sponsors.length > 1 && item.location
-              ? {
-                  ...item,
-                  location: locationFor(item.location, name),
-                  sponsors: item.sponsors.filter((n) => n === name),
-                }
-              : item,
-          ),
+          // trimmed here so a sponsor never receives another sponsor's room
+          // (judging rooms too, even when this sponsor isn't in the list).
+          .map((item) => ({
+            ...item,
+            location: item.location ? ownLocation(item.location, name) : null,
+            sponsors:
+              item.sponsors.length > 1
+                ? item.sponsors.filter((n) => n === name)
+                : item.sponsors,
+          })),
         coffeeChat: sheet.coffeeChats.find((c) => c.sponsor === name) ?? null,
         // The full running order is public at the ceremony itself; who else
         // speaks helps a sponsor know when to be ready.
