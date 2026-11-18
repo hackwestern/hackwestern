@@ -245,14 +245,12 @@
       "serverGuards": []
     },
     {
-      "auth": "session",
+      "auth": "none-detected",
       "dynamic": false,
       "file": "src/pages/scavenger.tsx",
       "hasGetServerSideProps": true,
       "route": "/scavenger",
-      "serverGuards": [
-        "disabledRedirect"
-      ]
+      "serverGuards": []
     },
     {
       "auth": "none-detected",
