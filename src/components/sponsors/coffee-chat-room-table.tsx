@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
+import { Lock, Plus, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { hover, press } from "~/components/internals/interaction";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { AddChatHere } from "~/components/sponsors/coffee-chat-board";
 import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-rooms";
@@ -145,9 +146,15 @@ export function CoffeeChatRoomTable({
 
 function Legend() {
   const items = [
-    ["free", "bg-dashboard-schedule-blue border-dashboard-action-primary"],
+    [
+      "free",
+      "border-dashed bg-dashboard-bg-surface border-dashboard-border-outline",
+    ],
     ["booked", "bg-dashboard-bg-inset border-dashboard-border-control"],
-    ["full", "bg-dashboard-bg-navSelected border-dashboard-border-strong"],
+    [
+      "full",
+      "bg-dashboard-bg-navSelected border-dashboard-action-primary ring-1 ring-inset ring-dashboard-action-primary",
+    ],
     ["over", "bg-dashboard-status-iconBadge border-dashboard-status-warning"],
     [
       "dimmed",
@@ -199,27 +206,40 @@ function CellButton({
       onClick={(e) => onOpen(e.currentTarget)}
       className={cn(
         "flex min-h-14 w-full flex-col items-stretch gap-1 rounded-dashboard-sm border px-2 py-1.5 text-left text-xs leading-4",
+        press,
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1",
         cell.state === "free" &&
-          "border-dashboard-action-primary/40 bg-dashboard-schedule-blue font-semibold text-dashboard-text-active hover:bg-dashboard-bg-navSelected",
+          cn(
+            "border-dashed border-dashboard-border-outline bg-dashboard-bg-surface font-semibold text-dashboard-text-link",
+            hover.solidBorder,
+            hover.highlight,
+          ),
         cell.state === "booked" &&
-          "border-dashboard-border-control bg-dashboard-bg-inset text-dashboard-text-heavy hover:bg-dashboard-bg-nav",
+          cn(
+            "border-dashboard-border-control bg-dashboard-bg-inset text-dashboard-text-heavy",
+            hover.nav,
+          ),
+        // Full: a solid blue double edge and a lock, apart from grey booked.
         cell.state === "full" &&
-          "border-dashboard-border-strong bg-dashboard-bg-navSelected text-dashboard-text-heavy",
+          "border-dashboard-action-primary bg-dashboard-bg-navSelected text-dashboard-text-active ring-1 ring-inset ring-dashboard-action-primary",
         cell.state === "over" &&
           "border-2 border-dashboard-status-warning bg-dashboard-status-iconBadge text-dashboard-text-warning",
         dimmed && "opacity-40",
       )}
     >
       {cell.state === "free" ? (
-        copy.free
+        <span className="flex items-center gap-1">
+          <Plus aria-hidden className="size-3.5 shrink-0" />
+          {copy.free}
+        </span>
       ) : (
         <>
           <span className="flex items-baseline justify-between gap-2">
             <span className="min-w-0 truncate font-semibold">
               {who ?? copy.overWarning}
             </span>
-            <span className="shrink-0 font-semibold tabular-nums">
+            <span className="flex shrink-0 items-center gap-1 font-semibold tabular-nums">
+              {cell.state === "full" && <Lock aria-hidden className="size-3" />}
               {copy.used(cell.used, cell.capacity)}
             </span>
           </span>
@@ -336,7 +356,10 @@ function DialogBody({
         </div>
         <Dialog.Close
           aria-label={dialogCopy.close}
-          className="-mr-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+          className={cn(
+            "-mr-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+            hover.highlight,
+          )}
         >
           <X aria-hidden className="size-5" />
         </Dialog.Close>

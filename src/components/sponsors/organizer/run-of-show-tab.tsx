@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { CeremonyOrder } from "~/components/sponsors/ceremony-order";
 import {
@@ -43,8 +44,8 @@ const NO_NAMES: string[] = [];
 
 export type OrganizerSchedule = RouterOutputs["sponsorSchedule"]["organizer"];
 
-// Organizer run of show: the whole sheet, read-only, with team tasks, the
-// live coffee chat map beside it and the room booking table under it. Edits
+// Organizer run of show: the whole sheet, read-only, with team tasks, at
+// full width; the room booking table and live coffee chat map under it. Edits
 // happen in the sheet (SheetEditButton). `sponsor` (an id or name, from
 // ?sponsor=) sets the sponsor filter, which narrows the coffee chats on the
 // grid and in the rooms table.
@@ -89,55 +90,48 @@ export function RunOfShowTab({
       <SheetEditButton href={data.sheetUrl} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <DayPicker value={shownDay} onChange={setDay} />
-        <a
-          href="#rooms"
-          className="inline-flex min-h-11 items-center text-sm font-semibold text-dashboard-text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
-        >
-          {roomCopy.jump}
-        </a>
+        <DashboardButton variant="link" asChild className="-mr-2">
+          <a href="#rooms">{roomCopy.jump}</a>
+        </DashboardButton>
       </div>
       <TimelineKey
         mode="organizer"
         showHackathon={showHackathon}
         onShowHackathonChange={setShowHackathon}
       />
-      {/* The run of show with the live coffee chat room map beside it
-          (below it, folded, on phones). */}
-      <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
-        <div className="min-w-0">
-          <DayGrid
-            mode="organizer"
-            day={shownDay}
-            now={now}
-            entries={[
-              ...buildOrganizerTimeline({
-                day: shownDay,
-                items: data.items,
-                live: live.data,
-                showHackathon,
-              }),
-              ...taskEntries(shownDay, data.tasks),
-              ...coffeeChatEntries(
-                shownDay,
-                (chats.data?.chats ?? [])
-                  .filter((c) => selection.isShown(c.sponsorName))
-                  .map((c) => ({
-                    ...c,
-                    hacker: booked.hacker(c.firstName, c.lastName),
-                  })),
-              ),
-            ]}
-            workshops={data.workshops}
-            tasks={data.tasks}
-            emptyText={copy.emptyDay}
-          />
-        </div>
-        <div className="min-w-0 lg:sticky lg:top-4">
-          <CoffeeChatLiveMap now={now} />
-        </div>
+      {/* The run of show gets the full width so its columns fit without
+          sideways scrolling; the live room map sits with the rooms below. */}
+      <div className="min-w-0">
+        <DayGrid
+          mode="organizer"
+          day={shownDay}
+          now={now}
+          entries={[
+            ...buildOrganizerTimeline({
+              day: shownDay,
+              items: data.items,
+              live: live.data,
+              showHackathon,
+            }),
+            ...taskEntries(shownDay, data.tasks),
+            ...coffeeChatEntries(
+              shownDay,
+              (chats.data?.chats ?? [])
+                .filter((c) => selection.isShown(c.sponsorName))
+                .map((c) => ({
+                  ...c,
+                  hacker: booked.hacker(c.firstName, c.lastName),
+                })),
+            ),
+          ]}
+          workshops={data.workshops}
+          tasks={data.tasks}
+          emptyText={copy.emptyDay}
+        />
       </div>
       <RoomsSection
         day={shownDay}
+        now={now}
         names={names}
         selection={selection}
         jump={jumpToRooms}
@@ -151,16 +145,19 @@ export function RunOfShowTab({
   );
 }
 
-// The coffee chat rooms as a booking table, right under the run of show
-// (it replaced the "Where is everyone" tab, which now lands here).
+// The coffee chat rooms as a booking table, right under the run of show,
+// with the live floor map beside it (it replaced the "Where is everyone"
+// tab, which now lands here: #rooms).
 function RoomsSection({
   day,
+  now,
   names,
   selection,
   jump,
   onJumped,
 }: {
   day: RunOfShowDay;
+  now: Date;
   names: readonly string[];
   selection: SponsorSelection;
   jump: boolean;
@@ -188,16 +185,27 @@ function RoomsSection({
           {roomCopy.intro(ROOM_CAPACITY)}
         </p>
       </div>
-      {day !== COFFEE_CHAT_DAY_LABEL ? (
-        <DashboardPanel>
-          <p className="m-0 text-dashboard-text-medium">{roomCopy.notToday}</p>
-        </DashboardPanel>
-      ) : (
-        <>
-          <SponsorFilter names={names} selection={selection} />
-          <CoffeeChatRoomTable selection={selection} />
-        </>
-      )}
+      {/* The room table with the live floor map beside it (below it on
+          phones and tablets). */}
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+        <div className="flex min-w-0 flex-col gap-3">
+          {day !== COFFEE_CHAT_DAY_LABEL ? (
+            <DashboardPanel>
+              <p className="m-0 text-dashboard-text-medium">
+                {roomCopy.notToday}
+              </p>
+            </DashboardPanel>
+          ) : (
+            <>
+              <SponsorFilter names={names} selection={selection} />
+              <CoffeeChatRoomTable selection={selection} />
+            </>
+          )}
+        </div>
+        <div className="min-w-0 xl:sticky xl:top-4">
+          <CoffeeChatLiveMap now={now} />
+        </div>
+      </div>
     </section>
   );
 }

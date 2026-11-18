@@ -1,3 +1,4 @@
+import { hover } from "~/components/internals/interaction";
 import Image from "next/image";
 import { useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
@@ -26,8 +27,8 @@ import { api } from "~/utils/api";
 
 const copy = coffeeChatCopy.organizer.side;
 
-// Beside the run of show (below it on phones, folded): the coffee chat
-// rooms on the floor plan and which sponsor is in each, right now. No time
+// Beside the coffee chat room table (below it on phones, folded): the
+// coffee chat rooms on the floor plan and which sponsor is in each, right now. No time
 // picking: it follows the clock and the live board polling.
 export function CoffeeChatLiveMap({ now }: { now: Date }) {
   const board = useLiveChatBoard();
@@ -107,7 +108,10 @@ function Section({
           aria-controls={`${id}-body`}
           aria-label={open ? copy.hide(title) : copy.show(title)}
           onClick={() => setOpen((o) => !o)}
-          className="-my-2 -mr-2 inline-flex size-11 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary lg:hidden"
+          className={cn(
+            "-my-2 -mr-2 inline-flex size-11 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary lg:hidden",
+            hover.highlight,
+          )}
         >
           <ChevronDown
             aria-hidden
