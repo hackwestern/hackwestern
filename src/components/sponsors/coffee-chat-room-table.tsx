@@ -294,7 +294,7 @@ function CellButton({
                 key={o.sponsor}
                 name={o.sponsor}
                 color={sponsorColor(colors, o.sponsor) ?? undefined}
-                className="size-6"
+                className="h-6 max-w-24"
               />
             ))}
           </span>
