@@ -233,27 +233,74 @@ describe("sundayWhere", () => {
     // Between two slots: still in the room, nobody presenting.
     expect(
       sundayWhere({ sponsorName: "Acme", items, slots, now: at("10:07") }),
-    ).toMatchObject({ kind: "presenting", team: null });
+    ).toMatchObject({ kind: "presenting", room: "Rm 2230", team: null });
   });
 
-  it("presentations are next when nothing else comes first", () => {
-    const quiet = items.filter((i) => i.column !== "spon-booth");
+  it("between slots in two rooms, the nearest slot's room", () => {
+    const split = [
+      { room: "Rm 2230", start: 10 * 60, teamName: "Team One" },
+      { room: "Rm 2235", start: 10 * 60 + 20, teamName: "Team Two" },
+    ];
+    // 10:06: one minute after Rm 2230's slot, 14 before Rm 2235's.
     expect(
       sundayWhere({
         sponsorName: "Acme",
-        items: quiet.filter((i) => i.start !== "09:00"),
+        items,
+        slots: split,
+        now: at("10:06"),
+      }),
+    ).toMatchObject({ kind: "presenting", room: "Rm 2230", team: null });
+    // 10:17: three minutes before Rm 2235's slot.
+    expect(
+      sundayWhere({
+        sponsorName: "Acme",
+        items,
+        slots: split,
+        now: at("10:17"),
+      }),
+    ).toMatchObject({ kind: "presenting", room: "Rm 2235", team: null });
+  });
+
+  // The Sponsor Bay (08:00-17:00) stays in every case below.
+  it("presentations ahead beat the open Sponsor Bay", () => {
+    expect(
+      sundayWhere({
+        sponsorName: "Acme",
+        items: items.filter((i) => i.title !== "Sponsor judging round 1"),
         slots,
         now: at("09:30"),
       }),
     ).toEqual({ kind: "presenting-next", room: "Rm 2230", start: "10:00" });
   });
 
-  it("next block when nothing is on", () => {
-    const quiet = items.filter((i) => i.column !== "spon-booth");
+  it("a block before their first presentation comes first", () => {
+    expect(
+      sundayWhere({ sponsorName: "Acme", items, slots, now: at("08:15") }),
+    ).toMatchObject({
+      kind: "item",
+      title: "Sponsor judging workshop",
+      now: false,
+    });
+  });
+
+  it("after their presentations, the Sponsor Bay while it's open", () => {
+    expect(
+      sundayWhere({ sponsorName: "Acme", items, slots, now: at("11:00") }),
+    ).toMatchObject({ kind: "item", title: "Sponsor Bay open", now: true });
+    // Lunch is on now: lunch, not the Bay.
+    expect(
+      sundayWhere({ sponsorName: "Acme", items, slots, now: at("12:30") }),
+    ).toMatchObject({ kind: "item", title: "Lunch", now: true });
+  });
+
+  it("their next block once the Sponsor Bay has closed", () => {
+    const shortBay = items.map((i) =>
+      i.column === "spon-booth" ? { ...i, end: "10:30" } : i,
+    );
     expect(
       sundayWhere({
         sponsorName: "Acme",
-        items: quiet,
+        items: shortBay,
         slots,
         now: at("11:00"),
       }),
@@ -265,15 +312,9 @@ describe("sundayWhere", () => {
     });
   });
 
-  it("done after their last block, none without any", () => {
-    const quiet = items.filter((i) => i.column !== "spon-booth");
+  it("done after everything, none without any", () => {
     expect(
-      sundayWhere({
-        sponsorName: "Acme",
-        items: quiet,
-        slots,
-        now: at("15:00"),
-      }),
+      sundayWhere({ sponsorName: "Acme", items, slots, now: at("17:30") }),
     ).toEqual({ kind: "done" });
     expect(
       sundayWhere({

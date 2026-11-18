@@ -221,7 +221,7 @@ export function sponsorItems(
 }
 
 // Which block wins when several are on at once: the sponsor's own first,
-// then main events, then food, and the all-day Sponsor Bay last.
+// then main events, then food (the Sponsor Bay is a separate fallback).
 function rank(item: RunOfShowItem, sponsorName: string): number {
   if (item.sponsors.includes(sponsorName)) return 0;
   if (item.column === "big-event") return 1;
@@ -230,11 +230,42 @@ function rank(item: RunOfShowItem, sponsorName: string): number {
 }
 
 /**
- * Where a sponsor should be on Sunday at `now`: in their room while their
- * presentations run (first slot start to last slot end), else the run-of-
- * show block they're in, else their next block. Before Sunday it answers
- * for the start of Sunday (their first block); after their last block,
- * "done". Never guesses a room the data doesn't have.
+ * The room a sponsor is in during their presentations: the slot on now,
+ * else (between two slots) the nearest one, the next on a tie.
+ */
+function presentationRoom(
+  placed: readonly PresentationSlot[],
+  minute: number,
+): { room: string; team: string | null } {
+  const on = placed.find(
+    (s) => minute >= s.start && minute < s.start + PRESENTATION_SLOT_MINUTES,
+  );
+  if (on) return { room: on.room, team: on.teamName };
+  const prev = [...placed]
+    .reverse()
+    .find((s) => s.start + PRESENTATION_SLOT_MINUTES <= minute);
+  const next = placed.find((s) => s.start > minute);
+  const nearest =
+    prev && next
+      ? minute - (prev.start + PRESENTATION_SLOT_MINUTES) < next.start - minute
+        ? prev
+        : next
+      : (next ?? prev);
+  return { room: nearest?.room ?? "", team: null };
+}
+
+/**
+ * Where a sponsor should be on Sunday at `now`, from real data only:
+ * 1. their presentation room while their slots run (first start to last
+ *    end), with the team on now;
+ * 2. a run-of-show block on now (their own first, then main events, food);
+ * 3. their next block, when it starts before their first presentation;
+ * 4. their presentations, when those are still ahead;
+ * 5. the all-day Sponsor Bay, if it's open (the last fallback, also after
+ *    their presentations are over);
+ * 6. their next block;
+ * else "done" (or "none" with nothing on the run of show for them).
+ * Before Sunday it answers for the start of Sunday.
  */
 export function sundayWhere({
   sponsorName,
@@ -261,34 +292,30 @@ export function sundayWhere({
   if (first && last) {
     const end = last.start + PRESENTATION_SLOT_MINUTES;
     if (minute >= first.start && minute < end) {
-      const current = placed.find(
-        (s) =>
-          minute >= s.start && minute < s.start + PRESENTATION_SLOT_MINUTES,
-      );
       return {
         kind: "presenting",
-        room: current?.room ?? first.room,
-        team: current?.teamName ?? null,
+        ...presentationRoom(placed, minute),
         until: hhmm(end),
       };
     }
   }
 
   const own = sponsorItems(items, sponsorName, day);
-  const on = own
-    .filter((i) => minute >= minutesOf(i.start) && minute < minutesOf(i.end))
+  const isBay = (i: RunOfShowItem) => i.column === "spon-booth";
+  const onNow = (i: RunOfShowItem) =>
+    minute >= minutesOf(i.start) && minute < minutesOf(i.end);
+  const current = own
+    .filter((i) => onNow(i) && !isBay(i))
     .sort(
       (a, b) =>
         rank(a, sponsorName) - rank(b, sponsorName) ||
         a.start.localeCompare(b.start),
-    );
-  // The Sponsor Bay runs all day; only say so when nothing else is on.
-  const current = on[0];
+    )[0];
+  const bay = own.find((i) => onNow(i) && isBay(i));
   const next = own
-    .filter((i) => minutesOf(i.start) > minute && i.column !== "spon-booth")
+    .filter((i) => minutesOf(i.start) > minute && !isBay(i))
     .sort((a, b) => a.start.localeCompare(b.start))[0];
-  const upcomingPresentation =
-    first && minute < first.start ? first : undefined;
+  const presentationAhead = first && minute < first.start ? first : undefined;
 
   const asItem = (i: RunOfShowItem, isNow: boolean): SundayWhere => ({
     kind: "item",
@@ -301,15 +328,20 @@ export function sundayWhere({
 
   if (current) return asItem(current, true);
   if (
-    upcomingPresentation &&
-    (!next || minutesOf(next.start) >= upcomingPresentation.start)
+    next &&
+    presentationAhead &&
+    minutesOf(next.start) < presentationAhead.start
   ) {
+    return asItem(next, false);
+  }
+  if (presentationAhead) {
     return {
       kind: "presenting-next",
-      room: upcomingPresentation.room,
-      start: hhmm(upcomingPresentation.start),
+      room: presentationAhead.room,
+      start: hhmm(presentationAhead.start),
     };
   }
+  if (bay) return asItem(bay, true);
   if (next) return asItem(next, false);
   return own.length > 0 || placed.length > 0
     ? { kind: "done" }
