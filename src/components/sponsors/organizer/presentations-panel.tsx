@@ -6,6 +6,7 @@ import {
   dashboardButtonVariants,
 } from "~/components/internals/dashboard-button";
 import { DashboardChip } from "~/components/internals/dashboard-chip";
+import { PresentationHackers } from "~/components/sponsors/organizer/presentation-hackers";
 import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
 import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
 import { formatPresentationTime } from "~/lib/sponsor-presentations";
@@ -14,7 +15,7 @@ import { cn } from "~/lib/utils";
 import { api, type RouterOutputs } from "~/utils/api";
 
 const copy = sponsorPresentationsCopy.organizer;
-const VIEWS = ["rooms", "teams"] as const;
+const VIEWS = ["rooms", "teams", "hackers"] as const;
 type View = (typeof VIEWS)[number];
 type Overview = RouterOutputs["sponsorPresentations"]["overview"];
 
@@ -29,7 +30,8 @@ const NOTE = "m-0 text-sm font-medium text-dashboard-text-medium";
  * Organizer presentations on the Sponsor judging tab
  * (docs/flows/sponsor-judging.md): who sent a shortlist, Schedule
  * presentations (re-runnable; replaces the schedule), the schedule by room
- * or by team with teams that couldn't fit flagged, Notify hackers (Slack,
+ * or by team (or every hacker with how they heard) with teams that
+ * couldn't fit flagged, Notify hackers (Slack,
  * or email for members not on Slack; only members without their current
  * times, "Notify again" after a confirm) with members not reached listed, Open round 2 (after a
  * confirm; sponsors can't submit a top 5 until then), and the sponsor top
@@ -379,8 +381,10 @@ export function PresentationsPanel({
           </div>
           {view === "rooms" ? (
             <ByRoom data={data} colors={colors} />
-          ) : (
+          ) : view === "teams" ? (
             <ByTeam data={data} />
+          ) : (
+            <PresentationHackers data={data} />
           )}
         </div>
       )}
