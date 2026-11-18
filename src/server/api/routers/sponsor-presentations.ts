@@ -20,6 +20,7 @@ import {
 import { runAllTeamChecks } from "~/server/api/utils/cheat-check-runners";
 import { sendPresentationEmail } from "~/server/api/utils/presentation-email";
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
+import { membersByTeam } from "~/server/api/utils/sponsor-judging-teams";
 import {
   round2OpenedAt,
   setRound2Open,
@@ -208,11 +209,13 @@ export const sponsorPresentationsRouter = createTRPCRouter({
       room: r.room,
     });
 
-    // Per member: reached (has the current times) or why not.
+    // Per member: reached (has the current times, by Slack or email) or
+    // why not.
     const keys = keysByTeam(rows);
-    const members =
-      keys.size > 0
-        ? await db
+    const teamIds = [...keys.keys()];
+    const [members, profiles] = await Promise.all([
+      teamIds.length > 0
+        ? db
             .select({
               id: users.id,
               teamId: users.teamId,
@@ -220,44 +223,59 @@ export const sponsorPresentationsRouter = createTRPCRouter({
               email: users.email,
             })
             .from(users)
-            .where(inArray(users.teamId, [...keys.keys()]))
-        : [];
+            .where(inArray(users.teamId, teamIds))
+        : [],
+      membersByTeam(teamIds),
+    ]);
+    const profileOf = new Map(
+      [...profiles.values()].flat().map((p) => [p.userId, p]),
+    );
     const noticeOf = new Map(notices.map((n) => [n.userId, n]));
-    const reachedAt: Date[] = [];
-    let emailed = 0;
-    const notReached: {
-      userId: string;
-      name: string;
-      teamName: string;
-      reason: "not-on-slack" | "failed" | "not-sent";
-    }[] = [];
-    for (const m of members) {
-      const n = noticeOf.get(m.id);
-      const current =
-        n !== undefined &&
-        n.teamId === m.teamId &&
-        keys.get(n.teamId) === n.slotsKey;
-      if (current && n.sentAt) {
-        reachedAt.push(n.sentAt);
-        if (n.status === "emailed") emailed++;
-        continue;
-      }
-      notReached.push({
-        userId: m.id,
-        name: displayName(m),
-        teamName: names.get(m.teamId!) ?? m.teamId!,
-        // The last attempt at these times says why; else never sent.
-        reason:
-          current && n.status === "not-found"
-            ? "not-on-slack"
-            : current && n.status === "failed"
-              ? "failed"
-              : "not-sent",
-      });
-    }
-    notReached.sort(
-      (a, b) =>
-        a.teamName.localeCompare(b.teamName) || a.name.localeCompare(b.name),
+    const hackers = members
+      .map((m) => {
+        const n = noticeOf.get(m.id);
+        const current =
+          n !== undefined &&
+          n.teamId === m.teamId &&
+          keys.get(n.teamId) === n.slotsKey;
+        const reached = current && n.sentAt !== null;
+        const profile = profileOf.get(m.id);
+        return {
+          userId: m.id,
+          name: profile?.name ? profile.name : displayName(m),
+          github: profile?.github ?? null,
+          teamId: m.teamId!,
+          teamName: names.get(m.teamId!) ?? m.teamId!,
+          // Reached: how. Else the last attempt at these times says why.
+          status: reached
+            ? n.status === "emailed"
+              ? ("emailed" as const)
+              : ("sent" as const)
+            : current && n.status === "not-found"
+              ? ("not-on-slack" as const)
+              : current && n.status === "failed"
+                ? ("failed" as const)
+                : ("not-sent" as const),
+          /** When they got their current times; null = not reached. */
+          sentAt: reached ? n.sentAt : null,
+        };
+      })
+      .sort(
+        (a, b) =>
+          a.teamName.localeCompare(b.teamName) || a.name.localeCompare(b.name),
+      );
+    const reachedAt = hackers.flatMap((h) => (h.sentAt ? [h.sentAt] : []));
+    const notReached = hackers.flatMap((h) =>
+      h.status === "sent" || h.status === "emailed"
+        ? []
+        : [
+            {
+              userId: h.userId,
+              name: h.name,
+              teamName: h.teamName,
+              reason: h.status,
+            },
+          ],
     );
 
     return {
@@ -289,12 +307,14 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         members: members.length,
         reached: reachedAt.length,
         /** Of `reached`, those who got them by email. */
-        emailed,
+        emailed: hackers.filter((h) => h.status === "emailed").length,
         lastSentAt:
           reachedAt.length > 0
             ? new Date(Math.max(...reachedAt.map((d) => d.getTime())))
             : null,
         notReached,
+        /** Every scheduled team's members with how (or why not) reached. */
+        hackers,
       },
       slots: placed
         .map((r) => ({

@@ -94,7 +94,30 @@ export const sponsorPresentationsCopy = {
       openSince: (time: string) => `Round 2 open since ${time}`,
       closed: "Round 2 closed. Open it after presentations.",
     },
-    views: { rooms: "By room", teams: "By team" },
+    views: { rooms: "By room", teams: "By team", hackers: "By hacker" },
+    /** The per-hacker view: every scheduled hacker and how they heard. */
+    hackers: {
+      filterLabel: "Show",
+      all: "All hackers",
+      notReached: (n: number) => `Not reached (${n})`,
+      sponsorLabel: "Room",
+      allSponsors: "All rooms",
+      count: (shown: number, total: number) =>
+        shown === total
+          ? plural(total, "hacker", "hackers")
+          : `${shown} of ${plural(total, "hacker", "hackers")}`,
+      status: {
+        sent: "Slack sent",
+        emailed: "Emailed",
+        "not-on-slack": "Not on Slack",
+        failed: "Failed",
+        "not-sent": "Not sent yet",
+      },
+      /** "Slack sent 10:42 AM" */
+      statusAt: (status: string, time: string) => `${status} ${time}`,
+      none: "No hackers match.",
+      noMembers: "No hackers on this team.",
+    },
     viewsLabel: "Schedule view",
     flagged: (n: number) =>
       n === 1

@@ -379,6 +379,20 @@ describe("sponsorPresentations.notify", () => {
     expect(
       Object.fromEntries(notices.notReached.map((m) => [m.userId, m.reason])),
     ).toEqual({ [flaky.session.user.id]: "failed" });
+    // Per hacker: how each was reached, with the time for those reached.
+    expect(
+      Object.fromEntries(notices.hackers.map((h) => [h.userId, h.status])),
+    ).toEqual({
+      [ok.session.user.id]: "sent",
+      [missing.session.user.id]: "emailed",
+      [flaky.session.user.id]: "failed",
+    });
+    expect(
+      notices.hackers.find((h) => h.userId === flaky.session.user.id)!.sentAt,
+    ).toBeNull();
+    expect(
+      notices.hackers.find((h) => h.userId === ok.session.user.id)!.sentAt,
+    ).toBeInstanceOf(Date);
 
     dm.mockClear();
     dm.mockResolvedValue("sent");
