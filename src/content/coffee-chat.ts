@@ -3,19 +3,62 @@
 // Keep wording here, not in components or routers.
 
 export const coffeeChatCopy = {
-  reps: {
-    heading: "Reps at coffee chats",
-    intro:
-      "How many people from your team will run coffee chats. Each rep chats with their own hackers, side by side in your room.",
-    label: "Reps",
-    decrease: "One fewer rep",
-    increase: "One more rep",
-    parallel: (chats: number, groupSize: number) =>
-      groupSize > 1
-        ? `You'll run ${chats} group ${chats === 1 ? "chat" : "chats"} at a time.`
-        : `You'll run up to ${chats} ${chats === 1 ? "chat" : "chats"} at a time, one per rep.`,
+  // A sponsor's chat request (1-on-1 with N reps, or one group of M
+  // hackers). Shared by the organizer view and the sponsor's setup card.
+  request: {
+    summary: (style: "oneOnOne" | "group", perSlot: number) =>
+      style === "group"
+        ? `Group · ${perSlot} ${perSlot === 1 ? "hacker" : "hackers"}`
+        : `1-on-1 · ${perSlot} ${perSlot === 1 ? "rep" : "reps"}`,
+    none: "No chat request yet",
+    styleLabel: "How you'll run chats",
+    styles: { oneOnOne: "1-on-1 chats", group: "One group chat" },
+    perSlotLabel: { oneOnOne: "Reps chatting", group: "Hackers in the group" },
+    perSlotLine: (style: "oneOnOne" | "group", n: number) =>
+      style === "group"
+        ? `We book ${n} ${n === 1 ? "hacker" : "hackers"} into each chat.`
+        : `We book ${n} ${n === 1 ? "hacker" : "hackers"} per slot, one per rep.`,
+    decrease: "One fewer",
+    increase: "One more",
+    save: "Save",
     saving: "Saving…",
     saved: "Saved",
+    error: "Couldn't save. Try again.",
+  },
+
+  // /sponsors/[uuid]/coffee-chats: "Your chat setup".
+  setup: {
+    heading: "Your chat setup",
+    intro: "Tell us how you'll run coffee chats. We book hackers to match.",
+    fromSheet:
+      "Filled in from what you told us before. Change it if your plans changed.",
+    none: "Pick how you'll run chats.",
+    length: (minutes: number) => `Chats are ${minutes} min`,
+    hours: (start: string, end: string) => `Available ${start}–${end}`,
+    chattingHours: (hours: number) =>
+      `${hours} ${hours === 1 ? "hour" : "hours"} of chats`,
+  },
+
+  // A sponsor lowers hackers for a slot or an hour (a rep leaves).
+  fewer: {
+    ask: "Ask for fewer",
+    askLabel: (time: string) => `Ask for fewer hackers at ${time}`,
+    hackers: "Hackers then",
+    noChat: "0 = no chat then",
+    scope: "For",
+    slot: "This slot",
+    hour: "This hour",
+    save: "Save",
+    cancel: "Cancel",
+    slotLine: (time: string, booked: number, asked: number) =>
+      `${time} · ${booked} of ${asked} booked`,
+    askedFor: (n: number) => `asked for ${n}`,
+    heading: "Fewer hackers",
+    item: (start: string, end: string, n: number) =>
+      `${start}–${end} · ${n === 0 ? "no chats" : `${n} ${n === 1 ? "hacker" : "hackers"}`}`,
+    remove: "Back to full",
+    removeLabel: (start: string, end: string) =>
+      `Go back to your full request from ${start} to ${end}`,
     error: "Couldn't save. Try again.",
   },
 
@@ -34,11 +77,6 @@ export const coffeeChatCopy = {
   sponsorHolds: {
     heading: "Your coffee chat rooms",
     intro: "Hack Western gave you these rooms. Fill each chat with a hacker.",
-    // Short chat type, as on the organizer schedule.
-    chatType: (groupSize: number, reps: number) =>
-      groupSize > 1
-        ? `Group of ${groupSize}.`
-        : `1-on-1 · ${reps} ${reps === 1 ? "rep" : "reps"}.`,
     line: (
       room: string,
       start: string,
@@ -209,6 +247,9 @@ export const coffeeChatCopy = {
       "Hackers are booked in the part you'd cut. Cancel those chats first.",
     blockHasChats:
       "Hackers are booked in this room. Cancel their chats first, then release it.",
+    limitTimes: "Pick a start and end on the 15-minute grid.",
+    limitBelowBooked:
+      "More hackers are already booked then. Ask Hack Western to move them first.",
     holdClash: (room: string, sponsor: string, start: string, end: string) =>
       `${sponsor} already has ${room} from ${start} to ${end}. Pick another room or time.`,
   },
@@ -372,11 +413,13 @@ export const coffeeChatCopy = {
       fill: (booked: number, needed: number) => `${booked}/${needed}`,
       fillLabel: (booked: number, needed: number) =>
         `${booked} of ${needed} hackers booked`,
-      // Short chat type next to booked / needed on every block.
-      chatType: (groupSize: number, reps: number) =>
-        groupSize > 1
-          ? `Group of ${groupSize}`
-          : `1-on-1 · ${reps} ${reps === 1 ? "rep" : "reps"}`,
+      // One line on every block: request, then booked / asked for.
+      blockSummary: (request: string, booked: number, asked: number) =>
+        `${request} · ${booked}/${asked}`,
+      needs: (n: number) => `Needs ${n}`,
+      needsLabel: (n: number) => `Needs ${n} ${n === 1 ? "hacker" : "hackers"}`,
+      full: "Full",
+      askedFor: (n: number) => `asked for ${n}`,
       cellLabel: (room: string, time: string, who: string | null) =>
         who ? `${room}, ${time}, ${who}` : `${room}, ${time}, free: give room`,
       floorPlanAlt:
@@ -397,11 +440,27 @@ export const coffeeChatCopy = {
       // Per-sponsor strip above the table.
       strip: {
         label: "Sponsors and their rooms",
-        blocks: (n: number) =>
-          n === 0 ? "No room yet" : n === 1 ? "1 room block" : `${n} room blocks`,
-        hackers: (booked: number, needed: number) =>
-          `${booked}/${needed} hackers`,
+        window: (start: string, end: string) => `${start}–${end}`,
+        hoursBooked: (bookedMinutes: number, hours: number | null) => {
+          const h = (n: number) => String(Math.round(n * 100) / 100);
+          return hours === null
+            ? `${h(bookedMinutes / 60)} hours booked`
+            : `${h(bookedMinutes / 60)} of ${h(hours)} hours booked`;
+        },
+        hackers: (booked: number, target: number) =>
+          `${booked}/${target} hackers`,
+        mismatch: "Sheet numbers don't add up",
+        mismatchDetail: (
+          slots: number | null,
+          hackers: number | null,
+          hours: number | null,
+        ) =>
+          `Sheet: ${slots ?? "?"} slots, ${hackers ?? "?"} hackers, ${hours ?? "?"} chatting hours`,
+        notRegistered: "Not on the site yet",
         highlight: (name: string) => `Highlight ${name} in the rooms table`,
+        edit: "Edit request",
+        editLabel: (name: string) => `Edit ${name}'s chat request`,
+        editTitle: (name: string) => `${name}'s chat request`,
       },
 
       // A free cell: give the room to a sponsor for a length.
@@ -409,8 +468,8 @@ export const coffeeChatCopy = {
         title: (room: string, time: string) => `${room} · ${time} · Free`,
         sponsor: "Sponsor",
         pickSponsor: "Pick a sponsor",
-        format: (groupSize: number, minutes: number, reps: number) =>
-          `${groupSize > 1 ? `Group of ${groupSize}` : "1-on-1"} · ${minutes} min · ${reps} ${reps === 1 ? "rep" : "reps"}`,
+        request: (request: string, minutes: number) =>
+          `${request} · ${minutes} min`,
         length: "Length",
         submit: "Give room",
         saving: "Giving…",
@@ -422,10 +481,8 @@ export const coffeeChatCopy = {
       block: {
         title: (room: string, start: string, end: string) =>
           `${room} · ${start}–${end}`,
-        chatType: (groupSize: number, minutes: number) =>
-          groupSize > 1
-            ? `Group of ${groupSize}, ${minutes} min`
-            : `1-on-1, ${minutes} min`,
+        request: (request: string, minutes: number) =>
+          `${request} · ${minutes} min`,
         slotsLabel: "Chat slots",
         needsHacker: "Needs a hacker",
         addHacker: "Add a hacker",
@@ -438,9 +495,6 @@ export const coffeeChatCopy = {
           expired: "Expired",
           cancelled: "Cancelled",
         },
-        // Quiet: hackers plus reps can go past the room's people.
-        roomNote: (people: number, capacity: number) =>
-          `Up to ${people} people at once with reps; the room fits ${capacity}.`,
         changeLength: "Change length",
         save: "Save",
         cancel: "Cancel",

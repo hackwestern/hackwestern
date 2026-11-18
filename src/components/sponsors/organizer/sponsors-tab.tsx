@@ -22,6 +22,7 @@ import { DashboardTag } from "~/components/internals/dashboard-tag";
 import {
   WatcherInput,
 } from "~/components/sponsors/coffee-chat-fields";
+import { requestSummary } from "~/components/sponsors/chat-request-form";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
 import { JudgingStatusPill } from "~/components/sponsors/organizer/judging-panel";
@@ -906,15 +907,14 @@ export function SponsorsTab({
                       <td className={cn(cell, "text-dashboard-text-medium")}>
                         {summaryLoading && sponsor.sponsorId ? (
                           <CellSkeleton />
-                        ) : summary?.format ? (
+                        ) : summary && summary.request.source !== "none" ? (
                           copy.chatType(
-                            summary.format.durationMinutes,
-                            summary.format.groupSize,
-                            summary.reps,
+                            requestSummary(summary.request),
+                            summary.request.durationMinutes,
                           )
                         ) : (
                           <span className="text-dashboard-text-light">
-                            {summary ? copy.noChatType : copy.none}
+                            {summary ? requestSummary(summary.request) : copy.none}
                           </span>
                         )}
                       </td>
