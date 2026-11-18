@@ -522,6 +522,13 @@ export const GRID_SIZES = {
   taskLane: 120,
   /** No column narrower than this, whatever its lanes. */
   column: 160,
+  /**
+   * Wide screens (sm and up): columns share the grid's width and only
+   * scroll sideways when these floors don't fit. A column is at least
+   * `column` (9rem), each lane at least `lane`; an empty column (Food or
+   * Team tasks with nothing that day) can go down to `empty`.
+   */
+  fluid: { column: 144, lane: 88, empty: 112 },
 } as const;
 
 /**
@@ -548,6 +555,18 @@ export function columnMinWidth(
 ): number {
   const lanes = Math.max(1, ...entries.map((e) => e.lanes));
   return Math.max(GRID_SIZES.column, lanes * lane);
+}
+
+/**
+ * Min width of a grid column on wide screens, where columns share the
+ * width: see GRID_SIZES.fluid.
+ */
+export function fluidColumnMinWidth(
+  entries: readonly { lanes: number }[],
+): number {
+  if (entries.length === 0) return GRID_SIZES.fluid.empty;
+  const lanes = Math.max(1, ...entries.map((e) => e.lanes));
+  return Math.max(GRID_SIZES.fluid.column, lanes * GRID_SIZES.fluid.lane);
 }
 
 /**
