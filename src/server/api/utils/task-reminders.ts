@@ -1,5 +1,18 @@
 import { createHash } from "node:crypto";
-import { and, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 
 import { taskRemindersCopy } from "~/content/task-reminders";
 import { env } from "~/env";
@@ -12,9 +25,19 @@ import {
 } from "~/lib/run-of-show";
 import { runOfShowInstant } from "~/lib/run-of-show-time";
 import { parseTaskOwner } from "~/lib/task-owner";
+import {
+  buildPingLog,
+  PING_LOG_PAGE,
+  selectUpNext,
+  UP_NEXT_COUNT,
+  type PingLogEntry,
+  type UpNextPing,
+} from "~/lib/task-pings";
 import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { db } from "~/server/db";
 import {
+  sponsorHelpRequests,
+  sponsorJudgingSponsors,
   taskOwnerContacts,
   taskReminders,
   taskReminderSync,
@@ -911,4 +934,116 @@ export async function setTaskOwnerEmail(
     .values({ ownerKey: normalizeOwner(name), ...update })
     .onConflictDoUpdate({ target: taskOwnerContacts.ownerKey, set: update });
   return { match: matchOf(update) };
+}
+
+// ---------------------------------------------------------------------------
+// Task pings tab: up next, recently resolved help, ping log
+// ---------------------------------------------------------------------------
+
+export type ResolvedHelp = {
+  id: string;
+  sponsorId: string;
+  sponsorName: string;
+  reason: string;
+  claimedByName: string | null;
+  resolvedAt: Date;
+};
+
+export type TaskPingActivity = {
+  upNext: UpNextPing[];
+  log: PingLogEntry[];
+  hasMore: boolean;
+  /** The last few resolved help requests, newest first. */
+  recentlyResolved: ResolvedHelp[];
+};
+
+const RECENTLY_RESOLVED = 5;
+
+const reminderColumns = {
+  id: taskReminders.id,
+  task: taskReminders.task,
+  owner: taskReminders.owner,
+  slackUserId: taskReminders.slackUserId,
+  postAt: taskReminders.postAt,
+  status: taskReminders.status,
+  error: taskReminders.error,
+};
+
+/** Organizer-only data for the Task pings tab. Reads the DB only. */
+export async function getTaskPingActivity(
+  now: Date = new Date(),
+  limit: number = PING_LOG_PAGE,
+): Promise<TaskPingActivity> {
+  // One more than asked from each source tells whether there's more.
+  const [upcoming, past, help, resolved] = await Promise.all([
+    db
+      .select(reminderColumns)
+      .from(taskReminders)
+      .where(
+        and(eq(taskReminders.status, "scheduled"), gt(taskReminders.postAt, now)),
+      )
+      .orderBy(asc(taskReminders.postAt))
+      .limit(UP_NEXT_COUNT),
+    db
+      .select(reminderColumns)
+      .from(taskReminders)
+      .where(
+        and(
+          inArray(taskReminders.status, [
+            "scheduled",
+            "sent-window-passed",
+            "failed",
+          ]),
+          lte(taskReminders.postAt, now),
+        ),
+      )
+      .orderBy(desc(taskReminders.postAt))
+      .limit(limit + 1),
+    db
+      .select({
+        id: sponsorHelpRequests.id,
+        sponsorName: sponsorJudgingSponsors.name,
+        reason: sponsorHelpRequests.reason,
+        createdAt: sponsorHelpRequests.createdAt,
+        postedToSlack: sql<boolean>`${sponsorHelpRequests.slackTs} is not null`,
+        pingCount: sponsorHelpRequests.pingCount,
+      })
+      .from(sponsorHelpRequests)
+      .innerJoin(
+        sponsorJudgingSponsors,
+        eq(sponsorJudgingSponsors.id, sponsorHelpRequests.sponsorId),
+      )
+      .where(lte(sponsorHelpRequests.createdAt, now))
+      .orderBy(desc(sponsorHelpRequests.createdAt))
+      .limit(limit + 1),
+    db
+      .select({
+        id: sponsorHelpRequests.id,
+        sponsorId: sponsorHelpRequests.sponsorId,
+        sponsorName: sponsorJudgingSponsors.name,
+        reason: sponsorHelpRequests.reason,
+        claimedByName: sponsorHelpRequests.claimedByName,
+        resolvedAt: sponsorHelpRequests.resolvedAt,
+      })
+      .from(sponsorHelpRequests)
+      .innerJoin(
+        sponsorJudgingSponsors,
+        eq(sponsorJudgingSponsors.id, sponsorHelpRequests.sponsorId),
+      )
+      .where(
+        and(
+          eq(sponsorHelpRequests.status, "resolved"),
+          isNotNull(sponsorHelpRequests.resolvedAt),
+        ),
+      )
+      .orderBy(desc(sponsorHelpRequests.resolvedAt))
+      .limit(RECENTLY_RESOLVED),
+  ]);
+  const { entries, hasMore } = buildPingLog(past, help, now, limit);
+  return {
+    upNext: selectUpNext(upcoming, now),
+    log: entries,
+    hasMore,
+    recentlyResolved: resolved.map((r) => ({ ...r, resolvedAt: r.resolvedAt! })),
+  };
 }

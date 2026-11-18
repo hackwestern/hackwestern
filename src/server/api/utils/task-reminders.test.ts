@@ -7,6 +7,7 @@ import { createInnerTRPCContext } from "~/server/api/trpc";
 import {
   AUTO_SYNC_THROTTLE_MS,
   diffReminders,
+  getTaskPingActivity,
   getTaskReminderStatus,
   listTaskOwners,
   maybeAutoSyncTaskReminders,
@@ -541,6 +542,36 @@ describe("syncTaskReminders", () => {
   });
 });
 
+describe("getTaskPingActivity", () => {
+  test("up next and the log come from the reminder rows", async () => {
+    const slack = mockSlack();
+    await syncTaskReminders(NOW, {
+      token: "xoxb-t",
+      fetch: slack.fetch,
+      channel: CHANNEL,
+      readSheet: sheet([
+        task("14:00", "Tape cables", "All"),
+        task("15:00", "Open doors", "Noah"),
+      ]),
+    });
+    const before = await getTaskPingActivity(NOW);
+    expect(before.upNext).toMatchObject([
+      { task: "Tape cables", target: { kind: "channel" } },
+      { task: "Open doors", target: { kind: "dm", name: "Noah" } },
+    ]);
+    expect(before.log.filter((e) => e.kind === "task")).toEqual([]);
+
+    const later = new Date("2026-11-21T14:30:00-05:00");
+    const after = await getTaskPingActivity(later);
+    expect(after.upNext.map((p) => p.task)).toEqual(["Open doors"]);
+    expect(
+      after.log
+        .filter((e) => e.kind === "task")
+        .map((e) => [e.kind === "task" && e.task, e.status]),
+    ).toEqual([["Tape cables", "scheduled"]]);
+  });
+});
+
 describe("owner matching", () => {
   test("saving an email looks the user up; unknown emails are not found", async () => {
     const slack = mockSlack();
@@ -644,6 +675,9 @@ describe("taskReminders router", () => {
 
   test("rejects a logged-out caller", async () => {
     await expect(publicCaller.taskReminders.status()).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+    });
+    await expect(publicCaller.taskReminders.activity()).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
     await expect(publicCaller.taskReminders.owners()).rejects.toMatchObject({

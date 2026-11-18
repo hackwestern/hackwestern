@@ -1,8 +1,7 @@
 /**
  * Copy for run-of-show task reminders (T49): the Slack message at each
  * task's start time (a DM to its owner, or a sponsor team channel post when
- * no one person owns it), and the "Task pings" panel in the organizer
- * Schedule tab's "Task pings" section.
+ * no one person owns it), and the organizer home's Task pings tab.
  */
 export const taskRemindersCopy = {
   slack: {
@@ -29,15 +28,40 @@ export const taskRemindersCopy = {
       ].join("\n"),
   },
 
-  panel: {
-    /** Collapsible section on the Schedule tab that holds the panel. */
-    sectionTitle: "Task pings",
+  /** The organizer home's Task pings tab (?tab=pings). */
+  tab: {
     intro:
-      "Task pings are on: each task's owner gets a Slack DM at its start time; tasks without a clear owner go to the team channel with @here.",
-    nextPing: (when: string) => `Next ping: ${when}`,
-    noNextPing: "No pings waiting",
-    failed: (n: number) => `${n} couldn't be scheduled`,
-    noToken: "Slack not connected",
+      "Task owners get a Slack DM when their task starts. Tasks without a clear owner go to the team channel with @here, and so do sponsors' help requests.",
+
+    helpHeading: "Sponsor help requests",
+    resolvedHeading: "Recently resolved",
+    resolvedBy: (name: string) => `resolved, claimed by ${name}`,
+    resolved: "resolved",
+
+    upNextHeading: "Up next",
+    upNextEmpty: "No task pings waiting.",
+    upNextNoSlack: "Slack isn't connected, so no task pings are scheduled.",
+    dm: (name: string) => `DM ${name}`,
+    channel: "Channel @here",
+
+    logHeading: "Ping log",
+    logNote:
+      "Slack sends task pings itself at their time, so a task ping here means Slack took it for that time, not that we saw it delivered.",
+    logEmpty: "No pings yet.",
+    helpWhat: (sponsor: string, reason: string) => `Help: ${sponsor} · ${reason}`,
+    rePings: (n: number) => (n === 1 ? "1 re-ping" : `${n} re-pings`),
+    status: {
+      scheduled: "Handed to Slack",
+      failed: (code: string | null) =>
+        code ? `Failed (${code})` : "Failed",
+      posted: "Posted",
+      notPosted: "Not posted to Slack",
+    },
+    showMore: "Show more",
+    loadingMore: "Loading…",
+
+    slackConnected: "Slack connected",
+    slackNotConnected: "Slack not connected",
     noChannel: "No team channel set (SPONSOR_HELP_SLACK_CHANNEL)",
     loadError: "Couldn't load task pings.",
     retry: "Try again",

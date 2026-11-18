@@ -1,6 +1,6 @@
 // User-facing copy for sponsor help requests: the sponsor's "Need help"
-// button and status card, the organizer Help tab, and the Slack messages the
-// bot posts. Keep wording here, not in components.
+// button and status card, the help queue on the organizer Task pings tab, and
+// the Slack messages the bot posts. Keep wording here, not in components.
 
 import type { SponsorHelpReason } from "~/lib/sponsor-help";
 
