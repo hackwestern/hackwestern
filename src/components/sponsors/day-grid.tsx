@@ -48,12 +48,9 @@ const TIME_WIDTH = 64;
 const PINNED_TASKS =
   "lg:sticky lg:right-0 lg:border-l-2 lg:border-dashboard-border-default bg-dashboard-bg-surface";
 
-// Column focus: the focused column gets this much width at least (wide
-// screens); the others shrink to thin greyed strips (thinner on phones).
-const FOCUS_WIDTH = 280;
-const COLLAPSED_WIDTH = { wide: 40, narrow: 14 };
-// Taller rows while focused, so full titles and details fit.
-const FOCUS_SLOT_SCALE = 1.5;
+// Column focus is gentle (Jazz, 2026-11-18): the focused column gets about
+// 30% more width; the others keep their size and text, faded.
+const FOCUS_GROWTH = 1.3;
 
 const STORAGE_KEY = "hw-sponsor-schedule-show-hackathon";
 
@@ -240,7 +237,7 @@ export function DayGrid({
   const focused = columns.some((c) => c.column === focusChoice)
     ? focusChoice
     : null;
-  const slotHeight = focused ? SLOT_HEIGHT * FOCUS_SLOT_SCALE : SLOT_HEIGHT;
+  const slotHeight = SLOT_HEIGHT;
   const height = rows.reduce(
     (h, r) => h + (r.type === "slot" ? slotHeight : GAP_HEIGHT),
     0,
@@ -252,7 +249,6 @@ export function DayGrid({
     nowMinute >= 0 && rows.length > 0
       ? axisOffset(rows, nowMinute, slotHeight, GAP_HEIGHT)
       : null;
-  const collapsed = wide ? COLLAPSED_WIDTH.wide : COLLAPSED_WIDTH.narrow;
   // Floors per column. Wide screens: fluid floors, so columns share the
   // width; phones: a readable width per lane (the grid scrolls sideways).
   const floor = (c: (typeof columns)[number]) =>
@@ -268,21 +264,11 @@ export function DayGrid({
     c.entries.length === 0
       ? 0.6
       : Math.max(1, ...c.entries.map((e) => e.lanes));
-  const widths = columns.map((c) =>
-    focused
-      ? c.column === focused
-        ? Math.max(wide ? FOCUS_WIDTH : 0, floor(c))
-        : collapsed
-      : floor(c),
-  );
+  const grow = (c: (typeof columns)[number]) =>
+    c.column === focused ? FOCUS_GROWTH : 1;
+  const widths = columns.map((c) => Math.round(floor(c) * grow(c)));
   const template = `${TIME_WIDTH}px ${columns
-    .map((c, i) =>
-      focused
-        ? c.column === focused
-          ? `minmax(${widths[i]}px, 1fr)`
-          : `${widths[i]}px`
-        : `minmax(${widths[i]}px, ${share(c)}fr)`,
-    )
+    .map((c, i) => `minmax(${widths[i]}px, ${share(c) * grow(c)}fr)`)
     .join(" ")}`;
   const minWidth = TIME_WIDTH + widths.reduce((a, b) => a + b, 0);
   const label = (column: GridColumn) => copy.columns[column];
@@ -505,48 +491,32 @@ export function DayGrid({
                   <ol
                     key={column}
                     aria-label={label(column)}
-                    // Greyed columns only take a click to show all again.
-                    aria-hidden={muted || undefined}
-                    onClick={muted ? () => setFocusChoice(null) : undefined}
+                    // Other columns stay readable and clickable, just faded.
                     className={cn(
-                      "relative m-0 list-none border-l border-dashboard-border-subtle p-0",
+                      "relative m-0 list-none border-l border-dashboard-border-subtle p-0 transition-opacity duration-150 motion-reduce:transition-none",
                       column === "tasks" &&
                         !focused &&
                         cn(PINNED_TASKS, "z-30"),
-                      muted &&
-                        "cursor-pointer overflow-hidden bg-dashboard-bg-inset",
+                      muted && "opacity-50",
                     )}
                   >
-                    {laid.map((entry) =>
-                      muted ? (
-                        <CollapsedBlock
-                          key={entry.id}
-                          entry={entry}
-                          column={column}
-                          top={y(entry.start)}
-                          height={Math.max(
-                            y(entry.end) - y(entry.start),
-                            GRID_SIZES.minBlock,
-                          )}
-                        />
-                      ) : (
-                        <GridBlock
-                          key={entry.id}
-                          entry={entry}
-                          column={column}
-                          top={y(entry.start)}
-                          height={Math.max(
-                            y(entry.end) - y(entry.start),
-                            GRID_SIZES.minBlock,
-                          )}
-                          nowMinute={nowMinute}
-                          mode={mode}
-                          sponsorName={sponsorName}
-                          onOpen={open}
-                          expanded={focused === column}
-                        />
-                      ),
-                    )}
+                    {laid.map((entry) => (
+                      <GridBlock
+                        key={entry.id}
+                        entry={entry}
+                        column={column}
+                        top={y(entry.start)}
+                        height={Math.max(
+                          y(entry.end) - y(entry.start),
+                          GRID_SIZES.minBlock,
+                        )}
+                        nowMinute={nowMinute}
+                        mode={mode}
+                        sponsorName={sponsorName}
+                        onOpen={open}
+                        expanded={focused === column}
+                      />
+                    ))}
                   </ol>
                 );
               })}
@@ -593,47 +563,6 @@ export function DayGrid({
         }}
       />
     </section>
-  );
-}
-
-/**
- * A block in a greyed-out column while another is focused: just its shape
- * and colour, no text (a 14-40px strip can't hold words, only broken
- * letters). Not clickable on its own: a click on the column shows all.
- */
-function CollapsedBlock({
-  entry,
-  column,
-  top,
-  height,
-}: {
-  entry: LaidOutEntry;
-  column: GridColumn;
-  top: number;
-  height: number;
-}) {
-  const strong = entry.kind !== "hackathon";
-  return (
-    <li
-      className="pointer-events-none absolute px-0.5 py-1"
-      style={{
-        top,
-        height,
-        left: `${(entry.lane / entry.lanes) * 100}%`,
-        width: `${100 / entry.lanes}%`,
-      }}
-    >
-      <span
-        className={cn(
-          "block h-full rounded-dashboard-xs",
-          strong
-            ? entry.kind === "task"
-              ? "bg-dashboard-bg-task"
-              : COLUMN_TINT[column]
-            : "border border-dashed border-dashboard-border-control",
-        )}
-      />
-    </li>
   );
 }
 
