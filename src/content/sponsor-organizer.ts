@@ -104,9 +104,7 @@ export const sponsorOrganizerCopy = {
       needsHacker: "Needs a hacker",
       help: "Help",
     },
-    chatType: (minutes: number, groupSize: number, reps: number) =>
-      `${groupSize > 1 ? `Group of ${groupSize}` : "1-on-1"} · ${minutes} min · ${reps === 1 ? "1 rep" : `${reps} reps`}`,
-    noChatType: "No chat times",
+    chatType: (request: string, minutes: number) => `${request} · ${minutes} min`,
     unassigned: "Unassigned",
     chatsCell: (accepted: number, waiting: number) =>
       `${accepted} accepted · ${waiting} waiting`,

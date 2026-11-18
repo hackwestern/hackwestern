@@ -15,6 +15,7 @@ import {
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { HackerLinks } from "~/components/sponsors/hacker-links";
 import { InterestedHackers } from "~/components/sponsors/interested-hackers";
+import { ChatSetupCard } from "~/components/sponsors/chat-setup-card";
 import { SponsorHolds } from "~/components/sponsors/sponsor-holds";
 import {
   InvalidLink,
@@ -130,7 +131,8 @@ export default function SponsorCoffeeChatsPage() {
   }
   if (!q.data) return shell(<LoadError onRetry={() => void q.refetch()} />);
 
-  const { sponsorName, watcherName, chats, holds } = q.data;
+  const { sponsorName, watcherName, chats, holds, request, sheet, limits } =
+    q.data;
   const groups = groupByTime(chats);
   const partners = new Map(
     (partnersQ.data ?? []).map((p) => [p.chatId, p] as const),
@@ -233,10 +235,15 @@ export default function SponsorCoffeeChatsPage() {
         </button>
       </div>
 
-      {/* Rooms organizers held for this sponsor (only their own). */}
+      {/* How they run chats (1-on-1 with N reps, or one group of M). */}
+      <ChatSetupCard sponsor={id} request={request} sheet={sheet} />
+
+      {/* This sponsor's own room blocks, with how full each is. */}
       <SponsorHolds
         sponsor={id}
         holds={holds}
+        request={request}
+        limits={limits}
         onPickCandidates={() => {
           choose("candidates", true);
           tabRefs.current

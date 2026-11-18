@@ -2,6 +2,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Check, Coffee, Plus, Users } from "lucide-react";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
+import { hover, press } from "~/components/internals/interaction";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { HackerLinks } from "~/components/sponsors/hacker-links";
 import { pressable } from "~/components/sponsors/sponsor-shell";
@@ -171,11 +172,12 @@ export function InterestedHackers({
             </p>
           </div>
 
-          {/* Filters: a segmented control with counts. */}
+          {/* Filters: small segmented pills with counts, like the day
+              pills on the schedule header ("Shortlisted 4"). */}
           <div
             role="group"
             aria-label={copy.filterLabel}
-            className="grid grid-cols-3 gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1"
+            className="inline-flex w-fit max-w-full flex-wrap items-center gap-0.5 rounded-full bg-dashboard-bg-inset p-0.5"
           >
             {filters.map((f) => {
               const on = filter === f.value;
@@ -187,20 +189,20 @@ export function InterestedHackers({
                   aria-label={copy.filterCount(f.label, f.count)}
                   onClick={() => setFilter(f.value)}
                   className={cn(
-                    "flex min-h-11 min-w-0 flex-col items-center justify-center rounded-dashboard-md px-1 text-sm font-semibold leading-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary sm:flex-row sm:gap-1.5",
+                    "inline-flex h-11 cursor-pixel-hover items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 font-figtree text-sm font-semibold leading-none sm:h-8 sm:text-xs",
+                    press,
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1",
                     on
-                      ? "bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card"
-                      : "text-dashboard-text-medium [@media(hover:hover)]:hover:text-dashboard-text-heavy",
-                    pressable,
+                      ? "bg-dashboard-action-primary text-dashboard-text-inverse"
+                      : cn("text-dashboard-text-medium", hover.surface),
                   )}
                 >
-                  <span className="max-w-full truncate">{f.label}</span>
+                  {f.label}
                   <span
+                    aria-hidden
                     className={cn(
-                      "text-xs tabular-nums",
-                      on
-                        ? "text-dashboard-action-primary"
-                        : "text-dashboard-text-light",
+                      "tabular-nums",
+                      on ? "opacity-80" : "text-dashboard-text-light",
                     )}
                   >
                     {f.count}
