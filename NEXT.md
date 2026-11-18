@@ -1,105 +1,41 @@
 # NEXT — sponsor dashboard (branch `sponsor-dashboard`, not pushed)
 
-## Merged 2026-11-16
-T47 (hour grid + tasks column), T48 (coffee chat table), T49 (Slack task pings at start time; migration 0046). Local DB migrated to 0046; the five task owners from `_local/task-owners.md` are loaded into task_owner_contact locally. On the real site, enter them once in the organizer Team tasks tab after deploy.
-Checks on 0ca39a4: tsc clean; vitest 1015 passed, 1 failed (Apple Wallet). Run `next build` in a spare worktree before the PR.
+## Now
+Review and merge the two branches whose agents were running when the session ended, then build room blocks:
+1. `sd-judging-view` (worktree `hackwestern-sd-chat`): Sunday "Sponsor track judging" panel under the run of show (rooms per sponsor from Lucas's sheet > run-of-show list, missing rooms flagged; the team fills rooms into the sheet), Judging column in the Sponsors table, day picker as small pills in the schedule card header, schedule legend removed (keep "Show hackathon events" checkbox in the header), rooms section heading/intro/not-Saturday message removed, room table legend removed.
+2. `sd-sponsor-scoring` (worktree `hackwestern-sd-help`): sponsor judging flow on `/sponsors/<id>/picks` (browse projects, score /10, Save to shortlist, rank and Submit top 5, also written to Lucas's sheet via setChosenTeams) and a new organizer tab "Sponsor judging" (`?tab=judging`). Migration 0049: apply after review with `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/hackwestern_spon SKIP_ENV_VALIDATION=1 npm run db:migrate`.
+   - For each: check the branch's last commits (the agent may have finished), run code-reviewer (+ design-reviewer for UI; there is no design.md: use docs/redesign-brief.md, src/lib/tokens.ts, tailwind.config.ts), fix, merge with `--no-ff`, then `npx tsc --noEmit` and `SKIP_ENV_VALIDATION=1 npx vitest run` (only the Apple Wallet test fails, known).
+   - Both touch the organizer tabs / Sponsors table: expect conflicts in the tab list and docs/decisions.md (keep both sides).
+3. Build **room blocks** per `docs/flows/coffee-chat-room-blocks.md` (one concept: sponsor + room + time; slots show hackers booked / needed by chat type, e.g. 0/1 or 0/3; lengths 15 min to 1 hr 30; per-sponsor chat-type strip on the Coffee chats tab; no legend).
 
-## Merged 2026-11-16 (late)
-T52 (coffee chats: map + where beside the table), T53 (tasks amber on schedule, Team tasks tab removed, Task pings under grid), T54 (live Happening now banner). Nothing running.
+## Where things stand (2026-11-18)
+- Merged: Lucas's #1143 (top-40 candidates), schedule/organizer/sponsor redesigns, sponsor candidates + GitHub avatars, T55 one organizer home (tabs Sponsors | Run of show | Coffee chats | Task pings), room holds + combined Sponsors table + sponsor colours, automatic Slack owner matching + Task pings tab (help merged in), gentle column focus, floor 2 plan image instead of the live map, ceremony/workshop info by day, real sponsor logos (no circle).
+- Migrations 0047 (task reminder route key) and 0048 (coffee chat holds) are applied to the local DB.
+- Checks on 473435c: tsc clean; vitest all pass except Apple Wallet. One lint warning in `src/components/sponsors/sponsor-badge.tsx` (no-img-element: the disable comment sits on the `return` line; move it onto the `<img>` line inside JSX).
+- Login now sends ALL organizers to `/internal/sponsors`.
 
-## Done 2026-11-17
-- Merged Lucas's spon-judging (#1143 getInterestedHackers, top 40 from the hacker interest form).
-- Schedule: column focus, Hackathon events lane (no Main event column), coffee chats on the grid (live polling), room booking table (rooms = columns, n/6 capacity) under the schedule, map beside it (now only), sponsor filter + per-sponsor stats. Judging room has no booking data (only sheet items like "Sponsor Track Judging" -> Judging column).
-- Sponsor Candidates: Lucas's top 40, admitted hackers only, shortlist toggle + Offer coffee chat.
-- T55: /internal/sponsors is the one organizer home (tabs Sponsors | Run of show | Coffee chats | Help, per-sponsor strip, back links); /internal/sponsor-schedule redirects; "Sponsor team" nav link removed.
-- Hackathon events off by default; food + opening/closing ceremonies always shown; sponsors no longer get the ceremony running order.
-- Organizers land on /internal/sponsors after login (affects ALL organizers; no sponsor-team role).
-- Emil Kowalski skills installed in ~/.claude/skills (old versions in ~/.claude/skills/_to_delete/emil-skills-before-2026-11-17).
+## Open questions for Jazz
+- Lucas's sheet IDs (`SPONSOR_JUDGING_SHEET`, `SPONSOR_MASTER_SHEET`, `HACKER_INTEREST_FORM`) are not in git: ask Lucas or read them from Vercel env vars. Until then the Sponsors tab is empty locally. `1JRfqib3...` is Luka's HW13 schedule sheet, not Lucas's.
+- Add `SLACK_BOT_TOKEN` to local `.env` (signing secret, channel and mention were copied in), then restart :3013.
+- Limit Slack owner matching to spon-team channel members? (needs `channels:read`, plus `groups:read` if private)
+- More sponsor colour token pairs in `src/lib/tokens.ts` (main folder)? Less needed now that logos show.
+- OK to show the interest form's resume + link for hackers who didn't agree to share? (currently yes, first name only)
+- Before the PR: `next build` in a spare worktree, strip `mocks/` from the PR, push `sponsor-dashboard`, PR into `spon-judging` (needs Jazz's OK). Slack buttons/reactions only work after deploy; then turn on Event Subscriptions.
+- Rotating the Slack token/secret is optional (they were pasted in chat).
 
-## Merged later 2026-11-17
-- Redesigns merged: schedule grid (fluid columns, no sideways scroll at 1280), organizer (tokens, round-checkbox sponsor filter with "All sponsors" checkbox, map under the schedule), sponsor portal (GitHub avatars, Candidates tab). Checks: tsc clean; vitest 1123 passed, 1 failed (Apple Wallet).
-- Organizer tab URLs: ?tab=schedule | coffee | help.
-
-## Merged 2026-11-18
-- Room holds (migration 0048, applied locally), combined sponsor table on the Sponsors tab, stable sponsor colours + initials, free cells neutral.
-- Automatic Slack owner matching (no manual emails) + Task pings tab (help merged in; tabs: Sponsors | Run of show | Coffee chats | Task pings). Migration 0047 (applied locally).
-- tsconfig + eslint ignore **/_to_delete/** (files parked in src/_to_delete broke tsc).
-- Checks on merge: tsc clean; vitest all pass except Apple Wallet.
-
-## Running 2026-11-18 (review + merge when done)
-- sd-judging-view (worktree hackwestern-sd-chat): Sunday "Sponsor track judging" panel under the run of show (rooms per sponsor from Lucas's sheet > run-of-show list, missing rooms flagged; team fills rooms into the sheet, no app auto-assign), Judging column in the Sponsors table, day picker as small pills in the schedule header, rooms section heading/intro/not-Saturday message removed, quieter room table legend.
-- sd-sponsor-scoring (worktree hackwestern-sd-help): sponsor judging flow (browse projects, score /10, Save to shortlist, rank + Submit top 5, also written to Lucas's sheet via setChosenTeams), new organizer tab "Sponsor judging" (?tab=judging). Migration 0049 (apply after review).
-- Also merged today: gentle column focus (~30%), floor 2 plan image instead of the live map, ceremony/workshop info filtered by picked day.
-- Lucas's sheet: a link in his PRs is https://docs.google.com/spreadsheets/d/1K_HR5oh3r80b8WVMWCPPjfuWXUgfkmhlX7FGI6JJ8tY/edit (unconfirmed which sheet) - confirm with Lucas.
-
-## Next
-- Project picks page (/sponsors/<id>/picks) redesign + richer project info + show tile whenever judging is open (proposed, waiting for Jazz).
-- Optional: limit Slack owner matching to spon-team channel members (needs channels:read / groups:read scope).
-- Optional: 4 more sponsor colour token pairs (pink strong, purple, teal, red) in src/lib/tokens.ts (main folder).
-- Hold seats: shows reps as used (1/6); Jazz to confirm vs 0/6.
-- Then: next build in a spare worktree, strip mocks/ from the PR, push sponsor-dashboard, PR into spon-judging (needs Jazz's OK). Slack features only work after deploy.
-
-## Needs Jazz
-- Local .env needs SLACK_BOT_TOKEN, SPONSOR_JUDGING_SHEET, SPONSOR_MASTER_SHEET, SPONSOR_SHEETS_CLIENT_EMAIL, SPONSOR_SHEETS_PRIVATE_KEY, HACKER_INTEREST_FORM (ask Lucas / copy from Vercel). Restart :3013 after. Claude can read .env now (global deny for Read(**/.env) removed 2026-11-17).
-- OK to show the form's resume + link for hackers who didn't agree to share? (currently yes, first name only)
-- Candidates copy says "Only hackers who agreed to share... are shown" — now inaccurate; fix with T50.
-
-## Next to build: T50 (small)
-- Jazz decided (2026-11-16): NO per-sponsor owner/rep. Help pings stay channel-only (@here in the spon-team channel); no DMs to a sponsor owner.
-- Hide the T44 "Your Hack Western contact for chats: <name>" line from sponsors (coffee-chats page, freeTimes/sponsorChats `watcherName` not shown). Keep the watcher field organizer-only, or drop it if Jazz prefers.
-- Log the decision in docs/decisions.md (keep it valid UTF-8).
-
-## Then build: T51 sponsor team command center (one screen) — Jazz, 2026-11-16
-Replace the organizer page's separate tabs (Schedule / Team tasks / Coffee chats / Where is everyone / Help) with ONE dashboard at /internal/sponsor-schedule, built on the merged T47 grid, T48 coffee chat board, T42 map and T49 task pings.
-- **Main area: one big hour-by-hour calendar** for the selected day (reuse day-grid.tsx). Layers drawn on the same timeline, each toggleable:
-  - Run of show events (sheet columns), clickable details (T47)
-  - Team tasks with owner chips (T47 tasks column), clickable
-  - Coffee chats: a column per room (Rm 2241/2242/2243) showing which sponsor is there + hacker chips/status per slot; click opens the T48 cell panel (cancel / move / add a chat here)
-  - Hackathon /live events (muted), as on the sponsor view
-- **Side panel (right on desktop, bottom sheet / collapsible on phone):**
-  - Layer toggles (events, tasks, coffee chats, hackathon events)
-  - **Filter by company**: multi-select sponsors; the calendar, coffee chats and map show only those companies (persist in localStorage)
-  - **Where is everyone now**: compact map (T42) + "right now" list per company, following the calendar's selected time (click a time row to scrub)
-  - **Tasks now / next** with owners and Slack ping status (T49)
-  - **Coffee chats summary**: offered / accepted / pending / seats left, rooms in use, link to the full T48 table (keep the table as a drill-down view)
-  - **Help queue**: open sponsor help pings with Resolve (from the old Help tab)
-  - Edit in Google Sheets button
-- Keep: day picker, now line, keyboard access, detail dialogs, organizer-only data, blue dashboard-* system, copy in src/content/.
-- Old tabs: remove from the UI (move components to keep reuse), keep URLs working via ?view= or redirects.
-- Suggest a quick mock first (mocks/organizer-dashboard-v1, 2 layout variants) and get Jazz's pick before building.
-
-## Then
-Open the PR. Push `sponsor-dashboard` and open it **into `spon-judging`** (#1112, which it's built on); retarget to `main` once #1112 merges. Jazz to confirm before pushing.
-
-## State (2026-11-16)
-- Board: 45 Done, 1 Blocked (T33, Jazz's Slack steps). Backlog empty.
-- Checks on 613daf4: `tsc` clean; vitest 968 passed, 1 failed (Apple Wallet signing, fails on base too); `next build` compiled successfully (run in a separate worktree, never in the folder the dev server uses).
-- Migrations added: 0039 coffee_chat, 0040 room label/cancelled, 0041 sponsor_help, 0042 help contact, 0043 coffee_chat_room, 0044 coffee_chat_watcher, 0045 sponsor_shortlist.
-
-## Not yet reviewed by a checker agent
-T38 (schedule grid), T39 (where-is-everyone move), T41-T46 (rooms, map, ad hoc, watcher, shortlist page, ceremonies). Run code-reviewer + accessibility-tester on `git diff 82bce81..sponsor-dashboard` before merging the PR.
-
-## Jazz (accounts / people)
-- Vercel: 7 vars added from `_local/vercel-env.txt`; then move that file to `_local/_to_delete/`.
-- Rotate Slack token + signing secret (they were pasted in chat), update Vercel.
-- Slack: `/invite @HW13 Bot` in the sponsor team channel; after deploy turn on Event Subscriptions (`/api/slack/events`; reaction_added, message.channels, message.groups). Runbook: docs/runbooks/slack-app.md.
-- Optional: service account `hw-run-of-show@...` Editor on the run-of-show sheet (Coffee Chat Bookings mirror).
-- Remove MAILJET_* from the Windows/shell environment (local tests could send real mail).
-- Move `Downloads\hackwestern-sheets-d3df24095154.json`.
-- Test the badge scanner on a real phone.
-- Clarify "status" in the spon team's list (assumed: existing sponsor status panel).
-
-## Ask the spon team
-- Coffee Chats rows for Scotiabank, Commure, CSE (blank = can't offer chats)
-- Canada Life: 3 chatting hours vs a 10-12 window
-- Ceremonies tab: add times (or order) per speaker
-- Workshops tab: add a Runner/Speaker column
-- Room for Sponsor Track Shortlisting
-- Check the map pin positions (src/lib/sponsor-map-rooms.ts)
+## Files touched this session (main areas)
+- `src/pages/internal/sponsors.tsx`, `src/components/sponsors/organizer/*` (tabs, Sponsors table, run of show, coffee chats, task pings)
+- `src/components/sponsors/`: day-grid, coffee-chat-room-table, sponsor-filter, sponsor-badge, hacker-avatar, help-queue
+- `src/pages/sponsors/[uuid]/*` (portal, coffee chats + candidates, scan, schedule)
+- `src/server/api/routers/`: sponsor-portal, sponsor-shortlist, coffee-chat-requests, sponsor-organizer, task-reminders, sponsor-schedule; `src/server/slack/directory.ts`
+- `src/lib/`: sponsor-timeline, sponsor-colors, sponsor-logos, sponsor-next-event, coffee-chat-holds, sponsor-organizer, run-of-show
+- `drizzle/0047`, `drizzle/0048`; `tsconfig.json`, `.eslintrc.cjs`; `src/pages/dashboard.tsx` (organizer redirect); `public/shared/sponsors/scotiabank-trimmed.svg`
+- Docs: `docs/decisions.md`, `docs/redesign-brief.md`, `docs/flows/sponsor-organizer.md`, `docs/flows/coffee-chat-room-blocks.md`
+- Outside the repo: `~/.claude/skills` (Emil Kowalski skills installed; old versions in `_to_delete/emil-skills-before-2026-11-17`), `~/.claude/settings.json` (removed the `Read(**/.env)` deny rule; other .env variants still blocked).
 
 ## Local setup
-- Dev server: `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/hackwestern_spon R2_PUBLIC_BASE_URL=http://localhost:3013 NEXTAUTH_SECRET=local-dev-only-secret NEXTAUTH_URL=http://localhost:3013 SKIP_ENV_VALIDATION=1 npx next dev --turbopack -p 3013`
-- Local `.env` has RUN_OF_SHOW_* and GOOGLE_SHEETS_API_KEY (local key `hw-schedule-local`, restricted to Sheets API).
-- Demo data: sponsors (Sun Life has a real Coffee Chats row), demo hackers in `_local/demo-accounts.md` (codes demo-otter-kite, demo-maple-fox). Jazz's local account is an organizer; log in at /login (Google login can't work on localhost).
-- Worktrees (can be removed after the PR): hackwestern-sd-chat, -sd-help, -sd-hackers, -sd-notify, -sd-sched2. Extra local DBs: hackwestern_sd_*.
+- Dev server: `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/hackwestern_spon R2_PUBLIC_BASE_URL=http://localhost:3013 NEXTAUTH_SECRET=local-dev-only-secret NEXTAUTH_URL=http://localhost:3013 SKIP_ENV_VALIDATION=1 npx next dev --turbopack -p 3013` (restart it after `npm install` or `.env` changes; it goes stale).
+- Organizer tabs: `/internal/sponsors` (Sponsors), `?tab=schedule`, `?tab=coffee`, `?tab=pings`. Sponsor portal: `/sponsors/<id>` (local ids: `SELECT name,id FROM sponsor_judging_sponsor` via `docker exec hackwestern_db psql -U postgres -d hackwestern_spon`).
+- Demo data: demo hackers in `_local/demo-accounts.md`. Jazz's local account is an organizer; log in at /login (Google login can't work on localhost).
+- Worktrees (remove after the PR): hackwestern-sd-chat, -sd-help, -sd-hackers, -sd-notify, -sd-sched2. Extra local DBs: hackwestern_sd_*.
 - Editing docs/board.md: use a script file (CRLF); keep docs/decisions.md valid UTF-8.

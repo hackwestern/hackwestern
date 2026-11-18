@@ -167,3 +167,16 @@
 - **Decision:** Each task reminder row stores a `route_key` (migration 0047): a hash of where it goes (DM user or channel) and its full text, mention included. A kept reminder whose route key changed is rescheduled, so a new channel, mention, location or owner match takes effect; rows from before 0047 are rescheduled once. If deleting the old Slack message fails (other than "already gone"), the new one for that task is held back until a later sync deletes the old one. If `users.list` fails, the last directory copy is used even when expired; a 429 with Retry-After of 5 s or less is retried once. The tab shows the configured mention ("Team channel (@here)", or just "Team channel"). The unused `owners` and `setOwnerEmail` procedures are removed; the `task_owner_contact` table and its email override stay.
 - **Why:** Review of sd-auto-owners: a failed delete plus a new schedule sent two messages, and changing SPONSOR_HELP_SLACK_CHANNEL or the mention left old messages in place.
 - **Alternatives:** fold the route into `task_key` (no migration, but a failed delete could no longer be tied to its task); abort the sync when the directory is down (every owner falls back to nothing until Slack recovers).
+
+## 2026-11-18 — Organizer dashboard clean-up (Jazz, during review)
+
+- **Decision:** Organizers land on `/internal/sponsors` after login (all organizers; no sponsor-team role exists). Column focus is gentle (focused column about 30% wider, others faded, not collapsed; rows keep their height). The live map panel is replaced by a static floor 2 plan image. Ceremony and workshop info under the run of show follow the picked day. Schedule and room table legends are removed; each cell names its own state. Sponsor badges show the real logo (no circle), initials as fallback; a proportion-fixed copy of the Scotiabank SVG removes its built-in padding. `**/_to_delete/**` is excluded from tsc and eslint.
+- **Why:** Jazz found the dashboard too busy: big focus jumps, a clickable map nobody needs, legends that state the obvious, and generic initials instead of brands. Parked files in `src/_to_delete` were silently breaking type checks.
+- **Alternatives:** a sponsor-team role for the login redirect (no role exists yet); keep the map with live pins (more UI to maintain, little value); keep legends but smaller (Jazz asked for them gone).
+
+## 2026-11-18 — Coffee chat rooms become "room blocks" (proposed, approved direction)
+
+- **Decision:** One concept replaces whole-day sponsor rooms, holds and per-cell booking: a room block (one sponsor, one room, a stretch of time) that hackers are added into. Slots show hackers booked / hackers the sponsor's chat type needs (1-on-1 = 0/1, group of 3 = 0/3); the 6-person room limit is a server check shown only as a warning. Lengths: 15 min, 30 min, 45 min, 1 hour, 1 hr 15, 1 hr 30. Spec: `docs/flows/coffee-chat-room-blocks.md`. Not built yet.
+- **Why:** The room dialog mixed three ideas (assign room, book hacker, hold room) and confused organizers; "1/6" didn't match how sponsors think about their chats.
+- **Alternatives:** keep holds and room assignment as separate actions with clearer copy (still two concepts for one job).
+
