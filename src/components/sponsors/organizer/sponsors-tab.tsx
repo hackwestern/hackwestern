@@ -756,11 +756,21 @@ export function SponsorsTab({
                       <NeedsHackerPill n={summary.needsHacker} />
                     )}
                     {summary?.judging && (
-                      <span className="text-sm text-dashboard-text-medium">
-                        {judgingCopy.column}:{" "}
-                        {judgingCopy.cell(
-                          summary.judging.room,
-                          summary.judging.picks,
+                      <span
+                        className={cn(
+                          "text-sm text-dashboard-text-medium",
+                          summary.judging.missingRoom &&
+                            "text-dashboard-text-warning",
+                        )}
+                      >
+                        {judgingCopy.labelled(
+                          judgingCopy.column,
+                          judgingCopy.cell(
+                            summary.judging.room,
+                            summary.judging.picks,
+                            summary.judging.room !== null ||
+                              summary.judging.missingRoom,
+                          ),
                         )}
                       </span>
                     )}
@@ -1160,7 +1170,8 @@ function JudgingCell({ summary }: { summary: SponsorSummary | undefined }) {
           j.missingRoom && "text-dashboard-text-warning",
         )}
       >
-        {j.room ?? judgingCopy.missing}
+        {j.room ??
+          (j.missingRoom ? judgingCopy.missing : judgingCopy.roomUnknown)}
       </span>
       <span
         className={cn(
@@ -1185,13 +1196,16 @@ function JudgingDetail({
   return (
     <span className="flex flex-col items-start gap-1">
       <span>
-        {judgingCopy.cell(judging.room, judging.picks)}
-        {judging.source && (
-          <span className="font-medium text-dashboard-text-light">
-            {" "}
-            · {judgingCopy.source[judging.source]}
-          </span>
-        )}
+        {(() => {
+          const value = judgingCopy.cell(
+            judging.room,
+            judging.picks,
+            judging.room !== null || judging.missingRoom,
+          );
+          return judging.source
+            ? judgingCopy.withSource(value, judgingCopy.source[judging.source])
+            : value;
+        })()}
       </span>
       {judging.otherRoom && (
         <span className="text-xs font-medium text-dashboard-text-warning">

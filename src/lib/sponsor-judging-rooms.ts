@@ -27,6 +27,8 @@ export type JudgingRoomSource = "sponsor-sheet" | "run-of-show";
 export type JudgingStatus =
   | "ready"
   | "missing-room"
+  /** No room found, but a sheet that could name one couldn't be read. */
+  | "room-unknown"
   | "too-few-picks"
   /** The judging sheet couldn't be read, so picks are unknown. */
   | "picks-unknown"
@@ -67,6 +69,8 @@ export type JudgingBoard = {
   rows: JudgingRow[];
   /** False when Lucas's judging sheet couldn't be read. */
   sheetRead: boolean;
+  /** False when the run-of-show sheet couldn't be read. */
+  runOfShowRead: boolean;
   counts: JudgingCounts;
 };
 
@@ -85,14 +89,17 @@ export type JudgingCounts = {
  */
 export type PickCount = (sponsorName: string) => number | null;
 
-/** Picks from the judging sheet's chosen team ids (name -> ids). */
+/**
+ * Picks from the judging sheet's chosen team ids (name -> ids). A sponsor
+ * with no row in the sheet is unknown (null), not 0.
+ */
 export function pickCountFromChosenTeams(
   chosen: ReadonlyMap<string, readonly string[]>,
 ): PickCount {
   const byName = new Map(
-    [...chosen].map(([name, ids]) => [name.toLowerCase(), ids.length]),
+    [...chosen].map(([name, ids]) => [norm(name), ids.length]),
   );
-  return (name) => byName.get(name.toLowerCase()) ?? 0;
+  return (name) => byName.get(norm(name)) ?? null;
 }
 
 /** When the sheet has no judging item to date it. */
@@ -125,13 +132,16 @@ export function judgingStatus({
   registered,
   room,
   picks,
+  roomKnown = true,
 }: {
   registered: boolean;
   room: string | null;
   picks: number | null;
+  /** False when a room source couldn't be read (no room = unknown). */
+  roomKnown?: boolean;
 }): JudgingStatus {
   if (!registered) return "not-registered";
-  if (!room) return "missing-room";
+  if (!room) return roomKnown ? "missing-room" : "room-unknown";
   if (picks === null) return "picks-unknown";
   if (picks < MIN_SPONSOR_PICKS) return "too-few-picks";
   return "ready";
@@ -154,14 +164,19 @@ export function judgingCounts(rows: readonly JudgingRow[]): JudgingCounts {
  * per company the run-of-show list names that isn't registered. `sheet` is
  * Lucas's judging spreadsheet read: rooms by sponsor name (case-insensitive,
  * "TBD" = none) and the pick count; null when it couldn't be read.
+ * `runOfShowRead` false = `items` is empty because the run-of-show sheet
+ * failed. A sponsor with no room is "missing" only when both sources were
+ * read; otherwise its room is unknown.
  */
 export function buildJudgingBoard({
   sponsors,
   items,
+  runOfShowRead = true,
   sheet,
 }: {
   sponsors: readonly { id: string; name: string }[];
   items: readonly RunOfShowItem[];
+  runOfShowRead?: boolean;
   sheet: {
     rooms: ReadonlyMap<string, string>;
     pickCount: PickCount;
@@ -172,13 +187,14 @@ export function buildJudgingBoard({
   const listedRoom = (name: string) =>
     listed.find((l) => norm(l.name) === norm(name))?.room ?? null;
   const sheetRooms = sheet
-    ? new Map([...sheet.rooms].map(([k, v]) => [k.toLowerCase(), v]))
+    ? new Map([...sheet.rooms].map(([k, v]) => [norm(k), v]))
     : null;
+  const roomKnown = sheet !== null && runOfShowRead;
 
   const registered: JudgingRow[] = [...sponsors]
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((s) => {
-      const fromSheet = sheetRoomOrNull(sheetRooms?.get(s.name.toLowerCase()));
+      const fromSheet = sheetRoomOrNull(sheetRooms?.get(norm(s.name)));
       const fromList = listedRoom(s.name);
       const room = fromSheet ?? fromList;
       const picks = sheet ? sheet.pickCount(s.name) : null;
@@ -193,9 +209,9 @@ export function buildJudgingBoard({
             ? fromList
             : null,
         picks,
-        missingRoom: !room,
+        missingRoom: !room && roomKnown,
         tooFewPicks: picks !== null && picks < MIN_SPONSOR_PICKS,
-        status: judgingStatus({ registered: true, room, picks }),
+        status: judgingStatus({ registered: true, room, picks, roomKnown }),
       };
     });
 
@@ -229,6 +245,7 @@ export function buildJudgingBoard({
     day: item?.day ?? JUDGING_DEFAULT_DAY,
     rows,
     sheetRead: sheet !== null,
+    runOfShowRead,
     counts: judgingCounts(rows),
   };
 }

@@ -448,7 +448,8 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
             sponsors: ["Acme"],
           },
         ],
-        sheet: null,
+        // Read, but names no rooms: Bolt's room is missing, not unknown.
+        sheet: { rooms: new Map(), pickCount: () => null },
       }),
       now: new Date("2026-11-22T14:00:00Z"),
     });

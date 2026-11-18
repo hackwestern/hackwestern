@@ -22,17 +22,21 @@ const WARN: ReadonlySet<JudgingStatus> = new Set([
   "too-few-picks",
 ]);
 
+const NOTICE =
+  "m-0 rounded-dashboard-md bg-dashboard-bg-inset px-3 py-2 text-sm text-dashboard-text-medium";
+
 // Sunday sponsor track judging under the organizer run of show (like the
 // ceremony running order): the sheet's time window, then each sponsor's
 // room, picks and status. Read-only: rooms are filled in the sheets by the
 // team (docs/decisions.md, 2026-11-18), so the only action is the sheet.
 export function JudgingPanel({
   board,
-  loading,
+  failed,
   sheetUrl,
 }: {
   board: JudgingBoard | null | undefined;
-  loading: boolean;
+  /** The summary query failed (no board to show). */
+  failed: boolean;
   sheetUrl: string | null;
 }) {
   // Colours over registered sponsors only, the set the other tabs use.
@@ -64,9 +68,9 @@ export function JudgingPanel({
                 formatClock(board.slot.start),
                 formatClock(board.slot.end),
               )
-            : loading
-              ? copy.loading
-              : copy.noSlot}
+            : board?.runOfShowRead
+              ? copy.noSlot
+              : null}
         </p>
         {board && board.counts.sponsors > 0 && (
           <p className="m-0 text-sm font-semibold tabular-nums text-dashboard-text-heavy">
@@ -79,11 +83,18 @@ export function JudgingPanel({
         )}
       </div>
 
+      {!board && failed && (
+        <p role="status" className={NOTICE}>
+          {copy.loadFailed}
+        </p>
+      )}
+      {board && !board.runOfShowRead && (
+        <p role="status" className={NOTICE}>
+          {copy.runOfShowUnread}
+        </p>
+      )}
       {board && !board.sheetRead && (
-        <p
-          role="status"
-          className="m-0 rounded-dashboard-md bg-dashboard-bg-inset px-3 py-2 text-sm text-dashboard-text-medium"
-        >
+        <p role="status" className={NOTICE}>
           {copy.sheetUnread}
         </p>
       )}
@@ -142,7 +153,14 @@ function JudgingTableRow({
   const cell = "border-b border-dashboard-border-subtle px-3 py-2.5 align-top";
   return (
     <tr>
-      <th scope="row" className={cn(cell, "font-semibold")}>
+      {/* Pinned, like the Sponsors table, so the name stays on phones. */}
+      <th
+        scope="row"
+        className={cn(
+          cell,
+          "sticky left-0 z-10 bg-dashboard-bg-surface font-semibold",
+        )}
+      >
         <span className="flex min-w-0 items-center gap-2">
           <SponsorBadge name={row.name} colors={colors} />
           <span className="break-words">{row.name}</span>
@@ -163,10 +181,12 @@ function JudgingTableRow({
               </span>
             )}
           </span>
-        ) : (
+        ) : row.missingRoom ? (
           <span className="font-semibold text-dashboard-text-warning">
             {copy.missing}
           </span>
+        ) : (
+          <span className="text-dashboard-text-light">{copy.roomUnknown}</span>
         )}
       </td>
       <td
