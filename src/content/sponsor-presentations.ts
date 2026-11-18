@@ -70,6 +70,19 @@ export const sponsorPresentationsCopy = {
     },
     memberOf: (name: string, team: string, reason: string) =>
       `${name} · ${team} · ${reason}`,
+    /** Round 2 (sponsors rank the teams that presented), opened by hand. */
+    round2: {
+      open: "Open round 2",
+      close: "Close round 2",
+      opening: "Opening…",
+      closing: "Closing…",
+      openConfirm:
+        "Open round 2 for every sponsor? Sponsors with presentations rank the teams that presented and submit their top 5.",
+      closeConfirm:
+        "Close round 2? Sponsors can't submit a top 5 until you open it again. Rankings already submitted are kept.",
+      openSince: (time: string) => `Round 2 open since ${time}`,
+      closed: "Round 2 closed. Open it after presentations.",
+    },
     views: { rooms: "By room", teams: "By team" },
     viewsLabel: "Schedule view",
     flagged: (n: number) =>

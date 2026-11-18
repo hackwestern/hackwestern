@@ -29,6 +29,7 @@ import {
   listEligibleTeams,
   writeChosenTeams,
 } from "~/server/api/utils/sponsor-judging-teams";
+import { round2OpenedAt } from "~/server/api/utils/sponsor-judging-settings";
 import { db } from "~/server/db";
 import {
   sponsorFinalPicks,
@@ -88,13 +89,13 @@ async function reviewsFor(sponsorId: string): Promise<TeamReview[]> {
 
 /**
  * Round state for one sponsor: their sent shortlist, whether any schedule
- * exists, and their presentation slots (placed only). Once a schedule
- * exists AND this sponsor has a placed slot, round 2 ranks only those
- * teams (judgingRound). A sponsor with no slot is never locked out: they
- * keep ranking their shortlist.
+ * exists, their presentation slots (placed only), and whether organizers
+ * have opened round 2. Once round 2 is open AND this sponsor has a placed
+ * slot, round 2 ranks only those teams (judgingRound). A sponsor with no
+ * slot is never locked out: once round 2 opens they rank their shortlist.
  */
 async function roundFor(sponsorId: string) {
-  const [sent, anySlot, slots] = await Promise.all([
+  const [sent, anySlot, slots, openedAt] = await Promise.all([
     db.query.sponsorShortlistSends.findFirst({
       where: eq(sponsorShortlistSends.sponsorId, sponsorId),
     }),
@@ -114,6 +115,7 @@ async function roundFor(sponsorId: string) {
           isNotNull(sponsorPresentations.startMinute),
         ),
       ),
+    round2OpenedAt(),
   ]);
   return {
     shortlistSent: sent ? { sentAt: sent.sentAt, teamIds: sent.teamIds } : null,
@@ -122,6 +124,8 @@ async function roundFor(sponsorId: string) {
     slots: slots
       .map((r) => ({ teamId: r.teamId, room: r.room ?? "", start: r.start! }))
       .sort((a, b) => a.start - b.start),
+    /** Organizers opened round 2 (after presentations). */
+    round2Open: openedAt !== null,
   };
 }
 
@@ -312,7 +316,8 @@ export const sponsorScoringRouter = createTRPCRouter({
 
   /**
    * Submit the ranked top SPONSOR_FINAL_TOP: exactly that many, no repeats,
-   * all on this sponsor's shortlist and still eligible. Resubmitting
+   * all on this sponsor's shortlist and still eligible. Only once
+   * organizers have opened round 2. Resubmitting
    * replaces the last one while judging is open. Saved here first, then
    * written to Lucas's judging sheet; if the sheet write fails the
    * submission still counts and `sheetSynced` is false (the next `get`
@@ -344,6 +349,12 @@ export const sponsorScoringRouter = createTRPCRouter({
         eligibleTeamIds(track, input.teamIds),
         roundFor(sponsor.id),
       ]);
+      if (!round.round2Open) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: errors.round2Closed,
+        });
+      }
       // Round 2 (this sponsor has a placed slot): only teams that presented
       // to them. Otherwise, including a schedule with no slot for them
       // (sent late, no room, none fit), their shortlist.

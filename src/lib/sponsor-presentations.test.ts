@@ -198,19 +198,65 @@ describe("judgingRound", () => {
   it("is per sponsor: round 2 only with a placed slot of their own", async () => {
     const { judgingRound } = await import("./sponsor-presentations");
     const at = new Date();
+    const open = { round2Open: true };
     expect(
-      judgingRound({ shortlistSent: null, scheduledAt: null, slots: [] }),
+      judgingRound({
+        shortlistSent: null,
+        scheduledAt: null,
+        slots: [],
+        ...open,
+      }),
     ).toBe("shortlist");
     expect(
-      judgingRound({ shortlistSent: {}, scheduledAt: null, slots: [] }),
+      judgingRound({
+        shortlistSent: {},
+        scheduledAt: null,
+        slots: [],
+        ...open,
+      }),
     ).toBe("sent");
     // Someone else's schedule exists, none for this sponsor.
     expect(
-      judgingRound({ shortlistSent: {}, scheduledAt: at, slots: [] }),
+      judgingRound({ shortlistSent: {}, scheduledAt: at, slots: [], ...open }),
     ).toBe("reschedule");
     expect(
-      judgingRound({ shortlistSent: {}, scheduledAt: at, slots: [{}] }),
+      judgingRound({
+        shortlistSent: {},
+        scheduledAt: at,
+        slots: [{}],
+        ...open,
+      }),
     ).toBe("rank");
+  });
+
+  it("waits on the sent shortlist until organizers open round 2", async () => {
+    const { judgingRound } = await import("./sponsor-presentations");
+    const at = new Date();
+    const closed = { round2Open: false };
+    expect(
+      judgingRound({
+        shortlistSent: {},
+        scheduledAt: at,
+        slots: [{}],
+        ...closed,
+      }),
+    ).toBe("sent");
+    expect(
+      judgingRound({
+        shortlistSent: {},
+        scheduledAt: at,
+        slots: [],
+        ...closed,
+      }),
+    ).toBe("sent");
+    expect(
+      judgingRound({
+        shortlistSent: null,
+        scheduledAt: at,
+        slots: [{}],
+        ...closed,
+      }),
+    ).toBe("shortlist");
   });
 });
 
