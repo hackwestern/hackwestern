@@ -89,11 +89,15 @@ export const sponsorTourCopy = {
         },
         candidates: {
           title: "Or pick from your candidates",
-          body: "Hackers who said they're interested show up on Coffee chats. Offer a chat straight from the list.",
+          body: "Tap Candidates to see the hackers who want to meet you.",
+        },
+        pick: {
+          title: "Offer from the list",
+          body: "Shortlist the hackers you like, then tap Offer coffee chat. You pick the time next.",
         },
         accept: {
           title: "They accept on their live site",
-          body: "The hacker gets your offer on /live and accepts or declines. Accepted chats show up here.",
+          body: "The hacker gets your offer on /live and accepts or declines. Your chats shows every offer and its answer.",
         },
       },
     },

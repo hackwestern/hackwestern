@@ -170,9 +170,6 @@ export default function SponsorCoffeeChatsPage() {
         eyebrow={copy.eyebrow}
         title={copy.title(sponsorName)}
         intro={sponsorHackersCopy.pageIntro}
-        // RETARGET after sd-room-blocks: the tour's coffee chat steps
-        // anchor here until the rebuilt candidates list has its own target.
-        tour="chats-header"
       />
 
       {/* The numbers a rep checks between chats. */}
@@ -283,6 +280,9 @@ export default function SponsorCoffeeChatsPage() {
                 type="button"
                 role="tab"
                 id={`tab-${t}`}
+                data-tour={
+                  t === "candidates" ? "chats-candidates-tab" : "chats-tab"
+                }
                 aria-selected={on}
                 aria-controls={`panel-${t}`}
                 tabIndex={on ? 0 : -1}
@@ -370,6 +370,7 @@ export default function SponsorCoffeeChatsPage() {
 
       <div
         id="panel-candidates"
+        data-tour="chats-candidates"
         role="tabpanel"
         aria-labelledby="tab-candidates"
         hidden={tab !== "candidates"}

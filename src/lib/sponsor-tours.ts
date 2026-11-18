@@ -2,10 +2,8 @@
 // `data-tour` target, where the callout sits and whether it waits for the
 // sponsor's own click. Copy comes from src/content/sponsor-tour.ts.
 //
-// RETARGET after sd-room-blocks merges (the coffee chats page rebuild):
-// steps marked `// RETARGET` point at the coffee chats page header only,
-// because that page's body is being replaced. Move them onto the new
-// candidates list once it lands.
+// The coffee chat steps target the coffee chats v2 page (sd-room-blocks):
+// the Your chats / Candidates tabs and the Candidates panel.
 
 import { sponsorTourCopy } from "~/content/sponsor-tour";
 import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
@@ -110,19 +108,26 @@ const tours = {
         placement: "top",
         ...t.coffeeChat.steps.offer,
       },
-      // RETARGET: coffee chats header until the candidates list is rebuilt.
       {
         id: "candidates",
         page: "coffeeChats",
-        target: "chats-header",
+        target: "chats-candidates-tab",
         placement: "bottom",
+        waitForClick: true,
         ...t.coffeeChat.steps.candidates,
       },
-      // RETARGET: centred for now; point at the accepted chats list later.
+      {
+        id: "pick",
+        page: "coffeeChats",
+        target: "chats-candidates",
+        placement: "top",
+        ...t.coffeeChat.steps.pick,
+      },
       {
         id: "accept",
         page: "coffeeChats",
-        placement: "center",
+        target: "chats-tab",
+        placement: "bottom",
         ...t.coffeeChat.steps.accept,
       },
     ],
