@@ -13,6 +13,7 @@ export const sponsorOrganizerCopy = {
     sponsors: "Sponsors",
     schedule: "Run of show",
     coffee: "Coffee chats",
+    judging: "Sponsor judging",
     pings: "Task pings",
   },
   /** Screen reader text after the Task pings tab's count badge. */

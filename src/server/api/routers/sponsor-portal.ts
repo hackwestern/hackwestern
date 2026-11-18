@@ -39,7 +39,7 @@ import {
 } from "~/server/api/utils/sponsor-hw-contacts";
 import { fetchRankedInterestRows } from "~/server/api/utils/hacker-interest";
 import { db } from "~/server/db";
-import { sponsorJudgingSponsors } from "~/server/db/schema";
+import { sponsorFinalPicks, sponsorJudgingSponsors } from "~/server/db/schema";
 
 export const sponsorPortalRouter = createTRPCRouter({
   /**
@@ -92,16 +92,27 @@ export const sponsorPortalRouter = createTRPCRouter({
         const sheets = await getSheetsClient();
         const spreadsheetId = getSpreadsheetId();
 
-        const [sponsorInfoMap, picksMap, contactPhones, coffeeChatGrid] =
-          await Promise.all([
-            fetchAllSponsorInfo(sheets, spreadsheetId),
-            fetchAllChosenTeams(sheets, spreadsheetId),
-            fetchHwContactPhones(),
-            fetchCoffeeChatGrid(sheets, spreadsheetId),
-          ]);
+        const [
+          sponsorInfoMap,
+          picksMap,
+          contactPhones,
+          coffeeChatGrid,
+          finalPick,
+        ] = await Promise.all([
+          fetchAllSponsorInfo(sheets, spreadsheetId),
+          fetchAllChosenTeams(sheets, spreadsheetId),
+          fetchHwContactPhones(),
+          fetchCoffeeChatGrid(sheets, spreadsheetId),
+          db.query.sponsorFinalPicks.findFirst({
+            where: eq(sponsorFinalPicks.sponsorId, input.sponsor.toLowerCase()),
+            columns: { teamIds: true },
+          }),
+        ]);
 
         const info = sponsorInfoMap.get(sponsorName.toLowerCase());
-        const picks = picksMap.get(sponsorName) ?? [];
+        // The submitted ranking (sponsor_final_pick) wins over the sheet,
+        // which can lag behind it while a sheet write is pending.
+        const picks = finalPick?.teamIds ?? picksMap.get(sponsorName) ?? [];
         // The sponsor info tab on the judging sheet is the only source for
         // the HW contact; an empty cell stays "—".
         const hwContact = info?.hwContact ?? "—";
@@ -122,6 +133,13 @@ export const sponsorPortalRouter = createTRPCRouter({
           workshopLocation: info?.workshopLocation ?? null,
           workshopTime: info?.workshopTime ?? null,
           picksCount: picks.length,
+          // Judging applies when the sponsor awards a prize track, has a
+          // judging room, or has already submitted picks. The portal shows
+          // the Judging tile on any of these (no judging room needed).
+          judgingApplies:
+            Boolean(info?.track) ||
+            Boolean(info?.roomNumber && info.roomNumber !== "TBD") ||
+            picks.length > 0,
           // Coffee chats: 0 minutes means the sponsor never sees the booking
           // link at all.
           maxCoffeeChatMinutes,

@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   uniqueIndex,
   serial,
@@ -504,6 +505,53 @@ export const sponsorShortlists = pgTable(
   },
   (t) => [primaryKey({ columns: [t.sponsorId, t.userId] })],
 );
+
+// A sponsor's review of one submitted team on /sponsors/[uuid]/picks
+// ("Judging"): a 1-10 score, whether it's on their shortlist, and a short
+// private note. One row per (sponsor, team), written by autosave. Only teams
+// the sponsor can see (submitted, in their track) can be reviewed; see the
+// sponsorScoring router and docs/decisions.md (2026-11-18).
+export const sponsorTeamReviews = pgTable(
+  "sponsor_team_review",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 12 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    // 1-10, null = not scored yet.
+    score: smallint("score"),
+    shortlisted: boolean("shortlisted").default(false).notNull(),
+    note: varchar("note", { length: 280 }),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sponsorId, t.teamId] }),
+    index("sponsor_team_review_team_idx").on(t.teamId),
+    check(
+      "sponsor_team_review_score_range",
+      sql`${t.score} IS NULL OR (${t.score} BETWEEN 1 AND 10)`,
+    ),
+  ],
+);
+
+// A sponsor's submitted final ranking: exactly SPONSOR_FINAL_TOP team ids,
+// best first (src/lib/sponsor-scoring.ts). Resubmitting replaces it. The
+// same ids are also written to the judging sheet (Lucas's picks column);
+// sheetSyncedAt is null while that write hasn't succeeded.
+export const sponsorFinalPicks = pgTable("sponsor_final_pick", {
+  sponsorId: uuid("sponsor_id")
+    .primaryKey()
+    .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+  teamIds: varchar("team_ids", { length: 12 }).array().notNull(),
+  submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+  sheetSyncedAt: timestamp("sheet_synced_at", { mode: "date", precision: 3 }),
+});
 
 export const sponsorHelpStatusEnum = pgEnum("sponsor_help_status", [
   "open",
