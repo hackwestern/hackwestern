@@ -61,7 +61,10 @@ export function HackerLinks({
               pressable,
             )}
           >
-            <Icon aria-hidden className="size-4 shrink-0 text-dashboard-text-light" />
+            <Icon
+              aria-hidden
+              className="size-4 shrink-0 text-dashboard-text-light"
+            />
             {label}
           </a>
         </li>

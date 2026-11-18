@@ -155,7 +155,10 @@ export default function SponsorHubPage() {
         </nav>
 
         {/* Event details */}
-        <section aria-labelledby="details-heading" className="flex flex-col gap-3">
+        <section
+          aria-labelledby="details-heading"
+          className="flex flex-col gap-3"
+        >
           <h2
             id="details-heading"
             className="dashboard-section-label m-0 text-dashboard-text-light"

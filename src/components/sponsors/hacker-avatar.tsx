@@ -18,7 +18,9 @@ export function githubUsername(value: string | null | undefined) {
   if (USERNAME.test(bare)) return bare;
   let url: URL;
   try {
-    url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`);
+    url = new URL(
+      /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`,
+    );
   } catch {
     return null;
   }

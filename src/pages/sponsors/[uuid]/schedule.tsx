@@ -148,13 +148,20 @@ export default function SponsorSchedulePage() {
             aria-label={coffeeChatCopy.hub.linksLabel}
             className="grid grid-cols-1 gap-3 sm:grid-cols-2"
           >
-            <DashboardButton asChild className={cn("md:h-11 md:w-full", pressable)}>
+            <DashboardButton
+              asChild
+              className={cn("md:h-11 md:w-full", pressable)}
+            >
               <Link href={`/sponsors/${id}/scan`}>
                 <ScanLine aria-hidden />
                 {coffeeChatCopy.hub.scan}
               </Link>
             </DashboardButton>
-            <DashboardButton variant="outline" asChild className={cn("h-11 w-full", pressable)}>
+            <DashboardButton
+              variant="outline"
+              asChild
+              className={cn("h-11 w-full", pressable)}
+            >
               <Link href={`/sponsors/${id}/coffee-chats`}>
                 {coffeeChatCopy.hub.list}
               </Link>
