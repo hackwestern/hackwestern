@@ -11,15 +11,21 @@ export function DayPicker({
   value,
   onChange,
   days = RUN_OF_SHOW_DAYS,
+  label = scheduleCopy.dayPicker,
+  dayLabel = (day) => day,
 }: {
   value: RunOfShowDay;
   onChange: (day: RunOfShowDay) => void;
   days?: readonly RunOfShowDay[];
+  /** The group's accessible name. */
+  label?: string;
+  /** Short pill text, e.g. "Fri"; the full day stays the accessible name. */
+  dayLabel?: (day: RunOfShowDay) => string;
 }) {
   return (
     <div
       role="group"
-      aria-label={scheduleCopy.dayPicker}
+      aria-label={label}
       className="inline-flex w-fit items-center gap-0.5 rounded-full bg-dashboard-bg-inset p-0.5"
     >
       {days.map((day) => {
@@ -39,7 +45,14 @@ export function DayPicker({
                 : cn("text-dashboard-text-medium", hover.surface),
             )}
           >
-            {day}
+            {dayLabel(day) === day ? (
+              day
+            ) : (
+              <>
+                <span aria-hidden>{dayLabel(day)}</span>
+                <span className="sr-only">{day}</span>
+              </>
+            )}
           </button>
         );
       })}
