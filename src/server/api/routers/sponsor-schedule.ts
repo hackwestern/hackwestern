@@ -62,6 +62,8 @@ async function readSheet(
     );
     return {
       readAt: snapshot.readAt,
+      // Organizer-only: the sponsor `get` below never copies it out.
+      availability: snapshot.availability,
       ...sheet,
       coffeeChats: applyAssignedRooms(sheet.coffeeChats, sponsors),
     };
@@ -157,6 +159,7 @@ export const sponsorScheduleRouter = createTRPCRouter({
         coffeeChats: sheet.coffeeChats,
         ceremonies: sheet.ceremonies,
         workshops: sheet.workshops,
+        availability: sheet.availability,
       };
     },
   ),
