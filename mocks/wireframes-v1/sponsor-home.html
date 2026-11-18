@@ -158,6 +158,11 @@ img { display: block; }
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 120; background: var(--text-heavy); color: #fff; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: var(--r-full); box-shadow: var(--shadow-btn); animation: rise 200ms var(--ease-out); max-width: calc(100vw - 32px); }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
 
+
+/* phone width: grids get a shrinkable column, long tags wrap */
+.row > .tag { flex-shrink: 1; white-space: normal; text-align: right; }
+.v4 .two, .v6 .layout, .v7 .layout, .v10 .venue, .v2 .grid, .v5 .layout, .places, .pair, .split, .three { grid-template-columns: minmax(0,1fr); }
+.pill.wrap { white-space: normal; text-align: left; padding-top: 6px; padding-bottom: 6px; }
 /* ========== V1 Stack ========== */
 .v1 .inner { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
 .v1 .welcome { background: var(--primary); color: #fff; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
@@ -198,6 +203,7 @@ img { display: block; }
 .v3 .dark .muted { color: rgba(255,255,255,0.8); }
 .v3 .accent { background: var(--primary); color: #fff; }
 .v3 .accent .muted { color: rgba(255,255,255,0.85); }
+.v3 .accent .pill-map { background: #fff; border-color: #fff; color: var(--primary); }
 .v3 .today-dot { position: absolute; top: 12px; right: 12px; }
 .v3 .big { font-size: 32px; font-weight: 700; line-height: 1; }
 @container app (max-width: 759px) { .v3 .r2.mob1 { grid-row: auto; } }
