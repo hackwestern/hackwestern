@@ -27,6 +27,11 @@ vi.mock("~/env", async (importOriginal) => {
   };
 });
 
+// The sheet mirror writes to the real run-of-show sheet: never from a test.
+vi.mock("~/server/api/utils/coffee-chat-sheet-mirror", () => ({
+  mirrorCoffeeChats: vi.fn(async () => undefined),
+}));
+
 const CHAT: CoffeeChatNotice = {
   chatId: "11111111-1111-4111-8111-111111111111",
   sponsorName: "StarTech",

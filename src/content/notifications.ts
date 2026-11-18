@@ -57,6 +57,14 @@ export const notificationsCopy = {
     save: "Save",
     saving: "Saving…",
     saved: "Saved",
+    /** After saving: who Slack finds for the email we'll try first. */
+    found: (name: string) => `Saved. Found you on Slack as ${name}.`,
+    foundNoName: (email: string) =>
+      `Saved. Found a Slack account for ${email}.`,
+    notFound: (email: string) =>
+      `Saved, but no Slack account uses ${email}. Check it for typos.`,
+    notFoundApplication: (email: string) =>
+      `Saved. No Slack account uses ${email}, so we'll email you there.`,
     invalid: "That doesn't look like an email.",
     error: "Couldn't save. Try again.",
   },
