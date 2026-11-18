@@ -1,11 +1,9 @@
 import {
-  COFFEE_CHAT_GRID_MINUTES,
   coffeeChatExpiresAt,
-  coffeeChatMinutesOf,
-  coffeeChatTimeOf,
   coffeeChatsOverlap,
 } from "~/lib/coffee-chat-requests";
 import {
+  chatsInSlot,
   coffeeChatOfferRoom,
   holdStartTimes,
   type HoldSpan,
@@ -38,31 +36,6 @@ export type OfferProblem =
   | "roomTaken";
 
 /**
- * Most hackers the sponsor has in their room at any moment of `slot`. Checks
- * each quarter hour, so chats that start off the usual grid still count.
- */
-export function seatsUsed(sponsorChats: ChatTime[], slot: ChatTime): number {
-  const start = coffeeChatMinutesOf(slot.slotTime);
-  if (start === null) return 0;
-  let most = 0;
-  for (
-    let t = start;
-    t < start + slot.durationMinutes;
-    t += COFFEE_CHAT_GRID_MINUTES
-  ) {
-    const tick = {
-      slotTime: coffeeChatTimeOf(t),
-      durationMinutes: COFFEE_CHAT_GRID_MINUTES,
-    };
-    most = Math.max(
-      most,
-      sponsorChats.filter((c) => coffeeChatsOverlap(c, tick)).length,
-    );
-  }
-  return most;
-}
-
-/**
  * Seats left at `slot`: hackers the sponsor asked for there (their
  * request, lowered by any "Ask for fewer") minus hackers booked. No room
  * capacity (docs/flows/coffee-chat-room-blocks.md v2).
@@ -72,7 +45,11 @@ export function seatsLeft(
   slot: ChatTime,
   asked: number,
 ): number {
-  return Math.max(0, asked - seatsUsed(sponsorChats, slot));
+  return Math.max(
+    0,
+    asked -
+      chatsInSlot(sponsorChats, slot.slotTime, slot.durationMinutes).length,
+  );
 }
 
 /** "Rm 2241", " rm  2241 " -> "rm 2241", for comparing room labels. */

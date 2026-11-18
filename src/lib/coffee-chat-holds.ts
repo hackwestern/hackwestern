@@ -209,6 +209,26 @@ export function holdFitsChat(minutes: number, duration: number): boolean {
 /** A live chat (pending or accepted, filtered by the caller). */
 type LiveChat = ChatTime & { sponsorId: string; chatId?: string };
 
+/**
+ * The chats booked in one slot: those starting in [slot start, start +
+ * chat length). The one seat count for offers (server) and block slots
+ * (pages), so both always agree. Chats start on slot starts, so this only
+ * differs from an overlap count if the sheet's FORMAT length changes after
+ * booking opens, which it must not (docs/decisions.md 2026-11-18).
+ */
+export function chatsInSlot<C extends ChatTime>(
+  chats: readonly C[],
+  slotTime: string,
+  durationMinutes: number,
+): C[] {
+  const start = coffeeChatMinutesOf(slotTime);
+  if (start === null) return [];
+  return chats.filter((c) => {
+    const t = coffeeChatMinutesOf(c.slotTime);
+    return t !== null && t >= start && t < start + durationMinutes;
+  });
+}
+
 /** One slot of a block: hackers booked against hackers asked for. */
 export type BlockSlot = {
   slotTime: string;
@@ -234,17 +254,9 @@ export function blockSlots(
   limits: readonly SlotLimit[] = [],
 ): BlockSlot[] {
   const duration = request.durationMinutes;
+  const own = liveChats.filter((c) => c.sponsorId === block.sponsorId);
   return holdStartTimes(block, duration).map((slotTime) => {
-    const start = coffeeChatMinutesOf(slotTime)!;
-    const inside = liveChats.filter((c) => {
-      const t = coffeeChatMinutesOf(c.slotTime);
-      return (
-        c.sponsorId === block.sponsorId &&
-        t !== null &&
-        t >= start &&
-        t < start + duration
-      );
-    });
+    const inside = chatsInSlot(own, slotTime, duration);
     const { asked, lowered } = askedAt(
       request,
       limits,

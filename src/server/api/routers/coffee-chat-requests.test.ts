@@ -8,6 +8,7 @@ import type * as RunOfShowSheet from "~/server/api/utils/run-of-show-sheet";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { createCaller } from "~/server/api/root";
 import { notifyCoffeeChat } from "~/server/api/utils/coffee-chat-notify";
+import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import {
@@ -1611,5 +1612,128 @@ describe("coffeeChatRequests: chat requests and asks for fewer (v2)", () => {
     ).resolves.toEqual({ cleared: true });
     mine = await caller.coffeeChatRequests.sponsorChats({ sponsor });
     expect(mine.limits).toEqual([]);
+  });
+});
+
+describe("coffeeChatRequests v2: review fixes", () => {
+  async function organizer() {
+    const orgId = `fix-organizer-${++n}`;
+    await db
+      .insert(users)
+      .values({ id: orgId, email: `${orgId}@example.com`, type: "organizer" });
+    return hackerCaller(orgId);
+  }
+
+  test("a request can't drop below hackers already booked in a slot", async () => {
+    const sponsor = await makeSponsor(2);
+    for (const userId of [await makeHacker(), await makeHacker()]) {
+      await caller.coffeeChatRequests.offer({
+        sponsor,
+        userId,
+        slotTime: "10:00",
+      });
+    }
+    const lower = await codeOf(
+      caller.coffeeChatRequests.setChatRequest({
+        sponsor,
+        style: "oneOnOne",
+        perSlot: 1,
+      }),
+    );
+    expect(lower.code).toBe("CONFLICT");
+    expect(lower.message).toBe(errors.requestBelowBooked("10:00 AM", 2));
+    const org = await organizer();
+    expect(
+      (
+        await codeOf(
+          org.coffeeChatRequests.organizerSetChatRequest({
+            sponsorId: sponsor,
+            style: "group",
+            perSlot: 1,
+          }),
+        )
+      ).code,
+    ).toBe("CONFLICT");
+    // Same count or more is fine.
+    await expect(
+      caller.coffeeChatRequests.setChatRequest({
+        sponsor,
+        style: "group",
+        perSlot: 2,
+      }),
+    ).resolves.toMatchObject({ style: "group", perSlot: 2 });
+  });
+
+  test("ask for fewer: one slot or inside one hour, inside own block", async () => {
+    // Block 10:00-12:00.
+    const sponsor = await makeSponsor(2);
+    const bad = async (startTime: string, endTime: string) =>
+      (
+        await codeOf(
+          caller.coffeeChatRequests.askForFewer({
+            sponsor,
+            startTime,
+            endTime,
+            hackers: 1,
+          }),
+        )
+      ).code;
+    expect(await bad("10:00", "12:00")).toBe("BAD_REQUEST"); // two hours
+    expect(await bad("10:30", "11:15")).toBe("BAD_REQUEST"); // across 11:00
+    expect(await bad("12:00", "12:15")).toBe("BAD_REQUEST"); // past the block
+    expect(await bad("09:45", "10:00")).toBe("BAD_REQUEST"); // before it
+    await caller.coffeeChatRequests.askForFewer({
+      sponsor,
+      startTime: "11:00",
+      endTime: "12:00",
+      hackers: 1,
+    });
+  });
+
+  test("a sponsor's ask for fewer never touches another sponsor", async () => {
+    const a = await makeSponsor(2);
+    const b = await makeSponsor(2, {
+      windowStart: "13:00",
+      windowEnd: "14:00",
+    });
+    // A asks inside its own block; B's block and slots don't change.
+    await caller.coffeeChatRequests.askForFewer({
+      sponsor: a,
+      startTime: "10:00",
+      endTime: "10:15",
+      hackers: 0,
+    });
+    // A can't reach into B's block time.
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.askForFewer({
+            sponsor: a,
+            startTime: "13:00",
+            endTime: "13:15",
+            hackers: 0,
+          }),
+        )
+      ).code,
+    ).toBe("BAD_REQUEST");
+    const theirs = await caller.coffeeChatRequests.sponsorChats({ sponsor: b });
+    expect(theirs.limits).toEqual([]);
+    expect(theirs.holds[0]!.slots.every((x) => x.needed === 2)).toBe(true);
+    const mine = await caller.coffeeChatRequests.sponsorChats({ sponsor: a });
+    expect(mine.limits.map((l) => l.sponsorId)).toEqual([a]);
+  });
+
+  test("Give room still works while the sheet can't be read", async () => {
+    const sponsor = await makeSponsor(1, { room: null });
+    const org = await organizer();
+    vi.mocked(getRunOfShow).mockRejectedValueOnce(new Error("sheet down"));
+    await expect(
+      org.coffeeChatRequests.createHold({
+        sponsorId: sponsor,
+        room: "Rm 2241",
+        startTime: "19:00",
+        endTime: "19:30",
+      }),
+    ).resolves.toMatchObject({ chatIds: [] });
   });
 });

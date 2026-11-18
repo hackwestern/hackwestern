@@ -248,7 +248,11 @@ export const coffeeChatCopy = {
       "Hackers are booked in the part you'd cut. Cancel those chats first.",
     blockHasChats:
       "Hackers are booked in this room. Cancel their chats first, then release it.",
-    limitTimes: "Pick a start and end on the 15-minute grid.",
+    limitTimes: "Pick one of your slots, or an hour inside one of your rooms.",
+    tooManyLimits:
+      "That's a lot of changes. Put one back to full first, or ask Hack Western.",
+    requestBelowBooked: (time: string, booked: number) =>
+      `${booked} ${booked === 1 ? "hacker is" : "hackers are"} already booked at ${time}. Ask Hack Western to move them first, then lower the number.`,
     limitBelowBooked:
       "More hackers are already booked then. Ask Hack Western to move them first.",
     holdClash: (room: string, sponsor: string, start: string, end: string) =>
