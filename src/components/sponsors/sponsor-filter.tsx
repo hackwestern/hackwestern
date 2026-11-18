@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { coffeeChatCopy } from "~/content/coffee-chat";
@@ -14,15 +14,22 @@ export type SponsorSelection = {
   toggle: (sponsor: string) => void;
   showAll: () => void;
   clear: () => void;
+  /** Show just this sponsor. */
+  showOnly: (sponsor: string) => void;
 };
 
 /**
  * Which sponsors the Coffee chats tables and totals show. Stored as the
  * sponsors left out, so a sponsor added later shows by default. Remembered
  * on this device; storage failures just mean it lasts for this visit.
+ *
+ * `focus` (a sponsor name, e.g. from ?sponsor= on /internal/sponsors) shows
+ * just that sponsor once it is in `names`; All sponsors still undoes it, and
+ * so does the focus going away.
  */
 export function useSponsorSelection(
   names: readonly string[],
+  focus: string | null = null,
 ): SponsorSelection {
   const [hidden, setHidden] = useState<string[]>([]);
   useEffect(() => {
@@ -44,6 +51,24 @@ export function useSponsorSelection(
       // Storage blocked: the choice lasts for this visit only.
     }
   };
+  // Applied once per focus value, after the stored choice loads, so the
+  // focus wins and a later "All sponsors" sticks. Dropping the focus (e.g.
+  // "Show everyone") shows every sponsor again.
+  const focused = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focus) {
+      if (focused.current !== null) {
+        focused.current = null;
+        save([]);
+      }
+      return;
+    }
+    if (focused.current === focus || !names.includes(focus)) return;
+    focused.current = focus;
+    save(names.filter((n) => n !== focus));
+    // save only writes state and storage; names/focus are what matter here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus, names]);
   const selected = useMemo(() => {
     const out = new Set(hidden);
     if (!names.some((n) => out.has(n))) return null;
@@ -60,6 +85,7 @@ export function useSponsorSelection(
       ),
     showAll: () => save([]),
     clear: () => save([...names]),
+    showOnly: (sponsor) => save(names.filter((n) => n !== sponsor)),
   };
 }
 
