@@ -122,6 +122,13 @@ export const sponsorPortalRouter = createTRPCRouter({
           workshopLocation: info?.workshopLocation ?? null,
           workshopTime: info?.workshopTime ?? null,
           picksCount: picks.length,
+          // Judging applies when the sponsor awards a prize track, has a
+          // judging room, or has already submitted picks. The portal shows
+          // the Judging tile on any of these (no judging room needed).
+          judgingApplies:
+            Boolean(info?.track) ||
+            Boolean(info?.roomNumber && info.roomNumber !== "TBD") ||
+            picks.length > 0,
           // Coffee chats: 0 minutes means the sponsor never sees the booking
           // link at all.
           maxCoffeeChatMinutes,

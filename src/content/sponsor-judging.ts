@@ -1,0 +1,166 @@
+// Copy for sponsor judging: the sponsor's Judging page
+// (/sponsors/[uuid]/picks: browse and score projects, shortlist, submit a
+// ranked top list) and the organizer "Sponsor judging" tab. Keep wording
+// here, not in components.
+
+const plural = (n: number, one: string, many: string) =>
+  `${n} ${n === 1 ? one : many}`;
+
+export const sponsorJudgingCopy = {
+  seoTitle: "Judging",
+  brand: "Hack Western 13",
+  back: "Back to sponsor hub",
+  title: "Judging",
+  intro: (top: number) =>
+    `Look through the projects, score each one out of 10 and save the strongest to your shortlist. Then rank your shortlist and submit your top ${top}.`,
+  trackTag: (track: string) => `Showing teams in ${track}`,
+  invalid: {
+    title: "Link not recognised",
+    body: "This private link isn't valid. Ask your Hack Western contact for a new one.",
+  },
+  loadFailed: "Couldn't load the projects.",
+  retry: "Try again",
+
+  steps: {
+    label: "Judging steps",
+    browse: "Browse projects",
+    shortlist: "Your shortlist",
+  },
+
+  browse: {
+    searchLabel: "Search teams",
+    searchPlaceholder: "Search teams, members or tracks",
+    clearSearch: "Clear search",
+    filterLabel: "Show",
+    filters: {
+      all: "All",
+      scored: "Scored",
+      shortlisted: "Shortlisted",
+      unreviewed: "Not reviewed",
+    },
+    sortLabel: "Sort by",
+    sorts: { name: "Name", score: "Score" },
+    count: (shown: number, total: number) =>
+      shown === total
+        ? plural(total, "project", "projects")
+        : `${shown} of ${plural(total, "project", "projects")}`,
+    noMatch: (query: string) => `No teams match "${query}".`,
+    noFilterMatch: "No projects here yet.",
+    noTeams: (track: string | null) =>
+      track
+        ? `No submitted teams in ${track} yet.`
+        : "No teams have submitted yet.",
+    noMembers: "No members listed",
+    devpost: "Devpost",
+    github: "GitHub",
+    openOn: (team: string, site: string) => `Open ${team} on ${site}`,
+  },
+
+  score: {
+    label: (team: string) => `Score for ${team}, out of 10`,
+    heading: "Score",
+    outOf: "/10",
+    clear: "Clear",
+    clearLabel: (team: string) => `Clear score for ${team}`,
+  },
+
+  shortlistToggle: {
+    add: "Save to shortlist",
+    added: "Shortlisted",
+    label: (team: string) => `Save ${team} to your shortlist`,
+  },
+
+  note: {
+    add: "Add a note",
+    edit: "Note",
+    label: (team: string) => `Private note on ${team}`,
+    placeholder: "Only you and Hack Western organizers see this",
+    left: (n: number) => `${n} left`,
+  },
+
+  saving: "Saving…",
+  saved: "Saved",
+  saveFailed: "Couldn't save. Check your connection and try again.",
+
+  shortlist: {
+    heading: "Rank your shortlist",
+    intro: (top: number) =>
+      `Put your favourite first. The first ${top} are the teams you submit.`,
+    empty: "Your shortlist is empty. Save projects to it while you browse.",
+    browse: "Browse projects",
+    needMore: (top: number, have: number) =>
+      `Shortlist ${plural(top - have, "more team", "more teams")} to submit your top ${top}.`,
+    cutLine: (top: number) => `Your top ${top}`,
+    belowLine: "Not submitted",
+    moveUp: (team: string) => `Move ${team} up`,
+    moveDown: (team: string) => `Move ${team} down`,
+    rank: (n: number) => `#${n}`,
+    noScore: "No score",
+    scoreOf: (n: number) => `${n}/10`,
+    remove: (team: string) => `Remove ${team} from your shortlist`,
+    keyboardHint: "Use the arrow buttons to reorder.",
+    moved: (team: string, rank: number) => `${team} moved to number ${rank}.`,
+  },
+
+  submit: {
+    button: (top: number) => `Submit top ${top}`,
+    resubmit: (top: number) => `Resubmit top ${top}`,
+    confirmTitle: (top: number) => `Submit these ${top}?`,
+    confirmBody:
+      "Hack Western uses this ranking for your prize. You can change it and resubmit while judging is open.",
+    confirm: "Confirm and submit",
+    cancel: "Go back",
+    submitting: "Submitting…",
+    submittedAt: (time: string) => `Submitted ${time}`,
+    changed: "Your ranking has changed since you submitted.",
+    sheetPending:
+      "Saved, but the judging sheet didn't update. Submit again to retry, or tell your Hack Western contact.",
+    failed: "Couldn't submit. Check your connection and try again.",
+    closed: "Judging has closed. Your last submission stands.",
+  },
+
+  errors: {
+    unknownSponsor: "Unknown sponsor link",
+    notEligible: "That team isn't one you can judge.",
+    closed: "Judging has closed.",
+    ranking: {
+      wrongCount: (top: number) => `Submit exactly ${top} teams.`,
+      duplicate: () => "Each team can appear only once.",
+      notShortlisted: () => "Only teams on your shortlist can be submitted.",
+      closed: () => "Judging has closed.",
+    },
+  },
+
+  /** The organizer "Sponsor judging" tab on /internal/sponsors. */
+  organizer: {
+    viewsLabel: "Sponsor judging view",
+    views: { sponsors: "By sponsor", teams: "All teams" },
+    intro: (top: number) =>
+      `Each sponsor scores projects, shortlists some and submits a ranked top ${top}.`,
+    submittedAt: (time: string) => `Submitted ${time}`,
+    notYet: "Not submitted yet",
+    sheetPending: "Sheet not updated",
+    scored: (n: number) => plural(n, "scored", "scored"),
+    shortlisted: (n: number) => plural(n, "shortlisted", "shortlisted"),
+    noScore: "No score",
+    scoreOf: (n: number) => `${n}/10`,
+    devpost: "Devpost",
+    openDevpost: (team: string) => `Open ${team} on Devpost`,
+    noSponsors: "No sponsors have a private link yet.",
+    noTeams: "No sponsor has scored or submitted a team yet.",
+    loadFailed: "Couldn't load sponsor judging.",
+    retry: "Try again",
+    columns: {
+      rank: "#",
+      team: "Team",
+      inTop: (top: number) => `In a top ${top}`,
+      sponsors: "Sponsors",
+      average: "Avg score",
+      links: "Links",
+    },
+    inTopCount: (n: number) => plural(n, "sponsor", "sponsors"),
+    averageOf: (avg: string, n: number) =>
+      `${avg} from ${plural(n, "score", "scores")}`,
+    noAverage: "—",
+  },
+} as const;

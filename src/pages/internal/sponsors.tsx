@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import SEO from "~/components/seo";
 import { InternalNavbar } from "~/components/internals/navbar";
 import { CoffeeChatsTab } from "~/components/sponsors/organizer/coffee-chats-tab";
+import { JudgingTab } from "~/components/sponsors/organizer/judging-tab";
 import {
   OrganizerTabList,
   panelId,
@@ -33,7 +34,7 @@ const copy = sponsorOrganizerCopy;
 const SUMMARY_REFRESH_MS = 15_000;
 
 // The organizer sponsor home: Lucas's sponsor board plus the run of show,
-// coffee chats and task pings (with the help queue), as tabs in the URL (?tab=, ?sponsor=). Each
+// coffee chats, sponsor judging and task pings (with the help queue), as tabs in the URL (?tab=, ?sponsor=). Each
 // sponsor row links into the other tabs focused on that sponsor, and they
 // link back to the row (docs/flows/sponsor-organizer.md).
 export default function SponsorOrganizerHome() {
@@ -129,6 +130,8 @@ export default function SponsorOrganizerHome() {
               />
             ) : tab === "coffee" ? (
               <CoffeeChatsTab sponsor={loc.sponsor} />
+            ) : tab === "judging" ? (
+              <JudgingTab sponsor={focusId} />
             ) : schedule.isLoading ? (
               <ScheduleSkeleton />
             ) : !schedule.data ? (

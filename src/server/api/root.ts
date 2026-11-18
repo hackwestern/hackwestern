@@ -19,6 +19,7 @@ import { sponsorOrganizerRouter } from "./routers/sponsor-organizer";
 import { coffeeChatRequestsRouter } from "./routers/coffee-chat-requests";
 import { sponsorInterestRouter } from "./routers/sponsor-interest";
 import { sponsorShortlistRouter } from "./routers/sponsor-shortlist";
+import { sponsorScoringRouter } from "./routers/sponsor-scoring";
 import { onboardingRouter } from "./routers/onboarding";
 import { taskRemindersRouter } from "./routers/task-reminders";
 
@@ -48,6 +49,7 @@ export const appRouter = createTRPCRouter({
   coffeeChatRequests: coffeeChatRequestsRouter,
   sponsorInterest: sponsorInterestRouter,
   sponsorShortlist: sponsorShortlistRouter,
+  sponsorScoring: sponsorScoringRouter,
   onboarding: onboardingRouter,
   taskReminders: taskRemindersRouter,
 });
