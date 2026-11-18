@@ -11,6 +11,7 @@ import {
   sponsorJudgingSponsors,
   sponsorPresentations,
   teams,
+  users,
 } from "~/server/db/schema";
 import {
   fetchSponsorTrack,
@@ -385,6 +386,11 @@ describe("sponsorScoring.overview", () => {
       teamId: ids[0]!,
       score: 4,
     });
+    const hacker = await mockSession(db);
+    await db
+      .update(users)
+      .set({ teamId: ids[0]!, name: "Ada Lovelace" })
+      .where(eq(users.id, hacker.user.id));
 
     const res = await organizer.sponsorScoring.overview();
     const sa = res.sponsors.find((s) => s.sponsorId === a.id)!;
@@ -392,6 +398,11 @@ describe("sponsorScoring.overview", () => {
     expect(sa.final?.teams.map((t) => t.teamId)).toEqual(ids);
     expect(sa.final?.teams[0]).toMatchObject({ score: 10 });
     expect(sa.final?.teams[0]?.devpostUrl).toContain("devpost.com");
+    // Final results list each team's hackers.
+    expect(sa.final?.teams[0]?.members).toEqual([
+      { userId: hacker.user.id, name: "Ada Lovelace", github: null },
+    ]);
+    expect(sa.final?.teams[1]?.members).toEqual([]);
     expect(res.sponsors.find((s) => s.sponsorId === b.id)).toMatchObject({
       scored: 1,
       shortlisted: 0,

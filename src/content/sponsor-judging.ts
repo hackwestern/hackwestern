@@ -168,7 +168,11 @@ export const sponsorJudgingCopy = {
   /** The organizer "Sponsor judging" tab on /internal/sponsors. */
   organizer: {
     viewsLabel: "Sponsor judging view",
-    views: { sponsors: "By sponsor", teams: "All teams" },
+    views: { sponsors: "Final results", teams: "All teams" },
+    /** Rank badge on a submitted top list: "1st", "2nd"... */
+    rankOf: (n: number) =>
+      `${n}${n % 10 === 1 && n % 100 !== 11 ? "st" : n % 10 === 2 && n % 100 !== 12 ? "nd" : n % 10 === 3 && n % 100 !== 13 ? "rd" : "th"}`,
+    noMembers: "No hackers listed",
     intro: (top: number) =>
       `Each sponsor scores projects, shortlists some and submits a ranked top ${top}.`,
     submittedAt: (time: string) => `Submitted ${time}`,
