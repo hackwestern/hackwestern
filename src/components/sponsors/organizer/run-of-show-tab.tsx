@@ -14,6 +14,7 @@ import {
   useShowHackathon,
 } from "~/components/sponsors/day-grid";
 import { DayPicker } from "~/components/sponsors/day-picker";
+import { JudgingPanel } from "~/components/sponsors/organizer/judging-panel";
 import { ReadAt } from "~/components/sponsors/schedule-states";
 import { SheetEditButton } from "~/components/sponsors/sheet-edit-button";
 import {
@@ -30,6 +31,7 @@ import type { RunOfShowDay } from "~/lib/run-of-show";
 import { defaultRunOfShowDay } from "~/lib/run-of-show-time";
 import { fetchScheduleData } from "~/lib/schedule";
 import { coffeeChatEntries } from "~/lib/schedule-bookings";
+import { JUDGING_DEFAULT_DAY } from "~/lib/sponsor-judging-rooms";
 import { sponsorNameForParam } from "~/lib/sponsor-organizer";
 import { buildOrganizerTimeline, taskEntries } from "~/lib/sponsor-timeline";
 import {
@@ -84,6 +86,15 @@ export function RunOfShowTab({
     refetchOnWindowFocus: true,
   });
   const board = useLiveChatBoard();
+  // Same query (and cache) as the page's sponsor summary: the Sunday
+  // judging board rides along with it.
+  const summary = api.sponsorOrganizer.summary.useQuery(undefined, {
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+  const judging = summary.data?.judging;
+  // Shown on the day the judging block falls on (Sunday without one).
+  const judgingDay = judging?.day ?? JUDGING_DEFAULT_DAY;
   const names = board.data?.sponsors.map((s) => s.sponsor) ?? NO_NAMES;
   const selection = useSponsorSelection(
     names,
@@ -141,6 +152,13 @@ export function RunOfShowTab({
         jump={jumpToRooms}
         onJumped={onJumped}
       />
+      {shownDay === judgingDay && (
+        <JudgingPanel
+          board={judging}
+          loading={summary.isLoading}
+          sheetUrl={data.sheetUrl}
+        />
+      )}
       {/* Only the picked day's ceremony and workshops (Jazz, 2026-11-18). */}
       <CeremonyOrder
         segments={ceremonySegmentsForDay(data.ceremonies, data.items, shownDay)}
