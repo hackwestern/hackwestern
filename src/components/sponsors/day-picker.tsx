@@ -3,7 +3,7 @@ import { scheduleCopy } from "~/content/sponsor-schedule";
 import { RUN_OF_SHOW_DAYS, type RunOfShowDay } from "~/lib/run-of-show";
 
 // Friday / Saturday / Sunday switcher. Full-width thirds on phones so each
-// chip is a comfortable tap target.
+// chip is a comfortable tap target; a slight press-in confirms the tap.
 export function DayPicker({
   value,
   onChange,
@@ -24,7 +24,7 @@ export function DayPicker({
           key={day}
           selected={day === value}
           onClick={() => onChange(day)}
-          className="min-h-11 justify-center"
+          className="min-h-11 justify-center motion-safe:transition-[color,background-color,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.97] sm:min-w-24"
         >
           {day}
         </DashboardChip>
