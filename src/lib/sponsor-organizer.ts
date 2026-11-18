@@ -3,7 +3,12 @@
 // redirect, and the per-sponsor chat and help summary. Pure, so it's tested
 // without a router or a database.
 
-import { holdNeedsHacker, type HoldSpan } from "~/lib/coffee-chat-holds";
+import {
+  blockFill,
+  blockFormatOf,
+  holdStartTimes,
+  type HoldSpan,
+} from "~/lib/coffee-chat-holds";
 import {
   coffeeChatExpiresAt,
   effectiveCoffeeChatStatus,
@@ -11,10 +16,7 @@ import {
 } from "~/lib/coffee-chat-requests";
 import type { CoffeeChatSetup } from "~/lib/run-of-show";
 import type { JudgingBoard, JudgingRow } from "~/lib/sponsor-judging-rooms";
-import {
-  offerStartTimes,
-  seatsLeft,
-} from "~/server/api/utils/coffee-chat-capacity";
+import { seatsLeft } from "~/server/api/utils/coffee-chat-capacity";
 
 export const ORGANIZER_HOME_PATH = "/internal/sponsors";
 
@@ -163,7 +165,7 @@ export type SummaryChat = {
   github: string | null;
 };
 
-/** One organizer room hold in a sponsor's row. */
+/** One room block in a sponsor's row. */
 export type SummaryHold = HoldSpan & {
   holdId: string;
   needsHacker: boolean;
@@ -172,13 +174,7 @@ export type SummaryHold = HoldSpan & {
 export type SponsorSummary = {
   sponsorId: string;
   name: string;
-  /** Coffee chat room: assignment, else the sheet's ROOM, else a chat's. */
-  room: string | null;
-  /** Organizer assignment only (for the inline room picker). */
-  assignedRoom: string | null;
-  /** The sheet's ROOM, used when nothing is assigned. */
-  sheetRoom: string | null;
-  /** Every room this sponsor uses: `room` plus hold rooms, sorted. */
+  /** Every room this sponsor uses: block rooms plus live chats', sorted. */
   rooms: string[];
   /** Chat type from the Coffee Chats sheet row; null without one. */
   format: { durationMinutes: number; groupSize: number } | null;
@@ -189,7 +185,7 @@ export type SponsorSummary = {
   pending: number;
   /** Open seats at start times (window and holds) still offerable now. */
   seatsLeft: number;
-  /** Organizer room holds with no live chat yet. */
+  /** Room blocks with a slot still needing a hacker. */
   needsHacker: number;
   /** Live chats, earliest first. */
   chats: SummaryChat[];
@@ -278,23 +274,11 @@ function seatsLeftToday(
   reps: number,
   now: Date,
 ): number {
-  const full: CoffeeChatSetup | null =
-    setup?.windowStart && setup.windowEnd
-      ? {
-          sponsor: setup.sponsor,
-          windowStart: setup.windowStart,
-          windowEnd: setup.windowEnd,
-          durationMinutes: setup.durationMinutes === 30 ? 30 : 15,
-          groupSize: setup.groupSize ?? 1,
-          slots: null,
-          hackers: null,
-          format: null,
-          room: setup.room,
-        }
-      : null;
-  const durationMinutes = full?.durationMinutes ?? setup?.durationMinutes ?? 15;
-  const groupSize = full?.groupSize ?? setup?.groupSize ?? 1;
-  return offerStartTimes(full, holds)
+  const { durationMinutes, groupSize } = blockFormatOf(setup, reps);
+  const times = new Set(
+    holds.flatMap((h) => holdStartTimes(h, durationMinutes)),
+  );
+  return [...times]
     .filter((t) => now < coffeeChatExpiresAt(t))
     .reduce(
       (sum, slotTime) =>
@@ -322,7 +306,6 @@ export function buildSponsorSummaries({
   sponsors: readonly {
     id: string;
     name: string;
-    coffeeChatRoom: string | null;
     coffeeChatReps?: number;
     coffeeChatWatcher?: string | null;
   }[];
@@ -357,13 +340,9 @@ export function buildSponsorSummaries({
   const byId = new Map<string, SponsorSummary>();
   for (const s of sponsors) {
     const setup = setups.find((c) => c.sponsor === s.name);
-    const sheetRoom = setup?.room ?? null;
     byId.set(s.id, {
       sponsorId: s.id,
       name: s.name,
-      room: s.coffeeChatRoom ?? sheetRoom,
-      assignedRoom: s.coffeeChatRoom,
-      sheetRoom,
       rooms: [],
       format:
         setup?.windowStart && setup.windowEnd
@@ -384,7 +363,7 @@ export function buildSponsorSummaries({
       judging: judging?.rows.find((r) => r.sponsorId === s.id) ?? null,
     });
   }
-  // Earliest chats first, so the fallback room is the first one booked.
+  // Earliest chats first.
   const ordered = [...chats].sort((a, b) =>
     a.slotTime.localeCompare(b.slotTime),
   );
@@ -400,7 +379,6 @@ export function buildSponsorSummaries({
     if (status === "accepted") row.accepted += 1;
     else if (status === "pending") row.pending += 1;
     else continue;
-    row.room ??= chat.room;
     const durationMinutes = chat.durationMinutes ?? 15;
     live.push({
       sponsorId: chat.sponsorId,
@@ -419,7 +397,8 @@ export function buildSponsorSummaries({
       github: chat.share ? (chat.github ?? null) : null,
     });
   }
-  // A hold needs a hacker until a live chat of its sponsor overlaps it.
+  // A block needs a hacker while a slot (before its cutoff) is short of
+  // the hackers its chat type needs.
   let needsHacker = 0;
   const sortedHolds = [...holds].sort((a, b) =>
     a.startTime.localeCompare(b.startTime),
@@ -427,7 +406,11 @@ export function buildSponsorSummaries({
   for (const hold of sortedHolds) {
     const row = byId.get(hold.sponsorId);
     if (!row) continue;
-    const needs = holdNeedsHacker(hold, live);
+    const format = blockFormatOf(
+      setups.find((c) => c.sponsor === row.name),
+      row.reps,
+    );
+    const needs = blockFill(hold, format, live, now).firstOpen !== null;
     row.holds.push({
       holdId: hold.holdId ?? `${hold.sponsorId}-${hold.startTime}`,
       sponsorId: hold.sponsorId,
@@ -444,8 +427,8 @@ export function buildSponsorSummaries({
     const setup = setups.find((c) => c.sponsor === row.name);
     row.rooms = [
       ...new Set([
-        ...(row.room ? [row.room] : []),
         ...row.holds.map((h) => h.room),
+        ...row.chats.flatMap((c) => (c.room ? [c.room] : [])),
       ]),
     ].sort();
     row.seatsLeft = seatsLeftToday(

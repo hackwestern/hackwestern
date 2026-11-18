@@ -91,7 +91,6 @@ export const sponsorOrganizerRouter = createTRPCRouter({
         .select({
           id: sponsorJudgingSponsors.id,
           name: sponsorJudgingSponsors.name,
-          coffeeChatRoom: sponsorJudgingSponsors.coffeeChatRoom,
           coffeeChatReps: sponsorJudgingSponsors.coffeeChatReps,
           coffeeChatWatcher: sponsorJudgingSponsors.coffeeChatWatcher,
         })

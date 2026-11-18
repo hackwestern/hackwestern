@@ -2,16 +2,18 @@ import {
   COFFEE_CHAT_GRID_MINUTES,
   coffeeChatExpiresAt,
   coffeeChatMinutesOf,
-  coffeeChatSeats,
   coffeeChatTimeOf,
   effectiveCoffeeChatStatus,
   isActiveCoffeeChat,
-  resolveCoffeeChatRoom,
   type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
 import {
-  chatsInHold,
+  blockFill,
+  blockFormatOf,
+  blockSlots,
+  hackersPerSlot,
   holdCovers,
+  type BlockSlot,
   type HoldSpan,
 } from "~/lib/coffee-chat-holds";
 import type { CoffeeChatSetup } from "~/lib/run-of-show";
@@ -35,6 +37,8 @@ export type BoardChat = {
   lastName: string | null;
   /** Badge / wallet pass code, once issued. */
   hackerId: string | null;
+  /** GitHub link (avatar photo) only when the hacker agreed to share. */
+  github: string | null;
   slotTime: string;
   durationMinutes: number;
   room: string | null;
@@ -44,9 +48,10 @@ export type BoardChat = {
 
 /**
  * One cell of a sponsor's column. `rows` grid slots tall: a 30-min chat
- * start spans two rows. `kind`: "open" is a start time in the window, "gap"
- * is inside the window but not a start time (e.g. the last 15 minutes of a
- * window of 30-min groups), "out" is outside the window.
+ * start spans two rows. `kind`: "open" is a slot start in one of the
+ * sponsor's room blocks, "gap" is inside a block but not a start (e.g. the
+ * last 15 minutes of a 45-min block of 30-min groups), "out" is outside
+ * every block.
  */
 export type BoardCell = {
   slotTime: string;
@@ -62,14 +67,20 @@ export type BoardCell = {
   offerable: boolean;
 };
 
-/** An organizer room hold on the board. */
+/** A room block on the board: one sponsor, one room, a stretch of time. */
 export type BoardHold = HoldSpan & {
   holdId: string;
   sponsor: string;
   note: string | null;
-  /** Live chats (pending or accepted) inside the hold. */
-  chats: number;
-  /** No live chat inside yet: the sponsor still needs a hacker. */
+  /** The block's slots: hackers booked / hackers the chat type needs. */
+  slots: BlockSlot[];
+  /** Hackers booked and needed over every slot. */
+  booked: number;
+  needed: number;
+  /** Chats filled out of the block's chats. */
+  filled: number;
+  total: number;
+  /** A slot still before its cutoff has fewer hackers than it needs. */
   needsHacker: boolean;
 };
 
@@ -85,13 +96,11 @@ export type BoardSponsor = {
   groupSize: number;
   hackers: number | null;
   reps: number;
-  assignedRoom: string | null;
-  sheetRoom: string | null;
-  /** Assignment, else the sheet's ROOM, else null. */
-  room: string | null;
+  /** Hackers one slot needs (hackersPerSlot: chat type x reps). */
+  perSlot: number;
   watcher: string | null;
   counts: { accepted: number; pending: number; total: number };
-  /** This sponsor's holds with no live chat yet. */
+  /** This sponsor's blocks with a slot still needing a hacker. */
   holdsNeedingHacker: number;
   cells: BoardCell[];
 };
@@ -108,7 +117,7 @@ export type ChatBoard = {
     pending: number;
     /** Open seats at start times that can still be offered. */
     seatsLeft: number;
-    /** Holds with no live chat yet. */
+    /** Blocks with a slot still needing a hacker. */
     needsHacker: number;
   };
   roomsInUse: string[];
@@ -118,11 +127,13 @@ type BoardSponsorRow = {
   id: string;
   name: string;
   reps: number;
-  assignedRoom: string | null;
   watcher: string | null;
 };
 
-type BoardChatRow = Omit<BoardChat, "status"> & { status: CoffeeChatStatus };
+type BoardChatRow = Omit<BoardChat, "status" | "github"> & {
+  status: CoffeeChatStatus;
+  github?: string | null;
+};
 type BoardHoldRow = HoldSpan & { holdId: string; note: string | null };
 
 const GRID = COFFEE_CHAT_GRID_MINUTES;
@@ -172,16 +183,13 @@ export function boardCells(input: {
 }): BoardCell[] {
   const { setup, now } = input;
   const holds = input.holds ?? [];
-  const window = windowOf(setup);
-  const duration = setup?.durationMinutes ?? 15;
+  const format = blockFormatOf(setup, input.reps);
+  const duration = format.durationMinutes;
   const starts = new Set(
     offerStartTimes(setup ?? null, holds).map((t) => coffeeChatMinutesOf(t)!),
   );
   const active = input.chats.filter((c) => isActiveCoffeeChat(c, now));
-  const seats =
-    setup !== undefined || holds.length > 0
-      ? coffeeChatSeats(input.reps, setup?.groupSize ?? 1)
-      : 0;
+  const seats = holds.length > 0 ? hackersPerSlot(format) : 0;
   const last = input.slots[input.slots.length - 1];
   const cells: BoardCell[] = [];
 
@@ -190,13 +198,12 @@ export function boardCells(input: {
     const open =
       starts.has(t) && last !== undefined && t + duration <= last + GRID;
     const rows = open ? duration / GRID : 1;
-    const inWindow = window !== null && t >= window.start && t < window.end;
     const inHold = holds.some((h) =>
       holdCovers(h, { slotTime: coffeeChatTimeOf(t) }),
     );
     const kind: BoardCell["kind"] = open
       ? "open"
-      : inWindow || inHold
+      : inHold
         ? "gap"
         : "out";
     const slotTime = coffeeChatTimeOf(t);
@@ -245,6 +252,7 @@ export function buildChatBoard(input: {
   const holdRows = input.holds ?? [];
   const chats: BoardChat[] = input.chats.map((c) => ({
     ...c,
+    github: c.github ?? null,
     status: effectiveCoffeeChatStatus(c, now),
   }));
   const byName = new Map(input.sponsors.map((s) => [s.name, s]));
@@ -262,13 +270,28 @@ export function buildChatBoard(input: {
   }
   const live = chats.filter((c) => isActiveCoffeeChat(c, now));
   const names = new Map(input.sponsors.map((s) => [s.id, s.name]));
+  const formats = new Map(
+    input.sponsors.map((s) => [
+      s.id,
+      blockFormatOf(
+        input.setups.find((c) => c.sponsor === s.name),
+        s.reps,
+      ),
+    ]),
+  );
   const holds: BoardHold[] = holdRows.map((h) => {
-    const inside = chatsInHold(h, live).length;
+    const format = formats.get(h.sponsorId) ?? blockFormatOf(null, 1);
+    const slots = blockSlots(h, format, live);
+    const fill = blockFill(h, format, live, now);
     return {
       ...h,
       sponsor: names.get(h.sponsorId) ?? "",
-      chats: inside,
-      needsHacker: inside === 0,
+      slots,
+      booked: slots.reduce((n, s) => n + s.booked, 0),
+      needed: slots.reduce((n, s) => n + s.needed, 0),
+      filled: fill.filled,
+      total: fill.total,
+      needsHacker: fill.firstOpen !== null,
     };
   });
 
@@ -304,9 +327,7 @@ export function buildChatBoard(input: {
       groupSize: setup?.groupSize ?? 1,
       hackers: setup?.hackers ?? null,
       reps,
-      assignedRoom: row?.assignedRoom ?? null,
-      sheetRoom: setup?.room ?? null,
-      room: resolveCoffeeChatRoom(row?.assignedRoom, setup?.room),
+      perSlot: hackersPerSlot(blockFormatOf(setup, reps)),
       watcher: row?.watcher ?? null,
       counts: {
         accepted: mine.filter((c) => c.status === "accepted").length,
@@ -330,9 +351,7 @@ export function buildChatBoard(input: {
       Number(b.setUp) - Number(a.setUp) || a.sponsor.localeCompare(b.sponsor),
   );
 
-  const roomsInUse = [
-    ...new Set(sponsors.flatMap((s) => (s.setUp && s.room ? [s.room] : []))),
-  ].sort();
+  const roomsInUse = [...new Set(holds.map((h) => h.room))].sort();
 
   return {
     slots: slots.map(coffeeChatTimeOf),

@@ -2,12 +2,12 @@ import {
   COFFEE_CHAT_GRID_MINUTES,
   coffeeChatExpiresAt,
   coffeeChatMinutesOf,
-  coffeeChatSeats,
   coffeeChatTimeOf,
   coffeeChatsOverlap,
 } from "~/lib/coffee-chat-requests";
 import {
   coffeeChatOfferRoom,
+  hackersPerSlot,
   holdStartTimes,
   type HoldSpan,
 } from "~/lib/coffee-chat-holds";
@@ -83,7 +83,11 @@ export function seatsUsed(sponsorChats: ChatTime[], slot: ChatTime): number {
   return most;
 }
 
-/** Seats left at `slot` for a sponsor with this many reps and group size. */
+/**
+ * Seats left at `slot` for a sponsor with this many reps and group size:
+ * hackersPerSlot (chat type x reps). The room's 6 people don't cap it
+ * (docs/decisions.md 2026-11-18 hackers per slot).
+ */
 export function seatsLeft(
   sponsorChats: ChatTime[],
   slot: ChatTime,
@@ -92,7 +96,8 @@ export function seatsLeft(
 ): number {
   return Math.max(
     0,
-    coffeeChatSeats(reps, groupSize) - seatsUsed(sponsorChats, slot),
+    hackersPerSlot({ durationMinutes: slot.durationMinutes, groupSize, reps }) -
+      seatsUsed(sponsorChats, slot),
   );
 }
 

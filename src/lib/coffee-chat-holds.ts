@@ -11,8 +11,8 @@
  * - A chat always goes in the sponsor's block covering its start, in the
  *   block's room. No block then = no offer.
  * - A block's slots start one chat length apart. Each slot needs
- *   coffeeChatSeats(reps, group size) hackers: a 1-on-1 slot needs one per
- *   rep, a group slot the group size times the chats the room fits at once.
+ *   hackersPerSlot(format) hackers: one per rep for 1-on-1s, the group
+ *   size for a group. The room's 6 people don't cap it.
  *
  * Dependency-free (shared by server, organizer and sponsor pages).
  */
@@ -20,9 +20,7 @@ import {
   COFFEE_CHAT_GRID_MINUTES,
   coffeeChatExpiresAt,
   coffeeChatMinutesOf,
-  coffeeChatParallelChats,
   coffeeChatRoomOf,
-  coffeeChatSeats,
   coffeeChatsOverlap,
   coffeeChatTimeOf,
 } from "~/lib/coffee-chat-requests";
@@ -205,6 +203,27 @@ export type BlockFormat = {
   reps: number;
 };
 
+/**
+ * A sponsor's block format: chat length and group size from their Coffee
+ * Chats sheet row (FORMAT), reps from their own setting. No sheet row =
+ * 1-on-1, 15 min (docs/decisions.md 2026-11-18 room blocks).
+ */
+export function blockFormatOf(
+  setup: { durationMinutes?: number; groupSize?: number } | null | undefined,
+  reps: number,
+): BlockFormat {
+  return {
+    durationMinutes: setup?.durationMinutes ?? 15,
+    groupSize: setup?.groupSize ?? 1,
+    reps,
+  };
+}
+
+/** True when a block this long fits at least one chat of `duration`. */
+export function holdFitsChat(minutes: number, duration: number): boolean {
+  return minutes >= duration;
+}
+
 /** A live chat (pending or accepted, filtered by the caller). */
 type LiveChat = ChatTime & { sponsorId: string; chatId?: string };
 
@@ -217,12 +236,22 @@ export type BlockSlot = {
 };
 
 /**
- * Hackers one slot needs: one per rep for 1-on-1s, the group size per
- * group, as many chats at once as the 6-person room fits
- * (coffeeChatSeats). 1-on-1 with 3 reps = 3; group of 3 = 3.
+ * Chats one slot runs at once: 1-on-1s run one per rep; a group is one
+ * chat for the whole sponsor (the sheet gives one group size per sponsor;
+ * docs/decisions.md 2026-11-18 hackers per slot).
+ */
+export function chatsPerSlot(format: BlockFormat): number {
+  return format.groupSize > 1 ? 1 : Math.max(1, Math.floor(format.reps));
+}
+
+/**
+ * Hackers one slot needs, from chat type and reps: 1-on-1 = one hacker
+ * per rep (3 reps = 3); a group = the group size (group of 3 = 3). Not
+ * capped by the room's 6 people: going over is only a quiet note.
  */
 export function hackersPerSlot(format: BlockFormat): number {
-  return coffeeChatSeats(format.reps, format.groupSize);
+  const group = Math.max(1, Math.floor(format.groupSize));
+  return chatsPerSlot(format) * group;
 }
 
 /**
@@ -269,7 +298,7 @@ export function blockFill(
   now?: Date,
 ): { filled: number; total: number; firstOpen: string | null } {
   const slots = blockSlots(block, format, liveChats);
-  const parallel = coffeeChatParallelChats(format.reps, format.groupSize);
+  const parallel = chatsPerSlot(format);
   const group = Math.max(1, Math.floor(format.groupSize));
   return {
     filled: slots.reduce(
@@ -294,17 +323,6 @@ export function chatsInHold<C extends LiveChat>(
   return liveChats.filter(
     (c) => c.sponsorId === hold.sponsorId && holdCovers(hold, c),
   );
-}
-
-/**
- * Live chats no block of their sponsor covers (booked before blocks, or
- * left behind by an old room move). They keep their stored room.
- */
-export function chatsOutsideBlocks<C extends LiveChat>(
-  chats: readonly C[],
-  blocks: readonly HoldSpan[],
-): C[] {
-  return chats.filter((c) => !ownHoldAt(blocks, c.sponsorId, c));
 }
 
 /** One of a sponsor's own blocks, as their pages show it (no note). */
