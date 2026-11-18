@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { type TeamReview } from "~/lib/sponsor-scoring";
 import { api, type RouterOutputs } from "~/utils/api";
 
@@ -20,6 +20,8 @@ const EMPTY: TeamReview = {
  * The sponsor's judging data plus autosaving review edits. Each edit shows
  * at once (optimistic), saves in the background, and on failure rolls back
  * only the fields it changed, and only if nothing newer replaced them.
+ * After a failure it refetches once no other save is in flight, so the
+ * cache ends up matching what the server actually saved.
  */
 export function useSponsorJudging(sponsor: string, enabled: boolean) {
   const utils = api.useUtils();
@@ -28,6 +30,8 @@ export function useSponsorJudging(sponsor: string, enabled: boolean) {
     { enabled, refetchOnWindowFocus: false, retry: 1 },
   );
   const [saveState, setSaveState] = useState<Record<string, SaveState>>({});
+  const inFlight = useRef(0);
+  const needsRefetch = useRef(false);
 
   const patchCache = useCallback(
     (teamId: string, patch: ReviewPatch) => {
@@ -57,6 +61,7 @@ export function useSponsorJudging(sponsor: string, enabled: boolean) {
       if (vars.shortlisted !== undefined) patch.shortlisted = vars.shortlisted;
       if (vars.note !== undefined) patch.note = vars.note;
       patchCache(vars.teamId, patch);
+      inFlight.current += 1;
       setSaveState((s) => ({ ...s, [vars.teamId]: "saving" }));
       return { before, patch };
     },
@@ -74,6 +79,15 @@ export function useSponsorJudging(sponsor: string, enabled: boolean) {
       }
       patchCache(vars.teamId, rollback);
       setSaveState((s) => ({ ...s, [vars.teamId]: "error" }));
+      needsRefetch.current = true;
+    },
+    onSettled: () => {
+      inFlight.current = Math.max(0, inFlight.current - 1);
+      // Refetching earlier would overwrite edits still saving.
+      if (inFlight.current === 0 && needsRefetch.current) {
+        needsRefetch.current = false;
+        void utils.sponsorScoring.get.invalidate({ sponsor });
+      }
     },
     onSuccess: (_row, vars) => {
       setSaveState((s) =>
