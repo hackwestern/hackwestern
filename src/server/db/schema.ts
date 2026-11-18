@@ -1775,5 +1775,9 @@ export const opsPings = pgTable(
     index("ops_ping_key_idx").on(t.pingKey),
     index("ops_ping_task_idx").on(t.taskKey),
     index("ops_ping_status_idx").on(t.status),
+    // Backstop: at most one live scheduled message per ping.
+    uniqueIndex("ops_ping_live_key_idx")
+      .on(t.pingKey)
+      .where(sql`${t.status} = 'scheduled'`),
   ],
 );
