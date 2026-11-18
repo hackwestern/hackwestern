@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { DashboardButton } from "~/components/internals/dashboard-button";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { SCORE_MAX, SCORE_MIN } from "~/lib/sponsor-scoring";
@@ -64,17 +65,15 @@ export function ScoreControl({
           </span>
         </span>
         {value !== null && (
-          <button
+          <DashboardButton
             type="button"
+            variant="link"
             onClick={() => onChange(null)}
             aria-label={copy.clearLabel(team)}
-            className={cn(
-              "-my-2 -mr-2 min-h-11 rounded-dashboard-md px-2 text-sm font-semibold text-dashboard-text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary md:min-h-9 [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
-              pressable,
-            )}
+            className="-my-2 -mr-2"
           >
             {copy.clear}
-          </button>
+          </DashboardButton>
         )}
       </div>
       <div
