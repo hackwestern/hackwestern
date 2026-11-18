@@ -1,4 +1,10 @@
-import { ExternalLink, FileText, Github, Linkedin } from "lucide-react";
+import {
+  ExternalLink,
+  FileText,
+  Github,
+  Link as LinkIcon,
+  Linkedin,
+} from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { sponsorHackersCopy as copy } from "~/content/sponsor-hackers";
 
@@ -7,6 +13,7 @@ const LINKS = [
   { key: "github", label: copy.links.github, Icon: Github },
   { key: "linkedIn", label: copy.links.linkedIn, Icon: Linkedin },
   { key: "devpost", label: copy.links.devpost, Icon: ExternalLink },
+  { key: "extraLink", label: copy.links.extra, Icon: LinkIcon },
 ] as const;
 
 export type HackerLinkFields = {
@@ -14,12 +21,14 @@ export type HackerLinkFields = {
   github: string | null;
   linkedIn: string | null;
   devpost: string | null;
+  /** The extra link from the hacker interest form, if any. */
+  extraLink?: string | null;
 };
 
 /**
- * A hacker's Resume / GitHub / LinkedIn / Devpost buttons. The server only
- * sends links (already made safe by safeProfileUrl) for hackers who agreed
- * to share with sponsors, so nothing renders for anyone else.
+ * A hacker's Resume / GitHub / LinkedIn / Devpost (and interest form extra
+ * link) buttons. The server only sends links (already made safe by
+ * safeProfileUrl) the hacker agreed to share with sponsors.
  */
 export function HackerLinks({
   name,
