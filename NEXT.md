@@ -7,16 +7,25 @@ Checks on 0ca39a4: tsc clean; vitest 1015 passed, 1 failed (Apple Wallet). Run `
 ## Merged 2026-11-16 (late)
 T52 (coffee chats: map + where beside the table), T53 (tasks amber on schedule, Team tasks tab removed, Task pings under grid), T54 (live Happening now banner). Nothing running.
 
-## Running (2026-11-17)
-- sd-sched-focus (worktree hackwestern-sd-chat): column focus on the schedule; Main event -> Hackathon events lane; coffee chats as a room-booking table (rooms = columns, 15-min rows, who booked + n/6 capacity, click free slot to add) placed under the schedule, replacing Where is everyone; map beside the schedule, live (no time picking); sponsor filter + per-sponsor stats on the coffee chat table; judging room lane if data exists.
-- sd-shortlist-pick (worktree hackwestern-sd-help): sponsor candidate picker from Lucas's top 40 (#1143 getInterestedHackers, merged d62a7a0) with shortlist toggle + offer chat.
-- Merged Lucas's spon-judging into sponsor-dashboard (d62a7a0). Needs HACKER_INTEREST_FORM (sheet id) in .env/Vercel and the service account given access to that sheet.
+## Done 2026-11-17
+- Merged Lucas's spon-judging (#1143 getInterestedHackers, top 40 from the hacker interest form).
+- Schedule: column focus, Hackathon events lane (no Main event column), coffee chats on the grid (live polling), room booking table (rooms = columns, n/6 capacity) under the schedule, map beside it (now only), sponsor filter + per-sponsor stats. Judging room has no booking data (only sheet items like "Sponsor Track Judging" -> Judging column).
+- Sponsor Candidates: Lucas's top 40, admitted hackers only, shortlist toggle + Offer coffee chat.
+- T55: /internal/sponsors is the one organizer home (tabs Sponsors | Run of show | Coffee chats | Help, per-sponsor strip, back links); /internal/sponsor-schedule redirects; "Sponsor team" nav link removed.
+- Hackathon events off by default; food + opening/closing ceremonies always shown; sponsors no longer get the ceremony running order.
+- Organizers land on /internal/sponsors after login (affects ALL organizers; no sponsor-team role).
+- Emil Kowalski skills installed in ~/.claude/skills (old versions in ~/.claude/skills/_to_delete/emil-skills-before-2026-11-17).
 
-## Then: T55 one sponsor home at /internal/sponsors (Jazz, 2026-11-16; reconfirmed 2026-11-17)
-- Jazz 2026-11-17: connect Lucas's /internal/sponsors dashboard with schedule + coffee chats + help, with a clear end-to-end organizer flow. Start after sd-sched-focus merges (both touch sponsor-schedule.tsx).
-- /internal/sponsors ("Sponsor dashboard", top-nav "Sponsors") gets tabs: Sponsors (existing list) | Run of show | Coffee chats | Help.
-- /internal/sponsor-schedule redirects to the matching tab; remove the separate "Sponsor team" nav link.
-- Each sponsor row: room, chats accepted/pending, open help request, "View on schedule" link that opens Run of show filtered to that company (first step of the T51 company filter).
+## Running: redesign (docs/redesign-brief.md)
+- redesign-schedule (worktree hackwestern-sd-chat): day grid, details dialog, day picker, Happening now.
+- redesign-sponsor (worktree hackwestern-sd-help): sponsor portal pages + GitHub avatars (hacker-avatar.tsx) + hacker /live coffee chat UI.
+- redesign-organizer (worktree hackwestern-sd-hackers): /internal/sponsors tabs, Lucas's list on tokens, room table, help queue.
+- Each needs a code review (+ design-reviewer) before merge; screenshots in mocks/*-redesign-v1/. If a session ends before they report, check each branch's commits.
+
+## Needs Jazz
+- SPONSOR_JUDGING_SHEET (Lucas's master sheet id) and HACKER_INTEREST_FORM (interest form sheet id) for local .env + Vercel; service account needs access to both sheets.
+- OK to show the form's resume + link for hackers who didn't agree to share? (currently yes, first name only)
+- Candidates copy says "Only hackers who agreed to share... are shown" — now inaccurate; fix with T50.
 
 ## Next to build: T50 (small)
 - Jazz decided (2026-11-16): NO per-sponsor owner/rep. Help pings stay channel-only (@here in the spon-team channel); no DMs to a sponsor owner.
