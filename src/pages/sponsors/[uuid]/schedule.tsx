@@ -123,6 +123,7 @@ export default function SponsorSchedulePage() {
     items: data.items,
     ceremonies: data.ceremonies,
     coffeeChat: data.coffeeChat,
+    holds: chats.data?.holds ?? [],
     now,
   });
 
@@ -138,7 +139,7 @@ export default function SponsorSchedulePage() {
         now={now}
         sponsorName={data.sponsorName}
       />
-      <NextEventCard event={nextEvent} />
+      <NextEventCard event={nextEvent} sponsor={id} />
       <SponsorHelp sponsor={id} />
       {shownDay === "Saturday" && (
         <>

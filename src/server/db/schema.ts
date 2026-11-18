@@ -428,6 +428,39 @@ export const coffeeChats = pgTable(
   ],
 );
 
+// An organizer's room hold: a coffee chat room set aside for one sponsor at
+// one Saturday time, before any hacker is booked ("Needs a hacker"). A room
+// can be held by different sponsors at different times; the server refuses
+// a hold or chat from another sponsor in the same room at an overlapping
+// time. Chats the sponsor offers inside the hold take its room. See
+// src/lib/coffee-chat-holds.ts and docs/decisions.md (2026-11-17).
+export const coffeeChatHolds = pgTable(
+  "coffee_chat_hold",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    // One of the coffee chat rooms ("Rm 2241"-"Rm 2243").
+    room: varchar("room", { length: 64 }).notNull(),
+    // Saturday "HH:MM" on the 15-minute grid; end is exclusive.
+    startTime: varchar("start_time", { length: 5 }).notNull(),
+    endTime: varchar("end_time", { length: 5 }).notNull(),
+    note: varchar("note", { length: 255 }),
+    createdBy: varchar("created_by", { length: 255 }).references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("coffee_chat_hold_sponsor_idx").on(t.sponsorId),
+    index("coffee_chat_hold_room_idx").on(t.room, t.startTime),
+  ],
+);
+
 // A hacker's interest ranking of the sponsors (1 = most interested). Feeds each
 // sponsor's coffee-chat shortlist. One row per (hacker, sponsor), and a hacker
 // can't give two sponsors the same rank.

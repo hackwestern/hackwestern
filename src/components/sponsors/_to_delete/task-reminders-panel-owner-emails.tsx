@@ -3,7 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
-import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-rooms";
+import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-fields";
 import { useNow } from "~/components/sponsors/use-now";
 import { taskRemindersCopy } from "~/content/task-reminders";
 import { compareRunOfShow, formatClock } from "~/lib/run-of-show";

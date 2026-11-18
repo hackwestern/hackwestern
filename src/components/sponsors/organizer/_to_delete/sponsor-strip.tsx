@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { CalendarDays, Coffee, DoorOpen, LifeBuoy } from "lucide-react";
+import {
+  CalendarDays,
+  Coffee,
+  DoorOpen,
+  LifeBuoy,
+  TriangleAlert,
+} from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { sponsorOrganizerCopy } from "~/content/sponsor-organizer";
 import {
@@ -94,6 +100,17 @@ export function SponsorStrip({
             <Coffee aria-hidden className="size-3.5" />
             {copy.chats(summary.accepted, summary.pending)}
           </span>
+          {summary.needsHacker > 0 && (
+            <span
+              className={cn(
+                pill,
+                "bg-dashboard-status-iconBadge tabular-nums text-dashboard-text-warning",
+              )}
+            >
+              <TriangleAlert aria-hidden className="size-3.5" />
+              {copy.needsHacker(summary.needsHacker)}
+            </span>
+          )}
           {help ? (
             <span
               className={cn(

@@ -82,8 +82,7 @@ export const sponsorOrganizerCopy = {
       "Workshop live": "Mark left",
       Left: null,
     } as Record<string, string | null>,
-    advanceLabel: (name: string, next: string) =>
-      `Move ${name} to ${next}`,
+    advanceLabel: (name: string, next: string) => `Move ${name} to ${next}`,
     copyLink: "Copy link",
     copied: "Copied",
     copyLabel: (name: string) => `Copy ${name}'s private sponsor page link`,
@@ -93,6 +92,52 @@ export const sponsorOrganizerCopy = {
     empty: "No sponsors yet. Sync from the master sheet to load them.",
     noMatch: "No sponsors match this search and filter.",
     clearFilters: "Clear search and filter",
+
+    // The combined sponsor table: Lucas's columns plus each sponsor's
+    // coffee chats, holds and help (sponsorOrganizer.summary).
+    chatColumns: {
+      sponsor: "Sponsor",
+      chatType: "Chat type",
+      chatRoom: "Chat room",
+      chats: "Chats",
+      needsHacker: "Needs a hacker",
+      help: "Help",
+    },
+    chatType: (minutes: number, groupSize: number, reps: number) =>
+      `${groupSize > 1 ? `Group of ${groupSize}` : "1-on-1"} · ${minutes} min · ${reps === 1 ? "1 rep" : `${reps} reps`}`,
+    noChatType: "No chat times",
+    unassigned: "Unassigned",
+    chatsCell: (accepted: number, waiting: number) =>
+      `${accepted} accepted · ${waiting} waiting`,
+    needsHackerCell: (n: number) => (n === 0 ? "None" : String(n)),
+    helpOpen: "Open",
+    helpClaimed: "On it",
+    noHelp: "None",
+    notRegistered: "Not registered",
+    expand: (name: string) => `Show ${name}'s chats and details`,
+    collapse: (name: string) => `Hide ${name}'s chats and details`,
+    highlight: (name: string) => `${name}: show on the coffee chat rooms`,
+    totalsLabel: (n: number) =>
+      n === 1 ? "Totals, 1 sponsor" : `Totals, ${n} sponsors`,
+    seatsLeft: (n: number) =>
+      n === 1 ? "1 seat left today" : `${n} seats left today`,
+    seatsLabel: "Seats left today",
+    openHelp: (n: number) => (n === 1 ? "1 open" : `${n} open`),
+    details: {
+      chatsHeading: "Coffee chats",
+      detailsHeading: "Details",
+      noChats: "No chats booked yet.",
+      holdsHeading: "Room holds",
+      hold: (room: string, start: string, end: string) =>
+        `${room} · ${start}–${end}`,
+      holdBooked: "Hacker booked",
+      chat: (time: string, room: string | null) =>
+        room ? `${time} · ${room}` : time,
+      status: { accepted: "Accepted", pending: "Waiting" },
+      roomLabel: "Sponsor room",
+      notRegistered:
+        "This sponsor has no private link yet, so no chats or help. Sync from the master sheet.",
+    },
   },
 
   strip: {
@@ -101,6 +146,8 @@ export const sponsorOrganizerCopy = {
     noRoom: "No chat room",
     chats: (accepted: number, pending: number) =>
       `${accepted} accepted · ${pending} pending`,
+    needsHacker: (n: number) =>
+      n === 1 ? "1 hold needs a hacker" : `${n} holds need a hacker`,
     helpOpen: (minutes: number) =>
       minutes < 1 ? "Help: waiting, just now" : `Help: waiting ${minutes} min`,
     helpClaimed: (name: string | null) =>

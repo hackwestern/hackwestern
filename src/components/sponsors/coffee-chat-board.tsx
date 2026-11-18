@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -9,10 +9,15 @@ import {
   HackerMatches,
   useDebounced,
 } from "~/components/sponsors/add-coffee-chat";
-import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-rooms";
+import {
+  SponsorRoomSelect,
+  WatcherInput,
+} from "~/components/sponsors/coffee-chat-fields";
+import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-fields";
 import {
   CoffeeChatRoomTable,
   useLiveChatBoard,
+  useSponsorColors,
 } from "~/components/sponsors/coffee-chat-room-table";
 import {
   SponsorFilter,
@@ -21,11 +26,7 @@ import {
 import { LoadError } from "~/components/sponsors/schedule-states";
 import { useNow } from "~/components/sponsors/use-now";
 import { coffeeChatCopy } from "~/content/coffee-chat";
-import {
-  boardStats,
-  ROOM_CAPACITY,
-  type BoardStats,
-} from "~/lib/coffee-chat-room-table";
+import { ROOM_CAPACITY } from "~/lib/coffee-chat-room-table";
 import {
   COFFEE_CHAT_GRID_MINUTES,
   coffeeChatExpiresAt,
@@ -49,11 +50,12 @@ const roomCopy = coffeeChatCopy.organizer.roomTable;
 
 type Selected = { sponsor: string; slotTime: string };
 
-// Organizer Coffee chats tab: the sponsor filter and totals, then the rooms
-// table (a room booking view) by default, with the sponsor x time table and
-// the per-sponsor list (rooms, add a chat, booked chats) one toggle away.
-// The filter and totals apply to every view.
-// `sponsor` (an id or name, from ?sponsor=) sets the filter to that sponsor.
+// Organizer Coffee chats tab: the sponsor filter, then the colour-coded
+// rooms table (a room booking view) by default, with the sponsor x time
+// table and the list (add a chat, booked chats) one toggle away. The
+// filter applies to every view; per-sponsor totals live on the Sponsors
+// tab. Picking a sponsor's name (or arriving with ?sponsor=, an id or name)
+// highlights their cells and dims everyone else's; Escape clears it.
 export function CoffeeChatBoard({
   list,
   sponsor = null,
@@ -62,13 +64,19 @@ export function CoffeeChatBoard({
   sponsor?: string | null;
 }) {
   const [view, setView] = useState<"rooms" | "table" | "list">("rooms");
-  const now = useNow(30_000);
   const board = useLiveChatBoard();
   const names = board.data?.sponsors.map((s) => s.sponsor) ?? NO_NAMES;
-  const selection = useSponsorSelection(
-    names,
-    sponsorNameForParam(sponsor, board.data?.sponsors ?? NO_SPONSORS),
+  const selection = useSponsorSelection(names);
+  const colors = useSponsorColors(board.data?.colorNames ?? NO_NAMES);
+  const linked = sponsorNameForParam(
+    sponsor,
+    board.data?.sponsors ?? NO_SPONSORS,
   );
+  const [highlight, setHighlight] = useState<string | null>(null);
+  // ?sponsor= highlights that sponsor once the board knows them.
+  useEffect(() => {
+    if (linked) setHighlight(linked);
+  }, [linked]);
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -100,10 +108,14 @@ export function CoffeeChatBoard({
         </div>
         {view !== "list" && board.data && (
           <>
-            <SponsorFilter names={names} selection={selection} />
-            <Summary
-              stats={boardStats(board.data, selection.selected)}
-              now={board.data.slots.find((slot) => isNowRow(slot, now)) ?? null}
+            <SponsorFilter
+              names={names}
+              selection={selection}
+              colors={colors}
+              highlight={highlight}
+              onHighlight={(name) =>
+                setHighlight((h) => (h === name ? null : name))
+              }
             />
           </>
         )}
@@ -114,7 +126,12 @@ export function CoffeeChatBoard({
             <p className="m-0 text-sm text-dashboard-text-medium">
               {roomCopy.intro(ROOM_CAPACITY)}
             </p>
-            <CoffeeChatRoomTable selection={selection} />
+            <CoffeeChatRoomTable
+              selection={selection}
+              colors={colors}
+              highlight={highlight}
+              onClearHighlight={() => setHighlight(null)}
+            />
           </>
         ) : (
           <Board isShown={selection.isShown} />
@@ -316,63 +333,6 @@ function Board({ isShown }: { isShown: (sponsor: string) => boolean }) {
 }
 
 // Totals for the sponsors in the filter (every sponsor by default).
-function Summary({
-  stats: totals,
-  now,
-}: {
-  stats: BoardStats;
-  now: string | null;
-}) {
-  const rooms = totals.roomsInUse;
-  const stats: [string, ReactNode][] = [
-    [copy.totals.offered, totals.offered],
-    [copy.totals.accepted, totals.accepted],
-    [copy.totals.pending, totals.pending],
-    [copy.totals.seatsLeft, totals.seatsLeft],
-    [copy.totals.rooms, rooms.length > 0 ? rooms.join(", ") : copy.noRooms],
-  ];
-  return (
-    <section
-      aria-label={copy.summaryLabel}
-      className="rounded-dashboard-lg bg-dashboard-bg-surface px-4 py-3 shadow-dashboard-card"
-    >
-      <dl className="m-0 flex flex-wrap gap-x-6 gap-y-2">
-        {stats.map(([label, value], i) => (
-          <div
-            key={label}
-            className={cn(
-              "flex flex-col",
-              i === stats.length - 1 && "min-w-0 basis-full sm:basis-auto",
-            )}
-          >
-            <dt className="text-xs font-semibold text-dashboard-text-light">
-              {label}
-            </dt>
-            <dd
-              className={cn(
-                "m-0 font-semibold",
-                i === stats.length - 1 ? "text-sm leading-6" : "text-base",
-              )}
-            >
-              {value}
-            </dd>
-          </div>
-        ))}
-        {now && (
-          <div className="flex flex-col">
-            <dt className="text-xs font-semibold text-dashboard-text-light">
-              {copy.now}
-            </dt>
-            <dd className="m-0 text-base font-semibold text-dashboard-text-active">
-              {formatClock(now)}
-            </dd>
-          </div>
-        )}
-      </dl>
-    </section>
-  );
-}
-
 function SponsorHeader({
   sponsor: s,
   rooms,
@@ -404,7 +364,12 @@ function SponsorHeader({
         )}
         {s.sponsorId ? (
           <>
-            <RoomSelect sponsor={s} sponsorId={s.sponsorId} rooms={rooms} />
+            <SponsorRoomSelect
+              sponsorId={s.sponsorId}
+              assignedRoom={s.assignedRoom}
+              sheetRoom={s.sheetRoom}
+              rooms={rooms}
+            />
             <WatcherInput sponsorId={s.sponsorId} watcher={s.watcher} />
           </>
         ) : (
@@ -417,134 +382,6 @@ function SponsorHeader({
         </span>
       </div>
     </th>
-  );
-}
-
-const smallField =
-  "h-9 w-full rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-2 text-xs text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary";
-
-function RoomSelect({
-  sponsor: s,
-  sponsorId,
-  rooms,
-}: {
-  sponsor: BoardSponsor;
-  sponsorId: string;
-  rooms: string[];
-}) {
-  const utils = api.useUtils();
-  const assign = api.coffeeChatRequests.assignCoffeeChatRoom.useMutation({
-    onSuccess: async () => {
-      await Promise.all([
-        utils.coffeeChatRequests.invalidate(),
-        utils.sponsorSchedule.invalidate(),
-      ]);
-    },
-  });
-  const id = `board-room-${sponsorId}`;
-  const errorId = `${id}-error`;
-  return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-xs text-dashboard-text-light">
-        {copy.room}
-      </label>
-      <select
-        id={id}
-        value={s.assignedRoom ?? ""}
-        disabled={assign.isPending}
-        aria-invalid={assign.error ? true : undefined}
-        aria-describedby={assign.error ? errorId : undefined}
-        onChange={(e) =>
-          assign.mutate({ sponsorId, room: e.target.value || null })
-        }
-        className={smallField}
-      >
-        <option value="">{copy.unassigned}</option>
-        {rooms.map((r) => (
-          <option key={r} value={r}>
-            {r}
-          </option>
-        ))}
-      </select>
-      {!s.assignedRoom && s.sheetRoom && (
-        <span className="text-xs text-dashboard-text-light">
-          {copy.sheetRoom(s.sheetRoom)}
-        </span>
-      )}
-      {assign.error && (
-        <span
-          id={errorId}
-          role="alert"
-          className="whitespace-normal text-xs text-dashboard-text-warning"
-        >
-          {assign.error.message || booked.rooms.saveError}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function WatcherInput({
-  sponsorId,
-  watcher,
-}: {
-  sponsorId: string;
-  watcher: string | null;
-}) {
-  const utils = api.useUtils();
-  const [value, setValue] = useState(watcher ?? "");
-  const [saved, setSaved] = useState(false);
-  const save = api.coffeeChatRequests.setCoffeeChatWatcher.useMutation({
-    onSuccess: async () => {
-      setSaved(true);
-      await utils.coffeeChatRequests.invalidate();
-    },
-  });
-  const id = `board-watcher-${sponsorId}`;
-  const dirty = value.trim() !== (watcher ?? "");
-  return (
-    <form
-      className="flex flex-col gap-1"
-      onSubmit={(e) => {
-        e.preventDefault();
-        setSaved(false);
-        save.mutate({ sponsorId, watcher: value.trim() || null });
-      }}
-    >
-      <label htmlFor={id} className="text-xs text-dashboard-text-light">
-        {copy.watcher}
-      </label>
-      <div className="flex gap-1">
-        <input
-          id={id}
-          list="board-watchers"
-          value={value}
-          maxLength={255}
-          onChange={(e) => {
-            setValue(e.target.value);
-            setSaved(false);
-          }}
-          className={cn(smallField, "min-w-0 flex-1")}
-        />
-        <DashboardButton
-          type="submit"
-          variant="outline"
-          disabled={!dirty || save.isPending}
-          className="h-9 px-2.5 text-xs"
-        >
-          {copy.watcherSave}
-        </DashboardButton>
-      </div>
-      <span aria-live="polite" className="text-xs empty:hidden">
-        {save.error ? (
-          <span className="text-dashboard-text-warning">
-            {save.error.message || booked.rooms.watcherError}
-          </span>
-        ) : saved && !dirty ? (
-          <span className="text-dashboard-text-light">{copy.watcherSaved}</span>
-        ) : null}
-      </span>
-    </form>
   );
 }
 

@@ -30,6 +30,23 @@ export const coffeeChatCopy = {
   },
 
   // /sponsors/[uuid]/coffee-chats: the sponsor's own chats.
+  // A sponsor's own room holds (organizers set a room aside before a
+  // hacker is booked). Coffee chats page and the next-event card.
+  sponsorHolds: {
+    heading: "Your held rooms",
+    intro:
+      "Hack Western set these rooms aside for you. Offer a chat to a hacker for each one.",
+    line: (room: string, start: string, end: string) =>
+      `${room} · ${start}–${end}`,
+    needsHacker: "You still need a hacker",
+    booked: (n: number) =>
+      n === 1 ? "1 hacker booked" : `${n} hackers booked`,
+    pick: "Pick from candidates",
+    scan: "Scan a badge",
+    actionsLabel: (room: string, start: string) =>
+      `Find a hacker for ${room} at ${start}`,
+  },
+
   sponsorList: {
     seoTitle: "Your coffee chats",
     eyebrow: "Coffee chats",
@@ -177,6 +194,10 @@ export const coffeeChatCopy = {
     alreadyOver: "This chat can't be changed anymore.",
     sheetUnavailable:
       "Couldn't read the run-of-show sheet. Try again in a minute.",
+    holdNotFound: "That room hold doesn't exist anymore.",
+    holdTimes: "Pick a start and length on the 15-minute grid, up to 4 hours.",
+    holdClash: (room: string, sponsor: string, start: string, end: string) =>
+      `${sponsor} already has ${room} from ${start} to ${end}. Pick another room or time.`,
   },
 
   // Shown to sponsors (freeTimes / sponsorChats `watcherName`).
@@ -248,6 +269,7 @@ export const coffeeChatCopy = {
         accepted: "Accepted",
         pending: "Waiting for reply",
         seatsLeft: "Seats left today",
+        needsHacker: "Holds needing a hacker",
         rooms: "Rooms in use",
       },
       noRooms: "None yet",
@@ -354,6 +376,10 @@ export const coffeeChatCopy = {
           ? `All ${total} sponsors`
           : `${shown} of ${total} sponsors`,
       none: "No sponsors picked. Pick one above, or All sponsors.",
+      show: (name: string) => `Show ${name}`,
+      highlight: (name: string) => `Highlight ${name} in the rooms table`,
+      highlightHint:
+        "Tick to show or hide a sponsor. Pick a name to highlight their rooms; Escape clears it.",
     },
 
     // Rooms down the side of a booking table: one column per room.
@@ -366,13 +392,17 @@ export const coffeeChatCopy = {
       time: "Time",
       legendLabel: "What the cells mean",
       legend: {
-        free: "Available: pick any available time to book",
-        booked: "Booked",
+        free: "Free: pick it to book or hold",
+        booked: "Booked, in the sponsor's colour",
         full: "Full",
         over: "Over capacity",
+        held: "Held, needs a hacker",
         dimmed: "Other sponsors (filtered out)",
       },
-      free: "Available",
+      free: "Free",
+      full: "Full",
+      over: "Over",
+      clash: "Two sponsors",
       used: (used: number, capacity: number) => `${used}/${capacity}`,
       hackers: (n: number) => (n === 1 ? "1 hacker" : `${n} hackers`),
       reps: (n: number) => (n === 1 ? "1 rep" : `${n} reps`),
@@ -405,6 +435,43 @@ export const coffeeChatCopy = {
             : `${sponsor} has no room yet. Give them this room first to book here.`,
         assign: (room: string) => `Use ${room} for this sponsor`,
         assignError: "Couldn't change the room. Try again.",
+      },
+      // Organizer room holds: a room set aside for a sponsor before any
+      // hacker is booked.
+      needsHacker: "Needs a hacker",
+      heldFor: (sponsor: string) => `Held for ${sponsor}`,
+      heldLabel: (sponsor: string) => `held for ${sponsor}, needs a hacker`,
+      holdForm: {
+        heading: "Hold room for a sponsor",
+        intro: (room: string, time: string) =>
+          `Set ${room} aside from ${time} before a hacker is booked. The sponsor sees the room and that they still need a hacker.`,
+        sponsor: "Sponsor",
+        pickSponsor: "Pick a sponsor",
+        length: "Length",
+        minutes: (n: number) => `${n} min`,
+        note: "Note for organizers (optional)",
+        submit: "Hold room",
+        saving: "Holding…",
+        done: (sponsor: string, room: string, start: string, end: string) =>
+          `${room} held for ${sponsor}, ${start} to ${end}.`,
+        error: "Couldn't hold the room. Try again.",
+      },
+      holds: {
+        heading: "Room holds",
+        span: (start: string, end: string) => `${start} to ${end}`,
+        chats: (n: number) => (n === 1 ? "1 chat booked" : `${n} chats booked`),
+        addHint: "Add a chat into this hold with the form below.",
+        move: "Move hold",
+        remove: "Remove hold",
+        removeConfirm: (sponsor: string) =>
+          `Remove ${sponsor}'s hold? Chats already booked keep their room.`,
+        confirmRemove: "Remove",
+        room: "Room",
+        start: "Start",
+        length: "Length",
+        save: "Save",
+        cancel: "Cancel",
+        error: "Couldn't change the hold. Try again.",
       },
     },
 

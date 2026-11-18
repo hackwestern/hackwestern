@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { hover } from "~/components/internals/interaction";
 import { cn } from "~/lib/utils";
-import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-rooms";
+import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-fields";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { formatClock } from "~/lib/run-of-show";
 import type { OrganizerHackerMatch } from "~/server/api/routers/coffee-chat-requests";

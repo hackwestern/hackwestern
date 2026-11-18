@@ -118,6 +118,7 @@ describe("boardStats", () => {
       pending: 1,
       seatsLeft: 5,
       roomsInUse: ["Rm 2241", "Rm 2242"],
+      needsHacker: 0,
     });
   });
 
@@ -128,6 +129,7 @@ describe("boardStats", () => {
       pending: 1,
       seatsLeft: 3,
       roomsInUse: ["Rm 2241"],
+      needsHacker: 0,
     });
     expect(boardStats(board(), new Set())).toEqual({
       offered: 0,
@@ -135,6 +137,7 @@ describe("boardStats", () => {
       pending: 0,
       seatsLeft: 0,
       roomsInUse: [],
+      needsHacker: 0,
     });
   });
 });

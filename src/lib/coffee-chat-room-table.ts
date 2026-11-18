@@ -12,6 +12,7 @@ import {
   coffeeChatMinutesOf,
   coffeeChatRoomOf,
 } from "~/lib/coffee-chat-requests";
+import { holdCovers } from "~/lib/coffee-chat-holds";
 
 /** People one coffee chat room fits at once (rooms 2241-2243). */
 export const ROOM_CAPACITY = COFFEE_CHAT_ROOM_PEOPLE;
@@ -39,10 +40,20 @@ export type RoomBoardChat = {
   room: string | null;
   status: string;
 };
+export type RoomBoardHold = {
+  holdId: string;
+  sponsorId: string;
+  room: string;
+  startTime: string;
+  endTime: string;
+  needsHacker: boolean;
+};
 export type RoomBoard = {
   slots: string[];
   sponsors: RoomBoardSponsor[];
   chats: RoomBoardChat[];
+  /** Organizer room holds (absent on old fixtures = none). */
+  holds?: RoomBoardHold[];
 };
 
 /** One sponsor in a room cell. */
@@ -56,6 +67,8 @@ export type RoomOccupant = {
   reps: number;
   /** In the sponsor filter (false = shown dimmed). */
   selected: boolean;
+  /** The organizer hold this cell falls in, if any. */
+  hold: { holdId: string; needsHacker: boolean } | null;
 };
 
 export type RoomCellState = "free" | "booked" | "full" | "over";
@@ -68,6 +81,14 @@ export type RoomCell = {
   used: number;
   capacity: number;
   state: RoomCellState;
+  /** A hold here has no live chat yet ("Needs a hacker"). */
+  needsHacker: boolean;
+  /**
+   * Two or more sponsors claim this room now. The server refuses this when
+   * a hold, chat or room is set, but a later sheet window change can still
+   * cause it, so the table shows it instead of hiding it.
+   */
+  clash: boolean;
 };
 
 export type RoomTable = {
@@ -101,8 +122,10 @@ export function roomCellState(used: number, occupied: boolean): RoomCellState {
  * Who holds each room at each slot. A sponsor holds a room through its
  * coffee chat window when the room is theirs (assignment, else sheet ROOM),
  * and wherever one of its live chats (pending or accepted) is running; a
- * chat with no room of its own is in its sponsor's room. `selected` = null
- * means every sponsor is in the filter.
+ * chat with no room of its own is in its sponsor's room. An organizer hold
+ * puts its sponsor in the hold's room for its time (and takes them out of
+ * their usual room then). `selected` = null means every sponsor is in the
+ * filter.
  */
 export function buildRoomTable(
   board: RoomBoard,
@@ -115,6 +138,7 @@ export function buildRoomTable(
     board.sponsors.flatMap((s) => (s.sponsorId ? [[s.sponsorId, s]] : [])),
   );
   const live = board.chats.filter((c) => ACTIVE.has(c.status));
+  const allHolds = board.holds ?? [];
   const rows = board.slots.map((slotTime) => {
     const t = coffeeChatMinutesOf(slotTime) ?? -1;
     return rooms.map((room): RoomCell => {
@@ -128,14 +152,22 @@ export function buildRoomTable(
         );
         const start = s.windowStart ? coffeeChatMinutesOf(s.windowStart) : null;
         const end = s.windowEnd ? coffeeChatMinutesOf(s.windowEnd) : null;
-        const holds =
+        const slot = { slotTime };
+        const ownHolds = allHolds.filter(
+          (h) => h.sponsorId === s.sponsorId && holdCovers(h, slot),
+        );
+        const hold = ownHolds.find((h) => sameRoom(h.room, room)) ?? null;
+        // A hold elsewhere moves the sponsor out of their usual room then.
+        const heldElsewhere = ownHolds.length > 0 && !hold;
+        const windowRoom =
+          !heldElsewhere &&
           s.setUp &&
           sameRoom(s.room, room) &&
           start !== null &&
           end !== null &&
           t >= start &&
           t < end;
-        if (!holds && chats.length === 0) continue;
+        if (!windowRoom && !hold && chats.length === 0) continue;
         occupants.push({
           sponsor: s.sponsor,
           sponsorId: s.sponsorId,
@@ -144,6 +176,9 @@ export function buildRoomTable(
           pending: chats.filter((c) => c.status === "pending").length,
           reps: s.reps,
           selected: selected === null || selected.has(s.sponsor),
+          hold: hold
+            ? { holdId: hold.holdId, needsHacker: hold.needsHacker }
+            : null,
         });
       }
       // Chats whose sponsor isn't a board column still take seats.
@@ -162,6 +197,8 @@ export function buildRoomTable(
         used,
         capacity: ROOM_CAPACITY,
         state: roomCellState(used, occupants.length > 0 || orphans > 0),
+        needsHacker: occupants.some((o) => o.hold?.needsHacker),
+        clash: new Set(occupants.map((o) => o.sponsor)).size > 1,
       };
     });
   });
@@ -174,6 +211,8 @@ export type BoardStats = {
   pending: number;
   seatsLeft: number;
   roomsInUse: string[];
+  /** Holds with no live chat yet. */
+  needsHacker: number;
 };
 
 /**
@@ -202,8 +241,16 @@ export function boardStats(
       .flatMap((s) => s.cells)
       .reduce((sum, c) => sum + (c.offerable ? c.seatsLeft : 0), 0),
     roomsInUse: [
-      ...new Set(sponsors.flatMap((s) => (s.setUp && s.room ? [s.room] : []))),
+      ...new Set([
+        ...sponsors.flatMap((s) => (s.setUp && s.room ? [s.room] : [])),
+        ...(board.holds ?? [])
+          .filter((h) => ids.has(h.sponsorId))
+          .map((h) => h.room),
+      ]),
     ].sort(),
+    needsHacker: (board.holds ?? []).filter(
+      (h) => h.needsHacker && ids.has(h.sponsorId),
+    ).length,
   };
 }
 

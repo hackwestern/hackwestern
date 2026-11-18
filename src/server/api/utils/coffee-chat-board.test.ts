@@ -284,7 +284,62 @@ describe("buildChatBoard", () => {
       // Acme: 4 starts x 1 seat - 2 used = 2. Beta: 2 starts x 1 group of 3
       // (1 rep) = 6, the declined chat holds none.
       seatsLeft: 2 + 6,
+      needsHacker: 0,
     });
     expect(board.roomsInUse).toEqual(["Rm 2241", "Rm 2242"]);
+  });
+});
+
+describe("buildChatBoard with room holds", () => {
+  const sponsors = [
+    { id: "h", name: "Holdco", reps: 1, assignedRoom: null, watcher: null },
+  ];
+  const holds = [
+    {
+      holdId: "h1",
+      sponsorId: "h",
+      room: "Rm 2242",
+      startTime: "13:00",
+      endTime: "13:30",
+      note: null,
+    },
+  ];
+
+  test("a hold-only sponsor gets a column with open cells in the hold", () => {
+    const board = buildChatBoard({
+      sponsors,
+      setups: [],
+      chats: [],
+      holds,
+      now: morning,
+    });
+    expect(board.slots).toEqual(["13:00", "13:15"]);
+    const col = board.sponsors[0]!;
+    expect(col.sponsor).toBe("Holdco");
+    expect(col.cells.map((c) => [c.slotTime, c.kind, c.offerable])).toEqual([
+      ["13:00", "open", true],
+      ["13:15", "open", true],
+    ]);
+    expect(col.holdsNeedingHacker).toBe(1);
+    expect(board.holds[0]).toMatchObject({
+      sponsor: "Holdco",
+      needsHacker: true,
+      chats: 0,
+    });
+    expect(board.totals.needsHacker).toBe(1);
+  });
+
+  test("a pending chat inside clears it; a declined one doesn't", () => {
+    const withChat = (status: CoffeeChatStatus) =>
+      buildChatBoard({
+        sponsors,
+        setups: [],
+        chats: [{ ...chat("h", "13:15", status), room: "Rm 2242" }],
+        holds,
+        now: morning,
+      });
+    expect(withChat("pending").holds[0]!.needsHacker).toBe(false);
+    expect(withChat("pending").totals.needsHacker).toBe(0);
+    expect(withChat("declined").holds[0]!.needsHacker).toBe(true);
   });
 });

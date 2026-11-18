@@ -15,6 +15,7 @@ import {
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { HackerLinks } from "~/components/sponsors/hacker-links";
 import { InterestedHackers } from "~/components/sponsors/interested-hackers";
+import { SponsorHolds } from "~/components/sponsors/sponsor-holds";
 import {
   InvalidLink,
   LoadError,
@@ -129,7 +130,7 @@ export default function SponsorCoffeeChatsPage() {
   }
   if (!q.data) return shell(<LoadError onRetry={() => void q.refetch()} />);
 
-  const { sponsorName, watcherName, chats } = q.data;
+  const { sponsorName, watcherName, chats, holds } = q.data;
   const groups = groupByTime(chats);
   const partners = new Map(
     (partnersQ.data ?? []).map((p) => [p.chatId, p] as const),
@@ -231,6 +232,18 @@ export default function SponsorCoffeeChatsPage() {
           />
         </button>
       </div>
+
+      {/* Rooms organizers held for this sponsor (only their own). */}
+      <SponsorHolds
+        sponsor={id}
+        holds={holds}
+        onPickCandidates={() => {
+          choose("candidates", true);
+          tabRefs.current
+            .get("candidates")
+            ?.scrollIntoView({ block: "nearest" });
+        }}
+      />
 
       {/* Your chats | Candidates. Sticks to the top so switching is always
           one tap away on a long list. */}

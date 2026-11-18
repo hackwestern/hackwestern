@@ -65,9 +65,12 @@ function useAnnouncer() {
 export function BadgeScanner({
   sponsor,
   initialCode,
+  preferredTime = null,
 }: {
   sponsor: string;
   initialCode?: string | null;
+  /** Start time to preselect when it's open (e.g. a room hold's). */
+  preferredTime?: string | null;
 }) {
   const [phase, setPhase] = useState<Phase>(() =>
     initialCode ? { kind: "hacker", code: initialCode } : { kind: "scan" },
@@ -118,6 +121,7 @@ export function BadgeScanner({
           key={phase.code}
           sponsor={sponsor}
           code={phase.code}
+          preferredTime={preferredTime}
           repName={repName}
           onRepName={setRepName}
           headingRef={headingRef}
@@ -370,6 +374,7 @@ function NotHackerPanel({
 function OfferStep({
   sponsor,
   code,
+  preferredTime,
   repName,
   onRepName,
   headingRef,
@@ -380,6 +385,7 @@ function OfferStep({
 }: {
   sponsor: string;
   code: string;
+  preferredTime: string | null;
   repName: string;
   onRepName: (name: string) => void;
   headingRef: HeadingRef;
@@ -396,7 +402,7 @@ function OfferStep({
     { sponsor, userId: hackerQ.data?.userId },
     { enabled: hackerQ.isSuccess, retry: false, refetchOnWindowFocus: false },
   );
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(preferredTime);
   const [offerError, setOfferError] = useState<string | null>(null);
   const offer = api.coffeeChatRequests.offer.useMutation({
     onSuccess: onSent,
