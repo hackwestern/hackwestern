@@ -29,8 +29,10 @@ const NOTE = "m-0 text-sm font-medium text-dashboard-text-medium";
  * Organizer presentations on the Sponsor judging tab
  * (docs/flows/sponsor-judging.md): who sent a shortlist, Schedule
  * presentations (re-runnable; replaces the schedule), the schedule by room
- * or by team with teams that couldn't fit flagged, Notify hackers (Slack),
- * and the sponsor top teams for the cheat check.
+ * or by team with teams that couldn't fit flagged, Notify hackers (Slack;
+ * only members without their current times, "Notify again" after a
+ * confirm) with members not reached listed, and the sponsor top teams for
+ * the cheat check.
  */
 export function PresentationsPanel({
   colors,
@@ -45,15 +47,25 @@ export function PresentationsPanel({
   const refresh = () => void utils.sponsorPresentations.overview.invalidate();
   const schedule = api.sponsorPresentations.schedule.useMutation({
     onSuccess: () => {
-      setConfirming(false);
+      setConfirming(null);
       refresh();
     },
   });
+  // Dry run before replacing a schedule: how many hackers get new times.
+  const preview = api.sponsorPresentations.schedule.useMutation({
+    onSuccess: (res) =>
+      setConfirming({ kind: "schedule", changed: res.changedTimes }),
+  });
   const notify = api.sponsorPresentations.notify.useMutation({
-    onSuccess: refresh,
+    onSuccess: () => {
+      setConfirming(null);
+      refresh();
+    },
   });
   const cheat = api.sponsorPresentations.cheatCheckTopTeams.useMutation();
-  const [confirming, setConfirming] = useState(false);
+  const [confirming, setConfirming] = useState<
+    { kind: "schedule"; changed: number } | { kind: "resend" } | null
+  >(null);
   const [view, setView] = useState<View>("rooms");
   const data = overview.data;
 
@@ -63,10 +75,18 @@ export function PresentationsPanel({
 
   const anySent = data.sponsors.some((s) => s.sentAt);
   const scheduled = data.scheduledAt !== null;
+  const { notices } = data;
+  const toNotify = notices.notReached.length;
+  // Before anyone was tried every member is "not sent": no list yet.
+  const attempted =
+    notices.reached > 0 ||
+    notices.notReached.some((m) => m.reason !== "not-sent");
   const errorOf = (e: { message: string; data?: { code?: string } | null }) =>
     e.data?.code === "BAD_REQUEST" || e.data?.code === "PRECONDITION_FAILED"
       ? e.message
       : copy.failed;
+  const busy = schedule.isPending || preview.isPending || notify.isPending;
+  const scheduleError = schedule.error ?? preview.error;
 
   return (
     <section
@@ -126,50 +146,76 @@ export function PresentationsPanel({
       <div className="flex flex-col gap-2">
         {confirming ? (
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <p className={NOTE}>{copy.rescheduleConfirm}</p>
+            <p className={NOTE}>
+              {confirming.kind === "schedule"
+                ? copy.rescheduleConfirm(confirming.changed)
+                : copy.resendConfirm(notices.reached)}
+            </p>
             <div className="flex shrink-0 gap-2">
               <DashboardButton
                 variant="small"
-                onClick={() => setConfirming(false)}
-                disabled={schedule.isPending}
+                onClick={() => setConfirming(null)}
+                disabled={busy}
               >
                 {copy.cancel}
               </DashboardButton>
-              <DashboardButton
-                variant="small"
-                onClick={() => schedule.mutate()}
-                disabled={schedule.isPending}
-              >
-                {schedule.isPending ? copy.scheduling : copy.confirm}
-              </DashboardButton>
+              {confirming.kind === "schedule" ? (
+                <DashboardButton
+                  variant="small"
+                  onClick={() => schedule.mutate()}
+                  disabled={busy}
+                >
+                  {schedule.isPending ? copy.scheduling : copy.confirm}
+                </DashboardButton>
+              ) : (
+                <DashboardButton
+                  variant="small"
+                  onClick={() => notify.mutate({ resend: true })}
+                  disabled={busy}
+                >
+                  {notify.isPending ? copy.notifying : copy.resendButton}
+                </DashboardButton>
+              )}
             </div>
           </div>
         ) : (
           <div className="flex flex-wrap items-center gap-2">
             <DashboardButton
               variant="small"
-              disabled={!anySent || schedule.isPending}
+              disabled={!anySent || busy}
               onClick={() =>
-                scheduled ? setConfirming(true) : schedule.mutate()
+                scheduled ? preview.mutate({ dryRun: true }) : schedule.mutate()
               }
             >
               {schedule.isPending
                 ? copy.scheduling
-                : scheduled
-                  ? copy.reschedule
-                  : copy.schedule}
+                : preview.isPending
+                  ? copy.checking
+                  : scheduled
+                    ? copy.reschedule
+                    : copy.schedule}
             </DashboardButton>
+            {/* Only members who don't have their current times. */}
             <DashboardButton
               variant="small"
-              disabled={data.slots.length === 0 || notify.isPending}
+              disabled={data.slots.length === 0 || toNotify === 0 || busy}
               onClick={() => notify.mutate()}
             >
               {notify.isPending
                 ? copy.notifying
-                : data.notifiedAt
-                  ? copy.notifyAgain
+                : notices.reached > 0
+                  ? copy.notifyRest(toNotify)
                   : copy.notify}
             </DashboardButton>
+            {notices.reached > 0 && (
+              <DashboardButton
+                variant="small"
+                disabled={busy}
+                onClick={() => setConfirming({ kind: "resend" })}
+              >
+                {copy.notifyAgain}
+              </DashboardButton>
+            )}
           </div>
         )}
         <p className={NOTE} aria-live="polite">
@@ -184,13 +230,17 @@ export function PresentationsPanel({
           {scheduled && data.slots.length > 0 && (
             <>
               {" · "}
-              {data.notifiedAt
-                ? copy.notifiedAt(formatSubmittedTime(data.notifiedAt))
+              {notices.lastSentAt
+                ? copy.notified(
+                    notices.reached,
+                    notices.members,
+                    formatSubmittedTime(notices.lastSentAt),
+                  )
                 : copy.notNotified}
             </>
           )}
         </p>
-        {schedule.isError && <p className={WARN}>{errorOf(schedule.error)}</p>}
+        {scheduleError && <p className={WARN}>{errorOf(scheduleError)}</p>}
         {notify.isError && (
           <p role="alert" className={WARN}>
             <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
@@ -203,11 +253,31 @@ export function PresentationsPanel({
               notify.data.sent,
               notify.data.notOnSlack.length,
               notify.data.failed,
+              notify.data.skipped,
             )}
             {notify.data.notOnSlack.length > 0 && (
               <> {copy.notOnSlack(notify.data.notOnSlack.join(", "))}</>
             )}
           </p>
+        )}
+        {attempted && toNotify > 0 && (
+          <div className={cn(WARN, "flex-col gap-1.5")}>
+            <span className="inline-flex items-center gap-2">
+              <TriangleAlert aria-hidden className="size-4 shrink-0" />
+              {copy.notReached(toNotify)}
+            </span>
+            <ul className="m-0 list-none p-0 pl-6 font-medium">
+              {notices.notReached.map((m) => (
+                <li key={m.userId}>
+                  {copy.memberOf(
+                    m.name,
+                    m.teamName,
+                    copy.notReachedReasons[m.reason],
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
 
