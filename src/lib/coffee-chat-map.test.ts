@@ -29,6 +29,7 @@ function sponsor(
     room,
     watcher: null,
     counts: { accepted: 0, pending: 0, total: 0 },
+    holdsNeedingHacker: 0,
     cells: [],
   };
 }

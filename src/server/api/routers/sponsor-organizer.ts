@@ -13,6 +13,7 @@ import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { db } from "~/server/db";
 import {
+  coffeeChatHolds,
   coffeeChats,
   sponsorHelpRequests,
   sponsorJudgingSponsors,
@@ -47,13 +48,14 @@ export const sponsorOrganizerRouter = createTRPCRouter({
           coffeeChatRoom: sponsorJudgingSponsors.coffeeChatRoom,
         })
         .from(sponsorJudgingSponsors);
-      const [setups, chats, help] = await Promise.all([
+      const [setups, chats, help, holds] = await Promise.all([
         sheetRooms(sponsors.map((s) => s.name)),
         db
           .select({
             sponsorId: coffeeChats.sponsorId,
             room: coffeeChats.room,
             slotTime: coffeeChats.slotTime,
+            durationMinutes: coffeeChats.durationMinutes,
             status: coffeeChats.status,
           })
           .from(coffeeChats)
@@ -68,8 +70,23 @@ export const sponsorOrganizerRouter = createTRPCRouter({
           })
           .from(sponsorHelpRequests)
           .where(inArray(sponsorHelpRequests.status, ["open", "claimed"])),
+        db
+          .select({
+            sponsorId: coffeeChatHolds.sponsorId,
+            room: coffeeChatHolds.room,
+            startTime: coffeeChatHolds.startTime,
+            endTime: coffeeChatHolds.endTime,
+          })
+          .from(coffeeChatHolds),
       ]);
-      return buildSponsorSummaries({ sponsors, setups, chats, help, now });
+      return buildSponsorSummaries({
+        sponsors,
+        setups,
+        chats,
+        help,
+        holds,
+        now,
+      });
     },
   ),
 });

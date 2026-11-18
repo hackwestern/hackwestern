@@ -165,6 +165,7 @@ export const scheduleCopy = {
         ? "You speak at the opening ceremony"
         : "You speak at the closing ceremony",
     coffeeTitle: "Your coffee chats",
+    holdTitle: "Your coffee chat room",
     labels: { when: "When", room: "Room" },
   },
 

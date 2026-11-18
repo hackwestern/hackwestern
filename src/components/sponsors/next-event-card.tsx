@@ -1,6 +1,8 @@
-import { CalendarClock, Clock, MapPin } from "lucide-react";
+import { CalendarClock, Clock, MapPin, TriangleAlert } from "lucide-react";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
+import { HoldActions } from "~/components/sponsors/sponsor-holds";
+import { coffeeChatCopy } from "~/content/coffee-chat";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import { formatClock } from "~/lib/run-of-show";
 import type { NextEvent } from "~/lib/sponsor-next-event";
@@ -12,12 +14,21 @@ function titleOf(event: NextEvent): string {
     return copy.ceremonyTitle(event.ceremony);
   }
   if (event.kind === "coffee") return copy.coffeeTitle;
+  if (event.kind === "hold") return copy.holdTitle;
   return event.title;
 }
 
 // "Your next event": the sponsor's next own item from now, with a countdown.
 // The countdown ticks with useNow (once a minute), so it isn't aria-live.
-export function NextEventCard({ event }: { event: NextEvent | null }) {
+// A held room with no hacker yet says so, with ways to find one (needs the
+// sponsor's UUID for the links).
+export function NextEventCard({
+  event,
+  sponsor,
+}: {
+  event: NextEvent | null;
+  sponsor?: string;
+}) {
   return (
     <DashboardPanel className="border-l-4 border-dashboard-action-primary">
       <h2 className="m-0 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
@@ -69,6 +80,20 @@ export function NextEventCard({ event }: { event: NextEvent | null }) {
               </dd>
             </div>
           </dl>
+          {event.kind === "hold" && event.needsHacker && (
+            <div className="flex flex-col gap-3">
+              <p className="m-0 flex items-center gap-1.5 text-base font-semibold text-dashboard-text-warning">
+                <TriangleAlert aria-hidden className="size-4 shrink-0" />
+                {coffeeChatCopy.sponsorHolds.needsHacker}
+              </p>
+              {sponsor && event.location && (
+                <HoldActions
+                  sponsor={sponsor}
+                  hold={{ room: event.location, startTime: event.start }}
+                />
+              )}
+            </div>
+          )}
         </>
       )}
     </DashboardPanel>

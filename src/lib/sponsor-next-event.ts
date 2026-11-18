@@ -11,12 +11,13 @@ import {
   type RunOfShowItem,
   type SponsorCeremonySegment,
 } from "~/lib/run-of-show";
+import type { SponsorHoldView } from "~/lib/coffee-chat-holds";
 import { runOfShowInstant } from "~/lib/run-of-show-time";
 import { isOwnItem } from "~/lib/sponsor-timeline";
 
 export type NextEvent = {
   /** "item": a run-of-show block; the others get their title from copy. */
-  kind: "item" | "ceremony" | "coffee";
+  kind: "item" | "ceremony" | "coffee" | "hold";
   title: string;
   ceremony?: CeremonyKind;
   day: RunOfShowDay;
@@ -26,6 +27,8 @@ export type NextEvent = {
   now: boolean;
   /** Whole minutes until it starts (0 when it's on now). */
   minutesUntil: number;
+  /** A room hold with no hacker booked yet (kind "hold"). */
+  needsHacker?: boolean;
 };
 
 const CEREMONY_TITLE: Record<CeremonyKind, RegExp> = {
@@ -60,12 +63,15 @@ export function nextOwnEvent({
   items,
   ceremonies,
   coffeeChat,
+  holds = [],
   now,
 }: {
   sponsorName: string;
   items: RunOfShowItem[];
   ceremonies: SponsorCeremonySegment[];
   coffeeChat: CoffeeChatSetup | null;
+  /** The sponsor's own room holds (Saturday). */
+  holds?: readonly SponsorHoldView[];
   now: Date;
 }): NextEvent | null {
   const candidates: Candidate[] = items
@@ -114,6 +120,19 @@ export function nextOwnEvent({
     });
   }
 
+  // Rooms organizers held for this sponsor, flagged while no hacker is in.
+  for (const hold of holds) {
+    candidates.push({
+      kind: "hold",
+      title: "",
+      day: "Saturday",
+      start: hold.startTime,
+      end: hold.endTime,
+      location: hold.room,
+      needsHacker: hold.needsHacker,
+    });
+  }
+
   const upcoming = candidates
     .map((c) => ({
       c,
@@ -126,11 +145,12 @@ export function nextOwnEvent({
   const next =
     upcoming.find((x) => !(x.c.background && x.start <= t)) ?? upcoming[0];
   if (!next) return null;
-  const { kind, title, ceremony, day, start, location } = next.c;
+  const { kind, title, ceremony, day, start, location, needsHacker } = next.c;
   return {
     kind,
     title,
     ...(ceremony ? { ceremony } : {}),
+    ...(kind === "hold" ? { needsHacker: Boolean(needsHacker) } : {}),
     day,
     start,
     location,
