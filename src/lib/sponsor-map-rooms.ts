@@ -5,8 +5,9 @@
  * percent of the image width (x) and height (y) from the top-left corner.
  * Adjust them here: nothing else hardcodes a position.
  *
- * Images are Pranav's floor plans (origin/pranav/live-site-sponsors-map),
- * copied to public/sponsor-map/ so they don't collide with his /live map.
+ * Images are the HW13 floor maps with numbered rooms and a legend
+ * (HW13_Level1_map_3 / HW13_Level2_map_3, Jazz 2026-11-18), the same files
+ * as the /live map. Pins sit on each room's numbered marker.
  */
 
 export const SPONSOR_MAP_FLOORS = [
@@ -15,14 +16,14 @@ export const SPONSOR_MAP_FLOORS = [
     label: "Floor 1",
     image: "/sponsor-map/floor1.webp",
     width: 2400,
-    height: 2029,
+    height: 2086,
   },
   {
     id: "floor2",
     label: "Floor 2",
     image: "/sponsor-map/floor2.webp",
     width: 2400,
-    height: 2223,
+    height: 2453,
   },
 ] as const;
 
@@ -48,48 +49,59 @@ export type SponsorMapRoom = {
 export const SPONSOR_MAP_ROOMS: SponsorMapRoom[] = [
   // Floor 1 (ground floor)
   {
-    // Sponsor booths. The sheet calls it "SM Atrium" or "Sponsor Bay";
-    // Pranav's plan marks it as 1235.
+    // Sponsor booths (marker 1). The sheet calls it "SM Atrium" or
+    // "Sponsor Bay"; the floor map marks it as 1235.
     id: "1235",
     label: "Sponsor Bay",
     floor: "floor1",
-    x: 14.5,
-    y: 61,
+    x: 14.4,
+    y: 59,
     aliases: ["sponsor bay", "sm atrium", "atrium"],
   },
-  { id: "1230", label: "1230", floor: "floor1", x: 29, y: 50 },
+  { id: "1230", label: "1230", floor: "floor1", x: 29.2, y: 48.5 },
   {
     id: "1110",
     label: "Grand Hall",
     floor: "floor1",
-    x: 82.5,
-    y: 66,
+    x: 82.7,
+    y: 64.2,
     aliases: ["grand hall"],
+  },
+  {
+    // The table in front of the Grand Hall (marker 4).
+    id: "help-desk",
+    label: "Help desk",
+    floor: "floor1",
+    x: 82.7,
+    y: 51.4,
+    aliases: ["help desk"],
   },
 
   // Floor 2
   {
-    // Sponsor lounge (Jazz, 2026-11-18). Also a judging room on Sunday.
+    // Sponsor lounge: the curtained section of 2110 Alumni Commons (marker
+    // 5). Also a judging room on Sunday.
     id: "2110",
     label: "Sponsor Lounge",
     floor: "floor2",
-    x: 84,
-    y: 43,
+    x: 84.3,
+    y: 38.9,
     aliases: ["alumni commons", "sponsor lounge"],
   },
-  { id: "2230", label: "2230", floor: "floor2", x: 39.5, y: 37 },
-  { id: "2235", label: "2235", floor: "floor2", x: 32, y: 40 },
-  // Coffee chat rooms run diagonally, 2243 top-left to 2241 bottom-right.
-  { id: "2243", label: "2243", floor: "floor2", x: 25.5, y: 43.5 },
-  { id: "2242", label: "2242", floor: "floor2", x: 28, y: 47 },
-  { id: "2241", label: "2241", floor: "floor2", x: 30.5, y: 50.5 },
+  { id: "2230", label: "2230", floor: "floor2", x: 40, y: 35.9 },
+  { id: "2235", label: "2235", floor: "floor2", x: 30.4, y: 34.1 },
+  // Coffee chat rooms (marker 8) run diagonally, 2243 top-left to 2241
+  // bottom-right.
+  { id: "2243", label: "2243", floor: "floor2", x: 26.3, y: 39.8 },
+  { id: "2242", label: "2242", floor: "floor2", x: 28.3, y: 42 },
+  { id: "2241", label: "2241", floor: "floor2", x: 30.2, y: 44.2 },
   {
-    // Where sponsors leave their things overnight (Jazz, 2026-11-18).
+    // Sponsor storage: where sponsors leave their things overnight (marker 9).
     id: "2244",
     label: "Belongings",
     floor: "floor2",
-    x: 17.5,
-    y: 50,
+    x: 17.8,
+    y: 45.4,
     aliases: ["belongings", "storage"],
   },
 ];
@@ -132,7 +144,7 @@ export const COFFEE_CHAT_MAP_FOCUS: SponsorMapFocus = {
   // Narrow on purpose: the three rooms are ~2.5% apart, and each pin is a
   // two-line card. At this zoom they sit ~55px apart in a 345px panel.
   x: 20,
-  y: 36,
+  y: 32,
   width: 20,
   height: 20,
 };
