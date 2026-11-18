@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Clock, MapPin, Users } from "lucide-react";
+import { CalendarX, Clock, MapPin, Users, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardCheckbox } from "~/components/internals/dashboard-checkbox";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
@@ -21,6 +21,7 @@ import {
   blockTextLayout,
   buildAxis,
   columnMinWidth,
+  fluidColumnMinWidth,
   formatMinutes,
   GRID_SIZES,
   layoutGrid,
@@ -35,9 +36,10 @@ const copy = scheduleCopy.timeline;
 
 // Same rhythm as the /live schedule grid: a fixed row per half hour (tall
 // enough for two lines of title and a location), long empty stretches
-// folded into one dashed row. Each column keeps a readable width per lane;
-// on phones the grid scrolls inside its own box (time column and headers
-// pinned), never the page.
+// folded into one dashed row. On wide screens the columns share the width
+// (busier columns get more), so a normal day needs no sideways scroll; on
+// phones each lane keeps a readable width and the grid scrolls inside its
+// own box (time column and headers pinned), never the page.
 const SLOT_HEIGHT = GRID_SIZES.slot;
 const GAP_HEIGHT = GRID_SIZES.gap;
 const TIME_WIDTH = 64;
@@ -46,14 +48,25 @@ const TIME_WIDTH = 64;
 const PINNED_TASKS =
   "lg:sticky lg:right-0 lg:border-l-2 lg:border-dashboard-border-default bg-dashboard-bg-surface";
 
-// Column focus: the focused column gets this much width at least; the
-// others shrink to thin greyed strips (thinner on phones).
+// Column focus: the focused column gets this much width at least (wide
+// screens); the others shrink to thin greyed strips (thinner on phones).
 const FOCUS_WIDTH = 280;
 const COLLAPSED_WIDTH = { wide: 40, narrow: 14 };
 // Taller rows while focused, so full titles and details fit.
 const FOCUS_SLOT_SCALE = 1.5;
 
 const STORAGE_KEY = "hw-sponsor-schedule-show-hackathon";
+
+// Hover styles use the [@media(hover:hover)]:hover: variant: only where
+// there is a real pointer, so a tap on a phone doesn't leave a block stuck
+// in its hover state.
+
+/** Scroll behaviour that respects "reduce motion". */
+function scrollBehavior(): ScrollBehavior {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ? "auto"
+    : "smooth";
+}
 
 /** True at sm (640px) and up; true before mount so SSR matches desktop. */
 function useIsWide(): boolean {
@@ -100,7 +113,22 @@ const COLUMN_TINT: Record<GridColumn, string> = {
   "coffee-chats": "bg-dashboard-schedule-orange",
   judging: "bg-dashboard-schedule-green",
   other: "bg-dashboard-schedule-blue",
-  tasks: "bg-dashboard-bg-highlight",
+  // Tasks keep their own amber (no tint drawn over it).
+  tasks: "bg-dashboard-bg-task",
+};
+
+// Collapsed column headers show only this swatch (their name is in the
+// button's label and tooltip), so nothing reads as a clipped word.
+const COLUMN_SWATCH: Record<GridColumn, string> = {
+  hackathon:
+    "border border-dashed border-dashboard-border-control bg-dashboard-bg-inset",
+  "sponsor-workshop": "bg-dashboard-schedule-pink",
+  food: "bg-dashboard-schedule-blue",
+  "spon-booth": "bg-dashboard-schedule-green",
+  "coffee-chats": "bg-dashboard-schedule-orange",
+  judging: "bg-dashboard-schedule-green",
+  other: "bg-dashboard-schedule-blue",
+  tasks: "border-l-4 border-dashboard-border-task bg-dashboard-bg-task",
 };
 
 // Main events, meals and the Sponsor Bay (a place itself) with no room just
@@ -131,7 +159,7 @@ export function TimelineKey({
         <li className="flex items-center gap-2">
           <span
             aria-hidden
-            className="size-4 rounded-dashboard-xs border-l-4 border-dashboard-action-primary bg-dashboard-schedule-pink"
+            className="size-4 rounded-dashboard-xs border-l-4 border-dashboard-action-primary bg-dashboard-bg-surface shadow-dashboard-card"
           />
           {mode === "organizer" ? copy.runOfShow : copy.yours}
         </li>
@@ -201,6 +229,9 @@ export function DayGrid({
   const [selected, setSelected] = useState<TimelineEntry | null>(null);
   const [focusChoice, setFocusChoice] = useState<GridColumn | null>(null);
   const opener = useRef<HTMLButtonElement | null>(null);
+  const scroller = useRef<HTMLDivElement | null>(null);
+  const headers = useRef(new Map<GridColumn, HTMLButtonElement>());
+  const scrolledToNow = useRef<string | null>(null);
   const wide = useIsWide();
   const date = Number(RUN_OF_SHOW_DATES[day].slice(8));
   const rows = buildAxis(entries);
@@ -222,21 +253,35 @@ export function DayGrid({
       ? axisOffset(rows, nowMinute, slotHeight, GAP_HEIGHT)
       : null;
   const collapsed = wide ? COLLAPSED_WIDTH.wide : COLLAPSED_WIDTH.narrow;
-  const widths = columns.map((c) =>
-    focused
-      ? c.column === focused
-        ? Math.max(FOCUS_WIDTH, columnMinWidth(c.entries))
-        : collapsed
+  // Floors per column. Wide screens: fluid floors, so columns share the
+  // width; phones: a readable width per lane (the grid scrolls sideways).
+  const floor = (c: (typeof columns)[number]) =>
+    wide
+      ? fluidColumnMinWidth(c.entries)
       : columnMinWidth(
           c.entries,
           c.column === "tasks" ? GRID_SIZES.taskLane : GRID_SIZES.lane,
-        ),
+        );
+  // Spare width goes to busier columns: one share per lane, less for an
+  // empty column.
+  const share = (c: (typeof columns)[number]) =>
+    c.entries.length === 0
+      ? 0.6
+      : Math.max(1, ...c.entries.map((e) => e.lanes));
+  const widths = columns.map((c) =>
+    focused
+      ? c.column === focused
+        ? Math.max(wide ? FOCUS_WIDTH : 0, floor(c))
+        : collapsed
+      : floor(c),
   );
   const template = `${TIME_WIDTH}px ${columns
     .map((c, i) =>
-      focused && c.column !== focused
-        ? `${widths[i]}px`
-        : `minmax(${widths[i]}px, 1fr)`,
+      focused
+        ? c.column === focused
+          ? `minmax(${widths[i]}px, 1fr)`
+          : `${widths[i]}px`
+        : `minmax(${widths[i]}px, ${share(c)}fr)`,
     )
     .join(" ")}`;
   const minWidth = TIME_WIDTH + widths.reduce((a, b) => a + b, 0);
@@ -255,6 +300,36 @@ export function DayGrid({
     return () => window.removeEventListener("keydown", onKey);
   }, [focused, selected]);
 
+  // A focused column slides into view beside the time column; before, it
+  // could open half hidden under it when the grid was scrolled sideways.
+  useEffect(() => {
+    const box = scroller.current;
+    const header = focused ? headers.current.get(focused) : null;
+    if (!box || !header) return;
+    // Measured on screen (not offsetLeft, which depends on which ancestor
+    // is positioned): how far the column starts past the time column.
+    const delta =
+      header.getBoundingClientRect().left -
+      box.getBoundingClientRect().left -
+      TIME_WIDTH;
+    box.scrollTo({
+      left: Math.max(0, box.scrollLeft + delta),
+      behavior: scrollBehavior(),
+    });
+  }, [focused]);
+
+  // Open on the current time: once per day shown, the grid scrolls (inside
+  // its own box, never the page) so the now line sits near the top.
+  const hasNow = nowY !== null;
+  useEffect(() => {
+    const box = scroller.current;
+    if (!box || !hasNow || scrolledToNow.current === day) return;
+    scrolledToNow.current = day;
+    box.scrollTop = Math.max(0, (nowY ?? 0) - SLOT_HEIGHT);
+    // Only when the day or "is today" changes, not every minute.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [day, hasNow]);
+
   const open = (entry: TimelineEntry, button: HTMLButtonElement) => {
     opener.current = button;
     setSelected(entry);
@@ -265,7 +340,7 @@ export function DayGrid({
       aria-labelledby={headingId}
       className="rounded-dashboard-lg bg-dashboard-bg-surface p-3 shadow-dashboard-card sm:p-5"
     >
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-3 flex min-h-11 flex-wrap items-center justify-between gap-2">
         <h2
           id={headingId}
           className="m-0 text-lg font-bold text-dashboard-text-heavy sm:text-2xl"
@@ -275,7 +350,7 @@ export function DayGrid({
         {focused ? (
           <DashboardButton
             variant="outline"
-            className="h-11"
+            className="h-11 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.97]"
             onClick={() => setFocusChoice(null)}
           >
             {copy.focus.showAll}
@@ -293,11 +368,19 @@ export function DayGrid({
       </p>
 
       {entries.length === 0 ? (
-        <p className="m-0 rounded-dashboard-lg bg-dashboard-bg-inset p-6 text-center text-base text-dashboard-text-medium">
-          {emptyText}
-        </p>
+        <div className="flex flex-col items-center gap-2 rounded-dashboard-lg bg-dashboard-bg-inset p-6 text-center">
+          <CalendarX
+            aria-hidden
+            className="size-6 text-dashboard-text-light"
+            strokeWidth={1.67}
+          />
+          <p className="m-0 text-base text-dashboard-text-medium">
+            {emptyText}
+          </p>
+        </div>
       ) : (
         <div
+          ref={scroller}
           role="region"
           aria-label={copy.gridLabel(day)}
           tabIndex={0}
@@ -312,7 +395,7 @@ export function DayGrid({
             >
               <span
                 aria-hidden
-                className="sticky left-0 z-10 bg-dashboard-bg-surface py-2 text-xs font-semibold uppercase tracking-wide text-dashboard-text-light"
+                className="sticky left-0 z-10 flex items-end bg-dashboard-bg-surface pb-2 text-xs font-semibold uppercase tracking-wide text-dashboard-text-light"
               >
                 {copy.timeHeader}
               </span>
@@ -322,27 +405,56 @@ export function DayGrid({
                 return (
                   <button
                     key={column}
+                    ref={(el) => {
+                      if (el) headers.current.set(column, el);
+                      else headers.current.delete(column);
+                    }}
                     type="button"
                     aria-pressed={isFocused}
                     aria-label={copy.focus.focusColumn(label(column))}
                     title={label(column)}
                     onClick={() => toggleFocus(column)}
                     className={cn(
-                      "min-h-11 min-w-0 cursor-pointer overflow-hidden px-1 py-2 text-center text-xs font-semibold uppercase leading-tight tracking-wide text-dashboard-text-medium hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary",
+                      "flex min-h-11 min-w-0 cursor-pointer items-end gap-1 py-2 text-left text-xs font-semibold uppercase leading-tight tracking-wide text-dashboard-text-medium",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary",
+                      "[@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
+                      muted ? "justify-center px-0" : "px-2",
                       column === "tasks" && !focused && PINNED_TASKS,
                       isFocused &&
                         "bg-dashboard-bg-highlight text-dashboard-text-active",
-                      muted && "truncate px-0 opacity-50",
                     )}
                   >
-                    {muted && !wide ? "" : label(column)}
+                    {muted ? (
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "mb-0.5 size-3 shrink-0 rounded-dashboard-xs",
+                          COLUMN_SWATCH[column],
+                        )}
+                      />
+                    ) : (
+                      <>
+                        {/* Wraps to a second line rather than clipping. */}
+                        <span className="min-w-0 break-words">
+                          {label(column)}
+                        </span>
+                        {isFocused && (
+                          <X aria-hidden className="mb-px size-3.5 shrink-0" />
+                        )}
+                      </>
+                    )}
                   </button>
                 );
               })}
             </div>
 
+            {/* Keyed on day and focus: the blocks fade in after a change
+                (short, ease-out, none with reduced motion) instead of
+                snapping to the new layout. Headers aren't keyed, so a
+                keyboard user keeps focus on the heading they pressed. */}
             <div
-              className="relative grid"
+              key={`${day}-${focused ?? "all"}`}
+              className="relative grid motion-safe:duration-200 motion-safe:ease-out motion-safe:animate-in motion-safe:fade-in-0"
               style={{ gridTemplateColumns: template, height }}
             >
               {/* Half-hour rules across every column (visual only). */}
@@ -402,31 +514,45 @@ export function DayGrid({
                         !focused &&
                         cn(PINNED_TASKS, "z-30"),
                       muted &&
-                        "cursor-pointer overflow-hidden bg-dashboard-bg-inset opacity-40 grayscale",
+                        "cursor-pointer overflow-hidden bg-dashboard-bg-inset",
                     )}
                   >
-                    {laid.map((entry) => (
-                      <GridBlock
-                        key={entry.id}
-                        entry={entry}
-                        column={column}
-                        top={y(entry.start)}
-                        height={Math.max(
-                          y(entry.end) - y(entry.start),
-                          GRID_SIZES.minBlock,
-                        )}
-                        nowMinute={nowMinute}
-                        mode={mode}
-                        sponsorName={sponsorName}
-                        onOpen={open}
-                        expanded={focused === column}
-                        inactive={muted}
-                      />
-                    ))}
+                    {laid.map((entry) =>
+                      muted ? (
+                        <CollapsedBlock
+                          key={entry.id}
+                          entry={entry}
+                          column={column}
+                          top={y(entry.start)}
+                          height={Math.max(
+                            y(entry.end) - y(entry.start),
+                            GRID_SIZES.minBlock,
+                          )}
+                        />
+                      ) : (
+                        <GridBlock
+                          key={entry.id}
+                          entry={entry}
+                          column={column}
+                          top={y(entry.start)}
+                          height={Math.max(
+                            y(entry.end) - y(entry.start),
+                            GRID_SIZES.minBlock,
+                          )}
+                          nowMinute={nowMinute}
+                          mode={mode}
+                          sponsorName={sponsorName}
+                          onOpen={open}
+                          expanded={focused === column}
+                        />
+                      ),
+                    )}
                   </ol>
                 );
               })}
 
+              {/* Now line: a pill in the time column, a dot where the line
+                  starts and the line across every column. */}
               {nowY !== null && (
                 <div
                   aria-hidden
@@ -434,13 +560,14 @@ export function DayGrid({
                   style={{ top: nowY, transform: "translateY(-50%)" }}
                 >
                   <span
-                    className="sticky left-0 shrink-0 bg-dashboard-bg-surface"
+                    className="sticky left-0 flex shrink-0 items-center bg-dashboard-bg-surface"
                     style={{ width: TIME_WIDTH }}
                   >
-                    <span className="rounded-dashboard-xs bg-dashboard-action-primary px-1.5 py-0.5 text-[11px] font-bold text-dashboard-text-inverse">
+                    <span className="whitespace-nowrap rounded-dashboard-xs bg-dashboard-action-primary px-1 py-0.5 text-[11px] font-bold leading-tight text-dashboard-text-inverse">
                       {formatMinutes(Math.floor(nowMinute))}
                     </span>
                   </span>
+                  <span className="-ml-1 size-2 shrink-0 rounded-full bg-dashboard-action-primary" />
                   <span className="h-0.5 flex-1 bg-dashboard-action-primary" />
                 </div>
               )}
@@ -469,6 +596,47 @@ export function DayGrid({
   );
 }
 
+/**
+ * A block in a greyed-out column while another is focused: just its shape
+ * and colour, no text (a 14-40px strip can't hold words, only broken
+ * letters). Not clickable on its own: a click on the column shows all.
+ */
+function CollapsedBlock({
+  entry,
+  column,
+  top,
+  height,
+}: {
+  entry: LaidOutEntry;
+  column: GridColumn;
+  top: number;
+  height: number;
+}) {
+  const strong = entry.kind !== "hackathon";
+  return (
+    <li
+      className="pointer-events-none absolute px-0.5 py-1"
+      style={{
+        top,
+        height,
+        left: `${(entry.lane / entry.lanes) * 100}%`,
+        width: `${100 / entry.lanes}%`,
+      }}
+    >
+      <span
+        className={cn(
+          "block h-full rounded-dashboard-xs",
+          strong
+            ? entry.kind === "task"
+              ? "bg-dashboard-bg-task"
+              : COLUMN_TINT[column]
+            : "border border-dashed border-dashboard-border-control",
+        )}
+      />
+    </li>
+  );
+}
+
 function GridBlock({
   entry,
   column,
@@ -479,7 +647,6 @@ function GridBlock({
   sponsorName,
   onOpen,
   expanded = false,
-  inactive = false,
 }: {
   entry: LaidOutEntry;
   column: GridColumn;
@@ -491,8 +658,6 @@ function GridBlock({
   onOpen: (entry: TimelineEntry, button: HTMLButtonElement) => void;
   /** Focused column: full text, nothing clipped; the block grows to fit. */
   expanded?: boolean;
-  /** Greyed column while another is focused: not clickable or tabbable. */
-  inactive?: boolean;
 }) {
   const isTask = entry.kind === "task";
   const booking = entry.booking ?? null;
@@ -543,7 +708,6 @@ function GridBlock({
         "absolute p-1",
         strong ? "z-20" : "z-10",
         expanded && "focus-within:z-30 hover:z-30",
-        inactive && "pointer-events-none",
       )}
       style={{
         top,
@@ -554,13 +718,14 @@ function GridBlock({
     >
       <button
         type="button"
-        tabIndex={inactive ? -1 : undefined}
         onClick={(e) => onOpen(entry, e.currentTarget)}
         aria-haspopup="dialog"
         className={cn(
           "relative flex w-full cursor-pointer flex-col items-stretch gap-0.5 rounded-dashboard-sm p-1.5 text-left",
           expanded ? "min-h-full" : "h-full overflow-hidden",
-          "hover:shadow-dashboard-card motion-safe:transition-[box-shadow,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:hover:-translate-y-px",
+          // Press feedback everywhere; the lift only with a real pointer.
+          "motion-safe:transition-[box-shadow,transform] motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.98]",
+          "[@media(hover:hover)]:hover:shadow-dashboard-card motion-safe:[@media(hover:hover)]:hover:-translate-y-px",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
           isTask
             ? "border-l-4 border-dashboard-border-task bg-dashboard-bg-task text-dashboard-text-task shadow-dashboard-card"
@@ -573,7 +738,7 @@ function GridBlock({
         )}
       >
         {/* Tint over white so the block stays opaque over the rules. */}
-        {strong && (
+        {strong && !isTask && (
           <span
             aria-hidden
             className={cn(
@@ -600,7 +765,7 @@ function GridBlock({
         >
           <span className="sr-only">{srPrefix}</span>
           {(mine || live) && (
-            <span className="mr-1 inline-flex gap-1 align-top">
+            <span className="mr-1 inline-flex max-w-full flex-wrap gap-1 align-top">
               {live && (
                 <DashboardTag className="bg-dashboard-action-primary px-1.5 py-0 leading-4 text-dashboard-text-inverse">
                   {scheduleCopy.now}
