@@ -9,7 +9,7 @@ export default Internal;
 export const getServerSideProps = async () => {
   return {
     redirect: {
-      destination: "/internal/dashboard",
+      destination: "/internal/review",
       permanent: false,
     },
   };
