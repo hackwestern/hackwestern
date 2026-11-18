@@ -8,6 +8,7 @@ import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { ProjectCard } from "~/components/sponsors/judging/project-card";
 import { ShortlistRanking } from "~/components/sponsors/judging/shortlist-ranking";
+import { ShortlistSend } from "~/components/sponsors/judging/shortlist-send";
 import { useSponsorJudging } from "~/components/sponsors/judging/use-sponsor-judging";
 import { pressable, SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
@@ -18,6 +19,10 @@ import {
   type BrowseFilter,
   type BrowseSort,
 } from "~/lib/sponsor-scoring";
+import {
+  formatPresentationTime,
+  judgingRound,
+} from "~/lib/sponsor-presentations";
 import { cn } from "~/lib/utils";
 import { uuidRegex } from "~/utils/urls";
 
@@ -52,9 +57,25 @@ export default function SponsorJudgingPage() {
         : [],
     [data, reviews, search, filter, sort],
   );
-  const shortlistCount = data
-    ? data.teams.filter((t) => reviews.get(t.id)?.shortlisted).length
-    : 0;
+  // Round 2 once presentations are scheduled: rank the teams that
+  // presented (team id -> "10:05 AM"). Before that, round 1's shortlist.
+  const presented = useMemo(
+    () =>
+      data && judgingRound(data.round) === "rank"
+        ? new Map(
+            data.round.slots.map((s) => [
+              s.teamId,
+              formatPresentationTime(s.start),
+            ]),
+          )
+        : null,
+    [data],
+  );
+  const shortlistCount = !data
+    ? 0
+    : presented
+      ? presented.size
+      : data.teams.filter((t) => reviews.get(t.id)?.shortlisted).length;
 
   const chooseStep = (s: Step, focus = false) => {
     setStep(s);
@@ -284,8 +305,17 @@ export default function SponsorJudgingPage() {
               </ul>
             )}
           </>
-        ) : (
+        ) : presented ? (
           <ShortlistRanking
+            sponsor={uuid}
+            data={data}
+            reviews={reviews}
+            onSave={save}
+            onBrowse={() => chooseStep("browse", true)}
+            presented={presented}
+          />
+        ) : (
+          <ShortlistSend
             sponsor={uuid}
             data={data}
             reviews={reviews}

@@ -333,7 +333,8 @@ export const sponsorPresentationsRouter = createTRPCRouter({
       failed: results.filter((r) => r.result === "failed").length,
       notOnSlack: results
         .filter((r) => r.result === "not-found")
-        .map((r) => r.member.name?.trim() || r.member.email),
+        // A blank name falls back to the email.
+        .map((r) => (r.member.name?.trim() ? r.member.name : r.member.email)),
     };
   }),
 

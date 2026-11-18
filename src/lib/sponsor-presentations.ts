@@ -308,3 +308,19 @@ export function formatPresentationTime(minutes: number) {
   const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
   return `${h12}:${String(m).padStart(2, "0")} ${h24 < 12 ? "AM" : "PM"}`;
 }
+
+export type JudgingRound = "shortlist" | "sent" | "rank";
+
+/**
+ * Where a sponsor is in Sunday judging: "shortlist" (round 1, nothing
+ * sent), "sent" (shortlist sent, waiting for the schedule) or "rank"
+ * (presentations scheduled, round 2 open). For the picks page and the
+ * portal tile; takes sponsorScoring.get's `round`.
+ */
+export function judgingRound(round: {
+  shortlistSent: unknown;
+  scheduledAt: Date | string | null;
+}): JudgingRound {
+  if (round.scheduledAt) return "rank";
+  return round.shortlistSent ? "sent" : "shortlist";
+}
