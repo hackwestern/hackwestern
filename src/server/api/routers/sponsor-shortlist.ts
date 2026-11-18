@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { COFFEE_CHAT_SHORTLIST_SIZE } from "~/lib/coffee-chat-requests";
@@ -10,8 +10,9 @@ import {
 } from "~/server/api/trpc";
 import {
   safeProfileUrl,
-  sponsorShortlist,
-  type ShortlistedHacker,
+  sponsorCandidates,
+  type CandidateSource,
+  type SponsorCandidate,
 } from "~/server/api/utils/sponsor-shortlist";
 import { db } from "~/server/db";
 import {
@@ -23,8 +24,8 @@ import {
   users,
 } from "~/server/db/schema";
 
-/** A hacker on the sponsor's interested list, with their shortlist state. */
-export type InterestedHacker = ShortlistedHacker & { shortlisted: boolean };
+/** A hacker on the sponsor's candidate list, with their shortlist state. */
+export type InterestedHacker = SponsorCandidate & { shortlisted: boolean };
 
 /**
  * Who the sponsor is chatting with, keyed by chat id. Full name, team and
@@ -66,52 +67,71 @@ async function shortlistedIds(sponsorId: string) {
   return rows.map((r) => r.userId);
 }
 
+/** Whether the logged-in viewer (if any) is an organizer. */
+async function isOrganizer(userId: string | undefined) {
+  if (!userId) return false;
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { type: true },
+  });
+  return user?.type === "organizer";
+}
+
 /**
- * The sponsor's "Interested hackers" (T10) and coffee chat shortlist (T45),
- * on /sponsors/[uuid]/coffee-chats. The sponsor's UUID is the credential,
- * as on their other portal pages. Only admitted hackers who agreed to share
- * with sponsors and ranked this sponsor are ever listed or shortlisted.
+ * The sponsor's candidates (T10) and coffee chat shortlist (T45), on
+ * /sponsors/[uuid]/coffee-chats. The sponsor's UUID is the credential, as
+ * on their other portal pages. Candidates come from the hacker interest
+ * form ranking (top 40), or the in-app ranking when the form can't be read;
+ * only candidates can be shortlisted. See sponsorCandidates.
  */
 export const sponsorShortlistRouter = createTRPCRouter({
-  /** Interested hackers, best rank first, each flagged if shortlisted. */
+  /**
+   * Candidates, best first, each flagged if shortlisted. `source` says which
+   * ranking they came from; `showSource` is true only for a logged-in
+   * organizer, so the fallback note never reaches sponsors.
+   */
   list: publicProcedure.input(z.object({ sponsor: sponsorInput })).query(
     async ({
+      ctx,
       input,
     }): Promise<{
       sponsorName: string;
       hackers: InterestedHacker[];
       maxShortlist: number;
+      source: CandidateSource;
+      showSource: boolean;
     }> => {
       const sponsor = await findSponsor(input.sponsor);
-      const [hackers, ids] = await Promise.all([
-        sponsorShortlist(sponsor.id),
+      const [candidates, ids, showSource] = await Promise.all([
+        sponsorCandidates(sponsor),
         shortlistedIds(sponsor.id),
+        isOrganizer(ctx.session?.user.id),
       ]);
       const picked = new Set(ids);
       return {
         sponsorName: sponsor.name,
-        hackers: hackers.map((h) => ({
+        hackers: candidates.hackers.map((h) => ({
           ...h,
           shortlisted: picked.has(h.userId),
         })),
         maxShortlist: COFFEE_CHAT_SHORTLIST_SIZE,
+        source: candidates.source,
+        showSource,
       };
     },
   ),
 
   /**
-   * Add an interested hacker to the shortlist. Anyone who isn't an
-   * admitted, consenting hacker who ranked this sponsor is a 404. Adding
-   * twice is a no-op. Capped at COFFEE_CHAT_SHORTLIST_SIZE.
+   * Add a candidate to the shortlist. Anyone not on the sponsor's current
+   * candidate list is a 404. Adding twice is a no-op. Capped at
+   * COFFEE_CHAT_SHORTLIST_SIZE, counting only picks still on the list.
    */
   add: publicProcedure
     .input(z.object({ sponsor: sponsorInput, userId: userIdInput }))
     .mutation(async ({ input }) => {
       const sponsor = await findSponsor(input.sponsor);
-      const [eligible] = await sponsorShortlist(sponsor.id, {
-        userIds: [input.userId],
-        limit: 1,
-      });
+      const { hackers } = await sponsorCandidates(sponsor);
+      const eligible = hackers.find((h) => h.userId === input.userId);
       if (!eligible) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -138,7 +158,15 @@ export const sponsorShortlistRouter = createTRPCRouter({
         const [total] = await tx
           .select({ n: count() })
           .from(sponsorShortlists)
-          .where(eq(sponsorShortlists.sponsorId, sponsor.id));
+          .where(
+            and(
+              eq(sponsorShortlists.sponsorId, sponsor.id),
+              inArray(
+                sponsorShortlists.userId,
+                hackers.map((h) => h.userId),
+              ),
+            ),
+          );
         if ((total?.n ?? 0) >= COFFEE_CHAT_SHORTLIST_SIZE) {
           throw new TRPCError({
             code: "CONFLICT",
@@ -230,19 +258,16 @@ export const sponsorShortlistRouter = createTRPCRouter({
 
   /**
    * Organizers: a sponsor's shortlist, oldest pick first, for assigning
-   * chats. Hackers who have since withdrawn consent, lost admission or
-   * unranked the sponsor drop off.
+   * chats. Hackers no longer on the sponsor's candidate list (for example,
+   * they withdrew consent under the in-app ranking) drop off.
    */
   forSponsor: protectedOrganizerProcedure
     .input(z.object({ sponsorId: sponsorInput }))
     .query(async ({ input }) => {
       const sponsor = await findSponsor(input.sponsorId);
       const ids = await shortlistedIds(sponsor.id);
-      const eligible = await sponsorShortlist(sponsor.id, {
-        userIds: ids,
-        limit: null,
-      });
-      const byId = new Map(eligible.map((h) => [h.userId, h]));
+      const { hackers } = await sponsorCandidates(sponsor);
+      const byId = new Map(hackers.map((h) => [h.userId, h]));
       return {
         sponsorName: sponsor.name,
         hackers: ids.flatMap((id) => {
