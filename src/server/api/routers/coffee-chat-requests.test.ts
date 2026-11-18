@@ -1407,11 +1407,11 @@ describe("coffeeChatRequests.setCoffeeChatWatcher (T44)", () => {
     expect(
       (await caller.coffeeChatRequests.sponsorChats({ sponsor })).watcherName,
     ).toBe("Wendy");
-    const rooms = await org.coffeeChatRequests.organizerRooms();
-    expect(rooms.sponsors.find((s) => s.sponsorId === sponsor)?.watcher).toBe(
+    const board = await org.coffeeChatRequests.organizerChatBoard();
+    expect(board.sponsors.find((s) => s.sponsorId === sponsor)?.watcher).toBe(
       "Wendy",
     );
-    expect(rooms.watchers).toContain("Watcher Wendy");
+    expect(board.watchers).toContain("Watcher Wendy");
 
     // Blank clears it.
     await org.coffeeChatRequests.setCoffeeChatWatcher({

@@ -588,20 +588,6 @@ export type OrganizerHackerMatch = {
   hackerId: string | null;
 };
 
-/** One sponsor's coffee chat setup, on the organizer page. */
-export type OrganizerCoffeeChatRoom = {
-  /** Null when the sheet names a sponsor that isn't registered. */
-  sponsorId: string | null;
-  sponsor: string;
-  windowStart: string | null;
-  windowEnd: string | null;
-  durationMinutes: number;
-  groupSize: number;
-  hackers: number | null;
-  /** Sponsor-team member watching this sponsor's chats (free text). */
-  watcher: string | null;
-};
-
 /**
  * Offer a coffee chat: a pending request the hacker accepts or declines on
  * /live, with every capacity, overlap and room rule. Shared by the
@@ -1238,63 +1224,6 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       watchers,
       readAt: now.toISOString(),
     };
-  }),
-
-  /**
-   * Every sponsor's Saturday coffee chat window and format, for the
-   * organizer's sponsor pickers. Registered sponsors without a sheet row
-   * are listed too (no window yet). Organizers only.
-   */
-  organizerRooms: protectedOrganizerProcedure.query(async () => {
-    const sponsors = await db
-      .select({
-        id: sponsorJudgingSponsors.id,
-        name: sponsorJudgingSponsors.name,
-        watcher: sponsorJudgingSponsors.coffeeChatWatcher,
-      })
-      .from(sponsorJudgingSponsors)
-      .orderBy(asc(sponsorJudgingSponsors.name));
-    const setups = await readSheetCoffeeChatSetups(sponsors.map((s) => s.name));
-    const rows: OrganizerCoffeeChatRoom[] = sponsors.map((s) => {
-      const setup = setups.find((c) => c.sponsor === s.name);
-      return {
-        sponsorId: s.id,
-        sponsor: s.name,
-        windowStart: setup?.windowStart ?? null,
-        windowEnd: setup?.windowEnd ?? null,
-        durationMinutes: setup?.durationMinutes ?? 15,
-        groupSize: setup?.groupSize ?? 1,
-        hackers: setup?.hackers ?? null,
-        watcher: s.watcher,
-      };
-    });
-    for (const setup of setups) {
-      if (sponsors.some((s) => s.name === setup.sponsor)) continue;
-      rows.push({
-        sponsorId: null,
-        sponsor: setup.sponsor,
-        windowStart: setup.windowStart,
-        windowEnd: setup.windowEnd,
-        durationMinutes: setup.durationMinutes,
-        groupSize: setup.groupSize,
-        hackers: setup.hackers,
-        watcher: null,
-      });
-    }
-    // Organizer names, suggested for the watcher field (free text).
-    const organizers = await db
-      .select({ name: users.name })
-      .from(users)
-      .where(eq(users.type, "organizer"))
-      .orderBy(asc(users.name));
-    const watchers = [
-      ...new Set(
-        organizers
-          .map((o) => o.name?.trim() ?? "")
-          .filter((name) => name.length > 0),
-      ),
-    ];
-    return { sponsors: rows, watchers };
   }),
 
   /**

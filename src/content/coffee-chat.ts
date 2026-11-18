@@ -1,5 +1,6 @@
-// User-facing copy for coffee chat requests: the sponsor's rep count, the
-// organizer Cancel / Move-room actions, and error messages from the server.
+// User-facing copy for coffee chats: the sponsor's chat request and asks
+// for fewer, the organizer rooms view and its actions, and error messages
+// from the server.
 // Keep wording here, not in components or routers.
 
 export const coffeeChatCopy = {
@@ -260,8 +261,6 @@ export const coffeeChatCopy = {
   },
 
   organizer: {
-    heading: "Booked chats",
-    empty: "No coffee chats booked yet.",
     cancel: "Cancel",
     confirmCancel: "Cancel chat",
     cancelConfirm: (hacker: string, sponsor: string, time: string) =>
@@ -272,7 +271,6 @@ export const coffeeChatCopy = {
       `Moves ${sponsor}'s room block at ${time}, with every chat in it, to the new room.`,
     move: "Move",
     close: "Close",
-    roomTbd: "Room to be assigned",
     status: {
       pending: "Waiting for reply",
       accepted: "Accepted",
@@ -282,106 +280,23 @@ export const coffeeChatCopy = {
     },
     hacker: (first: string, last: string | null) =>
       last ? `${first} ${last}` : first,
-    when: (time: string, minutes: number) => `${time} · ${minutes} min`,
     actionError: "Couldn't update the chat.",
 
-    // Saturday room assignment (rooms 2241-2243), one card per sponsor.
+    // Who on the sponsor team watches a sponsor's chats.
     rooms: {
-      heading: "Rooms",
-      intro:
-        "Give each sponsor a coffee chat room. Sponsors in the same room can't overlap. Changing a room moves that sponsor's booked chats and tells each hacker.",
-      empty: "No sponsors yet.",
-      window: "Window",
-      format: "Format",
-      hackers: "Hackers",
-      room: "Room",
-      unassigned: "Not assigned",
-      sheetRoom: (room: string) => `Sheet says ${room}`,
-      notSetUp: "No coffee chat window in the sheet yet.",
-      notRegistered: "Not registered on the site, so no room can be saved.",
-      saved: "Saved",
-      saveError: "Couldn't save the room.",
-      watcher: "Watched by",
-      watcherHint:
-        "Sponsor team member who watches this sponsor's chats and room.",
-      watcherPlaceholder: "Name",
-      watcherSave: "Save",
-      watcherSaved: "Saved",
       watcherError: "Couldn't save who's watching.",
     },
 
-    // Saturday board: sponsors across, 15-minute slots down (T48).
+    // The Coffee chats tab: one rooms x time view.
     board: {
       heading: "Saturday coffee chats",
       intro:
-        "Every sponsor side by side. Pick a cell to see its chats, cancel or move them, or add one.",
-      viewLabel: "View",
-      views: { rooms: "Rooms", table: "By sponsor", list: "List" },
-      summaryLabel: "Today's totals",
-      totals: {
-        offered: "Offered",
-        accepted: "Accepted",
-        pending: "Waiting for reply",
-        seatsLeft: "Seats left today",
-        needsHacker: "Holds needing a hacker",
-        rooms: "Rooms in use",
-      },
-      noRooms: "None yet",
-      tableLabel: "Coffee chats by sponsor and time",
-      scrollHint: "Scroll sideways to see every sponsor.",
-      time: "Time",
-      now: "Now",
-      empty: "No sponsor has coffee chat times in the sheet yet.",
-      notSetUp: "Not set up",
-      notRegistered: "Not registered on the site",
-      format: (minutes: number, groupSize: number) =>
-        groupSize > 1
-          ? `Group of ${groupSize}, ${minutes} min`
-          : `1-on-1, ${minutes} min`,
-      reps: (n: number) => `${n} ${n === 1 ? "rep" : "reps"}`,
-      counts: (accepted: number, pending: number, total: number) =>
-        `${accepted} accepted · ${pending} waiting · ${total} total`,
-      room: "Room",
-      unassigned: "Unassigned",
-      sheetRoom: (room: string) => `Sheet: ${room}`,
+        "Rooms by time. Pick a sponsor to highlight their rooms, a block to see its hackers, or a free cell to give the room.",
+      shortName: (first: string, last: string | null) =>
+        last?.trim() ? `${first} ${last.trim()[0]!.toUpperCase()}.` : first,
       watcher: "Watched by",
       watcherSave: "Save",
       watcherSaved: "Saved",
-      outside: "No room block",
-      noStart: "No start time",
-      seatsLeft: (n: number) => `${n} ${n === 1 ? "seat" : "seats"} left`,
-      full: "Full",
-      closed: "Closed",
-      shortName: (first: string, last: string | null) =>
-        last?.trim() ? `${first} ${last.trim()[0]!.toUpperCase()}.` : first,
-      cellLabel: (sponsor: string, time: string) => `${sponsor}, ${time}`,
-      status: {
-        pending: "Pending",
-        accepted: "Accepted",
-        declined: "Declined",
-        expired: "Expired",
-        cancelled: "Cancelled",
-      },
-      panel: {
-        title: (sponsor: string, time: string) => `${sponsor} at ${time}`,
-        description: (format: string, room: string | null) =>
-          room ? `${format} · ${room}` : `${format} · Room to be assigned`,
-        close: "Close",
-        chats: "Chats here",
-        noChats: "No chats here yet.",
-        code: (code: string | null) => code ?? "No hacker ID yet",
-        rep: (rep: string | null) => (rep ? `Rep: ${rep}` : "No rep named"),
-        addHeading: "Add a chat here",
-        addIntro: (sponsor: string, time: string) =>
-          `Sends the hacker a request for ${sponsor} at ${time}. They accept on /live.`,
-        cantAdd: {
-          notRegistered:
-            "This sponsor isn't registered on the site, so chats can't be added.",
-          notOpen: "This isn't one of the sponsor's start times.",
-          full: "No seats left at this time.",
-          tooLate: "Too close to the start to send a request now.",
-        },
-      },
     },
 
     // Pick which sponsors the Coffee chats tables and totals show.
@@ -409,7 +324,6 @@ export const coffeeChatCopy = {
       time: "Time",
       free: "Free",
       clash: "Two sponsors",
-      needsHacker: "Needs a hacker",
       fill: (booked: number, needed: number) => `${booked}/${needed}`,
       fillLabel: (booked: number, needed: number) =>
         `${booked} of ${needed} hackers booked`,
@@ -484,10 +398,8 @@ export const coffeeChatCopy = {
         request: (request: string, minutes: number) =>
           `${request} · ${minutes} min`,
         slotsLabel: "Chat slots",
-        needsHacker: "Needs a hacker",
         addHacker: "Add a hacker",
         addLabel: (time: string) => `Add a hacker at ${time}`,
-        closed: "Too late to add",
         status: {
           pending: "Waiting",
           accepted: "Accepted",
@@ -506,13 +418,9 @@ export const coffeeChatCopy = {
       },
     },
 
-    // Organizers add a chat by hand (same rules as a sponsor's offer).
+    // Organizers add a hacker to a block slot by hand (same rules as a
+    // sponsor's offer).
     add: {
-      heading: "Add a chat",
-      intro:
-        "Book a hacker with a sponsor yourself. The hacker still accepts on /live and gets the usual message.",
-      sponsor: "Sponsor",
-      pickSponsor: "Pick a sponsor",
       hacker: "Hacker",
       hackerPlaceholder: "Name, email or hacker ID",
       searching: "Searching…",
@@ -520,15 +428,7 @@ export const coffeeChatCopy = {
       typeMore: "Type at least 2 characters.",
       change: "Change",
       code: (code: string | null) => code ?? "No hacker ID yet",
-      time: "Start time",
-      pickTime: "Pick a time",
-      noTimes: "No open times left for this sponsor and hacker.",
-      timeOption: (time: string, seats: number, room: string | null) =>
-        `${time} · ${seats} ${seats === 1 ? "seat" : "seats"} left${room ? ` · ${room}` : ""}`,
-      rep: "Rep name (optional)",
       submit: "Add chat",
-      added: (hacker: string, sponsor: string, time: string) =>
-        `Sent ${hacker} a request for ${sponsor} at ${time}.`,
       addError: "Couldn't add the chat.",
     },
   },
