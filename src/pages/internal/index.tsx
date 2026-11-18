@@ -32,6 +32,11 @@ const SECTIONS: { title: string; cards: Card[] }[] = [
         note: "API not wired up yet",
       },
       {
+        href: "/internal/clock",
+        title: "Clock",
+        description: "Start, pause and reset the shared 5-minute pitch clock.",
+      },
+      {
         href: "/judge",
         title: "My judging",
         description: "The judge phone view.",
