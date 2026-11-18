@@ -181,17 +181,12 @@ export const submissionStatusEnum = pgEnum("submission_status", [
 
 export const judgeTypeEnum = pgEnum("judge_type", ["organizer", "sponsored"]);
 
-export const judgingQueueStatusEnum = pgEnum("judging_queue_status", [
-  "waiting",
-  "assigned",
-]);
-
 export const roundTypeEnum = pgEnum("round_type", ["regular", "sponsored"]);
 
 /**
  * Where one stop on a judge's list stands. `assigned` -> `in_progress` ->
  * `done` (score submitted) or `team_absent` (nobody at the table).
- * `cancelled` is an organizer removing the pairing before it happened.
+ * `cancelled` is an organizer removing the stop before it happened.
  */
 export const judgingAssignmentStatusEnum = pgEnum("judging_assignment_status", [
   "assigned",
@@ -202,10 +197,11 @@ export const judgingAssignmentStatusEnum = pgEnum("judging_assignment_status", [
 ]);
 
 /**
- * Live judging state of a physical table, for the organizer table map.
- * `empty`: no team seated. `waiting`: team seated with stops still to come.
+ * Live judging state of a physical table, for the table map. `empty`: no
+ * team seated. `waiting`: team seated with stops still to come (or none yet).
  * `being_judged`: a judge is there now. `finished`: every stop is done,
- * absent or cancelled. Switched-off tables use `judging_table.is_active`.
+ * absent or cancelled. Kept in sync by triggers (see triggers.sql).
+ * Switched-off tables use `judging_table.is_active`.
  */
 export const judgingTableStatusEnum = pgEnum("judging_table_status", [
   "empty",
@@ -224,11 +220,11 @@ export const cheatSweepStatusEnum = pgEnum("cheat_sweep_status", [
 ]);
 
 /**
- * What caused a sweep to start — the judging queue draining, or an organizer
- * kicking one off by hand.
+ * What caused a sweep to start: judging finishing (every stop closed), or an
+ * organizer kicking one off by hand.
  */
 export const cheatSweepTriggerEnum = pgEnum("cheat_sweep_trigger", [
-  "queue_drain",
+  "judging_complete",
   "manual",
 ]);
 
@@ -840,6 +836,10 @@ export const judges = pgTable("judge", {
   marksSquaredSum: real("marks_squared_sum").default(0).notNull(),
   // Calibration rating for score normalization; null until set.
   harshness: real("harshness"),
+  // When they were added. Auto-assign hands out table sections in this order.
+  createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
 });
 
 export const judgesRelations = relations(judges, ({ one, many }) => ({
@@ -848,51 +848,17 @@ export const judgesRelations = relations(judges, ({ one, many }) => ({
     references: [users.id],
   }),
   marks: many(teamMarks),
-  skips: many(judgingSkips),
   assignments: many(judgingAssignments),
 }));
 
-export const judgingQueue = pgTable(
-  "judging_queue",
-  {
-    teamId: varchar("team_id", { length: 255 })
-      .notNull()
-      .primaryKey()
-      .references(() => teams.id, { onDelete: "cascade" }),
-    seenJudges: integer("seen_judges").default(0).notNull(),
-    roundsRemaining: integer("rounds_remaining").default(0).notNull(),
-    enqueuedAt: timestamp("enqueued_at", { mode: "date", precision: 3 })
-      .defaultNow()
-      .notNull(),
-    status: judgingQueueStatusEnum("status").default("waiting").notNull(),
-    // The judge currently holding this team (sequential, one judge at a
-    // time). NULL when the team is waiting. `assignedAt` is stamped on
-    // assignment and used to reclaim teams abandoned by a judge who walked
-    // away (see STALE_ASSIGNMENT_MINUTES in the queue helpers).
-    currentJudgeId: varchar("current_judge_id", { length: 255 }).references(
-      () => judges.id,
-    ),
-    assignedAt: timestamp("assigned_at", { mode: "date", precision: 3 }),
-  },
-  (t) => [
-    index("judging_queue_priority_idx").on(
-      t.roundsRemaining.desc(),
-      t.enqueuedAt.asc(),
-    ),
-    index("judging_queue_current_judge_idx").on(t.currentJudgeId),
-  ],
-);
-
 /**
- * The rubric behind a mark: each category rated 1-5 (matching the judge
- * screen's rubric), plus free-text notes.
+ * The rubric behind a mark, as the judge app sends it: a 0-10 rating (half
+ * steps) per rubric criterion id, the judge's notes, and their super like.
  */
 export type ScoreBreakdown = {
-  idea: number;
-  technical: number;
-  design: number;
-  pitch: number;
+  ratings: Record<string, number>;
   notes?: string | null;
+  superLike?: boolean;
 };
 
 export const teamMarks = pgTable(
@@ -906,8 +872,8 @@ export const teamMarks = pgTable(
       .notNull()
       .references(() => judges.id),
     score: real("score").notNull(),
-    // Per-category rubric ratings behind `score`, plus the judge's notes.
-    // Null when the judge used the single slider instead of the rubric.
+    // Per-criterion rubric ratings behind `score`, plus notes and super like.
+    // Null when the judge only gave an overall score.
     scoreBreakdown: jsonb("score_breakdown").$type<ScoreBreakdown>(),
     roundType: roundTypeEnum("round_type").default("regular").notNull(),
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
@@ -927,33 +893,6 @@ export const teamMarksRelations = relations(teamMarks, ({ one }) => ({
   }),
   judge: one(judges, {
     fields: [teamMarks.judgeId],
-    references: [judges.id],
-  }),
-}));
-
-export const judgingSkips = pgTable(
-  "judging_skip",
-  {
-    teamId: varchar("team_id", { length: 255 })
-      .notNull()
-      .references(() => teams.id, { onDelete: "cascade" }),
-    judgeId: varchar("judge_id", { length: 255 })
-      .notNull()
-      .references(() => judges.id),
-    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
-      .defaultNow()
-      .notNull(),
-  },
-  (t) => [primaryKey({ columns: [t.teamId, t.judgeId] })],
-);
-
-export const judgingSkipsRelations = relations(judgingSkips, ({ one }) => ({
-  team: one(teams, {
-    fields: [judgingSkips.teamId],
-    references: [teams.id],
-  }),
-  judge: one(judges, {
-    fields: [judgingSkips.judgeId],
     references: [judges.id],
   }),
 }));
@@ -989,16 +928,17 @@ export const teamTracksRelations = relations(teamTracks, ({ one }) => ({
 }));
 
 /**
- * A physical table in the judging hall. Organizers enter these before the
- * event, then seat each team at one (`team.judging_table_id`). Inactive
- * tables (broken, unused) can't be seated.
+ * A physical table in the judging hall, numbered along the snake (row 1 left
+ * to right, row 2 right to left, ...). Created from `judging_settings`; each
+ * submitted team is seated at one (`team.judging_table_id`). Inactive tables
+ * (broken, unused) get no team and no judges.
  */
 export const judgingTables = pgTable("judging_table", {
   id: serial("id").primaryKey(),
   number: integer("number").notNull().unique(),
   zone: varchar("zone", { length: 64 }).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
-  // Kept in step with seating and judging_assignment changes by the engine.
+  // Kept in sync with seating and judging_assignment by triggers.
   status: judgingTableStatusEnum("status").default("empty").notNull(),
   statusUpdatedAt: timestamp("status_updated_at", {
     mode: "date",
@@ -1008,18 +948,41 @@ export const judgingTables = pgTable("judging_table", {
     .notNull(),
 });
 
-export const judgingTablesRelations = relations(judgingTables, ({ one }) => ({
-  team: one(teams, {
-    fields: [judgingTables.id],
-    references: [teams.judgingTableId],
+export const judgingTablesRelations = relations(
+  judgingTables,
+  ({ one, many }) => ({
+    team: one(teams, {
+      fields: [judgingTables.id],
+      references: [teams.judgingTableId],
+    }),
+    assignments: many(judgingAssignments),
   }),
-}));
+);
 
 /**
- * One stop on a judge's list, paired by hand by an organizer and live as
- * soon as it's created. The judge finds the team at its seated table.
- * Cancelled rows are kept for history and ignored by the unique indexes, so
- * a judge can be re-paired with a team or reuse a position.
+ * The room layout and how many judges each table needs. One row (id = 1).
+ * Tables per row = ceil(tableCount / rows); see docs/judging-engine.md.
+ */
+export const judgingSettings = pgTable(
+  "judging_settings",
+  {
+    id: integer("id").primaryKey().default(1),
+    tableCount: integer("table_count").default(70).notNull(),
+    rows: integer("rows").default(5).notNull(),
+    judgesPerTable: integer("judges_per_table").default(3).notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [check("judging_settings_singleton", sql`${t.id} = 1`)],
+);
+
+/**
+ * One stop on a judge's list: a table in their section of the snake. The team
+ * judged is whoever is seated there, so swapping two teams' tables moves each
+ * into the other's judges' lineup. Written by auto-assign (in walking order)
+ * and by organizer fixes. Cancelled rows are kept for history and ignored by
+ * the unique indexes.
  */
 export const judgingAssignments = pgTable(
   "judging_assignment",
@@ -1028,9 +991,9 @@ export const judgingAssignments = pgTable(
     judgeId: varchar("judge_id", { length: 255 })
       .notNull()
       .references(() => judges.id, { onDelete: "cascade" }),
-    teamId: varchar("team_id", { length: 255 })
+    judgingTableId: integer("judging_table_id")
       .notNull()
-      .references(() => teams.id, { onDelete: "cascade" }),
+      .references(() => judgingTables.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
     status: judgingAssignmentStatusEnum("status").default("assigned").notNull(),
     assignedBy: varchar("assigned_by", { length: 255 }).references(
@@ -1047,10 +1010,15 @@ export const judgingAssignments = pgTable(
     uniqueIndex("judging_assignment_judge_position_idx")
       .on(t.judgeId, t.position)
       .where(sql`${t.status} <> 'cancelled'`),
-    uniqueIndex("judging_assignment_judge_team_idx")
-      .on(t.judgeId, t.teamId)
+    uniqueIndex("judging_assignment_judge_table_idx")
+      .on(t.judgeId, t.judgingTableId)
       .where(sql`${t.status} <> 'cancelled'`),
-    index("judging_assignment_team_idx").on(t.teamId),
+    index("judging_assignment_table_idx").on(t.judgingTableId),
+    // A judge is at one table at a time; backs the check in startStop when
+    // two starts race.
+    uniqueIndex("judging_assignment_one_in_progress_idx")
+      .on(t.judgeId)
+      .where(sql`${t.status} = 'in_progress'`),
   ],
 );
 
@@ -1061,9 +1029,9 @@ export const judgingAssignmentsRelations = relations(
       fields: [judgingAssignments.judgeId],
       references: [judges.id],
     }),
-    team: one(teams, {
-      fields: [judgingAssignments.teamId],
-      references: [teams.id],
+    table: one(judgingTables, {
+      fields: [judgingAssignments.judgingTableId],
+      references: [judgingTables.id],
     }),
     assigner: one(users, {
       fields: [judgingAssignments.assignedBy],
@@ -1075,13 +1043,11 @@ export const judgingAssignmentsRelations = relations(
 export const teamsRelations = relations(teams, ({ many, one }) => ({
   members: many(users),
   marks: many(teamMarks),
-  skips: many(judgingSkips),
   checkResults: many(teamCheckResults),
   judgingTable: one(judgingTables, {
     fields: [teams.judgingTableId],
     references: [judgingTables.id],
   }),
-  judgingAssignments: many(judgingAssignments),
   trackEntries: many(teamTracks),
 }));
 
@@ -1183,8 +1149,8 @@ export const teamCheckResultsRelations = relations(
 // ---------------------------------------------------------------------------
 
 /**
- * One row per automated cheat-check sweep. A sweep is started when the judging
- * queue drains (or manually by an organizer) and is worked off in slices by
+ * One row per automated cheat-check sweep. A sweep is started when judging
+ * completes (or manually by an organizer) and is worked off in slices by
  * `/api/cheat-check/sweep`, which re-invokes itself until every item is done.
  *
  * `lastHeartbeatAt` is bumped after every batch so a sweep whose worker died

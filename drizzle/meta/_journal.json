@@ -274,6 +274,13 @@
       "when": 1794853502649,
       "tag": "0038_scavenger_item_type_time_room",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1794977231031,
+      "tag": "0039_judging_engine",
+      "breakpoints": true
     }
   ]
 }

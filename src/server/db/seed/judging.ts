@@ -1,60 +1,61 @@
 /**
- * Judging end-to-end seed script (M1 test foundation).
+ * Judging end-to-end seed script.
  *
- * Brings a clean local database to a full judging-flow state in one command:
+ * Brings a clean local database to a ready-to-judge room in one command:
  *
- *   npm run seed:judging -- --teams 30 --judges 5 --sponsors 2 --rounds 3
+ *   npm run seed:judging -- --tables 70 --rows 5 --teams 60 --judges 35
  *
  * What it does, in order:
  *   1. Applies the judging triggers (idempotent — triggers.sql source of truth).
- *   2. Wipes the judging tables (judging_assignment, team_mark, judging_skip,
- *      judging_queue, judge, judging_table), ALL teams, and any judge
- *      accounts from a previous run.
- *   3. Inserts `--teams` submitted teams with sponsor-track coverage.
- *   4. Creates `--judges` judge accounts (`--sponsors` of them sponsored with
- *      a track). These are REAL credentials-provider accounts — humans can
- *      sign in at /login with them during a dress rehearsal:
+ *   2. Wipes the judging tables (judging_assignment, team_mark, judge,
+ *      judging_table, judging_settings), ALL teams, and any judge accounts
+ *      from a previous run.
+ *   3. Inserts `--teams` submitted teams, one minute apart.
+ *   4. Creates `--judges` judge accounts. These are REAL credentials-provider
+ *      accounts — humans can sign in at /login with them during a dress
+ *      rehearsal:
  *        email    judge<n>@judging.hackwestern.dev
  *        password --password (default "hw13-judging")
- *      Also creates organizer@judging.hackwestern.dev (users.type=organizer)
- *      for the admin endpoints and organizer views.
- *   5. Optionally promotes existing real accounts to organizer judges via
+ *      Also creates organizer@judging.hackwestern.dev (users.type=organizer),
+ *      who is the last judge added, for the admin endpoints and views.
+ *   5. Optionally promotes existing real accounts to judges via
  *      --emails a@x.com,b@y.com (for rehearsals where organizers use their
  *      own sign-ins).
- *   6. Loads the queue with `--rounds` rounds per team.
- *   7. Creates one judging table per team (split across two zones) and seats
- *      every team, so organizers can start pairing judges straight away.
+ *   6. Runs the engine: sets up `--tables` tables in `--rows` rows, seats every
+ *      team (random, or submission order with --in-order), and auto-assigns
+ *      every judge a section of the snake so each table gets 3 judges.
  *
- * Flags: --teams N  --judges N  --sponsors N  --rounds N  --password STR
- *        --emails a@x,b@y  --yes (skip confirm)
+ * Flags: --tables N  --rows N  --teams N  --judges N  --in-order
+ *        --password STR  --emails a@x,b@y  --yes (skip confirm)
  */
 import * as p from "@clack/prompts";
 import bcrypt from "bcrypt";
 import { faker } from "@faker-js/faker";
-import { eq, inArray, like, sql } from "drizzle-orm";
+import { inArray, like, sql } from "drizzle-orm";
 
 import { conn, db } from "..";
 import {
   judges,
   judgingAssignments,
-  judgingQueue,
-  judgingSkips,
+  judgingSettings,
   judgingTables,
   teamMarks,
   teams,
-  trackEnum,
   users,
 } from "../schema";
 import { applyTriggers } from "../triggers";
+import { autoAssign } from "~/server/judging/assignments";
+import { seatTeams, setupTables } from "~/server/judging/room";
 
 export const JUDGING_SEED_EMAIL_DOMAIN = "judging.hackwestern.dev";
 export const JUDGING_SEED_ORGANIZER_EMAIL = `organizer@${JUDGING_SEED_EMAIL_DOMAIN}`;
 
 type Args = {
+  tables: number;
+  rows: number;
   teams: number;
   judges: number;
-  sponsors: number;
-  rounds: number;
+  random: boolean;
   password: string;
   emails: string[];
   yes: boolean;
@@ -62,10 +63,11 @@ type Args = {
 
 function parseArgs(argv: string[]): Args {
   const args: Args = {
-    teams: 30,
-    judges: 5,
-    sponsors: 2,
-    rounds: 3,
+    tables: 70,
+    rows: 5,
+    teams: 60,
+    judges: 35,
+    random: true,
     password: "hw13-judging",
     emails: [],
     yes: false,
@@ -78,17 +80,20 @@ function parseArgs(argv: string[]): Args {
       return v;
     };
     switch (flag) {
+      case "--tables":
+        args.tables = parseInt(next(), 10);
+        break;
+      case "--rows":
+        args.rows = parseInt(next(), 10);
+        break;
       case "--teams":
         args.teams = parseInt(next(), 10);
         break;
       case "--judges":
         args.judges = parseInt(next(), 10);
         break;
-      case "--sponsors":
-        args.sponsors = parseInt(next(), 10);
-        break;
-      case "--rounds":
-        args.rounds = parseInt(next(), 10);
+      case "--in-order":
+        args.random = false;
         break;
       case "--password":
         args.password = next();
@@ -106,38 +111,38 @@ function parseArgs(argv: string[]): Args {
         throw new Error(`Unknown flag: ${flag}`);
     }
   }
-  if (args.sponsors > args.judges) {
-    throw new Error("--sponsors cannot exceed --judges");
+  if (args.tables < 1 || args.rows < 1 || args.teams < 1) {
+    throw new Error("--tables, --rows and --teams must all be >= 1");
   }
-  if (args.teams < 1 || args.judges < 1 || args.rounds < 1) {
-    throw new Error("--teams, --judges and --rounds must all be >= 1");
+  if (args.teams > args.tables) {
+    throw new Error("--teams cannot exceed --tables (one team per table)");
+  }
+  // The organizer account judges too, so it counts toward the 3 per table.
+  if (args.judges + 1 < 3) {
+    throw new Error("--judges must be at least 2 (each table needs 3 judges)");
   }
   return args;
 }
 
-async function seedJudging(args: Args): Promise<void> {
-  const sponsorTracks = trackEnum.enumValues.filter((t) => t !== "General");
-
+async function seedJudging(args: Args) {
   // 1. Triggers (idempotent: CREATE OR REPLACE / DROP IF EXISTS).
   await applyTriggers(db);
 
+  const organizerId = faker.string.uuid();
   await db.transaction(async (tx) => {
-    // 2. Wipe judging state. Order respects FKs (marks/skips/queue -> judge,
-    // teams). users.team_id is ON DELETE SET NULL, so deleting teams is safe.
+    // 2. Wipe judging state. Order respects FKs. users.team_id and
+    // team.judging_table_id are ON DELETE SET NULL, so deleting is safe.
     await tx.delete(judgingAssignments).where(sql`true`);
     await tx.delete(teamMarks).where(sql`true`);
-    await tx.delete(judgingSkips).where(sql`true`);
-    await tx.delete(judgingQueue).where(sql`true`);
     await tx.delete(judges).where(sql`true`);
     await tx.delete(teams).where(sql`true`);
     await tx.delete(judgingTables).where(sql`true`);
+    await tx.delete(judgingSettings).where(sql`true`);
     await tx
       .delete(users)
       .where(like(users.email, `%@${JUDGING_SEED_EMAIL_DOMAIN}`));
 
-    // 3. Teams — all "submitted" (loadQueue only queues submitted/late).
-    // Every team carries General plus at least one sponsor track, assigned
-    // round-robin so each sponsor track has coverage for the sponsored flow.
+    // 3. Teams, all submitted, one minute apart so submission order is clear.
     const teamIds = faker.helpers.uniqueArray(
       () => faker.string.alphanumeric(6),
       args.teams,
@@ -146,6 +151,7 @@ async function seedJudging(args: Args): Promise<void> {
       () => faker.string.fromCharacters("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 6),
       args.teams,
     );
+    const firstSubmission = Date.now() - args.teams * 60_000;
     await tx.insert(teams).values(
       teamIds.map((id, i) => ({
         id,
@@ -154,30 +160,21 @@ async function seedJudging(args: Args): Promise<void> {
         devpostUrl: `https://devpost.com/software/seed-${id}`,
         githubUrl: `https://github.com/hackwestern/seed-${id}`,
         submissionStatus: "submitted" as const,
-        tracks: ["General" as const, sponsorTracks[i % sponsorTracks.length]!],
+        submittedAt: new Date(firstSubmission + i * 60_000),
+        tracks: ["General" as const],
       })),
     );
 
     // 4. Judge + organizer accounts with real credentials-provider logins.
     const passwordHash = await bcrypt.hash(args.password, 10);
-    const judgeUsers = Array.from({ length: args.judges }, (_, i) => {
-      const n = i + 1;
-      const sponsored = i < args.sponsors;
-      return {
-        id: faker.string.uuid(),
-        name: sponsored ? `Judge ${n} (sponsored)` : `Judge ${n}`,
-        email: `judge${n}@${JUDGING_SEED_EMAIL_DOMAIN}`,
-        emailVerified: new Date(),
-        password: passwordHash,
-        sponsored,
-        track: sponsored ? [sponsorTracks[i % sponsorTracks.length]!] : null,
-      };
-    });
-    await tx
-      .insert(users)
-      .values(judgeUsers.map(({ sponsored: _s, track: _t, ...u }) => u));
-    // Organizers judge too, so the organizer account is also an organizer judge.
-    const organizerId = faker.string.uuid();
+    const judgeUsers = Array.from({ length: args.judges }, (_, i) => ({
+      id: faker.string.uuid(),
+      name: `Judge ${i + 1}`,
+      email: `judge${i + 1}@${JUDGING_SEED_EMAIL_DOMAIN}`,
+      emailVerified: new Date(),
+      password: passwordHash,
+    }));
+    if (judgeUsers.length > 0) await tx.insert(users).values(judgeUsers);
     await tx.insert(users).values({
       id: organizerId,
       name: "Judging Organizer",
@@ -186,16 +183,24 @@ async function seedJudging(args: Args): Promise<void> {
       password: passwordHash,
       type: "organizer",
     });
+
+    // Judges get sections in the order they were added: judge1 first, the
+    // organizer last.
+    const addedAt = Date.now() - (args.judges + 1) * 1000;
     await tx.insert(judges).values([
-      ...judgeUsers.map((u) => ({
+      ...judgeUsers.map((u, i) => ({
         id: u.id,
-        type: u.sponsored ? ("sponsored" as const) : ("organizer" as const),
-        track: u.track,
+        type: "organizer" as const,
+        createdAt: new Date(addedAt + i * 1000),
       })),
-      { id: organizerId, type: "organizer" as const, track: null },
+      {
+        id: organizerId,
+        type: "organizer" as const,
+        createdAt: new Date(addedAt + args.judges * 1000),
+      },
     ]);
 
-    // 5. Promote real accounts (--emails) to organizer judges.
+    // 5. Promote real accounts (--emails) to judges, after the seeded ones.
     if (args.emails.length > 0) {
       const found = await tx.query.users.findMany({
         where: inArray(users.email, args.emails),
@@ -214,39 +219,13 @@ async function seedJudging(args: Args): Promise<void> {
         .values(found.map((u) => ({ id: u.id, type: "organizer" as const })))
         .onConflictDoNothing();
     }
-
-    // 6. Load the queue (mirrors judging.admin.loadQueue: every submitted
-    // team, `rounds` rounds, defaults for the remaining columns).
-    await tx.insert(judgingQueue).values(
-      teamIds.map((teamId) => ({
-        teamId,
-        roundsRemaining: args.rounds,
-      })),
-    );
-
-    // 7. One table per team, numbered from 1 and split across two zones,
-    // with each team seated at its own table.
-    const tables = await tx
-      .insert(judgingTables)
-      .values(
-        teamIds.map((_, i) => ({
-          number: i + 1,
-          zone: i < teamIds.length / 2 ? "Main gym" : "Side hall",
-        })),
-      )
-      .returning({ id: judgingTables.id });
-    for (const [i, teamId] of teamIds.entries()) {
-      await tx
-        .update(teams)
-        .set({ judgingTableId: tables[i]!.id })
-        .where(eq(teams.id, teamId));
-    }
-    // Every table now has a team and no stops yet, so all are waiting.
-    await tx
-      .update(judgingTables)
-      .set({ status: "waiting", statusUpdatedAt: new Date() })
-      .where(sql`true`);
   });
+
+  // 6. The engine does the rest, exactly as organizers would.
+  await setupTables({ tableCount: args.tables, rows: args.rows });
+  const seating = await seatTeams({ random: args.random });
+  const plan = await autoAssign(organizerId);
+  return { seating, plan };
 }
 
 console.log("Judging seed script");
@@ -266,8 +245,8 @@ try {
     // clack is TTY-only, so it's used solely for this interactive confirm.
     const ok = await p.confirm({
       message:
-        "This DELETES all rows in team, judge, judging_queue, judging_skip, " +
-        "team_mark, judging_table and judging_assignment. Continue?",
+        "This DELETES all rows in team, judge, team_mark, judging_table, " +
+        "judging_settings and judging_assignment. Continue?",
     });
     if (ok !== true) {
       console.log("Stopped.");
@@ -276,25 +255,25 @@ try {
   }
 
   const started = Date.now();
-  await seedJudging(args);
+  const { seating, plan } = await seedJudging(args);
   const secs = ((Date.now() - started) / 1000).toFixed(1);
 
   console.log(
     [
       `Seeded in ${secs}s:`,
-      `  ${args.teams} teams (submitted, sponsor tracks covered)`,
-      `  ${args.judges} judges (${args.sponsors} sponsored), ${args.rounds} rounds/team queued`,
-      `  ${args.teams} judging tables, one team seated at each`,
+      `  ${args.tables} tables in ${args.rows} rows`,
+      `  ${seating.seated} teams seated (${args.random ? "random" : "submission order"}), ${seating.emptyTables} tables empty`,
+      `  ${plan.judges} judges, ${plan.tablesPerJudge.min}-${plan.tablesPerJudge.max} tables each, ${plan.judgesPerTable} per table`,
       ...(args.emails.length > 0
         ? [`  promoted to judges: ${args.emails.join(", ")}`]
         : []),
       "",
       "Sign in at /login for in-person demos:",
       `  judge1..judge${args.judges}@${JUDGING_SEED_EMAIL_DOMAIN}`,
-      `  ${JUDGING_SEED_ORGANIZER_EMAIL}  (organizer/admin)`,
+      `  ${JUDGING_SEED_ORGANIZER_EMAIL}  (organizer/admin, also a judge)`,
       `  password: ${args.password}`,
       "",
-      "Judging flow ready. Run `npm run judging:driver` to smoke-test.",
+      "Room ready.",
     ].join("\n"),
   );
 } catch (e) {

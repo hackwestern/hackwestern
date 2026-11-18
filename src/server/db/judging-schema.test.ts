@@ -72,16 +72,14 @@ describe("team_track", () => {
 });
 
 describe("team_mark.score_breakdown", () => {
-  test("stores the rubric and notes, and is optional", async () => {
+  test("stores the rubric, notes and super like, and is optional", async () => {
     const session = await mockSession(db);
     await db.insert(judges).values({ id: session.user.id });
     const teamId = await makeTeam();
     const breakdown: ScoreBreakdown = {
-      idea: 4,
-      technical: 5,
-      design: 3,
-      pitch: 4,
+      ratings: { idea: 7.5, technical: 9, design: 6, pitch: 8 },
       notes: "Great live demo; auth was mocked.",
+      superLike: true,
     };
 
     const [withRubric] = await db
@@ -89,7 +87,7 @@ describe("team_mark.score_breakdown", () => {
       .values({
         teamId,
         judgeId: session.user.id,
-        score: 80,
+        score: 8,
         scoreBreakdown: breakdown,
       })
       .returning();
@@ -97,7 +95,7 @@ describe("team_mark.score_breakdown", () => {
 
     const [sliderOnly] = await db
       .insert(teamMarks)
-      .values({ teamId, judgeId: session.user.id, score: 60 })
+      .values({ teamId, judgeId: session.user.id, score: 6 })
       .returning();
     expect(sliderOnly?.scoreBreakdown).toBeNull();
   });
