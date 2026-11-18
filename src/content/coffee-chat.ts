@@ -418,6 +418,8 @@ export const coffeeChatCopy = {
           ? `${room}, ${time}, ${who}, ${used} of ${capacity} booked`
           : `${room}, ${time}, available`,
       notToday: "Coffee chats run on Saturday. Pick Saturday to see the rooms.",
+      floorPlanAlt:
+        "Floor 2 plan showing the coffee chat rooms, Rm 2241, Rm 2242 and Rm 2243.",
       empty: "No coffee chat times in the sheet yet.",
       dialog: {
         title: (room: string, time: string) => `${room} at ${time}`,

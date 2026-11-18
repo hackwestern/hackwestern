@@ -1,3 +1,4 @@
+import { SPONSOR_MAP_FLOORS } from "~/lib/sponsor-map-rooms";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -7,7 +8,6 @@ import {
   CoffeeChatRoomTable,
   useLiveChatBoard,
 } from "~/components/sponsors/coffee-chat-room-table";
-import { CoffeeChatLiveMap } from "~/components/sponsors/coffee-chat-side-panel";
 import {
   DayGrid,
   TimelineKey,
@@ -32,10 +32,16 @@ import { fetchScheduleData } from "~/lib/schedule";
 import { coffeeChatEntries } from "~/lib/schedule-bookings";
 import { sponsorNameForParam } from "~/lib/sponsor-organizer";
 import { buildOrganizerTimeline, taskEntries } from "~/lib/sponsor-timeline";
+import {
+  ceremonySegmentsForDay,
+  workshopsForDay,
+} from "~/lib/sponsor-next-event";
 import { api, type RouterOutputs } from "~/utils/api";
 
 const copy = scheduleCopy.organizer;
 const roomCopy = coffeeChatCopy.organizer.roomTable;
+// The coffee chat rooms (Rm 2241-2243) are on floor 2.
+const FLOOR_2 = SPONSOR_MAP_FLOORS[1];
 const booked = coffeeChatCopy.organizer;
 /** How often booked coffee chats refresh on the schedule. */
 const LIVE_REFRESH_MS = 15_000;
@@ -130,32 +136,33 @@ export function RunOfShowTab({
       </div>
       <RoomsSection
         day={shownDay}
-        now={now}
         names={names}
         selection={selection}
         jump={jumpToRooms}
         onJumped={onJumped}
       />
-      <CeremonyOrder segments={data.ceremonies} items={data.items} />
-      <WorkshopsTable workshops={data.workshops} />
+      {/* Only the picked day's ceremony and workshops (Jazz, 2026-11-18). */}
+      <CeremonyOrder
+        segments={ceremonySegmentsForDay(data.ceremonies, data.items, shownDay)}
+        items={data.items}
+      />
+      <WorkshopsTable workshops={workshopsForDay(data.workshops, shownDay)} />
       <ReadAt iso={data.readAt} />
     </>
   );
 }
 
 // The coffee chat rooms as a booking table, right under the run of show,
-// with the live floor map beside it (it replaced the "Where is everyone"
+// with the floor 2 plan beside it (it replaced the "Where is everyone"
 // tab, which now lands here: #rooms).
 function RoomsSection({
   day,
-  now,
   names,
   selection,
   jump,
   onJumped,
 }: {
   day: RunOfShowDay;
-  now: Date;
   names: readonly string[];
   selection: SponsorSelection;
   jump: boolean;
@@ -200,8 +207,19 @@ function RoomsSection({
             </>
           )}
         </div>
+        {/* Just the floor plan for reference (Jazz, 2026-11-18): no pins,
+            toggles or live state. */}
         <div className="min-w-0 xl:sticky xl:top-4">
-          <CoffeeChatLiveMap now={now} />
+          {/* eslint-disable-next-line @next/next/no-img-element -- static
+              plan image at its natural size; no optimisation needed */}
+          <img
+            src={FLOOR_2.image}
+            width={FLOOR_2.width}
+            height={FLOOR_2.height}
+            alt={roomCopy.floorPlanAlt}
+            loading="lazy"
+            className="h-auto w-full rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card"
+          />
         </div>
       </div>
     </section>

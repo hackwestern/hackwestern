@@ -46,6 +46,40 @@ export function ceremonyItem(
   );
 }
 
+// When the sheet has no ceremony block to date it: opening is Friday,
+// closing is Sunday.
+const CEREMONY_DEFAULT_DAY: Record<CeremonyKind, RunOfShowDay> = {
+  opening: "Friday",
+  closing: "Sunday",
+};
+
+/** The day a ceremony happens, from its run-of-show block. */
+export function ceremonyDay(
+  items: RunOfShowItem[],
+  ceremony: CeremonyKind,
+): RunOfShowDay {
+  return ceremonyItem(items, ceremony)?.day ?? CEREMONY_DEFAULT_DAY[ceremony];
+}
+
+/**
+ * Info under the organizer run of show follows the picked day (Jazz,
+ * 2026-11-18): only that day's ceremony segments and workshops.
+ */
+export function ceremonySegmentsForDay<T extends { ceremony: CeremonyKind }>(
+  segments: T[],
+  items: RunOfShowItem[],
+  day: RunOfShowDay,
+): T[] {
+  return segments.filter((s) => ceremonyDay(items, s.ceremony) === day);
+}
+
+export function workshopsForDay<T extends { day: RunOfShowDay | null }>(
+  workshops: T[],
+  day: RunOfShowDay,
+): T[] {
+  return workshops.filter((w) => w.day === day);
+}
+
 function addMinutes(time: string, minutes: number): string {
   const [h, m] = time.split(":").map(Number) as [number, number];
   const total = Math.min(h * 60 + m + minutes, 24 * 60);
