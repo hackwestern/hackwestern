@@ -1,7 +1,12 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
 import { admittedStatuses } from "~/lib/admission";
 import { COFFEE_CHAT_SHORTLIST_SIZE } from "~/lib/coffee-chat-requests";
+import {
+  fetchRankedInterestRows,
+  INTERESTED_HACKER_LIMIT,
+  type RankedInterestRow,
+} from "~/server/api/utils/hacker-interest";
 import { db } from "~/server/db";
 import {
   applications,
@@ -126,4 +131,223 @@ export async function sponsorShortlist(
     linkedIn: safeProfileUrl(r.linkedIn),
     devpost: safeProfileUrl(r.devpost),
   }));
+}
+
+/**
+ * A hacker on the sponsor's candidate list (the hackers they can shortlist
+ * for coffee chats). Full name, team and profile links only when the hacker
+ * agreed to share with sponsors; otherwise the first name alone. The
+ * interest form's resume and extra link show either way: hackers submitted
+ * those on a form meant for sponsors. Never an email or phone number.
+ */
+export type SponsorCandidate = {
+  /** Internal user id, used to shortlist the hacker and offer a chat. */
+  userId: string;
+  /** Public badge id; only when shared. */
+  hackerId: string | null;
+  /** Place on the sponsor's list, 1 = best. */
+  rank: number;
+  /** Where the hacker put this sponsor in their own ranking, if known. */
+  pick: number | null;
+  name: string;
+  shared: boolean;
+  team: string | null;
+  resume: string | null;
+  github: string | null;
+  linkedIn: string | null;
+  devpost: string | null;
+  extraLink: string | null;
+};
+
+/**
+ * Where the candidate list came from: the interest form ranking, or the
+ * in-app ranking on /live when the form isn't set up or can't be read.
+ */
+export type CandidateSource = "interestForm" | "inAppRanking";
+
+/** What we know about a form respondent's account, keyed by email. */
+export type CandidateProfile = {
+  userId: string;
+  /** Lowercased and trimmed. */
+  email: string;
+  hackerId: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  accountName: string | null;
+  share: boolean | null;
+  team: string | null;
+  resume: string | null;
+  github: string | null;
+  linkedIn: string | null;
+  devpost: string | null;
+};
+
+function firstNameOf(profile: CandidateProfile, formName: string) {
+  return (
+    [profile.firstName, formName, profile.accountName]
+      .map((name) => name?.trim().split(/\s+/)[0] ?? "")
+      .find((name) => name.length > 0) ?? ""
+  );
+}
+
+/**
+ * Turn the interest form ranking into candidates: match each row's email to
+ * an account (rows with no account are dropped, since they can't be
+ * shortlisted), keep the ranking's order, and trim each profile to what the
+ * hacker agreed to share. Pure, so the privacy rules are easy to test.
+ */
+export function candidatesFromInterestForm(
+  ranked: readonly RankedInterestRow[],
+  profiles: readonly CandidateProfile[],
+): SponsorCandidate[] {
+  const byEmail = new Map<string, CandidateProfile>();
+  for (const profile of profiles) {
+    const email = profile.email.trim().toLowerCase();
+    if (!byEmail.has(email)) byEmail.set(email, profile);
+  }
+
+  return ranked.flatMap((row, index): SponsorCandidate[] => {
+    const profile = byEmail.get(row.email.trim().toLowerCase());
+    if (!profile) return [];
+    const formResume = safeProfileUrl(row.resumeUrl);
+    const extraLink = safeProfileUrl(row.extraLink);
+    const base = { userId: profile.userId, rank: index + 1, pick: row.pick };
+    if (profile.share !== true) {
+      return [
+        {
+          ...base,
+          hackerId: null,
+          name: firstNameOf(profile, row.name),
+          shared: false,
+          team: null,
+          resume: formResume,
+          github: null,
+          linkedIn: null,
+          devpost: null,
+          extraLink,
+        },
+      ];
+    }
+    return [
+      {
+        ...base,
+        hackerId: profile.hackerId,
+        name:
+          displayName(profile.firstName, profile.lastName, null) ||
+          row.name.trim() ||
+          (profile.accountName?.trim() ?? ""),
+        shared: true,
+        team: profile.team,
+        resume: formResume ?? safeProfileUrl(profile.resume),
+        github: safeProfileUrl(profile.github),
+        linkedIn: safeProfileUrl(profile.linkedIn),
+        devpost: safeProfileUrl(profile.devpost),
+        extraLink,
+      },
+    ];
+  });
+}
+
+/** Accounts (and application profile) for these lowercased emails. */
+async function profilesByEmail(
+  emails: readonly string[],
+): Promise<CandidateProfile[]> {
+  if (emails.length === 0) return [];
+  const email = sql<string>`lower(trim(${users.email}))`;
+  return db
+    .select({
+      userId: users.id,
+      email,
+      hackerId: users.hackerId,
+      firstName: applications.firstName,
+      lastName: applications.lastName,
+      accountName: users.name,
+      share: applications.agreeShareWithSponsors,
+      team: teams.name,
+      resume: applications.resumeLink,
+      github: applications.githubLink,
+      linkedIn: applications.linkedInLink,
+      devpost: applications.devpostLink,
+    })
+    .from(users)
+    .leftJoin(applications, eq(applications.userId, users.id))
+    .leftJoin(teams, eq(users.teamId, teams.id))
+    .where(inArray(email, [...emails]))
+    .orderBy(asc(users.id));
+}
+
+// The form ranking reads a Google Sheet and every completed review, so keep
+// it for a minute per sponsor: the page polls, and each shortlist add checks
+// the list. Profiles (and consent) are always read fresh.
+const RANKING_TTL_MS = 60_000;
+const rankingCache = new Map<
+  string,
+  { at: number; rows: Promise<RankedInterestRow[]> }
+>();
+
+function cachedRanking(sponsorName: string) {
+  const now = Date.now();
+  const hit = rankingCache.get(sponsorName);
+  if (hit && now - hit.at < RANKING_TTL_MS) return hit.rows;
+  const rows = fetchRankedInterestRows(sponsorName);
+  rankingCache.set(sponsorName, { at: now, rows });
+  // Don't keep a failure around: the next call tries again.
+  rows.catch(() => {
+    if (rankingCache.get(sponsorName)?.rows === rows) {
+      rankingCache.delete(sponsorName);
+    }
+  });
+  return rows;
+}
+
+/**
+ * The sponsor's candidates, best first, at most INTERESTED_HACKER_LIMIT:
+ * the interest form ranking when it's set up and readable, otherwise the
+ * in-app ranking (sponsorShortlist above).
+ */
+export async function sponsorCandidates(
+  sponsor: { id: string; name: string },
+  { now = Date.now() }: { now?: number } = {},
+): Promise<{ source: CandidateSource; hackers: SponsorCandidate[] }> {
+  let ranked: RankedInterestRow[] | null = null;
+  try {
+    ranked = await cachedRanking(sponsor.name);
+  } catch (error) {
+    console.warn(
+      `Interest form unavailable for ${sponsor.name}; using in-app ranking:`,
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  if (ranked) {
+    const profiles = await profilesByEmail(
+      ranked.map((row) => row.email.trim().toLowerCase()),
+    );
+    return {
+      source: "interestForm",
+      hackers: candidatesFromInterestForm(ranked, profiles),
+    };
+  }
+
+  const fallback = await sponsorShortlist(sponsor.id, {
+    now,
+    limit: INTERESTED_HACKER_LIMIT,
+  });
+  return {
+    source: "inAppRanking",
+    hackers: fallback.map((h, index) => ({
+      userId: h.userId,
+      hackerId: h.hackerId,
+      rank: index + 1,
+      pick: h.rank,
+      name: h.name,
+      shared: true,
+      team: h.team,
+      resume: h.resume,
+      github: h.github,
+      linkedIn: h.linkedIn,
+      devpost: h.devpost,
+      extraLink: null,
+    })),
+  };
 }

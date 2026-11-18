@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 
 import {
   cell,
@@ -6,8 +7,13 @@ import {
   getSheetsClient,
 } from "~/server/api/utils/sponsor-sheets";
 import { env } from "~/env";
+import { db } from "~/server/db";
+import { applications, reviews, users } from "~/server/db/schema";
 
-type InterestRow = {
+/** How many interested hackers a sponsor sees, best application first. */
+export const INTERESTED_HACKER_LIMIT = 40;
+
+export type InterestRow = {
   email: string;
   name: string;
   resumeUrl: string;
@@ -109,4 +115,102 @@ export async function fetchHackerInterestRows(
       },
     ];
   });
+}
+
+/** One completed review of an applicant, keyed by the applicant's email. */
+export type ScoredReview = {
+  email: string;
+  originalityRating: number | null;
+  technicalityRating: number | null;
+  passionRating: number | null;
+};
+
+/** An interest form row that made the sponsor's list, best first. */
+export type RankedInterestRow = {
+  /** Lowercased; server-side only, never sent to sponsors. */
+  email: string;
+  name: string;
+  resumeUrl: string;
+  extraLink: string;
+  /** Where the hacker put this sponsor on the form (1-3). */
+  pick: number;
+};
+
+/**
+ * Hackers who put the sponsor in their top 3 on the interest form and have
+ * at least one completed review, by average review score (ties by name),
+ * capped at `limit`. One row per email (the first form response wins).
+ */
+export function rankInterestRows(
+  interestRows: readonly InterestRow[],
+  scoredReviews: readonly ScoredReview[],
+  limit = INTERESTED_HACKER_LIMIT,
+): RankedInterestRow[] {
+  const interestedEmails = new Set(interestRows.map((row) => row.email));
+  const scores = new Map<string, number>();
+  const reviewCounts = new Map<string, number>();
+  for (const row of scoredReviews) {
+    const email = row.email.trim().toLowerCase();
+    if (!interestedEmails.has(email)) continue;
+    scores.set(
+      email,
+      (scores.get(email) ?? 0) +
+        (row.originalityRating ?? 0) +
+        (row.technicalityRating ?? 0) +
+        (row.passionRating ?? 0),
+    );
+    reviewCounts.set(email, (reviewCounts.get(email) ?? 0) + 1);
+  }
+
+  const firstByEmail = new Map<string, InterestRow>();
+  for (const row of interestRows) {
+    if (!firstByEmail.has(row.email)) firstByEmail.set(row.email, row);
+  }
+
+  return [...firstByEmail.values()]
+    .flatMap((row) =>
+      row.rank !== null && row.rank <= 3 && scores.has(row.email)
+        ? [
+            {
+              email: row.email,
+              name: row.name.trim(),
+              resumeUrl: row.resumeUrl,
+              extraLink: row.extraLink,
+              pick: row.rank,
+              score:
+                (scores.get(row.email) ?? 0) /
+                (reviewCounts.get(row.email) ?? 1),
+            },
+          ]
+        : [],
+    )
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    )
+    .slice(0, limit)
+    .map(({ score: _score, ...row }) => row);
+}
+
+/**
+ * The sponsor's interested hackers from the interest form, best first.
+ * Throws when the form isn't configured or can't be read.
+ */
+export async function fetchRankedInterestRows(
+  sponsorName: string,
+): Promise<RankedInterestRow[]> {
+  const interestRows = await fetchHackerInterestRows(sponsorName);
+  const scoredReviews = await db
+    .select({
+      email: users.email,
+      originalityRating: reviews.originalityRating,
+      technicalityRating: reviews.technicalityRating,
+      passionRating: reviews.passionRating,
+    })
+    .from(applications)
+    .innerJoin(users, eq(users.id, applications.userId))
+    .innerJoin(reviews, eq(reviews.applicantUserId, applications.userId))
+    .where(eq(reviews.completed, true));
+  return rankInterestRows(interestRows, scoredReviews);
 }
