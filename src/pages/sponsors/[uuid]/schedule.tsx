@@ -12,7 +12,7 @@ import { NextEventCard } from "~/components/sponsors/next-event-card";
 import { RepCount } from "~/components/sponsors/rep-count";
 import {
   DayGrid,
-  TimelineKey,
+  HackathonToggle,
   useShowHackathon,
 } from "~/components/sponsors/day-grid";
 import {
@@ -170,15 +170,17 @@ export default function SponsorSchedulePage() {
           </nav>
         </>
       )}
-      <DayPicker value={shownDay} onChange={setDay} />
-      <TimelineKey
-        showHackathon={showHackathon}
-        onShowHackathonChange={setShowHackathon}
-      />
       <DayGrid
         day={shownDay}
         entries={entries}
         now={now}
+        headerStart={<DayPicker value={shownDay} onChange={setDay} />}
+        headerEnd={
+          <HackathonToggle
+            showHackathon={showHackathon}
+            onShowHackathonChange={setShowHackathon}
+          />
+        }
         sponsorName={data.sponsorName}
         workshops={data.workshops}
       />

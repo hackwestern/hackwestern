@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { CalendarX, Clock, MapPin, Users, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardCheckbox } from "~/components/internals/dashboard-checkbox";
@@ -136,59 +136,31 @@ const NO_ROOM_NEEDED = new Set<TimelineEntry["category"]>([
   "spon-booth",
 ]);
 
-/** Legend plus the hide/show switch for hackathon events. */
-export function TimelineKey({
+/**
+ * The hide/show switch for hackathon events, sized for the schedule card's
+ * header row. No legend: the column headers name each lane (Jazz,
+ * 2026-11-18).
+ */
+export function HackathonToggle({
   showHackathon,
   onShowHackathonChange,
-  mode = "sponsor",
 }: {
   showHackathon: boolean;
   onShowHackathonChange: (show: boolean) => void;
-  mode?: GridMode;
 }) {
   const toggleId = useId();
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-      <ul
-        aria-label={copy.legendLabel}
-        className="m-0 flex list-none flex-wrap items-center gap-x-4 gap-y-1 p-0 text-sm text-dashboard-text-medium"
-      >
-        <li className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="size-4 rounded-dashboard-xs border-l-4 border-dashboard-action-primary bg-dashboard-bg-surface shadow-dashboard-card"
-          />
-          {mode === "organizer" ? copy.runOfShow : copy.yours}
-        </li>
-        <li className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="size-4 rounded-dashboard-xs border border-dashed border-dashboard-border-control bg-dashboard-bg-inset"
-          />
-          {copy.hackathon}
-        </li>
-        {mode === "organizer" && (
-          <li className="flex items-center gap-2">
-            <span
-              aria-hidden
-              className="size-4 rounded-dashboard-xs border-l-4 border-dashboard-border-task bg-dashboard-bg-task"
-            />
-            {copy.teamTask}
-          </li>
-        )}
-      </ul>
-      <label
-        htmlFor={toggleId}
-        className="flex min-h-11 cursor-pixel-hover items-center gap-1.5 text-sm font-medium text-dashboard-text-heavy"
-      >
-        <DashboardCheckbox
-          id={toggleId}
-          checked={showHackathon}
-          onCheckedChange={(v) => onShowHackathonChange(v === true)}
-        />
-        {copy.showHackathon}
-      </label>
-    </div>
+    <label
+      htmlFor={toggleId}
+      className="flex min-h-10 cursor-pixel-hover items-center gap-1.5 text-sm font-medium text-dashboard-text-heavy sm:min-h-8"
+    >
+      <DashboardCheckbox
+        id={toggleId}
+        checked={showHackathon}
+        onCheckedChange={(v) => onShowHackathonChange(v === true)}
+      />
+      {copy.showHackathon}
+    </label>
   );
 }
 
@@ -209,6 +181,8 @@ export function DayGrid({
   workshops = [],
   tasks = [],
   emptyText = scheduleCopy.emptyDay,
+  headerStart,
+  headerEnd,
 }: {
   day: RunOfShowDay;
   entries: readonly TimelineEntry[];
@@ -221,6 +195,10 @@ export function DayGrid({
   /** Organizer view: team tasks listed in an event's details. */
   tasks?: readonly RunOfShowTask[];
   emptyText?: string;
+  /** Beside the day title, e.g. the day pills. */
+  headerStart?: ReactNode;
+  /** Right end of the header row, e.g. the hackathon events switch. */
+  headerEnd?: ReactNode;
 }) {
   const headingId = useId();
   const [selected, setSelected] = useState<TimelineEntry | null>(null);
@@ -326,13 +304,19 @@ export function DayGrid({
       aria-labelledby={headingId}
       className="rounded-dashboard-lg bg-dashboard-bg-surface p-3 shadow-dashboard-card sm:p-5"
     >
-      <div className="mb-3 flex min-h-11 flex-wrap items-center justify-between gap-2">
-        <h2
-          id={headingId}
-          className="m-0 text-lg font-bold text-dashboard-text-heavy sm:text-2xl"
-        >
-          {copy.dayHeading(day, date)}
-        </h2>
+      <div className="mb-3 flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+          <h2
+            id={headingId}
+            className="m-0 text-lg font-bold text-dashboard-text-heavy sm:text-2xl"
+          >
+            {copy.dayHeading(day, date)}
+          </h2>
+          {headerStart}
+        </div>
+        {headerEnd}
+      </div>
+      <div className="-mt-1 mb-3 flex flex-wrap items-center justify-end gap-2 empty:hidden">
         {focused ? (
           <DashboardButton
             variant="outline"
