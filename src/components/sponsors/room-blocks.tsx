@@ -254,11 +254,16 @@ export function BlockDetails({
                 key={slot.slotTime}
                 className="flex flex-col gap-2 border-b border-dashboard-border-subtle py-2.5 text-sm last:border-b-0"
               >
-                <div className="flex items-start gap-3">
-                  <span className="w-16 shrink-0 font-semibold tabular-nums text-dashboard-text-medium">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="whitespace-nowrap font-semibold tabular-nums text-dashboard-text-medium">
                     {time}
                   </span>
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <span className="tabular-nums">
+                    <SlotFill slot={slot} />
+                  </span>
+                </div>
+                {chats.length > 0 && (
+                  <div className="ml-[4.75rem] flex min-w-0 flex-col gap-1.5">
                     {chats.map((c) => (
                       <BlockChat
                         key={c.chatId}
@@ -268,10 +273,7 @@ export function BlockDetails({
                       />
                     ))}
                   </div>
-                  <span className="shrink-0 tabular-nums">
-                    <SlotFill slot={slot} />
-                  </span>
-                </div>
+                )}
                 {open && adding !== slot.slotTime && (
                   <DashboardButton
                     variant="small"
@@ -530,7 +532,7 @@ export function SlotFill({
 }) {
   const short = slot.needed - slot.booked;
   return (
-    <span className="flex items-baseline gap-1.5">
+    <span className="flex flex-wrap items-baseline justify-end gap-x-1.5 whitespace-nowrap">
       <span
         aria-label={copy.fillLabel(slot.booked, slot.needed)}
         className="font-semibold text-dashboard-text-heavy"
@@ -705,7 +707,7 @@ export function SponsorStrip({
                   <SponsorBadge
                     name={item.sponsor}
                     colors={colors}
-                    className="size-5"
+                    className="max-w-20"
                   />
                   <span className="truncate">{item.sponsor}</span>
                 </span>
