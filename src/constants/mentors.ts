@@ -43,30 +43,9 @@ export const MentorsList: Mentor[] = [
   },
   // New this year
   {
-    name: "Ariston Michael",
-    skills: ["C#", "Python", "Cloud", ".NET", "Unity"],
-    tags: ["Software Engineering", "Design", "AI", "Hardware"],
-    image: "/landing/mentors/aristonm.webp",
-    linkedin: "https://www.linkedin.com/in/ariston-michael/",
-  },
-  {
     name: "Aiden (Arman) Alaei",
     skills: ["Python", "Machine learning", "C#", "REST APIs"],
     tags: ["Software Engineering", "Product Management", "AI"],
-  },
-  {
-    name: "Isteyak Isteyak",
-    skills: ["Computer vision", "C++", "CUDA", "FastAPI", "MERN"],
-    tags: ["Software Engineering", "Product Management", "AI"],
-    image: "/landing/mentors/isteyak.webp",
-    linkedin: "https://www.linkedin.com/in/isteyak/",
-  },
-  {
-    name: "Keerthana Bhukya",
-    skills: ["LLMs & RAG", "Python", "Next.js", "FastAPI", "AWS"],
-    tags: ["Software Engineering", "Product Management", "AI"],
-    image: "/landing/mentors/keerthanab.webp",
-    linkedin: "https://www.linkedin.com/in/keerthanabhukya/",
   },
   {
     name: "Shivansh Kushwaha",
@@ -74,29 +53,6 @@ export const MentorsList: Mentor[] = [
     tags: ["Software Engineering", "Product Management", "Design", "AI"],
     image: "/landing/mentors/shivanshk.webp",
     linkedin: "https://www.linkedin.com/in/shivkushwaha/",
-  },
-  {
-    name: "Eric Liu",
-    skills: ["Real-time backends", "TypeScript", "AI agents", "WebSockets"],
-    tags: ["Software Engineering", "AI"],
-    image: "/landing/mentors/ericl.webp",
-    linkedin: "https://www.linkedin.com/in/eric-liu-b0694442a/",
-  },
-  {
-    // UNVERIFIED: very short answers
-    name: "Nelson Zhou",
-    skills: ["Python", "Customer discovery"],
-    tags: ["Design"],
-    image: "/landing/mentors/nelsonz.webp",
-    linkedin: "https://www.linkedin.com/in/nelson-zhou/",
-  },
-  {
-    // UNVERIFIED: every free-text answer was just "a", skills left empty
-    name: "Evan Yang",
-    skills: [],
-    tags: ["Software Engineering", "Product Management", "Design", "AI"],
-    image: "/landing/mentors/evany.webp",
-    linkedin: "https://www.linkedin.com/in/evanzyang/",
   },
   {
     name: "Mohamed Toman",
@@ -112,13 +68,6 @@ export const MentorsList: Mentor[] = [
     linkedin: "https://www.linkedin.com/in/aleksbrsc/",
   },
   {
-    name: "Khushal Mehta",
-    skills: ["AI & LLMs", "Python", "Project management", "Startups"],
-    tags: ["Software Engineering", "Product Management", "Design", "AI"],
-    image: "/landing/mentors/khushalm.webp",
-    linkedin: "https://www.linkedin.com/in/khushal-mehta/",
-  },
-  {
     name: "William Liu",
     skills: ["Project scoping", "Debugging", "Design", "Figma"],
     tags: ["Software Engineering", "Product Management", "Design"],
@@ -131,20 +80,6 @@ export const MentorsList: Mentor[] = [
     tags: ["Software Engineering", "AI"],
     linkedin: "https://www.linkedin.com/in/hanjaemin/",
     image: "/landing/mentors/jaeminh.webp",
-  },
-  {
-    name: "Anmol Kumari",
-    skills: ["Python", "Data & AI", "FastAPI", "Agents", "Azure"],
-    tags: ["Software Engineering", "AI"],
-    image: "/landing/mentors/anmolk.webp",
-    linkedin: "https://www.linkedin.com/in/anmol-kumari-429988119/",
-  },
-  {
-    name: "Alan Lu",
-    skills: ["Node.js", "React", "TypeScript", "MongoDB"],
-    tags: ["Software Engineering"],
-    image: "/landing/mentors/alanl.webp",
-    linkedin: "https://www.linkedin.com/in/lu-alan/",
   },
   {
     name: "Rafay Kashif",
@@ -166,25 +101,5 @@ export const MentorsList: Mentor[] = [
     tags: ["Software Engineering", "Design", "Hardware", "AI"],
     image: "/landing/mentors/alim.webp",
     linkedin: "https://www.linkedin.com/in/am-uwo/",
-  },
-  {
-    name: "Vidhi Kalal",
-    skills: ["Python", "SQL", "Next.js", "Cloud", "Gen AI"],
-    tags: ["Software Engineering", "AI"],
-    image: "/landing/mentors/vidhik.webp",
-    linkedin: "https://www.linkedin.com/in/vidhi-kalal/",
-  },
-  {
-    name: "Mohammad Hammad",
-    skills: ["Python", "Java", "JavaScript", "Unity"],
-    tags: ["Software Engineering"],
-    image: "/landing/mentors/mohammadh.webp",
-    linkedin: "https://www.linkedin.com/in/mohammad-b-hammad/",
-  },
-  {
-    name: "Maxim Skubitsky",
-    skills: ["Product thinking", "Figma", "Case competitions", "Pitching"],
-    tags: ["Product Management", "Design"],
-    linkedin: "https://www.linkedin.com/in/maxim-skubitsky/",
   },
 ];
