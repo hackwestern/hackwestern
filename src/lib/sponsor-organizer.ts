@@ -3,12 +3,15 @@
 // redirect, and the per-sponsor chat and help summary. Pure, so it's tested
 // without a router or a database.
 
+import { blockFill, holdStartTimes, type HoldSpan } from "~/lib/coffee-chat-holds";
 import {
-  blockFill,
-  blockFormatOf,
-  holdStartTimes,
-  type HoldSpan,
-} from "~/lib/coffee-chat-holds";
+  askedAt,
+  chatRequestOf,
+  type ChatRequest,
+  type SavedChatRequest,
+  type SetupLike,
+  type SlotLimit,
+} from "~/lib/coffee-chat-request";
 import {
   coffeeChatExpiresAt,
   effectiveCoffeeChatStatus,
@@ -177,8 +180,8 @@ export type SponsorSummary = {
   /** Every room this sponsor uses: block rooms plus live chats', sorted. */
   rooms: string[];
   /** Chat type from the Coffee Chats sheet row; null without one. */
-  format: { durationMinutes: number; groupSize: number } | null;
-  reps: number;
+  /** The chat request in force (source "none" = no request yet). */
+  request: ChatRequest;
   watcher: string | null;
   accepted: number;
   /** Requests the hacker can still answer (past the cutoff they expire). */
@@ -257,24 +260,28 @@ export function summaryTotals(
   );
 }
 
-type SetupRow = {
+type SetupRow = SetupLike & {
   sponsor: string;
   room: string | null;
-  windowStart?: string | null;
-  windowEnd?: string | null;
-  durationMinutes?: number;
-  groupSize?: number;
 };
 
-/** Seats still offerable today: same rules as the organizer board. */
+function savedOf(s: {
+  coffeeChatStyle?: string | null;
+  coffeeChatPerSlot?: number | null;
+}): SavedChatRequest {
+  return { style: s.coffeeChatStyle ?? null, perSlot: s.coffeeChatPerSlot ?? null };
+}
+
+/** Seats still offerable today: same rules as offering a chat. */
 function seatsLeftToday(
-  setup: SetupRow | undefined,
+  sponsorId: string,
+  request: ChatRequest,
+  limits: readonly SlotLimit[],
   holds: readonly HoldSpan[],
   live: { slotTime: string; durationMinutes: number }[],
-  reps: number,
   now: Date,
 ): number {
-  const { durationMinutes, groupSize } = blockFormatOf(setup, reps);
+  const { durationMinutes } = request;
   const times = new Set(
     holds.flatMap((h) => holdStartTimes(h, durationMinutes)),
   );
@@ -282,7 +289,12 @@ function seatsLeftToday(
     .filter((t) => now < coffeeChatExpiresAt(t))
     .reduce(
       (sum, slotTime) =>
-        sum + seatsLeft(live, { slotTime, durationMinutes }, reps, groupSize),
+        sum +
+        seatsLeft(
+          live,
+          { slotTime, durationMinutes },
+          askedAt(request, limits, sponsorId, slotTime).asked,
+        ),
       0,
     );
 }
@@ -300,13 +312,15 @@ export function buildSponsorSummaries({
   chats,
   help,
   holds = [],
+  limits = [],
   judging = null,
   now,
 }: {
   sponsors: readonly {
     id: string;
     name: string;
-    coffeeChatReps?: number;
+    coffeeChatStyle?: string | null;
+    coffeeChatPerSlot?: number | null;
     coffeeChatWatcher?: string | null;
   }[];
   /** Coffee Chats sheet rows by sponsor name ([] when the sheet failed). */
@@ -333,6 +347,8 @@ export function buildSponsorSummaries({
   }[];
   /** Organizer room holds (every sponsor). */
   holds?: readonly (HoldSpan & { holdId?: string })[];
+  /** Sponsors' asks for fewer hackers (every sponsor). */
+  limits?: readonly SlotLimit[];
   /** Sunday judging board (buildJudgingBoard); null when not read. */
   judging?: JudgingBoard | null;
   now: Date;
@@ -344,14 +360,7 @@ export function buildSponsorSummaries({
       sponsorId: s.id,
       name: s.name,
       rooms: [],
-      format:
-        setup?.windowStart && setup.windowEnd
-          ? {
-              durationMinutes: setup.durationMinutes ?? 15,
-              groupSize: setup.groupSize ?? 1,
-            }
-          : null,
-      reps: s.coffeeChatReps ?? 1,
+      request: chatRequestOf(setup, savedOf(s)),
       watcher: s.coffeeChatWatcher ?? null,
       accepted: 0,
       pending: 0,
@@ -406,11 +415,8 @@ export function buildSponsorSummaries({
   for (const hold of sortedHolds) {
     const row = byId.get(hold.sponsorId);
     if (!row) continue;
-    const format = blockFormatOf(
-      setups.find((c) => c.sponsor === row.name),
-      row.reps,
-    );
-    const needs = blockFill(hold, format, live, now).firstOpen !== null;
+    const needs =
+      blockFill(hold, row.request, live, limits, now).firstOpen !== null;
     row.holds.push({
       holdId: hold.holdId ?? `${hold.sponsorId}-${hold.startTime}`,
       sponsorId: hold.sponsorId,
@@ -432,10 +438,11 @@ export function buildSponsorSummaries({
       ]),
     ].sort();
     row.seatsLeft = seatsLeftToday(
-      setup,
+      row.sponsorId,
+      row.request,
+      limits,
       row.holds,
       live.filter((c) => c.sponsorId === row.sponsorId),
-      row.reps,
       now,
     );
   }

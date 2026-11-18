@@ -28,6 +28,7 @@ import { db } from "~/server/db";
 import {
   applications,
   coffeeChatHolds,
+  coffeeChatLimits,
   coffeeChats,
   sponsorHelpRequests,
   sponsorJudgingSponsors,
@@ -91,11 +92,12 @@ export const sponsorOrganizerRouter = createTRPCRouter({
         .select({
           id: sponsorJudgingSponsors.id,
           name: sponsorJudgingSponsors.name,
-          coffeeChatReps: sponsorJudgingSponsors.coffeeChatReps,
+          coffeeChatStyle: sponsorJudgingSponsors.coffeeChatStyle,
+          coffeeChatPerSlot: sponsorJudgingSponsors.coffeeChatPerSlot,
           coffeeChatWatcher: sponsorJudgingSponsors.coffeeChatWatcher,
         })
         .from(sponsorJudgingSponsors);
-      const [runOfShow, sheet, chats, help, holds] = await Promise.all([
+      const [runOfShow, sheet, chats, help, holds, limits] = await Promise.all([
         runOfShowFor(sponsors.map((s) => s.name)),
         judgingSheet(),
         db
@@ -135,6 +137,14 @@ export const sponsorOrganizerRouter = createTRPCRouter({
             endTime: coffeeChatHolds.endTime,
           })
           .from(coffeeChatHolds),
+        db
+          .select({
+            sponsorId: coffeeChatLimits.sponsorId,
+            startTime: coffeeChatLimits.startTime,
+            endTime: coffeeChatLimits.endTime,
+            hackers: coffeeChatLimits.hackers,
+          })
+          .from(coffeeChatLimits),
       ]);
       return buildSponsorSummaries({
         sponsors,
@@ -148,6 +158,7 @@ export const sponsorOrganizerRouter = createTRPCRouter({
         })),
         help,
         holds,
+        limits,
         judging: buildJudgingBoard({
           sponsors,
           items: runOfShow?.items ?? [],

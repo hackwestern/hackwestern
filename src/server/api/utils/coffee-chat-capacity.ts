@@ -7,11 +7,14 @@ import {
 } from "~/lib/coffee-chat-requests";
 import {
   coffeeChatOfferRoom,
-  hackersPerSlot,
   holdStartTimes,
   type HoldSpan,
 } from "~/lib/coffee-chat-holds";
-import type { CoffeeChatSetup } from "~/lib/run-of-show";
+import {
+  askedAt,
+  type ChatRequest,
+  type SlotLimit,
+} from "~/lib/coffee-chat-request";
 
 /**
  * Capacity rules for offering a coffee chat (T15) and for organizer moves
@@ -60,21 +63,16 @@ export function seatsUsed(sponsorChats: ChatTime[], slot: ChatTime): number {
 }
 
 /**
- * Seats left at `slot` for a sponsor with this many reps and group size:
- * hackersPerSlot (chat type x reps). The room's 6 people don't cap it
- * (docs/decisions.md 2026-11-18 hackers per slot).
+ * Seats left at `slot`: hackers the sponsor asked for there (their
+ * request, lowered by any "Ask for fewer") minus hackers booked. No room
+ * capacity (docs/flows/coffee-chat-room-blocks.md v2).
  */
 export function seatsLeft(
   sponsorChats: ChatTime[],
   slot: ChatTime,
-  reps: number,
-  groupSize: number,
+  asked: number,
 ): number {
-  return Math.max(
-    0,
-    hackersPerSlot({ durationMinutes: slot.durationMinutes, groupSize, reps }) -
-      seatsUsed(sponsorChats, slot),
-  );
+  return Math.max(0, asked - seatsUsed(sponsorChats, slot));
 }
 
 /** "Rm 2241", " rm  2241 " -> "rm 2241", for comparing room labels. */
@@ -122,12 +120,16 @@ export function offerRoomAt(input: {
   return coffeeChatOfferRoom(input.holds ?? [], input.sponsorId, input.slot);
 }
 
-/** Chat length and group size, with 1-on-1 15-min defaults. */
-export function formatOf(setup: CoffeeChatSetup | null) {
-  return {
-    durationMinutes: setup?.durationMinutes ?? 15,
-    groupSize: setup?.groupSize ?? 1,
-  };
+/** The request and asks the offer rules read. */
+type Asks = {
+  sponsorId: string;
+  request: Pick<ChatRequest, "perSlot" | "durationMinutes">;
+  limits?: readonly SlotLimit[];
+};
+
+function askedFor(input: Asks, slotTime: string): number {
+  return askedAt(input.request, input.limits ?? [], input.sponsorId, slotTime)
+    .asked;
 }
 
 /**
@@ -135,10 +137,9 @@ export function formatOf(setup: CoffeeChatSetup | null) {
  * their own room blocks. The sheet window alone offers nothing.
  */
 export function offerStartTimes(
-  setup: CoffeeChatSetup | null,
+  durationMinutes: number,
   holds: readonly HoldSpan[] = [],
 ): string[] {
-  const { durationMinutes } = formatOf(setup);
   const times = new Set<string>();
   for (const hold of holds) {
     for (const t of holdStartTimes(hold, durationMinutes)) times.add(t);
@@ -149,35 +150,35 @@ export function offerStartTimes(
 /**
  * Why an offer can't be made, or null when it can. Checks, in order: one
  * of the sponsor's own blocks (`holds`) covers the start, the time is one
- * of that block's slot starts, it isn't past the reply cutoff, a seat is
- * free, the hacker is free, and no other sponsor is in the room (chats and
- * blocks, passed in `roomChats`).
+ * of that block's slot starts, it isn't past the reply cutoff, the slot
+ * still has hackers asked for, the hacker is free, and no other sponsor is
+ * in the room (chats and blocks, passed in `roomChats`).
  */
-export function offerProblem(input: {
-  setup: CoffeeChatSetup | null;
-  slotTime: string;
-  reps: number;
-  sponsorId: string;
-  sponsorChats: SponsorChat[];
-  hackerChats: ChatTime[];
-  roomChats: RoomChat[];
-  holds?: readonly HoldSpan[];
-  now: Date;
-}): OfferProblem | null {
-  const { setup } = input;
+export function offerProblem(
+  input: Asks & {
+    slotTime: string;
+    sponsorChats: SponsorChat[];
+    hackerChats: ChatTime[];
+    roomChats: RoomChat[];
+    holds?: readonly HoldSpan[];
+    now: Date;
+  },
+): OfferProblem | null {
   const room = offerRoomAt({
     sponsorId: input.sponsorId,
     holds: input.holds,
     slot: input,
   });
   if (!room) return "noBlock";
-  if (!offerStartTimes(setup, input.holds).includes(input.slotTime)) {
+  const { durationMinutes } = input.request;
+  if (!offerStartTimes(durationMinutes, input.holds).includes(input.slotTime)) {
     return "notInWindow";
   }
   if (input.now >= coffeeChatExpiresAt(input.slotTime)) return "tooLate";
-  const { durationMinutes, groupSize } = formatOf(setup);
   const slot = { slotTime: input.slotTime, durationMinutes };
-  if (seatsLeft(input.sponsorChats, slot, input.reps, groupSize) < 1) {
+  if (
+    seatsLeft(input.sponsorChats, slot, askedFor(input, input.slotTime)) < 1
+  ) {
     return "full";
   }
   if (hackerBusy(input.hackerChats, slot)) return "hackerBusy";
@@ -192,21 +193,23 @@ export function offerProblem(input: {
  * left. Leaves out times past the reply cutoff, and, when a hacker's chats
  * are given, times that clash with them.
  */
-export function freeStartTimes(input: {
-  setup: CoffeeChatSetup | null;
-  reps: number;
-  sponsorId: string;
-  sponsorChats: SponsorChat[];
-  hackerChats?: ChatTime[];
-  roomChats: RoomChat[];
-  holds?: readonly HoldSpan[];
-  now: Date;
-}): { slotTime: string; seatsLeft: number; room: string | null }[] {
-  const { setup } = input;
-  const { durationMinutes, groupSize } = formatOf(setup);
-  return offerStartTimes(setup, input.holds).flatMap((slotTime) => {
+export function freeStartTimes(
+  input: Asks & {
+    sponsorChats: SponsorChat[];
+    hackerChats?: ChatTime[];
+    roomChats: RoomChat[];
+    holds?: readonly HoldSpan[];
+    now: Date;
+  },
+): { slotTime: string; seatsLeft: number; room: string | null }[] {
+  const { durationMinutes } = input.request;
+  return offerStartTimes(durationMinutes, input.holds).flatMap((slotTime) => {
     const slot = { slotTime, durationMinutes };
-    const left = seatsLeft(input.sponsorChats, slot, input.reps, groupSize);
+    const left = seatsLeft(
+      input.sponsorChats,
+      slot,
+      askedFor(input, slotTime),
+    );
     const room = offerRoomAt({
       sponsorId: input.sponsorId,
       holds: input.holds,

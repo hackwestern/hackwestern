@@ -231,6 +231,12 @@ function toCount(text: string): number | null {
   return Number(text);
 }
 
+/** "2", "2.5" -> hours; null when blank or not a number. */
+function toHours(text: string): number | null {
+  if (!/^\d+(\.\d+)?$/.test(text)) return null;
+  return Number(text);
+}
+
 /**
  * Parse the "Coffee Chats" tab (header in row 1, matched by name). Skips
  * blank names and the "Total" row. A row with only a name is a sponsor not
@@ -245,9 +251,11 @@ export function parseCoffeeChatsTab(grid: SheetGrid): CoffeeChatSetup[] {
   const cols = {
     start: col("AVAILABILITY START"),
     end: col("AVAILABILITY END"),
+    hours: col("CHATTING HOURS"),
     slots: col("SLOTS"),
     hackers: col("HACKERS CHATTING"),
     format: col("FORMAT"),
+    notes: col("NOTES"),
     room: col("ROOM"),
   };
 
@@ -262,9 +270,11 @@ export function parseCoffeeChatsTab(grid: SheetGrid): CoffeeChatSetup[] {
       windowEnd: parseSheetTime(at(r, cols.end)),
       durationMinutes: parseCoffeeChatDuration(format),
       groupSize: parseCoffeeChatGroupSize(format),
+      chattingHours: toHours(at(r, cols.hours)),
       slots: toCount(at(r, cols.slots)),
       hackers: toCount(at(r, cols.hackers)),
       format,
+      notes: at(r, cols.notes) || null,
       room: at(r, cols.room) || null,
     });
   }

@@ -135,7 +135,7 @@ describe("sponsor matching", () => {
     );
     expect(named.items.find((i) => i.title === "Sunlife Workshop")?.sponsors).toEqual(["Sun Life"]);
     expect(named.items.find((i) => i.title === "Dinner")?.sponsors).toEqual([]);
-    expect(named.coffeeChats.map((c) => c.sponsor)).toEqual(["StarTech", "Sun Life", "Canada Life", "Scotiabank"]);
+    expect(named.coffeeChats.map((c) => c.sponsor)).toEqual(["StarTech", "Sun Life", "Canada Life", "Scotiabank", "CSE"]);
   });
 
   test("matches sponsors named only in the location (Sunday judging rooms)", () => {
@@ -154,10 +154,11 @@ describe("sponsor matching", () => {
 
 const COFFEE: string[][] = [
   ["Sponsor", "AVAILABILITY START", "AVAILABILITY END", "CHATTING HOURS", "SLOTS", "HACKERS CHATTING", "FORMAT", "NOTES"],
-  ["StarTech", "9:00 AM", "1:00 PM", "2", "24", "24", "Individual (15 mins)", "3-4 reps"],
+  ["StarTech", "9:00 AM", "1:00 PM", "2", "24", "24", "Individual (15 mins)", "3-4 reps (notes based on 3)"],
   ["Sunlife", "10:00 AM", "4:00 PM", "3", "12", "36", "Groups (30 mins with 3 people)"],
   ["Canada Life", "10:00 AM", "12:00 PM", "3", "4", "12", "Groups (30 mins with 3 people)"],
   ["Scotiabank"],
+  ["CSE"],
   [],
   ["Total", "", "", "", "", "72"],
 ];
@@ -172,12 +173,20 @@ describe("parseCoffeeChatsTab", () => {
       windowEnd: "13:00",
       durationMinutes: 15,
       groupSize: 1,
+      chattingHours: 2,
       slots: 24,
       hackers: 24,
       format: "Individual (15 mins)",
+      notes: "3-4 reps (notes based on 3)",
       room: null,
     });
-    expect(setups[1]).toMatchObject({ durationMinutes: 30, groupSize: 3, windowEnd: "16:00" });
+    expect(setups[1]).toMatchObject({
+      durationMinutes: 30,
+      groupSize: 3,
+      windowEnd: "16:00",
+      chattingHours: 3,
+      notes: null,
+    });
   });
 
   test("a name-only row is not set up yet", () => {
@@ -186,12 +195,14 @@ describe("parseCoffeeChatsTab", () => {
       windowEnd: null,
       slots: null,
       hackers: null,
+      chattingHours: null,
       format: null,
+      notes: null,
     });
   });
 
   test("skips the Total row and blank rows", () => {
-    expect(setups.map((s) => s.sponsor)).toEqual(["StarTech", "Sunlife", "Canada Life", "Scotiabank"]);
+    expect(setups.map((s) => s.sponsor)).toEqual(["StarTech", "Sunlife", "Canada Life", "Scotiabank", "CSE"]);
   });
 
   test("matches columns by header name and reads ROOM when present", () => {
