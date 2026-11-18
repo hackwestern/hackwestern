@@ -32,6 +32,7 @@ import { sponsorPortalCopy as copy } from "~/content/sponsor-portal";
 import { SponsorHelp } from "~/components/sponsors/help-button";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorLogo } from "~/lib/sponsor-logos";
+import { BoothLayout } from "~/components/sponsors/booth-layout";
 import { cn } from "~/lib/utils";
 
 export default function SponsorHubPage() {
@@ -255,6 +256,20 @@ export default function SponsorHubPage() {
               )}
             </div>
           </dl>
+        </section>
+
+        {/* Sponsor Bay layout: booths around the projector screen */}
+        <section
+          aria-labelledby="booths-heading"
+          className="flex flex-col gap-3"
+        >
+          <h2
+            id="booths-heading"
+            className="dashboard-section-label m-0 text-dashboard-text-light"
+          >
+            {venue.booths.heading}
+          </h2>
+          <BoothLayout sponsorName={data?.sponsorName} />
         </section>
 
         {/* Event details */}

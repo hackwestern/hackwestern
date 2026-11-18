@@ -54,6 +54,14 @@ export const sponsorVenueCopy = {
     },
     openMap: "See it on the map",
   },
+  booths: {
+    heading: "Sponsor Bay layout",
+    screen: "Projector screen",
+    label: "Sponsor Bay booth layout around the projector screen",
+    labelMine: (sponsor: string) =>
+      `Sponsor Bay booth layout around the projector screen. Your booth, ${sponsor}, is highlighted.`,
+    yours: (sponsor: string) => `Your booth is highlighted: ${sponsor}.`,
+  },
   judgingLocked: {
     badge: "Opens Sunday 9:00 AM",
     message:
