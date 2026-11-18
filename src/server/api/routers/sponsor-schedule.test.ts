@@ -29,6 +29,11 @@ vi.mock("~/server/api/utils/run-of-show-sheet", () => {
   });
   return {
     runOfShowSheetUrl: () => "https://docs.google.com/spreadsheets/d/fake/edit",
+    // The organizer summary caches its judging sheet read; no cache here.
+    createCachedLoader: (load: () => Promise<unknown>) => ({
+      get: load,
+      clear: () => undefined,
+    }),
     getRunOfShow: () =>
       Promise.resolve({
         readAt: "2026-11-15T12:00:00.000Z",
