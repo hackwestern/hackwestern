@@ -7,6 +7,21 @@ export const sponsorHackersCopy = {
   pageIntro:
     "See who wants to meet you, shortlist the hackers you'd like to chat with, and follow the chats you've offered.",
   chatsHeading: "Your chats",
+  // The switch between Your chats and Candidates at the top of the page.
+  tabs: {
+    label: "Coffee chats",
+    chats: "Your chats",
+    candidates: "Candidates",
+  },
+  // The three numbers above the switch.
+  stats: {
+    label: "Summary",
+    accepted: "Accepted",
+    waiting: "Waiting",
+    shortlisted: "Shortlisted",
+    of: (max: number) => `of ${max}`,
+  },
+  refreshLabel: "Refresh chats and candidates",
   heading: "Candidates",
   // Candidates from the hacker interest form (the usual case).
   introForm:
@@ -26,6 +41,7 @@ export const sponsorHackersCopy = {
   filterAll: "All",
   filterShortlisted: "Shortlisted",
   filterNotShortlisted: "Not shortlisted",
+  filterCount: (label: string, n: number) => `${label}, ${n}`,
   noneShortlisted:
     "You haven't shortlisted anyone yet. Tap Shortlist on a hacker to add them.",
   noneNotShortlisted: "Everyone on this list is on your shortlist.",

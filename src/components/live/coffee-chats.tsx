@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Check, Clock, Copy, MapPin, UserRound } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
+import { pressable } from "~/components/sponsors/sponsor-shell";
 import { useNow } from "~/components/sponsors/use-now";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import {
@@ -181,7 +182,7 @@ export default function CoffeeChats() {
           </p>
           <DashboardButton
             variant="outline"
-            className="h-11"
+            className={cn("h-11", pressable)}
             onClick={() => void chats.refetch()}
           >
             {copy.retry}
@@ -316,7 +317,7 @@ function ChatCard({
   return (
     <li
       className={cn(
-        "flex flex-col gap-3 rounded-dashboard-lg border p-4 motion-safe:duration-200 motion-safe:animate-in motion-safe:fade-in",
+        "flex flex-col gap-3 rounded-dashboard-2xl border p-4 motion-safe:duration-200 motion-safe:animate-in motion-safe:fade-in sm:p-5",
         pending
           ? "border-dashboard-action-primary bg-dashboard-bg-surface shadow-dashboard-card"
           : accepted
@@ -334,7 +335,7 @@ function ChatCard({
         </h3>
         <span
           className={cn(
-            "inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-semibold",
+            "inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold",
             chipClass[status],
           )}
         >
@@ -408,7 +409,7 @@ function ChatCard({
       )}
 
       {confirming && (pending || canDrop) ? (
-        <div className="flex flex-col gap-2 rounded-dashboard-md border border-dashboard-border-control p-3">
+        <div className="flex flex-col gap-2 rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-highlightSubtle p-3 motion-safe:duration-150 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1">
           <p className="m-0 text-sm font-semibold text-dashboard-text-heavy">
             {pending
               ? copy.confirmDecline(chat.sponsorName)
@@ -418,7 +419,7 @@ function ChatCard({
             <DashboardButton
               ref={confirmYes}
               variant="outline"
-              className="h-11 flex-1"
+              className={cn("h-11 flex-1", pressable)}
               aria-label={
                 busy
                   ? undefined
@@ -437,7 +438,7 @@ function ChatCard({
             </DashboardButton>
             <DashboardButton
               variant="outline"
-              className="h-11 flex-1"
+              className={cn("h-11 flex-1", pressable)}
               aria-label={copy.keepLabel(chat.sponsorName)}
               onClick={closeConfirm}
             >
@@ -448,7 +449,7 @@ function ChatCard({
       ) : pending ? (
         <div className="flex gap-2">
           <DashboardButton
-            className="h-11 flex-1 md:h-11"
+            className={cn("h-11 flex-1 md:h-11", pressable)}
             aria-label={busy ? undefined : copy.acceptLabel(chat.sponsorName)}
             aria-disabled={busy || undefined}
             onClick={() => onAnswer("accept")}
@@ -458,7 +459,7 @@ function ChatCard({
           <DashboardButton
             ref={opener}
             variant="outline"
-            className="h-11 flex-1"
+            className={cn("h-11 flex-1", pressable)}
             aria-label={copy.declineLabel(chat.sponsorName)}
             aria-disabled={busy || undefined}
             onClick={() => onConfirm(true)}
@@ -470,7 +471,7 @@ function ChatCard({
         <DashboardButton
           ref={opener}
           variant="outline"
-          className="h-11 w-fit"
+          className={cn("h-11 w-fit", pressable)}
           aria-label={copy.cantMakeLabel(chat.sponsorName)}
           aria-disabled={busy || undefined}
           onClick={() => onConfirm(true)}
@@ -527,7 +528,7 @@ function HackerCode({
             </code>
             <DashboardButton
               variant="outline"
-              className="h-11"
+              className={cn("h-11", pressable)}
               aria-label={copy.copyLabel}
               onClick={() => void copyCode()}
             >

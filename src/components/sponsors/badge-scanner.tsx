@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
+import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
+import { hoverTint, pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorScanCopy } from "~/content/sponsor-scan";
 import { formatClock } from "~/lib/run-of-show";
 import {
@@ -219,7 +221,7 @@ function CameraPanel({
             </p>
           </div>
           {status !== "unavailable" && (
-            <DashboardButton variant="outline" className="h-11" onClick={retry}>
+            <DashboardButton variant="outline" className={cn("h-11", pressable)} onClick={retry}>
               {copy.camera.retry}
             </DashboardButton>
           )}
@@ -307,7 +309,7 @@ function ManualEntry({ onSubmit }: { onSubmit: (text: string) => void }) {
         <DashboardButton
           type="submit"
           variant="outline"
-          className="h-11 w-full sm:w-auto"
+          className={cn("h-11 w-full sm:w-auto", pressable)}
         >
           {copy.manual.submit}
         </DashboardButton>
@@ -350,7 +352,7 @@ function NotHackerPanel({
         <StepHeading headingRef={headingRef}>{title}</StepHeading>
       </div>
       <p className="m-0 text-base text-dashboard-text-medium">{body}</p>
-      <DashboardButton className="md:w-full" onClick={onScanNext}>
+      <DashboardButton className={cn("md:w-full", pressable)} onClick={onScanNext}>
         <ScanLine aria-hidden />
         {copy.scanNext}
       </DashboardButton>
@@ -471,7 +473,15 @@ function OfferStep({
 
   return (
     <DashboardPanel className={cn("gap-5", enterMotion)}>
-      <div className="flex flex-col gap-1">
+      <div className="flex items-start gap-3">
+        {/* GitHub photo only when they shared their profile (links is
+            null otherwise). */}
+        <HackerAvatar
+          name={hacker.firstName}
+          github={hacker.links?.github}
+          size="lg"
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
           <Coffee aria-hidden className="size-4" strokeWidth={1.67} />
           {copy.card.eyebrow}
@@ -489,6 +499,7 @@ function OfferStep({
             </span>
           </p>
         )}
+        </div>
       </div>
 
       {timesQ.isError ? (
@@ -525,11 +536,15 @@ function OfferStep({
                   <label
                     key={t.slotTime}
                     className={cn(
-                      "flex min-h-11 cursor-pointer flex-col justify-center rounded-dashboard-lg border px-3 py-2 transition-colors",
+                      "flex min-h-11 cursor-pointer flex-col justify-center rounded-dashboard-lg border px-3 py-2",
+                      pressable,
                       "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-dashboard-action-primary has-[:focus-visible]:ring-offset-2",
                       checked
                         ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
-                        : "border-dashboard-border-default bg-dashboard-bg-surface text-dashboard-text-heavy hover:bg-dashboard-bg-highlight",
+                        : cn(
+                            "border-dashboard-border-default bg-dashboard-bg-surface text-dashboard-text-heavy",
+                            hoverTint,
+                          ),
                     )}
                   >
                     <input
@@ -609,14 +624,14 @@ function OfferStep({
               type="submit"
               disabled={!slot}
               aria-disabled={offer.isPending || undefined}
-              className="md:h-11"
+              className={cn("md:h-11", pressable)}
             >
               {offer.isPending ? copy.card.offering : copy.card.offer}
             </DashboardButton>
             <DashboardButton
               type="button"
               variant="outline"
-              className="h-11 w-full sm:w-auto"
+              className={cn("h-11 w-full sm:w-auto", pressable)}
               onClick={onScanNext}
             >
               {copy.cancel}
@@ -626,7 +641,7 @@ function OfferStep({
       )}
 
       {(times.length === 0 || timesQ.isError) && (
-        <DashboardButton className="md:w-full" onClick={onScanNext}>
+        <DashboardButton className={cn("md:w-full", pressable)} onClick={onScanNext}>
           <ScanLine aria-hidden />
           {copy.scanNext}
         </DashboardButton>
@@ -668,14 +683,14 @@ function SentPanel({
         {copy.sent.next}
       </p>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <DashboardButton className="md:h-11" onClick={onScanNext}>
+        <DashboardButton className={cn("md:h-11", pressable)} onClick={onScanNext}>
           <ScanLine aria-hidden />
           {copy.scanNext}
         </DashboardButton>
         <DashboardButton
           variant="outline"
           asChild
-          className="h-11 w-full sm:w-auto"
+          className={cn("h-11 w-full sm:w-auto", pressable)}
         >
           <Link href={`/sponsors/${sponsor}/coffee-chats`}>
             {copy.sent.viewChats}

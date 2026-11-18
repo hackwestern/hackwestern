@@ -5,8 +5,9 @@ import {
   Link as LinkIcon,
   Linkedin,
 } from "lucide-react";
-import { DashboardButton } from "~/components/internals/dashboard-button";
+import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorHackersCopy as copy } from "~/content/sponsor-hackers";
+import { cn } from "~/lib/utils";
 
 const LINKS = [
   { key: "resume", label: copy.links.resume, Icon: FileText },
@@ -46,25 +47,23 @@ export function HackerLinks({
   return (
     <ul
       aria-label={copy.links.label(name)}
-      className="m-0 grid list-none grid-cols-2 gap-2 p-0 sm:flex sm:flex-wrap"
+      className="m-0 flex list-none flex-wrap gap-2 p-0"
     >
       {links.map(({ key, label, Icon, href }) => (
         <li key={key}>
-          <DashboardButton
-            variant="outline"
-            asChild
-            className="h-11 w-full sm:w-auto"
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={copy.links.opensIn(label, name)}
+            className={cn(
+              "inline-flex min-h-11 items-center gap-1.5 rounded-dashboard-lg border border-dashboard-border-subtle bg-dashboard-bg-surface px-3 text-sm font-semibold text-dashboard-text-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:border-dashboard-border-control [@media(hover:hover)]:hover:text-dashboard-text-heavy",
+              pressable,
+            )}
           >
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={copy.links.opensIn(label, name)}
-            >
-              <Icon aria-hidden />
-              {label}
-            </a>
-          </DashboardButton>
+            <Icon aria-hidden className="size-4 shrink-0 text-dashboard-text-light" />
+            {label}
+          </a>
         </li>
       ))}
     </ul>

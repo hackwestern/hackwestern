@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { LifeBuoy } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { cn } from "~/lib/utils";
+import { pressable } from "~/components/sponsors/sponsor-shell";
 import { HelpSheet } from "~/components/sponsors/help-sheet";
 import { HelpStatus, helpStatusText } from "~/components/sponsors/help-status";
 import { sponsorHelpCopy } from "~/content/sponsor-help";
@@ -100,7 +102,13 @@ export function SponsorHelp({
         <>
           <DashboardButton
             ref={triggerRef}
-            className="md:h-11 md:w-full"
+            variant="outline"
+            // Secondary to each page's main action, but full width and
+            // always in the same place, so it's easy to find in a hurry.
+            className={cn(
+              "h-12 w-full rounded-dashboard-lg text-base font-semibold [&_svg]:size-5 [&_svg]:text-dashboard-action-primary",
+              pressable,
+            )}
             onClick={() => {
               request.reset();
               setSheetOpen(true);

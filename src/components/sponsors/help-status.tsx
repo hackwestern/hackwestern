@@ -1,6 +1,7 @@
 import { forwardRef, useId } from "react";
 import { CheckCircle2, Clock, UserCheck } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { pressable } from "~/components/sponsors/sponsor-shell";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { sponsorHelpCopy } from "~/content/sponsor-help";
 import type { SponsorHelpView } from "~/server/api/routers/sponsor-help";
@@ -61,11 +62,11 @@ export const HelpStatus = forwardRef<
       tabIndex={-1}
       role="region"
       aria-labelledby={titleId}
-      className="rounded-dashboard-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2"
+      className="rounded-dashboard-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2 motion-safe:duration-200 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
     >
       <DashboardPanel
         className={cn(
-          "gap-4 p-5 sm:p-6",
+          "gap-4 rounded-dashboard-2xl p-5 sm:p-6",
           status === "claimed" && "bg-dashboard-bg-highlight",
         )}
       >
@@ -114,7 +115,7 @@ export const HelpStatus = forwardRef<
           <div className="flex flex-col gap-2">
             <DashboardButton
               variant="outline"
-              className="h-11 w-full sm:w-auto sm:self-start"
+              className={cn("h-11 w-full sm:w-auto sm:self-start", pressable)}
               onClick={onCancel}
               disabled={cancelling}
             >
@@ -132,7 +133,7 @@ export const HelpStatus = forwardRef<
         ) : (
           <DashboardButton
             variant="outline"
-            className="h-11 w-full sm:w-auto sm:self-start"
+            className={cn("h-11 w-full sm:w-auto sm:self-start", pressable)}
             onClick={onDismiss}
           >
             {copy.dismiss}

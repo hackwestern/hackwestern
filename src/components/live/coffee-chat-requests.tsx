@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { Coffee } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
+import { pressable } from "~/components/sponsors/sponsor-shell";
+import { cn } from "~/lib/utils";
 import { coffeeChatToastId } from "~/components/live/coffee-chats";
 import { useNow } from "~/components/sponsors/use-now";
 import { coffeeChatCopy } from "~/content/coffee-chat";
@@ -99,6 +101,22 @@ export default function CoffeeChatRequests({
           chat.durationMinutes,
         ),
         duration: Infinity,
+        icon: (
+          <Coffee aria-hidden className="size-5 text-dashboard-action-primary" />
+        ),
+        // The app Toaster centres short messages; an offer has a title,
+        // a time and a button, so lay it out as a row and give the button
+        // a full 44px target that never wraps ("View" used to break).
+        classNames: {
+          toast: "!justify-start !gap-3 !px-4 text-left shadow-dashboard-card",
+          content: "min-w-0 flex-1",
+          title: "font-semibold",
+          icon: "shrink-0",
+          actionButton: cn(
+            "!min-h-11 shrink-0 whitespace-nowrap !px-4 !text-base !font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
+            pressable,
+          ),
+        },
         action: {
           label: copy.toastAction,
           onClick: (event) => {
@@ -138,7 +156,7 @@ export default function CoffeeChatRequests({
       <DashboardButton
         asChild
         variant={pending > 0 ? "primary" : "outline"}
-        className="h-11 w-full md:h-11 md:w-fit"
+        className={cn("h-11 w-full md:h-11 md:w-fit", pressable)}
       >
         <Link href="/live?tab=coffee-chats" shallow>
           {copy.viewAll}
