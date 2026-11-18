@@ -83,6 +83,7 @@ export const sponsorHelpCopy = {
   organizer: {
     tab: "Help",
     empty: "No open help requests.",
+    noneFor: (name: string) => `No open help request from ${name}.`,
     open: "Waiting",
     claimed: (name: string) => `Claimed by ${name}`,
     claimedUnknown: "Claimed",
