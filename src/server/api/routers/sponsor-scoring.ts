@@ -27,6 +27,7 @@ import {
   fetchSponsorTracks,
   isEligibleTeam,
   listEligibleTeams,
+  membersByTeam,
   writeChosenTeams,
 } from "~/server/api/utils/sponsor-judging-teams";
 import { round2OpenedAt } from "~/server/api/utils/sponsor-judging-settings";
@@ -402,7 +403,8 @@ export const sponsorScoringRouter = createTRPCRouter({
     }),
 
   /**
-   * Organizers: every sponsor's progress and submitted ranking, plus all
+   * Organizers: every sponsor's progress and submitted ranking (final
+   * results: teams in rank order with their hackers), plus all
    * teams ranked by how many sponsors put them in a top list and their
    * average score. Only teams a sponsor can still judge (submitted, in
    * their track) count toward progress and tallies; a withdrawn team stays
@@ -449,6 +451,10 @@ export const sponsorScoringRouter = createTRPCRouter({
             .from(teams)
             .where(inArray(teams.id, teamIds))
         : [];
+    // Final results show each submitted team's hackers.
+    const members = await membersByTeam([
+      ...new Set(finals.flatMap((f) => f.teamIds)),
+    ]);
     const teamById = new Map(
       teamRows.map((t) => [
         t.id,
@@ -504,6 +510,7 @@ export const sponsorScoringRouter = createTRPCRouter({
                 devpostUrl: teamById.get(teamId)?.devpostUrl ?? null,
                 score: s.scoreOf.get(teamId) ?? null,
                 eligible: s.canJudge(teamId),
+                members: members.get(teamId) ?? [],
               })),
             }
           : null,
