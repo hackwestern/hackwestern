@@ -7,7 +7,13 @@ Checks on 0ca39a4: tsc clean; vitest 1015 passed, 1 failed (Apple Wallet). Run `
 ## Merged 2026-11-16 (late)
 T52 (coffee chats: map + where beside the table), T53 (tasks amber on schedule, Team tasks tab removed, Task pings under grid), T54 (live Happening now banner). Nothing running.
 
-## Then: T55 one sponsor home at /internal/sponsors (Jazz, 2026-11-16)
+## Running (2026-11-17)
+- sd-sched-focus (worktree hackwestern-sd-chat): column focus on the schedule; Main event -> Hackathon events lane; coffee chats as a room-booking table (rooms = columns, 15-min rows, who booked + n/6 capacity, click free slot to add) placed under the schedule, replacing Where is everyone; map beside the schedule, live (no time picking); sponsor filter + per-sponsor stats on the coffee chat table; judging room lane if data exists.
+- sd-shortlist-pick (worktree hackwestern-sd-help): sponsor candidate picker from Lucas's top 40 (#1143 getInterestedHackers, merged d62a7a0) with shortlist toggle + offer chat.
+- Merged Lucas's spon-judging into sponsor-dashboard (d62a7a0). Needs HACKER_INTEREST_FORM (sheet id) in .env/Vercel and the service account given access to that sheet.
+
+## Then: T55 one sponsor home at /internal/sponsors (Jazz, 2026-11-16; reconfirmed 2026-11-17)
+- Jazz 2026-11-17: connect Lucas's /internal/sponsors dashboard with schedule + coffee chats + help, with a clear end-to-end organizer flow. Start after sd-sched-focus merges (both touch sponsor-schedule.tsx).
 - /internal/sponsors ("Sponsor dashboard", top-nav "Sponsors") gets tabs: Sponsors (existing list) | Run of show | Coffee chats | Help.
 - /internal/sponsor-schedule redirects to the matching tab; remove the separate "Sponsor team" nav link.
 - Each sponsor row: room, chats accepted/pending, open help request, "View on schedule" link that opens Run of show filtered to that company (first step of the T51 company filter).
