@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import { useQuery } from "@tanstack/react-query";
 import SEO from "~/components/seo";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -8,9 +9,13 @@ import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { InternalNavbar } from "~/components/internals/navbar";
 import { AddCoffeeChat } from "~/components/sponsors/add-coffee-chat";
 import { CoffeeChatBoard } from "~/components/sponsors/coffee-chat-board";
+import {
+  CoffeeChatRoomTable,
+  useLiveChatBoard,
+} from "~/components/sponsors/coffee-chat-room-table";
 import { CoffeeChatRooms } from "~/components/sponsors/coffee-chat-rooms";
+import { CoffeeChatLiveMap } from "~/components/sponsors/coffee-chat-side-panel";
 import { CeremonyOrder } from "~/components/sponsors/ceremony-order";
-import { CompanyLocationsView } from "~/components/sponsors/company-locations";
 import {
   DayGrid,
   TimelineKey,
@@ -26,7 +31,10 @@ import {
   ScheduleSkeleton,
 } from "~/components/sponsors/schedule-states";
 import { SheetEditButton } from "~/components/sponsors/sheet-edit-button";
-import { SponsorMap } from "~/components/sponsors/sponsor-map";
+import {
+  SponsorFilter,
+  useSponsorSelection,
+} from "~/components/sponsors/sponsor-filter";
 import { TaskPingsSection } from "~/components/sponsors/task-reminders-panel";
 import { useNow } from "~/components/sponsors/use-now";
 import { WorkshopsTable } from "~/components/sponsors/workshop-details";
@@ -34,6 +42,8 @@ import { coffeeChatCopy } from "~/content/coffee-chat";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import { sponsorHelpCopy } from "~/content/sponsor-help";
 import { formatClock, type RunOfShowDay } from "~/lib/run-of-show";
+import { ROOM_CAPACITY } from "~/lib/coffee-chat-room-table";
+import { COFFEE_CHAT_DAY_LABEL } from "~/lib/coffee-chats";
 import { defaultRunOfShowDay } from "~/lib/run-of-show-time";
 import { fetchScheduleData } from "~/lib/schedule";
 import { coffeeChatEntries } from "~/lib/schedule-bookings";
@@ -55,7 +65,26 @@ type Tab = keyof typeof TAB_LABELS;
 export default function OrganizerRunOfShowPage() {
   const now = useNow();
   const [day, setDay] = useState<RunOfShowDay | null>(null);
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("schedule");
+  // "Where is everyone" is now the rooms table under the schedule: its tab
+  // (and ?tab=where, #rooms links) land there.
+  const [jumpToRooms, setJumpToRooms] = useState(false);
+  useEffect(() => {
+    if (!router.isReady) return;
+    const asked = router.query.tab ?? router.query.view;
+    if (asked === "where" || window.location.hash === "#rooms") {
+      setJumpToRooms(true);
+    }
+  }, [router.isReady, router.query.tab, router.query.view]);
+  const pickTab = (t: Tab) => {
+    if (t === "where") {
+      setTab("schedule");
+      setJumpToRooms(true);
+    } else {
+      setTab(t);
+    }
+  };
   const q = api.sponsorSchedule.organizer.useQuery(undefined, {
     refetchInterval: 60_000,
     retry: 1,
@@ -86,11 +115,9 @@ export default function OrganizerRunOfShowPage() {
             "mx-auto flex w-full flex-col gap-5",
             // The day grid and the coffee chat table + side panel get room
             // for their columns; lists stay readable.
-            tab === "schedule"
-              ? "max-w-[1280px]"
-              : tab === "coffee"
-                ? "max-w-[1440px]"
-                : "max-w-[880px]",
+            tab === "schedule" || tab === "coffee"
+              ? "max-w-[1440px]"
+              : "max-w-[880px]",
           )}
         >
           <PageIntro
@@ -110,7 +137,7 @@ export default function OrganizerRunOfShowPage() {
               <DashboardChip
                 key={t}
                 selected={t === tab}
-                onClick={() => setTab(t)}
+                onClick={() => pickTab(t)}
                 className="min-h-11"
               >
                 {TAB_LABELS[t]}
@@ -119,8 +146,6 @@ export default function OrganizerRunOfShowPage() {
           </div>
           {tab === "help" ? (
             <HelpQueue />
-          ) : tab === "where" ? (
-            <WhereIsEveryone day={shownDay} onDay={setDay} now={now} />
           ) : q.isLoading ? (
             <ScheduleSkeleton />
           ) : !q.data ? (
@@ -129,7 +154,17 @@ export default function OrganizerRunOfShowPage() {
             <>
               <SheetEditButton href={q.data.sheetUrl} />
               {tab !== "coffee" && (
-                <DayPicker value={shownDay} onChange={setDay} />
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <DayPicker value={shownDay} onChange={setDay} />
+                  {tab === "schedule" && (
+                    <a
+                      href="#rooms"
+                      className="inline-flex min-h-11 items-center text-sm font-semibold text-dashboard-text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+                    >
+                      {roomCopy.jump}
+                    </a>
+                  )}
+                </div>
               )}
               {tab === "schedule" && (
                 <>
@@ -138,29 +173,43 @@ export default function OrganizerRunOfShowPage() {
                     showHackathon={showHackathon}
                     onShowHackathonChange={setShowHackathon}
                   />
-                  <DayGrid
-                    mode="organizer"
+                  {/* The run of show with the live coffee chat room map
+                      beside it (below it, folded, on phones). */}
+                  <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+                    <div className="min-w-0">
+                      <DayGrid
+                        mode="organizer"
+                        day={shownDay}
+                        now={now}
+                        entries={[
+                          ...buildOrganizerTimeline({
+                            day: shownDay,
+                            items: q.data.items,
+                            live: live.data,
+                            showHackathon,
+                          }),
+                          ...taskEntries(shownDay, q.data.tasks),
+                          ...coffeeChatEntries(
+                            shownDay,
+                            (chats.data?.chats ?? []).map((c) => ({
+                              ...c,
+                              hacker: booked.hacker(c.firstName, c.lastName),
+                            })),
+                          ),
+                        ]}
+                        workshops={q.data.workshops}
+                        tasks={q.data.tasks}
+                        emptyText={copy.emptyDay}
+                      />
+                    </div>
+                    <div className="min-w-0 lg:sticky lg:top-4">
+                      <CoffeeChatLiveMap now={now} />
+                    </div>
+                  </div>
+                  <RoomsSection
                     day={shownDay}
-                    now={now}
-                    entries={[
-                      ...buildOrganizerTimeline({
-                        day: shownDay,
-                        items: q.data.items,
-                        live: live.data,
-                        showHackathon,
-                      }),
-                      ...taskEntries(shownDay, q.data.tasks),
-                      ...coffeeChatEntries(
-                        shownDay,
-                        (chats.data?.chats ?? []).map((c) => ({
-                          ...c,
-                          hacker: booked.hacker(c.firstName, c.lastName),
-                        })),
-                      ),
-                    ]}
-                    workshops={q.data.workshops}
-                    tasks={q.data.tasks}
-                    emptyText={copy.emptyDay}
+                    jump={jumpToRooms}
+                    onJumped={() => setJumpToRooms(false)}
                   />
                   <CeremonyOrder
                     segments={q.data.ceremonies}
@@ -190,39 +239,59 @@ export default function OrganizerRunOfShowPage() {
   );
 }
 
-// Every company's rooms and times. Organizer-only: sponsors never see this.
-function WhereIsEveryone({
+const roomCopy = coffeeChatCopy.organizer.roomTable;
+
+// The coffee chat rooms as a booking table, right under the run of show
+// (it replaced the "Where is everyone" tab, which now lands here).
+function RoomsSection({
   day,
-  onDay,
-  now,
+  jump,
+  onJumped,
 }: {
   day: RunOfShowDay;
-  onDay: (day: RunOfShowDay) => void;
-  now: Date;
+  jump: boolean;
+  onJumped: () => void;
 }) {
-  const q = api.sponsorSchedule.organizerCompanies.useQuery(undefined, {
-    refetchInterval: 60_000,
-    retry: 1,
-  });
-  // Watcher names for the map; the map still works without them.
-  const rooms = api.coffeeChatRequests.organizerRooms.useQuery(undefined, {
-    refetchInterval: 60_000,
-    retry: 1,
-  });
-  if (q.isLoading) return <ScheduleSkeleton />;
-  if (!q.data) return <LoadError onRetry={() => void q.refetch()} />;
-  const watchers = Object.fromEntries(
-    (rooms.data?.sponsors ?? []).map((s) => [s.sponsor, s.watcher]),
-  );
+  const board = useLiveChatBoard();
+  const names = board.data?.sponsors.map((s) => s.sponsor) ?? NO_NAMES;
+  const selection = useSponsorSelection(names);
+  useEffect(() => {
+    if (!jump) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    document
+      .getElementById("rooms")
+      ?.scrollIntoView({ behavior: reduce.matches ? "auto" : "smooth" });
+    onJumped();
+  }, [jump, onJumped]);
   return (
-    <>
-      <DayPicker value={day} onChange={onDay} />
-      <SponsorMap data={q.data} watchers={watchers} day={day} now={now} />
-      <CompanyLocationsView data={q.data} day={day} now={now} />
-      <ReadAt iso={q.data.readAt} />
-    </>
+    <section
+      id="rooms"
+      aria-labelledby="rooms-heading"
+      className="flex scroll-mt-4 flex-col gap-3"
+    >
+      <div className="flex flex-col gap-1">
+        <h2 id="rooms-heading" className="m-0 text-lg font-semibold">
+          {roomCopy.heading}
+        </h2>
+        <p className="m-0 text-sm text-dashboard-text-medium">
+          {roomCopy.intro(ROOM_CAPACITY)}
+        </p>
+      </div>
+      {day !== COFFEE_CHAT_DAY_LABEL ? (
+        <DashboardPanel>
+          <p className="m-0 text-dashboard-text-medium">{roomCopy.notToday}</p>
+        </DashboardPanel>
+      ) : (
+        <>
+          <SponsorFilter names={names} selection={selection} />
+          <CoffeeChatRoomTable selection={selection} />
+        </>
+      )}
+    </section>
   );
 }
+
+const NO_NAMES: string[] = [];
 
 const booked = coffeeChatCopy.organizer;
 

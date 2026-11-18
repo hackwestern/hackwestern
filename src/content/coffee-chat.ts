@@ -241,7 +241,7 @@ export const coffeeChatCopy = {
       intro:
         "Every sponsor side by side. Pick a cell to see its chats, cancel or move them, or add one.",
       viewLabel: "View",
-      views: { table: "Table", list: "List" },
+      views: { rooms: "Rooms", table: "By sponsor", list: "List" },
       summaryLabel: "Today's totals",
       totals: {
         offered: "Offered",
@@ -337,6 +337,75 @@ export const coffeeChatCopy = {
       whereError: "Couldn't load where sponsors are.",
       show: (section: string) => `Show ${section}`,
       hide: (section: string) => `Hide ${section}`,
+      // The map beside the run of show: now only, no time picking.
+      nowAt: (time: string) => `Now · ${time}`,
+      mapIntroLive: "Which sponsor is in which coffee chat room right now.",
+      roomsNow: "Coffee chat rooms now",
+      notToday: "Coffee chats run on Saturday. The map shows them then.",
+    },
+
+    // Pick which sponsors the Coffee chats tables and totals show.
+    sponsorFilter: {
+      label: "Show sponsors",
+      all: "All sponsors",
+      clear: "Clear",
+      count: (shown: number, total: number) =>
+        shown === total
+          ? `All ${total} sponsors`
+          : `${shown} of ${total} sponsors`,
+      none: "No sponsors picked. Pick one above, or All sponsors.",
+    },
+
+    // Rooms down the side of a booking table: one column per room.
+    roomTable: {
+      heading: "Coffee chat rooms",
+      intro: (capacity: number) =>
+        `Each room fits ${capacity} people: hackers in chats plus the sponsor's reps.`,
+      jump: "Jump to rooms",
+      tableLabel: "Coffee chat rooms by time",
+      time: "Time",
+      legendLabel: "What the cells mean",
+      legend: {
+        free: "Available: pick any available time to book",
+        booked: "Booked",
+        full: "Full",
+        over: "Over capacity",
+        dimmed: "Other sponsors (filtered out)",
+      },
+      free: "Available",
+      used: (used: number, capacity: number) => `${used}/${capacity}`,
+      hackers: (n: number) => (n === 1 ? "1 hacker" : `${n} hackers`),
+      reps: (n: number) => (n === 1 ? "1 rep" : `${n} reps`),
+      overWarning: "Over capacity",
+      cellLabel: (
+        room: string,
+        time: string,
+        who: string | null,
+        used: number,
+        capacity: number,
+      ) =>
+        who
+          ? `${room}, ${time}, ${who}, ${used} of ${capacity} booked`
+          : `${room}, ${time}, available`,
+      notToday: "Coffee chats run on Saturday. Pick Saturday to see the rooms.",
+      empty: "No coffee chat times in the sheet yet.",
+      dialog: {
+        title: (room: string, time: string) => `${room} at ${time}`,
+        description: (used: number, capacity: number) =>
+          `${used} of ${capacity} places taken.`,
+        close: "Close",
+        inRoom: "In this room",
+        nobody: "Nobody has this room yet.",
+        sponsor: "Book for",
+        pickSponsor: "Pick a sponsor",
+        noSponsors: "No sponsor has an open start time here.",
+        otherRoom: (sponsor: string, room: string | null) =>
+          room
+            ? `${sponsor}'s chats are in ${room}. Move them to this room first to book here.`
+            : `${sponsor} has no room yet. Give them this room first to book here.`,
+        assign: (room: string) => `Use ${room} for this sponsor`,
+        assignError: "Couldn't change the room. Try again.",
+      },
     },
 
     // Organizers add a chat by hand (same rules as a sponsor's offer).
