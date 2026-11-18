@@ -67,13 +67,8 @@ const SECTIONS: { title: string; cards: Card[] }[] = [
     ],
   },
   {
-    title: "Applications & sponsors",
+    title: "Sponsors",
     cards: [
-      {
-        href: "/internal/review",
-        title: "Applicant Review",
-        description: "Review hacker applications.",
-      },
       {
         href: "/internal/sponsors",
         title: "Sponsors",
