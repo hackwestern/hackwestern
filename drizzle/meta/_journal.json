@@ -358,13 +358,6 @@
       "when": 1794991461859,
       "tag": "0050_sponsor_presentations",
       "breakpoints": true
-    },
-    {
-      "idx": 51,
-      "version": "7",
-      "when": 1794995791487,
-      "tag": "0051_ops_pings",
-      "breakpoints": true
     }
   ]
 }
