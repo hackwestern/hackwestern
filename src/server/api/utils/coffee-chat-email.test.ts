@@ -21,6 +21,7 @@ import {
 import { db } from "~/server/db";
 import {
   applications,
+  coffeeChatHolds,
   coffeeChats,
   sponsorJudgingSponsors,
   users,
@@ -83,7 +84,7 @@ async function makeSponsor(room: string | null = "Rm 2241") {
   const name = `Email Sponsor ${++n}`;
   const [row] = await db
     .insert(sponsorJudgingSponsors)
-    .values({ name, coffeeChatReps: 2 })
+    .values({ name, coffeeChatStyle: "oneOnOne", coffeeChatPerSlot: 2 })
     .returning();
   setups.push({
     sponsor: name,
@@ -91,11 +92,23 @@ async function makeSponsor(room: string | null = "Rm 2241") {
     windowEnd: "12:00",
     durationMinutes: 15,
     groupSize: 1,
+    chattingHours: null,
     slots: null,
     hackers: null,
     format: "Individual (15 mins)",
+    notes: null,
     room,
   });
+  // Offers need a room block (blocks own rooms; v2).
+  // Its own room, so sponsors from other tests never share it at once.
+  if (room) {
+    await db.insert(coffeeChatHolds).values({
+      sponsorId: row!.id,
+      room: `${room} ${n}`,
+      startTime: "10:00",
+      endTime: "11:30",
+    });
+  }
   return { id: row!.id, name };
 }
 

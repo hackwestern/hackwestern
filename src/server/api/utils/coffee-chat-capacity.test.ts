@@ -1,75 +1,42 @@
 import { describe, expect, test } from "vitest";
 
-import type { CoffeeChatSetup } from "~/lib/run-of-show";
+import type { ChatRequest } from "~/lib/coffee-chat-request";
 import {
-  coffeeChatStartTimes,
   freeStartTimes,
   offerProblem,
   roomTakenByOtherSponsor,
   seatsLeft,
-  seatsUsed,
-  sponsorRoomAt,
 } from "~/server/api/utils/coffee-chat-capacity";
 
-const oneOnOne: CoffeeChatSetup = {
-  sponsor: "A",
-  windowStart: "10:00",
-  windowEnd: "11:00",
+const oneOnOne = (perSlot = 1): ChatRequest => ({
+  style: "oneOnOne",
+  perSlot,
   durationMinutes: 15,
-  groupSize: 1,
-  slots: null,
-  hackers: null,
-  format: "Individual (15 mins)",
-  room: "Rm 2241",
-};
-const groups: CoffeeChatSetup = {
-  ...oneOnOne,
-  durationMinutes: 30,
-  groupSize: 3,
-  format: "Groups (30 mins with 3 people)",
-};
+  source: "sponsor",
+});
 const early = new Date("2026-11-21T08:00:00-05:00");
+// The sponsor's room block, 10:00-11:00 in Rm 2241.
+const holds = [
+  { sponsorId: "a", room: "Rm 2241", startTime: "10:00", endTime: "11:00" },
+];
 const chat = (slotTime: string, durationMinutes = 15) => ({
   slotTime,
   durationMinutes,
 });
 
-describe("coffeeChatStartTimes", () => {
-  test("1-on-1s every quarter hour, ending by the window end", () => {
-    expect(coffeeChatStartTimes(oneOnOne)).toEqual([
-      "10:00",
-      "10:15",
-      "10:30",
-      "10:45",
-    ]);
-  });
-
-  test("30-min groups every half hour from the start", () => {
-    expect(coffeeChatStartTimes(groups)).toEqual(["10:00", "10:30"]);
-  });
-
-  test("no window, no times", () => {
-    expect(coffeeChatStartTimes({ ...oneOnOne, windowStart: null })).toEqual(
-      [],
-    );
-  });
-});
-
 describe("seats", () => {
-  test("counts chats overlapping any quarter hour of the slot", () => {
+  test("counts chats starting in the slot, like the block slots do", () => {
     const chats = [chat("10:00", 30), chat("10:30", 30)];
-    expect(seatsUsed(chats, chat("10:15", 30))).toBe(1);
-    expect(seatsUsed(chats, chat("10:00", 30))).toBe(1);
-    expect(seatsUsed([...chats, chat("10:15")], chat("10:15"))).toBe(2);
+    expect(seatsLeft(chats, chat("10:00", 30), 3)).toBe(2);
+    expect(seatsLeft(chats, chat("10:30", 30), 3)).toBe(2);
+    expect(seatsLeft(chats, chat("11:00", 30), 3)).toBe(3);
   });
 
-  test("seats = coffeeChatSeats(reps, group size) minus used", () => {
-    // 1-on-1: one chat per rep, at most 3 (room fits 6).
-    expect(seatsLeft([], chat("10:00"), 2, 1)).toBe(2);
-    expect(seatsLeft([], chat("10:00"), 10, 1)).toBe(3);
-    expect(seatsLeft([chat("10:00")], chat("10:00"), 2, 1)).toBe(1);
-    // Groups of 3: one group at once, three hacker seats.
-    expect(seatsLeft([], chat("10:00", 30), 4, 3)).toBe(3);
+  test("seats = hackers asked for minus booked; no room capacity", () => {
+    expect(seatsLeft([], chat("10:00"), 2)).toBe(2);
+    expect(seatsLeft([], chat("10:00"), 10)).toBe(10);
+    expect(seatsLeft([chat("10:00")], chat("10:00"), 2)).toBe(1);
+    expect(seatsLeft([chat("10:00")], chat("10:00"), 0)).toBe(0);
   });
 });
 
@@ -95,25 +62,31 @@ describe("roomTakenByOtherSponsor", () => {
 
 describe("offerProblem", () => {
   const base = {
-    setup: oneOnOne,
+    request: oneOnOne(),
     slotTime: "10:00",
-    reps: 1,
     sponsorId: "a",
     sponsorChats: [],
     hackerChats: [],
     roomChats: [],
+    holds,
     now: early,
   };
 
-  test("ok inside the window with a free seat", () => {
+  test("ok at a block slot with a free seat", () => {
     expect(offerProblem(base)).toBeNull();
   });
 
-  test("window, cutoff, seats, hacker and room", () => {
-    expect(offerProblem({ ...base, setup: null })).toBe("notSetUp");
-    expect(offerProblem({ ...base, slotTime: "09:45" })).toBe("notInWindow");
-    expect(offerProblem({ ...base, slotTime: "11:00" })).toBe("notInWindow");
-    expect(offerProblem({ ...base, slotTime: "10:10" })).toBe("notInWindow");
+  test("block, slot start, cutoff, seats, hacker and room", () => {
+    expect(offerProblem({ ...base, holds: [] })).toBe("noBlock");
+    expect(offerProblem({ ...base, slotTime: "09:45" })).toBe("noBlock");
+    expect(offerProblem({ ...base, slotTime: "11:00" })).toBe("noBlock");
+    expect(
+      offerProblem({
+        ...base,
+        request: { ...oneOnOne(), durationMinutes: 30 },
+        slotTime: "10:15",
+      }),
+    ).toBe("notInWindow");
     expect(
       offerProblem({ ...base, now: new Date("2026-11-21T09:40:00-05:00") }),
     ).toBe("tooLate");
@@ -130,18 +103,43 @@ describe("offerProblem", () => {
       }),
     ).toBe("roomTaken");
   });
+
+  test("an ask for fewer lowers the seats; 0 = no chat then", () => {
+    const asks = (hackers: number) => [
+      { sponsorId: "a", startTime: "10:00", endTime: "10:15", hackers },
+    ];
+    const three = { ...base, request: oneOnOne(3) };
+    expect(offerProblem({ ...three, sponsorChats: [chat("10:00")] })).toBe(
+      null,
+    );
+    expect(
+      offerProblem({
+        ...three,
+        limits: asks(1),
+        sponsorChats: [chat("10:00")],
+      }),
+    ).toBe("full");
+    expect(offerProblem({ ...three, limits: asks(0) })).toBe("full");
+    // Another sponsor's ask doesn't count.
+    expect(
+      offerProblem({
+        ...three,
+        limits: [{ ...asks(0)[0]!, sponsorId: "b" }],
+      }),
+    ).toBeNull();
+  });
 });
 
 describe("freeStartTimes", () => {
   test("earliest first, skipping full and clashing times", () => {
     expect(
       freeStartTimes({
-        setup: oneOnOne,
-        reps: 1,
+        request: oneOnOne(),
         sponsorId: "a",
         sponsorChats: [chat("10:00")],
         hackerChats: [chat("10:30")],
         roomChats: [],
+        holds,
         now: early,
       }),
     ).toEqual([
@@ -150,26 +148,19 @@ describe("freeStartTimes", () => {
     ]);
   });
 
-  test("drops times past the reply cutoff", () => {
+  test("drops times past the reply cutoff and asked down to 0", () => {
     expect(
       freeStartTimes({
-        setup: oneOnOne,
-        reps: 2,
+        request: oneOnOne(2),
+        limits: [
+          { sponsorId: "a", startTime: "10:45", endTime: "11:00", hackers: 0 },
+        ],
         sponsorId: "a",
         sponsorChats: [],
         roomChats: [],
+        holds,
         now: new Date("2026-11-21T09:56:00-05:00"),
       }).map((t) => t.slotTime),
-    ).toEqual(["10:30", "10:45"]);
-  });
-});
-
-describe("sponsorRoomAt", () => {
-  test("a moved slot keeps its room; otherwise the sheet room", () => {
-    const chats = [{ ...chat("10:00"), room: "Rm 2243" }, chat("10:30")];
-    expect(sponsorRoomAt(chats, "Rm 2241", chat("10:00"))).toBe("Rm 2243");
-    expect(sponsorRoomAt(chats, "Rm 2241", chat("10:15"))).toBe("Rm 2241");
-    expect(sponsorRoomAt(chats, "Rm 2241", chat("10:30"))).toBe("Rm 2241");
-    expect(sponsorRoomAt([], null, chat("10:00"))).toBeNull();
+    ).toEqual(["10:30"]);
   });
 });

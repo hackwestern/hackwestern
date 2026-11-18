@@ -20,6 +20,8 @@ const sponsors = S.map(([id, name, room, reps]) => ({
   id,
   name,
   reps,
+  style: null,
+  perSlot: reps,
   assignedRoom: room,
   watcher: name === "CSE" ? "Sam Organizer" : null,
 }));
@@ -34,9 +36,11 @@ const setup = (
   windowEnd,
   durationMinutes: group ? 30 : 15,
   groupSize: group ? 3 : 1,
+  chattingHours: null,
   slots: null,
   hackers: null,
   format: null,
+  notes: null,
   room: null,
 });
 const setups = [

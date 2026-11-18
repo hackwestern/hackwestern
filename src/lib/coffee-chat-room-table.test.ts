@@ -1,57 +1,70 @@
 import { describe, expect, it } from "vitest";
 import {
-  boardStats,
   buildRoomTable,
-  ROOM_CAPACITY,
-  roomCellState,
+  roomCellSpans,
+  sponsorStrip,
   type RoomBoard,
   type RoomBoardChat,
-  type RoomBoardSponsor,
+  type RoomBoardHold,
 } from "~/lib/coffee-chat-room-table";
-
-const sponsor = (over: Partial<RoomBoardSponsor>): RoomBoardSponsor => ({
-  sponsorId: "s-cl",
-  sponsor: "Canada Life",
-  setUp: true,
-  windowStart: "10:00",
-  windowEnd: "11:00",
-  reps: 2,
-  room: "Rm 2241",
-  cells: [],
-  ...over,
-});
 
 const chat = (over: Partial<RoomBoardChat>): RoomBoardChat => ({
   chatId: "c",
   sponsorId: "s-cl",
   slotTime: "10:00",
-  durationMinutes: 30,
+  durationMinutes: 15,
   room: "Rm 2241",
   status: "accepted",
   ...over,
 });
 
+// Canada Life: 1-on-1 with 2 reps, Rm 2241 10:00-10:30 (two 15-min slots).
+const block: RoomBoardHold = {
+  holdId: "h-cl",
+  sponsorId: "s-cl",
+  room: "Rm 2241",
+  startTime: "10:00",
+  endTime: "10:30",
+  slots: [
+    { slotTime: "10:00", booked: 2, needed: 2 },
+    { slotTime: "10:15", booked: 0, needed: 2 },
+  ],
+  booked: 2,
+  needed: 4,
+  needsHacker: true,
+};
+
 const board = (over: Partial<RoomBoard> = {}): RoomBoard => ({
-  slots: ["10:00", "10:15", "10:30", "10:45", "11:00"],
+  slots: ["10:00", "10:15", "10:30", "10:45"],
   sponsors: [
-    sponsor({ cells: [{ offerable: true, seatsLeft: 3 }] }),
-    sponsor({
+    {
       sponsorId: "s-sb",
       sponsor: "Scotiabank",
-      room: "Rm 2242",
-      reps: 1,
-      cells: [
-        { offerable: true, seatsLeft: 2 },
-        { offerable: false, seatsLeft: 5 },
-      ],
-    }),
+      setUp: false,
+      request: { source: "none" },
+      blockMinutes: 0,
+    },
+    {
+      sponsorId: "s-cl",
+      sponsor: "Canada Life",
+      setUp: true,
+      request: { source: "sponsor" },
+      blockMinutes: 30,
+    },
+    {
+      sponsorId: "s-st",
+      sponsor: "StarTech",
+      setUp: true,
+      request: { source: "sheet" },
+      blockMinutes: 0,
+    },
   ],
   chats: [
     chat({ chatId: "a" }),
-    chat({ chatId: "b", status: "pending" }),
+    chat({ chatId: "b", status: "pending", room: null }),
     chat({ chatId: "x", status: "cancelled" }),
-    chat({ chatId: "d", sponsorId: "s-sb", room: null, slotTime: "10:30" }),
   ],
+  holds: [block],
   ...over,
 });
 
@@ -66,78 +79,67 @@ describe("buildRoomTable", () => {
 
   it("has one column per coffee chat room and a row per grid slot", () => {
     expect(table.rooms).toEqual(["Rm 2241", "Rm 2242", "Rm 2243"]);
-    expect(table.slots).toHaveLength(5);
+    expect(table.slots).toHaveLength(4);
   });
 
-  it("counts live hackers plus the sponsor's reps against capacity", () => {
-    const c = cell(table, "10:15", "Rm 2241");
-    expect(
-      c.occupants.map((o) => [o.sponsor, o.hackers, o.accepted, o.pending]),
-    ).toEqual([["Canada Life", 2, 1, 1]]);
-    expect(c.used).toBe(4); // 2 hackers + 2 reps; the cancelled chat is out
-    expect(c.capacity).toBe(ROOM_CAPACITY);
-    expect(c.state).toBe("booked");
+  it("a block cell shows its slot's booked / needed, not people / 6", () => {
+    const c = cell(table, "10:00", "Rm 2241");
+    expect(c.holdId).toBe("h-cl");
+    expect(c.occupants.map((o) => [o.sponsor, o.hackers, o.slot])).toEqual([
+      ["Canada Life", 2, { slotTime: "10:00", booked: 2, needed: 2 }],
+    ]);
+    expect(cell(table, "10:15", "Rm 2241").needsHacker).toBe(true);
+    expect(cell(table, "10:00", "Rm 2241").needsHacker).toBe(false);
   });
 
-  it("holds the room through the sponsor's window, even with no chats", () => {
-    const c = cell(table, "10:45", "Rm 2241");
-    expect(c.occupants[0]?.hackers).toBe(0);
-    expect(c.used).toBe(2);
-    expect(cell(table, "11:00", "Rm 2241").state).toBe("free");
+  it("no block, no sponsor: free (the whole-day room is gone)", () => {
+    expect(cell(table, "10:30", "Rm 2241").occupants).toEqual([]);
+    expect(cell(table, "10:00", "Rm 2242").occupants).toEqual([]);
   });
 
-  it("puts a chat with no room in its sponsor's room", () => {
-    expect(cell(table, "10:30", "Rm 2242").used).toBe(2);
-    expect(cell(table, "10:30", "Rm 2243").state).toBe("free");
-  });
-
-  it("flags full and over-capacity rooms", () => {
-    expect(roomCellState(ROOM_CAPACITY, true)).toBe("full");
-    expect(roomCellState(ROOM_CAPACITY + 1, true)).toBe("over");
-    expect(roomCellState(0, false)).toBe("free");
+  it("no room capacity: many hackers in a room is just a count", () => {
     const busy = buildRoomTable(
       board({
-        chats: ["a", "b", "c", "d", "e"].map((id) => chat({ chatId: id })),
+        chats: ["a", "b", "c", "d", "e", "f", "g"].map((id) =>
+          chat({ chatId: id }),
+        ),
       }),
     );
-    expect(cell(busy, "10:00", "Rm 2241").state).toBe("over"); // 5 + 2 reps
+    const c = cell(busy, "10:00", "Rm 2241");
+    expect(c.occupants[0]?.hackers).toBe(7);
+    expect("over" in c).toBe(false);
   });
 
-  it("marks sponsors outside the filter so the table can dim them", () => {
-    const t = buildRoomTable(board(), { selected: new Set(["Scotiabank"]) });
-    expect(cell(t, "10:00", "Rm 2241").occupants[0]?.selected).toBe(false);
-    expect(cell(t, "10:00", "Rm 2242").occupants[0]?.selected).toBe(true);
+  it("a chat booked before blocks still shows, and two sponsors clash", () => {
+    const t = buildRoomTable(
+      board({
+        chats: [chat({ chatId: "old", sponsorId: "s-sb", room: "Rm 2241" })],
+      }),
+    );
+    const c = cell(t, "10:00", "Rm 2241");
+    expect(c.occupants.map((o) => o.sponsor).sort()).toEqual([
+      "Canada Life",
+      "Scotiabank",
+    ]);
+    expect(c.clash).toBe(true);
+    expect(c.holdId).toBeNull();
   });
 });
 
-describe("boardStats", () => {
-  it("counts everything when every sponsor is selected", () => {
-    expect(boardStats(board(), null)).toEqual({
-      offered: 4,
-      accepted: 2,
-      pending: 1,
-      seatsLeft: 5,
-      roomsInUse: ["Rm 2241", "Rm 2242"],
-      needsHacker: 0,
-    });
+describe("roomCellSpans", () => {
+  it("merges a block's cells into its first row", () => {
+    const spans = roomCellSpans(buildRoomTable(board()));
+    expect(spans.map((row) => row[0])).toEqual([2, 0, 1, 1]);
+    expect(spans.map((row) => row[1])).toEqual([1, 1, 1, 1]);
   });
+});
 
-  it("recounts for the chosen sponsors only", () => {
-    expect(boardStats(board(), new Set(["Canada Life"]))).toEqual({
-      offered: 3,
-      accepted: 1,
-      pending: 1,
-      seatsLeft: 3,
-      roomsInUse: ["Rm 2241"],
-      needsHacker: 0,
-    });
-    expect(boardStats(board(), new Set())).toEqual({
-      offered: 0,
-      accepted: 0,
-      pending: 0,
-      seatsLeft: 0,
-      roomsInUse: [],
-      needsHacker: 0,
-    });
+describe("sponsorStrip", () => {
+  it("sponsors with rooms first, then set up, then by name", () => {
+    expect(sponsorStrip(board()).map((s) => s.sponsor)).toEqual([
+      "Canada Life",
+      "StarTech",
+      "Scotiabank",
+    ]);
   });
 });

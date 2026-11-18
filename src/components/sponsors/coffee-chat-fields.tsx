@@ -4,86 +4,20 @@ import { coffeeChatCopy } from "~/content/coffee-chat";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 
-// A sponsor's coffee chat room picker and "Watched by" field, with their
-// Save flows (assignCoffeeChatRoom moves live chats under the Move room
-// rules; setCoffeeChatWatcher). Shared by the Coffee chats board and the
-// Sponsors tab's expanded rows. Organizers only.
+// A sponsor's coffee chat "Watched by" field and its Save flow
+// (setCoffeeChatWatcher), plus the shared field style. Used by the Coffee
+// chats board and the Sponsors tab's expanded rows. Organizers only. Rooms
+// come from room blocks (room table), not a per-sponsor room.
 
 /** Text field / select style shared by the organizer coffee chat forms. */
 export const dashboardFieldClass =
-  "h-10 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary";
+  "h-11 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary md:h-10";
 
 const copy = coffeeChatCopy.organizer.board;
 const booked = coffeeChatCopy.organizer;
 
 const smallField =
   "h-9 w-full rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-2 text-xs text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary";
-
-export function SponsorRoomSelect({
-  sponsorId,
-  assignedRoom,
-  sheetRoom,
-  rooms,
-  idPrefix = "board-room",
-}: {
-  sponsorId: string;
-  assignedRoom: string | null;
-  sheetRoom: string | null;
-  rooms: readonly string[];
-  idPrefix?: string;
-}) {
-  const utils = api.useUtils();
-  const assign = api.coffeeChatRequests.assignCoffeeChatRoom.useMutation({
-    onSuccess: async () => {
-      await Promise.all([
-        utils.coffeeChatRequests.invalidate(),
-        utils.sponsorSchedule.invalidate(),
-        utils.sponsorOrganizer.invalidate(),
-      ]);
-    },
-  });
-  const id = `${idPrefix}-${sponsorId}`;
-  const errorId = `${id}-error`;
-  return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-xs text-dashboard-text-light">
-        {copy.room}
-      </label>
-      <select
-        id={id}
-        value={assignedRoom ?? ""}
-        disabled={assign.isPending}
-        aria-invalid={assign.error ? true : undefined}
-        aria-describedby={assign.error ? errorId : undefined}
-        onChange={(e) =>
-          assign.mutate({ sponsorId, room: e.target.value || null })
-        }
-        className={smallField}
-      >
-        <option value="">{copy.unassigned}</option>
-        {rooms.map((r) => (
-          <option key={r} value={r}>
-            {r}
-          </option>
-        ))}
-      </select>
-      {!assignedRoom && sheetRoom && (
-        <span className="text-xs text-dashboard-text-light">
-          {copy.sheetRoom(sheetRoom)}
-        </span>
-      )}
-      {assign.error && (
-        <span
-          id={errorId}
-          role="alert"
-          className="whitespace-normal text-xs text-dashboard-text-warning"
-        >
-          {assign.error.message || booked.rooms.saveError}
-        </span>
-      )}
-    </div>
-  );
-}
 
 export function WatcherInput({
   sponsorId,
