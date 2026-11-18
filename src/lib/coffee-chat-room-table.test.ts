@@ -38,18 +38,25 @@ const board = (over: Partial<RoomBoard> = {}): RoomBoard => ({
   slots: ["10:00", "10:15", "10:30", "10:45"],
   sponsors: [
     {
-      sponsorId: "s-cl",
-      sponsor: "Canada Life",
-      durationMinutes: 15,
-      groupSize: 1,
-      reps: 2,
-    },
-    {
       sponsorId: "s-sb",
       sponsor: "Scotiabank",
-      durationMinutes: 30,
-      groupSize: 3,
-      reps: 1,
+      setUp: false,
+      request: { source: "none" },
+      blockMinutes: 0,
+    },
+    {
+      sponsorId: "s-cl",
+      sponsor: "Canada Life",
+      setUp: true,
+      request: { source: "sponsor" },
+      blockMinutes: 30,
+    },
+    {
+      sponsorId: "s-st",
+      sponsor: "StarTech",
+      setUp: true,
+      request: { source: "sheet" },
+      blockMinutes: 0,
     },
   ],
   chats: [
@@ -90,14 +97,17 @@ describe("buildRoomTable", () => {
     expect(cell(table, "10:00", "Rm 2242").occupants).toEqual([]);
   });
 
-  it("going past 6 people is only flagged, never blocked", () => {
+  it("no room capacity: many hackers in a room is just a count", () => {
     const busy = buildRoomTable(
       board({
-        chats: ["a", "b", "c", "d", "e"].map((id) => chat({ chatId: id })),
+        chats: ["a", "b", "c", "d", "e", "f", "g"].map((id) =>
+          chat({ chatId: id }),
+        ),
       }),
     );
-    expect(cell(busy, "10:00", "Rm 2241").over).toBe(true); // 5 + 2 reps
-    expect(cell(table, "10:00", "Rm 2241").over).toBe(false);
+    const c = cell(busy, "10:00", "Rm 2241");
+    expect(c.occupants[0]?.hackers).toBe(7);
+    expect("over" in c).toBe(false);
   });
 
   it("a chat booked before blocks still shows, and two sponsors clash", () => {
@@ -114,11 +124,6 @@ describe("buildRoomTable", () => {
     expect(c.clash).toBe(true);
     expect(c.holdId).toBeNull();
   });
-
-  it("marks sponsors outside the filter so the table can dim them", () => {
-    const t = buildRoomTable(board(), { selected: new Set(["Scotiabank"]) });
-    expect(cell(t, "10:00", "Rm 2241").occupants[0]?.selected).toBe(false);
-  });
 });
 
 describe("roomCellSpans", () => {
@@ -130,29 +135,11 @@ describe("roomCellSpans", () => {
 });
 
 describe("sponsorStrip", () => {
-  it("chat type, reps, blocks and hackers booked / needed per sponsor", () => {
-    expect(sponsorStrip(board())).toEqual([
-      {
-        sponsor: "Canada Life",
-        sponsorId: "s-cl",
-        durationMinutes: 15,
-        groupSize: 1,
-        reps: 2,
-        blocks: 1,
-        booked: 2,
-        needed: 4,
-      },
-      {
-        sponsor: "Scotiabank",
-        sponsorId: "s-sb",
-        durationMinutes: 30,
-        groupSize: 3,
-        reps: 1,
-        blocks: 0,
-        booked: 0,
-        needed: 0,
-      },
+  it("sponsors with rooms first, then set up, then by name", () => {
+    expect(sponsorStrip(board()).map((s) => s.sponsor)).toEqual([
+      "Canada Life",
+      "StarTech",
+      "Scotiabank",
     ]);
-    expect(sponsorStrip(board(), new Set(["Scotiabank"]))).toHaveLength(1);
   });
 });

@@ -3,7 +3,6 @@ import { describe, expect, test } from "vitest";
 import type { CoffeeChatStatus } from "~/lib/coffee-chat-requests";
 import type { CoffeeChatSetup } from "~/lib/run-of-show";
 import {
-  boardCells,
   boardSlots,
   buildChatBoard,
 } from "~/server/api/utils/coffee-chat-board";
@@ -18,9 +17,11 @@ function setup(over: Partial<CoffeeChatSetup>): CoffeeChatSetup {
     windowEnd: "11:00",
     durationMinutes: 15,
     groupSize: 1,
+    chattingHours: null,
     slots: null,
     hackers: null,
     format: null,
+    notes: null,
     room: null,
     ...over,
   };
@@ -75,178 +76,41 @@ describe("boardSlots", () => {
   });
 });
 
-describe("boardCells", () => {
-  const slots = [
-    "09:45",
-    "10:00",
-    "10:15",
-    "10:30",
-    "10:45",
-    "11:00",
-    "11:15",
-  ].map(minutes);
-
-  test("1-on-1s: one row per start, outside the window is out", () => {
-    const cells = boardCells({
-      slots,
-      setup: setup({}),
-      reps: 2,
-      registered: true,
-      chats: [],
-      now: morning,
-    });
-    expect(cells.map((c) => [c.slotTime, c.kind, c.rows])).toEqual([
-      ["09:45", "out", 1],
-      ["10:00", "open", 1],
-      ["10:15", "open", 1],
-      ["10:30", "open", 1],
-      ["10:45", "open", 1],
-      ["11:00", "out", 1],
-      ["11:15", "out", 1],
-    ]);
-    // 2 reps, 1-on-1s: 2 seats per start.
-    expect(cells[1]).toMatchObject({ seats: 2, seatsLeft: 2, offerable: true });
-    expect(cells[0]).toMatchObject({
-      seats: 0,
-      seatsLeft: 0,
-      offerable: false,
-    });
-  });
-
-  test("30-min groups span two rows; a window tail shorter than a chat is a gap", () => {
-    const cells = boardCells({
-      slots,
-      setup: setup({
-        windowEnd: "11:15",
-        durationMinutes: 30,
-        groupSize: 3,
-      }),
-      reps: 1,
-      registered: true,
-      chats: [],
-      now: morning,
-    });
-    expect(cells.map((c) => [c.slotTime, c.kind, c.rows])).toEqual([
-      ["09:45", "out", 1],
-      ["10:00", "open", 2],
-      ["10:30", "open", 2],
-      ["11:00", "gap", 1],
-      ["11:15", "out", 1],
-    ]);
-    // Rows add up to the table, so the column lines up.
-    expect(cells.reduce((sum, c) => sum + c.rows, 0)).toBe(slots.length);
-    expect(cells[1]).toMatchObject({ seats: 3, seatsLeft: 3 });
-  });
-
-  test("seats count only chats that still hold one; every chat is listed", () => {
-    const chats = [
-      chat("s", "10:00", "accepted"),
-      chat("s", "10:00", "pending"),
-      chat("s", "10:00", "declined"),
-      chat("s", "10:00", "cancelled"),
-    ];
-    const cells = boardCells({
-      slots,
-      setup: setup({}),
-      reps: 3,
-      registered: true,
-      chats,
-      now: morning,
-    });
-    const ten = cells.find((c) => c.slotTime === "10:00")!;
-    expect(ten.chatIds).toEqual(chats.map((c) => c.chatId));
-    expect(ten).toMatchObject({ seats: 3, seatsUsed: 2, seatsLeft: 1 });
-  });
-
-  test("a pending request past its cutoff frees the seat and can't be offered", () => {
-    const late = new Date("2026-11-21T09:45:00-05:00"); // 10:00 cutoff 9:40
-    const cells = boardCells({
-      slots,
-      setup: setup({}),
-      reps: 1,
-      registered: true,
-      chats: [chat("s", "10:00", "pending")],
-      now: late,
-    });
-    const ten = cells.find((c) => c.slotTime === "10:00")!;
-    expect(ten).toMatchObject({ seatsUsed: 0, seatsLeft: 1, offerable: false });
-    expect(cells.find((c) => c.slotTime === "10:15")!.offerable).toBe(true);
-  });
-
-  test("a 30-min group fills its whole start; full and unregistered aren't offerable", () => {
-    const group = setup({ durationMinutes: 30, groupSize: 3 });
-    const chats = ["accepted", "accepted", "pending"].map((s) =>
-      chat("s", "10:00", s as CoffeeChatStatus, 30),
-    );
-    const cells = boardCells({
-      slots,
-      setup: group,
-      reps: 2,
-      registered: true,
-      chats,
-      now: morning,
-    });
-    // 2 reps but a group of 3 + 1 rep fills a 6-person room once: 3 seats.
-    expect(cells.find((c) => c.slotTime === "10:00")).toMatchObject({
-      rows: 2,
-      seats: 3,
-      seatsLeft: 0,
-      offerable: false,
-    });
-    const unregistered = boardCells({
-      slots,
-      setup: group,
-      reps: 2,
-      registered: false,
-      chats: [],
-      now: morning,
-    });
-    expect(unregistered.some((c) => c.offerable)).toBe(false);
-  });
-
-  test("not set up: every cell is out, but its chats still show", () => {
-    const c = chat("s", "10:15");
-    const cells = boardCells({
-      slots,
-      setup: setup({ windowStart: null, windowEnd: null }),
-      reps: 1,
-      registered: true,
-      chats: [c],
-      now: morning,
-    });
-    expect(cells.every((x) => x.kind === "out" && x.rows === 1)).toBe(true);
-    expect(cells.find((x) => x.slotTime === "10:15")!.chatIds).toEqual([
-      c.chatId,
-    ]);
-  });
+const row = (id: string, name: string, over: object = {}) => ({
+  id,
+  name,
+  style: null,
+  perSlot: null,
+  watcher: null,
+  ...over,
 });
 
 describe("buildChatBoard", () => {
-  test("columns, counts, totals and rooms in use", () => {
-    const sponsors = [
-      {
-        id: "a",
-        name: "Acme",
-        reps: 1,
-        assignedRoom: "Rm 2241",
-        watcher: "Sam",
-      },
-      { id: "b", name: "Beta", reps: 1, assignedRoom: null, watcher: null },
-      { id: "c", name: "Cobalt", reps: 1, assignedRoom: null, watcher: null },
-      { id: "d", name: "Delta", reps: 1, assignedRoom: null, watcher: null },
-    ];
+  test("sponsors, requests, sheet numbers, counts and totals", () => {
     const board = buildChatBoard({
-      sponsors,
+      sponsors: [
+        row("a", "Acme", { watcher: "Sam" }),
+        row("b", "Beta", { style: "oneOnOne", perSlot: 2 }),
+        row("c", "Cobalt"),
+        row("d", "Delta"),
+      ],
       setups: [
         setup({
           sponsor: "Beta",
           windowStart: "10:30",
           windowEnd: "11:30",
-          room: "Rm 2242",
           durationMinutes: 30,
           groupSize: 3,
+          format: "Groups (30 mins with 3 people)",
+          chattingHours: 3,
+          slots: 12,
+          hackers: 36,
         }),
-        setup({ sponsor: "Acme", room: "Rm 2243" }),
+        setup({
+          sponsor: "Acme",
+          format: "Individual (15 mins)",
+          notes: "3-4 reps (notes based on 3)",
+        }),
         setup({ sponsor: "Blank Co", windowStart: null, windowEnd: null }),
         setup({ sponsor: "Cobalt", windowStart: null, windowEnd: null }),
       ],
@@ -254,7 +118,7 @@ describe("buildChatBoard", () => {
         chat("a", "10:00", "accepted"),
         chat("a", "10:15", "pending"),
         chat("b", "10:30", "declined", 30),
-        // Delta has no sheet row but has a chat: still a column.
+        // Delta has no sheet row but has a chat: still listed.
         chat("d", "11:30", "pending"),
       ],
       now: morning,
@@ -269,31 +133,40 @@ describe("buildChatBoard", () => {
       ["Cobalt", false],
       ["Delta", false],
     ]);
-    const acme = board.sponsors[0]!;
+    const [acme, beta, blank, cobalt] = board.sponsors;
     expect(acme).toMatchObject({
-      room: "Rm 2241",
-      sheetRoom: "Rm 2243",
       watcher: "Sam",
+      request: { style: "oneOnOne", perSlot: 3, source: "sheet" },
       counts: { accepted: 1, pending: 1, total: 2 },
+      booked: 2,
     });
-    expect(board.sponsors[2]!.sponsorId).toBeNull();
+    // Beta answered 1-on-1 x 2; the length stays the sheet's 30 min.
+    expect(beta).toMatchObject({
+      request: {
+        style: "oneOnOne",
+        perSlot: 2,
+        durationMinutes: 30,
+        source: "sponsor",
+      },
+      sheet: { chattingHours: 3, slots: 12, hackers: 36 },
+      // The sheet's own numbers: 12 x 3 = 36 adds up, 3 h != 12 slots.
+      mismatch: ["hours"],
+      booked: 0,
+    });
+    expect(blank!.sponsorId).toBeNull();
+    expect(cobalt!.request.source).toBe("none");
     expect(board.totals).toEqual({
       offered: 4,
       accepted: 1,
       pending: 2,
-      // Acme: 4 starts x 1 seat - 2 used = 2. Beta: 2 starts x 1 group of 3
-      // (1 rep) = 6, the declined chat holds none.
-      seatsLeft: 2 + 6,
       needsHacker: 0,
     });
-    expect(board.roomsInUse).toEqual(["Rm 2241", "Rm 2242"]);
+    expect(board.roomsInUse).toEqual([]);
   });
 });
 
-describe("buildChatBoard with room holds", () => {
-  const sponsors = [
-    { id: "h", name: "Holdco", reps: 1, assignedRoom: null, watcher: null },
-  ];
+describe("buildChatBoard with room blocks", () => {
+  const sponsors = [row("h", "Holdco", { style: "oneOnOne", perSlot: 2 })];
   const holds = [
     {
       holdId: "h1",
@@ -305,41 +178,58 @@ describe("buildChatBoard with room holds", () => {
     },
   ];
 
-  test("a hold-only sponsor gets a column with open cells in the hold", () => {
+  test("a block-only sponsor is listed; slots show booked / asked", () => {
     const board = buildChatBoard({
       sponsors,
       setups: [],
-      chats: [],
+      chats: [{ ...chat("h", "13:00"), room: "Rm 2242" }],
       holds,
+      limits: [
+        { sponsorId: "h", startTime: "13:15", endTime: "13:30", hackers: 1 },
+      ],
       now: morning,
     });
     expect(board.slots).toEqual(["13:00", "13:15"]);
-    const col = board.sponsors[0]!;
-    expect(col.sponsor).toBe("Holdco");
-    expect(col.cells.map((c) => [c.slotTime, c.kind, c.offerable])).toEqual([
-      ["13:00", "open", true],
-      ["13:15", "open", true],
+    const s = board.sponsors[0]!;
+    expect(s).toMatchObject({
+      sponsor: "Holdco",
+      blockMinutes: 30,
+      booked: 1,
+      asked: 3,
+      holdsNeedingHacker: 1,
+    });
+    expect(
+      board.holds[0]!.slots.map((x) => [x.booked, x.needed, x.lowered]),
+    ).toEqual([
+      [1, 2, false],
+      [0, 1, true],
     ]);
-    expect(col.holdsNeedingHacker).toBe(1);
     expect(board.holds[0]).toMatchObject({
       sponsor: "Holdco",
+      booked: 1,
+      needed: 3,
+      filled: 1,
+      total: 3,
       needsHacker: true,
-      chats: 0,
     });
     expect(board.totals.needsHacker).toBe(1);
+    expect(board.roomsInUse).toEqual(["Rm 2242"]);
   });
 
-  test("a pending chat inside clears it; a declined one doesn't", () => {
-    const withChat = (status: CoffeeChatStatus) =>
+  test("filling every asked seat clears it; a declined chat doesn't", () => {
+    const withChats = (status: CoffeeChatStatus) =>
       buildChatBoard({
         sponsors,
         setups: [],
-        chats: [{ ...chat("h", "13:15", status), room: "Rm 2242" }],
+        chats: ["13:00", "13:00", "13:15", "13:15"].map((t) => ({
+          ...chat("h", t, status),
+          room: "Rm 2242",
+        })),
         holds,
         now: morning,
       });
-    expect(withChat("pending").holds[0]!.needsHacker).toBe(false);
-    expect(withChat("pending").totals.needsHacker).toBe(0);
-    expect(withChat("declined").holds[0]!.needsHacker).toBe(true);
+    expect(withChats("pending").holds[0]!.needsHacker).toBe(false);
+    expect(withChats("pending").totals.needsHacker).toBe(0);
+    expect(withChats("declined").holds[0]!.needsHacker).toBe(true);
   });
 });

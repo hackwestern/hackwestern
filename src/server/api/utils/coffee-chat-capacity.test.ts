@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import type { CoffeeChatSetup } from "~/lib/run-of-show";
+import type { ChatRequest } from "~/lib/coffee-chat-request";
 import {
   freeStartTimes,
   offerProblem,
@@ -9,23 +9,12 @@ import {
   seatsUsed,
 } from "~/server/api/utils/coffee-chat-capacity";
 
-const oneOnOne: CoffeeChatSetup = {
-  sponsor: "A",
-  windowStart: "10:00",
-  windowEnd: "11:00",
+const oneOnOne = (perSlot = 1): ChatRequest => ({
+  style: "oneOnOne",
+  perSlot,
   durationMinutes: 15,
-  groupSize: 1,
-  slots: null,
-  hackers: null,
-  format: "Individual (15 mins)",
-  room: "Rm 2241",
-};
-const groups: CoffeeChatSetup = {
-  ...oneOnOne,
-  durationMinutes: 30,
-  groupSize: 3,
-  format: "Groups (30 mins with 3 people)",
-};
+  source: "sponsor",
+});
 const early = new Date("2026-11-21T08:00:00-05:00");
 // The sponsor's room block, 10:00-11:00 in Rm 2241.
 const holds = [
@@ -44,13 +33,11 @@ describe("seats", () => {
     expect(seatsUsed([...chats, chat("10:15")], chat("10:15"))).toBe(2);
   });
 
-  test("seats = hackersPerSlot (chat type x reps) minus used", () => {
-    // 1-on-1: one hacker per rep, not capped by the room's 6 people.
-    expect(seatsLeft([], chat("10:00"), 2, 1)).toBe(2);
-    expect(seatsLeft([], chat("10:00"), 10, 1)).toBe(10);
-    expect(seatsLeft([chat("10:00")], chat("10:00"), 2, 1)).toBe(1);
-    // Group of 3: one group per sponsor, three hacker seats.
-    expect(seatsLeft([], chat("10:00", 30), 4, 3)).toBe(3);
+  test("seats = hackers asked for minus booked; no room capacity", () => {
+    expect(seatsLeft([], chat("10:00"), 2)).toBe(2);
+    expect(seatsLeft([], chat("10:00"), 10)).toBe(10);
+    expect(seatsLeft([chat("10:00")], chat("10:00"), 2)).toBe(1);
+    expect(seatsLeft([chat("10:00")], chat("10:00"), 0)).toBe(0);
   });
 });
 
@@ -76,9 +63,8 @@ describe("roomTakenByOtherSponsor", () => {
 
 describe("offerProblem", () => {
   const base = {
-    setup: oneOnOne,
+    request: oneOnOne(),
     slotTime: "10:00",
-    reps: 1,
     sponsorId: "a",
     sponsorChats: [],
     hackerChats: [],
@@ -98,7 +84,7 @@ describe("offerProblem", () => {
     expect(
       offerProblem({
         ...base,
-        setup: { ...oneOnOne, durationMinutes: 30 },
+        request: { ...oneOnOne(), durationMinutes: 30 },
         slotTime: "10:15",
       }),
     ).toBe("notInWindow");
@@ -118,14 +104,38 @@ describe("offerProblem", () => {
       }),
     ).toBe("roomTaken");
   });
+
+  test("an ask for fewer lowers the seats; 0 = no chat then", () => {
+    const asks = (hackers: number) => [
+      { sponsorId: "a", startTime: "10:00", endTime: "10:15", hackers },
+    ];
+    const three = { ...base, request: oneOnOne(3) };
+    expect(offerProblem({ ...three, sponsorChats: [chat("10:00")] })).toBe(
+      null,
+    );
+    expect(
+      offerProblem({
+        ...three,
+        limits: asks(1),
+        sponsorChats: [chat("10:00")],
+      }),
+    ).toBe("full");
+    expect(offerProblem({ ...three, limits: asks(0) })).toBe("full");
+    // Another sponsor's ask doesn't count.
+    expect(
+      offerProblem({
+        ...three,
+        limits: [{ ...asks(0)[0]!, sponsorId: "b" }],
+      }),
+    ).toBeNull();
+  });
 });
 
 describe("freeStartTimes", () => {
   test("earliest first, skipping full and clashing times", () => {
     expect(
       freeStartTimes({
-        setup: oneOnOne,
-        reps: 1,
+        request: oneOnOne(),
         sponsorId: "a",
         sponsorChats: [chat("10:00")],
         hackerChats: [chat("10:30")],
@@ -139,17 +149,19 @@ describe("freeStartTimes", () => {
     ]);
   });
 
-  test("drops times past the reply cutoff", () => {
+  test("drops times past the reply cutoff and asked down to 0", () => {
     expect(
       freeStartTimes({
-        setup: oneOnOne,
-        reps: 2,
+        request: oneOnOne(2),
+        limits: [
+          { sponsorId: "a", startTime: "10:45", endTime: "11:00", hackers: 0 },
+        ],
         sponsorId: "a",
         sponsorChats: [],
         roomChats: [],
         holds,
         now: new Date("2026-11-21T09:56:00-05:00"),
       }).map((t) => t.slotTime),
-    ).toEqual(["10:30", "10:45"]);
+    ).toEqual(["10:30"]);
   });
 });
