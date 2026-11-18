@@ -1,5 +1,4 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardCheckbox } from "~/components/internals/dashboard-checkbox";
 import { hover } from "~/components/internals/interaction";
 import { coffeeChatCopy } from "~/content/coffee-chat";
@@ -124,24 +123,22 @@ export function SponsorFilter({
             {copy.count(shown, names.length)}
           </span>
         </span>
-        <div className="-mr-2 flex">
-          <DashboardButton
-            variant="link"
-            disabled={selection.selected === null}
-            onClick={selection.showAll}
-          >
-            {copy.all}
-          </DashboardButton>
-          <DashboardButton
-            variant="link"
-            disabled={shown === 0}
-            onClick={selection.clear}
-          >
-            {copy.clear}
-          </DashboardButton>
-        </div>
       </div>
-      <div className="-mx-1 flex flex-wrap">
+      <div className="-mx-1 flex flex-wrap items-center">
+        {/* All sponsors: ticked when every sponsor shows; ticking it shows
+            everyone, unticking it hides everyone (Jazz, 2026-11-17). */}
+        <SponsorCheck
+          name={copy.all}
+          checked={shown === names.length && names.length > 0}
+          onToggle={
+            shown === names.length ? selection.clear : selection.showAll
+          }
+          strong
+        />
+        <span
+          aria-hidden="true"
+          className="mx-2 h-5 w-px bg-dashboard-border-subtle"
+        />
         {names.map((name) => (
           <SponsorCheck
             key={name}
@@ -165,15 +162,18 @@ function SponsorCheck({
   name,
   checked,
   onToggle,
+  strong = false,
 }: {
   name: string;
   checked: boolean;
   onToggle: () => void;
+  strong?: boolean;
 }) {
   return (
     <label
       className={cn(
         "flex min-h-11 min-w-0 max-w-full cursor-pixel-hover items-center gap-1 rounded-dashboard-md pr-2 text-sm text-dashboard-text-heavy md:min-h-9",
+        strong && "font-semibold",
         hover.highlight,
       )}
     >
