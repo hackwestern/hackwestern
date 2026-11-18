@@ -63,7 +63,7 @@ const SponsorCard = ({
           href={link}
           target="_blank"
           rel="noopener noreferrer"
-          className={`flex flex-1 cursor-pixel-hover items-center justify-center rounded-dashboard-lg bg-dashboard-bg-surface px-10 py-4 transition-all duration-300 ${scale > 1 ? "h-48" : "h-28"} ${
+          className={`flex flex-1 cursor-pixel-hover items-center justify-center rounded-dashboard-lg bg-dashboard-bg-surface px-10 py-4 transition-all duration-300 ${scale >= 3 ? "h-48" : scale > 1 ? "h-36" : scale < 1 ? "h-24" : "h-28"} ${
             isExpanded
               ? "border border-transparent"
               : "border border-dashboard-border-subtle hover:border-dashboard-border-outline hover:shadow-dashboard-card"
@@ -128,15 +128,22 @@ const Sponsors = () => {
               scale: 3.0,
             };
           }
-          if (tierName === "Diamond Sponsors" || tierName === "Gold Sponsors") {
+          if (tierName === "Silver Sponsors") {
             return {
-              gridCols: "grid-cols-1 max-w-2xl mx-auto",
+              gridCols: "grid-cols-1 sm:grid-cols-2 max-w-4xl mx-auto",
               titleSize: "text-2xl",
-              scale: 2.16,
+              scale: 1.6,
+            };
+          }
+          if (tierName === "In-Kind Sponsors") {
+            return {
+              gridCols: "grid-cols-2 lg:grid-cols-4",
+              titleSize: "text-xl",
+              scale: 0.8,
             };
           }
 
-          // Bronze and In-Kind use default
+          // Bronze uses default
           return {
             gridCols: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
             titleSize: "text-xl",

@@ -25,7 +25,7 @@ export const SPONSOR_TIERS: SponsorTier[] = [
     ],
   },
   {
-    tier: "Sponsors",
+    tier: "Silver Sponsors",
     sponsors: [
       {
         name: "Canada Life",
@@ -53,6 +53,11 @@ export const SPONSOR_TIERS: SponsorTier[] = [
         description:
           "Manulife is a leading international financial services group that helps people make their decisions easier and lives better. We operate primarily as John Hancock in the United States and Manulife elsewhere. We provide financial advice, insurance, as well as wealth and asset management solutions for individuals, groups and institutions.",
       },
+    ],
+  },
+  {
+    tier: "Bronze Sponsors",
+    sponsors: [
       {
         name: "StarTech.com",
         logo: "/shared/sponsors/startech.svg",
@@ -100,6 +105,11 @@ export const SPONSOR_TIERS: SponsorTier[] = [
         logo: "/shared/sponsors/ubit.png",
         link: "https://www.ubit.foundation/",
       },
+    ],
+  },
+  {
+    tier: "In-Kind Sponsors",
+    sponsors: [
       {
         name: "OpenAI",
         logo: "/shared/sponsors/openai.svg",
