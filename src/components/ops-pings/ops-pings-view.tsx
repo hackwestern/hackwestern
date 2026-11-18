@@ -4,7 +4,8 @@ import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { ReadAt } from "~/components/sponsors/schedule-states";
 import { opsPingsCopy } from "~/content/ops-pings";
-import { formatClock, RUN_OF_SHOW_DAYS } from "~/lib/run-of-show";
+import { formatOpsClock } from "~/lib/ops-run-of-show";
+import { RUN_OF_SHOW_DAYS } from "~/lib/run-of-show";
 import { cn } from "~/lib/utils";
 import type { RouterOutputs } from "~/utils/api";
 import { api } from "~/utils/api";
@@ -33,8 +34,11 @@ type PersonLike = Extract<Owner, { kind: "person" }> | { token: string; status: 
 function personLabel(p: PersonLike): { text: string; warn: boolean } {
   switch (p.status) {
     case "matched": {
+      if (p.via === "close") {
+        return { text: `${p.token} → ${p.name}: ${copy.owner.closeMatch}`, warn: true };
+      }
       const via = p.via ? copy.owner.via[p.via] : "";
-      return { text: `${p.token} → ${p.name}${via ? ` (${via})` : ""}`, warn: p.via === "close" };
+      return { text: `${p.token} → ${p.name}${via ? ` (${via})` : ""}`, warn: false };
     }
     case "ambiguous":
       return { text: `${p.token}: ${copy.owner.ambiguous(p.candidates ?? [])}`, warn: true };
@@ -49,12 +53,15 @@ function OwnerItem({ owner }: { owner: Owner }) {
   if (owner.kind === "everyone") {
     return <li className="text-dashboard-text-light">{copy.owner.everyone}</li>;
   }
-  if (owner.kind === "spon") {
+  if (owner.kind === "group") {
     if (!owner.members) return <li className={WARN}>{copy.owner.sponUnavailable}</li>;
     return (
       <li>
         <span className="text-dashboard-text-medium">
-          {owner.token}: {copy.owner.spon(owner.members.length)}
+          {owner.token}:{" "}
+          {owner.group === "spon"
+            ? copy.owner.spon(owner.members.length)
+            : copy.owner.team(owner.members.length)}
         </span>
         <ul className="m-0 list-none pl-3">
           {owner.members.map((m) => {
@@ -110,8 +117,8 @@ function PingItem({ ping, label }: { ping: Ping; label: string }) {
 
 function TaskRow({ task }: { task: Task }) {
   const time = task.end
-    ? `${formatClock(task.start)} – ${formatClock(task.end)}`
-    : formatClock(task.start);
+    ? `${formatOpsClock(task.start)} – ${formatOpsClock(task.end)}`
+    : formatOpsClock(task.start);
   return (
     <li className="flex flex-col gap-3 border-b border-dashboard-border-default p-4 last:border-b-0 sm:grid sm:grid-cols-[7rem_minmax(0,1fr)_minmax(0,1fr)] sm:gap-4 sm:px-5">
       <div className="flex flex-col">
@@ -153,6 +160,7 @@ function syncMessage(r: SyncResult): { text: string; warn: boolean } {
     "not-configured": copy.sheetNotConfigured,
     "sheet-error": copy.sheetError,
     "slack-error": copy.slackError,
+    busy: copy.busy,
   };
   return { text: byReason[r.reason] ?? copy.syncError, warn: true };
 }
@@ -224,8 +232,10 @@ export function OpsPingsView() {
   const flaggedTasks = data.tasks.filter((t) =>
     t.owners.some((o) =>
       o.kind === "person"
-        ? o.status !== "matched"
-        : o.kind === "spon" && (!o.members || o.members.some((m) => m.status !== "matched")),
+        ? o.status !== "matched" || o.via === "close"
+        : o.kind === "group" &&
+          (!o.members ||
+            o.members.some((m) => m.status !== "matched" || m.via === "close")),
     ),
   );
 
@@ -294,7 +304,7 @@ export function OpsPingsView() {
                 <li key={t.cell} className="break-words">
                   <span className="font-semibold">{copy.cell(t.cell)}</span>
                   {" · "}
-                  {t.day} {formatClock(t.start)} {t.title}
+                  {t.day} {formatOpsClock(t.start)} {t.title}
                   <ul className="m-0 list-none pl-3">
                     {t.owners
                       .filter((o) => o.kind !== "everyone")

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { eq, inArray, sql, and, gt } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
 
 import { opsPingsCopy } from "~/content/ops-pings";
 import { opsOwnerAliases } from "~/content/ops-pings-aliases";
@@ -11,12 +11,13 @@ import {
   type NameMatch,
 } from "~/lib/ops-owners";
 import {
+  formatOpsClock,
   parseOpsSchedule,
   type OpsIssue,
   type OpsTask,
   type ParsedOpsSchedule,
 } from "~/lib/ops-run-of-show";
-import { formatClock, RUN_OF_SHOW_DAYS } from "~/lib/run-of-show";
+import { RUN_OF_SHOW_DAYS } from "~/lib/run-of-show";
 import { runOfShowInstant } from "~/lib/run-of-show-time";
 import {
   createCachedLoader,
@@ -27,7 +28,7 @@ import {
 } from "~/server/api/utils/run-of-show-sheet";
 import { diffReminders } from "~/server/api/utils/task-reminders";
 import { db } from "~/server/db";
-import { opsPings, users } from "~/server/db/schema";
+import { opsPings, taskReminderSync, users } from "~/server/db/schema";
 import { escapeSlackText } from "~/server/slack/client";
 import { lookupSlackUser } from "~/server/slack/dm";
 import { getSlackOrganizers, type SlackOrganizer } from "~/server/slack/organizers";
@@ -56,7 +57,6 @@ export const TEAM_ASSIGNMENTS_TAB = "Team Assignments";
 /** Start pings go out 10 minutes before the start (Jazz, 2026-11-18). */
 export const START_LEAD_MS = 10 * 60_000;
 export const OPS_SHEET_CACHE_MS = 60_000;
-const LOCK_KEY = "ops-pings-sync";
 
 const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
 
@@ -165,7 +165,9 @@ export type OwnerResolution = {
   | ({ kind: "person" } & PersonResolution)
   | { kind: "everyone" }
   | {
-      kind: "spon";
+      kind: "group";
+      /** "spon": the Team Assignments list; "team": a list in the config. */
+      group: "spon" | "team";
       /** Null when the Team Assignments list couldn't be read. */
       members: ({ token: string } & PersonResolution)[] | null;
     }
@@ -200,10 +202,26 @@ export function ownerResolver(ctx: OwnerContext) {
   async function resolvePerson(name: string): Promise<PersonResolution> {
     if (ctx.slack) {
       const m = matchName(name, ctx.slack, aliases);
-      if (m.status === "one") {
+      if (m.status === "many") return { status: "ambiguous", candidates: m.candidates };
+      if (m.status === "one" && m.via !== "close") {
         return { status: "matched", name: m.name, slackUserId: m.id, via: m.via };
       }
-      if (m.status === "many") return { status: "ambiguous", candidates: m.candidates };
+      if (m.status === "one") {
+        // A close spelling ("Sarah" -> tagged "Sara") is only taken when no
+        // organizer account is exactly this name and someone else on Slack.
+        const exact = matchName(name, ctx.app, aliases);
+        if (exact.status === "many") {
+          return { status: "ambiguous", candidates: [...new Set([m.name, ...exact.candidates])].sort() };
+        }
+        if (exact.status === "one" && exact.via !== "close") {
+          const account = ctx.app.find((o) => o.id === exact.id)!;
+          const theirs = ctx.lookupEmail ? await ctx.lookupEmail(account.email) : null;
+          if (theirs !== m.id) {
+            return { status: "ambiguous", candidates: [...new Set([m.name, exact.name])].sort() };
+          }
+        }
+        return { status: "matched", name: m.name, slackUserId: m.id, via: "close" };
+      }
     }
     // Fallback: an organizer account in the app, then Slack by its email.
     const a = matchName(name, ctx.app, aliases);
@@ -223,13 +241,14 @@ export function ownerResolver(ctx: OwnerContext) {
     return Promise.all(
       task.owners.map(async (o): Promise<OwnerResolution> => {
         if (o.group === "everyone") return { token: o.raw, kind: "everyone" };
-        if (o.group === "spon") {
-          const members = ctx.sponRoster
+        if (o.group === "spon" || o.group === "team") {
+          const names = o.group === "spon" ? ctx.sponRoster : (o.members ?? []);
+          const members = names
             ? await Promise.all(
-                ctx.sponRoster.map(async (n) => ({ token: n, ...(await person(n)) })),
+                names.map(async (n) => ({ token: n, ...(await person(n)) })),
               )
             : null;
-          return { token: o.raw, kind: "spon", members };
+          return { token: o.raw, kind: "group", group: o.group, members };
         }
         return { token: o.raw, kind: "person", ...(await person(o.name)) };
       }),
@@ -249,19 +268,24 @@ export function recipientsOf(owners: OwnerResolution[]): Recipient[] {
   };
   for (const o of owners) {
     if (o.kind === "person") add(o);
-    if (o.kind === "spon") o.members?.forEach(add);
+    if (o.kind === "group") o.members?.forEach(add);
   }
   return [...out.values()];
 }
 
-/** Owner names nobody can be DMed for, to show on the page. */
+/** Needs a person to look: not matched, or matched by a close spelling. */
+export function needsCheck(p: PersonResolution): boolean {
+  return p.status !== "matched" || p.via === "close";
+}
+
+/** Owner names to show under "Needs a look". */
 export function flaggedOwners(owners: OwnerResolution[]): number {
   let n = 0;
   for (const o of owners) {
-    if (o.kind === "person" && o.status !== "matched") n++;
-    if (o.kind === "spon") {
+    if (o.kind === "person" && needsCheck(o)) n++;
+    if (o.kind === "group") {
       if (!o.members) n++;
-      else n += o.members.filter((m) => m.status !== "matched").length;
+      else n += o.members.filter(needsCheck).length;
     }
   }
   return n;
@@ -281,8 +305,8 @@ export function opsTaskKey(t: Pick<OpsTask, "day" | "start" | "title">): string 
 export function pingText(task: OpsTask, kind: PingKind): string {
   const e = (s: string | null) =>
     s === null ? null : escapeSlackText(s.replace(/[ \t]+/g, " ").trim());
-  const start = formatClock(task.start);
-  const end = task.end ? formatClock(task.end) : null;
+  const start = formatOpsClock(task.start);
+  const end = task.end ? formatOpsClock(task.end) : null;
   if (kind === "end") {
     return opsPingsCopy.slack.end({
       title: e(task.title)!,
@@ -386,6 +410,8 @@ export type OpsDeps = {
   token?: string;
   fetch?: typeof fetch;
   readSheet?: (options: { fresh?: boolean }) => Promise<OpsSheet>;
+  /** Wall clock for the sync lock; tests pass their own. */
+  clock?: () => Date;
 };
 
 function slackToken(deps: OpsDeps): string | undefined {
@@ -483,7 +509,14 @@ export type OpsSyncResult =
     }
   | {
       ok: false;
-      reason: "no-token" | "not-configured" | "sheet-error" | "slack-error" | "error";
+      reason:
+        | "no-token"
+        | "not-configured"
+        | "sheet-error"
+        | "slack-error"
+        /** Another sync is running. */
+        | "busy"
+        | "error";
     };
 
 type StoredOpsPing = {
@@ -496,10 +529,56 @@ type StoredOpsPing = {
   routeKey: string | null;
 };
 
+/** A run's lock goes stale after this long without progress (a crash). */
+export const SYNC_LOCK_STALE_MS = 2 * 60_000;
+const LOCK_ROW_ID = "ops-pings";
+
+/**
+ * One sync at a time, across instances: a lock row in task_reminder_sync
+ * (row "ops-pings", its lastAttemptAt is the lock). Taken when free or
+ * stale, refreshed as the run goes, cleared when the run ends.
+ */
+async function claimSyncLock(clock: () => Date): Promise<boolean> {
+  const at = clock();
+  const claimed = await db
+    .insert(taskReminderSync)
+    .values({ id: LOCK_ROW_ID, lastAttemptAt: at })
+    .onConflictDoUpdate({
+      target: taskReminderSync.id,
+      set: { lastAttemptAt: at },
+      setWhere: or(
+        isNull(taskReminderSync.lastAttemptAt),
+        lt(
+          taskReminderSync.lastAttemptAt,
+          new Date(at.getTime() - SYNC_LOCK_STALE_MS),
+        ),
+      ),
+    })
+    .returning({ id: taskReminderSync.id });
+  return claimed.length > 0;
+}
+
+async function refreshSyncLock(clock: () => Date): Promise<void> {
+  await db
+    .update(taskReminderSync)
+    .set({ lastAttemptAt: clock() })
+    .where(eq(taskReminderSync.id, LOCK_ROW_ID));
+}
+
+async function releaseSyncLock(at: Date): Promise<void> {
+  await db
+    .update(taskReminderSync)
+    .set({ lastAttemptAt: null, lastSyncedAt: at })
+    .where(eq(taskReminderSync.id, LOCK_ROW_ID));
+}
+
 /**
  * Make Slack's scheduled DMs match the sheet: new pings scheduled, changed
- * ones replaced, removed ones deleted, unchanged ones left alone. Idempotent;
- * concurrent runs queue on a Postgres advisory lock. Never throws.
+ * ones replaced, removed ones deleted, unchanged ones left alone. Each row is
+ * written as soon as its Slack call returns, so a run that stops halfway
+ * leaves the database matching Slack and the next run carries on from there
+ * (no message is scheduled twice). One run at a time; a second one meanwhile
+ * gets "busy". Never throws.
  */
 export async function syncOpsPings(
   now: Date = new Date(),
@@ -508,6 +587,7 @@ export async function syncOpsPings(
   const token = slackToken(deps);
   if (!token) return { ok: false, reason: "no-token" };
   const fetchImpl = deps.fetch ?? fetch;
+  const clock = deps.clock ?? (() => new Date());
 
   let sheet: OpsSheet;
   try {
@@ -516,6 +596,7 @@ export async function syncOpsPings(
     return { ok: false, reason: sheetFailure(error) };
   }
 
+  let locked = false;
   try {
     const { ctx, slack } = await ownerContext(sheet, now, { ...deps, token }, true);
     // Without the organizer list every owner would look unmatched: change
@@ -523,110 +604,125 @@ export async function syncOpsPings(
     if (slack !== "connected") return { ok: false, reason: "slack-error" };
     const plan = await planOpsPings(sheet, ctx, now);
 
-    return await db.transaction(async (tx) => {
-      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${LOCK_KEY}))`);
-      const stored = (await tx
-        .select({
-          id: opsPings.id,
-          taskKey: opsPings.pingKey,
-          postAt: opsPings.postAt,
-          status: opsPings.status,
-          slackChannel: opsPings.slackChannel,
-          scheduledMessageId: opsPings.scheduledMessageId,
-          routeKey: opsPings.routeKey,
-        })
-        .from(opsPings)
-        .where(inArray(opsPings.status, ["scheduled", "failed"]))) as StoredOpsPing[];
-      const diff = diffReminders<DesiredOpsPing, StoredOpsPing>(stored, plan.desired, now);
+    locked = await claimSyncLock(clock);
+    if (!locked) return { ok: false, reason: "busy" };
 
-      if (diff.passed.length > 0) {
-        await tx
-          .update(opsPings)
-          .set({ status: "sent-window-passed" })
-          .where(inArray(opsPings.id, diff.passed));
-      }
-      if (diff.drop.length > 0) {
-        await tx
-          .update(opsPings)
-          .set({ status: "cancelled" })
-          .where(inArray(opsPings.id, diff.drop));
-      }
+    const stored = (await db
+      .select({
+        id: opsPings.id,
+        taskKey: opsPings.pingKey,
+        postAt: opsPings.postAt,
+        status: opsPings.status,
+        slackChannel: opsPings.slackChannel,
+        scheduledMessageId: opsPings.scheduledMessageId,
+        routeKey: opsPings.routeKey,
+      })
+      .from(opsPings)
+      .where(inArray(opsPings.status, ["scheduled", "failed"]))) as StoredOpsPing[];
+    const diff = diffReminders<DesiredOpsPing, StoredOpsPing>(stored, plan.desired, now);
 
-      let cancelled = diff.drop.length;
-      const stuck = new Set<string>();
-      for (const row of diff.cancel) {
-        const outcome = await cancelScheduledMessage(token, row, fetchImpl);
-        await tx
-          .update(opsPings)
-          .set(
-            outcome.status === "cancelled"
-              ? { status: "cancelled", error: null }
-              : outcome.status === "gone"
-                ? { status: "cancelled", error: outcome.code }
-                : { error: `cancel: ${outcome.code}`.slice(0, 255) },
-          )
-          .where(eq(opsPings.id, row.id));
-        if (outcome.status === "stuck") stuck.add(row.taskKey);
-        else cancelled++;
-      }
+    if (diff.passed.length > 0) {
+      await db
+        .update(opsPings)
+        .set({ status: "sent-window-passed" })
+        .where(inArray(opsPings.id, diff.passed));
+    }
+    if (diff.drop.length > 0) {
+      await db
+        .update(opsPings)
+        .set({ status: "cancelled" })
+        .where(inArray(opsPings.id, diff.drop));
+    }
 
-      const dmChannels = new Map<string, string>();
-      let created = 0;
-      let failed = 0;
-      let deferred = 0;
-      for (const d of diff.create) {
-        if (stuck.has(d.taskKey)) {
-          deferred++;
-          continue;
-        }
-        const res = await scheduleSlackMessage(
-          token,
-          { slackUserId: d.slackUserId, channel: null },
-          d.postAt,
-          d.text,
-          dmChannels,
-          fetchImpl,
-        );
-        if (res.ok) created++;
-        else failed++;
-        const row = {
-          pingKey: d.taskKey,
-          taskKey: d.groupKey,
-          kind: d.kind,
-          task: d.task,
-          owner: d.owner.slice(0, 255),
-          slackUserId: d.slackUserId,
-          postAt: d.postAt,
-          routeKey: d.routeKey,
-          slackChannel: res.slackChannel,
-          ...(res.ok
-            ? { status: "scheduled" as const, scheduledMessageId: res.scheduledMessageId, error: null }
-            : { status: "failed" as const, scheduledMessageId: null, error: res.code }),
-        };
-        if (d.retryId) {
-          await tx.update(opsPings).set(row).where(eq(opsPings.id, d.retryId));
-        } else {
-          await tx.insert(opsPings).values(row);
-        }
-      }
+    let cancelled = diff.drop.length;
+    const stuck = new Set<string>();
+    for (const row of diff.cancel) {
+      const outcome = await cancelScheduledMessage(token, row, fetchImpl);
+      await db
+        .update(opsPings)
+        .set(
+          outcome.status === "cancelled"
+            ? { status: "cancelled", error: null }
+            : outcome.status === "gone"
+              ? { status: "cancelled", error: outcome.code }
+              : { error: `cancel: ${outcome.code}`.slice(0, 255) },
+        )
+        .where(eq(opsPings.id, row.id));
+      if (outcome.status === "stuck") stuck.add(row.taskKey);
+      else cancelled++;
+      await refreshSyncLock(clock);
+    }
 
-      const [counted] = await tx
-        .select({ count: sql<number>`count(*)::int` })
-        .from(opsPings)
-        .where(and(eq(opsPings.status, "scheduled"), gt(opsPings.postAt, now)));
-      return {
-        ok: true as const,
-        scheduled: counted?.count ?? 0,
-        created,
-        cancelled,
-        failed,
-        tooSoon: diff.tooSoon.length,
-        deferred,
+    const dmChannels = new Map<string, string>();
+    let created = 0;
+    let failed = 0;
+    let deferred = 0;
+    for (const d of diff.create) {
+      if (stuck.has(d.taskKey)) {
+        deferred++;
+        continue;
+      }
+      const res = await scheduleSlackMessage(
+        token,
+        { slackUserId: d.slackUserId, channel: null },
+        d.postAt,
+        d.text,
+        dmChannels,
+        fetchImpl,
+      );
+      const row = {
+        pingKey: d.taskKey,
+        taskKey: d.groupKey,
+        kind: d.kind,
+        task: d.task,
+        owner: d.owner.slice(0, 255),
+        slackUserId: d.slackUserId,
+        postAt: d.postAt,
+        routeKey: d.routeKey,
+        slackChannel: res.slackChannel,
+        ...(res.ok
+          ? { status: "scheduled" as const, scheduledMessageId: res.scheduledMessageId, error: null }
+          : { status: "failed" as const, scheduledMessageId: null, error: res.code }),
       };
-    });
+      try {
+        if (d.retryId) {
+          await db.update(opsPings).set(row).where(eq(opsPings.id, d.retryId));
+        } else {
+          await db.insert(opsPings).values(row);
+        }
+      } catch (error) {
+        // Slack has it but we couldn't record it: take it back out of Slack
+        // so the next run doesn't schedule it a second time, then stop.
+        if (res.ok) await cancelScheduledMessage(token, row, fetchImpl);
+        throw error;
+      }
+      if (res.ok) created++;
+      else failed++;
+      await refreshSyncLock(clock);
+    }
+
+    const [counted] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(opsPings)
+      .where(and(eq(opsPings.status, "scheduled"), gt(opsPings.postAt, now)));
+    return {
+      ok: true as const,
+      scheduled: counted?.count ?? 0,
+      created,
+      cancelled,
+      failed,
+      tooSoon: diff.tooSoon.length,
+      deferred,
+    };
   } catch (error) {
     console.error("ops pings: sync failed", error);
     return { ok: false, reason: "error" };
+  } finally {
+    if (locked) {
+      await releaseSyncLock(clock()).catch((error: unknown) =>
+        console.error("ops pings: sync lock not released", error),
+      );
+    }
   }
 }
 

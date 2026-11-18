@@ -60,7 +60,9 @@ export const opsPingsCopy = {
       "Slack isn't connected (SLACK_BOT_TOKEN isn't set), so nothing can be scheduled. Owners below are matched to organizer accounts only.",
     slackError:
       "Couldn't read the organizer list from Slack. Owners below are matched to organizer accounts only, and nothing was scheduled.",
-    syncError: "Scheduling failed. Nothing was changed. Try again.",
+    syncError:
+      "Scheduling stopped partway. Pings already scheduled are saved; press again to finish.",
+    busy: "Someone else is scheduling right now. Try again in a minute.",
     syncDone: (p: {
       created: number;
       cancelled: number;
@@ -80,6 +82,8 @@ export const opsPingsCopy = {
       "no-time": "No time (no Starts line and no time in column A)",
       "no-day": "Not under a day (FRIDAY, SATURDAY, SUNDAY)",
       note: "Note in the time column, not read as a task",
+      "unclear-end":
+        "The time range ends at or before it starts and isn't clearly overnight: start ping only",
     },
     allClear: "Every cell was read and every owner was matched.",
 
@@ -105,11 +109,13 @@ export const opsPingsCopy = {
         alias: "alias",
         full: "",
         first: "first name",
-        close: "close spelling, check it",
+        close: "close spelling",
         email: "organizer account email",
       } as Record<string, string>,
       everyone: "Everyone, not pinged",
       spon: (n: number) => `Spon team: ${n} people`,
+      team: (n: number) => `${n} people`,
+      closeMatch: "Close match: check",
       sponUnavailable:
         "Spon team list couldn't be read (Team Assignments tab), not pinged",
       noMatch: "No match",

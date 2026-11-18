@@ -5,6 +5,7 @@ import { parseOwners, type OpsTask } from "~/lib/ops-run-of-show";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 import {
+  flaggedOwners,
   getOpsOverview,
   parseTeamRoster,
   pingText,
@@ -16,7 +17,7 @@ import {
   type OwnerContext,
 } from "~/server/api/utils/ops-pings";
 import { db } from "~/server/db";
-import { opsPings, users } from "~/server/db/schema";
+import { opsPings, taskReminderSync, users } from "~/server/db/schema";
 import { resetSlackOrganizersCache } from "~/server/slack/organizers";
 
 // Saturday noon, Eastern. Tasks below are later the same day.
@@ -51,6 +52,9 @@ const MEMBERS = [
   { id: "U-NOAH", profile: { real_name: "[ORGANIZER] Noah Medland" } },
   { id: "U-CAR", profile: { real_name: "[ORGANIZER] Caroline Ge" } },
   { id: "U-EMILY", profile: { real_name: "[ORGANIZER] Emily Liu" } },
+  { id: "U-SARA", profile: { real_name: "[ORGANIZER] Sara Kim" } },
+  // Sarah Lieng is an organizer whose Slack name has no tag yet.
+  { id: "U-SARAH", profile: { real_name: "Sarah Lieng" } },
   // A hacker who shares an organizer's name.
   { id: "U-HACKER", profile: { real_name: "Brittney Chong" } },
   { id: "U-BOT", is_bot: true, profile: { real_name: "[ORGANIZER] Bot" } },
@@ -95,6 +99,7 @@ function mockSlack(answers: Record<string, unknown> = {}) {
 beforeEach(async () => {
   await db.delete(opsPings).where(sql`true`);
   await db.delete(users).where(sql`true`);
+  await db.delete(taskReminderSync).where(sql`true`);
   resetSlackOrganizersCache();
   resetOpsEmailCache();
 });
@@ -104,6 +109,12 @@ const SLACK_ORGANIZERS = [
   { id: "U-JW", name: "Jessica Wang" },
   { id: "U-NOAH", name: "Noah Medland" },
   { id: "U-CAR", name: "Caroline Ge" },
+  { id: "U-ALI", name: "Alex Li" },
+  { id: "U-AXU", name: "Alex Xu" },
+  { id: "U-JG", name: "Jasmine Gu" },
+  { id: "U-LL", name: "Lucian Lavric" },
+  { id: "U-LW", name: "Lillian Wei" },
+  { id: "U-SARA", name: "Sara Kim" },
 ];
 
 const ctx = (over: Partial<OwnerContext> = {}): OwnerContext => ({
@@ -158,22 +169,98 @@ describe("planOpsPings", () => {
       ctx({ sponRoster: null }),
       NOW,
     );
-    expect(plan.tasks[0]!.owners).toEqual([{ token: "ALL OF SPON", kind: "spon", members: null }]);
+    expect(plan.tasks[0]!.owners).toEqual([
+      { token: "ALL OF SPON", kind: "group", group: "spon", members: null },
+    ]);
     expect(plan.desired).toEqual([]);
   });
 
   test("ambiguous and unmatched names are never DMed", async () => {
     const plan = await planOpsPings(
-      sheetOf([task({ title: "Cup Stacking", owner: "Jessica, Anson Holia, WEB", start: "13:00" })]),
+      sheetOf([task({ title: "Cup Stacking", owner: "Alex, Anson Holia, All judges", start: "13:00" })]),
       ctx(),
       NOW,
     );
     expect(plan.tasks[0]!.owners).toEqual([
-      { token: "Jessica", kind: "person", status: "ambiguous", candidates: ["Jessica Wang", "Jessica Xing"] },
+      { token: "Alex", kind: "person", status: "ambiguous", candidates: ["Alex Li", "Alex Xu"] },
       { token: "Anson Holia", kind: "person", status: "no-match" },
-      { token: "WEB", kind: "person", status: "no-match" },
+      { token: "All judges", kind: "person", status: "no-match" },
     ]);
     expect(plan.desired).toEqual([]);
+  });
+
+  test("aliases: Jess is Jessica Xing, Jessica is Jessica Wang, Lillian is Lillian Wei", async () => {
+    const plan = await planOpsPings(
+      sheetOf([task({ title: "Cup Stacking", owner: "Jess, Jessica, Lillian", start: "13:00" })]),
+      ctx(),
+      NOW,
+    );
+    expect(
+      plan.tasks[0]!.owners.map((o) => (o.kind === "person" && o.status === "matched" ? [o.token, o.name, o.via] : o)),
+    ).toEqual([
+      ["Jess", "Jessica Xing", "alias"],
+      ["Jessica", "Jessica Wang", "alias"],
+      ["Lillian", "Lillian Wei", "alias"],
+    ]);
+    expect(plan.tasks[0]!.recipients.map((r) => r.slackUserId)).toEqual(["U-JX", "U-JW", "U-LW"]);
+  });
+
+  test("WEB is a group: Jasmine Gu and Lucian Lavric each get a DM", async () => {
+    const plan = await planOpsPings(
+      sheetOf([task({ title: "Cheat Check", owner: "Pranav Varma (lead), WEB", start: "13:00" })]),
+      ctx(),
+      NOW,
+    );
+    expect(plan.tasks[0]!.owners[1]).toMatchObject({
+      token: "WEB",
+      kind: "group",
+      group: "team",
+      members: [
+        { token: "Jasmine Gu", status: "matched", slackUserId: "U-JG" },
+        { token: "Lucian Lavric", status: "matched", slackUserId: "U-LL" },
+      ],
+    });
+    expect(plan.tasks[0]!.recipients.map((r) => r.slackUserId)).toEqual(["U-JG", "U-LL"]);
+  });
+
+  test("a close Slack spelling loses to an organizer account with the exact name", async () => {
+    const app = [{ id: "a-sarah", name: "Sarah Lieng", email: "sarah@hw.ca" }];
+    // Sarah's own Slack account (no tag) is someone other than tagged "Sara".
+    const plan = await planOpsPings(
+      sheetOf([task({ title: "Photobooth", owner: "Sarah", start: "13:00" })]),
+      ctx({ app, lookupEmail: async () => "U-SARAH" }),
+      NOW,
+    );
+    expect(plan.tasks[0]!.owners).toEqual([
+      { token: "Sarah", kind: "person", status: "ambiguous", candidates: ["Sara Kim", "Sarah Lieng"] },
+    ]);
+    expect(plan.desired).toEqual([]);
+
+    // No Slack account found for Sarah's email: still not Sara's DM.
+    const unknown = await planOpsPings(
+      sheetOf([task({ title: "Photobooth", owner: "Sarah", start: "13:00" })]),
+      ctx({ app, lookupEmail: async () => null }),
+      NOW,
+    );
+    expect(unknown.desired).toEqual([]);
+
+    // The account's email is the tagged Sara's: same person, so it's a match.
+    const same = await planOpsPings(
+      sheetOf([task({ title: "Photobooth", owner: "Sarah", start: "13:00" })]),
+      ctx({ app, lookupEmail: async () => "U-SARA" }),
+      NOW,
+    );
+    expect(same.tasks[0]!.owners[0]).toMatchObject({ status: "matched", slackUserId: "U-SARA", via: "close" });
+  });
+
+  test("a close spelling with no organizer account to check against is matched and flagged", async () => {
+    const plan = await planOpsPings(
+      sheetOf([task({ title: "Photobooth", owner: "Sarah", start: "13:00" })]),
+      ctx(),
+      NOW,
+    );
+    expect(plan.tasks[0]!.owners[0]).toMatchObject({ status: "matched", name: "Sara Kim", via: "close" });
+    expect(flaggedOwners(plan.tasks[0]!.owners)).toBe(1);
   });
 
   test("fallback: an organizer account in the app, then Slack by its email", async () => {
@@ -301,6 +388,70 @@ describe("syncOpsPings", () => {
     expect(slack.scheduled()).toEqual([]);
   });
 
+  test("a run that stops halfway, then a re-run, schedules each ping once", async () => {
+    const slack = mockSlack();
+    const live = new Set<string>();
+    const tracking = (async (url: string | URL | Request, init?: RequestInit) => {
+      const res = await slack.fetch(url, init);
+      const method = String(url).replace("https://slack.com/api/", "");
+      const args = new URLSearchParams(String(init?.body ?? ""));
+      const body = (await res.clone().json()) as { scheduled_message_id?: string };
+      if (method === "chat.scheduleMessage" && body.scheduled_message_id) live.add(body.scheduled_message_id);
+      if (method === "chat.deleteScheduledMessage") live.delete(args.get("scheduled_message_id")!);
+      return res;
+    }) as typeof fetch;
+    const deps = { token: "xoxb-test", fetch: tracking, readSheet: async () => sheetOf(TASKS) };
+
+    // The database fails on the second ping row: the run stops there.
+    const insert = db.insert.bind(db);
+    let rows = 0;
+    const spy = vi.spyOn(db, "insert").mockImplementation(((table: unknown) => {
+      if (table === opsPings && ++rows === 2) throw new Error("database went away");
+      return insert(table as typeof opsPings);
+    }) as typeof db.insert);
+    expect(await syncOpsPings(NOW, deps)).toEqual({ ok: false, reason: "error" });
+    spy.mockRestore();
+    // The one Slack took but we couldn't record was taken back out of Slack.
+    expect(live.size).toBe(1);
+    expect(await db.select().from(opsPings)).toHaveLength(1);
+
+    const again = await syncOpsPings(NOW, deps);
+    expect(again).toMatchObject({ ok: true, created: 3, scheduled: 4 });
+    expect(live.size).toBe(4);
+    const saved = await db.select().from(opsPings);
+    expect(new Set(saved.map((r) => r.pingKey)).size).toBe(4);
+    expect(saved.every((r) => r.status === "scheduled")).toBe(true);
+  });
+
+  test("one run at a time: a second run while one holds the lock is busy", async () => {
+    const slack = mockSlack();
+    const deps = { token: "xoxb-test", fetch: slack.fetch, readSheet: async () => sheetOf(TASKS) };
+    const lockAt = new Date();
+    await db.insert(taskReminderSync).values({ id: "ops-pings", lastAttemptAt: lockAt });
+    expect(await syncOpsPings(NOW, { ...deps, clock: () => new Date(lockAt.getTime() + 30_000) })).toEqual({
+      ok: false,
+      reason: "busy",
+    });
+    expect(slack.scheduled()).toEqual([]);
+    // A lock left by a run that crashed goes stale after 2 minutes.
+    const res = await syncOpsPings(NOW, { ...deps, clock: () => new Date(lockAt.getTime() + 3 * 60_000) });
+    expect(res).toMatchObject({ ok: true, created: 4 });
+    const [lock] = await db.select().from(taskReminderSync);
+    expect(lock!.lastAttemptAt).toBeNull();
+  });
+
+  test("Sara (tagged) never gets Sarah's DM when Sarah's account is someone else on Slack", async () => {
+    await db.insert(users).values({ id: "a-sarah", email: "sarah@hw.ca", name: "Sarah Lieng", type: "organizer" });
+    const slack = mockSlack({ "users.lookupByEmail": { ok: true, user: { id: "U-SARAH" } } });
+    const res = await syncOpsPings(NOW, {
+      token: "xoxb-test",
+      fetch: slack.fetch,
+      readSheet: async () => sheetOf([task({ title: "Photobooth", owner: "Sarah", start: "13:00" })]),
+    });
+    expect(res).toMatchObject({ ok: true, created: 0 });
+    expect(slack.scheduled()).toEqual([]);
+  });
+
   test("a sheet read failure changes nothing", async () => {
     const slack = mockSlack();
     const res = await syncOpsPings(NOW, {
@@ -323,7 +474,7 @@ describe("getOpsOverview", () => {
       fetch: slack.fetch,
       readSheet: async () =>
         sheetOf([
-          task({ title: "Lunch", owner: "Jess, Jessica", start: "13:00", end: "14:00" }),
+          task({ title: "Lunch", owner: "Jess, Alex", start: "13:00", end: "14:00" }),
           task({ title: "Breakfast", owner: "Emily Liu", start: "08:00" }),
         ]),
     };
@@ -332,7 +483,7 @@ describe("getOpsOverview", () => {
     expect(before.tasks[1]!.pings[0]!.deliveries).toEqual([
       { name: "Jessica Xing", slackUserId: "U-JX", status: "pending", error: null },
     ]);
-    expect(before.flagged).toBe(1); // "Jessica" is ambiguous
+    expect(before.flagged).toBe(1); // "Alex" is ambiguous
 
     await syncOpsPings(NOW, deps);
     const after = await getOpsOverview(NOW, deps);
