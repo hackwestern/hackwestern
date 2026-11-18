@@ -553,6 +553,47 @@ export const sponsorFinalPicks = pgTable("sponsor_final_pick", {
   sheetSyncedAt: timestamp("sheet_synced_at", { mode: "date", precision: 3 }),
 });
 
+// The shortlist a sponsor sent at the end of round 1: a snapshot of the
+// shortlisted team ids, so later shortlist edits don't move the schedule
+// until the sponsor sends again. Sending again replaces it
+// (docs/flows/sponsor-judging.md).
+export const sponsorShortlistSends = pgTable("sponsor_shortlist_send", {
+  sponsorId: uuid("sponsor_id")
+    .primaryKey()
+    .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+  teamIds: varchar("team_ids", { length: 12 }).array().notNull(),
+  sentAt: timestamp("sent_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
+
+// The Sunday presentation schedule (src/lib/sponsor-presentations.ts): one
+// row per (sponsor, sent-shortlist team). startMinute is minutes after
+// midnight Eastern on judging day; null = couldn't fit (room set) or the
+// sponsor had no room (room null). "Schedule presentations" replaces every
+// row; notifiedAt is when the team's Slack DMs went out.
+export const sponsorPresentations = pgTable(
+  "sponsor_presentation",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 12 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    room: varchar("room", { length: 64 }),
+    startMinute: smallint("start_minute"),
+    scheduledAt: timestamp("scheduled_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    notifiedAt: timestamp("notified_at", { mode: "date", precision: 3 }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sponsorId, t.teamId] }),
+    index("sponsor_presentation_team_idx").on(t.teamId),
+  ],
+);
+
 export const sponsorHelpStatusEnum = pgEnum("sponsor_help_status", [
   "open",
   "claimed",
