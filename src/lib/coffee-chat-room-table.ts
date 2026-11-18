@@ -83,6 +83,12 @@ export type RoomCell = {
   state: RoomCellState;
   /** A hold here has no live chat yet ("Needs a hacker"). */
   needsHacker: boolean;
+  /**
+   * Two or more sponsors claim this room now. The server refuses this when
+   * a hold, chat or room is set, but a later sheet window change can still
+   * cause it, so the table shows it instead of hiding it.
+   */
+  clash: boolean;
 };
 
 export type RoomTable = {
@@ -192,6 +198,7 @@ export function buildRoomTable(
         capacity: ROOM_CAPACITY,
         state: roomCellState(used, occupants.length > 0 || orphans > 0),
         needsHacker: occupants.some((o) => o.hold?.needsHacker),
+        clash: new Set(occupants.map((o) => o.sponsor)).size > 1,
       };
     });
   });

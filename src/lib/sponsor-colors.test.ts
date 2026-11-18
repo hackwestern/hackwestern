@@ -4,6 +4,7 @@ import {
   SPONSOR_PALETTE,
   sponsorColor,
   sponsorColorIndexes,
+  sponsorInitials,
 } from "~/lib/sponsor-colors";
 
 const names = ["Canada Life", "Shopify", "RBC", "Google", "Ford", "Bell"];
@@ -50,9 +51,25 @@ describe("sponsor colours", () => {
 
   test("palette classes only use dashboard tokens", () => {
     for (const c of SPONSOR_PALETTE) {
-      for (const cls of [c.fill, c.edge, c.dot].join(" ").split(" ")) {
-        expect(cls).toMatch(/dashboard-|^ring-2$|^ring-inset$/);
+      for (const cls of [c.fill, c.edge, c.badge].join(" ").split(" ")) {
+        expect(cls).toMatch(/dashboard-|^ring-1$|^ring-inset$/);
       }
     }
+  });
+
+  test("no warning orange in the palette (over capacity owns it)", () => {
+    const all = SPONSOR_PALETTE.map((c) => `${c.fill} ${c.edge} ${c.badge}`);
+    expect(all.join(" ")).not.toMatch(/orange|iconBadge|status-warning/);
+  });
+});
+
+describe("sponsorInitials", () => {
+  test("two letters, from two words or one", () => {
+    expect(sponsorInitials("Canada Life")).toBe("CL");
+    expect(sponsorInitials("RBC")).toBe("RB");
+    expect(sponsorInitials("de Havilland Aircraft")).toBe("DH");
+    expect(sponsorInitials("  1Password ")).toBe("1P");
+    expect(sponsorInitials("École 42")).toBe("É4");
+    expect(sponsorInitials("—")).toBe("?");
   });
 });
