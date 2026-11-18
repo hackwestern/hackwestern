@@ -1,5 +1,5 @@
-# 🤙 Help Desk - By the stairs outside the Grand Hall
-*Look for the help desk by the stairs outside the Grand Hall (Rm 1110).*
+# 🤙 Help Desk - In front of the Grand Hall
+*Look for the help desk table in front of the Grand Hall (Rm 1110). MLH hardware is handed out here.*
 - Any questions you have about the weekend!
 - Late check-in and lost Hacker badge cards
 - Hardware checkout and scavenger hunt prizes
