@@ -11,6 +11,7 @@ import Mentors from "~/components/live/mentors";
 import Sponsors from "~/components/live/sponsors";
 import EventLogistics from "~/components/live/event-logistics";
 import ContactUs from "~/components/live/contact-us";
+import Activities from "~/components/live/activities";
 import Sidebar from "~/components/live/sidebar";
 import Topbar from "~/components/live/topbar";
 import { authOptions } from "~/server/auth";
@@ -23,9 +24,12 @@ import { disabledRedirect } from "~/utils/redirect";
 const Live = ({ isOrganizer }: { isOrganizer: boolean }) => {
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get("tab") ?? "home";
-  // Direct links to a disabled tab land on Home
+  // Direct links to a disabled tab, or to an organizer-only tab, land on Home
   const tab =
-    requestedTab === "schedule" && !SCHEDULE_ENABLED ? "home" : requestedTab;
+    (requestedTab === "schedule" && !SCHEDULE_ENABLED) ||
+    (requestedTab === "activities" && !isOrganizer)
+      ? "home"
+      : requestedTab;
   const { data: session } = useSession();
 
   const firstName = session?.user?.name?.split(" ")[0];
@@ -80,6 +84,8 @@ const TabComponent = ({
       return <EventLogistics />;
     case "contact-us":
       return <ContactUs />;
+    case "activities":
+      return <Activities />;
     default:
       return <Home isOrganizer={isOrganizer} />;
   }

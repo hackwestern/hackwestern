@@ -1059,3 +1059,298 @@ describe("scavengerHuntRouter item status", () => {
     },
   );
 });
+
+const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
+
+describe("scavengerHuntRouter activity endpoints", () => {
+  afterEach(async () => {
+    const items = await db.query.scavengerHuntItems.findMany({
+      where: (t, { like }) => like(t.name, "ACT-TEST%"),
+    });
+    for (const item of items) {
+      await db
+        .delete(scavengerHuntScans)
+        .where(eq(scavengerHuntScans.itemId, item.id));
+      await db
+        .delete(scavengerHuntItems)
+        .where(eq(scavengerHuntItems.id, item.id));
+    }
+  });
+
+  const base = {
+    name: "ACT-TEST Dinner",
+    type: "meal" as const,
+    startsAt: new Date(Date.now() + DAY),
+    endsAt: new Date(Date.now() + DAY + 2 * HOUR),
+    room: "Rm 1230",
+    points: 5,
+    winPoints: null,
+  };
+  const findMine = async () =>
+    (await organizerCaller.scavengerHunt.getScavengerHuntItems()).filter((a) =>
+      a.name?.startsWith("ACT-TEST"),
+    );
+
+  test("creates and edits an activity", async () => {
+    await organizerCaller.scavengerHunt.saveActivity(base);
+    const [created] = await findMine();
+    expect(created).toMatchObject({
+      type: "meal",
+      status: "active",
+      room: "Rm 1230",
+      points: 5,
+      winPoints: null,
+      scans: 0,
+    });
+
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      id: created!.id,
+      name: "ACT-TEST Cup Stacking",
+      type: "activity",
+      winPoints: 50,
+    });
+    const [edited] = await findMine();
+    expect(edited).toMatchObject({
+      id: created!.id,
+      name: "ACT-TEST Cup Stacking",
+      type: "activity",
+      winPoints: 50,
+    });
+  });
+
+  test("drops win points for types that can't be won", async () => {
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      winPoints: 10,
+    });
+    expect((await findMine())[0]?.winPoints).toBeNull();
+  });
+
+  test("drafts and disabled items are hidden from the scanner and can't be scanned", async () => {
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      status: "draft",
+    });
+    const [draft] = await findMine();
+    expect(draft?.status).toBe("draft");
+
+    const scannable = async () =>
+      (await caller.scavengerHunt.getAllScavengerHuntItems()).map((i) => i.id);
+    expect(await scannable()).not.toContain(draft!.id);
+    await expect(
+      organizerCaller.scavengerHunt.scan({
+        userId: session.user.id,
+        itemId: draft!.id,
+      }),
+    ).rejects.toThrow("This activity is a draft");
+
+    await organizerCaller.scavengerHunt.setActivityStatus({
+      id: draft!.id,
+      status: "active",
+    });
+    expect(await scannable()).toContain(draft!.id);
+
+    await organizerCaller.scavengerHunt.setActivityStatus({
+      id: draft!.id,
+      status: "disabled",
+    });
+    expect(await scannable()).not.toContain(draft!.id);
+    expect((await findMine())[0]?.status).toBe("disabled");
+  });
+
+  test("counts scans and hides deleted activities", async () => {
+    await organizerCaller.scavengerHunt.saveActivity(base);
+    const [activity] = await findMine();
+    await organizerCaller.scavengerHunt.scan({
+      userId: session.user.id,
+      itemId: activity!.id,
+    });
+    expect((await findMine())[0]?.scans).toBe(1);
+
+    await organizerCaller.scavengerHunt.deleteScavengerHuntItem({
+      itemId: activity!.id,
+    });
+    expect(await findMine()).toHaveLength(0);
+  });
+
+  test("a winner's attendance and win scans count as one scan", async () => {
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      type: "activity",
+      winPoints: 20,
+    });
+    const [activity] = await findMine();
+    for (const activityType of ["attendance", "win"] as const) {
+      await organizerCaller.scavengerHunt.scan({
+        userId: session.user.id,
+        itemId: activity!.id,
+        activityType,
+      });
+    }
+    expect((await findMine())[0]?.scans).toBe(1);
+  });
+
+  test("editing or disabling a deleted activity fails", async () => {
+    await organizerCaller.scavengerHunt.saveActivity(base);
+    const [activity] = await findMine();
+    await organizerCaller.scavengerHunt.deleteScavengerHuntItem({
+      itemId: activity!.id,
+    });
+    await expect(
+      organizerCaller.scavengerHunt.saveActivity({ ...base, id: activity!.id }),
+    ).rejects.toThrow("This activity was deleted");
+    await expect(
+      organizerCaller.scavengerHunt.setActivityStatus({
+        id: activity!.id,
+        status: "disabled",
+      }),
+    ).rejects.toThrow("This activity was deleted");
+  });
+
+  test("rejects a duplicate name, ignoring case", async () => {
+    await organizerCaller.scavengerHunt.saveActivity(base);
+    await expect(
+      organizerCaller.scavengerHunt.saveActivity({
+        ...base,
+        name: "act-test dinner",
+        type: "workshop",
+      }),
+    ).rejects.toThrow('An activity named "act-test dinner" already exists');
+
+    // Saving an activity under its own name is not a duplicate
+    const [activity] = await findMine();
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      id: activity!.id,
+      points: 7,
+    });
+    expect((await findMine())[0]?.points).toBe(7);
+  });
+
+  test("a new or changed end time must be in the future", async () => {
+    const past = {
+      startsAt: new Date(Date.now() - 2 * HOUR),
+      endsAt: new Date(Date.now() - HOUR),
+    };
+    await expect(
+      organizerCaller.scavengerHunt.saveActivity({ ...base, ...past }),
+    ).rejects.toThrow("End time must be in the future");
+
+    await organizerCaller.scavengerHunt.saveActivity(base);
+    const [activity] = await findMine();
+    await expect(
+      organizerCaller.scavengerHunt.saveActivity({
+        ...base,
+        id: activity!.id,
+        ...past,
+      }),
+    ).rejects.toThrow("End time must be in the future");
+  });
+
+  test("an activity that already started can be created", async () => {
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      startsAt: new Date(Date.now() - HOUR),
+      endsAt: new Date(Date.now() + HOUR),
+    });
+    expect(await findMine()).toHaveLength(1);
+  });
+
+  test("a finished activity can be edited if its times don't change", async () => {
+    await organizerCaller.scavengerHunt.saveActivity(base);
+    const [activity] = await findMine();
+    const past = {
+      startsAt: new Date(Date.now() - 2 * HOUR),
+      endsAt: new Date(Date.now() - HOUR),
+    };
+    await db
+      .update(scavengerHuntItems)
+      .set(past)
+      .where(eq(scavengerHuntItems.id, activity!.id));
+
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      ...past,
+      id: activity!.id,
+      room: "Rm 2230",
+    });
+    expect((await findMine())[0]?.room).toBe("Rm 2230");
+  });
+
+  test("changing points updates the balances of hackers who scanned it", async () => {
+    const pointsOf = async () => {
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, session.user.id),
+      });
+      return [
+        user?.scavengerHuntEarned ?? 0,
+        user?.scavengerHuntBalance ?? 0,
+      ] as const;
+    };
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      type: "activity",
+      points: 10,
+      winPoints: 50,
+    });
+    const [activity] = await findMine();
+    const [earned0, balance0] = await pointsOf();
+    for (const activityType of ["attendance", "win"] as const) {
+      await organizerCaller.scavengerHunt.scan({
+        userId: session.user.id,
+        itemId: activity!.id,
+        activityType,
+      });
+    }
+    expect(await pointsOf()).toEqual([earned0 + 60, balance0 + 60]);
+
+    // +5 attendance, -10 win
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      id: activity!.id,
+      type: "activity",
+      points: 15,
+      winPoints: 40,
+    });
+    expect(await pointsOf()).toEqual([earned0 + 55, balance0 + 55]);
+
+    // No longer winnable, so the win scan is worth 0
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      id: activity!.id,
+      type: "workshop",
+      points: 15,
+      winPoints: null,
+    });
+    expect(await pointsOf()).toEqual([earned0 + 15, balance0 + 15]);
+  });
+
+  test("rejects an end time equal to the start time", async () => {
+    await expect(
+      organizerCaller.scavengerHunt.saveActivity({
+        ...base,
+        endsAt: base.startsAt,
+      }),
+    ).rejects.toThrow("End time must be after start time");
+  });
+
+  test("rejects an end time before the start time", async () => {
+    await expect(
+      organizerCaller.scavengerHunt.saveActivity({
+        ...base,
+        endsAt: new Date(base.startsAt.getTime() - HOUR),
+      }),
+    ).rejects.toThrow("End time must be after start time");
+  });
+
+  test("hackers can't manage activities", async () => {
+    await expect(caller.scavengerHunt.getScavengerHuntItems()).rejects.toThrow(
+      TRPCError,
+    );
+    await expect(caller.scavengerHunt.saveActivity(base)).rejects.toThrow(
+      TRPCError,
+    );
+  });
+});
