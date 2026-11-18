@@ -78,16 +78,7 @@ export function ShortlistRanking({
     onSuccess: (res) => {
       setConfirming(false);
       utils.sponsorScoring.get.setData({ sponsor }, (old) =>
-        old
-          ? {
-              ...old,
-              final: {
-                teamIds: res.teamIds,
-                submittedAt: res.submittedAt,
-                sheetSynced: res.sheetSynced,
-              },
-            }
-          : old,
+        old ? { ...old, final: res } : old,
       );
     },
   });

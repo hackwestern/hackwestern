@@ -21,10 +21,12 @@ export const SCORE_MIN = 1;
 export const SCORE_MAX = 10;
 export const NOTE_MAX = 280;
 
-/** When sponsors can no longer submit. None set in code: always open. */
-export const SPONSOR_JUDGING_CLOSES_AT: Date | null = null;
-
-export function judgingOpen(now: Date, closesAt = SPONSOR_JUDGING_CLOSES_AT) {
+/**
+ * Whether sponsors can still review and submit. `closesAt` comes from the
+ * optional SPONSOR_JUDGING_CLOSES_AT env var on the server; null (unset)
+ * means judging never closes.
+ */
+export function judgingOpen(now: Date, closesAt: Date | null) {
   return closesAt === null || now.getTime() < closesAt.getTime();
 }
 

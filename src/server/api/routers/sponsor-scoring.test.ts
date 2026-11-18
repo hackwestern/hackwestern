@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { faker } from "@faker-js/faker";
+import { eq } from "drizzle-orm";
+import type * as Env from "~/env";
 
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -8,8 +10,24 @@ import { db } from "~/server/db";
 import { sponsorJudgingSponsors, teams } from "~/server/db/schema";
 import {
   fetchSponsorTrack,
+  fetchSponsorTracks,
   writeChosenTeams,
 } from "~/server/api/utils/sponsor-judging-teams";
+
+// SPONSOR_JUDGING_CLOSES_AT, per test (unset = judging never closes).
+let closesAt: string | undefined;
+vi.mock("~/env", async (importOriginal) => {
+  const original = await importOriginal<typeof Env>();
+  const env = original.env as Record<string | symbol, unknown>;
+  return {
+    env: new Proxy(env, {
+      get(target, prop) {
+        if (prop === "SPONSOR_JUDGING_CLOSES_AT") return closesAt;
+        return target[prop];
+      },
+    }),
+  };
+});
 
 // The sheet is the only outside call: the sponsor's track and Lucas's picks
 // column. Team eligibility itself runs against the test database.
@@ -18,18 +36,24 @@ vi.mock("~/server/api/utils/sponsor-judging-teams", async (importOriginal) => ({
     typeof import("~/server/api/utils/sponsor-judging-teams")
   >()),
   fetchSponsorTrack: vi.fn(),
+  fetchSponsorTracks: vi.fn(),
   writeChosenTeams: vi.fn(),
 }));
 const track = vi.mocked(fetchSponsorTrack);
+const allTracks = vi.mocked(fetchSponsorTracks);
 const writeSheet = vi.mocked(writeChosenTeams);
 
 // Sponsors aren't logged in: their private UUID is the credential.
 const anon = createCaller(createInnerTRPCContext({ session: null }));
 
 beforeEach(() => {
+  closesAt = undefined;
   track.mockReset().mockResolvedValue(null);
+  allTracks.mockReset().mockResolvedValue(new Map());
   writeSheet.mockReset().mockResolvedValue(undefined);
 });
+
+const PAST = "2020-01-01T00:00:00Z";
 
 async function sponsor() {
   const [row] = await db
@@ -94,6 +118,40 @@ describe("sponsorScoring.get", () => {
     expect(ids).not.toContain(draft);
     expect(res.finalTop).toBe(5);
     expect(res.final).toBeNull();
+  });
+
+  test("retries a sheet write that failed after the submission saved", async () => {
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    writeSheet.mockRejectedValue(new Error("sheets down"));
+    await anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids });
+    // Still down: the query succeeds and says so.
+    await expect(
+      anon.sponsorScoring.get({ sponsor: s.id }),
+    ).resolves.toMatchObject({ final: { sheetSynced: false } });
+
+    writeSheet.mockReset().mockResolvedValue(undefined);
+    const res = await anon.sponsorScoring.get({ sponsor: s.id });
+    expect(res.final).toMatchObject({ teamIds: ids, sheetSynced: true });
+    expect(writeSheet).toHaveBeenCalledWith(s.name, ids);
+
+    // Synced now: no more writes.
+    writeSheet.mockClear();
+    await anon.sponsorScoring.get({ sponsor: s.id });
+    expect(writeSheet).not.toHaveBeenCalled();
+  });
+
+  test("a submitted team that withdrew drops out of the ranking", async () => {
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    await anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids });
+    await db
+      .update(teams)
+      .set({ submissionStatus: "draft" })
+      .where(eq(teams.id, ids[2]!));
+    const res = await anon.sponsorScoring.get({ sponsor: s.id });
+    expect(res.final?.teamIds).toEqual(ids.filter((id) => id !== ids[2]));
+    expect(res.final?.ineligibleCount).toBe(1);
   });
 });
 
@@ -167,6 +225,16 @@ describe("sponsorScoring.review", () => {
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
+  test("refused once judging has closed", async () => {
+    const s = await sponsor();
+    const t = await team();
+    closesAt = PAST;
+    await expect(
+      anon.sponsorScoring.review({ sponsor: s.id, teamId: t, score: 5 }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect((await anon.sponsorScoring.get({ sponsor: s.id })).open).toBe(false);
+  });
+
   test("one sponsor's reviews never show for another", async () => {
     const a = await sponsor();
     const b = await sponsor();
@@ -236,10 +304,40 @@ describe("sponsorScoring.submit", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
+  test("refused once judging has closed", async () => {
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    closesAt = PAST;
+    await expect(
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(writeSheet).not.toHaveBeenCalled();
+  });
+
+  test("a slow sheet write never marks a newer submission synced", async () => {
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    const reranked = [...ids].reverse();
+    // While the first ranking's sheet write is in flight, a second ranking
+    // is submitted and its own sheet write fails.
+    writeSheet.mockImplementationOnce(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      writeSheet.mockRejectedValueOnce(new Error("sheets down"));
+      await anon.sponsorScoring.submit({ sponsor: s.id, teamIds: reranked });
+    });
+    await expect(
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+    ).resolves.toMatchObject({ sheetSynced: false });
+    writeSheet.mockRejectedValue(new Error("sheets down"));
+    expect(
+      (await anon.sponsorScoring.get({ sponsor: s.id })).final,
+    ).toMatchObject({ teamIds: reranked, sheetSynced: false });
+  });
+
   test("still counts if the sheet write fails; resubmit replaces", async () => {
     const s = await sponsor();
     const ids = await shortlistFive(s.id);
-    writeSheet.mockRejectedValueOnce(new Error("sheets down"));
+    writeSheet.mockRejectedValue(new Error("sheets down"));
     await expect(
       anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
     ).resolves.toMatchObject({ sheetSynced: false });
@@ -247,6 +345,7 @@ describe("sponsorScoring.submit", () => {
       (await anon.sponsorScoring.get({ sponsor: s.id })).final,
     ).toMatchObject({ teamIds: ids, sheetSynced: false });
 
+    writeSheet.mockReset().mockResolvedValue(undefined);
     const reranked = [ids[4]!, ...ids.slice(0, 4)];
     await anon.sponsorScoring.submit({ sponsor: s.id, teamIds: reranked });
     expect(
@@ -298,5 +397,44 @@ describe("sponsorScoring.overview", () => {
       scoreCount: 2,
       bestRank: 1,
     });
+  });
+
+  test("withdrawn teams leave the tallies but stay flagged in the ranking", async () => {
+    const organizer = createCaller(
+      createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
+    );
+    const a = await sponsor();
+    const ids = await shortlistFive(a.id);
+    await anon.sponsorScoring.submit({ sponsor: a.id, teamIds: ids });
+    await db
+      .update(teams)
+      .set({ submissionStatus: "draft" })
+      .where(eq(teams.id, ids[0]!));
+
+    const res = await organizer.sponsorScoring.overview();
+    const sa = res.sponsors.find((s) => s.sponsorId === a.id)!;
+    expect(sa).toMatchObject({ scored: 4, shortlisted: 4 });
+    expect(sa.final?.teams[0]).toMatchObject({
+      teamId: ids[0],
+      eligible: false,
+    });
+    expect(sa.final?.teams[1]).toMatchObject({ eligible: true });
+    expect(res.teams.find((t) => t.teamId === ids[0])).toBeUndefined();
+    expect(res.teams.find((t) => t.teamId === ids[1])).toMatchObject({
+      bestRank: 1,
+    });
+  });
+
+  test("counts sponsors whose submission isn't in the sheet", async () => {
+    const organizer = createCaller(
+      createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
+    );
+    const before = (await organizer.sponsorScoring.overview()).unsyncedCount;
+    const a = await sponsor();
+    const ids = await shortlistFive(a.id);
+    writeSheet.mockRejectedValue(new Error("sheets down"));
+    await anon.sponsorScoring.submit({ sponsor: a.id, teamIds: ids });
+    const res = await organizer.sponsorScoring.overview();
+    expect(res.unsyncedCount).toBe(before + 1);
   });
 });
