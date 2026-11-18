@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { DashboardChip } from "~/components/internals/dashboard-chip";
+import { DashboardCheckbox } from "~/components/internals/dashboard-checkbox";
+import { hover } from "~/components/internals/interaction";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { cn } from "~/lib/utils";
 
@@ -89,7 +90,10 @@ export function useSponsorSelection(
   };
 }
 
-/** Sponsor chips (multi-select) with All sponsors and Clear. */
+/**
+ * Sponsors as a light list of round checkboxes (native inputs, so Tab,
+ * Space and screen readers work as usual) with All sponsors and Clear.
+ */
 export function SponsorFilter({
   names,
   selection,
@@ -103,36 +107,33 @@ export function SponsorFilter({
   const shown = names.filter(selection.isShown).length;
   if (names.length === 0) return null;
   return (
-    <div
-      role="group"
+    <fieldset
       aria-labelledby={labelId}
       className={cn(
-        "flex flex-col gap-2 rounded-dashboard-lg bg-dashboard-bg-surface px-4 py-3 shadow-dashboard-card",
+        "m-0 flex min-w-0 flex-col gap-1 rounded-dashboard-lg border-0 bg-dashboard-bg-surface px-4 py-3 shadow-dashboard-card",
         className,
       )}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-3">
         <span
           id={labelId}
           className="text-sm font-semibold text-dashboard-text-heavy"
         >
           {copy.label}
-          <span className="ml-2 font-medium text-dashboard-text-light">
+          <span className="ml-2 font-medium tabular-nums text-dashboard-text-light">
             {copy.count(shown, names.length)}
           </span>
         </span>
-        <div className="flex gap-1">
+        <div className="-mr-2 flex">
           <DashboardButton
-            variant="tertiary"
-            className="min-h-11 px-2"
+            variant="link"
             disabled={selection.selected === null}
             onClick={selection.showAll}
           >
             {copy.all}
           </DashboardButton>
           <DashboardButton
-            variant="tertiary"
-            className="min-h-11 px-2"
+            variant="link"
             disabled={shown === 0}
             onClick={selection.clear}
           >
@@ -140,22 +141,44 @@ export function SponsorFilter({
           </DashboardButton>
         </div>
       </div>
-      {/* One row that scrolls sideways on phones, wraps on wider screens. */}
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+      <div className="-mx-1 flex flex-wrap">
         {names.map((name) => (
-          <DashboardChip
+          <SponsorCheck
             key={name}
-            selected={selection.isShown(name)}
-            onClick={() => selection.toggle(name)}
-            className="min-h-11 shrink-0"
-          >
-            {name}
-          </DashboardChip>
+            name={name}
+            checked={selection.isShown(name)}
+            onToggle={() => selection.toggle(name)}
+          />
         ))}
       </div>
       {shown === 0 && (
         <p className="m-0 text-sm text-dashboard-text-medium">{copy.none}</p>
       )}
-    </div>
+    </fieldset>
+  );
+}
+
+// One sponsor: the whole label is the hit area (44px tall on touch, 36px on
+// desktop) around a round DashboardCheckbox. Only colour and the check's
+// opacity change, so nothing shifts when toggling.
+function SponsorCheck({
+  name,
+  checked,
+  onToggle,
+}: {
+  name: string;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <label
+      className={cn(
+        "flex min-h-11 min-w-0 max-w-full cursor-pixel-hover items-center gap-1 rounded-dashboard-md pr-2 text-sm text-dashboard-text-heavy md:min-h-9",
+        hover.highlight,
+      )}
+    >
+      <DashboardCheckbox round checked={checked} onCheckedChange={onToggle} />
+      <span className="min-w-0 break-words">{name}</span>
+    </label>
   );
 }
