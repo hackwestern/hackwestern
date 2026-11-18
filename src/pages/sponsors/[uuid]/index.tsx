@@ -1,24 +1,25 @@
 import { useRouter } from "next/router";
 import Link from "next/link";
 import {
-  ArrowRight,
+  ChevronRight,
   Clock,
   Coffee,
   MapPin,
   Phone,
   Presentation,
   ScanLine,
+  Trophy,
+  type LucideIcon,
 } from "lucide-react";
 import SEO from "~/components/seo";
 import { uuidRegex } from "~/utils/urls";
 import { api } from "~/utils/api";
-import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
-import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "~/lib/sponsor-picks";
-import { coffeeChatCopy } from "~/content/coffee-chat";
-import { scheduleCopy } from "~/content/sponsor-schedule";
+import { sponsorPortalCopy as copy } from "~/content/sponsor-portal";
 import { SponsorHelp } from "~/components/sponsors/help-button";
+import { pressable } from "~/components/sponsors/sponsor-shell";
+import { cn } from "~/lib/utils";
 
 export default function SponsorHubPage() {
   const router = useRouter();
@@ -39,12 +40,13 @@ export default function SponsorHubPage() {
   if (!router.isReady) {
     return (
       <Shell>
-        <div className="flex flex-col gap-4" aria-busy="true">
-          <div className="h-32 w-full animate-pulse rounded-dashboard-2xl bg-dashboard-bg-nav" />
-          <div className="h-40 w-full animate-pulse rounded-dashboard-2xl bg-dashboard-bg-surface shadow-dashboard-card" />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="h-28 w-full animate-pulse rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card" />
-            <div className="h-28 w-full animate-pulse rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card" />
+        <div className="flex flex-col gap-5" aria-busy="true">
+          <div className="h-36 w-full animate-pulse rounded-dashboard-2xl bg-dashboard-bg-nav motion-reduce:animate-none" />
+          <div className="h-11 w-full animate-pulse rounded-dashboard-lg bg-dashboard-bg-nav motion-reduce:animate-none" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 h-20 animate-pulse rounded-dashboard-2xl bg-dashboard-bg-surface shadow-dashboard-card motion-reduce:animate-none" />
+            <div className="h-28 animate-pulse rounded-dashboard-2xl bg-dashboard-bg-surface shadow-dashboard-card motion-reduce:animate-none" />
+            <div className="h-28 animate-pulse rounded-dashboard-2xl bg-dashboard-bg-surface shadow-dashboard-card motion-reduce:animate-none" />
           </div>
         </div>
       </Shell>
@@ -58,18 +60,16 @@ export default function SponsorHubPage() {
     return (
       <Shell>
         <DashboardPanel className="text-center">
-          <h1 className="dashboard-h1 m-0">Link not recognised</h1>
+          <h1 className="dashboard-h1 m-0">{copy.invalid.title}</h1>
           <p className="mb-0 mt-2 text-base leading-relaxed text-dashboard-text-medium">
-            This private link isn&apos;t valid. If you believe this is an error,
-            please reach out to your Hack Western organizer contact for
-            assistance.
+            {copy.invalid.body}
           </p>
         </DashboardPanel>
       </Shell>
     );
   }
 
-  const sponsorName = data?.sponsorName ?? "Sponsor";
+  const sponsorName = data?.sponsorName ?? copy.welcome.fallbackName;
   const roomNumber = data?.roomNumber ?? "TBD";
   const boothLocation = data?.boothLocation ?? "TBD";
   const hwContact =
@@ -78,264 +78,275 @@ export default function SponsorHubPage() {
   const picksCount = data?.picksCount ?? 0;
   const workshopLocation = data?.workshopLocation ?? null;
   const workshopTime = data?.workshopTime ?? null;
-  // Not every sponsor runs a workshop — omit the card entirely when blank.
+  // Not every sponsor runs a workshop — omit the row entirely when blank.
   const hasWorkshop = Boolean(workshopLocation) || Boolean(workshopTime);
 
-  // Unassigned booth/room ("TBD" from the sheet) hides the card entirely.
+  // Unassigned booth/room ("TBD" from the sheet) hides the row entirely.
   const hasBoothLocation = boothLocation !== "TBD";
   const hasJudgingRoom = roomNumber !== "TBD";
+  const actions = copy.actions;
 
   return (
     <Shell>
       <div className="flex flex-col gap-5">
         {/* Welcome */}
-        <section className="relative overflow-hidden rounded-dashboard-2xl bg-dashboard-action-primary p-6 text-dashboard-text-inverse shadow-dashboard-card sm:p-7">
-          <div className="relative z-10 flex flex-col gap-2">
-            <span className="inline-flex items-center whitespace-nowrap rounded-dashboard-sm bg-white/20 px-2 py-1 font-figtree text-xs font-medium leading-5 text-white backdrop-blur-sm">
-              Hack Western 13
-            </span>
-
-            <h1 className="m-0 text-[28px] font-bold leading-[1.2] tracking-tight md:text-[32px]">
-              Welcome, {sponsorName}!
-            </h1>
-
-            <p className="m-0 max-w-[540px] text-base font-medium leading-relaxed text-white/90">
-              We&apos;re thrilled to have you with us this weekend. Use this
-              portal to check your booth and judging details and pick your top
-              projects.
-            </p>
-          </div>
+        <section className="flex flex-col gap-2 rounded-dashboard-2xl bg-dashboard-action-primary p-5 text-dashboard-text-inverse shadow-dashboard-card sm:p-7">
+          <h1 className="m-0 break-words text-2xl font-bold leading-default tracking-tight sm:text-3xl">
+            {copy.welcome.title(sponsorName)}
+          </h1>
+          <p className="m-0 max-w-[540px] text-base font-medium leading-relaxed text-dashboard-text-inverse/90">
+            {copy.welcome.body}
+          </p>
         </section>
 
         {/* Need help: pings the sponsor team in Slack */}
         <SponsorHelp sponsor={id} boothLocation={boothLocation} />
 
-        {/* Judging CTA — hidden entirely when no judging room is assigned */}
-        {hasJudgingRoom && (
-          <DashboardPanel>
-            <div className="flex flex-col gap-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="dashboard-section-label text-dashboard-text-light">
-                    Judging
-                  </span>
-                  <h2 className="m-0 text-xl font-semibold text-dashboard-text-heavy">
-                    Pick your top teams
-                  </h2>
-                </div>
-
-                {picksCount > 0 ? (
-                  <span className="inline-flex items-center whitespace-nowrap rounded-dashboard-sm bg-dashboard-bg-highlight px-2 py-1 font-figtree text-xs font-medium leading-5 text-dashboard-text-heavy">
-                    {picksCount} picked
-                  </span>
-                ) : (
-                  <DashboardTag>Pending</DashboardTag>
-                )}
-              </div>
-
-              <p className="m-0 text-base font-medium leading-relaxed text-dashboard-text-medium">
-                Select between {MIN_SPONSOR_PICKS} and {MAX_SPONSOR_PICKS} teams
-                for your sponsored awards. You can update and save your
-                selections anytime before judging closes.
-              </p>
-
-              <DashboardButton asChild className="mt-1 md:w-full">
-                <Link href={`/sponsors/${id}/picks`}>
-                  {picksCount > 0
-                    ? "Review & edit your picks"
-                    : "Select top teams"}
-                  <ArrowRight />
-                </Link>
-              </DashboardButton>
-            </div>
-          </DashboardPanel>
-        )}
-
-        {/* Coffee chats: offer by scanning a badge, then track replies */}
-        <DashboardPanel>
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1">
-              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
-                <Coffee
-                  aria-hidden="true"
-                  className="size-4"
-                  strokeWidth={1.67}
+        {/* The things a rep does all weekend, one tap each. */}
+        <nav aria-label={actions.label}>
+          <ul className="m-0 grid list-none grid-cols-2 gap-3 p-0">
+            <li className="col-span-2">
+              <ActionTile
+                href={`/sponsors/${id}/scan`}
+                icon={ScanLine}
+                title={actions.scan.title}
+                body={actions.scan.body}
+                primary
+              />
+            </li>
+            <li>
+              <ActionTile
+                href={`/sponsors/${id}/coffee-chats`}
+                icon={Coffee}
+                title={actions.chats.title}
+                body={actions.chats.body}
+              />
+            </li>
+            <li>
+              <ActionTile
+                href={`/sponsors/${id}/schedule`}
+                icon={Clock}
+                title={actions.schedule.title}
+                body={actions.schedule.body}
+              />
+            </li>
+            {/* Judging: hidden entirely when no judging room is assigned */}
+            {hasJudgingRoom && (
+              <li className="col-span-2">
+                <ActionTile
+                  href={`/sponsors/${id}/picks`}
+                  icon={Trophy}
+                  title={
+                    picksCount > 0 ? actions.picks.edit : actions.picks.title
+                  }
+                  body={actions.picks.body(
+                    MIN_SPONSOR_PICKS,
+                    MAX_SPONSOR_PICKS,
+                  )}
+                  badge={
+                    picksCount > 0
+                      ? actions.picks.picked(picksCount)
+                      : actions.picks.pending
+                  }
                 />
-                {coffeeChatCopy.hub.eyebrow}
-              </span>
-              <h2 className="m-0 text-xl font-semibold text-dashboard-text-heavy">
-                {coffeeChatCopy.hub.heading}
-              </h2>
-            </div>
-
-            <p className="m-0 text-base font-medium leading-relaxed text-dashboard-text-medium">
-              {coffeeChatCopy.hub.body}
-            </p>
-
-            <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <DashboardButton asChild className="md:h-11 md:w-full">
-                <Link href={`/sponsors/${id}/scan`}>
-                  <ScanLine aria-hidden />
-                  {coffeeChatCopy.hub.scan}
-                </Link>
-              </DashboardButton>
-              <DashboardButton
-                variant="outline"
-                asChild
-                className="h-11 w-full"
-              >
-                <Link href={`/sponsors/${id}/coffee-chats`}>
-                  {coffeeChatCopy.hub.list}
-                  <ArrowRight aria-hidden />
-                </Link>
-              </DashboardButton>
-            </div>
-          </div>
-        </DashboardPanel>
-
-        {/* Schedule (from the run-of-show sheet) */}
-        <nav
-          aria-label={scheduleCopy.hubLinks.label}
-          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-        >
-          <DashboardButton variant="outline" asChild className="h-11 w-full">
-            <Link href={`/sponsors/${id}/schedule`}>
-              <Clock aria-hidden />
-              {scheduleCopy.hubLinks.schedule}
-            </Link>
-          </DashboardButton>
+              </li>
+            )}
+          </ul>
         </nav>
 
         {/* Event details */}
-        <div className="flex flex-col gap-3">
-          <h2 className="dashboard-section-label m-0 text-dashboard-text-light">
-            Event details
+        <section aria-labelledby="details-heading" className="flex flex-col gap-3">
+          <h2
+            id="details-heading"
+            className="dashboard-section-label m-0 text-dashboard-text-light"
+          >
+            {copy.details.heading}
           </h2>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <dl className="m-0 flex flex-col divide-y divide-dashboard-border-subtle rounded-dashboard-2xl bg-dashboard-bg-surface px-4 shadow-dashboard-card sm:px-5">
             {hasBoothLocation && (
-              <DashboardPanel className="gap-2 p-4 sm:p-5">
-                <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
-                  <MapPin
-                    aria-hidden="true"
-                    className="size-4"
-                    strokeWidth={1.67}
-                  />
-                  Booth location
-                </span>
-                <span className="text-xl font-semibold text-dashboard-text-heavy">
-                  {boothLocation}
-                </span>
-                <span className="text-sm font-medium text-dashboard-text-light">
-                  Your assigned sponsor booth table
-                </span>
-              </DashboardPanel>
+              <DetailRow
+                icon={MapPin}
+                label={copy.details.booth.label}
+                value={boothLocation}
+                hint={copy.details.booth.hint}
+              />
             )}
-
             {hasJudgingRoom && (
-              <DashboardPanel className="gap-2 p-4 sm:p-5">
-                <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
-                  <Presentation
-                    aria-hidden="true"
-                    className="size-4"
-                    strokeWidth={1.67}
-                  />
-                  Judging room
-                </span>
-                <span className="text-xl font-semibold text-dashboard-text-heavy">
-                  Room {roomNumber}
-                </span>
-                <span className="text-sm font-medium text-dashboard-text-light">
-                  Head here when judging deliberations start
-                </span>
-              </DashboardPanel>
+              <DetailRow
+                icon={Presentation}
+                label={copy.details.judging.label}
+                value={copy.details.judging.value(roomNumber)}
+                hint={copy.details.judging.hint}
+              />
             )}
-          </div>
-
-          {/* Workshop — only when the sheet has data for this sponsor */}
-          {hasWorkshop && (
-            <DashboardPanel className="gap-2 p-4 sm:p-5">
-              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
-                <Clock
-                  aria-hidden="true"
-                  className="size-4"
-                  strokeWidth={1.67}
-                />
-                Workshop
-              </span>
-              <div className="flex flex-col gap-1.5">
-                {workshopLocation && (
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-dashboard-text-light">
-                      Location
-                    </span>
-                    <span className="text-xl font-semibold text-dashboard-text-heavy">
-                      {workshopLocation}
-                    </span>
-                  </div>
-                )}
-                {workshopTime && (
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-dashboard-text-light">
-                      Time
-                    </span>
-                    <span className="text-xl font-semibold text-dashboard-text-heavy">
-                      {workshopTime}
-                    </span>
-                  </div>
-                )}
+            {/* Workshop — only when the sheet has data for this sponsor */}
+            {hasWorkshop && (
+              <DetailRow
+                icon={Clock}
+                label={copy.details.workshop.label}
+                value={[workshopTime, workshopLocation]
+                  .filter(Boolean)
+                  .join(" · ")}
+              />
+            )}
+            <div className="flex items-center gap-3 py-4">
+              <DetailIcon icon={Phone} />
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <dt className="text-sm font-medium text-dashboard-text-light">
+                  {copy.details.contact.label}
+                </dt>
+                <dd className="m-0 break-words text-base font-semibold text-dashboard-text-heavy">
+                  {hwContact ?? copy.details.contact.fallback}
+                </dd>
               </div>
-            </DashboardPanel>
-          )}
-
-          {/* HW contact */}
-          <DashboardPanel className="flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-            <div className="flex flex-col gap-1">
-              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
-                <Phone
-                  aria-hidden="true"
-                  className="size-4"
-                  strokeWidth={1.67}
-                />
-                Your Hack Western contact
-              </span>
-              <span className="text-lg font-semibold text-dashboard-text-heavy">
-                {hwContact ?? "Hack Western Organizer Team"}
-              </span>
-              {hwContact && hwContactPhone && (
+              {hwContact && hwContactPhone ? (
                 <a
                   href={`tel:${hwContactPhone.replace(/[^\d+]/g, "")}`}
-                  className="text-base font-medium text-dashboard-text-link underline-offset-2 hover:underline"
+                  aria-label={copy.details.contact.call(hwContactPhone)}
+                  className={cn(
+                    "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm font-semibold text-dashboard-text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
+                    pressable,
+                  )}
                 >
+                  <Phone aria-hidden className="size-4" />
                   {hwContactPhone}
                 </a>
+              ) : (
+                <span className="shrink-0 rounded-dashboard-sm bg-dashboard-bg-nav px-2 py-1 text-xs font-medium text-dashboard-text-light">
+                  {copy.details.contact.tag}
+                </span>
               )}
             </div>
+          </dl>
+        </section>
 
-            <DashboardTag className="self-start sm:self-auto">
-              On-Site Support
-            </DashboardTag>
-          </DashboardPanel>
-        </div>
-
-        <p className="m-0 mt-1 text-center text-sm font-medium leading-relaxed text-dashboard-text-light">
-          Need immediate assistance during the hackathon? Reach out to your HW
-          contact.
+        <p className="m-0 text-center text-sm font-medium leading-relaxed text-dashboard-text-light">
+          {copy.footer}
         </p>
       </div>
     </Shell>
   );
 }
 
+function ActionTile({
+  href,
+  icon: Icon,
+  title,
+  body,
+  badge,
+  primary = false,
+}: {
+  href: string;
+  icon: LucideIcon;
+  title: string;
+  body: string;
+  badge?: string;
+  primary?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "group flex h-full min-h-11 items-center gap-3 rounded-dashboard-2xl p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
+        primary
+          ? "bg-dashboard-text-heavy text-dashboard-text-inverse shadow-dashboard-primary-btn [@media(hover:hover)]:hover:bg-dashboard-text-medium"
+          : "flex-col items-start bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card [@media(hover:hover)]:hover:bg-dashboard-bg-highlightSubtle",
+        pressable,
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "inline-flex size-10 shrink-0 items-center justify-center rounded-full",
+          primary
+            ? "bg-dashboard-action-primary text-dashboard-text-inverse"
+            : "bg-dashboard-bg-highlight text-dashboard-action-primary",
+        )}
+      >
+        <Icon className="size-5" strokeWidth={1.75} />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-semibold">
+          {title}
+          {badge && (
+            <span className="rounded-dashboard-sm bg-dashboard-bg-highlight px-2 py-0.5 text-xs font-medium text-dashboard-text-active">
+              {badge}
+            </span>
+          )}
+        </span>
+        <span
+          className={cn(
+            "text-sm font-medium",
+            primary
+              ? "text-dashboard-text-inverse/80"
+              : "text-dashboard-text-light",
+          )}
+        >
+          {body}
+        </span>
+      </span>
+      {primary && (
+        <ChevronRight
+          aria-hidden
+          className="size-5 shrink-0 transition-transform duration-150 ease-out motion-reduce:transition-none [@media(hover:hover)]:group-hover:translate-x-0.5"
+        />
+      )}
+    </Link>
+  );
+}
+
+function DetailIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <span
+      aria-hidden
+      className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-inset text-dashboard-text-medium"
+    >
+      <Icon className="size-5" strokeWidth={1.67} />
+    </span>
+  );
+}
+
+function DetailRow({
+  icon,
+  label,
+  value,
+  hint,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 py-4">
+      <DetailIcon icon={icon} />
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <dt className="text-sm font-medium text-dashboard-text-light">
+          {label}
+        </dt>
+        <dd className="m-0 break-words text-base font-semibold text-dashboard-text-heavy">
+          {value}
+        </dd>
+        {hint && (
+          <dd className="m-0 text-sm font-medium text-dashboard-text-light">
+            {hint}
+          </dd>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <SEO title="Sponsor Portal" noindex />
-      <div className="min-h-screen bg-dashboard-bg-page px-4 pb-12 pt-6 font-figtree font-medium leading-default text-dashboard-text-heavy sm:px-5">
+      <SEO title={copy.seoTitle} noindex />
+      <div className="min-h-dvh bg-dashboard-bg-page px-4 pb-[max(3rem,env(safe-area-inset-bottom))] pt-4 font-figtree font-medium leading-default text-dashboard-text-heavy sm:px-5 sm:pt-6">
         <div className="mx-auto flex w-full max-w-[640px] flex-col gap-5">
-          <header className="flex items-center justify-between">
-            <span className="text-sm font-semibold tracking-tight text-dashboard-text-medium">
-              Hack Western 13
+          <header className="flex min-h-11 items-center justify-between">
+            <span className="text-sm font-semibold tracking-tight text-dashboard-text-light">
+              {copy.brand}
             </span>
           </header>
           {children}

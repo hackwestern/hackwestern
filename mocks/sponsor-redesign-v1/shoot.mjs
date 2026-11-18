@@ -41,6 +41,7 @@ const shots = [
   ["home", `/sponsors/${S}`, "main, h1"],
   ["coffee-chats", `/sponsors/${S}/coffee-chats`, "#interested"],
   ["scan", `/sponsors/${S}/scan`, "h2"],
+  ["candidates", `/sponsors/${S}/coffee-chats#interested`, "#interested"],
   ["offer", `/sponsors/${S}/scan?hacker=${HACKER}`, "h2"],
   ["schedule", `/sponsors/${S}/schedule`, "h1"],
 ];
@@ -62,6 +63,11 @@ for (const width of [390, 1280]) {
     await page.setViewportSize(vp);
     console.log("shot", name, width);
   }
+  // The help sheet, open.
+  await page.goto(`${BASE}/sponsors/${S}`);
+  await page.getByRole("button", { name: /Need help/ }).click().catch(() => {});
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: `${DIR}/${TAG}-help-sheet-${width}.png` });
   await context.close();
 
   const live = await open(vp, { hacker: true });

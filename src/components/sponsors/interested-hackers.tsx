@@ -1,11 +1,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check, Coffee, Plus, Users } from "lucide-react";
-import { DashboardButton } from "~/components/internals/dashboard-button";
-import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
-import { DashboardTag } from "~/components/internals/dashboard-tag";
+import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { HackerLinks } from "~/components/sponsors/hacker-links";
+import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorHackersCopy as copy } from "~/content/sponsor-hackers";
 import { cn } from "~/lib/utils";
 import type { InterestedHacker } from "~/server/api/routers/sponsor-shortlist";
@@ -104,93 +103,128 @@ export function InterestedHackers({
         ? h.shortlisted
         : !h.shortlisted,
   );
-  const filters: { value: Filter; label: string }[] = [
-    { value: "all", label: copy.filterAll },
-    { value: "shortlisted", label: copy.filterShortlisted },
-    { value: "not", label: copy.filterNotShortlisted },
+  const filters: { value: Filter; label: string; count: number }[] = [
+    { value: "all", label: copy.filterAll, count: hackers.length },
+    { value: "shortlisted", label: copy.filterShortlisted, count: picked },
+    {
+      value: "not",
+      label: copy.filterNotShortlisted,
+      count: hackers.length - picked,
+    },
   ];
+  const fill = Math.min(1, picked / Math.max(1, data.maxShortlist));
 
   return (
     <section
       id="interested"
       aria-labelledby="interested-heading"
-      className="flex scroll-mt-20 flex-col gap-3"
+      className="flex scroll-mt-20 flex-col gap-4"
     >
-      <div className="flex flex-col gap-1.5">
-        <h2
-          id="interested-heading"
-          className="m-0 text-xl font-semibold text-dashboard-text-heavy"
-        >
-          {copy.heading}
-        </h2>
-        <p className="m-0 text-base text-dashboard-text-medium">
-          {fromForm ? copy.introForm : copy.intro}
-        </p>
-      </div>
+      <h2 id="interested-heading" className="sr-only">
+        {copy.heading}
+      </h2>
+      <p className="m-0 text-base text-dashboard-text-medium">
+        {fromForm ? copy.introForm : copy.intro}
+      </p>
       {data.showSource && !fromForm && (
-        <p className="m-0 rounded-dashboard-md border border-dashboard-border-muted p-3 text-sm text-dashboard-text-light">
+        <p className="m-0 rounded-dashboard-lg border border-dashboard-border-muted p-3 text-sm text-dashboard-text-light">
           {copy.sourceNote}
         </p>
       )}
-      <p className="m-0 rounded-dashboard-md bg-dashboard-bg-inset p-3 text-sm text-dashboard-text-medium">
-        {copy.shortlistHint}
-      </p>
 
       {hackers.length === 0 ? (
-        <DashboardPanel className="items-center text-center">
-          <Users
-            aria-hidden
-            className="size-6 text-dashboard-text-light"
-            strokeWidth={1.67}
-          />
-          <p className="m-0 text-base text-dashboard-text-medium">
+        <DashboardPanel className="items-center gap-2 rounded-dashboard-2xl py-10 text-center">
+          <span className="inline-flex size-12 items-center justify-center rounded-full bg-dashboard-bg-inset">
+            <Users
+              aria-hidden
+              className="size-6 text-dashboard-text-light"
+              strokeWidth={1.67}
+            />
+          </span>
+          <p className="m-0 max-w-[400px] text-base text-dashboard-text-medium">
             {fromForm ? copy.emptyForm : copy.empty}
           </p>
         </DashboardPanel>
       ) : (
         <>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="m-0 flex flex-col text-sm text-dashboard-text-light">
-              <span className="font-semibold text-dashboard-text-medium">
+          {/* Shortlist progress: count, cap and a bar toward the cap. */}
+          <div className="flex flex-col gap-2 rounded-dashboard-2xl bg-dashboard-bg-surface p-4 shadow-dashboard-card">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <span className="text-base font-semibold text-dashboard-text-heavy">
                 {copy.shortlistCount(picked, hackers.length)}
               </span>
-              <span>{copy.shortlistCap(data.maxShortlist)}</span>
-            </p>
-            <div
-              role="group"
-              aria-label={copy.filterLabel}
-              className="flex flex-wrap gap-2"
-            >
-              {filters.map((f) => (
-                <DashboardChip
-                  key={f.value}
-                  selected={filter === f.value}
-                  onClick={() => setFilter(f.value)}
-                  className="h-11"
-                >
-                  {f.label}
-                </DashboardChip>
-              ))}
+              <span className="text-sm text-dashboard-text-light">
+                {copy.shortlistCap(data.maxShortlist)}
+              </span>
             </div>
+            <div
+              aria-hidden
+              className="h-1.5 w-full overflow-hidden rounded-full bg-dashboard-bg-nav"
+            >
+              <div
+                className="h-full w-full origin-left rounded-full bg-dashboard-action-primary transition-transform duration-300 ease-out motion-reduce:transition-none"
+                style={{ transform: `scaleX(${fill})` }}
+              />
+            </div>
+            <p className="m-0 text-sm text-dashboard-text-medium">
+              {copy.shortlistHint}
+            </p>
+          </div>
+
+          {/* Filters: a segmented control with counts. */}
+          <div
+            role="group"
+            aria-label={copy.filterLabel}
+            className="grid grid-cols-3 gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1"
+          >
+            {filters.map((f) => {
+              const on = filter === f.value;
+              return (
+                <button
+                  key={f.value}
+                  type="button"
+                  aria-pressed={on}
+                  aria-label={copy.filterCount(f.label, f.count)}
+                  onClick={() => setFilter(f.value)}
+                  className={cn(
+                    "flex min-h-11 min-w-0 flex-col items-center justify-center rounded-dashboard-md px-1 text-sm font-semibold leading-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary sm:flex-row sm:gap-1.5",
+                    on
+                      ? "bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card"
+                      : "text-dashboard-text-medium [@media(hover:hover)]:hover:text-dashboard-text-heavy",
+                    pressable,
+                  )}
+                >
+                  <span className="max-w-full truncate">{f.label}</span>
+                  <span
+                    className={cn(
+                      "text-xs tabular-nums",
+                      on
+                        ? "text-dashboard-action-primary"
+                        : "text-dashboard-text-light",
+                    )}
+                  >
+                    {f.count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {error && (
             <p
               role="alert"
-              className="m-0 rounded-dashboard-md bg-dashboard-status-iconBadge p-3 text-sm font-medium text-dashboard-text-warning"
+              className="m-0 rounded-dashboard-lg bg-dashboard-status-iconBadge p-3 text-sm font-medium text-dashboard-text-warning"
             >
               {error}
             </p>
           )}
 
           {shown.length === 0 ? (
-            <DashboardPanel className="text-center">
-              <p className="m-0 text-base text-dashboard-text-medium">
-                {filter === "not"
-                  ? copy.noneNotShortlisted
-                  : copy.noneShortlisted}
-              </p>
-            </DashboardPanel>
+            <p className="m-0 rounded-dashboard-2xl bg-dashboard-bg-inset p-6 text-center text-base text-dashboard-text-medium">
+              {filter === "not"
+                ? copy.noneNotShortlisted
+                : copy.noneShortlisted}
+            </p>
           ) : (
             <ol className="m-0 flex list-none flex-col gap-3 p-0">
               {shown.map((h) => (
@@ -227,68 +261,76 @@ function HackerCard({
   const on = hacker.shortlisted;
 
   return (
-    <DashboardPanel
+    <article
+      aria-labelledby={`hacker-${hacker.userId}`}
       className={cn(
-        "gap-3 p-4 sm:p-5",
-        on && "ring-2 ring-dashboard-action-primary",
+        "flex flex-col gap-3 rounded-dashboard-2xl border bg-dashboard-bg-surface p-4 shadow-dashboard-card transition-colors duration-150 ease-out motion-reduce:transition-none sm:p-5",
+        on ? "border-dashboard-action-primary" : "border-transparent",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
+      <div className="flex items-start gap-3">
+        <span className="relative shrink-0">
+          {/* Only shared profiles carry a GitHub link, so no consent
+              means initials, never a photo. */}
+          <HackerAvatar
+            name={name}
+            github={hacker.shared ? hacker.github : null}
+            size="lg"
+          />
           <span
             aria-label={copy.rankLabel(hacker.rank)}
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-highlight text-sm font-semibold tabular-nums text-dashboard-text-active"
+            className="absolute -bottom-1 -right-1 inline-flex min-w-6 items-center justify-center rounded-full border-2 border-dashboard-bg-surface bg-dashboard-text-heavy px-1 text-xs font-semibold tabular-nums leading-5 text-dashboard-text-inverse"
           >
             {copy.rank(hacker.rank)}
           </span>
-          <div className="flex min-w-0 flex-col gap-1">
-            <h3 className="m-0 break-words text-lg font-semibold text-dashboard-text-heavy">
-              {name}
-            </h3>
-            {hacker.shared ? (
-              <span className="break-words text-sm text-dashboard-text-light">
-                {hacker.team ?? copy.noTeam}
-              </span>
-            ) : (
-              <span className="text-sm text-dashboard-text-light">
-                {copy.notShared}
-              </span>
-            )}
-            {hacker.pick !== null && (
-              <DashboardTag className="mt-1 self-start">
-                {copy.pick(hacker.pick)}
-              </DashboardTag>
-            )}
-          </div>
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <h3
+            id={`hacker-${hacker.userId}`}
+            className="m-0 break-words text-lg font-semibold leading-snug text-dashboard-text-heavy"
+          >
+            {name}
+          </h3>
+          <span className="break-words text-sm text-dashboard-text-light">
+            {hacker.shared ? (hacker.team ?? copy.noTeam) : copy.notShared}
+          </span>
+          {hacker.pick !== null && (
+            <span className="mt-1 self-start rounded-dashboard-sm bg-dashboard-bg-highlight px-2 py-0.5 text-xs font-medium text-dashboard-text-active">
+              {copy.pick(hacker.pick)}
+            </span>
+          )}
         </div>
-        <DashboardButton
+        <button
           type="button"
-          variant="outline"
           aria-pressed={on}
           onClick={onToggle}
           className={cn(
-            "h-11 shrink-0",
-            on &&
-              "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse hover:bg-dashboard-text-active",
+            "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-dashboard-lg border px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2 [&_svg]:size-4",
+            on
+              ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse [@media(hover:hover)]:hover:bg-dashboard-text-active"
+              : "border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-heavy [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
+            pressable,
           )}
         >
           {on ? <Check aria-hidden /> : <Plus aria-hidden />}
           {copy.shortlist}
           <span className="sr-only"> {name}</span>
-        </DashboardButton>
+        </button>
       </div>
       <HackerLinks name={name} links={hacker} />
       {on && (
-        <DashboardButton asChild className="sm:w-auto md:h-11 md:w-full">
-          <Link
-            href={`/sponsors/${sponsor}/scan?hacker=${encodeURIComponent(hacker.userId)}`}
-            aria-label={copy.offerLabel(name)}
-          >
-            <Coffee aria-hidden />
-            {copy.offer}
-          </Link>
-        </DashboardButton>
+        <Link
+          href={`/sponsors/${sponsor}/scan?hacker=${encodeURIComponent(hacker.userId)}`}
+          aria-label={copy.offerLabel(name)}
+          className={cn(
+            "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-dashboard-lg bg-dashboard-action-primary px-4 text-base font-semibold text-dashboard-text-inverse shadow-dashboard-primary-btn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2 motion-safe:duration-200 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 [@media(hover:hover)]:hover:bg-dashboard-text-active",
+            pressable,
+          )}
+        >
+          <Coffee aria-hidden className="size-4" />
+          {copy.offer}
+        </Link>
       )}
-    </DashboardPanel>
+    </article>
   );
 }
