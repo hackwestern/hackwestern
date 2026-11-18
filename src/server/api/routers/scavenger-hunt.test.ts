@@ -1175,7 +1175,7 @@ describe("scavengerHuntRouter activity endpoints", () => {
     expect(await findMine()).toHaveLength(0);
   });
 
-  test("a winner's attendance and win scans count as one scan", async () => {
+  test("attendance and win scans are counted separately", async () => {
     await organizerCaller.scavengerHunt.saveActivity({
       ...base,
       type: "activity",
@@ -1189,7 +1189,7 @@ describe("scavengerHuntRouter activity endpoints", () => {
         activityType,
       });
     }
-    expect((await findMine())[0]?.scans).toBe(1);
+    expect((await findMine())[0]).toMatchObject({ scans: 1, winScans: 1 });
   });
 
   test("editing or disabling a deleted activity fails", async () => {

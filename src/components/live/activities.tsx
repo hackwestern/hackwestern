@@ -86,9 +86,6 @@ const typeLabel = (a: Activity) => {
   return a.winPoints !== null ? `${label} (Winnable)` : label;
 };
 
-const pointsLabel = (a: Activity) =>
-  a.winPoints !== null ? `${a.points} (+${a.winPoints} win)` : String(a.points);
-
 // datetime-local needs local "YYYY-MM-DDTHH:mm"
 const toInputValue = (d: Date | undefined) => {
   if (!d) return "";
@@ -106,6 +103,8 @@ const Activities = () => {
       if (!next.delete(id)) next.add(id);
       return next;
     });
+  // Winnable rows show attendance points and scans unless switched to Win
+  const [showWin, setShowWin] = useState(false);
   const [editing, setEditing] = useState<Activity | "new" | null>(null);
   const [deleting, setDeleting] = useState<Activity | null>(null);
 
@@ -133,7 +132,7 @@ const Activities = () => {
   );
 
   return (
-    <div className="flex w-full flex-col gap-6 font-figtree">
+    <div className="flex w-full flex-col gap-6 font-figtree md:min-h-0 md:flex-1">
       <div className="flex flex-col-reverse gap-4 md:flex-row md:items-center md:justify-between">
         <div
           role="group"
@@ -157,6 +156,31 @@ const Activities = () => {
           ))}
         </div>
         <div className="flex flex-col gap-4 md:flex-row md:items-center">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={showWin}
+            onClick={() => setShowWin((v) => !v)}
+            className="inline-flex cursor-pixel-hover items-center gap-2 self-start whitespace-nowrap rounded-dashboard-sm text-sm font-medium text-dashboard-action-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2 md:self-auto"
+          >
+            <span
+              aria-hidden="true"
+              className={cn(
+                "relative h-5 w-9 rounded-full transition-colors",
+                showWin
+                  ? "bg-dashboard-action-primary"
+                  : "bg-dashboard-border-default",
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute left-0.5 top-0.5 size-4 rounded-full bg-white transition-transform duration-200 motion-reduce:transition-none",
+                  showWin && "translate-x-4",
+                )}
+              />
+            </span>
+            Show for wins
+          </button>
           <div className="relative w-full md:w-[276px]">
             <Search
               aria-hidden="true"
@@ -191,9 +215,9 @@ const Activities = () => {
           {isLoading ? "Loading activities..." : "No activities found"}
         </p>
       ) : (
-        <div className="w-full overflow-x-auto">
+        <div className="w-full overflow-x-auto md:min-h-0 md:flex-1 md:overflow-y-auto">
           <Table className="w-full font-figtree leading-default md:min-w-[720px]">
-            <TableHeader className="[&_tr]:border-dashboard-border-faint">
+            <TableHeader className="md:sticky md:top-0 md:z-10 md:bg-dashboard-bg-page [&_tr]:border-dashboard-border-faint">
               <TableRow className="hover:bg-transparent">
                 {COLUMNS.map((column) => (
                   <TableHead
@@ -217,13 +241,15 @@ const Activities = () => {
             <TableBody>
               {rows.map((a, i) => {
                 const isExpanded = expanded.has(a.id);
+                const isWin = showWin && a.winPoints !== null;
                 // Index-based stripes, because the details row breaks odd/even
                 const stripe = i % 2 === 0 && "bg-dashboard-bg-highlightSubtle";
+                const blue = isWin && "text-dashboard-action-primary";
                 const details = [
                   ["Type", typeLabel(a)],
                   ["Location", a.room ?? "TBD"],
-                  ["Points", pointsLabel(a)],
-                  ["Scans", String(a.scans)],
+                  ["Points", String(isWin ? a.winPoints : a.points)],
+                  ["Scans", String(isWin ? a.winScans : a.scans)],
                 ] as const;
                 return (
                   <Fragment key={a.id}>
@@ -234,7 +260,7 @@ const Activities = () => {
                       )}
                     >
                       <TableCell
-                        className={cn(CELL, "text-dashboard-text-heavy")}
+                        className={cn(CELL, "text-dashboard-text-heavy", blue)}
                       >
                         <span className="flex flex-wrap items-center gap-2">
                           <span
@@ -256,6 +282,7 @@ const Activities = () => {
                         className={cn(
                           CELL,
                           "hidden text-dashboard-text-light md:table-cell",
+                          blue,
                         )}
                       >
                         {typeLabel(a)}
@@ -264,6 +291,7 @@ const Activities = () => {
                         className={cn(
                           CELL,
                           "whitespace-nowrap text-dashboard-text-light",
+                          blue,
                         )}
                       >
                         {formatEventTime(a.startsAt, {
@@ -283,6 +311,7 @@ const Activities = () => {
                           className={cn(
                             CELL,
                             "hidden text-dashboard-text-light md:table-cell",
+                            blue,
                           )}
                         >
                           {value}
@@ -328,7 +357,12 @@ const Activities = () => {
                                 <dt className="text-xs font-semibold uppercase leading-5 text-dashboard-text-light">
                                   {label}
                                 </dt>
-                                <dd className="font-medium text-dashboard-text-light">
+                                <dd
+                                  className={cn(
+                                    "font-medium text-dashboard-text-light",
+                                    blue,
+                                  )}
+                                >
                                   {value}
                                 </dd>
                               </Fragment>

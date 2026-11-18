@@ -462,6 +462,7 @@ export const scavengerHuntRouter = createTRPCRouter({
             room: scavengerHuntItems.room,
             // Attendance only, so a winner (attendance + win rows) counts once
             scans: sql<number>`count(${scavengerHuntScans.userId}) filter (where ${scavengerHuntScans.activityType} = 'attendance')::int`,
+            winScans: sql<number>`count(${scavengerHuntScans.userId}) filter (where ${scavengerHuntScans.activityType} = 'win')::int`,
           })
           .from(scavengerHuntItems)
           .leftJoin(
