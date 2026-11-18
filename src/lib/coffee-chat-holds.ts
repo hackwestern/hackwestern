@@ -10,9 +10,9 @@
  * - A block lasts 15 minutes to 1 hr 30, on the 15-minute grid.
  * - A chat always goes in the sponsor's block covering its start, in the
  *   block's room. No block then = no offer.
- * - A block's slots start one chat length apart. Each slot needs
- *   hackersPerSlot(format) hackers: one per rep for 1-on-1s, the group
- *   size for a group. The room's 6 people don't cap it.
+ * - A block's slots start one chat length apart. Each slot takes the
+ *   hackers the sponsor asked for (coffee-chat-request.ts). No room
+ *   capacity: reps organize themselves in the room.
  *
  * Dependency-free (shared by server, organizer and sponsor pages).
  */
@@ -24,6 +24,11 @@ import {
   coffeeChatsOverlap,
   coffeeChatTimeOf,
 } from "~/lib/coffee-chat-requests";
+import {
+  askedAt,
+  type ChatRequest,
+  type SlotLimit,
+} from "~/lib/coffee-chat-request";
 
 /** A new block's length unless the organizer picks another. */
 export const DEFAULT_HOLD_MINUTES = 60;
@@ -196,29 +201,6 @@ export function holdStartTimes(
   return times;
 }
 
-/** A sponsor's chat type and reps, which decide a block's slots. */
-export type BlockFormat = {
-  durationMinutes: number;
-  groupSize: number;
-  reps: number;
-};
-
-/**
- * A sponsor's block format: chat length and group size from their Coffee
- * Chats sheet row (FORMAT), reps from their own setting. No sheet row =
- * 1-on-1, 15 min (docs/decisions.md 2026-11-18 room blocks).
- */
-export function blockFormatOf(
-  setup: { durationMinutes?: number; groupSize?: number } | null | undefined,
-  reps: number,
-): BlockFormat {
-  return {
-    durationMinutes: setup?.durationMinutes ?? 15,
-    groupSize: setup?.groupSize ?? 1,
-    reps,
-  };
-}
-
 /** True when a block this long fits at least one chat of `duration`. */
 export function holdFitsChat(minutes: number, duration: number): boolean {
   return minutes >= duration;
@@ -227,44 +209,31 @@ export function holdFitsChat(minutes: number, duration: number): boolean {
 /** A live chat (pending or accepted, filtered by the caller). */
 type LiveChat = ChatTime & { sponsorId: string; chatId?: string };
 
-/** One slot of a block: hackers booked against hackers the chat needs. */
+/** One slot of a block: hackers booked against hackers asked for. */
 export type BlockSlot = {
   slotTime: string;
   booked: number;
+  /** Hackers asked for here: the request, lowered by any ask. */
   needed: number;
+  /** The request before any "Ask for fewer". */
+  requested: number;
+  /** An ask lowered this slot (shown as "asked for N"). */
+  lowered: boolean;
   chatIds: string[];
 };
 
 /**
- * Chats one slot runs at once: 1-on-1s run one per rep; a group is one
- * chat for the whole sponsor (the sheet gives one group size per sponsor;
- * docs/decisions.md 2026-11-18 hackers per slot).
- */
-export function chatsPerSlot(format: BlockFormat): number {
-  return format.groupSize > 1 ? 1 : Math.max(1, Math.floor(format.reps));
-}
-
-/**
- * Hackers one slot needs, from chat type and reps: 1-on-1 = one hacker
- * per rep (3 reps = 3); a group = the group size (group of 3 = 3). Not
- * capped by the room's 6 people: going over is only a quiet note.
- */
-export function hackersPerSlot(format: BlockFormat): number {
-  const group = Math.max(1, Math.floor(format.groupSize));
-  return chatsPerSlot(format) * group;
-}
-
-/**
  * The block's slots, earliest first. Each live chat of the block's
- * sponsor counts in the slot its start falls in.
+ * sponsor counts in the slot its start falls in. Hackers asked for per
+ * slot come from the sponsor's request and their asks for fewer.
  */
 export function blockSlots(
   block: HoldSpan,
-  format: BlockFormat,
+  request: Pick<ChatRequest, "perSlot" | "durationMinutes">,
   liveChats: readonly LiveChat[],
+  limits: readonly SlotLimit[] = [],
 ): BlockSlot[] {
-  const needed = hackersPerSlot(format);
-  const duration = format.durationMinutes;
+  const duration = request.durationMinutes;
   return holdStartTimes(block, duration).map((slotTime) => {
     const start = coffeeChatMinutesOf(slotTime)!;
     const inside = liveChats.filter((c) => {
@@ -276,36 +245,51 @@ export function blockSlots(
         t < start + duration
       );
     });
+    const { asked, lowered } = askedAt(
+      request,
+      limits,
+      block.sponsorId,
+      slotTime,
+    );
     return {
       slotTime,
       booked: inside.length,
-      needed,
+      needed: asked,
+      requested: request.perSlot,
+      lowered,
       chatIds: inside.flatMap((c) => (c.chatId ? [c.chatId] : [])),
     };
   });
 }
 
 /**
- * "n of m chats filled" for a block: chats are slots times the chats the
- * room runs at once; a chat is filled once its hackers are all booked.
- * `firstOpen` is the earliest slot still short of hackers (and, with
- * `now`, still before its reply cutoff), or null.
+ * "n of m chats filled" for a block. 1-on-1: every hacker asked for is a
+ * chat. Group: every slot asking for hackers is one chat, filled once all
+ * its hackers are booked. `firstOpen` is the earliest slot still short of
+ * hackers (and, with `now`, still before its reply cutoff), or null.
  */
 export function blockFill(
   block: HoldSpan,
-  format: BlockFormat,
+  request: Pick<ChatRequest, "style" | "perSlot" | "durationMinutes">,
   liveChats: readonly LiveChat[],
+  limits: readonly SlotLimit[] = [],
   now?: Date,
 ): { filled: number; total: number; firstOpen: string | null } {
-  const slots = blockSlots(block, format, liveChats);
-  const parallel = chatsPerSlot(format);
-  const group = Math.max(1, Math.floor(format.groupSize));
+  const slots = blockSlots(block, request, liveChats, limits);
+  const group = request.style === "group";
   return {
     filled: slots.reduce(
-      (n, s) => n + Math.min(parallel, Math.floor(s.booked / group)),
+      (n, s) =>
+        n +
+        (group
+          ? Number(s.needed > 0 && s.booked >= s.needed)
+          : Math.min(s.booked, s.needed)),
       0,
     ),
-    total: slots.length * parallel,
+    total: slots.reduce(
+      (n, s) => n + (group ? Number(s.needed > 0) : s.needed),
+      0,
+    ),
     firstOpen:
       slots.find(
         (s) =>
@@ -337,6 +321,8 @@ export type SponsorHoldView = {
   /** Earliest slot still short of hackers, for Scan a badge. */
   firstOpen: string | null;
   needsHacker: boolean;
+  /** Each slot, for "Ask for fewer". */
+  slots: BlockSlot[];
 };
 
 /**
@@ -348,14 +334,15 @@ export function holdsForSponsor(
   holds: readonly (HoldSpan & { holdId: string })[],
   sponsorId: string,
   liveChats: readonly LiveChat[],
-  format: BlockFormat,
+  request: Pick<ChatRequest, "style" | "perSlot" | "durationMinutes">,
+  limits: readonly SlotLimit[] = [],
   now?: Date,
 ): SponsorHoldView[] {
   return holds
     .filter((h) => h.sponsorId === sponsorId)
     .sort((a, b) => a.startTime.localeCompare(b.startTime))
     .map((h) => {
-      const fill = blockFill(h, format, liveChats, now);
+      const fill = blockFill(h, request, liveChats, limits, now);
       return {
         holdId: h.holdId,
         room: h.room,
@@ -363,6 +350,7 @@ export function holdsForSponsor(
         endTime: h.endTime,
         ...fill,
         needsHacker: fill.firstOpen !== null,
+        slots: blockSlots(h, request, liveChats, limits),
       };
     });
 }

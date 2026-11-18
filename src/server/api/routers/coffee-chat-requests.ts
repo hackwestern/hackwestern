@@ -15,7 +15,6 @@ import { z } from "zod";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { admittedStatuses, isAdmittedStatus } from "~/lib/admission";
 import {
-  blockFormatOf,
   holdAsRoomUse,
   holdClash,
   holdCovers,
@@ -39,6 +38,13 @@ import {
   isActiveCoffeeChat,
   type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
+import {
+  CHAT_STYLES,
+  chatRequestOf,
+  MAX_PER_SLOT,
+  MIN_PER_SLOT,
+  type SlotLimit,
+} from "~/lib/coffee-chat-request";
 import { formatClock, type CoffeeChatSetup } from "~/lib/run-of-show";
 import {
   createTRPCRouter,
@@ -65,6 +71,7 @@ import { db } from "~/server/db";
 import {
   applications,
   coffeeChatHolds,
+  coffeeChatLimits,
   coffeeChats,
   sponsorJudgingSponsors,
   users,
@@ -86,7 +93,8 @@ async function findSponsor(conn: Db | Tx, id: string, lock = false) {
     .select({
       id: sponsorJudgingSponsors.id,
       name: sponsorJudgingSponsors.name,
-      reps: sponsorJudgingSponsors.coffeeChatReps,
+      style: sponsorJudgingSponsors.coffeeChatStyle,
+      perSlot: sponsorJudgingSponsors.coffeeChatPerSlot,
       watcher: sponsorJudgingSponsors.coffeeChatWatcher,
     })
     .from(sponsorJudgingSponsors)
@@ -209,6 +217,20 @@ async function activeChats(conn: Db | Tx, where: SQL, now: Date) {
  */
 async function activeRoomChats(conn: Db | Tx, now: Date) {
   return activeChats(conn, isNotNull(coffeeChats.room), now);
+}
+
+/** "Ask for fewer" rows (all, or those matching `where`). */
+async function loadLimits(conn: Db | Tx, where?: SQL): Promise<SlotLimit[]> {
+  return conn
+    .select({
+      sponsorId: coffeeChatLimits.sponsorId,
+      startTime: coffeeChatLimits.startTime,
+      endTime: coffeeChatLimits.endTime,
+      hackers: coffeeChatLimits.hackers,
+    })
+    .from(coffeeChatLimits)
+    .where(where)
+    .orderBy(asc(coffeeChatLimits.startTime));
 }
 
 /** A room block as the pages and rules see it. */
@@ -458,10 +480,7 @@ async function saveHold(input: {
   }
   const forSponsor = sponsorId;
   const named = await findSponsor(db, forSponsor);
-  const { durationMinutes } = blockFormatOf(
-    await setupFor(named.name),
-    named.reps,
-  );
+  const { durationMinutes } = chatRequestOf(await setupFor(named.name), named);
   const span: HoldSpan = {
     sponsorId: named.id,
     room,
@@ -625,7 +644,12 @@ export async function createCoffeeChatOffer(input: {
         tx,
         eq(coffeeChatHolds.sponsorId, sponsor.id),
       );
-      const { durationMinutes } = blockFormatOf(setup, locked.reps);
+      const request = chatRequestOf(setup, locked);
+      const limits = await loadLimits(
+        tx,
+        eq(coffeeChatLimits.sponsorId, sponsor.id),
+      );
+      const { durationMinutes } = request;
       // The room of the sponsor's block covering this start (no block =
       // no offer). Room writes are locked, so nobody can take it meanwhile.
       const room = offerRoomAt({
@@ -638,9 +662,9 @@ export async function createCoffeeChatOffer(input: {
         roomUses(tx, now),
       ]);
       const problem = offerProblem({
-        setup,
+        request,
+        limits,
         slotTime: input.slotTime,
-        reps: locked.reps,
         sponsorId: sponsor.id,
         sponsorChats,
         hackerChats,
@@ -683,7 +707,131 @@ export async function createCoffeeChatOffer(input: {
   }
 }
 
+/** Save a sponsor's chat request (style + hackers per slot). */
+async function saveChatRequest(input: {
+  sponsorId: string;
+  style: (typeof CHAT_STYLES)[number];
+  perSlot: number;
+}) {
+  const [row] = await db
+    .update(sponsorJudgingSponsors)
+    .set({ coffeeChatStyle: input.style, coffeeChatPerSlot: input.perSlot })
+    .where(eq(sponsorJudgingSponsors.id, input.sponsorId.toLowerCase()))
+    .returning({
+      style: sponsorJudgingSponsors.coffeeChatStyle,
+      perSlot: sponsorJudgingSponsors.coffeeChatPerSlot,
+    });
+  if (!row) {
+    throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownSponsor });
+  }
+  return row;
+}
+
+const chatRequestInput = {
+  style: z.enum(CHAT_STYLES),
+  perSlot: z.number().int().min(MIN_PER_SLOT).max(MAX_PER_SLOT),
+};
+
+/**
+ * "Ask for fewer": at most `hackers` per slot starting in the span (a slot
+ * or an hour; 0 = no chat then). Asking for the full request again clears
+ * the ask. Refused when more hackers are already booked in a slot than
+ * the new number (cancel or move them first). Lock order as everywhere:
+ * the sponsor row, then chats.
+ */
+async function saveSlotLimit(input: {
+  sponsorId: string;
+  startTime: string;
+  endTime: string;
+  hackers: number;
+}) {
+  const start = coffeeChatMinutesOf(input.startTime);
+  const end = coffeeChatMinutesOf(input.endTime);
+  if (start === null || end === null || end <= start) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: errors.limitTimes });
+  }
+  const now = new Date();
+  const named = await findSponsor(db, input.sponsorId);
+  const setup = await setupFor(named.name).catch(() => null);
+  return db.transaction(async (tx) => {
+    const sponsor = await findSponsor(tx, named.id, true);
+    const request = chatRequestOf(setup, sponsor);
+    const span = and(
+      eq(coffeeChatLimits.sponsorId, sponsor.id),
+      eq(coffeeChatLimits.startTime, input.startTime),
+      eq(coffeeChatLimits.endTime, input.endTime),
+    );
+    if (input.hackers >= request.perSlot) {
+      await tx.delete(coffeeChatLimits).where(span);
+      return { cleared: true };
+    }
+    const live = await activeChats(
+      tx,
+      eq(coffeeChats.sponsorId, sponsor.id),
+      now,
+    );
+    const booked = new Map<string, number>();
+    for (const c of live) {
+      const t = coffeeChatMinutesOf(c.slotTime);
+      if (t === null || t < start || t >= end) continue;
+      booked.set(c.slotTime, (booked.get(c.slotTime) ?? 0) + 1);
+    }
+    if ([...booked.values()].some((n) => n > input.hackers)) {
+      throw new TRPCError({ code: "CONFLICT", message: errors.limitBelowBooked });
+    }
+    await tx
+      .insert(coffeeChatLimits)
+      .values({
+        sponsorId: sponsor.id,
+        startTime: input.startTime,
+        endTime: input.endTime,
+        hackers: input.hackers,
+      })
+      .onConflictDoUpdate({
+        target: [
+          coffeeChatLimits.sponsorId,
+          coffeeChatLimits.startTime,
+          coffeeChatLimits.endTime,
+        ],
+        set: { hackers: input.hackers },
+      });
+    return { cleared: false };
+  });
+}
+
 export const coffeeChatRequestsRouter = createTRPCRouter({
+  /**
+   * The sponsor's chat request: 1-on-1 with N reps, or one group of M
+   * hackers. Public (sponsor UUID): the UUID only reaches its own row.
+   */
+  setChatRequest: publicProcedure
+    .input(z.object({ sponsor: sponsorInput, ...chatRequestInput }))
+    .mutation(({ input }) =>
+      saveChatRequest({ ...input, sponsorId: input.sponsor }),
+    ),
+
+  /** An organizer edits a sponsor's request for them. Organizers only. */
+  organizerSetChatRequest: protectedOrganizerProcedure
+    .input(z.object({ sponsorId: sponsorInput, ...chatRequestInput }))
+    .mutation(({ input }) => saveChatRequest(input)),
+
+  /**
+   * "Ask for fewer" hackers from startTime to endTime (a slot or an hour).
+   * Public (sponsor UUID). Rules in saveSlotLimit.
+   */
+  askForFewer: publicProcedure
+    .input(
+      z.object({
+        sponsor: sponsorInput,
+        startTime: slotTimeInput,
+        endTime: slotTimeInput,
+        hackers: z.number().int().min(0).max(MAX_PER_SLOT),
+      }),
+    )
+    .mutation(({ input }) =>
+      saveSlotLimit({ ...input, sponsorId: input.sponsor }),
+    ),
+
   /**
    * Who a scanned badge belongs to, for the sponsor's offer card. Public
    * (sponsor UUID). Only the first name, plus links when the hacker agreed
@@ -719,24 +867,25 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       const sponsor = await findSponsor(db, input.sponsor);
       if (input.userId) await findAdmittedHacker(input.userId, now);
       const setup = await setupFor(sponsor.name);
-      const [sponsorChats, hackerChats, roomChats, holds] = await Promise.all([
-        activeChats(db, eq(coffeeChats.sponsorId, sponsor.id), now),
-        input.userId
-          ? activeChats(db, eq(coffeeChats.userId, input.userId), now)
-          : Promise.resolve([]),
-        roomUses(db, now),
-        loadHolds(db, eq(coffeeChatHolds.sponsorId, sponsor.id)),
-      ]);
-      const format = blockFormatOf(setup, sponsor.reps);
+      const [sponsorChats, hackerChats, roomChats, holds, limits] =
+        await Promise.all([
+          activeChats(db, eq(coffeeChats.sponsorId, sponsor.id), now),
+          input.userId
+            ? activeChats(db, eq(coffeeChats.userId, input.userId), now)
+            : Promise.resolve([]),
+          roomUses(db, now),
+          loadHolds(db, eq(coffeeChatHolds.sponsorId, sponsor.id)),
+          loadLimits(db, eq(coffeeChatLimits.sponsorId, sponsor.id)),
+        ]);
+      const request = chatRequestOf(setup, sponsor);
       return {
-        durationMinutes: format.durationMinutes,
-        groupSize: format.groupSize,
-        reps: sponsor.reps,
+        durationMinutes: request.durationMinutes,
+        request,
         /** "Your Hack Western contact for chats": set by organizers. */
         watcherName: sponsor.watcher,
         times: freeStartTimes({
-          setup,
-          reps: sponsor.reps,
+          request,
+          limits,
           sponsorId: sponsor.id,
           sponsorChats,
           hackerChats,
@@ -805,17 +954,34 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       );
       // Only this sponsor's blocks (same UUID scoping as their chats). The
       // sheet only adds the chat type; without it, 1-on-1 15 min.
-      const [holdRows, live, setup] = await Promise.all([
+      const [holdRows, live, setup, limits] = await Promise.all([
         loadHolds(db, eq(coffeeChatHolds.sponsorId, sponsor.id)),
         activeChats(db, eq(coffeeChats.sponsorId, sponsor.id), now),
         setupFor(sponsor.name).catch(() => null),
+        loadLimits(db, eq(coffeeChatLimits.sponsorId, sponsor.id)),
       ]);
-      const format = blockFormatOf(setup, sponsor.reps);
-      const holds = holdsForSponsor(holdRows, sponsor.id, live, format, now);
+      const request = chatRequestOf(setup, sponsor);
+      const holds = holdsForSponsor(
+        holdRows,
+        sponsor.id,
+        live,
+        request,
+        limits,
+        now,
+      );
       return {
         sponsorName: sponsor.name,
         watcherName: sponsor.watcher,
-        format,
+        request,
+        /** The sheet row's window and chatting hours, for "Your chat setup". */
+        sheet: setup
+          ? {
+              windowStart: setup.windowStart,
+              windowEnd: setup.windowEnd,
+              chattingHours: setup.chattingHours,
+            }
+          : null,
+        limits,
         chats,
         holds,
       };
@@ -1009,11 +1175,12 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       .select({
         id: sponsorJudgingSponsors.id,
         name: sponsorJudgingSponsors.name,
-        reps: sponsorJudgingSponsors.coffeeChatReps,
+        style: sponsorJudgingSponsors.coffeeChatStyle,
+        perSlot: sponsorJudgingSponsors.coffeeChatPerSlot,
         watcher: sponsorJudgingSponsors.coffeeChatWatcher,
       })
       .from(sponsorJudgingSponsors);
-    const [setups, rows, rooms, organizers, holds] = await Promise.all([
+    const [setups, rows, rooms, organizers, holds, limits] = await Promise.all([
       readSheetCoffeeChatSetups(sponsors.map((s) => s.name)),
       db
         .select({
@@ -1042,9 +1209,11 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         .where(eq(users.type, "organizer"))
         .orderBy(asc(users.name)),
       loadHolds(db),
+      loadLimits(db),
     ]);
     const board = buildChatBoard({
       holds,
+      limits,
       sponsors,
       setups,
       // GitHub (the avatar photo) only for hackers who agreed to share.

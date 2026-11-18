@@ -58,10 +58,14 @@ export type CoffeeChatSetup = {
   durationMinutes: 15 | 30;
   /** 1 = individual 1-on-1, 3 = group of 3. */
   groupSize: number;
+  /** CHATTING HOURS: hours of chats inside the window (e.g. 2 of 9-1). */
+  chattingHours: number | null;
   slots: number | null;
   hackers: number | null;
   /** Raw FORMAT cell, e.g. "Groups (30 mins with 3 people)". */
   format: string | null;
+  /** Raw NOTES cell, e.g. "3-4 reps (notes based on 3)". */
+  notes: string | null;
   /** Coffee chat room, e.g. "Rm 2241"; null until organizers assign one. */
   room: string | null;
 };
