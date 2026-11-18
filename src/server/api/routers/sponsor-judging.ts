@@ -33,6 +33,13 @@ export const sponsorJudgingRouter = createTRPCRouter({
     .query(async ({ input }) => {
       try {
         const sponsorName = await resolveSponsorName(input.sponsor);
+        // Only prize track sponsors judge (same gate as listAllTeams).
+        if (!hasPrizeTrack(sponsorName)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: sponsorJudgingCopy.errors.noPrizeTrack,
+          });
+        }
         const sheets = await getSheetsClient();
         const spreadsheetId = getSpreadsheetId();
 

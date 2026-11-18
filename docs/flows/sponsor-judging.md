@@ -36,7 +36,7 @@ Sponsors don't book times. We run the automation:
 
 ## Round 2: top 5
 
-From the teams that presented, each sponsor ranks their top 5 and sends it to us. A team that didn't present isn't in the round 2 list. Round 2 opens when an organizer presses "Open round 2" after presentations; until then sponsors see their sent shortlist and can't submit a top 5.
+From the teams that presented, each sponsor ranks their top 5 and sends it to us. A team that didn't present isn't in the round 2 list. Round 2 opens when an organizer presses "Open round 2" after presentations (it can't open until at least one team has a presentation slot); until then sponsors see their sent shortlist and can't submit a top 5.
 
 A sponsor with no presentation slot can't rank in round 2 (Jazz). Nobody presented to them, so the page says round 2 is locked and to ask us to schedule again, and the server refuses their top 5.
 
@@ -57,4 +57,4 @@ The web team runs the cheat check on every team in any sponsor's top 5 before wi
   - **Chosen teams and presentation schedule:** Sponsor | Round | Team | Members | Time | Room | Notified (one row per shortlisted or scheduled team per sponsor; time and room only for a placed slot; Notified is Slack, Email, failed, or a mix).
   - **Final results:** Sponsor | Rank | Team | Members (each submitted top 5 in order).
 
-  Blank cells mean the app doesn't have that data yet. The run-of-show service account needs Editor on the sheet; until then writes fail quietly (logged once) and judging still works.
+  Blank cells mean the app doesn't have that data yet. The run-of-show service account needs Editor on the sheet; until then writes fail quietly (logged once) and judging still works. Only production writes to the sheet (or a dev server started with `SHEET_WRITES=1`); tests never do.

@@ -113,10 +113,13 @@ vi.mock("~/env", async (importOriginal) => {
 });
 
 const setups: CoffeeChatSetup[] = [];
+// Writes are off under Vitest; this file mocks Google, so it turns them on.
+const writes = vi.hoisted(() => ({ enabled: true }));
 vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => {
   const original = await importOriginal<typeof RunOfShowSheet>();
   return {
     ...original,
+    sheetWritesEnabled: () => writes.enabled,
     getRunOfShow: vi.fn(async () => ({
       readAt: new Date().toISOString(),
       items: [],
@@ -135,6 +138,7 @@ afterAll(() => {
 });
 beforeEach(() => {
   sheet.fail = null;
+  writes.enabled = true;
 });
 
 let n = 0;
@@ -369,5 +373,70 @@ describe("coffee chat sheet mirror (T20)", () => {
     await mirrorCoffeeChats();
     expect(sheet.grid[0]?.[0]).toBe("Chat ID");
     log.mockRestore();
+  });
+
+  test("with sheet writes off nothing is written; logged once", async () => {
+    const log = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    writes.enabled = false;
+    const before = sheet.ranges.length;
+    await expect(mirrorCoffeeChats()).resolves.toEqual({
+      ok: false,
+      error: "disabled",
+    });
+    await mirrorCoffeeChats();
+    expect(sheet.ranges.length).toBe(before);
+    expect(
+      log.mock.calls.filter((args) =>
+        String(args[0]).includes("sheet writes are off"),
+      ),
+    ).toHaveLength(1);
+    log.mockRestore();
+  });
+
+  test("a run that timed out never clears after a newer run", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.useRealTimers();
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    vi.setSystemTime(new Date("2026-11-21T08:00:00-05:00"));
+
+    // The old run's sheet hangs on write until released.
+    let release!: () => void;
+    const steps: string[] = [];
+    const slow = {
+      tabTitles: async () => [BOOKINGS_TAB],
+      addTab: async () => undefined,
+      write: () =>
+        new Promise<void>((resolve) => {
+          steps.push("old write");
+          release = resolve;
+        }),
+      clear: async () => {
+        steps.push("old clear");
+      },
+    };
+    const fast = {
+      tabTitles: async () => [BOOKINGS_TAB],
+      addTab: async () => undefined,
+      write: async () => {
+        steps.push("new write");
+      },
+      clear: async () => {
+        steps.push("new clear");
+      },
+    };
+    const old = mirrorCoffeeChats({ sheet: async () => slow });
+    const newer = mirrorCoffeeChats({ sheet: async () => fast });
+    await vi.advanceTimersByTimeAsync(MIRROR_TIMEOUT_MS);
+    await expect(old).resolves.toMatchObject({ ok: false });
+    await expect(newer).resolves.toMatchObject({ ok: true });
+    // The old write finishes late: it must not clear the newer rows.
+    release();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(steps).toEqual(["old write", "new write", "new clear"]);
+
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-21T08:00:00-05:00"));
   });
 });

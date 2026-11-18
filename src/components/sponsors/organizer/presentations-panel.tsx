@@ -273,10 +273,17 @@ export function PresentationsPanel({
           </div>
         )}
         {syncSheet.data && (
-          <p role="status" className={syncSheet.data.ok ? NOTE : WARN}>
+          <p
+            role="status"
+            className={
+              syncSheet.data.ok || syncSheet.data.disabled ? NOTE : WARN
+            }
+          >
             {syncSheet.data.ok
               ? copy.synced(formatSubmittedTime(syncSheet.data.syncedAt))
-              : copy.syncFailed(syncSheet.data.error)}
+              : syncSheet.data.disabled
+                ? copy.syncDisabled
+                : copy.syncFailed(syncSheet.data.error)}
           </p>
         )}
         {syncSheet.isError && (
@@ -317,6 +324,12 @@ export function PresentationsPanel({
             {round2Open
               ? copy.round2.openSince(formatSubmittedTime(data.round2OpenedAt!))
               : copy.round2.closed}
+          </p>
+        )}
+        {/* Why "Open round 2" is disabled (the server refuses the same). */}
+        {!round2Open && data.slots.length === 0 && (
+          <p className={NOTE}>
+            {sponsorPresentationsCopy.errors.round2NoSchedule}
           </p>
         )}
         {scheduleError && <p className={WARN}>{errorOf(scheduleError)}</p>}

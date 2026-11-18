@@ -61,3 +61,13 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   }
   return realFetch(input, init);
 }) as typeof fetch;
+
+// No test may write to a Google Sheet: the run-of-show service account is
+// Editor on the live sheet. sheetWritesEnabled() (run-of-show-sheet.ts)
+// returns false whenever process.env.VITEST is set, so both mirrors write
+// nothing and getSheetsClient asks for the read-only scope. A test that
+// exercises a write mocks sheetWritesEnabled AND googleapis (or passes a
+// fake sheet). SHEET_WRITES is also blanked for the suite (vitest.config.ts).
+if (!process.env.VITEST) {
+  throw new Error("vitest.setup.ts expects process.env.VITEST to be set");
+}

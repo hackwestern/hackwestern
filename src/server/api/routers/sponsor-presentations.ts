@@ -20,6 +20,7 @@ import {
 } from "~/server/api/trpc";
 import { runAllTeamChecks } from "~/server/api/utils/cheat-check-runners";
 import { sendPresentationEmail } from "~/server/api/utils/presentation-email";
+import { SHEET_WRITES_DISABLED } from "~/server/api/utils/coffee-chat-sheet-mirror";
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
 import {
   mirrorSponsorJudging,
@@ -733,18 +734,7 @@ export const sponsorPresentationsRouter = createTRPCRouter({
   setRound2: protectedOrganizerProcedure
     .input(z.object({ open: z.boolean() }))
     .mutation(async ({ input }) => {
-      if (input.open) {
-        const placed = await db.query.sponsorPresentations.findFirst({
-          where: isNotNull(sponsorPresentations.startMinute),
-          columns: { teamId: true },
-        });
-        if (!placed) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: errors.noSchedule,
-          });
-        }
-      }
+      // Opening with nothing scheduled is refused inside setRound2Open.
       return { round2OpenedAt: await setRound2Open(input.open) };
     }),
 
@@ -752,13 +742,19 @@ export const sponsorPresentationsRouter = createTRPCRouter({
    * Rewrite the "Sponsor Judging" tab of the run-of-show sheet from the DB
    * now (it is also rewritten after every judging change). Never throws:
    * `ok` is false with the Sheets error message when the write failed (for
-   * example, the service account isn't Editor on the sheet yet).
+   * example, the service account isn't Editor on the sheet yet), and
+   * `disabled` is true when this server doesn't write to sheets at all
+   * (outside production without SHEET_WRITES=1).
    */
   syncSheet: protectedOrganizerProcedure.mutation(async () => {
     const result = await mirrorSponsorJudging();
     return result.ok
       ? { ok: true as const, syncedAt: new Date() }
-      : { ok: false as const, error: result.error };
+      : {
+          ok: false as const,
+          disabled: result.error === SHEET_WRITES_DISABLED,
+          error: result.error,
+        };
   }),
 
   /**

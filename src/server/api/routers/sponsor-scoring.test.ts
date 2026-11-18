@@ -8,6 +8,7 @@ import { createInnerTRPCContext } from "~/server/api/trpc";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
 import { db } from "~/server/db";
 import {
+  sponsorJudgingSettings,
   sponsorJudgingSponsors,
   sponsorPresentations,
   teams,
@@ -62,7 +63,14 @@ const anon = createCaller(createInnerTRPCContext({ session: null }));
 beforeEach(async () => {
   closesAt = undefined;
   // Round 2 open unless a test closes it, so submit tests can submit.
-  await setRound2Open(true);
+  // Written directly: setRound2Open refuses while nothing is scheduled.
+  await db
+    .insert(sponsorJudgingSettings)
+    .values({ id: 1, round2OpenedAt: new Date() })
+    .onConflictDoUpdate({
+      target: sponsorJudgingSettings.id,
+      set: { round2OpenedAt: new Date() },
+    });
   track.mockReset().mockResolvedValue(null);
   allTracks.mockReset().mockResolvedValue(new Map());
   writeSheet.mockReset().mockResolvedValue(undefined);
@@ -730,6 +738,9 @@ describe("sponsorScoring prize track gate", () => {
     ).rejects.toMatchObject(noTrack);
     await expect(
       anon.sponsorJudging.listAllTeams({ sponsor: s.id }),
+    ).rejects.toMatchObject(noTrack);
+    await expect(
+      anon.sponsorJudging.getChosenTeams({ sponsor: s.id }),
     ).rejects.toMatchObject(noTrack);
   });
 

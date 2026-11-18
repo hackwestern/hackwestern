@@ -26,6 +26,17 @@ import type { SponAvailability } from "~/lib/spon-availability";
  */
 const READONLY_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
 
+/**
+ * Whether this server may write to the Google Sheets. The service account
+ * is Editor on the live run-of-show sheet, so only production writes, or a
+ * dev server started with SHEET_WRITES=1. Never under Vitest, whatever the
+ * env says: a test that needs a write mocks this function and the network.
+ */
+export function sheetWritesEnabled(): boolean {
+  if (process.env.VITEST) return false;
+  return env.NODE_ENV === "production" || env.SHEET_WRITES === "1";
+}
+
 /** Undo .env escaping: surrounding quotes and literal "\n" line breaks. */
 function normalizePrivateKey(raw: string | undefined): string | undefined {
   return raw
@@ -189,7 +200,8 @@ export function createCachedLoader<T>(
   let inFlight: Promise<T> | null = null;
   return {
     get() {
-      if (cached && now() < cached.expiresAt) return Promise.resolve(cached.value);
+      if (cached && now() < cached.expiresAt)
+        return Promise.resolve(cached.value);
       inFlight ??= load()
         .then((value) => {
           cached = { value, expiresAt: now() + ttlMs };

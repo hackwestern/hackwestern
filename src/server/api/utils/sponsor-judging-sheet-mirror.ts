@@ -6,8 +6,11 @@ import { formatPresentationTime, slotsKey } from "~/lib/sponsor-presentations";
 import { prizeTrackOf } from "~/lib/sponsor-prize-tracks";
 import {
   googleBookingsSheet,
+  SHEET_WRITES_DISABLED,
   type BookingsSheet,
+  type MirrorResult,
 } from "~/server/api/utils/coffee-chat-sheet-mirror";
+import { sheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
 import { membersByTeam } from "~/server/api/utils/sponsor-judging-teams";
 import { db } from "~/server/db";
@@ -29,7 +32,8 @@ import {
  * notified, top 5 submitted) and by the organizer "Sync to sheet" button.
  * Same pattern as the coffee chat mirror: its own tab (created if
  * missing), the spreadsheets write scope, writes one at a time, and a
- * failure is logged once and never blocks the action.
+ * failure is logged once and never blocks the action. Outside production
+ * (unless SHEET_WRITES=1) and in tests nothing is written.
  *
  * Three tables, top to bottom, a blank row between them:
  *   1. Tracks: one row per prize track sponsor.
@@ -329,17 +333,25 @@ export async function loadJudgingSheetInput(
   };
 }
 
-/** Rewrite the tab from `input`. Throws on any Sheets error. */
+/**
+ * Rewrite the tab from `input`. Throws on any Sheets error. Stops between
+ * steps once `isCurrent` says a newer run has started, so a run that timed
+ * out can't overwrite or clear what the newer run wrote.
+ */
 export async function writeJudgingSheet(
   sheet: BookingsSheet,
   input: JudgingSheetInput,
+  isCurrent: () => boolean = () => true,
 ): Promise<number> {
   const rows = judgingSheetRows(input);
   if (!(await sheet.tabTitles()).includes(JUDGING_TAB)) {
+    if (!isCurrent()) return rows.length;
     await sheet.addTab(JUDGING_TAB);
   }
+  if (!isCurrent()) return rows.length;
   const tab = `'${JUDGING_TAB}'`;
   await sheet.write(`${tab}!A1`, rows);
+  if (!isCurrent()) return rows.length;
   // Rows left over from a longer earlier write.
   await sheet.clear(`${tab}!A${rows.length + 1}:Z`);
   return rows.length;
@@ -350,18 +362,20 @@ export const MIRROR_TIMEOUT_MS = 5000;
 /** Longest a judging action waits on the mirror before responding. */
 export const MIRROR_WAIT_MS = 2500;
 
-export type MirrorResult =
-  | { ok: true; rows: number }
-  | { ok: false; error: string };
+export type { MirrorResult };
 
 let lastLoggedError: string | null = null;
 let queue: Promise<unknown> = Promise.resolve();
+/** Bumped as each run starts; an older run stops writing once it changes. */
+let generation = 0;
 
 /**
  * Mirror judging to the sheet. Writes run one at a time (each reads the DB
  * fresh, so the last one wins with the latest state). Never rejects: a
  * failure is logged, once until it changes or a write succeeds, and
- * returned for the organizer "Sync to sheet" button.
+ * returned for the organizer "Sync to sheet" button. With sheet writes off
+ * (sheetWritesEnabled) nothing is written and it returns
+ * `{ ok: false, error: "disabled" }`, logged once.
  */
 export function mirrorSponsorJudging(
   deps: {
@@ -370,12 +384,25 @@ export function mirrorSponsorJudging(
   } = {},
 ): Promise<MirrorResult> {
   const run = async (): Promise<MirrorResult> => {
+    if (!sheetWritesEnabled()) {
+      if (lastLoggedError !== SHEET_WRITES_DISABLED) {
+        lastLoggedError = SHEET_WRITES_DISABLED;
+        console.warn(
+          "sponsor judging sheet mirror: sheet writes are off outside production (set SHEET_WRITES=1 to write)",
+        );
+      }
+      return { ok: false, error: SHEET_WRITES_DISABLED };
+    }
+    const gen = ++generation;
+    const isCurrent = () => gen === generation;
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const write = (async () => {
         const input = await (deps.load ?? loadJudgingSheetInput)();
+        if (!isCurrent()) return 0;
         const sheet = await (deps.sheet ?? googleBookingsSheet)();
-        return writeJudgingSheet(sheet, input);
+        if (!isCurrent()) return 0;
+        return writeJudgingSheet(sheet, input, isCurrent);
       })();
       // A hung Google call must not stall every later write in the queue.
       const timeout = new Promise<never>((_, reject) => {

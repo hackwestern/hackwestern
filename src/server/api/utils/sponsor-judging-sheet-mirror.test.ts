@@ -5,6 +5,7 @@ import type { BookingsSheet } from "~/server/api/utils/coffee-chat-sheet-mirror"
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
 import {
   JUDGING_TAB,
+  MIRROR_TIMEOUT_MS,
   judgingSheetRows,
   loadJudgingSheetInput,
   mirrorSponsorJudging,
@@ -36,6 +37,15 @@ vi.mock("googleapis", () => ({
       },
     },
   },
+}));
+// Writes are off under Vitest; these tests use a fake sheet, so they turn
+// them on (and off for the disabled test).
+const writes = vi.hoisted(() => ({ enabled: true }));
+vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("~/server/api/utils/run-of-show-sheet")
+  >()),
+  sheetWritesEnabled: () => writes.enabled,
 }));
 // Rooms are read from the sheets: mocked.
 vi.mock("~/server/api/utils/sponsor-judging-board", () => ({
@@ -271,7 +281,68 @@ describe("writeJudgingSheet", () => {
 });
 
 describe("mirrorSponsorJudging", () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+    writes.enabled = true;
+  });
+
+  test("with sheet writes off nothing is written; logged once", async () => {
+    const log = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    writes.enabled = false;
+    const { sheet, ranges } = fakeSheet();
+    const deps = { sheet: async () => sheet, load: async () => fixture };
+    await expect(mirrorSponsorJudging(deps)).resolves.toEqual({
+      ok: false,
+      error: "disabled",
+    });
+    await mirrorSponsorJudging(deps);
+    expect(ranges).toEqual([]);
+    expect(
+      log.mock.calls.filter((args) =>
+        String(args[0]).includes("sheet writes are off"),
+      ),
+    ).toHaveLength(1);
+  });
+
+  test("a run that timed out never clears after a newer run", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const steps: string[] = [];
+    let release!: () => void;
+    const slow: BookingsSheet = {
+      tabTitles: async () => [JUDGING_TAB],
+      addTab: async () => undefined,
+      write: () =>
+        new Promise<void>((resolve) => {
+          steps.push("old write");
+          release = resolve;
+        }),
+      clear: async () => {
+        steps.push("old clear");
+      },
+    };
+    const fast: BookingsSheet = {
+      tabTitles: async () => [JUDGING_TAB],
+      addTab: async () => undefined,
+      write: async () => {
+        steps.push("new write");
+      },
+      clear: async () => {
+        steps.push("new clear");
+      },
+    };
+    const load = async () => fixture;
+    const old = mirrorSponsorJudging({ sheet: async () => slow, load });
+    const newer = mirrorSponsorJudging({ sheet: async () => fast, load });
+    await vi.advanceTimersByTimeAsync(MIRROR_TIMEOUT_MS);
+    await expect(old).resolves.toMatchObject({ ok: false });
+    await expect(newer).resolves.toMatchObject({ ok: true });
+    // The old write lands late: it must not clear the newer rows.
+    release();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(steps).toEqual(["old write", "new write", "new clear"]);
+  });
 
   test("a sheet failure is returned, logged once, and never thrown", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);

@@ -1,7 +1,12 @@
-import { eq, sql } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import { eq, isNotNull, sql } from "drizzle-orm";
 
+import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
 import { db } from "~/server/db";
-import { sponsorJudgingSettings } from "~/server/db/schema";
+import {
+  sponsorJudgingSettings,
+  sponsorPresentations,
+} from "~/server/db/schema";
 
 /**
  * Sunday judging switches (one row, id 1; no row = everything closed).
@@ -20,9 +25,24 @@ export async function round2OpenedAt(): Promise<Date | null> {
 
 /**
  * Open or close round 2. Opening an open round keeps its first opened
- * time; closing clears it. Returns the stored value.
+ * time; closing clears it. Returns the stored value. Opening needs a
+ * schedule with at least one placed slot (BAD_REQUEST otherwise): round 2
+ * ranks teams that presented, so with nothing scheduled nobody could rank.
+ * The organizer button is disabled in the same case.
  */
 export async function setRound2Open(open: boolean): Promise<Date | null> {
+  if (open) {
+    const placed = await db.query.sponsorPresentations.findFirst({
+      where: isNotNull(sponsorPresentations.startMinute),
+      columns: { teamId: true },
+    });
+    if (!placed) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: sponsorPresentationsCopy.errors.round2NoSchedule,
+      });
+    }
+  }
   const now = new Date();
   const [row] = await db
     .insert(sponsorJudgingSettings)

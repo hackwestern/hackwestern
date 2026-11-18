@@ -17,6 +17,10 @@ import {
 } from "~/server/db/schema";
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
 import {
+  round2OpenedAt,
+  setRound2Open,
+} from "~/server/api/utils/sponsor-judging-settings";
+import {
   mirrorSponsorJudging,
   mirrorSponsorJudgingSoon,
 } from "~/server/api/utils/sponsor-judging-sheet-mirror";
@@ -243,8 +247,14 @@ describe("sponsorPresentations.syncSheet", () => {
     mirror.mockResolvedValueOnce({ ok: false, error: "no permission" });
     await expect(organizer.sponsorPresentations.syncSheet()).resolves.toEqual({
       ok: false,
+      disabled: false,
       error: "no permission",
     });
+    // Writes off (dev, tests): the button says so instead of an error.
+    mirror.mockResolvedValueOnce({ ok: false, error: "disabled" });
+    await expect(
+      organizer.sponsorPresentations.syncSheet(),
+    ).resolves.toMatchObject({ ok: false, disabled: true });
   });
 
   test("scheduling and notifying rewrite the tab; a dry run doesn't", async () => {
@@ -549,7 +559,11 @@ describe("sponsorPresentations.setRound2", () => {
     await organizer.sponsorPresentations.setRound2({ open: false });
     await expect(
       organizer.sponsorPresentations.setRound2({ open: true }),
-    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message:
+        "Schedule presentations before opening round 2. No team has a presentation slot yet.",
+    });
     expect(
       (await organizer.sponsorPresentations.overview()).round2OpenedAt,
     ).toBeNull();
@@ -572,6 +586,29 @@ describe("sponsorPresentations.setRound2", () => {
     expect(
       (await organizer.sponsorPresentations.overview()).round2OpenedAt,
     ).toBeNull();
+  });
+});
+
+describe("setRound2Open (the shared guard)", () => {
+  test("refuses to open with nothing scheduled, or only unplaced teams", async () => {
+    const message =
+      "Schedule presentations before opening round 2. No team has a presentation slot yet.";
+    await expect(setRound2Open(true)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message,
+    });
+    // A schedule where nothing fit (no room) still has no slot.
+    const s = await sponsor();
+    await db.insert(sponsorPresentations).values({
+      sponsorId: s.id,
+      teamId: await team(),
+      room: null,
+      startMinute: null,
+    });
+    await expect(setRound2Open(true)).rejects.toMatchObject({ message });
+    expect(await round2OpenedAt()).toBeNull();
+    // Closing always works.
+    await expect(setRound2Open(false)).resolves.toBeNull();
   });
 });
 
