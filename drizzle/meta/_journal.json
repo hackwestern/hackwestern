@@ -281,6 +281,13 @@
       "when": 1794977231031,
       "tag": "0039_judging_engine",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1795019846367,
+      "tag": "0040_scavenger_item_status_name",
+      "breakpoints": true
     }
   ]
 }
