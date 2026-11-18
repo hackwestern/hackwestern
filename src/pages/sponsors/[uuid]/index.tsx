@@ -116,7 +116,8 @@ export default function SponsorHubPage() {
         {/* Welcome */}
         <section
           data-tour="welcome"
-          className="flex flex-col gap-2 rounded-dashboard-2xl bg-dashboard-action-primary p-5 text-dashboard-text-inverse shadow-dashboard-card sm:p-7">
+          className="flex flex-col gap-2 rounded-dashboard-2xl bg-dashboard-action-primary p-5 text-dashboard-text-inverse shadow-dashboard-card sm:p-7"
+        >
           {/* The sponsor's own logo, on white so any logo colour reads on
               the blue card (Jazz, 2026-11-18). */}
           {logo && (

@@ -285,3 +285,27 @@ export function placeCallout(
     placement: side,
   };
 }
+
+// ------------------------------------------------------------
+// Click targets
+// ------------------------------------------------------------
+
+/** What a tour target can be clicked through: a link, button or tab. */
+export const CLICKABLE_SELECTOR =
+  'a[href], button, [role="tab"], input, select, textarea';
+
+interface ClickableLike {
+  matches(selector: string): boolean;
+  querySelector(selector: string): ClickableLike | null;
+}
+
+/**
+ * The element "Next" clicks on a waitForClick step: the target itself when
+ * it's a link or button, else its first link or button inside. A `data-tour`
+ * on a wrapper (the Scan a badge `<li>`) still opens the link, so keyboard
+ * users get the same result as tapping.
+ */
+export function clickTargetOf<T extends ClickableLike>(el: T): T {
+  if (el.matches(CLICKABLE_SELECTOR)) return el;
+  return (el.querySelector(CLICKABLE_SELECTOR) as T | null) ?? el;
+}

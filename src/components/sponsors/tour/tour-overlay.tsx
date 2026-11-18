@@ -31,6 +31,11 @@ function useMediaQuery(query: string) {
   return matches;
 }
 
+/** Inside a dialog other than the tour's own callout (e.g. the map). */
+function insideOtherDialog(el: Element): boolean {
+  return !!el.closest('[role="dialog"]:not([data-tour-callout])');
+}
+
 const sameRect = (a: Rect | null, b: Rect | null) =>
   a === b ||
   (!!a &&
@@ -135,12 +140,16 @@ export function TourOverlay({
     return () => cancelAnimationFrame(id);
   }, [index, total, step.title, step.body]);
 
-  // Escape closes the tour wherever focus is (the target, the callout).
+  // Escape closes the innermost thing only: when focus is inside another
+  // dialog (the venue map, even with the tour drawn inside it), that dialog
+  // closes first and the next Escape closes the tour.
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeRef.current();
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (e.target instanceof Element && insideOtherDialog(e.target)) return;
+      closeRef.current();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -236,6 +245,7 @@ export function TourOverlay({
 
       <div
         ref={calloutRef}
+        data-tour-callout=""
         role="dialog"
         aria-modal="false"
         aria-labelledby={titleId}

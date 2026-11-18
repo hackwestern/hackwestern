@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  clickTargetOf,
   hasSeenWelcome,
   hrefForMove,
   loadProgress,
@@ -249,5 +250,45 @@ describe("SPONSOR_TOURS", () => {
     for (const step of SPONSOR_TOURS.welcome.steps) {
       expect(["home", "any"]).toContain(step.page);
     }
+  });
+});
+
+describe("clickTargetOf", () => {
+  // A tiny stand-in for DOM elements: a tag and children, matched by tag.
+  interface Fake {
+    tag: string;
+    children: Fake[];
+    matches(selector: string): boolean;
+    querySelector(selector: string): Fake | null;
+  }
+  const clickable = new Set(["a", "button"]);
+  const node = (tag: string, children: Fake[] = []): Fake => ({
+    tag,
+    children,
+    matches: () => clickable.has(tag),
+    querySelector(selector) {
+      for (const c of children) {
+        if (c.matches(selector)) return c;
+        const deep = c.querySelector(selector);
+        if (deep) return deep;
+      }
+      return null;
+    },
+  });
+
+  it("clicks a link or button target itself", () => {
+    const button = node("button");
+    expect(clickTargetOf(button)).toBe(button);
+  });
+
+  it("clicks the first link inside a wrapper target", () => {
+    const link = node("a");
+    const li = node("li", [node("span"), node("div", [link]), node("button")]);
+    expect(clickTargetOf(li)).toBe(link);
+  });
+
+  it("falls back to the target when nothing inside is clickable", () => {
+    const section = node("section", [node("p")]);
+    expect(clickTargetOf(section)).toBe(section);
   });
 });
