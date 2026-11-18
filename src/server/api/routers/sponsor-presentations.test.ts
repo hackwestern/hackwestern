@@ -9,6 +9,7 @@ import { mockOrganizerSession, mockSession } from "~/server/auth";
 import { db } from "~/server/db";
 import {
   sponsorJudgingSponsors,
+  sponsorPresentationNotices,
   sponsorPresentations,
   sponsorShortlistSends,
   teams,
@@ -50,6 +51,7 @@ beforeEach(async () => {
   slackToken = undefined;
   rooms.mockReset().mockResolvedValue(new Map());
   dm.mockReset().mockResolvedValue("sent");
+  await db.delete(sponsorPresentationNotices);
   await db.delete(sponsorPresentations);
   await db.delete(sponsorShortlistSends);
   organizer = createCaller(
@@ -79,6 +81,26 @@ async function team() {
 
 async function send(sponsorId: string, teamIds: string[]) {
   await db.insert(sponsorShortlistSends).values({ sponsorId, teamIds });
+}
+
+/** A signed-in hacker on `teamId`, with their caller. */
+async function member(teamId: string) {
+  const session = await mockSession(db);
+  await db.update(users).set({ teamId }).where(eq(users.id, session.user.id));
+  return {
+    session,
+    caller: createCaller(createInnerTRPCContext({ session })),
+  };
+}
+
+/** One sponsor in `room` with one shortlisted team, scheduled. */
+async function scheduledTeam(room = "Rm 2110") {
+  const s = await sponsor();
+  const t = await team();
+  await send(s.id, [t]);
+  rooms.mockResolvedValue(new Map([[s.id, room]]));
+  await organizer.sponsorPresentations.schedule();
+  return { s, t };
 }
 
 describe("sponsorPresentations.schedule", () => {
@@ -187,7 +209,12 @@ describe("sponsorPresentations.notify", () => {
       { sponsorName: s.name, room: "Rm 2235", start: 600 },
     ]);
     const view = await organizer.sponsorPresentations.overview();
-    expect(view.notifiedAt).not.toBeNull();
+    expect(view.notices).toMatchObject({
+      members: 1,
+      reached: 1,
+      notReached: [],
+    });
+    expect(view.notices.lastSentAt).not.toBeNull();
   });
 
   test("lists members not on Slack and doesn't mark their team", async () => {
@@ -207,9 +234,147 @@ describe("sponsorPresentations.notify", () => {
     const res = await organizer.sponsorPresentations.notify();
     expect(res.sent).toBe(0);
     expect(res.notOnSlack).toHaveLength(1);
-    expect((await organizer.sponsorPresentations.overview()).notifiedAt).toBe(
-      null,
+    const { notices } = await organizer.sponsorPresentations.overview();
+    expect(notices.reached).toBe(0);
+    expect(notices.notReached).toEqual([
+      expect.objectContaining({
+        userId: member.user.id,
+        reason: "not-on-slack",
+      }),
+    ]);
+  });
+
+  test("a second notify sends nothing; resend sends everyone again", async () => {
+    slackToken = "xoxb-test";
+    const { t } = await scheduledTeam();
+    await member(t);
+    await member(t);
+
+    expect(await organizer.sponsorPresentations.notify()).toMatchObject({
+      sent: 2,
+      skipped: 0,
+    });
+    expect(await organizer.sponsorPresentations.notify()).toMatchObject({
+      sent: 0,
+      skipped: 2,
+    });
+    expect(dm).toHaveBeenCalledTimes(2);
+
+    expect(
+      await organizer.sponsorPresentations.notify({ resend: true }),
+    ).toMatchObject({ sent: 2, skipped: 0 });
+    expect(dm).toHaveBeenCalledTimes(4);
+  });
+
+  test("a double click DMs each member once", async () => {
+    slackToken = "xoxb-test";
+    const { t } = await scheduledTeam();
+    await member(t);
+    dm.mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve("sent"), 50)),
     );
+    const [a, b] = await Promise.all([
+      organizer.sponsorPresentations.notify(),
+      organizer.sponsorPresentations.notify(),
+    ]);
+    expect(a.sent + b.sent).toBe(1);
+    expect(dm).toHaveBeenCalledTimes(1);
+  });
+
+  test("a retry targets only members not reached", async () => {
+    slackToken = "xoxb-test";
+    const { t } = await scheduledTeam();
+    const ok = await member(t);
+    const missing = await member(t);
+    const flaky = await member(t);
+    dm.mockImplementation(async (_token, m) =>
+      m.email === missing.session.user.email
+        ? "not-found"
+        : m.email === flaky.session.user.email
+          ? "failed"
+          : "sent",
+    );
+    expect(await organizer.sponsorPresentations.notify()).toMatchObject({
+      sent: 1,
+      failed: 1,
+      notOnSlack: [expect.any(String)],
+    });
+    // One member reached: the team's times are on /live for everyone.
+    expect(await flaky.caller.sponsorPresentations.mine()).toHaveLength(1);
+    const { notices } = await organizer.sponsorPresentations.overview();
+    expect(notices.reached).toBe(1);
+    expect(
+      Object.fromEntries(notices.notReached.map((m) => [m.userId, m.reason])),
+    ).toEqual({
+      [missing.session.user.id]: "not-on-slack",
+      [flaky.session.user.id]: "failed",
+    });
+
+    dm.mockClear();
+    dm.mockResolvedValue("sent");
+    expect(await organizer.sponsorPresentations.notify()).toMatchObject({
+      sent: 2,
+      skipped: 1,
+    });
+    const retried = dm.mock.calls.map((c) => c[1].email);
+    expect(retried).not.toContain(ok.session.user.email);
+    expect(retried).toHaveLength(2);
+  });
+});
+
+describe("sponsorPresentations.schedule and notices", () => {
+  test("rescheduling keeps members notified when their times don't change", async () => {
+    slackToken = "xoxb-test";
+    const { s, t } = await scheduledTeam("Rm 2110");
+    const hacker = await member(t);
+    await organizer.sponsorPresentations.notify();
+
+    // Same input: same times, nothing to tell anyone.
+    expect(
+      await organizer.sponsorPresentations.schedule({ dryRun: true }),
+    ).toMatchObject({ changedTimes: 0 });
+    await organizer.sponsorPresentations.schedule();
+    expect(await hacker.caller.sponsorPresentations.mine()).toHaveLength(1);
+    expect(await organizer.sponsorPresentations.notify()).toMatchObject({
+      sent: 0,
+      skipped: 1,
+    });
+
+    // New room: the confirm step counts them, a dry run changes nothing.
+    rooms.mockResolvedValue(new Map([[s.id, "Rm 3000"]]));
+    expect(
+      await organizer.sponsorPresentations.schedule({ dryRun: true }),
+    ).toMatchObject({ changedTimes: 1 });
+    expect(await hacker.caller.sponsorPresentations.mine()).toEqual([
+      expect.objectContaining({ room: "Rm 2110" }),
+    ]);
+
+    // Stored: /live hides the new times until they're sent.
+    await organizer.sponsorPresentations.schedule();
+    expect(await hacker.caller.sponsorPresentations.mine()).toEqual([]);
+    const { notices } = await organizer.sponsorPresentations.overview();
+    expect(notices.notReached).toEqual([
+      expect.objectContaining({ reason: "not-sent" }),
+    ]);
+    expect(await organizer.sponsorPresentations.notify()).toMatchObject({
+      sent: 1,
+    });
+    expect(await hacker.caller.sponsorPresentations.mine()).toEqual([
+      expect.objectContaining({ room: "Rm 3000" }),
+    ]);
+  });
+
+  test("clamps a long sheet room to the column instead of failing", async () => {
+    const s = await sponsor();
+    const t = await team();
+    await send(s.id, [t]);
+    rooms.mockResolvedValue(new Map([[s.id, `  ${"Room ".repeat(30)}  `]]));
+    await expect(
+      organizer.sponsorPresentations.schedule(),
+    ).resolves.toMatchObject({ placed: 1 });
+    const [row] = await db.select().from(sponsorPresentations);
+    expect(row!.room!.length).toBeLessThanOrEqual(64);
+    expect(row!.room!.startsWith("Room Room")).toBe(true);
   });
 });
 
