@@ -140,7 +140,9 @@ export default function SponsorSchedulePage() {
         sponsorName={data.sponsorName}
       />
       <NextEventCard event={nextEvent} sponsor={id} />
-      <SponsorHelp sponsor={id} />
+      {/* Your workshops first, ahead of the schedule; Need help sits under
+          the schedule (Jazz, 2026-11-18). */}
+      <WorkshopDetails workshops={data.workshops} />
       {shownDay === "Saturday" && (
         <>
           <CoffeeChatSummary setup={data.coffeeChat} />
@@ -184,7 +186,7 @@ export default function SponsorSchedulePage() {
         sponsorName={data.sponsorName}
         workshops={data.workshops}
       />
-      <WorkshopDetails workshops={data.workshops} />
+      <SponsorHelp sponsor={id} />
       <ReadAt iso={data.readAt} />
     </>,
   );
