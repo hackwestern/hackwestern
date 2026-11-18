@@ -60,7 +60,7 @@ const task = (
 const span = (start: number, end: number) => ({ start, end });
 
 describe("buildOrganizerTimeline", () => {
-  it("shows every run-of-show item full strength and only new /live events", () => {
+  it("shows run-of-show items full strength, Main events muted with new /live events", () => {
     const entries = buildOrganizerTimeline({
       day: "Saturday",
       items,
@@ -68,10 +68,31 @@ describe("buildOrganizerTimeline", () => {
       showHackathon: true,
     });
     expect(entries.map((e) => [e.title, e.kind])).toEqual([
-      ["Opening Ceremony!", "yours"],
+      ["Opening Ceremony!", "hackathon"],
       ["Intro to Git", "hackathon"],
       ["Scotiabank Workshop", "yours"],
     ]);
+    // The sheet's copy of the opening is kept (it has the details).
+    expect(entries[0]?.item).toBeDefined();
+  });
+
+  it("puts Main event items and /live events in one Hackathon events column", () => {
+    const columns = layoutGrid(
+      buildOrganizerTimeline({
+        day: "Saturday",
+        items,
+        live,
+        showHackathon: true,
+      }),
+    );
+    const hackathon = columns.find((c) => c.column === "hackathon");
+    expect(hackathon?.entries.map((e) => e.title)).toEqual([
+      "Opening Ceremony!",
+      "Intro to Git",
+    ]);
+    expect(columns.some((c) => (c.column as string) === "big-event")).toBe(
+      false,
+    );
   });
 
   it("drops /live events when hidden", () => {
@@ -82,6 +103,11 @@ describe("buildOrganizerTimeline", () => {
       showHackathon: false,
     });
     expect(entries.every((e) => e.kind === "yours")).toBe(true);
+    // Main events go too, so the Hackathon events column disappears.
+    expect(entries.some((e) => e.title === "Opening Ceremony!")).toBe(false);
+    expect(layoutGrid(entries).some((c) => c.column === "hackathon")).toBe(
+      false,
+    );
   });
 });
 
