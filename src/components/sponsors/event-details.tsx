@@ -1,5 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { Clock, MapPin, User, Users, X } from "lucide-react";
+import { coffeeChatCopy } from "~/content/coffee-chat";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import {
   formatClock,
@@ -98,7 +99,10 @@ function Body({
 }) {
   const date = Number(RUN_OF_SHOW_DATES[day].slice(8));
   const isTask = entry.kind === "task";
-  const sponsors = entry.item?.sponsors ?? [];
+  const booking = entry.booking ?? null;
+  const sponsors = booking
+    ? [booking.sponsorName]
+    : (entry.item?.sponsors ?? []);
   const mine =
     mode === "sponsor" && !!sponsorName && sponsors.includes(sponsorName);
   const location = entry.location
@@ -106,9 +110,12 @@ function Body({
       ? locationFor(entry.location, sponsorName)
       : entry.location
     : null;
-  const workshop = isTask ? null : workshopForEntry(entry, day, workshops);
+  const workshop =
+    isTask || booking ? null : workshopForEntry(entry, day, workshops);
   const during =
-    mode === "organizer" && !isTask ? tasksInEntry(entry, day, tasks) : [];
+    mode === "organizer" && !isTask && !booking
+      ? tasksInEntry(entry, day, tasks)
+      : [];
   const happening = isTask ? entriesAt(entry.start, entries) : [];
   const owner = entry.task?.owner ?? null;
 
@@ -123,7 +130,11 @@ function Body({
             {entry.title}
           </Dialog.Title>
           <Dialog.Description className="sr-only">
-            {isTask ? details.taskDescription : details.description}
+            {isTask
+              ? details.taskDescription
+              : booking
+                ? copy.booking.description
+                : details.description}
           </Dialog.Description>
         </div>
         <Dialog.Close
@@ -196,13 +207,37 @@ function Body({
         </section>
       )}
 
-      {entry.kind === "hackathon" && (
+      {/* Sheet Main event items are hackathon-wide too, but not from /live. */}
+      {entry.kind === "hackathon" && !entry.item && (
         <p className="m-0 text-sm text-dashboard-text-light">
           {details.hackathonNote}
         </p>
       )}
 
-      {mode === "organizer" && !isTask && (
+      {booking && (
+        <ListSection heading={copy.booking.who} empty={details.noTasks}>
+          {booking.chats.map((c) => (
+            <li
+              key={c.chatId}
+              className="flex flex-wrap items-baseline justify-between gap-2"
+            >
+              <span className="break-words">{c.hacker}</span>
+              <span className="text-sm text-dashboard-text-light">
+                {coffeeChatCopy.organizer.status[
+                  c.status as keyof typeof coffeeChatCopy.organizer.status
+                ] ?? c.status}
+              </span>
+            </li>
+          ))}
+        </ListSection>
+      )}
+      {booking && (
+        <p className="m-0 text-sm text-dashboard-text-light">
+          {copy.booking.liveNote}
+        </p>
+      )}
+
+      {mode === "organizer" && !isTask && !booking && (
         <ListSection heading={details.tasks} empty={details.noTasks}>
           {during.map((t, i) => (
             <li key={`${t.start}-${i}`} className="flex flex-col gap-0.5">

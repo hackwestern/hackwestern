@@ -41,7 +41,7 @@ export type TimelineEntry = {
    * "task": a team task (organizer view only).
    */
   kind: "yours" | "hackathon" | "task";
-  category: RunOfShowColumn | LiveCategory | "task";
+  category: RunOfShowColumn | LiveCategory | "task" | "coffee-chat";
   title: string;
   location: string | null;
   /** Minutes after the day's midnight (Eastern). Past 1440 = after midnight. */
@@ -51,6 +51,17 @@ export type TimelineEntry = {
   item?: RunOfShowItem;
   /** The team task behind a "task" entry (organizer view only). */
   task?: RunOfShowTask;
+  /** Booked coffee chats behind a "coffee-chat" entry (from the DB). */
+  booking?: CoffeeChatBooking;
+};
+
+/** One sponsor's booked coffee chats at one start, in one room. */
+export type CoffeeChatBooking = {
+  sponsorName: string;
+  /** Normalized room, or null while unassigned. */
+  room: string | null;
+  slotTime: string;
+  chats: { chatId: string; hacker: string; status: string }[];
 };
 
 /** Run-of-show columns every sponsor gets whoever they are. */
@@ -312,23 +323,32 @@ export function axisOffset(
 }
 
 /**
- * The day grid's columns: the run-of-show sheet's categories in its order,
- * plus "other" for hackathon-only activities (/live's activities, scavenger
- * hunt and other columns) that have no run-of-show column.
+ * The day grid's columns, in order. "hackathon" holds every hackathon-wide
+ * event: the sheet's Main event items plus the /live schedule, muted.
+ * "coffee-chats" holds the sheet's coffee chat items and booked chats (one
+ * block per booking, room in the block); "judging" holds sponsor judging.
  */
 export const GRID_COLUMNS = [
-  "big-event",
+  "hackathon",
   "sponsor-workshop",
   "food",
   "spon-booth",
   "coffee-chats",
+  "judging",
   "other",
   "tasks",
 ] as const;
 export type GridColumn = (typeof GRID_COLUMNS)[number];
 
+/** Columns shown even when empty. */
+const ALWAYS_SHOWN = new Set<GridColumn>([
+  "sponsor-workshop",
+  "spon-booth",
+  "coffee-chats",
+]);
+
 const LIVE_TO_GRID: Record<LiveCategory, GridColumn> = {
-  main: "big-event",
+  main: "hackathon",
   sponsor: "sponsor-workshop",
   workshop: "sponsor-workshop",
   food: "food",
@@ -338,18 +358,39 @@ const LIVE_TO_GRID: Record<LiveCategory, GridColumn> = {
   other: "other",
 };
 
+/**
+ * Sponsor judging on the run of show ("Sponsor Track Judging"), not the
+ * workshop about it ("Sponsor Judging Workshop").
+ */
+export function isJudgingTitle(title: string): boolean {
+  return /\bjudg/i.test(title) && !/workshop|info\s*session/i.test(title);
+}
+
 export function gridColumnOf(
-  entry: Pick<TimelineEntry, "category">,
+  entry: Pick<TimelineEntry, "category" | "kind" | "title"> & {
+    item?: unknown;
+  },
 ): GridColumn {
   if (entry.category === "task") return "tasks";
+  if (entry.category === "coffee-chat") return "coffee-chats";
+  // Hackathon-wide: everything muted, and the sheet's Main event column.
+  if (
+    entry.kind === "hackathon" ||
+    entry.category === "big-event" ||
+    entry.category === "main"
+  ) {
+    return "hackathon";
+  }
+  if (entry.item && isJudgingTitle(entry.title)) return "judging";
   return (GRID_COLUMNS as readonly string[]).includes(entry.category)
     ? (entry.category as GridColumn)
-    : LIVE_TO_GRID[entry.category as LiveCategory];
+    : (LIVE_TO_GRID[entry.category as LiveCategory] ?? "other");
 }
 
 /**
- * Entries per grid column, each column laid out in its own lanes. The
- * "other" column is left out when it has nothing in it.
+ * Entries per grid column, each column laid out in its own lanes. Columns
+ * other than Workshops, Sponsor Bay and Coffee chats are left out when
+ * empty (so hiding hackathon events hides their column).
  */
 export function layoutGrid(
   entries: readonly TimelineEntry[],
@@ -361,16 +402,15 @@ export function layoutGrid(
         .filter((e) => gridColumnOf(e) === column)
         .sort((a, b) => a.start - b.start),
     ),
-  })).filter(
-    (c) =>
-      (c.column !== "other" && c.column !== "tasks") || c.entries.length > 0,
-  );
+  })).filter((c) => ALWAYS_SHOWN.has(c.column) || c.entries.length > 0);
 }
 
 /**
  * One day of the organizer run of show: every run-of-show item at full
- * strength, plus (when shown) the /live events that aren't already on the
- * run of show, muted like the sponsor view.
+ * strength except Main event items, which are hackathon-wide and shown
+ * muted with the /live events. When hackathon events are shown, /live
+ * events already on the run of show are left out (shown once); when
+ * hidden, Main event items go too.
  */
 export function buildOrganizerTimeline({
   day,
@@ -383,13 +423,21 @@ export function buildOrganizerTimeline({
   live: readonly DaySchedule[] | undefined;
   showHackathon: boolean;
 }): TimelineEntry[] {
-  const runOfShow = items
-    .filter((i) => i.day === day)
+  const today = items.filter((i) => i.day === day);
+  const runOfShow = today
+    .filter((i) => i.column !== "big-event")
     .map((i) => fromRunOfShow(i, "yours"));
+  const mainEvents = today
+    .filter((i) => i.column === "big-event")
+    .map((i) => fromRunOfShow(i, "hackathon"));
+  const sheet = [...runOfShow, ...mainEvents];
   const hackathon = showHackathon
-    ? liveDayEntries(live?.find((d) => d.day === day)).filter(
-        (e) => !runOfShow.some((r) => isSameEvent(r, e)),
-      )
+    ? [
+        ...mainEvents,
+        ...liveDayEntries(live?.find((d) => d.day === day)).filter(
+          (e) => !sheet.some((r) => isSameEvent(r, e)),
+        ),
+      ]
     : [];
   return [...runOfShow, ...hackathon].sort(
     (a, b) =>

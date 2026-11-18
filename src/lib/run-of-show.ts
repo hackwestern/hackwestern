@@ -179,3 +179,20 @@ export function locationFor(location: string, sponsor: string): string {
   }
   return location;
 }
+
+/**
+ * What one sponsor may see of a location. A per-sponsor list ("Scotiabank:
+ * Rm 2110, Canada Life: Rm 2230", two or more "name: room" parts) becomes
+ * that sponsor's room only, or null when they aren't in it, so another
+ * sponsor's room never reaches them. Anything else is returned as is.
+ */
+export function ownLocation(location: string, sponsor: string): string | null {
+  const parts = location
+    .split(/[,\n]/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const labelled = parts.filter((p) => /^[^:]+:\s*\S/.test(p));
+  if (labelled.length < 2) return location;
+  const own = locationFor(location, sponsor);
+  return own === location ? null : own;
+}
