@@ -107,12 +107,14 @@
       ]
     },
     {
-      "auth": "none-detected",
+      "auth": "organizer",
       "dynamic": false,
       "file": "src/pages/internal/index.tsx",
       "hasGetServerSideProps": true,
       "route": "/internal",
-      "serverGuards": []
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
     },
     {
       "auth": "none-detected",
