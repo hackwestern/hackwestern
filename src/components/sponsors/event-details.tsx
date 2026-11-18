@@ -53,14 +53,20 @@ export function EventDetails({
   return (
     <Dialog.Root open={entry !== null} onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 motion-reduce:animate-none" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40 duration-200 ease-out data-[state=closed]:duration-150 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 motion-reduce:animate-none" />
+        {/* Phones: a bottom sheet that slides up from the edge and back
+            down on close. Wider: a centred dialog that fades and grows
+            from 95% (centred with margins, not translate, so the
+            animation's transform doesn't knock it off centre). Enter
+            200-250ms ease-out, exit faster; reduced motion: none. */}
         <Dialog.Content
           onCloseAutoFocus={onCloseAutoFocus}
           className={cn(
-            "fixed z-50 flex max-h-[90dvh] w-full flex-col gap-5 overflow-y-auto bg-dashboard-bg-surface p-6 font-figtree font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card focus:outline-none",
+            "fixed z-50 flex max-h-[90dvh] w-full flex-col gap-5 overflow-y-auto overscroll-contain bg-dashboard-bg-surface p-6 font-figtree font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card focus:outline-none",
             "inset-x-0 bottom-0 rounded-t-dashboard-2xl pb-[max(1.5rem,env(safe-area-inset-bottom))]",
-            "data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom-4 motion-reduce:animate-none sm:data-[state=open]:fade-in-0 sm:data-[state=open]:slide-in-from-bottom-0",
-            "sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-w-[520px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-dashboard-2xl",
+            "ease-out data-[state=closed]:duration-200 data-[state=open]:duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom-full data-[state=open]:slide-in-from-bottom-full motion-reduce:animate-none",
+            "sm:inset-0 sm:m-auto sm:h-fit sm:max-w-[520px] sm:rounded-dashboard-2xl sm:pb-6",
+            "sm:data-[state=closed]:duration-150 sm:data-[state=open]:duration-200 sm:data-[state=closed]:fade-out-0 sm:data-[state=open]:fade-in-0 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:slide-out-to-bottom-0 sm:data-[state=open]:slide-in-from-bottom-0",
           )}
         >
           {entry && (
@@ -139,7 +145,7 @@ function Body({
         </div>
         <Dialog.Close
           aria-label={details.close}
-          className="-mr-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+          className="-mr-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.97] [@media(hover:hover)]:hover:bg-dashboard-bg-highlight"
         >
           <X aria-hidden className="size-5" />
         </Dialog.Close>
