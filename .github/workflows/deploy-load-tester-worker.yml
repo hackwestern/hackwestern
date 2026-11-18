@@ -1,0 +1,54 @@
+name: Deploy load-tester worker
+
+# Deploys the hw-network-requests Cloudflare Worker (request-event ingest into
+# D1) whenever it changes. main -> prod worker + D1 ("Production" GitHub
+# environment); dev -> separate hw-network-requests-dev worker + D1 ("Dev"
+# environment). Each environment needs:
+#   secrets.CLOUDFLARE_API_TOKEN               Workers Scripts:Edit + D1:Edit
+#   secrets.CLOUDFLARE_ACCOUNT_ID
+# The worker's HW_NETWORK_REQUESTS_INGEST_TOKEN secret is NOT set here. Set it
+# once per environment by hand (it persists across deploys):
+#   npx wrangler secret put HW_NETWORK_REQUESTS_INGEST_TOKEN -c workers/hw-network-requests/wrangler.toml [-e dev]
+# using the same value as in that Vercel env.
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - "workers/hw-network-requests/**"
+      - ".github/workflows/deploy-load-tester-worker.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-load-tester-worker-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # Also guards manual runs: never deploy from a feature branch.
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'Production' || 'Dev' }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # dev gets its own worker + D1 (see [env.dev] in wrangler.toml).
+      WRANGLER: npx --yes wrangler@4.163.0 -c workers/hw-network-requests/wrangler.toml ${{ github.ref_name == 'dev' && '-e dev' || '' }}
+      DB_NAME: ${{ github.ref_name == 'dev' && 'hw-network-requests-dev' || 'hw-network-requests' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Deploy worker
+        run: $WRANGLER deploy
+
+      # Runs only the migrations/*.sql files this database hasn't applied yet
+      # (tracked per database in its d1_migrations table).
+      - name: Apply D1 migrations
+        run: $WRANGLER d1 migrations apply $DB_NAME --remote

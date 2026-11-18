@@ -208,7 +208,11 @@ export const sponsorJudgingRouter = createTRPCRouter({
         sponsorTrack =
           sponsorInfoMap.get(sponsorName.toLowerCase())?.track ?? null;
       } catch (error) {
-        console.warn("Could not resolve sponsor track:", error);
+        console.error("Could not resolve sponsor track:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Couldn't load your prize track. Try again in a minute.",
+        });
       }
 
       const submittedTeams = await db
