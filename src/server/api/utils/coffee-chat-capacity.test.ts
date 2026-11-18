@@ -6,7 +6,6 @@ import {
   offerProblem,
   roomTakenByOtherSponsor,
   seatsLeft,
-  seatsUsed,
 } from "~/server/api/utils/coffee-chat-capacity";
 
 const oneOnOne = (perSlot = 1): ChatRequest => ({
@@ -26,11 +25,11 @@ const chat = (slotTime: string, durationMinutes = 15) => ({
 });
 
 describe("seats", () => {
-  test("counts chats overlapping any quarter hour of the slot", () => {
+  test("counts chats starting in the slot, like the block slots do", () => {
     const chats = [chat("10:00", 30), chat("10:30", 30)];
-    expect(seatsUsed(chats, chat("10:15", 30))).toBe(1);
-    expect(seatsUsed(chats, chat("10:00", 30))).toBe(1);
-    expect(seatsUsed([...chats, chat("10:15")], chat("10:15"))).toBe(2);
+    expect(seatsLeft(chats, chat("10:00", 30), 3)).toBe(2);
+    expect(seatsLeft(chats, chat("10:30", 30), 3)).toBe(2);
+    expect(seatsLeft(chats, chat("11:00", 30), 3)).toBe(3);
   });
 
   test("seats = hackers asked for minus booked; no room capacity", () => {

@@ -135,6 +135,7 @@ export function SponsorHolds({
                   key={slot.slotTime}
                   sponsor={sponsor}
                   slot={slot}
+                  block={h}
                   request={request}
                 />
               ))}
@@ -166,14 +167,16 @@ function useAskFewer(onDone?: () => void) {
 }
 
 // "9:00 AM · 2 of 3 booked" (+ "asked for 2"), and "Ask for fewer" for
-// this slot or its whole hour (down to 0 = no chat then).
+// this slot or its hour inside the room block (down to 0 = no chat then).
 function SlotRow({
   sponsor,
   slot,
+  block,
   request,
 }: {
   sponsor: string;
   slot: BlockSlot;
+  block: { startTime: string; endTime: string };
   request: ChatRequest;
 }) {
   const [open, setOpen] = useState(false);
@@ -182,12 +185,22 @@ function SlotRow({
   const save = useAskFewer(() => setOpen(false));
   const time = formatClock(slot.slotTime);
   const start = coffeeChatMinutesOf(slot.slotTime) ?? 0;
+  const hour = start - (start % 60);
+  // The server takes one slot, or the part of its clock hour inside the
+  // block (saveSlotLimit).
   const span =
     scope === "slot"
-      ? { startTime: slot.slotTime, endTime: coffeeChatTimeOf(start + request.durationMinutes) }
+      ? {
+          startTime: slot.slotTime,
+          endTime: coffeeChatTimeOf(start + request.durationMinutes),
+        }
       : {
-          startTime: coffeeChatTimeOf(start - (start % 60)),
-          endTime: coffeeChatTimeOf(start - (start % 60) + 60),
+          startTime: coffeeChatTimeOf(
+            Math.max(hour, coffeeChatMinutesOf(block.startTime) ?? hour),
+          ),
+          endTime: coffeeChatTimeOf(
+            Math.min(hour + 60, coffeeChatMinutesOf(block.endTime) ?? hour + 60),
+          ),
         };
   return (
     <li className="flex flex-col gap-2 text-sm">

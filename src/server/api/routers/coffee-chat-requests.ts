@@ -15,6 +15,7 @@ import { z } from "zod";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { admittedStatuses, isAdmittedStatus } from "~/lib/admission";
 import {
+  chatsInSlot,
   holdAsRoomUse,
   holdClash,
   holdCovers,
@@ -39,6 +40,7 @@ import {
   type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
 import {
+  askedAt,
   CHAT_STYLES,
   chatRequestOf,
   MAX_PER_SLOT,
@@ -480,7 +482,11 @@ async function saveHold(input: {
   }
   const forSponsor = sponsorId;
   const named = await findSponsor(db, forSponsor);
-  const { durationMinutes } = chatRequestOf(await setupFor(named.name), named);
+  const { durationMinutes } = requestWithFallback(
+    await setupOrNull(named.name),
+    named,
+    await activeChats(db, eq(coffeeChats.sponsorId, named.id), new Date()),
+  );
   const span: HoldSpan = {
     sponsorId: named.id,
     room,
@@ -693,24 +699,87 @@ export async function createCoffeeChatOffer(input: {
   }
 }
 
-/** Save a sponsor's chat request (style + hackers per slot). */
+/**
+ * The sponsor's sheet row, or null when the sheet can't be read. Writers
+ * that only need the chat length use this so a sheet outage never blocks
+ * them; the length then falls back to their booked chats', else 15 min.
+ */
+async function setupOrNull(sponsorName: string) {
+  return setupFor(sponsorName).catch(() => null);
+}
+
+/** The chat request in force, with the fallback length when needed. */
+function requestWithFallback(
+  setup: CoffeeChatSetup | null,
+  saved: { style: string | null; perSlot: number | null },
+  live: readonly { durationMinutes: number }[],
+) {
+  const request = chatRequestOf(setup, saved);
+  return setup
+    ? request
+    : { ...request, durationMinutes: live[0]?.durationMinutes ?? 15 };
+}
+
+/**
+ * Hackers booked in each of the sponsor's slots (by slot start), counted
+ * with chatsInSlot like offers and block slots.
+ */
+function bookedBySlot(
+  live: readonly { slotTime: string; durationMinutes: number }[],
+  durationMinutes: number,
+): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const t of new Set(live.map((c) => c.slotTime))) {
+    out.set(t, chatsInSlot(live, t, durationMinutes).length);
+  }
+  return out;
+}
+
+/**
+ * Save a sponsor's chat request (style + hackers per slot). Refused when it
+ * would leave a slot asking for fewer hackers than are already booked
+ * there. Lock order as everywhere: room writes, then the sponsor row.
+ */
 async function saveChatRequest(input: {
   sponsorId: string;
   style: (typeof CHAT_STYLES)[number];
   perSlot: number;
 }) {
-  const [row] = await db
-    .update(sponsorJudgingSponsors)
-    .set({ coffeeChatStyle: input.style, coffeeChatPerSlot: input.perSlot })
-    .where(eq(sponsorJudgingSponsors.id, input.sponsorId.toLowerCase()))
-    .returning({
-      style: sponsorJudgingSponsors.coffeeChatStyle,
-      perSlot: sponsorJudgingSponsors.coffeeChatPerSlot,
-    });
-  if (!row) {
-    throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownSponsor });
-  }
-  return row;
+  const now = new Date();
+  const named = await findSponsor(db, input.sponsorId);
+  const setup = await setupOrNull(named.name);
+  return db.transaction(async (tx) => {
+    await lockRoomWrites(tx);
+    const sponsor = await findSponsor(tx, named.id, true);
+    const [live, limits] = await Promise.all([
+      activeChats(tx, eq(coffeeChats.sponsorId, sponsor.id), now),
+      loadLimits(tx, eq(coffeeChatLimits.sponsorId, sponsor.id)),
+    ]);
+    const before = requestWithFallback(setup, sponsor, live);
+    const next = { perSlot: input.perSlot };
+    for (const [slotTime, booked] of bookedBySlot(
+      live,
+      before.durationMinutes,
+    )) {
+      const asked = askedAt(next, limits, sponsor.id, slotTime).asked;
+      const was = askedAt(before, limits, sponsor.id, slotTime).asked;
+      if (booked > asked && asked < was) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: errors.requestBelowBooked(formatClock(slotTime), booked),
+        });
+      }
+    }
+    const [row] = await tx
+      .update(sponsorJudgingSponsors)
+      .set({ coffeeChatStyle: input.style, coffeeChatPerSlot: input.perSlot })
+      .where(eq(sponsorJudgingSponsors.id, sponsor.id))
+      .returning({
+        style: sponsorJudgingSponsors.coffeeChatStyle,
+        perSlot: sponsorJudgingSponsors.coffeeChatPerSlot,
+      });
+    return row!;
+  });
 }
 
 const chatRequestInput = {
@@ -718,12 +787,17 @@ const chatRequestInput = {
   perSlot: z.number().int().min(MIN_PER_SLOT).max(MAX_PER_SLOT),
 };
 
+/** Most "Ask for fewer" rows one sponsor can keep. */
+const MAX_LIMITS_PER_SPONSOR = 200;
+
 /**
- * "Ask for fewer": at most `hackers` per slot starting in the span (a slot
- * or an hour; 0 = no chat then). Asking for the full request again clears
- * the ask. Refused when more hackers are already booked in a slot than
- * the new number (cancel or move them first). Lock order as everywhere:
- * the sponsor row, then chats.
+ * "Ask for fewer": at most `hackers` per slot starting in the span, 0 = no
+ * chat then. The span is one slot (one chat length) or part of one clock
+ * hour, on the grid, and inside one of the sponsor's own blocks, so a
+ * sponsor never touches another sponsor's times. Asking for the full
+ * request again clears the ask. Refused when more hackers are booked in a
+ * slot than the new number, or past MAX_LIMITS_PER_SPONSOR rows. Lock
+ * order as everywhere: room writes, the sponsor row, then chats.
  */
 async function saveSlotLimit(input: {
   sponsorId: string;
@@ -733,15 +807,32 @@ async function saveSlotLimit(input: {
 }) {
   const start = coffeeChatMinutesOf(input.startTime);
   const end = coffeeChatMinutesOf(input.endTime);
-  if (start === null || end === null || end <= start) {
+  const sameHour =
+    start !== null && end !== null && Math.floor(start / 60) * 60 + 60 >= end;
+  if (start === null || end === null || end <= start || !sameHour) {
     throw new TRPCError({ code: "BAD_REQUEST", message: errors.limitTimes });
   }
   const now = new Date();
   const named = await findSponsor(db, input.sponsorId);
-  const setup = await setupFor(named.name).catch(() => null);
+  const setup = await setupOrNull(named.name);
   return db.transaction(async (tx) => {
+    await lockRoomWrites(tx);
     const sponsor = await findSponsor(tx, named.id, true);
-    const request = chatRequestOf(setup, sponsor);
+    const [live, holds, limits] = await Promise.all([
+      activeChats(tx, eq(coffeeChats.sponsorId, sponsor.id), now),
+      loadHolds(tx, eq(coffeeChatHolds.sponsorId, sponsor.id)),
+      loadLimits(tx, eq(coffeeChatLimits.sponsorId, sponsor.id)),
+    ]);
+    const request = requestWithFallback(setup, sponsor, live);
+    const oneSlot = end - start === request.durationMinutes;
+    const inBlock = holds.some((h) => {
+      const hs = coffeeChatMinutesOf(h.startTime);
+      const he = coffeeChatMinutesOf(h.endTime);
+      return hs !== null && he !== null && start >= hs && end <= he;
+    });
+    if (!inBlock || (!oneSlot && end - start > 60)) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: errors.limitTimes });
+    }
     const span = and(
       eq(coffeeChatLimits.sponsorId, sponsor.id),
       eq(coffeeChatLimits.startTime, input.startTime),
@@ -751,19 +842,24 @@ async function saveSlotLimit(input: {
       await tx.delete(coffeeChatLimits).where(span);
       return { cleared: true };
     }
-    const live = await activeChats(
-      tx,
-      eq(coffeeChats.sponsorId, sponsor.id),
-      now,
-    );
-    const booked = new Map<string, number>();
-    for (const c of live) {
-      const t = coffeeChatMinutesOf(c.slotTime);
+    for (const [slotTime, booked] of bookedBySlot(
+      live,
+      request.durationMinutes,
+    )) {
+      const t = coffeeChatMinutesOf(slotTime);
       if (t === null || t < start || t >= end) continue;
-      booked.set(c.slotTime, (booked.get(c.slotTime) ?? 0) + 1);
+      if (booked > input.hackers) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: errors.limitBelowBooked,
+        });
+      }
     }
-    if ([...booked.values()].some((n) => n > input.hackers)) {
-      throw new TRPCError({ code: "CONFLICT", message: errors.limitBelowBooked });
+    const exists = limits.some(
+      (l) => l.startTime === input.startTime && l.endTime === input.endTime,
+    );
+    if (!exists && limits.length >= MAX_LIMITS_PER_SPONSOR) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: errors.tooManyLimits });
     }
     await tx
       .insert(coffeeChatLimits)
