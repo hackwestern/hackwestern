@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CalendarDays, Coffee, DoorOpen, LifeBuoy } from "lucide-react";
+import { DashboardButton } from "~/components/internals/dashboard-button";
 import { sponsorOrganizerCopy } from "~/content/sponsor-organizer";
 import {
   organizerHomeHref,
@@ -15,10 +16,9 @@ const pill =
 
 // 44px tall on touch screens, 36px on desktop; hover only where a pointer
 // hovers; a small scale-down on press.
-// Borderless so a long list of sponsors stays calm; an open help request
-// gets the warning outline so it stands out.
-const action =
-  "inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-dashboard-md border border-transparent px-2 text-xs font-semibold text-dashboard-text-link md:min-h-9 [@media(hover:hover)]:hover:bg-dashboard-bg-highlight motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary";
+// DashboardButton "link" at the strip's smaller text size; an open help
+// request gets the warning outline so it stands out.
+const action = "border border-transparent text-xs";
 
 /**
  * One sponsor at a glance on the Sponsors tab: coffee chat room, chats
@@ -121,30 +121,35 @@ export function SponsorStrip({
         </div>
       )}
       <div className="flex flex-wrap items-center gap-1.5">
-        <Link href={link("schedule")} shallow scroll={false} className={action}>
-          <CalendarDays aria-hidden className="size-3.5" />
-          {copy.viewSchedule}
-          <span className="sr-only"> {name}</span>
-        </Link>
-        <Link href={link("coffee")} shallow scroll={false} className={action}>
-          <Coffee aria-hidden className="size-3.5" />
-          {copy.coffeeChats}
-          <span className="sr-only"> {name}</span>
-        </Link>
-        <Link
-          href={link("help")}
-          shallow
-          scroll={false}
+        <DashboardButton variant="link" asChild className={action}>
+          <Link href={link("schedule")} shallow scroll={false}>
+            <CalendarDays aria-hidden />
+            {copy.viewSchedule}
+            <span className="sr-only"> {name}</span>
+          </Link>
+        </DashboardButton>
+        <DashboardButton variant="link" asChild className={action}>
+          <Link href={link("coffee")} shallow scroll={false}>
+            <Coffee aria-hidden />
+            {copy.coffeeChats}
+            <span className="sr-only"> {name}</span>
+          </Link>
+        </DashboardButton>
+        <DashboardButton
+          variant="link"
+          asChild
           className={cn(
             action,
             help?.status === "open" &&
               "border-dashboard-status-iconBadgeIcon text-dashboard-text-warning",
           )}
         >
-          <LifeBuoy aria-hidden className="size-3.5" />
-          {copy.help}
-          <span className="sr-only"> {name}</span>
-        </Link>
+          <Link href={link("help")} shallow scroll={false}>
+            <LifeBuoy aria-hidden />
+            {copy.help}
+            <span className="sr-only"> {name}</span>
+          </Link>
+        </DashboardButton>
       </div>
     </div>
   );

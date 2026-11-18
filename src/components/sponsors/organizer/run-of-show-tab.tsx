@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { CeremonyOrder } from "~/components/sponsors/ceremony-order";
 import {
@@ -89,12 +90,9 @@ export function RunOfShowTab({
       <SheetEditButton href={data.sheetUrl} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <DayPicker value={shownDay} onChange={setDay} />
-        <a
-          href="#rooms"
-          className="inline-flex min-h-11 items-center text-sm font-semibold text-dashboard-text-link underline-offset-4 [@media(hover:hover)]:hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
-        >
-          {roomCopy.jump}
-        </a>
+        <DashboardButton variant="link" asChild className="-mr-2">
+          <a href="#rooms">{roomCopy.jump}</a>
+        </DashboardButton>
       </div>
       <TimelineKey
         mode="organizer"

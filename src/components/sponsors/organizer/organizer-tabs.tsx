@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { ArrowLeft } from "lucide-react";
+import { DashboardButton } from "~/components/internals/dashboard-button";
+import { hover } from "~/components/internals/interaction";
 import { sponsorOrganizerCopy } from "~/content/sponsor-organizer";
 import {
   ORGANIZER_TABS,
@@ -121,7 +123,11 @@ export function OrganizerTabList({
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary",
               selected
                 ? "border-dashboard-action-primary text-dashboard-text-active"
-                : "border-transparent text-dashboard-text-light [@media(hover:hover)]:hover:bg-dashboard-bg-nav [@media(hover:hover)]:hover:text-dashboard-text-heavy",
+                : cn(
+                    "border-transparent text-dashboard-text-light",
+                    hover.nav,
+                    hover.textHeavy,
+                  ),
             )}
           >
             {copy.tabs[t]}
@@ -139,9 +145,6 @@ export function OrganizerTabList({
     </div>
   );
 }
-
-const linkClass =
-  "inline-flex min-h-11 items-center gap-1.5 rounded-dashboard-sm text-sm font-semibold text-dashboard-text-link underline-offset-4 [@media(hover:hover)]:hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary";
 
 /**
  * Shown on Run of show, Coffee chats and Help when they're focused on one
@@ -161,23 +164,21 @@ export function SponsorFocusBar({
       <span className="text-sm font-semibold text-dashboard-text-heavy">
         {name ? copy.focus.showing(name) : copy.focus.showingUnknown}
       </span>
-      <Link
-        href={organizerHomeHref({ tab: "sponsors", sponsor: sponsorId })}
-        scroll={false}
-        shallow
-        className={linkClass}
-      >
-        <ArrowLeft aria-hidden className="size-4" />
-        {name ? copy.focus.backTo(name) : copy.focus.back}
-      </Link>
-      <Link
-        href={organizerHomeHref({ tab })}
-        scroll={false}
-        shallow
-        className={linkClass}
-      >
-        {copy.focus.clear}
-      </Link>
+      <DashboardButton variant="link" asChild className="-mx-2">
+        <Link
+          href={organizerHomeHref({ tab: "sponsors", sponsor: sponsorId })}
+          scroll={false}
+          shallow
+        >
+          <ArrowLeft aria-hidden />
+          {name ? copy.focus.backTo(name) : copy.focus.back}
+        </Link>
+      </DashboardButton>
+      <DashboardButton variant="link" asChild className="-mx-2">
+        <Link href={organizerHomeHref({ tab })} scroll={false} shallow>
+          {copy.focus.clear}
+        </Link>
+      </DashboardButton>
     </div>
   );
 }

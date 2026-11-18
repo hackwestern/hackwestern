@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { hover, press } from "~/components/internals/interaction";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { SponsorStrip } from "~/components/sponsors/organizer/sponsor-strip";
@@ -69,21 +70,8 @@ const STATUS_STYLE: Record<SponsorStatus, { badge: string; dot: string }> = {
   },
 };
 
-/** Hover only where there is a pointer that hovers (no sticky taps). */
-const hoverHighlight = "[@media(hover:hover)]:hover:bg-dashboard-bg-highlight";
-/** Press feedback: a quick, subtle scale-down. */
-const press =
-  "motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out active:scale-[0.97]";
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1";
-/** Small outline control: 44px tall on touch screens, 36px on desktop. */
-const smallControl = cn(
-  "inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-2.5 text-sm font-semibold text-dashboard-text-heavy md:min-h-9",
-  hoverHighlight,
-  press,
-  focusRing,
-  "disabled:pointer-events-none disabled:opacity-dashboard-disabled",
-);
 
 function ago(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1000));
@@ -124,8 +112,8 @@ function CopyLinkButton({
 
   return (
     <div className="inline-flex items-center gap-1.5">
-      <button
-        type="button"
+      <DashboardButton
+        variant="small"
         onClick={() => {
           void navigator.clipboard
             .writeText(`${window.location.origin}${url}`)
@@ -133,27 +121,32 @@ function CopyLinkButton({
         }}
         aria-label={copied ? copy.copiedLabel(name) : copy.copyLabel(name)}
         // Fixed width so "Copied" doesn't nudge the row.
-        className={cn(smallControl, "min-w-28")}
+        className="min-w-28"
       >
         {copied ? (
-          <Check
-            aria-hidden
-            className="size-4 text-dashboard-status-live"
-          />
+          <Check aria-hidden className="size-4 text-dashboard-status-live" />
         ) : (
           <Copy aria-hidden className="size-4 text-dashboard-text-light" />
         )}
         <span aria-hidden>{copied ? copy.copied : copy.copyLink}</span>
-      </button>
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        aria-label={copy.openPage(name)}
-        className={cn(smallControl, "min-w-11 px-0 md:min-w-9")}
+      </DashboardButton>
+      <DashboardButton
+        variant="small"
+        asChild
+        className="min-w-11 px-0 md:min-w-9"
       >
-        <ExternalLink aria-hidden className="size-4 text-dashboard-text-light" />
-      </a>
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={copy.openPage(name)}
+        >
+          <ExternalLink
+            aria-hidden
+            className="size-4 text-dashboard-text-light"
+          />
+        </a>
+      </DashboardButton>
       <span aria-live="polite" className="sr-only">
         {copied ? copy.copiedLabel(name) : ""}
       </span>
@@ -207,19 +200,16 @@ function StatusPicker({
       </div>
 
       {next && nextLabel && (
-        <button
-          type="button"
+        <DashboardButton
+          variant="small"
           disabled={isPending}
           onClick={() => onStatusChange(next)}
           aria-label={copy.advanceLabel(sponsorName, next)}
-          className={cn(
-            smallControl,
-            "border-dashboard-border-outline px-2 text-xs text-dashboard-text-link md:min-h-8",
-          )}
+          className="border-dashboard-border-outline px-2 text-xs text-dashboard-text-link md:min-h-8"
         >
           {nextLabel}
-          <ArrowRight aria-hidden className="size-3.5" />
-        </button>
+          <ArrowRight aria-hidden />
+        </DashboardButton>
       )}
     </div>
   );
@@ -354,9 +344,10 @@ export function SponsorsTab({
   const sponsors = useMemo(() => sponsorsQ.data ?? [], [sponsorsQ.data]);
 
   const countsByStatus = useMemo(() => {
-    const counts = Object.fromEntries(
-      STATUS_FLOW.map((s) => [s, 0]),
-    ) as Record<SponsorStatus, number>;
+    const counts = Object.fromEntries(STATUS_FLOW.map((s) => [s, 0])) as Record<
+      SponsorStatus,
+      number
+    >;
     for (const s of sponsors) {
       if (s.status in counts) counts[s.status] += 1;
     }
@@ -511,7 +502,7 @@ export function SponsorsTab({
             aria-label={copy.dismiss}
             className={cn(
               "inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-md",
-              "[@media(hover:hover)]:hover:bg-dashboard-bg-surface",
+              hover.surface,
               focusRing,
             )}
           >
@@ -574,7 +565,7 @@ export function SponsorsTab({
               aria-label={copy.clearSearch}
               className={cn(
                 "absolute right-0 top-0 inline-flex size-11 items-center justify-center rounded-dashboard-lg text-dashboard-text-light",
-                "[@media(hover:hover)]:hover:text-dashboard-text-heavy",
+                hover.textHeavy,
                 focusRing,
               )}
             >
@@ -607,7 +598,7 @@ export function SponsorsTab({
                     ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
                     : cn(
                         "border-dashboard-border-default bg-dashboard-bg-surface text-dashboard-text-heavy",
-                        hoverHighlight,
+                        hover.highlight,
                       ),
                 )}
               >
@@ -675,7 +666,9 @@ export function SponsorsTab({
                     {!sponsor.onMasterSheet && <NotOnMaster />}
                   </div>
                   {sponsor.tier && (
-                    <DashboardTag className="shrink-0">{sponsor.tier}</DashboardTag>
+                    <DashboardTag className="shrink-0">
+                      {sponsor.tier}
+                    </DashboardTag>
                   )}
                 </div>
 
@@ -769,7 +762,9 @@ export function SponsorsTab({
                           {!sponsor.onMasterSheet && <NotOnMaster />}
                         </span>
                       </th>
-                      <td className="px-4 pb-2 pt-3">{statusPicker(sponsor)}</td>
+                      <td className="px-4 pb-2 pt-3">
+                        {statusPicker(sponsor)}
+                      </td>
                       <td className="px-4 pb-2 pt-3">
                         <RoomBadge roomNumber={sponsor.roomNumber} />
                       </td>
@@ -780,7 +775,9 @@ export function SponsorsTab({
                         {sponsor.tier || copy.none}
                       </td>
                       <td className="px-4 pb-2 pt-3 text-dashboard-text-medium">
-                        {sponsor.hwContact || sponsor.companyContact || copy.none}
+                        {sponsor.hwContact ||
+                          sponsor.companyContact ||
+                          copy.none}
                       </td>
                       <td className="px-4 pb-2 pt-3">
                         <Picks n={sponsor.teamIds.length} />

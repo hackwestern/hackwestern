@@ -1,3 +1,4 @@
+import { hover } from "~/components/internals/interaction";
 import Image from "next/image";
 import { useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
@@ -107,7 +108,10 @@ function Section({
           aria-controls={`${id}-body`}
           aria-label={open ? copy.hide(title) : copy.show(title)}
           onClick={() => setOpen((o) => !o)}
-          className="-my-2 -mr-2 inline-flex size-11 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium [@media(hover:hover)]:hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary lg:hidden"
+          className={cn(
+            "-my-2 -mr-2 inline-flex size-11 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary lg:hidden",
+            hover.highlight,
+          )}
         >
           <ChevronDown
             aria-hidden

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
+import { hover, press } from "~/components/internals/interaction";
 import { cn } from "~/lib/utils";
 
 export const dashboardButtonVariants = cva(
@@ -21,6 +22,19 @@ export const dashboardButtonVariants = cva(
           "gap-2.5 py-1 text-sm text-dashboard-text-medium hover:text-dashboard-text-light md:text-[16px]",
         outline:
           "h-10 gap-2 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3.5 text-sm text-dashboard-text-heavy hover:bg-dashboard-bg-highlight",
+        // Compact outline button for dense ops screens: 44px tall on touch,
+        // 36px on desktop.
+        small: cn(
+          "min-h-11 gap-1.5 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-2.5 text-sm font-semibold text-dashboard-text-heavy md:min-h-9 disabled:opacity-dashboard-disabled",
+          hover.highlight,
+          press,
+        ),
+        // A text link with a button's hit area, for in-page actions.
+        link: cn(
+          "min-h-11 gap-1.5 rounded-dashboard-md px-2 text-sm font-semibold text-dashboard-text-link md:min-h-9 disabled:text-dashboard-text-disabled",
+          hover.highlight,
+          press,
+        ),
       },
     },
     defaultVariants: { variant: "primary" },
