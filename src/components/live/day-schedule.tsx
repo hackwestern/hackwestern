@@ -74,7 +74,7 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
       title={
         event.location ? `${event.title} · ${event.location}` : event.title
       }
-      className={`rounded-lg border-2 p-1.5 sm:px-2.5 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 z-50 flex select-text flex-col justify-center overflow-hidden shadow-sm transition-shadow hover:shadow-md`}
+      className={`rounded-lg border-2 p-1.5 sm:px-2.5 lg:px-1.5 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 z-50 flex select-text flex-col justify-center overflow-hidden shadow-sm transition-shadow hover:shadow-md`}
       style={{ height: `${height}px` }}
     >
       <div
@@ -306,7 +306,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
 
   return (
     <div className="w-full pb-3 sm:pb-4">
-      <div className="rounded-sm px-3 py-4 sm:p-6">
+      <div className="rounded-sm px-3 py-4 sm:p-6 lg:px-2">
         {/* Header with day name */}
         <div className="sticky left-0 mb-3 mt-1 font-figtree text-lg font-bold text-dashboard-text-heavy sm:mb-4 sm:mt-2 sm:text-2xl">
           {day}, November{" "}
@@ -370,7 +370,6 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
               { key: "scavengerHunt", type: "scavenger" },
               { key: "other", type: "other" },
               { key: "other2", type: "other" },
-              { key: "other3", type: "other" },
             ];
 
             // Group consecutive columns with the same event
@@ -431,7 +430,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                   className="grid gap-1.5 border-t border-gray-200 pt-1 sm:gap-2"
                   style={{
                     minHeight: `${height}px`,
-                    gridTemplateColumns: `60px repeat(11, 1fr)`,
+                    gridTemplateColumns: `60px repeat(10, 1fr)`,
                   }}
                 >
                   {/* Time label */}
@@ -462,13 +461,13 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                 {isLargeGap && (
                   <div
                     key={`gap-${idx}`}
-                    className="grid grid-cols-[60px_repeat(11,1fr)] gap-1.5 rounded-md border border-dashed border-gray-300 bg-gray-50 sm:gap-2"
+                    className="grid grid-cols-[60px_repeat(10,1fr)] gap-1.5 rounded-md border border-dashed border-gray-300 bg-gray-50 sm:gap-2"
                     style={{ minHeight: "40px" }}
                   >
                     <div className="flex items-center justify-center font-figtree text-xs font-medium text-dashboard-text-light">
                       ⋯
                     </div>
-                    {Array(11)
+                    {Array(10)
                       .fill(null)
                       .map((_, colIdx) => (
                         <div
