@@ -2,7 +2,7 @@ import { LIVE_URL } from "~/content/coffee-chat-notify";
 import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
 import { formatPresentationTime } from "~/lib/sponsor-presentations";
 import { escapeSlackText } from "~/server/slack/client";
-import { dmByEmail } from "~/server/slack/dm";
+import { dmHacker } from "~/server/slack/dm";
 
 const copy = sponsorPresentationsCopy.slack;
 
@@ -52,20 +52,21 @@ export type PresentationDmResult = "sent" | "not-found" | "failed";
 /**
  * Send one team member their presentation times; never throws. The single
  * place a presentation DM goes out, so a notification record can be
- * written beside it later. Uses the same email lookup as coffee chats.
+ * written beside it later. Same lookup as coffee chats: their Slack email
+ * first, then the email they applied with.
  */
 export async function sendPresentationDm(
   token: string,
-  member: { email: string | null },
+  member: { email: string | null; slackEmail?: string | null },
   teamName: string,
   slots: readonly TeamPresentation[],
   fetchImpl: typeof fetch = fetch,
 ): Promise<PresentationDmResult> {
   if (!member.email) return "not-found";
   try {
-    return await dmByEmail(
+    return await dmHacker(
       token,
-      member.email,
+      member,
       presentationDmMessage(teamName, slots),
       fetchImpl,
     );

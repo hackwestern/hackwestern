@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { coffeeChatNotifyCopy } from "~/content/coffee-chat-notify";
@@ -8,7 +8,7 @@ import type { CoffeeChatAnswer } from "~/server/api/utils/coffee-chat-expiry";
 import { loadCoffeeChatNotice } from "~/server/api/utils/coffee-chat-notify";
 import { respondToCoffeeChat } from "~/server/api/utils/coffee-chat-respond";
 import { db } from "~/server/db";
-import { users } from "~/server/db/schema";
+import { coffeeChats, users } from "~/server/db/schema";
 import { slackApi, type SlackResponse } from "~/server/slack/client";
 import {
   COFFEE_CHAT_ACCEPT_ACTION,
@@ -60,9 +60,14 @@ type Deps = { token?: string; fetch?: typeof fetch; now?: Date };
 
 type UserInfo = SlackResponse & { user?: { profile?: { email?: string } } };
 
-/** The site user whose email matches the clicking Slack user's, or null. */
+/**
+ * The hacker who owns `chatId` when the clicking Slack user is them: the
+ * Slack account's email is their account email or the Slack email they
+ * set on /live. Null otherwise.
+ */
 async function hackerForSlackUser(
   slackUserId: string,
+  chatId: string,
   token: string,
   fetchImpl: typeof fetch,
 ): Promise<string | null> {
@@ -77,8 +82,17 @@ async function hackerForSlackUser(
   if (!email) return null;
   const [row] = await db
     .select({ id: users.id })
-    .from(users)
-    .where(sql`lower(${users.email}) = ${email}`)
+    .from(coffeeChats)
+    .innerJoin(users, eq(users.id, coffeeChats.userId))
+    .where(
+      and(
+        eq(coffeeChats.id, chatId),
+        or(
+          sql`lower(${users.email}) = ${email}`,
+          sql`lower(${users.slackEmail}) = ${email}`,
+        ),
+      ),
+    )
     .limit(1);
   return row?.id ?? null;
 }
@@ -155,7 +169,12 @@ export async function handleCoffeeChatInteraction(
 
   let userId: string | null;
   try {
-    userId = await hackerForSlackUser(payload.user.id, token, fetchImpl);
+    userId = await hackerForSlackUser(
+      payload.user.id,
+      chatId.data,
+      token,
+      fetchImpl,
+    );
   } catch (error) {
     console.error(
       "Slack users.info failed:",

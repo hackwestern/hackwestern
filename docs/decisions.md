@@ -254,3 +254,21 @@
 - **Why:** Jazz asked for a Stepshots-style tour on the real UI, with how-to flows, so sponsors learn the portal in a minute without a video or a call.
 - **Alternatives:** a tour library such as Shepherd or driver.js (another dependency to style and keep accessible, and it fights Radix dialogs the same way); Radix Popover for the callout (its dismiss layer closes it on the very click a waitForClick step needs, and it portals outside the map dialog); screenshots or a video (they go stale as the coffee chat and judging pages change).
 - **Coffee chats v2:** the coffee chat flow targets the Candidates tab, the Candidates panel and the Your chats tab of the v2 page (merged from sd-room-blocks), not the page header.
+
+## 2026-11-18 — Hackers can give the email their Slack is on; email notices still go to the email they applied with
+
+**Decision:** Hackers set an optional "Email you use on Slack" in the notification center on /live, stored on the user (`user.slack_email`, migration 0056; trimmed and lowercased; blank or the same as their account email is stored as null). Every hacker Slack lookup goes through `dmHacker` (src/server/slack/dm.ts): `users.lookupByEmail` with the Slack email first, then the email they applied with (`user.email`), stopping at the first match. If Slack finds neither, the Mailjet email goes to the email they applied with, never the Slack email. This covers coffee chat offers, cancels and room moves, and the Sunday presentation DMs. The coffee chat Accept/Decline buttons in Slack also accept a click from a Slack account on either email, but only on that hacker's own chat.
+
+**Why:** Many hackers join Slack with a personal email that isn't the one they applied with, so the DM silently fell back to email. The applied-with email is the one we know works, so it stays the email target.
+
+**Kept as it was:** Coffee chats still email when the DM wasn't sent for any reason (not found, Slack failed or slow, no bot token); presentations email only when Slack can't find the hacker and record a Slack failure as "failed" for a retry. The presentation claim and per-member idempotency are unchanged.
+
+**Alternatives:** A unique constraint on the Slack email (rejected: it would let one hacker block another by typing their email first, and matching the click to the chat's owner already covers it); emailing the Slack email too (rejected: the ask was the applied-with email).
+
+## 2026-11-18 — The hacker notification center is derived, with a seen-keys list per user
+
+**Decision:** The bell on /live (hackers only; in the mobile top bar and next to the page heading on desktop) lists the hacker's coffee chats (offered, confirmed, declined, expired, cancelled; time and room) and their team's sponsor presentations (sponsor, time, room) once the team has been sent its times. It is built on each request from `coffee_chat` and `sponsor_presentation`/`sponsor_presentation_notice` (src/lib/hacker-notifications.ts); there is no notifications table. Read state is one column, `user.notifications_seen` (text[]), holding the keys of notices the hacker has seen. A coffee chat's key includes its status, time and room, so a confirm, cancel or room move shows as unread again. Opening the bell marks everything read; the server works out the keys itself and keeps only current ones. Each presentation notice shows how the hacker was told (Slack DM or Email) from `sponsor_presentation_notice.status`. Coffee chat notices show no channel, because which channel reached the hacker isn't stored.
+
+**Why:** Both sources already hold everything the list needs, so a table would duplicate them and could drift. A seen-keys list gives per-notice unread state, including changes, without storing the notices.
+
+**Alternatives:** A `notification` table written beside each DM or email (more writes inside the notify paths, and a second source of truth); a single "last opened" timestamp (cancels and room moves have no timestamp, so they wouldn't show as unread); storing the coffee chat channel on `coffee_chat` (left for later, since the notify channels run in parallel and the last event would overwrite it).
