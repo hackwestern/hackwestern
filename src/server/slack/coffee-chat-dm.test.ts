@@ -31,6 +31,7 @@ const CHAT: CoffeeChatNotice = {
   chatId: "11111111-1111-4111-8111-111111111111",
   sponsorName: "StarTech",
   hackerEmail: "sam@example.com",
+  hackerSlackEmail: null,
   hackerFirstName: "Sam",
   admitted: true,
   slotTime: "10:15",

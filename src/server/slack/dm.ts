@@ -1,3 +1,4 @@
+import { slackLookupEmails } from "~/lib/slack-email";
 import {
   SlackApiError,
   slackApi,
@@ -8,17 +9,14 @@ type LookupResponse = SlackResponse & { user?: { id?: string } };
 type OpenResponse = SlackResponse & { channel?: { id?: string } };
 
 /**
- * DM one person by their email: look them up, open the DM, post `message`
- * (chat.postMessage args minus `channel`). "not-found" when no Slack user
- * has that email. Any other Slack failure throws a SlackApiError.
+ * The Slack user id for an email, or null when no Slack user has it. Any
+ * other Slack failure throws a SlackApiError.
  */
-export async function dmByEmail(
+export async function findSlackUserId(
   token: string,
   email: string,
-  message: Record<string, unknown>,
   fetchImpl: typeof fetch = fetch,
-): Promise<"sent" | "not-found"> {
-  let slackUserId: string | undefined;
+): Promise<string | null> {
   try {
     const found = await slackApi<LookupResponse>(
       token,
@@ -26,12 +24,31 @@ export async function dmByEmail(
       { email },
       fetchImpl,
     );
-    slackUserId = found.user?.id;
+    return found.user?.id ?? null;
   } catch (error) {
     if (error instanceof SlackApiError && error.code === "users_not_found") {
-      return "not-found";
+      return null;
     }
     throw error;
+  }
+}
+
+/**
+ * DM the first Slack user found by `emails`, tried in order: look them up,
+ * open the DM, post `message` (chat.postMessage args minus `channel`).
+ * "not-found" when no email matches a Slack user. Any other Slack failure
+ * throws a SlackApiError.
+ */
+export async function dmByEmails(
+  token: string,
+  emails: readonly string[],
+  message: Record<string, unknown>,
+  fetchImpl: typeof fetch = fetch,
+): Promise<"sent" | "not-found"> {
+  let slackUserId: string | null = null;
+  for (const email of emails) {
+    slackUserId = await findSlackUserId(token, email, fetchImpl);
+    if (slackUserId) break;
   }
   if (!slackUserId) return "not-found";
 
@@ -46,4 +63,18 @@ export async function dmByEmail(
 
   await slackApi(token, "chat.postMessage", { channel, ...message }, fetchImpl);
   return "sent";
+}
+
+/**
+ * DM a hacker: found by the email they use on Slack first, then the email
+ * they applied with (src/lib/slack-email.ts). Every hacker DM goes
+ * through here.
+ */
+export function dmHacker(
+  token: string,
+  hacker: { slackEmail?: string | null; email: string | null },
+  message: Record<string, unknown>,
+  fetchImpl: typeof fetch = fetch,
+): Promise<"sent" | "not-found"> {
+  return dmByEmails(token, slackLookupEmails(hacker), message, fetchImpl);
 }

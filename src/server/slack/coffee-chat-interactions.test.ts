@@ -236,6 +236,24 @@ describe("Slack click matching (T23)", () => {
     });
   });
 
+  test("a hacker whose Slack is on their Slack email can answer", async () => {
+    const kim = await makeHacker();
+    await db
+      .update(users)
+      .set({ slackEmail: "kim@slack.dev" })
+      .where(eq(users.id, kim.id));
+    const chatId = await makeChat(kim.id);
+    const slack = mockSlack({ U1: "Kim@Slack.dev" });
+
+    expect(
+      await handleCoffeeChatInteraction(
+        clickPayload("U1", chatId, "coffee_chat_accept"),
+        { fetch: slack.fetch },
+      ),
+    ).toBe("accepted");
+    expect(await statusOf(chatId)).toBe("accepted");
+  });
+
   test("a Slack user with no matching site account changes nothing", async () => {
     const kim = await makeHacker();
     const chatId = await makeChat(kim.id);
