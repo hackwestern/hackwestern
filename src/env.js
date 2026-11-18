@@ -104,6 +104,9 @@ export const env = createEnv({
     // ISO 8601 datetime for the project submission deadline. Submissions after
     // this are marked "late". Unset = no deadline, everything counts as on-time.
     PROJECT_SUBMISSION_DEADLINE: z.string().datetime().optional(),
+    // ISO 8601 datetime when sponsor judging closes (/sponsors/[uuid]/picks):
+    // after it sponsors can't score, shortlist or submit. Unset = never closes.
+    SPONSOR_JUDGING_CLOSES_AT: z.string().datetime({ offset: true }).optional(),
     // Bearer token for /api/cheat-check/sweep, which the sweep worker also uses
     // to re-invoke itself. Leave unset to disable automated sweeps entirely.
     CHEAT_SWEEP_SECRET: z.string().optional(),
@@ -211,6 +214,7 @@ export const env = createEnv({
     HACK_START: process.env.HACK_START,
     HACK_END: process.env.HACK_END,
     PROJECT_SUBMISSION_DEADLINE: process.env.PROJECT_SUBMISSION_DEADLINE,
+    SPONSOR_JUDGING_CLOSES_AT: process.env.SPONSOR_JUDGING_CLOSES_AT,
     CHEAT_SWEEP_SECRET: process.env.CHEAT_SWEEP_SECRET,
     SLACK_BOT_TOKEN: process.env.SLACK_BOT_TOKEN,
     SLACK_SIGNING_SECRET: process.env.SLACK_SIGNING_SECRET,

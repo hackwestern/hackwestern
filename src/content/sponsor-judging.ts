@@ -122,6 +122,7 @@ export const sponsorJudgingCopy = {
   errors: {
     unknownSponsor: "Unknown sponsor link",
     notEligible: "That team isn't one you can judge.",
+    trackUnavailable: "Couldn't load your prize track. Try again in a minute.",
     closed: "Judging has closed.",
     ranking: {
       wrongCount: (top: number) => `Submit exactly ${top} teams.`,

@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, arrayOverlaps, eq, inArray } from "drizzle-orm";
 
+import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { type TrackValue } from "~/lib/sponsor-track";
 import { db } from "~/server/db";
 import { applications, teams, users } from "~/server/db/schema";
@@ -54,17 +55,36 @@ export async function fetchSponsorTrack(
   const key = sponsorName.toLowerCase();
   const hit = trackCache.get(key);
   if (hit && hit.expires > Date.now()) return hit.track;
+  const track = (await fetchSponsorTracks()).get(key) ?? null;
+  // Cache a sponsor missing from the sheet too (no track), so their
+  // autosaves don't re-read the sheet every time.
+  trackCache.set(key, { track, expires: Date.now() + TRACK_TTL_MS });
+  return track;
+}
+
+/**
+ * Every sponsor's prize track in one sheet read, keyed by lowercased
+ * sponsor name (a sponsor missing from the map has no track). Refreshes the
+ * per-sponsor cache too. Same error rule as fetchSponsorTrack.
+ */
+export async function fetchSponsorTracks(): Promise<
+  Map<string, TrackValue | null>
+> {
   try {
     const sheets = await getSheetsClient();
     const info = await fetchAllSponsorInfo(sheets, getSpreadsheetId());
-    const track = info.get(key)?.track ?? null;
-    trackCache.set(key, { track, expires: Date.now() + TRACK_TTL_MS });
-    return track;
+    const expires = Date.now() + TRACK_TTL_MS;
+    const tracks = new Map<string, TrackValue | null>();
+    for (const [key, record] of info) {
+      tracks.set(key, record.track ?? null);
+      trackCache.set(key, { track: record.track ?? null, expires });
+    }
+    return tracks;
   } catch (error) {
     console.error("Could not resolve sponsor track:", error);
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message: "Couldn't load your prize track. Try again in a minute.",
+      message: sponsorJudgingCopy.errors.trackUnavailable,
     });
   }
 }
@@ -74,11 +94,26 @@ export function clearSponsorTrackCache() {
   trackCache.clear();
 }
 
+const JUDGEABLE_STATUSES = ["submitted", "late"] as const;
+
 /** Submitted (or late) teams, narrowed to the track when there is one. */
 function eligibleWhere(track: TrackValue | null) {
   return and(
-    inArray(teams.submissionStatus, ["submitted", "late"]),
+    inArray(teams.submissionStatus, [...JUDGEABLE_STATUSES]),
     ...(track ? [arrayOverlaps(teams.tracks, [track])] : []),
+  );
+}
+
+/** eligibleWhere for a team row already in memory (organizer overview). */
+export function isEligibleTeam(
+  team: { submissionStatus: string | null; tracks: string[] | null },
+  track: TrackValue | null,
+) {
+  return (
+    (JUDGEABLE_STATUSES as readonly (string | null)[]).includes(
+      team.submissionStatus,
+    ) &&
+    (track === null || (team.tracks ?? []).includes(track))
   );
 }
 
