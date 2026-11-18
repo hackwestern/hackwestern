@@ -91,7 +91,7 @@ export function RunOfShowTab({
         <DayPicker value={shownDay} onChange={setDay} />
         <a
           href="#rooms"
-          className="inline-flex min-h-11 items-center text-sm font-semibold text-dashboard-text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+          className="inline-flex min-h-11 items-center text-sm font-semibold text-dashboard-text-link underline-offset-4 [@media(hover:hover)]:hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
         >
           {roomCopy.jump}
         </a>

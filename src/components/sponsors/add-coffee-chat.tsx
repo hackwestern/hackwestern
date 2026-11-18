@@ -271,7 +271,7 @@ export function HackerMatches({
                 <button
                   type="button"
                   onClick={() => onPick(m)}
-                  className="flex min-h-11 w-full flex-col items-start rounded-dashboard-md px-3 py-2 text-left hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+                  className="flex min-h-11 w-full flex-col items-start rounded-dashboard-md px-3 py-2 text-left [@media(hover:hover)]:hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
                 >
                   <span className="font-semibold">{m.name}</span>
                   <span className="break-all text-dashboard-text-light">
