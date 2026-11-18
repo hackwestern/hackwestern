@@ -21,7 +21,6 @@ import {
   type SponsorSelection,
   useSponsorSelection,
 } from "~/components/sponsors/sponsor-filter";
-import { TaskPingsSection } from "~/components/sponsors/task-reminders-panel";
 import { WorkshopsTable } from "~/components/sponsors/workshop-details";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { scheduleCopy } from "~/content/sponsor-schedule";
@@ -139,7 +138,6 @@ export function RunOfShowTab({
       />
       <CeremonyOrder segments={data.ceremonies} items={data.items} />
       <WorkshopsTable workshops={data.workshops} />
-      <TaskPingsSection />
       <ReadAt iso={data.readAt} />
     </>
   );

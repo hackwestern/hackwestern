@@ -68,7 +68,7 @@ export function OrganizerTabList({
 }: {
   tab: OrganizerTab;
   onSelect: (tab: OrganizerTab) => void;
-  /** Unclaimed help requests, shown as a count on the Help tab. */
+  /** Unclaimed help requests, shown as a count on the Task pings tab. */
   openHelp: number;
 }) {
   const refs = useRef<Partial<Record<OrganizerTab, HTMLButtonElement | null>>>(
@@ -131,7 +131,7 @@ export function OrganizerTabList({
             )}
           >
             {copy.tabs[t]}
-            {t === "help" && openHelp > 0 && (
+            {t === "pings" && openHelp > 0 && (
               <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-dashboard-status-iconBadge px-1.5 text-xs font-bold leading-5 text-dashboard-text-warning">
                 {openHelp}
                 <span className="sr-only">
@@ -147,7 +147,7 @@ export function OrganizerTabList({
 }
 
 /**
- * Shown on Run of show, Coffee chats and Help when they're focused on one
+ * Shown on Run of show, Coffee chats and Task pings when they're focused on one
  * sponsor: who, a link back to that sponsor's row, and a way to see everyone.
  */
 export function SponsorFocusBar({
