@@ -274,7 +274,8 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
       {
         id: "a",
         name: "Acme",
-        coffeeChatReps: 2,
+        coffeeChatStyle: "oneOnOne",
+        coffeeChatPerSlot: 2,
         coffeeChatWatcher: "Sam",
       },
       { id: "b", name: "Beta" },
@@ -353,10 +354,9 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
   });
   const [acme, beta] = r.sponsors;
 
-  it("adds chat type, reps, watcher, rooms and live chats", () => {
+  it("adds the chat request, watcher, rooms and live chats", () => {
     expect(acme).toMatchObject({
-      format: { durationMinutes: 15, groupSize: 1 },
-      reps: 2,
+      request: { style: "oneOnOne", perSlot: 2, durationMinutes: 15 },
       watcher: "Sam",
       rooms: ["Rm 2241"],
       needsHacker: 1,
@@ -367,7 +367,7 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
       ["Grace", null, "pending"],
     ]);
     expect(beta).toMatchObject({
-      format: null,
+      request: { source: "none" },
       rooms: ["Rm 2243"],
       needsHacker: 1,
     });

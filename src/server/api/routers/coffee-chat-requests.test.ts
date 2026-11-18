@@ -55,9 +55,16 @@ afterAll(() => {
 let n = 0;
 async function makeSponsor(reps: number, setup: Partial<CoffeeChatSetup> = {}) {
   const name = `Offer Sponsor ${++n}`;
+  // The sponsor's request: a group runs one chat of the group size, else
+  // 1-on-1s with `reps` reps.
+  const group = (setup.groupSize ?? 1) > 1;
   const [row] = await db
     .insert(sponsorJudgingSponsors)
-    .values({ name, coffeeChatReps: reps })
+    .values({
+      name,
+      coffeeChatStyle: group ? "group" : "oneOnOne",
+      coffeeChatPerSlot: group ? setup.groupSize! : reps,
+    })
     .returning();
   const full: CoffeeChatSetup = {
     sponsor: name,
@@ -65,9 +72,11 @@ async function makeSponsor(reps: number, setup: Partial<CoffeeChatSetup> = {}) {
     windowEnd: "12:00",
     durationMinutes: 15,
     groupSize: 1,
+    chattingHours: null,
     slots: null,
     hackers: null,
     format: "Individual (15 mins)",
+    notes: null,
     room: `Rm ${2240 + n}`,
     ...setup,
   };
@@ -467,7 +476,10 @@ describe("coffeeChatRequests.freeTimes", () => {
       "10:30",
       "10:45",
     ]);
-    expect(all).toMatchObject({ durationMinutes: 15, groupSize: 1, reps: 1 });
+    expect(all).toMatchObject({
+      durationMinutes: 15,
+      request: { style: "oneOnOne", perSlot: 1, source: "sponsor" },
+    });
 
     const forBusy = await caller.coffeeChatRequests.freeTimes({
       sponsor,
@@ -1444,7 +1456,7 @@ describe("coffeeChatRequests.organizerChatBoard (T48)", () => {
     ).toBe("FORBIDDEN");
   });
 
-  test("every sponsor by slot, with chats, hacker codes and seats", async () => {
+  test("every sponsor with request, chats, hacker codes and blocks", async () => {
     const orgId = `board-organizer-${++n}`;
     await db
       .insert(users)
@@ -1473,22 +1485,17 @@ describe("coffeeChatRequests.organizerChatBoard (T48)", () => {
     const column = board.sponsors.find((s) => s.sponsorId === sponsor)!;
     expect(column).toMatchObject({
       setUp: true,
-      reps: 2,
-      durationMinutes: 30,
+      request: { style: "group", perSlot: 3, durationMinutes: 30 },
       counts: { accepted: 0, pending: 1, total: 1 },
+      blockMinutes: 60,
+      booked: 1,
     });
-    const cell = column.cells.find((c) => c.slotTime === "13:30")!;
-    expect(cell).toMatchObject({
-      kind: "open",
-      rows: 2,
+    const block = board.holds.find((h) => h.sponsorId === sponsor)!;
+    expect(block.slots.find((x) => x.slotTime === "13:30")).toMatchObject({
+      booked: 1,
+      needed: 3,
       chatIds: [chatId],
-      seats: 3,
-      seatsUsed: 1,
-      seatsLeft: 2,
-      offerable: true,
     });
-    // The 13:45 row belongs to the 13:30 cell.
-    expect(column.cells.some((c) => c.slotTime === "13:45")).toBe(false);
     expect(board.chats.find((c) => c.chatId === chatId)).toMatchObject({
       firstName: "Boardy",
       hackerId: `board-code-${n}`,
@@ -1497,5 +1504,112 @@ describe("coffeeChatRequests.organizerChatBoard (T48)", () => {
     });
     expect(board.slots).toContain("13:45");
     expect(board.assignableRooms).toEqual(["Rm 2241", "Rm 2242", "Rm 2243"]);
+  });
+});
+
+describe("coffeeChatRequests: chat requests and asks for fewer (v2)", () => {
+  test("a sponsor sets their own request; organizers can set it for them", async () => {
+    const a = await makeSponsor(1);
+    const b = await makeSponsor(1);
+    await caller.coffeeChatRequests.setChatRequest({
+      sponsor: a,
+      style: "group",
+      perSlot: 4,
+    });
+    const mine = await caller.coffeeChatRequests.sponsorChats({ sponsor: a });
+    expect(mine.request).toMatchObject({
+      style: "group",
+      perSlot: 4,
+      source: "sponsor",
+    });
+    expect(
+      (await caller.coffeeChatRequests.sponsorChats({ sponsor: b })).request
+        .perSlot,
+    ).toBe(1);
+    // Organizer only.
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.organizerSetChatRequest({
+            sponsorId: b,
+            style: "oneOnOne",
+            perSlot: 3,
+          }),
+        )
+      ).code,
+    ).toBe("UNAUTHORIZED");
+    const orgId = `request-organizer-${++n}`;
+    await db
+      .insert(users)
+      .values({ id: orgId, email: `${orgId}@example.com`, type: "organizer" });
+    await hackerCaller(orgId).coffeeChatRequests.organizerSetChatRequest({
+      sponsorId: b,
+      style: "oneOnOne",
+      perSlot: 3,
+    });
+    expect(
+      (await caller.coffeeChatRequests.sponsorChats({ sponsor: b })).request,
+    ).toMatchObject({ style: "oneOnOne", perSlot: 3 });
+  });
+
+  test("ask for fewer lowers a slot, refuses below booked, and clears", async () => {
+    // 1-on-1 with 2 reps, block 10:00-12:00.
+    const sponsor = await makeSponsor(2);
+    const hacker = await makeHacker();
+    await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: hacker,
+      slotTime: "10:00",
+    });
+    await caller.coffeeChatRequests.askForFewer({
+      sponsor,
+      startTime: "11:00",
+      endTime: "12:00",
+      hackers: 0,
+    });
+    let mine = await caller.coffeeChatRequests.sponsorChats({ sponsor });
+    expect(mine.limits).toEqual([
+      { sponsorId: sponsor, startTime: "11:00", endTime: "12:00", hackers: 0 },
+    ]);
+    const slot = (t: string) =>
+      mine.holds[0]!.slots.find((x) => x.slotTime === t)!;
+    expect(slot("11:00")).toMatchObject({ needed: 0, lowered: true });
+    expect(slot("10:45")).toMatchObject({ needed: 2, lowered: false });
+    // No chat then: an offer at 11:15 is full.
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.offer({
+            sponsor,
+            userId: await makeHacker(),
+            slotTime: "11:15",
+          }),
+        )
+      ).code,
+    ).toBe("CONFLICT");
+    // One hacker is booked at 10:00: asking for 0 then is refused.
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.askForFewer({
+            sponsor,
+            startTime: "10:00",
+            endTime: "10:15",
+            hackers: 0,
+          }),
+        )
+      ).code,
+    ).toBe("CONFLICT");
+    // Asking for the full request again clears the ask.
+    await expect(
+      caller.coffeeChatRequests.askForFewer({
+        sponsor,
+        startTime: "11:00",
+        endTime: "12:00",
+        hackers: 2,
+      }),
+    ).resolves.toEqual({ cleared: true });
+    mine = await caller.coffeeChatRequests.sponsorChats({ sponsor });
+    expect(mine.limits).toEqual([]);
   });
 });
