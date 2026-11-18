@@ -26,6 +26,12 @@ T52 (coffee chats: map + where beside the table), T53 (tasks amber on schedule, 
 - tsconfig + eslint ignore **/_to_delete/** (files parked in src/_to_delete broke tsc).
 - Checks on merge: tsc clean; vitest all pass except Apple Wallet.
 
+## Running 2026-11-18 (review + merge when done)
+- sd-judging-view (worktree hackwestern-sd-chat): Sunday "Sponsor track judging" panel under the run of show (rooms per sponsor from Lucas's sheet > run-of-show list, missing rooms flagged; team fills rooms into the sheet, no app auto-assign), Judging column in the Sponsors table, day picker as small pills in the schedule header, rooms section heading/intro/not-Saturday message removed, quieter room table legend.
+- sd-sponsor-scoring (worktree hackwestern-sd-help): sponsor judging flow (browse projects, score /10, Save to shortlist, rank + Submit top 5, also written to Lucas's sheet via setChosenTeams), new organizer tab "Sponsor judging" (?tab=judging). Migration 0049 (apply after review).
+- Also merged today: gentle column focus (~30%), floor 2 plan image instead of the live map, ceremony/workshop info filtered by picked day.
+- Lucas's sheet: a link in his PRs is https://docs.google.com/spreadsheets/d/1K_HR5oh3r80b8WVMWCPPjfuWXUgfkmhlX7FGI6JJ8tY/edit (unconfirmed which sheet) - confirm with Lucas.
+
 ## Next
 - Project picks page (/sponsors/<id>/picks) redesign + richer project info + show tile whenever judging is open (proposed, waiting for Jazz).
 - Optional: limit Slack owner matching to spon-team channel members (needs channels:read / groups:read scope).
