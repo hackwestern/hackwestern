@@ -20,11 +20,7 @@ import { buildRoomTable, type RoomCell } from "~/lib/coffee-chat-room-table";
 import { holdCovers } from "~/lib/coffee-chat-holds";
 import { coffeeChatRoomOf } from "~/lib/coffee-chat-requests";
 import { formatClock } from "~/lib/run-of-show";
-import {
-  SPONSOR_PALETTE,
-  sponsorColor,
-  sponsorColorIndexes,
-} from "~/lib/sponsor-colors";
+import { sponsorColor, sponsorColorIndexes } from "~/lib/sponsor-colors";
 import { cn } from "~/lib/utils";
 import type {
   BoardSponsor,
@@ -135,7 +131,6 @@ export function CoffeeChatRoomTable({
 
   return (
     <div className="flex min-w-0 flex-col gap-3">
-      <Legend />
       <div
         role="region"
         aria-label={copy.tableLabel}
@@ -205,7 +200,7 @@ export function CoffeeChatRoomTable({
   );
 }
 
-/** One opacity for everything dimmed (cells and the legend swatch). */
+/** One opacity for everything dimmed. */
 const DIMMED = "opacity-40";
 
 // Free: white with a dashed neutral edge and "+ Free", unlike any sponsor
@@ -217,39 +212,6 @@ const FREE_CELL =
 const OVER_CELL =
   "border-2 border-dashboard-status-warning bg-dashboard-bg-surface text-dashboard-text-warning";
 const HELD_EDGE = "border-2 border-dashed border-dashboard-status-warning";
-
-function Legend() {
-  const sample = SPONSOR_PALETTE[0]!;
-  const sponsorCell = cn(
-    "border-dashboard-border-subtle border-l-4",
-    sample.fill,
-    sample.edge,
-  );
-  const items = [
-    ["free", FREE_CELL],
-    ["booked", sponsorCell],
-    ["full", cn(sponsorCell, "ring-1 ring-inset ring-dashboard-border-strong")],
-    ["over", OVER_CELL],
-    ["held", cn(sample.fill, HELD_EDGE)],
-    ["dimmed", cn(sponsorCell, DIMMED)],
-  ] as const;
-  return (
-    <ul
-      aria-label={copy.legendLabel}
-      className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-sm text-dashboard-text-medium"
-    >
-      {items.map(([key, swatch]) => (
-        <li key={key} className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className={cn("size-4 rounded-dashboard-xs border", swatch)}
-          />
-          {copy.legend[key]}
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 function CellButton({
   cell,
@@ -300,7 +262,9 @@ function CellButton({
           ? null
           : warning
             ? `${who ?? ""}, ${warning}`
-            : (who ?? copy.overWarning),
+            : cell.state === "full"
+              ? `${who ?? ""}, ${copy.full}`
+              : (who ?? copy.overWarning),
         cell.used,
         cell.capacity,
       )}
