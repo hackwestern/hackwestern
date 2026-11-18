@@ -41,7 +41,25 @@ import {
 } from "~/components/judging/shared/rubric-scorer";
 import { JudgeConfirm } from "~/components/judging/shared/judge-confirm";
 import { type JudgeInitialData } from "~/server/api/utils/judge-data";
-import { api } from "~/utils/api";
+import {
+  stubUtils,
+  useStubMutation,
+  useStubQuery,
+} from "~/components/judging/api-stub";
+
+// Shapes the removed old-queue API returned (see api-stub.ts).
+type AssignmentData = { team: { id: string; name: string } | null };
+type MarkData = {
+  id: number;
+  teamId: string;
+  score: number;
+  team: { name: string };
+  scoreBreakdown: {
+    ratings?: Record<string, number>;
+    notes?: string;
+    superLike?: boolean;
+  } | null;
+};
 
 // The rubric every judge scores with, until rubrics come from the backend.
 const RUBRIC = DEFAULT_RUBRIC;
@@ -178,7 +196,9 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   };
 
   const online = useOnline();
-  const utils = api.useUtils();
+  const utils = {
+    judging: { me: { getCurrentAssignment: stubUtils } },
+  };
   const router = useRouter();
 
   // The comparison with the other judges is only loaded after submitting: the
@@ -209,15 +229,17 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       { scroll: false },
     );
   }, [hydrated, stage, initial.comparison, router]);
-  const assignment = api.judging.me.getCurrentAssignment.useQuery();
-  const marksQuery = api.judging.me.getSubmittedTeamMarks.useQuery();
-  // Re-scoring only opens once nothing is left in this judge's queue.
-  const remainingQuery = api.judging.me.getRemainingCount.useQuery();
-  const getNext = api.judging.me.getNextTeam.useMutation();
-  const submit = api.judging.me.submitTeamMark.useMutation();
-  const edit = api.judging.me.editTeamMark.useMutation();
-  const startTeam = api.judging.me.startTeam.useMutation();
-  const skip = api.judging.me.skipAssignment.useMutation();
+  // Not wired up: these procedures were removed in #1155 (the judge app still
+  // needs rewiring to getMyStops / startStop / submitStop). Stubbed so the UI
+  // renders; nothing loads and mutations fail.
+  const assignment = useStubQuery<AssignmentData | undefined>(undefined);
+  const marksQuery = useStubQuery<MarkData[]>([]);
+  const remainingQuery = useStubQuery<number | undefined>(undefined);
+  const getNext = useStubMutation();
+  const submit = useStubMutation<Record<string, unknown>>();
+  const edit = useStubMutation<Record<string, unknown>>();
+  const startTeam = useStubMutation();
+  const skip = useStubMutation<Record<string, unknown>>();
 
   const held = assignment.data?.team ?? null;
   const heldTable = held ? (initial.tableByTeam[held.id] ?? null) : null;

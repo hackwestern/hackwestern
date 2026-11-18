@@ -11,10 +11,12 @@ import { ControlRanking } from "~/components/judging/control/control-ranking";
 import {
   MUTED,
   errorText,
+  type QueueState,
   useNow,
 } from "~/components/judging/control/control-shared";
 import { ControlSponsorTracks } from "~/components/judging/control/control-sponsor-tracks";
 import { api } from "~/utils/api";
+import { useStubQuery } from "~/components/judging/api-stub";
 import { authRedirectOrganizer } from "~/utils/redirect";
 
 const POLL_MS = 5000;
@@ -28,7 +30,8 @@ export default function JudgingControlRoom() {
   const now = useNow();
   const { data: session } = useSession();
   const poll = { refetchInterval: POLL_MS };
-  const queueQ = api.judging.admin.getQueue.useQuery(undefined, poll);
+  // Not wired up: getQueue was removed in #1155.
+  const queueQ = useStubQuery<QueueState | undefined>(undefined);
   const judgesQ = api.judging.admin.getAllJudges.useQuery(undefined, poll);
   const rankingQ = api.judging.admin.getLatestRanking.useQuery(undefined, poll);
 

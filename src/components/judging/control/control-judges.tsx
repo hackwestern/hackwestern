@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api } from "~/utils/api";
+import { NOT_WIRED, useStubMutation } from "~/components/judging/api-stub";
 import {
   BTN_OUTLINE,
   CARD,
@@ -12,7 +12,6 @@ import {
   StatusLine,
   TD,
   TH,
-  errorText,
   formatHold,
   judgeName,
 } from "./control-shared";
@@ -28,10 +27,10 @@ export function ControlJudges({
   now: number;
   myId: string | undefined;
 }) {
-  const utils = api.useUtils();
   const [picked, setPicked] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<Status>(null);
-  const assign = api.judging.admin.assignJudgeForTeam.useMutation();
+  // Not wired up: assignJudgeForTeam was removed in #1155.
+  const assign = useStubMutation<{ judgeId: string; teamId: string }>();
 
   const teams = queue?.teams ?? [];
   const holdByJudge = new Map(
@@ -158,23 +157,10 @@ export function ControlJudges({
                             );
                             if (!team) return;
                             setStatus(null);
-                            assign.mutate(
-                              { judgeId: j.id, teamId: team.teamId },
-                              {
-                                onSuccess: () => {
-                                  setStatus({
-                                    tone: "ok",
-                                    text: `Sent ${team.teamName} to ${name}.`,
-                                  });
-                                  void utils.judging.admin.invalidate();
-                                },
-                                onError: (e) =>
-                                  setStatus({
-                                    tone: "error",
-                                    text: `Couldn't send ${team.teamName} to ${name}. ${errorText(e)}`,
-                                  }),
-                              },
-                            );
+                            setStatus({
+                              tone: "error",
+                              text: `Not working right now. ${NOT_WIRED}`,
+                            });
                           }}
                         >
                           {sending ? "Sending…" : "Send"}

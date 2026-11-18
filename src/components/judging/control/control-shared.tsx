@@ -2,8 +2,23 @@ import { useEffect, useState } from "react";
 import { trackEnum } from "~/server/db/schema";
 import { type RouterOutputs } from "~/utils/api";
 
-export type QueueState = RouterOutputs["judging"]["admin"]["getQueue"];
-export type QueueTeam = QueueState["teams"][number];
+// Shape the old queue API returned (removed in #1155); kept so the screens
+// still render. Not backed by anything right now.
+export type QueueTeam = {
+  teamId: string;
+  teamName: string;
+  roundsRemaining: number;
+  seenJudges: number;
+  tracks: (typeof trackEnum.enumValues)[number][];
+  currentJudgeId: string | null;
+  currentJudgeName: string | null;
+  assignedAt: Date | string | null;
+};
+export type QueueState = {
+  teams: QueueTeam[];
+  submittedTeams: number;
+  regularMarks: number;
+};
 export type JudgeRow =
   RouterOutputs["judging"]["admin"]["getAllJudges"][number];
 export type RankingRow =

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api } from "~/utils/api";
+import { NOT_WIRED, useStubMutation } from "~/components/judging/api-stub";
 import {
   BTN_DARK,
   BTN_OUTLINE,
@@ -10,50 +10,18 @@ import {
   type QueueState,
   type Status,
   StatusLine,
-  errorText,
 } from "./control-shared";
 
 export function ControlQueue({ queue }: { queue: QueueState | undefined }) {
-  const utils = api.useUtils();
   const [rounds, setRounds] = useState(3);
   const [confirmPurge, setConfirmPurge] = useState(false);
   const [status, setStatus] = useState<Status>(null);
 
-  const load = api.judging.admin.loadQueue.useMutation({
-    onSuccess: ({ added }) => {
-      setStatus({
-        tone: "ok",
-        text:
-          added > 0
-            ? `Added ${added} team${added === 1 ? "" : "s"} to the queue, ${rounds} marks each.`
-            : queue?.submittedTeams === 0
-              ? "No teams added: nobody has submitted a project yet."
-              : "No teams added: every submitted team is already in the queue.",
-      });
-      void utils.judging.admin.invalidate();
-    },
-    onError: (e) =>
-      setStatus({
-        tone: "error",
-        text: `Couldn't load the queue. ${errorText(e)}`,
-      }),
-  });
-
-  const purge = api.judging.admin.purgeQueue.useMutation({
-    onSuccess: () => {
-      setConfirmPurge(false);
-      setStatus({
-        tone: "ok",
-        text: "Queue purged. Marks are untouched; load the queue again to restart.",
-      });
-      void utils.judging.admin.invalidate();
-    },
-    onError: (e) =>
-      setStatus({
-        tone: "error",
-        text: `Couldn't purge the queue. ${errorText(e)}`,
-      }),
-  });
+  // Not wired up: loadQueue / purgeQueue were removed in #1155.
+  const load = useStubMutation<{ roundsPerTeam: number }>();
+  const purge = useStubMutation();
+  const notWired = () =>
+    setStatus({ tone: "error", text: `Not working right now. ${NOT_WIRED}` });
 
   const queued = queue?.teams.length ?? 0;
   const pill = !queue
@@ -95,7 +63,7 @@ export function ControlQueue({ queue }: { queue: QueueState | undefined }) {
             disabled={load.isPending}
             onClick={() => {
               setConfirmPurge(false);
-              load.mutate({ roundsPerTeam: rounds });
+              notWired();
             }}
           >
             {load.isPending ? "Loading…" : "Load queue"}
@@ -132,7 +100,7 @@ export function ControlQueue({ queue }: { queue: QueueState | undefined }) {
               type="button"
               className="min-h-11 rounded-[10px] bg-[#a1200f] px-4 text-[15px] font-bold text-white disabled:opacity-50"
               disabled={purge.isPending}
-              onClick={() => purge.mutate()}
+              onClick={notWired}
             >
               {purge.isPending ? "Purging…" : "Purge"}
             </button>
