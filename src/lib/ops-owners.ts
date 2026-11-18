@@ -88,7 +88,7 @@ export function foldAliases(
 export function matchName(
   name: string,
   candidates: NameCandidate[],
-  aliases: Map<string, string> = new Map(),
+  aliases = new Map<string, string>(),
 ): NameMatch {
   const key = foldName(name);
   if (!key) return { status: "none" };

@@ -97,6 +97,9 @@ export const env = createEnv({
     RUN_OF_SHOW_SHEET: z.string().optional(),
     RUN_OF_SHOW_SHEETS_CLIENT_EMAIL: z.string().optional(),
     RUN_OF_SHOW_SHEETS_PRIVATE_KEY: z.string().optional(),
+    // Organizer team's run of show (ops pings, /internal/ops-pings). Read
+    // with the RUN_OF_SHOW_SHEETS_* service account.
+    OPS_RUN_OF_SHOW_SHEET: z.string().optional(),
     GITHUB_TOKEN: z.string().optional(),
     // ISO 8601 datetime strings for the hacking window used in commit-timing cheat checks
     HACK_START: z.string().datetime().optional(),
@@ -210,6 +213,7 @@ export const env = createEnv({
     RUN_OF_SHOW_SHEET: process.env.RUN_OF_SHOW_SHEET,
     RUN_OF_SHOW_SHEETS_CLIENT_EMAIL: process.env.RUN_OF_SHOW_SHEETS_CLIENT_EMAIL,
     RUN_OF_SHOW_SHEETS_PRIVATE_KEY: process.env.RUN_OF_SHOW_SHEETS_PRIVATE_KEY,
+    OPS_RUN_OF_SHOW_SHEET: process.env.OPS_RUN_OF_SHOW_SHEET,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     HACK_START: process.env.HACK_START,
     HACK_END: process.env.HACK_END,

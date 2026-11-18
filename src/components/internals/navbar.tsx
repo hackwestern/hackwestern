@@ -2,6 +2,7 @@ import Link from "next/link";
 import { HWLogo } from "~/components/apply/hw-logo";
 import { Button } from "~/components/ui/button";
 import { Profile } from "~/components/apply/profile";
+import { opsPingsCopy } from "~/content/ops-pings";
 
 export function InternalNavbar() {
   return (
@@ -20,6 +21,9 @@ export function InternalNavbar() {
         </Button>
         <Button className="text-primary-600" variant={"link"} asChild>
           <Link href="/internal/sponsors">Sponsors</Link>
+        </Button>
+        <Button className="text-primary-600" variant={"link"} asChild>
+          <Link href="/internal/ops-pings">{opsPingsCopy.page.navLabel}</Link>
         </Button>
         {/* Bulk status tool (#558) is hard-disabled (#798); hidden until it's back.
         <Button className="text-primary-600" variant={"link"} asChild>

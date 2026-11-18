@@ -1719,3 +1719,42 @@ export const taskReminderSync = pgTable("task_reminder_sync", {
   lastSyncedAt: timestamp("last_synced_at", { mode: "date", precision: 3 }),
   lastAttemptAt: timestamp("last_attempt_at", { mode: "date", precision: 3 }),
 });
+
+// ---------------------------------------------------------------------------
+// Ops pings: the organizer run of show (OPS_RUN_OF_SHOW_SHEET)
+// ---------------------------------------------------------------------------
+
+// One Slack scheduled DM to one organizer for one task: "start" (10 minutes
+// before it starts) or "end" (at its end time). Synced from the sheet by
+// src/server/api/utils/ops-pings.ts; same lifecycle as task_reminder.
+export const opsPings = pgTable(
+  "ops_ping",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    // sha256 of the task (day, start, title) + kind + Slack user: what the
+    // sync diffs on. A moved task or a different person is a new key.
+    pingKey: varchar("ping_key", { length: 64 }).notNull(),
+    // sha256 of day + start + title: groups a task's pings on the page.
+    taskKey: varchar("task_key", { length: 64 }).notNull(),
+    kind: varchar("kind", { length: 8 }).$type<"start" | "end">().notNull(),
+    task: text("task").notNull(),
+    // The organizer as matched ("Jessica Xing"), for display.
+    owner: varchar("owner", { length: 255 }).notNull(),
+    slackUserId: varchar("slack_user_id", { length: 32 }).notNull(),
+    postAt: timestamp("post_at", { mode: "date", precision: 3 }).notNull(),
+    slackChannel: varchar("slack_channel", { length: 32 }),
+    scheduledMessageId: varchar("scheduled_message_id", { length: 64 }),
+    // sha256 of the recipient and full text: a change reschedules.
+    routeKey: varchar("route_key", { length: 64 }),
+    status: taskReminderStatusEnum("status").notNull(),
+    error: varchar("error", { length: 255 }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("ops_ping_key_idx").on(t.pingKey),
+    index("ops_ping_task_idx").on(t.taskKey),
+    index("ops_ping_status_idx").on(t.status),
+  ],
+);

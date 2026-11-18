@@ -23,6 +23,7 @@ import { sponsorPresentationsRouter } from "./routers/sponsor-presentations";
 import { sponsorScoringRouter } from "./routers/sponsor-scoring";
 import { onboardingRouter } from "./routers/onboarding";
 import { taskRemindersRouter } from "./routers/task-reminders";
+import { opsPingsRouter } from "./routers/ops-pings";
 
 /**
  * This is the primary router for your server.
@@ -54,6 +55,7 @@ export const appRouter = createTRPCRouter({
   sponsorScoring: sponsorScoringRouter,
   onboarding: onboardingRouter,
   taskReminders: taskRemindersRouter,
+  opsPings: opsPingsRouter,
 });
 
 // export type definition of API
