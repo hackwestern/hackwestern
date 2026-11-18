@@ -10,6 +10,7 @@ import {
   type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
 import type { CoffeeChatSetup } from "~/lib/run-of-show";
+import type { JudgingBoard, JudgingRow } from "~/lib/sponsor-judging-rooms";
 import {
   offerStartTimes,
   seatsLeft,
@@ -198,6 +199,8 @@ export type SponsorSummary = {
     claimedByName: string | null;
     createdAt: string;
   } | null;
+  /** Sunday judging room, picks and status; null without a judging read. */
+  judging: JudgingRow | null;
 };
 
 export type SummaryTotals = {
@@ -207,6 +210,8 @@ export type SummaryTotals = {
   needsHacker: number;
   /** Help requests nobody has claimed yet. */
   openHelp: number;
+  /** Registered sponsors with no judging room yet. */
+  missingRooms: number;
 };
 
 export type SponsorSummaries = {
@@ -219,6 +224,8 @@ export type SponsorSummaries = {
   needsHacker: number;
   /** The totals row, over every sponsor. */
   totals: SummaryTotals;
+  /** Sunday judging: rooms, picks and status, incl. unregistered companies. */
+  judging: JudgingBoard | null;
 };
 
 /**
@@ -227,10 +234,11 @@ export type SponsorSummaries = {
  * help requests.
  */
 export function summaryTotals(
-  rows: readonly Pick<
+  rows: readonly (Pick<
     SponsorSummary,
     "accepted" | "pending" | "seatsLeft" | "needsHacker" | "help"
-  >[],
+  > &
+    Partial<Pick<SponsorSummary, "judging">>)[],
 ): SummaryTotals {
   return rows.reduce<SummaryTotals>(
     (t, r) => ({
@@ -239,8 +247,16 @@ export function summaryTotals(
       seatsLeft: t.seatsLeft + r.seatsLeft,
       needsHacker: t.needsHacker + r.needsHacker,
       openHelp: t.openHelp + (r.help?.status === "open" ? 1 : 0),
+      missingRooms: t.missingRooms + (r.judging?.missingRoom ? 1 : 0),
     }),
-    { accepted: 0, pending: 0, seatsLeft: 0, needsHacker: 0, openHelp: 0 },
+    {
+      accepted: 0,
+      pending: 0,
+      seatsLeft: 0,
+      needsHacker: 0,
+      openHelp: 0,
+      missingRooms: 0,
+    },
   );
 }
 
@@ -299,6 +315,7 @@ export function buildSponsorSummaries({
   chats,
   help,
   holds = [],
+  judging = null,
   now,
 }: {
   sponsors: readonly {
@@ -332,6 +349,8 @@ export function buildSponsorSummaries({
   }[];
   /** Organizer room holds (every sponsor). */
   holds?: readonly (HoldSpan & { holdId?: string })[];
+  /** Sunday judging board (buildJudgingBoard); null when not read. */
+  judging?: JudgingBoard | null;
   now: Date;
 }): SponsorSummaries {
   const byId = new Map<string, SponsorSummary>();
@@ -361,6 +380,7 @@ export function buildSponsorSummaries({
       chats: [],
       holds: [],
       help: null,
+      judging: judging?.rows.find((r) => r.sponsorId === s.id) ?? null,
     });
   }
   // Earliest chats first, so the fallback room is the first one booked.
@@ -462,5 +482,6 @@ export function buildSponsorSummaries({
     openHelp,
     needsHacker,
     totals: summaryTotals(rows),
+    judging,
   };
 }

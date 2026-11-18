@@ -180,3 +180,8 @@
 - **Why:** The room dialog mixed three ideas (assign room, book hacker, hold room) and confused organizers; "1/6" didn't match how sponsors think about their chats.
 - **Alternatives:** keep holds and room assignment as separate actions with clearer copy (still two concepts for one job).
 
+## 2026-11-18 — Sponsor track judging view; no app-side room auto-assignment
+
+- **Decision:** No app-side auto-assignment until Jazz provides the allowed judging rooms list. Organizers get a Sunday "Sponsor track judging" panel under the run of show (shown on the day the sheet's judging item falls on, Sunday without one) and a Judging column on the Sponsors table, both from `sponsorOrganizer.summary`. Each registered sponsor's room comes from Lucas's sponsor info sheet ("Room") first, else the run-of-show judging item's "Name: Rm" list, with the source shown; a sponsor with neither is "Missing room". Companies named in the list but not registered (e.g. QNX) are listed as "Not registered". Picks are the judging sheet's chosen teams against 5–20, read through one helper (`PickCount`) so a ranked shortlist can replace it. Sponsors still see only their own room (`ownLocation`).
+- **Why:** Most sponsors have no judging room yet, and the team fills rooms into the sheets (Jazz confirmed). Guessing rooms from a made-up pool could send a sponsor to a room nobody booked.
+- **Alternatives:** auto-assign free rooms in the app (no list of allowed rooms to pick from); show only the run-of-show list (hides rooms Lucas's sheet already has); a separate procedure for judging (one more poll; the summary already reads both sheets).
