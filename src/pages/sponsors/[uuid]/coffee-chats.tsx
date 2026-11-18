@@ -168,6 +168,9 @@ export default function SponsorCoffeeChatsPage() {
         eyebrow={copy.eyebrow}
         title={copy.title(sponsorName)}
         intro={sponsorHackersCopy.pageIntro}
+        // RETARGET after sd-room-blocks: the tour's coffee chat steps
+        // anchor here until the rebuilt candidates list has its own target.
+        tour="chats-header"
       />
 
       {/* The numbers a rep checks between chats. */}

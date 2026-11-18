@@ -4,6 +4,7 @@ import SEO from "~/components/seo";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import { VenueMapButton } from "~/components/sponsors/venue-map";
 import { cn } from "~/lib/utils";
+import { SponsorTour } from "~/components/sponsors/tour/sponsor-tour";
 import { pressable } from "./sponsor-shell-styles";
 
 export { pressable, hoverTint } from "./sponsor-shell-styles";
@@ -47,10 +48,11 @@ export function SponsorShell({
             ) : (
               <span />
             )}
-            <div className="flex items-center gap-3">
-              <span className="hidden text-sm font-semibold tracking-tight text-dashboard-text-light sm:inline">
+            <div className="flex items-center gap-2">
+              <span className="mr-1 hidden text-sm font-semibold tracking-tight text-dashboard-text-light sm:inline">
                 {scheduleCopy.brand}
               </span>
+              <SponsorTour />
               <VenueMapButton />
             </div>
           </header>

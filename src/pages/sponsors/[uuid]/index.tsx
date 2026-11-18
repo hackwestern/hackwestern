@@ -33,6 +33,7 @@ import { SponsorHelp } from "~/components/sponsors/help-button";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorLogo } from "~/lib/sponsor-logos";
 import { BoothLayout } from "~/components/sponsors/booth-layout";
+import { SponsorTour } from "~/components/sponsors/tour/sponsor-tour";
 import { cn } from "~/lib/utils";
 
 export default function SponsorHubPage() {
@@ -113,7 +114,9 @@ export default function SponsorHubPage() {
     <Shell>
       <div className="flex flex-col gap-5">
         {/* Welcome */}
-        <section className="flex flex-col gap-2 rounded-dashboard-2xl bg-dashboard-action-primary p-5 text-dashboard-text-inverse shadow-dashboard-card sm:p-7">
+        <section
+          data-tour="welcome"
+          className="flex flex-col gap-2 rounded-dashboard-2xl bg-dashboard-action-primary p-5 text-dashboard-text-inverse shadow-dashboard-card sm:p-7">
           {/* The sponsor's own logo, on white so any logo colour reads on
               the blue card (Jazz, 2026-11-18). */}
           {logo && (
@@ -142,7 +145,7 @@ export default function SponsorHubPage() {
         {/* The things a rep does all weekend, one tap each. */}
         <nav aria-label={actions.label}>
           <ul className="m-0 grid list-none grid-cols-2 gap-3 p-0">
-            <li className="col-span-2">
+            <li className="col-span-2" data-tour="tile-scan">
               <ActionTile
                 href={`/sponsors/${id}/scan`}
                 icon={ScanLine}
@@ -151,7 +154,7 @@ export default function SponsorHubPage() {
                 primary
               />
             </li>
-            <li>
+            <li data-tour="tile-chats">
               <ActionTile
                 href={`/sponsors/${id}/coffee-chats`}
                 icon={Coffee}
@@ -159,7 +162,7 @@ export default function SponsorHubPage() {
                 body={actions.chats.body}
               />
             </li>
-            <li>
+            <li data-tour="tile-schedule">
               <ActionTile
                 href={`/sponsors/${id}/schedule`}
                 icon={Clock}
@@ -167,7 +170,7 @@ export default function SponsorHubPage() {
                 body={actions.schedule.body}
               />
             </li>
-            <li className="col-span-2">
+            <li className="col-span-2" data-tour="tile-judging">
               {judgingOpen ? (
                 <ActionTile
                   href={`/sponsors/${id}/picks`}
@@ -196,6 +199,7 @@ export default function SponsorHubPage() {
         {/* Important things to remember */}
         <section
           aria-labelledby="important-heading"
+          data-tour="important"
           className="flex flex-col gap-3"
         >
           <div className="flex items-center justify-between gap-3">
@@ -265,6 +269,7 @@ export default function SponsorHubPage() {
         {/* Sponsor Bay layout: booths around the projector screen */}
         <section
           aria-labelledby="booths-heading"
+          data-tour="booths"
           className="flex flex-col gap-3"
         >
           <h2
@@ -530,11 +535,14 @@ function Shell({ children }: { children: React.ReactNode }) {
       <SEO title={copy.seoTitle} noindex />
       <div className="min-h-dvh bg-dashboard-bg-page px-4 pb-[max(3rem,env(safe-area-inset-bottom))] pt-4 font-figtree font-medium leading-default text-dashboard-text-heavy sm:px-5 sm:pt-6">
         <div className="mx-auto flex w-full max-w-[640px] flex-col gap-5">
-          <header className="flex min-h-11 items-center justify-between">
+          <header className="flex min-h-11 items-center justify-between gap-3">
             <span className="text-sm font-semibold tracking-tight text-dashboard-text-light">
               {copy.brand}
             </span>
-            <VenueMapButton />
+            <div className="flex items-center gap-2">
+              <SponsorTour offerWelcome />
+              <VenueMapButton />
+            </div>
           </header>
           {children}
         </div>

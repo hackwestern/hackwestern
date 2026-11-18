@@ -87,13 +87,16 @@ export function PageIntro({
   eyebrow,
   title,
   intro,
+  tour,
 }: {
   eyebrow: string;
   title: string;
   intro: string;
+  /** A `data-tour` target name for the guided tour. */
+  tour?: string;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div data-tour={tour} className="flex flex-col gap-1.5">
       <span className="text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
         {eyebrow}
       </span>

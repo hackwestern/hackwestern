@@ -100,7 +100,7 @@ export function BadgeScanner({
       : go({ kind: "notHacker" }, copy.notHacker.title);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div data-tour="scan-camera" className="flex flex-col gap-4">
       <p role="status" className="sr-only">
         {message}
       </p>
