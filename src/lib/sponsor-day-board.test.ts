@@ -6,6 +6,7 @@ import {
   parseDayParam,
   round1State,
   round2State,
+  slotFill,
   slotTone,
   slotTotals,
   slotsByRoom,
@@ -81,6 +82,16 @@ describe("Saturday slots", () => {
       ["Rm 2241", ["10:00", "10:15"]],
       ["Rm 2242", ["10:00", "10:15"]],
     ]);
+  });
+  it("caps a cell at the ask and keeps the extras apart", () => {
+    // Ask lowered to 2 after 4 were booked: "2/2 +2 over", never "4/2".
+    expect(slotFill({ booked: 4, needed: 2 })).toEqual({ shown: 2, over: 2 });
+    // Asked for none but one is booked: "0/0 +1 over", never "1/0".
+    expect(slotFill({ booked: 1, needed: 0 })).toEqual({ shown: 0, over: 1 });
+    expect(slotFill({ booked: 1, needed: 3 })).toEqual({ shown: 1, over: 0 });
+    // The cells add up to the totals.
+    const cells = slots.reduce((n, s) => n + slotFill(s).shown, 0);
+    expect(cells).toBe(slotTotals(slots).booked);
   });
   it("totals booked against asked, never over a slot's ask", () => {
     expect(slotTotals(slots)).toEqual({ booked: 6, needed: 8, open: 1 });

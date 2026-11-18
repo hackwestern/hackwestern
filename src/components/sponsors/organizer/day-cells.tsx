@@ -5,6 +5,7 @@ import { formatClock, type RunOfShowItem } from "~/lib/run-of-show";
 import {
   round1State,
   round2State,
+  slotFill,
   slotTone,
   slotsByRoom,
   sundayWhere,
@@ -95,27 +96,46 @@ export function ChatSlotsCell({ summary }: { summary: SponsorSummary }) {
           <span className="mr-0.5 whitespace-nowrap text-xs font-semibold text-dashboard-text-medium">
             {room}
           </span>
-          {slots.map((s) => (
-            <span
-              key={s.slotTime}
-              aria-label={copy.slotLabel(
-                room,
-                formatClock(s.slotTime),
-                s.booked,
-                s.needed,
-              )}
-              className={cn(
-                "whitespace-nowrap rounded-dashboard-sm px-1.5 py-0.5 text-xs font-semibold tabular-nums leading-5",
-                TONE[slotTone(s)],
-              )}
-            >
-              {copy.slot(
-                formatClock(s.slotTime).replace(/ [AP]M$/, ""),
-                s.booked,
-                s.needed,
-              )}
-            </span>
-          ))}
+          {slots.map((s) => {
+            // Never "4/3": booked is capped at the ask, extras said apart.
+            const { shown, over } = slotFill(s);
+            return (
+              <span
+                key={s.slotTime}
+                role="img"
+                aria-label={copy.slotLabel(
+                  room,
+                  formatClock(s.slotTime),
+                  shown,
+                  s.needed,
+                  over,
+                )}
+                className="inline-flex items-center gap-1 whitespace-nowrap"
+              >
+                <span
+                  aria-hidden
+                  className={cn(
+                    "rounded-dashboard-sm px-1.5 py-0.5 text-xs font-semibold tabular-nums leading-5",
+                    TONE[slotTone(s)],
+                  )}
+                >
+                  {copy.slot(
+                    formatClock(s.slotTime).replace(/ [AP]M$/, ""),
+                    shown,
+                    s.needed,
+                  )}
+                </span>
+                {over > 0 && (
+                  <span
+                    aria-hidden
+                    className="text-xs tabular-nums text-dashboard-text-light"
+                  >
+                    {copy.slotOver(over)}
+                  </span>
+                )}
+              </span>
+            );
+          })}
         </span>
       ))}
     </span>
