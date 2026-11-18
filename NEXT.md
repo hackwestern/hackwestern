@@ -5,9 +5,26 @@
   - Owner decisions pending: late shortlist (recommend: fill free gaps, don't move anyone), round 2 timing (recommend: wait for 11:30), add QNX as a sponsor, email members not on Slack (recommend: yes).
 - RUNNING `sd-room-blocks` (worktree `hackwestern-sd-room-blocks`, DB `hackwestern_sd_blocks`, port 3022): coffee chats v2 per `docs/flows/coffee-chat-room-blocks.md` in that worktree (sponsor requests 1-on-1 N reps or group M hackers, Ask for fewer, no room cap, one combined view, logos only, sheet Coffee Chats numbers). Migration slot 0051 (its journal lacks 0050: regenerate/renumber at merge).
 - RUNNING `sd-availability` (worktree `hackwestern-sd-availability`, port 3023): spon team availability timetable under Run of show + Organizers toggle on the schedule, from RUN OF SHOW columns J-P (SPON TEAM AVAILABILITY / NECESSARY SHIFTS blocks).
+- RUNNING `ops-pings` (worktree `hackwestern-ops-pings`, DB `hackwestern_ops_pings`, port 3031), SEPARATE PR stacked on sponsor-dashboard: organizer run-of-show Slack pings from sheet 1lnRCD_q_EYaAcmL-IXkmuWZMNAiFIiU1Linbm8jHyAE ("Schedule View"). DM each owner 15 min before start and at end (title, where, notes/to-do) + post in OPS_PINGS_CHANNEL. Owners matched to Slack profile names of organizer-channel members; groups (Everyone, ALL OF SPON) channel-only; ambiguous names flagged. Needs Jazz: the organizer channel, SLACK_BOT_TOKEN scopes.
+- MERGED aaf8e97 `sd-judging-round2`: Open/Close round 2 (organizer button, server-enforced), email for members not on Slack, By hacker view with notice status, Final results with hackers. Migration 0052 applied to `hackwestern_spon` (journal idx 51 = tag 0052). tsc clean; vitest 1363 pass, only Apple Wallet fails.
+  - Open question: after round 2 opens, a sponsor with no slot can still rank from their shortlist (never locked out). OK?
+  - MERGE NOTE for sd-room-blocks: its migration was told to be 0051; main's journal already has idx 51 (tag 0052). Regenerate/renumber its migration as 0053 at merge.
+- Coffee chat page mockups: `mocks/sponsor-coffee-chats-v3/` a-candidate-list, b-rooms-first, c-pipeline (serve with `python -m http.server 3040 --bind 127.0.0.1` from the repo root). Waiting for Jazz's pick.
 - Waiting on Jazz: where the sponsor booth projector/screen setup info lives (not in the run-of-show sheet).
 - Optional polish offered: portal shows "Welcome, Sponsor!" for a few seconds until the sheet read finishes; could show name + logo from the DB right away.
 - `hackwestern-sd-tester` (branch `sd-tester-sponsor`) has no work and no note: ask Jazz.
+
+## When everything is merged: PRs (Jazz 2026-11-18)
+- **Strip Claude attribution** from the UNPUSHED commits only (214 on `sponsor-dashboard`, plus feature branches): back up first (`git branch backup/sponsor-dashboard-<date>`), then rewrite messages for `sponsor-dashboard --not --remotes` only (never touch commits already on origin: 553 pushed ones stay; rewriting shared history needs a team decision with Luka). No `Co-Authored-By: Claude` and no "Generated with Claude Code" in new commits or PR bodies (memory: no-claude-coauthor).
+- **Separate DRAFT PRs, marked in progress** ("[WIP]" title, GitHub draft), each with screenshots and a plain description of what changed and why, tagging @lucianlavric (Luka's GitHub login, from PR #1137). Stacked on `spon-judging` (#1112), split at the feature merge commits:
+  1. Sponsor dashboard base (organizer home, run of show, portal redesign, room holds, task pings)
+  2. Sunday judging rounds (sd-presentations + sd-judging-round2)
+  3. Spon team availability (sd-availability)
+  4. Sponsor portal: map, important info, booth layout, logos, locked judging tile
+  5. Coffee chats v2 (sd-room-blocks)
+  6. Organizer run-of-show Slack pings (ops-pings), separate PR
+  - Screenshots: take fresh ones from the merged app (organizer + sponsor views, desktop + phone); `mocks/` stays out of the PRs.
+  - Needs Jazz's OK before pushing.
 
 ## To build (queued, Jazz 2026-11-18)
 - **Sponsors tab (organizer first page) changes by day** (Jazz 2026-11-18). Build after sd-room-blocks merges (both touch the Sponsors table).
