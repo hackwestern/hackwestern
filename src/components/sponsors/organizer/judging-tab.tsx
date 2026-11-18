@@ -1,6 +1,9 @@
 import { useMemo, useRef, useState } from "react";
 import { CheckCircle2, ExternalLink, TriangleAlert } from "lucide-react";
-import { DashboardButton } from "~/components/internals/dashboard-button";
+import {
+  DashboardButton,
+  dashboardButtonVariants,
+} from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
 import { pressable } from "~/components/sponsors/sponsor-shell";
@@ -18,9 +21,8 @@ type Overview = RouterOutputs["sponsorScoring"]["overview"];
 const REFRESH_MS = 30_000;
 
 const devpostLink = cn(
-  "inline-flex min-h-11 shrink-0 items-center gap-1 rounded-dashboard-md px-2 text-sm font-semibold text-dashboard-text-link md:min-h-9",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
-  pressable,
+  dashboardButtonVariants({ variant: "link" }),
+  "shrink-0",
 );
 
 /**

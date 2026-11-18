@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { Search, X } from "lucide-react";
 
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { ProjectCard } from "~/components/sponsors/judging/project-card";
@@ -227,22 +228,14 @@ export default function SponsorJudgingPage() {
                   className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1"
                 >
                   {BROWSE_FILTERS.map((f) => (
-                    <button
+                    <DashboardChip
                       key={f}
-                      type="button"
-                      aria-pressed={filter === f}
+                      selected={filter === f}
                       onClick={() => setFilter(f)}
-                      className={cn(
-                        "inline-flex min-h-11 shrink-0 items-center rounded-full border px-3.5 text-sm font-semibold md:min-h-9",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
-                        filter === f
-                          ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
-                          : "border-dashboard-border-default bg-dashboard-bg-surface text-dashboard-text-medium [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
-                        pressable,
-                      )}
+                      className="min-h-11 shrink-0 md:min-h-9"
                     >
                       {copy.browse.filters[f]}
-                    </button>
+                    </DashboardChip>
                   ))}
                 </div>
                 <label className="inline-flex items-center gap-2 text-sm font-semibold text-dashboard-text-medium">

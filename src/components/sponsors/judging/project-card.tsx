@@ -1,5 +1,9 @@
 import { useEffect, useId, useState } from "react";
 import { Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
+import {
+  DashboardButton,
+  dashboardButtonVariants,
+} from "~/components/internals/dashboard-button";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { pressable } from "~/components/sponsors/sponsor-shell";
@@ -16,11 +20,7 @@ import {
 const copy = sponsorJudgingCopy;
 const AVATARS = 4;
 
-export const linkChip = cn(
-  "inline-flex min-h-11 items-center gap-1.5 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm font-semibold text-dashboard-text-heavy md:min-h-9",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
-  pressable,
-);
+const linkChip = dashboardButtonVariants({ variant: "small" });
 
 export function ProjectLinks({ team }: { team: JudgingTeam }) {
   if (!team.devpostUrl && !team.githubUrl) return null;
@@ -166,18 +166,15 @@ export function ProjectCard({
           {shortlisted ? copy.shortlistToggle.added : copy.shortlistToggle.add}
         </button>
         {!noteOpen && (
-          <button
+          <DashboardButton
             type="button"
+            variant="link"
             onClick={() => setNoteOpen(true)}
             aria-expanded={false}
             aria-controls={noteId}
-            className={cn(
-              "inline-flex min-h-11 items-center rounded-dashboard-md px-3 text-sm font-semibold text-dashboard-text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
-              pressable,
-            )}
           >
             {copy.note.add}
-          </button>
+          </DashboardButton>
         )}
         <p
           aria-live="polite"
