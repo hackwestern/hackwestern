@@ -79,12 +79,14 @@ export default function JudgingControlRoom() {
           />
 
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:items-start">
-            <ControlJudges
-              judges={judgesQ.data}
-              queue={queueQ.data}
-              now={now}
-              myId={session?.user.id}
-            />
+            <div id="manage-judges" className="min-w-0 scroll-mt-4">
+              <ControlJudges
+                judges={judgesQ.data}
+                queue={queueQ.data}
+                now={now}
+                myId={session?.user.id}
+              />
+            </div>
             <ControlRanking ranking={rankingQ.data} queue={queueQ.data} />
           </div>
 
