@@ -42,8 +42,8 @@ export const coffeeChatCopy = {
 
   // A sponsor lowers hackers for a slot or an hour (a rep leaves).
   fewer: {
-    ask: "Ask for fewer",
-    askLabel: (time: string) => `Ask for fewer hackers at ${time}`,
+    ask: "Offer less chats",
+    askLabel: (time: string) => `Offer less chats at ${time}`,
     hackers: "Hackers then",
     noChat: "0 = no chat then",
     scope: "For",
@@ -54,7 +54,7 @@ export const coffeeChatCopy = {
     slotLine: (time: string, booked: number, asked: number) =>
       `${time} · ${booked} of ${asked} booked`,
     askedFor: (n: number) => `asked for ${n}`,
-    heading: "Fewer hackers",
+    heading: "Less chats",
     item: (start: string, end: string, n: number) =>
       `${start}–${end} · ${n === 0 ? "no chats" : `${n} ${n === 1 ? "hacker" : "hackers"}`}`,
     remove: "Back to full",
