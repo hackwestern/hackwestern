@@ -13,6 +13,7 @@ import EventLogistics from "~/components/live/event-logistics";
 import ContactUs from "~/components/live/contact-us";
 import CoffeeChatRequests from "~/components/live/coffee-chat-requests";
 import CoffeeChats from "~/components/live/coffee-chats";
+import SponsorPresentations from "~/components/live/sponsor-presentations";
 import Sidebar from "~/components/live/sidebar";
 import Topbar from "~/components/live/topbar";
 import { authOptions } from "~/server/auth";
@@ -48,6 +49,7 @@ const Live = ({ isOrganizer }: { isOrganizer: boolean }) => {
             {isGreeting ? `Hi, ${firstName}!` : pageTitle}
           </h1>
           {!isOrganizer && <CoffeeChatRequests showSummary={tab === "home"} />}
+          {!isOrganizer && tab === "home" && <SponsorPresentations />}
           <TabComponent tab={tab} isOrganizer={isOrganizer} />
         </main>
       </div>

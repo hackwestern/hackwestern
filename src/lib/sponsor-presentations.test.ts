@@ -193,3 +193,16 @@ describe("helpers", () => {
     ).toEqual(["a", "b"]);
   });
 });
+
+describe("judgingRound", () => {
+  it("moves from shortlist to sent to rank", async () => {
+    const { judgingRound } = await import("./sponsor-presentations");
+    expect(judgingRound({ shortlistSent: null, scheduledAt: null })).toBe(
+      "shortlist",
+    );
+    expect(judgingRound({ shortlistSent: {}, scheduledAt: null })).toBe("sent");
+    expect(judgingRound({ shortlistSent: null, scheduledAt: new Date() })).toBe(
+      "rank",
+    );
+  });
+});

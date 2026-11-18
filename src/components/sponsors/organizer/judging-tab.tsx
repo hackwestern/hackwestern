@@ -6,6 +6,7 @@ import {
 } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
+import { PresentationsPanel } from "~/components/sponsors/organizer/presentations-panel";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { sponsorColorIndexes } from "~/lib/sponsor-colors";
@@ -82,6 +83,7 @@ export function JudgingTab({ sponsor }: { sponsor: string | null }) {
 
   return (
     <div className="flex flex-col gap-4">
+      <PresentationsPanel colors={colors} />
       {data.unsyncedCount > 0 && (
         <p
           role="status"

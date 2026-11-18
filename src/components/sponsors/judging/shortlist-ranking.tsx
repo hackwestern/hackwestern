@@ -26,7 +26,10 @@ const iconButton = cn(
 );
 
 /**
- * The shortlist step: shortlisted teams in rank order, moved with up/down
+ * Round 2 ranking: by default the shortlisted teams; once presentations
+ * are scheduled, `presented` (team id -> "10:05 AM") limits it to the
+ * teams that presented, shows their time, and hides Remove. Teams in rank
+ * order, moved with up/down
  * buttons (focus follows the moved team; the new place is announced), the
  * first `finalTop` above a line, and Submit top N with a confirm step.
  * Once submitted it shows "Submitted 10:42 AM" until the ranking changes.
@@ -37,20 +40,24 @@ export function ShortlistRanking({
   reviews,
   onSave,
   onBrowse,
+  presented,
 }: {
   sponsor: string;
   data: JudgingData;
   reviews: ReadonlyMap<string, TeamReview>;
   onSave: (teamId: string, patch: ReviewPatch) => void;
   onBrowse: () => void;
+  presented?: ReadonlyMap<string, string>;
 }) {
   const top = data.finalTop;
   const shortlist = useMemo(
     () =>
       data.teams
-        .filter((t) => reviews.get(t.id)?.shortlisted)
+        .filter((t) =>
+          presented ? presented.has(t.id) : reviews.get(t.id)?.shortlisted,
+        )
         .map((t) => ({ ...t, score: reviews.get(t.id)?.score ?? null })),
-    [data.teams, reviews],
+    [data.teams, reviews, presented],
   );
   const byId = useMemo(
     () => new Map(shortlist.map((t) => [t.id, t])),
@@ -109,6 +116,15 @@ export function ShortlistRanking({
     });
   };
 
+  if (shortlist.length === 0 && presented) {
+    return (
+      <DashboardPanel className="items-start">
+        <p className="m-0 text-base text-dashboard-text-medium">
+          {copy.round.noPresenters}
+        </p>
+      </DashboardPanel>
+    );
+  }
   if (shortlist.length === 0) {
     return (
       <DashboardPanel className="items-start">
@@ -126,10 +142,12 @@ export function ShortlistRanking({
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2 className="m-0 text-xl font-semibold text-dashboard-text-heavy">
-          {copy.shortlist.heading}
+          {presented ? copy.round.presentedHeading : copy.shortlist.heading}
         </h2>
         <p className="m-0 text-base text-dashboard-text-medium">
-          {copy.shortlist.intro(top)}
+          {presented
+            ? copy.round.presentedIntro(top)
+            : copy.shortlist.intro(top)}
         </p>
       </div>
 
@@ -180,6 +198,8 @@ export function ShortlistRanking({
                     {team.score === null
                       ? copy.shortlist.noScore
                       : copy.shortlist.scoreOf(team.score)}
+                    {presented?.get(id) &&
+                      ` · ${copy.round.presentsAt(presented.get(id)!)}`}
                   </span>
                   <ProjectLinks team={team} />
                 </div>
@@ -208,14 +228,16 @@ export function ShortlistRanking({
                   >
                     <ArrowDown aria-hidden className="size-4" />
                   </button>
-                  <button
-                    type="button"
-                    aria-label={copy.shortlist.remove(team.name)}
-                    onClick={() => onSave(id, { shortlisted: false })}
-                    className={iconButton}
-                  >
-                    <X aria-hidden className="size-4" />
-                  </button>
+                  {!presented && (
+                    <button
+                      type="button"
+                      aria-label={copy.shortlist.remove(team.name)}
+                      onClick={() => onSave(id, { shortlisted: false })}
+                      className={iconButton}
+                    >
+                      <X aria-hidden className="size-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             </li>
