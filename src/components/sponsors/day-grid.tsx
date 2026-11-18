@@ -1,5 +1,13 @@
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
-import { CalendarX, Clock, MapPin, Users, X } from "lucide-react";
+import {
+  CalendarX,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  MapPin,
+  Users,
+  X,
+} from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardCheckbox } from "~/components/internals/dashboard-checkbox";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
@@ -61,6 +69,8 @@ const FOCUS_GROWTH = 1.3;
 
 const STORAGE_KEY = "hw-sponsor-schedule-show-hackathon";
 const ORGANIZERS_STORAGE_KEY = "hw-sponsor-schedule-show-organizers";
+// Schedule folded to its header, so what sits below is in view.
+const COLLAPSED_STORAGE_KEY = "hw-sponsor-schedule-collapsed";
 // The narrow "who's around" column (organizers only), right of the times.
 const ORGANIZERS_WIDTH = 92;
 
@@ -361,6 +371,10 @@ export function DayGrid({
     opener.current = button;
     setSelected(entry);
   };
+  // Fold the grid to its header to see the details under it (Jazz,
+  // 2026-11-18). Remembered on this device.
+  const [collapsed, setCollapsed] = useStoredFlag(COLLAPSED_STORAGE_KEY);
+  const bodyId = `${headingId}-body`;
 
   return (
     <section
@@ -377,8 +391,25 @@ export function DayGrid({
           </h2>
           {headerStart}
         </div>
-        {headerEnd}
+        <div className="flex flex-wrap items-center gap-2">
+          {headerEnd}
+          <DashboardButton
+            variant="outline"
+            aria-expanded={!collapsed}
+            aria-controls={bodyId}
+            onClick={() => setCollapsed(!collapsed)}
+            className="h-9 gap-1.5 px-3 text-sm motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.97]"
+          >
+            {collapsed ? (
+              <ChevronDown aria-hidden className="size-4" />
+            ) : (
+              <ChevronUp aria-hidden className="size-4" />
+            )}
+            {collapsed ? copy.collapse.expand : copy.collapse.collapse}
+          </DashboardButton>
+        </div>
       </div>
+      <div id={bodyId} hidden={collapsed}>
       <div className="-mt-1 mb-3 flex flex-wrap items-center justify-end gap-2 empty:hidden">
         {focused ? (
           <DashboardButton
@@ -606,6 +637,7 @@ export function DayGrid({
           </div>
         </div>
       )}
+      </div>
 
       <EventDetails
         entry={selected}
