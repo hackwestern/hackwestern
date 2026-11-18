@@ -42,8 +42,11 @@ export type BookingsSheet = {
   clear(range: string): Promise<void>;
 };
 
-/** A writer client, separate from the read-only run-of-show reader. */
-async function googleBookingsSheet(): Promise<BookingsSheet> {
+/**
+ * A writer client, separate from the read-only run-of-show reader. Also
+ * used by the Sponsor Judging tab mirror (sponsor-judging-sheet-mirror.ts).
+ */
+export async function googleBookingsSheet(): Promise<BookingsSheet> {
   const { email, key } = runOfShowCredentials();
   const spreadsheetId = runOfShowSpreadsheetId();
   const auth = new google.auth.JWT({ email, key, scopes: [WRITE_SCOPE] });

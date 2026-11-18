@@ -72,6 +72,7 @@ export function PresentationsPanel({
     },
   });
   const cheat = api.sponsorPresentations.cheatCheckTopTeams.useMutation();
+  const syncSheet = api.sponsorPresentations.syncSheet.useMutation();
   const [confirming, setConfirming] = useState<
     | { kind: "schedule"; changed: number }
     | { kind: "resend" }
@@ -261,7 +262,27 @@ export function PresentationsPanel({
             >
               {round2Open ? copy.round2.close : copy.round2.open}
             </DashboardButton>
+            {/* The Sponsor Judging tab also updates after every change. */}
+            <DashboardButton
+              variant="small"
+              disabled={syncSheet.isPending}
+              onClick={() => syncSheet.mutate()}
+            >
+              {syncSheet.isPending ? copy.syncing : copy.syncSheet}
+            </DashboardButton>
           </div>
+        )}
+        {syncSheet.data && (
+          <p role="status" className={syncSheet.data.ok ? NOTE : WARN}>
+            {syncSheet.data.ok
+              ? copy.synced(formatSubmittedTime(syncSheet.data.syncedAt))
+              : copy.syncFailed(syncSheet.data.error)}
+          </p>
+        )}
+        {syncSheet.isError && (
+          <p role="alert" className={WARN}>
+            {copy.failed}
+          </p>
         )}
         <p className={NOTE} aria-live="polite">
           {!anySent

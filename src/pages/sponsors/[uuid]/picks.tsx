@@ -60,6 +60,7 @@ export default function SponsorJudgingPage() {
   // Round 2 once organizers open it and this sponsor has presentation
   // slots: rank the teams that presented (team id -> "10:05 AM"). Before
   // that, round 1's sent shortlist with a note that round 2 opens later.
+  // Round 2 open with no slot of their own: "locked", no ranking.
   const round = data ? judgingRound(data.round) : "shortlist";
   const presented = useMemo(
     () =>
@@ -111,6 +112,20 @@ export default function SponsorJudgingPage() {
           <h1 className="dashboard-h1 m-0">{copy.invalid.title}</h1>
           <p className="mb-0 mt-2 text-base leading-relaxed text-dashboard-text-medium">
             {copy.invalid.body}
+          </p>
+        </DashboardPanel>
+      </SponsorShell>
+    );
+  }
+
+  // Sponsors without a prize track don't judge: a quiet note, no retry.
+  if (query.error?.data?.code === "FORBIDDEN") {
+    return (
+      <SponsorShell title={copy.seoTitle} backHref={`/sponsors/${uuid}`}>
+        <DashboardPanel className="items-start">
+          <h1 className="dashboard-h1 m-0">{copy.noPrizeTrack.title}</h1>
+          <p className="m-0 text-base leading-relaxed text-dashboard-text-medium">
+            {copy.noPrizeTrack.body}
           </p>
         </DashboardPanel>
       </SponsorShell>
@@ -322,26 +337,17 @@ export default function SponsorJudgingPage() {
             onBrowse={() => chooseStep("browse", true)}
             presented={presented}
           />
-        ) : round === "reschedule" ? (
-          // Round 2 is open, but nothing was scheduled for this sponsor:
-          // never lock them out.
-          <>
-            <ShortlistSend
-              sponsor={uuid}
-              data={data}
-              reviews={reviews}
-              onSave={save}
-              onBrowse={() => chooseStep("browse", true)}
-              reschedule
-            />
-            <ShortlistRanking
-              sponsor={uuid}
-              data={data}
-              reviews={reviews}
-              onSave={save}
-              onBrowse={() => chooseStep("browse", true)}
-            />
-          </>
+        ) : round === "locked" ? (
+          // Round 2 is open, but no team presented to this sponsor: no
+          // slot, no ranking (Jazz, 2026-11-18; the server refuses too).
+          <ShortlistSend
+            sponsor={uuid}
+            data={data}
+            reviews={reviews}
+            onSave={save}
+            onBrowse={() => chooseStep("browse", true)}
+            locked
+          />
         ) : (
           <ShortlistSend
             sponsor={uuid}

@@ -108,6 +108,9 @@ export default function SponsorHubPage() {
   // never time-gated, so this exposes nothing new.
   const judgingOpen =
     router.query.preview === "judging" || judgingUnlocked(now);
+  // Only prize track sponsors judge; the rest get a quiet "No prize track"
+  // tile in the same spot (Jazz, 2026-11-18). Unknown while loading.
+  const noPrizeTrack = data?.hasPrizeTrack === false;
   const actions = copy.actions;
 
   return (
@@ -172,7 +175,15 @@ export default function SponsorHubPage() {
               />
             </li>
             <li className="col-span-2" data-tour="tile-judging">
-              {judgingOpen ? (
+              {noPrizeTrack ? (
+                <LockedTile
+                  icon={Trophy}
+                  title={actions.picks.title}
+                  body={actions.picks.noTrack.body}
+                  badge={actions.picks.noTrack.badge}
+                  message={actions.picks.noTrack.message}
+                />
+              ) : judgingOpen ? (
                 <ActionTile
                   href={`/sponsors/${id}/picks`}
                   icon={Trophy}

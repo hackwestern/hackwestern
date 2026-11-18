@@ -1,6 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import { sponsorJudgingCopy } from "~/content/sponsor-judging";
+import { hasPrizeTrack } from "~/lib/sponsor-prize-tracks";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
   SHEET_TAB,
@@ -68,6 +70,8 @@ export const sponsorJudgingRouter = createTRPCRouter({
    * devpost/github and aren't judgeable). Each team carries its id, name,
    * submission links, tracks, and member names.
    *
+   * Sponsors without a prize track are refused (FORBIDDEN).
+   *
    * Track filtering: the sponsor's track comes from the "Sponsor Track"
    * column on the sponsor info tab. A sponsor with a track set only sees
    * teams in that track (overlap on the teams.tracks array, same filter the
@@ -79,6 +83,13 @@ export const sponsorJudgingRouter = createTRPCRouter({
     .input(z.object({ sponsor: z.string().uuid() }))
     .query(async ({ input }) => {
       const sponsorName = await resolveSponsorName(input.sponsor);
+      // Only prize track sponsors judge (src/content/sponsor-prize-tracks.ts).
+      if (!hasPrizeTrack(sponsorName)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: sponsorJudgingCopy.errors.noPrizeTrack,
+        });
+      }
 
       // A sheet failure is an error, never "no filter" (see fetchSponsorTrack).
       const sponsorTrack = await fetchSponsorTrack(sponsorName);

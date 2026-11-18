@@ -31,13 +31,14 @@ export function ShortlistSend({
   reviews,
   onSave,
   onBrowse,
-  reschedule = false,
+  locked = false,
 }: {
   /**
-   * A schedule exists with no slot for this sponsor: say organizers need
-   * to schedule again; the ranking renders below, so the bar isn't sticky.
+   * Round 2 is open but this sponsor has no presentation slot, so they
+   * can't rank (Jazz, 2026-11-18): say so plainly, in place of the
+   * "round 2 opens later" note.
    */
-  reschedule?: boolean;
+  locked?: boolean;
   sponsor: string;
   data: JudgingData;
   reviews: ReadonlyMap<string, TeamReview>;
@@ -72,7 +73,7 @@ export function ShortlistSend({
     },
   });
 
-  if (shortlist.length === 0 && !sent && !reschedule) {
+  if (shortlist.length === 0 && !sent && !locked) {
     return (
       <DashboardPanel className="items-start">
         <p className="m-0 text-base text-dashboard-text-medium">
@@ -128,21 +129,15 @@ export function ShortlistSend({
       <p
         className={cn(
           "m-0 text-sm",
-          reschedule
+          locked
             ? "rounded-dashboard-lg bg-dashboard-status-iconBadge px-4 py-3 font-semibold text-dashboard-text-warning"
             : "text-dashboard-text-medium",
         )}
       >
-        {reschedule ? copy.round.reschedule : copy.round.waiting}
+        {locked ? copy.round.locked : copy.round.waiting}
       </p>
 
-      <div
-        className={cn(
-          reschedule
-            ? "border-t border-dashboard-border-subtle pt-3"
-            : "sticky bottom-0 z-10 -mx-4 border-t border-dashboard-border-subtle bg-dashboard-bg-page/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm sm:-mx-5 sm:px-5",
-        )}
-      >
+      <div className="sticky bottom-0 z-10 -mx-4 border-t border-dashboard-border-subtle bg-dashboard-bg-page/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm sm:-mx-5 sm:px-5">
         {!data.open ? (
           <p className="m-0 text-sm font-medium text-dashboard-text-medium">
             {copy.submit.closed}

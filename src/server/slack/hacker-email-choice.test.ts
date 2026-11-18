@@ -52,6 +52,10 @@ vi.mock("~/server/mail-mailjet", () => ({
 vi.mock("~/server/api/utils/coffee-chat-sheet-mirror", () => ({
   mirrorCoffeeChats: vi.fn(async () => undefined),
 }));
+vi.mock("~/server/api/utils/sponsor-judging-sheet-mirror", () => ({
+  mirrorSponsorJudging: vi.fn(async () => ({ ok: true, rows: 0 })),
+  mirrorSponsorJudgingSoon: vi.fn(async () => undefined),
+}));
 vi.mock("~/server/api/utils/sponsor-judging-board", () => ({
   judgingRoomsById: vi.fn(),
 }));
@@ -256,7 +260,8 @@ describe("presentation notify", () => {
     );
     const [sponsor] = await db
       .insert(sponsorJudgingSponsors)
-      .values({ name: `Choice Judge ${faker.string.alphanumeric(8)}` })
+      // A prize track sponsor: only those are scheduled.
+      .values({ name: `QNX Choice Judge ${faker.string.alphanumeric(8)}` })
       .returning();
     const teamId = faker.string.alphanumeric(12);
     await db.insert(teams).values({

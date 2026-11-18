@@ -319,19 +319,18 @@ export function formatPresentationTime(minutes: number) {
   return `${h12}:${String(m).padStart(2, "0")} ${h24 < 12 ? "AM" : "PM"}`;
 }
 
-export type JudgingRound = "shortlist" | "sent" | "reschedule" | "rank";
+export type JudgingRound = "shortlist" | "sent" | "locked" | "rank";
 
 /**
  * Where one sponsor is in Sunday judging. Round 2 starts only once
  * organizers open it (`round2Open`, after presentations): then "rank" (they
  * have at least one placed slot: rank the teams that presented) or
- * "reschedule" (a schedule exists but has no slot for them: sent late, no
- * room, or none of their teams fit; they rank their shortlist and should
- * ask organizers to schedule again). Before that, "sent" (shortlist sent,
- * waiting for round 2) or "shortlist" (round 1, nothing sent). Only "rank"
- * limits the top 5 to teams that presented; no top 5 can be submitted
- * until round 2 is open. For the picks page; takes sponsorScoring.get's
- * `round`.
+ * "locked" (a schedule exists but has no slot for them: sent late, no
+ * room, or none of their teams fit). A sponsor with no slot can't rank in
+ * round 2 (Jazz, 2026-11-18); sponsorScoring.submit refuses them too.
+ * Before that, "sent" (shortlist sent, waiting for round 2) or "shortlist"
+ * (round 1, nothing sent). No top 5 can be submitted until round 2 is
+ * open. For the picks page; takes sponsorScoring.get's `round`.
  */
 export function judgingRound(round: {
   shortlistSent: unknown;
@@ -341,7 +340,7 @@ export function judgingRound(round: {
 }): JudgingRound {
   if (round.round2Open) {
     if (round.slots.length > 0) return "rank";
-    if (round.scheduledAt) return "reschedule";
+    if (round.scheduledAt) return "locked";
   }
   return round.shortlistSent ? "sent" : "shortlist";
 }

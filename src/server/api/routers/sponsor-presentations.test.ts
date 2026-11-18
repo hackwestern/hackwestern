@@ -16,6 +16,10 @@ import {
   users,
 } from "~/server/db/schema";
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
+import {
+  mirrorSponsorJudging,
+  mirrorSponsorJudgingSoon,
+} from "~/server/api/utils/sponsor-judging-sheet-mirror";
 import { sendPresentationDm } from "~/server/slack/presentation-dm";
 import { presentationDmMessage } from "~/server/slack/presentation-dm";
 import { sendViaMailjet } from "~/server/mail-mailjet";
@@ -38,6 +42,12 @@ vi.mock("~/env", async (importOriginal) => {
     }),
   };
 });
+
+// The Sponsor Judging tab mirror writes to Google Sheets; never here.
+vi.mock("~/server/api/utils/sponsor-judging-sheet-mirror", () => ({
+  mirrorSponsorJudging: vi.fn(async () => ({ ok: true, rows: 0 })),
+  mirrorSponsorJudgingSoon: vi.fn(async () => undefined),
+}));
 
 // Rooms come from the sheets; Slack is the network.
 vi.mock("~/server/api/utils/sponsor-judging-board", () => ({
@@ -74,10 +84,12 @@ beforeEach(async () => {
   );
 });
 
-async function sponsor() {
+/** A sponsor with a prize track (the name contains "QNX"), or without. */
+async function sponsor(prizeTrack = true) {
+  const name = `${prizeTrack ? "QNX" : "Sponsor"} ${faker.string.alphanumeric(10)}`;
   const [row] = await db
     .insert(sponsorJudgingSponsors)
-    .values({ name: `Sponsor ${faker.string.alphanumeric(10)}` })
+    .values({ name })
     .returning();
   return row!;
 }
@@ -179,6 +191,73 @@ describe("sponsorPresentations.schedule", () => {
     expect(starts[1]! - starts[0]!).toBeGreaterThanOrEqual(10);
     const rows = await db.select().from(sponsorPresentations);
     expect(rows).toHaveLength(3);
+  });
+});
+
+describe("sponsorPresentations prize track gate", () => {
+  test("a sponsor without a prize track is never scheduled or listed", async () => {
+    const track = await sponsor();
+    const none = await sponsor(false);
+    const t = await team();
+    await send(track.id, [t]);
+    await send(none.id, [t]);
+    rooms.mockResolvedValue(
+      new Map([
+        [track.id, "Rm 2110"],
+        [none.id, "Rm 2230"],
+      ]),
+    );
+
+    const res = await organizer.sponsorPresentations.schedule();
+    expect(res).toMatchObject({ placed: 1, unplaced: 0 });
+    const rows = await db.select().from(sponsorPresentations);
+    expect(rows.map((r) => r.sponsorId)).toEqual([track.id]);
+    // Rooms are only looked up for track sponsors.
+    expect(rooms.mock.calls[0]![0].map((s) => s.id)).not.toContain(none.id);
+
+    const view = await organizer.sponsorPresentations.overview();
+    const listed = view.sponsors.map((s) => s.sponsorId);
+    expect(listed).toContain(track.id);
+    expect(listed).not.toContain(none.id);
+  });
+
+  test("only non-track shortlists sent: nothing to schedule", async () => {
+    const none = await sponsor(false);
+    await send(none.id, [await team()]);
+    await expect(
+      organizer.sponsorPresentations.schedule(),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+});
+
+describe("sponsorPresentations.syncSheet", () => {
+  test("organizers only; reports the mirror's result", async () => {
+    await expect(anon.sponsorPresentations.syncSheet()).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+    });
+    const mirror = vi.mocked(mirrorSponsorJudging);
+    mirror.mockResolvedValueOnce({ ok: true, rows: 12 });
+    await expect(
+      organizer.sponsorPresentations.syncSheet(),
+    ).resolves.toMatchObject({ ok: true });
+    mirror.mockResolvedValueOnce({ ok: false, error: "no permission" });
+    await expect(organizer.sponsorPresentations.syncSheet()).resolves.toEqual({
+      ok: false,
+      error: "no permission",
+    });
+  });
+
+  test("scheduling and notifying rewrite the tab; a dry run doesn't", async () => {
+    const soon = vi.mocked(mirrorSponsorJudgingSoon);
+    soon.mockClear();
+    const { t } = await scheduledTeam();
+    expect(soon).toHaveBeenCalledTimes(1);
+    await organizer.sponsorPresentations.schedule({ dryRun: true });
+    expect(soon).toHaveBeenCalledTimes(1);
+    await member(t);
+    slackToken = "xoxb-test";
+    await organizer.sponsorPresentations.notify();
+    expect(soon).toHaveBeenCalledTimes(2);
   });
 });
 

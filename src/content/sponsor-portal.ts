@@ -28,6 +28,13 @@ export const sponsorPortalCopy = {
       body: (top: number) => `Score projects and submit your top ${top}`,
       picked: (n: number) => `${n} submitted`,
       pending: "Not submitted",
+      /** Sponsors without a prize track (src/content/sponsor-prize-tracks.ts). */
+      noTrack: {
+        badge: "No prize track",
+        body: "Judging is for prize track sponsors",
+        message:
+          "Your team doesn't have a prize track this year, so there's no judging to do. If that's wrong, tell your Hack Western contact.",
+      },
     },
   },
   details: {

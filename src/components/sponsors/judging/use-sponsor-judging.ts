@@ -27,7 +27,12 @@ export function useSponsorJudging(sponsor: string, enabled: boolean) {
   const utils = api.useUtils();
   const query = api.sponsorScoring.get.useQuery(
     { sponsor },
-    { enabled, refetchOnWindowFocus: false, retry: 1 },
+    {
+      enabled,
+      refetchOnWindowFocus: false,
+      // FORBIDDEN (no prize track) won't change on a retry.
+      retry: (count, error) => error.data?.code !== "FORBIDDEN" && count < 1,
+    },
   );
   const [saveState, setSaveState] = useState<Record<string, SaveState>>({});
   const inFlight = useRef(0);
