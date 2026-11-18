@@ -271,10 +271,12 @@ describe("sponsor and organizer views", () => {
       ],
       now: early,
     });
-    expect(summary.needsHacker).toBe(1);
+    // No request yet = 3 hackers per slot, so Beta's 1 chat still leaves
+    // its slot short.
+    expect(summary.needsHacker).toBe(2);
     expect(summary.sponsors.map((s) => [s.name, s.needsHacker])).toEqual([
       ["Acme", 1],
-      ["Beta", 0],
+      ["Beta", 1],
     ]);
     expect(summary.sponsors[1]!.rooms).toEqual(["Rm 2243"]);
   });

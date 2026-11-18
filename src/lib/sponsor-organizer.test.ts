@@ -377,15 +377,16 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
     // Acme: block 10:00-10:30, 2 reps x 1-on-1 = 2 seats at 10:00 and
     // 10:15; 1 used each. The sheet window alone adds nothing.
     expect(acme!.seatsLeft).toBe(2);
-    // Beta: block 13:00-13:30, default 1-on-1 15 min, 1 rep: 2 starts.
-    expect(beta!.seatsLeft).toBe(2);
+    // Beta: block 13:00-13:30, no request yet: 3 hackers per slot (the
+    // default), 15 min: 2 starts x 3.
+    expect(beta!.seatsLeft).toBe(6);
   });
 
   it("totals row sums the given rows", () => {
     expect(r.totals).toEqual({
       accepted: 1,
       pending: 1,
-      seatsLeft: 4,
+      seatsLeft: 8,
       needsHacker: 2,
       openHelp: 1,
       missingRooms: 0,

@@ -270,12 +270,11 @@ describe("coffeeChatRequests.offer: rules", () => {
     );
     expect(error.code).toBe("CONFLICT");
 
-    // 4 reps of 1-on-1s: 4 hackers per slot, past the room's 6 people
-    // (only a note in the organizer's block dialog, never a refusal).
+    // At most 3 hackers per slot, even if a row says 4 reps.
     const big = await makeSponsor(4);
     const hackers = [];
-    for (let i = 0; i < 5; i++) hackers.push(await makeHacker());
-    for (const userId of hackers.slice(0, 4)) {
+    for (let i = 0; i < 4; i++) hackers.push(await makeHacker());
+    for (const userId of hackers.slice(0, 3)) {
       await caller.coffeeChatRequests.offer({
         sponsor: big,
         userId,
@@ -287,7 +286,7 @@ describe("coffeeChatRequests.offer: rules", () => {
         await codeOf(
           caller.coffeeChatRequests.offer({
             sponsor: big,
-            userId: hackers[4]!,
+            userId: hackers[3]!,
             slotTime: "10:00",
           }),
         )
@@ -1515,12 +1514,24 @@ describe("coffeeChatRequests: chat requests and asks for fewer (v2)", () => {
     await caller.coffeeChatRequests.setChatRequest({
       sponsor: a,
       style: "group",
-      perSlot: 4,
+      perSlot: 3,
     });
+    // Never more than 3 hackers per slot.
+    expect(
+      (
+        await codeOf(
+          caller.coffeeChatRequests.setChatRequest({
+            sponsor: a,
+            style: "group",
+            perSlot: 4,
+          }),
+        )
+      ).code,
+    ).toBe("BAD_REQUEST");
     const mine = await caller.coffeeChatRequests.sponsorChats({ sponsor: a });
     expect(mine.request).toMatchObject({
       style: "group",
-      perSlot: 4,
+      perSlot: 3,
       source: "sponsor",
     });
     expect(
