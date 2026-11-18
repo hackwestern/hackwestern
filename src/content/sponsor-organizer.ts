@@ -101,6 +101,8 @@ export const sponsorOrganizerCopy = {
     noRoom: "No chat room",
     chats: (accepted: number, pending: number) =>
       `${accepted} accepted · ${pending} pending`,
+    needsHacker: (n: number) =>
+      n === 1 ? "1 hold needs a hacker" : `${n} holds need a hacker`,
     helpOpen: (minutes: number) =>
       minutes < 1 ? "Help: waiting, just now" : `Help: waiting ${minutes} min`,
     helpClaimed: (name: string | null) =>

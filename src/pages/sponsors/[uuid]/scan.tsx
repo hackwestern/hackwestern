@@ -24,6 +24,14 @@ export default function SponsorScanPage() {
       ? badgeCodeOf(router.query.hacker)
       : null;
 
+  // ?time=HH:MM (a room hold's "Scan a badge") preselects that start time
+  // when it's still open; otherwise the earliest open one is picked.
+  const time =
+    typeof router.query.time === "string" &&
+    /^\d{2}:\d{2}$/.test(router.query.time)
+      ? router.query.time
+      : null;
+
   // Only to tell a wrong link apart early; per-hacker times load after a scan.
   const sponsorQ = api.coffeeChatRequests.freeTimes.useQuery(
     { sponsor: id },
@@ -51,7 +59,12 @@ export default function SponsorScanPage() {
         title={hacker ? copy.offerTitle : copy.title}
         intro={hacker ? copy.offerIntro : copy.intro}
       />
-      <BadgeScanner key={hacker ?? ""} sponsor={id} initialCode={hacker} />
+      <BadgeScanner
+        key={hacker ?? ""}
+        sponsor={id}
+        initialCode={hacker}
+        preferredTime={time}
+      />
     </>,
   );
 }

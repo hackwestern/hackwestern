@@ -329,6 +329,7 @@ function Summary({
     [copy.totals.accepted, totals.accepted],
     [copy.totals.pending, totals.pending],
     [copy.totals.seatsLeft, totals.seatsLeft],
+    [copy.totals.needsHacker, totals.needsHacker],
     [copy.totals.rooms, rooms.length > 0 ? rooms.join(", ") : copy.noRooms],
   ];
   return (

@@ -330,6 +330,13 @@
       "when": 1794809869782,
       "tag": "0046_task_reminders",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1794977678667,
+      "tag": "0047_coffee_chat_hold",
+      "breakpoints": true
     }
   ]
 }

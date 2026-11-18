@@ -15,13 +15,24 @@ import { z } from "zod";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { admittedStatuses, isAdmittedStatus } from "~/lib/admission";
 import {
+  holdAsRoomUse,
+  holdClash,
+  holdCovers,
+  holdsForSponsor,
+  holdTimesProblem,
+  type HoldSpan,
+  type RoomUse,
+} from "~/lib/coffee-chat-holds";
+import {
   ACTIVE_COFFEE_CHAT_STATUSES,
   applyAssignedRooms,
   COFFEE_CHAT_ROOMS,
   coffeeChatExpiresAt,
   coffeeChatRoomClash,
   coffeeChatRoomOf,
+  coffeeChatMinutesOf,
   coffeeChatsOverlap,
+  coffeeChatTimeOf,
   isActiveCoffeeChat,
   resolveCoffeeChatRoom,
   type CoffeeChatStatus,
@@ -37,8 +48,8 @@ import {
   freeStartTimes,
   normalizeRoom,
   offerProblem,
+  offerRoomAt,
   roomTakenByOtherSponsor,
-  sponsorRoomAt,
   type OfferProblem,
 } from "~/server/api/utils/coffee-chat-capacity";
 import { buildChatBoard } from "~/server/api/utils/coffee-chat-board";
@@ -51,6 +62,7 @@ import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { db } from "~/server/db";
 import {
   applications,
+  coffeeChatHolds,
   coffeeChats,
   sponsorJudgingSponsors,
   users,
@@ -201,6 +213,38 @@ async function activeChats(conn: Db | Tx, where: SQL, now: Date) {
  */
 async function activeRoomChats(conn: Db | Tx, now: Date) {
   return activeChats(conn, isNotNull(coffeeChats.room), now);
+}
+
+/** A room hold as the pages and rules see it. */
+export type RoomHold = HoldSpan & { holdId: string; note: string | null };
+
+/** Room holds, earliest first (all, or those matching `where`). */
+async function loadHolds(conn: Db | Tx, where?: SQL): Promise<RoomHold[]> {
+  const rows = await conn
+    .select({
+      holdId: coffeeChatHolds.id,
+      sponsorId: coffeeChatHolds.sponsorId,
+      room: coffeeChatHolds.room,
+      startTime: coffeeChatHolds.startTime,
+      endTime: coffeeChatHolds.endTime,
+      note: coffeeChatHolds.note,
+    })
+    .from(coffeeChatHolds)
+    .where(where)
+    .orderBy(asc(coffeeChatHolds.startTime), asc(coffeeChatHolds.createdAt));
+  return rows;
+}
+
+/**
+ * Everything that takes a room right now: active chats with a room, plus
+ * every room hold. Other sponsors' entries block offers, moves and holds.
+ */
+async function roomUses(conn: Db | Tx, now: Date): Promise<RoomUse[]> {
+  const [chats, holds] = await Promise.all([
+    activeRoomChats(conn, now),
+    loadHolds(conn),
+  ]);
+  return [...chats, ...holds.map(holdAsRoomUse)];
 }
 
 /**
@@ -356,7 +400,7 @@ async function moveChatsToRoom(
   now: Date,
 ): Promise<string[]> {
   await lockRooms(tx, [room, ...moving.map((c) => c.room)]);
-  const roomChats = await activeRoomChats(tx, now);
+  const roomChats = await roomUses(tx, now);
   if (
     moving.some((c) => roomTakenByOtherSponsor(roomChats, sponsorId, room, c))
   ) {
@@ -370,6 +414,171 @@ async function moveChatsToRoom(
       .where(inArray(coffeeChats.id, changed));
   }
   return changed;
+}
+
+/**
+ * Every sponsor's coffee chat window as a room use in their effective room
+ * (assignment, else sheet ROOM). Sponsors without a window or room take
+ * no room this way.
+ */
+function windowRoomUses(
+  sponsors: { id: string; name: string; assigned: string | null }[],
+  setups: CoffeeChatSetup[],
+): RoomUse[] {
+  return sponsors.flatMap((s) => {
+    const setup = setups.find((c) => c.sponsor === s.name);
+    const room = resolveCoffeeChatRoom(s.assigned, setup?.room);
+    const start = setup?.windowStart
+      ? coffeeChatMinutesOf(setup.windowStart)
+      : null;
+    const end = setup?.windowEnd ? coffeeChatMinutesOf(setup.windowEnd) : null;
+    if (!room || start === null || end === null || end <= start) return [];
+    return [
+      {
+        sponsorId: s.id,
+        room,
+        slotTime: setup!.windowStart!,
+        durationMinutes: end - start,
+      },
+    ];
+  });
+}
+
+/** CONFLICT naming who already has the room, and when. */
+function throwRoomUsed(
+  room: string,
+  use: RoomUse,
+  sponsors: { id: string; name: string }[],
+): never {
+  const start = coffeeChatMinutesOf(use.slotTime) ?? 0;
+  throw new TRPCError({
+    code: "CONFLICT",
+    message: errors.holdClash(
+      room,
+      sponsors.find((s) => s.id === use.sponsorId)?.name ?? "",
+      formatClock(use.slotTime),
+      formatClock(coffeeChatTimeOf(start + use.durationMinutes)),
+    ),
+  });
+}
+
+/**
+ * Create a hold, or move one (`holdId`), after checking no other sponsor
+ * has the room then (chats, holds or room window). The sponsor's live chats
+ * starting inside the hold move into its room (hold room comes first), and
+ * each moved hacker is told. Lock order as everywhere: sponsor row, then
+ * the hold, then rooms.
+ */
+async function saveHold(input: {
+  holdId?: string;
+  sponsorId?: string;
+  room: string;
+  startTime: string;
+  endTime: string;
+  note?: string | null;
+  createdBy?: string;
+}): Promise<{ holdId: string; chatIds: string[] }> {
+  const now = new Date();
+  const room = coffeeChatRoomOf(input.room);
+  if (!room) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: errors.unknownRoom });
+  }
+  if (holdTimesProblem(input.startTime, input.endTime)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: errors.holdTimes });
+  }
+  let sponsorId = input.sponsorId;
+  if (input.holdId) {
+    const [found] = await db
+      .select({ sponsorId: coffeeChatHolds.sponsorId })
+      .from(coffeeChatHolds)
+      .where(eq(coffeeChatHolds.id, input.holdId));
+    if (!found) {
+      throw new TRPCError({ code: "NOT_FOUND", message: errors.holdNotFound });
+    }
+    sponsorId = found.sponsorId;
+  }
+  if (!sponsorId) {
+    throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownSponsor });
+  }
+  const forSponsor = sponsorId;
+  const names = await db
+    .select({ name: sponsorJudgingSponsors.name })
+    .from(sponsorJudgingSponsors);
+  const setups = await readSheetCoffeeChatSetups(names.map((s) => s.name));
+
+  const result = await db.transaction(async (tx) => {
+    const sponsor = await findSponsor(tx, forSponsor, true);
+    let previousRoom: string | null = null;
+    if (input.holdId) {
+      const [held] = await tx
+        .select({ room: coffeeChatHolds.room })
+        .from(coffeeChatHolds)
+        .where(eq(coffeeChatHolds.id, input.holdId))
+        .for("update");
+      if (!held) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: errors.holdNotFound,
+        });
+      }
+      previousRoom = held.room;
+    }
+    const span: HoldSpan = {
+      sponsorId: sponsor.id,
+      room,
+      startTime: input.startTime,
+      endTime: input.endTime,
+    };
+    const moving = (
+      await activeChats(tx, eq(coffeeChats.sponsorId, sponsor.id), now)
+    ).filter((c) => holdCovers(span, c));
+    await lockRooms(tx, [room, previousRoom, ...moving.map((c) => c.room)]);
+    const sponsors = await tx
+      .select({
+        id: sponsorJudgingSponsors.id,
+        name: sponsorJudgingSponsors.name,
+        assigned: sponsorJudgingSponsors.coffeeChatRoom,
+      })
+      .from(sponsorJudgingSponsors);
+    const uses = [
+      ...(await roomUses(tx, now)),
+      ...windowRoomUses(sponsors, setups),
+    ];
+    const clash = holdClash(span, uses);
+    if (clash) throwRoomUsed(room, clash, sponsors);
+
+    let holdId = input.holdId;
+    if (holdId) {
+      await tx
+        .update(coffeeChatHolds)
+        .set({
+          room,
+          startTime: input.startTime,
+          endTime: input.endTime,
+          ...(input.note !== undefined ? { note: input.note } : {}),
+        })
+        .where(eq(coffeeChatHolds.id, holdId));
+    } else {
+      const [row] = await tx
+        .insert(coffeeChatHolds)
+        .values({
+          sponsorId: sponsor.id,
+          room,
+          startTime: input.startTime,
+          endTime: input.endTime,
+          note: input.note ?? null,
+          createdBy: input.createdBy ?? null,
+        })
+        .returning({ id: coffeeChatHolds.id });
+      holdId = row!.id;
+    }
+    const chatIds = await moveChatsToRoom(tx, sponsor.id, moving, room, now);
+    return { holdId, chatIds };
+  });
+  await Promise.all(
+    result.chatIds.map((id) => notifyCoffeeChat("roomMoved", { id })),
+  );
+  return result;
 }
 
 /** ILIKE pattern for "contains text", with %, _ and \ taken literally. */
@@ -440,18 +649,25 @@ export async function createCoffeeChatOffer(input: {
         eq(coffeeChats.sponsorId, sponsor.id),
         now,
       );
-      // The sponsor's room at this start (moved by organizers, or the
-      // sheet's), locked before checking who else is in it.
-      const room = setup
-        ? sponsorRoomAt(sponsorChats, setup.room, {
-            slotTime: input.slotTime,
-            durationMinutes: setup.durationMinutes,
-          })
-        : null;
+      const holds = await loadHolds(
+        tx,
+        eq(coffeeChatHolds.sponsorId, sponsor.id),
+      );
+      const durationMinutes = setup?.durationMinutes ?? 15;
+      // The sponsor's room at this start: their hold's, else where their
+      // chats then already are (organizer moves), else assigned or sheet
+      // room. Locked before checking who else is in it.
+      const room = offerRoomAt({
+        sponsorId: sponsor.id,
+        sponsorChats,
+        setupRoom: setup?.room ?? null,
+        holds,
+        slot: { slotTime: input.slotTime, durationMinutes },
+      });
       await lockRooms(tx, [room]);
       const [hackerChats, roomChats] = await Promise.all([
         activeChats(tx, eq(coffeeChats.userId, hacker.userId), now),
-        activeRoomChats(tx, now),
+        roomUses(tx, now),
       ]);
       const problem = offerProblem({
         setup,
@@ -461,6 +677,7 @@ export async function createCoffeeChatOffer(input: {
         sponsorChats,
         hackerChats,
         roomChats,
+        holds,
         now,
       });
       if (problem) throwProblem(problem);
@@ -472,7 +689,7 @@ export async function createCoffeeChatOffer(input: {
           userId: hacker.userId,
           room,
           slotTime: input.slotTime,
-          durationMinutes: setup!.durationMinutes,
+          durationMinutes,
           repName: input.repName ? input.repName : null,
         })
         .returning();
@@ -534,12 +751,13 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       const sponsor = await findSponsor(db, input.sponsor);
       if (input.userId) await findAdmittedHacker(input.userId, now);
       const setup = await setupFor(sponsor.name);
-      const [sponsorChats, hackerChats, roomChats] = await Promise.all([
+      const [sponsorChats, hackerChats, roomChats, holds] = await Promise.all([
         activeChats(db, eq(coffeeChats.sponsorId, sponsor.id), now),
         input.userId
           ? activeChats(db, eq(coffeeChats.userId, input.userId), now)
           : Promise.resolve([]),
-        activeRoomChats(db, now),
+        roomUses(db, now),
+        loadHolds(db, eq(coffeeChatHolds.sponsorId, sponsor.id)),
       ]);
       return {
         room: setup?.room ?? null,
@@ -555,6 +773,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           sponsorChats,
           hackerChats,
           roomChats,
+          holds,
           now,
         }),
       };
@@ -616,7 +835,18 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           };
         },
       );
-      return { sponsorName: sponsor.name, watcherName: sponsor.watcher, chats };
+      // Only this sponsor's holds (same UUID scoping as their chats).
+      const [holdRows, live] = await Promise.all([
+        loadHolds(db, eq(coffeeChatHolds.sponsorId, sponsor.id)),
+        activeChats(db, eq(coffeeChats.sponsorId, sponsor.id), now),
+      ]);
+      const holds = holdsForSponsor(holdRows, sponsor.id, live);
+      return {
+        sponsorName: sponsor.name,
+        watcherName: sponsor.watcher,
+        chats,
+        holds,
+      };
     }),
 
   /**
@@ -768,6 +998,30 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           await activeChats(tx, eq(coffeeChats.sponsorId, chat.sponsorId), now)
         ).filter((c) => coffeeChatsOverlap(c, chat));
         await moveChatsToRoom(tx, chat.sponsorId, moving, room, now);
+        // The sponsor's holds around those chats follow them, so later
+        // offers there land in the new room too (hold room comes first).
+        const holds = (
+          await loadHolds(tx, eq(coffeeChatHolds.sponsorId, chat.sponsorId))
+        ).filter(
+          (h) =>
+            normalizeRoom(h.room) !== normalizeRoom(room) &&
+            moving.some((c) => holdCovers(h, c)),
+        );
+        if (holds.length > 0) {
+          const uses = await roomUses(tx, now);
+          if (holds.some((h) => holdClash({ ...h, room }, uses))) {
+            throwProblem("roomTaken");
+          }
+          await tx
+            .update(coffeeChatHolds)
+            .set({ room })
+            .where(
+              inArray(
+                coffeeChatHolds.id,
+                holds.map((h) => h.holdId),
+              ),
+            );
+        }
         return { room, chatIds: moving.map((c) => c.id) };
       });
       // A move takes the sponsor's whole slot, so every moved chat is notified
@@ -795,7 +1049,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         watcher: sponsorJudgingSponsors.coffeeChatWatcher,
       })
       .from(sponsorJudgingSponsors);
-    const [setups, rows, rooms, organizers] = await Promise.all([
+    const [setups, rows, rooms, organizers, holds] = await Promise.all([
       readSheetCoffeeChatSetups(sponsors.map((s) => s.name)),
       db
         .select({
@@ -821,8 +1075,10 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         .from(users)
         .where(eq(users.type, "organizer"))
         .orderBy(asc(users.name)),
+      loadHolds(db),
     ]);
     const board = buildChatBoard({
+      holds,
       sponsors,
       setups,
       chats: rows.map(({ userName, firstName, ...row }) => ({
@@ -970,6 +1226,29 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         const clash = room
           ? coffeeChatRoomClash(sponsor.id, room, windows)
           : null;
+        // Another sponsor's room hold inside this sponsor's window.
+        const mine = windows.find((w) => w.id === sponsor.id);
+        if (room && !clash && mine?.windowStart && mine.windowEnd) {
+          const start = coffeeChatMinutesOf(mine.windowStart);
+          const end = coffeeChatMinutesOf(mine.windowEnd);
+          if (start !== null && end !== null && end > start) {
+            const window: RoomUse = {
+              sponsorId: sponsor.id,
+              room,
+              slotTime: mine.windowStart,
+              durationMinutes: end - start,
+            };
+            const held = (await loadHolds(tx))
+              .map(holdAsRoomUse)
+              .find(
+                (h) =>
+                  h.sponsorId !== sponsor.id &&
+                  normalizeRoom(h.room) === normalizeRoom(room) &&
+                  coffeeChatsOverlap(h, window),
+              );
+            if (held) throwRoomUsed(room, held, sponsors);
+          }
+        }
         if (clash) {
           throw new TRPCError({
             code: "CONFLICT",
@@ -999,6 +1278,65 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       );
       return result;
     }),
+  /**
+   * Hold a coffee chat room for a sponsor at a Saturday time, before any
+   * hacker is booked ("Needs a hacker"). Refused when another sponsor has
+   * that room then (chat, hold or room window). Organizers only.
+   */
+  createHold: protectedOrganizerProcedure
+    .input(
+      z.object({
+        sponsorId: sponsorInput,
+        room: z.string().trim().min(1).max(64),
+        startTime: slotTimeInput,
+        endTime: slotTimeInput,
+        note: z.string().trim().max(255).optional(),
+      }),
+    )
+    .mutation(({ input, ctx }) =>
+      saveHold({
+        ...input,
+        sponsorId: input.sponsorId.toLowerCase(),
+        note: input.note ? input.note : null,
+        createdBy: ctx.session.user.id,
+      }),
+    ),
+
+  /**
+   * Move a hold to another room or time (same sponsor), with the same
+   * rules as creating one. Organizers only.
+   */
+  moveHold: protectedOrganizerProcedure
+    .input(
+      z.object({
+        holdId: z.string().uuid(),
+        room: z.string().trim().min(1).max(64),
+        startTime: slotTimeInput,
+        endTime: slotTimeInput,
+      }),
+    )
+    .mutation(({ input }) => saveHold(input)),
+
+  /**
+   * Remove a hold. Chats already booked inside it keep their room.
+   * Organizers only.
+   */
+  deleteHold: protectedOrganizerProcedure
+    .input(z.object({ holdId: z.string().uuid() }))
+    .mutation(async ({ input }) => {
+      const [row] = await db
+        .delete(coffeeChatHolds)
+        .where(eq(coffeeChatHolds.id, input.holdId))
+        .returning({ id: coffeeChatHolds.id });
+      if (!row) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: errors.holdNotFound,
+        });
+      }
+      return { holdId: row.id };
+    }),
+
   /**
    * Who on the sponsor team watches a sponsor's coffee chats (and so their
    * room): a name, or null to clear. Sponsors see it as their Hack Western

@@ -3,6 +3,7 @@
 // redirect, and the per-sponsor chat and help summary. Pure, so it's tested
 // without a router or a database.
 
+import { holdNeedsHacker, type HoldSpan } from "~/lib/coffee-chat-holds";
 import {
   effectiveCoffeeChatStatus,
   type CoffeeChatStatus,
@@ -128,6 +129,8 @@ export type SponsorSummary = {
   accepted: number;
   /** Requests the hacker can still answer (past the cutoff they expire). */
   pending: number;
+  /** Organizer room holds with no live chat yet. */
+  needsHacker: number;
   help: {
     id: string;
     status: SponsorHelpState;
@@ -142,6 +145,8 @@ export type SponsorSummaries = {
   liveHelp: number;
   /** Of those, the ones nobody has claimed yet. */
   openHelp: number;
+  /** Room holds across every sponsor with no live chat yet. */
+  needsHacker: number;
 };
 
 /**
@@ -154,6 +159,7 @@ export function buildSponsorSummaries({
   setups,
   chats,
   help,
+  holds = [],
   now,
 }: {
   sponsors: readonly {
@@ -167,8 +173,12 @@ export function buildSponsorSummaries({
     sponsorId: string;
     room: string | null;
     slotTime: string;
+    /** Defaults to 15 (older callers). */
+    durationMinutes?: number;
     status: CoffeeChatStatus;
   }[];
+  /** Organizer room holds (every sponsor). */
+  holds?: readonly HoldSpan[];
   help: readonly {
     id: string;
     sponsorId: string;
@@ -187,6 +197,7 @@ export function buildSponsorSummaries({
       room: s.coffeeChatRoom ?? sheetRoom,
       accepted: 0,
       pending: 0,
+      needsHacker: 0,
       help: null,
     });
   }
@@ -203,15 +214,29 @@ export function buildSponsorSummaries({
     else continue;
     row.room ??= chat.room;
   }
+  // A hold needs a hacker until a live chat of its sponsor overlaps it.
+  const live = chats
+    .filter((c) => {
+      const status = effectiveCoffeeChatStatus(c, now);
+      return status === "accepted" || status === "pending";
+    })
+    .map((c) => ({ ...c, durationMinutes: c.durationMinutes ?? 15 }));
+  let needsHacker = 0;
+  for (const hold of holds) {
+    const row = byId.get(hold.sponsorId);
+    if (!row || !holdNeedsHacker(hold, live)) continue;
+    row.needsHacker += 1;
+    needsHacker += 1;
+  }
   let liveHelp = 0;
   let openHelp = 0;
-  const live = help
+  const liveRequests = help
     .filter(
       (h): h is typeof h & { status: SponsorHelpState } =>
         h.status === "open" || h.status === "claimed",
     )
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-  for (const h of live) {
+  for (const h of liveRequests) {
     const row = byId.get(h.sponsorId);
     if (!row) continue;
     liveHelp += 1;
@@ -227,5 +252,6 @@ export function buildSponsorSummaries({
     sponsors: [...byId.values()].sort((a, b) => a.name.localeCompare(b.name)),
     liveHelp,
     openHelp,
+    needsHacker,
   };
 }

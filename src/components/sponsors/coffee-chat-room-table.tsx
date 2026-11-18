@@ -6,11 +6,17 @@ import { hover, press } from "~/components/internals/interaction";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { AddChatHere } from "~/components/sponsors/coffee-chat-board";
 import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-rooms";
+import {
+  HoldRoomForm,
+  HoldsHere,
+  NeedsHackerBadge,
+} from "~/components/sponsors/room-holds";
 import { LoadError } from "~/components/sponsors/schedule-states";
 import type { SponsorSelection } from "~/components/sponsors/sponsor-filter";
 import { useNow } from "~/components/sponsors/use-now";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { buildRoomTable, type RoomCell } from "~/lib/coffee-chat-room-table";
+import { holdCovers } from "~/lib/coffee-chat-holds";
 import { coffeeChatRoomOf } from "~/lib/coffee-chat-requests";
 import { formatClock } from "~/lib/run-of-show";
 import { cn } from "~/lib/utils";
@@ -157,6 +163,10 @@ function Legend() {
     ],
     ["over", "bg-dashboard-status-iconBadge border-dashboard-status-warning"],
     [
+      "held",
+      "border-2 border-dashed border-dashboard-status-warning bg-dashboard-bg-surface",
+    ],
+    [
       "dimmed",
       "bg-dashboard-bg-inset border-dashboard-border-control opacity-40",
     ],
@@ -199,7 +209,11 @@ function CellButton({
       aria-label={copy.cellLabel(
         cell.room,
         time,
-        cell.state === "free" ? null : (who ?? copy.overWarning),
+        cell.state === "free"
+          ? null
+          : cell.needsHacker
+            ? `${who ?? ""}, ${copy.needsHacker}`
+            : (who ?? copy.overWarning),
         cell.used,
         cell.capacity,
       )}
@@ -224,6 +238,10 @@ function CellButton({
           "border-dashboard-action-primary bg-dashboard-bg-navSelected text-dashboard-text-active ring-1 ring-inset ring-dashboard-action-primary",
         cell.state === "over" &&
           "border-2 border-dashboard-status-warning bg-dashboard-status-iconBadge text-dashboard-text-warning",
+        // A hold with no hacker yet: dashed warning edge, apart from over.
+        cell.needsHacker &&
+          cell.state !== "over" &&
+          "border-2 border-dashed border-dashboard-status-warning",
         dimmed && "opacity-40",
       )}
     >
@@ -244,7 +262,13 @@ function CellButton({
             </span>
           </span>
           <span className="truncate text-dashboard-text-medium">
-            {cell.state === "over" ? copy.overWarning : copy.hackers(hackers)}
+            {cell.state === "over" ? (
+              copy.overWarning
+            ) : cell.needsHacker ? (
+              <NeedsHackerBadge />
+            ) : (
+              copy.hackers(hackers)
+            )}
           </span>
           <span
             aria-hidden
@@ -320,16 +344,24 @@ function DialogBody({
   now: Date;
 }) {
   const time = formatClock(cell.slotTime);
+  // A sponsor is in this room when it's theirs or they hold it now.
+  const inRoom = (s: BoardSponsor) =>
+    sameRoom(s.room, cell.room) ||
+    board.holds.some(
+      (h) =>
+        h.sponsorId === s.sponsorId &&
+        sameRoom(h.room, cell.room) &&
+        holdCovers(h, { slotTime: cell.slotTime }),
+    );
   // Sponsors who can take a chat starting now-ish here: an offerable start
-  // at this slot. People already in the room come first.
+  // at this slot. People already in the room (or holding it) come first.
   const bookable = board.sponsors
     .filter((s) =>
       s.cells.some((c) => c.slotTime === cell.slotTime && c.offerable),
     )
     .sort(
       (a, b) =>
-        Number(sameRoom(b.room, cell.room)) -
-          Number(sameRoom(a.room, cell.room)) ||
+        Number(inRoom(b)) - Number(inRoom(a)) ||
         a.sponsor.localeCompare(b.sponsor),
     );
   const [sponsorName, setSponsorName] = useState(
@@ -339,6 +371,11 @@ function DialogBody({
       "",
   );
   const sponsor = bookable.find((s) => s.sponsor === sponsorName);
+  // Holds in this room covering this slot.
+  const holdsHere = board.holds.filter(
+    (h) =>
+      sameRoom(h.room, cell.room) && holdCovers(h, { slotTime: cell.slotTime }),
+  );
   const sponsorCell = sponsor?.cells.find((c) => c.slotTime === cell.slotTime);
   const selectId = `room-book-${cell.room}-${cell.slotTime}`;
 
@@ -414,7 +451,7 @@ function DialogBody({
         )}
         {sponsor && sponsorCell && (
           <>
-            {sameRoom(sponsor.room, cell.room) ? (
+            {inRoom(sponsor) ? (
               <AddChatHere sponsor={sponsor} cell={sponsorCell} now={now} />
             ) : (
               <MoveHere sponsor={sponsor} room={cell.room} />
@@ -422,6 +459,9 @@ function DialogBody({
           </>
         )}
       </section>
+
+      <HoldsHere holds={holdsHere} slots={board.slots} />
+      <HoldRoomForm board={board} room={cell.room} slotTime={cell.slotTime} />
     </>
   );
 }

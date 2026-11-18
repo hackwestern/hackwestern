@@ -9,9 +9,14 @@ import {
   resolveCoffeeChatRoom,
   type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
+import {
+  chatsInHold,
+  holdCovers,
+  type HoldSpan,
+} from "~/lib/coffee-chat-holds";
 import type { CoffeeChatSetup } from "~/lib/run-of-show";
 import {
-  coffeeChatStartTimes,
+  offerStartTimes,
   seatsUsed,
 } from "~/server/api/utils/coffee-chat-capacity";
 
@@ -57,6 +62,17 @@ export type BoardCell = {
   offerable: boolean;
 };
 
+/** An organizer room hold on the board. */
+export type BoardHold = HoldSpan & {
+  holdId: string;
+  sponsor: string;
+  note: string | null;
+  /** Live chats (pending or accepted) inside the hold. */
+  chats: number;
+  /** No live chat inside yet: the sponsor still needs a hacker. */
+  needsHacker: boolean;
+};
+
 export type BoardSponsor = {
   /** Null when the sheet names a sponsor that isn't registered. */
   sponsorId: string | null;
@@ -75,6 +91,8 @@ export type BoardSponsor = {
   room: string | null;
   watcher: string | null;
   counts: { accepted: number; pending: number; total: number };
+  /** This sponsor's holds with no live chat yet. */
+  holdsNeedingHacker: number;
   cells: BoardCell[];
 };
 
@@ -83,12 +101,15 @@ export type ChatBoard = {
   slots: string[];
   sponsors: BoardSponsor[];
   chats: BoardChat[];
+  holds: BoardHold[];
   totals: {
     offered: number;
     accepted: number;
     pending: number;
     /** Open seats at start times that can still be offered. */
     seatsLeft: number;
+    /** Holds with no live chat yet. */
+    needsHacker: number;
   };
   roomsInUse: string[];
 };
@@ -102,6 +123,7 @@ type BoardSponsorRow = {
 };
 
 type BoardChatRow = Omit<BoardChat, "status"> & { status: CoffeeChatStatus };
+type BoardHoldRow = HoldSpan & { holdId: string; note: string | null };
 
 const GRID = COFFEE_CHAT_GRID_MINUTES;
 
@@ -144,18 +166,22 @@ export function boardCells(input: {
   reps: number;
   registered: boolean;
   chats: BoardChatRow[];
+  /** The sponsor's own room holds: their start times open too. */
+  holds?: readonly HoldSpan[];
   now: Date;
 }): BoardCell[] {
   const { setup, now } = input;
+  const holds = input.holds ?? [];
   const window = windowOf(setup);
   const duration = setup?.durationMinutes ?? 15;
   const starts = new Set(
-    window && setup
-      ? coffeeChatStartTimes(setup).map((t) => coffeeChatMinutesOf(t)!)
-      : [],
+    offerStartTimes(setup ?? null, holds).map((t) => coffeeChatMinutesOf(t)!),
   );
   const active = input.chats.filter((c) => isActiveCoffeeChat(c, now));
-  const seats = setup ? coffeeChatSeats(input.reps, setup.groupSize) : 0;
+  const seats =
+    setup !== undefined || holds.length > 0
+      ? coffeeChatSeats(input.reps, setup?.groupSize ?? 1)
+      : 0;
   const last = input.slots[input.slots.length - 1];
   const cells: BoardCell[] = [];
 
@@ -164,9 +190,13 @@ export function boardCells(input: {
     const open =
       starts.has(t) && last !== undefined && t + duration <= last + GRID;
     const rows = open ? duration / GRID : 1;
+    const inWindow = window !== null && t >= window.start && t < window.end;
+    const inHold = holds.some((h) =>
+      holdCovers(h, { slotTime: coffeeChatTimeOf(t) }),
+    );
     const kind: BoardCell["kind"] = open
       ? "open"
-      : window && t >= window.start && t < window.end
+      : inWindow || inHold
         ? "gap"
         : "out";
     const slotTime = coffeeChatTimeOf(t);
@@ -208,9 +238,11 @@ export function buildChatBoard(input: {
   sponsors: BoardSponsorRow[];
   setups: CoffeeChatSetup[];
   chats: BoardChatRow[];
+  holds?: BoardHoldRow[];
   now: Date;
 }): ChatBoard {
   const { now } = input;
+  const holdRows = input.holds ?? [];
   const chats: BoardChat[] = input.chats.map((c) => ({
     ...c,
     status: effectiveCoffeeChatStatus(c, now),
@@ -221,20 +253,46 @@ export function buildChatBoard(input: {
   );
   for (const s of input.sponsors) {
     if (columns.some((c) => c.name === s.name)) continue;
-    if (chats.some((c) => c.sponsorId === s.id)) columns.push({ name: s.name });
+    if (
+      chats.some((c) => c.sponsorId === s.id) ||
+      holdRows.some((h) => h.sponsorId === s.id)
+    ) {
+      columns.push({ name: s.name });
+    }
   }
+  const live = chats.filter((c) => isActiveCoffeeChat(c, now));
+  const names = new Map(input.sponsors.map((s) => [s.id, s.name]));
+  const holds: BoardHold[] = holdRows.map((h) => {
+    const inside = chatsInHold(h, live).length;
+    return {
+      ...h,
+      sponsor: names.get(h.sponsorId) ?? "",
+      chats: inside,
+      needsHacker: inside === 0,
+    };
+  });
 
   const slots = boardSlots(
     columns.flatMap((c) => {
       const w = windowOf(c.setup);
       return w ? [w] : [];
     }),
-    chats,
+    [
+      ...chats,
+      ...holdRows.flatMap((h) => {
+        const start = coffeeChatMinutesOf(h.startTime);
+        const end = coffeeChatMinutesOf(h.endTime);
+        return start === null || end === null
+          ? []
+          : [{ slotTime: h.startTime, durationMinutes: end - start }];
+      }),
+    ],
   );
 
   const sponsors: BoardSponsor[] = columns.map(({ name, setup }) => {
     const row = byName.get(name);
     const mine = row ? chats.filter((c) => c.sponsorId === row.id) : [];
+    const ownHolds = row ? holds.filter((h) => h.sponsorId === row.id) : [];
     const reps = row?.reps ?? 0;
     return {
       sponsorId: row?.id ?? null,
@@ -255,12 +313,14 @@ export function buildChatBoard(input: {
         pending: mine.filter((c) => c.status === "pending").length,
         total: mine.length,
       },
+      holdsNeedingHacker: ownHolds.filter((h) => h.needsHacker).length,
       cells: boardCells({
         slots,
         setup,
         reps,
         registered: Boolean(row),
         chats: mine,
+        holds: ownHolds,
         now,
       }),
     };
@@ -278,6 +338,7 @@ export function buildChatBoard(input: {
     slots: slots.map(coffeeChatTimeOf),
     sponsors,
     chats,
+    holds,
     totals: {
       offered: chats.length,
       accepted: chats.filter((c) => c.status === "accepted").length,
@@ -285,6 +346,7 @@ export function buildChatBoard(input: {
       seatsLeft: sponsors
         .flatMap((s) => s.cells)
         .reduce((sum, c) => sum + (c.offerable ? c.seatsLeft : 0), 0),
+      needsHacker: holds.filter((h) => h.needsHacker).length,
     },
     roomsInUse,
   };
