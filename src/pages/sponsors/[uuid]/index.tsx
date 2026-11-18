@@ -102,7 +102,11 @@ export default function SponsorHubPage() {
   const hasJudgingRoom = roomNumber !== "TBD";
   // The Judging tile always shows: locked until round 1 opens, so sponsors
   // know it's coming (Jazz, 2026-11-18).
-  const judgingOpen = judgingUnlocked(now);
+  // `?preview=judging` opens the tile early so the team can walk through
+  // the flow before Sunday (Jazz, 2026-11-18). The picks page itself was
+  // never time-gated, so this exposes nothing new.
+  const judgingOpen =
+    router.query.preview === "judging" || judgingUnlocked(now);
   const actions = copy.actions;
 
   return (
