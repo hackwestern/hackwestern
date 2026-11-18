@@ -43,6 +43,11 @@ const payloadSchema = z.object({
   type: z.string(),
   user: z.object({ id: z.string() }).optional(),
   response_url: z.string().optional(),
+  channel: z.object({ id: z.string() }).optional(),
+  container: z
+    .object({ channel_id: z.string().optional() })
+    .passthrough()
+    .optional(),
   actions: z
     .array(z.object({ action_id: z.string(), value: z.string().optional() }))
     .optional(),
@@ -95,6 +100,16 @@ async function hackerForSlackUser(
     )
     .limit(1);
   return row?.id ?? null;
+}
+
+/**
+ * True when the click came from a direct message with the bot (Slack DM
+ * channel ids start with "D"). The offer buttons are only ever posted in
+ * the DM the bot opened with the hacker it found (dmHacker).
+ */
+function isDirectMessage(payload: z.infer<typeof payloadSchema>): boolean {
+  const channelId = payload.channel?.id ?? payload.container?.channel_id;
+  return typeof channelId === "string" && channelId.startsWith("D");
 }
 
 /** Post the result back to the DM through Slack's response_url. */
@@ -165,6 +180,11 @@ export async function handleCoffeeChatInteraction(
   };
 
   if (!chatId.success || !payload.user) return fail("notYours");
+  // Only a click in a 1:1 DM with the bot counts. The request is signed by
+  // Slack, so a "D…" channel is the bot's DM with the clicker: the clicker
+  // is the person the offer was DM'd to. That narrows a wrong Slack email
+  // (docs/decisions.md, 2026-11-18) to the one person who got the DM.
+  if (!isDirectMessage(payload)) return fail("notYours");
   if (!token) return fail("failed");
 
   let userId: string | null;

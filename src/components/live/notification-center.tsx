@@ -67,7 +67,7 @@ export default function NotificationCenter({
           ...notices.filter((n) => n.unread).map((n) => n.key),
         ]),
     );
-    markSeen.mutate();
+    markSeen.mutate({ keys: notices.map((n) => n.key) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, unread]);
 
@@ -256,12 +256,23 @@ function SlackEmailForm({
   const id = useId();
   const utils = api.useUtils();
   const [value, setValue] = useState(slackEmail ?? "");
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
   const [invalid, setInvalid] = useState(false);
   const save = api.notifications.setSlackEmail.useMutation({
     onSuccess: (result) => {
       setValue(result.slackEmail ?? "");
-      setSaved(true);
+      const check = result.slack;
+      setSaved(
+        check.status === "found"
+          ? check.name
+            ? s.found(check.name)
+            : s.foundNoName(check.email)
+          : check.status === "not-found"
+            ? result.slackEmail
+              ? s.notFound(check.email)
+              : s.notFoundApplication(check.email)
+            : s.saved,
+      );
       void utils.notifications.center.invalidate();
     },
   });
@@ -278,7 +289,7 @@ function SlackEmailForm({
       className="flex flex-col gap-2 border-t border-dashboard-border-default pt-5"
       onSubmit={(e) => {
         e.preventDefault();
-        setSaved(false);
+        setSaved(null);
         const checked = slackEmailInput(s.invalid).safeParse(value);
         setInvalid(!checked.success);
         if (checked.success) save.mutate({ slackEmail: checked.data });
@@ -308,7 +319,7 @@ function SlackEmailForm({
           aria-describedby={`${id}-status`}
           onChange={(e) => {
             setValue(e.target.value);
-            setSaved(false);
+            setSaved(null);
             setInvalid(false);
           }}
           className="h-11 min-w-0 flex-1 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-base text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
@@ -330,7 +341,7 @@ function SlackEmailForm({
           error ? "text-dashboard-text-warning" : "text-dashboard-text-light",
         )}
       >
-        {error ?? (saved ? s.saved : s.fallback(applicationEmail))}
+        {error ?? saved ?? s.fallback(applicationEmail)}
       </p>
     </form>
   );

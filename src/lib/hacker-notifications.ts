@@ -130,3 +130,17 @@ export function buildHackerNotices(
 
 export const unreadCount = (notices: readonly HackerNotice[]) =>
   notices.filter((n) => n.unread).length;
+
+/**
+ * The seen keys to store after the hacker was shown `shown`: what they had
+ * already seen plus what they were shown, limited to notices that still
+ * exist (`current`). A notice they were never shown stays unread.
+ */
+export function nextSeenKeys(
+  current: readonly string[],
+  seen: readonly string[],
+  shown: readonly string[],
+): string[] {
+  const read = new Set([...seen, ...shown]);
+  return current.filter((key) => read.has(key));
+}
