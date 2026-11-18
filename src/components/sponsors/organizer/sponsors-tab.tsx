@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import {
   ArrowRight,
@@ -14,6 +14,13 @@ import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { SponsorStrip } from "~/components/sponsors/organizer/sponsor-strip";
+import {
+  addInFlight,
+  removeInFlight,
+  sponsorKey,
+  sponsorStatusIn,
+  withSponsorStatus,
+} from "~/components/sponsors/organizer/status-writes";
 import { sponsorOrganizerCopy } from "~/content/sponsor-organizer";
 import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
 import { sponsorRowId, type SponsorSummary } from "~/lib/sponsor-organizer";
@@ -289,30 +296,51 @@ export function SponsorsTab({
     refetchInterval: 30000,
   });
 
+  // Sponsors with a status write in flight: their row is locked until it
+  // settles (a ref for the synchronous double-click check, state to render).
+  const inFlightRef = useRef<ReadonlySet<string>>(new Set());
+  const [inFlight, setInFlight] = useState<ReadonlySet<string>>(new Set());
+  const setInFlightBoth = (next: ReadonlySet<string>) => {
+    inFlightRef.current = next;
+    setInFlight(next);
+  };
+
   const updateStatus = api.sponsorDashboard.setSponsorStatus.useMutation({
     onMutate: async ({ sponsorName, status }) => {
       await utils.sponsorDashboard.getSponsors.cancel();
-      const prev = utils.sponsorDashboard.getSponsors.getData();
-      utils.sponsorDashboard.getSponsors.setData(undefined, (old) => {
-        if (!old) return old;
-        return old.map((s) =>
-          s.name.toLowerCase() === sponsorName.toLowerCase()
-            ? { ...s, status }
-            : s,
-        );
-      });
-      return { prev };
+      const prevStatus = sponsorStatusIn(
+        utils.sponsorDashboard.getSponsors.getData(),
+        sponsorName,
+      );
+      utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
+        withSponsorStatus(old, sponsorName, status),
+      );
+      return { prevStatus };
     },
-    onError: (err, _vars, context) => {
-      if (context?.prev) {
-        utils.sponsorDashboard.getSponsors.setData(undefined, context.prev);
+    onError: (err, { sponsorName }, context) => {
+      // Undo just this sponsor; others changed meanwhile keep theirs.
+      const prevStatus = context?.prevStatus;
+      if (prevStatus) {
+        utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
+          withSponsorStatus(old, sponsorName, prevStatus),
+        );
       }
       setNote({ tone: "error", text: copy.statusFailed(err.message) });
     },
-    onSettled: async () => {
-      await utils.sponsorDashboard.getSponsors.invalidate();
+    onSettled: async (_data, _err, { sponsorName }) => {
+      setInFlightBoth(removeInFlight(inFlightRef.current, sponsorName));
+      // Refetch once nothing else is saving, so a refetch can't briefly
+      // undo another sponsor's optimistic change.
+      if (inFlightRef.current.size === 0) {
+        await utils.sponsorDashboard.getSponsors.invalidate();
+      }
     },
   });
+  const changeStatus = (sponsorName: string, status: SponsorStatus) => {
+    if (inFlightRef.current.has(sponsorKey(sponsorName))) return;
+    setInFlightBoth(addInFlight(inFlightRef.current, sponsorName));
+    updateStatus.mutate({ sponsorName, status });
+  };
 
   const sync = api.sponsorDashboard.syncSponsors.useMutation({
     onSuccess: async (registered) => {
@@ -397,14 +425,9 @@ export function SponsorsTab({
     <StatusPicker
       sponsorName={sponsor.name}
       currentStatus={sponsor.status}
-      onStatusChange={(status) =>
-        updateStatus.mutate({ sponsorName: sponsor.name, status })
-      }
-      // Only the sponsor being saved waits; the rest stay usable.
-      isPending={
-        updateStatus.isPending &&
-        updateStatus.variables?.sponsorName === sponsor.name
-      }
+      onStatusChange={(status) => changeStatus(sponsor.name, status)}
+      // Only sponsors being saved wait; the rest stay usable.
+      isPending={inFlight.has(sponsorKey(sponsor.name))}
     />
   );
   const clearFilters = () => {
