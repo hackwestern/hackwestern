@@ -7,13 +7,13 @@ import { createInnerTRPCContext } from "~/server/api/trpc";
 import {
   AUTO_SYNC_THROTTLE_MS,
   diffReminders,
+  getTaskPingActivity,
   getTaskReminderStatus,
-  listTaskOwners,
   maybeAutoSyncTaskReminders,
   planTaskReminders,
   reminderText,
   resetAutoSyncThrottle,
-  setTaskOwnerEmail,
+  routeOwner,
   syncTaskReminders,
   taskKey,
   type StoredReminder,
@@ -24,6 +24,10 @@ import {
   taskReminders,
   taskReminderSync,
 } from "~/server/db/schema";
+import {
+  resetSlackDirectoryCache,
+  type SlackDirectoryUser,
+} from "~/server/slack/directory";
 
 // Saturday noon, Eastern. Tasks below are later the same day.
 const NOW = new Date("2026-11-21T12:00:00-05:00");
@@ -73,6 +77,13 @@ function mockSlack(answers: Record<string, unknown> = {}) {
         channel: args.get("channel"),
       },
       "chat.deleteScheduledMessage": { ok: true },
+      "users.list": {
+        ok: true,
+        members: [
+          { id: "UJAZZ", real_name: "Jazz Gu", profile: { first_name: "Jazz" } },
+          { id: "UNOAH", real_name: "Noah Lee" },
+        ],
+      },
     };
     const body = answers[method] ?? defaults[method] ?? { ok: false };
     return new Response(JSON.stringify(body), { status: 200 });
@@ -96,10 +107,18 @@ beforeEach(async () => {
   await db.delete(taskOwnerContacts).where(sql`true`);
   await db.delete(taskReminderSync).where(sql`true`);
   resetAutoSyncThrottle();
+  resetSlackDirectoryCache();
 });
 
+const DIRECTORY: SlackDirectoryUser[] = [
+  { id: "UJAZZ", names: ["jazz", "jazz gu"] },
+  { id: "UNOAH", names: ["noah", "noah lee"] },
+  { id: "UDAN1", names: ["daniel", "daniel kim"] },
+  { id: "UDAN2", names: ["daniel", "daniel wu"] },
+];
+
 describe("planTaskReminders", () => {
-  const contacts = [{ ownerKey: "jazz", slackUserId: "UJAZZ" }];
+  const contacts = { directory: DIRECTORY };
 
   test("DMs a matched owner at the task's start time", () => {
     const plan = planTaskReminders(
@@ -119,26 +138,81 @@ describe("planTaskReminders", () => {
     expect(d.text).toBe("⏰ Now (2:00 PM): Open doors · Rm 1230");
   });
 
-  test("no owner and unmatched owner go to the team channel", () => {
+  test("no owner, no clear owner and unmatched owner go to the team channel", () => {
     const plan = planTaskReminders(
-      [task("14:00", "Tape cables", null), task("15:00", "Lunch", "Sam")],
+      [
+        task("14:00", "Tape cables", null),
+        task("15:00", "Lunch", "Sam"),
+        task("16:00", "Booths", "[SPON] + [WEB] All"),
+        task("17:00", "Swag", "Daniel"),
+        task("18:00", "Dinner", "[SPON] Noah"),
+      ],
       ITEMS,
       contacts,
       NOW,
       CHANNEL,
     );
-    expect(plan.desired.map((d) => [d.target, d.channel, d.slackUserId])).toEqual(
-      [
-        ["channel", CHANNEL, null],
-        ["channel", CHANNEL, null],
-      ],
+    expect(
+      plan.desired.map((d) => [d.task, d.target, d.channel, d.slackUserId]),
+    ).toEqual([
+      ["Tape cables", "channel", CHANNEL, null],
+      ["Lunch", "channel", CHANNEL, null],
+      ["Booths", "channel", CHANNEL, null],
+      ["Swag", "channel", CHANNEL, null], // two Daniels on Slack
+      ["Dinner", "dm", null, "UNOAH"],
+    ]);
+    expect(plan.desired[0]!.text).toBe(
+      "<!here> ⏰ Now (2:00 PM): Tape cables · Rm 1230\nNo owner in the sheet, can someone grab this?",
+    );
+    expect(plan.desired[2]!.text).toBe(
+      "<!here> ⏰ Now (4:00 PM): Booths\nOwner in the sheet: [SPON] + [WEB] All. No one person to DM, can someone grab this?",
+    );
+    expect(plan.noChannelTasks).toEqual([]);
+  });
+
+  test("channel text uses the configured mention and escapes sheet text", () => {
+    const plan = planTaskReminders(
+      [task("14:00", "<!channel> & go", "<!everyone> All")],
+      ITEMS,
+      contacts,
+      NOW,
+      CHANNEL,
+      "<!subteam^S1>",
     );
     expect(plan.desired[0]!.text).toBe(
-      "⏰ Now (2:00 PM): Tape cables · no owner yet, can someone grab this?",
+      "<!subteam^S1> ⏰ Now (2:00 PM): &lt;!channel&gt; &amp; go · Rm 1230\nOwner in the sheet: &lt;!everyone&gt; All. No one person to DM, can someone grab this?",
     );
-    expect(plan.unmatchedOwners).toEqual(["Sam"]);
-    expect(plan.noOwnerTasks.map((t) => t.task)).toEqual(["Tape cables"]);
-    expect(plan.noChannelTasks).toEqual([]);
+    const quiet = planTaskReminders(
+      [task("14:00", "Tape", null)],
+      ITEMS,
+      contacts,
+      NOW,
+      CHANNEL,
+      "",
+    );
+    expect(quiet.desired[0]!.text.startsWith("⏰ Now")).toBe(true);
+  });
+
+  test("a saved email match overrides the directory", () => {
+    expect(
+      routeOwner("Daniel", {
+        directory: DIRECTORY,
+        contacts: [{ ownerKey: "daniel", slackUserId: "UDAN2" }],
+      }),
+    ).toEqual({ target: "dm", slackUserId: "UDAN2", name: "Daniel" });
+    expect(routeOwner("Daniel", { directory: DIRECTORY })).toEqual({
+      target: "channel",
+      reason: "ambiguous",
+    });
+    expect(routeOwner("caroline", { directory: DIRECTORY })).toEqual({
+      target: "channel",
+      reason: "no-match",
+    });
+    expect(
+      routeOwner("Canada Life: Noah Manulife: Caroline", {
+        directory: DIRECTORY,
+      }),
+    ).toEqual({ target: "channel", reason: "per-company" });
   });
 
   test("without a team channel, unowned tasks are skipped and reported", () => {
@@ -184,7 +258,7 @@ describe("diffReminders", () => {
     return planTaskReminders(
       [t],
       ITEMS,
-      [{ ownerKey: "jazz", slackUserId: user }],
+      { contacts: [{ ownerKey: "jazz", slackUserId: user }] },
       NOW,
       CHANNEL,
     ).desired[0]!;
@@ -200,6 +274,7 @@ describe("diffReminders", () => {
     status: "scheduled",
     slackChannel: "D1",
     scheduledMessageId: "Q1",
+    routeKey: d.routeKey,
     ...over,
   });
 
@@ -221,6 +296,26 @@ describe("diffReminders", () => {
       removed.taskKey,
     ]);
     expect(diff.create.map((d) => d.task)).toEqual(["New text", "Added"]);
+  });
+
+  test("a new channel, mention or text reschedules; a pre-0047 row too", () => {
+    const t = task("14:00", "Booths", "All");
+    const plan = (channel: string, mention: string) =>
+      planTaskReminders([t], ITEMS, {}, NOW, channel, mention).desired[0]!;
+    const before = plan(CHANNEL, "<!here>");
+    for (const after of [plan("C-OTHER", "<!here>"), plan(CHANNEL, "")]) {
+      expect(after.taskKey).toBe(before.taskKey);
+      const diff = diffReminders([stored(before)], [after], NOW);
+      expect(diff.keep).toEqual([]);
+      expect(diff.cancel).toHaveLength(1);
+      expect(diff.create).toHaveLength(1);
+    }
+    expect(
+      diffReminders([stored(before)], [plan(CHANNEL, "<!here>")], NOW).keep,
+    ).toHaveLength(1);
+    expect(
+      diffReminders([stored(before, { routeKey: null })], [before], NOW).cancel,
+    ).toHaveLength(1);
   });
 
   test("a new Slack user for the owner reschedules", () => {
@@ -305,11 +400,11 @@ describe("syncTaskReminders", () => {
       scheduled: 3,
       created: 3,
       tooSoon: 1,
-      unmatchedOwners: 1,
-      noOwnerTasks: 1,
+      toChannel: 2,
     });
     expect(slack.methods()).toEqual([
       "users.lookupByEmail",
+      "users.list",
       "conversations.open",
       "chat.scheduleMessage",
       "chat.scheduleMessage",
@@ -324,7 +419,7 @@ describe("syncTaskReminders", () => {
     expect(posts[0]!.args.get("post_at")).toBe(
       String(new Date("2026-11-21T14:00:00-05:00").getTime() / 1000),
     );
-    expect(posts[1]!.args.get("text")).toContain("no owner yet");
+    expect(posts[1]!.args.get("text")).toContain("Owner in the sheet: Sam");
 
     // Running again with the same sheet changes nothing in Slack.
     slack.reset();
@@ -346,6 +441,7 @@ describe("syncTaskReminders", () => {
       readSheet: sheet([task("14:30", "Open doors", "Jazz"), tasks[1]!]),
     });
     expect(changed).toMatchObject({ ok: true, scheduled: 2, created: 1, cancelled: 2 });
+    // The directory is cached, so users.list isn't called again.
     expect(slack.methods().sort()).toEqual([
       "chat.deleteScheduledMessage",
       "chat.deleteScheduledMessage",
@@ -370,12 +466,12 @@ describe("syncTaskReminders", () => {
     const status = await getTaskReminderStatus(NOW, {
       token: "xoxb-t",
       channel: null,
-      readSheet: read,
     });
     expect(status).toMatchObject({
+      slackConnected: true,
       channelConfigured: false,
-      noChannelTasks: 1,
-      scheduled: 0,
+      nextPingAt: null,
+      failed: 0,
     });
   });
 
@@ -395,11 +491,8 @@ describe("syncTaskReminders", () => {
     const status = await getTaskReminderStatus(NOW, {
       token: "xoxb-t",
       channel: CHANNEL,
-      readSheet: read,
     });
-    expect(status.failures).toMatchObject([
-      { owner: "Jazz", task: "Open doors", error: "restricted_action" },
-    ]);
+    expect(status).toMatchObject({ failed: 1, nextPingAt: null });
 
     const fixed = mockSlack();
     const retried = await syncTaskReminders(NOW, {
@@ -412,79 +505,122 @@ describe("syncTaskReminders", () => {
     expect(await db.select().from(taskReminders)).toHaveLength(1);
   });
 
-  test("channel reminders count as sent to channel, not failures", async () => {
+  test("matches owners by name with no saved emails; status shows the next ping", async () => {
     const slack = mockSlack();
-    const read = sheet([task("14:00", "Tape cables", null)]);
-    await syncTaskReminders(NOW, {
+    const read = sheet([
+      task("14:00", "Tape cables", null),
+      task("15:00", "Open doors", "[SPON] Noah"),
+    ]);
+    const result = await syncTaskReminders(NOW, {
       token: "xoxb-t",
       fetch: slack.fetch,
       channel: CHANNEL,
       readSheet: read,
     });
+    expect(result).toMatchObject({ ok: true, created: 2, toChannel: 1 });
+    const posts = slack.calls.filter((c) => c.method === "chat.scheduleMessage");
+    expect(posts.map((p) => p.args.get("channel"))).toEqual([
+      CHANNEL,
+      "D-UNOAH",
+    ]);
     const status = await getTaskReminderStatus(NOW, {
       token: "xoxb-t",
       channel: CHANNEL,
-      readSheet: read,
     });
     expect(status).toMatchObject({
-      scheduled: 1,
-      toChannel: 1,
-      failures: [],
-      noOwnerTasks: [{ task: "Tape cables" }],
+      slackConnected: true,
+      channelConfigured: true,
+      nextPingAt: new Date("2026-11-21T14:00:00-05:00"),
+      failed: 0,
     });
-    expect(status.lastSyncedAt?.toISOString()).toBe(NOW.toISOString());
+  });
+
+  test("a failed delete holds the new message back until the old one is gone", async () => {
+    const tasks = [task("14:00", "Booths", "All")];
+    const opts = (fetch: typeof globalThis.fetch, mention: string) => ({
+      token: "xoxb-t",
+      fetch,
+      channel: CHANNEL,
+      mention,
+      readSheet: sheet(tasks),
+    });
+    const first = mockSlack();
+    await syncTaskReminders(NOW, opts(first.fetch, "<!here>"));
+
+    // The mention changes, but Slack won't delete the old post.
+    const stuck = mockSlack({
+      "chat.deleteScheduledMessage": { ok: false, error: "internal_error" },
+    });
+    const held = await syncTaskReminders(NOW, opts(stuck.fetch, ""));
+    expect(held).toMatchObject({ ok: true, created: 0, deferred: 1 });
+    expect(stuck.methods()).toEqual(["chat.deleteScheduledMessage"]);
+    const rows = await db.select().from(taskReminders);
+    expect(rows.map((r) => r.status)).toEqual(["scheduled"]);
+
+    // Next sync: the delete works, then the new post is scheduled.
+    const fixed = mockSlack();
+    const done = await syncTaskReminders(NOW, opts(fixed.fetch, ""));
+    expect(done).toMatchObject({ ok: true, created: 1, cancelled: 1, deferred: 0 });
+    expect(fixed.methods()).toEqual([
+      "chat.deleteScheduledMessage",
+      "chat.scheduleMessage",
+    ]);
+    expect(fixed.calls[1]!.args.get("text")!.startsWith("⏰ Now")).toBe(true);
+  });
+
+  test("only no-owner tasks: the directory isn't fetched", async () => {
+    const slack = mockSlack();
+    await syncTaskReminders(NOW, {
+      token: "xoxb-t",
+      fetch: slack.fetch,
+      channel: CHANNEL,
+      readSheet: sheet([task("14:00", "Booths", "All")]),
+    });
+    expect(slack.methods()).toEqual(["chat.scheduleMessage"]);
+  });
+
+  test("a failed directory read stops the sync and keeps what's scheduled", async () => {
+    const slack = mockSlack({
+      "users.list": { ok: false, error: "missing_scope" },
+    });
+    const result = await syncTaskReminders(NOW, {
+      token: "xoxb-t",
+      fetch: slack.fetch,
+      channel: CHANNEL,
+      readSheet: sheet([task("14:00", "Open doors", "Noah")]),
+    });
+    expect(result).toEqual({ ok: false, reason: "error" });
+    expect(slack.methods()).toEqual(["users.list"]);
   });
 });
 
-describe("owner matching", () => {
-  test("saving an email looks the user up; unknown emails are not found", async () => {
+describe("getTaskPingActivity", () => {
+  test("up next and the log come from the reminder rows", async () => {
     const slack = mockSlack();
-    expect(
-      await setTaskOwnerEmail(" Jazz ", "Jazz@Example.com", {
-        token: "xoxb-t",
-        fetch: slack.fetch,
-      }),
-    ).toEqual({ match: "matched" });
-    expect(slack.calls[0]!.args.get("email")).toBe("jazz@example.com");
-
-    const missing = mockSlack({
-      "users.lookupByEmail": { ok: false, error: "users_not_found" },
-    });
-    expect(
-      await setTaskOwnerEmail("Sam", "sam@example.com", {
-        token: "xoxb-t",
-        fetch: missing.fetch,
-      }),
-    ).toEqual({ match: "not-found" });
-
-    const { owners } = await listTaskOwners({
+    await syncTaskReminders(NOW, {
+      token: "xoxb-t",
+      fetch: slack.fetch,
+      channel: CHANNEL,
       readSheet: sheet([
-        task("14:00", "A", "jazz"),
-        task("15:00", "B", "Jazz"),
-        task("16:00", "C", "Alex"),
+        task("14:00", "Tape cables", "All"),
+        task("15:00", "Open doors", "Noah"),
       ]),
     });
-    expect(owners).toEqual([
-      { ownerName: "Alex", slackEmail: null, match: "no-email", taskCount: 1 },
-      {
-        ownerName: "jazz",
-        slackEmail: "jazz@example.com",
-        match: "matched",
-        taskCount: 2,
-      },
-      {
-        ownerName: "Sam",
-        slackEmail: "sam@example.com",
-        match: "not-found",
-        taskCount: 0,
-      },
+    const before = await getTaskPingActivity(NOW);
+    expect(before.upNext).toMatchObject([
+      { task: "Tape cables", target: { kind: "channel" } },
+      { task: "Open doors", target: { kind: "dm", name: "Noah" } },
     ]);
-  });
+    expect(before.log.filter((e) => e.kind === "task")).toEqual([]);
 
-  test("without Slack, the email is saved and checked on the next sync", async () => {
+    const later = new Date("2026-11-21T14:30:00-05:00");
+    const after = await getTaskPingActivity(later);
+    expect(after.upNext.map((p) => p.task)).toEqual(["Open doors"]);
     expect(
-      await setTaskOwnerEmail("Jazz", "jazz@example.com", { token: undefined }),
-    ).toEqual({ match: "not-checked" });
+      after.log
+        .filter((e) => e.kind === "task")
+        .map((e) => [e.kind === "task" && e.task, e.status]),
+    ).toEqual([["Tape cables", "scheduled"]]);
   });
 });
 
@@ -541,17 +677,11 @@ describe("taskReminders router", () => {
     await expect(publicCaller.taskReminders.status()).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
-    await expect(publicCaller.taskReminders.owners()).rejects.toMatchObject({
+    await expect(publicCaller.taskReminders.activity()).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
     await expect(publicCaller.taskReminders.sync()).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
-    await expect(
-      publicCaller.taskReminders.setOwnerEmail({
-        ownerName: "Jazz",
-        slackEmail: "jazz@example.com",
-      }),
-    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 });
