@@ -293,15 +293,18 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
         : currentMinutes + 30;
       const duration = nextMinutes - currentMinutes;
       const baseSlotHeight = 56; // must match baseSlotHeight in row rendering
-      const slotHeight = Math.max(
-        baseSlotHeight,
-        (duration / 30) * baseSlotHeight,
-      );
+      const rowGap = isDesktop ? 8 : 6; // space-y-1.5 sm:space-y-2
+      // Same as the rows: a gap over 2 hours is a 20px row plus a 40px "⋯" row
+      const isLargeGap = duration > 120;
+      const slotHeight = isLargeGap
+        ? 20
+        : Math.max(baseSlotHeight, (duration / 30) * baseSlotHeight);
 
-      totalHeight += slotHeight + 6; // 6px gap between rows (approx space-y-1.5)
+      totalHeight += slotHeight + rowGap;
+      if (isLargeGap) totalHeight += 40 + rowGap;
     }
 
-    return totalHeight - 6; // Remove last gap
+    return totalHeight - (isDesktop ? 8 : 6); // Remove last gap
   };
 
   return (
