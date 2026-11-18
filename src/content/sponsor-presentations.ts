@@ -41,31 +41,42 @@ export const sponsorPresentationsCopy = {
       `Send every scheduled hacker their times again? ${plural(n, "hacker already has", "hackers already have")} them.`,
     resendButton: "Send again",
     notifying: "Sending…",
-    notified: (reached: number, members: number, time: string) =>
-      `${reached}/${members} hackers have their times · last sent ${time}`,
+    notified: (
+      reached: number,
+      members: number,
+      emailed: number,
+      time: string,
+    ) =>
+      `${reached}/${members} hackers have their times${emailed > 0 ? ` (${emailed} by email)` : ""} · last sent ${time}`,
     notNotified: "Hackers not notified yet",
     notifyResult: (
       sent: number,
+      emailed: number,
       missing: number,
       failed: number,
       skipped: number,
     ) =>
       [
         `Sent ${plural(sent, "DM", "DMs")}.`,
+        emailed > 0
+          ? `Emailed ${plural(emailed, "member", "members")} not on Slack.`
+          : "",
         skipped > 0 ? `${skipped} already had their times.` : "",
         missing > 0
-          ? `${plural(missing, "member", "members")} not on Slack.`
+          ? `${plural(missing, "member", "members")} not on Slack with no email.`
           : "",
-        failed > 0 ? `${plural(failed, "DM", "DMs")} failed; try again.` : "",
+        failed > 0
+          ? `${plural(failed, "message", "messages")} failed; try again.`
+          : "",
       ]
         .filter(Boolean)
         .join(" "),
-    notOnSlack: (names: string) => `Not on Slack: ${names}`,
+    notOnSlack: (names: string) => `Not on Slack, no email: ${names}`,
     notReached: (n: number) =>
       `${plural(n, "member hasn't", "members haven't")} been reached`,
     notReachedReasons: {
-      "not-on-slack": "Not on Slack",
-      failed: "DM failed",
+      "not-on-slack": "Not on Slack, no email",
+      failed: "Slack DM or email failed",
       "not-sent": "Not sent yet",
     },
     memberOf: (name: string, team: string, reason: string) =>
@@ -136,6 +147,20 @@ export const sponsorPresentationsCopy = {
       `• ${time}: ${sponsor}, ${room}`,
     footer:
       "Each presentation is 5 minutes. Be at the room a few minutes early. Your times are also on",
+  },
+
+  /** Email to a team member Slack can't find (same times as the DM). */
+  email: {
+    from: "Hack Western Team <hello@hackwestern.com>",
+    subject: (team: string) => `Your sponsor presentation times for ${team}`,
+    greeting: (firstName: string) =>
+      firstName ? `Hi ${firstName},` : "Hi there,",
+    intro: (team: string) =>
+      `Here are ${team}'s sponsor presentations on Sunday. Each one is 5 minutes, so be at the room a few minutes early.`,
+    line: (time: string, sponsor: string, room: string) =>
+      `${time}: ${sponsor}, ${room}`,
+    action: "See your times on your Live page",
+    signoff: "The Hack Western 13 Team",
   },
 
   errors: {

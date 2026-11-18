@@ -29,9 +29,9 @@ const NOTE = "m-0 text-sm font-medium text-dashboard-text-medium";
  * Organizer presentations on the Sponsor judging tab
  * (docs/flows/sponsor-judging.md): who sent a shortlist, Schedule
  * presentations (re-runnable; replaces the schedule), the schedule by room
- * or by team with teams that couldn't fit flagged, Notify hackers (Slack;
- * only members without their current times, "Notify again" after a
- * confirm) with members not reached listed, Open round 2 (after a
+ * or by team with teams that couldn't fit flagged, Notify hackers (Slack,
+ * or email for members not on Slack; only members without their current
+ * times, "Notify again" after a confirm) with members not reached listed, Open round 2 (after a
  * confirm; sponsors can't submit a top 5 until then), and the sponsor top
  * teams for the cheat check.
  */
@@ -277,6 +277,7 @@ export function PresentationsPanel({
                 ? copy.notified(
                     notices.reached,
                     notices.members,
+                    notices.emailed,
                     formatSubmittedTime(notices.lastSentAt),
                   )
                 : copy.notNotified}
@@ -311,6 +312,7 @@ export function PresentationsPanel({
           <p role="status" className={NOTE}>
             {copy.notifyResult(
               notify.data.sent,
+              notify.data.emailed,
               notify.data.notOnSlack.length,
               notify.data.failed,
               notify.data.skipped,

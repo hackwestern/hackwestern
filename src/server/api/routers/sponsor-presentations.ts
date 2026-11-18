@@ -18,6 +18,7 @@ import {
   protectedProcedure,
 } from "~/server/api/trpc";
 import { runAllTeamChecks } from "~/server/api/utils/cheat-check-runners";
+import { sendPresentationEmail } from "~/server/api/utils/presentation-email";
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
 import {
   round2OpenedAt,
@@ -33,10 +34,7 @@ import {
   teams,
   users,
 } from "~/server/db/schema";
-import {
-  sendPresentationDm,
-  type PresentationDmResult,
-} from "~/server/slack/presentation-dm";
+import { sendPresentationDm } from "~/server/slack/presentation-dm";
 
 const errors = sponsorPresentationsCopy.errors;
 
@@ -226,6 +224,7 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         : [];
     const noticeOf = new Map(notices.map((n) => [n.userId, n]));
     const reachedAt: Date[] = [];
+    let emailed = 0;
     const notReached: {
       userId: string;
       name: string;
@@ -240,6 +239,7 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         keys.get(n.teamId) === n.slotsKey;
       if (current && n.sentAt) {
         reachedAt.push(n.sentAt);
+        if (n.status === "emailed") emailed++;
         continue;
       }
       notReached.push({
@@ -281,12 +281,15 @@ export const sponsorPresentationsRouter = createTRPCRouter({
       /** When organizers opened round 2; null = closed. */
       round2OpenedAt: openedAt,
       /**
-       * Slack notices for the scheduled teams' members: how many have
-       * their current times (and the latest such send), and who doesn't.
+       * Notices for the scheduled teams' members: how many have their
+       * current times (by Slack or, for members not on Slack, by email; and
+       * the latest such send), and who neither reached.
        */
       notices: {
         members: members.length,
         reached: reachedAt.length,
+        /** Of `reached`, those who got them by email. */
+        emailed,
         lastSentAt:
           reachedAt.length > 0
             ? new Date(Math.max(...reachedAt.map((d) => d.getTime())))
@@ -426,11 +429,12 @@ export const sponsorPresentationsRouter = createTRPCRouter({
     }),
 
   /**
-   * Slack DM each member of every scheduled team their rooms and times.
-   * Each member is claimed atomically first, so a double click or retry
-   * never DMs anyone twice; by default only members who don't have their
-   * current times yet (never sent, not on Slack, failed, or times changed)
-   * are sent. `resend` sends everyone again. Once any member of a team has
+   * Slack DM each member of every scheduled team their rooms and times; a
+   * member Slack can't find by email address gets the same times by email
+   * instead (status "emailed"). Each member is claimed atomically first,
+   * so a double click or retry never messages anyone twice; by default
+   * only members who don't have their current times yet (never sent, not
+   * reached, failed, or times changed) are sent. `resend` sends everyone again. Once any member of a team has
    * the current times, they show on /live. Without SLACK_BOT_TOKEN nothing
    * is sent and it says so.
    */
@@ -494,7 +498,13 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         .from(users)
         .where(inArray(users.teamId, [...byTeam.keys()]));
       if (members.length === 0) {
-        return { sent: 0, failed: 0, notOnSlack: [] as string[], skipped: 0 };
+        return {
+          sent: 0,
+          emailed: 0,
+          failed: 0,
+          notOnSlack: [] as string[],
+          skipped: 0,
+        };
       }
 
       // Claim: one upsert; only rows it returns get a DM. Never claimed: a
@@ -536,26 +546,33 @@ export const sponsorPresentationsRouter = createTRPCRouter({
       const claimAt = claimed[0]?.claimedAt ?? null;
       const targets = members.filter((m) => claimedIds.has(m.id));
 
+      // Slack first; a member Slack can't find is emailed instead.
       const results = await mapPool(targets, DM_CONCURRENCY, async (m) => {
         const team = byTeam.get(m.teamId!)!;
-        const result: PresentationDmResult = await sendPresentationDm(
+        const dmResult = await sendPresentationDm(
           token,
           m,
           team.name,
           team.slots,
         );
+        const result =
+          dmResult === "not-found"
+            ? await sendPresentationEmail(m, team.name, team.slots)
+            : dmResult;
         return { member: m, result };
       });
 
       // Record each outcome on the rows this call claimed.
-      for (const status of ["sent", "not-found", "failed"] as const) {
+      const outcomes = ["sent", "emailed", "not-found", "failed"] as const;
+      for (const status of outcomes) {
         const ids = results
           .filter((r) => r.result === status)
           .map((r) => r.member.id);
         if (ids.length === 0) continue;
+        const reached = status === "sent" || status === "emailed";
         await db
           .update(n)
-          .set(status === "sent" ? { status, sentAt: sql`now()` } : { status })
+          .set(reached ? { status, sentAt: sql`now()` } : { status })
           .where(
             and(
               inArray(n.userId, ids),
@@ -566,7 +583,10 @@ export const sponsorPresentationsRouter = createTRPCRouter({
       }
       return {
         sent: results.filter((r) => r.result === "sent").length,
+        /** Not on Slack, so emailed instead. */
+        emailed: results.filter((r) => r.result === "emailed").length,
         failed: results.filter((r) => r.result === "failed").length,
+        /** Not on Slack and no email address: nobody reached them. */
         notOnSlack: results
           .filter((r) => r.result === "not-found")
           .map((r) => displayName(r.member)),
@@ -616,7 +636,7 @@ export const sponsorPresentationsRouter = createTRPCRouter({
 
   /**
    * The signed-in hacker's team's presentations, once any member of the
-   * team was sent these exact times on Slack (so /live and Slack agree; a
+   * team was sent these exact times (Slack or email) (so /live and Slack agree; a
    * reschedule that changes them hides them until notified again).
    */
   mine: protectedProcedure.query(async ({ ctx }) => {

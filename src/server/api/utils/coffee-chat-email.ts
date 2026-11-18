@@ -15,7 +15,7 @@ import {
 
 const copy = coffeeChatNotifyCopy.email;
 
-function escapeHtml(text: string): string {
+export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -23,6 +23,18 @@ function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+/** A paragraph of the Hack Western email layout; `inner` is HTML. */
+export const emailParagraph = (inner: string) =>
+  `<p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#0b2238">${inner}</p>`;
+
+/** The layout's one call-to-action button. */
+export const emailButton = (href: string, label: string) =>
+  `<p style="margin:0 0 24px"><a href="${href}" style="display:inline-block;background:#0b6bc4;color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;padding:12px 20px;border-radius:8px">${escapeHtml(label)}</a></p>`;
+
+/** The card the blocks (already HTML) sit in. */
+export const emailShell = (blocks: readonly string[]) =>
+  `<div style="background-color:#f3f7fc;padding:24px 0"><div style="margin:0 auto;max-width:560px;background:#ffffff;border-radius:12px;padding:32px">${blocks.join("")}</div></div>`;
 
 type OfferDetails = Pick<
   CoffeeChatNotice,
@@ -53,18 +65,17 @@ export function coffeeChatOfferEmail(chat: OfferDetails) {
     "",
   ].join("\n");
 
-  const p = (inner: string) =>
-    `<p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#0b2238">${inner}</p>`;
-  const html = `<div style="background-color:#f3f7fc;padding:24px 0"><div style="margin:0 auto;max-width:560px;background:#ffffff;border-radius:12px;padding:32px">${[
+  const p = emailParagraph;
+  const html = emailShell([
     p(escapeHtml(copy.greeting(chat.hackerFirstName))),
     p(escapeHtml(copy.intro(chat.sponsorName))),
     p(
       `<strong>${escapeHtml(copy.whenLabel)}:</strong> ${escapeHtml(when)}<br><strong>${escapeHtml(copy.whereLabel)}:</strong> ${escapeHtml(where)}`,
     ),
-    `<p style="margin:0 0 24px"><a href="${LIVE_URL}" style="display:inline-block;background:#0b6bc4;color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;padding:12px 20px;border-radius:8px">${escapeHtml(copy.action)}</a></p>`,
+    emailButton(LIVE_URL, copy.action),
     p(escapeHtml(copy.deadline)),
     p(escapeHtml(copy.signoff)),
-  ].join("")}</div></div>`;
+  ]);
 
   return { subject, html, text };
 }
@@ -86,14 +97,13 @@ export function coffeeChatChangeEmail(
     copy.signoff,
     "",
   ].join("\n");
-  const p = (inner: string) =>
-    `<p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:15px;line-height:1.5;color:#0b2238">${inner}</p>`;
-  const html = `<div style="background-color:#f3f7fc;padding:24px 0"><div style="margin:0 auto;max-width:560px;background:#ffffff;border-radius:12px;padding:32px">${[
+  const p = emailParagraph;
+  const html = emailShell([
     p(escapeHtml(copy.greeting(chat.hackerFirstName))),
     p(escapeHtml(line)),
-    `<p style="margin:0 0 24px"><a href="${LIVE_URL}" style="display:inline-block;background:#0b6bc4;color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;text-decoration:none;padding:12px 20px;border-radius:8px">${escapeHtml(change.emailAction)}</a></p>`,
+    emailButton(LIVE_URL, change.emailAction),
     p(escapeHtml(copy.signoff)),
-  ].join("")}</div></div>`;
+  ]);
   return { subject, html, text };
 }
 
