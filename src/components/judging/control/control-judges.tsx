@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NOT_WIRED, useStubMutation } from "~/components/judging/api-stub";
+import { api } from "~/utils/api";
 import {
   BTN_OUTLINE,
   CARD,
@@ -12,6 +12,7 @@ import {
   StatusLine,
   TD,
   TH,
+  errorText,
   formatHold,
   judgeName,
 } from "./control-shared";
@@ -29,8 +30,8 @@ export function ControlJudges({
 }) {
   const [picked, setPicked] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<Status>(null);
-  // Not wired up: assignJudgeForTeam was removed in #1155.
-  const assign = useStubMutation<{ judgeId: string; teamId: string }>();
+  const utils = api.useUtils();
+  const assign = api.judging.admin.addJudgeToTable.useMutation();
 
   const teams = queue?.teams ?? [];
   const holdByJudge = new Map(
@@ -157,10 +158,23 @@ export function ControlJudges({
                             );
                             if (!team) return;
                             setStatus(null);
-                            setStatus({
-                              tone: "error",
-                              text: `Not working right now. ${NOT_WIRED}`,
-                            });
+                            assign.mutate(
+                              { judgeId: j.id, tableId: team.tableId },
+                              {
+                                onSuccess: () => {
+                                  setStatus({
+                                    tone: "ok",
+                                    text: `Added ${name} to table ${team.tableNumber} (${team.teamName}).`,
+                                  });
+                                  void utils.judging.admin.invalidate();
+                                },
+                                onError: (e) =>
+                                  setStatus({
+                                    tone: "error",
+                                    text: `Couldn't add ${name} to table ${team.tableNumber}. ${errorText(e)}`,
+                                  }),
+                              },
+                            );
                           }}
                         >
                           {sending ? "Sending…" : "Send"}
