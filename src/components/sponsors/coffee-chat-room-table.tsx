@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Plus, TriangleAlert, X } from "lucide-react";
+import { requestSummary } from "~/components/sponsors/chat-request-form";
 import { hover, press } from "~/components/internals/interaction";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import {
   BlockDetails,
   GiveRoom,
+  SlotFill,
   SponsorStrip,
 } from "~/components/sponsors/room-blocks";
 import { LoadError } from "~/components/sponsors/schedule-states";
 import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
-import type { SponsorSelection } from "~/components/sponsors/sponsor-filter";
 import { useNow } from "~/components/sponsors/use-now";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import {
@@ -54,22 +55,18 @@ export function useSponsorColors(
 
 type Picked = { room: string; slotTime: string };
 
-// Coffee chats as a room booking table: one column per room, a row per
-// 15-minute slot, with a per-sponsor strip above. A free cell gives the
+// Coffee chats as one room booking view: one column per room, a row per
+// 15-minute slot, with the sponsor strip above. A free cell gives the
 // room to a sponsor for a length; a room block is one tall cell in the
-// sponsor's colour with their chat type and each slot's hackers booked /
-// needed, and opens the block. `highlight` (a sponsor name) rings that
-// sponsor's blocks, dims everyone else's and scrolls to their first one;
-// Escape clears it.
+// sponsor's colour with their logo, request and each slot's hackers
+// booked / asked for, and opens the block. `highlight` (a sponsor name)
+// rings that sponsor's blocks, dims everyone else's and scrolls to their
+// first one; Escape clears it. No legend.
 export function CoffeeChatRoomTable({
-  selection,
-  colors,
   highlight = null,
   onHighlight,
   onClearHighlight,
 }: {
-  selection: SponsorSelection;
-  colors?: ReadonlyMap<string, number>;
   highlight?: string | null;
   onHighlight?: (name: string) => void;
   onClearHighlight?: () => void;
@@ -79,8 +76,7 @@ export function CoffeeChatRoomTable({
   const [picked, setPicked] = useState<Picked | null>(null);
   const opener = useRef<HTMLButtonElement | null>(null);
   const region = useRef<HTMLDivElement>(null);
-  const ownColors = useSponsorColors(q.data?.colorNames ?? NO_NAMES);
-  const palette = colors ?? ownColors;
+  const palette = useSponsorColors(q.data?.colorNames ?? NO_NAMES);
   const ready = Boolean(q.data);
 
   // Escape clears the highlight (unless a dialog is open; it closes first).
@@ -124,7 +120,7 @@ export function CoffeeChatRoomTable({
       </DashboardPanel>
     );
   }
-  const table = buildRoomTable(board, { selected: selection.selected });
+  const table = buildRoomTable(board);
   const spans = roomCellSpans(table);
   const pickedCell = picked
     ? table.rows[table.slots.indexOf(picked.slotTime)]?.[
@@ -135,7 +131,7 @@ export function CoffeeChatRoomTable({
   return (
     <div className="flex min-w-0 flex-col gap-3">
       <SponsorStrip
-        items={sponsorStrip(board, selection.selected)}
+        items={sponsorStrip(board)}
         colors={palette}
         highlight={highlight}
         onHighlight={onHighlight}
@@ -248,14 +244,9 @@ function CellButton({
   const highlighted =
     highlight !== null && cell.occupants.some((o) => o.sponsor === highlight);
   // Dim only other sponsors' blocks: free cells never dim.
-  const dimmed =
-    !free &&
-    (cell.occupants.every((o) => !o.selected) ||
-      (highlight !== null && !highlighted));
+  const dimmed = !free && highlight !== null && !highlighted;
   const lead =
-    cell.occupants.find((o) => o.sponsor === highlight) ??
-    cell.occupants.find((o) => o.selected) ??
-    cell.occupants[0];
+    cell.occupants.find((o) => o.sponsor === highlight) ?? cell.occupants[0];
   const color = lead ? sponsorColor(colors, lead.sponsor) : null;
   const sponsor = board.sponsors.find((s) => s.sponsorId === lead?.sponsorId);
   const when = hold
@@ -296,15 +287,16 @@ function CellButton({
         </span>
       ) : (
         <>
-          <span className="flex min-w-0 items-center gap-1.5">
-            {lead && (
+          {/* Logo only; the button's aria-label names the sponsor. */}
+          <span aria-hidden className="flex min-w-0 items-center gap-1">
+            {cell.occupants.map((o) => (
               <SponsorBadge
-                name={lead.sponsor}
-                color={color ?? undefined}
-                className="size-5"
+                key={o.sponsor}
+                name={o.sponsor}
+                color={sponsorColor(colors, o.sponsor) ?? undefined}
+                className="size-6"
               />
-            )}
-            <span className="min-w-0 truncate font-semibold">{who}</span>
+            ))}
           </span>
           {cell.clash ? (
             <span className="inline-flex items-center gap-1 font-semibold text-dashboard-text-warning">
@@ -312,9 +304,14 @@ function CellButton({
               {copy.clash}
             </span>
           ) : (
-            sponsor && (
+            sponsor &&
+            hold && (
               <span className="truncate text-dashboard-text-medium">
-                {copy.chatType(sponsor.groupSize, sponsor.reps)}
+                {copy.blockSummary(
+                  requestSummary(sponsor.request),
+                  hold.booked,
+                  hold.needed,
+                )}
               </span>
             )
           )}
@@ -323,22 +320,12 @@ function CellButton({
               {hold.slots.map((slot) => (
                 <li
                   key={slot.slotTime}
-                  className="flex justify-between gap-2 tabular-nums"
+                  className="flex flex-wrap items-baseline justify-between gap-x-2 tabular-nums"
                 >
                   <span className="text-dashboard-text-medium">
                     {formatClock(slot.slotTime)}
                   </span>
-                  <span
-                    aria-label={copy.fillLabel(slot.booked, slot.needed)}
-                    className={cn(
-                      "font-semibold",
-                      slot.booked < slot.needed
-                        ? "text-dashboard-text-medium"
-                        : "text-dashboard-text-heavy",
-                    )}
-                  >
-                    {copy.fill(slot.booked, slot.needed)}
-                  </span>
+                  <SlotFill slot={slot} />
                 </li>
               ))}
             </ul>
@@ -363,7 +350,7 @@ function RoomSlotDialog({
   onCloseFocus,
 }: {
   cell: RoomCell | undefined;
-  board: ChatBoard;
+  board: ChatBoard & { rooms: string[] };
   colors: ReadonlyMap<string, number>;
   now: Date;
   onClose: () => void;
@@ -407,11 +394,10 @@ function RoomSlotDialog({
                       </span>
                       {sponsor && (
                         <span>
-                          {copy.block.chatType(
-                            sponsor.groupSize,
-                            sponsor.durationMinutes,
-                          )}{" "}
-                          · {copy.chatType(sponsor.groupSize, sponsor.reps)}
+                          {copy.block.request(
+                            requestSummary(sponsor.request),
+                            sponsor.request.durationMinutes,
+                          )}
                         </span>
                       )}
                     </Dialog.Description>

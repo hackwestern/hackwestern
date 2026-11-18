@@ -9,7 +9,6 @@ import { DayPicker } from "~/components/sponsors/day-picker";
 import { SponsorHelp } from "~/components/sponsors/help-button";
 import { HappeningNowBanner } from "~/components/sponsors/happening-now";
 import { NextEventCard } from "~/components/sponsors/next-event-card";
-import { RepCount } from "~/components/sponsors/rep-count";
 import {
   DayGrid,
   HackathonToggle,
@@ -144,7 +143,6 @@ export default function SponsorSchedulePage() {
       {shownDay === "Saturday" && (
         <>
           <CoffeeChatSummary setup={data.coffeeChat} />
-          <RepCount sponsor={id} groupSize={data.coffeeChat?.groupSize ?? 1} />
           <nav
             aria-label={coffeeChatCopy.hub.linksLabel}
             className="grid grid-cols-1 gap-3 sm:grid-cols-2"

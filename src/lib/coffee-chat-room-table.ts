@@ -2,21 +2,17 @@
  * The organizer's coffee chat room table: one column per room, one row per
  * 15-minute grid slot. A room at a time is free or in one sponsor's room
  * block (docs/flows/coffee-chat-room-blocks.md); a block cell says how many
- * hackers its slot has against how many the sponsor's chat type needs.
- * Plus the per-sponsor strip above the table. Pure functions over the
+ * hackers its slot has against how many the sponsor asked for. Plus the
+ * sponsor strip above the table. No room capacity (v2). Pure functions over the
  * organizer chat board, so the table, the strip and the dialogs agree.
  */
 import {
   ACTIVE_COFFEE_CHAT_STATUSES,
-  COFFEE_CHAT_ROOM_PEOPLE,
   COFFEE_CHAT_ROOMS,
   coffeeChatMinutesOf,
   coffeeChatRoomOf,
 } from "~/lib/coffee-chat-requests";
 import { holdCovers } from "~/lib/coffee-chat-holds";
-
-/** People one coffee chat room fits at once (rooms 2241-2243). */
-export const ROOM_CAPACITY = COFFEE_CHAT_ROOM_PEOPLE;
 
 /** The rooms the table always shows, in order. */
 export const ROOM_TABLE_ROOMS: readonly string[] = COFFEE_CHAT_ROOMS;
@@ -26,9 +22,9 @@ export const ROOM_TABLE_ROOMS: readonly string[] = COFFEE_CHAT_ROOMS;
 export type RoomBoardSponsor = {
   sponsorId: string | null;
   sponsor: string;
-  durationMinutes: number;
-  groupSize: number;
-  reps: number;
+  setUp: boolean;
+  request: { source: string };
+  blockMinutes: number;
 };
 export type RoomBoardChat = {
   chatId: string;
@@ -62,9 +58,6 @@ export type RoomOccupant = {
   sponsorId: string | null;
   /** Hackers in live chats running in this room now. */
   hackers: number;
-  reps: number;
-  /** In the sponsor filter (false = shown dimmed). */
-  selected: boolean;
   /** The block this cell falls in; null for a chat booked before blocks. */
   holdId: string | null;
   /** The block's slot covering this time: booked / needed. */
@@ -75,10 +68,6 @@ export type RoomCell = {
   room: string;
   slotTime: string;
   occupants: RoomOccupant[];
-  /** Hackers in live chats plus the occupying sponsors' reps. */
-  used: number;
-  /** More people than the room fits: only a quiet note in the dialog. */
-  over: boolean;
   /** A block slot here is short of hackers. */
   needsHacker: boolean;
   /**
@@ -113,14 +102,11 @@ function covers(start: number | null, minutes: number, t: number): boolean {
 /**
  * Who has each room at each slot: the sponsor whose block covers it, and
  * any live chat running there (a chat with no room counts in its
- * sponsor's block). `selected` = null means every sponsor is in the filter.
+ * sponsor's block).
  */
 export function buildRoomTable(
   board: RoomBoard,
-  {
-    rooms = ROOM_TABLE_ROOMS,
-    selected = null,
-  }: { rooms?: readonly string[]; selected?: ReadonlySet<string> | null } = {},
+  { rooms = ROOM_TABLE_ROOMS }: { rooms?: readonly string[] } = {},
 ): RoomTable {
   const byId = new Map(
     board.sponsors.flatMap((s) => (s.sponsorId ? [[s.sponsorId, s]] : [])),
@@ -153,25 +139,19 @@ export function buildRoomTable(
             .reverse()
             .find((x) => (coffeeChatMinutesOf(x.slotTime) ?? Infinity) <= t) ??
           null;
-        const name = s?.sponsor ?? "";
         return {
-          sponsor: name,
+          sponsor: s?.sponsor ?? "",
           sponsorId: s?.sponsorId ?? id,
           hackers: chats.filter((c) => c.sponsorId === id).length,
-          reps: s?.reps ?? 0,
-          selected: selected === null || selected.has(name),
           holdId: hold?.holdId ?? null,
           slot,
         };
       });
-      const used = occupants.reduce((n, o) => n + o.hackers + o.reps, 0);
       const only = occupants.length === 1 ? occupants[0]! : null;
       return {
         room,
         slotTime,
         occupants,
-        used,
-        over: used > ROOM_CAPACITY,
         needsHacker: occupants.some(
           (o) => o.slot !== null && o.slot.booked < o.slot.needed,
         ),
@@ -205,48 +185,17 @@ export function roomCellSpans(table: RoomTable): number[][] {
   return spans;
 }
 
-/** One sponsor in the strip above the room table. */
-export type SponsorStripItem = {
-  sponsor: string;
-  sponsorId: string;
-  durationMinutes: number;
-  groupSize: number;
-  reps: number;
-  blocks: number;
-  /** Hackers booked / needed over every slot of their blocks. */
-  booked: number;
-  needed: number;
-};
-
 /**
- * Registered sponsors in the filter, with their chat type, reps, blocks
- * and hackers booked / needed. Sponsors with blocks first, then by name.
+ * The sponsor strip above the room table: every sponsor in the view, those
+ * with room blocks first, then set up (a sheet window), then by name.
  */
-export function sponsorStrip(
-  board: RoomBoard,
-  selected: ReadonlySet<string> | null = null,
-): SponsorStripItem[] {
-  return board.sponsors
-    .filter(
-      (s): s is RoomBoardSponsor & { sponsorId: string } =>
-        s.sponsorId !== null && (selected === null || selected.has(s.sponsor)),
-    )
-    .map((s) => {
-      const own = board.holds.filter((h) => h.sponsorId === s.sponsorId);
-      return {
-        sponsor: s.sponsor,
-        sponsorId: s.sponsorId,
-        durationMinutes: s.durationMinutes,
-        groupSize: s.groupSize,
-        reps: s.reps,
-        blocks: own.length,
-        booked: own.reduce((n, h) => n + h.booked, 0),
-        needed: own.reduce((n, h) => n + h.needed, 0),
-      };
-    })
-    .sort(
-      (a, b) =>
-        Number(b.blocks > 0) - Number(a.blocks > 0) ||
-        a.sponsor.localeCompare(b.sponsor),
-    );
+export function sponsorStrip<S extends RoomBoardSponsor>(
+  board: { sponsors: readonly S[] },
+): S[] {
+  return [...board.sponsors].sort(
+    (a, b) =>
+      Number(b.blockMinutes > 0) - Number(a.blockMinutes > 0) ||
+      Number(b.setUp) - Number(a.setUp) ||
+      a.sponsor.localeCompare(b.sponsor),
+  );
 }
