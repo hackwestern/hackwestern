@@ -1,29 +1,22 @@
 import { TRPCError } from "@trpc/server";
-import { and, arrayOverlaps, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
-import { db } from "~/server/db";
-import { applications, teams, users } from "~/server/db/schema";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "~/lib/sponsor-picks";
-import { type TrackValue } from "~/lib/sponsor-track";
 import {
   SHEET_TAB,
-  fetchAllSponsorInfo,
   fetchColumnA,
   findSponsorRows,
-  getJudgingSheetId,
   getSheetsClient,
   getSpreadsheetId,
   parseTeamIds,
   resolveSponsorName,
 } from "~/server/api/utils/sponsor-sheets";
-
-/** Submission link trimmed, or null when blank. */
-function normalizeSubmissionUrl(url: string | null): string | null {
-  const trimmed = url?.trim();
-  return trimmed ? trimmed : null;
-}
+import {
+  fetchSponsorTrack,
+  listEligibleTeams,
+  writeChosenTeams,
+} from "~/server/api/utils/sponsor-judging-teams";
 
 export const sponsorJudgingRouter = createTRPCRouter({
   /**
@@ -93,79 +86,8 @@ export const sponsorJudgingRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       try {
         const sponsorName = await resolveSponsorName(input.sponsorId);
-        const sheets = await getSheetsClient();
-        const spreadsheetId = getSpreadsheetId();
-
-        const columnA = await fetchColumnA(sheets, spreadsheetId);
-        const [existingRow] = findSponsorRows(columnA, sponsorName);
-
-        const cellValue = input.teamIds.join(", ");
-
-        if (existingRow) {
-          await sheets.spreadsheets.values.update({
-            spreadsheetId,
-            range: `${SHEET_TAB}!B${existingRow}`,
-            valueInputOption: "RAW",
-            requestBody: {
-              majorDimension: "ROWS",
-              values: [[cellValue]],
-            },
-          });
-          return { sponsorName, teamIds: input.teamIds };
-        }
-
-        // No row yet. The append below races with any other first write for
-        // the same sponsor: both can see "no row" and both append, leaving a
-        // duplicate row that would silently shadow picks. Re-read column A
-        // afterwards and collapse any extra rows onto the first one.
-        await sheets.spreadsheets.values.append({
-          spreadsheetId,
-          range: `${SHEET_TAB}!A:B`,
-          valueInputOption: "RAW",
-          insertDataOption: "INSERT_ROWS",
-          requestBody: {
-            majorDimension: "ROWS",
-            values: [[sponsorName, cellValue]],
-          },
-        });
-
-        const rowsAfterAppend = findSponsorRows(
-          await fetchColumnA(sheets, spreadsheetId),
-          sponsorName,
-        );
-        const [canonicalRow, ...duplicates] = rowsAfterAppend;
-        if (canonicalRow && duplicates.length > 0) {
-          const sheetId = await getJudgingSheetId(sheets, spreadsheetId);
-          // Delete highest row numbers first so earlier indices stay valid.
-          await sheets.spreadsheets.batchUpdate({
-            spreadsheetId,
-            requestBody: {
-              requests: [...duplicates]
-                .sort((a, b) => b - a)
-                .map((rowNumber) => ({
-                  deleteDimension: {
-                    range: {
-                      sheetId,
-                      dimension: "ROWS",
-                      startIndex: rowNumber - 1,
-                      endIndex: rowNumber,
-                    },
-                  },
-                })),
-            },
-          });
-          // The surviving row may hold the other writer's picks; assert ours.
-          await sheets.spreadsheets.values.update({
-            spreadsheetId,
-            range: `${SHEET_TAB}!B${canonicalRow}`,
-            valueInputOption: "RAW",
-            requestBody: {
-              majorDimension: "ROWS",
-              values: [[cellValue]],
-            },
-          });
-        }
-
+        // Shared with sponsorScoring.submit (utils/sponsor-judging-teams).
+        await writeChosenTeams(sponsorName, input.teamIds);
         return { sponsorName, teamIds: input.teamIds };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -200,92 +122,9 @@ export const sponsorJudgingRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const sponsorName = await resolveSponsorName(input.sponsor);
 
-      let sponsorTrack: TrackValue | null = null;
-      try {
-        const sheets = await getSheetsClient();
-        const spreadsheetId = getSpreadsheetId();
-        const sponsorInfoMap = await fetchAllSponsorInfo(sheets, spreadsheetId);
-        sponsorTrack =
-          sponsorInfoMap.get(sponsorName.toLowerCase())?.track ?? null;
-      } catch (error) {
-        console.error("Could not resolve sponsor track:", error);
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Couldn't load your prize track. Try again in a minute.",
-        });
-      }
-
-      const submittedTeams = await db
-        .select({
-          id: teams.id,
-          name: teams.name,
-          devpostUrl: teams.devpostUrl,
-          githubUrl: teams.githubUrl,
-          tracks: teams.tracks,
-        })
-        .from(teams)
-        .where(
-          and(
-            inArray(teams.submissionStatus, ["submitted", "late"]),
-            ...(sponsorTrack
-              ? [arrayOverlaps(teams.tracks, [sponsorTrack])]
-              : []),
-          ),
-        )
-        .orderBy(teams.name);
-
-      if (submittedTeams.length === 0) {
-        return { sponsorName, sponsorTrack, teams: [] };
-      }
-
-      const members = await db
-        .select({
-          teamId: users.teamId,
-          userName: users.name,
-          firstName: applications.firstName,
-          lastName: applications.lastName,
-        })
-        .from(users)
-        .leftJoin(applications, eq(applications.userId, users.id))
-        .where(
-          inArray(
-            users.teamId,
-            submittedTeams.map((team) => team.id),
-          ),
-        );
-
-      const membersByTeam = new Map<string, string[]>();
-      for (const member of members) {
-        if (!member.teamId) continue;
-        // The application's first/last name is what the hacker typed; fall
-        // back to the auth display name when the application name is blank.
-        const applicationName = [member.firstName, member.lastName]
-          .filter((part): part is string => Boolean(part?.trim()))
-          .map((part) => part.trim())
-          .join(" ");
-        const fullName =
-          applicationName.length > 0
-            ? applicationName
-            : (member.userName?.trim() ?? "");
-        if (!fullName) continue;
-        const names = membersByTeam.get(member.teamId) ?? [];
-        names.push(fullName);
-        membersByTeam.set(member.teamId, names);
-      }
-
-      return {
-        sponsorName,
-        sponsorTrack,
-        teams: submittedTeams.map((team) => ({
-          id: team.id,
-          name: team.name,
-          devpostUrl: normalizeSubmissionUrl(team.devpostUrl),
-          githubUrl: normalizeSubmissionUrl(team.githubUrl),
-          tracks: team.tracks ?? [],
-          members: (membersByTeam.get(team.id) ?? []).sort((a, b) =>
-            a.localeCompare(b),
-          ),
-        })),
-      };
+      // A sheet failure is an error, never "no filter" (see fetchSponsorTrack).
+      const sponsorTrack = await fetchSponsorTrack(sponsorName);
+      const teams = await listEligibleTeams(sponsorTrack);
+      return { sponsorName, sponsorTrack, teams };
     }),
 });
