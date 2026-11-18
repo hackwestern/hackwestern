@@ -10,6 +10,10 @@
 - `hackwestern-sd-tester` (branch `sd-tester-sponsor`) has no work and no note: ask Jazz.
 
 ## To build (queued, Jazz 2026-11-18)
+- **Sponsors tab (organizer first page) changes by day** (Jazz 2026-11-18). Build after sd-room-blocks merges (both touch the Sponsors table).
+  - Friday: per sponsor, have they arrived, and have they been given their portal link (organizer ticks; store in DB; show counts "5 of 9 arrived").
+  - Saturday: coffee chat status (from room blocks v2).
+  - Sunday: did they send their shortlist / submit their top 5, and where they should be right now (judging room, presentations, booth) from the run of show.
 - **Hacker notification center on the live site.** Hackers see their coffee chat offers/updates and, if a sponsor shortlisted them, their judging presentation rooms + times. Unread count on the existing `NotificationBadge` in `src/components/live/navlinks.tsx`.
 - **Slack bot finds hackers by the Slack email they give us.** Add a "Slack email" field hackers fill in (fallback: account email). Today `src/server/slack/coffee-chat-dm.ts` already DMs via `users.lookupByEmail` with the account email, then falls back to email; reuse that one helper for coffee chats AND judging (Notify hackers in sd-presentations), so one lookup, one place.
 - Every Slack DM also writes a notification row, so the center and Slack always say the same thing.
