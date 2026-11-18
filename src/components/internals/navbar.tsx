@@ -16,12 +16,6 @@ export function InternalNavbar() {
         </Button>
         <div className="flex min-w-0 items-center gap-3 overflow-x-auto font-figtree">
           <Button className="text-primary-600" variant={"link"} asChild>
-            <Link href="/internal/judging">Judging Controls</Link>
-          </Button>
-          <Button className="text-primary-600" variant={"link"} asChild>
-            <Link href="/internal/judging#manage-judges">Manage Judges</Link>
-          </Button>
-          <Button className="text-primary-600" variant={"link"} asChild>
             <Link href="/internal/sponsors">Sponsors</Link>
           </Button>
           <Button className="text-primary-600" variant={"link"} asChild>
