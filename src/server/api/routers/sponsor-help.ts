@@ -287,6 +287,7 @@ export const sponsorHelpRouter = createTRPCRouter({
     return db
       .select({
         id: sponsorHelpRequests.id,
+        sponsorId: sponsorHelpRequests.sponsorId,
         sponsorName: sponsorJudgingSponsors.name,
         reason: sponsorHelpRequests.reason,
         note: sponsorHelpRequests.note,

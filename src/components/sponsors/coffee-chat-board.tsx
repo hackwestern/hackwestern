@@ -32,6 +32,7 @@ import {
   type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
 import { formatClock } from "~/lib/run-of-show";
+import { sponsorNameForParam } from "~/lib/sponsor-organizer";
 import { cn } from "~/lib/utils";
 import type { OrganizerHackerMatch } from "~/server/api/routers/coffee-chat-requests";
 import type {
@@ -51,12 +52,22 @@ type Selected = { sponsor: string; slotTime: string };
 // table (a room booking view) by default, with the sponsor x time table and
 // the per-sponsor list (rooms, add a chat, booked chats) one toggle away.
 // The filter and totals apply to every view.
-export function CoffeeChatBoard({ list }: { list: ReactNode }) {
+// `sponsor` (an id or name, from ?sponsor=) sets the filter to that sponsor.
+export function CoffeeChatBoard({
+  list,
+  sponsor = null,
+}: {
+  list: ReactNode;
+  sponsor?: string | null;
+}) {
   const [view, setView] = useState<"rooms" | "table" | "list">("rooms");
   const now = useNow(30_000);
   const board = useLiveChatBoard();
   const names = board.data?.sponsors.map((s) => s.sponsor) ?? NO_NAMES;
-  const selection = useSponsorSelection(names);
+  const selection = useSponsorSelection(
+    names,
+    sponsorNameForParam(sponsor, board.data?.sponsors ?? NO_SPONSORS),
+  );
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -113,6 +124,7 @@ export function CoffeeChatBoard({ list }: { list: ReactNode }) {
 }
 
 const NO_NAMES: string[] = [];
+const NO_SPONSORS: BoardSponsor[] = [];
 
 const STATUS_CHIP: Record<CoffeeChatStatus, string> = {
   accepted: "bg-dashboard-bg-highlight text-dashboard-text-active",
