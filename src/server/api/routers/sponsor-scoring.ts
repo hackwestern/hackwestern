@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { env } from "~/env";
+import { judgingRound } from "~/lib/sponsor-presentations";
 import {
   NOTE_MAX,
   SCORE_MAX,
@@ -88,7 +89,9 @@ async function reviewsFor(sponsorId: string): Promise<TeamReview[]> {
 /**
  * Round state for one sponsor: their sent shortlist, whether any schedule
  * exists, and their presentation slots (placed only). Once a schedule
- * exists, round 2 ranks only the teams with a slot for this sponsor.
+ * exists AND this sponsor has a placed slot, round 2 ranks only those
+ * teams (judgingRound). A sponsor with no slot is never locked out: they
+ * keep ranking their shortlist.
  */
 async function roundFor(sponsorId: string) {
   const [sent, anySlot, slots] = await Promise.all([
@@ -341,9 +344,10 @@ export const sponsorScoringRouter = createTRPCRouter({
         eligibleTeamIds(track, input.teamIds),
         roundFor(sponsor.id),
       ]);
-      // Round 2: once presentations are scheduled, only teams with a slot
-      // for this sponsor can be ranked. Before that, the shortlist.
-      const scheduled = round.scheduledAt !== null;
+      // Round 2 (this sponsor has a placed slot): only teams that presented
+      // to them. Otherwise, including a schedule with no slot for them
+      // (sent late, no room, none fit), their shortlist.
+      const scheduled = judgingRound(round) === "rank";
       const pool = scheduled
         ? round.slots.map((s) => s.teamId)
         : shortlistRows.map((r) => r.teamId);

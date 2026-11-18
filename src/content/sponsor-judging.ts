@@ -139,6 +139,8 @@ export const sponsorJudgingCopy = {
     sendFailed: "Couldn't send. Check your connection and try again.",
     waiting:
       "Round 2 opens here once presentations are scheduled: you'll rank your top teams from the ones that present.",
+    reschedule:
+      "Presentations are scheduled, but none are booked with you yet. Send your shortlist if you haven't, then ask your Hack Western contact to schedule again. Until then you can still rank your shortlist and submit your top 5 below.",
     presentedHeading: "Rank the teams that presented",
     presentedIntro: (top: number) =>
       `Put your favourite first. The first ${top} are the teams you submit.`,

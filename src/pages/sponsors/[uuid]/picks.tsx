@@ -57,11 +57,12 @@ export default function SponsorJudgingPage() {
         : [],
     [data, reviews, search, filter, sort],
   );
-  // Round 2 once presentations are scheduled: rank the teams that
+  // Round 2 once this sponsor has presentation slots: rank the teams that
   // presented (team id -> "10:05 AM"). Before that, round 1's shortlist.
+  const round = data ? judgingRound(data.round) : "shortlist";
   const presented = useMemo(
     () =>
-      data && judgingRound(data.round) === "rank"
+      data && round === "rank"
         ? new Map(
             data.round.slots.map((s) => [
               s.teamId,
@@ -69,7 +70,7 @@ export default function SponsorJudgingPage() {
             ]),
           )
         : null,
-    [data],
+    [data, round],
   );
   const shortlistCount = !data
     ? 0
@@ -314,6 +315,25 @@ export default function SponsorJudgingPage() {
             onBrowse={() => chooseStep("browse", true)}
             presented={presented}
           />
+        ) : round === "reschedule" ? (
+          // Scheduled, but nothing for this sponsor: never lock them out.
+          <>
+            <ShortlistSend
+              sponsor={uuid}
+              data={data}
+              reviews={reviews}
+              onSave={save}
+              onBrowse={() => chooseStep("browse", true)}
+              reschedule
+            />
+            <ShortlistRanking
+              sponsor={uuid}
+              data={data}
+              reviews={reviews}
+              onSave={save}
+              onBrowse={() => chooseStep("browse", true)}
+            />
+          </>
         ) : (
           <ShortlistSend
             sponsor={uuid}

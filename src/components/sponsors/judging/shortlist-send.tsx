@@ -31,7 +31,13 @@ export function ShortlistSend({
   reviews,
   onSave,
   onBrowse,
+  reschedule = false,
 }: {
+  /**
+   * A schedule exists with no slot for this sponsor: say organizers need
+   * to schedule again; the ranking renders below, so the bar isn't sticky.
+   */
+  reschedule?: boolean;
   sponsor: string;
   data: JudgingData;
   reviews: ReadonlyMap<string, TeamReview>;
@@ -66,7 +72,7 @@ export function ShortlistSend({
     },
   });
 
-  if (shortlist.length === 0 && !sent) {
+  if (shortlist.length === 0 && !sent && !reschedule) {
     return (
       <DashboardPanel className="items-start">
         <p className="m-0 text-base text-dashboard-text-medium">
@@ -119,11 +125,24 @@ export function ShortlistSend({
         ))}
       </ul>
 
-      <p className="m-0 text-sm text-dashboard-text-medium">
-        {copy.round.waiting}
+      <p
+        className={cn(
+          "m-0 text-sm",
+          reschedule
+            ? "rounded-dashboard-lg bg-dashboard-status-iconBadge px-4 py-3 font-semibold text-dashboard-text-warning"
+            : "text-dashboard-text-medium",
+        )}
+      >
+        {reschedule ? copy.round.reschedule : copy.round.waiting}
       </p>
 
-      <div className="sticky bottom-0 z-10 -mx-4 border-t border-dashboard-border-subtle bg-dashboard-bg-page/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm sm:-mx-5 sm:px-5">
+      <div
+        className={cn(
+          reschedule
+            ? "border-t border-dashboard-border-subtle pt-3"
+            : "sticky bottom-0 z-10 -mx-4 border-t border-dashboard-border-subtle bg-dashboard-bg-page/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm sm:-mx-5 sm:px-5",
+        )}
+      >
         {!data.open ? (
           <p className="m-0 text-sm font-medium text-dashboard-text-medium">
             {copy.submit.closed}

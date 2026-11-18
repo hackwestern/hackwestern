@@ -70,7 +70,16 @@ export type PresentationSchedule = {
 };
 
 /** Cap on backtracking steps per team, so a hopeless team can't hang it. */
-const SEARCH_LIMIT = 50_000;
+export const SEARCH_LIMIT = 50_000;
+
+/** sponsor_presentation.room is varchar(64). */
+export const PRESENTATION_ROOM_MAX = 64;
+
+/** A sheet room as stored: trimmed, spaces collapsed, at most 64 chars. */
+export function normalizeRoom(room: string | null | undefined) {
+  const clean = (room ?? "").trim().replace(/\s+/g, " ");
+  return clean ? clean.slice(0, PRESENTATION_ROOM_MAX).trimEnd() : null;
+}
 
 const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
@@ -88,6 +97,7 @@ const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 export function schedulePresentations(
   requests: readonly PresentationRequest[],
   window: PresentationWindow = PRESENTATION_WINDOW,
+  { searchLimit = SEARCH_LIMIT }: { searchLimit?: number } = {},
 ): PresentationSchedule {
   const slotCount = slotsPerRoom(window);
   const startOf = (i: number) => window.start + i * window.slotMinutes;
@@ -192,7 +202,7 @@ export function schedulePresentations(
       return true;
     };
     const walk = (k: number): boolean => {
-      if (++steps > SEARCH_LIMIT) return true;
+      if (++steps > searchLimit) return true;
       if (chosen.size + (list.length - k) <= best.size) return false;
       if (k === list.length) {
         best = new Map(chosen);
@@ -309,18 +319,36 @@ export function formatPresentationTime(minutes: number) {
   return `${h12}:${String(m).padStart(2, "0")} ${h24 < 12 ? "AM" : "PM"}`;
 }
 
-export type JudgingRound = "shortlist" | "sent" | "rank";
+export type JudgingRound = "shortlist" | "sent" | "reschedule" | "rank";
 
 /**
- * Where a sponsor is in Sunday judging: "shortlist" (round 1, nothing
- * sent), "sent" (shortlist sent, waiting for the schedule) or "rank"
- * (presentations scheduled, round 2 open). For the picks page and the
- * portal tile; takes sponsorScoring.get's `round`.
+ * Where one sponsor is in Sunday judging: "rank" (round 2: they have at
+ * least one placed slot), "reschedule" (a schedule exists but has no slot
+ * for them: sent late, no room, or none of their teams fit; organizers
+ * need to schedule again), "sent" (shortlist sent, no schedule yet) or
+ * "shortlist" (round 1, nothing sent). Only "rank" limits the top 5 to
+ * teams that presented. For the picks page and the portal tile; takes
+ * sponsorScoring.get's `round`.
  */
 export function judgingRound(round: {
   shortlistSent: unknown;
   scheduledAt: Date | string | null;
+  slots: readonly unknown[];
 }): JudgingRound {
-  if (round.scheduledAt) return "rank";
+  if (round.slots.length > 0) return "rank";
+  if (round.scheduledAt) return "reschedule";
   return round.shortlistSent ? "sent" : "shortlist";
+}
+
+/**
+ * A team's slots as one comparable string: a member whose DM was sent
+ * for this key has the team's current times.
+ */
+export function slotsKey(
+  slots: readonly { sponsorId: string; room: string; start: number }[],
+) {
+  return slots
+    .map((s) => `${s.start}|${s.sponsorId}|${s.room}`)
+    .sort()
+    .join(";");
 }

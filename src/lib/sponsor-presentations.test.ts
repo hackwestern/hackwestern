@@ -195,14 +195,71 @@ describe("helpers", () => {
 });
 
 describe("judgingRound", () => {
-  it("moves from shortlist to sent to rank", async () => {
+  it("is per sponsor: round 2 only with a placed slot of their own", async () => {
     const { judgingRound } = await import("./sponsor-presentations");
-    expect(judgingRound({ shortlistSent: null, scheduledAt: null })).toBe(
-      "shortlist",
-    );
-    expect(judgingRound({ shortlistSent: {}, scheduledAt: null })).toBe("sent");
-    expect(judgingRound({ shortlistSent: null, scheduledAt: new Date() })).toBe(
-      "rank",
-    );
+    const at = new Date();
+    expect(
+      judgingRound({ shortlistSent: null, scheduledAt: null, slots: [] }),
+    ).toBe("shortlist");
+    expect(
+      judgingRound({ shortlistSent: {}, scheduledAt: null, slots: [] }),
+    ).toBe("sent");
+    // Someone else's schedule exists, none for this sponsor.
+    expect(
+      judgingRound({ shortlistSent: {}, scheduledAt: at, slots: [] }),
+    ).toBe("reschedule");
+    expect(
+      judgingRound({ shortlistSent: {}, scheduledAt: at, slots: [{}] }),
+    ).toBe("rank");
+  });
+});
+
+describe("search limit", () => {
+  it("drops nothing when the search gives up early", () => {
+    // 12 rooms, everyone on every shortlist: far more than fits.
+    const sponsors = ids("s", 12);
+    const teams = ids("t", 10);
+    const requests = sponsors.map((sponsorId, i) => ({
+      sponsorId,
+      room: `Rm ${2100 + i}`,
+      teamIds: teams,
+    }));
+    for (const searchLimit of [1, 5, 200]) {
+      const result = schedulePresentations(requests, undefined, {
+        searchLimit,
+      });
+      expectValid(requests, result);
+      expect(result.unplaced.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("finishes a hopeless team at the default limit", async () => {
+    const { SEARCH_LIMIT } = await import("./sponsor-presentations");
+    expect(SEARCH_LIMIT).toBe(50_000);
+    // One team on 12 shortlists needs 12 slots 10 minutes apart: 9 fit.
+    const requests = ids("s", 12).map((sponsorId, i) => ({
+      sponsorId,
+      room: `Rm ${i}`,
+      teamIds: ["star"],
+    }));
+    const started = Date.now();
+    const result = schedulePresentations(requests);
+    expect(Date.now() - started).toBeLessThan(2000);
+    expectValid(requests, result);
+    expect(result.slots).toHaveLength(9);
+    expect(result.unplaced).toHaveLength(3);
+  });
+});
+
+describe("normalizeRoom and slotsKey", () => {
+  it("clamps rooms to the column and keys slots by content", async () => {
+    const { normalizeRoom, slotsKey } = await import("./sponsor-presentations");
+    expect(normalizeRoom("  Rm   2110 ")).toBe("Rm 2110");
+    expect(normalizeRoom("   ")).toBeNull();
+    expect(normalizeRoom("x".repeat(100))).toHaveLength(64);
+    const a = { sponsorId: "a", room: "Rm 1", start: 600 };
+    const b = { sponsorId: "b", room: "Rm 2", start: 610 };
+    expect(slotsKey([a, b])).toBe(slotsKey([b, a]));
+    expect(slotsKey([a, b])).not.toBe(slotsKey([a, { ...b, start: 620 }]));
   });
 });
