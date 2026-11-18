@@ -8,6 +8,11 @@ Two builds running in their own worktrees (started by a session that stopped at 
 Then: review each (code-reviewer + design-reviewer), merge with `--no-ff`, apply migrations to `hackwestern_spon`, run tsc + vitest.
 - `hackwestern-sd-tester` (branch `sd-tester-sponsor`, DB `hackwestern_sd_tester`) was created with no work and no note: ask Jazz what it was for.
 
+## To build (queued, Jazz 2026-11-18)
+- **Hacker notification center on the live site.** Hackers see their coffee chat offers/updates and, if a sponsor shortlisted them, their judging presentation rooms + times. Unread count on the existing `NotificationBadge` in `src/components/live/navlinks.tsx`.
+- **Slack bot finds hackers by the Slack email they give us.** Add a "Slack email" field hackers fill in (fallback: account email). Today `src/server/slack/coffee-chat-dm.ts` already DMs via `users.lookupByEmail` with the account email, then falls back to email; reuse that one helper for coffee chats AND judging (Notify hackers in sd-presentations), so one lookup, one place.
+- Every Slack DM also writes a notification row, so the center and Slack always say the same thing.
+
 ## Where things stand (2026-11-18)
 - Merged: Lucas's #1143 (top-40 candidates), schedule/organizer/sponsor redesigns, sponsor candidates + GitHub avatars, T55 one organizer home (tabs Sponsors | Run of show | Coffee chats | Task pings), room holds + combined Sponsors table + sponsor colours, automatic Slack owner matching + Task pings tab (help merged in), gentle column focus, floor 2 plan image instead of the live map, ceremony/workshop info by day, real sponsor logos (no circle).
 - Migrations 0047 (task reminder route key) and 0048 (coffee chat holds) are applied to the local DB.
