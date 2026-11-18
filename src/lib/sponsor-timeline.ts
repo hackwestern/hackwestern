@@ -154,6 +154,16 @@ export function isSameEvent(
   return short.length >= 4 && long.includes(short);
 }
 
+/**
+ * Hackathon-wide events that show even with "Show hackathon events" off:
+ * meals (sponsors eat too) and the opening and closing ceremonies.
+ */
+export function isAlwaysShown(
+  entry: Pick<TimelineEntry, "category" | "title">,
+): boolean {
+  return entry.category === "food" || /ceremon/i.test(entry.title);
+}
+
 /** A run-of-show item is the sponsor's own unless it's an all-hands event. */
 export function isOwnItem(item: RunOfShowItem, sponsorName: string): boolean {
   return item.sponsors.includes(sponsorName) || !ALL_HANDS.has(item.column);
@@ -201,17 +211,14 @@ export function buildSponsorTimeline({
     .filter((i) => isOwnItem(i, sponsorName))
     .map((i) => fromRunOfShow(i, "yours"));
 
-  let hackathon: TimelineEntry[] = [];
-  if (showHackathon) {
-    const liveEntries = liveDayEntries(live?.find((d) => d.day === day));
-    const allHands = today
-      .filter((i) => !isOwnItem(i, sponsorName))
-      .map((i) => fromRunOfShow(i, "hackathon"));
-    hackathon = [
-      ...liveEntries.filter((e) => !yours.some((y) => isSameEvent(y, e))),
-      ...allHands.filter((a) => !liveEntries.some((e) => isSameEvent(a, e))),
-    ];
-  }
+  const liveEntries = liveDayEntries(live?.find((d) => d.day === day));
+  const allHands = today
+    .filter((i) => !isOwnItem(i, sponsorName))
+    .map((i) => fromRunOfShow(i, "hackathon"));
+  const hackathon = [
+    ...liveEntries.filter((e) => !yours.some((y) => isSameEvent(y, e))),
+    ...allHands.filter((a) => !liveEntries.some((e) => isSameEvent(a, e))),
+  ].filter((e) => showHackathon || isAlwaysShown(e));
 
   return [...yours, ...hackathon].sort(
     (a, b) =>
@@ -343,6 +350,7 @@ export type GridColumn = (typeof GRID_COLUMNS)[number];
 /** Columns shown even when empty. */
 const ALWAYS_SHOWN = new Set<GridColumn>([
   "sponsor-workshop",
+  "food",
   "spon-booth",
   "coffee-chats",
 ]);
@@ -373,6 +381,8 @@ export function gridColumnOf(
 ): GridColumn {
   if (entry.category === "task") return "tasks";
   if (entry.category === "coffee-chat") return "coffee-chats";
+  // Meals get their own column, from the sheet or /live.
+  if (entry.category === "food") return "food";
   // Hackathon-wide: everything muted, and the sheet's Main event column.
   if (
     entry.kind === "hackathon" ||
@@ -431,14 +441,12 @@ export function buildOrganizerTimeline({
     .filter((i) => i.column === "big-event")
     .map((i) => fromRunOfShow(i, "hackathon"));
   const sheet = [...runOfShow, ...mainEvents];
-  const hackathon = showHackathon
-    ? [
-        ...mainEvents,
-        ...liveDayEntries(live?.find((d) => d.day === day)).filter(
-          (e) => !sheet.some((r) => isSameEvent(r, e)),
-        ),
-      ]
-    : [];
+  const hackathon = [
+    ...mainEvents,
+    ...liveDayEntries(live?.find((d) => d.day === day)).filter(
+      (e) => !sheet.some((r) => isSameEvent(r, e)),
+    ),
+  ].filter((e) => showHackathon || isAlwaysShown(e));
   return [...runOfShow, ...hackathon].sort(
     (a, b) =>
       a.start - b.start ||

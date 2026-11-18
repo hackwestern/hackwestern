@@ -95,19 +95,22 @@ describe("buildOrganizerTimeline", () => {
     );
   });
 
-  it("drops /live events when hidden", () => {
+  it("keeps only ceremonies and food from the hackathon when hidden", () => {
     const entries = buildOrganizerTimeline({
       day: "Saturday",
       items,
       live,
       showHackathon: false,
     });
-    expect(entries.every((e) => e.kind === "yours")).toBe(true);
-    // Main events go too, so the Hackathon events column disappears.
-    expect(entries.some((e) => e.title === "Opening Ceremony!")).toBe(false);
-    expect(layoutGrid(entries).some((c) => c.column === "hackathon")).toBe(
-      false,
-    );
+    expect(entries.map((e) => [e.title, e.kind])).toEqual([
+      ["Opening Ceremony!", "hackathon"],
+      ["Scotiabank Workshop", "yours"],
+    ]);
+    expect(
+      layoutGrid(entries)
+        .find((c) => c.column === "hackathon")
+        ?.entries.map((e) => e.title),
+    ).toEqual(["Opening Ceremony!"]);
   });
 });
 

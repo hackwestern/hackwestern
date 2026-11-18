@@ -4,7 +4,6 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { ScanLine } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { CeremonyOrder } from "~/components/sponsors/ceremony-order";
 import { CoffeeChatSummary } from "~/components/sponsors/coffee-chat-summary";
 import { DayPicker } from "~/components/sponsors/day-picker";
 import { SponsorHelp } from "~/components/sponsors/help-button";
@@ -175,7 +174,6 @@ export default function SponsorSchedulePage() {
         workshops={data.workshops}
       />
       <WorkshopDetails workshops={data.workshops} />
-      <CeremonyOrder segments={data.ceremonies} items={data.items} />
       <ReadAt iso={data.readAt} />
     </>,
   );

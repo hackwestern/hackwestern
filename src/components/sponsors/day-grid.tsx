@@ -70,10 +70,11 @@ function useIsWide(): boolean {
 
 /** "Show hackathon events", remembered on this device. */
 export function useShowHackathon(): [boolean, (show: boolean) => void] {
-  const [show, setShow] = useState(true);
+  // Off by default (Jazz, 2026-11-17): food and ceremonies show anyway.
+  const [show, setShow] = useState(false);
   useEffect(() => {
     try {
-      if (window.localStorage.getItem(STORAGE_KEY) === "0") setShow(false);
+      if (window.localStorage.getItem(STORAGE_KEY) === "1") setShow(true);
     } catch {
       // Storage blocked: keep the default.
     }
