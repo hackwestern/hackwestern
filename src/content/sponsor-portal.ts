@@ -18,7 +18,10 @@ export const sponsorPortalCopy = {
     label: "Quick actions",
     scan: { title: "Scan a badge", body: "Offer a hacker a coffee chat" },
     chats: { title: "Coffee chats", body: "Your chats and candidates" },
-    schedule: { title: "Your schedule", body: "Booth, workshop and judging times" },
+    schedule: {
+      title: "Your schedule",
+      body: "Booth, workshop and judging times",
+    },
     picks: {
       title: "Pick top teams",
       edit: "Edit your picks",

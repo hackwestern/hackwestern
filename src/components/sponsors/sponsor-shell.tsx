@@ -12,7 +12,7 @@ import { cn } from "~/lib/utils";
  * arbitrary values; see the redesign report.)
  */
 export const pressable =
-  "transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:transition-colors motion-reduce:active:scale-100";
+  "transition-[transform,background-color,border-color,color,box-shadow] duration-150 [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:transition-colors motion-reduce:active:scale-100";
 
 /** Hover tint only on devices that really hover, so taps don't stick. */
 export const hoverTint =

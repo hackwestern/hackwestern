@@ -221,7 +221,11 @@ function CameraPanel({
             </p>
           </div>
           {status !== "unavailable" && (
-            <DashboardButton variant="outline" className={cn("h-11", pressable)} onClick={retry}>
+            <DashboardButton
+              variant="outline"
+              className={cn("h-11", pressable)}
+              onClick={retry}
+            >
               {copy.camera.retry}
             </DashboardButton>
           )}
@@ -352,7 +356,10 @@ function NotHackerPanel({
         <StepHeading headingRef={headingRef}>{title}</StepHeading>
       </div>
       <p className="m-0 text-base text-dashboard-text-medium">{body}</p>
-      <DashboardButton className={cn("md:w-full", pressable)} onClick={onScanNext}>
+      <DashboardButton
+        className={cn("md:w-full", pressable)}
+        onClick={onScanNext}
+      >
         <ScanLine aria-hidden />
         {copy.scanNext}
       </DashboardButton>
@@ -482,23 +489,26 @@ function OfferStep({
           size="lg"
         />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
-          <Coffee aria-hidden className="size-4" strokeWidth={1.67} />
-          {copy.card.eyebrow}
-        </span>
-        <StepHeading headingRef={headingRef}>
-          {times.length > 0 || timesQ.isError
-            ? copy.card.heading(hacker.firstName)
-            : copy.card.noTimes.title}
-        </StepHeading>
-        {free && (
-          <p className="m-0 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-dashboard-text-medium">
-            <span className="inline-flex items-center gap-1.5">
-              <Clock aria-hidden className="size-4 text-dashboard-text-light" />
-              {copy.card.timesHint(free.durationMinutes)}
-            </span>
-          </p>
-        )}
+          <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
+            <Coffee aria-hidden className="size-4" strokeWidth={1.67} />
+            {copy.card.eyebrow}
+          </span>
+          <StepHeading headingRef={headingRef}>
+            {times.length > 0 || timesQ.isError
+              ? copy.card.heading(hacker.firstName)
+              : copy.card.noTimes.title}
+          </StepHeading>
+          {free && (
+            <p className="m-0 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-dashboard-text-medium">
+              <span className="inline-flex items-center gap-1.5">
+                <Clock
+                  aria-hidden
+                  className="size-4 text-dashboard-text-light"
+                />
+                {copy.card.timesHint(free.durationMinutes)}
+              </span>
+            </p>
+          )}
         </div>
       </div>
 
@@ -641,7 +651,10 @@ function OfferStep({
       )}
 
       {(times.length === 0 || timesQ.isError) && (
-        <DashboardButton className={cn("md:w-full", pressable)} onClick={onScanNext}>
+        <DashboardButton
+          className={cn("md:w-full", pressable)}
+          onClick={onScanNext}
+        >
           <ScanLine aria-hidden />
           {copy.scanNext}
         </DashboardButton>
@@ -683,7 +696,10 @@ function SentPanel({
         {copy.sent.next}
       </p>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <DashboardButton className={cn("md:h-11", pressable)} onClick={onScanNext}>
+        <DashboardButton
+          className={cn("md:h-11", pressable)}
+          onClick={onScanNext}
+        >
           <ScanLine aria-hidden />
           {copy.scanNext}
         </DashboardButton>

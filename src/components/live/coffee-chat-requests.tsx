@@ -102,7 +102,10 @@ export default function CoffeeChatRequests({
         ),
         duration: Infinity,
         icon: (
-          <Coffee aria-hidden className="size-5 text-dashboard-action-primary" />
+          <Coffee
+            aria-hidden
+            className="size-5 text-dashboard-action-primary"
+          />
         ),
         // The app Toaster centres short messages; an offer has a title,
         // a time and a button, so lay it out as a row and give the button

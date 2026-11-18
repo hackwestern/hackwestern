@@ -240,8 +240,7 @@ export default function SponsorCoffeeChatsPage() {
           aria-label={tabsCopy.label}
           className="grid grid-cols-2 gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1"
           onKeyDown={(event) => {
-            if (event.key !== "ArrowLeft" && event.key !== "ArrowRight")
-              return;
+            if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
             event.preventDefault();
             const at = TABS.indexOf(tab);
             const next =
