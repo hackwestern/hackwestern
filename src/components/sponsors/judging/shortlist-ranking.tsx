@@ -156,13 +156,13 @@ export function ShortlistRanking({
               )}
               <div
                 className={cn(
-                  "rounded-dashboard-xl flex items-center gap-3 bg-dashboard-bg-surface p-3 shadow-dashboard-card",
+                  "flex items-start gap-3 rounded-dashboard-2xl bg-dashboard-bg-surface p-3 shadow-dashboard-card",
                   !inTop && "opacity-80",
                 )}
               >
                 <span
                   className={cn(
-                    "inline-flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums",
+                    "inline-flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums",
                     inTop
                       ? "bg-dashboard-action-primary text-dashboard-text-inverse"
                       : "bg-dashboard-bg-nav text-dashboard-text-medium",
@@ -171,7 +171,9 @@ export function ShortlistRanking({
                   {copy.shortlist.rank(i + 1)}
                 </span>
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                  <span className="break-words text-base font-semibold text-dashboard-text-heavy">
+                  {/* leading-7 matches the rank badge, so the badge sits
+                      on the first line of a long name. */}
+                  <span className="break-words text-base font-semibold leading-7 text-dashboard-text-heavy">
                     {team.name}
                   </span>
                   <span className="text-sm font-medium tabular-nums text-dashboard-text-light">

@@ -296,7 +296,7 @@ function AllTeams({
                 {i + 1}
               </span>
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <span className="break-words text-base font-semibold text-dashboard-text-heavy">
+                <span className="break-words text-base font-semibold leading-7 text-dashboard-text-heavy">
                   {t.name}
                 </span>
                 <span className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-dashboard-text-medium">
