@@ -1,431 +1,307 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import Link from "next/link";
-import { ArrowLeft, Check, ExternalLink, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 
-import SEO from "~/components/seo";
-import { uuidRegex } from "~/utils/urls";
-import { api } from "~/utils/api";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { DashboardChip } from "~/components/internals/dashboard-chip";
+import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
-import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "~/lib/sponsor-picks";
+import { ProjectCard } from "~/components/sponsors/judging/project-card";
+import { ShortlistRanking } from "~/components/sponsors/judging/shortlist-ranking";
+import { useSponsorJudging } from "~/components/sponsors/judging/use-sponsor-judging";
+import { pressable, SponsorShell } from "~/components/sponsors/sponsor-shell";
+import { sponsorJudgingCopy } from "~/content/sponsor-judging";
+import {
+  BROWSE_FILTERS,
+  BROWSE_SORTS,
+  browseTeams,
+  type BrowseFilter,
+  type BrowseSort,
+} from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
+import { uuidRegex } from "~/utils/urls";
 
-type PickableTeam = {
-  id: string;
-  name: string;
-  members: string[];
-  tracks: string[];
-  devpostUrl: string | null;
-  githubUrl: string | null;
-};
+const copy = sponsorJudgingCopy;
+const STEPS = ["browse", "shortlist"] as const;
+type Step = (typeof STEPS)[number];
 
-const CARD =
-  "w-full rounded-dashboard-2xl border-[1.5px] bg-dashboard-bg-surface px-4 py-3.5 text-left shadow-dashboard-card transition-colors";
-const CARD_OFF =
-  "border-dashboard-border-default hover:bg-dashboard-bg-highlight";
-const CARD_ON =
-  "border-dashboard-action-primary bg-dashboard-bg-highlight ring-1 ring-dashboard-action-primary";
-const COUNTER =
-  "inline-flex size-7 shrink-0 items-center justify-center rounded-full text-[13px] font-bold";
-const COUNTER_OFF = "bg-dashboard-bg-nav text-dashboard-text-medium";
-const COUNTER_ON = "bg-dashboard-action-primary text-dashboard-text-inverse";
-
-export default function SponsorPicksPage() {
+// Sponsor judging (kept at Lucas's /sponsors/[uuid]/picks URL): browse the
+// submitted projects, score them 1-10 and save some to a shortlist, then
+// rank the shortlist and submit a top SPONSOR_FINAL_TOP. The submission is
+// also written to Lucas's judging sheet. See docs/decisions.md (2026-11-18).
+export default function SponsorJudgingPage() {
   const router = useRouter();
   const uuid = typeof router.query.uuid === "string" ? router.query.uuid : "";
   const validUuid = uuidRegex.test(uuid);
-
-  const [selected, setSelected] = useState<string[]>([]);
-  const [query, setQuery] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  // Existing picks from the judging sheet, so a sponsor re-opening their link
-  // sees what they already chose. Ready as soon as the uuid is known; seeded
-  // into the selection once (see seededFor), later edits stay local until save.
-  const existingQ = api.sponsorJudging.getChosenTeams.useQuery(
-    { sponsor: uuid },
-    {
-      enabled: validUuid,
-      refetchOnWindowFocus: false,
-    },
+  const { query, reviews, save, saveState } = useSponsorJudging(
+    uuid,
+    validUuid,
   );
-  const [seededFor, setSeededFor] = useState<string | null>(null);
-  const existingPicks = existingQ.data;
-  useEffect(() => {
-    if (!existingPicks || seededFor === uuid) return;
-    setSeededFor(uuid);
-    setSelected(existingPicks.teamIds);
-  }, [existingPicks, seededFor, uuid]);
+  const data = query.data;
 
-  const save = api.sponsorJudging.setChosenTeams.useMutation();
+  const [step, setStep] = useState<Step>("browse");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<BrowseFilter>("all");
+  const [sort, setSort] = useState<BrowseSort>("name");
+  const stepRefs = useRef(new Map<Step, HTMLButtonElement>());
 
-  // Fetch all teams from the database (gated on this sponsor's private UUID)
-  const teamsQ = api.sponsorJudging.listAllTeams.useQuery(
-    { sponsor: uuid },
-    {
-      enabled: validUuid,
-      refetchOnWindowFocus: false,
-    },
+  const visible = useMemo(
+    () =>
+      data
+        ? browseTeams(data.teams, reviews, { query: search, filter, sort })
+        : [],
+    [data, reviews, search, filter, sort],
   );
-  const allTeams = useMemo<PickableTeam[]>(
-    () => teamsQ.data?.teams ?? [],
-    [teamsQ.data],
-  );
-  const sponsorTrack = teamsQ.data?.sponsorTrack ?? null;
+  const shortlistCount = data
+    ? data.teams.filter((t) => reviews.get(t.id)?.shortlisted).length
+    : 0;
 
-  const visibleTeams = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return allTeams;
-    return allTeams.filter((team) =>
-      `${team.name} ${team.members.join(" ")} ${team.tracks.join(" ")}`
-        .toLowerCase()
-        .includes(q),
-    );
-  }, [query, allTeams]);
+  const chooseStep = (s: Step, focus = false) => {
+    setStep(s);
+    if (focus) stepRefs.current.get(s)?.focus();
+  };
 
-  const atMax = selected.length >= MAX_SPONSOR_PICKS;
-
-  function toggle(teamId: string) {
-    setSaved(false);
-    setSelected((current) => {
-      if (current.includes(teamId)) {
-        return current.filter((id) => id !== teamId);
-      }
-      if (current.length >= MAX_SPONSOR_PICKS) return current;
-      return [...current, teamId];
-    });
-  }
-
-  function savePicks() {
-    if (selected.length < MIN_SPONSOR_PICKS) return;
-    save.mutate(
-      { sponsorId: uuid, teamIds: selected },
-      { onSuccess: () => setSaved(true) },
-    );
-  }
-
-  if (!router.isReady) {
-    // Keep the layout on first paint (SSR + hydration) instead of a blank page.
+  if (!router.isReady || (validUuid && query.isLoading)) {
     return (
-      <Shell>
+      <SponsorShell
+        title={copy.seoTitle}
+        backHref={uuid ? `/sponsors/${uuid}` : undefined}
+      >
         <div className="flex flex-col gap-3" aria-busy="true">
-          <div className="h-8 w-40 animate-pulse rounded-dashboard-sm bg-dashboard-bg-nav" />
-          <div className="h-11 w-full animate-pulse rounded-dashboard-md bg-dashboard-bg-nav" />
-          {[0, 1, 2, 3, 4].map((i) => (
+          <div className="h-8 w-40 animate-pulse rounded-dashboard-sm bg-dashboard-bg-nav motion-reduce:animate-none" />
+          <div className="h-12 w-full animate-pulse rounded-dashboard-lg bg-dashboard-bg-nav motion-reduce:animate-none" />
+          {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="h-24 w-full animate-pulse rounded-dashboard-2xl bg-dashboard-bg-surface shadow-dashboard-card"
+              className="h-56 w-full animate-pulse rounded-dashboard-2xl bg-dashboard-bg-surface shadow-dashboard-card motion-reduce:animate-none"
             />
           ))}
         </div>
-      </Shell>
+      </SponsorShell>
     );
   }
 
-  if (!validUuid) {
+  if (!validUuid || query.error?.data?.code === "NOT_FOUND") {
     return (
-      <Shell>
-        <div className="rounded-dashboard-2xl bg-dashboard-bg-surface p-5 text-center shadow-dashboard-card">
-          <h1 className="dashboard-h1 m-0">Link not recognised</h1>
-          <p className="mb-0 mt-2 text-base font-medium leading-relaxed text-dashboard-text-medium">
-            This private link isn&apos;t valid. Ask your Hack Western contact
-            for a new one.
+      <SponsorShell title={copy.seoTitle}>
+        <DashboardPanel className="text-center">
+          <h1 className="dashboard-h1 m-0">{copy.invalid.title}</h1>
+          <p className="mb-0 mt-2 text-base leading-relaxed text-dashboard-text-medium">
+            {copy.invalid.body}
           </p>
-        </div>
-      </Shell>
+        </DashboardPanel>
+      </SponsorShell>
     );
   }
 
-  const canSave = selected.length >= MIN_SPONSOR_PICKS && !save.isPending;
+  if (!data) {
+    return (
+      <SponsorShell title={copy.seoTitle} backHref={`/sponsors/${uuid}`}>
+        <DashboardPanel className="items-start">
+          <p className="m-0 text-base text-dashboard-text-medium">
+            {query.error?.message ?? copy.loadFailed}
+          </p>
+          <DashboardButton variant="small" onClick={() => void query.refetch()}>
+            {copy.retry}
+          </DashboardButton>
+        </DashboardPanel>
+      </SponsorShell>
+    );
+  }
+
+  const counts: Record<Step, number> = {
+    browse: data.teams.length,
+    shortlist: shortlistCount,
+  };
 
   return (
-    <Shell
-      counter={
-        <span
-          className={cn(
-            "text-sm font-medium tabular-nums",
-            atMax
-              ? "text-dashboard-status-warning"
-              : "text-dashboard-text-light",
+    <SponsorShell title={copy.seoTitle} backHref={`/sponsors/${uuid}`}>
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-1.5">
+          <DashboardTag>{data.sponsorName}</DashboardTag>
+          {data.sponsorTrack && (
+            <DashboardTag className="bg-dashboard-bg-highlight text-dashboard-text-active">
+              {copy.trackTag(data.sponsorTrack)}
+            </DashboardTag>
           )}
+        </div>
+        <h1 className="dashboard-h1 m-0">{copy.title}</h1>
+        <p className="m-0 text-base leading-relaxed text-dashboard-text-medium">
+          {copy.intro(data.finalTop)}
+        </p>
+      </div>
+
+      {/* Browse | Shortlist, sticky so switching is one tap on a long list. */}
+      <div className="sticky top-0 z-20 -mx-4 bg-dashboard-bg-page/95 px-4 py-2 backdrop-blur-sm sm:-mx-5 sm:px-5">
+        <div
+          role="tablist"
+          aria-label={copy.steps.label}
+          className="grid grid-cols-2 gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1"
+          onKeyDown={(e) => {
+            if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+            e.preventDefault();
+            chooseStep(step === "browse" ? "shortlist" : "browse", true);
+          }}
         >
-          {selected.length} of {MAX_SPONSOR_PICKS} selected · min{" "}
-          {MIN_SPONSOR_PICKS}
-        </span>
-      }
-    >
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          {validUuid && (
-            <Link
-              href={`/sponsors/${uuid}`}
-              className="mb-1 inline-flex items-center gap-1.5 self-start text-sm font-medium text-dashboard-text-medium hover:text-dashboard-text-heavy"
-            >
-              <ArrowLeft
-                aria-hidden="true"
-                className="size-4"
-                strokeWidth={1.67}
-              />
-              Back to sponsor hub
-            </Link>
-          )}
-          {existingQ.data?.sponsorName && (
-            <DashboardTag className="self-start">
-              {existingQ.data.sponsorName}
-            </DashboardTag>
-          )}
-          {sponsorTrack && (
-            <DashboardTag className="self-start border border-dashboard-action-primary bg-dashboard-bg-highlight text-dashboard-text-heavy">
-              Showing teams in {sponsorTrack}
-            </DashboardTag>
-          )}
-          <h1 className="dashboard-h1 m-0">Pick your top teams</h1>
-          <p className="mb-0 mt-1 text-base font-medium leading-relaxed text-dashboard-text-medium">
-            Choose between {MIN_SPONSOR_PICKS} and {MAX_SPONSOR_PICKS} teams.
-            You can come back and change your picks any time before judging
-            closes.
-          </p>
+          {STEPS.map((s) => {
+            const on = step === s;
+            return (
+              <button
+                key={s}
+                ref={(el) => {
+                  if (el) stepRefs.current.set(s, el);
+                  else stepRefs.current.delete(s);
+                }}
+                type="button"
+                role="tab"
+                id={`step-${s}`}
+                aria-selected={on}
+                aria-controls={`panel-${s}`}
+                tabIndex={on ? 0 : -1}
+                onClick={() => chooseStep(s)}
+                className={cn(
+                  "inline-flex min-h-11 items-center justify-center gap-2 rounded-dashboard-md px-2 text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                  on
+                    ? "bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card"
+                    : "text-dashboard-text-medium [@media(hover:hover)]:hover:text-dashboard-text-heavy",
+                  pressable,
+                )}
+              >
+                {copy.steps[s]}
+                <span
+                  className={cn(
+                    "rounded-full px-2 text-xs tabular-nums leading-5",
+                    on
+                      ? "bg-dashboard-bg-highlight text-dashboard-text-active"
+                      : "bg-dashboard-bg-navSelected text-dashboard-text-medium",
+                  )}
+                >
+                  {counts[s]}
+                </span>
+              </button>
+            );
+          })}
         </div>
+      </div>
 
-        <label className="sr-only" htmlFor="team-search">
-          Search teams
-        </label>
-        <div className="relative w-full">
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-dashboard-text-disabled"
-          />
-          <input
-            id="team-search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            onFocus={() => setSearchOpen(true)}
-            placeholder="Search teams…"
-            className="min-h-11 w-full rounded-dashboard-md border border-dashboard-border-default bg-dashboard-bg-surface pl-10 pr-9 text-base font-medium text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder focus:border-dashboard-action-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2"
-          />
-          {query && (
-            <button
-              type="button"
-              aria-label="Clear search"
-              onClick={() => {
-                setQuery("");
-                setSearchOpen(false);
-              }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-dashboard-xs p-1 text-dashboard-text-light hover:text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
-            >
-              <X aria-hidden="true" className="size-4" strokeWidth={1.67} />
-            </button>
-          )}
-        </div>
-
-        {searchOpen && query && (
-          <button
-            type="button"
-            onClick={() => {
-              setQuery("");
-              setSearchOpen(false);
-            }}
-            className="-mt-2 self-start bg-transparent p-0 text-sm font-medium text-dashboard-text-link underline"
-          >
-            Clear search
-          </button>
-        )}
-
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {teamsQ.isLoading && (
-            <>
-              {[0, 1, 2, 3, 4].map((i) => (
-                <li key={i}>
-                  <div className="h-24 w-full animate-pulse rounded-dashboard-2xl bg-dashboard-bg-surface shadow-dashboard-card" />
-                </li>
-              ))}
-            </>
-          )}
-          {!teamsQ.isLoading &&
-            visibleTeams.map((team) => {
-              const on = selected.includes(team.id);
-              const disabled = !on && atMax;
-              const hasLinks = Boolean(team.devpostUrl ?? team.githubUrl);
-              return (
-                <li key={team.id} className="relative">
+      <div
+        role="tabpanel"
+        id={`panel-${step}`}
+        aria-labelledby={`step-${step}`}
+        className="flex flex-col gap-4"
+      >
+        {step === "browse" ? (
+          <>
+            <div className="flex flex-col gap-3">
+              <div className="relative w-full">
+                <label className="sr-only" htmlFor="team-search">
+                  {copy.browse.searchLabel}
+                </label>
+                <Search
+                  aria-hidden
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-dashboard-text-disabled"
+                />
+                <input
+                  id="team-search"
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={copy.browse.searchPlaceholder}
+                  className="min-h-11 w-full rounded-dashboard-md border border-dashboard-border-default bg-dashboard-bg-surface pl-10 pr-11 text-base font-medium text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder focus:border-dashboard-action-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [&::-webkit-search-cancel-button]:hidden"
+                />
+                {search && (
                   <button
                     type="button"
-                    aria-pressed={on}
-                    disabled={disabled}
-                    onClick={() => toggle(team.id)}
-                    className={cn(
-                      CARD,
-                      on ? CARD_ON : CARD_OFF,
-                      disabled
-                        ? "cursor-not-allowed opacity-50"
-                        : "cursor-pointer",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
-                    )}
+                    aria-label={copy.browse.clearSearch}
+                    onClick={() => setSearch("")}
+                    className="absolute right-0 top-0 inline-flex size-11 items-center justify-center rounded-dashboard-md text-dashboard-text-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:text-dashboard-text-heavy"
                   >
-                    <span className="flex items-center gap-3">
-                      <span
-                        aria-hidden="true"
-                        className={cn(COUNTER, on ? COUNTER_ON : COUNTER_OFF)}
-                      >
-                        {on && <Check className="size-4" strokeWidth={2.5} />}
-                      </span>
-                      <span
-                        className={cn(
-                          "flex min-w-0 flex-1 flex-col gap-0.5 text-left",
-                          hasLinks && "pr-14",
-                        )}
-                      >
-                        <span className="truncate text-base font-semibold text-dashboard-text-heavy">
-                          {team.name}
-                        </span>
-                        <span className="truncate text-sm font-medium text-dashboard-text-light">
-                          {team.members.length > 0
-                            ? team.members.join(", ")
-                            : "No members listed"}
-                        </span>
-                        {team.tracks.length > 0 && (
-                          <span className="flex flex-wrap gap-1.5 pt-0.5">
-                            {team.tracks.map((track) => (
-                              <DashboardTag key={track}>{track}</DashboardTag>
-                            ))}
-                          </span>
-                        )}
-                      </span>
-                    </span>
+                    <X aria-hidden className="size-4" />
                   </button>
-                  {/* Sibling overlay so link taps never toggle the pick. */}
-                  {hasLinks && (
-                    <span className="absolute right-3 top-3.5 z-10 flex items-center gap-1.5">
-                      {team.devpostUrl && (
-                        <a
-                          href={team.devpostUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label={`Open ${team.name} on Devpost`}
-                          className="inline-flex items-center gap-1 rounded-dashboard-sm bg-dashboard-bg-nav px-2 py-1 text-xs font-semibold text-dashboard-text-medium transition-colors hover:text-dashboard-text-heavy"
-                        >
-                          Devpost
-                          <ExternalLink
-                            aria-hidden="true"
-                            className="size-3"
-                            strokeWidth={1.67}
-                          />
-                        </a>
-                      )}
-                      {team.githubUrl && (
-                        <a
-                          href={team.githubUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          aria-label={`Open ${team.name} on GitHub`}
-                          className="inline-flex items-center gap-1 rounded-dashboard-sm bg-dashboard-bg-nav px-2 py-1 text-xs font-semibold text-dashboard-text-medium transition-colors hover:text-dashboard-text-heavy"
-                        >
-                          GitHub
-                          <ExternalLink
-                            aria-hidden="true"
-                            className="size-3"
-                            strokeWidth={1.67}
-                          />
-                        </a>
-                      )}
-                    </span>
-                  )}
-                </li>
-              );
-            })}
-          {!teamsQ.isLoading && visibleTeams.length === 0 && query && (
-            <li className="rounded-dashboard-lg bg-dashboard-bg-inset p-5 text-center text-sm font-medium italic text-dashboard-text-medium">
-              No teams match &ldquo;{query}&rdquo;.
-            </li>
-          )}
-          {!teamsQ.isLoading && allTeams.length === 0 && !query && (
-            <li className="rounded-dashboard-lg bg-dashboard-bg-inset p-5 text-center text-sm font-medium italic text-dashboard-text-medium">
-              {sponsorTrack
-                ? `No submitted teams in ${sponsorTrack} yet.`
-                : "No teams have submitted yet."}
-            </li>
-          )}
-        </ul>
+                )}
+              </div>
 
-        {atMax && (
-          <p className="m-0 rounded-dashboard-md border border-dashboard-border-subtle bg-dashboard-bg-highlight px-4 py-3 text-sm font-medium leading-relaxed text-dashboard-text-heavy">
-            That&apos;s the max of {MAX_SPONSOR_PICKS}. Deselect a team to swap
-            in a different one.
-          </p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div
+                  role="group"
+                  aria-label={copy.browse.filterLabel}
+                  className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1"
+                >
+                  {BROWSE_FILTERS.map((f) => (
+                    <DashboardChip
+                      key={f}
+                      selected={filter === f}
+                      onClick={() => setFilter(f)}
+                      className="min-h-11 shrink-0 md:min-h-9"
+                    >
+                      {copy.browse.filters[f]}
+                    </DashboardChip>
+                  ))}
+                </div>
+                <label className="inline-flex items-center gap-2 text-sm font-semibold text-dashboard-text-medium">
+                  {copy.browse.sortLabel}
+                  <select
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as BrowseSort)}
+                    className="min-h-11 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-2 text-base font-semibold text-dashboard-text-heavy focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary md:min-h-9 md:text-sm"
+                  >
+                    {BROWSE_SORTS.map((s) => (
+                      <option key={s} value={s}>
+                        {copy.browse.sorts[s]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <p
+                className="m-0 text-sm font-medium text-dashboard-text-light"
+                aria-live="polite"
+              >
+                {copy.browse.count(visible.length, data.teams.length)}
+              </p>
+            </div>
+
+            {data.teams.length === 0 ? (
+              <Empty>{copy.browse.noTeams(data.sponsorTrack)}</Empty>
+            ) : visible.length === 0 ? (
+              <Empty>
+                {search.trim()
+                  ? copy.browse.noMatch(search.trim())
+                  : copy.browse.noFilterMatch}
+              </Empty>
+            ) : (
+              <ul className="m-0 flex list-none flex-col gap-3 p-0">
+                {visible.map((team) => (
+                  <li key={team.id}>
+                    <ProjectCard
+                      team={team}
+                      review={reviews.get(team.id)}
+                      saveState={saveState[team.id]}
+                      onSave={(patch) => save(team.id, patch)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        ) : (
+          <ShortlistRanking
+            sponsor={uuid}
+            data={data}
+            reviews={reviews}
+            onSave={save}
+            onBrowse={() => chooseStep("browse", true)}
+          />
         )}
       </div>
-
-      {/* Sticky save bar: thumb-reachable on phones, padded above the safe area. */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-dashboard-border-subtle bg-dashboard-bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-dashboard-bg-surface/80">
-        <div className="mx-auto flex w-full max-w-[640px] items-center justify-between gap-3 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3">
-          <span className="flex flex-col">
-            <span
-              className={cn(
-                "text-base font-semibold tabular-nums text-dashboard-text-heavy",
-                selected.length < MIN_SPONSOR_PICKS &&
-                  "text-dashboard-status-warning",
-              )}
-            >
-              {selected.length} / {MAX_SPONSOR_PICKS}
-            </span>
-            <span className="text-xs font-medium text-dashboard-text-light">
-              pick at least {MIN_SPONSOR_PICKS}
-            </span>
-          </span>
-          <DashboardButton
-            disabled={!canSave}
-            onClick={savePicks}
-            className="flex-1 disabled:cursor-not-allowed disabled:opacity-dashboard-disabled sm:max-w-[260px]"
-          >
-            {save.isPending
-              ? "Saving…"
-              : save.isError
-                ? "Failed — tap to retry"
-                : saved
-                  ? "Saved"
-                  : "Save picks"}
-          </DashboardButton>
-        </div>
-        {save.isError && (
-          <p className="m-0 bg-[#fdecea] px-4 pb-3 pt-2 text-center text-sm font-medium text-[#7a1a0f]">
-            Couldn&apos;t save your picks. Check your connection and try again.
-          </p>
-        )}
-        {saved && (
-          <p className="m-0 px-4 pb-3 text-center text-sm font-medium text-dashboard-status-live">
-            Your picks are saved. Changes save only when you tap Save picks.
-          </p>
-        )}
-      </div>
-      {/* Room so the last card clears the sticky bar. */}
-      <div className="h-32" />
-    </Shell>
+    </SponsorShell>
   );
 }
 
-function Shell({
-  children,
-  counter,
-}: {
-  children: React.ReactNode;
-  counter?: React.ReactNode;
-}) {
+function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      <SEO title="Sponsor picks" noindex />
-      <div className="min-h-screen bg-dashboard-bg-page px-4 pb-4 pt-6 font-figtree font-medium leading-default text-dashboard-text-heavy sm:px-5">
-        <div className="mx-auto flex w-full max-w-[640px] flex-col gap-5">
-          <header className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-sm font-semibold tracking-tight text-dashboard-text-medium">
-              Hack Western 13
-            </span>
-            {counter}
-          </header>
-          {children}
-        </div>
-      </div>
-    </>
+    <p className="m-0 rounded-dashboard-lg bg-dashboard-bg-inset p-5 text-center text-sm font-medium text-dashboard-text-medium">
+      {children}
+    </p>
   );
 }

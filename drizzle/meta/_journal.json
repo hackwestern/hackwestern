@@ -344,6 +344,13 @@
       "when": 1794979773755,
       "tag": "0048_coffee_chat_hold",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1794984550455,
+      "tag": "0049_sponsor_scoring",
+      "breakpoints": true
     }
   ]
 }

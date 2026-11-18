@@ -23,11 +23,10 @@ export const sponsorPortalCopy = {
       body: "Booth, workshop and judging times",
     },
     picks: {
-      title: "Pick top teams",
-      edit: "Edit your picks",
-      body: (min: number, max: number) => `Choose ${min} to ${max} teams`,
-      picked: (n: number) => `${n} picked`,
-      pending: "Pending",
+      title: "Judging",
+      body: (top: number) => `Score projects and submit your top ${top}`,
+      picked: (n: number) => `${n} submitted`,
+      pending: "Not submitted",
     },
   },
   details: {

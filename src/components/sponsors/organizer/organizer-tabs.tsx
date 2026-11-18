@@ -100,8 +100,9 @@ export function OrganizerTabList({
       role="tablist"
       aria-label={copy.tabsLabel}
       onKeyDown={onKeyDown}
-      // Four equal tabs on phones so all of them fit without scrolling.
-      className="-mx-1 grid grid-cols-4 gap-0.5 overflow-x-auto border-b border-dashboard-border-default px-1 sm:flex sm:gap-1"
+      // Five equal tabs on phones so all of them fit without scrolling;
+      // two-word labels wrap onto two lines there.
+      className="-mx-1 grid grid-cols-5 gap-0.5 overflow-x-auto border-b border-dashboard-border-default px-1 sm:flex sm:gap-1"
     >
       {ORGANIZER_TABS.map((t) => {
         const selected = t === tab;
@@ -119,7 +120,7 @@ export function OrganizerTabList({
             tabIndex={selected ? 0 : -1}
             onClick={() => onSelect(t)}
             className={cn(
-              "-mb-px inline-flex min-h-11 shrink-0 cursor-pixel-hover items-center justify-center gap-1.5 whitespace-nowrap rounded-t-dashboard-md border-b-2 px-1 font-figtree text-sm font-semibold sm:justify-start sm:gap-2 sm:px-3",
+              "-mb-px inline-flex min-h-11 shrink-0 cursor-pixel-hover items-center justify-center gap-1.5 rounded-t-dashboard-md border-b-2 px-1 py-1 text-center font-figtree text-sm font-semibold leading-tight sm:justify-start sm:gap-2 sm:whitespace-nowrap sm:px-3 sm:py-0 sm:leading-default",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary",
               selected
                 ? "border-dashboard-action-primary text-dashboard-text-active"

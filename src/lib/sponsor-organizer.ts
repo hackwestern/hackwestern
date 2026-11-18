@@ -22,6 +22,7 @@ export const ORGANIZER_TABS = [
   "sponsors",
   "schedule",
   "coffee",
+  "judging",
   "pings",
 ] as const;
 export type OrganizerTab = (typeof ORGANIZER_TABS)[number];

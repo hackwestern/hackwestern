@@ -15,7 +15,7 @@ import SEO from "~/components/seo";
 import { uuidRegex } from "~/utils/urls";
 import { api } from "~/utils/api";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
-import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "~/lib/sponsor-picks";
+import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
 import { sponsorPortalCopy as copy } from "~/content/sponsor-portal";
 import { SponsorHelp } from "~/components/sponsors/help-button";
 import { pressable } from "~/components/sponsors/sponsor-shell";
@@ -84,6 +84,7 @@ export default function SponsorHubPage() {
   // Unassigned booth/room ("TBD" from the sheet) hides the row entirely.
   const hasBoothLocation = boothLocation !== "TBD";
   const hasJudgingRoom = roomNumber !== "TBD";
+  const judgingApplies = data?.judgingApplies ?? false;
   const actions = copy.actions;
 
   return (
@@ -130,19 +131,15 @@ export default function SponsorHubPage() {
                 body={actions.schedule.body}
               />
             </li>
-            {/* Judging: hidden entirely when no judging room is assigned */}
-            {hasJudgingRoom && (
+            {/* Judging: shown whenever judging applies to this sponsor (a
+                prize track, a judging room, or picks already in). */}
+            {judgingApplies && (
               <li className="col-span-2">
                 <ActionTile
                   href={`/sponsors/${id}/picks`}
                   icon={Trophy}
-                  title={
-                    picksCount > 0 ? actions.picks.edit : actions.picks.title
-                  }
-                  body={actions.picks.body(
-                    MIN_SPONSOR_PICKS,
-                    MAX_SPONSOR_PICKS,
-                  )}
+                  title={actions.picks.title}
+                  body={actions.picks.body(SPONSOR_FINAL_TOP)}
                   badge={
                     picksCount > 0
                       ? actions.picks.picked(picksCount)
