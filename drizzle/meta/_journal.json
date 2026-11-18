@@ -365,6 +365,13 @@
       "when": 1794993831912,
       "tag": "0052_sponsor_judging_round2",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1794996820161,
+      "tag": "0054_ops_pings",
+      "breakpoints": true
     }
   ]
 }
