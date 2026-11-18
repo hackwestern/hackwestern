@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sponsor Home Wireframes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ---------- Design tokens (src/lib/tokens.ts, dashboard-*) ---------- */
+:root {
+  --text-heavy: #0b2b4a; --text-medium: #1c3550; --text-light: #516476;
+  --text-placeholder: rgba(81,100,118,0.7); --text-inverse: #fff;
+  --text-link: #0b6bc4; --text-active: #08559c; --text-warning: #8a4300;
+  --bg-page: #f3f7fc; --bg-surface: #fff; --bg-nav: #dbe7f5; --bg-nav-sel: #b9d3f0;
+  --bg-inset: #edf3fa; --bg-highlight: #e1effb; --bg-highlight-subtle: rgba(225,239,251,0.4);
+  --primary: #0b6bc4;
+  --border-default: #cdddeb; --border-subtle: #e0eaf3; --border-card: #d6e3ef;
+  --border-control: #b9cbe0; --border-muted: rgba(81,100,118,0.2);
+  --live: #16803c; --warning: #a34a00;
+  --tint-pink: rgba(250,104,235,0.15); --tint-blue: rgba(37,130,254,0.15);
+  --tint-green: rgba(104,250,109,0.15); --tint-orange: rgba(254,145,37,0.15);
+  --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-2xl: 12px; --r-3xl: 20px; --r-full: 999px;
+  --shadow-card: 0 1px 2px rgba(11,43,74,0.06), 0 1px 4px rgba(11,43,74,0.05);
+  --shadow-btn: 0 2px 4px rgba(11,43,74,0.2);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: #e6edf5; font-family: Figtree, system-ui, sans-serif; font-weight: 500; color: var(--text-heavy); overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; }
+img { display: block; }
+
+/* ---------- Harness chrome (not part of the designs) ---------- */
+.h-bar { position: sticky; top: 0; z-index: 50; background: rgba(230,237,245,0.92); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-default); padding: 10px 16px 8px; }
+.h-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; max-width: 1312px; margin: 0 auto; }
+.h-title { font-weight: 700; font-size: 14px; margin-right: 4px; }
+.h-badge { font-size: 11px; font-weight: 700; letter-spacing: .04em; padding: 3px 8px; border-radius: var(--r-full); background: #ffefb8; color: #5c3d00; border: 1px solid #c78a00; }
+.h-spacer { flex: 1; }
+.h-seg { display: inline-flex; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--r-full); padding: 2px; gap: 2px; }
+.h-seg button { border: 0; background: transparent; border-radius: var(--r-full); padding: 4px 10px; font-size: 12px; font-weight: 600; color: var(--text-light); cursor: pointer; white-space: nowrap; }
+.h-seg button[aria-pressed="true"] { background: var(--text-heavy); color: #fff; }
+.h-select { font: inherit; font-size: 12px; font-weight: 600; border: 1px solid var(--border-default); border-radius: var(--r-full); padding: 4px 8px; background: var(--bg-surface); color: var(--text-heavy); }
+.h-note { max-width: 1312px; margin: 6px auto 0; font-size: 13px; color: var(--text-light); }
+.h-note b { color: var(--text-heavy); }
+.h-pickwrap { max-width: 1312px; margin: 8px auto 0; overflow-x: auto; scrollbar-width: none; }
+.h-pickwrap::-webkit-scrollbar { display: none; }
+/* Picker: PICKER.md styles, placed in the top bar (brief: picker at the top) */
+.proto-picker { position: relative; display: inline-flex; align-items: center; gap: 2px; padding: 4px; border-radius: 999px; background: rgba(10,10,10,0.82); -webkit-backdrop-filter: blur(12px) saturate(1.4); backdrop-filter: blur(12px) saturate(1.4); box-shadow: 0 0 0 1px rgba(255,255,255,0.08) inset, 0 8px 24px rgba(0,0,0,0.24), 0 2px 6px rgba(0,0,0,0.12); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; line-height: 1; -webkit-font-smoothing: antialiased; user-select: none; -webkit-user-select: none; }
+.proto-picker-highlight { position: absolute; top: 4px; left: 0; height: 28px; border-radius: 999px; background: rgba(255,255,255,0.12); }
+.proto-picker[data-ready] .proto-picker-highlight { transition: transform 250ms cubic-bezier(0.23,1,0.32,1), width 250ms cubic-bezier(0.23,1,0.32,1); }
+@media (prefers-reduced-motion: reduce) { .proto-picker[data-ready] .proto-picker-highlight { transition: none; } }
+.proto-picker-item { position: relative; display: flex; align-items: center; height: 28px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: rgba(255,255,255,0.55); font: inherit; cursor: pointer; white-space: nowrap; transition: color 150ms ease-out, transform 160ms cubic-bezier(0.23,1,0.32,1); }
+@media (hover: hover) and (pointer: fine) { .proto-picker-item:hover { color: rgba(255,255,255,0.85); } }
+.proto-picker-item:active { transform: scale(0.97); }
+.proto-picker-item:focus-visible { outline: 2px solid rgba(255,255,255,0.4); outline-offset: 2px; }
+.proto-picker-item[data-active] { color: #fff; }
+
+.stage-wrap { padding: 20px 16px 80px; }
+.frame { container: app / inline-size; margin: 0 auto; background: var(--bg-page); min-height: 70vh; width: 100%; max-width: 1280px; border-radius: 14px; box-shadow: 0 0 0 1px var(--border-default), 0 12px 40px rgba(11,43,74,0.10); overflow: clip; }
+.frame[data-device="phone"] { max-width: 375px; border-radius: 32px; box-shadow: 0 0 0 10px #0b2b4a, 0 20px 50px rgba(11,43,74,0.25); }
+
+/* ---------- Shared app primitives ---------- */
+.app { font-size: 16px; line-height: 1.35; color: var(--text-heavy); min-height: 70vh; }
+.wrap { padding: 16px; }
+@container app (min-width: 760px) { .wrap { padding: 24px 32px; } }
+.card { background: var(--bg-surface); border-radius: var(--r-2xl); box-shadow: var(--shadow-card); }
+.label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: -0.02em; color: var(--text-light); margin: 0; }
+.muted { color: var(--text-light); }
+.small { font-size: 14px; }
+.xs { font-size: 12px; }
+.strong { font-weight: 600; }
+.h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+.h2 { font-size: 18px; font-weight: 600; margin: 0; }
+.row { display: flex; align-items: center; gap: 12px; }
+.col { display: flex; flex-direction: column; }
+.gap4 { gap: 4px; } .gap8 { gap: 8px; } .gap12 { gap: 12px; } .gap16 { gap: 16px; } .gap20 { gap: 20px; }
+.grow { flex: 1; min-width: 0; }
+.wrapflex { flex-wrap: wrap; }
+.ico { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.ico.sm { width: 16px; height: 16px; }
+.dot-ico { width: 40px; height: 40px; border-radius: var(--r-full); background: var(--bg-inset); color: var(--text-medium); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.dot-ico.blue { background: var(--bg-highlight); color: var(--primary); }
+
+/* Pills: small, quiet. The Map pill is the high-visibility one. */
+.pill { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: var(--r-full); border: 1px solid var(--border-control); background: var(--bg-surface); color: var(--text-heavy); font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none; transition: transform 160ms var(--ease-out), background-color 150ms ease; touch-action: manipulation; position: relative; }
+.pill::after { content: ""; position: absolute; inset: -6px -2px; } /* 44px hit area */
+.pill:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) { .pill:hover { background: var(--bg-highlight); } }
+.pill:focus-visible, .tap:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.pill .ico { width: 16px; height: 16px; }
+.pill-map { background: var(--primary); border-color: var(--primary); color: #fff; }
+@media (hover: hover) and (pointer: fine) { .pill-map:hover { background: var(--text-active); } }
+.pill-dark { background: var(--text-heavy); border-color: var(--text-heavy); color: #fff; }
+@media (hover: hover) and (pointer: fine) { .pill-dark:hover { background: var(--text-medium); } }
+.pill-q { width: 32px; padding: 0; justify-content: center; font-weight: 700; }
+.pill-ghost { border-color: transparent; background: transparent; color: var(--text-link); }
+.tag { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: var(--r-sm); background: var(--bg-highlight); color: var(--text-active); white-space: nowrap; }
+.tag.grey { background: var(--bg-nav); color: var(--text-light); }
+.tag.live { background: rgba(22,128,60,0.1); color: var(--live); }
+.tag.live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--live); }
+.tag.warn { background: #fbe9dc; color: var(--text-warning); }
+.tap { cursor: pointer; transition: transform 160ms var(--ease-out), background-color 150ms ease; border: 0; text-align: left; font: inherit; color: inherit; touch-action: manipulation; }
+.tap:active { transform: scale(0.985); }
+@media (hover: hover) and (pointer: fine) { .tap.card:hover { background: #fbfdff; } }
+.divide > * + * { border-top: 1px solid var(--border-subtle); }
+.logo-chip { display: inline-flex; align-items: center; height: 48px; padding: 8px 14px; background: #fff; border-radius: var(--r-lg); box-shadow: var(--shadow-card); width: fit-content; }
+.logo-chip img { height: 100%; width: auto; max-width: 170px; object-fit: contain; }
+.logo-text { font-weight: 700; font-size: 20px; letter-spacing: 0.04em; color: var(--text-heavy); }
+.slots { display: flex; gap: 6px; flex-wrap: wrap; }
+.slot { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; border-radius: var(--r-lg); background: var(--bg-inset); font-size: 12px; min-width: 64px; }
+.slot b { font-size: 14px; }
+.slot.full { background: var(--tint-orange); }
+.slot.now { box-shadow: inset 0 0 0 1.5px var(--primary); }
+.lockmsg { margin: 0; padding: 10px 14px; border-radius: var(--r-lg); background: var(--bg-highlight); color: var(--text-active); font-size: 14px; }
+[data-locked] .lockmsg { display: none; }
+[data-locked][data-open] .lockmsg { display: block; }
+.locked-tile { border: 1px dashed var(--border-control); background: var(--bg-inset); color: var(--text-light); box-shadow: none; }
+.steps { display: flex; gap: 6px; flex-wrap: wrap; }
+.step { font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: var(--r-full); background: var(--bg-inset); color: var(--text-light); }
+.step.on { background: var(--primary); color: #fff; }
+.step.done { background: var(--bg-highlight); color: var(--text-active); }
+
+/* Sponsor Bay booth grid: logos only, yours highlighted */
+.bay { display: flex; flex-direction: column; gap: 10px; }
+.bay-screen { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bay-screen i { display: block; height: 4px; width: 70%; border-radius: 99px; background: var(--text-heavy); }
+.bay-screen span { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-light); }
+.bay-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(5, minmax(40px, auto)); gap: 6px; }
+.booth { display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: var(--r-sm); background: var(--bg-inset); border: 1px solid var(--border-subtle); min-width: 0; position: relative; }
+.booth img { max-width: 100%; max-height: 22px; width: auto; object-fit: contain; opacity: .75; }
+.booth .bt { font-size: 11px; font-weight: 700; color: var(--text-medium); }
+.booth.v { min-height: 56px; }
+.booth.mine { background: #fff; border: 2px solid var(--primary); box-shadow: 0 0 0 3px var(--bg-highlight); }
+.booth.mine img { opacity: 1; }
+.booth .you { position: absolute; top: -9px; right: -4px; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px; background: var(--primary); color: #fff; }
+.bay.big .bay-grid { grid-template-rows: repeat(5, minmax(64px, auto)); gap: 10px; }
+.bay.big .booth img { max-height: 32px; }
+.bay.big .booth.v { min-height: 80px; }
+
+/* Overlay: sheets for Map, Need help, How-to */
+.ov { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
+.ov[hidden] { display: none; }
+.ov-scrim { position: absolute; inset: 0; background: rgba(11,43,74,0.32); animation: fade 200ms ease-out; }
+.sheet { position: relative; width: 100%; max-width: 560px; max-height: 86vh; overflow: auto; overscroll-behavior: contain; background: var(--bg-surface); border-radius: 20px 20px 0 0; padding: 20px 20px max(20px, env(safe-area-inset-bottom)); box-shadow: 0 -8px 40px rgba(11,43,74,0.2); animation: rise 260ms var(--ease-out); font-family: Figtree, system-ui, sans-serif; }
+.ov[data-device="phone"] .sheet { max-width: 375px; }
+@media (min-width: 700px) { .ov { align-items: center; } .sheet { border-radius: 20px; } }
+@keyframes rise { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .sheet, .ov-scrim { animation: none; } }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.floor { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; padding: 12px; background: var(--bg-inset); border-radius: var(--r-2xl); }
+.room { grid-column: span 2; padding: 10px 8px; border-radius: var(--r-md); background: #fff; border: 1px solid var(--border-subtle); font-size: 12px; min-height: 54px; display: flex; flex-direction: column; gap: 2px; }
+.room b { font-size: 13px; }
+.room.key { border: 1.5px solid var(--primary); background: var(--bg-highlight); }
+.room.wide { grid-column: span 3; }
+.room.full { grid-column: span 6; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 120; background: var(--text-heavy); color: #fff; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: var(--r-full); box-shadow: var(--shadow-btn); animation: rise 200ms var(--ease-out); max-width: calc(100vw - 32px); }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+
+/* ========== V1 Stack ========== */
+.v1 .inner { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+.v1 .welcome { background: var(--primary); color: #fff; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+.v1 .welcome p { margin: 0; color: rgba(255,255,255,0.9); }
+.v1 .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.v1 .tile { padding: 16px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.v1 .tile.wide { grid-column: span 2; flex-direction: row; align-items: center; }
+.v1 .tile.dark { background: var(--text-heavy); color: #fff; }
+.v1 .tile.dark .muted { color: rgba(255,255,255,0.8); }
+.v1 .tile.dark .dot-ico { background: var(--primary); color: #fff; }
+.v1 .dl { padding: 0 16px; }
+.v1 .dl > div { display: flex; gap: 12px; align-items: center; padding: 14px 0; }
+.v1 .todaystrip { padding: 12px 16px; display: flex; gap: 12px; align-items: center; }
+
+/* ========== V2 Today first ========== */
+.v2 .grid { display: grid; gap: 20px; }
+@container app (min-width: 760px) { .v2 .grid { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: start; } }
+.v2 .hero { padding: 20px; display: flex; flex-direction: column; gap: 14px; border-top: 4px solid var(--primary); }
+.v2 .clock { font-size: 13px; font-weight: 600; color: var(--text-light); }
+.v2 .big { font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -0.01em; line-height: 1.15; }
+.v2 .nextlist > div { display: flex; gap: 12px; padding: 12px 16px; align-items: baseline; }
+.v2 .nextlist time { width: 72px; flex: none; font-size: 14px; color: var(--text-light); font-weight: 600; }
+.v2 details { background: var(--bg-surface); border-radius: var(--r-2xl); box-shadow: var(--shadow-card); }
+.v2 summary { list-style: none; cursor: pointer; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+.v2 summary::-webkit-details-marker { display: none; }
+.v2 details[open] summary .ico { transform: rotate(90deg); }
+.v2 summary .ico { transition: transform 200ms var(--ease-out); }
+.v2 .dbody { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+
+/* ========== V3 Bento ========== */
+.v3 .bento { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; grid-auto-flow: dense; }
+@container app (min-width: 760px) { .v3 .bento { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; } }
+.v3 .b { padding: 16px; display: flex; flex-direction: column; gap: 8px; min-height: 120px; position: relative; }
+.v3 .s2 { grid-column: span 2; }
+.v3 .r2 { grid-row: span 2; }
+.v3 .welcome { justify-content: space-between; }
+.v3 .dark { background: var(--text-heavy); color: #fff; }
+.v3 .dark .muted { color: rgba(255,255,255,0.8); }
+.v3 .accent { background: var(--primary); color: #fff; }
+.v3 .accent .muted { color: rgba(255,255,255,0.85); }
+.v3 .today-dot { position: absolute; top: 12px; right: 12px; }
+.v3 .big { font-size: 32px; font-weight: 700; line-height: 1; }
+@container app (max-width: 759px) { .v3 .r2.mob1 { grid-row: auto; } }
+
+/* ========== V4 Side nav ========== */
+.v4 { display: grid; grid-template-columns: 1fr; min-height: 70vh; }
+@container app (min-width: 760px) { .v4 { grid-template-columns: 232px minmax(0, 1fr); } }
+.v4 .rail { display: none; background: var(--bg-surface); border-right: 1px solid var(--border-subtle); padding: 20px 12px; flex-direction: column; gap: 4px; }
+@container app (min-width: 760px) { .v4 .rail { display: flex; } .v4 .tabbar { display: none; } }
+.v4 .navi { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--r-lg); color: var(--text-medium); font-weight: 600; font-size: 15px; background: transparent; width: 100%; }
+.v4 .navi[aria-current="page"] { background: var(--bg-nav); color: var(--text-active); }
+@media (hover: hover) and (pointer: fine) { .v4 .navi:hover { background: var(--bg-inset); } }
+.v4 .top { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-surface); position: sticky; top: 0; z-index: 2; }
+.v4 .pane { padding: 16px; display: flex; flex-direction: column; gap: 16px; max-width: 860px; }
+@container app (min-width: 760px) { .v4 .pane { padding: 24px 32px; } }
+.v4 .two { display: grid; gap: 16px; }
+@container app (min-width: 900px) { .v4 .two { grid-template-columns: 1fr 1fr; } }
+.v4 .tabbar { position: sticky; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr); background: var(--bg-surface); border-top: 1px solid var(--border-subtle); padding: 6px 4px max(6px, env(safe-area-inset-bottom)); z-index: 3; }
+.v4 .tabbar button { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; font-weight: 600; color: var(--text-light); background: none; border: 0; padding: 6px 0; min-height: 44px; }
+.v4 .tabbar button[aria-current="page"] { color: var(--primary); }
+.v4 .main { display: flex; flex-direction: column; min-width: 0; }
+@container app (min-width: 760px) { .v4 .v4-phonehelp { display: none; } }
+
+/* ========== V5 Weekend line ========== */
+.v5 .layout { display: grid; gap: 20px; }
+@container app (min-width: 900px) { .v5 .layout { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; } .v5 .side { position: sticky; top: 16px; } }
+.v5 .chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.v5 .chips::-webkit-scrollbar { display: none; }
+.v5 .chip { flex: none; font-size: 13px; padding: 6px 10px; border-radius: var(--r-full); background: var(--bg-surface); box-shadow: var(--shadow-card); white-space: nowrap; }
+.v5 .chip b { font-weight: 700; }
+.v5 .tl { position: relative; padding-left: 22px; }
+.v5 .tl::before { content: ""; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 2px; background: var(--border-default); }
+.v5 .dayh { margin: 18px 0 8px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; color: var(--text-light); display: flex; gap: 8px; align-items: center; }
+.v5 .ev { position: relative; padding: 10px 14px; margin-bottom: 8px; }
+.v5 .ev::before { content: ""; position: absolute; left: -21px; top: 15px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg-surface); border: 2px solid var(--border-control); }
+.v5 .ev.own::before { border-color: var(--primary); background: var(--primary); }
+.v5 .ev.past { opacity: 0.55; }
+.v5 .ev.food { background: var(--tint-blue); box-shadow: none; }
+.v5 .ev.cer { background: var(--tint-pink); box-shadow: none; }
+.v5 .ev.own { box-shadow: inset 3px 0 0 var(--primary), var(--shadow-card); }
+.v5 .nowline { position: relative; margin: 4px 0 12px; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--live); }
+.v5 .nowline::before { content: ""; position: absolute; left: -22px; width: 14px; height: 14px; border-radius: 50%; background: var(--live); box-shadow: 0 0 0 4px rgba(22,128,60,0.15); }
+.v5 .nowline::after { content: ""; flex: 1; height: 2px; background: var(--live); opacity: 0.4; }
+
+/* ========== V6 Map first ========== */
+.v6 .layout { display: grid; gap: 16px; }
+@container app (min-width: 860px) { .v6 .layout { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: start; } }
+.v6 .mapcard { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.v6 .rooms { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+@container app (min-width: 560px) { .v6 .rooms { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+.v6 .rm { padding: 10px 12px; border-radius: var(--r-lg); background: var(--bg-inset); display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.v6 .rm b { font-size: 15px; }
+.v6 .rm.hot { background: var(--bg-highlight); box-shadow: inset 0 0 0 1.5px var(--primary); }
+.v6 .dock { position: sticky; bottom: 12px; z-index: 3; margin: 16px auto 0; width: fit-content; max-width: 100%; display: flex; gap: 6px; padding: 6px; background: rgba(255,255,255,0.92); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-radius: var(--r-full); box-shadow: 0 6px 24px rgba(11,43,74,0.16), 0 0 0 1px var(--border-subtle); overflow-x: auto; scrollbar-width: none; }
+.v6 .dock::-webkit-scrollbar { display: none; }
+
+/* ========== V7 Chat ========== */
+.v7 .layout { display: grid; gap: 20px; max-width: 1040px; margin: 0 auto; }
+@container app (min-width: 900px) { .v7 .layout { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; } .v7 .pinned { position: sticky; top: 16px; } }
+.v7 .thread { display: flex; flex-direction: column; gap: 10px; }
+.v7 .msg { max-width: 88%; padding: 12px 14px; border-radius: 16px 16px 16px 4px; background: var(--bg-surface); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 8px; animation: rise 220ms var(--ease-out); }
+.v7 .msg.me { align-self: flex-end; background: var(--primary); color: #fff; border-radius: 16px 16px 4px 16px; }
+@media (prefers-reduced-motion: reduce) { .v7 .msg { animation: none; } }
+.v7 .from { font-size: 12px; font-weight: 600; color: var(--text-light); margin-left: 4px; }
+.v7 .replies { position: sticky; bottom: 0; padding: 10px 0 max(10px, env(safe-area-inset-bottom)); background: linear-gradient(to top, var(--bg-page) 70%, transparent); display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ========== V8 One card ========== */
+.v8 .center { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.v8 .deck { position: relative; touch-action: pan-y; }
+.v8 .focus { padding: 24px 20px; min-height: 380px; display: flex; flex-direction: column; gap: 14px; animation: swapin 220ms var(--ease-out); }
+@keyframes swapin { from { opacity: 0; transform: translateX(var(--dx, 12px)); } }
+@media (prefers-reduced-motion: reduce) { .v8 .focus { animation: none; } }
+.v8 .peek { position: absolute; inset: 10px -8px -8px 10px; z-index: -1; background: var(--bg-surface); border-radius: var(--r-2xl); opacity: 0.6; box-shadow: var(--shadow-card); }
+.v8 .dots { display: flex; gap: 6px; justify-content: center; }
+.v8 .dots button { width: 8px; height: 8px; padding: 0; border-radius: 99px; border: 0; background: var(--border-control); cursor: pointer; position: relative; transition: width 200ms var(--ease-out); }
+.v8 .dots button::after { content: ""; position: absolute; inset: -10px -4px; }
+.v8 .dots button[aria-current="true"] { width: 20px; background: var(--primary); }
+.v8 .kicker { font-size: 13px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.02em; }
+.v8 .big { font-size: 28px; font-weight: 700; line-height: 1.15; margin: 0; }
+
+/* ========== V9 Grouped list ========== */
+.v9 .cols { columns: 1; column-gap: 20px; max-width: 1100px; margin: 0 auto; }
+@container app (min-width: 820px) { .v9 .cols { columns: 2; } }
+.v9 .grp { break-inside: avoid; margin-bottom: 20px; }
+.v9 .grp > .label { padding: 0 16px 6px; }
+.v9 .list { overflow: hidden; }
+.v9 .li { display: flex; align-items: center; gap: 12px; padding: 0 14px; min-height: 52px; width: 100%; background: var(--bg-surface); }
+.v9 .li + .li { border-top: 1px solid var(--border-subtle); }
+.v9 .li .ic { width: 28px; height: 28px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-highlight); color: var(--primary); flex: none; }
+.v9 .li .ic .ico { width: 16px; height: 16px; }
+.v9 .li .val { color: var(--text-light); font-size: 14px; text-align: right; }
+.v9 .li .chev { color: var(--border-control); }
+.v9 .li .t { padding: 12px 0; }
+
+/* ========== V10 Day board ========== */
+.v10 .strip { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.v10 .board { display: grid; gap: 14px; }
+@container app (min-width: 860px) { .v10 .board { grid-template-columns: var(--cols); align-items: start; } .v10 .daypills { display: none; } }
+@container app (max-width: 859px) { .v10 .dcol:not([data-show]) { display: none; } }
+.v10 .dcol { background: var(--bg-inset); border-radius: var(--r-3xl); padding: 12px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.v10 .dcol.today { background: var(--bg-highlight); box-shadow: inset 0 0 0 1.5px var(--bg-nav-sel); }
+.v10 .dcol.other .cardlet { opacity: 0.8; }
+.v10 .cardlet { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.v10 .cardlet.own { box-shadow: inset 3px 0 0 var(--primary), var(--shadow-card); }
+.v10 .dhead { display: flex; align-items: center; justify-content: space-between; padding: 4px 4px 0; }
+.v10 .venue { display: grid; gap: 14px; margin-top: 16px; }
+@container app (min-width: 860px) { .v10 .venue { grid-template-columns: 1.2fr 1fr 1fr; } }
+</style>
+</head>
+<body>
+<header class="h-bar">
+  <div class="h-row">
+    <span class="h-title">Sponsor home</span>
+    <span class="h-badge">WIREFRAME · dummy data</span>
+    <span class="h-spacer"></span>
+    <label class="xs muted strong" for="h-sponsor">Sponsor</label>
+    <select id="h-sponsor" class="h-select"></select>
+    <div class="h-seg" id="h-when" role="group" aria-label="Simulated time"></div>
+    <div class="h-seg" id="h-device" role="group" aria-label="Frame width">
+      <button data-device="desktop">Desktop</button><button data-device="phone">Phone</button>
+    </div>
+  </div>
+  <div class="h-pickwrap"><nav class="proto-picker" aria-label="Prototype variants"><span class="proto-picker-highlight" aria-hidden="true"></span></nav></div>
+  <p class="h-note" id="h-note"></p>
+</header>
+<div class="stage-wrap"><div class="frame" id="frame"><div id="stage"></div></div></div>
+<div class="ov" id="ov" hidden><div class="ov-scrim" data-act="close"></div><div class="sheet" role="dialog" aria-modal="true" id="sheet"></div></div>
+
+<script>
+/* ================= Dummy data ================= */
+const LOGO_DIR = '../../public/shared/sponsors/';
+const BOOTHS = [
+  { sponsor: 'Accenture', side: 'top', col: 2, row: 1 }, { sponsor: 'Canada Life', side: 'top', col: 3, row: 1 },
+  { sponsor: 'Manulife', side: 'top', col: 4, row: 1 }, { sponsor: 'QNX', side: 'left', col: 1, row: 2 },
+  { sponsor: 'TinyFish', side: 'left', col: 1, row: 3 }, { sponsor: 'StarTech', side: 'left', col: 1, row: 4 },
+  { sponsor: 'CSE', side: 'right', col: 5, row: 2 }, { sponsor: 'Sun Life', side: 'right', col: 5, row: 3 },
+  { sponsor: 'Scotiabank', side: 'right', col: 5, row: 4 }, { sponsor: 'Commure', side: 'bottom', col: 2, row: 5 },
+];
+const SIDE_TEXT = { top: 'Front row, facing the screen', left: 'Left wall', right: 'Right wall', bottom: 'Back row' };
+const SP = {
+  'Accenture': { logo: 'accenture.svg', contact: 'Daniel', workshop: { title: 'Prompting for product people', t: '15:00', e: '16:00', room: 'Rm 2230' } },
+  'Canada Life': { logo: 'canadalife.png', contact: 'Caroline', judging: 'Rm 2230', speaks: { order: 3, total: 6, min: 2 },
+    coffee: { t: '10:00', e: '12:00', step: 30, fmt: '30-min chats, groups of 3', room: 'Rm 2242', booked: [3, 2, 1, 0] },
+    workshop: { title: 'Open banking in an afternoon', t: '14:00', e: '15:00', room: 'Rm 2230' } },
+  'Manulife': { logo: 'manulife.svg', contact: 'Alice' },
+  'QNX': { logo: null, contact: 'Aniya', judging: 'Rm 2235', workshop: { title: 'Real-time systems 101', t: '16:00', e: '17:00', room: 'Rm 2235' } },
+  'TinyFish': { logo: 'tinyfish.svg', contact: 'Daniel' },
+  'StarTech': { logo: 'startech.svg', contact: 'Alice', coffee: { t: '09:00', e: '13:00', step: 15, fmt: '15-min 1-on-1 chats, 3 reps', room: 'Rm 2241', booked: [3, 3, 2, 3, 1, 2, 0, 1, 3, 2, 0, 0, 1, 0, 0, 0] } },
+  'CSE': { logo: 'cse-trimmed.png', contact: 'Aniya' },
+  'Sun Life': { logo: 'sunlife.png', contact: 'Caroline', coffee: { t: '10:00', e: '16:00', step: 30, fmt: '30-min chats, groups of 3', room: 'Rm 2243', booked: [3, 3, 2, 1, 2, 0, 3, 1, 0, 0, 1, 0] } },
+  'Scotiabank': { logo: 'scotiabank-trimmed.svg', contact: 'Noah', judging: 'Rm 2110', speaks: { order: 5, total: 6, min: 3 } },
+  'Commure': { logo: 'commure.svg', contact: 'Daniel' },
+};
+const WHEN = {
+  fri: { day: 'fri', min: 17 * 60, short: 'Fri 5 PM', long: 'Friday, Nov 20 · 5:00 PM', dayName: 'Friday' },
+  sat: { day: 'sat', min: 11 * 60, short: 'Sat 11 AM', long: 'Saturday, Nov 21 · 11:00 AM', dayName: 'Saturday' },
+  sunEarly: { day: 'sun', min: 8 * 60 + 15, short: 'Sun 8:15 AM', long: 'Sunday, Nov 22 · 8:15 AM', dayName: 'Sunday' },
+  sunLive: { day: 'sun', min: 10 * 60 + 20, short: 'Sun 10:20 AM', long: 'Sunday, Nov 22 · 10:20 AM', dayName: 'Sunday' },
+};
+const DAYS = [{ id: 'fri', name: 'Friday', short: 'Fri', date: 'Nov 20' }, { id: 'sat', name: 'Saturday', short: 'Sat', date: 'Nov 21' }, { id: 'sun', name: 'Sunday', short: 'Sun', date: 'Nov 22' }];
+
+const toMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const fmt = (t) => { const m = typeof t === 'number' ? t : toMin(t); let h = Math.floor(m / 60), mm = m % 60; const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return mm ? `${h}:${String(mm).padStart(2, '0')} ${ap}` : `${h}:00 ${ap}`; };
+const fmtShort = (t) => fmt(t).replace(':00', '');
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function eventsFor(name) {
+  const s = SP[name];
+  const ev = [
+    { d: 'fri', t: '16:00', e: '17:30', title: 'Check in and set up your booth', where: 'Sponsor Bay · SM Atrium', kind: 'own' },
+    { d: 'fri', t: '17:30', e: '18:30', title: 'Dinner', where: 'Grand Hall Rm 1110', kind: 'food' },
+    { d: 'fri', t: '18:30', e: '19:30', title: s.speaks ? `Opening ceremony · you speak #${s.speaks.order} of ${s.speaks.total}` : 'Opening ceremony', where: 'Grand Hall Rm 1110', kind: 'cer', own: !!s.speaks },
+    { d: 'fri', t: '20:00', e: '22:00', title: 'Sponsor Bay open', where: 'Sponsor Bay · SM Atrium', kind: 'own' },
+    { d: 'sat', t: '08:00', e: '09:30', title: 'Breakfast', where: 'Grand Hall Rm 1110', kind: 'food' },
+    { d: 'sat', t: '09:00', e: '16:00', title: 'Sponsor Bay open', where: 'Sponsor Bay · SM Atrium', kind: 'own' },
+    { d: 'sat', t: '12:00', e: '13:00', title: 'Lunch', where: 'Grand Hall Rm 1110', kind: 'food' },
+    { d: 'sat', t: '18:00', e: '19:00', title: 'Dinner', where: 'Grand Hall Rm 1110', kind: 'food' },
+    { d: 'sun', t: '08:00', e: '09:00', title: 'Breakfast', where: 'Grand Hall Rm 1110', kind: 'food' },
+    { d: 'sun', t: '08:30', e: '09:00', title: 'Judging debrief (there will be coffee!)', where: 'Rm 2110', kind: 'own' },
+    { d: 'sun', t: '12:00', e: '13:00', title: 'Lunch', where: 'Grand Hall Rm 1110', kind: 'food' },
+    { d: 'sun', t: '13:30', e: '14:30', title: 'Closing ceremony', where: 'Grand Hall Rm 1110', kind: 'cer' },
+  ];
+  if (s.coffee) ev.push({ d: 'sat', t: s.coffee.t, e: s.coffee.e, title: 'Your coffee chats', where: s.coffee.room, kind: 'own', coffee: true });
+  if (s.workshop) ev.push({ d: 'sat', t: s.workshop.t, e: s.workshop.e, title: `Workshop: ${s.workshop.title}`, where: s.workshop.room, kind: 'own' });
+  if (s.judging) {
+    ev.push({ d: 'sun', t: '09:00', e: '10:00', title: 'Round 1: shortlist projects', where: 'On this portal', kind: 'own', judging: true });
+    ev.push({ d: 'sun', t: '10:00', e: '11:30', title: '5-min presentations', where: s.judging, kind: 'own', judging: true });
+    ev.push({ d: 'sun', t: '11:30', e: '12:00', title: 'Round 2: pick your top 5', where: 'On this portal', kind: 'own', judging: true });
+  } else {
+    ev.push({ d: 'sun', t: '09:00', e: '12:00', title: 'Judging: shortlist and pick your top 5', where: 'On this portal', kind: 'own', judging: true });
+  }
+  const order = { fri: 0, sat: 1, sun: 2 };
+  return ev.sort((a, b) => order[a.d] - order[b.d] || toMin(a.t) - toMin(b.t));
+}
+function slotsFor(name) {
+  const c = SP[name].coffee; if (!c) return [];
+  const out = []; for (let m = toMin(c.t), i = 0; m < toMin(c.e); m += c.step, i++) out.push({ t: m, n: c.booked[i] ?? 0 });
+  return out;
+}
+
+/* ================= State ================= */
+const params = new URLSearchParams(location.search);
+const S = {
+  v: Math.min(10, Math.max(1, Number(params.get('v')) || 1)),
+  device: params.get('device') === 'phone' ? 'phone' : 'desktop',
+  when: WHEN[params.get('when')] ? params.get('when') : 'sat',
+  sponsor: SP[params.get('sponsor')] ? params.get('sponsor') : 'Canada Life',
+  v4tab: 'home', v8i: 0, v10day: null, chat: [], v5past: false,
+};
+function ctx() {
+  const w = WHEN[S.when], name = S.sponsor, s = SP[name];
+  const all = eventsFor(name);
+  const today = all.filter((e) => e.d === w.day);
+  const isPast = (e) => { const di = DAYS.findIndex((d) => d.id === e.d), wi = DAYS.findIndex((d) => d.id === w.day); return di < wi || (di === wi && toMin(e.e) <= w.min); };
+  const isNow = (e) => e.d === w.day && toMin(e.t) <= w.min && w.min < toMin(e.e);
+  const nowOwn = today.filter((e) => isNow(e) && (e.kind === 'own' || e.own) && !/Sponsor Bay open/.test(e.title));
+  const nowAny = today.filter(isNow);
+  const upcoming = all.filter((e) => !isPast(e) && !isNow(e));
+  const nextOwn = upcoming.find((e) => e.kind === 'own' || e.own);
+  const booth = BOOTHS.find((b) => b.sponsor === name);
+  const judgingOpen = S.when === 'sunLive';
+  return { w, name, s, all, today, isPast, isNow, nowOwn, nowAny, upcoming, nextOwn, booth, judgingOpen, slots: slotsFor(name) };
+}
+
+/* ================= Icons ================= */
+const P = {
+  scan: '<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/>',
+  coffee: '<path d="M10 2v2M14 2v2M17 8a1 1 0 0 1 1 1v1h1a3 3 0 0 1 0 6h-1.3A6 6 0 0 1 12 21H8a5 5 0 0 1-5-5V9a1 1 0 0 1 1-1z"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  trophy: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  sofa: '<path d="M4 11V8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v3M2 13a2 2 0 0 1 4 0v2h12v-2a2 2 0 0 1 4 0v5H2zM5 18v2M19 18v2"/>',
+  bag: '<rect x="5" y="7" width="14" height="13" rx="2"/><path d="M9 7V4h6v3M9 11v5M15 11v5"/>',
+  siren: '<path d="M7 18v-6a5 5 0 0 1 10 0v6M5 21h14v-3H5zM12 3V2M4 6 3 5M20 6l1-1"/>',
+  pin: '<path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/>',
+  phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+  help: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.3 2.4c-.5.2-.8.6-.8 1.1M12 16h.01"/>',
+  chev: '<path d="M9 6l6 6-6 6"/>', chevL: '<path d="M15 6l-6 6 6 6"/>',
+  cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  map: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14"/>',
+  present: '<path d="M3 4h18M5 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4M12 15v5M8 20h8"/>',
+  check: '<path d="M5 12l5 5 9-10"/>', x: '<path d="M6 6l12 12M18 6 6 18"/>',
+};
+const I = (n, cls = '') => `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
+
+/* ================= Shared pieces ================= */
+const logo = (name, cls = '') => SP[name].logo ? `<img class="${cls}" src="${LOGO_DIR}${SP[name].logo}" alt="${esc(name)} logo">` : `<span class="logo-text ${cls}">${esc(name)}</span>`;
+const logoChip = (name) => `<span class="logo-chip">${logo(name)}</span>`;
+const mapPill = (label = 'Map') => `<button class="pill pill-map" data-act="map">${I('map')}${label}</button>`;
+const helpPill = (label = 'Need help?') => `<button class="pill" data-act="help">${I('help')}${label}</button>`;
+const tourPill = () => `<button class="pill pill-q" data-act="tour" aria-label="How this portal works">?</button>`;
+const go = (label) => `data-act="go" data-go="${esc(label)}"`;
+
+function bay(c, opts = {}) {
+  const cells = BOOTHS.map((b) => {
+    const mine = b.sponsor === c.name, v = b.side === 'left' || b.side === 'right';
+    const inner = SP[b.sponsor].logo ? `<img src="${LOGO_DIR}${SP[b.sponsor].logo}" alt="${esc(b.sponsor)}">` : `<span class="bt">${esc(b.sponsor)}</span>`;
+    return `<div class="booth${v ? ' v' : ''}${mine ? ' mine' : ''}" style="grid-column:${b.col};grid-row:${b.row}">${inner}${mine ? '<span class="you">You</span>' : ''}</div>`;
+  }).join('');
+  return `<figure class="bay${opts.big ? ' big' : ''}" style="margin:0" role="img" aria-label="Sponsor Bay booth layout around the projector screen. Your booth, ${esc(c.name)}, is highlighted.">
+    <div class="bay-screen"><span>Projector screen</span><i></i></div>
+    <div class="bay-grid">${cells}</div></figure>`;
+}
+function judgingBlock(c, style = 'tile') {
+  if (c.judgingOpen) {
+    return `<button class="card tap ${style}" ${go('Judging')} style="display:flex;gap:12px;align-items:center;padding:16px;width:100%">
+      <span class="dot-ico blue">${I('trophy')}</span>
+      <span class="col gap4 grow"><span class="row" style="gap:8px;flex-wrap:wrap"><span class="strong">Judging</span><span class="tag live">Open</span><span class="tag">Not submitted</span></span>
+      <span class="small muted">Score projects and submit your top 5</span>
+      <span class="steps"><span class="step done">Round 1 shortlist</span><span class="step on">Presentations${c.s.judging ? ' · ' + c.s.judging : ''}</span><span class="step">Top 5</span></span></span>${I('chev')}</button>`;
+  }
+  return `<div data-locked class="col gap8"><button class="card tap locked-tile" data-act="locked" aria-expanded="false" style="display:flex;gap:12px;align-items:center;padding:16px;width:100%">
+    <span class="dot-ico" style="background:var(--bg-nav)">${I('trophy')}</span>
+    <span class="col gap4 grow"><span class="row" style="gap:8px;flex-wrap:wrap"><span class="strong" style="color:var(--text-medium)">Judging</span><span class="tag grey">Opens Sunday 9:00 AM</span></span>
+    <span class="small">Score projects and submit your top 5</span></span>${I('lock')}</button>
+    <p class="lockmsg" role="status">This will be unlocked on Sunday at 9:00 AM. Please come to the sponsor judging debrief at 8:30 AM. There will be coffee!</p></div>`;
+}
+const IMPORTANT = [
+  { icon: 'sofa', label: 'Sponsor lounge', value: 'Rm 2110', hint: 'A space for sponsors all weekend' },
+  { icon: 'bag', label: 'Leave your things overnight', value: 'Rm 2244', hint: 'Store your belongings here between days' },
+];
+function importantList(c, pad = '0 16px') {
+  return `<dl class="card divide" style="margin:0;padding:${pad}">
+    ${IMPORTANT.map((r) => `<div class="row" style="padding:14px 0"><span class="dot-ico">${I(r.icon)}</span><div class="col gap4 grow"><dt class="small muted">${r.label}</dt><dd class="strong" style="margin:0">${r.value}</dd><dd class="small muted" style="margin:0">${r.hint}</dd></div></div>`).join('')}
+    <div class="row" style="padding:14px 0"><span class="dot-ico">${I('siren')}</span><div class="col gap4 grow"><dt class="small muted">Emergency contact</dt><dd class="strong" style="margin:0">Noah</dd></div><span class="tag grey">Phone number coming soon</span></div></dl>`;
+}
+function detailsList(c, pad = '0 16px') {
+  const rows = [
+    { icon: 'pin', label: 'Booth', value: `Sponsor Bay · ${SIDE_TEXT[c.booth.side]}`, hint: 'SM Atrium, Floor 1' },
+    c.s.judging && { icon: 'present', label: 'Judging room', value: `Room ${c.s.judging.replace('Rm ', '')}`, hint: 'Head here when presentations start Sunday 10:00 AM' },
+    c.s.workshop && { icon: 'clock', label: 'Workshop', value: `Sat ${fmt(c.s.workshop.t)} · ${c.s.workshop.room}`, hint: c.s.workshop.title },
+  ].filter(Boolean);
+  return `<dl class="card divide" style="margin:0;padding:${pad}">
+    ${rows.map((r) => `<div class="row" style="padding:14px 0"><span class="dot-ico">${I(r.icon)}</span><div class="col gap4 grow"><dt class="small muted">${r.label}</dt><dd class="strong" style="margin:0">${esc(r.value)}</dd>${r.hint ? `<dd class="small muted" style="margin:0">${esc(r.hint)}</dd>` : ''}</div></div>`).join('')}
+    <div class="row" style="padding:14px 0"><span class="dot-ico">${I('phone')}</span><div class="col gap4 grow"><dt class="small muted">Your Hack Western contact</dt><dd class="strong" style="margin:0">${c.s.contact}</dd></div><span class="tag grey">On-site support</span></div></dl>`;
+}
+function slotsRow(c) {
+  if (!c.slots.length) return '';
+  return `<div class="slots">${c.slots.map((sl) => {
+    const now = c.w.day === 'sat' && sl.t <= c.w.min && c.w.min < sl.t + SP[c.name].coffee.step;
+    return `<span class="slot${sl.n >= 3 ? ' full' : ''}${now ? ' now' : ''}"><span class="muted">${fmtShort(sl.t)}</span><b>${sl.n}/3</b></span>`;
+  }).join('')}</div>`;
+}
+function chatsSummary(c) {
+  if (!c.s.coffee) return 'Not set up yet. Your contact will confirm.';
+  const booked = c.slots.reduce((a, s) => a + s.n, 0);
+  return `${booked} of ${c.slots.length * 3} spots booked · Sat`;
+}
+/* What matters today, in plain words. Used by several variants. */
+function todayStory(c) {
+  const s = c.s, w = S.when;
+  if (w === 'fri') return {
+    kicker: 'Today: arrival',
+    title: 'Check in at the Sponsor Bay, then dinner and opening',
+    body: `Your booth is on the ${SIDE_TEXT[c.booth.side].toLowerCase()}. Drop bags in Rm 2244 first.${s.speaks ? ` You speak at the opening ceremony at 6:30 PM (#${s.speaks.order} of ${s.speaks.total}, ${s.speaks.min} min).` : ''}`,
+    acts: [mapPill('Find your booth'), `<button class="pill" ${go('Your schedule')}>${I('cal')}Tonight's schedule</button>`],
+  };
+  if (w === 'sat') return s.coffee ? {
+    kicker: 'Happening now', live: true,
+    title: `Your coffee chats · ${s.coffee.room}`,
+    body: `${fmt(s.coffee.t)} to ${fmt(s.coffee.e)}, ${s.coffee.fmt}. Scan a badge to offer a hacker a spot.`,
+    extra: slotsRow(c),
+    acts: [`<button class="pill pill-dark" ${go('Scan a badge')}>${I('scan')}Scan a badge</button>`, `<button class="pill" ${go('Coffee chats')}>${I('coffee')}See chats</button>`],
+  } : {
+    kicker: 'Today: Sponsor Bay day', live: true,
+    title: 'Sponsor Bay is open 9:00 AM to 4:00 PM',
+    body: `${s.workshop ? `Your workshop "${s.workshop.title}" is at ${fmt(s.workshop.t)} in ${s.workshop.room}. ` : ''}Scan badges at your booth to remember hackers you meet.`,
+    acts: [`<button class="pill pill-dark" ${go('Scan a badge')}>${I('scan')}Scan a badge</button>`],
+  };
+  if (w === 'sunEarly') return {
+    kicker: 'Today: judging',
+    title: 'Judging debrief at 8:30 AM in Rm 2110',
+    body: 'Judging opens at 9:00 AM. We will walk you through it at the debrief. There will be coffee!',
+    acts: [mapPill('Where is Rm 2110?')],
+  };
+  return {
+    kicker: 'Happening now', live: true,
+    title: s.judging ? `Presentations in ${s.judging}` : 'Judging is open',
+    body: s.judging ? 'Shortlisted teams come to you, 5 minutes each, until 11:30 AM. Then pick your top 5.' : 'Score the projects in your track and submit your top 5 by noon.',
+    extra: `<div class="steps"><span class="step done">Round 1 shortlist</span><span class="step on">Presentations</span><span class="step">Top 5</span><span class="step">Cheat check (we do this)</span></div>`,
+    acts: [`<button class="pill pill-dark" ${go('Judging')}>${I('trophy')}Open judging</button>`],
+  };
+}
+
+/* ================= Variants ================= */
+const VARIANTS = [
+  { name: 'Stack', why: 'Today\'s home, tidied: one column you read top to bottom, a small "today" strip that changes by day.', render: v1 },
+  { name: 'Today first', why: 'The top card answers "what do I do right now"; everything else folds away until you need it.', render: v2 },
+  { name: 'Bento', why: 'Every feature is a tile at once, sized by how much it matters today. Good on a laptop at the booth.', render: v3 },
+  { name: 'Side nav', why: 'An app with sections: rail on desktop, tab bar on phone. Home stays short because each feature has its own place.', render: v4 },
+  { name: 'Weekend line', why: 'Home is the weekend as one timeline, with actions attached to the moment you need them.', render: v5 },
+  { name: 'Map first', why: 'Sponsors mostly ask "where". The booth floor and rooms lead; actions live in a dock.', render: v6 },
+  { name: 'Chat', why: 'A friendly assistant thread: it tells you what\'s on and you tap a reply to ask for more.', render: v7 },
+  { name: 'One card', why: 'One thing at a time, ordered by what matters today. Swipe or tap through; see all if you want.', render: v8 },
+  { name: 'Grouped list', why: 'Settings-style rows: dense, scannable, every item one tap. Nothing is a big block.', render: v9 },
+  { name: 'Day board', why: 'Three day columns; today is wide and bright, the other days are short previews.', render: v10 },
+];
+
+function v1(c) {
+  const st = todayStory(c);
+  return `<div class="app v1"><div class="wrap"><div class="inner">
+    <header class="row"><span class="small strong muted grow">Hack Western 13</span>${tourPill()}${mapPill()}</header>
+    <section class="card welcome">${logoChip(c.name)}<h1 class="h1">Welcome, ${esc(c.name)}!</h1><p>We're thrilled to have you with us this weekend. Use this portal to check your booth and judging details and pick your top projects.</p></section>
+    <div class="card todaystrip">${st.live ? '<span class="tag live">Now</span>' : '<span class="tag">Today</span>'}<span class="grow small"><b>${esc(st.title)}</b></span>${I('chev')}</div>
+    <div class="card row" style="padding:14px 16px"><span class="dot-ico blue">${I('help')}</span><span class="col grow"><span class="strong">Need help?</span><span class="small muted">Ping the sponsor team. Someone will come to you.</span></span><button class="pill" data-act="help">Ask</button></div>
+    <nav class="tiles" aria-label="Quick actions">
+      <button class="card tap tile wide dark" ${go('Scan a badge')}><span class="dot-ico">${I('scan')}</span><span class="col grow"><span class="strong">Scan a badge</span><span class="small muted">Offer a hacker a coffee chat</span></span>${I('chev')}</button>
+      <button class="card tap tile" ${go('Coffee chats')}><span class="dot-ico blue">${I('coffee')}</span><span class="strong">Coffee chats</span><span class="small muted">${chatsSummary(c)}</span></button>
+      <button class="card tap tile" ${go('Your schedule')}><span class="dot-ico blue">${I('clock')}</span><span class="strong">Your schedule</span><span class="small muted">${c.nextOwn ? 'Next: ' + esc(c.nextOwn.title) : 'Booth, workshop and judging times'}</span></button>
+      <div style="grid-column:span 2">${judgingBlock(c)}</div>
+    </nav>
+    <section class="col gap12"><div class="row"><h2 class="label grow">Important things to remember</h2><button class="pill pill-ghost" data-act="map">See it on the map</button></div>${importantList(c)}</section>
+    <section class="col gap12"><h2 class="label">Sponsor Bay layout</h2><div class="card" style="padding:16px">${bay(c)}</div></section>
+    <section class="col gap12"><h2 class="label">Event details</h2>${detailsList(c)}</section>
+    <p class="small muted" style="text-align:center;margin:0">Need immediate assistance during the hackathon? Reach out to your HW contact.</p>
+  </div></div></div>`;
+}
+
+function v2(c) {
+  const st = todayStory(c);
+  const later = c.upcoming.filter((e) => e.d === c.w.day).slice(0, 4);
+  return `<div class="app v2"><div class="wrap">
+    <header class="row" style="margin-bottom:16px">${SP[c.name].logo ? `<span style="height:28px;display:flex">${logo(c.name)}</span>` : logo(c.name)}<span class="grow"></span>${helpPill()}${tourPill()}${mapPill()}</header>
+    <div class="grid">
+      <div class="col gap16">
+        <section class="card hero"><span class="clock">${c.w.long}</span>
+          <span class="row" style="gap:8px">${st.live ? `<span class="tag live">${st.kicker}</span>` : `<span class="tag">${st.kicker}</span>`}</span>
+          <h1 class="big">${esc(st.title)}</h1><p style="margin:0" class="muted">${esc(st.body)}</p>${st.extra || ''}
+          <div class="row wrapflex" style="gap:8px">${st.acts.join('')}</div></section>
+        <section class="col gap8"><h2 class="label">Later today</h2>
+          <div class="card divide nextlist">${later.length ? later.map((e) => `<div><time>${fmt(e.t)}</time><span class="grow"><span class="${e.kind === 'own' || e.own ? 'strong' : ''}">${esc(e.title)}</span><br><span class="small muted">${esc(e.where)}</span></span></div>`).join('') : '<div><span class="muted small">Nothing else today.</span></div>'}</div></section>
+        <nav class="row wrapflex" style="gap:8px" aria-label="Quick actions">
+          <button class="pill" ${go('Scan a badge')}>${I('scan')}Scan a badge</button><button class="pill" ${go('Coffee chats')}>${I('coffee')}Coffee chats</button><button class="pill" ${go('Your schedule')}>${I('clock')}Your schedule</button>
+        </nav>
+        ${judgingBlock(c)}
+      </div>
+      <div class="col gap12">
+        <details ${S.device === 'desktop' ? 'open' : ''}><summary>Important things to remember ${I('chev')}</summary><div class="dbody">${importantList(c, '0')}</div></details>
+        <details><summary>Your booth in the Sponsor Bay ${I('chev')}</summary><div class="dbody">${bay(c)}</div></details>
+        <details><summary>Event details ${I('chev')}</summary><div class="dbody">${detailsList(c, '0')}</div></details>
+      </div>
+    </div></div></div>`;
+}
+
+function v3(c) {
+  const w = S.when;
+  const chatsHot = w === 'sat' && c.s.coffee, judgeHot = w === 'sunEarly' || w === 'sunLive';
+  const booked = c.slots.reduce((a, s) => a + s.n, 0);
+  const nx = c.nowOwn[0] || c.nextOwn;
+  return `<div class="app v3"><div class="wrap"><div class="bento">
+    <section class="card b s2 welcome accent"><div class="row"><span class="logo-chip" style="height:40px">${logo(c.name)}</span><span class="grow"></span>${tourPill()}${mapPill()}</div>
+      <div><h1 class="h1">Welcome, ${esc(c.name)}!</h1><p class="small muted" style="margin:4px 0 0">${c.w.long}</p></div></section>
+    <button class="card tap b" data-act="help"><span class="dot-ico blue">${I('help')}</span><span class="strong">Need help?</span><span class="small muted">Someone comes to you</span></button>
+    <button class="card tap b dark ${chatsHot ? '' : 'r2 mob1'}" ${go('Scan a badge')}><span class="dot-ico" style="background:var(--primary);color:#fff">${I('scan')}</span><span class="strong">Scan a badge</span><span class="small muted">Offer a coffee chat</span></button>
+    <button class="card tap b ${chatsHot ? 's2 r2' : ''}" ${go('Coffee chats')}>${chatsHot ? '<span class="tag live today-dot">Now</span>' : ''}<span class="dot-ico blue">${I('coffee')}</span><span class="strong">Coffee chats</span>
+      ${c.s.coffee ? `<span class="big">${booked}<span class="small muted">/${c.slots.length * 3}</span></span><span class="small muted">spots booked · ${c.s.coffee.room}</span>${chatsHot ? slotsRow(c) : ''}` : '<span class="small muted">Not set up yet</span>'}</button>
+    <button class="card tap b" ${go('Your schedule')}><span class="dot-ico blue">${I('clock')}</span><span class="strong">Your schedule</span>${nx ? `<span class="small"><b>${c.isNow(nx) ? 'Now' : fmt(nx.t)}</b> ${esc(nx.title)}</span>` : ''}</button>
+    <div class="${judgeHot ? 's2' : 's2'}">${judgingBlock(c)}</div>
+    <section class="card b s2 r2"><div class="row"><span class="strong grow">Sponsor Bay</span><span class="small muted">${SIDE_TEXT[c.booth.side]}</span></div>${bay(c)}</section>
+    <section class="card b"><span class="dot-ico">${I('sofa')}</span><span class="strong">Lounge</span><span class="big" style="font-size:22px">Rm 2110</span><span class="small muted">All weekend</span></section>
+    <section class="card b"><span class="dot-ico">${I('bag')}</span><span class="strong">Belongings</span><span class="big" style="font-size:22px">Rm 2244</span><span class="small muted">Overnight</span></section>
+    <section class="card b"><span class="dot-ico">${I('siren')}</span><span class="strong">Emergency</span><span class="big" style="font-size:22px">Noah</span><span class="tag grey" style="width:fit-content">Phone coming soon</span></section>
+    <section class="card b"><span class="dot-ico">${I('phone')}</span><span class="strong">Your contact</span><span class="big" style="font-size:22px">${c.s.contact}</span><span class="small muted">On-site support</span></section>
+    ${c.s.judging ? `<section class="card b"><span class="dot-ico">${I('present')}</span><span class="strong">Judging room</span><span class="big" style="font-size:22px">${c.s.judging}</span><span class="small muted">Sun 10:00 AM</span></section>` : ''}
+    ${c.s.workshop ? `<section class="card b"><span class="dot-ico">${I('clock')}</span><span class="strong">Workshop</span><span class="big" style="font-size:22px">${fmtShort(c.s.workshop.t)}</span><span class="small muted">Sat · ${c.s.workshop.room}</span></section>` : ''}
+  </div></div></div>`;
+}
+
+function v4(c) {
+  const tabs = [
+    { id: 'home', label: 'Home', icon: 'home' }, { id: 'scan', label: 'Scan', icon: 'scan' }, { id: 'chats', label: 'Chats', icon: 'coffee' },
+    { id: 'schedule', label: 'Schedule', icon: 'clock' }, { id: 'judging', label: 'Judging', icon: c.judgingOpen ? 'trophy' : 'lock' }, { id: 'venue', label: 'Venue', icon: 'pin' },
+  ];
+  const t = S.v4tab, st = todayStory(c);
+  const panes = {
+    home: `<h1 class="h1">Welcome, ${esc(c.name)}!</h1>
+      <section class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px">${st.live ? `<span class="tag live" style="width:fit-content">${st.kicker}</span>` : `<span class="tag" style="width:fit-content">${st.kicker}</span>`}<span class="h2">${esc(st.title)}</span><span class="small muted">${esc(st.body)}</span>${st.extra || ''}<div class="row wrapflex" style="gap:8px">${st.acts.join('')}</div></section>
+      <div class="two"><section class="col gap8"><h2 class="label">Important things to remember</h2>${importantList(c)}</section><section class="col gap8"><h2 class="label">Event details</h2>${detailsList(c)}</section></div>`,
+    scan: `<h1 class="h1">Scan a badge</h1><div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px;align-items:flex-start"><div style="width:100%;aspect-ratio:4/3;max-height:320px;border-radius:12px;background:var(--text-heavy);display:flex;align-items:center;justify-content:center;color:#fff" class="small">Camera preview</div><span class="small muted">Point at the QR on a hacker's badge to offer them a coffee chat.</span></div>`,
+    chats: `<h1 class="h1">Coffee chats</h1><div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">${c.s.coffee ? `<span class="strong">Saturday ${fmt(c.s.coffee.t)} to ${fmt(c.s.coffee.e)} · ${c.s.coffee.room}</span><span class="small muted">${c.s.coffee.fmt}</span>${slotsRow(c)}` : '<span class="muted">Your coffee chat times aren\'t set yet. Your Hack Western contact will confirm them.</span>'}</div>`,
+    schedule: `<h1 class="h1">Your schedule · ${c.w.dayName}</h1><div class="card divide" style="padding:0 16px">${c.today.map((e) => `<div class="row" style="padding:12px 0"><span class="small muted" style="width:72px">${fmt(e.t)}</span><span class="grow ${e.kind === 'own' || e.own ? 'strong' : ''}">${esc(e.title)}<br><span class="small muted" style="font-weight:500">${esc(e.where)}</span></span>${c.isNow(e) ? '<span class="tag live">Now</span>' : ''}</div>`).join('')}</div>`,
+    judging: `<h1 class="h1">Judging</h1>${judgingBlock(c)}`,
+    venue: `<h1 class="h1">Venue</h1><div class="two"><section class="card" style="padding:16px">${bay(c)}</section><section class="col gap8">${importantList(c)}${mapPill('Open the full map')}</section></div>`,
+  };
+  const navBtn = (x) => `<button class="navi tap" data-act="v4tab" data-tab="${x.id}" ${t === x.id ? 'aria-current="page"' : ''}>${I(x.icon)}${x.label}</button>`;
+  return `<div class="app v4">
+    <aside class="rail"><div style="padding:4px 12px 16px;height:52px;display:flex">${SP[c.name].logo ? `<span style="height:28px;display:flex">${logo(c.name)}</span>` : logo(c.name)}</div>${tabs.map(navBtn).join('')}
+      <span class="grow"></span><div class="col gap8" style="padding:12px">${helpPill()}<button class="pill pill-ghost" data-act="tour" style="justify-content:flex-start">? How this works</button></div></aside>
+    <div class="main"><div class="top"><span class="small strong muted grow">Hack Western 13 · ${c.w.short}</span><span class="v4-phonehelp">${helpPill('Help')}</span>${tourPill()}${mapPill()}</div>
+      <div class="pane">${panes[t]}</div><span class="grow"></span>
+      <nav class="tabbar">${tabs.filter((x) => x.id !== 'venue').map((x) => `<button data-act="v4tab" data-tab="${x.id}" ${t === x.id ? 'aria-current="page"' : ''}>${I(x.icon)}${x.label}</button>`).join('')}</nav></div></div>`;
+}
+
+function v5(c) {
+  const evs = c.all;
+  let html = '', nowPlaced = false;
+  const pastCount = evs.filter((e) => c.isPast(e)).length;
+  DAYS.forEach((d) => {
+    const list = evs.filter((e) => e.d === d.id && (S.v5past || !c.isPast(e)));
+    if (!list.length) return;
+    html += `<div class="dayh">${d.name} · ${d.date}${d.id === c.w.day ? '<span class="tag">Today</span>' : ''}</div>`;
+    list.forEach((e) => {
+      if (!nowPlaced && d.id === c.w.day && (toMin(e.t) > c.w.min)) { html += `<div class="nowline">Now · ${fmt(c.w.min)}</div>`; nowPlaced = true; }
+      const own = e.kind === 'own' || e.own, cls = `${own ? 'own' : ''} ${e.kind === 'food' ? 'food' : ''} ${e.kind === 'cer' ? 'cer' : ''} ${c.isPast(e) ? 'past' : ''}`;
+      let act = '';
+      if (e.coffee) act = `<div class="row wrapflex" style="gap:6px;margin-top:8px"><button class="pill pill-dark" ${go('Scan a badge')}>${I('scan')}Scan a badge</button><button class="pill" ${go('Coffee chats')}>See chats</button></div>${c.isNow(e) ? `<div style="margin-top:8px">${slotsRow(c)}</div>` : ''}`;
+      if (e.judging && /Round 1|shortlist/.test(e.title)) act = `<div style="margin-top:8px">${c.judgingOpen ? `<button class="pill pill-dark" ${go('Judging')}>${I('trophy')}Open judging</button>` : `<div data-locked class="col gap8"><button class="pill" data-act="locked" aria-expanded="false">${I('lock')}Opens Sunday 9:00 AM</button><p class="lockmsg">This will be unlocked on Sunday at 9:00 AM. Please come to the sponsor judging debrief at 8:30 AM. There will be coffee!</p></div>`}</div>`;
+      if (/Check in/.test(e.title)) act = `<div style="margin-top:8px">${mapPill('Find your booth')}</div>`;
+      html += `<div class="card ev ${cls}"><div class="row" style="gap:8px;align-items:baseline"><span class="small muted strong" style="width:64px;flex:none">${fmt(e.t)}</span><span class="grow"><span class="${own ? 'strong' : ''}">${esc(e.title)}</span><br><span class="small muted">${esc(e.where)}</span></span>${c.isNow(e) ? '<span class="tag live">Now</span>' : ''}</div>${act}</div>`;
+    });
+    if (!nowPlaced && d.id === c.w.day) { html += `<div class="nowline">Now · ${fmt(c.w.min)}</div>`; nowPlaced = true; }
+  });
+  return `<div class="app v5"><div class="wrap">
+    <header class="row" style="margin-bottom:12px">${SP[c.name].logo ? `<span style="height:26px;display:flex">${logo(c.name)}</span>` : logo(c.name)}<span class="grow"></span>${helpPill('Help')}${tourPill()}${mapPill()}</header>
+    <div class="chips" style="margin-bottom:8px"><span class="chip">Lounge <b>Rm 2110</b></span><span class="chip">Belongings <b>Rm 2244</b></span><span class="chip">Emergency <b>Noah</b> · phone soon</span><span class="chip">Contact <b>${c.s.contact}</b></span></div>
+    <div class="layout"><div><h1 class="h1" style="margin-top:8px">Your weekend</h1>
+      ${pastCount ? `<button class="pill pill-ghost" data-act="v5past" style="margin-top:6px;padding-left:0">${S.v5past ? 'Hide' : 'Show'} earlier (${pastCount})</button>` : ''}
+      <div class="tl">${html}</div></div>
+      <aside class="side col gap12"><section class="card" style="padding:16px"><div class="row" style="margin-bottom:10px"><span class="strong grow">Your booth</span><span class="small muted">${SIDE_TEXT[c.booth.side]}</span></div>${bay(c)}</section>${detailsList(c)}</aside></div>
+  </div></div>`;
+}
+
+function v6(c) {
+  const day = c.w.day;
+  const rooms = [
+    { n: 'Rm 2110', t: 'Sponsor lounge', hot: false, sub: 'All weekend' + (c.s.judging === 'Rm 2110' ? ' · your judging room Sun' : '') },
+    { n: 'Rm 2244', t: 'Belongings', hot: day === 'fri', sub: 'Overnight storage' },
+    c.s.coffee && { n: c.s.coffee.room, t: 'Your coffee chats', hot: day === 'sat', sub: `Sat ${fmtShort(c.s.coffee.t)} to ${fmtShort(c.s.coffee.e)}` },
+    c.s.workshop && { n: c.s.workshop.room, t: 'Your workshop', hot: false, sub: `Sat ${fmtShort(c.s.workshop.t)}` },
+    { n: 'Rm 1110', t: 'Grand Hall', hot: day === 'fri', sub: 'Meals and ceremonies' },
+    c.s.judging && c.s.judging !== 'Rm 2110' && { n: c.s.judging, t: 'Your judging room', hot: day === 'sun', sub: 'Sun 10:00 AM' },
+    day === 'sun' && { n: 'Rm 2110', t: 'Judging debrief', hot: S.when === 'sunEarly', sub: 'Sun 8:30 AM, coffee!' },
+  ].filter(Boolean);
+  const st = todayStory(c);
+  return `<div class="app v6"><div class="wrap">
+    <header class="row" style="margin-bottom:14px"><span class="logo-chip" style="height:40px">${logo(c.name)}</span><span class="grow"></span>${tourPill()}${mapPill('Full map')}</header>
+    <div class="layout">
+      <section class="card mapcard"><div class="row"><div class="col grow"><span class="label">Sponsor Bay · SM Atrium, Floor 1</span><span class="h2">Your booth: ${SIDE_TEXT[c.booth.side].toLowerCase()}</span></div></div>
+        ${bay(c, { big: true })}
+        <div class="col gap8"><span class="label">Rooms you'll use${day ? ' · ' + c.w.dayName : ''}</span><div class="rooms">${rooms.map((r) => `<div class="rm${r.hot ? ' hot' : ''}"><b>${r.n}</b><span>${r.t}</span><span class="muted xs">${r.sub}</span></div>`).join('')}</div></div></section>
+      <div class="col gap12">
+        <section class="card" style="padding:16px;display:flex;flex-direction:column;gap:8px">${st.live ? `<span class="tag live" style="width:fit-content">${st.kicker}</span>` : `<span class="tag" style="width:fit-content">${st.kicker}</span>`}<span class="h2">${esc(st.title)}</span><span class="small muted">${esc(st.body)}</span>${st.extra || ''}</section>
+        ${judgingBlock(c)}
+        <section class="card divide" style="padding:4px 16px"><div class="row" style="padding:12px 0"><span class="dot-ico">${I('siren')}</span><span class="grow"><span class="small muted">Emergency contact</span><br><b>Noah</b></span><span class="tag grey">Phone number coming soon</span></div></section>
+        ${detailsList(c)}
+      </div>
+    </div>
+    <nav class="dock" aria-label="Quick actions">${helpPill('Help')}<button class="pill pill-dark" ${go('Scan a badge')}>${I('scan')}Scan</button><button class="pill" ${go('Coffee chats')}>${I('coffee')}Chats</button><button class="pill" ${go('Your schedule')}>${I('clock')}Schedule</button><button class="pill" ${go('Judging')}>${I(c.judgingOpen ? 'trophy' : 'lock')}Judging</button></nav>
+  </div></div>`;
+}
+
+const CHAT_ANSWERS = (c) => ({
+  booth: { q: 'Where is my booth?', a: `${SIDE_TEXT[c.booth.side]} of the Sponsor Bay (SM Atrium, Floor 1). It's highlighted here:`, extra: bay(c) },
+  rooms: { q: 'Which rooms should I know?', a: 'Sponsor lounge is Rm 2110, all weekend. Leave your things overnight in Rm 2244.' + (c.s.coffee ? ` Your coffee chats are in ${c.s.coffee.room}.` : '') + (c.s.judging ? ` Your judging room is ${c.s.judging}.` : ''), extra: mapPill('Open the map') },
+  chats: { q: 'How are my coffee chats going?', a: c.s.coffee ? `${chatsSummary(c)}. ${c.s.coffee.fmt}, at most 3 hackers per slot.` : "Your coffee chat times aren't set yet. Your Hack Western contact will confirm them.", extra: c.s.coffee ? slotsRow(c) + `<div class="row" style="gap:6px"><button class="pill pill-dark" ${go('Scan a badge')}>${I('scan')}Scan a badge</button></div>` : '' },
+  judging: { q: 'When is judging?', a: c.judgingOpen ? 'Judging is open now. Presentations run until 11:30 AM, then you pick your top 5.' : 'Sunday. Come to the debrief at 8:30 AM in Rm 2110 (there will be coffee!). Judging opens at 9:00 AM.', extra: judgingBlock(c) },
+  next: { q: "What's next for me?", a: c.nextOwn ? `${c.nextOwn.title}, ${DAYS.find((d) => d.id === c.nextOwn.d).name} at ${fmt(c.nextOwn.t)} in ${c.nextOwn.where}.` : "That's everything on your schedule. Thanks for coming!", extra: `<button class="pill" ${go('Your schedule')}>${I('cal')}Full schedule</button>` },
+  emergency: { q: 'Who do I call in an emergency?', a: `Noah is your emergency contact. His phone number is coming soon. For anything else, ${c.s.contact} is your Hack Western contact.` },
+});
+function v7(c) {
+  const st = todayStory(c), A = CHAT_ANSWERS(c);
+  const asked = S.chat.map((k) => `<div class="msg me">${esc(A[k].q)}</div><span class="from">Hack Western</span><div class="msg"><span>${esc(A[k].a)}</span>${A[k].extra || ''}</div>`).join('');
+  const left = Object.keys(A).filter((k) => !S.chat.includes(k));
+  return `<div class="app v7"><div class="wrap"><div class="layout"><div class="col gap12">
+    <header class="row">${logoChip(c.name)}<span class="grow"></span>${tourPill()}${mapPill()}</header>
+    <div class="thread">
+      <span class="from">Hack Western · ${c.w.short}</span>
+      <div class="msg"><span><b>Hi ${esc(c.name)}!</b> Good to have you here. This is your portal for the weekend.</span></div>
+      <div class="msg"><span>${st.live ? '<span class="tag live">Now</span> ' : ''}<b>${esc(st.title)}.</b> ${esc(st.body)}</span>${st.extra || ''}<div class="row wrapflex" style="gap:6px">${st.acts.join('')}</div></div>
+      ${asked}
+    </div>
+    <div class="replies">${helpPill('I need help')}${left.map((k) => `<button class="pill" data-act="ask" data-k="${k}">${esc(A[k].q)}</button>`).join('')}</div>
+    </div>
+    <aside class="pinned col gap12"><span class="label">Pinned</span>${importantList(c)}<button class="card tap" ${go('Scan a badge')} style="padding:14px 16px;display:flex;gap:10px;align-items:center;width:100%">${I('scan')}<span class="strong grow">Scan a badge</span>${I('chev')}</button></aside>
+  </div></div></div>`;
+}
+
+function v8cards(c) {
+  const st = todayStory(c), w = S.when;
+  const cards = {
+    now: { k: st.kicker, body: `<h1 class="big">${esc(st.title)}</h1><p class="muted" style="margin:0">${esc(st.body)}</p>${st.extra || ''}<div class="row wrapflex" style="gap:8px">${st.acts.join('')}</div>` },
+    scan: { k: 'Scan a badge', body: `<h1 class="big">Met someone great?</h1><p class="muted" style="margin:0">Scan their badge to offer them a coffee chat or remember them for later.</p><button class="pill pill-dark" ${go('Scan a badge')} style="width:fit-content">${I('scan')}Open the scanner</button>` },
+    chats: { k: 'Coffee chats', body: c.s.coffee ? `<h1 class="big">${chatsSummary(c)}</h1><p class="muted" style="margin:0">${c.s.coffee.room} · ${fmt(c.s.coffee.t)} to ${fmt(c.s.coffee.e)} · ${c.s.coffee.fmt}</p>${slotsRow(c)}<button class="pill" ${go('Coffee chats')} style="width:fit-content">See your chats</button>` : `<h1 class="big">Not set up yet</h1><p class="muted" style="margin:0">Your coffee chat times aren't set yet. Your Hack Western contact will confirm them.</p>` },
+    next: { k: 'Your next event', body: c.nextOwn ? `<h1 class="big">${esc(c.nextOwn.title)}</h1><p class="muted" style="margin:0">${DAYS.find((d) => d.id === c.nextOwn.d).name} at ${fmt(c.nextOwn.t)} · ${esc(c.nextOwn.where)}</p><button class="pill" ${go('Your schedule')} style="width:fit-content">${I('clock')}Your schedule</button>` : `<h1 class="big">All done!</h1>` },
+    judging: { k: 'Judging', body: `<h1 class="big">${c.judgingOpen ? 'Judging is open' : 'Opens Sunday at 9:00 AM'}</h1>${judgingBlock(c)}` },
+    booth: { k: 'Your booth', body: `<h1 class="big">${SIDE_TEXT[c.booth.side]}</h1><p class="muted" style="margin:0">Sponsor Bay · SM Atrium, Floor 1</p>${bay(c)}` },
+    remember: { k: 'Remember', body: `<h1 class="big">Lounge Rm 2110 · Bags Rm 2244</h1>${importantList(c)}` },
+    details: { k: 'Event details', body: detailsList(c) },
+  };
+  const order = { fri: ['now', 'booth', 'remember', 'next', 'scan', 'chats', 'judging', 'details'], sat: ['now', 'scan', 'chats', 'next', 'booth', 'remember', 'judging', 'details'], sunEarly: ['now', 'judging', 'next', 'remember', 'booth', 'scan', 'chats', 'details'], sunLive: ['now', 'judging', 'next', 'remember', 'booth', 'scan', 'chats', 'details'] }[w];
+  return order.map((id) => cards[id]);
+}
+function v8(c) {
+  const cards = v8cards(c), i = Math.min(S.v8i, cards.length - 1), cd = cards[i];
+  if (S.v8all) return `<div class="app v8"><div class="wrap"><div class="center"><header class="row"><span class="strong grow">Everything</span><button class="pill" data-act="v8all">Back to one at a time</button>${mapPill()}</header>${cards.map((x) => `<section class="card" style="padding:18px;display:flex;flex-direction:column;gap:10px"><span class="kicker">${x.k}</span>${x.body.replace('class="big"', 'class="h2"')}</section>`).join('')}</div></div></div>`;
+  return `<div class="app v8"><div class="wrap"><div class="center">
+    <header class="row"><span class="small strong muted grow">${c.w.long}</span>${tourPill()}${mapPill()}</header>
+    <div class="deck" id="v8deck"><div class="peek"></div><section class="card focus" style="--dx:${S.v8dir < 0 ? '-12px' : '12px'}"><span class="row"><span class="kicker grow">${cd.k}</span><span class="xs muted">${i + 1} of ${cards.length}</span></span>${cd.body}</section></div>
+    <div class="row"><button class="pill" data-act="v8" data-d="-1" ${i === 0 ? 'disabled style="opacity:.4"' : ''} aria-label="Previous">${I('chevL')}</button>
+      <div class="dots grow">${cards.map((x, j) => `<button data-act="v8go" data-i="${j}" aria-label="${x.k}" ${j === i ? 'aria-current="true"' : ''}></button>`).join('')}</div>
+      <button class="pill" data-act="v8" data-d="1" ${i === cards.length - 1 ? 'disabled style="opacity:.4"' : ''} aria-label="Next">${I('chev')}</button></div>
+    <div class="row" style="justify-content:center;gap:8px">${helpPill()}<button class="pill pill-ghost" data-act="v8all">See all</button></div>
+  </div></div></div>`;
+}
+
+function v9(c) {
+  const li = (icon, t, val, act, extra = '') => `<button class="li tap" ${act}><span class="ic">${I(icon)}</span><span class="t grow">${t}${extra}</span><span class="val">${val}</span><span class="chev">${I('chev', 'sm')}</span></button>`;
+  const st = todayStory(c);
+  const todayRows = c.today.filter((e) => !c.isPast(e)).slice(0, 4);
+  return `<div class="app v9"><div class="wrap">
+    <header class="row" style="max-width:1100px;margin:0 auto 16px"><span style="height:28px;display:flex">${logo(c.name)}</span><span class="grow"></span>${tourPill()}${mapPill()}</header>
+    <div class="cols">
+      <div class="grp"><p class="label">Today · ${c.w.dayName}</p><div class="card list">
+        <div class="li" style="background:var(--bg-highlight)"><span class="ic" style="background:#fff">${I('clock')}</span><span class="t grow"><span class="strong">${esc(st.title)}</span><br><span class="small muted">${st.live ? 'Happening now' : st.kicker}</span></span></div>
+        ${todayRows.map((e) => li(e.kind === 'food' ? 'coffee' : e.judging ? 'trophy' : 'cal', `<span class="${e.kind === 'own' || e.own ? 'strong' : ''}">${esc(e.title)}</span>`, c.isNow(e) ? '<span class="tag live">Now</span>' : fmt(e.t), go('Your schedule'))).join('')}
+      </div></div>
+      <div class="grp"><p class="label">Do</p><div class="card list">
+        ${li('help', '<span class="strong">Need help?</span>', 'Ping the team', 'data-act="help"')}
+        ${li('scan', '<span class="strong">Scan a badge</span>', '', go('Scan a badge'))}
+        ${li('coffee', '<span class="strong">Coffee chats</span>', c.s.coffee ? `${c.slots.reduce((a, s) => a + s.n, 0)}/${c.slots.length * 3} booked` : 'Not set up', go('Coffee chats'))}
+        ${li('clock', '<span class="strong">Your schedule</span>', c.nextOwn ? 'Next ' + fmt(c.nextOwn.t) : '', go('Your schedule'))}
+        ${c.judgingOpen ? li('trophy', '<span class="strong">Judging</span>', '<span class="tag live">Open</span>', go('Judging')) : `<div data-locked><button class="li tap" data-act="locked" aria-expanded="false" style="color:var(--text-light)"><span class="ic" style="background:var(--bg-nav);color:var(--text-light)">${I('lock')}</span><span class="t grow strong">Judging</span><span class="val">Opens Sun 9:00 AM</span></button><p class="lockmsg" style="border-radius:0">This will be unlocked on Sunday at 9:00 AM. Please come to the sponsor judging debrief at 8:30 AM. There will be coffee!</p></div>`}
+      </div></div>
+      <div class="grp"><p class="label">Important things to remember</p><div class="card list">
+        ${li('sofa', 'Sponsor lounge', 'Rm 2110', 'data-act="map"')}${li('bag', 'Belongings overnight', 'Rm 2244', 'data-act="map"')}
+        <div class="li"><span class="ic">${I('siren')}</span><span class="t grow">Emergency contact · <b>Noah</b></span><span class="tag grey">Phone soon</span></div>
+      </div></div>
+      <div class="grp"><p class="label">Sponsor Bay</p><div class="card" style="padding:14px">${bay(c)}</div></div>
+      <div class="grp"><p class="label">Event details</p><div class="card list">
+        ${li('pin', 'Booth', SIDE_TEXT[c.booth.side], 'data-act="map"')}
+        ${c.s.judging ? li('present', 'Judging room', c.s.judging, 'data-act="map"') : ''}
+        ${c.s.workshop ? li('clock', 'Workshop', `Sat ${fmtShort(c.s.workshop.t)} · ${c.s.workshop.room}`, go('Your schedule')) : ''}
+        <div class="li"><span class="ic">${I('phone')}</span><span class="t grow">Your Hack Western contact · <b>${c.s.contact}</b></span><span class="tag grey">On-site</span></div>
+      </div></div>
+    </div></div></div>`;
+}
+
+function v10(c) {
+  const show = S.v10day || c.w.day;
+  const colFor = (d) => {
+    const isToday = d.id === c.w.day;
+    const evs = c.all.filter((e) => e.d === d.id && (e.kind === 'own' || e.own || e.kind === 'cer'));
+    const acts = { fri: [mapPill('Find your booth')], sat: [`<button class="pill pill-dark" ${go('Scan a badge')}>${I('scan')}Scan a badge</button>`, `<button class="pill" ${go('Coffee chats')}>${I('coffee')}Chats</button>`], sun: [] }[d.id];
+    const shown = isToday ? evs : evs.slice(0, 3);
+    return `<section class="dcol ${isToday ? 'today' : 'other'}" ${d.id === show ? 'data-show' : ''}>
+      <div class="dhead"><span class="strong">${d.name} <span class="muted small">${d.date}</span></span>${isToday ? '<span class="tag live">Today</span>' : ''}</div>
+      ${isToday && acts.length ? `<div class="row wrapflex" style="gap:6px">${acts.join('')}</div>` : ''}
+      ${d.id === 'sun' ? judgingBlock(c) : ''}
+      ${d.id === 'sat' && c.s.coffee && isToday ? `<div class="card cardlet own"><span class="strong">Coffee chats · ${c.s.coffee.room}</span>${slotsRow(c)}</div>` : ''}
+      ${shown.map((e) => `<div class="card cardlet ${e.kind === 'own' || e.own ? 'own' : ''}" style="${c.isPast(e) ? 'opacity:.55' : ''}"><span class="row" style="gap:8px"><span class="small muted strong">${fmt(e.t)}</span>${c.isNow(e) ? '<span class="tag live">Now</span>' : ''}</span><span class="${isToday ? 'strong' : 'small strong'}">${esc(e.title)}</span>${isToday ? `<span class="small muted">${esc(e.where)}</span>` : ''}</div>`).join('')}
+      ${!isToday && evs.length > 3 ? `<span class="xs muted" style="padding:0 4px">+${evs.length - 3} more</span>` : ''}
+    </section>`;
+  };
+  const cols = DAYS.map((d) => d.id === c.w.day ? '2fr' : '1fr').join(' ');
+  return `<div class="app v10"><div class="wrap">
+    <div class="strip">${SP[c.name].logo ? `<span style="height:28px;display:flex">${logo(c.name)}</span>` : logo(c.name)}<span class="h2 grow">Your weekend</span>${helpPill()}${tourPill()}${mapPill()}</div>
+    <div class="h-seg daypills" style="margin-bottom:12px" role="group" aria-label="Day">${DAYS.map((d) => `<button data-act="v10day" data-day="${d.id}" aria-pressed="${d.id === show}">${d.short}${d.id === c.w.day ? ' · Today' : ''}</button>`).join('')}</div>
+    <div class="board" style="--cols:${cols}">${DAYS.map(colFor).join('')}</div>
+    <div class="venue"><section class="card" style="padding:16px"><div class="row" style="margin-bottom:10px"><span class="strong grow">Sponsor Bay</span><span class="small muted">${SIDE_TEXT[c.booth.side]}</span></div>${bay(c)}</section>${importantList(c)}${detailsList(c)}</div>
+  </div></div>`;
+}
+
+/* ================= Sheets ================= */
+function mapSheet() {
+  const c = ctx();
+  const f = S.mapFloor || 2;
+  const fl1 = `<div class="floor"><div class="room full key"><b>Sponsor Bay · SM Atrium</b><span>Your booth: ${SIDE_TEXT[c.booth.side].toLowerCase()}</span></div><div class="room wide"><b>Rm 1110</b><span>Grand Hall · meals, ceremonies</span></div><div class="room wide"><b>Entrance</b><span>Check-in desk</span></div></div>`;
+  const key = (r) => [`Rm 2110`, 'Rm 2244', c.s.coffee && c.s.coffee.room, c.s.judging, c.s.workshop && c.s.workshop.room].includes(r);
+  const r2 = [['Rm 2110', 'Sponsor lounge'], ['Rm 2230', 'Judging · Canada Life'], ['Rm 2235', 'Judging · QNX'], ['Rm 2241', 'Coffee chats'], ['Rm 2242', 'Coffee chats'], ['Rm 2243', 'Coffee chats'], ['Rm 2244', 'Belongings overnight']];
+  const fl2 = `<div class="floor">${r2.map(([n, t]) => `<div class="room ${key(n) ? 'key' : ''} ${n === 'Rm 2244' ? 'full' : ''}"><b>${n}</b><span>${t}</span></div>`).join('')}</div>`;
+  return `<div class="sheet-head"><h2 class="h2">Venue map</h2><button class="pill pill-q" data-act="close" aria-label="Close map">${I('x')}</button></div>
+    <p class="small muted" style="margin:0 0 12px">Floor plans with the rooms sponsors use. Your rooms are highlighted.</p>
+    <div class="h-seg" style="margin-bottom:12px"><button data-act="floor" data-f="1" aria-pressed="${f === 1}">Floor 1</button><button data-act="floor" data-f="2" aria-pressed="${f === 2}">Floor 2</button></div>
+    ${f === 1 ? fl1 : fl2}`;
+}
+function helpSheet() {
+  const c = ctx();
+  if (S.helpSent) return `<div class="sheet-head"><h2 class="h2">Help is on the way</h2><button class="pill pill-q" data-act="close" aria-label="Close">${I('x')}</button></div>
+    <div class="col gap12"><span class="tag live" style="width:fit-content">Sent to the sponsor team</span><p style="margin:0"><b>${c.s.contact}</b> is coming to your booth (${SIDE_TEXT[c.booth.side].toLowerCase()}).</p><p class="small muted" style="margin:0">Reason: ${esc(S.helpReason)}</p><button class="pill" data-act="help-cancel" style="width:fit-content">I'm sorted, cancel</button></div>`;
+  const reasons = ['Out of swag or supplies', 'Tech or wifi', 'Food or drinks', 'Find a hacker', 'Something else'];
+  return `<div class="sheet-head"><h2 class="h2">What do you need?</h2><button class="pill pill-q" data-act="close" aria-label="Close">${I('x')}</button></div>
+    <p class="small muted" style="margin:0 0 12px">Pick one. We'll ping the Hack Western sponsor team and show you who's coming.</p>
+    <div class="row wrapflex" style="gap:8px;margin-bottom:16px">${reasons.map((r) => `<button class="pill" data-act="reason" data-r="${esc(r)}" style="${S.helpReason === r ? 'background:var(--text-heavy);color:#fff;border-color:var(--text-heavy)' : ''}">${r}</button>`).join('')}</div>
+    <p class="small muted" style="margin:0 0 12px">We'll come to your booth. Saved on this device: <b>Priya S.</b>, 519-555-0123.</p>
+    <button class="pill pill-dark" data-act="help-send" ${S.helpReason ? '' : 'disabled style="opacity:.45"'}>Send for help</button>`;
+}
+const TOUR = [
+  { t: 'Need help?', b: 'Tap it any time. We ping the sponsor team and show you who is coming to your booth.' },
+  { t: 'Scan a badge', b: "Scan a hacker's badge to offer them a coffee chat. At most 3 hackers per slot." },
+  { t: 'The Map pill', b: 'Top right on every page. Shows your booth, the lounge (Rm 2110) and where to leave your things (Rm 2244).' },
+  { t: 'Judging on Sunday', b: 'It unlocks at 9:00 AM. Come to the debrief at 8:30 AM in Rm 2110 first. There will be coffee!' },
+];
+function tourSheet() {
+  const i = S.tourI || 0, st = TOUR[i];
+  return `<div class="sheet-head"><span class="label">How this portal works · ${i + 1} of ${TOUR.length}</span><button class="pill pill-q" data-act="close" aria-label="Close">${I('x')}</button></div>
+    <h2 class="h2" style="margin-bottom:6px">${st.t}</h2><p style="margin:0 0 16px" class="muted">${st.b}</p>
+    <div class="row"><button class="pill" data-act="tour-step" data-d="-1" ${i === 0 ? 'disabled style="opacity:.4"' : ''}>Back</button><span class="grow"></span>${i < TOUR.length - 1 ? '<button class="pill pill-dark" data-act="tour-step" data-d="1">Next</button>' : '<button class="pill pill-dark" data-act="close">Got it</button>'}</div>`;
+}
+
+/* ================= Harness wiring ================= */
+const stage = document.getElementById('stage'), frame = document.getElementById('frame');
+const picker = document.querySelector('.proto-picker'), highlight = picker.querySelector('.proto-picker-highlight');
+VARIANTS.forEach((v, i) => { const b = document.createElement('button'); b.className = 'proto-picker-item'; b.textContent = `${(i + 1) % 10} ${v.name}`; b.addEventListener('click', () => select(i + 1)); picker.appendChild(b); });
+const items = [...picker.querySelectorAll('.proto-picker-item')];
+const sel = document.getElementById('h-sponsor');
+sel.innerHTML = Object.keys(SP).map((n) => `<option ${n === S.sponsor ? 'selected' : ''}>${n}</option>`).join('');
+sel.addEventListener('change', () => { S.sponsor = sel.value; sync(); render(); });
+const whenSeg = document.getElementById('h-when');
+whenSeg.innerHTML = Object.entries(WHEN).map(([k, w]) => `<button data-when="${k}">${w.short}</button>`).join('');
+whenSeg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.when = b.dataset.when; S.v8i = 0; S.v10day = null; S.chat = []; sync(); render(); });
+document.getElementById('h-device').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; S.device = b.dataset.device; sync(); render(); });
+
+function moveHighlight() { const a = items[S.v - 1]; highlight.style.width = a.offsetWidth + 'px'; highlight.style.transform = `translateX(${a.offsetLeft}px)`; }
+function sync() {
+  const u = new URL(location.href); u.searchParams.set('v', S.v); u.searchParams.set('device', S.device); u.searchParams.set('when', S.when); u.searchParams.set('sponsor', S.sponsor); history.replaceState(null, '', u);
+  items.forEach((b, i) => { if (i === S.v - 1) { b.setAttribute('data-active', ''); b.setAttribute('aria-current', 'true'); } else { b.removeAttribute('data-active'); b.removeAttribute('aria-current'); } });
+  moveHighlight();
+  whenSeg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.when === S.when));
+  document.querySelectorAll('#h-device button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.device === S.device));
+  frame.dataset.device = S.device; document.getElementById('ov').dataset.device = S.device;
+  const v = VARIANTS[S.v - 1];
+  document.getElementById('h-note').innerHTML = `<b>${S.v}. ${v.name}</b> · ${v.why}`;
+}
+function render() { stage.innerHTML = VARIANTS[S.v - 1].render(ctx()); bindDeck(); }
+function select(n) { S.v = n; sync(); render(); items[n - 1].scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+
+const ov = document.getElementById('ov'), sheet = document.getElementById('sheet');
+let sheetKind = null, lastFocus = null;
+function openSheet(kind) { sheetKind = kind; if (ov.hidden) lastFocus = document.activeElement; drawSheet(); ov.hidden = false; sheet.querySelector('button')?.focus(); }
+function drawSheet() { sheet.innerHTML = sheetKind === 'map' ? mapSheet() : sheetKind === 'help' ? helpSheet() : tourSheet(); }
+function closeSheet() { ov.hidden = true; sheetKind = null; lastFocus?.focus?.(); }
+let toastT;
+function toast(msg) { document.querySelector('.toast')?.remove(); const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg; document.body.appendChild(t); clearTimeout(toastT); toastT = setTimeout(() => t.remove(), 1800); }
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
+  const a = el.dataset.act;
+  if (a === 'map') { S.mapFloor = 2; openSheet('map'); }
+  else if (a === 'help') { openSheet('help'); }
+  else if (a === 'tour') { S.tourI = 0; openSheet('tour'); }
+  else if (a === 'close') closeSheet();
+  else if (a === 'floor') { S.mapFloor = Number(el.dataset.f); drawSheet(); }
+  else if (a === 'reason') { S.helpReason = el.dataset.r; drawSheet(); }
+  else if (a === 'help-send') { S.helpSent = true; drawSheet(); }
+  else if (a === 'help-cancel') { S.helpSent = false; S.helpReason = null; closeSheet(); toast('Cancelled. Glad you are sorted.'); }
+  else if (a === 'tour-step') { S.tourI = Math.max(0, Math.min(TOUR.length - 1, (S.tourI || 0) + Number(el.dataset.d))); drawSheet(); }
+  else if (a === 'go') toast(`Would open: ${el.dataset.go}`);
+  else if (a === 'locked') { const box = el.closest('[data-locked]'); const open = !box.hasAttribute('data-open'); box.toggleAttribute('data-open', open); el.setAttribute('aria-expanded', open); }
+  else if (a === 'v4tab') { S.v4tab = el.dataset.tab; render(); }
+  else if (a === 'v5past') { S.v5past = !S.v5past; render(); }
+  else if (a === 'ask') { S.chat.push(el.dataset.k); render(); }
+  else if (a === 'v8') { S.v8dir = Number(el.dataset.d); S.v8i += S.v8dir; render(); }
+  else if (a === 'v8go') { const n = Number(el.dataset.i); S.v8dir = n < S.v8i ? -1 : 1; S.v8i = n; render(); }
+  else if (a === 'v8all') { S.v8all = !S.v8all; render(); }
+  else if (a === 'v10day') { S.v10day = el.dataset.day; render(); }
+});
+function bindDeck() {
+  const deck = document.getElementById('v8deck'); if (!deck) return;
+  let x0 = null;
+  deck.addEventListener('pointerdown', (e) => { x0 = e.clientX; });
+  deck.addEventListener('pointerup', (e) => { if (x0 == null) return; const dx = e.clientX - x0; x0 = null; const n = v8cards(ctx()).length; if (Math.abs(dx) > 50) { const d = dx < 0 ? 1 : -1; const ni = Math.max(0, Math.min(n - 1, S.v8i + d)); if (ni !== S.v8i) { S.v8dir = d; S.v8i = ni; render(); } } });
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !ov.hidden) { closeSheet(); return; }
+  const t = e.target; if (e.metaKey || e.ctrlKey || e.altKey || t.matches?.('input,textarea,select,[contenteditable]')) return;
+  if (!ov.hidden) return;
+  if (e.key === 'ArrowRight') select(S.v % 10 + 1);
+  else if (e.key === 'ArrowLeft') select((S.v + 8) % 10 + 1);
+  else if (/^[0-9]$/.test(e.key)) select(e.key === '0' ? 10 : Number(e.key));
+});
+sync(); render();
+requestAnimationFrame(() => requestAnimationFrame(() => picker.setAttribute('data-ready', '')));
+addEventListener('resize', moveHighlight);
+</script>
+</body>
+</html>

@@ -3,7 +3,9 @@
 ## Now: RESTART HERE (updated 2026-11-18, end of a very long session)
 Merged into `sponsor-dashboard` today: sd-presentations, sd-judging-round2, sd-availability, sd-room-blocks (coffee chats v2, 5f24f8c), plus portal work (map, important info, booth layout, logos, locked judging tile + `?preview=judging`, schedule order, minimize). Local DB `hackwestern_spon` at 53 migrations (0050, 0052, 0053 applied). Checks on 5f24f8c: tsc clean; vitest 1345 pass, only Apple Wallet fails. Dev server: see Local setup (port 3013).
 
-Builds that were still RUNNING when the session ended. Background agents die with the session: check each worktree, commit any WIP (plain message, no Claude attribution), then start a fresh subagent with the brief below.
+MERGED since: sd-sponsor-tour (1b3bab8; tsc clean, vitest 1369 pass, only Apple Wallet fails). ops-pings is DONE and reviewed (branch ops-pings, migration 0054 chained after 0053, 1412 tests pass): open it as its own draft PR. Open question for Jazz: is "Luka" the same person as "Lucian Lavric" (alias for WEB)? Wireframes: 14 of 15 written (sponsor-schedule still in progress).
+
+Older notes (builds that were running at the previous restart): Background agents die with the session: check each worktree, commit any WIP (plain message, no Claude attribution), then start a fresh subagent with the brief below.
 1. **ops-pings** (worktree `hackwestern-ops-pings`, branch `ops-pings`, DB `hackwestern_ops_pings`, port 3031): SEPARATE PR. Built through 2a99d8f; uncommitted review fixes were in progress. Still to do:
    - Fix duplicate DMs: write each `ops_ping` row right after its own Slack call; session advisory lock held for the whole run; partial unique index on `ping_key` WHERE status='scheduled'; regenerate 0054 in place.
    - Close-spelling guard: an exact app-organizer match beats a close Slack match; show "Close match: check".
