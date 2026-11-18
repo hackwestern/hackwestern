@@ -19,6 +19,11 @@ export const sponsorJudgingCopy = {
     body: "This private link isn't valid. Ask your Hack Western contact for a new one.",
   },
   loadFailed: "Couldn't load the projects.",
+  /** A sponsor without a prize track (src/content/sponsor-prize-tracks.ts). */
+  noPrizeTrack: {
+    title: "No prize track",
+    body: "Judging is only for sponsors with a prize track, and yours doesn't have one this year. If that's wrong, tell your Hack Western contact.",
+  },
   retry: "Try again",
 
   steps: {
@@ -139,8 +144,9 @@ export const sponsorJudgingCopy = {
     sendFailed: "Couldn't send. Check your connection and try again.",
     waiting:
       "Round 2 opens here after presentations: you'll rank your top teams from the ones that presented.",
-    reschedule:
-      "Presentations are scheduled, but none are booked with you yet. Send your shortlist if you haven't, then ask your Hack Western contact to schedule again. Until then you can still rank your shortlist and submit your top 5 below.",
+    /** Round 2 is open but this sponsor has no presentation slot. */
+    locked:
+      "Round 2 is locked for you: no teams presented to you, so there's nobody to rank. Send your shortlist if you haven't, then ask your Hack Western contact to schedule presentations again.",
     presentedHeading: "Rank the teams that presented",
     presentedIntro: (top: number) =>
       `Put your favourite first. The first ${top} are the teams you submit.`,
@@ -156,12 +162,54 @@ export const sponsorJudgingCopy = {
     trackUnavailable: "Couldn't load your prize track. Try again in a minute.",
     closed: "Judging has closed.",
     round2Closed: "Round 2 isn't open yet. It opens after presentations.",
+    noPrizeTrack: "Judging is only for sponsors with a prize track.",
+    noSlot:
+      "Round 2 is locked: no teams presented to you, so you can't rank a top 5.",
     ranking: {
       wrongCount: (top: number) => `Submit exactly ${top} teams.`,
       duplicate: () => "Each team can appear only once.",
       notShortlisted: () => "Only teams on your shortlist can be submitted.",
       notPresented: () => "Only teams that presented to you can be submitted.",
       closed: () => "Judging has closed.",
+    },
+  },
+
+  /**
+   * The "Sponsor Judging" tab the app writes in the run-of-show sheet
+   * (sponsor-judging-sheet-mirror.ts). Rewritten in full on every change.
+   */
+  sheet: {
+    tab: "Sponsor Judging",
+    note: "Written by the Hack Western app from its database. Edits here are overwritten on the next change.",
+    updated: (time: string) => `Updated ${time}`,
+    tracks: {
+      title: "Tracks",
+      headers: [
+        "Sponsor",
+        "Has track",
+        "Judging room",
+        "Round 1 shortlist sent",
+        "Round 2 top 5 sent",
+      ],
+      yes: "Yes",
+    },
+    schedule: {
+      title: "Chosen teams and presentation schedule",
+      headers: [
+        "Sponsor",
+        "Round",
+        "Team",
+        "Members",
+        "Time",
+        "Room",
+        "Notified",
+      ],
+      round1: "Round 1",
+      notified: { slack: "Slack", email: "Email", failed: "failed" },
+    },
+    finals: {
+      title: "Final results",
+      headers: ["Sponsor", "Rank", "Team", "Members"],
     },
   },
 

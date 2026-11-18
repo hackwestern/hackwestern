@@ -218,7 +218,7 @@ describe("judgingRound", () => {
     // Someone else's schedule exists, none for this sponsor.
     expect(
       judgingRound({ shortlistSent: {}, scheduledAt: at, slots: [], ...open }),
-    ).toBe("reschedule");
+    ).toBe("locked");
     expect(
       judgingRound({
         shortlistSent: {},

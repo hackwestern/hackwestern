@@ -72,6 +72,7 @@ export function PresentationsPanel({
     },
   });
   const cheat = api.sponsorPresentations.cheatCheckTopTeams.useMutation();
+  const syncSheet = api.sponsorPresentations.syncSheet.useMutation();
   const [confirming, setConfirming] = useState<
     | { kind: "schedule"; changed: number }
     | { kind: "resend" }
@@ -261,7 +262,34 @@ export function PresentationsPanel({
             >
               {round2Open ? copy.round2.close : copy.round2.open}
             </DashboardButton>
+            {/* The Sponsor Judging tab also updates after every change. */}
+            <DashboardButton
+              variant="small"
+              disabled={syncSheet.isPending}
+              onClick={() => syncSheet.mutate()}
+            >
+              {syncSheet.isPending ? copy.syncing : copy.syncSheet}
+            </DashboardButton>
           </div>
+        )}
+        {syncSheet.data && (
+          <p
+            role="status"
+            className={
+              syncSheet.data.ok || syncSheet.data.disabled ? NOTE : WARN
+            }
+          >
+            {syncSheet.data.ok
+              ? copy.synced(formatSubmittedTime(syncSheet.data.syncedAt))
+              : syncSheet.data.disabled
+                ? copy.syncDisabled
+                : copy.syncFailed(syncSheet.data.error)}
+          </p>
+        )}
+        {syncSheet.isError && (
+          <p role="alert" className={WARN}>
+            {copy.failed}
+          </p>
         )}
         <p className={NOTE} aria-live="polite">
           {!anySent
@@ -296,6 +324,12 @@ export function PresentationsPanel({
             {round2Open
               ? copy.round2.openSince(formatSubmittedTime(data.round2OpenedAt!))
               : copy.round2.closed}
+          </p>
+        )}
+        {/* Why "Open round 2" is disabled (the server refuses the same). */}
+        {!round2Open && data.slots.length === 0 && (
+          <p className={NOTE}>
+            {sponsorPresentationsCopy.errors.round2NoSchedule}
           </p>
         )}
         {scheduleError && <p className={WARN}>{errorOf(scheduleError)}</p>}

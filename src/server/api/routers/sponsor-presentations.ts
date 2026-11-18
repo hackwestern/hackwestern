@@ -11,6 +11,7 @@ import {
   schedulePresentations,
   slotsKey,
 } from "~/lib/sponsor-presentations";
+import { hasPrizeTrack } from "~/lib/sponsor-prize-tracks";
 import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
 import {
   createTRPCRouter,
@@ -19,7 +20,12 @@ import {
 } from "~/server/api/trpc";
 import { runAllTeamChecks } from "~/server/api/utils/cheat-check-runners";
 import { sendPresentationEmail } from "~/server/api/utils/presentation-email";
+import { SHEET_WRITES_DISABLED } from "~/server/api/utils/coffee-chat-sheet-mirror";
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
+import {
+  mirrorSponsorJudging,
+  mirrorSponsorJudgingSoon,
+} from "~/server/api/utils/sponsor-judging-sheet-mirror";
 import { membersByTeam } from "~/server/api/utils/sponsor-judging-teams";
 import {
   round2OpenedAt,
@@ -267,7 +273,7 @@ export const sponsorPresentationsRouter = createTRPCRouter({
    * top teams for the cheat check.
    */
   overview: protectedOrganizerProcedure.query(async () => {
-    const [sponsors, sends, rows, topIds, notices, openedAt] =
+    const [registered, sends, rows, topIds, notices, openedAt] =
       await Promise.all([
         db
           .select({
@@ -282,6 +288,8 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         db.select().from(sponsorPresentationNotices),
         round2OpenedAt(),
       ]);
+    // Only prize track sponsors take part in judging.
+    const sponsors = registered.filter((s) => hasPrizeTrack(s.name));
     const names = await teamNames([
       ...new Set([...rows.map((r) => r.teamId), ...topIds]),
     ]);
@@ -449,22 +457,28 @@ export const sponsorPresentationsRouter = createTRPCRouter({
       // The sheets are slow, so every sponsor's room is read before the
       // transaction; the sends are read inside it, so the stored schedule
       // always matches one consistent set of shortlists.
-      const allSponsors = await db
-        .select({
-          id: sponsorJudgingSponsors.id,
-          name: sponsorJudgingSponsors.name,
-        })
-        .from(sponsorJudgingSponsors);
-      const rooms = await judgingRoomsById(allSponsors);
-
-      return db.transaction(async (tx) => {
-        const scheduledAt = new Date();
-        const sends = await tx
+      // Only prize track sponsors present (src/content/sponsor-prize-tracks.ts).
+      const trackSponsors = (
+        await db
           .select({
-            sponsorId: sponsorShortlistSends.sponsorId,
-            teamIds: sponsorShortlistSends.teamIds,
+            id: sponsorJudgingSponsors.id,
+            name: sponsorJudgingSponsors.name,
           })
-          .from(sponsorShortlistSends);
+          .from(sponsorJudgingSponsors)
+      ).filter((s) => hasPrizeTrack(s.name));
+      const trackIds = new Set(trackSponsors.map((s) => s.id));
+      const rooms = await judgingRoomsById(trackSponsors);
+
+      const result = await db.transaction(async (tx) => {
+        const scheduledAt = new Date();
+        const sends = (
+          await tx
+            .select({
+              sponsorId: sponsorShortlistSends.sponsorId,
+              teamIds: sponsorShortlistSends.teamIds,
+            })
+            .from(sponsorShortlistSends)
+        ).filter((s) => trackIds.has(s.sponsorId));
         if (sends.length === 0) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -537,6 +551,8 @@ export const sponsorPresentationsRouter = createTRPCRouter({
           changedTimes,
         };
       });
+      if (!dryRun) await mirrorSponsorJudgingSoon();
+      return result;
     }),
 
   /**
@@ -694,6 +710,7 @@ export const sponsorPresentationsRouter = createTRPCRouter({
             ),
           );
       }
+      await mirrorSponsorJudgingSoon();
       return {
         sent: results.filter((r) => r.result === "sent").length,
         /** Not on Slack, so emailed instead. */
@@ -717,20 +734,28 @@ export const sponsorPresentationsRouter = createTRPCRouter({
   setRound2: protectedOrganizerProcedure
     .input(z.object({ open: z.boolean() }))
     .mutation(async ({ input }) => {
-      if (input.open) {
-        const placed = await db.query.sponsorPresentations.findFirst({
-          where: isNotNull(sponsorPresentations.startMinute),
-          columns: { teamId: true },
-        });
-        if (!placed) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: errors.noSchedule,
-          });
-        }
-      }
+      // Opening with nothing scheduled is refused inside setRound2Open.
       return { round2OpenedAt: await setRound2Open(input.open) };
     }),
+
+  /**
+   * Rewrite the "Sponsor Judging" tab of the run-of-show sheet from the DB
+   * now (it is also rewritten after every judging change). Never throws:
+   * `ok` is false with the Sheets error message when the write failed (for
+   * example, the service account isn't Editor on the sheet yet), and
+   * `disabled` is true when this server doesn't write to sheets at all
+   * (outside production without SHEET_WRITES=1).
+   */
+  syncSheet: protectedOrganizerProcedure.mutation(async () => {
+    const result = await mirrorSponsorJudging();
+    return result.ok
+      ? { ok: true as const, syncedAt: new Date() }
+      : {
+          ok: false as const,
+          disabled: result.error === SHEET_WRITES_DISABLED,
+          error: result.error,
+        };
+  }),
 
   /**
    * Run the existing team cheat checks on every team in a sponsor's top

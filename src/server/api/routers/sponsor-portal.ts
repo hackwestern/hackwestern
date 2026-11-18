@@ -14,6 +14,7 @@ import {
   mergeCoffeeChatBookings,
   sortCoffeeChatSlots,
 } from "~/lib/coffee-chats";
+import { hasPrizeTrack } from "~/lib/sponsor-prize-tracks";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
   fetchAllChosenTeams,
@@ -131,13 +132,9 @@ export const sponsorPortalRouter = createTRPCRouter({
           workshopLocation: info?.workshopLocation ?? null,
           workshopTime: info?.workshopTime ?? null,
           picksCount: picks.length,
-          // Judging applies when the sponsor awards a prize track, has a
-          // judging room, or has already submitted picks. The portal shows
-          // the Judging tile on any of these (no judging room needed).
-          judgingApplies:
-            Boolean(info?.track) ||
-            Boolean(info?.roomNumber && info.roomNumber !== "TBD") ||
-            picks.length > 0,
+          // Only prize track sponsors judge (src/content/sponsor-prize-tracks.ts);
+          // the others see a "No prize track" tile instead of Judging.
+          hasPrizeTrack: hasPrizeTrack(sponsorName),
           // Coffee chats: 0 minutes means the sponsor never sees the booking
           // link at all.
           maxCoffeeChatMinutes,
@@ -155,7 +152,7 @@ export const sponsorPortalRouter = createTRPCRouter({
           workshopLocation: null,
           workshopTime: null,
           picksCount: 0,
-          judgingApplies: false,
+          hasPrizeTrack: hasPrizeTrack(sponsorName),
           maxCoffeeChatMinutes: 0,
           maxCoffeeChatBlocks: coffeeChatBlocksFor(0),
           coffeeChatBookedCount: 0,

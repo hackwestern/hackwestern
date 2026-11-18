@@ -32,6 +32,7 @@ export default defineConfig({
           "HACKER_INTEREST_FORM",
           "SLACK_BOT_TOKEN",
           "SPONSOR_HELP_SLACK_BOT_TOKEN",
+          "SHEET_WRITES",
         ].map((name) => [name, ""]),
       ),
     },

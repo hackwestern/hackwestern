@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import {
   runOfShowCredentials,
   runOfShowSpreadsheetId,
+  sheetWritesEnabled,
 } from "~/server/api/utils/run-of-show-sheet";
 import { google } from "googleapis";
 import { eq } from "drizzle-orm";
@@ -63,6 +64,7 @@ export function normalizeOptionalText(val: string | undefined): string {
 }
 
 const SPREADSHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
+const READONLY_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
 
 const uuidRegex =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -90,7 +92,10 @@ export async function getSheetsClient() {
   const auth = new google.auth.JWT({
     email: creds.email,
     key: creds.key,
-    scopes: [SPREADSHEETS_SCOPE],
+    // Outside production (and in tests) the client is read-only, so a
+    // write (shortlist, sponsor info, room grid) fails instead of landing
+    // on the live sheet (sheetWritesEnabled).
+    scopes: [sheetWritesEnabled() ? SPREADSHEETS_SCOPE : READONLY_SCOPE],
   });
   await auth.authorize();
 

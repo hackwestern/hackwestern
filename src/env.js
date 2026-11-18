@@ -97,6 +97,10 @@ export const env = createEnv({
     RUN_OF_SHOW_SHEET: z.string().optional(),
     RUN_OF_SHOW_SHEETS_CLIENT_EMAIL: z.string().optional(),
     RUN_OF_SHOW_SHEETS_PRIVATE_KEY: z.string().optional(),
+    // "1" lets a non-production server write to the Google Sheets (mirrors,
+    // shortlists, room grid). Unset = writes only in production; never in
+    // tests (sheetWritesEnabled in run-of-show-sheet.ts).
+    SHEET_WRITES: z.string().optional(),
     GITHUB_TOKEN: z.string().optional(),
     // ISO 8601 datetime strings for the hacking window used in commit-timing cheat checks
     HACK_START: z.string().datetime().optional(),
@@ -210,6 +214,7 @@ export const env = createEnv({
     RUN_OF_SHOW_SHEET: process.env.RUN_OF_SHOW_SHEET,
     RUN_OF_SHOW_SHEETS_CLIENT_EMAIL: process.env.RUN_OF_SHOW_SHEETS_CLIENT_EMAIL,
     RUN_OF_SHOW_SHEETS_PRIVATE_KEY: process.env.RUN_OF_SHOW_SHEETS_PRIVATE_KEY,
+    SHEET_WRITES: process.env.SHEET_WRITES,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     HACK_START: process.env.HACK_START,
     HACK_END: process.env.HACK_END,

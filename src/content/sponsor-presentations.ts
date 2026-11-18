@@ -130,6 +130,14 @@ export const sponsorPresentationsCopy = {
     roomOf: (sponsor: string, room: string) => `${sponsor} · ${room}`,
     slotCount: (n: number, max: number) => `${n}/${max}`,
     teamSlots: (n: number) => plural(n, "presentation", "presentations"),
+    /** Rewrite the "Sponsor Judging" tab of the run-of-show sheet now. */
+    syncSheet: "Sync to sheet",
+    syncing: "Syncing…",
+    synced: (time: string) => `Sponsor Judging tab updated ${time}.`,
+    syncDisabled:
+      "Sheet writes are off on this server (they only run in production, or with SHEET_WRITES=1), so the Sponsor Judging tab wasn't touched.",
+    syncFailed: (error: string) =>
+      `Couldn't write the Sponsor Judging tab (${error}). The run-of-show service account needs Editor on the sheet. Judging still works.`,
     cheatHeading: "Cheat check",
     cheatIntro: (top: number, n: number) =>
       `${plural(n, "team is", "teams are")} in a sponsor's top ${top}.`,
@@ -190,5 +198,7 @@ export const sponsorPresentationsCopy = {
     slackOff:
       "Slack isn't set up on this server (SLACK_BOT_TOKEN is missing), so no messages were sent.",
     noSchedule: "Schedule presentations first.",
+    round2NoSchedule:
+      "Schedule presentations before opening round 2. No team has a presentation slot yet.",
   },
 } as const;
