@@ -62,11 +62,6 @@ export const MentorsList: Mentor[] = [
     linkedin: "https://www.linkedin.com/in/isteyak/",
   },
   {
-    name: "Ramus Hu",
-    skills: ["Python", "TypeScript", "Flutter", "Pitching", "CTF"],
-    tags: ["Software Engineering", "Product Management", "AI"],
-  },
-  {
     name: "Keerthana Bhukya",
     skills: ["LLMs & RAG", "Python", "Next.js", "FastAPI", "AWS"],
     tags: ["Software Engineering", "Product Management", "AI"],
