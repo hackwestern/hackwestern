@@ -1,4 +1,5 @@
-import type { RunOfShowDay } from "~/lib/run-of-show";
+import { opsOwnerGroups } from "~/content/ops-pings-aliases";
+import { formatClock, type RunOfShowDay } from "~/lib/run-of-show";
 
 /**
  * Parser for the organizer team's run of show ("Schedule View" tab of the
@@ -28,7 +29,8 @@ export type SheetMerge = {
   endCol: number;
 };
 
-export type OwnerGroup = "everyone" | "spon";
+/** "team" is a fixed list from src/content/ops-pings-aliases.ts ("WEB"). */
+export type OwnerGroup = "everyone" | "spon" | "team";
 
 export type OwnerToken = {
   /** As written, role included: "Aleeza (Photos)". */
@@ -39,6 +41,8 @@ export type OwnerToken = {
   role: string | null;
   /** A whole group rather than one person. */
   group: OwnerGroup | null;
+  /** A team's people, as Slack names; only for group "team". */
+  members?: string[];
 };
 
 export type OpsTask = {
@@ -49,7 +53,10 @@ export type OpsTask = {
   day: RunOfShowDay;
   /** "HH:MM", 24-hour. */
   start: string;
-  /** "HH:MM", later than start; null when the sheet gives no clear end. */
+  /**
+   * "HH:MM", later than start; past midnight it runs on ("25:00" = 1:00 AM
+   * the next day). Null when the sheet gives no clear end.
+   */
   end: string | null;
   endSource: "text" | "cell" | null;
   title: string;
@@ -61,7 +68,13 @@ export type OpsTask = {
   blurb: string | null;
 };
 
-export type OpsIssueReason = "no-owner" | "no-time" | "no-day" | "note";
+export type OpsIssueReason =
+  | "no-owner"
+  | "no-time"
+  | "no-day"
+  | "note"
+  /** A time range whose end is at or before its start, not clearly overnight. */
+  | "unclear-end";
 
 export type OpsIssue = {
   cell: string;
@@ -85,6 +98,12 @@ export type ParsedOpsSchedule = {
 // ---------------------------------------------------------------------------
 
 const pad = (n: number) => String(n).padStart(2, "0");
+/** "25:00" -> "1:00 AM": a clock that runs past midnight, for display. */
+export function formatOpsClock(hhmm: string): string {
+  const [h, m] = hhmm.split(":");
+  return formatClock(`${pad(Number(h) % 24)}:${m}`);
+}
+
 const minutesOf = (hhmm: string) => {
   const [h, m] = hhmm.split(":").map(Number) as [number, number];
   return h * 60 + m;
@@ -142,13 +161,15 @@ export function parseClockLabel(text: string): string | null {
 /**
  * Times in a time line's value: "1:00 PM", "12:00 PM - 2:00 PM", "1PM - 4PM",
  * "7:00pm", "When busses arrive, 6pm-7pm". A side with no am/pm takes the
- * other side's, else the reading closest to the row's time. Null when the
- * value holds no time ("TBD").
+ * other side's, else the reading closest to the row's time. A range that
+ * runs past midnight ends the next day ("11pm-1am" -> "23:00" to "25:00")
+ * when the end says AM and the start is PM; any other end at or before the
+ * start is `endUnclear`. Null when the value holds no time ("TBD").
  */
 export function parseTimeValue(
   value: string,
   rowTime: string | null,
-): { start: string; end: string | null } | null {
+): { start: string; end: string | null; endUnclear?: true } | null {
   const range = RANGE_RE.exec(value);
   if (range) {
     const a = clockOf(range, 1);
@@ -170,10 +191,12 @@ export function parseTimeValue(
         end = start ? resolve(b, start) : null;
       }
       if (start) {
-        return {
-          start,
-          end: end && minutesOf(end) > minutesOf(start) ? end : null,
-        };
+        if (!end) return { start, end: null };
+        if (minutesOf(end) > minutesOf(start)) return { start, end };
+        if (b.meridiem === "am" && minutesOf(start) >= 12 * 60) {
+          return { start, end: `${24 + Number(end.slice(0, 2))}:${end.slice(3)}` };
+        }
+        return { start, end: null, endUnclear: true };
       }
     }
   }
@@ -209,29 +232,18 @@ const fold = (s: string) =>
     .replace(/\s+/g, " ")
     .toLowerCase();
 
-const EVERYONE = new Set([
-  "everyone",
-  "everybody",
-  "all",
-  "all hands",
-  "all organizers",
-  "all organisers",
-  "the team",
-]);
-const SPON = new Set([
-  "all of spon",
-  "all spon",
-  "spon",
-  "spon team",
-  "sponsorship",
-  "sponsorship team",
-  "all of sponsorship",
-]);
+const foldSet = (names: string[]) => new Set(names.map(fold));
+const EVERYONE = foldSet(opsOwnerGroups.everyone);
+const SPON = foldSet(opsOwnerGroups.spon);
+const TEAMS = new Map(
+  Object.entries(opsOwnerGroups.teams).map(([k, v]) => [fold(k), v]),
+);
 
 export function ownerGroup(name: string): OwnerGroup | null {
   const key = fold(name);
   if (EVERYONE.has(key)) return "everyone";
   if (SPON.has(key)) return "spon";
+  if (TEAMS.has(key)) return "team";
   return null;
 }
 
@@ -258,6 +270,7 @@ export function parseOwners(text: string): OwnerToken[] {
       name,
       role: roles.filter(Boolean).join(", ") || null,
       group: ownerGroup(name),
+      ...(TEAMS.has(fold(name)) ? { members: TEAMS.get(fold(name)) } : {}),
     });
   };
   for (let i = 0; i < text.length; i++) {
@@ -508,7 +521,10 @@ export function parseOpsSchedule(
       }
       let end: string | null = null;
       let endSource: OpsTask["endSource"] = null;
-      if (fromText?.end) {
+      if (fromText?.endUnclear) {
+        // The cell gives an end we can't place: start ping only, and say so.
+        issue("unclear-end");
+      } else if (fromText?.end) {
         end = fromText.end;
         endSource = "text";
       } else {

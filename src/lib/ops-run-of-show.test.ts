@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   cellRef,
+  formatOpsClock,
   parseClockLabel,
   parseOpsSchedule,
   parseOwners,
@@ -73,6 +74,20 @@ describe("times", () => {
     expect(parseTimeValue("3:00-6:00 PM", null)).toEqual({ start: "15:00", end: "18:00" });
   });
 
+  test("a range past midnight ends the next day when it's clear", () => {
+    expect(parseTimeValue("11pm-1am", "23:00")).toEqual({ start: "23:00", end: "25:00" });
+    expect(parseTimeValue("11:30 PM - 12:30 AM", null)).toEqual({ start: "23:30", end: "24:30" });
+    expect(parseTimeValue("11-1am", null)).toEqual({ start: "23:00", end: "25:00" });
+    expect(formatOpsClock("25:00")).toBe("1:00 AM");
+    expect(formatOpsClock("24:30")).toBe("12:30 AM");
+    expect(formatOpsClock("13:15")).toBe("1:15 PM");
+  });
+
+  test("an end at or before the start that isn't clearly overnight is unclear", () => {
+    expect(parseTimeValue("3pm-1pm", null)).toEqual({ start: "15:00", end: null, endUnclear: true });
+    expect(parseTimeValue("10-2", "22:00")).toEqual({ start: "22:00", end: null, endUnclear: true });
+  });
+
   test("no time, or numbers that aren't times", () => {
     expect(parseTimeValue("TBD", "13:00")).toBeNull();
     expect(parseTimeValue("Rm 2230", "13:00")).toBeNull();
@@ -111,6 +126,14 @@ describe("owners", () => {
       { raw: "Aleeza (Photos)", name: "Aleeza", role: "Photos", group: null },
       { raw: "Allison (Slack + Comms)", name: "Allison", role: "Slack + Comms", group: null },
     ]);
+  });
+
+  test("WEB is a team from the config, with its people", () => {
+    expect(parseOwners("Pranav Varma (lead), WEB")).toEqual([
+      { raw: "Pranav Varma (lead)", name: "Pranav Varma", role: "lead", group: null },
+      { raw: "WEB", name: "WEB", role: null, group: "team", members: ["Jasmine Gu", "Lucian Lavric"] },
+    ]);
+    expect(parseOwners("web")[0]!.group).toBe("team");
   });
 
   test("slashes, ampersands, 'and', trailing commas", () => {
@@ -322,6 +345,22 @@ describe("parseOpsSchedule", () => {
     const { tasks, issues } = parseOpsSchedule(grid, []);
     expect(tasks).toEqual([]);
     expect(issues.map((i) => i.reason)).toEqual(["no-day", "no-time"]);
+  });
+
+  test("an overnight range in a cell ends the next day; an unclear one is a Needs a look item", () => {
+    const grid = sheet({
+      23: { 0: "SATURDAY" },
+      24: { 0: "11:00 PM", 4: "Movie Night\nOwner: Alex\nTime: 11pm-1am\nLocation: Rm 2230" },
+      25: { 0: "11:30 PM", 5: "Odd\nOwner: Kevin\nStarts: 3pm-1pm" },
+    });
+    const { tasks, issues } = parseOpsSchedule(grid, []);
+    expect(tasks.map((t) => [t.title, t.start, t.end, t.endSource])).toEqual([
+      ["Movie Night", "23:00", "25:00", "text"],
+      ["Odd", "15:00", null, null],
+    ]);
+    expect(issues).toEqual([
+      { cell: "F26", day: "Saturday", time: "23:30", title: "Odd", reason: "unclear-end" },
+    ]);
   });
 
   test("no header row: nothing is read", () => {
