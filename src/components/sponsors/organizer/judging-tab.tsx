@@ -127,6 +127,7 @@ export function JudgingTab({ sponsor }: { sponsor: string | null }) {
         role="tabpanel"
         id="judging-view-panel"
         aria-labelledby={`judging-view-${view}`}
+        className="min-w-0"
       >
         {view === "sponsors" ? (
           <BySponsor data={data} colors={colors} focus={sponsor} />
@@ -257,80 +258,128 @@ function AllTeams({
   }
   const cols = copy.columns;
   return (
-    <div className="overflow-x-auto rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card">
-      <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-        <thead>
-          <tr className="border-b border-dashboard-border-default text-dashboard-text-light">
-            <th scope="col" className="w-12 px-4 py-3 font-semibold">
-              {cols.rank}
-            </th>
-            <th scope="col" className="px-4 py-3 font-semibold">
-              {cols.team}
-            </th>
-            <th scope="col" className="px-4 py-3 font-semibold">
-              {cols.inTop(data.finalTop)}
-            </th>
-            <th scope="col" className="px-4 py-3 font-semibold">
-              {cols.average}
-            </th>
-            <th scope="col" className="px-4 py-3 font-semibold">
-              <span className="sr-only">{cols.links}</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.teams.map((t, i) => {
-            const avg = formatAverage(t.averageScore);
-            return (
-              <tr
-                key={t.teamId}
-                className="border-b border-dashboard-border-subtle last:border-b-0"
-              >
-                <td className="px-4 py-2.5 font-bold tabular-nums text-dashboard-text-medium">
-                  {i + 1}
-                </td>
-                <th
-                  scope="row"
-                  className="break-words px-4 py-2.5 font-semibold text-dashboard-text-heavy"
-                >
+    <>
+      {/* Phones: one card per team, nothing scrolls sideways. */}
+      <ol className="m-0 flex list-none flex-col gap-2 p-0 md:hidden">
+        {data.teams.map((t, i) => {
+          const avg = formatAverage(t.averageScore);
+          return (
+            <li
+              key={t.teamId}
+              className="flex items-start gap-3 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card"
+            >
+              <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-highlight text-xs font-bold tabular-nums text-dashboard-text-active">
+                {i + 1}
+              </span>
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <span className="break-words text-base font-semibold text-dashboard-text-heavy">
                   {t.name}
-                </th>
-                <td className="px-4 py-2.5">
-                  <span className="flex flex-wrap items-center gap-1.5">
-                    <span className="font-semibold tabular-nums text-dashboard-text-heavy">
-                      {t.topSponsors.length}
+                </span>
+                <span className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-dashboard-text-medium">
+                  {cols.inTop(data.finalTop)}:{" "}
+                  {copy.inTopCount(t.topSponsors.length)}
+                  {t.topSponsors.map((name) => (
+                    <span key={name} title={name} className="inline-flex">
+                      <SponsorBadge name={name} colors={colors} />
+                      <span className="sr-only">{name}</span>
                     </span>
-                    {t.topSponsors.map((name) => (
-                      <span key={name} title={name} className="inline-flex">
-                        <SponsorBadge name={name} colors={colors} />
-                        <span className="sr-only">{name}</span>
-                      </span>
-                    ))}
-                  </span>
-                </td>
-                <td className="px-4 py-2.5 tabular-nums text-dashboard-text-medium">
+                  ))}
+                </span>
+                <span className="text-sm font-medium tabular-nums text-dashboard-text-medium">
+                  {cols.average}:{" "}
                   {avg ? copy.averageOf(avg, t.scoreCount) : copy.noAverage}
-                </td>
-                <td className="px-2 py-1 text-right">
-                  {t.devpostUrl && (
-                    <a
-                      href={t.devpostUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={copy.openDevpost(t.name)}
-                      className={devpostLink}
-                    >
-                      {copy.devpost}
-                      <ExternalLink aria-hidden className="size-3.5" />
-                    </a>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                </span>
+              </div>
+              {t.devpostUrl && (
+                <a
+                  href={t.devpostUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={copy.openDevpost(t.name)}
+                  className={cn(devpostLink, "-mr-2 -mt-2")}
+                >
+                  <ExternalLink aria-hidden className="size-4" />
+                </a>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      <div className="hidden overflow-x-auto rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card md:block">
+        <table className="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr className="border-b border-dashboard-border-default text-dashboard-text-light">
+              <th scope="col" className="w-12 px-4 py-3 font-semibold">
+                {cols.rank}
+              </th>
+              <th scope="col" className="px-4 py-3 font-semibold">
+                {cols.team}
+              </th>
+              <th scope="col" className="px-4 py-3 font-semibold">
+                {cols.inTop(data.finalTop)}
+              </th>
+              <th scope="col" className="px-4 py-3 font-semibold">
+                {cols.average}
+              </th>
+              <th scope="col" className="px-4 py-3 font-semibold">
+                <span className="sr-only">{cols.links}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.teams.map((t, i) => {
+              const avg = formatAverage(t.averageScore);
+              return (
+                <tr
+                  key={t.teamId}
+                  className="border-b border-dashboard-border-subtle last:border-b-0"
+                >
+                  <td className="px-4 py-2.5 font-bold tabular-nums text-dashboard-text-medium">
+                    {i + 1}
+                  </td>
+                  <th
+                    scope="row"
+                    className="break-words px-4 py-2.5 font-semibold text-dashboard-text-heavy"
+                  >
+                    {t.name}
+                  </th>
+                  <td className="px-4 py-2.5">
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-semibold tabular-nums text-dashboard-text-heavy">
+                        {t.topSponsors.length}
+                      </span>
+                      {t.topSponsors.map((name) => (
+                        <span key={name} title={name} className="inline-flex">
+                          <SponsorBadge name={name} colors={colors} />
+                          <span className="sr-only">{name}</span>
+                        </span>
+                      ))}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 tabular-nums text-dashboard-text-medium">
+                    {avg ? copy.averageOf(avg, t.scoreCount) : copy.noAverage}
+                  </td>
+                  <td className="px-2 py-1 text-right">
+                    {t.devpostUrl && (
+                      <a
+                        href={t.devpostUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={copy.openDevpost(t.name)}
+                        className={devpostLink}
+                      >
+                        {copy.devpost}
+                        <ExternalLink aria-hidden className="size-3.5" />
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
