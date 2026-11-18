@@ -2,18 +2,18 @@ import { useEffect, useState } from "react";
 import { Minus, Plus, UserRound } from "lucide-react";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { coffeeChatCopy } from "~/content/coffee-chat";
+import { chatsPerSlot } from "~/lib/coffee-chat-holds";
 import {
   MAX_COFFEE_CHAT_REPS,
   MIN_COFFEE_CHAT_REPS,
-  coffeeChatParallelChats,
 } from "~/lib/coffee-chat-requests";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 
 const copy = coffeeChatCopy.reps;
 
-// The sponsor's coffee chat rep count (1 to 10), saved as they tap. Parallel
-// chats = reps, capped by the room (reps + hackers <= 6).
+// The sponsor's coffee chat rep count (1 to 10), saved as they tap. Chats
+// at once: one per rep for 1-on-1s, one for a group (chatsPerSlot).
 export function RepCount({
   sponsor,
   groupSize,
@@ -47,7 +47,7 @@ export function RepCount({
     setReps(next);
     save.mutate({ sponsor, reps: next });
   };
-  const chats = coffeeChatParallelChats(reps, groupSize);
+  const chats = chatsPerSlot({ durationMinutes: 15, groupSize, reps });
 
   return (
     <DashboardPanel>

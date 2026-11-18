@@ -7,11 +7,12 @@
  *
  * Decisions (docs/decisions.md, 2026-11-14):
  * - The DB `coffee_chat` table is the source of truth; the sheet is a mirror.
- * - Saturday only. Each sponsor uses their own room (organizers assign
- *   2241-2243; rooms aren't shared in a slot). A room fits 6 people.
+ * - Saturday only. Chats happen in room blocks (one sponsor, one of rooms
+ *   2241-2243, a stretch of time; src/lib/coffee-chat-holds.ts).
  * - Window, format (length + group size) and total hackers come from the
  *   Coffee Chats tab; the sponsor sets how many reps they send.
- * - One rep per chat at a time, and reps + hackers in the room <= 6.
+ * - One rep per chat at a time. Hackers per slot = chat type x reps
+ *   (hackersPerSlot); going past the room's 6 people is only a note.
  * - A request nobody answers expires 20 minutes before the chat.
  *
  * Dependency-free: used by the hacker /live page, the sponsor pages and the
@@ -33,10 +34,6 @@ export const ACTIVE_COFFEE_CHAT_STATUSES = ["pending", "accepted"] as const;
 /** Top interested, consenting hackers shown to each sponsor. */
 export const COFFEE_CHAT_SHORTLIST_SIZE = 40;
 
-/** Reps a sponsor can say they're sending to coffee chats. */
-export const MIN_COFFEE_CHAT_REPS = 1;
-export const MAX_COFFEE_CHAT_REPS = 10;
-
 /** An unanswered request expires this long before the chat starts. */
 export const COFFEE_CHAT_EXPIRY_MINUTES_BEFORE = 20;
 
@@ -51,8 +48,8 @@ const COFFEE_CHAT_UTC_OFFSET = "-05:00";
 export const COFFEE_CHAT_ROOM_PEOPLE = 6;
 
 /**
- * Saturday coffee chat rooms organizers assign sponsors to (same labels as
- * migration 0040). Docs/decisions.md 2026-11-15.
+ * Saturday coffee chat rooms organizers give sponsors blocks in (same
+ * labels as migration 0040). Docs/decisions.md 2026-11-15.
  */
 export const COFFEE_CHAT_ROOMS = ["Rm 2241", "Rm 2242", "Rm 2243"] as const;
 export type CoffeeChatRoom = (typeof COFFEE_CHAT_ROOMS)[number];
@@ -66,77 +63,6 @@ export function coffeeChatRoomOf(
     .replace(/\s+/g, " ")
     .toLowerCase();
   return COFFEE_CHAT_ROOMS.find((r) => r.toLowerCase() === key) ?? null;
-}
-
-/**
- * A sponsor's coffee chat room: the organizer's assignment, else the
- * Coffee Chats sheet's ROOM value, else null ("Room to be assigned").
- */
-export function resolveCoffeeChatRoom(
-  assigned: string | null | undefined,
-  sheetRoom: string | null | undefined,
-): string | null {
-  return assigned?.trim() ? assigned : sheetRoom?.trim() ? sheetRoom : null;
-}
-
-/**
- * Sheet setups with each sponsor's organizer-assigned room applied (by
- * sponsor name), so offers, free times and schedules all agree.
- */
-export function applyAssignedRooms<
-  T extends { sponsor: string; room: string | null },
->(
-  setups: T[],
-  sponsors: { name: string; coffeeChatRoom: string | null }[],
-): T[] {
-  const assigned = new Map(sponsors.map((s) => [s.name, s.coffeeChatRoom]));
-  return setups.map((s) => ({
-    ...s,
-    room: resolveCoffeeChatRoom(assigned.get(s.sponsor), s.room),
-  }));
-}
-
-/** True when two Saturday windows ("HH:MM"-"HH:MM") overlap. */
-export function coffeeChatWindowsOverlap(
-  a: { windowStart: string | null; windowEnd: string | null },
-  b: { windowStart: string | null; windowEnd: string | null },
-): boolean {
-  const [aStart, aEnd, bStart, bEnd] = [
-    a.windowStart,
-    a.windowEnd,
-    b.windowStart,
-    b.windowEnd,
-  ].map((t) => (t ? coffeeChatMinutesOf(t) : null));
-  if (aStart == null || aEnd == null || bStart == null || bEnd == null) {
-    return false;
-  }
-  return aStart < bEnd && bStart < aEnd;
-}
-
-/**
- * The first other sponsor already assigned `room` whose coffee chat window
- * overlaps this sponsor's, or null. Sponsors without a window never clash.
- */
-export function coffeeChatRoomClash<
-  S extends {
-    id: string;
-    room: string | null;
-    windowStart: string | null;
-    windowEnd: string | null;
-  },
->(sponsorId: string, room: string, sponsors: S[]): S | null {
-  const me = sponsors.find((s) => s.id === sponsorId);
-  if (!me) return null;
-  const key = coffeeChatRoomOf(room);
-  return (
-    sponsors.find(
-      (s) =>
-        s.id !== sponsorId &&
-        key !== null &&
-        coffeeChatRoomOf(s.room) === key &&
-        coffeeChatWindowsOverlap(s, me),
-    ) ?? null
-  );
 }
 
 export const COFFEE_CHAT_GRID_MINUTES = 15;
@@ -247,33 +173,4 @@ export function isActiveCoffeeChat(
 ): boolean {
   const status = effectiveCoffeeChatStatus(chat, now);
   return status === "pending" || status === "accepted";
-}
-
-/**
- * Chats a sponsor runs at once in their room: one per rep, as long as reps
- * plus hackers fit in the room. 1-on-1s: 2 people each, so up to 3 at once.
- * Groups of 3: 4 people each, so 1 at once.
- */
-export function coffeeChatParallelChats(
-  reps: number,
-  groupSize: number,
-  roomPeople: number = COFFEE_CHAT_ROOM_PEOPLE,
-): number {
-  const perChat = Math.max(1, Math.floor(groupSize)) + 1;
-  return Math.max(
-    0,
-    Math.min(Math.floor(reps), Math.floor(roomPeople / perChat)),
-  );
-}
-
-/** Hacker seats a sponsor has at one start time. */
-export function coffeeChatSeats(
-  reps: number,
-  groupSize: number,
-  roomPeople: number = COFFEE_CHAT_ROOM_PEOPLE,
-): number {
-  return (
-    coffeeChatParallelChats(reps, groupSize, roomPeople) *
-    Math.max(1, Math.floor(groupSize))
-  );
 }

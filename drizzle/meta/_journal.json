@@ -365,6 +365,13 @@
       "when": 1794993831912,
       "tag": "0052_sponsor_judging_round2",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1794996122165,
+      "tag": "0053_coffee_chat_request",
+      "breakpoints": true
     }
   ]
 }

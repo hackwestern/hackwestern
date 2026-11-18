@@ -21,6 +21,7 @@ import {
 import { db } from "~/server/db";
 import {
   applications,
+  coffeeChatHolds,
   sponsorJudgingSponsors,
   users,
 } from "~/server/db/schema";
@@ -154,7 +155,7 @@ async function makeSponsor() {
   const name = `Mirror Sponsor ${++n}`;
   const [row] = await db
     .insert(sponsorJudgingSponsors)
-    .values({ name, coffeeChatReps: 3 })
+    .values({ name, coffeeChatStyle: "oneOnOne", coffeeChatPerSlot: 3 })
     .returning();
   setups.push({
     sponsor: name,
@@ -162,12 +163,23 @@ async function makeSponsor() {
     windowEnd: "12:00",
     durationMinutes: 15,
     groupSize: 1,
+    chattingHours: null,
     slots: null,
     hackers: null,
     format: "Individual (15 mins)",
+    notes: null,
     room: "Rm 2241",
   });
-  return { id: row!.id, name };
+  // Offers need a room block (blocks own rooms; v2). Its own room, so
+  // sponsors from other tests never share it at the same time.
+  const room = `Rm ${2300 + n}`;
+  await db.insert(coffeeChatHolds).values({
+    sponsorId: row!.id,
+    room,
+    startTime: "10:00",
+    endTime: "11:30",
+  });
+  return { id: row!.id, name, room };
 }
 
 async function makeHacker(firstName: string) {
@@ -243,7 +255,7 @@ describe("coffee chat sheet mirror (T20)", () => {
       "Ana Tester",
       "10:00 AM",
       "15",
-      "Rm 2241",
+      sponsor.room,
       "Waiting for reply",
       "",
       expect.any(String),
