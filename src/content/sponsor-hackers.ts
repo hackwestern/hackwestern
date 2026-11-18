@@ -1,4 +1,4 @@
-// User-facing copy for the "Interested hackers" section and shortlist on
+// User-facing copy for the "Candidates" section and shortlist on
 // the sponsor's coffee chats page (/sponsors/[uuid]/coffee-chats#interested;
 // the old /sponsors/[uuid]/hackers link redirects there). Keep wording here,
 // not in components.
@@ -7,18 +7,33 @@ export const sponsorHackersCopy = {
   pageIntro:
     "See who wants to meet you, shortlist the hackers you'd like to chat with, and follow the chats you've offered.",
   chatsHeading: "Your chats",
-  heading: "Interested hackers",
+  heading: "Candidates",
+  // Candidates from the hacker interest form (the usual case).
+  introForm:
+    "Up to 40 hackers who named you as one of their top 3 sponsors, strongest applications first. Shortlist the ones you'd like to meet.",
+  // Candidates from the in-app ranking on /live (when the form can't be read).
   intro:
     "Hackers who put you on their list of sponsors to meet, top picks first. Only hackers who agreed to share their profile with sponsors are shown.",
+  // Shown to logged-in organizers only, never to sponsors.
+  sourceNote:
+    "Organizers only: the hacker interest form couldn't be read (is HACKER_INTEREST_FORM set and shared with the service account?), so this list uses the in-app ranking from /live.",
   shortlistHint:
     "The Hack Western team uses your shortlist to set up coffee chats; you can also scan a badge anytime.",
   shortlistCount: (picked: number, total: number) =>
     `${picked} of ${total} shortlisted`,
+  shortlistCap: (max: number) => `You can shortlist up to ${max}.`,
   filterLabel: "Show",
   filterAll: "All",
-  filterShortlisted: "Shortlisted only",
+  filterShortlisted: "Shortlisted",
+  filterNotShortlisted: "Not shortlisted",
   noneShortlisted:
     "You haven't shortlisted anyone yet. Tap Shortlist on a hacker to add them.",
+  noneNotShortlisted: "Everyone on this list is on your shortlist.",
+  rank: (rank: number) => `#${rank}`,
+  rankLabel: (rank: number) => `Rank ${rank}`,
+  notShared: "First name only. This hacker didn't share their full profile.",
+  offer: "Offer coffee chat",
+  offerLabel: (name: string) => `Offer ${name} a coffee chat`,
   shortlist: "Shortlist",
   added: (name: string) => `${name} added to your shortlist.`,
   removed: (name: string) => `${name} removed from your shortlist.`,
@@ -28,6 +43,8 @@ export const sponsorHackersCopy = {
     `Your shortlist is full (${max} hackers). Remove someone to add another.`,
   empty:
     "No hackers yet. As hackers pick the sponsors they'd like to meet on the live site, they'll show up here.",
+  emptyForm:
+    "No candidates yet. Hackers who pick you on the interest form will show up here.",
   noTeam: "No team yet",
   pick: (rank: number) => {
     const suffix =
@@ -45,6 +62,7 @@ export const sponsorHackersCopy = {
     github: "GitHub",
     linkedIn: "LinkedIn",
     devpost: "Devpost",
+    extra: "Link",
     opensIn: (link: string, name: string) =>
       `${name}'s ${link} (opens in a new tab)`,
   },

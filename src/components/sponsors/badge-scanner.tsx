@@ -58,8 +58,18 @@ function useAnnouncer() {
 
 // Scan a hacker's badge, wallet pass or /live QR (or type their hacker
 // code), then offer them a coffee chat at one of the sponsor's open times.
-export function BadgeScanner({ sponsor }: { sponsor: string }) {
-  const [phase, setPhase] = useState<Phase>({ kind: "scan" });
+// `initialCode` (a hacker code or user id, e.g. from the candidates list)
+// skips the camera and opens the offer card for that hacker.
+export function BadgeScanner({
+  sponsor,
+  initialCode,
+}: {
+  sponsor: string;
+  initialCode?: string | null;
+}) {
+  const [phase, setPhase] = useState<Phase>(() =>
+    initialCode ? { kind: "hacker", code: initialCode } : { kind: "scan" },
+  );
   const { message, announce } = useAnnouncer();
   // The sponsor's own name sticks between scans.
   const [repName, setRepName] = useState("");
