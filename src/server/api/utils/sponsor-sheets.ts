@@ -372,7 +372,9 @@ function findSponsorInfoTabTitle(
   sheets: SheetsClient,
   spreadsheetId: string,
 ): Promise<string | null> {
-  return findTabTitle(sheets, spreadsheetId, "sponsor info");
+  return findTabTitle(sheets, spreadsheetId, "live sponsor info").then(
+    (title) => title ?? findTabTitle(sheets, spreadsheetId, "sponsor info"),
+  );
 }
 
 export async function fetchAllSponsorInfo(

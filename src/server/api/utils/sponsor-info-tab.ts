@@ -5,7 +5,10 @@ import { TRACK_VALUES } from "~/lib/sponsor-track";
 import { type SheetsClient } from "~/server/api/utils/sponsor-sheets";
 import { fetchHwContactNames } from "~/server/api/utils/sponsor-hw-contacts";
 
-const SPONSOR_INFO_TAB = "sponsor info";
+// Jazz renamed the tab "live sponsor info" in the merged sheet (2026-11-18);
+// either name is found, and a new tab is only made when neither exists.
+const SPONSOR_INFO_TAB = "live sponsor info";
+export const SPONSOR_INFO_TAB_NAMES = ["live sponsor info", "sponsor info"];
 
 /** 1-based column number -> A1-notation letters (1 -> "A", 9 -> "I"). */
 function columnLetter(columnNumber: number): string {
@@ -27,8 +30,10 @@ export async function ensureSponsorInfoTab(
     spreadsheetId,
     fields: "sheets.properties(sheetId,title)",
   });
-  const found = meta.data.sheets?.find(
-    (s) => s.properties?.title?.trim().toLowerCase() === "sponsor info",
+  const found = meta.data.sheets?.find((s) =>
+    SPONSOR_INFO_TAB_NAMES.includes(
+      s.properties?.title?.trim().toLowerCase() ?? "",
+    ),
   );
 
   let tabName = found?.properties?.title;
