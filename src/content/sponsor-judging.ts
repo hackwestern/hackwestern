@@ -138,7 +138,7 @@ export const sponsorJudgingCopy = {
       "Your shortlist has changed since presentations were scheduled. Tell your Hack Western contact if a team should be added.",
     sendFailed: "Couldn't send. Check your connection and try again.",
     waiting:
-      "Round 2 opens here once presentations are scheduled: you'll rank your top teams from the ones that present.",
+      "Round 2 opens here after presentations: you'll rank your top teams from the ones that presented.",
     reschedule:
       "Presentations are scheduled, but none are booked with you yet. Send your shortlist if you haven't, then ask your Hack Western contact to schedule again. Until then you can still rank your shortlist and submit your top 5 below.",
     presentedHeading: "Rank the teams that presented",
@@ -155,6 +155,7 @@ export const sponsorJudgingCopy = {
     notEligible: "That team isn't one you can judge.",
     trackUnavailable: "Couldn't load your prize track. Try again in a minute.",
     closed: "Judging has closed.",
+    round2Closed: "Round 2 isn't open yet. It opens after presentations.",
     ranking: {
       wrongCount: (top: number) => `Submit exactly ${top} teams.`,
       duplicate: () => "Each team can appear only once.",
@@ -167,7 +168,11 @@ export const sponsorJudgingCopy = {
   /** The organizer "Sponsor judging" tab on /internal/sponsors. */
   organizer: {
     viewsLabel: "Sponsor judging view",
-    views: { sponsors: "By sponsor", teams: "All teams" },
+    views: { sponsors: "Final results", teams: "All teams" },
+    /** Rank badge on a submitted top list: "1st", "2nd"... */
+    rankOf: (n: number) =>
+      `${n}${n % 10 === 1 && n % 100 !== 11 ? "st" : n % 10 === 2 && n % 100 !== 12 ? "nd" : n % 10 === 3 && n % 100 !== 13 ? "rd" : "th"}`,
+    noMembers: "No hackers listed",
     intro: (top: number) =>
       `Each sponsor scores projects, shortlists some and submits a ranked top ${top}.`,
     submittedAt: (time: string) => `Submitted ${time}`,

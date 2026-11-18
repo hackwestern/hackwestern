@@ -23,7 +23,7 @@ const iconButton = cn(
  * Round 1's shortlist step: the shortlisted teams (remove with X) and
  * "Send shortlist", which hands the list to organizers for scheduling.
  * Sending again replaces the sent list. Round 2 (ranking) opens on this
- * tab once presentations are scheduled.
+ * tab once organizers open it after presentations.
  */
 export function ShortlistSend({
   sponsor,

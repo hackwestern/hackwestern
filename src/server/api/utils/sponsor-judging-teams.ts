@@ -117,6 +117,56 @@ export function isEligibleTeam(
   );
 }
 
+export type TeamMember = {
+  userId: string;
+  /** Application first + last name, else the account name; may be "". */
+  name: string;
+  /** The application's GitHub link, for the avatar. */
+  github: string | null;
+};
+
+/**
+ * Every member of `teamIds`, by team, sorted by name. The application's
+ * first/last name is what the hacker typed; it falls back to the auth
+ * display name when the application name is blank.
+ */
+export async function membersByTeam(
+  teamIds: readonly string[],
+): Promise<Map<string, TeamMember[]>> {
+  const byTeam = new Map<string, TeamMember[]>();
+  if (teamIds.length === 0) return byTeam;
+  const rows = await db
+    .select({
+      userId: users.id,
+      teamId: users.teamId,
+      userName: users.name,
+      firstName: applications.firstName,
+      lastName: applications.lastName,
+      github: applications.githubLink,
+    })
+    .from(users)
+    .leftJoin(applications, eq(applications.userId, users.id))
+    .where(inArray(users.teamId, [...teamIds]));
+  for (const row of rows) {
+    if (!row.teamId) continue;
+    const applicationName = [row.firstName, row.lastName]
+      .filter((part): part is string => Boolean(part?.trim()))
+      .map((part) => part.trim())
+      .join(" ");
+    const list = byTeam.get(row.teamId) ?? [];
+    list.push({
+      userId: row.userId,
+      name: applicationName || (row.userName?.trim() ?? ""),
+      github: row.github?.trim() ? row.github.trim() : null,
+    });
+    byTeam.set(row.teamId, list);
+  }
+  for (const list of byTeam.values()) {
+    list.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  return byTeam;
+}
+
 /**
  * Every team the sponsor can judge, by name, with member names. Only
  * submitted teams ("submitted" or "late"; drafts have nothing to judge),
@@ -139,50 +189,16 @@ export async function listEligibleTeams(
 
   if (submittedTeams.length === 0) return [];
 
-  const members = await db
-    .select({
-      teamId: users.teamId,
-      userName: users.name,
-      firstName: applications.firstName,
-      lastName: applications.lastName,
-    })
-    .from(users)
-    .leftJoin(applications, eq(applications.userId, users.id))
-    .where(
-      inArray(
-        users.teamId,
-        submittedTeams.map((team) => team.id),
-      ),
-    );
-
-  const membersByTeam = new Map<string, string[]>();
-  for (const member of members) {
-    if (!member.teamId) continue;
-    // The application's first/last name is what the hacker typed; fall
-    // back to the auth display name when the application name is blank.
-    const applicationName = [member.firstName, member.lastName]
-      .filter((part): part is string => Boolean(part?.trim()))
-      .map((part) => part.trim())
-      .join(" ");
-    const fullName =
-      applicationName.length > 0
-        ? applicationName
-        : (member.userName?.trim() ?? "");
-    if (!fullName) continue;
-    const names = membersByTeam.get(member.teamId) ?? [];
-    names.push(fullName);
-    membersByTeam.set(member.teamId, names);
-  }
-
+  const members = await membersByTeam(submittedTeams.map((team) => team.id));
   return submittedTeams.map((team) => ({
     id: team.id,
     name: team.name,
     devpostUrl: normalizeSubmissionUrl(team.devpostUrl),
     githubUrl: normalizeSubmissionUrl(team.githubUrl),
     tracks: team.tracks ?? [],
-    members: (membersByTeam.get(team.id) ?? []).sort((a, b) =>
-      a.localeCompare(b),
-    ),
+    members: (members.get(team.id) ?? [])
+      .map((m) => m.name)
+      .filter((name) => name.length > 0),
   }));
 }
 
