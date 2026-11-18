@@ -236,7 +236,12 @@ export const sponsorOrganizerRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const [row] = await db
         .update(sponsorJudgingSponsors)
-        .set({ portalLinkGivenAt: input.given ? new Date() : null })
+        // A second "given" keeps the first time; undo clears it.
+        .set({
+          portalLinkGivenAt: input.given
+            ? sql`coalesce(${sponsorJudgingSponsors.portalLinkGivenAt}, now())`
+            : null,
+        })
         .where(eq(sponsorJudgingSponsors.id, input.sponsorId))
         .returning({
           portalLinkGivenAt: sponsorJudgingSponsors.portalLinkGivenAt,
