@@ -139,3 +139,18 @@ export function buildPingLog(
   );
   return { entries: all.slice(0, limit), hasMore: all.length > limit };
 }
+
+/**
+ * A Slack mention as people read it: "<!here>" -> "@here",
+ * "<!subteam^S1|@spon-team>" -> "@spon-team". Null when there's none or it
+ * can't be shown (a user group with no handle).
+ */
+export function mentionLabel(mention: string | null | undefined): string | null {
+  const m = mention?.trim();
+  if (!m) return null;
+  const special = /^<!(here|channel|everyone)(?:\|[^>]*)?>$/.exec(m);
+  if (special) return `@${special[1]}`;
+  const named = /^<!subteam\^[^|>]+\|@?([^>]+)>$/.exec(m);
+  if (named) return `@${named[1]}`;
+  return m.startsWith("<") ? null : m;
+}

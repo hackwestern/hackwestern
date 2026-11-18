@@ -27,6 +27,7 @@ import { runOfShowInstant } from "~/lib/run-of-show-time";
 import { parseTaskOwner } from "~/lib/task-owner";
 import {
   buildPingLog,
+  mentionLabel,
   PING_LOG_PAGE,
   selectUpNext,
   UP_NEXT_COUNT,
@@ -245,7 +246,16 @@ export type DesiredReminder = {
   text: string;
   /** postAt is under MIN_SCHEDULE_AHEAD_MS away: Slack can't take it. */
   tooSoon: boolean;
+  /** Hash of where and what: a change reschedules a kept reminder. */
+  routeKey: string;
 };
+
+/** Hash of a reminder's destination and full text (mention included). */
+export function routeKey(
+  d: Pick<DesiredReminder, "target" | "slackUserId" | "channel" | "text">,
+): string {
+  return sha256(JSON.stringify([d.target, d.slackUserId, d.channel, d.text]));
+}
 
 export type ReminderPlan = {
   /** Upcoming tasks: DMs to matched owners, channel posts for the rest. */
@@ -283,16 +293,20 @@ export function planTaskReminders(
     }
     const key = taskKey(task);
     if (desired.has(key)) continue; // the same task twice in the sheet
+    const where = {
+      target: route.target,
+      slackUserId: route.target === "dm" ? route.slackUserId : null,
+      channel: route.target === "channel" ? channel : null,
+      text: reminderText(task, items, route.target, mention),
+    };
     desired.set(key, {
       taskKey: key,
       owner: task.owner?.trim() ?? "",
       task: task.task,
-      target: route.target,
-      slackUserId: route.target === "dm" ? route.slackUserId : null,
-      channel: route.target === "channel" ? channel : null,
+      ...where,
       postAt,
-      text: reminderText(task, items, route.target, mention),
       tooSoon: postAt.getTime() < now.getTime() + MIN_SCHEDULE_AHEAD_MS,
+      routeKey: routeKey(where),
     });
   }
   return { desired: [...desired.values()], noChannelTasks };
@@ -306,6 +320,8 @@ export type StoredReminder = {
   status: "scheduled" | "failed";
   slackChannel: string | null;
   scheduledMessageId: string | null;
+  /** Null on rows from before 0047: treated as changed. */
+  routeKey: string | null;
 };
 
 export type ReminderDiff = {
@@ -349,7 +365,7 @@ export function diffReminders(
     if (
       d &&
       !kept.has(row.taskKey) &&
-      d.slackUserId === row.slackUserId &&
+      d.routeKey === row.routeKey &&
       d.postAt.getTime() === row.postAt.getTime()
     ) {
       kept.add(row.taskKey);
@@ -468,6 +484,8 @@ export type SyncResult =
       cancelled: number;
       failed: number;
       tooSoon: number;
+      /** New reminders held back because the old one couldn't be deleted. */
+      deferred: number;
       /** Planned pings that go to the team channel (no clear owner). */
       toChannel: number;
       /** Unowned tasks skipped because no team channel is configured. */
@@ -546,6 +564,7 @@ export async function syncTaskReminders(
           status: taskReminders.status,
           slackChannel: taskReminders.slackChannel,
           scheduledMessageId: taskReminders.scheduledMessageId,
+          routeKey: taskReminders.routeKey,
         })
         .from(taskReminders)
         .where(
@@ -567,6 +586,9 @@ export async function syncTaskReminders(
       }
 
       let cancelled = diff.drop.length;
+      // Tasks whose old message couldn't be deleted: scheduling the new one
+      // too would send two, so they wait for the next sync.
+      const stuck = new Set<string>();
       for (const row of diff.cancel) {
         try {
           if (row.slackChannel && row.scheduledMessageId) {
@@ -599,13 +621,19 @@ export async function syncTaskReminders(
             )
             .where(eq(taskReminders.id, row.id));
           if (gone) cancelled++;
+          else stuck.add(row.taskKey);
         }
       }
 
       const dmChannels = new Map<string, string>();
       let created = 0;
       let failed = 0;
+      let deferred = 0;
       for (const d of diff.create) {
+        if (stuck.has(d.taskKey)) {
+          deferred++;
+          continue;
+        }
         const userId = d.slackUserId;
         let values: Pick<
           typeof taskReminders.$inferInsert,
@@ -662,6 +690,7 @@ export async function syncTaskReminders(
           owner: d.owner.slice(0, 255),
           task: d.task,
           slackUserId: userId,
+          routeKey: d.routeKey,
           postAt: d.postAt,
           ...values,
         };
@@ -701,6 +730,7 @@ export async function syncTaskReminders(
         cancelled,
         failed,
         tooSoon: diff.tooSoon.length,
+        deferred,
         toChannel: plan.desired.filter((d) => d.target === "channel").length,
         noChannelTasks: plan.noChannelTasks.length,
       };
@@ -801,6 +831,10 @@ export type TaskReminderStatus = {
   slackConnected: boolean;
   /** The sponsor team channel is set (pings with no clear owner go there). */
   channelConfigured: boolean;
+  /** The channel posts' mention as people read it ("@here"), or null. */
+  channelMention: string | null;
+  /** Sponsor help posts' mention (no @here default there), or null. */
+  helpMention: string | null;
   /** When the next scheduled ping goes out; null when none is waiting. */
   nextPingAt: Date | null;
   /** Upcoming pings Slack refused to schedule (retried on the next sync). */
@@ -810,7 +844,7 @@ export type TaskReminderStatus = {
 /** The small status line on the Task pings panel. Reads the DB only. */
 export async function getTaskReminderStatus(
   now: Date = new Date(),
-  deps: Pick<SlackDeps, "token" | "channel"> = {},
+  deps: Pick<SlackDeps, "token" | "channel" | "mention"> = {},
 ): Promise<TaskReminderStatus> {
   const upcoming = await db
     .select({ status: taskReminders.status, postAt: taskReminders.postAt })
@@ -825,115 +859,13 @@ export async function getTaskReminderStatus(
   return {
     slackConnected: Boolean(slackToken(deps)),
     channelConfigured: teamChannel(deps) !== null,
+    channelMention: mentionLabel(channelMention(deps)),
+    helpMention: mentionLabel(
+      "mention" in deps ? deps.mention : env.SPONSOR_HELP_SLACK_MENTION,
+    ),
     nextPingAt: upcoming.find((r) => r.status === "scheduled")?.postAt ?? null,
     failed: upcoming.filter((r) => r.status === "failed").length,
   };
-}
-
-async function safeReadSheet(
-  readSheet: () => Promise<SheetTasks>,
-): Promise<SheetTasks | null> {
-  try {
-    return await readSheet();
-  } catch (error) {
-    console.error("task reminders: sheet read failed", error);
-    return null;
-  }
-}
-
-export type OwnerMatch = "matched" | "not-found" | "not-checked" | "no-email";
-
-export type TaskOwnerRow = {
-  ownerName: string;
-  slackEmail: string | null;
-  match: OwnerMatch;
-  /** Tasks in the sheet with this owner (0 = saved but no longer used). */
-  taskCount: number;
-};
-
-function matchOf(c: {
-  slackEmail: string | null;
-  slackUserId: string | null;
-  lookedUpAt: Date | null;
-}): OwnerMatch {
-  if (!c.slackEmail) return "no-email";
-  if (c.slackUserId) return "matched";
-  return c.lookedUpAt ? "not-found" : "not-checked";
-}
-
-/** Owner names from the sheet plus saved emails, sheet names first. */
-export async function listTaskOwners(
-  deps: Pick<SyncDeps, "readSheet"> = {},
-): Promise<{ owners: TaskOwnerRow[]; sheetError: boolean }> {
-  const sheet = await safeReadSheet(deps.readSheet ?? getRunOfShow);
-  const fromSheet = new Map<string, { name: string; count: number }>();
-  for (const t of sheet?.tasks ?? []) {
-    const name = t.owner?.trim();
-    if (!name) continue;
-    const key = normalizeOwner(name);
-    const entry = fromSheet.get(key) ?? { name, count: 0 };
-    entry.count++;
-    fromSheet.set(key, entry);
-  }
-  const contacts = await db.select().from(taskOwnerContacts);
-  const byKey = new Map(contacts.map((c) => [c.ownerKey, c]));
-  const keys = new Set([...fromSheet.keys(), ...byKey.keys()]);
-  const owners = [...keys].map((key): TaskOwnerRow => {
-    const c = byKey.get(key);
-    const s = fromSheet.get(key);
-    return {
-      ownerName: s?.name ?? c!.ownerName,
-      slackEmail: c?.slackEmail ?? null,
-      match: c ? matchOf(c) : "no-email",
-      taskCount: s?.count ?? 0,
-    };
-  });
-  owners.sort(
-    (a, b) =>
-      Number(b.taskCount > 0) - Number(a.taskCount > 0) ||
-      a.ownerName.localeCompare(b.ownerName),
-  );
-  return { owners, sheetError: sheet === null };
-}
-
-/**
- * Save (or clear) an owner's Slack email and look the user up straight away
- * when Slack is connected. Reminders follow on the next sync.
- */
-export async function setTaskOwnerEmail(
-  ownerName: string,
-  slackEmail: string | null,
-  deps: SlackDeps & { now?: Date } = {},
-): Promise<{ match: OwnerMatch }> {
-  const now = deps.now ?? new Date();
-  const name = ownerName.trim().replace(/\s+/g, " ");
-  const email = slackEmail?.trim().toLowerCase() ?? null;
-  const update = {
-    ownerName: name,
-    slackEmail: email?.length ? email : null,
-    slackUserId: null as string | null,
-    lookedUpAt: null as Date | null,
-    updatedAt: now,
-  };
-  const token = slackToken(deps);
-  if (update.slackEmail && token) {
-    const found = await lookupSlackUser(
-      token,
-      update.slackEmail,
-      deps.fetch ?? fetch,
-    );
-    if (found.status === "error") {
-      console.error("task reminders: Slack lookup failed:", found.code);
-    } else {
-      update.slackUserId = found.status === "found" ? found.userId : null;
-      update.lookedUpAt = now;
-    }
-  }
-  await db
-    .insert(taskOwnerContacts)
-    .values({ ownerKey: normalizeOwner(name), ...update })
-    .onConflictDoUpdate({ target: taskOwnerContacts.ownerKey, set: update });
-  return { match: matchOf(update) };
 }
 
 // ---------------------------------------------------------------------------

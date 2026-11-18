@@ -30,8 +30,8 @@ const when = (d: Date) => pingTime.format(new Date(d));
 const reasonLabel = (reason: string) =>
   sponsorHelpCopy.reasons[reason as SponsorHelpReason] ?? reason;
 
-const targetLabel = (t: PingTarget) =>
-  t.kind === "dm" ? copy.dm(t.name) : copy.channel;
+const targetLabel = (t: PingTarget, mention: string | null) =>
+  t.kind === "dm" ? copy.dm(t.name) : copy.channel(mention);
 
 function SectionHeading({ id, children }: { id: string; children: string }) {
   return (
@@ -81,11 +81,13 @@ export function TaskPingsTab({
 
   const a = activity.data;
   const s = status.data;
+  const mention = s?.channelMention ?? null;
+  const helpMention = s?.helpMention ?? null;
 
   return (
     <div className="flex flex-col gap-6">
       <p className="m-0 max-w-prose text-base text-dashboard-text-medium">
-        {copy.intro}
+        {copy.intro(mention)}
       </p>
 
       <section
@@ -155,7 +157,7 @@ export function TaskPingsTab({
                       key={p.id}
                       at={p.at}
                       what={p.task}
-                      where={targetLabel(p.target)}
+                      where={targetLabel(p.target, mention)}
                     />
                   ))}
                 </ol>
@@ -178,7 +180,11 @@ export function TaskPingsTab({
               ) : (
                 <ol className="m-0 flex list-none flex-col p-0">
                   {a.log.map((e) => (
-                    <LogRow key={`${e.kind}-${e.id}`} entry={e} />
+                    <LogRow
+                      key={`${e.kind}-${e.id}`}
+                      entry={e}
+                      mention={e.kind === "help" ? helpMention : mention}
+                    />
                   ))}
                 </ol>
               )}
@@ -259,13 +265,19 @@ function PingRow({
   );
 }
 
-function LogRow({ entry: e }: { entry: PingLogEntry }) {
+function LogRow({
+  entry: e,
+  mention,
+}: {
+  entry: PingLogEntry;
+  mention: string | null;
+}) {
   if (e.kind === "task") {
     return (
       <PingRow
         at={e.at}
         what={e.task}
-        where={targetLabel(e.target)}
+        where={targetLabel(e.target, mention)}
         tag={
           e.status === "failed"
             ? { text: copy.status.failed(e.error), warning: true }
@@ -279,7 +291,7 @@ function LogRow({ entry: e }: { entry: PingLogEntry }) {
     <PingRow
       at={e.at}
       what={e.pingCount > 0 ? `${what} (${copy.rePings(e.pingCount)})` : what}
-      where={targetLabel(e.target)}
+      where={targetLabel(e.target, mention)}
       tag={
         e.status === "posted"
           ? { text: copy.status.posted, warning: false }

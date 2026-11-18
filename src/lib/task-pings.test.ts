@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   buildPingLog,
+  mentionLabel,
   reminderTarget,
   selectUpNext,
   type HelpPingRow,
@@ -38,6 +39,17 @@ const help = (
   postedToSlack: true,
   pingCount: 0,
   ...over,
+});
+
+describe("mentionLabel", () => {
+  test("reads Slack mentions as people see them", () => {
+    expect(mentionLabel("<!here>")).toBe("@here");
+    expect(mentionLabel("<!channel>")).toBe("@channel");
+    expect(mentionLabel("<!subteam^S1|@spon-team>")).toBe("@spon-team");
+    expect(mentionLabel("<!subteam^S1>")).toBeNull();
+    expect(mentionLabel("")).toBeNull();
+    expect(mentionLabel(undefined)).toBeNull();
+  });
 });
 
 describe("reminderTarget", () => {
