@@ -7,7 +7,11 @@ import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
 import { db } from "~/server/db";
-import { sponsorJudgingSponsors, teams } from "~/server/db/schema";
+import {
+  sponsorJudgingSponsors,
+  sponsorPresentations,
+  teams,
+} from "~/server/db/schema";
 import {
   fetchSponsorTrack,
   fetchSponsorTracks,
@@ -436,5 +440,171 @@ describe("sponsorScoring.overview", () => {
     await anon.sponsorScoring.submit({ sponsor: a.id, teamIds: ids });
     const res = await organizer.sponsorScoring.overview();
     expect(res.unsyncedCount).toBe(before + 1);
+  });
+});
+
+describe("sponsorScoring.sendShortlist", () => {
+  test("snapshots the shortlist; later edits don't change it until resent", async () => {
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    const sent = await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
+    expect(sent.teamIds).toEqual([...ids].sort());
+
+    await anon.sponsorScoring.review({
+      sponsor: s.id,
+      teamId: ids[0]!,
+      shortlisted: false,
+    });
+    const res = await anon.sponsorScoring.get({ sponsor: s.id });
+    expect(res.round.shortlistSent?.teamIds).toEqual([...ids].sort());
+
+    const again = await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
+    expect(again.teamIds).toEqual(ids.slice(1).sort());
+  });
+
+  test("refuses an empty shortlist and a closed round", async () => {
+    const s = await sponsor();
+    await expect(
+      anon.sponsorScoring.sendShortlist({ sponsor: s.id }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await shortlistFive(s.id);
+    closesAt = PAST;
+    await expect(
+      anon.sponsorScoring.sendShortlist({ sponsor: s.id }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+});
+
+describe("sponsorScoring round 2", () => {
+  test("once scheduled, only teams that present can be ranked", async () => {
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    const late = await team();
+    try {
+      // Five of the shortlist present; `late` is ranked but never presented.
+      await db.insert(sponsorPresentations).values(
+        ids.map((teamId, i) => ({
+          sponsorId: s.id,
+          teamId,
+          room: "Rm 2110",
+          startMinute: 600 + i * 5,
+        })),
+      );
+      const res = await anon.sponsorScoring.get({ sponsor: s.id });
+      expect(res.round.scheduledAt).not.toBeNull();
+      expect(res.round.slots.map((x) => x.teamId)).toEqual(ids);
+
+      await anon.sponsorScoring.review({
+        sponsor: s.id,
+        teamId: late,
+        shortlisted: true,
+      });
+      await expect(
+        anon.sponsorScoring.submit({
+          sponsor: s.id,
+          teamIds: [late, ...ids.slice(0, 4)],
+        }),
+      ).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "Only teams that presented to you can be submitted.",
+      });
+
+      // A presenter that was un-shortlisted afterwards still counts.
+      await anon.sponsorScoring.review({
+        sponsor: s.id,
+        teamId: ids[0]!,
+        shortlisted: false,
+      });
+      await expect(
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+      ).resolves.toMatchObject({ teamIds: ids });
+    } finally {
+      await db.delete(sponsorPresentations);
+    }
+  });
+
+  // A schedule exists, but not for this sponsor: they keep round 1 and
+  // can still submit from their shortlist.
+  async function scheduleFor(sponsorId: string, teamId: string) {
+    await db.insert(sponsorPresentations).values({
+      sponsorId,
+      teamId,
+      room: "Rm 2110",
+      startMinute: 600,
+    });
+  }
+
+  test("a sponsor who sent late (no rows) isn't locked out", async () => {
+    const other = await sponsor();
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    try {
+      await scheduleFor(other.id, await team());
+      await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
+      const res = await anon.sponsorScoring.get({ sponsor: s.id });
+      expect(res.round.scheduledAt).not.toBeNull();
+      expect(res.round.slots).toEqual([]);
+      await expect(
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+      ).resolves.toMatchObject({ teamIds: ids });
+    } finally {
+      await db.delete(sponsorPresentations);
+    }
+  });
+
+  test("a sponsor with no room (rows, none placed) isn't locked out", async () => {
+    const other = await sponsor();
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    try {
+      await scheduleFor(other.id, await team());
+      await db.insert(sponsorPresentations).values(
+        ids.map((teamId) => ({
+          sponsorId: s.id,
+          teamId,
+          room: null,
+          startMinute: null,
+        })),
+      );
+      await expect(
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+      ).resolves.toMatchObject({ teamIds: ids });
+    } finally {
+      await db.delete(sponsorPresentations);
+    }
+  });
+
+  test("re-sending after scheduling keeps round 2 on the slots they have", async () => {
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    try {
+      await db.insert(sponsorPresentations).values(
+        ids.map((teamId, i) => ({
+          sponsorId: s.id,
+          teamId,
+          room: "Rm 2110",
+          startMinute: 600 + i * 5,
+        })),
+      );
+      // A new team joins the shortlist and is re-sent; it hasn't presented.
+      const added = await team();
+      await anon.sponsorScoring.review({
+        sponsor: s.id,
+        teamId: added,
+        shortlisted: true,
+      });
+      await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
+      await expect(
+        anon.sponsorScoring.submit({
+          sponsor: s.id,
+          teamIds: [added, ...ids.slice(0, 4)],
+        }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+      ).resolves.toMatchObject({ teamIds: ids });
+    } finally {
+      await db.delete(sponsorPresentations);
+    }
   });
 });

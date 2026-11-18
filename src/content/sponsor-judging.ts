@@ -123,8 +123,35 @@ export const sponsorJudgingCopy = {
     closed: "Judging has closed. Your last submission stands.",
   },
 
+  /** Round 1 ends with Send shortlist; round 2 ranks teams that presented. */
+  round: {
+    sendHeading: "Your shortlist",
+    sendIntro:
+      "When you're happy with it, send it to us. We'll schedule each team to present in your room from 10:00.",
+    send: "Send shortlist",
+    resend: "Send again",
+    sending: "Sending…",
+    sentAt: (time: string, n: number) =>
+      `Sent ${time} · ${plural(n, "team", "teams")}`,
+    changed: "Your shortlist has changed since you sent it.",
+    changedAfterSchedule:
+      "Your shortlist has changed since presentations were scheduled. Tell your Hack Western contact if a team should be added.",
+    sendFailed: "Couldn't send. Check your connection and try again.",
+    waiting:
+      "Round 2 opens here once presentations are scheduled: you'll rank your top teams from the ones that present.",
+    reschedule:
+      "Presentations are scheduled, but none are booked with you yet. Send your shortlist if you haven't, then ask your Hack Western contact to schedule again. Until then you can still rank your shortlist and submit your top 5 below.",
+    presentedHeading: "Rank the teams that presented",
+    presentedIntro: (top: number) =>
+      `Put your favourite first. The first ${top} are the teams you submit.`,
+    noPresenters:
+      "No teams are scheduled to present to you. Ask your Hack Western contact.",
+    presentsAt: (time: string) => `Presents ${time}`,
+  },
+
   errors: {
     unknownSponsor: "Unknown sponsor link",
+    emptyShortlist: "Shortlist at least one team before sending.",
     notEligible: "That team isn't one you can judge.",
     trackUnavailable: "Couldn't load your prize track. Try again in a minute.",
     closed: "Judging has closed.",
@@ -132,6 +159,7 @@ export const sponsorJudgingCopy = {
       wrongCount: (top: number) => `Submit exactly ${top} teams.`,
       duplicate: () => "Each team can appear only once.",
       notShortlisted: () => "Only teams on your shortlist can be submitted.",
+      notPresented: () => "Only teams that presented to you can be submitted.",
       closed: () => "Judging has closed.",
     },
   },
