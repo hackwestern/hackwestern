@@ -157,6 +157,54 @@ describe("buildJudgingBoard", () => {
     expect(board.rows[0]?.room).toBe("Rm 2230");
   });
 
+  it("says room unknown (not missing) when a room source can't be read", () => {
+    const read = { rooms: new Map<string, string>(), pickCount: () => 6 };
+    const noRunOfShow = buildJudgingBoard({
+      sponsors: SPONSORS,
+      items: [],
+      runOfShowRead: false,
+      sheet: read,
+    });
+    expect(noRunOfShow.runOfShowRead).toBe(false);
+    expect(noRunOfShow.rows.every((r) => r.status === "room-unknown")).toBe(
+      true,
+    );
+    expect(noRunOfShow.rows.some((r) => r.missingRoom)).toBe(false);
+    expect(noRunOfShow.counts.missingRooms).toBe(0);
+
+    const noSheet = buildJudgingBoard({
+      sponsors: SPONSORS,
+      items,
+      sheet: null,
+    });
+    const unlisted = noSheet.rows.filter((r) => r.registered && !r.room);
+    expect(unlisted.length).toBeGreaterThan(0);
+    expect(unlisted.every((r) => r.status === "room-unknown")).toBe(true);
+  });
+
+  it("matches sheet rooms and picks ignoring case and spaces; no sheet row = unknown picks", () => {
+    const board = buildJudgingBoard({
+      sponsors: [
+        { id: "1", name: "Canada Life" },
+        { id: "2", name: "Absent Co" },
+      ],
+      items: [],
+      sheet: {
+        rooms: new Map([["canada  life ", "Rm 3000"]]),
+        pickCount: pickCountFromChosenTeams(
+          new Map([[" CANADA LIFE", teams(MIN_SPONSOR_PICKS)]]),
+        ),
+      },
+    });
+    const by = (n: string) => board.rows.find((r) => r.name === n);
+    expect(by("Canada Life")).toMatchObject({
+      room: "Rm 3000",
+      picks: MIN_SPONSOR_PICKS,
+      status: "ready",
+    });
+    expect(by("Absent Co")?.picks).toBeNull();
+  });
+
   it("counts picks and flags too few", () => {
     const board = buildJudgingBoard({
       sponsors: SPONSORS,

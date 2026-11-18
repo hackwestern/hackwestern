@@ -155,10 +155,11 @@ export function RunOfShowTab({
           onJumped={onJumped}
         />
       )}
-      {shownDay === judgingDay && (
+      {/* Not while loading: the day isn't known yet (no Sunday flash). */}
+      {!summary.isLoading && shownDay === judgingDay && (
         <JudgingPanel
           board={judging}
-          loading={summary.isLoading}
+          failed={summary.isError}
           sheetUrl={data.sheetUrl}
         />
       )}

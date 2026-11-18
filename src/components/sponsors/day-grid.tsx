@@ -152,7 +152,7 @@ export function HackathonToggle({
   return (
     <label
       htmlFor={toggleId}
-      className="flex min-h-10 cursor-pixel-hover items-center gap-1.5 text-sm font-medium text-dashboard-text-heavy sm:min-h-8"
+      className="flex min-h-11 cursor-pixel-hover items-center gap-1.5 text-sm font-medium text-dashboard-text-heavy sm:min-h-8"
     >
       <DashboardCheckbox
         id={toggleId}

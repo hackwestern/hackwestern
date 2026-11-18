@@ -367,6 +367,8 @@ function findSponsorInfoTabTitle(
 export async function fetchAllSponsorInfo(
   sheets: SheetsClient,
   spreadsheetId: string,
+  /** Rethrow read errors instead of returning an empty map. */
+  { strict = false }: { strict?: boolean } = {},
 ): Promise<Map<string, SponsorInfoRecord>> {
   const map = new Map<string, SponsorInfoRecord>();
   try {
@@ -434,6 +436,7 @@ export async function fetchAllSponsorInfo(
       }
     }
   } catch (error) {
+    if (strict) throw error;
     console.warn("Could not read sponsor info tab:", error);
   }
   return map;

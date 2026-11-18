@@ -186,23 +186,29 @@ export const sponsorOrganizerCopy = {
     },
     otherRoom: (room: string) => `Run of show says ${room}`,
     missing: "Missing",
+    roomUnknown: "Unknown",
     picks: (n: number, min: number, max: number) => `${n} of ${min}–${max}`,
     picksUnknown: "—",
     status: {
       ready: "Ready",
       "missing-room": "Missing room",
+      "room-unknown": "Room unknown",
       "too-few-picks": "Too few picks",
       "picks-unknown": "Picks unavailable",
       "not-registered": "Not registered",
     },
     sheetUnread:
       "Couldn't read the judging sheet, so picks and sheet rooms are missing. It retries on its own.",
-    loading: "Loading judging rooms…",
+    runOfShowUnread:
+      "Couldn't read the run of show, so the judging time and its room list are missing. It retries on its own.",
+    loadFailed: "Couldn't load judging rooms. It retries on its own.",
     empty: "No sponsors registered yet.",
     // Sponsors tab
     column: "Judging",
-    cell: (room: string | null, picks: number | null) =>
-      `${room ?? "Missing"}${picks === null ? "" : ` · ${picks} ${picks === 1 ? "pick" : "picks"}`}`,
+    cell: (room: string | null, picks: number | null, roomKnown = true) =>
+      `${room ?? (roomKnown ? "Missing" : "Unknown")}${picks === null ? "" : ` · ${picks} ${picks === 1 ? "pick" : "picks"}`}`,
+    labelled: (label: string, value: string) => `${label}: ${value}`,
+    withSource: (value: string, source: string) => `${value} · ${source}`,
     missingRooms: (n: number) =>
       n === 0
         ? "All rooms set"

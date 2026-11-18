@@ -56,7 +56,8 @@ const judgingSheetCache = createCachedLoader(async () => {
   const sheets = await getSheetsClient();
   const spreadsheetId = getSpreadsheetId();
   const [info, chosen] = await Promise.all([
-    fetchAllSponsorInfo(sheets, spreadsheetId),
+    // Strict: a failed read must show as "couldn't read", not as no rooms.
+    fetchAllSponsorInfo(sheets, spreadsheetId, { strict: true }),
     fetchAllChosenTeams(sheets, spreadsheetId),
   ]);
   return {
@@ -151,6 +152,7 @@ export const sponsorOrganizerRouter = createTRPCRouter({
         judging: buildJudgingBoard({
           sponsors,
           items: runOfShow?.items ?? [],
+          runOfShowRead: runOfShow !== null,
           sheet,
         }),
         now,
