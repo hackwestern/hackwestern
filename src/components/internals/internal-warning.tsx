@@ -15,7 +15,7 @@ import { isDuringHackathon } from "~/lib/date";
 const PHRASE = "i understand";
 const STORAGE_KEY = "internal-warning-acknowledged";
 
-// Shown on every internal page, only while the hackathon is running, until
+// Shown on every internal page, from a week before the hackathon through the event, until
 // the viewer types the phrase once (remembered in this browser).
 export function InternalWarning() {
   const [open, setOpen] = useState(false);
