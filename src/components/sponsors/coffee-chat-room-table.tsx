@@ -307,11 +307,7 @@ function CellButton({
             sponsor &&
             hold && (
               <span className="truncate text-dashboard-text-medium">
-                {copy.blockSummary(
-                  requestSummary(sponsor.request),
-                  hold.booked,
-                  hold.needed,
-                )}
+                {requestSummary(sponsor.request)}
               </span>
             )
           )}

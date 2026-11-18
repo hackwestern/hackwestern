@@ -331,9 +331,6 @@ export const coffeeChatCopy = {
       fill: (booked: number, needed: number) => `${booked}/${needed}`,
       fillLabel: (booked: number, needed: number) =>
         `${booked} of ${needed} hackers booked`,
-      // One line on every block: request, then booked / asked for.
-      blockSummary: (request: string, booked: number, asked: number) =>
-        `${request} · ${booked}/${asked}`,
       needs: (n: number) => `Needs ${n}`,
       needsLabel: (n: number) => `Needs ${n} ${n === 1 ? "hacker" : "hackers"}`,
       full: "Full",
