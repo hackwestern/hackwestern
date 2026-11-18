@@ -5,6 +5,7 @@ import {
   buildAxis,
   buildOrganizerTimeline,
   columnMinWidth,
+  fluidColumnMinWidth,
   entriesAt,
   GRID_SIZES,
   layoutGrid,
@@ -281,5 +282,13 @@ describe("columnMinWidth for team tasks", () => {
     expect(columnMinWidth([{ lanes: 3 }], GRID_SIZES.taskLane)).toBe(
       3 * GRID_SIZES.taskLane,
     );
+  });
+});
+
+describe("fluidColumnMinWidth", () => {
+  it("lets columns share wide screens without going unreadable", () => {
+    expect(fluidColumnMinWidth([])).toBe(GRID_SIZES.fluid.empty);
+    expect(fluidColumnMinWidth([{ lanes: 1 }])).toBe(GRID_SIZES.fluid.column);
+    expect(fluidColumnMinWidth([{ lanes: 3 }])).toBe(3 * GRID_SIZES.fluid.lane);
   });
 });
