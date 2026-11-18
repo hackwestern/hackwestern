@@ -20,13 +20,21 @@ T52 (coffee chats: map + where beside the table), T53 (tasks amber on schedule, 
 - Redesigns merged: schedule grid (fluid columns, no sideways scroll at 1280), organizer (tokens, round-checkbox sponsor filter with "All sponsors" checkbox, map under the schedule), sponsor portal (GitHub avatars, Candidates tab). Checks: tsc clean; vitest 1123 passed, 1 failed (Apple Wallet).
 - Organizer tab URLs: ?tab=schedule | coffee | help.
 
-## Running: sd-room-holds (worktree hackwestern-sd-chat)
-1. Room holds: organizer holds a room for a sponsor at a time with no hacker yet ("Needs a hacker"); rooms shared by different sponsors at different times; chats in a held slot take the held room; sponsor sees "You still need a hacker" + Pick from candidates / Scan. Migration 0047 (apply locally after review).
-2. Jazz approved (2026-11-17): ONE combined sponsor table on the Sponsors tab (Lucas's columns + chat type, reps, chat room, chats, needs a hacker, help; expandable rows; totals row; phone = stacked cards). Coffee chats tab = colour-coded room table only. Each sponsor gets a stable colour; available cells grey; click a sponsor -> highlight their cells.
-- Needs review (code + design) before merge. May need extra colour tokens (add in main folder).
+## Merged 2026-11-18
+- Room holds (migration 0048, applied locally), combined sponsor table on the Sponsors tab, stable sponsor colours + initials, free cells neutral.
+- Automatic Slack owner matching (no manual emails) + Task pings tab (help merged in; tabs: Sponsors | Run of show | Coffee chats | Task pings). Migration 0047 (applied locally).
+- tsconfig + eslint ignore **/_to_delete/** (files parked in src/_to_delete broke tsc).
+- Checks on merge: tsc clean; vitest all pass except Apple Wallet.
+
+## Next
+- Project picks page (/sponsors/<id>/picks) redesign + richer project info + show tile whenever judging is open (proposed, waiting for Jazz).
+- Optional: limit Slack owner matching to spon-team channel members (needs channels:read / groups:read scope).
+- Optional: 4 more sponsor colour token pairs (pink strong, purple, teal, red) in src/lib/tokens.ts (main folder).
+- Hold seats: shows reps as used (1/6); Jazz to confirm vs 0/6.
+- Then: next build in a spare worktree, strip mocks/ from the PR, push sponsor-dashboard, PR into spon-judging (needs Jazz's OK). Slack features only work after deploy.
 
 ## Needs Jazz
-- SPONSOR_JUDGING_SHEET (Lucas's master sheet id) and HACKER_INTEREST_FORM (interest form sheet id) for local .env + Vercel; service account needs access to both sheets.
+- Local .env needs SLACK_BOT_TOKEN, SPONSOR_JUDGING_SHEET, SPONSOR_MASTER_SHEET, SPONSOR_SHEETS_CLIENT_EMAIL, SPONSOR_SHEETS_PRIVATE_KEY, HACKER_INTEREST_FORM (ask Lucas / copy from Vercel). Restart :3013 after. Claude can read .env now (global deny for Read(**/.env) removed 2026-11-17).
 - OK to show the form's resume + link for hackers who didn't agree to share? (currently yes, first name only)
 - Candidates copy says "Only hackers who agreed to share... are shown" — now inaccurate; fix with T50.
 
