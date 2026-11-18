@@ -21,7 +21,6 @@ import { SheetEditButton } from "~/components/sponsors/sheet-edit-button";
 import { SponAvailabilityTable } from "~/components/sponsors/organizer/spon-availability";
 import {
   SponsorFilter,
-  type SponsorSelection,
   useSponsorSelection,
 } from "~/components/sponsors/sponsor-filter";
 import { WorkshopsTable } from "~/components/sponsors/workshop-details";
@@ -113,6 +112,10 @@ export function RunOfShowTab({
           </DashboardButton>
         </div>
       )}
+      {/* Saturday: which sponsors' coffee chats the run of show lists. */}
+      {shownDay === COFFEE_CHAT_DAY_LABEL && (
+        <SponsorFilter names={names} selection={selection} />
+      )}
       {/* The run of show gets the full width so its columns fit without
           sideways scrolling; the live room map sits with the rooms below. */}
       <div className="min-w-0">
@@ -169,8 +172,6 @@ export function RunOfShowTab({
       {/* Coffee chats are Saturday only: other days have no rooms section. */}
       {shownDay === COFFEE_CHAT_DAY_LABEL && (
         <RoomsSection
-          names={names}
-          selection={selection}
           jump={jumpToRooms}
           onJumped={onJumped}
         />
@@ -196,19 +197,16 @@ export function RunOfShowTab({
 
 // The coffee chat rooms as a booking table, right under the run of show,
 // with the floor 2 plan beside it (it replaced the "Where is everyone"
-// tab, which now lands here: #rooms). No heading or intro: the cells show
-// capacity as n/6 (Jazz, 2026-11-18).
+// tab, which now lands here: #rooms). No heading or intro. The sponsor
+// strip highlights a sponsor's blocks, as on the Coffee chats tab.
 function RoomsSection({
-  names,
-  selection,
   jump,
   onJumped,
 }: {
-  names: readonly string[];
-  selection: SponsorSelection;
   jump: boolean;
   onJumped: () => void;
 }) {
+  const [highlight, setHighlight] = useState<string | null>(null);
   useEffect(() => {
     if (!jump) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -227,8 +225,13 @@ function RoomsSection({
           phones and tablets). */}
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
         <div className="flex min-w-0 flex-col gap-3">
-          <SponsorFilter names={names} selection={selection} />
-          <CoffeeChatRoomTable selection={selection} />
+          <CoffeeChatRoomTable
+            highlight={highlight}
+            onHighlight={(name) =>
+              setHighlight((h) => (h === name ? null : name))
+            }
+            onClearHighlight={() => setHighlight(null)}
+          />
         </div>
         {/* Just the floor plan for reference (Jazz, 2026-11-18): no pins,
             toggles or live state. */}

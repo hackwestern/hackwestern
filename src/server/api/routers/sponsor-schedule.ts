@@ -2,7 +2,6 @@ import { TRPCError } from "@trpc/server";
 import { asc } from "drizzle-orm";
 import { z } from "zod";
 
-import { applyAssignedRooms } from "~/lib/coffee-chat-requests";
 import {
   ownLocation,
   type CompanyLocations,
@@ -30,7 +29,6 @@ async function registeredSponsors() {
     .select({
       id: sponsorJudgingSponsors.id,
       name: sponsorJudgingSponsors.name,
-      coffeeChatRoom: sponsorJudgingSponsors.coffeeChatRoom,
     })
     .from(sponsorJudgingSponsors)
     .orderBy(asc(sponsorJudgingSponsors.name));
@@ -48,12 +46,10 @@ function findSponsor(
 }
 
 /**
- * The parsed sheet with sponsor names matched and organizer-assigned
- * coffee chat rooms applied (assignment > sheet ROOM). Fails closed.
+ * The parsed sheet with sponsor names matched. Coffee chat rooms come from
+ * room blocks, not a per-sponsor setting. Fails closed.
  */
-async function readSheet(
-  sponsors: { name: string; coffeeChatRoom: string | null }[],
-) {
+async function readSheet(sponsors: { name: string }[]) {
   try {
     const snapshot = await getRunOfShow();
     const sheet = applySponsorNames(
@@ -65,7 +61,6 @@ async function readSheet(
       // Organizer-only: the sponsor `get` below never copies it out.
       availability: snapshot.availability,
       ...sheet,
-      coffeeChats: applyAssignedRooms(sheet.coffeeChats, sponsors),
     };
   } catch (error) {
     console.error("run-of-show sheet read failed", error);

@@ -1,38 +1,41 @@
 /**
- * Room holds: an organizer sets a coffee chat room aside for one sponsor at
- * one Saturday time before any hacker is booked. Until a live chat (pending
- * or accepted) lands inside it, the hold "needs a hacker": organizers see a
- * warning cell, the sponsor sees "You still need a hacker".
+ * Room blocks (stored as coffee_chat_hold rows; the code keeps the name
+ * "hold"): one sponsor in one coffee chat room for a stretch of Saturday
+ * time. Hackers are booked into a block, one slot at a time.
  *
- * Rules (docs/decisions.md, 2026-11-17, room holds):
- * - A room can be held by different sponsors at different times. A hold may
- *   not overlap another sponsor's hold, live chat or room window in the same
- *   room. The same sponsor may hold adjacent or overlapping times.
- * - A chat offered at a start inside the sponsor's hold takes the hold's
- *   room. Room precedence for a new chat:
- *     hold room > room the sponsor's live chats already use at that time
- *     (organizer Move room) > organizer per-sponsor room > sheet ROOM > none.
- * - A hold adds its start times to the sponsor's offerable times, one chat
- *   length apart, so a sponsor with only a hold (no sheet window) can still
- *   be offered chats there.
+ * Rules (docs/flows/coffee-chat-room-blocks.md, docs/decisions.md
+ * 2026-11-18 room blocks):
+ * - Two sponsors never overlap in one room. A sponsor's own blocks may
+ *   touch but not overlap (one room per sponsor at any moment).
+ * - A block lasts 15 minutes to 1 hr 30, on the 15-minute grid.
+ * - A chat always goes in the sponsor's block covering its start, in the
+ *   block's room. No block then = no offer.
+ * - A block's slots start one chat length apart. Each slot takes the
+ *   hackers the sponsor asked for (coffee-chat-request.ts). No room
+ *   capacity: reps organize themselves in the room.
  *
  * Dependency-free (shared by server, organizer and sponsor pages).
  */
 import {
   COFFEE_CHAT_GRID_MINUTES,
+  coffeeChatExpiresAt,
   coffeeChatMinutesOf,
   coffeeChatRoomOf,
   coffeeChatsOverlap,
   coffeeChatTimeOf,
-  resolveCoffeeChatRoom,
 } from "~/lib/coffee-chat-requests";
+import {
+  askedAt,
+  type ChatRequest,
+  type SlotLimit,
+} from "~/lib/coffee-chat-request";
 
-/** A new hold's length unless the organizer picks another. */
-export const DEFAULT_HOLD_MINUTES = 30;
-/** Lengths offered when holding a room. */
-export const HOLD_LENGTHS = [15, 30, 45, 60, 90, 120] as const;
-/** Longest single hold (a whole morning is several holds, or a room). */
-export const MAX_HOLD_MINUTES = 240;
+/** A new block's length unless the organizer picks another. */
+export const DEFAULT_HOLD_MINUTES = 60;
+/** Lengths offered when giving a room (15 min to 1 hr 30). */
+export const HOLD_LENGTHS = [15, 30, 45, 60, 75, 90] as const;
+/** Longest single block; a longer stretch is back-to-back blocks. */
+export const MAX_HOLD_MINUTES = 90;
 
 export type HoldSpan = {
   sponsorId: string;
@@ -43,7 +46,7 @@ export type HoldSpan = {
   endTime: string;
 };
 
-/** Something that takes a room for a while: a chat, a hold or a window. */
+/** Something that takes a room for a while: a chat or a block. */
 export type RoomUse = {
   sponsorId: string;
   room: string | null;
@@ -53,7 +56,7 @@ export type RoomUse = {
 
 type ChatTime = { slotTime: string; durationMinutes: number };
 
-/** Hold length in minutes (0 when the times are off the grid). */
+/** Block length in minutes (0 when the times are off the grid). */
 export function holdMinutes(hold: Pick<HoldSpan, "startTime" | "endTime">) {
   const start = coffeeChatMinutesOf(hold.startTime);
   const end = coffeeChatMinutesOf(hold.endTime);
@@ -68,8 +71,8 @@ export function holdEndOf(startTime: string, minutes: number): string | null {
 }
 
 /**
- * Why these hold times can't be used, or null: both on the 15-minute grid,
- * end after start, at most MAX_HOLD_MINUTES.
+ * Why these block times can't be used, or null: both on the 15-minute
+ * grid, end after start, at most MAX_HOLD_MINUTES.
  */
 export function holdTimesProblem(
   startTime: string,
@@ -83,7 +86,7 @@ export function holdTimesProblem(
   return null;
 }
 
-/** A hold as a room use (start + length), for overlap checks. */
+/** A block as a room use (start + length), for overlap checks. */
 export function holdAsRoomUse(hold: HoldSpan): RoomUse {
   return {
     sponsorId: hold.sponsorId,
@@ -104,9 +107,8 @@ function sameRoom(a: string | null | undefined, b: string | null | undefined) {
 }
 
 /**
- * The first room use by ANOTHER sponsor in the hold's room at an
- * overlapping time, or null. The hold's own sponsor never clashes with
- * itself (adjacent and overlapping own holds are fine).
+ * The first room use by ANOTHER sponsor in the block's room at an
+ * overlapping time, or null. Own blocks are checked by ownHoldOverlap.
  */
 export function holdClash<U extends RoomUse>(
   hold: HoldSpan,
@@ -123,7 +125,27 @@ export function holdClash<U extends RoomUse>(
   );
 }
 
-/** True when a chat starting at `slot` starts inside the hold. */
+/**
+ * The first of the sponsor's other blocks the span overlaps, or null. A
+ * sponsor is in one room at a time, so own blocks may touch, not overlap.
+ */
+export function ownHoldOverlap<H extends HoldSpan & { holdId: string }>(
+  span: HoldSpan,
+  holds: readonly H[],
+  exceptHoldId?: string,
+): H | null {
+  const use = holdAsRoomUse(span);
+  return (
+    holds.find(
+      (h) =>
+        h.holdId !== exceptHoldId &&
+        h.sponsorId === span.sponsorId &&
+        coffeeChatsOverlap(holdAsRoomUse(h), use),
+    ) ?? null
+  );
+}
+
+/** True when a chat starting at `slot` starts inside the block. */
 export function holdCovers(
   hold: Pick<HoldSpan, "startTime" | "endTime">,
   slot: Pick<ChatTime, "slotTime">,
@@ -134,7 +156,7 @@ export function holdCovers(
   return start !== null && end !== null && t !== null && t >= start && t < end;
 }
 
-/** The sponsor's own hold a chat at `slot` falls in (earliest), or null. */
+/** The sponsor's own block a chat at `slot` falls in (earliest), or null. */
 export function ownHoldAt<H extends HoldSpan>(
   holds: readonly H[],
   sponsorId: string,
@@ -148,25 +170,20 @@ export function ownHoldAt<H extends HoldSpan>(
 }
 
 /**
- * The room a new chat goes in: hold room > room the sponsor's chats already
- * use then (organizer Move room) > organizer per-sponsor room > sheet ROOM
- * > none.
+ * The room a new chat at `slot` goes in: the room of the sponsor's own
+ * block covering it, else null (no block = no offer).
  */
-export function coffeeChatOfferRoom(input: {
-  holdRoom?: string | null;
-  movedRoom?: string | null;
-  assignedRoom?: string | null;
-  sheetRoom?: string | null;
-}): string | null {
-  if (input.holdRoom?.trim()) return input.holdRoom;
-  if (input.movedRoom?.trim()) return input.movedRoom;
-  return resolveCoffeeChatRoom(input.assignedRoom, input.sheetRoom);
+export function coffeeChatOfferRoom(
+  holds: readonly HoldSpan[],
+  sponsorId: string,
+  slot: Pick<ChatTime, "slotTime">,
+): string | null {
+  return ownHoldAt(holds, sponsorId, slot)?.room ?? null;
 }
 
 /**
- * Start times a hold adds for a sponsor whose chats last `duration`
- * minutes: from the hold's start, one chat length apart, each ending by the
- * hold's end.
+ * Slot starts in a block for chats lasting `duration` minutes: from the
+ * block's start, one chat length apart, each ending by the block's end.
  */
 export function holdStartTimes(
   hold: Pick<HoldSpan, "startTime" | "endTime">,
@@ -184,64 +201,168 @@ export function holdStartTimes(
   return times;
 }
 
-/**
- * True while no live chat (pending or accepted, already filtered by the
- * caller) of the hold's sponsor overlaps it.
- */
-export function holdNeedsHacker(
-  hold: HoldSpan,
-  liveChats: readonly (ChatTime & { sponsorId: string })[],
-): boolean {
-  const span = holdAsRoomUse(hold);
-  return !liveChats.some(
-    (c) => c.sponsorId === hold.sponsorId && coffeeChatsOverlap(c, span),
-  );
+/** True when a block this long fits at least one chat of `duration`. */
+export function holdFitsChat(minutes: number, duration: number): boolean {
+  return minutes >= duration;
 }
 
-/** Live chats inside the hold (same sponsor, overlapping). */
-export function chatsInHold<C extends ChatTime & { sponsorId: string }>(
+/** A live chat (pending or accepted, filtered by the caller). */
+type LiveChat = ChatTime & { sponsorId: string; chatId?: string };
+
+/**
+ * The chats booked in one slot: those starting in [slot start, start +
+ * chat length). The one seat count for offers (server) and block slots
+ * (pages), so both always agree. Chats start on slot starts, so this only
+ * differs from an overlap count if the sheet's FORMAT length changes after
+ * booking opens, which it must not (docs/decisions.md 2026-11-18).
+ */
+export function chatsInSlot<C extends ChatTime>(
+  chats: readonly C[],
+  slotTime: string,
+  durationMinutes: number,
+): C[] {
+  const start = coffeeChatMinutesOf(slotTime);
+  if (start === null) return [];
+  return chats.filter((c) => {
+    const t = coffeeChatMinutesOf(c.slotTime);
+    return t !== null && t >= start && t < start + durationMinutes;
+  });
+}
+
+/** One slot of a block: hackers booked against hackers asked for. */
+export type BlockSlot = {
+  slotTime: string;
+  booked: number;
+  /** Hackers asked for here: the request, lowered by any ask. */
+  needed: number;
+  /** The request before any "Ask for fewer". */
+  requested: number;
+  /** An ask lowered this slot (shown as "asked for N"). */
+  lowered: boolean;
+  chatIds: string[];
+};
+
+/**
+ * The block's slots, earliest first. Each live chat of the block's
+ * sponsor counts in the slot its start falls in. Hackers asked for per
+ * slot come from the sponsor's request and their asks for fewer.
+ */
+export function blockSlots(
+  block: HoldSpan,
+  request: Pick<ChatRequest, "perSlot" | "durationMinutes">,
+  liveChats: readonly LiveChat[],
+  limits: readonly SlotLimit[] = [],
+): BlockSlot[] {
+  const duration = request.durationMinutes;
+  const own = liveChats.filter((c) => c.sponsorId === block.sponsorId);
+  return holdStartTimes(block, duration).map((slotTime) => {
+    const inside = chatsInSlot(own, slotTime, duration);
+    const { asked, lowered } = askedAt(
+      request,
+      limits,
+      block.sponsorId,
+      slotTime,
+    );
+    return {
+      slotTime,
+      booked: inside.length,
+      needed: asked,
+      requested: request.perSlot,
+      lowered,
+      chatIds: inside.flatMap((c) => (c.chatId ? [c.chatId] : [])),
+    };
+  });
+}
+
+/**
+ * "n of m chats filled" for a block. 1-on-1: every hacker asked for is a
+ * chat. Group: every slot asking for hackers is one chat, filled once all
+ * its hackers are booked. `firstOpen` is the earliest slot still short of
+ * hackers (and, with `now`, still before its reply cutoff), or null.
+ */
+export function blockFill(
+  block: HoldSpan,
+  request: Pick<ChatRequest, "style" | "perSlot" | "durationMinutes">,
+  liveChats: readonly LiveChat[],
+  limits: readonly SlotLimit[] = [],
+  now?: Date,
+): { filled: number; total: number; firstOpen: string | null } {
+  const slots = blockSlots(block, request, liveChats, limits);
+  const group = request.style === "group";
+  return {
+    filled: slots.reduce(
+      (n, s) =>
+        n +
+        (group
+          ? Number(s.needed > 0 && s.booked >= s.needed)
+          : Math.min(s.booked, s.needed)),
+      0,
+    ),
+    total: slots.reduce(
+      (n, s) => n + (group ? Number(s.needed > 0) : s.needed),
+      0,
+    ),
+    firstOpen:
+      slots.find(
+        (s) =>
+          s.booked < s.needed &&
+          (!now || now < coffeeChatExpiresAt(s.slotTime)),
+      )?.slotTime ?? null,
+  };
+}
+
+/** Live chats inside the block (same sponsor, starting inside it). */
+export function chatsInHold<C extends LiveChat>(
   hold: HoldSpan,
   liveChats: readonly C[],
 ): C[] {
-  const span = holdAsRoomUse(hold);
   return liveChats.filter(
-    (c) => c.sponsorId === hold.sponsorId && coffeeChatsOverlap(c, span),
+    (c) => c.sponsorId === hold.sponsorId && holdCovers(hold, c),
   );
 }
 
-/** One of a sponsor's own holds, as their pages show it (no organizer note). */
+/** One of a sponsor's own blocks, as their pages show it (no note). */
 export type SponsorHoldView = {
   holdId: string;
   room: string;
   startTime: string;
   endTime: string;
-  /** Live chats (pending or accepted) inside the hold. */
-  chats: number;
+  /** Chats filled out of the block's chats ("1 of 4 chats filled"). */
+  filled: number;
+  total: number;
+  /** Earliest slot still short of hackers, for Scan a badge. */
+  firstOpen: string | null;
   needsHacker: boolean;
+  /** Each slot, for "Ask for fewer". */
+  slots: BlockSlot[];
 };
 
 /**
- * A sponsor's view of room holds: only holds of `sponsorId` (never another
- * sponsor's room or time), earliest first, each with whether it still
- * needs a hacker. `liveChats` are chats that hold a seat right now.
+ * A sponsor's view of room blocks: only blocks of `sponsorId` (never
+ * another sponsor's room or time), earliest first, with how full each is.
+ * `liveChats` are chats that hold a seat right now.
  */
 export function holdsForSponsor(
   holds: readonly (HoldSpan & { holdId: string })[],
   sponsorId: string,
-  liveChats: readonly (ChatTime & { sponsorId: string })[],
+  liveChats: readonly LiveChat[],
+  request: Pick<ChatRequest, "style" | "perSlot" | "durationMinutes">,
+  limits: readonly SlotLimit[] = [],
+  now?: Date,
 ): SponsorHoldView[] {
   return holds
     .filter((h) => h.sponsorId === sponsorId)
     .sort((a, b) => a.startTime.localeCompare(b.startTime))
     .map((h) => {
-      const chats = chatsInHold(h, liveChats).length;
+      const fill = blockFill(h, request, liveChats, limits, now);
       return {
         holdId: h.holdId,
         room: h.room,
         startTime: h.startTime,
         endTime: h.endTime,
-        chats,
-        needsHacker: chats === 0,
+        ...fill,
+        needsHacker: fill.firstOpen !== null,
+        slots: blockSlots(h, request, liveChats, limits),
       };
     });
 }

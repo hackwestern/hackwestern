@@ -1,23 +1,23 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  blockFill,
+  blockSlots,
   coffeeChatOfferRoom,
   holdClash,
   holdCovers,
-  holdNeedsHacker,
   holdsForSponsor,
   holdStartTimes,
   holdTimesProblem,
   ownHoldAt,
+  ownHoldOverlap,
   type HoldSpan,
 } from "~/lib/coffee-chat-holds";
-import { buildRoomTable, boardStats } from "~/lib/coffee-chat-room-table";
-import type { CoffeeChatSetup } from "~/lib/run-of-show";
+import type { ChatRequest } from "~/lib/coffee-chat-request";
 import { buildSponsorSummaries } from "~/lib/sponsor-organizer";
 import {
   freeStartTimes,
   offerProblem,
-  offerRoomAt,
 } from "~/server/api/utils/coffee-chat-capacity";
 
 const hold = (
@@ -33,23 +33,25 @@ const use = (
   durationMinutes = 30,
 ) => ({ sponsorId, room, slotTime, durationMinutes });
 const early = new Date("2026-11-21T08:00:00-05:00");
+const oneOnOne = (reps: number): ChatRequest => ({
+  style: "oneOnOne",
+  perSlot: reps,
+  durationMinutes: 15,
+  source: "sponsor",
+});
+const groupOf = (hackers: number): ChatRequest => ({
+  style: "group",
+  perSlot: hackers,
+  durationMinutes: 30,
+  source: "sponsor",
+});
 
-describe("holdClash (overlap rules)", () => {
+describe("holdClash (two sponsors never share a room at once)", () => {
   const a = hold("a", "Rm 2242", "10:30", "11:00");
 
   test("another sponsor in the same room at an overlapping time is refused", () => {
     expect(holdClash(a, [use("b", "Rm 2242", "10:45", 15)])).not.toBeNull();
-    // A hold, a chat or a room window: all room uses.
     expect(holdClash(a, [use("b", "rm  2242", "10:00", 60)])).not.toBeNull();
-  });
-
-  test("the same sponsor may hold adjacent or overlapping times", () => {
-    expect(
-      holdClash(a, [
-        use("a", "Rm 2242", "10:00", 30),
-        use("a", "Rm 2242", "10:45", 30),
-      ]),
-    ).toBeNull();
   });
 
   test("different times or rooms are fine", () => {
@@ -58,17 +60,33 @@ describe("holdClash (overlap rules)", () => {
     expect(holdClash(a, [use("b", "Rm 2241", "10:30", 30)])).toBeNull();
     expect(holdClash(a, [use("b", null, "10:30", 30)])).toBeNull();
   });
+
+  test("a sponsor's own blocks may touch but not overlap", () => {
+    const own = [
+      { ...hold("a", "Rm 2241", "10:00", "10:30"), holdId: "h1" },
+      { ...hold("b", "Rm 2242", "10:30", "11:00"), holdId: "h2" },
+    ];
+    expect(ownHoldOverlap(a, own)).toBeNull();
+    expect(
+      ownHoldOverlap(hold("a", "Rm 2243", "10:15", "10:45"), own)?.holdId,
+    ).toBe("h1");
+    // Changing h1 itself is not an overlap with itself.
+    expect(
+      ownHoldOverlap(hold("a", "Rm 2241", "10:00", "10:45"), own, "h1"),
+    ).toBeNull();
+  });
 });
 
-describe("hold times", () => {
-  test("on the grid, non-empty, at most 4 hours", () => {
+describe("block times", () => {
+  test("on the grid, non-empty, at most 1 hr 30", () => {
     expect(holdTimesProblem("10:30", "11:00")).toBeNull();
+    expect(holdTimesProblem("09:00", "10:30")).toBeNull();
     expect(holdTimesProblem("10:10", "11:00")).toBe("offGrid");
     expect(holdTimesProblem("11:00", "11:00")).toBe("empty");
-    expect(holdTimesProblem("09:00", "13:15")).toBe("tooLong");
+    expect(holdTimesProblem("09:00", "10:45")).toBe("tooLong");
   });
 
-  test("start times one chat length apart inside the hold", () => {
+  test("slot starts one chat length apart inside the block", () => {
     const h = hold("a", "Rm 2242", "10:30", "11:15");
     expect(holdStartTimes(h, 15)).toEqual(["10:30", "10:45", "11:00"]);
     expect(holdStartTimes(h, 30)).toEqual(["10:30"]);
@@ -77,190 +95,164 @@ describe("hold times", () => {
   });
 });
 
-describe("room precedence", () => {
-  test("hold > moved chats > organizer room > sheet room > none", () => {
-    const all = {
-      holdRoom: "Rm 2242",
-      movedRoom: "Rm 2243",
-      assignedRoom: "Rm 2241",
-      sheetRoom: "Rm 9999",
-    };
-    expect(coffeeChatOfferRoom(all)).toBe("Rm 2242");
-    expect(coffeeChatOfferRoom({ ...all, holdRoom: null })).toBe("Rm 2243");
-    expect(
-      coffeeChatOfferRoom({ ...all, holdRoom: null, movedRoom: null }),
-    ).toBe("Rm 2241");
-    expect(
-      coffeeChatOfferRoom({ sheetRoom: "Rm 9999", assignedRoom: " " }),
-    ).toBe("Rm 9999");
-    expect(coffeeChatOfferRoom({})).toBeNull();
-  });
+describe("a chat goes in its sponsor's block, or nowhere", () => {
+  const holds = [
+    hold("a", "Rm 2242", "10:30", "11:00"),
+    hold("b", "Rm 2243", "10:30", "11:00"),
+  ];
 
-  test("a chat inside the sponsor's own hold takes the hold's room", () => {
-    const holds = [
-      hold("a", "Rm 2242", "10:30", "11:00"),
-      hold("b", "Rm 2243", "10:30", "11:00"),
-    ];
-    const at = (slotTime: string) =>
-      offerRoomAt({
-        sponsorId: "a",
-        sponsorChats: [],
-        setupRoom: "Rm 2241",
-        holds,
-        slot: { slotTime, durationMinutes: 15 },
-      });
-    expect(at("10:45")).toBe("Rm 2242");
-    expect(at("10:00")).toBe("Rm 2241");
+  test("the block's room, else none", () => {
+    expect(coffeeChatOfferRoom(holds, "a", { slotTime: "10:45" })).toBe(
+      "Rm 2242",
+    );
+    expect(coffeeChatOfferRoom(holds, "a", { slotTime: "10:00" })).toBeNull();
     expect(ownHoldAt(holds, "b", { slotTime: "10:30" })?.room).toBe("Rm 2243");
   });
-});
 
-describe("offers with holds", () => {
-  const setup: CoffeeChatSetup = {
-    sponsor: "A",
-    windowStart: "10:00",
-    windowEnd: "10:30",
-    durationMinutes: 15,
-    groupSize: 1,
-    slots: null,
-    hackers: null,
-    format: null,
-    room: "Rm 2241",
-  };
   const base = {
-    setup,
+    request: oneOnOne(1),
     slotTime: "10:45",
-    reps: 1,
     sponsorId: "a",
     sponsorChats: [],
     hackerChats: [],
     roomChats: [],
-    holds: [hold("a", "Rm 2242", "10:30", "11:00")],
+    holds: [holds[0]!],
     now: early,
   };
 
-  test("a hold adds offerable start times outside the window", () => {
+  test("offers need a covering block; the sheet window alone offers nothing", () => {
     expect(offerProblem(base)).toBeNull();
-    expect(offerProblem({ ...base, holds: [] })).toBe("notInWindow");
-    expect(offerProblem({ ...base, setup: null })).toBeNull();
-    expect(offerProblem({ ...base, setup: null, holds: [] })).toBe("notSetUp");
+    expect(offerProblem({ ...base, holds: [] })).toBe("noBlock");
+    expect(offerProblem({ ...base, slotTime: "10:00" })).toBe("noBlock");
   });
 
-  test("another sponsor's hold in the room blocks the offer", () => {
+  test("a 1-on-1 slot with 3 reps takes 3 hackers, then is full", () => {
+    const three = { ...base, request: oneOnOne(3) };
+    const chats = [
+      use("a", "Rm 2242", "10:45", 15),
+      use("a", "Rm 2242", "10:45", 15),
+    ];
+    expect(offerProblem({ ...three, sponsorChats: chats })).toBeNull();
     expect(
       offerProblem({
-        ...base,
-        roomChats: [use("b", "Rm 2242", "10:45", 15)],
+        ...three,
+        sponsorChats: [...chats, use("a", "Rm 2242", "10:45", 15)],
       }),
+    ).toBe("full");
+  });
+
+  test("another sponsor in the room blocks the offer", () => {
+    expect(
+      offerProblem({ ...base, roomChats: [use("b", "Rm 2242", "10:45", 15)] }),
     ).toBe("roomTaken");
-    // Their hold is in another room: fine.
-    expect(
-      offerProblem({
-        ...base,
-        roomChats: [use("b", "Rm 2241", "10:45", 15)],
-      }),
-    ).toBeNull();
   });
 
-  test("free times include the hold's starts, in the hold's room", () => {
-    const times = freeStartTimes(base);
-    expect(times.map((t) => [t.slotTime, t.room])).toEqual([
-      ["10:00", "Rm 2241"],
-      ["10:15", "Rm 2241"],
+  test("free times are the block's slot starts, in the block's room", () => {
+    expect(freeStartTimes(base).map((t) => [t.slotTime, t.room])).toEqual([
       ["10:30", "Rm 2242"],
       ["10:45", "Rm 2242"],
     ]);
   });
 });
 
-describe("needs a hacker", () => {
-  const h = hold("a", "Rm 2242", "10:30", "11:00");
+describe("block slots and fill", () => {
+  const h = hold("a", "Rm 2243", "09:00", "10:00");
 
-  test("until a live chat of the same sponsor overlaps the hold", () => {
-    expect(holdNeedsHacker(h, [])).toBe(true);
-    expect(holdNeedsHacker(h, [use("b", null, "10:30")])).toBe(true);
-    expect(holdNeedsHacker(h, [use("a", "Rm 2242", "10:45", 15)])).toBe(false);
-    expect(holdNeedsHacker(h, [use("a", "Rm 2242", "11:00", 15)])).toBe(true);
+  test("1-on-1, 1 rep: four 15-min slots of 0/1", () => {
+    const slots = blockSlots(h, oneOnOne(1), [
+      { ...use("a", "Rm 2243", "09:00", 15), chatId: "c1" },
+      use("b", "Rm 2241", "09:15", 15),
+    ]);
+    expect(slots.map((s) => [s.slotTime, s.booked, s.needed])).toEqual([
+      ["09:00", 1, 1],
+      ["09:15", 0, 1],
+      ["09:30", 0, 1],
+      ["09:45", 0, 1],
+    ]);
+    expect(slots[0]!.chatIds).toEqual(["c1"]);
+    expect(
+      blockFill(h, oneOnOne(1), [use("a", null, "09:00", 15)], [], early),
+    ).toEqual({ filled: 1, total: 4, firstOpen: "09:15" });
   });
 
-  test("room table: held cell warns, then fills with the chat", () => {
-    const board = {
-      slots: ["10:30", "10:45"],
-      sponsors: [
-        {
-          sponsorId: "a",
-          sponsor: "Acme",
-          setUp: false,
-          windowStart: null,
-          windowEnd: null,
-          reps: 1,
-          room: null,
-          cells: [],
-        },
-      ],
-      chats: [],
-      holds: [{ ...h, holdId: "h1", needsHacker: true }],
-    };
-    const table = buildRoomTable(board);
-    const cell = table.rows[0]![table.rooms.indexOf("Rm 2242")]!;
-    expect(cell.needsHacker).toBe(true);
-    expect(cell.occupants.map((o) => o.sponsor)).toEqual(["Acme"]);
-    expect(cell.occupants[0]!.hold).toEqual({
-      holdId: "h1",
-      needsHacker: true,
-    });
-    // Other rooms stay free.
-    expect(table.rows[0]![table.rooms.indexOf("Rm 2241")]!.state).toBe("free");
-    expect(boardStats(board, null).needsHacker).toBe(1);
-    expect(boardStats(board, new Set(["Other"])).needsHacker).toBe(0);
-
-    const filled = {
-      ...board,
-      chats: [
-        {
-          chatId: "c1",
-          sponsorId: "a",
-          slotTime: "10:30",
-          durationMinutes: 15,
-          room: "Rm 2242",
-          status: "pending",
-        },
-      ],
-      holds: [{ ...h, holdId: "h1", needsHacker: false }],
-    };
-    const after = buildRoomTable(filled).rows[0]![1]!;
-    expect(after.needsHacker).toBe(false);
-    expect(after.occupants[0]!.hackers).toBe(1);
+  test("1-on-1 with 3 reps: 3 hackers per slot, past 6 people is fine", () => {
+    expect(blockSlots(h, oneOnOne(3), []).map((s) => s.needed)).toEqual([
+      3, 3, 3, 3,
+    ]);
+    expect(blockSlots(h, oneOnOne(6), [])[0]!.needed).toBe(6);
   });
 
-  test("a hold elsewhere takes the sponsor out of their usual room", () => {
-    const board = {
-      slots: ["10:30"],
-      sponsors: [
-        {
-          sponsorId: "a",
-          sponsor: "Acme",
-          setUp: true,
-          windowStart: "10:00",
-          windowEnd: "12:00",
-          reps: 1,
-          room: "Rm 2241",
-          cells: [],
-        },
-      ],
-      chats: [],
-      holds: [{ ...h, holdId: "h1", needsHacker: true }],
-    };
-    const row = buildRoomTable(board).rows[0]!;
-    expect(row[0]!.state).toBe("free"); // Rm 2241
-    expect(row[1]!.occupants).toHaveLength(1); // Rm 2242
+  test("group of M hackers: a chat is filled once all M are booked", () => {
+    const format = groupOf(3);
+    const two = [use("a", null, "09:00"), use("a", null, "09:00")];
+    expect(blockSlots(h, format, two).map((s) => s.needed)).toEqual([3, 3]);
+    expect(blockFill(h, format, two).filled).toBe(0);
+    expect(blockFill(h, format, [...two, use("a", null, "09:00")]).filled).toBe(
+      1,
+    );
+    expect(blockFill(h, format, two).total).toBe(2);
   });
 
-  test("organizer summary counts holds needing a hacker per sponsor", () => {
+  test("an ask for fewer lowers a slot, down to 0 (no chat then)", () => {
+    const limits = [
+      { sponsorId: "a", startTime: "09:15", endTime: "09:30", hackers: 2 },
+      { sponsorId: "a", startTime: "09:30", endTime: "10:00", hackers: 0 },
+      // Overlapping asks: the lowest wins.
+      { sponsorId: "a", startTime: "09:00", endTime: "10:00", hackers: 1 },
+      { sponsorId: "b", startTime: "09:00", endTime: "10:00", hackers: 0 },
+    ];
+    const slots = blockSlots(h, oneOnOne(3), [], limits);
+    expect(slots.map((s) => [s.needed, s.requested, s.lowered])).toEqual([
+      [1, 3, true],
+      [1, 3, true],
+      [0, 3, true],
+      [0, 3, true],
+    ]);
+    const fill = blockFill(h, oneOnOne(3), [use("a", null, "09:00", 15)], limits);
+    expect(fill).toEqual({ filled: 1, total: 2, firstOpen: "09:15" });
+    expect(blockSlots(h, oneOnOne(3), [])[0]!.lowered).toBe(false);
+  });
+});
+
+describe("sponsor and organizer views", () => {
+  test("a sponsor sees only their own blocks, with fill and no note", () => {
+    const holds = [
+      { ...hold("b", "Rm 2243", "09:00", "09:30"), holdId: "hb" },
+      { ...hold("a", "Rm 2242", "11:00", "11:30"), holdId: "ha2" },
+      {
+        ...hold("a", "Rm 2242", "10:30", "11:00"),
+        holdId: "ha1",
+        note: "VIP",
+      },
+    ];
+    const mine = holdsForSponsor(
+      holds,
+      "a",
+      [
+        use("a", "Rm 2242", "11:00", 15),
+        use("a", "Rm 2242", "11:15", 15),
+        use("b", "Rm 2243", "10:30", 15),
+      ],
+      oneOnOne(1),
+      [],
+      early,
+    );
+    expect(mine.map((m) => m.holdId)).toEqual(["ha1", "ha2"]);
+    expect(mine.map((m) => [m.filled, m.total, m.needsHacker])).toEqual([
+      [0, 2, true],
+      [2, 2, false],
+    ]);
+    expect(mine[0]!.firstOpen).toBe("10:30");
+    expect(mine.every((m) => !("note" in m) && !("sponsorId" in m))).toBe(true);
+    expect(mine[1]!.slots.map((x) => x.booked)).toEqual([1, 1]);
+    expect(holdsForSponsor(holds, "c", [], oneOnOne(1))).toEqual([]);
+  });
+
+  test("organizer summary counts blocks still needing a hacker", () => {
     const summary = buildSponsorSummaries({
       sponsors: [
-        { id: "a", name: "Acme", coffeeChatRoom: null },
-        { id: "b", name: "Beta", coffeeChatRoom: null },
+        { id: "a", name: "Acme" },
+        { id: "b", name: "Beta" },
       ],
       setups: [],
       chats: [
@@ -273,57 +265,19 @@ describe("needs a hacker", () => {
         },
       ],
       help: [],
-      holds: [h, hold("b", "Rm 2243", "10:30", "11:00")],
+      holds: [
+        hold("a", "Rm 2242", "10:30", "10:45"),
+        hold("b", "Rm 2243", "10:30", "10:45"),
+      ],
       now: early,
     });
-    expect(summary.needsHacker).toBe(1);
+    // No request yet = 3 hackers per slot, so Beta's 1 chat still leaves
+    // its slot short.
+    expect(summary.needsHacker).toBe(2);
     expect(summary.sponsors.map((s) => [s.name, s.needsHacker])).toEqual([
       ["Acme", 1],
-      ["Beta", 0],
+      ["Beta", 1],
     ]);
-  });
-});
-
-describe("holdsForSponsor (privacy)", () => {
-  test("a sponsor sees only their own holds, with no organizer note", () => {
-    const holds = [
-      { ...hold("b", "Rm 2243", "09:00", "09:30"), holdId: "hb" },
-      { ...hold("a", "Rm 2242", "11:00", "11:30"), holdId: "ha2" },
-      {
-        ...hold("a", "Rm 2242", "10:30", "11:00"),
-        holdId: "ha1",
-        note: "VIP",
-      },
-    ];
-    const mine = holdsForSponsor(holds, "a", [
-      use("a", "Rm 2242", "11:00", 15),
-      use("b", "Rm 2243", "10:30", 15),
-    ]);
-    expect(mine.map((m) => m.holdId)).toEqual(["ha1", "ha2"]);
-    expect(mine.map((m) => m.needsHacker)).toEqual([true, false]);
-    expect(mine.every((m) => !("note" in m) && !("sponsorId" in m))).toBe(true);
-    expect(holdsForSponsor(holds, "c", [])).toEqual([]);
-  });
-});
-
-describe("room table clash", () => {
-  test("two sponsors in one room at once are flagged", () => {
-    const sponsor = (id: string, name: string) => ({
-      sponsorId: id,
-      sponsor: name,
-      setUp: true,
-      windowStart: "10:00",
-      windowEnd: "11:00",
-      reps: 1,
-      room: "Rm 2241",
-      cells: [],
-    });
-    const table = buildRoomTable({
-      slots: ["10:00"],
-      sponsors: [sponsor("a", "Acme"), sponsor("b", "Beta")],
-      chats: [],
-    });
-    expect(table.rows[0]![0]!.clash).toBe(true);
-    expect(table.rows[0]![1]!.clash).toBe(false);
+    expect(summary.sponsors[1]!.rooms).toEqual(["Rm 2243"]);
   });
 });
