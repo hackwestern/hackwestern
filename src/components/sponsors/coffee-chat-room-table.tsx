@@ -22,6 +22,7 @@ import {
 } from "~/lib/coffee-chat-room-table";
 import { formatClock } from "~/lib/run-of-show";
 import { sponsorColor, sponsorColorIndexes } from "~/lib/sponsor-colors";
+import { sponsorLogo } from "~/lib/sponsor-logos";
 import { cn } from "~/lib/utils";
 import type {
   BoardHold,
@@ -321,7 +322,7 @@ function CellButton({
                   <span className="text-dashboard-text-medium">
                     {formatClock(slot.slotTime)}
                   </span>
-                  <SlotFill slot={slot} />
+                  <SlotFill slot={slot} compact />
                 </li>
               ))}
             </ul>
@@ -380,12 +381,21 @@ function RoomSlotDialog({
                           formatClock(hold.startTime),
                           formatClock(hold.endTime),
                         )
-                      : copy.give.title(cell.room, formatClock(cell.slotTime))}
+                      : copy.give.title}
                   </Dialog.Title>
                   {hold ? (
                     <Dialog.Description className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-dashboard-text-medium">
-                      <SponsorBadge name={hold.sponsor} colors={colors} />
-                      <span className="font-semibold text-dashboard-text-heavy">
+                      <SponsorBadge
+                        name={hold.sponsor}
+                        colors={colors}
+                        className="h-6 max-w-28"
+                      />
+                      <span
+                        className={cn(
+                          "font-semibold text-dashboard-text-heavy",
+                          sponsorLogo(hold.sponsor) && "sr-only",
+                        )}
+                      >
                         {hold.sponsor}
                       </span>
                       {sponsor && (
@@ -398,8 +408,8 @@ function RoomSlotDialog({
                       )}
                     </Dialog.Description>
                   ) : (
-                    <Dialog.Description className="sr-only">
-                      {copy.give.submit}
+                    <Dialog.Description className="m-0 text-sm text-dashboard-text-medium">
+                      {copy.give.where(cell.room, formatClock(cell.slotTime))}
                     </Dialog.Description>
                   )}
                 </div>

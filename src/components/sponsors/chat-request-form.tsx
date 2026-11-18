@@ -84,8 +84,8 @@ function StepButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "inline-flex size-10 cursor-pixel-hover items-center justify-center rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-heavy transition-colors hover:bg-dashboard-bg-highlight",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
+        "inline-flex size-11 cursor-pixel-hover items-center justify-center rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-heavy transition-colors hover:bg-dashboard-bg-highlight",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2 md:size-10",
         "disabled:cursor-not-allowed disabled:opacity-dashboard-disabled",
         "[&_svg]:size-4",
       )}

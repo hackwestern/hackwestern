@@ -269,12 +269,6 @@ export const coffeeChatCopy = {
     confirmCancel: "Cancel chat",
     cancelConfirm: (hacker: string, sponsor: string, time: string) =>
       `Cancel ${hacker}'s chat with ${sponsor} at ${time}?`,
-    moveRoom: "Move room",
-    moveTo: "Move to",
-    moveHint: (sponsor: string, time: string) =>
-      `Moves ${sponsor}'s room block at ${time}, with every chat in it, to the new room.`,
-    move: "Move",
-    close: "Close",
     status: {
       pending: "Waiting for reply",
       accepted: "Accepted",
@@ -380,7 +374,8 @@ export const coffeeChatCopy = {
 
       // A free cell: give the room to a sponsor for a length.
       give: {
-        title: (room: string, time: string) => `${room} · ${time} · Free`,
+        title: "Give this room to a sponsor",
+        where: (room: string, time: string) => `${room} · from ${time}`,
         sponsor: "Sponsor",
         pickSponsor: "Pick a sponsor",
         request: (request: string, minutes: number) =>
@@ -399,8 +394,29 @@ export const coffeeChatCopy = {
         request: (request: string, minutes: number) =>
           `${request} · ${minutes} min`,
         slotsLabel: "Chat slots",
-        addHacker: "Add a hacker",
-        addLabel: (time: string) => `Add a hacker at ${time}`,
+        // A slot's status in plain words.
+        slotStatus: (missing: number, waiting: number) =>
+          [
+            missing > 0
+              ? `Still missing ${missing} ${missing === 1 ? "hacker" : "hackers"}`
+              : "All hackers booked",
+            waiting > 0 ? `${waiting} waiting on approval` : null,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+        invite: "Invite a hacker",
+        inviteLabel: (time: string) => `Invite a hacker at ${time}`,
+        sendInvite: "Send invite",
+        cancelChat: "Cancel",
+        cancelLabel: (hacker: string, time: string) =>
+          `Cancel ${hacker}'s chat at ${time}`,
+        reject: "Reject",
+        rejectLabel: (hacker: string, time: string) =>
+          `Reject ${hacker}'s request at ${time}`,
+        rejectConfirm: (hacker: string, sponsor: string, time: string) =>
+          `Reject ${hacker}'s chat with ${sponsor} at ${time}?`,
+        confirmReject: "Reject",
+        keep: "Keep",
         status: {
           pending: "Waiting",
           accepted: "Accepted",
@@ -429,7 +445,6 @@ export const coffeeChatCopy = {
       typeMore: "Type at least 2 characters.",
       change: "Change",
       code: (code: string | null) => code ?? "No hacker ID yet",
-      submit: "Add chat",
       addError: "Couldn't add the chat.",
     },
   },

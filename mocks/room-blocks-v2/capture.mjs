@@ -73,6 +73,11 @@ for (const width of [1280, 390]) {
       "/internal/sponsors?tab=coffee",
       'button[aria-label^="Rm 2241, 11:00"]',
     ],
+    [
+      "give-room",
+      "/internal/sponsors?tab=coffee",
+      'button[aria-label$="give room"]',
+    ],
     ["sponsor-page", `/sponsors/${STARTECH}/coffee-chats`, null],
   ];
   for (const [name, path, click] of shots) {
