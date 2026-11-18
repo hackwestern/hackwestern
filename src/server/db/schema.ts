@@ -1579,6 +1579,10 @@ export const taskReminders = pgTable(
     // DM channel id from conversations.open.
     slackChannel: varchar("slack_channel", { length: 32 }),
     scheduledMessageId: varchar("scheduled_message_id", { length: 64 }),
+    // sha256 of where and what was scheduled (DM user or channel, and the
+    // full text with its mention): a change reschedules. Null on rows from
+    // before 0047, which are rescheduled once.
+    routeKey: varchar("route_key", { length: 64 }),
     status: taskReminderStatusEnum("status").notNull(),
     error: varchar("error", { length: 255 }),
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })

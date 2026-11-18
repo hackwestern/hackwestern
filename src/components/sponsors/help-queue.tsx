@@ -18,7 +18,8 @@ import { api } from "~/utils/api";
 
 const copy = sponsorHelpCopy.organizer;
 
-// Organizer backup for sponsor help requests: every open and claimed request
+// Organizer backup for sponsor help requests, on the Task pings tab under
+// its "Sponsor help requests" heading (so each request is an h3): every open and claimed request
 // with its age and who claimed it, plus Resolve (for when Slack is down or
 // someone forgot to close the loop). Doesn't depend on the run-of-show sheet.
 // `focusSponsorId` lifts that sponsor's request to the top and highlights it
@@ -136,7 +137,7 @@ export function HelpQueue({
             >
               <div className="flex min-w-0 flex-col gap-1.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="m-0 text-lg font-semibold">
+                  <h3 className="m-0 text-lg font-semibold">
                     {sponsorHref ? (
                       <Link
                         href={sponsorHref(r.sponsorId)}
@@ -150,7 +151,7 @@ export function HelpQueue({
                     ) : (
                       r.sponsorName
                     )}
-                  </h2>
+                  </h3>
                   {r.status === "open" ? (
                     <DashboardTag className="bg-dashboard-status-iconBadge text-dashboard-text-warning">
                       {copy.open}

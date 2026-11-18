@@ -44,7 +44,6 @@ import {
   organizerHomeHref,
   sponsorRowId,
   summaryTotals,
-  type OrganizerTab,
   type SponsorSummary,
 } from "~/lib/sponsor-organizer";
 import { cn } from "~/lib/utils";
@@ -1150,8 +1149,15 @@ function SponsorDetails({
   rooms: readonly string[];
   idPrefix: string;
 }) {
-  const link = (tab: OrganizerTab) =>
-    organizerHomeHref({ tab, sponsor: sponsor.sponsorId });
+  // Help requests live on the Task pings tab (scrolled to help).
+  const link = (tab: "schedule" | "coffee" | "help") =>
+    tab === "help"
+      ? organizerHomeHref({
+          tab: "pings",
+          sponsor: sponsor.sponsorId,
+          help: true,
+        })
+      : organizerHomeHref({ tab, sponsor: sponsor.sponsorId });
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <section className="flex min-w-0 flex-col gap-3">

@@ -21,7 +21,7 @@ export const ORGANIZER_TABS = [
   "sponsors",
   "schedule",
   "coffee",
-  "help",
+  "pings",
 ] as const;
 export type OrganizerTab = (typeof ORGANIZER_TABS)[number];
 
@@ -40,6 +40,8 @@ export type OrganizerLocation = {
   tab: OrganizerTab;
   /** Scroll the Run of show tab to the coffee chat rooms table. */
   jumpToRooms: boolean;
+  /** Scroll the Task pings tab to the help requests (old ?tab=help). */
+  jumpToHelp: boolean;
   /** Sponsor id (or name) to focus the filters on, from ?sponsor=. */
   sponsor: string | null;
 };
@@ -47,7 +49,8 @@ export type OrganizerLocation = {
 /**
  * Read the tab from ?tab= (or the old ?view=). "where" and #rooms were the
  * old "Where is everyone" tab: the Run of show tab, scrolled to the rooms.
- * Anything unknown opens Sponsors.
+ * "help" and #help were the old Help tab, now part of Task pings: that tab,
+ * scrolled to the help requests. Anything unknown opens Sponsors.
  */
 export function parseOrganizerLocation(
   query: OrganizerQuery,
@@ -55,13 +58,21 @@ export function parseOrganizerLocation(
 ): OrganizerLocation {
   const asked = first(query.tab) ?? first(query.view);
   const rooms = asked === "where" || hash === "#rooms";
+  const help = asked === "help" || hash === "#help";
   const tab: OrganizerTab = rooms
     ? "schedule"
-    : ORGANIZER_TABS.includes(asked as OrganizerTab)
-      ? (asked as OrganizerTab)
-      : "sponsors";
+    : help
+      ? "pings"
+      : ORGANIZER_TABS.includes(asked as OrganizerTab)
+        ? (asked as OrganizerTab)
+        : "sponsors";
   const sponsor = first(query.sponsor)?.trim();
-  return { tab, jumpToRooms: rooms, sponsor: sponsor ? sponsor : null };
+  return {
+    tab,
+    jumpToRooms: rooms,
+    jumpToHelp: help && tab === "pings",
+    sponsor: sponsor ? sponsor : null,
+  };
 }
 
 /** Anchor id of a sponsor's row on the Sponsors tab. */
@@ -74,10 +85,13 @@ export function organizerHomeHref({
   tab,
   sponsor,
   rooms,
+  help,
 }: {
   tab: OrganizerTab;
   sponsor?: string | null;
   rooms?: boolean;
+  /** Task pings, scrolled to the help requests. */
+  help?: boolean;
 }): string {
   const params = new URLSearchParams();
   if (tab !== "sponsors") params.set("tab", tab);
@@ -88,7 +102,9 @@ export function organizerHomeHref({
       ? `#${sponsorRowId(sponsor)}`
       : rooms && tab === "schedule"
         ? "#rooms"
-        : "";
+        : help && tab === "pings"
+          ? "#help"
+          : "";
   return `${ORGANIZER_HOME_PATH}${search ? `?${search}` : ""}${hash}`;
 }
 
@@ -100,11 +116,16 @@ export function organizerHomeHref({
 export function legacyScheduleDestination(query: OrganizerQuery): string {
   const asked = first(query.tab) ?? first(query.view);
   const tab: OrganizerTab =
-    asked === "coffee" || asked === "help" ? asked : "schedule";
+    asked === "coffee"
+      ? "coffee"
+      : asked === "help" || asked === "pings"
+        ? "pings"
+        : "schedule";
   return organizerHomeHref({
     tab,
     sponsor: first(query.sponsor) ?? null,
     rooms: asked === "where",
+    help: asked === "help",
   });
 }
 

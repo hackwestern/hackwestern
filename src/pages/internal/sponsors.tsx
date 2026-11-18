@@ -11,8 +11,8 @@ import {
 } from "~/components/sponsors/organizer/organizer-tabs";
 import { RunOfShowTab } from "~/components/sponsors/organizer/run-of-show-tab";
 import { SponsorsTab } from "~/components/sponsors/organizer/sponsors-tab";
+import { TaskPingsTab } from "~/components/sponsors/organizer/task-pings-tab";
 import { HappeningNowBanner } from "~/components/sponsors/happening-now";
-import { HelpQueue } from "~/components/sponsors/help-queue";
 import {
   LoadError,
   PageIntro,
@@ -33,7 +33,7 @@ const copy = sponsorOrganizerCopy;
 const SUMMARY_REFRESH_MS = 15_000;
 
 // The organizer sponsor home: Lucas's sponsor board plus the run of show,
-// coffee chats and help queue, as tabs in the URL (?tab=, ?sponsor=). Each
+// coffee chats and task pings (with the help queue), as tabs in the URL (?tab=, ?sponsor=). Each
 // sponsor row links into the other tabs focused on that sponsor, and they
 // link back to the row (docs/flows/sponsor-organizer.md).
 export default function SponsorOrganizerHome() {
@@ -79,8 +79,8 @@ export default function SponsorOrganizerHome() {
           className={cn(
             "mx-auto flex w-full flex-col gap-5",
             // The day grid and the coffee chat tables get room for their
-            // columns; the help list stays readable.
-            tab === "help" ? "max-w-[880px]" : "max-w-[1440px]",
+            // columns; the help list and ping log stay readable.
+            tab === "pings" ? "max-w-[880px]" : "max-w-[1440px]",
           )}
         >
           <PageIntro
@@ -118,13 +118,14 @@ export default function SponsorOrganizerHome() {
                 summaryFailed={!summary.data && summary.isError}
                 now={now}
               />
-            ) : tab === "help" ? (
-              <HelpQueue
+            ) : tab === "pings" ? (
+              <TaskPingsTab
                 focusSponsorId={focusId}
                 focusName={focusName}
                 sponsorHref={(id) =>
                   organizerHomeHref({ tab: "sponsors", sponsor: id })
                 }
+                jumpToHelp={loc.jumpToHelp}
               />
             ) : tab === "coffee" ? (
               <CoffeeChatsTab sponsor={loc.sponsor} />
