@@ -87,8 +87,11 @@ export const sponsorPortalRouter = createTRPCRouter({
   getSponsorPortalInfo: publicProcedure
     .input(z.object({ sponsor: z.string().uuid() }))
     .query(async ({ input }) => {
+      // The name comes from our database; only the rest needs the sheet. If
+      // the sheet can't be read, still return the name (welcome + logo) with
+      // the sheet fields blank, instead of failing the whole portal.
+      const sponsorName = await resolveSponsorName(input.sponsor);
       try {
-        const sponsorName = await resolveSponsorName(input.sponsor);
         const sheets = await getSheetsClient();
         const spreadsheetId = getSpreadsheetId();
 
@@ -147,14 +150,21 @@ export const sponsorPortalRouter = createTRPCRouter({
           coffeeChatBookedCount,
         };
       } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error
-              ? error.message
-              : "Failed to load sponsor portal information",
-        });
+        console.error("sponsor portal: sheet read failed", error);
+        return {
+          sponsorName,
+          hwContact: null,
+          hwContactPhone: null,
+          roomNumber: "TBD",
+          boothLocation: "TBD",
+          workshopLocation: null,
+          workshopTime: null,
+          picksCount: 0,
+          judgingApplies: false,
+          maxCoffeeChatMinutes: 0,
+          maxCoffeeChatBlocks: coffeeChatBlocksFor(0),
+          coffeeChatBookedCount: 0,
+        };
       }
     }),
 

@@ -5,6 +5,7 @@
  * A sponsor missing here falls back to their initials badge.
  */
 const LOGOS: Record<string, string> = {
+  accenture: "/shared/sponsors/accenture.svg",
   canadalife: "/shared/sponsors/canadalife.png",
   commure: "/shared/sponsors/commure.svg",
   cse: "/shared/sponsors/cse-trimmed.png",
@@ -12,6 +13,7 @@ const LOGOS: Record<string, string> = {
   scotiabank: "/shared/sponsors/scotiabank-trimmed.svg",
   startech: "/shared/sponsors/startech.svg",
   sunlife: "/shared/sponsors/sunlife.png",
+  tinyfish: "/shared/sponsors/tinyfish.svg",
 };
 
 function logoKey(name: string): string {
