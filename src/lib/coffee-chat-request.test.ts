@@ -3,7 +3,6 @@ import { describe, expect, test } from "vitest";
 import {
   askedAt,
   chatRequestOf,
-  repsFromNotes,
   sheetMismatch,
 } from "~/lib/coffee-chat-request";
 import { parseCoffeeChatsTab } from "~/server/api/utils/run-of-show-parse";
@@ -19,18 +18,8 @@ const SHEET = parseCoffeeChatsTab([
 ]);
 const row = (name: string) => SHEET.find((s) => s.sponsor === name)!;
 
-describe("repsFromNotes", () => {
-  test("'based on N' wins, else the first rep count", () => {
-    expect(repsFromNotes("3-4 reps (notes based on 3)")).toBe(3);
-    expect(repsFromNotes("2 reps")).toBe(2);
-    expect(repsFromNotes("4–5 reps")).toBe(4);
-    expect(repsFromNotes("bring swag")).toBeNull();
-    expect(repsFromNotes(null)).toBeNull();
-  });
-});
-
 describe("chatRequestOf: sheet defaults until the sponsor answers", () => {
-  test("Individual -> 1-on-1 with the NOTES rep count", () => {
+  test("Individual -> 1-on-1 with 3 reps (3 hackers per slot)", () => {
     expect(chatRequestOf(row("StarTech"))).toEqual({
       style: "oneOnOne",
       perSlot: 3,
@@ -49,12 +38,12 @@ describe("chatRequestOf: sheet defaults until the sponsor answers", () => {
     expect(chatRequestOf(row("Canada Life")).perSlot).toBe(3);
   });
 
-  test("a blank row is no request yet (1-on-1, 1 rep to book with)", () => {
+  test("a blank row is no request yet, still booked as 3 per slot", () => {
     for (const name of ["Scotiabank", "CSE"]) {
       expect(chatRequestOf(row(name))).toMatchObject({
         source: "none",
         style: "oneOnOne",
-        perSlot: 1,
+        perSlot: 3,
       });
     }
     expect(chatRequestOf(null).source).toBe("none");
@@ -69,6 +58,10 @@ describe("chatRequestOf: sheet defaults until the sponsor answers", () => {
       durationMinutes: 30,
       source: "sponsor",
     });
+    // At most 3 hackers per slot, whatever was saved.
+    expect(
+      chatRequestOf(row("Sunlife"), { style: "group", perSlot: 6 }).perSlot,
+    ).toBe(3);
     // Half-saved or unknown values fall back to the sheet.
     expect(
       chatRequestOf(row("StarTech"), { style: "group", perSlot: null }).source,

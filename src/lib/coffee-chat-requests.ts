@@ -34,10 +34,6 @@ export const ACTIVE_COFFEE_CHAT_STATUSES = ["pending", "accepted"] as const;
 /** Top interested, consenting hackers shown to each sponsor. */
 export const COFFEE_CHAT_SHORTLIST_SIZE = 40;
 
-/** Reps a sponsor can say they're sending to coffee chats. */
-export const MIN_COFFEE_CHAT_REPS = 1;
-export const MAX_COFFEE_CHAT_REPS = 10;
-
 /** An unanswered request expires this long before the chat starts. */
 export const COFFEE_CHAT_EXPIRY_MINUTES_BEFORE = 20;
 

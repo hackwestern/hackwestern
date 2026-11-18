@@ -7,18 +7,16 @@
  * - "Ask for fewer": a lower count for a stretch of time (a slot or an
  *   hour), down to 0 = no chat then. The lowest ask covering a slot wins.
  *
- * Until the sponsor answers, the request comes from their Coffee Chats
- * sheet row: "Individual" -> 1-on-1 with the rep count in NOTES (else 1),
- * "Groups ... with 3 people" -> one group of 3. A blank row = no request.
- * There is no room capacity: only hackers booked vs hackers asked for.
+ * A slot has at most 3 hackers (Jazz, 2026-11-18): 3 hackers + 3 reps
+ * side by side, or a group of 3 with 1 rep. Every sponsor is assumed to
+ * bring 3-4 reps, so until they answer the request is 3 per slot: 1-on-1
+ * with 3 reps when the Coffee Chats sheet says "Individual", else a group
+ * of 3. A blank row is "no request yet", still booked as 3. The only count
+ * is hackers booked vs hackers asked for.
  *
  * Dependency-free (shared by server, organizer and sponsor pages).
  */
-import {
-  coffeeChatMinutesOf,
-  MAX_COFFEE_CHAT_REPS,
-  MIN_COFFEE_CHAT_REPS,
-} from "~/lib/coffee-chat-requests";
+import { coffeeChatMinutesOf } from "~/lib/coffee-chat-requests";
 import type { CoffeeChatSetup } from "~/lib/run-of-show";
 
 /** The parts of a Coffee Chats sheet row a request reads. */
@@ -40,9 +38,11 @@ export type SetupLike = Partial<
 export const CHAT_STYLES = ["oneOnOne", "group"] as const;
 export type ChatStyle = (typeof CHAT_STYLES)[number];
 
-/** Hackers per slot a sponsor can ask for (reps or group size). */
-export const MIN_PER_SLOT = MIN_COFFEE_CHAT_REPS;
-export const MAX_PER_SLOT = MAX_COFFEE_CHAT_REPS;
+/** Hackers per slot a sponsor can ask for: 1 to 3 (fewer per slot via asks). */
+export const MIN_PER_SLOT = 1;
+export const MAX_PER_SLOT = 3;
+/** Hackers per slot until the sponsor answers. */
+export const DEFAULT_PER_SLOT = 3;
 
 /** What a sponsor saved (both null = not answered yet). */
 export type SavedChatRequest = {
@@ -73,18 +73,6 @@ function clampPerSlot(n: number): number {
   return Math.min(MAX_PER_SLOT, Math.max(MIN_PER_SLOT, Math.floor(n)));
 }
 
-/**
- * Reps from the sheet's NOTES: "3-4 reps (notes based on 3)" -> 3,
- * "2 reps" -> 2, anything else -> null.
- */
-export function repsFromNotes(notes: string | null | undefined): number | null {
-  const text = String(notes ?? "");
-  const based = /based on\s+(\d+)/i.exec(text);
-  const reps = /(\d+)(?:\s*[-–]\s*\d+)?\s*reps?\b/i.exec(text);
-  const n = Number((based ?? reps)?.[1]);
-  return Number.isInteger(n) && n >= 1 ? n : null;
-}
-
 /** True when the sheet row says nothing about chats (name only). */
 function blankRow(setup: SetupLike | null | undefined): boolean {
   return !setup || (!setup.format && !setup.windowStart && !setup.windowEnd);
@@ -96,14 +84,12 @@ export function sheetChatRequest(
 ): Omit<ChatRequest, "source"> | null {
   if (!setup || blankRow(setup)) return null;
   const durationMinutes = setup.durationMinutes ?? 15;
-  const groupSize = setup.groupSize ?? 1;
-  return groupSize > 1
-    ? { style: "group", perSlot: clampPerSlot(groupSize), durationMinutes }
-    : {
-        style: "oneOnOne",
-        perSlot: clampPerSlot(repsFromNotes(setup.notes) ?? 1),
-        durationMinutes,
-      };
+  const individual = /individual/i.test(setup.format ?? "");
+  return {
+    style: individual ? "oneOnOne" : "group",
+    perSlot: DEFAULT_PER_SLOT,
+    durationMinutes,
+  };
 }
 
 function isStyle(style: string | null): style is ChatStyle {
@@ -112,7 +98,7 @@ function isStyle(style: string | null): style is ChatStyle {
 
 /**
  * The request in force: the sponsor's answer, else the sheet's default,
- * else 1-on-1 with 1 rep ("No chat request yet"; organizers can still
+ * else 1-on-1 with 3 reps ("No chat request yet"; organizers can still
  * give a room).
  */
 export function chatRequestOf(
@@ -131,7 +117,12 @@ export function chatRequestOf(
   const sheet = sheetChatRequest(setup);
   return sheet
     ? { ...sheet, source: "sheet" }
-    : { style: "oneOnOne", perSlot: 1, durationMinutes, source: "none" };
+    : {
+        style: "oneOnOne",
+        perSlot: DEFAULT_PER_SLOT,
+        durationMinutes,
+        source: "none",
+      };
 }
 
 /** The lowest ask covering a slot start, or null when none does. */
