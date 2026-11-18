@@ -283,3 +283,10 @@
 - **Link given:** a nullable `portal_link_given_at` on `sponsor_judging_sponsor` (migration `0057_sponsor_portal_link_given`, after `0056_notification_center`; 0054 belongs to another branch, and the first draft numbered 0055 is in `drizzle/_to_delete/`), set by `sponsorOrganizer.setPortalLinkGiven`. Arrival was already stored (the sheet status), so nothing new for it.
 - **Why:** Jazz: the first page should change with the day. Friday is about judges arriving and getting their link, Sunday about whether they submitted and where they should be. Showing every day's columns at once was a wide table where most cells didn't apply.
 - **Alternatives:** record "link given" automatically on the sponsor's first portal visit (says they opened it, not that we handed it over; could be added later as a second signal); a separate Day tab (the first page is where organizers look); keep every column and only highlight the day's (still the wide table); compute Sunday status from `sponsorScoring.overview` and `sponsorPresentations.overview` on the client (two heavy queries for a few counts, so the summary query reads the counts itself).
+
+## 2026-11-18: One sponsor sheet (Spon Team RUN OF SHOW)
+- **Decision:** Lucas's judging sheet tabs (Judging, sponsor info, HW Contacts, Coffee Chats as "Coffee Chat Room Grid") were copied into the Spon Team RUN OF SHOW sheet. The code reads and writes only that sheet (`RUN_OF_SHOW_SHEET`), with the run-of-show login. `SPONSOR_JUDGING_SHEET` is no longer read.
+- **Why:** Jazz wants one source of truth; two sheets drift.
+- **Alternatives:** keep both sheets (rejected: drift); point `SPONSOR_JUDGING_SHEET` at the same ID (rejected: two settings for one sheet).
+- **Needs:** the run-of-show login must be Editor on the sheet for shortlists, sponsor info and the room grid to save.
+- Also: availability wins over chatting hours. Chatting hours longer than a sponsor's window are capped at the window (Canada Life: 3 h in 10-12 reads as 2 h).

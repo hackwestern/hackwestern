@@ -1,4 +1,8 @@
 import { TRPCError } from "@trpc/server";
+import {
+  runOfShowCredentials,
+  runOfShowSpreadsheetId,
+} from "~/server/api/utils/run-of-show-sheet";
 import { google } from "googleapis";
 import { eq } from "drizzle-orm";
 
@@ -65,22 +69,27 @@ const uuidRegex =
 
 export type SheetsClient = ReturnType<typeof google.sheets>;
 
+/**
+ * The sponsor tabs (Judging, sponsor info, HW Contacts, Coffee Chat Room
+ * Grid) live in the Spon Team RUN OF SHOW sheet since Lucas's judging sheet
+ * was merged into it (Jazz, 2026-11-18), so this uses the run-of-show login
+ * (falling back to the sponsor login). That account needs Editor on the
+ * sheet: shortlists, sponsor info and the room grid are written here.
+ */
 export async function getSheetsClient() {
-  const email = env.SPONSOR_SHEETS_CLIENT_EMAIL;
-  const key = env.SPONSOR_SHEETS_PRIVATE_KEY?.trim()
-    .replace(/^"+|"+$/g, "")
-    .replace(/\\n/g, "\n");
-  if (!email || !key) {
+  let creds: { email: string; key: string };
+  try {
+    creds = runOfShowCredentials();
+  } catch (e) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message:
-        "SPONSOR_SHEETS_CLIENT_EMAIL / SPONSOR_SHEETS_PRIVATE_KEY are not configured",
+      message: e instanceof Error ? e.message : String(e),
     });
   }
 
   const auth = new google.auth.JWT({
-    email,
-    key,
+    email: creds.email,
+    key: creds.key,
     scopes: [SPREADSHEETS_SCOPE],
   });
   await auth.authorize();
@@ -89,14 +98,16 @@ export async function getSheetsClient() {
 }
 
 export function getSpreadsheetId(): string {
-  const spreadsheetId = env.SPONSOR_JUDGING_SHEET;
-  if (!spreadsheetId) {
+  // One source of truth: the Spon Team RUN OF SHOW sheet. Lucas's old
+  // judging sheet (SPONSOR_JUDGING_SHEET) is no longer read.
+  try {
+    return runOfShowSpreadsheetId();
+  } catch (e) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message: "SPONSOR_JUDGING_SHEET env variable is not set",
+      message: e instanceof Error ? e.message : String(e),
     });
   }
-  return spreadsheetId;
 }
 
 /**
