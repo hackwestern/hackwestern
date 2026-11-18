@@ -83,7 +83,7 @@ export type RunOfShowSnapshot = ParsedRunOfShow & {
 
 type SheetData = sheets_v4.Schema$Sheet;
 
-function gridOf(sheet: SheetData | undefined): SheetGrid {
+export function gridOf(sheet: SheetData | undefined): SheetGrid {
   const grid: SheetGrid = [];
   for (const data of sheet?.data ?? []) {
     const startRow = data.startRow ?? 0;
@@ -98,7 +98,7 @@ function gridOf(sheet: SheetData | undefined): SheetGrid {
   return Array.from(grid, (row) => Array.from(row ?? [], (c) => c ?? ""));
 }
 
-function mergesOf(sheet: SheetData | undefined): SheetMerge[] {
+export function mergesOf(sheet: SheetData | undefined): SheetMerge[] {
   return (sheet?.merges ?? []).map((m) => ({
     startRow: m.startRowIndex ?? 0,
     endRow: m.endRowIndex ?? 0,
@@ -120,7 +120,7 @@ const OPTIONAL_RANGES = [
   `'${CEREMONIES_TAB}'!A1:J100`,
   `'${WORKSHOPS_TAB}'!A1:J100`,
 ];
-const SHEET_FIELDS =
+export const SHEET_FIELDS =
   "sheets(properties(title),merges,data(startRow,startColumn,rowData(values(formattedValue))))";
 
 /** The Sheets API rejects the whole request when a range names a missing tab. */

@@ -16,7 +16,7 @@ export type SlackDirectoryUser = {
   names: string[];
 };
 
-type SlackMember = {
+export type SlackMember = {
   id?: string;
   deleted?: boolean;
   is_bot?: boolean;
@@ -40,9 +40,9 @@ const MAX_PAGES = 50;
 const norm = (name: string | undefined) =>
   (name ?? "").trim().replace(/\s+/g, " ").toLowerCase();
 
-/** A member's matchable names; null for bots, deactivated users and guests. */
-export function directoryEntry(m: SlackMember): SlackDirectoryUser | null {
-  if (!m.id || m.id === "USLACKBOT") return null;
+/** False for Slackbot, bots, apps, deactivated users and guests. */
+export function isActivePerson(m: SlackMember): m is SlackMember & { id: string } {
+  if (!m.id || m.id === "USLACKBOT") return false;
   const skip = [
     m.deleted,
     m.is_bot,
@@ -50,7 +50,12 @@ export function directoryEntry(m: SlackMember): SlackDirectoryUser | null {
     m.is_restricted,
     m.is_ultra_restricted,
   ];
-  if (skip.some((flag) => flag === true)) return null;
+  return !skip.some((flag) => flag === true);
+}
+
+/** A member's matchable names; null for bots, deactivated users and guests. */
+export function directoryEntry(m: SlackMember): SlackDirectoryUser | null {
+  if (!isActivePerson(m)) return null;
   const real = norm(m.profile?.real_name ?? m.real_name);
   const firstName = norm(m.profile?.first_name);
   const first = firstName.length > 0 ? firstName : (real.split(" ")[0] ?? "");
@@ -70,15 +75,16 @@ type UsersListPage = SlackResponse & {
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
- * Every page of users.list. A rate-limited page (429) is retried once when
- * Slack's Retry-After is short. Throws a SlackApiError when Slack refuses.
+ * Every member on every page of users.list, unfiltered. A rate-limited page
+ * (429) is retried once when Slack's Retry-After is short. Throws a
+ * SlackApiError when Slack refuses.
  */
-export async function fetchSlackDirectory(
+export async function fetchSlackMembers(
   token: string,
   fetchImpl: typeof fetch = fetch,
   sleep: (ms: number) => Promise<void> = wait,
-): Promise<SlackDirectoryUser[]> {
-  const users: SlackDirectoryUser[] = [];
+): Promise<SlackMember[]> {
+  const members: SlackMember[] = [];
   let cursor: string | undefined;
   let retried = false;
   const page = (c: string | undefined) =>
@@ -103,15 +109,25 @@ export async function fetchSlackDirectory(
       await sleep(after * 1000);
       res = await page(cursor);
     }
-    for (const m of res.members ?? []) {
-      const entry = directoryEntry(m);
-      if (entry) users.push(entry);
-    }
+    members.push(...(res.members ?? []));
     const next = res.response_metadata?.next_cursor;
     cursor = next?.length ? next : undefined;
     if (!cursor) break;
   }
-  return users;
+  return members;
+}
+
+/** The workspace's people, as matchable names (see directoryEntry). */
+export async function fetchSlackDirectory(
+  token: string,
+  fetchImpl: typeof fetch = fetch,
+  sleep: (ms: number) => Promise<void> = wait,
+): Promise<SlackDirectoryUser[]> {
+  const members = await fetchSlackMembers(token, fetchImpl, sleep);
+  return members.flatMap((m) => {
+    const entry = directoryEntry(m);
+    return entry ? [entry] : [];
+  });
 }
 
 let cache: { token: string; at: number; users: SlackDirectoryUser[] } | null =

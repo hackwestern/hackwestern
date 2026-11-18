@@ -43,12 +43,13 @@ import {
   taskReminders,
   taskReminderSync,
 } from "~/server/db/schema";
+import { escapeSlackText } from "~/server/slack/client";
+import { lookupSlackUser } from "~/server/slack/dm";
 import {
-  SlackApiError,
-  escapeSlackText,
-  slackApi,
-  type SlackResponse,
-} from "~/server/slack/client";
+  cancelScheduledMessage,
+  MIN_SCHEDULE_AHEAD_MS,
+  scheduleSlackMessage,
+} from "~/server/slack/scheduled-messages";
 import {
   getSlackDirectory,
   matchSlackUser,
@@ -70,8 +71,8 @@ import {
 
 /** Reminders post at the task's start time (Jazz, 2026-11-16). */
 export const REMINDER_LEAD_MS = 0;
-/** Slack refuses a post_at in the past; keep a margin for clock skew. */
-export const MIN_SCHEDULE_AHEAD_MS = 90_000;
+export { MIN_SCHEDULE_AHEAD_MS };
+export { lookupSlackUser, type SlackLookup } from "~/server/slack/dm";
 /** The automatic sync runs at most this often (per instance and in the DB). */
 export const AUTO_SYNC_THROTTLE_MS = 3 * 60_000;
 /** Unchanged tasks are still re-synced after this long (owner emails change). */
@@ -324,30 +325,41 @@ export type StoredReminder = {
   routeKey: string | null;
 };
 
-export type ReminderDiff = {
+/** What the diff needs from a planned message (sponsor or ops pings). */
+export type DiffDesired = Pick<
+  DesiredReminder,
+  "taskKey" | "routeKey" | "postAt" | "tooSoon"
+>;
+
+/** What the diff needs from a stored message. */
+export type DiffStored = Omit<StoredReminder, "slackUserId">;
+
+export type ReminderDiff<
+  D extends DiffDesired = DesiredReminder,
+  S extends DiffStored = StoredReminder,
+> = {
   /** Scheduled and still right: leave alone. */
   keep: string[];
   /** Scheduled, post time passed: Slack has sent it. */
   passed: string[];
   /** Scheduled but no longer wanted: delete in Slack, then cancel. */
-  cancel: StoredReminder[];
+  cancel: S[];
   /** Failed and no longer wanted: mark cancelled (nothing in Slack). */
   drop: string[];
   /** To schedule; retryId reuses a failed row for the same task. */
-  create: (DesiredReminder & { retryId?: string })[];
+  create: (D & { retryId?: string })[];
   /** Wanted but too close to schedule, and not already scheduled. */
-  tooSoon: DesiredReminder[];
+  tooSoon: D[];
 };
 
 /** Compare stored reminders with the plan. Pure; the sync applies it. */
-export function diffReminders(
-  stored: StoredReminder[],
-  desired: DesiredReminder[],
-  now: Date,
-): ReminderDiff {
+export function diffReminders<
+  D extends DiffDesired = DesiredReminder,
+  S extends DiffStored = StoredReminder,
+>(stored: S[], desired: D[], now: Date): ReminderDiff<D, S> {
   const want = new Map(desired.map((d) => [d.taskKey, d]));
   const kept = new Set<string>();
-  const diff: ReminderDiff = {
+  const diff: ReminderDiff<D, S> = {
     keep: [],
     passed: [],
     cancel: [],
@@ -430,40 +442,6 @@ function teamChannel(deps: SlackDeps): string | null {
 function channelMention(deps: SlackDeps): string {
   if ("mention" in deps && deps.mention !== undefined) return deps.mention;
   return env.SPONSOR_HELP_SLACK_MENTION ?? DEFAULT_CHANNEL_MENTION;
-}
-
-function errorCode(error: unknown): string {
-  if (error instanceof SlackApiError) return error.code;
-  const name = (error as { name?: unknown })?.name;
-  if (name === "TimeoutError" || name === "AbortError") return "timeout";
-  return "error";
-}
-
-export type SlackLookup =
-  | { status: "found"; userId: string }
-  | { status: "not-found" }
-  | { status: "error"; code: string };
-
-export async function lookupSlackUser(
-  token: string,
-  email: string,
-  fetchImpl: typeof fetch = fetch,
-): Promise<SlackLookup> {
-  try {
-    const res = await slackApi<SlackResponse & { user?: { id?: string } }>(
-      token,
-      "users.lookupByEmail",
-      { email },
-      fetchImpl,
-    );
-    const userId = res.user?.id;
-    return userId ? { status: "found", userId } : { status: "not-found" };
-  } catch (error) {
-    const code = errorCode(error);
-    return code === "users_not_found"
-      ? { status: "not-found" }
-      : { status: "error", code };
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -590,39 +568,20 @@ export async function syncTaskReminders(
       // too would send two, so they wait for the next sync.
       const stuck = new Set<string>();
       for (const row of diff.cancel) {
-        try {
-          if (row.slackChannel && row.scheduledMessageId) {
-            await slackApi(
-              token,
-              "chat.deleteScheduledMessage",
-              {
-                channel: row.slackChannel,
-                scheduled_message_id: row.scheduledMessageId,
-              },
-              fetchImpl,
-            );
-          }
-          await tx
-            .update(taskReminders)
-            .set({ status: "cancelled", error: null })
-            .where(eq(taskReminders.id, row.id));
-          cancelled++;
-        } catch (error) {
-          const code = errorCode(error);
-          // Already sent or already deleted: nothing left to cancel.
-          const gone = code === "invalid_scheduled_message_id";
-          await tx
-            .update(taskReminders)
-            .set(
-              gone
-                ? { status: "cancelled", error: code }
+        const outcome = await cancelScheduledMessage(token, row, fetchImpl);
+        await tx
+          .update(taskReminders)
+          .set(
+            outcome.status === "cancelled"
+              ? { status: "cancelled", error: null }
+              : outcome.status === "gone"
+                ? { status: "cancelled", error: outcome.code }
                 : // Still in Slack: stays "scheduled" so the next sync retries.
-                  { error: `cancel: ${code}`.slice(0, 255) },
-            )
-            .where(eq(taskReminders.id, row.id));
-          if (gone) cancelled++;
-          else stuck.add(row.taskKey);
-        }
+                  { error: `cancel: ${outcome.code}`.slice(0, 255) },
+          )
+          .where(eq(taskReminders.id, row.id));
+        if (outcome.status === "stuck") stuck.add(row.taskKey);
+        else cancelled++;
       }
 
       const dmChannels = new Map<string, string>();
@@ -635,56 +594,32 @@ export async function syncTaskReminders(
           continue;
         }
         const userId = d.slackUserId;
-        let values: Pick<
+        const res = await scheduleSlackMessage(
+          token,
+          { slackUserId: userId, channel: d.channel },
+          d.postAt,
+          d.text,
+          dmChannels,
+          fetchImpl,
+        );
+        const values: Pick<
           typeof taskReminders.$inferInsert,
           "status" | "slackChannel" | "scheduledMessageId" | "error"
-        >;
-        try {
-          let channel = userId ? dmChannels.get(userId) : d.channel;
-          if (!channel && userId) {
-            const opened = await slackApi<
-              SlackResponse & { channel?: { id?: string } }
-            >(token, "conversations.open", { users: userId }, fetchImpl);
-            channel = opened.channel?.id;
-            if (!channel) {
-              throw new SlackApiError("conversations.open", "no_channel");
+        > = res.ok
+          ? {
+              status: "scheduled",
+              slackChannel: res.slackChannel,
+              scheduledMessageId: res.scheduledMessageId,
+              error: null,
             }
-            dmChannels.set(userId, channel);
-          }
-          if (!channel) {
-            throw new SlackApiError("chat.scheduleMessage", "no_channel");
-          }
-          const res = await slackApi<
-            SlackResponse & { scheduled_message_id?: string; channel?: string }
-          >(
-            token,
-            "chat.scheduleMessage",
-            {
-              channel,
-              post_at: String(Math.floor(d.postAt.getTime() / 1000)),
-              text: d.text,
-            },
-            fetchImpl,
-          );
-          values = {
-            status: "scheduled",
-            // Slack answers with the channel id, needed to delete it later.
-            slackChannel: res.channel ?? channel,
-            scheduledMessageId: res.scheduled_message_id ?? null,
-            error: null,
-          };
-          created++;
-        } catch (error) {
-          values = {
-            status: "failed",
-            slackChannel: userId
-              ? (dmChannels.get(userId) ?? null)
-              : d.channel,
-            scheduledMessageId: null,
-            error: errorCode(error).slice(0, 255),
-          };
-          failed++;
-        }
+          : {
+              status: "failed",
+              slackChannel: res.slackChannel,
+              scheduledMessageId: null,
+              error: res.code,
+            };
+        if (res.ok) created++;
+        else failed++;
         const row = {
           taskKey: d.taskKey,
           owner: d.owner.slice(0, 255),

@@ -3,6 +3,7 @@ import {
   slackApi,
   type SlackResponse,
 } from "~/server/slack/client";
+import { slackErrorCode } from "~/server/slack/scheduled-messages";
 
 type LookupResponse = SlackResponse & { user?: { id?: string } };
 type OpenResponse = SlackResponse & { channel?: { id?: string } };
@@ -46,4 +47,32 @@ export async function dmByEmail(
 
   await slackApi(token, "chat.postMessage", { channel, ...message }, fetchImpl);
   return "sent";
+}
+
+export type SlackLookup =
+  | { status: "found"; userId: string }
+  | { status: "not-found" }
+  | { status: "error"; code: string };
+
+/** Find a Slack user by email (users.lookupByEmail). Never throws. */
+export async function lookupSlackUser(
+  token: string,
+  email: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<SlackLookup> {
+  try {
+    const res = await slackApi<LookupResponse>(
+      token,
+      "users.lookupByEmail",
+      { email },
+      fetchImpl,
+    );
+    const userId = res.user?.id;
+    return userId ? { status: "found", userId } : { status: "not-found" };
+  } catch (error) {
+    const code = slackErrorCode(error);
+    return code === "users_not_found"
+      ? { status: "not-found" }
+      : { status: "error", code };
+  }
 }
