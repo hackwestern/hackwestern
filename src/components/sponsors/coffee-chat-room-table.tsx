@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Lock, Plus, X } from "lucide-react";
+import { Lock, Plus, TriangleAlert, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { hover, press } from "~/components/internals/interaction";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
@@ -12,6 +12,7 @@ import {
   NeedsHackerBadge,
 } from "~/components/sponsors/room-holds";
 import { LoadError } from "~/components/sponsors/schedule-states";
+import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
 import type { SponsorSelection } from "~/components/sponsors/sponsor-filter";
 import { useNow } from "~/components/sponsors/use-now";
 import { coffeeChatCopy } from "~/content/coffee-chat";
@@ -19,7 +20,11 @@ import { buildRoomTable, type RoomCell } from "~/lib/coffee-chat-room-table";
 import { holdCovers } from "~/lib/coffee-chat-holds";
 import { coffeeChatRoomOf } from "~/lib/coffee-chat-requests";
 import { formatClock } from "~/lib/run-of-show";
-import { sponsorColor, sponsorColorIndexes } from "~/lib/sponsor-colors";
+import {
+  SPONSOR_PALETTE,
+  sponsorColor,
+  sponsorColorIndexes,
+} from "~/lib/sponsor-colors";
 import { cn } from "~/lib/utils";
 import type {
   BoardSponsor,
@@ -200,26 +205,33 @@ export function CoffeeChatRoomTable({
   );
 }
 
+/** One opacity for everything dimmed (cells and the legend swatch). */
+const DIMMED = "opacity-40";
+
+// Free: white with a dashed neutral edge and "+ Free", unlike any sponsor
+// fill (sponsor cells are tinted with a solid strong left edge).
+const FREE_CELL =
+  "border-dashed border-dashboard-border-default bg-dashboard-bg-surface";
+// Over capacity: solid warning edge on white with an icon and "Over";
+// no sponsor colour uses the warning orange.
+const OVER_CELL =
+  "border-2 border-dashboard-status-warning bg-dashboard-bg-surface text-dashboard-text-warning";
+const HELD_EDGE = "border-2 border-dashed border-dashboard-status-warning";
+
 function Legend() {
+  const sample = SPONSOR_PALETTE[0]!;
+  const sponsorCell = cn(
+    "border-dashboard-border-subtle border-l-4",
+    sample.fill,
+    sample.edge,
+  );
   const items = [
-    ["free", "bg-dashboard-bg-inset border-dashboard-border-subtle"],
-    [
-      "booked",
-      "bg-dashboard-schedule-blue border-dashboard-border-subtle border-l-4 border-l-dashboard-action-primary",
-    ],
-    [
-      "full",
-      "bg-dashboard-schedule-blue border-dashboard-border-subtle border-l-4 border-l-dashboard-action-primary ring-1 ring-inset ring-dashboard-border-strong",
-    ],
-    ["over", "bg-dashboard-status-iconBadge border-dashboard-status-warning"],
-    [
-      "held",
-      "border-2 border-dashed border-dashboard-status-warning bg-dashboard-bg-surface",
-    ],
-    [
-      "dimmed",
-      "bg-dashboard-schedule-blue border-dashboard-border-subtle opacity-40",
-    ],
+    ["free", FREE_CELL],
+    ["booked", sponsorCell],
+    ["full", cn(sponsorCell, "ring-1 ring-inset ring-dashboard-border-strong")],
+    ["over", OVER_CELL],
+    ["held", cn(sample.fill, HELD_EDGE)],
+    ["dimmed", cn(sponsorCell, DIMMED)],
   ] as const;
   return (
     <ul
@@ -255,12 +267,13 @@ function CellButton({
   const occupied = cell.occupants.length > 0;
   const highlighted =
     highlight !== null && cell.occupants.some((o) => o.sponsor === highlight);
+  // Dim only other sponsors' bookings: free cells never dim.
   const dimmed =
     occupied &&
     (cell.occupants.every((o) => !o.selected) ||
       (highlight !== null && !highlighted));
-  // The colour of the sponsor the cell is about: the highlighted one, else
-  // the first shown, else the first.
+  // The sponsor the cell is about: the highlighted one, else the first
+  // shown, else the first.
   const lead =
     cell.occupants.find((o) => o.sponsor === highlight) ??
     cell.occupants.find((o) => o.selected) ??
@@ -268,6 +281,14 @@ function CellButton({
   const color = lead ? sponsorColor(colors, lead.sponsor) : null;
   const hackers = cell.occupants.reduce((n, o) => n + o.hackers, 0);
   const fill = Math.min(1, cell.used / cell.capacity);
+  const over = cell.state === "over";
+  const warning = over
+    ? copy.overWarning
+    : cell.clash
+      ? copy.clash
+      : cell.needsHacker
+        ? copy.needsHacker
+        : null;
   return (
     <button
       type="button"
@@ -277,8 +298,8 @@ function CellButton({
         time,
         cell.state === "free"
           ? null
-          : cell.needsHacker
-            ? `${who ?? ""}, ${copy.needsHacker}`
+          : warning
+            ? `${who ?? ""}, ${warning}`
             : (who ?? copy.overWarning),
         cell.used,
         cell.capacity,
@@ -290,31 +311,27 @@ function CellButton({
         "transition-opacity duration-150 ease-out motion-reduce:transition-none",
         press,
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1",
-        // Available: neutral grey, so booked vs free reads at a glance.
         cell.state === "free" &&
           cn(
-            "border-dashboard-border-subtle bg-dashboard-bg-inset font-semibold text-dashboard-text-light",
+            FREE_CELL,
+            "font-semibold text-dashboard-text-light",
             hover.highlight,
           ),
-        // Booked and full: the sponsor's colour, with a strong left edge.
+        // Booked and full: the sponsor's tint with a strong left edge.
         (cell.state === "booked" || cell.state === "full") &&
           cn(
             "border-l-4 border-dashboard-border-subtle text-dashboard-text-heavy",
             color?.fill,
             color?.edge,
           ),
-        // Full: a lock and an inner ring on top of the sponsor colour.
         cell.state === "full" &&
           "ring-1 ring-inset ring-dashboard-border-strong",
-        cell.state === "over" &&
-          "border-2 border-dashboard-status-warning bg-dashboard-status-iconBadge text-dashboard-text-warning",
+        over && OVER_CELL,
         // A hold with no hacker yet: dashed warning edge, apart from over.
-        cell.needsHacker &&
-          cell.state !== "over" &&
-          "border-2 border-dashed border-dashboard-status-warning",
+        cell.needsHacker && !over && HELD_EDGE,
         highlighted &&
           "ring-2 ring-dashboard-text-heavy ring-offset-1 ring-offset-dashboard-bg-surface",
-        dimmed && "opacity-30",
+        dimmed && DIMMED,
       )}
     >
       {cell.state === "free" ? (
@@ -324,18 +341,35 @@ function CellButton({
         </span>
       ) : (
         <>
-          <span className="flex items-baseline justify-between gap-2">
-            <span className="min-w-0 truncate font-semibold">
-              {who ?? copy.overWarning}
+          <span className="flex items-center justify-between gap-2">
+            <span className="flex min-w-0 items-center gap-1.5">
+              {lead && (
+                <SponsorBadge
+                  name={lead.sponsor}
+                  color={color ?? undefined}
+                  className="size-5"
+                />
+              )}
+              <span className="min-w-0 truncate font-semibold">
+                {who ?? copy.overWarning}
+              </span>
             </span>
             <span className="flex shrink-0 items-center gap-1 font-semibold tabular-nums">
-              {cell.state === "full" && <Lock aria-hidden className="size-3" />}
+              {cell.state === "full" && (
+                <>
+                  <Lock aria-hidden className="size-3" />
+                  <span>{copy.full}</span>
+                </>
+              )}
               {copy.used(cell.used, cell.capacity)}
             </span>
           </span>
           <span className="truncate text-dashboard-text-medium">
-            {cell.state === "over" ? (
-              copy.overWarning
+            {over || cell.clash ? (
+              <span className="inline-flex items-center gap-1 font-semibold text-dashboard-text-warning">
+                <TriangleAlert aria-hidden className="size-3.5 shrink-0" />
+                {over ? copy.over : copy.clash}
+              </span>
             ) : cell.needsHacker ? (
               <NeedsHackerBadge />
             ) : (
@@ -349,7 +383,7 @@ function CellButton({
             <span
               className={cn(
                 "block h-full rounded-full",
-                cell.state === "over"
+                over
                   ? "bg-dashboard-status-warning"
                   : "bg-dashboard-action-primary",
               )}

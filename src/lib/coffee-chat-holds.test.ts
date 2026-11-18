@@ -305,3 +305,25 @@ describe("holdsForSponsor (privacy)", () => {
     expect(holdsForSponsor(holds, "c", [])).toEqual([]);
   });
 });
+
+describe("room table clash", () => {
+  test("two sponsors in one room at once are flagged", () => {
+    const sponsor = (id: string, name: string) => ({
+      sponsorId: id,
+      sponsor: name,
+      setUp: true,
+      windowStart: "10:00",
+      windowEnd: "11:00",
+      reps: 1,
+      room: "Rm 2241",
+      cells: [],
+    });
+    const table = buildRoomTable({
+      slots: ["10:00"],
+      sponsors: [sponsor("a", "Acme"), sponsor("b", "Beta")],
+      chats: [],
+    });
+    expect(table.rows[0]![0]!.clash).toBe(true);
+    expect(table.rows[0]![1]!.clash).toBe(false);
+  });
+});

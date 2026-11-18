@@ -248,16 +248,20 @@ async function roomUses(conn: Db | Tx, now: Date): Promise<RoomUse[]> {
 }
 
 /**
- * Lock rooms for the rest of the transaction, so two sponsors can't both
- * claim one room at the same time (their sponsor-row locks don't cover
- * each other). Taken after any row locks, in sorted order, so two writers
- * that need two rooms can't deadlock.
+ * Lock coffee chat rooms for the rest of the transaction, so two sponsors
+ * can't both claim a room at one time (their sponsor-row locks don't cover
+ * each other). One lock for every room: which rooms a write touches is only
+ * known after reading rows (moved chats, holds, sheet labels), and a single
+ * key taken FIRST, before any row lock, in every transaction that places
+ * chats or holds in rooms (offer, Move room, assign room, create or move a
+ * hold) means no lock-order cycle is possible. Writes are tiny and there
+ * are three rooms, so serializing them costs nothing noticeable.
  */
-async function lockRooms(tx: Tx, rooms: (string | null | undefined)[]) {
-  const keys = [...new Set(rooms.map(normalizeRoom).filter(Boolean))].sort();
-  for (const key of keys) {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${key}))`);
-  }
+const ROOM_WRITES_LOCK = "coffee-chat-room-writes";
+async function lockRoomWrites(tx: Tx) {
+  await tx.execute(
+    sql`select pg_advisory_xact_lock(hashtext(${ROOM_WRITES_LOCK}))`,
+  );
 }
 
 const problemMessage: Record<OfferProblem, string> = {
@@ -383,9 +387,8 @@ async function lockActiveChat(tx: Tx, chatId: string, now: Date) {
 
 /**
  * Move some of a sponsor's live chats into `room` (null = no room yet),
- * with the same rules as offers: the rooms involved are locked (call after
- * locking the sponsor row), and no other sponsor may have a chat in `room`
- * overlapping any of them. Returns the ids whose room changed.
+ * with the same rules as offers: the caller holds lockRoomWrites, and no
+ * other sponsor may have a chat or hold in `room` overlapping any of them. Returns the ids whose room changed.
  */
 async function moveChatsToRoom(
   tx: Tx,
@@ -399,7 +402,6 @@ async function moveChatsToRoom(
   room: string | null,
   now: Date,
 ): Promise<string[]> {
-  await lockRooms(tx, [room, ...moving.map((c) => c.room)]);
   const roomChats = await roomUses(tx, now);
   if (
     moving.some((c) => roomTakenByOtherSponsor(roomChats, sponsorId, room, c))
@@ -466,8 +468,8 @@ function throwRoomUsed(
  * Create a hold, or move one (`holdId`), after checking no other sponsor
  * has the room then (chats, holds or room window). The sponsor's live chats
  * starting inside the hold move into its room (hold room comes first), and
- * each moved hacker is told. Lock order as everywhere: sponsor row, then
- * the hold, then rooms.
+ * each moved hacker is told. Lock order as everywhere: room writes, then
+ * the sponsor row, then the hold.
  */
 async function saveHold(input: {
   holdId?: string;
@@ -507,11 +509,12 @@ async function saveHold(input: {
   const setups = await readSheetCoffeeChatSetups(names.map((s) => s.name));
 
   const result = await db.transaction(async (tx) => {
+    // Lock order everywhere: room writes, sponsor row, hold or chat rows.
+    await lockRoomWrites(tx);
     const sponsor = await findSponsor(tx, forSponsor, true);
-    let previousRoom: string | null = null;
     if (input.holdId) {
       const [held] = await tx
-        .select({ room: coffeeChatHolds.room })
+        .select({ id: coffeeChatHolds.id })
         .from(coffeeChatHolds)
         .where(eq(coffeeChatHolds.id, input.holdId))
         .for("update");
@@ -521,7 +524,6 @@ async function saveHold(input: {
           message: errors.holdNotFound,
         });
       }
-      previousRoom = held.room;
     }
     const span: HoldSpan = {
       sponsorId: sponsor.id,
@@ -532,7 +534,6 @@ async function saveHold(input: {
     const moving = (
       await activeChats(tx, eq(coffeeChats.sponsorId, sponsor.id), now)
     ).filter((c) => holdCovers(span, c));
-    await lockRooms(tx, [room, previousRoom, ...moving.map((c) => c.room)]);
     const sponsors = await tx
       .select({
         id: sponsorJudgingSponsors.id,
@@ -633,7 +634,9 @@ export async function createCoffeeChatOffer(input: {
 
   try {
     const chat = await db.transaction(async (tx) => {
-      // Lock order: sponsor, then hacker. Every writer uses this order.
+      // Lock order: room writes, sponsor, then hacker. Every writer uses
+      // this order (writers that skip a step keep the rest in order).
+      await lockRoomWrites(tx);
       const locked = await findSponsor(tx, sponsor.id, true);
       await tx
         .select({ id: users.id })
@@ -656,7 +659,7 @@ export async function createCoffeeChatOffer(input: {
       const durationMinutes = setup?.durationMinutes ?? 15;
       // The sponsor's room at this start: their hold's, else where their
       // chats then already are (organizer moves), else assigned or sheet
-      // room. Locked before checking who else is in it.
+      // room. Room writes are locked, so nobody else can take it meanwhile.
       const room = offerRoomAt({
         sponsorId: sponsor.id,
         sponsorChats,
@@ -664,7 +667,6 @@ export async function createCoffeeChatOffer(input: {
         holds,
         slot: { slotTime: input.slotTime, durationMinutes },
       });
-      await lockRooms(tx, [room]);
       const [hackerChats, roomChats] = await Promise.all([
         activeChats(tx, eq(coffeeChats.userId, hacker.userId), now),
         roomUses(tx, now),
@@ -993,6 +995,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         });
       }
       const result = await db.transaction(async (tx) => {
+        await lockRoomWrites(tx);
         const chat = await lockActiveChat(tx, input.chatId, now);
         const moving = (
           await activeChats(tx, eq(coffeeChats.sponsorId, chat.sponsorId), now)
@@ -1194,7 +1197,8 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       const setups = await readSheetCoffeeChatSetups(names.map((s) => s.name));
 
       const result = await db.transaction(async (tx) => {
-        // Lock order as everywhere: sponsor row, then rooms.
+        // Lock order as everywhere: room writes, then the sponsor row.
+        await lockRoomWrites(tx);
         const sponsor = await findSponsor(tx, input.sponsorId, true);
         // Live chats follow the sponsor's room (assignment, else sheet).
         const sheetRoom =
@@ -1205,8 +1209,6 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           eq(coffeeChats.sponsorId, sponsor.id),
           now,
         );
-        // Every room involved, locked once in sorted order (no deadlocks).
-        await lockRooms(tx, [room, target, ...moving.map((c) => c.room)]);
         const sponsors = await tx
           .select({
             id: sponsorJudgingSponsors.id,

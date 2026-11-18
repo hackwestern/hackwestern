@@ -1,8 +1,16 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardCheckbox } from "~/components/internals/dashboard-checkbox";
 import { hover } from "~/components/internals/interaction";
 import { coffeeChatCopy } from "~/content/coffee-chat";
-import { sponsorColor } from "~/lib/sponsor-colors";
+import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
 import { cn } from "~/lib/utils";
 
 const copy = coffeeChatCopy.organizer.sponsorFilter;
@@ -156,7 +164,9 @@ export function SponsorFilter({
             name={name}
             checked={selection.isShown(name)}
             onToggle={() => selection.toggle(name)}
-            dot={colors ? sponsorColor(colors, name).dot : undefined}
+            badge={
+              colors ? <SponsorBadge name={name} colors={colors} /> : undefined
+            }
             highlighted={highlight === name}
             onHighlight={onHighlight ? () => onHighlight(name) : undefined}
           />
@@ -182,7 +192,7 @@ function SponsorCheck({
   checked,
   onToggle,
   strong = false,
-  dot,
+  badge,
   highlighted = false,
   onHighlight,
 }: {
@@ -190,17 +200,12 @@ function SponsorCheck({
   checked: boolean;
   onToggle: () => void;
   strong?: boolean;
-  /** Colour dot classes (sponsor colour). */
-  dot?: string;
+  /** The sponsor's colour badge (SponsorBadge). */
+  badge?: ReactNode;
   highlighted?: boolean;
   onHighlight?: () => void;
 }) {
-  const swatch = dot ? (
-    <span
-      aria-hidden
-      className={cn("inline-block size-2.5 shrink-0 rounded-full", dot)}
-    />
-  ) : null;
+  const swatch = badge ?? null;
   if (onHighlight) {
     // Checkbox and name are separate targets: tick = show/hide, name =
     // highlight. Both keep the 44px touch height.
@@ -219,22 +224,19 @@ function SponsorCheck({
           />
           <span className="sr-only">{copy.show(name)}</span>
         </label>
-        <button
-          type="button"
+        <DashboardButton
+          variant="link"
           aria-pressed={highlighted}
           aria-label={copy.highlight(name)}
           onClick={onHighlight}
           className={cn(
-            "flex min-h-11 min-w-0 items-center gap-1.5 rounded-dashboard-md px-1.5 text-left text-sm text-dashboard-text-heavy md:min-h-9",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
-            highlighted
-              ? "bg-dashboard-bg-navSelected font-semibold"
-              : hover.highlight,
+            "min-w-0 whitespace-normal px-1.5 text-left font-medium text-dashboard-text-heavy focus-visible:ring-offset-0",
+            highlighted && "bg-dashboard-bg-navSelected font-semibold",
           )}
         >
           {swatch}
           <span className="min-w-0 break-words">{name}</span>
-        </button>
+        </DashboardButton>
       </span>
     );
   }

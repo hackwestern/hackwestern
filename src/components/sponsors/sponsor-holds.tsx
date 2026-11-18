@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DoorOpen, ScanLine, TriangleAlert, Users } from "lucide-react";
-import { pressable } from "~/components/sponsors/sponsor-shell";
+import { DashboardButton } from "~/components/internals/dashboard-button";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import type { SponsorHoldView } from "~/lib/coffee-chat-holds";
 import { formatClock } from "~/lib/run-of-show";
@@ -8,8 +8,8 @@ import { cn } from "~/lib/utils";
 
 const copy = coffeeChatCopy.sponsorHolds;
 
-const actionClass =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm font-semibold text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:bg-dashboard-bg-highlight";
+/** Full-width compact outline buttons (DashboardButton "small"). */
+const actionClass = "w-full";
 
 /** The scan page, opened on this hold's start time when it's still open. */
 export function scanHrefForHold(sponsor: string, startTime: string): string {
@@ -34,30 +34,29 @@ export function HoldActions({
       className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2"
     >
       {onPickCandidates ? (
-        <button
+        <DashboardButton
+          variant="small"
           type="button"
           onClick={onPickCandidates}
-          className={cn(actionClass, pressable)}
+          className={actionClass}
         >
-          <Users aria-hidden className="size-4" />
+          <Users aria-hidden />
           {copy.pick}
-        </button>
+        </DashboardButton>
       ) : (
-        <Link
-          href={`/sponsors/${sponsor}/coffee-chats#interested`}
-          className={cn(actionClass, pressable)}
-        >
-          <Users aria-hidden className="size-4" />
-          {copy.pick}
-        </Link>
+        <DashboardButton variant="small" asChild className={actionClass}>
+          <Link href={`/sponsors/${sponsor}/coffee-chats#interested`}>
+            <Users aria-hidden />
+            {copy.pick}
+          </Link>
+        </DashboardButton>
       )}
-      <Link
-        href={scanHrefForHold(sponsor, hold.startTime)}
-        className={cn(actionClass, pressable)}
-      >
-        <ScanLine aria-hidden className="size-4" />
-        {copy.scan}
-      </Link>
+      <DashboardButton variant="small" asChild className={actionClass}>
+        <Link href={scanHrefForHold(sponsor, hold.startTime)}>
+          <ScanLine aria-hidden />
+          {copy.scan}
+        </Link>
+      </DashboardButton>
     </div>
   );
 }

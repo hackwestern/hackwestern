@@ -24,6 +24,7 @@ import {
   WatcherInput,
 } from "~/components/sponsors/coffee-chat-fields";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
+import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
 import {
   addInFlight,
   removeInFlight,
@@ -92,6 +93,13 @@ const STATUS_STYLE: Record<SponsorStatus, { badge: string; dot: string }> = {
     dot: "bg-dashboard-border-muted",
   },
 };
+
+/**
+ * Icon-only buttons: DashboardButton "small", square at the touch and
+ * desktop heights (44px / 36px). Not internals/icon-button.tsx: that is the
+ * promo site's grey button and can't take aria-label or aria-expanded.
+ */
+const iconButton = "size-11 shrink-0 px-0 md:size-9";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1";
@@ -552,18 +560,14 @@ export function SponsorsTab({
           )}
         >
           <span>{note.text}</span>
-          <button
-            type="button"
+          <DashboardButton
+            variant="small"
             onClick={() => setNote(null)}
             aria-label={copy.dismiss}
-            className={cn(
-              "inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-md",
-              hover.surface,
-              focusRing,
-            )}
+            className={iconButton}
           >
-            <X aria-hidden className="size-4" />
-          </button>
+            <X aria-hidden />
+          </DashboardButton>
         </div>
       )}
 
@@ -732,7 +736,7 @@ export function SponsorsTab({
                 >
                   <span className="flex min-w-0 flex-col gap-1">
                     <span className="flex min-w-0 items-center gap-2">
-                      <ColorDot color={colorOf(sponsor)} />
+                      <ColorDot name={sponsor.name} color={colorOf(sponsor)} />
                       <span className="min-w-0 break-words text-base font-semibold leading-snug">
                         {sponsor.name}
                       </span>
@@ -761,7 +765,7 @@ export function SponsorsTab({
                 </button>
                 <div className="flex flex-wrap items-center gap-2">
                   {statusPicker(sponsor)}
-                  <HelpCell summary={summary} />
+                  {summary?.help && <HelpCell summary={summary} />}
                 </div>
                 {open && (
                   <div
@@ -787,7 +791,7 @@ export function SponsorsTab({
           holds and details; the totals row sums what the filter shows. */}
       {filtered.length > 0 && (
         <div className="hidden overflow-x-auto rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card sm:block">
-          <table className="w-full min-w-[1100px] border-separate border-spacing-0 text-left text-sm">
+          <table className="w-full min-w-max border-separate border-spacing-0 text-left text-sm">
             <caption className="sr-only">{copy.tableLabel}</caption>
             <thead>
               <tr className="text-xs font-semibold text-dashboard-text-light">
@@ -840,8 +844,8 @@ export function SponsorsTab({
                         )}
                       >
                         <span className="flex items-center gap-1">
-                          <button
-                            type="button"
+                          <DashboardButton
+                            variant="small"
                             aria-expanded={open}
                             aria-controls={panelId}
                             aria-label={
@@ -850,12 +854,7 @@ export function SponsorsTab({
                                 : copy.expand(sponsor.name)
                             }
                             onClick={() => toggle(sponsor)}
-                            className={cn(
-                              "inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-md text-dashboard-text-light md:size-9",
-                              hover.highlight,
-                              press,
-                              focusRing,
-                            )}
+                            className={iconButton}
                           >
                             <ChevronDown
                               aria-hidden
@@ -864,7 +863,7 @@ export function SponsorsTab({
                                 open && "rotate-180",
                               )}
                             />
-                          </button>
+                          </DashboardButton>
                           <SponsorName
                             sponsor={sponsor}
                             color={colorOf(sponsor)}
@@ -1047,13 +1046,8 @@ function Picks({ n, long = false }: { n: number; long?: boolean }) {
   );
 }
 
-function ColorDot({ color }: { color: SponsorColor }) {
-  return (
-    <span
-      aria-hidden
-      className={cn("inline-block size-3 shrink-0 rounded-full", color.dot)}
-    />
-  );
+function ColorDot({ name, color }: { name: string; color: SponsorColor }) {
+  return <SponsorBadge name={name} color={color} />;
 }
 
 // The sponsor's name and colour dot. Registered sponsors link to the
@@ -1068,7 +1062,7 @@ function SponsorName({
   const name = (
     <span className="flex min-w-0 flex-col gap-1">
       <span className="flex min-w-0 items-center gap-2">
-        <ColorDot color={color} />
+        <ColorDot name={sponsor.name} color={color} />
         <span className="break-words">{sponsor.name}</span>
       </span>
       {!sponsor.onMasterSheet && <NotOnMaster />}
@@ -1196,7 +1190,7 @@ function SponsorDetails({
                     key={c.chatId}
                     className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"
                   >
-                    <span className="w-28 shrink-0 font-semibold tabular-nums text-dashboard-text-medium">
+                    <span className="shrink-0 whitespace-nowrap font-semibold tabular-nums text-dashboard-text-medium">
                       {detailCopy.chat(formatClock(c.slotTime), c.room)}
                     </span>
                     <span className="flex min-w-0 items-center gap-2">
