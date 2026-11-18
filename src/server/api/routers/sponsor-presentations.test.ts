@@ -378,6 +378,40 @@ describe("sponsorPresentations.schedule and notices", () => {
   });
 });
 
+describe("sponsorPresentations.setRound2", () => {
+  test("organizers open and close round 2; opening needs a schedule", async () => {
+    await expect(
+      anon.sponsorPresentations.setRound2({ open: true }),
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await organizer.sponsorPresentations.setRound2({ open: false });
+    await expect(
+      organizer.sponsorPresentations.setRound2({ open: true }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(
+      (await organizer.sponsorPresentations.overview()).round2OpenedAt,
+    ).toBeNull();
+
+    await scheduledTeam();
+    const opened = await organizer.sponsorPresentations.setRound2({
+      open: true,
+    });
+    expect(opened.round2OpenedAt).toBeInstanceOf(Date);
+    // Opening again keeps the first opened time.
+    const again = await organizer.sponsorPresentations.setRound2({
+      open: true,
+    });
+    expect(again.round2OpenedAt).toEqual(opened.round2OpenedAt);
+    expect(
+      (await organizer.sponsorPresentations.overview()).round2OpenedAt,
+    ).toEqual(opened.round2OpenedAt);
+
+    await organizer.sponsorPresentations.setRound2({ open: false });
+    expect(
+      (await organizer.sponsorPresentations.overview()).round2OpenedAt,
+    ).toBeNull();
+  });
+});
+
 describe("presentationDmMessage", () => {
   test("lists times in order and escapes names", () => {
     const msg = presentationDmMessage("A<b>", [

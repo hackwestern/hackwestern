@@ -19,6 +19,10 @@ import {
 } from "~/server/api/trpc";
 import { runAllTeamChecks } from "~/server/api/utils/cheat-check-runners";
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
+import {
+  round2OpenedAt,
+  setRound2Open,
+} from "~/server/api/utils/sponsor-judging-settings";
 import { db } from "~/server/db";
 import {
   sponsorFinalPicks,
@@ -173,19 +177,21 @@ export const sponsorPresentationsRouter = createTRPCRouter({
    * top teams for the cheat check.
    */
   overview: protectedOrganizerProcedure.query(async () => {
-    const [sponsors, sends, rows, topIds, notices] = await Promise.all([
-      db
-        .select({
-          id: sponsorJudgingSponsors.id,
-          name: sponsorJudgingSponsors.name,
-        })
-        .from(sponsorJudgingSponsors)
-        .orderBy(sponsorJudgingSponsors.name),
-      db.select().from(sponsorShortlistSends),
-      db.select().from(sponsorPresentations),
-      topTeamIds(),
-      db.select().from(sponsorPresentationNotices),
-    ]);
+    const [sponsors, sends, rows, topIds, notices, openedAt] =
+      await Promise.all([
+        db
+          .select({
+            id: sponsorJudgingSponsors.id,
+            name: sponsorJudgingSponsors.name,
+          })
+          .from(sponsorJudgingSponsors)
+          .orderBy(sponsorJudgingSponsors.name),
+        db.select().from(sponsorShortlistSends),
+        db.select().from(sponsorPresentations),
+        topTeamIds(),
+        db.select().from(sponsorPresentationNotices),
+        round2OpenedAt(),
+      ]);
     const names = await teamNames([
       ...new Set([...rows.map((r) => r.teamId), ...topIds]),
     ]);
@@ -272,6 +278,8 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         };
       }),
       scheduledAt,
+      /** When organizers opened round 2; null = closed. */
+      round2OpenedAt: openedAt,
       /**
        * Slack notices for the scheduled teams' members: how many have
        * their current times (and the latest such send), and who doesn't.
@@ -565,6 +573,30 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         /** Members left alone: they already had these times. */
         skipped: members.length - targets.length,
       };
+    }),
+
+  /**
+   * Open or close round 2 for every sponsor. While open, a sponsor with a
+   * placed slot ranks the teams that presented and submits a top
+   * SPONSOR_FINAL_TOP (sponsorScoring.submit refuses while closed).
+   * Opening needs a schedule with at least one placed slot.
+   */
+  setRound2: protectedOrganizerProcedure
+    .input(z.object({ open: z.boolean() }))
+    .mutation(async ({ input }) => {
+      if (input.open) {
+        const placed = await db.query.sponsorPresentations.findFirst({
+          where: isNotNull(sponsorPresentations.startMinute),
+          columns: { teamId: true },
+        });
+        if (!placed) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: errors.noSchedule,
+          });
+        }
+      }
+      return { round2OpenedAt: await setRound2Open(input.open) };
     }),
 
   /**

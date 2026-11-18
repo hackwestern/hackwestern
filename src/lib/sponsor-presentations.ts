@@ -322,21 +322,27 @@ export function formatPresentationTime(minutes: number) {
 export type JudgingRound = "shortlist" | "sent" | "reschedule" | "rank";
 
 /**
- * Where one sponsor is in Sunday judging: "rank" (round 2: they have at
- * least one placed slot), "reschedule" (a schedule exists but has no slot
- * for them: sent late, no room, or none of their teams fit; organizers
- * need to schedule again), "sent" (shortlist sent, no schedule yet) or
- * "shortlist" (round 1, nothing sent). Only "rank" limits the top 5 to
- * teams that presented. For the picks page and the portal tile; takes
- * sponsorScoring.get's `round`.
+ * Where one sponsor is in Sunday judging. Round 2 starts only once
+ * organizers open it (`round2Open`, after presentations): then "rank" (they
+ * have at least one placed slot: rank the teams that presented) or
+ * "reschedule" (a schedule exists but has no slot for them: sent late, no
+ * room, or none of their teams fit; they rank their shortlist and should
+ * ask organizers to schedule again). Before that, "sent" (shortlist sent,
+ * waiting for round 2) or "shortlist" (round 1, nothing sent). Only "rank"
+ * limits the top 5 to teams that presented; no top 5 can be submitted
+ * until round 2 is open. For the picks page; takes sponsorScoring.get's
+ * `round`.
  */
 export function judgingRound(round: {
   shortlistSent: unknown;
   scheduledAt: Date | string | null;
   slots: readonly unknown[];
+  round2Open: boolean;
 }): JudgingRound {
-  if (round.slots.length > 0) return "rank";
-  if (round.scheduledAt) return "reschedule";
+  if (round.round2Open) {
+    if (round.slots.length > 0) return "rank";
+    if (round.scheduledAt) return "reschedule";
+  }
   return round.shortlistSent ? "sent" : "shortlist";
 }
 
